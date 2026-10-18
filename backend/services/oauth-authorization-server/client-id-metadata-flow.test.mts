@@ -1,3 +1,4 @@
+import { OAuthProtocolError } from '@vouchington/oauth-server'
 import { createHash, randomBytes } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
 import { v7 as uuidv7 } from 'uuid'
@@ -17,7 +18,6 @@ import {
   getOAuthAuthorizationRequestForUser,
   getOAuthResourceUrl,
   listUserOAuthGrants,
-  OAuthProtocolError,
   validateOAuthAuthorizationRequest,
 } from './index.mts'
 

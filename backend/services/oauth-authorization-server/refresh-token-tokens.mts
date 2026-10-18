@@ -3,12 +3,16 @@ import { hashToken } from '@modules/token-secrets'
 import { v7 as uuidv7 } from 'uuid'
 import { OAUTH_SECRET_PURPOSES } from './constants.mts'
 import { authenticateRefreshClientAfterParticipantFence } from './refresh-client-authority.mts'
-import { OAuthProtocolError } from './errors.mts'
+import {
+  assertTokenRequestResource,
+  OAuthProtocolError,
+  type TokenResponse,
+} from '@vouchington/oauth-server'
 import { revokeOAuthRefreshFamily } from './refresh-family.mts'
 import { insertOAuthTokenPair } from './token-pairs.mts'
-import { assertScopeSubset, assertTokenRequestResource, parseOAuthScopes } from './validation.mts'
+import { assertScopeSubset, parseOAuthScopes } from './validation.mts'
 import type { ApiScope } from '@modules/scopes'
-import type { OAuthClient, OAuthTokenResponse } from './types.mts'
+import type { OAuthClient } from './types.mts'
 
 type RefreshTokenRow = {
   id: string
@@ -34,7 +38,7 @@ export async function exchangeOAuthRefreshToken(input: {
   refreshToken: string
   resource?: string
   scope?: string
-}): Promise<OAuthTokenResponse> {
+}): Promise<TokenResponse> {
   await using query = await beginTransaction()
   const { activeParticipantIds, client } = await authenticateRefreshClientAfterParticipantFence(
     input,
@@ -125,7 +129,7 @@ async function rotateRefreshToken(
   token: RefreshTokenRow,
   scopes: ApiScope[],
   query: TransactionQuery,
-): Promise<OAuthTokenResponse> {
+): Promise<TokenResponse> {
   const replacementId = uuidv7()
   const tokens = await insertOAuthTokenPair(
     {

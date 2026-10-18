@@ -1,43 +1,29 @@
 import { OAUTH_CLIENT_COLUMNS } from './client-columns.mts'
-import { randomBytes, timingSafeEqual } from 'node:crypto'
+import { timingSafeEqual } from 'node:crypto'
 import { write, type QueryExecutor, type TransactionQuery } from '@data-stores/psql'
-import { hasEveryScope } from '@modules/scopes'
 import { hashToken } from '@modules/token-secrets'
-import { OAuthProtocolError, invalidClientMetadata, invalidRequest } from './errors.mts'
-import { OAUTH_SECRET_PURPOSES } from './constants.mts'
 import {
-  validateAuthMethod,
-  validateClientName,
-  validateGrantTypes,
-  validateRegistrationObject,
-  validateResponseTypes,
-} from './client-metadata-validation.mts'
-import { validateRedirectUris } from './redirect-uri-validation.mts'
-import { matchesRegisteredRedirectUri } from './registered-redirect-uri.mts'
-import { parseOAuthScopes } from './validation.mts'
+  OAuthProtocolError,
+  registerClient,
+  type NewOAuthClient,
+  type RegisteredClient,
+} from '@vouchington/oauth-server'
+import { OAUTH_SECRET_PURPOSES } from './constants.mts'
+import { OAUTH_SCOPE_POLICY } from './validation.mts'
 import {
   resolveClientIdMetadataDocument,
   type ClientIdMetadataDependencies,
 } from './client-id-metadata-document.mts'
-import type { OAuthClient, RegisteredOAuthClient } from './types.mts'
+import type { OAuthClient } from './types.mts'
+import { createProtocolClientLookup } from './protocol-client.mts'
 
 export async function registerOAuthClient(
   input: unknown,
   ownerUserId: string | null = null,
   query: QueryExecutor = write,
-): Promise<RegisteredOAuthClient> {
-  const { client, clientSecret } = await insertOAuthClient(input, ownerUserId, query)
-  return {
-    client_id: client.client_id,
-    client_id_issued_at: Math.floor(client.created_at.getTime() / 1000),
-    client_name: client.client_name,
-    ...(clientSecret ? { client_secret: clientSecret, client_secret_expires_at: 0 as const } : {}),
-    grant_types: client.grant_types,
-    redirect_uris: client.redirect_uris,
-    response_types: client.response_types,
-    scope: client.scopes.join(' '),
-    token_endpoint_auth_method: client.token_endpoint_auth_method,
-  }
+): Promise<RegisteredClient> {
+  const { registered } = await insertOAuthClient(input, ownerUserId, query)
+  return registered
 }
 
 /** Validates RFC 7591 metadata and inserts the client, returning its row and one-time secret. */
@@ -45,24 +31,35 @@ export async function insertOAuthClient(
   input: unknown,
   ownerUserId: string | null,
   query: QueryExecutor,
-): Promise<{ client: OAuthClient; clientSecret: string | undefined }> {
-  const metadata = validateRegistrationObject(input)
-  const clientName = validateClientName(metadata.client_name)
-  const redirectUris = validateRedirectUris(metadata.redirect_uris)
-  const tokenEndpointAuthMethod = validateAuthMethod(metadata.token_endpoint_auth_method)
-  const grantTypes = validateGrantTypes(metadata.grant_types)
-  const responseTypes = validateResponseTypes(metadata.response_types)
-  let scopes: OAuthClient['scopes']
-  try {
-    scopes = parseOAuthScopes(metadata.scope)
-  } catch (err) {
-    if (err instanceof OAuthProtocolError) throw invalidClientMetadata(err.message)
-    throw err
-  }
-  const clientId = `voucha_${randomBytes(24).toString('base64url')}`
-  const clientSecret =
-    tokenEndpointAuthMethod === 'client_secret_basic' ? generateOAuthClientSecret() : undefined
+): Promise<{
+  client: OAuthClient
+  clientSecret: string | undefined
+  registered: RegisteredClient
+}> {
+  let insertedClient: OAuthClient | undefined
+  const registered = await registerClient(input, {
+    scopes: OAUTH_SCOPE_POLICY,
+    clientIdPrefix: 'voucha_',
+    clientSecretPrefix: 'voucha_secret_',
+    defaultAuthMethod: 'none',
+    hashSecret: (_purpose, secret) => hashToken(OAUTH_SECRET_PURPOSES.clientSecret, secret),
+    registry: {
+      findClient: createProtocolClientLookup(getOAuthClient, query),
+      createClient: async (client: NewOAuthClient) => {
+        insertedClient = await persistRegisteredClient(client, ownerUserId, query)
+      },
+    },
+  })
+  if (!insertedClient)
+    throw new OAuthProtocolError('server_error', 'client registration failed', 503)
+  return { client: insertedClient, clientSecret: registered.client_secret, registered }
+}
 
+async function persistRegisteredClient(
+  client: NewOAuthClient,
+  ownerUserId: string | null,
+  query: QueryExecutor,
+): Promise<OAuthClient> {
   const result = await query<OAuthClient>(
     `/* registerOAuthClient */ INSERT INTO oauth_clients (
        client_id,
@@ -78,21 +75,21 @@ export async function insertOAuthClient(
      ) VALUES ($1, $2, $3, $4, $5, $6::text[], $7::oauth_grant_types[], $8::oauth_response_types[], $9::api_scopes[], $10)
      RETURNING ${OAUTH_CLIENT_COLUMNS}`,
     [
-      clientId,
+      client.clientId,
       ownerUserId,
-      clientName,
-      tokenEndpointAuthMethod === 'none' ? 'public' : 'confidential',
-      tokenEndpointAuthMethod,
-      redirectUris,
-      grantTypes,
-      responseTypes,
-      scopes,
-      clientSecret ? hashToken(OAUTH_SECRET_PURPOSES.clientSecret, clientSecret) : null,
+      client.clientName,
+      client.tokenEndpointAuthMethod === 'none' ? 'public' : 'confidential',
+      client.tokenEndpointAuthMethod,
+      client.redirectUris,
+      client.grantTypes,
+      client.responseTypes,
+      client.scopes,
+      client.clientSecretHash,
     ],
   )
-  const client = result.rows[0]
-  if (!client) throw new OAuthProtocolError('server_error', 'client registration failed', 503)
-  return { client, clientSecret }
+  const persisted = result.rows[0]
+  if (!persisted) throw new OAuthProtocolError('server_error', 'client registration failed', 503)
+  return persisted
 }
 
 export async function getOAuthClient(
@@ -175,26 +172,4 @@ function assertOAuthClientAuthentication(
   if (actual.length !== expected.length || !timingSafeEqual(actual, expected)) {
     throw new OAuthProtocolError('invalid_client', 'client authentication failed', 401)
   }
-}
-
-export function assertClientAuthorizationRequest(
-  client: OAuthClient,
-  redirectUri: string,
-  scopes: OAuthClient['scopes'],
-): void {
-  if (!matchesRegisteredRedirectUri(redirectUri, client.redirect_uris)) {
-    throw invalidRequest('redirect_uri is not registered for this client')
-  }
-  // Uses the same coverage rule as tool authorization, so a client registered with
-  // `mcp.user:write` may request `cards:write`.
-  if (!hasEveryScope(client.scopes, scopes)) {
-    throw new OAuthProtocolError(
-      'invalid_scope',
-      'requested scope is not registered for this client',
-    )
-  }
-}
-
-export function generateOAuthClientSecret(): string {
-  return `voucha_secret_${randomBytes(32).toString('base64url')}`
 }

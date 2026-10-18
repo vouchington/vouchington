@@ -1,3 +1,4 @@
+import { OAuthProtocolError } from '@vouchington/oauth-server'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { v7 as uuidv7 } from 'uuid'
 import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
@@ -18,7 +19,6 @@ import {
   decideOAuthAuthorizationRequest,
   exchangeOAuthAuthorizationCode,
   getOAuthAuthorizationRequestForUser,
-  OAuthProtocolError,
   updateOwnedOAuthApp,
 } from './index.mts'
 

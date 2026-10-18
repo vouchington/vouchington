@@ -1,13 +1,13 @@
 import { OAUTH_CLIENT_COLUMNS } from './client-columns.mts'
 import { write } from '@data-stores/psql'
-import { buildOAuthAuthorizationResponseUrl } from './redirects.mts'
-import { OAuthProtocolError } from './errors.mts'
-import { matchesRegisteredRedirectUri } from './registered-redirect-uri.mts'
+import { OAuthProtocolError, authorizationErrorRedirect } from '@vouchington/oauth-server'
+import { getOAuthIssuer } from './resources.mts'
 import type { OAuthClient } from './types.mts'
 import {
   resolveClientIdMetadataDocument,
   type ClientIdMetadataDependencies,
 } from './client-id-metadata-document.mts'
+import { createProtocolClientLookup } from './protocol-client.mts'
 
 export async function getOAuthAuthorizationErrorRedirect(
   input: {
@@ -45,12 +45,10 @@ export async function getOAuthAuthorizationErrorRedirect(
       return null
     }
   }
-  if (!client || !matchesRegisteredRedirectUri(input.redirectUri, client.redirect_uris)) return null
-  return buildOAuthAuthorizationResponseUrl(input.redirectUri, {
-    error: input.error.code,
-    error_description: input.error.message,
-    ...(typeof input.state === 'string' && input.state.length <= 1024
-      ? { state: input.state }
-      : {}),
+  return authorizationErrorRedirect(input, {
+    issuer: getOAuthIssuer(),
+    clients: {
+      findClient: createProtocolClientLookup(async () => client ?? null, undefined),
+    },
   })
 }

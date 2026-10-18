@@ -9,10 +9,8 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestMembership, createTestUser, suspendTestUser } from '@voucha/test-helpers'
 import { createApiKey } from '@services/api-keys'
-import {
-  getOAuthResourceMetadataUrl,
-  type OAuthTokenResponse,
-} from '@services/oauth-authorization-server'
+import { getOAuthResourceMetadataUrl } from '@services/oauth-authorization-server'
+import type { TokenResponse } from '@vouchington/oauth-server'
 import { issueTestOAuthTokens } from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
 import type { PrivateUser } from '@services/users/types'
 
@@ -42,8 +40,8 @@ type JsonRpcResponse = {
 
 describe('POST /api/v1/mcp with OAuth access tokens', () => {
   let user: PrivateUser
-  let userTokens: OAuthTokenResponse
-  let topicsOnlyTokens: OAuthTokenResponse
+  let userTokens: TokenResponse
+  let topicsOnlyTokens: TokenResponse
 
   beforeAll(async () => {
     user = await createTestUser()

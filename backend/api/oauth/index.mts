@@ -1,5 +1,10 @@
 import app from '../app.mts'
 import {
+  OAuthProtocolError,
+  parseClientAuthentication,
+  requiredFormValue,
+} from '@vouchington/oauth-server'
+import {
   getOptionalAuthAndRateLimit,
   parseJsonBody,
   requireAuth,
@@ -13,7 +18,6 @@ import {
   decideOAuthAuthorizationRequest,
   getOAuthAuthorizationErrorRedirect,
   getOAuthAuthorizationRequestForUser,
-  OAuthProtocolError,
   registerOAuthClient,
   revokeOAuthToken,
   validateOAuthAuthorizationRequest,
@@ -22,11 +26,9 @@ import type { Context } from '@jongleberry/api-server'
 import { assertNotSuspended } from '@services/users'
 import {
   parseFormBody,
-  parseOAuthClientAuthentication,
   parseOAuthRegistrationBody,
   queryString,
   redirect,
-  requiredFormValue,
   sendOAuthError,
   setOAuthResponseHeaders,
 } from './protocol-helpers.mts'
@@ -96,7 +98,7 @@ app.route('/token').post(
     await ctx.applyRouteRateLimit('POST:/token', { identityMode: 'ip-only' })
     try {
       const form = await parseFormBody(ctx)
-      const client = parseOAuthClientAuthentication(ctx, form)
+      const client = parseClientAuthentication(ctx.req.headers.authorization, form)
       await authenticateOAuthClient(client.clientId, client.clientSecret)
       ctx.json(await exchangeOAuthTokenGrant(form, client))
     } catch (err) {
@@ -113,7 +115,7 @@ app.route('/revoke').post(
     await ctx.applyRouteRateLimit('POST:/revoke', { identityMode: 'ip-only' })
     try {
       const form = await parseFormBody(ctx)
-      const client = parseOAuthClientAuthentication(ctx, form)
+      const client = parseClientAuthentication(ctx.req.headers.authorization, form)
       await revokeOAuthToken({
         clientId: client.clientId,
         clientSecret: client.clientSecret,

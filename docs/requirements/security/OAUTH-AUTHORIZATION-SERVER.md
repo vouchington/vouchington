@@ -15,6 +15,13 @@ presented token existed.
 The server intentionally does not support implicit, password, client-credentials, plain-PKCE,
 OpenID Connect, ID-token, or UserInfo flows.
 
+The shared OAuth protocol package owns protocol parsing, validation, discovery, and response
+construction. Voucha supplies its scope catalog, resource resolver, client registry, and secret
+hashing policy. Token exchange and revocation remain in the app service so participant deletion
+locks, client authentication, grant mutation, and replay-family revocation share the required
+transaction order. Refresh downscoping uses scopes explicitly held by the token; catalog-implied
+coverage may authorize a new request but does not enlarge an existing token grant.
+
 ## Security invariants
 
 - Redirect URIs use exact registration matching except port-less HTTP loopback IP registrations,

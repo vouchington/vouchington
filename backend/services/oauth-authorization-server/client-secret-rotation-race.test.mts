@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import { hashToken } from '@modules/token-secrets'
 import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
 import { rotateTestOAuthClientSecretWhileWaiting } from '@voucha/test-helpers/entities/oauth-client-management'
-import { generateOAuthClientSecret } from './clients.mts'
+import { generateOpaqueToken } from '@vouchington/oauth-server'
 import { OAUTH_SECRET_PURPOSES } from './constants.mts'
 import { createTestApprovedOAuthAuthorization } from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
 import {
@@ -39,7 +39,10 @@ describe('OAuth client secret rotation racing token-endpoint authentication', ()
   function rotateSecretWhileWaiting<T>(clientId: string, start: () => Promise<T>): Promise<T> {
     return rotateTestOAuthClientSecretWhileWaiting({
       clientId,
-      clientSecretHash: hashToken(OAUTH_SECRET_PURPOSES.clientSecret, generateOAuthClientSecret()),
+      clientSecretHash: hashToken(
+        OAUTH_SECRET_PURPOSES.clientSecret,
+        generateOpaqueToken('voucha_secret_'),
+      ),
       waiterQueryMarker: '/* authenticateLockedOAuthClient */',
       start,
     })

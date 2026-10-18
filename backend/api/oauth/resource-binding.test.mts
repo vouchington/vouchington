@@ -48,9 +48,12 @@ describe('OAuth resource binding routes', () => {
     overrideDynamicConfigFieldsForTest(routeRateLimitConfig, originalRouteRateLimitConfig)
   })
 
-  it('redirects an unsupported resource back to the client as invalid_target with iss', async () => {
+  it.each([
+    ['an unsupported path', () => `${getOAuthIssuer()}/api/v1/users`],
+    ['an external origin', () => 'https://attacker.example/api/v1/mcp'],
+  ])('redirects %s back to the client as invalid_target with iss', async (_case, resource) => {
     const { location, redirectUri, state } = await authorize(createRequest(), {
-      resource: `${getOAuthIssuer()}/api/v1/users`,
+      resource: resource(),
       scope: 'mcp.user:read',
     })
 

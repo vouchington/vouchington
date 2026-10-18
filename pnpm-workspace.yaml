@@ -89,6 +89,7 @@ minimumReleaseAgeExclude:
   - '@vouchington/localization-compiler'
   - '@vouchington/media'
   - '@vouchington/memberships'
+  - '@vouchington/oauth-server'
   - '@vouchington/pagination'
   - '@vouchington/phone-validation'
   - '@vouchington/postgres'

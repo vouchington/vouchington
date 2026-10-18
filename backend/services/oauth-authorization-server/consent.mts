@@ -1,5 +1,4 @@
 import type { AuthorizationRequestRow } from './consent-types.mts'
-import { randomBytes } from 'node:crypto'
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import { hashToken } from '@modules/token-secrets'
 import { hasEveryScope } from '@modules/scopes'
@@ -9,10 +8,14 @@ import {
   lockOAuthParticipantUsers,
   readOAuthAuthorizationRequestParticipantUserIds,
 } from './active-users.mts'
-import { OAuthProtocolError } from './errors.mts'
-import { buildOAuthAuthorizationResponseUrl } from './redirects.mts'
+import {
+  OAuthProtocolError,
+  buildAuthorizationResponseUrl,
+  generateOpaqueToken,
+  matchesRegisteredRedirectUri,
+} from '@vouchington/oauth-server'
+import { getOAuthIssuer } from './resources.mts'
 import { mayUserAuthorizeOAuthResource } from './resource-authorization.mts'
-import { matchesRegisteredRedirectUri } from './registered-redirect-uri.mts'
 
 export async function decideOAuthAuthorizationRequest(
   userId: string,
@@ -41,11 +44,23 @@ export async function decideOAuthAuthorizationRequest(
   ) {
     await denyAuthorizationRequest(request, query)
     await query.commit()
-    return { redirect_uri: buildAuthorizationRedirect(request, { error: 'access_denied' }) }
+    return {
+      redirect_uri: buildAuthorizationResponseUrl(
+        request.redirect_uri,
+        { error: 'access_denied', state: request.client_state },
+        getOAuthIssuer(),
+      ),
+    }
   }
   const rawCode = await approveAuthorizationRequest(request, query)
   await query.commit()
-  return { redirect_uri: buildAuthorizationRedirect(request, { code: rawCode }) }
+  return {
+    redirect_uri: buildAuthorizationResponseUrl(
+      request.redirect_uri,
+      { code: rawCode, state: request.client_state },
+      getOAuthIssuer(),
+    ),
+  }
 }
 async function denyAuthorizationRequest(
   request: AuthorizationRequestRow,
@@ -79,7 +94,7 @@ async function issueAuthorizationCode(
   grantId: string,
   query: TransactionQuery,
 ): Promise<string> {
-  const rawCode = `voucha_code_${randomBytes(32).toString('base64url')}`
+  const rawCode = generateOpaqueToken('voucha_code_')
   await insertAuthorizationCode(request, grantId, rawCode, query)
   await query(
     `/* issueAuthorizationCode */ UPDATE oauth_authorization_requests
@@ -181,14 +196,4 @@ async function upsertGrant(
   const row = result.rows[0]
   if (!row) throw new OAuthProtocolError('server_error', 'authorization grant was not created', 503)
   return row.id
-}
-
-function buildAuthorizationRedirect(
-  request: Pick<AuthorizationRequestRow, 'redirect_uri' | 'client_state'>,
-  result: { code: string } | { error: string },
-): string {
-  return buildOAuthAuthorizationResponseUrl(request.redirect_uri, {
-    ...result,
-    state: request.client_state,
-  })
 }

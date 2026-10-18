@@ -1,15 +1,14 @@
+import { OAuthProtocolError, type MAX_REDIRECT_URIS } from '@vouchington/oauth-server'
 import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import {
   createOwnedOAuthApp,
   listOwnedOAuthApps,
-  OAuthProtocolError,
   revokeOwnedOAuthApp,
   rotateOwnedOAuthAppSecret,
   updateOwnedOAuthApp,
   type MAX_OAUTH_APP_SCOPES,
-  type MAX_REDIRECT_URIS,
   type OAuthClientAuthMethod,
 } from '@services/oauth-authorization-server'
 import { assertNotSuspended } from '@services/users'

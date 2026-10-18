@@ -42,27 +42,6 @@ export type ClientIdMetadataDocument = RegisterOAuthClientInput & {
   jwks_uri?: unknown
 }
 
-export type RegisteredOAuthClient = {
-  client_id: string
-  client_id_issued_at: number
-  client_name: string
-  client_secret?: string
-  client_secret_expires_at?: 0
-  grant_types: string[]
-  redirect_uris: string[]
-  response_types: string[]
-  scope: string
-  token_endpoint_auth_method: OAuthClientAuthMethod
-}
-
-export type OAuthTokenResponse = {
-  access_token: string
-  expires_in: number
-  refresh_token: string
-  scope: string
-  token_type: 'Bearer'
-}
-
 export type OAuthAccessPrincipal = {
   oauth_client_id: string
   client_id: string

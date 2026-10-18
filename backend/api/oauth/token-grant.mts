@@ -1,17 +1,19 @@
 import {
+  OAuthProtocolError,
+  requiredFormValue,
+  type TokenResponse,
+} from '@vouchington/oauth-server'
+import {
   exchangeOAuthAuthorizationCode,
   exchangeOAuthRefreshToken,
-  OAuthProtocolError,
-  type OAuthTokenResponse,
 } from '@services/oauth-authorization-server'
-import { requiredFormValue } from './protocol-helpers.mts'
 
 // RFC 8707 makes `resource` optional at the token endpoint; the service rejects a value that does
 // not match the resource the code or refresh family is bound to.
 export async function exchangeOAuthTokenGrant(
   form: URLSearchParams,
   client: { clientId: string; clientSecret?: string },
-): Promise<OAuthTokenResponse> {
+): Promise<TokenResponse> {
   const grantType = form.get('grant_type')
   const resource = form.has('resource') ? { resource: requiredFormValue(form, 'resource') } : {}
   if (grantType === 'authorization_code') {

@@ -1,11 +1,14 @@
 import { beginTransaction, read, type TransactionQuery } from '@data-stores/psql'
 import { isApiScope } from '@modules/scopes'
 import { hashToken } from '@modules/token-secrets'
-import { validateClientName } from './client-metadata-validation.mts'
-import { generateOAuthClientSecret, insertOAuthClient } from './clients.mts'
+import {
+  generateOpaqueToken,
+  invalidClientMetadata,
+  validateClientName,
+  validateRedirectUris,
+} from '@vouchington/oauth-server'
+import { insertOAuthClient } from './clients.mts'
 import { OAUTH_SECRET_PURPOSES } from './constants.mts'
-import { invalidClientMetadata } from './errors.mts'
-import { validateRedirectUris } from './redirect-uri-validation.mts'
 import type {
   IssuedOAuthApp,
   OAuthAppChanges,
@@ -139,7 +142,7 @@ export async function rotateOwnedOAuthAppSecret(
   currentUserId: string,
   appId: string,
 ): Promise<OAuthAppSecretRotation> {
-  const clientSecret = generateOAuthClientSecret()
+  const clientSecret = generateOpaqueToken('voucha_secret_')
   return mutateAsActiveOwner(currentUserId, async query => {
     const { rows } = await query<OAuthAppView>(
       `/* rotateOwnedOAuthAppSecret */ UPDATE oauth_clients
