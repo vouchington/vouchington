@@ -48,12 +48,12 @@ export function CreateSourceForm({ onSuccess }: { onSuccess?: () => void }) {
         abortControllerRef.current = controller
         const result = await createSource({ rss_feed_url: parsedUrls[0]!, follow: true })
         const completion = await waitForSourceImport(result, controller.signal)
+        setUrls('')
+        setLoading(false)
         onSuccess?.()
         if (completion.topicSlug) {
           push(topicHref({ topic_type: 'rss_feed', slug: completion.topicSlug }))
         } else {
-          setUrls('')
-          setLoading(false)
           onSuccessToast(t('extracted.sources.addSourceForm.sourceAddedSuccessfully_1817e3b7'))
         }
       } else {

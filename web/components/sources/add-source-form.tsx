@@ -37,13 +37,12 @@ export function AddSourceForm({
     try {
       const result = await createSource({ rss_feed_url: url.trim(), follow: true })
       const completion = await waitForSourceImport(result, controller.signal)
+      setUrl('')
+      setLoading(false)
       onSuccess?.()
       onSuccessToast(t('extracted.sources.addSourceForm.sourceAddedSuccessfully_1817e3b7'))
       if (completion.topicSlug) {
         push(topicHref({ topic_type: 'rss_feed', slug: completion.topicSlug }))
-      } else {
-        setUrl('')
-        setLoading(false)
       }
     } catch (err) {
       if (controller.signal.aborted) return
