@@ -2,11 +2,42 @@ import { randomUUID } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
 import { Queue, Worker, type Job } from 'glide-mq'
 import { createBulkEnqueueFunction, workerQueueConnection, workerQueuePrefix } from './index.mts'
-import { processPagedDispatcher, pagedDispatchBackoffStrategies } from './paged-dispatcher.mts'
+import {
+  processPagedDispatcher,
+  pagedDispatchBackoffStrategies,
+  type DispatchCursorKey,
+} from './paged-dispatcher.mts'
 import { pagedDispatchConfig } from './paged-dispatcher-config.mts'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 
 describe('paged dispatcher', () => {
+  it.each(['updated_at', 'created_at'])(
+    'rejects a non-unique or mutable %s cursor before dispatch',
+    async cursorKey => {
+      const queue = new Queue<Record<string, never>>(`cursor-${randomUUID()}`, {
+        connection: workerQueueConnection,
+        prefix: `${workerQueuePrefix}:cursor:${randomUUID()}`,
+      })
+      try {
+        const job = await queue.add('page', {})
+        if (!job) throw new Error('Expected dispatcher admission')
+        await expect(
+          processPagedDispatcher(job, {
+            dispatcher: 'rss',
+            cursorKey: cursorKey as DispatchCursorKey,
+            target: queue,
+            targetName: 'background',
+            readAndDispatch: async () => ({ result: 0 }),
+            enqueueNext: (data, opts) => queue.add('page', data, opts),
+          }),
+        ).rejects.toThrow('unique immutable cursor')
+      } finally {
+        await queue.obliterate({ force: true })
+        await queue.close()
+      }
+    },
+  )
+
   it('waits for queue capacity and replays each row and continuation once', async () => {
     const connection = {
       connection: workerQueueConnection,

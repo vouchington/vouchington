@@ -9,11 +9,12 @@ export const voteWeightWorkConfig = new DynamicConfig({
     membership_expirations_lookback_seconds: 'number',
     family_source_changes_lookback_seconds: 'number',
   },
+  // Overlap the daily schedules so a missed run does not create a recovery gap.
   defaultFields: {
     dispatch_batch_size: 500,
-    age_milestones_lookback_seconds: 86400,
-    membership_expirations_lookback_seconds: 86400,
-    family_source_changes_lookback_seconds: 86400,
+    age_milestones_lookback_seconds: 259200,
+    membership_expirations_lookback_seconds: 259200,
+    family_source_changes_lookback_seconds: 259200,
   },
 })
 export const voteWeightWorkMaxValues = {
@@ -33,7 +34,7 @@ export function getVoteWeightLookbackSeconds(
 ): number {
   const field = `${signal}_lookback_seconds` as const
   return getBoundedPositiveIntegerField(voteWeightWorkConfig, field, {
-    defaultValue: 86400,
+    defaultValue: 259200,
     maxValue: voteWeightWorkMaxValues[field],
   })
 }
