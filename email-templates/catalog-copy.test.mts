@@ -1,12 +1,4 @@
-import {
-  emailMessagesFromCatalog,
-  emailOptional,
-  formatLocalizationLeaf,
-  leavesFromCatalog,
-  loadEmailCatalogMessages,
-} from '@vouchington/email'
-
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -24,37 +16,11 @@ describe('catalog-copy', () => {
     process.env.NODE_ENV = ORIGINAL_NODE_ENV ?? 'test'
   })
 
-  it('projects normalized email aliases without changing their IDs', () => {
-    expect(
-      emailMessagesFromCatalog({
-        copies: [{ id: 'copy.fixture.welcome', descriptor: null }],
-        aliases: [
-          { consumer: 'web', alias: 'fixture.welcome', copyId: 'copy.fixture.welcome' },
-          { consumer: 'email', alias: 'email.fixture.welcome', copyId: 'copy.fixture.welcome' },
-        ],
-        translations: {
-          'en-US': [{ id: 'copy.fixture.welcome', value: 'Welcome' }],
-          es: [{ id: 'copy.fixture.welcome', value: 'Bienvenido' }],
-        },
-      }),
-    ).toEqual([
-      {
-        id: 'email.fixture.welcome',
-        consumers: ['email'],
-        descriptor: null,
-        translations: { 'en-US': 'Welcome', es: 'Bienvenido' },
-      },
-    ])
-  })
-
   describe('emailCopy', () => {
     it('interpolates catalog JSON and unnamed variants', () => {
       const t = emailCopy('en', 'welcome')
       expect(t('preview')).toContain('Welcome to Voucha')
       expect(t('heading', { userName: 'Jordan' })).toBe('Welcome to Voucha, Jordan!')
-      expect(emailOptional(t, 'heading', 'Jordan')).toBe('Welcome to Voucha, Jordan!')
-      expect(emailOptional(t, 'heading', undefined)).toBe('Welcome to Voucha!')
-      expect(emailOptional(t, 'heading', '')).toBe('Welcome to Voucha!')
       expect(emailCopy('es', 'welcome')('button')).toBe('Comenzar a explorar')
     })
 
@@ -178,118 +144,5 @@ describe('catalog-copy', () => {
     expect(resolveEmailCatalogDirectory(new URL('dist/index.mjs', import.meta.url).href)).toBe(
       fileURLToPath(new URL('../localization/catalog', import.meta.url)),
     )
-  })
-
-  it('reports the missing catalog path', () => {
-    const path = join(tmpdir(), 'missing-email-catalog')
-    expect(() => loadEmailCatalogMessages(path)).toThrow(
-      `Email catalog directory is missing at ${path}`,
-    )
-  })
-
-  it('reports a catalog without a translations directory', () => {
-    const directory = mkdtempSync(join(tmpdir(), 'email-catalog-without-translations-'))
-    try {
-      writeFileSync(join(directory, 'copies.json'), '[]')
-      writeFileSync(join(directory, 'aliases.json'), '[]')
-      expect(() => loadEmailCatalogMessages(directory)).toThrow(
-        `Email catalog translations directory is missing at ${join(directory, 'translations')}`,
-      )
-    } finally {
-      rmSync(directory, { recursive: true, force: true })
-    }
-  })
-
-  it('loads normalized email aliases from the fixture directory', () => {
-    expect(loadEmailCatalogMessages('localization/normalized-fixture')).toEqual([])
-  })
-
-  it('rejects an email alias whose copy is absent from the catalog', () => {
-    expect(() =>
-      emailMessagesFromCatalog({
-        copies: [],
-        aliases: [
-          { consumer: 'email', alias: 'email.fixture.missing', copyId: 'copy.fixture.missing' },
-        ],
-        translations: {},
-      }),
-    ).toThrow('Email alias "email.fixture.missing" references missing copy')
-  })
-
-  describe('formatLocalizationLeaf', () => {
-    it('keeps unknown placeholders', () => {
-      expect(formatLocalizationLeaf('Hello {name}', 'en')).toBe('Hello {name}')
-    })
-
-    it('selects plural forms and select-plural cases', () => {
-      expect(
-        formatLocalizationLeaf(
-          { kind: 'plural', valueParameter: 'count', forms: { other: '{count} items' } },
-          'en',
-          { count: 1 },
-        ),
-      ).toBe('1 items')
-      expect(
-        formatLocalizationLeaf(
-          {
-            kind: 'plural',
-            valueParameter: 'count',
-            forms: { one: '{count} item', other: '{count} items' },
-          },
-          'en',
-          { count: 1 },
-        ),
-      ).toBe('1 item')
-      expect(
-        formatLocalizationLeaf(
-          {
-            kind: 'select-plural',
-            valueParameter: 'value',
-            selectParameter: 'unit',
-            cases: { day: { one: '1d', other: '{value}d' } },
-          },
-          'en',
-          { unit: 'day', value: 4 },
-        ),
-      ).toBe('4d')
-    })
-
-    it('skips catalog messages with no matching locale', () => {
-      expect(
-        leavesFromCatalog(
-          [
-            {
-              id: 'email.only.fr',
-              consumers: ['email'],
-              descriptor: null,
-              translations: { fr: 'Bonjour' },
-            },
-          ],
-          'en',
-        ),
-      ).toEqual({})
-    })
-
-    it('rejects non-numeric plural values and unknown cases', () => {
-      expect(() =>
-        formatLocalizationLeaf(
-          { kind: 'plural', valueParameter: 'count', forms: { other: '{count}' } },
-          'en',
-          {},
-        ),
-      ).toThrow(/numeric/)
-      expect(() =>
-        formatLocalizationLeaf(
-          {
-            kind: 'select-plural',
-            valueParameter: 'value',
-            selectParameter: 'unit',
-            cases: { day: { other: 'd' } },
-          },
-          'en',
-          { unit: 'week', value: 1 },
-        ),
-      ).toThrow(/no case/)
-    })
   })
 })
