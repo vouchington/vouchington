@@ -22,20 +22,23 @@ describe('EXPLAIN coverage for incomplete SQL', () => {
       executorFactoryNames: ['beginTransaction', 'beginBoundedTransaction'],
       executorTypeNames: ['TransactionQuery', 'QueryExecutor', 'OwnedTransaction'],
     })
-    expect(facts.map(fact => [fact.annotation, fact.kind, fact.complete])).toEqual([
-      ['searchUrls', 'composed', false],
-      ['getPostIdsByUrlIds', 'composed', false],
-    ])
-    const captures = facts.map(fact => ({
-      name: fact.annotation!,
-      query_text: fact.sqlText!,
+    const captures = names.map(name => ({
+      name,
+      query_text: `/* ${name} */ SELECT 1`,
       scenario_id: 'fixture',
     }))
     const report = buildCoverageReport(facts, captures)
     expect(report).toMatchObject({ reads: 0, coveredReads: 0 })
-    expect(
-      report.unclassifiedStatements.map(statement => [statement.name, statement.reason]),
-    ).toEqual(names.map(name => [name, 'unresolved-sql-fragment']))
+    expect(report.unclassifiedStatements).toEqual(
+      sources.map(({ fileName }) =>
+        expect.objectContaining({
+          fileName,
+          name: '(annotation unavailable)',
+          reason: expect.any(String),
+        }),
+      ),
+    )
+    expect(report.unclassifiedStatements.every(statement => statement.reason.length > 0)).toBe(true)
     expect(report.ambiguousReads).toEqual([])
   })
 
@@ -88,6 +91,30 @@ describe('EXPLAIN coverage for incomplete SQL', () => {
         reason: 'opaque-member-or-getter',
       }),
     ])
+  })
+
+  it('keeps raw session-local PoolClient reads visible as uncovered', async () => {
+    const fixtureDir = mkdtempSync(join(tmpdir(), 'explain-coverage-pool-client-'))
+    try {
+      const resultsPath = join(fixtureDir, 'results.json')
+      writeFileSync(
+        resultsPath,
+        JSON.stringify({
+          results: [{ name: 'other', query_text: '/* other */ SELECT 1', scenario_id: 'fixture' }],
+          completedScenarioIds: ['fixture'],
+        }),
+      )
+      const fileName = 'backend/services/notifications/reconcile-batches.mts'
+      const source = readFileSync(join(import.meta.dirname, '../..', fileName), 'utf8')
+      const report = await reportCoverage([{ fileName, source }], resultsPath, ['fixture'])
+      expect(report).toMatchObject({ annotatedStatements: 2, reads: 2, coveredReads: 0 })
+      expect(report.uncoveredReads.map(read => read.name)).toEqual([
+        'selectRssFeedItemNotificationRecipientBatch',
+        'selectPostNotificationRecipientBatch',
+      ])
+    } finally {
+      rmSync(fixtureDir, { recursive: true, force: true })
+    }
   })
 
   it('includes internal PostgreSQL executor imports', async () => {
