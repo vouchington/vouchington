@@ -75,6 +75,16 @@
     "issue": 2613
   },
   {
+    "annotation": "claimContributionAdmission.abandonExpiredAttempt",
+    "reason": "Each call of a JSON-RPC batch, and each imported topic, is its own admission with its own reservation, idempotency key and transaction, so this step repeats once per admitted item (backend/api/v1/mcp/mcp.route-rate-limit.test.mts)",
+    "issue": 3117
+  },
+  {
+    "annotation": "claimContributionAdmission.claim",
+    "reason": "Each call of a JSON-RPC batch, and each imported topic, is its own admission with its own reservation, idempotency key and transaction, so this step repeats once per admitted item (backend/api/v1/mcp/mcp.route-rate-limit.test.mts)",
+    "issue": 3117
+  },
+  {
     "annotation": "claimContributionAdmission.insert",
     "reason": "Each imported topic is its own reservation, idempotency key and claim transaction, and the loop stops at the first in-progress item (import-topics.mts:78-92, admission-reservations.mts:37)",
     "issue": 3117
@@ -82,6 +92,16 @@
   {
     "annotation": "claimContributionAdmission.liveClaim",
     "reason": "Each imported topic is its own reservation, idempotency key and claim transaction, and the loop stops at the first in-progress item (import-topics.mts:78-92, admission-reservations.mts:85)",
+    "issue": 3117
+  },
+  {
+    "annotation": "claimContributionAdmission.mark",
+    "reason": "Each call of a JSON-RPC batch, and each imported topic, is its own admission with its own reservation, idempotency key and transaction, so this step repeats once per admitted item (backend/api/v1/mcp/mcp.route-rate-limit.test.mts)",
+    "issue": 3117
+  },
+  {
+    "annotation": "claimContributionAdmission.recordAttempt",
+    "reason": "Each call of a JSON-RPC batch, and each imported topic, is its own admission with its own reservation, idempotency key and transaction, so this step repeats once per admitted item (backend/api/v1/mcp/mcp.route-rate-limit.test.mts)",
     "issue": 3117
   },
   {
@@ -675,9 +695,24 @@
     "issue": 2605
   },
   {
+    "annotation": "persistFinalizedContributionResponse",
+    "reason": "Each call of a JSON-RPC batch, and each imported topic, is its own admission with its own reservation, idempotency key and transaction, so this step repeats once per admitted item (backend/api/v1/mcp/mcp.route-rate-limit.test.mts)",
+    "issue": 3117
+  },
+  {
     "annotation": "prepublishImageSurfaceDenial:current",
     "reason": "Image delivery and placement locks run once per image or surface",
     "issue": 2606
+  },
+  {
+    "annotation": "publishFinalizedContributionResponse.lockClaim",
+    "reason": "Each call of a JSON-RPC batch, and each imported topic, is its own admission with its own reservation, idempotency key and transaction, so this step repeats once per admitted item (backend/api/v1/mcp/mcp.route-rate-limit.test.mts)",
+    "issue": 3117
+  },
+  {
+    "annotation": "publishFinalizedContributionResponse.release",
+    "reason": "Each call of a JSON-RPC batch, and each imported topic, is its own admission with its own reservation, idempotency key and transaction, so this step repeats once per admitted item (backend/api/v1/mcp/mcp.route-rate-limit.test.mts)",
+    "issue": 3117
   },
   {
     "annotation": "readBlueskyLinkAuthorization",
@@ -843,6 +878,26 @@
     "annotation": "rotateApiKey",
     "reason": "Lock and validate the old key FOR UPDATE before inserting its replacement and linking the old key to it",
     "issue": 3119
+  },
+  {
+    "annotation": "runContributionAdmission.commit",
+    "reason": "Each call of a JSON-RPC batch, and each imported topic, is its own admission with its own reservation, idempotency key and transaction, so this step repeats once per admitted item (backend/api/v1/mcp/mcp.route-rate-limit.test.mts)",
+    "issue": 3117
+  },
+  {
+    "annotation": "runContributionAdmission.lockActor",
+    "reason": "Each call of a JSON-RPC batch, and each imported topic, is its own admission with its own reservation, idempotency key and transaction, so this step repeats once per admitted item (backend/api/v1/mcp/mcp.route-rate-limit.test.mts)",
+    "issue": 3117
+  },
+  {
+    "annotation": "runContributionAdmission.lockReservation",
+    "reason": "Each call of a JSON-RPC batch, and each imported topic, is its own admission with its own reservation, idempotency key and transaction, so this step repeats once per admitted item (backend/api/v1/mcp/mcp.route-rate-limit.test.mts)",
+    "issue": 3117
+  },
+  {
+    "annotation": "runContributionAdmission.recordAttemptResult",
+    "reason": "Each call of a JSON-RPC batch, and each imported topic, is its own admission with its own reservation, idempotency key and transaction, so this step repeats once per admitted item (backend/api/v1/mcp/mcp.route-rate-limit.test.mts)",
+    "issue": 3117
   },
   {
     "annotation": "selectCopyrightStatementFacts",
