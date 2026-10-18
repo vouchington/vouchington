@@ -72,6 +72,40 @@ describe('member appeal response projections', () => {
     expect(duplicate.body.appeal.public_response).toBeNull()
   })
 
+  it('retains the private staff submission shape for creation and duplicate responses', async () => {
+    const issuer = await createTestUser({ administrator: true })
+    const warning = await insertTestUserWarning({
+      userId: staff.id,
+      issuedById: issuer.id,
+      reason: `private-staff-warning-${crypto.randomUUID()}`,
+      publicMessage: 'Public staff warning explanation',
+    })
+    const body = {
+      target_type: 'warning',
+      target_id: warning.id,
+      appeal_reason: `Private staff appeal reason ${crypto.randomUUID()}`,
+    }
+    const request = createRequest()
+    await request.authenticateAs(staff)
+    const created = await request.post('/api/v1/appeals').send(body).expect(201)
+    expect(created.body.isDuplicate).toBe(false)
+    expect(created.body.appeal).toMatchObject({
+      case_id: expect.any(String),
+      appellant_user_id: staff.id,
+      appeal_reason: body.appeal_reason,
+    })
+    const duplicate = await request.post('/api/v1/appeals').send(body).expect(200)
+    expect(duplicate.body).toMatchObject({
+      isDuplicate: true,
+      appeal: {
+        id: created.body.appeal.id,
+        case_id: created.body.appeal.case_id,
+        appellant_user_id: staff.id,
+        appeal_reason: body.appeal_reason,
+      },
+    })
+  })
+
   it('uses the exact redactor for member list/detail while retaining the staff shape', async () => {
     const { appealId, requestBody } = await createOwnedAppeal()
     const staffRequest = createRequest()
