@@ -10,7 +10,8 @@ const SEMANTIC_POST_COUNT = 40_000
  * One set-based UPDATE fills every embedding while the HNSW index is dropped, then one bulk
  * build recreates the identical index with enough maintenance memory to hold the graph.
  * Per-tuple graph inserts cost about 1.2s per 1000 rows (about 50s for the corpus); the
- * bulk build over the same rows takes about 12s.
+ * serial bulk build over the same rows takes about 27s. Parallel workers are disabled because
+ * their shared-memory segment exceeds the CI Postgres container's /dev/shm.
  */
 export async function seedSemanticPosts(): Promise<void> {
   const ids = Array.from({ length: SEMANTIC_POST_COUNT }, (_, index) => seedUuid(index, '05'))
@@ -35,6 +36,7 @@ export async function seedSemanticPosts(): Promise<void> {
     [ids],
   )
   await transaction(`/* seedSemanticPosts */ SET LOCAL maintenance_work_mem = '512MB'`)
+  await transaction(`/* seedSemanticPosts */ SET LOCAL max_parallel_maintenance_workers = 0`)
   await transaction(
     `/* seedSemanticPosts */ CREATE INDEX ${HNSW_INDEX}
      ON posts USING hnsw (bedrock_nova_multimodal_v1_embedding vector_cosine_ops)
