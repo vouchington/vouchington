@@ -8,6 +8,12 @@ import {
   VOTE_AGGREGATION_FAMILY_SOURCE_CHANGES_JOB,
   VOTE_AGGREGATION_DIRTY_MARKERS_JOB,
 } from '@queues/background/enqueues/vote-aggregation-jobs'
+import {
+  safeAgeMilestonesData,
+  safeDirtyMarkersData,
+  safeFamilySourceChangesData,
+  safeMembershipExpirationsData,
+} from './vote-weight-dispatch-payloads.mts'
 import type {
   VoteWeightAgeMilestonesData,
   VoteWeightMembershipExpirationsData,
@@ -102,26 +108,19 @@ const enqueueBulkDirtyContinuations = createBackgroundBulkEnqueue(
   (data: VoteWeightDirtyMarkersData) => ({ data, opts: { jobId: dirtyJobId(data) } }),
 )
 
-async function enqueueContinuation<T>(
-  data: T,
-  jobId: string,
-  enqueueBulk: (inputs: T[]) => Promise<Array<{ id: string }>>,
-) {
-  const jobs = await enqueueBulkReactivatingFinished({
-    queue: voteAggregation,
-    inputs: [data],
-    jobIdOf: () => jobId,
-    enqueueBulk,
-  })
-  return jobs[0] ?? null
-}
-
 export function enqueueVoteWeightAgeMilestones(
   data: Parameters<typeof enqueueAgeMilestonesJob>[0] = {},
   options?: VoteWeightDispatcherEnqueueOptions,
 ): EnqueueReturnType {
-  if (data.window && (data.milestoneIndex !== undefined || data.afterId !== undefined))
-    return enqueueContinuation(data, ageJobId(data), enqueueBulkAgeContinuations)
+  if (data.window && (data.milestoneIndex !== undefined || data.afterId !== undefined)) {
+    const safeData = safeAgeMilestonesData(data)
+    return enqueueBulkReactivatingFinished({
+      queue: voteAggregation,
+      inputs: [safeData],
+      jobIdOf: () => ageJobId(safeData),
+      enqueueBulk: inputs => enqueueBulkAgeContinuations(inputs.map(safeAgeMilestonesData)),
+    }).then(jobs => jobs[0] ?? null)
+  }
   return enqueueAgeMilestonesJob(data, buildBackfillDispatcherJobOptions(options))
 }
 
@@ -129,8 +128,16 @@ export function enqueueVoteWeightMembershipExpirations(
   data: Parameters<typeof enqueueMembershipExpirationsJob>[0] = {},
   options?: VoteWeightDispatcherEnqueueOptions,
 ): EnqueueReturnType {
-  if (data.window && data.after)
-    return enqueueContinuation(data, expirationJobId(data), enqueueBulkExpirationContinuations)
+  if (data.window && data.after) {
+    const safeData = safeMembershipExpirationsData(data)
+    return enqueueBulkReactivatingFinished({
+      queue: voteAggregation,
+      inputs: [safeData],
+      jobIdOf: () => expirationJobId(safeData),
+      enqueueBulk: inputs =>
+        enqueueBulkExpirationContinuations(inputs.map(safeMembershipExpirationsData)),
+    }).then(jobs => jobs[0] ?? null)
+  }
   return enqueueMembershipExpirationsJob(data, buildBackfillDispatcherJobOptions(options))
 }
 
@@ -138,8 +145,16 @@ export function enqueueVoteWeightFamilySourceChanges(
   data: Parameters<typeof enqueueFamilySourceChangesJob>[0] = {},
   options?: VoteWeightDispatcherEnqueueOptions,
 ): EnqueueReturnType {
-  if (data.window && data.branches)
-    return enqueueContinuation(data, familyJobId(data), enqueueBulkFamilyContinuations)
+  if (data.window && data.branches) {
+    const safeData = safeFamilySourceChangesData(data)
+    return enqueueBulkReactivatingFinished({
+      queue: voteAggregation,
+      inputs: [safeData],
+      jobIdOf: () => familyJobId(safeData),
+      enqueueBulk: inputs =>
+        enqueueBulkFamilyContinuations(inputs.map(safeFamilySourceChangesData)),
+    }).then(jobs => jobs[0] ?? null)
+  }
   return enqueueFamilySourceChangesJob(data, buildBackfillDispatcherJobOptions(options))
 }
 
@@ -147,7 +162,14 @@ export function enqueueVoteWeightDirtyMarkers(
   data: Parameters<typeof enqueueDirtyMarkersJob>[0] = {},
   options?: VoteWeightDispatcherEnqueueOptions,
 ): EnqueueReturnType {
-  if (data.afterId)
-    return enqueueContinuation(data, dirtyJobId(data), enqueueBulkDirtyContinuations)
+  if (data.afterId) {
+    const safeData = safeDirtyMarkersData(data)
+    return enqueueBulkReactivatingFinished({
+      queue: voteAggregation,
+      inputs: [safeData],
+      jobIdOf: () => dirtyJobId(safeData),
+      enqueueBulk: inputs => enqueueBulkDirtyContinuations(inputs.map(safeDirtyMarkersData)),
+    }).then(jobs => jobs[0] ?? null)
+  }
   return enqueueDirtyMarkersJob(data, buildBackfillDispatcherJobOptions(options))
 }

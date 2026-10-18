@@ -1,6 +1,9 @@
 import type { JobOptions, Queue } from 'glide-mq'
 import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
-import type { CreateBulkEnqueueFunctionOptions } from '@data-stores/valkey-glide-mq/glide-mq-enqueue-types'
+import type {
+  CreateBulkEnqueueFunctionOptions,
+  GuardedBulkEnqueue,
+} from '@data-stores/valkey-glide-mq/glide-mq-enqueue-types'
 import type {
   HasSensitiveFields,
   NoSensitiveFields,
@@ -82,20 +85,34 @@ export function createBackgroundBulkEnqueue<
   job: BackgroundJobDefinition<TData, true> & { sensitive: true },
   buildJob: TBuildJob,
   options?: BackgroundEnqueueOptions,
+  ...contract: (TBuildJob extends (
+    input: Parameters<TBuildJob>[0],
+    index: number,
+  ) => ReturnType<TBuildJob>
+    ? []
+    : [never]) &
+    (ReturnType<TBuildJob>['data'] extends TData ? [] : [never])
 ): BulkEnqueue<Parameters<TBuildJob>[0]>
 export function createBackgroundBulkEnqueue<
   TBuildJob extends (...args: never[]) => { data: unknown; opts?: Partial<JobOptions> },
   TData,
 >(
   job: BackgroundJobDefinition<TData, false>,
-  buildJob: TBuildJob &
-    ([true] extends [HasSensitiveFields<ReturnType<TBuildJob>['data']>]
-      ? never
-      : ReturnType<TBuildJob>['data'] extends NoSensitiveFields<ReturnType<TBuildJob>['data']>
-        ? unknown
-        : never),
+  buildJob: TBuildJob,
   options?: BackgroundEnqueueOptions,
-): BulkEnqueue<Parameters<TBuildJob>[0]>
+  ...contract: (TBuildJob extends (
+    input: Parameters<TBuildJob>[0],
+    index: number,
+  ) => ReturnType<TBuildJob>
+    ? []
+    : [never]) &
+    (ReturnType<TBuildJob>['data'] extends TData ? [] : [never]) &
+    ([true] extends [HasSensitiveFields<ReturnType<TBuildJob>['data']>]
+      ? [never]
+      : ReturnType<TBuildJob>['data'] extends NoSensitiveFields<ReturnType<TBuildJob>['data']>
+        ? []
+        : [never])
+): GuardedBulkEnqueue<Parameters<TBuildJob>[0]>
 export function createBackgroundBulkEnqueue<
   TBuildJob extends (...args: never[]) => { data: unknown; opts?: Partial<JobOptions> },
   TData,
@@ -103,6 +120,7 @@ export function createBackgroundBulkEnqueue<
   job: BackgroundJobDefinition<TData>,
   buildJob: TBuildJob,
   options: BackgroundEnqueueOptions = {},
+  ..._contract: unknown[]
 ) {
   if (job.sensitive) {
     return createVerifiedBulkEnqueue({

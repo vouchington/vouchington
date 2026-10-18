@@ -54,6 +54,22 @@ export type CreateBulkEnqueueFunctionOptions<
   trackJobEnqueue?: typeof trackJobEnqueue
 }
 
+type BulkEnqueue<TInput> = (
+  inputs: TInput[],
+  perCallOpts?: Partial<JobOptions>,
+  callContext?: unknown,
+) => ReturnType<AddBulkQueue['addBulk']>
+
+export type GuardedBulkEnqueue<TInput> = <TActualInput extends TInput>(
+  inputs: TActualInput[] &
+    (TInput extends Record<string, never>
+      ? unknown
+      : ([true] extends [HasSensitiveFields<TInput>] ? never : unknown) &
+          ([true] extends [HasSensitiveFields<TActualInput>] ? never : unknown)),
+  perCallOpts?: Partial<JobOptions>,
+  callContext?: unknown,
+) => ReturnType<AddBulkQueue['addBulk']>
+
 export type CreateEnqueueFunction = {
   <TData, TName extends string, TCallContext = unknown>(
     options: CreateEnqueueFunctionOptions<TName, TCallContext> & { sensitive: true },
@@ -79,44 +95,55 @@ export type CreateEnqueueFunction = {
   ) => ReturnType<AddQueue['add']>
 }
 
-export type CreateBulkEnqueueFunction = <
+type BulkFactoryOptions<
   TBuildJob extends (...args: never[]) => { data: unknown; opts?: Partial<JobOptions> },
   TName extends string,
-  TCallContext = unknown,
->(
-  options:
-    | (Omit<
-        CreateBulkEnqueueFunctionOptions<
-          Parameters<TBuildJob>[0],
-          ReturnType<TBuildJob>['data'],
-          TName,
-          TCallContext
-        >,
-        'buildJob'
-      > & {
-        buildJob: TBuildJob
-        sensitive: true
-      })
-    | (Omit<
-        CreateBulkEnqueueFunctionOptions<
-          Parameters<TBuildJob>[0],
-          ReturnType<TBuildJob>['data'],
-          TName,
-          TCallContext
-        >,
-        'buildJob'
-      > & {
-        buildJob: TBuildJob
-        sensitive?: false
-      } & ([true] extends [HasSensitiveFields<ReturnType<TBuildJob>['data']>]
-          ? never
-          : [ReturnType<TBuildJob>['data']] extends [
-                NoSensitiveFields<NoInfer<ReturnType<TBuildJob>['data']>>,
-              ]
-            ? unknown
-            : never)),
-) => (
-  inputs: Parameters<TBuildJob>[0][],
-  perCallOpts?: Partial<JobOptions>,
-  callContext?: TCallContext,
-) => ReturnType<AddBulkQueue['addBulk']>
+  TCallContext,
+> = Omit<
+  CreateBulkEnqueueFunctionOptions<
+    Parameters<TBuildJob>[0],
+    ReturnType<TBuildJob>['data'],
+    TName,
+    TCallContext
+  >,
+  'buildJob'
+> & {
+  buildJob: TBuildJob
+}
+
+export type CreateBulkEnqueueFunction = {
+  <
+    TBuildJob extends (...args: never[]) => { data: unknown; opts?: Partial<JobOptions> },
+    TName extends string,
+    TCallContext = unknown,
+  >(
+    options: BulkFactoryOptions<TBuildJob, TName, TCallContext> & { sensitive: true },
+    ...contract: TBuildJob extends (
+      input: Parameters<TBuildJob>[0],
+      index: number,
+    ) => ReturnType<TBuildJob>
+      ? []
+      : [never]
+  ): BulkEnqueue<Parameters<TBuildJob>[0]>
+  <
+    TBuildJob extends (...args: never[]) => { data: unknown; opts?: Partial<JobOptions> },
+    TName extends string,
+    TCallContext = unknown,
+  >(
+    options: BulkFactoryOptions<TBuildJob, TName, TCallContext> & {
+      sensitive?: false
+    } & ([true] extends [HasSensitiveFields<ReturnType<TBuildJob>['data']>]
+        ? never
+        : [ReturnType<TBuildJob>['data']] extends [
+              NoSensitiveFields<NoInfer<ReturnType<TBuildJob>['data']>>,
+            ]
+          ? unknown
+          : never),
+    ...contract: TBuildJob extends (
+      input: Parameters<TBuildJob>[0],
+      index: number,
+    ) => ReturnType<TBuildJob>
+      ? []
+      : [never]
+  ): GuardedBulkEnqueue<Parameters<TBuildJob>[0]>
+}

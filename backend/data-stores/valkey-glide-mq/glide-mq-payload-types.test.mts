@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { createBulkEnqueueFunction, createEnqueueFunction } from './glide-mq-enqueue.mts'
 import { defineBackgroundJob } from '../../queues/background/enqueues/define-job.mts'
-import { createBackgroundEnqueue } from '../../queues/background/enqueues.mts'
+import {
+  createBackgroundBulkEnqueue,
+  createBackgroundEnqueue,
+} from '../../queues/background/enqueues.mts'
 import { enqueueProcessUserCreated } from '../../queues/entity-listeners/enqueues/enqueue-jobs.mts'
 
 const queue = undefined as never
@@ -96,6 +99,36 @@ function assertSensitivePayloadTypesAtCompileTime(): void {
     buildJob: (_input: string) => ({ data: widerBulkPayload }),
   })
 
+  const enqueueBulkIds = createBulkEnqueueFunction({
+    queue,
+    queueName: 'queue',
+    jobName: 'bulk-id-passthrough',
+    buildJob: (input: { id: string }) => ({ data: input }),
+  })
+  const widerBulkInputs = [{ id: 'safe-looking', token: 'must-not-be-persisted' }]
+  // @ts-expect-error actual bulk inputs cannot smuggle sensitive fields through a passthrough builder
+  void enqueueBulkIds(widerBulkInputs)
+
+  const enqueueOptionalBulkPayload = createBulkEnqueueFunction({
+    queue,
+    queueName: 'queue',
+    jobName: 'optional-bulk-payload',
+    buildJob: (input: { after?: string }) => ({ data: input }),
+  })
+  const opaqueBulkInput: object = { token: 'must-not-be-persisted' }
+  // @ts-expect-error opaque actual inputs cannot bypass the bulk sensitive-field guard
+  void enqueueOptionalBulkPayload([opaqueBulkInput])
+
+  // @ts-expect-error bulk builders cannot require arguments beyond the supplied input and index
+  createBulkEnqueueFunction({
+    queue,
+    queueName: 'queue',
+    jobName: 'too-many-build-arguments',
+    buildJob: (input: { id: string }, _index: number, required: string) => ({
+      data: { id: input.id, label: required },
+    }),
+  })
+
   type UnionPayload = { userId: string } | { userId: string; metadata: { token: string } }
   const unionPayload: UnionPayload = {
     userId: 'user-id',
@@ -143,6 +176,26 @@ function assertSensitivePayloadTypesAtCompileTime(): void {
   void createBackgroundEnqueue(ordinaryBackgroundJob)(widerBackgroundPayload)
   // @ts-expect-error domain-specific enqueue wrappers preserve the actual-argument guard
   void enqueueProcessUserCreated(widerBackgroundPayload)
+
+  const registeredIdJob = defineBackgroundJob<{ id: string }>(domain, {
+    name: 'registered-id',
+    priority: 10,
+  })
+  // @ts-expect-error a background bulk builder must produce the registered payload shape
+  createBackgroundBulkEnqueue(registeredIdJob, (_input: string) => ({
+    data: { slug: 'wrong-shape' },
+  }))
+  // @ts-expect-error background bulk builders cannot require arguments beyond input and index
+  createBackgroundBulkEnqueue(
+    registeredIdJob,
+    (input: string, _index: number, required: string) => ({ data: { id: input, label: required } }),
+  )
+  const enqueueBackgroundIds = createBackgroundBulkEnqueue(
+    registeredIdJob,
+    (input: { id: string }) => ({ data: input }),
+  )
+  // @ts-expect-error background bulk actual inputs cannot smuggle sensitive fields
+  void enqueueBackgroundIds([widerBackgroundPayload])
 
   void createEnqueueFunction<{ profile: { emailAddress: string } }, 'safe-user-created'>({
     queue,
