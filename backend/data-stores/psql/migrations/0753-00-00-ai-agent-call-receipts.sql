@@ -1,4 +1,4 @@
--- edited-in-place: pre-launch, never deployed to production
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Reserve the logical decision before a paid provider request. An interrupted request may have
 -- been billed, so its empty result must be reviewed rather than dispatched again.
 CREATE TABLE IF NOT EXISTS ai_agent_call_receipts (
