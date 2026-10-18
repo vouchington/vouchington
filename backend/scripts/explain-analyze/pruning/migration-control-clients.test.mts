@@ -26,6 +26,46 @@ function activity(backendType: string, pid = 42): MigrationActivityRow {
 }
 
 describe('migration server clients', () => {
+  it.each([
+    { disappears: false, expected: 'Owned database still has server clients: pid=42' },
+    { disappears: true, expected: 'closed' },
+  ])(
+    'preserves launch headroom with a clipped budget when disappears=$disappears',
+    async ({ disappears, expected }) => {
+      let now = 0
+      let reads = 0
+      const controlDeadline = 12_405
+      const result = assertMigrationServerClientsClosed({
+        databaseName: ownedDatabase,
+        sourceUrl: 'postgres://postgres@127.0.0.1/postgres',
+        now: () => now,
+        controlDeadline,
+        sleep: async milliseconds => {
+          now += milliseconds + 1
+        },
+        run: async () => {
+          now += 1
+          const seconds = Math.floor((controlDeadline - now - 10_000 - 500) / 1000)
+          if (seconds < 1) throw new Error('Insufficient migration control budget')
+          now += 100
+          reads += 1
+          return {
+            stdout: JSON.stringify(disappears && reads > 1 ? [] : [activity('client backend')]),
+          }
+        },
+      })
+      const outcome = await result.then(
+        () => 'closed',
+        (err: unknown) => {
+          if (!(err instanceof Error)) throw err
+          return err.message
+        },
+      )
+      expect(outcome).toContain(expected)
+      expect(reads).toBeGreaterThan(1)
+    },
+  )
+
   it('accepts an autovacuum-only activity sample', async () => {
     const queries: string[] = []
     await assertMigrationServerClientsClosed({

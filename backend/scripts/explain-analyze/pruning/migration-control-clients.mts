@@ -107,6 +107,8 @@ export function formatMigrationServerClients(clients: readonly MigrationActivity
 
 /** Parent psql budget: ten-second termination reserve, half-second margin, and one whole second. */
 const migrationCommandReserveMs = 11_500
+// Stop before the minimum launch boundary so timer drift and setup cannot consume it.
+const migrationCommandLaunchHeadroomMs = 500
 
 export async function assertMigrationServerClientsClosed(input: {
   run: (file: string, args: string[]) => Promise<{ stdout: string }>
@@ -120,7 +122,7 @@ export async function assertMigrationServerClientsClosed(input: {
     now: input.now,
     deadline: Math.min(
       input.now() + migrationServerClientSettleMs,
-      input.controlDeadline - migrationCommandReserveMs,
+      input.controlDeadline - migrationCommandReserveMs - migrationCommandLaunchHeadroomMs,
     ),
     sleep:
       input.sleep ?? (milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds))),
