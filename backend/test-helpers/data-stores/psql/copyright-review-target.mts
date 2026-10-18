@@ -1,6 +1,16 @@
 import { randomUUID } from 'node:crypto'
-import { write } from '@data-stores/psql'
+import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+
+/** The generated creation instant of this submission's newest assessment, not assessed_at. */
+export async function readTestCopyrightAssessmentCreatedAt(submissionId: string): Promise<Date> {
+  const { rows } = await read<{ created_at: Date }>(sql`/* readTestCopyrightAssessmentCreatedAt */
+    SELECT created_at FROM copyright_notice_submission_assessments
+    WHERE copyright_notice_submission_id = ${submissionId}
+    ORDER BY id DESC LIMIT 1`)
+  if (!rows[0]) throw new Error(`Copyright assessment not found for submission ${submissionId}`)
+  return rows[0].created_at
+}
 
 /** Appends a staff-entered submission that no moderator has reviewed or assessed yet. */
 export async function insertUnreviewedCopyrightSubmission(input: {
