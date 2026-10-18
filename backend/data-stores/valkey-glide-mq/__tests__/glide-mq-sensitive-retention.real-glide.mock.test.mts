@@ -48,7 +48,7 @@ describe('sensitive enqueue retention through real GlideMQ', () => {
                 retry: false,
                 trackJobEnqueue,
                 buildJob: email => ({ data: { nested: { email } }, opts: { priority: 0 } }),
-              })(['test@example.com'])
+              })(['tests+3274@voucha.ai'])
 
         const job = Array.isArray(result) ? result[0] : result
 
