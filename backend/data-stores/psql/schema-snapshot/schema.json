@@ -63250,7 +63250,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 14,
           "type": "text"
         },
         "context_max_reason_rank": {
@@ -63261,7 +63261,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16,
+          "ordinalPosition": 17,
           "type": "integer"
         },
         "context_note_hash": {
@@ -63272,7 +63272,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15,
+          "ordinalPosition": 16,
           "type": "text"
         },
         "context_report_count": {
@@ -63283,7 +63283,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 15,
           "type": "integer"
         },
         "created_at": {
@@ -63294,7 +63294,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17,
+          "ordinalPosition": 18,
           "type": "timestamp with time zone"
         },
         "dispatched_at": {
@@ -63305,7 +63305,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18,
+          "ordinalPosition": 19,
           "type": "timestamp with time zone"
         },
         "hostname_id": {
@@ -63338,7 +63338,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 11,
+          "ordinalPosition": 12,
           "type": "text"
         },
         "model": {
@@ -63349,7 +63349,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 12,
+          "ordinalPosition": 13,
           "type": "text"
         },
         "post_id": {
@@ -63371,7 +63371,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 10,
+          "ordinalPosition": 11,
           "type": "text"
         },
         "recommended_action": {
@@ -63382,7 +63382,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 9,
+          "ordinalPosition": 10,
           "type": "moderation_judgement_actions"
         },
         "reported_user_id": {
@@ -63416,6 +63416,17 @@
           "identity": null,
           "nullable": true,
           "ordinalPosition": 5,
+          "type": "uuid"
+        },
+        "run_id": {
+          "collation": null,
+          "comment": "Unique opaque identity of the admitted manual judgement run, used for exact result polling and retry replay.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 9,
           "type": "uuid"
         },
         "triggering_report_id": {
@@ -63685,6 +63696,26 @@
           "ready": true,
           "unique": true,
           "valid": true
+        },
+        "moderation_report_judgements_run_id_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX moderation_report_judgements_run_id_key ON public.moderation_report_judgements USING btree (run_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "run_id",
+              "descending": false,
+              "expression": "run_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
         }
       },
       "partition": null,
@@ -63695,7 +63726,12 @@
       },
       "relationKind": "table",
       "triggers": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "moderation_report_judgements_run_id_key": {
+          "columns": ["run_id"],
+          "definition": "UNIQUE (run_id)"
+        }
+      }
     },
     "moderation_reports": {
       "checkConstraints": {

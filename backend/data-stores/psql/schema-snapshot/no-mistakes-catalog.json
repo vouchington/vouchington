@@ -66488,7 +66488,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13
+          "ordinalPosition": 14
         },
         "context_max_reason_rank": {
           "comment": "Highest report reason severity rank in the bounded context when this judgement was generated.",
@@ -66498,7 +66498,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16
+          "ordinalPosition": 17
         },
         "context_note_hash": {
           "comment": "Hash of report notes in the bounded context, used for refresh decisions.",
@@ -66508,7 +66508,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15
+          "ordinalPosition": 16
         },
         "context_report_count": {
           "comment": "Total number of reports on the judged entity when this judgement was generated.",
@@ -66518,7 +66518,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14
+          "ordinalPosition": 15
         },
         "created_at": {
           "comment": null,
@@ -66528,7 +66528,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17
+          "ordinalPosition": 18
         },
         "dispatched_at": {
           "comment": "Timestamp when auto-dispatch successfully processed this judgement. NULL means not yet dispatched or auto-dispatch is disabled.",
@@ -66538,7 +66538,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18
+          "ordinalPosition": 19
         },
         "hostname_id": {
           "comment": "Judged URL hostname; set when entity is url_hostname.",
@@ -66568,7 +66568,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 11
+          "ordinalPosition": 12
         },
         "model": {
           "comment": "OpenAI model used for this judgement.",
@@ -66578,7 +66578,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 12
+          "ordinalPosition": 13
         },
         "post_id": {
           "comment": "Judged post or comment; set when entity is a post or comment.",
@@ -66598,7 +66598,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 10
+          "ordinalPosition": 11
         },
         "recommended_action": {
           "comment": "AI-recommended moderation action.",
@@ -66608,7 +66608,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 9
+          "ordinalPosition": 10
         },
         "reported_user_id": {
           "comment": "Judged user; set when entity is a user.",
@@ -66639,6 +66639,16 @@
           "identity": null,
           "nullable": true,
           "ordinalPosition": 5
+        },
+        "run_id": {
+          "comment": "Unique opaque identity of the admitted manual judgement run, used for exact result polling and retry replay.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 9
         },
         "triggering_report_id": {
           "comment": "The moderation report that triggered this judgement run, if any.",
@@ -66930,6 +66940,29 @@
           "ready": true,
           "unique": true,
           "valid": true
+        },
+        "moderation_report_judgements_run_id_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX moderation_report_judgements_run_id_key ON public.moderation_report_judgements USING btree (run_id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "run_id",
+              "descending": false,
+              "expression": "run_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
         }
       },
       "physicalPartition": null,
@@ -66938,7 +66971,11 @@
       },
       "relationKind": "table",
       "triggers": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "moderation_report_judgements_run_id_key": {
+          "columns": ["run_id"]
+        }
+      }
     },
     "moderation_reports": {
       "checkConstraints": {
