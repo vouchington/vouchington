@@ -1,6 +1,6 @@
 import { copyrightConfig } from '@services/copyright-notices/config'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
-import { afterEach, beforeAll, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import { withCopyrightStaffQueueHttp } from '@voucha/test-helpers/copyright-staff-queue-http'
 import {
@@ -29,18 +29,9 @@ describe('copyright staff queue urgency', () => {
     await copyrightConfig.close()
   }, 5_000)
 
-  beforeEach(() => {
-    onTestFinished(() => {
-      vi.useRealTimers()
-    })
-    vi.useFakeTimers({ toFake: ['Date'] })
-    vi.setSystemTime(decisionNow)
-  })
-
   afterEach(() => {
     restorePriority?.()
     restorePriority = undefined
-    vi.useRealTimers()
   })
 
   it('lists missed then due restoration deadlines ahead of older intake work across pages', async () => {
@@ -50,45 +41,42 @@ describe('copyright staff queue urgency', () => {
     const fixture = await createCopyrightFormFixture()
     const target = fixture.form.targets[0]!
     const moderator = await createTestUser({ extraRoles: ['moderator'] })
-    const createGuestNotice = async () => {
-      const { intake } = await createCopyrightFormIntake({
-        currentUser: null,
-        requesterIdentity: `guest:${crypto.randomUUID()}`,
-        idempotencyKey: crypto.randomUUID(),
-        request: {
-          jurisdiction: 'us_dmca',
-          claimantDisplayName: 'Guest claimant',
-          claimantContact: `claimant-${crypto.randomUUID()}@example.test`,
-          claimantEmail: `claimant-${crypto.randomUUID()}@example.test`,
-          workDescription: 'A photograph owned by the guest claimant.',
-          goodFaithBelief: true,
-          accuracyAuthorityUnderPenaltyOfPerjury: true,
-          electronicSignature: 'Guest claimant',
-          claimantTargets: [
-            {
-              surfaceKind: 'post-image' as const,
-              postId: target.post_id,
-              imageId: target.image_id,
-              hostedUseUrl: target.target_url,
-            },
-          ],
+    const createGuestNotice = async (now: Date) => {
+      const { intake } = await createCopyrightFormIntake(
+        {
+          currentUser: null,
+          requesterIdentity: `guest:${crypto.randomUUID()}`,
+          idempotencyKey: crypto.randomUUID(),
+          request: {
+            jurisdiction: 'us_dmca',
+            claimantDisplayName: 'Guest claimant',
+            claimantContact: `claimant-${crypto.randomUUID()}@example.test`,
+            claimantEmail: `claimant-${crypto.randomUUID()}@example.test`,
+            workDescription: 'A photograph owned by the guest claimant.',
+            goodFaithBelief: true,
+            accuracyAuthorityUnderPenaltyOfPerjury: true,
+            electronicSignature: 'Guest claimant',
+            claimantTargets: [
+              {
+                surfaceKind: 'post-image' as const,
+                postId: target.post_id,
+                imageId: target.image_id,
+                hostedUseUrl: target.target_url,
+              },
+            ],
+          },
         },
-      })
+        { now },
+      )
       return intake.copyright_notice_id
     }
     // The plain intake has waited longest, so only urgency can put the deadline cases ahead of it.
-    vi.setSystemTime(new Date(decisionNow.getTime() - 30 * day))
-    let olderIntake: string
-    try {
-      olderIntake = await createGuestNotice()
-    } finally {
-      vi.setSystemTime(decisionNow)
-    }
-    const due = await createGuestNotice()
-    const missed = await createGuestNotice()
-    const filingCase = await createGuestNotice()
+    const olderIntake = await createGuestNotice(new Date(decisionNow.getTime() - 30 * day))
+    const due = await createGuestNotice(decisionNow)
+    const missed = await createGuestNotice(decisionNow)
+    const filingCase = await createGuestNotice(decisionNow)
     const capability = await issueCopyrightGuestCapability({
-      issuedAt: new Date(),
+      issuedAt: decisionNow,
       currentUser: moderator,
       noticeId: filingCase,
       expiresAt: new Date(decisionNow.getTime() + day),
@@ -113,7 +101,7 @@ describe('copyright staff queue urgency', () => {
       })
     }
     // Eligible owned control interleaves between the due deadline and newer legal hold.
-    const interleavingControl = await createGuestNotice()
+    const interleavingControl = await createGuestNotice(decisionNow)
     await insertReviewedCopyrightFormIntake({
       noticeId: interleavingControl,
       reviewerUserId: moderator.id,
