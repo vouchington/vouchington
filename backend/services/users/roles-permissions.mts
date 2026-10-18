@@ -13,7 +13,7 @@ export const addUserRole = async (userId: string, role: string) => {
     SELECT platform_account_kind FROM users WHERE id = ${userId}::uuid FOR UPDATE
   `)
   assert(rows[0]?.platform_account_kind !== 'system', 403, 'System accounts cannot hold roles')
-  await query(sql`/* addUserRole */
+  const { rowCount } = await query(sql`/* addUserRole */
     WITH user_role AS (
       SELECT id FROM user_role_types WHERE slug = ${role}
     )
@@ -27,6 +27,9 @@ export const addUserRole = async (userId: string, role: string) => {
     ORDER BY input.user_id ASC NULLS LAST, input.role_type_id ASC NULLS LAST
     ON CONFLICT (user_id, role_type_id) DO NOTHING
   `)
+  if (rowCount)
+    await query(sql`/* addUserRole: mark vote weight dirty */
+      UPDATE users SET vote_weight_recalculated_at = NULL WHERE id = ${userId}::uuid`)
   await query.commit()
   void enqueueRecalculateUserVoteWeight(userId)
   markJwtStale(userId).catch(onError)
