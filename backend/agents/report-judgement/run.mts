@@ -143,6 +143,7 @@ export async function runReportJudgementAgent(
   // `posts`, and ai_usage_records.post_id has a real FK to it.
   const result = await callReceiptedAgentModel({
     agentSlug: 'report-judgement',
+    reportTarget: { entityType, entityId },
     promptVersion: REPORT_JUDGEMENT_PROMPT_VERSION,
     operationId:
       input.operationId ?? `${entityType}:${entityId}:${triggeringReportId}:${rerunById ?? ''}`,

@@ -23,9 +23,13 @@ function storyPostWouldCallOpenAI(
   return post != null && post.post_type === 'story' && (!post.ai_summary_markdown || force)
 }
 
-export async function wouldStoryPostCallOpenAI(postId: string, force: boolean): Promise<boolean> {
-  const post = await getPostByAny(postId)
-  return storyPostWouldCallOpenAI(post, force)
+export async function getStoryPostSpendState(
+  postIdOrSlug: string,
+  force: boolean,
+): Promise<{ postId: string; wouldCallModel: boolean } | null> {
+  const post = await getPostByAny(postIdOrSlug)
+  if (!post) return null
+  return { postId: post.id, wouldCallModel: storyPostWouldCallOpenAI(post, force) }
 }
 
 export async function processStoryPost(job: Job<StoryPostJobData>): Promise<unknown> {

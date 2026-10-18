@@ -6,7 +6,7 @@ import { deferJobForOpenAIRateLimit } from '@modules/openai-utils/rate-limit'
 import { getWorkerConcurrency, parseEnvPositiveInt } from '@modules/queue-config'
 import { agentCallOperationKey, runWithJobTokenAccumulator } from '@agents/_shared'
 import { getAgentCallReceipt } from '@services/ai-usage/agent-call-receipts'
-import { wouldStoryPostCallOpenAI } from '../processors/process-story-post.mts'
+import { getStoryPostSpendState } from '../processors/process-story-post.mts'
 import { delayForSpendCap } from '../processors/spend-cap-delay.mts'
 import {
   AI_AGENT_JOB_PRODUCES_SPEND,
@@ -125,6 +125,14 @@ function jobProducesSpend(job: Job<AIAgentJobData>): boolean {
 // DB predicates run only after the cheap static filter and an active breach, so spend-free
 // story-post retries do not pay a round trip on every dispatch.
 async function jobWouldIncurSpend(job: Job<AIAgentJobData>): Promise<boolean> {
+  if (job.name === 'story-post') {
+    const data = job.data as import('@queues/ai-agents/types').StoryPostJobData
+    const state = await getStoryPostSpendState(data.post_id, data.force ?? false)
+    if (!state?.wouldCallModel) return false
+    // The processor resolves a slug to this same post.id before choosing the paid-call receipt.
+    const operationId = data.force ? `${state.postId}:${job.id}` : state.postId
+    return !(await getAgentCallReceipt(agentCallOperationKey('story-post', operationId)))
+  }
   const receiptIdentity = existingReceiptIdentity(job)
   if (receiptIdentity) {
     const [agentSlug, operationId] = receiptIdentity
@@ -132,18 +140,10 @@ async function jobWouldIncurSpend(job: Job<AIAgentJobData>): Promise<boolean> {
     // too, so it can stop permanently for review instead of being parked by the spend gate.
     if (await getAgentCallReceipt(agentCallOperationKey(agentSlug, operationId))) return false
   }
-  if (job.name === 'story-post') {
-    const storyPostData = job.data as import('@queues/ai-agents/types').StoryPostJobData
-    return wouldStoryPostCallOpenAI(storyPostData.post_id, storyPostData.force ?? false)
-  }
   return true
 }
 
 function existingReceiptIdentity(job: Job<AIAgentJobData>): [string, string] | null {
-  if (job.name === 'story-post') {
-    const data = job.data as import('@queues/ai-agents/types').StoryPostJobData
-    return ['story-post', data.force ? `${data.post_id}:${job.id}` : data.post_id]
-  }
   if (job.name === 'report-judgement') {
     const data = job.data as import('@queues/ai-agents/types').ReportJudgementJobData
     return [

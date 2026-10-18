@@ -8,6 +8,7 @@ import {
   getAgentCallReceipt,
   releaseUnbilledAgentCallReceipt,
   reserveAgentCallReceipt,
+  type ReportReceiptTarget,
 } from '@services/ai-usage/agent-call-receipts'
 import { callAgentModel, type AgentModelCaller } from './call-agent-model.mts'
 import { UnbilledRetrySpendCapBreachError } from './openai-response-attempt-hooks.mts'
@@ -23,6 +24,7 @@ type ReceiptedCall<Output> = {
   communityId?: string | null
   postId?: string | null
   copyrightNoticeSubmissionId?: string
+  reportTarget?: ReportReceiptTarget
 }
 
 export function agentCallOperationKey(agentSlug: string, operationId: string): string {
@@ -74,6 +76,7 @@ export async function callReceiptedAgentModel<Output>(
             agentSlug,
             requestSha256,
             params.copyrightNoticeSubmissionId,
+            params.reportTarget,
           ))
         ) {
           unrecoverable(new Error(`Paid ${agentSlug} call ${key} is already reserved`))

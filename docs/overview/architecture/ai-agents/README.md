@@ -22,6 +22,9 @@ and measurement, and [AI agents](../ai-agents.md) links the surrounding pipeline
   review instead of another billable dispatch or a
   stale result attached to new input. Copyright guidance and appeal receipts retain a submission
   foreign key so the case-retention sweep can erase their duplicate ciphertext, including pending
-  receipts. Durable reservation is the admission point: erasure prevents new reservations and late
+  receipts. Report-derived ciphertext follows the reported target’s deletion lifecycle while the
+  permanent reservation remains, so erasure cannot authorize a second paid request. Story answers
+  contain the news story’s title and RSS-derived summary rather than a user profile or report.
+  Durable reservation is the admission point: erasure prevents new reservations and late
   result persistence, but does not cancel provider I/O admitted before erasure. Existing receipts
   pass the worker's daily-spend admission gate to replay local writes or stop an uncertain call.
