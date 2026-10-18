@@ -65,6 +65,28 @@ export const optionMcpResultCases: readonly McpResultFixtureCase[] = [
     structuredContent: { success: true, email_preferences: emailPreferencesFixture },
   },
   {
+    id: 'native.mcp.read-my-preferences.general',
+    tool: 'read_my_preferences',
+    arguments: { option: 'general', arguments: {} },
+    structuredContent: {
+      success: true,
+      settings: {
+        follows_visibility: 'everyone',
+        topic_follows_visibility: 'followers',
+        rss_feed_follows_visibility: 'mutual_followers',
+        community_memberships_visibility: 'nobody',
+        followers_visibility: 'users',
+        likes_visibility: 'nobody',
+        direct_messages_audience: 'mutual_followers',
+        default_post_broadcast: 'followers',
+        default_post_privacy: 'private',
+        country: 'US',
+        ui_locale: null,
+        should_import_hacker_news_discussions: false,
+      },
+    },
+  },
+  {
     id: 'native.mcp.read-feed.posts',
     tool: 'read_feed',
     arguments: { option: 'posts', arguments: { feed_type: 'follow_users' } },
