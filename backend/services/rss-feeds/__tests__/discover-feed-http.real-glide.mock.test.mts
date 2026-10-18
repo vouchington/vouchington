@@ -52,6 +52,7 @@ async function runHtmlImport(options: {
   const crawlsSettled = Promise.withResolvers<Job[]>()
   const rowsSettled = Promise.withResolvers<void>()
   const crawlJobs: Job[] = []
+  const htmlFetchCounts = new Map<string, number>()
   let rowRuns = 0
   const connection = { connection: workerQueueConnection, prefix: workerQueuePrefix }
   const crawler = new Worker(
@@ -88,17 +89,23 @@ async function runHtmlImport(options: {
         return processRssFeedImportRow(submitted.import.id, rowId, {
           crawlerRssOptions: {
             dependencies: {
-              fetchUrl: async ({ url }) => ({
-                response: options.htmlPages.has(url)
-                  ? new Response('<html><head></head><body>Blog</body></html>', {
-                      headers: { 'content-type': 'text/html' },
-                    })
-                  : new Response(
-                      '<?xml version="1.0"?><rss version="2.0"><channel><title>Feed</title><link>https://example.com/</link><description>Feed</description></channel></rss>',
-                      { headers: { 'content-type': 'application/rss+xml' } },
-                    ),
-                responseSignal: new AbortController().signal,
-              }),
+              fetchUrl: async ({ url }) => {
+                let response: Response
+                if (options.htmlPages.has(url)) {
+                  const fetchCount = (htmlFetchCounts.get(url) ?? 0) + 1
+                  htmlFetchCounts.set(url, fetchCount)
+                  if (fetchCount > 1) throw new Error(`Original HTML page fetched again: ${url}`)
+                  response = new Response('<html><head></head><body>Blog</body></html>', {
+                    headers: { 'content-type': 'text/html' },
+                  })
+                } else {
+                  response = new Response(
+                    '<?xml version="1.0"?><rss version="2.0"><channel><title>Feed</title><link>https://example.com/</link><description>Feed</description></channel></rss>',
+                    { headers: { 'content-type': 'application/rss+xml' } },
+                  )
+                }
+                return { response, responseSignal: new AbortController().signal }
+              },
             },
           },
         })
@@ -147,7 +154,6 @@ describe('HTML RSS discovery continuation', () => {
     const pageUrl = `https://discovery-replay-${randomUUID()}.example.com/blog`
     const submitted = await submitRssFeedImport(user, WEB_PROVENANCE, [pageUrl])
     const rowId = await getFirstRssFeedImportRowId(submitted.import.id)
-
     await expect(discoverFeedUrlFromHtml(pageUrl, rowId)).rejects.toBeInstanceOf(
       RssFeedDiscoveryPendingError,
     )

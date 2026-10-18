@@ -7,8 +7,11 @@ import { normalizeContentLanguageTag } from '@ts-shared/languages/content-langua
 import { CrawlerInvalidContentTypeError } from '@modules/on-error/errors'
 import { discoverFeedUrlFromHtml } from './discover-feed.mts'
 import { isYouTubeChannelFeedUrl } from '@modules/utils'
-
-const MISSING_FEED_CONTENT_ERROR_CODE = 'RSS_FEED_URL_MISSING_CONTENT'
+import { resumeRssFeedImportPageDiscovery } from './read-discovery-outcome.mts'
+import {
+  createMissingFeedContentError,
+  MISSING_FEED_CONTENT_ERROR_CODE,
+} from './missing-feed-content-error.mts'
 
 type FeedValidationDeps = {
   crawlerRss?: typeof CrawlerRss
@@ -26,22 +29,6 @@ function resolveFeedValidationDeps(deps: FeedValidationDeps = {}) {
     buildBoundedRssFeedItemsFromFeed:
       deps.buildBoundedRssFeedItemsFromFeed ?? buildBoundedRssFeedItemsFromFeed,
   }
-}
-
-function createMissingFeedContentError(): Error & {
-  code: string
-  status: number
-  statusCode: number
-} {
-  const error = new Error('RSS feed URL did not return feed content') as Error & {
-    code: string
-    status: number
-    statusCode: number
-  }
-  error.code = MISSING_FEED_CONTENT_ERROR_CODE
-  error.status = 422
-  error.statusCode = 422
-  return error
 }
 
 export async function assertRssFeedUrlExists(
@@ -97,6 +84,15 @@ export async function fetchAndClassifyFeed(
 
   if (process.env.PLAYWRIGHT_TEST === 'true' && process.env.NODE_ENV === 'test') {
     return { kind: 'feed', title: null, feedType: 'article' }
+  }
+
+  if (deps.importRowId) {
+    const discovery = await resumeRssFeedImportPageDiscovery(
+      rssFeedUrl,
+      deps.importRowId,
+      discoverFeedUrlFromHtmlFn,
+    )
+    if (discovery) return discovery
   }
 
   let parsedFeed: Record<string, unknown>
