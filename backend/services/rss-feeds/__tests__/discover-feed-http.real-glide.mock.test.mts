@@ -149,4 +149,13 @@ describe('HTML RSS discovery continuation', () => {
     ])
     expect(result.createdFeedUrl).toBeNull()
   })
+
+  it('does not treat an HTML page that links to itself as a feed', async () => {
+    const result = await runHtmlImport({ alternate: { 'application/rss+xml': '/blog' } })
+    expect(result.discovery.discovered_feed_url).toBeNull()
+    expect(result.status?.rows).toMatchObject([
+      { status: 'error', error_code: 'INVALID_FEED_CONTENT' },
+    ])
+    expect(result.createdFeedUrl).toBeNull()
+  })
 })
