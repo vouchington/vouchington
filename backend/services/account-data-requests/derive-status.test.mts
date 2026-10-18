@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { attachDerivedStatus, isActiveDataRequest } from './derive-status.mts'
 import { deriveDataRequestStatus } from '@voucha/types/entities/account-data-request'
 import type { UserDataRequestRow } from './types.mts'
@@ -35,16 +35,33 @@ describe('deriveDataRequestStatus', () => {
     ).toBe('processing')
   })
 
-  it('returns ready when completed with active s3_key and future expiry', () => {
-    expect(
-      deriveDataRequestStatus({
+  it.each([
+    ['ordinary UTC noon', '2026-10-20T12:34:56.789Z'],
+    ['UTC month end', '2027-01-31T23:59:59.999Z'],
+    ['UTC leap-day end', '2028-02-29T23:59:59.999Z'],
+  ])('classifies expiry -1 ms, at expiry, and +1 ms across %s', (_label, expiryIso) => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    try {
+      const expiresAt = new Date(expiryIso)
+      const completed = {
         ...baseRow,
         processing_started_at: new Date('2026-02-22T00:01:00.000Z'),
         completed_at: new Date('2026-02-22T00:02:00.000Z'),
         s3_key: 'exports/example.zip',
-        expires_at: new Date(Date.now() + 60_000),
-      }),
-    ).toBe('ready')
+        expires_at: expiresAt,
+      }
+
+      vi.setSystemTime(new Date(expiresAt.getTime() - 1))
+      expect(deriveDataRequestStatus(completed)).toBe('ready')
+
+      vi.setSystemTime(expiresAt)
+      expect(deriveDataRequestStatus(completed)).toBe('expired')
+
+      vi.setSystemTime(new Date(expiresAt.getTime() + 1))
+      expect(deriveDataRequestStatus(completed)).toBe('expired')
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('returns ready when completed with active s3_key and no expiry deadline', () => {
@@ -66,19 +83,7 @@ describe('deriveDataRequestStatus', () => {
         processing_started_at: new Date('2026-02-22T00:01:00.000Z'),
         completed_at: new Date('2026-02-22T00:02:00.000Z'),
         s3_key: null,
-        expires_at: new Date(Date.now() + 60_000),
-      }),
-    ).toBe('expired')
-  })
-
-  it('returns expired when completed and the deadline has passed', () => {
-    expect(
-      deriveDataRequestStatus({
-        ...baseRow,
-        processing_started_at: new Date('2026-02-22T00:01:00.000Z'),
-        completed_at: new Date('2026-02-22T00:02:00.000Z'),
-        s3_key: 'exports/example.zip',
-        expires_at: new Date(Date.now() - 1_000),
+        expires_at: new Date('2026-02-22T00:03:00.000Z'),
       }),
     ).toBe('expired')
   })
