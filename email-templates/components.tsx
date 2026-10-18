@@ -1,7 +1,9 @@
-import { Section, Text } from './react-email-runtime.mts'
+import { type LocalizedEmailProps, resolveEmailLocale, Section, Text } from '@vouchington/email'
+
+import { SUPPORTED_UI_LOCALES, DEFAULT_UI_LOCALE } from '@ts-shared/languages/ui-locales'
+
 import { COPYRIGHT_YEAR, colors, styles } from './styles.mts'
-import { getLocalizedFooterText, resolveUiLocale } from './locale.mts'
-import type { LocalizedEmailProps } from './types.mts'
+import { getLocalizedFooterText } from './locale.mts'
 
 const headerWordmark = {
   fontSize: '18px',
@@ -25,7 +27,7 @@ export function VouchaHeader() {
 }
 
 export function VouchaFooter({ uiLocale }: LocalizedEmailProps) {
-  const locale = resolveUiLocale(uiLocale)
+  const locale = resolveEmailLocale(uiLocale, SUPPORTED_UI_LOCALES, DEFAULT_UI_LOCALE)
   return (
     <Section style={styles.footer}>
       <Text style={styles.footerText}>{getLocalizedFooterText(locale, COPYRIGHT_YEAR)}</Text>
@@ -40,7 +42,7 @@ export function MarketingFooter({
   uiLocale,
   physicalAddress,
 }: LocalizedEmailProps & { physicalAddress: string }) {
-  const locale = resolveUiLocale(uiLocale)
+  const locale = resolveEmailLocale(uiLocale, SUPPORTED_UI_LOCALES, DEFAULT_UI_LOCALE)
   return (
     <Section style={styles.footer}>
       <Text style={styles.footerText}>{getLocalizedFooterText(locale, COPYRIGHT_YEAR)}</Text>

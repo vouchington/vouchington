@@ -1,11 +1,14 @@
+import { resolveEmailLocale } from '@vouchington/email'
+
+import { SUPPORTED_UI_LOCALES, DEFAULT_UI_LOCALE } from '@ts-shared/languages/ui-locales'
 import { emailCopy } from './catalog-copy.mts'
-import { resolveUiLocale } from './locale.mts'
+
 import { createRecommendationEmail } from './recommendation-email.tsx'
 import type { FollowNewsSourcesEmailProps } from './types.mts'
 
 const FollowNewsSourcesEmail = createRecommendationEmail(
   ({ sources, uiLocale, ...props }: FollowNewsSourcesEmailProps) => {
-    const locale = resolveUiLocale(uiLocale)
+    const locale = resolveEmailLocale(uiLocale, SUPPORTED_UI_LOCALES, DEFAULT_UI_LOCALE)
     const t = emailCopy(locale, 'follow-news-sources')
     return {
       ...props,

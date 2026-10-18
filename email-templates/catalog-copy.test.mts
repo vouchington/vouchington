@@ -1,19 +1,18 @@
+import {
+  emailMessagesFromCatalog,
+  emailOptional,
+  formatLocalizationLeaf,
+  leavesFromCatalog,
+  loadEmailCatalogMessages,
+} from '@vouchington/email'
+
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterEach, describe, expect, it } from 'vitest'
 import { compileLocalizationSqlite } from '@vouchington/localization-compiler'
-import {
-  emailCopy,
-  emailMessagesFromCatalog,
-  emailOptional,
-  formatLocalizationLeaf,
-  leavesFromCatalog,
-  loadEmailCatalogMessages,
-  resetEmailCatalogCache,
-  resolveEmailCatalogDirectory,
-} from './catalog-copy.mts'
+import { emailCopy, resetEmailCatalogCache, resolveEmailCatalogDirectory } from './catalog-copy.mts'
 
 const ORIGINAL_SQLITE = process.env.LOCALIZATION_SQLITE_PATH
 const ORIGINAL_NODE_ENV = process.env.NODE_ENV

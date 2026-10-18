@@ -1,4 +1,7 @@
 import {
+  type EmailRenderResultPromise,
+  type PreviewableEmailComponent,
+  resolveEmailLocale,
   Body,
   Container,
   Head,
@@ -6,24 +9,23 @@ import {
   Preview,
   Section,
   Text,
-  render,
-} from './react-email-runtime.mts'
+  renderEmail as renderTemplateEmail,
+} from '@vouchington/email'
+
+import { SUPPORTED_UI_LOCALES, DEFAULT_UI_LOCALE } from '@ts-shared/languages/ui-locales'
+
 import { emailCopy } from './catalog-copy.mts'
 import { VouchaFooter, VouchaHeader } from './components.tsx'
-import { getLocalizedSignoff, resolveUiLocale } from './locale.mts'
+import { getLocalizedSignoff } from './locale.mts'
 import { styles } from './styles.mts'
-import type {
-  EmailRenderResultPromise,
-  EmailVerificationEmailProps,
-  PreviewableEmailComponent,
-} from './types.mts'
+import type { EmailVerificationEmailProps } from './types.mts'
 
 const EmailVerificationEmail: PreviewableEmailComponent<EmailVerificationEmailProps> = ({
   token,
   uiLocale,
 }) =>
   (() => {
-    const locale = resolveUiLocale(uiLocale)
+    const locale = resolveEmailLocale(uiLocale, SUPPORTED_UI_LOCALES, DEFAULT_UI_LOCALE)
     const t = emailCopy(locale, 'email-verification')
 
     return (
@@ -61,13 +63,14 @@ EmailVerificationEmail.PreviewProps = {
 async function renderEmailVerificationEmail(
   props: EmailVerificationEmailProps,
 ): EmailRenderResultPromise {
-  const locale = resolveUiLocale(props.uiLocale)
+  const locale = resolveEmailLocale(props.uiLocale, SUPPORTED_UI_LOCALES, DEFAULT_UI_LOCALE)
   const t = emailCopy(locale, 'email-verification')
-  return {
+  return renderTemplateEmail({
     subject: t('heading'),
-    html: await render(<EmailVerificationEmail {...props} />, { pretty: true }),
+    element: <EmailVerificationEmail {...props} />,
+    pretty: true,
     text: `${t('text')}\n\n${props.token}\n\n${t('ignore')}\n\n${getLocalizedSignoff(locale)}`,
-  }
+  })
 }
 
 const RenderableEmailVerificationEmail = Object.assign(EmailVerificationEmail, {

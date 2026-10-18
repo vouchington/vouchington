@@ -1,6 +1,6 @@
+import { renderEmailVerificationEmail } from './index.mts'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import { renderEmailVerificationEmail } from './email-verification-renderer.mts'
 import EmailVerificationEmail from './email-verification.tsx'
 import { omitReactEmailPreviewPadding } from './test-helpers/omit-react-email-preview-padding.mts'
 

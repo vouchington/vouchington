@@ -1,7 +1,10 @@
-import { describe, expect, it } from 'vitest'
-import { getLocalizedFooterText, getLocalizedSignoff, resolveUiLocale } from './locale.mts'
+import { resolveEmailLocale } from '@vouchington/email'
 
-describe('resolveUiLocale', () => {
+import { SUPPORTED_UI_LOCALES, DEFAULT_UI_LOCALE } from '@ts-shared/languages/ui-locales'
+import { describe, expect, it } from 'vitest'
+import { getLocalizedFooterText, getLocalizedSignoff } from './locale.mts'
+
+describe('Voucha email locales', () => {
   it.each([
     ['pt-BR', 'pt'],
     ['fr_CA', 'fr'],
@@ -9,7 +12,7 @@ describe('resolveUiLocale', () => {
     ['de-DE', 'en'],
     [null, 'en'],
   ] as const)('normalizes %s to %s', (input, expected) => {
-    expect(resolveUiLocale(input)).toBe(expected)
+    expect(resolveEmailLocale(input, SUPPORTED_UI_LOCALES, DEFAULT_UI_LOCALE)).toBe(expected)
   })
 })
 

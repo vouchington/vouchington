@@ -1,6 +1,6 @@
+import { renderCommunityInviteEmail } from './index.mts'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import { renderCommunityInviteEmail } from './community-invite-renderer.mts'
 import CommunityInviteEmail from './community-invite.tsx'
 import { omitReactEmailPreviewPadding } from './test-helpers/omit-react-email-preview-padding.mts'
 

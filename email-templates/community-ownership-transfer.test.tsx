@@ -1,6 +1,6 @@
+import { renderCommunityOwnershipTransferEmail } from './index.mts'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import { renderCommunityOwnershipTransferEmail } from './community-ownership-transfer-renderer.mts'
 import CommunityOwnershipTransferEmail from './community-ownership-transfer.tsx'
 import { omitReactEmailPreviewPadding } from './test-helpers/omit-react-email-preview-padding.mts'
 

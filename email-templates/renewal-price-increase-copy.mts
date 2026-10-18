@@ -1,4 +1,10 @@
-import { resolveUiLocale, type UiLocale } from './locale.mts'
+import { resolveEmailLocale } from '@vouchington/email'
+
+import {
+  SUPPORTED_UI_LOCALES,
+  DEFAULT_UI_LOCALE,
+  type UiLocale,
+} from '@ts-shared/languages/ui-locales'
 import type { RenewalPriceIncreaseEmailProps } from './types.mts'
 import { getCurrency } from '@ts-shared/money'
 import { emailCopy } from './catalog-copy.mts'
@@ -19,7 +25,7 @@ const renewalDateFormatters: Record<UiLocale, Intl.DateTimeFormat> = {
 const priceFormatters = new Map<string, Intl.NumberFormat>()
 
 export function getRenewalPriceIncreaseContent(props: RenewalPriceIncreaseEmailProps) {
-  const locale = resolveUiLocale(props.uiLocale)
+  const locale = resolveEmailLocale(props.uiLocale, SUPPORTED_UI_LOCALES, DEFAULT_UI_LOCALE)
   const t = emailCopy(locale, 'renewal-price-increase')
   const plan = props.plan.slice(0, 1).toUpperCase() + props.plan.slice(1)
   const interval = props.interval === 'year' || props.interval === 'yearly' ? t('year') : t('month')

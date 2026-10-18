@@ -1,3 +1,5 @@
+import type { EmailRenderResultPromise } from '@vouchington/email'
+
 import type {
   CommunityApplicationDecisionEmailProps,
   CommunityInviteEmailProps,
@@ -5,8 +7,6 @@ import type {
   CommunityOwnershipTransferEmailProps,
   CommunityRoleChangeEmailProps,
   DataExportReadyEmailProps,
-  EmailRenderResult,
-  EmailRenderResultPromise,
   EmailVerificationEmailProps,
   FollowNewsSourcesEmailProps,
   FollowTopicsEmailProps,
@@ -23,8 +23,6 @@ export type {
   CommunityOwnershipTransferEmailProps,
   CommunityRoleChangeEmailProps,
   DataExportReadyEmailProps,
-  EmailRenderResult,
-  EmailRenderResultPromise,
   EmailVerificationEmailProps,
   FollowNewsSourcesEmailProps,
   FollowTopicsEmailProps,
@@ -71,4 +69,4 @@ export declare function renderRenewalPriceIncreaseEmail(
 export declare function renderWelcomeEmail(props: WelcomeEmailProps): EmailRenderResultPromise
 export declare function renderApiKeyExpiryEmail(
   props: import('./types.mts').ApiKeyExpiryEmailProps,
-): import('./types.mts').EmailRenderResultPromise
+): EmailRenderResultPromise

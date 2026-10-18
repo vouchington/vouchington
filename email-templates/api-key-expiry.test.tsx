@@ -1,5 +1,6 @@
+import { renderApiKeyExpiryEmail } from './index.mts'
+
 import { describe, expect, it } from 'vitest'
-import { renderApiKeyExpiryEmail } from './api-key-expiry-renderer.mts'
 
 describe('API key expiry reminder', () => {
   it('renders an escaped label, deadline and owner settings link without a key secret', async () => {
