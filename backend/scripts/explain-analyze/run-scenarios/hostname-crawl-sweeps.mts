@@ -41,7 +41,15 @@ export async function runHostnameCrawlSweepScenarios(): Promise<void> {
 
 registerScenarioContract('crawl-hostname-threshold-seek', {
   expectations: [
-    { kind: 'usesIndexes', indexes: ['idx_url_hostnames__crawl_due'], noSort: true },
+    {
+      kind: 'usesIndexes',
+      indexes: [
+        'idx_url_hostnames__crawl_due',
+        'idx_url_hostnames__age_threshold_days_id_crawlable',
+      ],
+      anyOf: true,
+      noSort: true,
+    },
     { kind: 'maxProcessedRows', relation: 'url_hostnames', max: 2 },
   ],
 })

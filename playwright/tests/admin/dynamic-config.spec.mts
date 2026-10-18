@@ -37,7 +37,12 @@ test.describe('Dynamic Config', () => {
     await expect(page.getByTestId('dynamic-config-refresh')).toBeVisible()
     await expect(page.getByTestId('dynamic-config-namespace-list')).toBeVisible()
     await expect(page.getByTestId('dynamic-config-namespace-button').first()).toBeVisible()
-    await expect(page.getByRole('button', { name: /Feature Flags/ })).toBeVisible()
+    const featureFlagsButton = page
+      .getByTestId('dynamic-config-namespace-button')
+      .filter({ hasText: 'Feature Flags' })
+    await expect(featureFlagsButton).toBeVisible()
+    await featureFlagsButton.click()
+    await expect(page.getByTestId('dynamic-config-namespace-title')).toHaveText('Feature Flags')
     await expect(page.getByTestId('dynamic-config-namespace-panel')).toBeVisible()
     await expect(page.getByTestId('dynamic-config-fields-table')).toBeVisible()
     await expect(page.getByTestId('dynamic-config-boolean-field').first()).toBeVisible()
