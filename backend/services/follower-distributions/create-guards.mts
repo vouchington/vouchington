@@ -14,7 +14,7 @@ export type CreateDistributionInput = {
   action: FollowerDistributionAction
   postIdOrSlug?: string
   rssFeedItemId?: string
-  options: SendFollowersInput
+  options: SendFollowersInput | (() => SendFollowersInput)
 }
 
 export async function validateTarget(
@@ -37,7 +37,7 @@ export async function validateTarget(
   }
 }
 
-export async function preflightRssFeedItemDistributionTarget(
+async function preflightRssFeedItemDistributionTarget(
   rssFeedItemId: string,
   options?: { query?: TransactionQuery },
 ): Promise<string> {
@@ -60,22 +60,45 @@ export async function preflightPostDistributionTarget(
   return post.id
 }
 
-export async function assertNoRecentDistribution(
+// One statement after the advisory lock, so it reads what the previous lock holder committed.
+// Precedence is unchanged: a recent distribution (429) wins over a selected recipient who is no
+// longer a follower (400).
+export async function assertCanDistribute(
   senderUserId: string,
   action: FollowerDistributionAction,
   entityId: string,
+  selectedRecipientIds: string[] | null,
   query: TransactionQuery,
-) {
+): Promise<string[] | null> {
   const recentCutoffId = getMinUUIDv7ForDate(new Date(Date.now() - 24 * 60 * 60 * 1000))
-  const existing = await query(
-    recentDistributionQuery(senderUserId, action, entityId, recentCutoffId),
-  )
-  if (existing.rows.length > 0) {
+  const statement = sql`/* assertCanDistribute */
+    SELECT EXISTS (`
+  statement.append(recentDistributionQuery(senderUserId, action, entityId, recentCutoffId))
+  statement.append(sql`) AS has_recent, `)
+  if (selectedRecipientIds) {
+    statement.append(sql`ARRAY(
+      SELECT subject_id
+      FROM relation__user__follow__user
+      WHERE object_id = ${senderUserId}
+        AND deleted_at IS NULL
+        AND subject_id = ANY(${selectedRecipientIds}::uuid[])
+    ) AS follower_ids`)
+  } else {
+    statement.append(sql`ARRAY[]::uuid[] AS follower_ids`)
+  }
+  const { rows } = await query(statement)
+  if (rows[0]!.has_recent) {
     throw createError(
       429,
       `You can only ${action.includes('share') ? 'share' : 'send'} this once per day`,
     )
   }
+  if (!selectedRecipientIds) return null
+  const followerIds = rows[0]!.follower_ids as string[]
+  if (followerIds.length !== selectedRecipientIds.length) {
+    throw createError(400, 'Selected users must be current followers')
+  }
+  return followerIds.toSorted()
 }
 
 export function dedupLockKey(
@@ -92,8 +115,7 @@ function recentDistributionQuery(
   entityId: string,
   recentCutoffId: string,
 ) {
-  const statement = sql`/* assertNoRecentDistribution */
-    SELECT 1
+  const statement = sql`SELECT 1
     FROM follower_distributions
     WHERE sender_user_id = ${senderUserId}
       AND action = ${action}

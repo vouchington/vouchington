@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict'
 import { beginTransaction, getCapturedQueries, read } from '@data-stores/psql'
 import { getMinUUIDv7ForParentHistory } from '@modules/utils/ids'
-import { assertNoRecentDistribution } from '@services/follower-distributions/create-guards'
+import { assertCanDistribute } from '@services/follower-distributions/create-guards'
 import { hasPostCreationModerationBypass } from '@services/posts/create/moderation-bypass'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture, seedPostId, seedUser } from '../run-support.mts'
+import { seedUuid } from '../seed-data/common.mts'
 
 export async function runFollowerDistributionScenarios(): Promise<void> {
   const { rows } = await read<{ id: string }>(
@@ -27,16 +28,18 @@ export async function runFollowerDistributionScenarios(): Promise<void> {
     await runAndCapture(id, async () => {
       await using query = await beginTransaction()
       await assert.rejects(
-        assertNoRecentDistribution(
+        assertCanDistribute(
           seedUser.id,
           action,
           action.startsWith('post_') ? seedPostId : itemId,
+          null,
           query,
         ),
         { statusCode: 429 },
       )
     })
   }
+  await runSelectedRecipientsScenario()
   registerScenarioContract('post-creation-moderation-bypass', {
     expectations: [
       { kind: 'custom', name: 'parentHistoryLowerBound' },
@@ -60,4 +63,31 @@ export async function runFollowerDistributionScenarios(): Promise<void> {
   const bound = captured?.text.match(/\bid\s*>=\s*\$(\d+)::uuid/u)
   assert.ok(captured && bound, 'Moderation bypass must bind its parent-history lower bound')
   assert.equal(captured.values[Number(bound[1]) - 1], getMinUUIDv7ForParentHistory(seedPostId))
+}
+
+// The recent-distribution check and the selected-follower check share one statement that runs
+// after the advisory lock. User 3 is followed by users 1 and 2 (ring plus heavy-follow seed), and
+// an absent post id keeps the recent check from rejecting.
+async function runSelectedRecipientsScenario(): Promise<void> {
+  const senderId = seedUuid(3, '01')
+  const followerIds = [seedUuid(1, '01'), seedUuid(2, '01')].toSorted()
+  registerScenarioContract('follower-distribution-selected-recipients', {
+    expectations: [
+      { kind: 'queryBinds', token: 'sender_user_id' },
+      { kind: 'queryBinds', token: 'relation__user__follow__user' },
+      { kind: 'maxProcessedRows', relation: 'follower_distributions', max: 4 },
+      { kind: 'maxProcessedRows', relation: 'relation__user__follow__user', max: 4 },
+    ],
+  })
+  await runAndCapture('follower-distribution-selected-recipients', async () => {
+    await using query = await beginTransaction()
+    const found = await assertCanDistribute(
+      senderId,
+      'post_send',
+      seedUuid(0, '7f'),
+      followerIds,
+      query,
+    )
+    assert.deepEqual(found, followerIds, 'Both seeded followers must be returned')
+  })
 }

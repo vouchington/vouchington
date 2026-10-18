@@ -75,7 +75,7 @@ async function insertReviewRatings({
   const topicIds = ratings.map(r => r.topic_id)
   await assertReviewTopicsAllowReviews(topicIds)
   await write(
-    sql`/* createPost */
+    sql`/* createPost:reviewRatings */
       INSERT INTO post_review_topic_ratings (post_id, topic_id, rating, order_index)
       SELECT ${postId}, topic_id, rating, order_index
       FROM UNNEST(
@@ -149,7 +149,7 @@ async function insertImages({
 }): Promise<void> {
   if (!updates.images?.length) return
   await write(
-    sql`/* createPost */
+    sql`/* createPost:images */
       INSERT INTO post_images (post_id, image_id, order_index, caption)
       SELECT ${postId}, image_id, order_index, caption
       FROM UNNEST(

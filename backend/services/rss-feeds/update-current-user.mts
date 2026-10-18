@@ -9,10 +9,8 @@ import {
 } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
-import {
-  setRssFeedDiscoverabilityAsCurrentUser,
-  setRssFeedEnablementAsCurrentUser,
-} from './discoverability.mts'
+import { setRssFeedStatesAsCurrentUser } from './set-states-as-current-user.mts'
+import type { ViewRssFeed } from './types.mts'
 import { updateRssFeedById, type UpdateRssFeedChanges } from './update.mts'
 import { omitStateChanges, type RssFeedStateChange } from './update-state-helpers.mts'
 import { enqueueEvaluateRssFeedDiscoverability } from '@queues/rss-feed-maintenance/enqueues/discoverability'
@@ -54,33 +52,17 @@ export const updateRssFeedByIdAsCurrentUser = async (
       )
       if (existing.rows.length === 0) return null
     }
-    const stateChange = stateChanges.find(({ kind }) => kind === 'enablement')
-    if (stateChange) {
-      const result = await setRssFeedEnablementAsCurrentUser(
-        currentUser,
-        {
-          rssFeedId: id,
-          is_enabled: stateChange.is_enabled,
-          reason: 'user update helper',
-        },
-        txOptions,
-      )
-      eligibilityChanged ||= result === 'updated'
-    }
-
-    const discoverabilityChange = stateChanges.find(({ kind }) => kind === 'discoverability')
-    if (discoverabilityChange) {
-      const result = await setRssFeedDiscoverabilityAsCurrentUser(
-        currentUser,
-        {
-          rssFeedId: id,
-          is_enabled: discoverabilityChange.is_enabled,
-          reason: 'user update helper',
-        },
-        txOptions,
-      )
-      eligibilityChanged ||= result === 'updated'
-    }
+    const result = await setRssFeedStatesAsCurrentUser(
+      currentUser,
+      id,
+      stateChanges.map(({ kind, is_enabled }) => ({
+        kind,
+        is_enabled,
+        reason: 'user update helper',
+      })),
+      txOptions,
+    )
+    eligibilityChanged ||= result === 'updated'
     return id
   }
   const updatedId = await runInTransaction(transactionOptions, run)
@@ -103,54 +85,61 @@ export async function updateRssFeedWithStateAsCurrentUser(
     discoverable?: boolean
     reason?: string | null
   },
-): Promise<void> {
+): Promise<ViewRssFeed | null> {
   assert(currentUserCanUpdateRssFeed(currentUser), 403, 'Forbidden')
   const fieldChanges = omitStateChanges(changes)
   let eligibilityChanged = false
-  const run = async (query: TransactionQuery) => {
+  const run = async (query: TransactionQuery): Promise<ViewRssFeed | null> => {
     const options = { query }
 
     const fieldChangeCount = Object.keys(fieldChanges).length
     if (fieldChangeCount > 0) {
       const updatedFieldId = await updateRssFeedById(id, fieldChanges, options)
-      if (!updatedFieldId) return false
+      if (!updatedFieldId) return null
     } else {
       const existing = await query(
         sql`/* updateRssFeedWithStateAsCurrentUser:lock */ SELECT id FROM rss_feeds WHERE id = ${id} FOR UPDATE`,
       )
-      if (existing.rows.length === 0) return false
+      if (existing.rows.length === 0) return null
     }
 
-    if (stateChanges.is_enabled !== undefined) {
-      const result = await setRssFeedEnablementAsCurrentUser(
-        currentUser,
-        {
-          rssFeedId: id,
-          is_enabled: stateChanges.is_enabled,
-          reason: stateChanges.reason,
-        },
-        options,
-      )
-      eligibilityChanged ||= result === 'updated'
-    }
-    if (stateChanges.discoverable !== undefined) {
-      const result = await setRssFeedDiscoverabilityAsCurrentUser(
-        currentUser,
-        {
-          rssFeedId: id,
-          is_enabled: stateChanges.discoverable,
-          reason: stateChanges.reason,
-        },
-        options,
-      )
-      eligibilityChanged ||= result === 'updated'
-    }
-    return true
+    const result = await setRssFeedStatesAsCurrentUser(
+      currentUser,
+      id,
+      [
+        ...(stateChanges.is_enabled === undefined
+          ? []
+          : [
+              {
+                kind: 'enablement' as const,
+                is_enabled: stateChanges.is_enabled,
+                reason: stateChanges.reason,
+              },
+            ]),
+        ...(stateChanges.discoverable === undefined
+          ? []
+          : [
+              {
+                kind: 'discoverability' as const,
+                is_enabled: stateChanges.discoverable,
+                reason: stateChanges.reason,
+              },
+            ]),
+      ],
+      options,
+    )
+    eligibilityChanged ||= result === 'updated'
+    // The write transaction returns the fresh row so the route does not re-read after commit.
+    const fresh = await query(
+      sql`/* updateRssFeedWithStateAsCurrentUser:fresh */ SELECT * FROM view_rss_feeds WHERE id = ${id}`,
+    )
+    return (fresh.rows[0] as ViewRssFeed | undefined) ?? null
   }
   const updated = await runInTransaction({}, run)
   if (updated) await invalidate.rss_feeds(id)
   if (updated && fieldChanges.topic_id !== undefined) void enqueueEvaluateRssFeedDiscoverability(id)
   if (updated && eligibilityChanged) void enqueueRefreshTopHashtags()
+  return updated
 }
 
 async function runInTransaction<Result>(

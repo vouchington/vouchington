@@ -112,7 +112,7 @@ describe('update.generated (state)', () => {
   it('updateRssFeedWithStateAsCurrentUser ignores state-only changes on missing feed', async () => {
     await expect(
       updateRssFeedWithStateAsCurrentUser(sharedUser, randomUUID(), {}, { discoverable: false }),
-    ).resolves.toBeUndefined()
+    ).resolves.toBeNull()
   })
 
   it('updateRssFeedById hides feed when discoverable = false', async () => {

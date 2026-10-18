@@ -1,6 +1,5 @@
 import {
   parseSendFollowersInput,
-  preflightRssFeedItemDistributionTarget,
   sendRssFeedItemToFollowers,
   shareRssFeedItemWithFollowers,
   type SendFollowersInput,
@@ -48,10 +47,11 @@ function source(
       const user = await requireActiveToolUser(currentUser)
       getDelegatedToolAuthority(user, invocationContext)
       const { rss_feed_item_id, ...body } = args
-      if (send) await preflightRssFeedItemDistributionTarget(rss_feed_item_id)
       return enqueueDistributionOrMarkFailed(
         send
-          ? await sendRssFeedItemToFollowers(user, rss_feed_item_id, parseSendFollowersInput(body))
+          ? await sendRssFeedItemToFollowers(user, rss_feed_item_id, () =>
+              parseSendFollowersInput(body),
+            )
           : await shareRssFeedItemWithFollowers(user, rss_feed_item_id),
       )
     },

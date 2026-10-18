@@ -118,18 +118,14 @@ app
           'unreliable_status_codes',
         )
     }
-    await updateRssFeedWithStateAsCurrentUser(currentUser, rssFeed.id, changes, {
+    const updated = await updateRssFeedWithStateAsCurrentUser(currentUser, rssFeed.id, changes, {
       is_enabled,
       discoverable,
       reason,
     })
-    const updated = await getRssFeedByIdCached(rssFeed.id)
     ctx.assert(updated, 404, 'RSS feed not found')
     ctx.json({
-      rss_feed: await attachWrittenRssFeedProvenance(
-        proxyRssFeedCoverArt(updated as ViewRssFeed),
-        currentUser,
-      ),
+      rss_feed: await attachWrittenRssFeedProvenance(proxyRssFeedCoverArt(updated), currentUser),
     })
   })
   .delete(async (ctx: Context) => {

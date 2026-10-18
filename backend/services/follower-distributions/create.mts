@@ -1,11 +1,8 @@
 import { beginTransaction } from '@data-stores/psql'
-import type { TransactionQuery } from '@data-stores/psql/types'
-import { getFollowerIdsForDistribution } from '@services/users'
 import type { PrivateUser } from '@services/users/types'
-import createError from 'http-errors'
 import sql from 'sql-template-strings'
 import {
-  assertNoRecentDistribution,
+  assertCanDistribute,
   dedupLockKey,
   type CreateDistributionInput,
   validateTarget,
@@ -14,6 +11,12 @@ import type { FollowerDistributionAccepted } from './types.mts'
 import { parseSendFollowersInput, type SendFollowersInput } from './send-followers-input.mts'
 
 export type FollowerDistributionOptions = SendFollowersInput
+
+/**
+ * Options resolved by a function run after the target exists: a missing target answers 404 before
+ * an invalid body answers its own error, with no separate read of the target.
+ */
+export type DeferredFollowerDistributionOptions = () => FollowerDistributionOptions
 
 export function sharePostWithFollowers(
   currentUser: PrivateUser,
@@ -48,7 +51,7 @@ export function shareRssFeedItemWithFollowers(
 export function sendRssFeedItemToFollowers(
   currentUser: PrivateUser,
   rssFeedItemId: string,
-  options: FollowerDistributionOptions,
+  options: FollowerDistributionOptions | DeferredFollowerDistributionOptions,
 ): Promise<FollowerDistributionAccepted> {
   return createDistribution(currentUser, { action: 'rss_feed_item_send', rssFeedItemId, options })
 }
@@ -57,16 +60,22 @@ async function createDistribution(
   currentUser: PrivateUser,
   input: CreateDistributionInput,
 ): Promise<FollowerDistributionAccepted> {
-  const options = parseSendFollowersInput(input.options)
+  const eagerOptions =
+    typeof input.options === 'function' ? null : parseSendFollowersInput(input.options)
   await using query = await beginTransaction()
-  // ast-grep-ignore: no-three-sequential-awaits -- service workflow has dependent validation, mutation, and follow-up side effects
   const target = await validateTarget(currentUser, input, query)
-  await query(sql`/* createDistribution */
+  const options = eagerOptions ?? parseSendFollowersInput((input.options as () => unknown)())
+  // ast-grep-ignore: no-three-sequential-awaits -- target.id keys the lock, the guard result gates the distribution insert, and that insert's id feeds the recipient insert; the lock stays its own statement so the guard reads after the previous holder committed
+  await query(sql`/* createDistribution:lock */
     SELECT pg_advisory_xact_lock(hashtext(${dedupLockKey(currentUser.id, input.action, target.id)}))
   `)
-  await assertNoRecentDistribution(currentUser.id, input.action, target.id, query)
-
-  const selectedRecipientIds = await validateSelectedRecipients(currentUser.id, options, query)
+  const selectedRecipientIds = await assertCanDistribute(
+    currentUser.id,
+    input.action,
+    target.id,
+    options.audience === 'selected_followers' ? options.recipient_user_ids.toSorted() : null,
+    query,
+  )
 
   const { rows } = await query(sql`/* createDistribution */
     INSERT INTO follower_distributions (
@@ -101,21 +110,4 @@ async function createDistribution(
   const result = { status: 'accepted', distribution_id: distributionId }
   await query.commit()
   return result as FollowerDistributionAccepted
-}
-
-async function validateSelectedRecipients(
-  senderUserId: string,
-  options: FollowerDistributionOptions,
-  query: TransactionQuery,
-): Promise<string[] | null> {
-  if (options.audience !== 'selected_followers') return null
-
-  const recipientUserIds = options.recipient_user_ids.toSorted()
-  const currentFollowerIds = await getFollowerIdsForDistribution(senderUserId, recipientUserIds, {
-    query,
-  })
-  if (currentFollowerIds.length !== recipientUserIds.length) {
-    throw createError(400, 'Selected users must be current followers')
-  }
-  return currentFollowerIds.toSorted()
 }

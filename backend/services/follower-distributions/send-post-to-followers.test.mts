@@ -246,4 +246,25 @@ describe('sendPostToFollowers', () => {
       }),
     ).rejects.toThrow('You can only send this once per day')
   })
+
+  it('answers the daily limit before the follower check when both would fail', async () => {
+    const sender = await createTestUser()
+    const follower = await createTestUser()
+    const nonFollower = await createTestUser()
+    const creator = await createTestUser()
+    await followUser(follower, sender)
+
+    const post = await createTestPost({ user: creator, post_type: 'discussion', privacy: 'public' })
+    await sendPostToFollowers(sender, post.id, {
+      audience: 'selected_followers',
+      recipient_user_ids: [follower.id],
+    })
+
+    await expect(
+      sendPostToFollowers(sender, post.id, {
+        audience: 'selected_followers',
+        recipient_user_ids: [nonFollower.id],
+      }),
+    ).rejects.toMatchObject({ statusCode: 429 })
+  })
 })

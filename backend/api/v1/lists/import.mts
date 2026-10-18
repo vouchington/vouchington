@@ -19,10 +19,7 @@ app.route('/api/v1/lists/:id/import').post(async (ctx: Context) => {
 
   const { community } = await loadCommunityForViewer(currentUser, body.community_slug)
 
-  const result = await importCommunityList(currentUser.id, {
-    communityId: community.id,
-    targetListId: list.id,
-  })
+  const result = await importCommunityList(list, { communityId: community.id })
 
   ctx.setStatus(200)
   ctx.json(result)

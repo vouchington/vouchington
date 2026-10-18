@@ -15,11 +15,13 @@ import {
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import { importCommunityList } from '../import.mts'
+import { getManageableList, type ManageableList } from '../manage.mts'
 
 describe('importCommunityList', () => {
   let user: PrivateUser
   let communityId: string
   let listId: string
+  let list: ManageableList
   let postId: string
   let rssFeedId: string
   let rssFeedItemId: string
@@ -62,15 +64,16 @@ describe('importCommunityList', () => {
       addedById: user.id,
     })
 
-    const list = await insertTestList({
+    const inserted = await insertTestList({
       ownerUserId: user.id,
       name: `Import Test List ${createRandomString(8)}`,
     })
-    listId = list.id
+    listId = inserted.id
+    list = await getManageableList(user.id, listId)
   })
 
   it('imports posts from the community', async () => {
-    const result = await importCommunityList(user.id, { communityId, targetListId: listId })
+    const result = await importCommunityList(list, { communityId })
     expect(result.posts).toBeGreaterThanOrEqual(1)
 
     expect(await listPostItemExists(listId, postId)).toBe(true)
@@ -81,25 +84,9 @@ describe('importCommunityList', () => {
   })
 
   it('is idempotent (re-import does not duplicate)', async () => {
-    const result = await importCommunityList(user.id, { communityId, targetListId: listId })
+    const result = await importCommunityList(list, { communityId })
     expect(result.posts).toBe(0)
 
     expect(await listPostItemCount(listId, postId)).toBe(1)
-  })
-
-  it('throws 403 when currentUser does not own the list', async () => {
-    const other = await createTestUser()
-    await expect(
-      importCommunityList(other.id, { communityId, targetListId: listId }),
-    ).rejects.toMatchObject({ status: 403 })
-  })
-
-  it('throws 404 for unknown list', async () => {
-    await expect(
-      importCommunityList(user.id, {
-        communityId,
-        targetListId: '00000000-0000-7000-8000-000000000000',
-      }),
-    ).rejects.toMatchObject({ status: 404 })
   })
 })

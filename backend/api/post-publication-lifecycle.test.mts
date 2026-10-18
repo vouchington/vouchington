@@ -22,7 +22,8 @@ import {
 } from '@voucha/test-helpers'
 import { updateCommunity } from '@services/communities'
 import { createPost, deletePost, updatePost } from '@services/posts'
-import { hardDeleteRssFeedById, setRssFeedEnablementAsCurrentUser } from '@services/rss-feeds'
+import { hardDeleteRssFeedById } from '@services/rss-feeds'
+import { setRssFeedStatesAsCurrentUser } from '@services/rss-feeds/set-states-as-current-user'
 import { ensureUserSuspendedInTransaction } from '@services/users'
 import { deleteUserAndDrainForTest } from '@voucha/test-helpers/services/users/delete-test-support'
 import { lockAuthorPublicationLifecycle } from '@services/post-publication'
@@ -103,14 +104,18 @@ describe('post publication lifecycle capture integration', () => {
     })
 
     await expect(
-      setRssFeedEnablementAsCurrentUser(administrator, { rssFeedId, is_enabled: false }),
+      setRssFeedStatesAsCurrentUser(administrator, rssFeedId, [
+        { kind: 'enablement', is_enabled: false },
+      ]),
     ).resolves.toBe('updated')
     const disabledWork = await getTestPostPublicationDirtyWorkForScope({
       type: 'rss_feed',
       id: rssFeedId,
     })
     await expect(
-      setRssFeedEnablementAsCurrentUser(administrator, { rssFeedId, is_enabled: true }),
+      setRssFeedStatesAsCurrentUser(administrator, rssFeedId, [
+        { kind: 'enablement', is_enabled: true },
+      ]),
     ).resolves.toBe('updated')
     await expect(
       getTestPostPublicationDirtyWorkForScope({ type: 'rss_feed', id: rssFeedId }),

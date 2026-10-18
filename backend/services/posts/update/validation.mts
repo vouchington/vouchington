@@ -98,8 +98,7 @@ export async function assertValidPostCategoryUpdate(
     changes.markdown !== undefined ||
     changes.structured_data !== undefined
   ) {
-    const retainedCategories = await getRetainedPostCategories(post.id, options)
-    const categories = changes.categories ?? retainedCategories
+    const categories = changes.categories ?? (await getRetainedPostCategories(post.id, options))
     const finalHashtagKeys = new Set(
       getPostHashtagKeys({
         ...changes,

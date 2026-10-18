@@ -170,6 +170,10 @@
       "reason": "new feed setup has no existing story-post projection"
     },
     {
+      "path": "backend/services/rss-feeds/state-changes.mts",
+      "reason": "called inside setRssFeedStatesAsCurrentUser, which records the publication change for every updated kind in the same transaction"
+    },
+    {
       "path": "backend/services/rss-feeds/set-canonical.mts",
       "reason": "canonical URL routing does not change source discoverability"
     },
