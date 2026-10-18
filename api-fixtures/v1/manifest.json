@@ -18721,6 +18721,318 @@
       "source": "backend/api/v1/currencies/currencies.mts",
       "statusKnowledge": "default"
     },
+    "GET:/api/v1/disputes#member": {
+      "bodyKind": "content",
+      "hash": "43c98239ab5caf2e239a28a5f5a3e35d569c26f0e6ab39ca311064218e5ed599",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "GET",
+      "routeTemplate": "/api/v1/disputes",
+      "schema": {
+        "definitions": {
+          "RedactedReviewDispute": {
+            "additionalProperties": false,
+            "properties": {
+              "approved_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "created_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "is_overdue": {
+                "required": false,
+                "schema": {
+                  "type": "boolean"
+                }
+              },
+              "post_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "public_response": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "reason": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "defamatory"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "factually_inaccurate"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "impersonation"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "other"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "privacy_violation"
+                    }
+                  ]
+                }
+              },
+              "resolution_action": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "annotate"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "dismiss"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "no_action"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "remove"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "resolved_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "sent_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "status": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "dismissed"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "pending"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "resolved"
+                    }
+                  ]
+                }
+              },
+              "topic_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "updated_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "type": "object"
+          },
+          "ReviewDisputePostContent": {
+            "additionalProperties": false,
+            "properties": {
+              "declared_language": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "lingua_rs_detected_language": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "text": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "type": "object"
+          }
+        },
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "disputes": {
+              "required": true,
+              "schema": {
+                "items": {
+                  "type": "intersection",
+                  "variants": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "post_content": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "name": "ReviewDisputePostContent",
+                                "type": "ref"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "name": "RedactedReviewDispute",
+                      "type": "ref"
+                    }
+                  ]
+                },
+                "type": "array"
+              }
+            },
+            "page_info": {
+              "required": true,
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "end_cursor": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "has_next_page": {
+                    "required": true,
+                    "schema": {
+                      "type": "boolean"
+                    }
+                  },
+                  "start_cursor": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  }
+                },
+                "type": "object"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/disputes/disputes.mts",
+      "statusKnowledge": "default"
+    },
     "GET:/api/v1/disputes#staff": {
       "bodyKind": "content",
       "hash": "c2fb7e843803f003e553c4d68e7fd2e7b8177041bb50b3d2d17019c509345cea",
@@ -19432,6 +19744,272 @@
                   }
                 },
                 "type": "object"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/disputes/disputes.mts",
+      "statusKnowledge": "default"
+    },
+    "GET:/api/v1/disputes/:id#member": {
+      "bodyKind": "content",
+      "hash": "4e34a2fb31f1dd9a19cc7e84419190d6e94877bccd22c001288357510e3ea7a8",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "GET",
+      "routeTemplate": "/api/v1/disputes/:id",
+      "schema": {
+        "definitions": {
+          "RedactedReviewDispute": {
+            "additionalProperties": false,
+            "properties": {
+              "approved_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "created_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "is_overdue": {
+                "required": false,
+                "schema": {
+                  "type": "boolean"
+                }
+              },
+              "post_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "public_response": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "reason": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "defamatory"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "factually_inaccurate"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "impersonation"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "other"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "privacy_violation"
+                    }
+                  ]
+                }
+              },
+              "resolution_action": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "annotate"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "dismiss"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "no_action"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "remove"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "resolved_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "sent_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "status": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "dismissed"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "pending"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "resolved"
+                    }
+                  ]
+                }
+              },
+              "topic_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "updated_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "type": "object"
+          },
+          "ReviewDisputePostContent": {
+            "additionalProperties": false,
+            "properties": {
+              "declared_language": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "lingua_rs_detected_language": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "text": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "type": "object"
+          }
+        },
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "dispute": {
+              "required": true,
+              "schema": {
+                "type": "intersection",
+                "variants": [
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "post_content": {
+                        "required": true,
+                        "schema": {
+                          "type": "union",
+                          "variants": [
+                            {
+                              "name": "ReviewDisputePostContent",
+                              "type": "ref"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    "type": "object"
+                  },
+                  {
+                    "name": "RedactedReviewDispute",
+                    "type": "ref"
+                  }
+                ]
               }
             }
           },
@@ -96616,6 +97194,55 @@
       "responseSchema": {
         "hash": "bc6d86d33506ec2b71542d6525c0745cd400169a511fb2d6a89830735d52e198",
         "key": "native.moderation.disputes.detail.default"
+      },
+      "route": {
+        "pathParams": {
+          "id": "00000000-0000-7000-8000-000000000201"
+        },
+        "routeTemplate": "/api/v1/disputes/:id"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-moderation-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/disputes#member",
+      "bodyFile": "responses/native.moderation.disputes.member.default.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.moderation.disputes.member.default",
+      "method": "GET",
+      "migratedFrom": ["backend/api/v1/disputes/disputes.mts"],
+      "path": "/api/v1/disputes",
+      "query": {
+        "limit": "25",
+        "status": "pending"
+      },
+      "responseSchema": {
+        "hash": "48fce60bad67cdc041d33bd4c6b29f5c915af03141ce2f480e8c0c78f28277c0",
+        "key": "native.moderation.disputes.member.default"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/disputes"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-moderation-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/disputes/:id#member",
+      "bodyFile": "responses/native.moderation.disputes.detail.member.default.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.moderation.disputes.detail.member.default",
+      "method": "GET",
+      "migratedFrom": ["backend/api/v1/disputes/disputes.mts"],
+      "path": "/api/v1/disputes/00000000-0000-7000-8000-000000000201",
+      "responseSchema": {
+        "hash": "1356bfa4b91aa268fa6aebda1f3bbdfecdc7587ecebe4a0fc31b96d083dea97b",
+        "key": "native.moderation.disputes.detail.member.default"
       },
       "route": {
         "pathParams": {

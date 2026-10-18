@@ -9,6 +9,10 @@ export const moderationParityEndpointRegistry: Record<string, ManifestEndpoint> 
     method: 'GET',
     path: disputePath,
   },
+  'native.moderation.disputes.detail.member.default': {
+    method: 'GET',
+    path: disputePath,
+  },
   'native.moderation.disputes.update.default': {
     method: 'PATCH',
     path: disputePath,

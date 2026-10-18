@@ -152,6 +152,11 @@ const moderationCoreEndpointRegistry: Record<string, ManifestEndpoint> = {
     path: '/api/v1/disputes',
     query: { limit: '25', status: 'pending' },
   },
+  'native.moderation.disputes.member.default': {
+    method: 'GET',
+    path: '/api/v1/disputes',
+    query: { limit: '25', status: 'pending' },
+  },
   'native.moderation.review-queue.default': {
     method: 'GET',
     path: '/api/v1/posts/review-queue',
