@@ -66,17 +66,16 @@ export function getSharedBackgroundWorker(): SharedBackgroundWorker {
 /**
  * Wait for jobs the shared background worker can still run, so a later socket snapshot does not
  * count connections those jobs have checked out. Returns false when this fork never started the
- * worker. A worker paused because another file attached its own worker is not going to pick up
- * waiting jobs; only jobs already active can still hold a connection, and parked jobs never can.
+ * worker. Waiting work belongs to the queue: another attached worker can consume it even when
+ * the shared worker has yielded. Delayed and suspended jobs stay parked.
  */
 export async function settleSharedBackgroundJobs(
   flushTimeoutMs = DEFAULT_FLUSH_TIMEOUT_MS,
 ): Promise<boolean> {
   if (!sharedWorker) return false
-  const internals = sharedWorker as unknown as { paused?: boolean; queue: FlushQueue }
+  const internals = sharedWorker as unknown as { queue: FlushQueue }
   if ((await internals.queue.getWorkers()).length === 0) return false
   await settleRunnableQueueJobs(internals.queue, {
-    includeWaiting: internals.paused !== true,
     flushTimeoutMs,
   })
   return true
