@@ -53,7 +53,7 @@ describe('get', () => {
         communityId: community.id,
         createdById: user.id,
       })
-      await deleteCommunityAgentPrompt(user, created.id)
+      await deleteCommunityAgentPrompt(user, created)
 
       const fetched = await getCommunityAgentPrompt(created.id)
       expect(fetched).toBeNull()
@@ -95,7 +95,7 @@ describe('get', () => {
         insertTestCommunityAgentPrompt({ communityId: otherCommunity.id, createdById: user.id }),
         insertTestCommunityAgentPrompt({ communityId: otherCommunity.id, createdById: user.id }),
       ])
-      await deleteCommunityAgentPrompt(user, deleted.id)
+      await deleteCommunityAgentPrompt(user, deleted)
 
       const results = await searchCommunityAgentPrompts(otherCommunity.id)
       const ids = results.map(r => r.id)

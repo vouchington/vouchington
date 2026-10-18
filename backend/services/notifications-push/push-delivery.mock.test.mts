@@ -17,7 +17,7 @@ import { deliverClaimedNotificationPushIntent } from './push-intent-delivery.mts
 import { claimNotificationPushIntent } from './push-intents.mts'
 import {
   createCommunityActivityDigestBatch,
-  createCommunityLifecycleNotification,
+  createCommunityLifecycleNotifications,
 } from '@services/notifications'
 
 vi.mock<typeof import('web-push')>(import('web-push'), async importActual => {
@@ -83,15 +83,17 @@ describe('deliverClaimedNotificationPushIntent', () => {
   it('includes structured community navigation in lifecycle pushes', async () => {
     const recipient = await createTestUserDirect()
     const community = await insertTestCommunity({ createdById: recipient.id })
-    const notification = await createCommunityLifecycleNotification(
-      {
-        userId: recipient.id,
-        communityId: community.id,
-        entityType: 'community_role_change',
-        eventKey: `push-structured-community:${community.id}`,
-        title: 'Community role changed',
-        body: 'Your community role changed.',
-      },
+    const [notification] = await createCommunityLifecycleNotifications(
+      [
+        {
+          userId: recipient.id,
+          communityId: community.id,
+          entityType: 'community_role_change',
+          eventKey: `push-structured-community:${community.id}`,
+          title: 'Community role changed',
+          body: 'Your community role changed.',
+        },
+      ],
       {},
     )
     await upsertWebPushSubscription({

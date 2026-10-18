@@ -43,27 +43,36 @@ export async function setApplicationQuestions(
 
   const options = { query }
 
-  // Soft-delete existing questions
-  await write(
-    sql`/* setApplicationQuestions */
+  if (questions.length === 0) {
+    await write(
+      sql`/* setApplicationQuestions:clear */
       UPDATE community_application_questions
       SET deleted_at = CURRENT_TIMESTAMP
       WHERE community_id = ${communityId}
         AND deleted_at IS NULL
       `,
-    options,
-  )
-
-  if (questions.length === 0) {
+      options,
+    )
     await query.commit()
     return []
   }
-  await write(
+  // One statement replaces the form. The insert reads the soft-delete's row count through `gate`,
+  // so the old rows are retired before the first new one is checked against the unique order index.
+  const { rows } = await write(
     sql`/* setApplicationQuestions */
+      WITH retired AS (
+        UPDATE community_application_questions
+        SET deleted_at = CURRENT_TIMESTAMP
+        WHERE community_id = ${communityId}
+          AND deleted_at IS NULL
+        RETURNING id
+      ), gate AS MATERIALIZED (
+        SELECT COUNT(*) AS retired_count FROM retired
+      )
       INSERT INTO community_application_questions (
         community_id, question, field_type, options, order_index, is_required
       )
-      SELECT ${communityId}, question, field_type, options::jsonb, order_index, is_required
+      SELECT ${communityId}, t.question, t.field_type, t.options::jsonb, t.order_index, t.is_required
       FROM UNNEST(
         ${questions.map(q => q.question)}::text[],
         ${questions.map(q => q.field_type)}::community_application_question_field_types[],
@@ -71,11 +80,12 @@ export async function setApplicationQuestions(
         ${questions.map((_, i) => i)}::smallint[],
         ${questions.map(q => q.is_required ?? true)}::boolean[]
       ) AS t(question, field_type, options, order_index, is_required)
+      CROSS JOIN gate
+      RETURNING id, community_id, question, field_type, options, order_index, is_required,
+        created_at, deleted_at
       `,
     options,
   )
-
-  const result = await getApplicationQuestions(communityId, options)
   await query.commit()
-  return result
+  return (rows as CommunityApplicationQuestion[]).toSorted((a, b) => a.order_index - b.order_index)
 }

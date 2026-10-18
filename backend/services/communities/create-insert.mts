@@ -42,6 +42,7 @@ export async function insertCommunity(
 
   const { rows } = await write(
     sql`/* createCommunity */
+    WITH new_community AS (
     INSERT INTO communities (
       id,
       name,
@@ -81,6 +82,11 @@ export async function insertCommunity(
       ${provenance.oauthClientId}
     )
     RETURNING id
+    ), owner_membership AS (
+      INSERT INTO community_members (community_id, user_id, role)
+      SELECT id, ${currentUserId}, 'owner' FROM new_community
+    )
+    SELECT id FROM new_community
     `,
     options,
   )
@@ -110,14 +116,6 @@ export async function insertCommunity(
         WHERE id = ${newCommunity.id}
       `)
   }
-
-  await write(
-    sql`/* createCommunity */
-    INSERT INTO community_members (community_id, user_id, role)
-    VALUES (${newCommunity.id}, ${currentUserId}, 'owner')
-    `,
-    options,
-  )
 
   const community = await getCommunity(newCommunity.id, options)
   assert(community, 500, 'Failed to create community')

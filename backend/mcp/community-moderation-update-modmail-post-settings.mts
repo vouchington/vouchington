@@ -27,6 +27,7 @@ export const updateModmailThread: CommunityModerationHandler = async (user, args
   assert(thread, 404, 'Modmail thread not found')
   assert(thread.community_id === community.id, 404, 'Modmail thread not found')
 
+  let updated: typeof thread | null = thread
   if (typeof args.assigned_moderator_user_id === 'string') {
     const assignee = await getCommunityMember(community.id, args.assigned_moderator_user_id)
     assert(
@@ -36,10 +37,10 @@ export const updateModmailThread: CommunityModerationHandler = async (user, args
       422,
       'assigned_moderator_user_id must be an active owner or moderator in this community',
     )
-    await assignModmailThread(conversationId, args.assigned_moderator_user_id)
+    updated = await assignModmailThread(conversationId, args.assigned_moderator_user_id)
   }
   if (args.resolved === true) {
-    await resolveModmailThread(conversationId, user.id)
+    updated = await resolveModmailThread(conversationId, user.id)
   } else if (args.resolved === false) {
     const alreadyOpen = await hasOpenModmailThread(
       thread.community_id!,
@@ -47,10 +48,10 @@ export const updateModmailThread: CommunityModerationHandler = async (user, args
       conversationId,
     )
     assert(!alreadyOpen, 409, 'Another open thread already exists for this subject')
-    await unresolveModmailThread(conversationId)
+    updated = await unresolveModmailThread(conversationId)
   }
 
-  return { thread: await getModmailThread(conversationId) }
+  return { thread: updated }
 }
 
 export const updateCommunityPostTypeSettings: CommunityModerationHandler = async (user, args) => {
