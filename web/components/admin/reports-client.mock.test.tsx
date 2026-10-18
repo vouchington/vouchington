@@ -248,6 +248,7 @@ function makeReport(overrides: Partial<AdminModerationReport> = {}): AdminModera
     report_count: 1,
     resolved_by_id: null,
     is_system_generated: false,
+    automatic_judgement_enabled: true,
     judgement: null,
     post_moderation_context: null,
     ...overrides,

@@ -30,6 +30,32 @@ describe('ReportsClient re-run judgement button', () => {
     expect(screen.getByRole('button', { name: /re-run ai judgement/i })).toBeVisible()
   })
 
+  it('does not poll disabled automatic AI, but still polls an admitted manual rerun', async () => {
+    mockRerunReportJudgement.mockResolvedValueOnce({ queued: true, rerun_by_id: 'admin-1' })
+    render(
+      <ReportsClient
+        viewerTier='staff'
+        data={makeReportsResponse({ automatic_judgement_enabled: false, judgement: null })}
+      />,
+    )
+    expect(mockUsePendingAiRefresh).toHaveBeenLastCalledWith(
+      false,
+      expect.any(Function),
+      '',
+      expect.any(Function),
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /re-run ai judgement/i }))
+    await waitFor(() =>
+      expect(mockUsePendingAiRefresh).toHaveBeenLastCalledWith(
+        true,
+        expect.any(Function),
+        'rerun:report-1:new',
+        expect.any(Function),
+      ),
+    )
+  })
+
   it.each([
     { status: 'reviewed' as const, is_system_generated: false },
     { status: 'pending' as const, is_system_generated: true },

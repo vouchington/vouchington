@@ -191,7 +191,7 @@
         "native.communities.moderation-queue.automod-flag.page-2",
         "web.communities.moderation-queue.default"
       ],
-      "hash": "833801fbd34613f9c0fcec08fe716fc4d2e669499de260bb2fa1b4f380a97ab6"
+      "hash": "26ac3fbc29a278647b1a7eb10ce29a92533690462444832d369b52dd9059aa5c"
     },
     "GET:/api/v1/communities/:communitySlug/moderator-stats": {
       "fixtureIds": ["web.communities.moderator-stats.default"],
@@ -756,7 +756,7 @@
         "native.moderation.reports.clustered.default",
         "native.moderation.reports.clustered.page-2"
       ],
-      "hash": "9dae74a2d40b31d9081156e58426ebbb26e8d7407a2e1251c6cebc77b7f2cd12"
+      "hash": "5da3dc5bbc4e0aa68b6b6177e5e8c5e582a102487eeeaef3f54e33ddefce0443"
     },
     "GET:/api/v1/reports#member": {
       "fixtureIds": ["native.moderation.reports.member.default"],
@@ -764,7 +764,7 @@
     },
     "GET:/api/v1/reports#staff": {
       "fixtureIds": ["native.moderation.reports.default"],
-      "hash": "8d816b30862891552a8a9b78a0c7a01d2c9d8a3358b5044aa80d27d25a68cf1f"
+      "hash": "be0f511bc4cd6a3427b52a79589c865ca1e350418456db0828eebb1203dd058c"
     },
     "GET:/api/v1/rss-feed-categories": {
       "fixtureIds": ["web.rss-feed-categories.default"],
@@ -2261,7 +2261,7 @@
     },
     "native.moderation.reports.clustered.default": {
       "fixtureIds": ["native.moderation.reports.clustered.default"],
-      "hash": "05e13dba0df79c6ecbe1b37bb5b9c20249321e7291d14a73a9e7d6b89f22da72"
+      "hash": "231867db8d571e897342d87543827002bd65928e4b18fab095459934cf3e7297"
     },
     "native.moderation.reports.clustered.page-2": {
       "fixtureIds": ["native.moderation.reports.clustered.page-2"],
@@ -2269,7 +2269,7 @@
     },
     "native.moderation.reports.default": {
       "fixtureIds": ["native.moderation.reports.default"],
-      "hash": "a8303f6ef1d0cbf019ba8324f071e0cf599f00c43872f4bdcdd2e8b7f63fc94c"
+      "hash": "14ee0da9b6f084ace8cbe23e32996a760dd4748d3c186fc16445a80eea5ff74a"
     },
     "native.moderation.reports.member.default": {
       "fixtureIds": ["native.moderation.reports.member.default"],
@@ -2905,7 +2905,7 @@
     },
     "web.communities.moderation-queue.default": {
       "fixtureIds": ["web.communities.moderation-queue.default"],
-      "hash": "c61606981461c8204731f17d2653cac44e9faa6c48be0095d66c93455becaeee"
+      "hash": "ccaec0c03c2247802bef8df6162d69ff9b834d6ec558d9d24ff8af43e69196d8"
     },
     "web.communities.moderation-results.default": {
       "fixtureIds": ["web.communities.moderation-results.default"],

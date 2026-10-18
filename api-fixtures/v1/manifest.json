@@ -8892,7 +8892,7 @@
     },
     "GET:/api/v1/communities/:communitySlug/moderation-queue": {
       "bodyKind": "content",
-      "hash": "833801fbd34613f9c0fcec08fe716fc4d2e669499de260bb2fa1b4f380a97ab6",
+      "hash": "26ac3fbc29a278647b1a7eb10ce29a92533690462444832d369b52dd9059aa5c",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -9197,6 +9197,12 @@
                     "items": {
                       "additionalProperties": false,
                       "properties": {
+                        "automatic_judgement_enabled": {
+                          "required": true,
+                          "schema": {
+                            "type": "boolean"
+                          }
+                        },
                         "case_id": {
                           "required": true,
                           "schema": {
@@ -9472,6 +9478,12 @@
                                     "type": "string"
                                   }
                                 ]
+                              }
+                            },
+                            "automatic_judgement_enabled": {
+                              "required": true,
+                              "schema": {
+                                "type": "boolean"
                               }
                             },
                             "case_id": {
@@ -9765,6 +9777,12 @@
                                     "type": "string"
                                   }
                                 ]
+                              }
+                            },
+                            "automatic_judgement_enabled": {
+                              "required": true,
+                              "schema": {
+                                "type": "boolean"
                               }
                             },
                             "case_id": {
@@ -42904,7 +42922,7 @@
     },
     "GET:/api/v1/reports#clustered": {
       "bodyKind": "content",
-      "hash": "9dae74a2d40b31d9081156e58426ebbb26e8d7407a2e1251c6cebc77b7f2cd12",
+      "hash": "5da3dc5bbc4e0aa68b6b6177e5e8c5e582a102487eeeaef3f54e33ddefce0443",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -43321,6 +43339,12 @@
                       "type": "string"
                     }
                   ]
+                }
+              },
+              "automatic_judgement_enabled": {
+                "required": true,
+                "schema": {
+                  "type": "boolean"
                 }
               },
               "case_id": {
@@ -44679,7 +44703,7 @@
     },
     "GET:/api/v1/reports#staff": {
       "bodyKind": "content",
-      "hash": "8d816b30862891552a8a9b78a0c7a01d2c9d8a3358b5044aa80d27d25a68cf1f",
+      "hash": "be0f511bc4cd6a3427b52a79589c865ca1e350418456db0828eebb1203dd058c",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -44973,6 +44997,12 @@
                       "type": "string"
                     }
                   ]
+                }
+              },
+              "automatic_judgement_enabled": {
+                "required": true,
+                "schema": {
+                  "type": "boolean"
                 }
               },
               "case_id": {
@@ -92975,7 +93005,7 @@
       "migratedFrom": ["backend/api/v1/communities/moderation-queue.mts"],
       "path": "/api/v1/communities/test-community/moderation-queue",
       "responseSchema": {
-        "hash": "c61606981461c8204731f17d2653cac44e9faa6c48be0095d66c93455becaeee",
+        "hash": "ccaec0c03c2247802bef8df6162d69ff9b834d6ec558d9d24ff8af43e69196d8",
         "key": "web.communities.moderation-queue.default"
       },
       "route": {
@@ -96862,7 +96892,7 @@
         "status": "pending"
       },
       "responseSchema": {
-        "hash": "a8303f6ef1d0cbf019ba8324f071e0cf599f00c43872f4bdcdd2e8b7f63fc94c",
+        "hash": "14ee0da9b6f084ace8cbe23e32996a760dd4748d3c186fc16445a80eea5ff74a",
         "key": "native.moderation.reports.default"
       },
       "route": {
@@ -96913,7 +96943,7 @@
         "status": "pending"
       },
       "responseSchema": {
-        "hash": "05e13dba0df79c6ecbe1b37bb5b9c20249321e7291d14a73a9e7d6b89f22da72",
+        "hash": "231867db8d571e897342d87543827002bd65928e4b18fab095459934cf3e7297",
         "key": "native.moderation.reports.clustered.default"
       },
       "route": {

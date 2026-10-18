@@ -50,6 +50,7 @@ describe('ReportDetail judgement freshness', () => {
       makeReport({
         target_user_id: 'target-user',
         is_system_generated: true,
+        automatic_judgement_enabled: true,
         community_ban_evasion: null,
       }),
     )
@@ -209,6 +210,7 @@ function makeBanEvasionReport(): AdminModerationReport {
     target_label: 'Suspect',
     target_user_id: 'suspect-1',
     is_system_generated: true,
+    automatic_judgement_enabled: true,
     community_ban_evasion: {
       community_id: 'community-1',
       community_slug: 'community',
@@ -242,6 +244,7 @@ function makeReport(overrides: Partial<AdminModerationReport> = {}): AdminModera
     report_count: 1,
     resolved_by_id: null,
     is_system_generated: false,
+    automatic_judgement_enabled: true,
     judgement: null,
     post_moderation_context: null,
     ...overrides,

@@ -1,7 +1,14 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
+import { moderationAiConfig } from '../moderation/ai-config.mts'
 import { reportTargetContentSql, reportTargetLabelSql } from './target-content.mts'
 
 export type { ModerationReportTargetContent } from './target-content.mts'
+
+export function reportAutomaticJudgementEnabledSql() {
+  const communityEnabled = moderationAiConfig.getFields().community_judgement_enabled
+  return sql`(r.post_id IS NULL OR
+    (target_post.id IS NOT NULL AND (target_post.community_id IS NULL OR ${communityEnabled})))`
+}
 
 export type ModerationReportStatusSqlAlias = 'mr' | 'r' | 'rc' | 'rr'
 

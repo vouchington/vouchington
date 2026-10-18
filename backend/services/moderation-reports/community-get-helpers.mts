@@ -61,6 +61,7 @@ export async function fetchBanEvasionReports(
       NULL::timestamptz AS escalated_at,
       NULL::uuid AS escalated_by_id,
       true AS is_system_generated,
+      false AS automatic_judgement_enabled,
       1 AS report_count,
       1 AS cursor_report_count,
       0 AS cursor_severity_rank,

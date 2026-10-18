@@ -24,6 +24,8 @@ export type PendingModerationReport = ModerationReport & {
   /** True when the target post was submitted anonymously. */
   target_is_anonymous?: boolean
   is_system_generated: boolean
+  /** Current automatic AI eligibility; manual staff reruns can still produce a judgement. */
+  automatic_judgement_enabled: boolean
   /** Ban-evasion flag context for user-entity reports. */
   community_ban_evasion?: CommunityBanEvasionContext | null
 }

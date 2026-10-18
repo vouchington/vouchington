@@ -75,7 +75,11 @@ restarts. The staff resource exposes the current requested run and the run that 
 clients continue polling within the original deadline until those IDs match, even when another
 staff request supersedes theirs. A prior job cannot overwrite the newer request's draft. Staff
 dispute reconciliation and report lists read the primary; queued report reruns are serialized per
-entity so each completion can be attributed. Copyright queues refresh every loaded page, and
+entity so each completion can be attributed. Staff report list and community moderation queue
+responses expose `automatic_judgement_enabled` for each report, based on the current community
+AI setting and target. Clients poll an ordinary pending report automatically only when this is
+true; an explicitly admitted staff rerun still polls when it is false. Member report lists omit
+the field. Copyright queues refresh every loaded page, and
 staff polling stops after a bounded wait with a visible refresh prompt. Native adoption is tracked
 as dependent client work under
 [clients #373](https://github.com/vouchington/vouchington-clients/issues/373); the producer lands first.

@@ -97,6 +97,7 @@ function makeSystemReport(): AdminModerationReport {
     ...makeOrdinaryReport(),
     id: 'ban-evasion-report',
     is_system_generated: true,
+    automatic_judgement_enabled: true,
     community_ban_evasion: {
       community_id: 'community-1',
       community_slug: 'community',
@@ -131,6 +132,7 @@ function makeOrdinaryReport(): AdminModerationReport {
     report_count: 2,
     resolved_by_id: null,
     is_system_generated: false,
+    automatic_judgement_enabled: true,
     judgement: null,
     post_moderation_context: null,
   }

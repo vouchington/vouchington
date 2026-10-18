@@ -7,6 +7,7 @@ import { enrichClusteredReports } from './clustered-report-enrichment.mts'
 import {
   appendReportTargetColumns,
   moderationReportsWithEntitySql,
+  reportAutomaticJudgementEnabledSql,
   reportTargetIsRestrictedSql,
   reportTargetJoinsSql,
 } from './target-metadata.mts'
@@ -171,6 +172,7 @@ export async function selectReportsByCluster(
       report_counts.report_count AS cursor_report_count,
       COALESCE(u.username = ${BAN_EVASION_SYSTEM_USERNAME}, false) AS is_system_generated,
       `)
+  query.append(reportAutomaticJudgementEnabledSql()).append(sql` AS automatic_judgement_enabled, `)
   query.append(reportTargetIsRestrictedSql())
   query.append(sql` AS target_is_restricted
     FROM ranked_reports r

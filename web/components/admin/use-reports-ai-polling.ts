@@ -11,7 +11,8 @@ export function useReportsAiPolling(reports: AdminModerationReport[], enabled: b
   const [rerunBefore, setRerunBefore] = useState<Record<string, string | null>>({})
   const [rerunTimedOut, setRerunTimedOut] = useState(false)
   const pendingJudgement = reports.some(
-    report => isOrdinaryPendingReport(report) && !report.judgement,
+    report =>
+      isOrdinaryPendingReport(report) && report.automatic_judgement_enabled && !report.judgement,
   )
   const pendingRerunEntities = new Set<string>()
   const pendingRerunKeys: string[] = []
@@ -29,7 +30,9 @@ export function useReportsAiPolling(reports: AdminModerationReport[], enabled: b
     () => router.refresh(),
     [
       ...reports.flatMap(report =>
-        isOrdinaryPendingReport(report) && !report.judgement ? [report.id] : [],
+        isOrdinaryPendingReport(report) && report.automatic_judgement_enabled && !report.judgement
+          ? [report.id]
+          : [],
       ),
       ...pendingRerunKeys,
     ].join('|'),

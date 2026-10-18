@@ -112,23 +112,23 @@
               "type": "object",
               "anyOf": [
                 {
-                  "type": "object",
+                  "additionalProperties": false,
                   "properties": {
-                    "results": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/$defs/S1"
-                      }
-                    },
                     "page_info": {
                       "$ref": "#/$defs/S2"
+                    },
+                    "results": {
+                      "items": {
+                        "$ref": "#/$defs/S1"
+                      },
+                      "type": "array"
                     }
                   },
                   "required": ["results", "page_info"],
-                  "additionalProperties": false
+                  "type": "object"
                 },
                 {
-                  "type": "object",
+                  "additionalProperties": false,
                   "properties": {
                     "conversation": {
                       "allOf": [
@@ -136,20 +136,22 @@
                           "$ref": "#/$defs/S1"
                         },
                         {
-                          "type": "object",
-                          "required": ["participant_add_policy"]
+                          "required": ["participant_add_policy"],
+                          "type": "object"
                         }
                       ]
                     }
                   },
                   "required": ["conversation"],
-                  "additionalProperties": false
+                  "type": "object"
                 },
                 {
-                  "type": "object",
+                  "additionalProperties": false,
                   "properties": {
+                    "page_info": {
+                      "$ref": "#/$defs/S2"
+                    },
                     "results": {
-                      "type": "array",
                       "items": {
                         "additionalProperties": false,
                         "properties": {
@@ -188,20 +190,20 @@
                           "updated_at"
                         ],
                         "type": "object"
-                      }
-                    },
-                    "page_info": {
-                      "$ref": "#/$defs/S2"
+                      },
+                      "type": "array"
                     }
                   },
                   "required": ["results", "page_info"],
-                  "additionalProperties": false
+                  "type": "object"
                 },
                 {
-                  "type": "object",
+                  "additionalProperties": false,
                   "properties": {
+                    "page_info": {
+                      "$ref": "#/$defs/S2"
+                    },
                     "results": {
-                      "type": "array",
                       "items": {
                         "additionalProperties": false,
                         "properties": {
@@ -215,19 +217,6 @@
                             "type": "string"
                           },
                           "profile_image_id": {
-                            "$ref": "#/$defs/S3"
-                          },
-                          "removed_at": {
-                            "$ref": "#/$defs/S3"
-                          },
-                          "role": {
-                            "enum": ["admin", "member", "owner"],
-                            "type": "string"
-                          },
-                          "user_id": {
-                            "$ref": "#/$defs/S3"
-                          },
-                          "username": {
                             "$ref": "#/$defs/S3"
                           },
                           "profile_image_placement": {
@@ -252,6 +241,19 @@
                                 "type": "object"
                               }
                             ]
+                          },
+                          "removed_at": {
+                            "$ref": "#/$defs/S3"
+                          },
+                          "role": {
+                            "enum": ["admin", "member", "owner"],
+                            "type": "string"
+                          },
+                          "user_id": {
+                            "$ref": "#/$defs/S3"
+                          },
+                          "username": {
+                            "$ref": "#/$defs/S3"
                           }
                         },
                         "required": [
@@ -266,14 +268,12 @@
                           "username"
                         ],
                         "type": "object"
-                      }
-                    },
-                    "page_info": {
-                      "$ref": "#/$defs/S2"
+                      },
+                      "type": "array"
                     }
                   },
                   "required": ["results", "page_info"],
-                  "additionalProperties": false
+                  "type": "object"
                 }
               ],
               "$defs": {
@@ -551,7 +551,7 @@
               "type": "object",
               "anyOf": [
                 {
-                  "type": "object",
+                  "additionalProperties": false,
                   "properties": {
                     "conversation": {
                       "additionalProperties": false,
@@ -597,21 +597,21 @@
                     }
                   },
                   "required": ["conversation"],
-                  "additionalProperties": false
+                  "type": "object"
                 },
                 {
-                  "type": "object",
+                  "additionalProperties": false,
                   "properties": {
                     "participant_add_policy": {
-                      "type": "string",
-                      "enum": ["owner_only", "all_members"]
+                      "enum": ["owner_only", "all_members"],
+                      "type": "string"
                     }
                   },
                   "required": ["participant_add_policy"],
-                  "additionalProperties": false
+                  "type": "object"
                 },
                 {
-                  "type": "object",
+                  "additionalProperties": false,
                   "properties": {
                     "message": {
                       "additionalProperties": false,
@@ -654,10 +654,10 @@
                     }
                   },
                   "required": ["message"],
-                  "additionalProperties": false
+                  "type": "object"
                 },
                 {
-                  "type": "object",
+                  "additionalProperties": false,
                   "properties": {
                     "participant": {
                       "additionalProperties": false,
@@ -672,19 +672,6 @@
                           "type": "string"
                         },
                         "profile_image_id": {
-                          "$ref": "#/$defs/S1"
-                        },
-                        "removed_at": {
-                          "$ref": "#/$defs/S1"
-                        },
-                        "role": {
-                          "enum": ["admin", "member", "owner"],
-                          "type": "string"
-                        },
-                        "user_id": {
-                          "$ref": "#/$defs/S1"
-                        },
-                        "username": {
                           "$ref": "#/$defs/S1"
                         },
                         "profile_image_placement": {
@@ -709,6 +696,19 @@
                               "type": "object"
                             }
                           ]
+                        },
+                        "removed_at": {
+                          "$ref": "#/$defs/S1"
+                        },
+                        "role": {
+                          "enum": ["admin", "member", "owner"],
+                          "type": "string"
+                        },
+                        "user_id": {
+                          "$ref": "#/$defs/S1"
+                        },
+                        "username": {
+                          "$ref": "#/$defs/S1"
                         }
                       },
                       "required": [
@@ -726,7 +726,7 @@
                     }
                   },
                   "required": ["participant"],
-                  "additionalProperties": false
+                  "type": "object"
                 },
                 {
                   "type": "object",
@@ -11835,8 +11835,8 @@
                           "$ref": "#/$defs/S1"
                         },
                         "subject_user_id": {
-                          "type": "string",
-                          "format": "uuid"
+                          "format": "uuid",
+                          "type": "string"
                         }
                       },
                       "required": ["community_id"],
@@ -11859,8 +11859,8 @@
                           "$ref": "#/$defs/S1"
                         },
                         "text": {
-                          "type": "string",
-                          "pattern": "\\S"
+                          "pattern": "\\S",
+                          "type": "string"
                         },
                         "conversationId": {
                           "type": "string",
@@ -20580,6 +20580,9 @@
                           "admin_action_path": {
                             "$ref": "#/$defs/S2"
                           },
+                          "automatic_judgement_enabled": {
+                            "type": "boolean"
+                          },
                           "community_ban_evasion": {
                             "anyOf": [
                               {
@@ -20798,6 +20801,7 @@
                           "target_label",
                           "target_path",
                           "target_user_id",
+                          "automatic_judgement_enabled",
                           "escalated_at",
                           "escalated_by_id",
                           "claim"
@@ -21975,13 +21979,13 @@
                         "community": {
                           "$ref": "#/$defs/S1"
                         },
-                        "title": {
+                        "body": {
+                          "maxLength": 5000,
+                          "pattern": "\\S",
                           "type": "string"
                         },
-                        "body": {
-                          "type": "string",
-                          "pattern": "\\S",
-                          "maxLength": 5000
+                        "title": {
+                          "type": "string"
                         }
                       },
                       "required": ["community", "body"],
@@ -22003,22 +22007,22 @@
                         "community": {
                           "$ref": "#/$defs/S1"
                         },
-                        "userId": {
-                          "type": "string",
-                          "format": "uuid"
+                        "publicMessage": {
+                          "type": ["string", "null"]
                         },
                         "reason": {
                           "type": "string"
                         },
-                        "publicMessage": {
-                          "type": ["string", "null"]
-                        },
                         "reportId": {
-                          "type": ["string", "null"],
-                          "format": "uuid"
+                          "format": "uuid",
+                          "type": ["string", "null"]
                         },
                         "resolveReport": {
                           "type": "boolean"
+                        },
+                        "userId": {
+                          "format": "uuid",
+                          "type": "string"
                         }
                       },
                       "required": ["community", "userId", "reason"],
@@ -22570,46 +22574,46 @@
                         "community": {
                           "$ref": "#/$defs/S1"
                         },
-                        "name": {
-                          "type": "string"
+                        "archive": {
+                          "type": "boolean"
                         },
-                        "slug": {
-                          "type": "string"
+                        "banner_image_id": {
+                          "format": "uuid",
+                          "type": ["string", "null"]
+                        },
+                        "default_language": {
+                          "type": ["string", "null"]
+                        },
+                        "list_type": {
+                          "enum": ["follow", "mute", null],
+                          "type": ["string", "null"]
                         },
                         "markdown": {
                           "type": ["string", "null"]
                         },
-                        "visibility": {
-                          "type": "string",
-                          "enum": ["public", "private"]
-                        },
-                        "list_type": {
-                          "type": ["string", "null"],
-                          "enum": ["follow", "mute", null]
-                        },
-                        "member_roster_visibility": {
-                          "type": "string",
-                          "enum": ["public", "users", "members", "moderators"]
-                        },
                         "member_invites_allowed_at": {
                           "type": "boolean"
+                        },
+                        "member_roster_visibility": {
+                          "enum": ["public", "users", "members", "moderators"],
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
                         },
                         "post_approval_required_at": {
                           "type": "boolean"
                         },
                         "profile_image_id": {
-                          "type": ["string", "null"],
-                          "format": "uuid"
-                        },
-                        "banner_image_id": {
-                          "type": ["string", "null"],
-                          "format": "uuid"
-                        },
-                        "default_language": {
+                          "format": "uuid",
                           "type": ["string", "null"]
                         },
-                        "archive": {
-                          "type": "boolean"
+                        "slug": {
+                          "type": "string"
+                        },
+                        "visibility": {
+                          "enum": ["public", "private"],
+                          "type": "string"
                         }
                       },
                       "required": ["community"],
@@ -22691,8 +22695,8 @@
                           "type": "string"
                         },
                         "assigned_moderator_user_id": {
-                          "type": "string",
-                          "format": "uuid"
+                          "format": "uuid",
+                          "type": "string"
                         },
                         "resolved": {
                           "type": "boolean"
@@ -26546,6 +26550,9 @@
                                               }
                                             ]
                                           },
+                                          "automatic_judgement_enabled": {
+                                            "type": "boolean"
+                                          },
                                           "case_id": {
                                             "type": "string"
                                           },
@@ -26949,7 +26956,8 @@
                                           "target_is_restricted",
                                           "target_label",
                                           "target_path",
-                                          "target_user_id"
+                                          "target_user_id",
+                                          "automatic_judgement_enabled"
                                         ],
                                         "type": "object"
                                       },
@@ -27271,6 +27279,9 @@
                                           "type": "string"
                                         }
                                       ]
+                                    },
+                                    "automatic_judgement_enabled": {
+                                      "type": "boolean"
                                     },
                                     "case_id": {
                                       "type": "string"
@@ -27665,7 +27676,8 @@
                                     "target_is_restricted",
                                     "target_label",
                                     "target_path",
-                                    "target_user_id"
+                                    "target_user_id",
+                                    "automatic_judgement_enabled"
                                   ],
                                   "type": "object"
                                 },
@@ -28140,6 +28152,9 @@
                                   }
                                 ]
                               },
+                              "automatic_judgement_enabled": {
+                                "type": "boolean"
+                              },
                               "case_id": {
                                 "type": "string"
                               },
@@ -28533,7 +28548,8 @@
                               "target_is_restricted",
                               "target_label",
                               "target_path",
-                              "target_user_id"
+                              "target_user_id",
+                              "automatic_judgement_enabled"
                             ],
                             "type": "object"
                           },
@@ -35818,6 +35834,9 @@
                 "S1": {
                   "additionalProperties": false,
                   "properties": {
+                    "ai_draft_requested_run_id": {
+                      "type": "string"
+                    },
                     "ai_draft_run_id": {
                       "anyOf": [
                         {
@@ -36280,9 +36299,6 @@
                       "type": "string"
                     },
                     "updated_at": {
-                      "type": "string"
-                    },
-                    "ai_draft_requested_run_id": {
                       "type": "string"
                     }
                   },

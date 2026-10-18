@@ -43,6 +43,7 @@ export interface StaffModerationReport extends ModerationReportListItem {
   note: string | null
   resolved_by_id: string | null
   is_system_generated: boolean
+  automatic_judgement_enabled: boolean
   community_ban_evasion?: CommunityBanEvasionContext | null
   judgement: {
     id: string
