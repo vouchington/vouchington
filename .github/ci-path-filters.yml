@@ -212,6 +212,7 @@ workflow-action-changes:
   - 'ci/with-node-test-options'
   - 'ci/artifact-upload-outcome.mts'
   - 'ci/coverage-artifacts.sh'
+  - 'ci/install-vouchington-tooling.sh'
   - 'ci/vitest/shard-total.mts'
   - 'ci/make-shard-matrix.sh'
 i18n-route-bounds:
