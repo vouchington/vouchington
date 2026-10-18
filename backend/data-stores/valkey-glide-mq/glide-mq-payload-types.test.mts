@@ -44,6 +44,23 @@ function assertSensitivePayloadTypesAtCompileTime(): void {
   // @ts-expect-error nested opaque payload shapes fail closed
   void nestedOpaqueEnqueue({ metadata: { id: 'opaque' } })
 
+  type HyphenatedCredentialPayload =
+    | { 'access-token': string }
+    | { 'refresh-token': string }
+    | { 'api-key': string }
+    | { 'private-key': string }
+    | { 'oauth-user-id': string }
+  const enqueueHyphenatedCredential = createEnqueueFunction<
+    HyphenatedCredentialPayload,
+    'hyphenated-credential'
+  >({
+    queue,
+    queueName: 'queue',
+    jobName: 'hyphenated-credential',
+  })
+  // @ts-expect-error hyphenated credential keys require sensitive retention
+  void enqueueHyphenatedCredential({ 'access-token': 'must-not-be-persisted' })
+
   const untypedEnqueue = createEnqueueFunction({
     queue,
     queueName: 'queue',
