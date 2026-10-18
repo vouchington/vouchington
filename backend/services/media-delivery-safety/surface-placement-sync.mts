@@ -46,36 +46,56 @@ export async function getImageSurfacePlacement(
   return rows[0] ?? null
 }
 
+/**
+ * Authority the caller already took in this transaction for this exact surface. Each flag skips the
+ * statement that would only repeat it.
+ */
+export type HeldSurfaceAuthority = {
+  /** `lockImageAssetAdmission` covered the requested image. */
+  admission?: boolean
+  /** The surface's owner advisory domain is held (`lockUserProfileLinkImageOwners`). */
+  ownerDomains?: boolean
+  /** `prepublishImageSurfaceDenials` locked, readiness-checked and denied this surface's change. */
+  prepublished?: boolean
+  /** `assertImagesReadyForSurface` covered the requested image (`prepareImageSurfaceAdmission`). */
+  ready?: boolean
+}
+
 /** Changes a typed public-use surface atomically while retaining immutable legal-evidence bindings. */
 export async function syncImageSurfacePlacement(
   reference: ImageSurfaceReference,
   requestedImageId: string | null,
   actorUserId: string | null,
   query: TransactionQuery,
+  held: HeldSurfaceAuthority = {},
 ): Promise<ImagePlacementTuple | null> {
   if (requestedImageId && !actorUserId) {
     throw new Error('An image surface activation requires an actor')
   }
-  await lockImageAssetAdmission(requestedImageId ? [requestedImageId] : [], query)
+  const prepublished = held.prepublished === true
+  if (!held.admission && !prepublished)
+    await lockImageAssetAdmission(requestedImageId ? [requestedImageId] : [], query)
   const { rows: canonical } = await query<{ id: string | null }>(
     sql`/* syncImageSurfacePlacement:canonicalAsset */ SELECT ${requestedImageId}::uuid::text AS id`,
   )
   const imageId = canonical[0]!.id
-  await lockImageSurfacePlacements([reference], query)
+  if (!prepublished)
+    await lockImageSurfacePlacements([reference], query, { ownerDomainsHeld: held.ownerDomains })
   // The pre-denial and retirement share this lock domain with recovery.  Re-read after acquiring
   // it: the tuple observed before the advisory lock is never authority to publish or retire.
   const current = await getImageSurfacePlacement(reference, query)
   if (current?.image_id === imageId) return current
-  await assertImagesReadyForSurface(imageId ? [imageId] : [], query)
+  if (!held.ready && !prepublished)
+    await assertImagesReadyForSurface(imageId ? [imageId] : [], query)
 
-  if (current && current.image_id !== imageId) {
+  if (current && current.image_id !== imageId && !prepublished) {
     await prepublishImagePlacementDenial(
       {
         placementId: current.placement_id,
         revision: current.placement_revision,
         imageId: current.image_id,
       },
-      { query },
+      { query, placementLocked: true },
     )
   }
   const retireStatement = sql`/* syncImageSurfacePlacement:retire */

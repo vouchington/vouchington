@@ -23,7 +23,7 @@ export async function prepublishImagePlacementDenial(
     revision: number
     imageId: string
   },
-  options: QueryOptions = {},
+  options: QueryOptions & { placementLocked?: boolean } = {},
 ): Promise<void> {
   if (!options.query) {
     await using transaction = await beginTransaction()
@@ -32,10 +32,12 @@ export async function prepublishImagePlacementDenial(
     return
   }
   const query = options.query
-  await lockImageDeliveryMutation(query, {
-    placementIds: [input.placementId],
-    placementOnly: true,
-  })
+  // A caller that already held this placement's lock (lockImageSurfacePlacements) passes it down.
+  if (!options.placementLocked)
+    await lockImageDeliveryMutation(query, {
+      placementIds: [input.placementId],
+      placementOnly: true,
+    })
   if (isMediaDeliveryRegistryPublicationEnabled()) await recordImageDeliveryRepairMarker(input)
   const staged = await stageImagePlacementDeliveryRecord(
     { ...input, state: 'withheld' },
