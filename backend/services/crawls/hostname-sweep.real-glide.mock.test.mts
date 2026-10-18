@@ -37,6 +37,9 @@ describe('hostname sweep selection and completion', () => {
       hostname: `shared-band-${randomUUID()}.example.com`,
       is_crawlable: true,
     })
+    onTestFinished(async () => {
+      await updateUrlHostname(decoy, { is_crawlable: false })
+    })
     await setTestHostnameCrawlSweep(decoy, 31000, null)
     const owner = await createTestUser()
     const hostname = `exclusive-${randomUUID()}.example.com`
