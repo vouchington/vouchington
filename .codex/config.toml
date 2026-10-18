@@ -31,7 +31,7 @@ statusMessage = "Checking web stack initialization"
 
 [[hooks.SessionStart.hooks]]
 type = "command"
-command = 'node "$(git rev-parse --show-toplevel)/dev/check-blackboard.mts"'
+command = '''repo="$(git rev-parse --show-toplevel 2>/dev/null)" || exit 0; cli="$repo/node_modules/vouchington-tooling/bin/vouchington.mjs"; if [ -f "$cli" ]; then help="$(node "$cli" --help)" || exit $?; case "$help" in *"agent-blackboard session-start"*) exec node "$cli" agent-blackboard session-start --docs-path docs/development/agent-blackboard.md --setup-hint "Run ./dev/initialize monorepo from the Vouchington worktree root, then continue this session." ;; esac; fi; printf '%s\n' '{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":"vouchington-tooling session-start is unavailable in this worktree. Run ./dev/initialize monorepo from the Vouchington worktree root, then continue this session."}}''''
 timeout = 15
 statusMessage = "Checking agent-blackboard availability"
 

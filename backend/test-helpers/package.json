@@ -74,7 +74,7 @@
     "undici": "^8.11.2",
     "uuid": "^14.0.3",
     "valkyries": "^0.10.0",
-    "vouchington-tooling": "^0.48.0"
+    "vouchington-tooling": "^0.52.1"
   },
   "devDependencies": {
     "@ts-shared/utils": "workspace:^",
