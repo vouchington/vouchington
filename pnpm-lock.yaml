@@ -6605,15 +6605,9 @@ importers:
       '@types/http-errors':
         specifier: ^2.0.5
         version: 2.0.5
-      '@voucha/config':
-        specifier: workspace:^
-        version: link:../../config
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
-      undici:
-        specifier: ^8.11.2
-        version: 8.11.2
 
   backend/services/fediverse-search:
     dependencies:

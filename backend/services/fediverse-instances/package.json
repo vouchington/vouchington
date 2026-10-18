@@ -42,8 +42,6 @@
   },
   "devDependencies": {
     "@types/http-errors": "^2.0.5",
-    "@voucha/config": "workspace:^",
-    "@voucha/test-helpers": "workspace:^",
-    "undici": "^8.11.2"
+    "@voucha/test-helpers": "workspace:^"
   }
 }
