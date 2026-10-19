@@ -4,10 +4,10 @@ import type { Context } from '@jongleberry/api-server'
 import type { PrivateUser } from '@services/users/types'
 import { ACCOUNT_SUSPENDED } from '@modules/on-error/error-codes'
 import {
+  getRequestCurrentUser,
   runWithRequestContext,
   setRequestCurrentUser,
-  getRequestCurrentUser,
-} from '../context/request-context.mts'
+} from '@modules/utils/request-context'
 import {
   getOptionalAuthAndRateLimit,
   getOptionalProtocolAuthAndRateLimit,

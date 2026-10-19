@@ -25,22 +25,6 @@ export const getUrlById = async (
   return rows[0] || null
 }
 
-export const getUrlsByIds = async (
-  ids: string[],
-  options: QueryOptions = {},
-): Promise<ViewUrl[]> => {
-  if (ids.length === 0) return []
-  const { rows } = await read<ViewUrl>(
-    `/* getUrlsByIds */
-    SELECT * FROM view_urls
-    WHERE id = ANY($1::uuid[])
-  `,
-    [ids],
-    options,
-  )
-  return rows
-}
-
 export const getUrlByAny = async (
   id: string,
   options: QueryOptions = {},
