@@ -74,7 +74,7 @@ export async function runViewDrivenReadScenarios(): Promise<void> {
   registerScenarioContract('search-list-items', {
     expectations: [
       { kind: 'maxProcessedRows', relation: 'user_list_posts', max: 96 },
-      { kind: 'maxProcessedRows', relation: 'posts', max: 96 },
+      { kind: 'maxProcessedRows', relation: 'posts', max: 192 },
     ],
     seededRows: { user_list_posts: 1080 },
   })

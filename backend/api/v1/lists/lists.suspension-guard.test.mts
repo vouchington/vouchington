@@ -11,8 +11,10 @@ import {
   suspendTestUser,
   unsuspendTestUser,
 } from '@voucha/test-helpers'
+import { read } from '@data-stores/psql'
 import { ACCOUNT_SUSPENDED } from '@modules/on-error/error-codes'
 import { getListForWrite, searchListItems, searchUserLists } from '@services/lists'
+import sql from 'sql-template-strings'
 import type { PrivateUser } from '@services/users/types'
 
 describe('list mutation suspension guards', () => {
@@ -131,8 +133,13 @@ describe('list mutation suspension guards', () => {
     const response = await request.delete(`/api/v1/lists/${listId}/items/posts/${postId}`)
     expect(response.status).toBe(403)
     expect(response.body.code).toBe(ACCOUNT_SUSPENDED)
-    const { results } = await searchListItems(listId, {})
-    expect(results.map(item => item.entity_id)).toContain(postId)
+    const { rows } = await read<{ post_id: string }>(sql`
+      SELECT post_id
+      FROM user_list_posts
+      WHERE user_list_id = ${listId}::uuid
+        AND removed_at IS NULL
+    `)
+    expect(rows.map(row => row.post_id)).toContain(postId)
   })
 
   it('rejects POST /api/v1/lists/:id/items/rss-feed-items from a suspended owner', async () => {
