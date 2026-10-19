@@ -56,16 +56,19 @@ describe('parseEmailJob', () => {
     ).toBe('template')
     expect(
       parseEmailJob('processSendDataExportReadyEmail', {
-        input: address,
-        variables: { downloadUrl: 'https://example.test/file', expiresInDays: 2 },
-      }).kind,
-    ).toBe('template')
+        input: { userId: 'user', uiLocale: 'fr' },
+        variables: { requestId: 'request' },
+      }),
+    ).toMatchObject({
+      kind: 'template',
+      variables: { requestId: 'request' },
+    })
     expect(() =>
       parseEmailJob('processSendDataExportReadyEmail', {
-        input: address,
-        variables: { downloadUrl: 'https://example.test/file', expiresInDays: Number.NaN },
+        input: { userId: 'user' },
+        variables: { downloadUrl: 'https://example.test/file', expiresInDays: 2 },
       }),
-    ).toThrow(/expiresInDays must be a number/)
+    ).toThrow(/unexpected property downloadUrl/)
     expect(
       parseEmailJob('processSendCommunityApplicationDecisionEmail', {
         input: address,

@@ -2,7 +2,6 @@ import type {
   CommunityApplicationDecisionEmailProps,
   CommunityOwnershipTransferEmailProps,
   CommunityRoleChangeEmailProps,
-  DataExportReadyEmailProps,
   EmailVerificationEmailProps,
   WelcomeEmailProps,
 } from '@email-templates/core'
@@ -41,7 +40,10 @@ export type ProcessSendEmailAddressLoginTokenVariables = {
   uiLocale?: string | null
 }
 
-export type ProcessSendDataExportReadyEmailVariables = DataExportReadyEmailProps
+/** The processor signs a fresh download URL from the durable export row. */
+export type ProcessSendDataExportReadyEmailVariables = {
+  requestId: string
+}
 
 export type ProcessSendEmailVerificationTokenVariables = EmailVerificationEmailProps
 

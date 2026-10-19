@@ -28,8 +28,30 @@ export const enqueueSendEmailAddressLoginToken =
     'processSendEmailAddressLoginToken',
   )
 
-export const enqueueSendDataExportReadyEmail =
-  createEnqueueFunction<ProcessSendDataExportReadyEmailVariables>('processSendDataExportReadyEmail')
+const enqueueSendDataExportReadyEmailJob = createGlideMqEnqueueFunction<
+  { input: EmailJobInput; variables: ProcessSendDataExportReadyEmailVariables },
+  'processSendDataExportReadyEmail'
+>({
+  queue: emails,
+  queueName: QUEUE_NAME,
+  jobName: 'processSendDataExportReadyEmail',
+  sensitive: true,
+})
+
+/** One notification per export request. The processor loads the row and signs the download URL. */
+export function enqueueSendDataExportReadyEmail(
+  input: EmailJobInput,
+  variables: ProcessSendDataExportReadyEmailVariables,
+): EnqueueReturnType {
+  const jobId = `data-export-ready__${variables.requestId}`
+  return enqueueSendDataExportReadyEmailJob(
+    { input, variables },
+    {
+      jobId,
+      deduplication: { id: jobId, mode: 'simple' },
+    },
+  )
+}
 
 export const enqueueSendEmailVerificationToken =
   createEnqueueFunction<ProcessSendEmailVerificationTokenVariables>(

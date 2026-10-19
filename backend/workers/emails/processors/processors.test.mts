@@ -1,5 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as ses from '@modules/aws/ses'
+import {
+  createDataRequest,
+  markDataRequestProcessing,
+  markDataRequestReady,
+} from '@services/account-data-requests'
+import * as exportS3 from '@services/account-data-requests/s3'
+import { createTestUser, expireUserDataRequestForTest, softDeleteUser } from '@voucha/test-helpers'
 import { processSendEmailAddressLoginToken } from './authentication.mts'
 import { processSendCommunityInviteEmail } from './community-invite.mts'
 import { processSendDataExportReadyEmail } from './data-export-ready.mts'
@@ -88,24 +95,74 @@ describe('processSendCommunityInviteEmail', () => {
 })
 
 describe('processSendDataExportReadyEmail', () => {
+  const signedUrl = 'https://downloads.example/export.zip?signature=signed-at-send'
+
   beforeEach(() => {
     vi.restoreAllMocks()
     vi.spyOn(ses, 'sendEmail').mockResolvedValue({} as never)
+    vi.spyOn(exportS3, 'getExportDownloadUrl').mockResolvedValue(signedUrl)
   })
 
-  it('renders data export ready email and sends via SES', async () => {
+  it('signs a fresh download URL at send time and keeps the provider failure retryable', async () => {
+    const user = await createTestUser()
+    const request = await readyExport(user.id, user.id)
+
+    vi.mocked(ses.sendEmail).mockRejectedValueOnce(new Error('ses down'))
+    await expect(
+      processSendDataExportReadyEmail(
+        { userId: user.id, uiLocale: 'fr' },
+        { requestId: request.id },
+      ),
+    ).rejects.toThrow(/ses down/)
+
     await processSendDataExportReadyEmail(
-      { emailAddress: 'tests+user@voucha.ai' },
-      { downloadUrl: 'https://example.com/export.zip', expiresInDays: 7, uiLocale: 'fr' },
+      { userId: user.id, uiLocale: 'fr' },
+      { requestId: request.id },
     )
 
-    expect(ses.sendEmail).toHaveBeenCalledWith(
+    expect(ses.sendEmail).toHaveBeenCalledTimes(2)
+    expect(ses.sendEmail).toHaveBeenLastCalledWith(
       expect.objectContaining({
-        to: 'tests+user@voucha.ai',
+        to: user.email_address,
         subject: 'Votre export de données est prêt',
-        html: expect.stringContaining('Télécharger vos données'),
-        text: expect.stringContaining("L'équipe Voucha"),
+        html: expect.stringContaining(signedUrl),
+        text: expect.stringContaining(signedUrl),
       }),
     )
+    expect(exportS3.getExportDownloadUrl).toHaveBeenCalledWith(
+      `${request.id}.zip`,
+      expect.any(Number),
+    )
+  })
+
+  it('skips a deleted recipient, an expired export, and an export requested by someone else', async () => {
+    const subject = await createTestUser()
+    const administrator = await createTestUser()
+    const expired = await readyExport(subject.id, subject.id)
+    const staffExport = await readyExport(subject.id, administrator.id)
+    const deleted = await readyExport(administrator.id, administrator.id)
+    await expireUserDataRequestForTest(expired.id)
+    await softDeleteUser(administrator.id)
+
+    await expect(
+      processSendDataExportReadyEmail({ userId: subject.id }, { requestId: expired.id }),
+    ).resolves.toMatchObject({ status: 'skipped', reason: 'export_unavailable' })
+    await expect(
+      processSendDataExportReadyEmail({ userId: subject.id }, { requestId: staffExport.id }),
+    ).resolves.toMatchObject({ status: 'skipped', reason: 'export_unavailable' })
+    await expect(
+      processSendDataExportReadyEmail({ userId: administrator.id }, { requestId: deleted.id }),
+    ).resolves.toMatchObject({ status: 'skipped', reason: 'no_verified_email' })
+
+    expect(ses.sendEmail).not.toHaveBeenCalled()
   })
 })
+
+async function readyExport(userId: string, requestedById: string) {
+  const request = await createDataRequest(userId, requestedById)
+  expect(await markDataRequestProcessing(request.id)).toBe(true)
+  expect(
+    await markDataRequestReady(request.id, `${request.id}.zip`, new Date(Date.now() + 86_400_000)),
+  ).toBe(true)
+  return request
+}

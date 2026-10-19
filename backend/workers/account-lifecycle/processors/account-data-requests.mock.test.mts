@@ -4,7 +4,6 @@ import * as fsPromises from 'node:fs/promises'
 import type {
   deleteExportFromS3,
   finishDataRequestUpload,
-  getExportDownloadUrl,
   leaseDataRequestUpload,
   markDataRequestFailed,
   markDataRequestProcessing,
@@ -28,7 +27,6 @@ vi.mock<typeof import('node:fs/promises')>(import('node:fs/promises'), () => ({
 const mockDeleteExportFromS3 = vi.fn<typeof deleteExportFromS3>()
 const mockFinishDataRequestUpload = vi.fn<typeof finishDataRequestUpload>()
 const mockEnqueueSendDataExportReadyEmail = vi.fn<typeof enqueueSendDataExportReadyEmail>()
-const mockGetExportDownloadUrl = vi.fn<typeof getExportDownloadUrl>()
 const mockGetPrivateUserByAny = vi.fn<typeof getPrivateUserByAny>()
 const mockLeaseDataRequestUpload = vi.fn<typeof leaseDataRequestUpload>()
 const mockMarkDataRequestFailed = vi.fn<typeof markDataRequestFailed>()
@@ -57,7 +55,6 @@ describe('processExportRequest', () => {
     mockDeleteExportFromS3.mockResolvedValue(undefined)
     mockFinishDataRequestUpload.mockResolvedValue(undefined)
     mockEnqueueSendDataExportReadyEmail.mockResolvedValue(true)
-    mockGetExportDownloadUrl.mockResolvedValue('https://s3.example.com/signed')
     mockGetPrivateUserByAny.mockResolvedValue({
       id: userId,
       __entity_type: 'user',
@@ -97,11 +94,11 @@ describe('processExportRequest', () => {
   it('enqueues a user-targeted email notification when the user exists', async () => {
     await runExportRequest(requestId, userId)
 
-    expect(mockGetExportDownloadUrl).toHaveBeenCalledWith(s3Key, 604800)
     expect(mockEnqueueSendDataExportReadyEmail).toHaveBeenCalledWith(
-      { userId },
-      { downloadUrl: 'https://s3.example.com/signed', expiresInDays: 7, uiLocale: 'fr' },
+      { userId, uiLocale: 'fr' },
+      { requestId },
     )
+    expect(mockEnqueueSendDataExportReadyEmail.mock.calls[0]?.[1]).not.toHaveProperty('downloadUrl')
   })
 
   it('enqueues a user-targeted email when the user has no email address', async () => {
@@ -115,8 +112,8 @@ describe('processExportRequest', () => {
     await runExportRequest(requestId, userId)
 
     expect(mockEnqueueSendDataExportReadyEmail).toHaveBeenCalledWith(
-      { userId },
-      { downloadUrl: 'https://s3.example.com/signed', expiresInDays: 7, uiLocale: null },
+      { userId, uiLocale: null },
+      { requestId },
     )
   })
 
@@ -230,7 +227,6 @@ describe('processExportRequest', () => {
 
   it.each([
     ['getPrivateUserByAny', mockGetPrivateUserByAny],
-    ['getExportDownloadUrl', mockGetExportDownloadUrl],
     ['wasDataRequestMadeBySubject', mockWasDataRequestMadeBySubject],
     ['email enqueue', mockEnqueueSendDataExportReadyEmail],
   ])('resolves successfully when %s rejects (best-effort email)', async (_name, mock) => {
@@ -247,7 +243,6 @@ describe('processExportRequest', () => {
 
     expect(mockWasDataRequestMadeBySubject).toHaveBeenCalledWith(requestId)
     expect(mockPublishTerminalStatus).toHaveBeenCalledWith(requestId, 'ready')
-    expect(mockGetExportDownloadUrl).not.toHaveBeenCalled()
     expect(mockEnqueueSendDataExportReadyEmail).not.toHaveBeenCalled()
   })
 })
@@ -285,7 +280,6 @@ function getExportRequestDependencies() {
     deleteExportFromS3: mockDeleteExportFromS3,
     enqueueSendDataExportReadyEmail: mockEnqueueSendDataExportReadyEmail,
     finishDataRequestUpload: mockFinishDataRequestUpload,
-    getExportDownloadUrl: mockGetExportDownloadUrl,
     getPrivateUserByAny: mockGetPrivateUserByAny,
     leaseDataRequestUpload: mockLeaseDataRequestUpload,
     markDataRequestFailed: mockMarkDataRequestFailed,
