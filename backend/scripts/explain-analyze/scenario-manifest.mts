@@ -130,6 +130,7 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'story-hydration-detail-25-first',
   'story-members-detail-25-after',
   'story-hydration-detail-25-after',
+  'story-by-id',
   'rss-feed-items-search',
   'rss-feed-items-search-by-category-topic',
   'rss-feed-items-search-by-rss-feed-source-group',

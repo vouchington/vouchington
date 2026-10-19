@@ -31,6 +31,7 @@ import { runOAuthClientVerificationScenarios } from './run-scenarios/oauth-clien
 import { runPostFeedShareScenarios } from './run-scenarios/post-feed-shares.mts'
 import { runEmbeddingReconciliationScenarios } from './run-scenarios/embedding-reconciliation.mts'
 import { runStoryMemberPageScenarios } from './run-scenarios/story-member-pages.mts'
+import { runStoryByIdScenario } from './run-scenarios/story-by-id.mts'
 import { runHostnameCrawlSweepScenarios } from './run-scenarios/hostname-crawl-sweeps.mts'
 import { runHostnameBlocklistScenario } from './run-scenarios/hostname-blocklist.mts'
 import { runCommunityRoundTripScenarios } from './run-scenarios/community-round-trips.mts'
@@ -58,6 +59,7 @@ async function main() {
     await runHeavyFollowScenarios()
     await runPostFeedShareScenarios()
     await runStoryMemberPageScenarios()
+    await runStoryByIdScenario()
     await runSearchAndFacetScenarios()
     await runOAuthClientVerificationScenarios()
     await runFollowerDistributionScenarios()
