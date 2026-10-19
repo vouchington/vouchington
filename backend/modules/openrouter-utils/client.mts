@@ -5,9 +5,8 @@ import { MissingModelClientCredentialError } from '@modules/openai-utils/missing
 let client: OpenAI | undefined
 let clientKey: string | undefined
 
+// Recheck the credential on every access so a cleared key cannot reuse a cached client.
 function getClient(): OpenAI {
-  // Same credential recheck as the direct OpenAI client: a cached client must not outlive a
-  // cleared key, or a later missing-credential test dispatches on the first worker's client.
   const apiKey = process.env.OPENROUTER_API_KEY?.trim()
   if (!apiKey) throw new MissingModelClientCredentialError('OpenRouter')
   if (!client || clientKey !== apiKey) {

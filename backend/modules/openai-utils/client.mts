@@ -5,14 +5,10 @@ import { MissingModelClientCredentialError } from './missing-client-credential.m
 let client: OpenAI | undefined
 let clientKey: string | undefined
 
+// Recheck the credential on every access so a cleared key cannot reuse a cached client.
 function getClient(): OpenAI {
-  // Recheck the credential on every access. A client constructed while the key was set must not
-  // survive a later clear: tests stub the key empty after another file in the same worker has
-  // already constructed the singleton, and a real dispatch would ignore that missing credential.
   const apiKey = process.env.OPENAI_API_KEY?.trim()
-  if (!apiKey) {
-    throw new MissingModelClientCredentialError('OpenAI')
-  }
+  if (!apiKey) throw new MissingModelClientCredentialError('OpenAI')
   if (!client || clientKey !== apiKey) {
     client = new OpenAI({ apiKey, fetch: getLongRunningExternalFetch() })
     clientKey = apiKey
