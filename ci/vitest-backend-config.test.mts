@@ -198,6 +198,7 @@ describe('backend Vitest project config', () => {
     expect(noDataMocks?.include).toContain('backend/**/*.no-data.mock.test.mts')
     for (const path of [
       'backend/modules/example.no-data.mock.test.mts',
+      'backend/modules/model-providers/openai-generate.no-data.test.mts',
       'backend/entrypoints/api/startup.test.mts',
       'backend/entrypoints/worker-cpu/grafana-heartbeat.test.mts',
       'backend/data-stores/graceful-shutdown/index.test.mts',
