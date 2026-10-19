@@ -218,6 +218,25 @@ describe('credentialed job deadline uses a single current-attempt timing read', 
     expect(result.output).toBe('')
   })
 
+  it('uses the only named job when the jobs API has not published runner_name', () => {
+    const job = ownedJob(new Date(fixtureNow * 1000).toISOString())
+    job.runner_name = null
+    job.runner_id = null
+    const result = captureJobDeadline({ total_count: 1, jobs: [job] })
+    expect(result.status).toBe(0)
+    expect(result.output).toBe(`CREDENTIALED_JOB_DEADLINE_EPOCH=${fixtureNow + 780}\n`)
+  })
+
+  it('rejects the only named job when a different runner is already published', () => {
+    const job = {
+      ...ownedJob(new Date(fixtureNow * 1000).toISOString()),
+      runner_name: 'other-runner',
+    }
+    const result = captureJobDeadline({ total_count: 1, jobs: [job] })
+    expect(result.status).not.toBe(0)
+    expect(result.output).toBe('')
+  })
+
   it('rejects a wrong attempt and incomplete timing response without a deadline', () => {
     const job = { ...ownedJob(new Date(fixtureNow * 1000).toISOString()), run_attempt: 1 }
     expect(captureJobDeadline({ total_count: 1, jobs: [job] }).status).not.toBe(0)
