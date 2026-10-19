@@ -1,4 +1,5 @@
 import type { MergedToolSource } from './create-merged-tool.mts'
+import { postReferenceSchema } from './entity-reference-schema.mts'
 import type { BasicUser } from '@services/users/types'
 import { resolveReadableThread } from './mcp-post-access.mts'
 import { mcpPostSchema, toMcpPosts, type McpPost } from './mcp-post-output.mts'
@@ -17,7 +18,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     parameters: {
       type: 'object',
       properties: {
-        post_id: { type: 'string', description: 'Post UUID or slug of the comment' },
+        post_id: postReferenceSchema,
       },
       required: ['post_id'],
     },

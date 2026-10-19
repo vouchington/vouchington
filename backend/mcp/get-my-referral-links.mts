@@ -1,7 +1,8 @@
 import { getUserReferralLinks } from '@services/user-referral-program-links'
 import type { Tool } from '@services/openai-agents/tool-types'
 import type { BasicUser } from '@services/users/types'
-import { isUUID } from '@modules/utils'
+import { topicReferenceSchema } from './entity-reference-schema.mts'
+import { canonicalEntityId } from './resolve-entity-reference.mts'
 import {
   iso,
   pageInputProperties,
@@ -33,10 +34,7 @@ type MyReferralLink = {
   deactivated_at: string | null
 }
 
-type ToolResult =
-  | McpPage<MyReferralLink>
-  | InvalidCursorResult
-  | { success: false; error: 'Invalid referral_program_id' }
+type ToolResult = McpPage<MyReferralLink> | InvalidCursorResult
 
 /** Signed-in REST allows 100 links per page; the tool pages like the other MCP read tools. */
 const REFERRAL_LINK_PAGE_LIMIT: McpPageLimit = { min: 1, max: 25, default: 20 }
@@ -52,9 +50,8 @@ const tool: Tool<ToolArgs, ToolResult> = {
       type: 'object',
       properties: {
         referral_program_id: {
-          type: 'string',
-          format: 'uuid',
-          description: 'Only links under this referral program topic UUID',
+          ...topicReferenceSchema,
+          description: 'Only links under this referral program topic',
         },
         ...pageInputProperties('Links', REFERRAL_LINK_PAGE_LIMIT),
       },
@@ -88,15 +85,22 @@ const tool: Tool<ToolArgs, ToolResult> = {
   function:
     (currentUser: BasicUser) =>
     async (args: ToolArgs): Promise<ToolResult> => {
-      if (args.referral_program_id !== undefined && !isUUID(args.referral_program_id)) {
-        return { success: false, error: 'Invalid referral_program_id' }
+      const programId = args.referral_program_id
+        ? await canonicalEntityId('topic', args.referral_program_id)
+        : undefined
+      if (args.referral_program_id && !programId) {
+        return {
+          success: true,
+          results: [],
+          page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+        }
       }
       const privateUser = await requirePrivateToolUser(currentUser)
       const page = await findPageOrNull(args.after, () =>
         getUserReferralLinks(privateUser, privateUser.id, {
           limit: clampToolLimit(args.limit, defaultLimit, max),
           after: args.after,
-          referral_program_id: args.referral_program_id,
+          referral_program_id: programId,
         }),
       )
       if (!page) return INVALID_CURSOR_RESULT

@@ -6,6 +6,7 @@ import {
 } from '@services/data-points/insights'
 import { DATA_POINT_VERTICALS } from '@ts-shared/data-points'
 import { resolveTopics } from './resolve-topic.mts'
+import { topicReferenceSchema } from './entity-reference-schema.mts'
 import { objectSchema, outcomeSchema } from './output-schema-shapes.mts'
 import { INSIGHTS_PROPERTIES } from './topic-output-schema-parts.mts'
 
@@ -47,14 +48,8 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     parameters: {
       type: 'object',
       properties: {
-        topic_id_a: {
-          type: 'string',
-          description: 'UUID or slug of the first topic to compare',
-        },
-        topic_id_b: {
-          type: 'string',
-          description: 'UUID or slug of the second topic to compare',
-        },
+        topic_id_a: topicReferenceSchema,
+        topic_id_b: topicReferenceSchema,
         vertical: {
           type: 'string',
           enum: VERTICALS,

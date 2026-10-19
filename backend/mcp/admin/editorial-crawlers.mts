@@ -8,6 +8,8 @@ import {
   type UpdateCrawlerUpdates,
 } from '@services/crawlers'
 import { adminInput, createAdminTool, PAGE_INPUT, UUID_INPUT } from './create-admin-tool.mts'
+import { topicReferenceSchema } from '../entity-reference-schema.mts'
+import { entityIdOrMissing } from '../resolve-entity-reference.mts'
 import { adminRouteOutputSchema } from './output-schema.mts'
 
 const selectors = { type: 'array', items: { type: 'string', maxLength: 2000 }, maxItems: 100 }
@@ -20,7 +22,7 @@ const updates = {
   link_text_content_to_remove: selectors,
   link_hrefs_to_remove: selectors,
   content_selectors: selectors,
-  referral_program_id: { anyOf: [UUID_INPUT, { type: 'null' }] },
+  referral_program_id: { anyOf: [topicReferenceSchema, { type: 'null' }] },
 }
 const listApi = { method: 'GET', path: '/api/v1/crawlers' } as const
 const list = createAdminTool<{
@@ -37,7 +39,7 @@ const list = createAdminTool<{
   parameters: adminInput({
     ...PAGE_INPUT,
     hostname_id: UUID_INPUT,
-    referral_program_id: UUID_INPUT,
+    referral_program_id: topicReferenceSchema,
   }),
   outputSchema: adminRouteOutputSchema(listApi),
   annotations: { readOnlyHint: true, openWorldHint: false },
@@ -73,7 +75,13 @@ const update = createAdminTool<{ id: string; updates: UpdateCrawlerUpdates }>({
     idempotentHint: false,
     openWorldHint: false,
   },
-  run: async (user, args) => ({ crawler: await updateCrawlerForUser(user, args.id, args.updates) }),
+  run: async (user, args) => {
+    const updates = { ...args.updates }
+    if (typeof updates.referral_program_id === 'string') {
+      updates.referral_program_id = await entityIdOrMissing('topic', updates.referral_program_id)
+    }
+    return { crawler: await updateCrawlerForUser(user, args.id, updates) }
+  },
 })
 const referralApi = { method: 'PUT', path: '/api/v1/crawlers/referral-program' } as const
 const referral = createAdminTool<{
@@ -90,7 +98,7 @@ const referral = createAdminTool<{
   parameters: adminInput(
     {
       hostname_id: UUID_INPUT,
-      referral_program_id: UUID_INPUT,
+      referral_program_id: topicReferenceSchema,
       crawler_type: updates.crawler_type,
       css_selectors_to_remove: selectors,
       content_selectors: selectors,

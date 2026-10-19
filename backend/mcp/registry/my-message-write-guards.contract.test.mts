@@ -147,12 +147,19 @@ describe('manage_my_messages guards — real DB', () => {
       optionArgs('create', { user_ids: [] }),
       optionArgs('send', { conversation_id: conversation.id, text: 'hello', user_id: peer.id }),
       { ...optionArgs('send', { conversation_id: conversation.id, text: 'hello' }), extra: true },
-      optionArgs('remove_participant', { conversation_id: conversation.id, user_id: 'bad' }),
     ]) {
       expect(await callRejectedMcpTool(owner, 'manage_my_messages', args, WRITE)).toContain(
         'Invalid tool arguments',
       )
     }
+    expect(
+      await callRejectedMcpTool(
+        owner,
+        'manage_my_messages',
+        optionArgs('remove_participant', { conversation_id: conversation.id, user_id: 'bad' }),
+        WRITE,
+      ),
+    ).toContain('Participant not found')
     await rejectedWrite(
       owner,
       'send',

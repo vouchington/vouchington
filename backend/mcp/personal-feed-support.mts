@@ -1,4 +1,5 @@
 import { loadCommunityForViewer } from '@services/communities'
+import { communityReferenceSchema } from './entity-reference-schema.mts'
 import type { PostFeedType, RssFeedItemFeedType, ReferralLinksFeedType } from '@services/feeds'
 import { resolveHashtagTopicSearch } from '@services/search-params'
 import type { PrivateUser } from '@services/users/types'
@@ -66,8 +67,8 @@ export const pageProperties = {
 export const commonProperties = {
   ...pageProperties,
   community: {
-    type: 'string',
-    description: 'Community UUID or slug, ignored for follow_users as on REST.',
+    ...communityReferenceSchema,
+    description: 'Community id or slug, ignored for follow_users as on REST.',
   },
   q: { type: 'string', description: 'Keyword or hashtag search.' },
   text_search_query: { type: 'string' },

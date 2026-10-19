@@ -4,6 +4,7 @@ import { getTopicDataPointInsights } from '@services/data-points/insights'
 import { DATA_POINT_VERTICALS } from '@ts-shared/data-points'
 import type { Money } from '@ts-shared/money'
 import { resolveTopic } from './resolve-topic.mts'
+import { topicReferenceSchema } from './entity-reference-schema.mts'
 import { outcomeSchema } from './output-schema-shapes.mts'
 import { INSIGHTS_PROPERTIES } from './topic-output-schema-parts.mts'
 
@@ -38,10 +39,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     parameters: {
       type: 'object',
       properties: {
-        topic_id: {
-          type: 'string',
-          description: 'The topic UUID or slug to aggregate data points for',
-        },
+        topic_id: topicReferenceSchema,
         vertical: {
           type: 'string',
           enum: VERTICALS,

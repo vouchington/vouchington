@@ -4,6 +4,7 @@ import {
   revokeReportAbusePenalty,
 } from '@services/report-integrity'
 import { createAdminTool, adminInput, UUID_INPUT, PAGE_INPUT } from './create-admin-tool.mts'
+import { userReferenceSchema } from '../entity-reference-schema.mts'
 import { adminRouteOutputSchema } from './output-schema.mts'
 
 type PenaltyQuery = {
@@ -23,7 +24,7 @@ export const adminReportIntegrityPenaltyTools = [
     parameters: adminInput({
       ...PAGE_INPUT,
       status: { type: 'string', enum: ['active', 'revoked'] },
-      user_id: UUID_INPUT,
+      user_id: userReferenceSchema,
       source_flag_id: UUID_INPUT,
     }),
     outputSchema: adminRouteOutputSchema({

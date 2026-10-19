@@ -188,8 +188,6 @@ describe('create_review_dispute — real store', () => {
   it.each([
     ['an unknown reason', { reason: 'rude' }],
     ['a missing claim', { claim_text: undefined }],
-    ['a malformed post id', { post_id: 'not-a-uuid' }],
-    ['a malformed topic id', { topic_id: 'not-a-uuid' }],
     ['a non-uuid idempotency key', { idempotency_key: 'not-a-uuid' }],
     ['an unexpected field', { resolution_action: 'remove' }],
   ])('refuses %s as invalid arguments before claiming a key', async (_label, extra) => {

@@ -8,6 +8,13 @@ import {
 } from '@services/copyright-notices/moderator-http-input'
 import { validateCopyrightMcpConstructedRequest } from '@services/copyright-notices/copyright-mcp-write-validation'
 import { UUID_INPUT } from './create-admin-tool.mts'
+import {
+  communityReferenceSchema,
+  postReferenceSchema,
+  topicReferenceSchema,
+  userReferenceSchema,
+} from '../entity-reference-schema.mts'
+import { entityIdOrMissing } from '../resolve-entity-reference.mts'
 
 export const APPROVE_COPYRIGHT_EMAIL_INTAKE_PATH = '/api/v1/copyright-email-intakes/:id/approvals'
 
@@ -33,12 +40,20 @@ const TARGET_OWNER_FIELDS = {
   'community-banner-image': 'community_id',
 } as const
 
+const TARGET_OWNER_SCHEMA = {
+  post_id: postReferenceSchema,
+  user_id: userReferenceSchema,
+  user_profile_link_id: UUID_INPUT,
+  topic_id: topicReferenceSchema,
+  community_id: communityReferenceSchema,
+} as const
+
 const TARGET_INPUT = {
   anyOf: Object.entries(TARGET_OWNER_FIELDS).map(([surface, owner]) => ({
     type: 'object',
     properties: {
       surface: { type: 'string', enum: [surface] },
-      [owner]: UUID_INPUT,
+      [owner]: TARGET_OWNER_SCHEMA[owner],
       image_id: UUID_INPUT,
       target_url: text(2048),
     },
@@ -91,12 +106,27 @@ export type ApproveCopyrightEmailIntakeArgs = {
  * Runs the REST approval steps in the REST order (kill switch, field parsers, request contract) and
  * then the shared decision both surfaces call, so a caller's values win exactly as they do on REST.
  */
-export function approveCopyrightEmailIntakeFromToolArgs(
+export async function approveCopyrightEmailIntakeFromToolArgs(
   currentUser: PrivateUser,
   args: ApproveCopyrightEmailIntakeArgs,
 ) {
   assertCopyrightIntakeEnabled()
-  const { intake_id: intakeId, ...body } = args
+  const targets = await Promise.all(
+    args.targets.map(async target => {
+      const owner = TARGET_OWNER_FIELDS[target.surface as keyof typeof TARGET_OWNER_FIELDS]
+      if (!owner || owner === 'user_profile_link_id') return target
+      const entityType =
+        owner === 'post_id'
+          ? 'post'
+          : owner === 'user_id'
+            ? 'user'
+            : owner === 'topic_id'
+              ? 'topic'
+              : 'community'
+      return { ...target, [owner]: await entityIdOrMissing(entityType, target[owner]!) }
+    }),
+  )
+  const { intake_id: intakeId, ...body } = { ...args, targets }
   const input = parseCopyrightNoticeForm(body)
   const recommendationId = parseCopyrightRecommendationId(body)
   const manualFallbackReason = parseCopyrightManualFallbackReason(body)

@@ -2,7 +2,10 @@ import { admitDelegatedCreate } from '@services/contribution-gating/admit-delega
 import type { Tool } from '@services/openai-agents/tool-types'
 import { createReviewDispute, parseCreateReviewDisputeInput } from '@services/review-disputes'
 import { REVIEW_DISPUTE_REASONS } from '@ts-shared/utils/moderation-catalogs'
+import assert from 'http-assert'
 import { getDelegatedToolAuthority } from './delegated-authority.mts'
+import { postReferenceSchema, topicReferenceSchema } from './entity-reference-schema.mts'
+import { canonicalEntityId, MISSING_REFERENCE_ID } from './resolve-entity-reference.mts'
 import { DISPUTE_SCHEMA, toMcpDispute, type McpDispute } from './mcp-case-output.mts'
 import { successSchema } from './output-schema-shapes.mts'
 import { requireActiveToolUser } from './private-user.mts'
@@ -30,13 +33,10 @@ const tool: Tool<Args, Result> = {
           type: 'string',
           format: 'uuid',
         },
-        post_id: { type: 'string', format: 'uuid' },
+        post_id: postReferenceSchema,
         reason: { type: 'string', enum: [...REVIEW_DISPUTE_REASONS] },
         claim_text: { type: 'string', description: 'The case for the moderators.' },
-        topic_id: {
-          type: 'string',
-          format: 'uuid',
-        },
+        topic_id: topicReferenceSchema,
       },
       required: ['idempotency_key', 'post_id', 'reason', 'claim_text'],
       additionalProperties: false,
@@ -55,11 +55,17 @@ const tool: Tool<Args, Result> = {
   function: currentUser => async (args, invocationContext) => {
     const user = await requireActiveToolUser(currentUser)
     const authority = getDelegatedToolAuthority(user, invocationContext)
+    const postId = await canonicalEntityId('post', args.post_id)
+    assert(postId, 404, 'Post not found')
+    const topicId =
+      args.topic_id === undefined
+        ? undefined
+        : ((await canonicalEntityId('topic', args.topic_id)) ?? MISSING_REFERENCE_ID)
     const input = parseCreateReviewDisputeInput({
-      post_id: args.post_id,
+      post_id: postId,
       reason: args.reason,
       claim_text: args.claim_text,
-      topic_id: args.topic_id,
+      topic_id: topicId,
     })
     return admitDelegatedCreate({
       authority,

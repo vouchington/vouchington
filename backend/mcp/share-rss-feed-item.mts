@@ -7,6 +7,7 @@ import {
 } from '@services/follower-distributions'
 import { createMergedTool, type MergedToolSource } from './create-merged-tool.mts'
 import { requireActiveToolUser } from './private-user.mts'
+import { canonicalEntityIds, MISSING_REFERENCE_ID } from './resolve-entity-reference.mts'
 import { getDelegatedToolAuthority } from './delegated-authority.mts'
 import {
   DISTRIBUTION_OUTPUT_SCHEMA,
@@ -47,10 +48,18 @@ function source(
       const user = await requireActiveToolUser(currentUser)
       getDelegatedToolAuthority(user, invocationContext)
       const { rss_feed_item_id, ...body } = args
+      const resolvedBody = Array.isArray(body.recipient_user_ids)
+        ? {
+            ...body,
+            recipient_user_ids: (await canonicalEntityIds('user', body.recipient_user_ids)).map(
+              userId => userId ?? MISSING_REFERENCE_ID,
+            ),
+          }
+        : body
       return enqueueDistributionOrMarkFailed(
         send
           ? await sendRssFeedItemToFollowers(user, rss_feed_item_id, () =>
-              parseSendFollowersInput(body),
+              parseSendFollowersInput(resolvedBody),
             )
           : await shareRssFeedItemWithFollowers(user, rss_feed_item_id),
       )

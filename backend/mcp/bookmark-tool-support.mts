@@ -39,7 +39,10 @@ export const BOOKMARK_TOOL_PARAMETERS = {
       enum: BOOKMARK_TOOL_ENTITY_TYPES,
       description: `The type of entity. Valid types per predicate: ${VALID_COMBINATIONS}.`,
     },
-    entity_id: { type: 'string', format: 'uuid' },
+    entity_id: {
+      type: 'string',
+      description: 'Entity id, or its slug, exact topic name, feed URL, or username',
+    },
     predicate: {
       type: 'string',
       enum: BOOKMARK_TOOL_PREDICATES,

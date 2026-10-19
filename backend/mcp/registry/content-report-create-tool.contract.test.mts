@@ -164,7 +164,6 @@ describe('create_content_report — real store', () => {
     ['an unknown entity type', { entity_type: 'topic' }],
     ['an unknown reason', { reason: 'rude' }],
     ['a missing reason', { reason: undefined }],
-    ['a malformed entity id', { entity_id: 'not-a-uuid' }],
     ['a non-uuid idempotency key', { idempotency_key: 'not-a-uuid' }],
     ['an unexpected field', { copyright: true }],
   ])('refuses %s before claiming a key', async (_label, extra) => {

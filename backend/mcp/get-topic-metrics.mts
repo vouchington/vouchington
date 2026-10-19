@@ -1,6 +1,8 @@
 import type { MergedToolSource } from './create-merged-tool.mts'
 import type { BasicUser } from '@services/users/types'
 import { getTopicMetricsByAny } from '@services/topics/metrics'
+import { topicReferenceSchema } from './entity-reference-schema.mts'
+import { resolveTopic } from './resolve-topic.mts'
 import { outcomeSchema } from './output-schema-shapes.mts'
 import {
   CONTENT_COUNT_PROPERTIES,
@@ -41,10 +43,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     parameters: {
       type: 'object',
       properties: {
-        topic_id: {
-          type: 'string',
-          description: 'The topic UUID or slug to retrieve metrics for',
-        },
+        topic_id: topicReferenceSchema,
       },
       required: ['topic_id'],
     },
@@ -65,7 +64,9 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
   function:
     (_currentUser: BasicUser) =>
     async (args: ToolArgs): Promise<ToolResult> => {
-      const metrics = await getTopicMetricsByAny(args.topic_id)
+      const topic = await resolveTopic(args.topic_id)
+      if (!topic) return { success: false, error: 'Topic not found' }
+      const metrics = await getTopicMetricsByAny(topic.id)
 
       if (!metrics) {
         return { success: false, error: 'Topic not found' }

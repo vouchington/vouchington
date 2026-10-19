@@ -16,11 +16,13 @@ import { POST_TARGET_SCHEMA, postActionMeta } from './meta.mts'
 import { getDelegatedToolAuthority } from '../delegated-authority.mts'
 import { requireActiveToolUser } from '../private-user.mts'
 import { successSchema } from '../output-schema-shapes.mts'
+import { topicReferenceSchema } from '../entity-reference-schema.mts'
+import { canonicalEntityId } from '../resolve-entity-reference.mts'
 
 type RatingArgs = { id: string; topic_id: string; rating?: number; order_index?: number }
 type Success = { success: true }
 
-const TOPIC = { type: 'string', format: 'uuid' }
+const TOPIC = topicReferenceSchema
 const RATING = { type: 'integer', minimum: 1, maximum: 5 }
 const ORDER = { type: 'integer', minimum: 0 }
 const COLLECTION = '/api/v1/posts/:idOrSlug/ratings'
@@ -49,7 +51,9 @@ function ratingSource(
     function: currentUser => async (args, invocationContext) => {
       const user = await requireActiveToolUser(currentUser)
       getDelegatedToolAuthority(user, invocationContext)
-      await run(user, args)
+      const topicId = await canonicalEntityId('topic', args.topic_id)
+      assert(topicId, 404, 'Not found')
+      await run(user, { ...args, topic_id: topicId })
       return { success: true }
     },
   }

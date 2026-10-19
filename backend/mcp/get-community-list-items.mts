@@ -1,4 +1,5 @@
 import type { MergedToolSource } from './create-merged-tool.mts'
+import { communityReferenceSchema } from './entity-reference-schema.mts'
 import { searchCommunityListItems, type CommunityListItemType } from '@services/communities'
 import type { ToolApiEndpoint } from '@services/openai-agents/tool-types'
 import type { BasicUser } from '@services/users/types'
@@ -49,7 +50,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     parameters: {
       type: 'object',
       properties: {
-        community_id: { type: 'string', description: 'Community UUID or slug' },
+        community_id: communityReferenceSchema,
         item_type: {
           type: 'string',
           enum: [...COMMUNITY_LIST_ITEM_TYPES],

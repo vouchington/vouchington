@@ -1,4 +1,5 @@
 import type { MergedToolSource } from './create-merged-tool.mts'
+import { communityReferenceSchema } from './entity-reference-schema.mts'
 import { getCommunityPostsPage } from '@services/communities'
 import type { BasicUser } from '@services/users/types'
 import {
@@ -48,7 +49,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     parameters: {
       type: 'object',
       properties: {
-        community_id: { type: 'string', description: 'Community UUID or slug' },
+        community_id: communityReferenceSchema,
         sort: {
           type: 'string',
           enum: [...POST_SORTS],

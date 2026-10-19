@@ -15,18 +15,18 @@
       },
       "manage_my_messages": {
         "measured": {
-          "list": 4920,
-          "core": 2212
+          "list": 4975,
+          "core": 2267
         },
         "max": {
-          "list": 5000,
+          "list": 6000,
           "core": 3000
         }
       },
       "read_community": {
         "measured": {
-          "list": 10623,
-          "core": 4016
+          "list": 10619,
+          "core": 4012
         },
         "max": {
           "list": 11000,
@@ -45,8 +45,8 @@
       },
       "read_topic": {
         "measured": {
-          "list": 8384,
-          "core": 3226
+          "list": 8158,
+          "core": 3000
         },
         "max": {
           "list": 9000,
@@ -55,8 +55,8 @@
       },
       "discover_communities": {
         "measured": {
-          "list": 5589,
-          "core": 1824
+          "list": 5619,
+          "core": 1854
         },
         "max": {
           "list": 6000,
@@ -75,8 +75,8 @@
       },
       "discover_rss_feeds": {
         "measured": {
-          "list": 5455,
-          "core": 2435
+          "list": 5532,
+          "core": 2512
         },
         "max": {
           "list": 6000,
@@ -85,8 +85,8 @@
       },
       "read_rss_feed": {
         "measured": {
-          "list": 4494,
-          "core": 1532
+          "list": 4515,
+          "core": 1553
         },
         "max": {
           "list": 5000,
@@ -95,8 +95,8 @@
       },
       "read_rss_feed_item": {
         "measured": {
-          "list": 6306,
-          "core": 3582
+          "list": 6413,
+          "core": 3689
         },
         "max": {
           "list": 7000,
@@ -105,8 +105,8 @@
       },
       "read_feed": {
         "measured": {
-          "list": 4934,
-          "core": 2941
+          "list": 4932,
+          "core": 2939
         },
         "max": {
           "list": 6000,
@@ -115,8 +115,8 @@
       },
       "read_posts": {
         "measured": {
-          "list": 9266,
-          "core": 5165
+          "list": 9187,
+          "core": 5086
         },
         "max": {
           "list": 10000,
@@ -125,8 +125,8 @@
       },
       "read_hostnames": {
         "measured": {
-          "list": 3046,
-          "core": 1727
+          "list": 3060,
+          "core": 1741
         },
         "max": {
           "list": 4000,
@@ -135,8 +135,8 @@
       },
       "read_data_points": {
         "measured": {
-          "list": 3472,
-          "core": 1538
+          "list": 3384,
+          "core": 1450
         },
         "max": {
           "list": 4000,
@@ -145,8 +145,8 @@
       },
       "read_users": {
         "measured": {
-          "list": 3315,
-          "core": 1399
+          "list": 3313,
+          "core": 1397
         },
         "max": {
           "list": 4000,
@@ -175,8 +175,8 @@
       },
       "read_my_lists": {
         "measured": {
-          "list": 6028,
-          "core": 2838
+          "list": 6039,
+          "core": 2849
         },
         "max": {
           "list": 7000,
@@ -215,8 +215,8 @@
       },
       "remove_list_content": {
         "measured": {
-          "list": 1461,
-          "core": 1107
+          "list": 1498,
+          "core": 1144
         },
         "max": {
           "list": 2000,
@@ -245,8 +245,8 @@
       },
       "manage_bookmark": {
         "measured": {
-          "list": 2299,
-          "core": 1486
+          "list": 2363,
+          "core": 1550
         },
         "max": {
           "list": 3000,
@@ -275,18 +275,18 @@
       },
       "create_post": {
         "measured": {
-          "list": 3533,
-          "core": 1822
+          "list": 3689,
+          "core": 1978
         },
         "max": {
           "list": 4000,
-          "core": 2000
+          "core": 3000
         }
       },
       "act_on_post": {
         "measured": {
-          "list": 6530,
-          "core": 4299
+          "list": 6511,
+          "core": 4280
         },
         "max": {
           "list": 7000,
@@ -295,8 +295,8 @@
       },
       "delete_post": {
         "measured": {
-          "list": 623,
-          "core": 327
+          "list": 597,
+          "core": 301
         },
         "max": {
           "list": 1000,
@@ -315,8 +315,8 @@
       },
       "vote": {
         "measured": {
-          "list": 4868,
-          "core": 4363
+          "list": 4846,
+          "core": 4341
         },
         "max": {
           "list": 5000,
@@ -335,8 +335,8 @@
       },
       "participate_in_community": {
         "measured": {
-          "list": 3360,
-          "core": 1442
+          "list": 3378,
+          "core": 1460
         },
         "max": {
           "list": 4000,
@@ -345,8 +345,8 @@
       },
       "leave_community": {
         "measured": {
-          "list": 810,
-          "core": 438
+          "list": 808,
+          "core": 436
         },
         "max": {
           "list": 1000,
@@ -355,8 +355,8 @@
       },
       "apply_to_community": {
         "measured": {
-          "list": 1497,
-          "core": 871
+          "list": 1495,
+          "core": 869
         },
         "max": {
           "list": 2000,
@@ -365,8 +365,8 @@
       },
       "create_content_report": {
         "measured": {
-          "list": 1682,
-          "core": 844
+          "list": 1768,
+          "core": 930
         },
         "max": {
           "list": 2000,
@@ -375,8 +375,8 @@
       },
       "create_review_dispute": {
         "measured": {
-          "list": 2230,
-          "core": 920
+          "list": 2276,
+          "core": 966
         },
         "max": {
           "list": 3000,
@@ -405,8 +405,8 @@
       },
       "share_rss_feed_item": {
         "measured": {
-          "list": 1684,
-          "core": 1235
+          "list": 1704,
+          "core": 1255
         },
         "max": {
           "list": 2000,
@@ -435,8 +435,8 @@
       },
       "add_entity_relation": {
         "measured": {
-          "list": 1447,
-          "core": 681
+          "list": 1640,
+          "core": 874
         },
         "max": {
           "list": 2000,
@@ -445,8 +445,8 @@
       },
       "remove_entity_relation": {
         "measured": {
-          "list": 1063,
-          "core": 665
+          "list": 1051,
+          "core": 653
         },
         "max": {
           "list": 2000,
@@ -475,8 +475,8 @@
       },
       "get_my_referral_links": {
         "measured": {
-          "list": 1886,
-          "core": 567
+          "list": 1865,
+          "core": 546
         },
         "max": {
           "list": 2000,
@@ -505,8 +505,8 @@
       },
       "add_list_item": {
         "measured": {
-          "list": 1371,
-          "core": 578
+          "list": 1408,
+          "core": 615
         },
         "max": {
           "list": 2000,
@@ -535,8 +535,8 @@
       },
       "create_referral_link": {
         "measured": {
-          "list": 2176,
-          "core": 661
+          "list": 2150,
+          "core": 635
         },
         "max": {
           "list": 3000,
@@ -635,8 +635,8 @@
       },
       "get_referral_links": {
         "measured": {
-          "list": 1428,
-          "core": 519
+          "list": 1314,
+          "core": 405
         },
         "max": {
           "list": 2000,
@@ -655,8 +655,8 @@
       },
       "manage_my_cards": {
         "measured": {
-          "list": 3293,
-          "core": 1489
+          "list": 3274,
+          "core": 1470
         },
         "max": {
           "list": 4000,
@@ -665,8 +665,8 @@
       },
       "manage_my_point_valuations": {
         "measured": {
-          "list": 2100,
-          "core": 917
+          "list": 2088,
+          "core": 905
         },
         "max": {
           "list": 3000,
@@ -675,8 +675,8 @@
       },
       "manage_my_rewards_statuses": {
         "measured": {
-          "list": 1719,
-          "core": 706
+          "list": 1700,
+          "core": 687
         },
         "max": {
           "list": 2000,
@@ -685,8 +685,8 @@
       },
       "manage_my_spending": {
         "measured": {
-          "list": 2234,
-          "core": 882
+          "list": 2222,
+          "core": 870
         },
         "max": {
           "list": 3000,
@@ -745,8 +745,8 @@
       },
       "update_topic_recommendation": {
         "measured": {
-          "list": 4359,
-          "core": 1290
+          "list": 4307,
+          "core": 1238
         },
         "max": {
           "list": 5000,
@@ -755,8 +755,8 @@
       },
       "withdraw_topic_recommendation": {
         "measured": {
-          "list": 791,
-          "core": 449
+          "list": 739,
+          "core": 397
         },
         "max": {
           "list": 1000,
@@ -767,8 +767,8 @@
     "community_moderation": {
       "read_community_moderation": {
         "measured": {
-          "list": 40102,
-          "core": 6473
+          "list": 40068,
+          "core": 6439
         },
         "max": {
           "list": 41000,
@@ -777,8 +777,8 @@
       },
       "add_community_moderation": {
         "measured": {
-          "list": 12055,
-          "core": 7010
+          "list": 12002,
+          "core": 6957
         },
         "max": {
           "list": 13000,
@@ -787,8 +787,8 @@
       },
       "update_community_moderation": {
         "measured": {
-          "list": 14515,
-          "core": 6401
+          "list": 14581,
+          "core": 6467
         },
         "max": {
           "list": 15000,
@@ -797,8 +797,8 @@
       },
       "remove_community_moderation": {
         "measured": {
-          "list": 7210,
-          "core": 6123
+          "list": 7372,
+          "core": 6285
         },
         "max": {
           "list": 8000,
@@ -880,8 +880,8 @@
       },
       "assign_rss_category_to_topic": {
         "measured": {
-          "list": 696,
-          "core": 353
+          "list": 726,
+          "core": 383
         },
         "max": {
           "list": 1000,
@@ -890,8 +890,8 @@
       },
       "update_crawler": {
         "measured": {
-          "list": 3744,
-          "core": 883
+          "list": 3774,
+          "core": 913
         },
         "max": {
           "list": 4000,
@@ -900,8 +900,8 @@
       },
       "set_referral_program_crawler": {
         "measured": {
-          "list": 3468,
-          "core": 593
+          "list": 3498,
+          "core": 623
         },
         "max": {
           "list": 4000,
@@ -920,8 +920,8 @@
       },
       "list_user_landing_pages": {
         "measured": {
-          "list": 1372,
-          "core": 319
+          "list": 1392,
+          "core": 339
         },
         "max": {
           "list": 2000,
@@ -980,8 +980,8 @@
       },
       "set_post_clearance": {
         "measured": {
-          "list": 854,
-          "core": 448
+          "list": 870,
+          "core": 464
         },
         "max": {
           "list": 1000,
@@ -990,8 +990,8 @@
       },
       "approve_post_clearance": {
         "measured": {
-          "list": 863,
-          "core": 450
+          "list": 879,
+          "core": 466
         },
         "max": {
           "list": 1000,
@@ -1040,8 +1040,8 @@
       },
       "search_moderator_actions": {
         "measured": {
-          "list": 2559,
-          "core": 1618
+          "list": 2600,
+          "core": 1659
         },
         "max": {
           "list": 3000,
@@ -1110,8 +1110,8 @@
       },
       "read_crawler": {
         "measured": {
-          "list": 7204,
-          "core": 855
+          "list": 7234,
+          "core": 885
         },
         "max": {
           "list": 8000,
@@ -1130,8 +1130,8 @@
       },
       "read_user_moderation": {
         "measured": {
-          "list": 4505,
-          "core": 1209
+          "list": 4527,
+          "core": 1231
         },
         "max": {
           "list": 5000,
@@ -1140,8 +1140,8 @@
       },
       "record_user_moderation": {
         "measured": {
-          "list": 2265,
-          "core": 1121
+          "list": 2336,
+          "core": 1192
         },
         "max": {
           "list": 3000,
@@ -1150,8 +1150,8 @@
       },
       "set_user_suspension": {
         "measured": {
-          "list": 6403,
-          "core": 986
+          "list": 6437,
+          "core": 1020
         },
         "max": {
           "list": 7000,
@@ -1160,8 +1160,8 @@
       },
       "configure_user_vote_weight": {
         "measured": {
-          "list": 1207,
-          "core": 843
+          "list": 1241,
+          "core": 877
         },
         "max": {
           "list": 2000,
@@ -1170,8 +1170,8 @@
       },
       "read_report_integrity": {
         "measured": {
-          "list": 3166,
-          "core": 1000
+          "list": 3186,
+          "core": 1020
         },
         "max": {
           "list": 4000,
@@ -1210,8 +1210,8 @@
       },
       "read_vote_integrity": {
         "measured": {
-          "list": 3429,
-          "core": 1041
+          "list": 3449,
+          "core": 1061
         },
         "max": {
           "list": 4000,
@@ -1512,8 +1512,8 @@
       },
       "reinstate_copyright_repeat_infringer": {
         "measured": {
-          "list": 959,
-          "core": 382
+          "list": 979,
+          "core": 402
         },
         "max": {
           "list": 1000,
@@ -1532,8 +1532,8 @@
       },
       "review_copyright_email_intake": {
         "measured": {
-          "list": 5081,
-          "core": 4360
+          "list": 5198,
+          "core": 4477
         },
         "max": {
           "list": 6000,

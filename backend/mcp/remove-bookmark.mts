@@ -1,7 +1,9 @@
 import type { MergedToolSource } from './create-merged-tool.mts'
 import type { BasicUser } from '@services/users/types'
+import assert from 'http-assert'
 import { deleteBookmarkAction } from '@services/entity-relation-actions'
 import { BOOKMARK_TOOL_PARAMETERS, type BookmarkToolArgs } from './bookmark-tool-support.mts'
+import { canonicalEntityId } from './resolve-entity-reference.mts'
 import { successSchema } from './output-schema-shapes.mts'
 import { requirePrivateToolUser } from './private-user.mts'
 
@@ -21,9 +23,11 @@ const tool: MergedToolSource<BookmarkToolArgs, { success: true }> = {
     outputSchema: successSchema({}),
   },
   function: (currentUser: BasicUser) => async (args: BookmarkToolArgs) => {
+    const entityId = await canonicalEntityId(args.entity_type, args.entity_id)
+    assert(entityId, 404, 'Entity not found')
     await deleteBookmarkAction(await requirePrivateToolUser(currentUser), {
       entityType: args.entity_type,
-      entityId: args.entity_id,
+      entityId,
       predicate: args.predicate,
     })
     return { success: true }

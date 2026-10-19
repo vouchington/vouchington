@@ -9,6 +9,7 @@ import {
 import { admitDelegatedCreate } from '@services/contribution-gating/admit-delegated-create'
 import type { Tool } from '@services/openai-agents/tool-types'
 import { getDelegatedToolAuthority } from './delegated-authority.mts'
+import { communityReferenceSchema } from './entity-reference-schema.mts'
 import { objectSchema, successSchema } from './output-schema-shapes.mts'
 import { requireActiveToolUser } from './private-user.mts'
 
@@ -47,7 +48,7 @@ const tool: Tool<Args, Result> = {
           type: 'string',
           format: 'uuid',
         },
-        community_id: { type: 'string', description: 'Community UUID or slug' },
+        community_id: communityReferenceSchema,
         answers: {
           type: 'object',
           additionalProperties: {

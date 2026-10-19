@@ -1,6 +1,7 @@
 import type { BasicUser } from '@services/users/types'
 import type { Tool } from '@services/openai-agents/tool-types'
-import { getTopicByAny } from '@services/topics/get'
+import { resolveTopic } from './resolve-topic.mts'
+import { topicReferenceSchema } from './entity-reference-schema.mts'
 import { getPrioritizedReferralLinks } from '@services/prioritized-referral-links/get-prioritized'
 import { sanitizePromptInjection } from '@jongleberry/vurst-prompt'
 import { nullable, objectSchema, outcomeSchema } from './output-schema-shapes.mts'
@@ -57,11 +58,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
     parameters: {
       type: 'object',
       properties: {
-        topic_id: {
-          type: 'string',
-          description:
-            'The topic identifier (UUID or slug) to look up referral links for. Can be a referral program topic or any topic with a linked referral program.',
-        },
+        topic_id: topicReferenceSchema,
         all: { type: 'boolean' },
       },
       required: ['topic_id'],
@@ -79,7 +76,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
   function:
     (currentUser: BasicUser) =>
     async (args: ToolArgs): Promise<ToolResult> => {
-      const topic = await getTopicByAny(args.topic_id)
+      const topic = await resolveTopic(args.topic_id)
 
       if (!topic) {
         return { success: false, error: 'Topic not found' }

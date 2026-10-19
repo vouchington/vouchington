@@ -1,4 +1,6 @@
 import type { MergedToolSource } from './create-merged-tool.mts'
+import { topicReferenceSchema } from './entity-reference-schema.mts'
+import { resolvedTopicFilters } from './resolve-topic.mts'
 import { resolveCommunityHashtagQuery, searchCommunities } from '@services/communities'
 import type { BasicUser } from '@services/users/types'
 import {
@@ -10,6 +12,7 @@ import {
   type McpCommunityEntry,
 } from './mcp-community-output.mts'
 import {
+  EMPTY_PAGE_INFO,
   findPageOrNull,
   INVALID_CURSOR_RESULT,
   type InvalidCursorResult,
@@ -58,7 +61,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
         has_list_items: { type: 'boolean' },
         has_list_type: { type: 'boolean' },
         list_type: { type: 'string', enum: ['follow', 'mute'] },
-        topic: { type: 'array', items: { type: 'string', format: 'uuid' } },
+        topic: { type: 'array', items: topicReferenceSchema },
       },
       required: [],
     },
@@ -77,6 +80,10 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
   function:
     (_currentUser: BasicUser) =>
     async (args: ToolArgs): Promise<ToolResult> => {
+      const topics = await resolvedTopicFilters({ topics: args.topic })
+      if (args.topic && !topics) {
+        return { success: true, results: [], page_info: EMPTY_PAGE_INFO }
+      }
       const hashtags = await resolveCommunityHashtagQuery(args.q)
       const page = await findPageOrNull(args.after, () =>
         searchCommunities({
@@ -84,7 +91,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
           search: hashtags.search,
           topicIds:
             hashtags.topicIds.length > 0 || (args.topic?.length ?? 0) > 0
-              ? [...new Set([...hashtags.topicIds, ...(args.topic ?? [])])]
+              ? [...new Set([...hashtags.topicIds, ...(topics?.topics ?? [])])]
               : undefined,
           feedCategory: args.feed_category,
           hasListItems: args.has_list_items || undefined,

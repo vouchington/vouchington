@@ -4,6 +4,7 @@ import type { BasicUser } from '@services/users/types'
 import { iso } from './mcp-read-output.mts'
 import { foundOrNotFoundSchema, pickProperties } from './read-tool-output-schema.mts'
 import { resolveTopic } from './resolve-topic.mts'
+import { topicReferenceSchema } from './entity-reference-schema.mts'
 
 type ToolArgs = {
   topic_id: string
@@ -25,11 +26,11 @@ const optionalIso = (value: Date | string | null | undefined): string | null =>
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
     description:
-      "Get a referral program's state by topic UUID or slug, including its company and enabled or disabled time. An unknown topic returns Topic not found; a topic that is not a referral program returns Topic is not a referral program. Use get_referral_links for its links.",
+      "Get a referral program's state by topic id, slug, or exact name, including its company and enabled or disabled time. An unknown topic returns Topic not found; a topic that is not a referral program returns Topic is not a referral program. Use get_referral_links for its links.",
     parameters: {
       type: 'object',
       properties: {
-        topic_id: { type: 'string', description: 'Referral program topic UUID or slug' },
+        topic_id: topicReferenceSchema,
       },
       required: ['topic_id'],
     },

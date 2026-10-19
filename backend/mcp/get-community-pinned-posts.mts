@@ -1,4 +1,5 @@
 import type { MergedToolSource } from './create-merged-tool.mts'
+import { communityReferenceSchema } from './entity-reference-schema.mts'
 import { getPinnedPosts } from '@services/communities'
 import type { BasicUser } from '@services/users/types'
 import { COMMUNITY_NOT_FOUND, loadPublicCommunity } from './mcp-community-output.mts'
@@ -18,7 +19,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     parameters: {
       type: 'object',
       properties: {
-        community_id: { type: 'string', description: 'Community UUID or slug' },
+        community_id: communityReferenceSchema,
       },
       required: ['community_id'],
     },

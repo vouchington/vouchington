@@ -5,7 +5,9 @@ import type { ViewRssFeed } from '@services/rss-feeds/types'
 import { searchRssFeeds } from '@services/rss-feeds'
 import { prepareRssFeedsSearchParams, resolveRssFeedsSearchParams } from '@services/search-params'
 import { buildPageInfo, decodeUuidCursor, isSimpleCursor } from '@modules/pagination'
-import { isUUID } from '@modules/utils'
+import { rssFeedReferenceSchema, topicReferenceSchema } from './entity-reference-schema.mts'
+import { canonicalEntityId } from './resolve-entity-reference.mts'
+import { resolvedTopicFilters } from './resolve-topic.mts'
 import { findPageOrNull, INVALID_CURSOR_RESULT, EMPTY_PAGE_INFO } from './paged-search.mts'
 import { mcpRssFeedSchema, toMcpRssFeeds, type McpRssFeed } from './mcp-rss-output.mts'
 import { pageInfoSchema, type McpPage } from './mcp-read-output.mts'
@@ -52,9 +54,9 @@ export const searchRssFeedsTool: MergedToolSource<ListArgs, ListResult> = {
         publisher_type: { type: 'string' },
         publisher_type_match: { type: 'string', enum: ['any', 'all'] },
         publisher_types: { type: 'array', items: { type: 'string' } },
-        topic: { type: 'string' },
+        topic: topicReferenceSchema,
         topic_match: { type: 'string', enum: ['any', 'all'] },
-        topics: { type: 'array', items: { type: 'string' } },
+        topics: { type: 'array', items: topicReferenceSchema },
         limit: { type: 'integer', minimum: 1, description: 'Defaults to 25; clamped to 25.' },
         after: { type: 'string' },
       },
@@ -77,6 +79,8 @@ export const searchRssFeedsTool: MergedToolSource<ListArgs, ListResult> = {
     (currentUser: BasicUser) =>
     async (args: ListArgs): Promise<ListResult> => {
       const page = await findPageOrNull(args.after, async () => {
+        const topics = await resolvedTopicFilters({ topic: args.topic, topics: args.topics })
+        if (!topics) return { results: [], page_info: EMPTY_PAGE_INFO }
         const prepared = prepareRssFeedsSearchParams({
           q: args.q,
           text_search_query: args.text_search_query,
@@ -88,9 +92,9 @@ export const searchRssFeedsTool: MergedToolSource<ListArgs, ListResult> = {
           publisher_type: args.publisher_type,
           publisher_type_match: args.publisher_type_match,
           publisher_types: args.publisher_types,
-          topic: args.topic,
+          topic: topics.topic,
           topic_match: args.topic_match,
-          topics: args.topics,
+          topics: topics.topics,
         })
         const { shouldReturnEmpty, searchOptions } = await resolveRssFeedsSearchParams(prepared)
         if (shouldReturnEmpty) return { results: [], page_info: EMPTY_PAGE_INFO }
@@ -125,7 +129,7 @@ export const getRssFeedTool: MergedToolSource<DetailArgs, DetailResult> = {
       'Get an RSS feed by UUID, including disabled or non-discoverable feeds as the REST detail route does.',
     parameters: {
       type: 'object',
-      properties: { rss_feed_id: { type: 'string', format: 'uuid' } },
+      properties: { rss_feed_id: rssFeedReferenceSchema },
       required: ['rss_feed_id'],
     },
   },
@@ -141,8 +145,9 @@ export const getRssFeedTool: MergedToolSource<DetailArgs, DetailResult> = {
   function:
     (_currentUser: BasicUser) =>
     async ({ rss_feed_id }: DetailArgs): Promise<DetailResult> => {
-      if (!isUUID(rss_feed_id)) return { success: false, error: 'RSS feed not found' }
-      const feed = await getRssFeedByIdCached(rss_feed_id)
+      const feedId = await canonicalEntityId('rss_feed', rss_feed_id)
+      if (!feedId) return { success: false, error: 'RSS feed not found' }
+      const feed = await getRssFeedByIdCached(feedId)
       if (!feed) return { success: false, error: 'RSS feed not found' }
       const [rssFeed] = await toMcpRssFeeds([feed as ViewRssFeed])
       return { success: true, rss_feed: rssFeed! }

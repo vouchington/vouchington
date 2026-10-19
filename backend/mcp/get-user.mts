@@ -1,5 +1,6 @@
 import type { MergedToolSource } from './create-merged-tool.mts'
 import { getPublicUserByIdOrSlug } from '@services/users'
+import { userReferenceSchema } from './entity-reference-schema.mts'
 import type { BasicUser } from '@services/users/types'
 import { toMcpUser, mcpUserSchema, USER_NOT_FOUND, type McpUser } from './mcp-user-output.mts'
 import { foundOrNotFoundSchema } from './read-tool-output-schema.mts'
@@ -17,7 +18,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     parameters: {
       type: 'object',
       properties: {
-        user_id: { type: 'string', description: 'User UUID or username' },
+        user_id: userReferenceSchema,
       },
       required: ['user_id'],
     },

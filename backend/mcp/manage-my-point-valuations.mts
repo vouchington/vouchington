@@ -4,6 +4,8 @@ import {
   updateIndividualRewardsProgramPointValuationById,
 } from '@services/individuals-households'
 import { createManageEntityTool } from './create-manage-entity-tool.mts'
+import { topicReferenceSchema } from './entity-reference-schema.mts'
+import { entityIdOrMissing } from './resolve-entity-reference.mts'
 import { moneySchema } from '@ts-shared/data-points/json-schemas'
 import { MAX_POINT_VALUE_MICROUNITS, MONEY_SCALE, type ScaledMoney } from '@ts-shared/money'
 
@@ -33,8 +35,8 @@ export default createManageEntityTool<AddPointValuationArgs, UpdatePointValuatio
     "Manage the current user's rewards program point valuations — how much the user values each rewards program's points.",
   addProperties: {
     rewards_program_id: {
-      type: 'string',
-      description: 'The topic UUID of the rewards program (required for action=add)',
+      ...topicReferenceSchema,
+      description: 'The rewards program topic (required for action=add)',
     },
     value_per_point: {
       ...pointValueSchema,
@@ -50,11 +52,16 @@ export default createManageEntityTool<AddPointValuationArgs, UpdatePointValuatio
       type: 'string',
     },
   },
-  addFn: (user, args) =>
-    createIndividualRewardsProgramPointValuation(user, user, args.rewards_program_id as string, {
-      value_per_point: args.value_per_point as ScaledMoney,
-      note: args.note as string | undefined,
-    }),
+  addFn: async (user, args) =>
+    createIndividualRewardsProgramPointValuation(
+      user,
+      user,
+      await entityIdOrMissing('topic', args.rewards_program_id as string),
+      {
+        value_per_point: args.value_per_point as ScaledMoney,
+        note: args.note as string | undefined,
+      },
+    ),
   updateFn: (user, args) =>
     updateIndividualRewardsProgramPointValuationById(user, user, args.id, {
       value_per_point: args.value_per_point as ScaledMoney | undefined,

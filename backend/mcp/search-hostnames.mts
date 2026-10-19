@@ -1,4 +1,6 @@
 import type { MergedToolSource } from './create-merged-tool.mts'
+import { topicReferenceSchema } from './entity-reference-schema.mts'
+import { resolvedTopicFilters } from './resolve-topic.mts'
 import { getPaginationLimits } from '@services/pagination'
 import { parseHostnamesSearchParams } from '@services/search-params'
 import { searchUrlHostnames } from '@services/urls-hostnames'
@@ -38,7 +40,7 @@ const { default: defaultLimit, max } = HOSTNAME_PAGE_LIMIT
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
     description:
-      'Search known hostnames as a signed-out reader sees them; administratively blocked ones never appear. query and hostname match part of a hostname. Results include topic_id and trust votes. Filter by topic UUID or slug. Sort by hostname (default) or net trust votes (highest first).',
+      'Search known hostnames as a signed-out reader sees them; administratively blocked ones never appear. query and hostname match part of a hostname. Results include topic_id and trust votes. Filter by topic id, slug, or exact name. Sort by hostname (default) or net trust votes (highest first).',
     parameters: {
       type: 'object',
       properties: {
@@ -48,7 +50,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
         hostname: {
           type: 'string',
         },
-        topic: { type: 'string', description: 'Only hostnames of this topic UUID or slug' },
+        topic: topicReferenceSchema,
         sort: {
           type: 'string',
           enum: ['trust'],
@@ -58,7 +60,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
         ...pageInputProperties('Hostnames', HOSTNAME_PAGE_LIMIT),
         include_descendants: { type: 'boolean' },
         topic_match: { type: 'string', enum: ['any', 'all'] },
-        topics: { type: 'array', items: { type: 'string' } },
+        topics: { type: 'array', items: topicReferenceSchema },
       },
       required: [],
     },
@@ -76,12 +78,14 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     async (args: ToolArgs): Promise<ToolResult> => {
       const page = await findPageOrNull(args.after, async () => {
         // A null viewer keeps `blocked: false` and every moderation filter off, like anonymous REST.
+        const topics = await resolvedTopicFilters({ topic: args.topic, topics: args.topics })
+        if (!topics) return { results: [], page_info: EMPTY_PAGE_INFO }
         const { shouldReturnEmpty, ...options } = await parseHostnamesSearchParams(
           {
             query: args.query,
             hostname: args.hostname,
-            topic: args.topic,
-            topics: args.topics,
+            topic: topics.topic,
+            topics: topics.topics,
             topic_match: args.topic_match,
             include_descendants: args.include_descendants,
             sort: args.sort,

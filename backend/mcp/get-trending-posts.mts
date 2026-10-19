@@ -4,6 +4,7 @@ import type { BasicUser } from '@services/users/types'
 import { getTrendingPosts, trendingPostsPaginationParser } from '@services/trending-posts'
 import type { TrendingPostsResult } from '@services/trending-posts/types'
 import { resolveTopic } from './resolve-topic.mts'
+import { topicReferenceSchema } from './entity-reference-schema.mts'
 import { outcomeSchema, objectSchema } from './output-schema-shapes.mts'
 import { componentSchema } from './route-response-schema.mts'
 import {
@@ -53,10 +54,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
           type: 'string',
           enum: [...VALID_TRENDING_POST_TYPES],
         },
-        topic_id: {
-          type: 'string',
-          description: 'Optionally filter to posts tagged with a specific topic, by UUID or slug.',
-        },
+        topic_id: topicReferenceSchema,
         after: {
           type: 'string',
         },

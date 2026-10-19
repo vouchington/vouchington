@@ -7,6 +7,7 @@ import {
   PAGE_INPUT,
   TEXT_INPUT,
 } from './create-admin-tool.mts'
+import { communityReferenceSchema, userReferenceSchema } from '../entity-reference-schema.mts'
 import { adminRouteOutputSchema } from './output-schema.mts'
 
 type WarningArgs = {
@@ -23,7 +24,7 @@ export const adminWarningTools = [
     description: 'List warnings issued to a user.',
     scope: 'moderation:read',
     api: { method: 'GET', path: '/api/v1/admin/warnings' },
-    parameters: adminInput({ ...PAGE_INPUT, userId: UUID_INPUT }, ['userId']),
+    parameters: adminInput({ ...PAGE_INPUT, userId: userReferenceSchema }, ['userId']),
     outputSchema: adminRouteOutputSchema({ method: 'GET', path: '/api/v1/admin/warnings' }),
     annotations: { readOnlyHint: true, openWorldHint: false },
     run: async (_user, args) => {
@@ -42,10 +43,10 @@ export const adminWarningTools = [
     api: { method: 'POST', path: '/api/v1/admin/warnings' },
     parameters: adminInput(
       {
-        userId: UUID_INPUT,
+        userId: userReferenceSchema,
         reason: TEXT_INPUT,
         publicMessage: TEXT_INPUT,
-        communityId: UUID_INPUT,
+        communityId: communityReferenceSchema,
         reportId: UUID_INPUT,
         resolveReport: { type: 'boolean' },
       },

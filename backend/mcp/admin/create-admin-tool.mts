@@ -10,6 +10,7 @@ import type {
   ToolOutputSchema,
 } from '@services/openai-agents/tool-types'
 import { requirePrivateToolUser } from '../private-user.mts'
+import { entityIdOrMissing } from '../resolve-entity-reference.mts'
 import { findSchemaViolation } from '../schema-validator.mts'
 import { adminOutputSchema, wrapAdminOutput } from '../untrusted-output.mts'
 
@@ -62,12 +63,35 @@ export function createAdminTool<TArgs>(config: AdminToolConfig<TArgs>): Tool<TAr
       if (!config.annotations.readOnlyHint) assertNotSuspended(user)
       const error = findSchemaViolation(config.parameters, args)
       assert(!error, 422, 'Invalid tool arguments')
-      return wrapAdminOutput(await config.run(user, args))
+      return wrapAdminOutput(await config.run(user, await resolveAdminReferences(args)))
     },
   }
 }
 
 export const UUID_INPUT = { type: 'string', format: 'uuid' }
+
+const ADMIN_REFERENCE_FIELDS = {
+  userId: 'user',
+  user_id: 'user',
+  actor_user_id: 'user',
+  accountUserId: 'user',
+  topic_id: 'topic',
+  referral_program_id: 'topic',
+  community_id: 'community',
+  communityId: 'community',
+} as const
+
+async function resolveAdminReferences<TArgs>(args: TArgs): Promise<TArgs> {
+  if (!args || typeof args !== 'object') return args
+  const next = { ...(args as Record<string, unknown>) }
+  await Promise.all(
+    Object.entries(ADMIN_REFERENCE_FIELDS).map(async ([key, entityType]) => {
+      const value = next[key]
+      if (typeof value === 'string') next[key] = await entityIdOrMissing(entityType, value)
+    }),
+  )
+  return next as TArgs
+}
 export const TEXT_INPUT = { type: 'string', minLength: 1, maxLength: 2000 }
 export const PAGE_INPUT = {
   after: { type: 'string' },

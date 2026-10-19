@@ -17,12 +17,17 @@ import {
   type ParticipantArgs,
   type PolicyArgs,
   ROOT,
-  uuid,
   conversationProperties,
   path,
   validated,
   readMessageBody,
 } from './my-message-tool.mts'
+import { userReferenceSchema } from './entity-reference-schema.mts'
+import {
+  canonicalEntityIds,
+  entityIdOrMissing,
+  MISSING_REFERENCE_ID,
+} from './resolve-entity-reference.mts'
 
 export const manageMyMessagesGroup = {
   name: 'manage_my_messages',
@@ -35,9 +40,17 @@ export const manageMyMessagesGroup = {
         {},
         [],
         async (user, args) => {
+          const body =
+            'user_id' in args
+              ? { user_id: await entityIdOrMissing('user', args.user_id) }
+              : {
+                  user_ids: (await canonicalEntityIds('user', args.user_ids)).map(
+                    id => id ?? MISSING_REFERENCE_ID,
+                  ),
+                }
           const result = await createMyMessageConversation(
             user,
-            () => readMessageBody(args),
+            () => readMessageBody(body),
             validated,
           )
           return { conversation: await messageConversationOutput(result.conversation) }
@@ -48,13 +61,15 @@ export const manageMyMessagesGroup = {
           oneOf: [
             {
               type: 'object',
-              properties: { user_id: uuid },
+              properties: { user_id: userReferenceSchema },
               required: ['user_id'],
               additionalProperties: false,
             },
             {
               type: 'object',
-              properties: { user_ids: { type: 'array', items: uuid, minItems: 1, maxItems: 25 } },
+              properties: {
+                user_ids: { type: 'array', items: userReferenceSchema, minItems: 1, maxItems: 25 },
+              },
               required: ['user_ids'],
               additionalProperties: false,
             },
@@ -106,13 +121,13 @@ export const manageMyMessagesGroup = {
       source: source<ParticipantArgs>(
         'Add a recipient to a group, subject to its participant policy and recipient rules.',
         { method: 'POST', path: `${ROOT}/:conversationId/participants` },
-        { ...conversationProperties, user_id: uuid },
+        { ...conversationProperties, user_id: userReferenceSchema },
         ['conversation_id', 'user_id'],
         async (user, args) => {
           const result = await addMyConversationParticipant(
             user,
             path(args),
-            () => readMessageBody({ user_id: args.user_id }),
+            async () => readMessageBody({ user_id: await entityIdOrMissing('user', args.user_id) }),
             validated,
           )
           return { participant: await messageParticipantOutput(result.participant) }
@@ -125,12 +140,12 @@ export const manageMyMessagesGroup = {
       source: source<ParticipantArgs>(
         'Leave a direct-message group or remove a participant when authorized.',
         { method: 'DELETE', path: `${ROOT}/:conversationId/participants/:userId` },
-        { ...conversationProperties, user_id: uuid },
+        { ...conversationProperties, user_id: userReferenceSchema },
         ['conversation_id', 'user_id'],
         async (user, args) => {
           await removeMyConversationParticipant(
             user,
-            { ...path(args), userId: args.user_id },
+            { ...path(args), userId: await entityIdOrMissing('user', args.user_id) },
             validated,
           )
           return { success: true }

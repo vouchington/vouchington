@@ -1,5 +1,6 @@
 import { createSlugFromTitle } from '@modules/utils'
 import { read, write, type QueryExecutor } from '@data-stores/psql'
+import { getTopicsByReferenceBatch } from '@services/topics/resolve-references'
 import sql from 'sql-template-strings'
 
 export type PreparedTopicInput = {
@@ -30,34 +31,18 @@ export function prepareTopicInput(rawName: string, index: number): PreparedTopic
   return { index, rawName, name, slug }
 }
 
+/** Topic import uses the shared reference resolver, including merges and aliases. */
 export async function findTopicsBySlugOrName(
   inputs: PreparedTopicInput[],
 ): Promise<Map<number, string>> {
   if (inputs.length === 0) return new Map()
-  const { rows } = await read<{ input_index: number; id: string | null }>(
-    sql`/* findTopicBySlugOrName */
-      WITH input AS (
-        SELECT *
-        FROM unnest(
-          ${inputs.map(input => input.index)}::int[],
-          ${inputs.map(input => input.slug)}::text[],
-          ${inputs.map(input => input.name.toLowerCase())}::text[]
-        ) AS values(input_index, slug, name)
-      )
-      SELECT input.input_index, matched.id
-      FROM input
-      LEFT JOIN LATERAL (
-        SELECT topics.id
-        FROM topics
-        WHERE topics.deleted_at IS NULL
-          AND topics.merged_into_topic_id IS NULL
-          AND (topics.slug = input.slug OR LOWER(topics.name) = input.name)
-        ORDER BY (topics.slug = input.slug) DESC
-        LIMIT 1
-      ) matched ON TRUE
-    `,
+  const topics = await getTopicsByReferenceBatch(inputs.map(input => input.name))
+  return new Map(
+    inputs.flatMap((input, index) => {
+      const topic = topics[index]
+      return topic ? [[input.index, topic.id] as const] : []
+    }),
   )
-  return new Map(rows.flatMap(row => (row.id ? [[row.input_index, row.id]] : [])))
 }
 
 export async function getFollowedTopicIds(

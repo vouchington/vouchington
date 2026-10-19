@@ -1,4 +1,5 @@
 import type { MergedToolSource } from './create-merged-tool.mts'
+import { communityReferenceSchema } from './entity-reference-schema.mts'
 import { sanitizePromptInjection } from '@jongleberry/vurst-prompt'
 import { searchCommunityMembers, type CommunityMemberRole } from '@services/communities'
 import { getUserPublicByAnyCachedBatch } from '@services/entity-fetch'
@@ -54,7 +55,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     parameters: {
       type: 'object',
       properties: {
-        community_id: { type: 'string', description: 'Community UUID or slug' },
+        community_id: communityReferenceSchema,
         role: {
           type: 'string',
           enum: [...MEMBER_ROLES],

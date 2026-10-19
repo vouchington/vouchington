@@ -4,6 +4,7 @@ import { getDelegatedToolAuthority } from './delegated-authority.mts'
 import { requirePrivateToolUser } from './private-user.mts'
 import type { Tool, ToolInvocationContext } from '@services/openai-agents/tool-types'
 import { objectSchema } from './output-schema-shapes.mts'
+import { postReferenceSchema } from './entity-reference-schema.mts'
 
 type RemoveEntityRelationArgs = { action: 'remove_tag'; post_id: string; tag: string }
 type RemoveEntityRelationResult = { post_id: string; tag: string; removed: boolean }
@@ -24,7 +25,7 @@ const tool: Tool<RemoveEntityRelationArgs, RemoveEntityRelationResult> = {
           enum: ['remove_tag'],
           description: 'What to remove. Only hashtags on a post can be removed for now.',
         },
-        post_id: { type: 'string', description: 'The ID or slug of the post.' },
+        post_id: postReferenceSchema,
         tag: { type: 'string', description: 'The hashtag, for example #travel-tips.' },
       },
       required: ['action', 'post_id', 'tag'],

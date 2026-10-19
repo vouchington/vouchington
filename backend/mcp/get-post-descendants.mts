@@ -1,4 +1,5 @@
 import type { MergedToolSource } from './create-merged-tool.mts'
+import { postReferenceSchema } from './entity-reference-schema.mts'
 import {
   COMMENT_DESCENDANTS_LIMIT,
   getCommentDescendantsPage,
@@ -32,7 +33,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     parameters: {
       type: 'object',
       properties: {
-        post_id: { type: 'string', description: 'Post UUID or slug' },
+        post_id: postReferenceSchema,
         limit: {
           type: 'integer',
           minimum: min,

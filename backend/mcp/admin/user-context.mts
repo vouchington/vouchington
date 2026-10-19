@@ -7,6 +7,7 @@ import {
   parseCreateUserModNoteInput,
 } from '@services/user-mod-notes'
 import { createAdminTool, adminInput, UUID_INPUT, TEXT_INPUT } from './create-admin-tool.mts'
+import { communityReferenceSchema, userReferenceSchema } from '../entity-reference-schema.mts'
 import { adminRouteOutputSchema } from './output-schema.mts'
 
 async function requireTargetUser(id: string) {
@@ -20,7 +21,7 @@ export const adminUserContextTools = [
     description: 'Read staff moderation context and notes for a user.',
     scope: 'moderation:read',
     api: { method: 'GET', path: '/api/v1/users/:userId/moderation-context' },
-    parameters: adminInput({ userId: UUID_INPUT }, ['userId']),
+    parameters: adminInput({ userId: userReferenceSchema }, ['userId']),
     outputSchema: adminRouteOutputSchema({
       method: 'GET',
       path: '/api/v1/users/:userId/moderation-context',
@@ -42,7 +43,7 @@ export const adminUserContextTools = [
     api: { method: 'GET', path: '/api/v1/users/:userId/mod-notes' },
     parameters: adminInput(
       {
-        userId: UUID_INPUT,
+        userId: userReferenceSchema,
         after: UUID_INPUT,
         limit: { type: 'integer', minimum: 1, maximum: 100 },
       },
@@ -67,10 +68,10 @@ export const adminUserContextTools = [
     description: 'Add an audited moderator note to a user.',
     scope: 'moderation:write',
     api: { method: 'POST', path: '/api/v1/users/:userId/mod-notes' },
-    parameters: adminInput({ userId: UUID_INPUT, body: TEXT_INPUT, community_id: UUID_INPUT }, [
-      'userId',
-      'body',
-    ]),
+    parameters: adminInput(
+      { userId: userReferenceSchema, body: TEXT_INPUT, community_id: communityReferenceSchema },
+      ['userId', 'body'],
+    ),
     outputSchema: adminRouteOutputSchema({
       method: 'POST',
       path: '/api/v1/users/:userId/mod-notes',

@@ -1,6 +1,5 @@
 import {
   optionArgs,
-  callRejectedMcpTool,
   callStructuredMcpTool,
   type McpContractCaller,
 } from '@voucha/test-helpers/mcp-tool-contract'
@@ -26,7 +25,6 @@ type Visibility = 'public' | 'unlisted' | 'private'
 const READ = ['lists:read'] as const
 const OWNED_PRIVATE = ['lists:read', 'post-relations.owned-private:write'] as const
 const BROAD = ['lists:read', 'mcp.user:read', 'mcp.user:write'] as const
-const INVALID = { success: false, error: 'Invalid entity_id' }
 const random = createRandomString(6)
 
 const asCaller = (user: Awaited<ReturnType<typeof createTestUser>>): McpContractCaller => ({
@@ -127,23 +125,16 @@ describe('read_my_lists.containing — real DB', () => {
     expect(await containing(item.id)).toEqual({ success: true, list_ids: [] })
   })
 
-  it('answers an empty list for an entity on no list, and refuses an id that is not a UUID', async () => {
+  it('answers an empty list for an entity on no list, and for a reference that names nothing', async () => {
     expect(await containing(lonePostId)).toEqual({ success: true, list_ids: [] })
     expect(await containing(randomUUID())).toEqual({ success: true, list_ids: [] })
-    expect(
-      await callRejectedMcpTool(
-        owner,
-        'read_my_lists',
-        optionArgs('containing', { item_type: 'post', entity_id: 'not-a-uuid' }),
-        READ,
-      ),
-    ).toEqual(expect.stringContaining('entity_id'))
+    expect(await containing('not-a-uuid')).toEqual({ success: true, list_ids: [] })
     expect(
       await getMyListsContainingTool.function(ownerUser)({
         item_type: 'post',
         entity_id: 'not-a-uuid',
       }),
-    ).toEqual(INVALID)
+    ).toEqual({ success: true, list_ids: [] })
   })
 })
 

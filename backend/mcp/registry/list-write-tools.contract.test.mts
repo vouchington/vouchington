@@ -265,7 +265,7 @@ describe('list write tools contract — real DB', () => {
     ],
     [
       'remove_list_content',
-      optionArgs('item', { list_id: crypto.randomUUID(), item_type: 'post', entity_id: 'nope' }),
+      optionArgs('item', { list_id: 'nope', item_type: 'post', entity_id: crypto.randomUUID() }),
     ],
   ])('refuses invalid %s arguments before any change', async (name, args) => {
     const caller = await createCaller()

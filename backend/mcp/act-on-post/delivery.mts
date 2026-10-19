@@ -17,6 +17,7 @@ import {
   enqueueDistributionOrMarkFailed,
 } from '../follower-distribution/tool-support.mts'
 import { requireActiveToolUser } from '../private-user.mts'
+import { canonicalEntityIds, MISSING_REFERENCE_ID } from '../resolve-entity-reference.mts'
 import { successSchema } from '../output-schema-shapes.mts'
 
 type DistributionArgs = { id: string } & Partial<SendFollowersInput>
@@ -39,10 +40,18 @@ function distributionSource(
       const user = await requireActiveToolUser(currentUser)
       getDelegatedToolAuthority(user, invocationContext)
       const { id, ...body } = args
+      const resolvedBody = Array.isArray(body.recipient_user_ids)
+        ? {
+            ...body,
+            recipient_user_ids: (await canonicalEntityIds('user', body.recipient_user_ids)).map(
+              userId => userId ?? MISSING_REFERENCE_ID,
+            ),
+          }
+        : body
       if (!send) return enqueueDistributionOrMarkFailed(await sharePostWithFollowers(user, id))
       await preflightPostDistributionTarget(user, 'post_send', id)
       return enqueueDistributionOrMarkFailed(
-        await sendPostToFollowers(user, id, parseSendFollowersInput(body)),
+        await sendPostToFollowers(user, id, parseSendFollowersInput(resolvedBody)),
       )
     },
   }
@@ -57,7 +66,7 @@ function readStateSource(read: boolean): MergedToolSource<{ id: string }, { succ
       description: read ? 'Mark a post you can see read.' : 'Mark a post you can see unread.',
       parameters: {
         type: 'object',
-        properties: { id: { type: 'string', format: 'uuid' } },
+        properties: { id: POST_TARGET_SCHEMA },
         required: ['id'],
       },
     },

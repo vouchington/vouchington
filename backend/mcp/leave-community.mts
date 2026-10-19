@@ -1,4 +1,5 @@
 import { leaveCommunity, loadCommunityWithViewer } from '@services/communities'
+import { communityReferenceSchema } from './entity-reference-schema.mts'
 import type { Tool } from '@services/openai-agents/tool-types'
 import { successSchema } from './output-schema-shapes.mts'
 import { requireActiveToolUser } from './private-user.mts'
@@ -15,7 +16,7 @@ const tool: Tool<Args, Result> = {
     parameters: {
       type: 'object',
       properties: {
-        community_id: { type: 'string', description: 'Community UUID or slug' },
+        community_id: communityReferenceSchema,
       },
       required: ['community_id'],
       additionalProperties: false,

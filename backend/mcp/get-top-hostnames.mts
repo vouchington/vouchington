@@ -1,5 +1,6 @@
 import type { MergedToolSource } from './create-merged-tool.mts'
-import { getTopicIdByAnyCached } from '@services/entity-cache'
+import { topicReferenceSchema } from './entity-reference-schema.mts'
+import { resolvedTopicFilters } from './resolve-topic.mts'
 import { searchTopHostnames } from '@services/urls-hostnames/search-top'
 import type { BasicUser } from '@services/users/types'
 import {
@@ -31,11 +32,11 @@ const { default: defaultLimit, max } = HOSTNAME_PAGE_LIMIT
 const tool: MergedToolSource<ToolArgs, ToolResult> = {
   schema: {
     description:
-      'List hostnames with at least one positive trust vote, highest net trust first, as a signed-out reader sees them. Administratively blocked hostnames never appear. Filter by topic UUID or slug; an unknown topic gives no results.',
+      'List hostnames with at least one positive trust vote, highest net trust first, as a signed-out reader sees them. Administratively blocked hostnames never appear. Filter by topic id, slug, or exact name; an unknown topic gives no results.',
     parameters: {
       type: 'object',
       properties: {
-        topic: { type: 'string', description: 'Only hostnames of this topic UUID or slug' },
+        topic: topicReferenceSchema,
         ...pageInputProperties('Hostnames', HOSTNAME_PAGE_LIMIT),
       },
       required: [],
@@ -52,9 +53,10 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
   function:
     (_currentUser: BasicUser) =>
     async (args: ToolArgs): Promise<ToolResult> => {
-      const topicId = args.topic ? await getTopicIdByAnyCached(args.topic) : undefined
+      const topics = await resolvedTopicFilters({ topic: args.topic })
+      const topicId = topics?.topic
       const page = await findPageOrNull(args.after, async () =>
-        args.topic && !topicId
+        args.topic && !topics
           ? { results: [], page_info: EMPTY_PAGE_INFO }
           : searchTopHostnames({
               limit: clampToolLimit(args.limit, defaultLimit, max),

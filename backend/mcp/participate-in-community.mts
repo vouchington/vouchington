@@ -13,6 +13,8 @@ import { componentSchema } from './route-response-schema.mts'
 import { objectSchema, successSchema } from './output-schema-shapes.mts'
 import { adminOutputSchema, wrapAdminOutput } from './untrusted-output.mts'
 import { requireActiveToolUser } from './private-user.mts'
+import { communityReferenceSchema, userReferenceSchema } from './entity-reference-schema.mts'
+import { entityIdOrMissing } from './resolve-entity-reference.mts'
 
 type Option = 'join' | 'open_modmail' | 'reply_modmail'
 type Args = {
@@ -39,7 +41,7 @@ const descriptions: Record<Option, string> = {
 
 function source(option: Option): MergedToolSource<Args> {
   const properties: Record<string, unknown> = {
-    community_id: { type: 'string', description: 'Community UUID or slug' },
+    community_id: communityReferenceSchema,
   }
   const required = ['community_id']
   if (option !== 'join') {
@@ -49,6 +51,7 @@ function source(option: Option): MergedToolSource<Args> {
         : 'CreateCommunityModmailMessageRequest',
     )
     Object.assign(properties, bodySchema['properties'])
+    if (properties['subject_user_id']) properties['subject_user_id'] = userReferenceSchema
     required.push(...((bodySchema['required'] as string[] | undefined) ?? []))
   }
   if (option === 'reply_modmail') {
@@ -88,8 +91,11 @@ function source(option: Option): MergedToolSource<Args> {
       }
       if (option === 'open_modmail') {
         const access = await loadModmailOpeningAccess(user, args.community_id)
+        const subjectUserId = args.subject_user_id
+          ? await entityIdOrMissing('user', args.subject_user_id)
+          : undefined
         return wrapAdminOutput({
-          thread: await openAuthorizedModmailThread(user, access, args.subject_user_id),
+          thread: await openAuthorizedModmailThread(user, access, subjectUserId),
         })
       }
       const access = await loadModmailReplyAccess(user, args.community_id, args.conversationId!)

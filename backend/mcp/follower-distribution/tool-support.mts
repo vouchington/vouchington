@@ -5,6 +5,7 @@ import {
 } from '@services/follower-distributions'
 import { enqueueProcessFollowerDistribution } from '@queues/follower-distributions/enqueues'
 import { objectSchema } from '../output-schema-shapes.mts'
+import { userReferenceSchema } from '../entity-reference-schema.mts'
 
 const UUID_SCHEMA = { type: 'string', format: 'uuid' }
 
@@ -41,7 +42,7 @@ export function distributionParameters(
           audience: { const: 'selected_followers' },
           recipient_user_ids: {
             type: 'array',
-            items: UUID_SCHEMA,
+            items: userReferenceSchema,
             minItems: 1,
             maxItems: MAX_SELECTED_FOLLOWER_DISTRIBUTION_RECIPIENTS,
             uniqueItems: true,

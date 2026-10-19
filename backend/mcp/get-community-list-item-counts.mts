@@ -1,4 +1,5 @@
 import type { MergedToolSource } from './create-merged-tool.mts'
+import { communityReferenceSchema } from './entity-reference-schema.mts'
 import { getCommunityListItemCounts } from '@services/communities'
 import type { BasicUser } from '@services/users/types'
 import { COMMUNITY_LIST_ITEM_TYPES } from './mcp-community-list-item-output.mts'
@@ -17,7 +18,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
       "Count a public community's curated list entries by item_type (topic, rss_feed, post, url_hostname or url). Counts reflect the signed-out view: unreadable posts are excluded. Use read_community (option list_items) to page through them.",
     parameters: {
       type: 'object',
-      properties: { community_id: { type: 'string', description: 'Community UUID or slug' } },
+      properties: { community_id: communityReferenceSchema },
       required: ['community_id'],
     },
   },

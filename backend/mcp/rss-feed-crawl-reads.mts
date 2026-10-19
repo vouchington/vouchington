@@ -1,6 +1,8 @@
 import type { MergedToolSource } from './create-merged-tool.mts'
 import { sanitizePromptInjection, wrapExternalContent } from '@jongleberry/vurst-prompt'
 import { isUUID } from '@modules/utils'
+import { rssFeedReferenceSchema } from './entity-reference-schema.mts'
+import { canonicalEntityId } from './resolve-entity-reference.mts'
 import { getRssFeedByIdCached } from '@services/entity-fetch'
 import { getMembershipByUserId } from '@services/memberships'
 import {
@@ -72,7 +74,7 @@ export const listRssFeedCrawlsTool: MergedToolSource<ListArgs, ListResult> = {
     parameters: {
       type: 'object',
       properties: {
-        rss_feed_id: { type: 'string', format: 'uuid' },
+        rss_feed_id: rssFeedReferenceSchema,
         limit: { type: 'integer', minimum: 1, description: 'Defaults to 50; clamped to 100.' },
         after: { type: 'string' },
       },
@@ -95,11 +97,12 @@ export const listRssFeedCrawlsTool: MergedToolSource<ListArgs, ListResult> = {
     (currentUser: BasicUser) =>
     async (args: ListArgs): Promise<ListResult> => {
       await requireCrawlViewer(currentUser)
-      if (!isUUID(args.rss_feed_id) || !(await getRssFeedByIdCached(args.rss_feed_id))) {
+      const feedId = await canonicalEntityId('rss_feed', args.rss_feed_id)
+      if (!feedId || !(await getRssFeedByIdCached(feedId))) {
         return { success: false, error: 'RSS feed not found' }
       }
       const page = await findPageOrNull(args.after, () =>
-        searchRssFeedCrawls(args.rss_feed_id, {
+        searchRssFeedCrawls(feedId, {
           limit: clampToolLimit(args.limit, 50, MAX_LIMIT),
           after: args.after,
         }),
@@ -116,7 +119,7 @@ export const getRssFeedCrawlTool: MergedToolSource<DetailArgs, DetailResult> = {
     parameters: {
       type: 'object',
       properties: {
-        rss_feed_id: { type: 'string', format: 'uuid' },
+        rss_feed_id: rssFeedReferenceSchema,
         crawl_id: { type: 'string', format: 'uuid' },
       },
       required: ['rss_feed_id', 'crawl_id'],
@@ -135,19 +138,20 @@ export const getRssFeedCrawlTool: MergedToolSource<DetailArgs, DetailResult> = {
     (currentUser: BasicUser) =>
     async (args: DetailArgs): Promise<DetailResult> => {
       const viewer = await requireCrawlViewer(currentUser)
-      if (!isUUID(args.rss_feed_id) || !isUUID(args.crawl_id)) {
+      const feedId = await canonicalEntityId('rss_feed', args.rss_feed_id)
+      if (!feedId || !isUUID(args.crawl_id)) {
         return { success: false, error: 'Crawl not found' }
       }
-      if (!(await getRssFeedByIdCached(args.rss_feed_id))) {
+      if (!(await getRssFeedByIdCached(feedId))) {
         return { success: false, error: 'RSS feed not found' }
       }
       if (!currentUserCanRefreshRssFeed(viewer)) {
-        const crawl = await getRssFeedCrawlSummaryById(args.rss_feed_id, args.crawl_id)
+        const crawl = await getRssFeedCrawlSummaryById(feedId, args.crawl_id)
         return crawl
           ? { success: true, crawl: toSummary(crawl) }
           : { success: false, error: 'Crawl not found' }
       }
-      const crawl = await getRssFeedCrawlById(args.rss_feed_id, args.crawl_id)
+      const crawl = await getRssFeedCrawlById(feedId, args.crawl_id)
       if (!crawl) return { success: false, error: 'Crawl not found' }
       return {
         success: true,

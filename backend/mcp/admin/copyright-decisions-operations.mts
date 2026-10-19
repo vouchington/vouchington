@@ -7,6 +7,8 @@ import {
 } from '@services/copyright-notices'
 import { replayCopyrightDeliveryIntentAndEnqueue } from '@services/copyright-notices/copyright-mcp-write-actions'
 import { UUID_INPUT } from './create-admin-tool.mts'
+import { userReferenceSchema } from '../entity-reference-schema.mts'
+import { entityIdOrMissing } from '../resolve-entity-reference.mts'
 import {
   copyrightDecisionTool,
   validateCopyrightDecisionRequest,
@@ -84,20 +86,17 @@ export const adminCopyrightDecisionOperationTools = [
   copyrightDecisionTool<{ accountUserId: string; rationale: string }>({
     name: 'reinstate_copyright_repeat_infringer',
     path: reinstatementPath,
-    properties: { accountUserId: UUID_INPUT },
+    properties: { accountUserId: userReferenceSchema },
     required: ['accountUserId'],
     idempotent: false,
     run: async (user, args) => {
+      const accountUserId = await entityIdOrMissing('user', args.accountUserId)
       const body = { rationale: args.rationale }
-      validateCopyrightDecisionRequest(
-        reinstatementPath,
-        { accountUserId: args.accountUserId },
-        body,
-      )
+      validateCopyrightDecisionRequest(reinstatementPath, { accountUserId }, body)
       return {
         copyright_repeat_infringer_review: await recordCopyrightRepeatInfringerReinstatement({
           currentUser: user,
-          accountUserId: args.accountUserId,
+          accountUserId,
           recordedAt: new Date(),
           ...body,
         }),
