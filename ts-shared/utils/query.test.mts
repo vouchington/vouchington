@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseStringArray, parseBooleanish, parseNumberParam, parseNumberParams } from './query.mts'
+import { parseStringArray, parseNumberParam, parseNumberParams } from './query.mts'
 
 describe('parseStringArray', () => {
   it('should parse comma-separated string', () => {
@@ -35,63 +35,6 @@ describe('parseStringArray', () => {
 
   it('should return empty array for empty string', () => {
     expect(parseStringArray('')).toEqual([])
-  })
-})
-
-describe('parseBooleanish', () => {
-  it('should parse boolean true', () => {
-    expect(parseBooleanish(true)).toBe(true)
-  })
-
-  it('should parse boolean false', () => {
-    expect(parseBooleanish(false)).toBe(false)
-  })
-
-  it('should parse string "true"', () => {
-    expect(parseBooleanish('true')).toBe(true)
-    expect(parseBooleanish('TRUE')).toBe(true)
-    expect(parseBooleanish('True')).toBe(true)
-  })
-
-  it('should parse string "false"', () => {
-    expect(parseBooleanish('false')).toBe(false)
-    expect(parseBooleanish('FALSE')).toBe(false)
-    expect(parseBooleanish('False')).toBe(false)
-  })
-
-  it('should parse string "1"', () => {
-    expect(parseBooleanish('1')).toBe(true)
-  })
-
-  it('should parse string "0"', () => {
-    expect(parseBooleanish('0')).toBe(false)
-  })
-
-  it('should parse number 1', () => {
-    expect(parseBooleanish(1)).toBe(true)
-  })
-
-  it('should parse number 0', () => {
-    expect(parseBooleanish(0)).toBe(false)
-  })
-
-  it('should parse non-zero numbers as true', () => {
-    expect(parseBooleanish(5)).toBe(true)
-    expect(parseBooleanish(-1)).toBe(true)
-  })
-
-  it('should return false for null and other falsy values', () => {
-    expect(parseBooleanish(null)).toBe(false)
-  })
-
-  it('should return false for empty string', () => {
-    expect(parseBooleanish('')).toBe(false)
-  })
-
-  it('should return false for other strings', () => {
-    expect(parseBooleanish('yes')).toBe(false)
-    expect(parseBooleanish('no')).toBe(false)
-    expect(parseBooleanish('random')).toBe(false)
   })
 })
 
