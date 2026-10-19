@@ -17,10 +17,9 @@ reader maps Cursor's dialect to Claude's ([harness parity](../agent-harness-pari
   session id Cursor and Grok do not export.
 - **PreToolUse** (`pre-tool-use.mts`): the policy hook. A block exits 2 with its reason on stderr. It
   is a guardrail, not a security boundary ([hook threat model](../agent-sandbox.md#hook-threat-model)).
-  Its PR and issue content rules skip a command that provably targets a repository outside the
-  checkout's home repositories. This lets a session work across repositories with different content
-  conventions, including repositories under the same GitHub owner. Targets on unknown hosts remain
-  unproven; merge authority never reads that state.
+  It enforces merge authority, stack workflow, and configured PR base constraints. Use the structured
+  `pr_create` and `pr_update` MCP tools for PR content validation, provenance, and Shepherd Journal
+  preservation; the shell hook does not enforce those content rules.
 - **PostToolUse** (`post-tool-use-command.mts`): one merged hook that runs the tmux reminder
   in-process and is fail-open (any error is swallowed). No hook records session evidence or appends
   Blackboard journal entries; agents write their own

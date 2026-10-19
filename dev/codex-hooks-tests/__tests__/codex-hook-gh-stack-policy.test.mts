@@ -231,15 +231,15 @@ describe('Codex hook hand-rolled stack base policy', () => {
     }
   })
 
-  it('gives the generic pr_create reason when no local gh-merge-base is set', () => {
+  it('allows PR creation when no non-main gh-merge-base is configured', () => {
     const dir = makeTestTempDirSync('gh-merge-base-none-')
     try {
       execFileSync('git', ['init', '-q', '-b', 'feature-api'], { cwd: dir, env: isolatedGitEnv() })
       expect(
         findPreToolUseBlock({
           tool_input: { command: 'gh pr create --draft --fill', cwd: dir },
-        })?.reason,
-      ).toContain('pr_create')
+        }),
+      ).toBeNull()
     } finally {
       rmSync(dir, { force: true, recursive: true })
     }
@@ -264,10 +264,8 @@ describe('Codex hook hand-rolled stack base policy', () => {
     }
   })
 
-  it('blocks gh pr new and points at pr_create', () => {
-    expect(findPreToolUseBlock({ tool_input: { command: 'gh pr new --fill' } })?.reason).toContain(
-      'pr_create',
-    )
+  it('allows gh pr new without a non-main base', () => {
+    expect(findPreToolUseBlock({ tool_input: { command: 'gh pr new --fill' } })).toBeNull()
   })
 })
 

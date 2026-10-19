@@ -9,15 +9,11 @@ export type GhInvocation = {
   action: string
   area: string
   arguments: string[]
-  argumentTokenIndexes: number[]
   optionTokenIndexes: number[]
   optionTokens: string[]
 }
 
-type GhInvocationScan = Pick<
-  GhInvocation,
-  'argumentTokenIndexes' | 'optionTokenIndexes' | 'optionTokens'
-> & {
+type GhInvocationScan = Pick<GhInvocation, 'optionTokenIndexes' | 'optionTokens'> & {
   actionIndex?: number
   areaIndex?: number
 }
@@ -34,8 +30,10 @@ export function parseGhOrGhStackInvocation(tokens: string[], index: number): GhI
 }
 
 export function parseGhInvocation(tokens: string[], ghIndex: number): GhInvocation | null {
-  const { actionIndex, areaIndex, argumentTokenIndexes, optionTokenIndexes, optionTokens } =
-    scanGhInvocation(tokens, ghIndex)
+  const { actionIndex, areaIndex, optionTokenIndexes, optionTokens } = scanGhInvocation(
+    tokens,
+    ghIndex,
+  )
   if (areaIndex === undefined || actionIndex === undefined) {
     return null
   }
@@ -44,7 +42,6 @@ export function parseGhInvocation(tokens: string[], ghIndex: number): GhInvocati
     action: tokens[actionIndex],
     area: tokens[areaIndex],
     arguments: tokens.slice(actionIndex + 1),
-    argumentTokenIndexes,
     optionTokenIndexes,
     optionTokens,
   }
@@ -59,7 +56,6 @@ function scanGhInvocation(tokens: string[], ghIndex: number): GhInvocationScan {
   let actionIndex: number | undefined
   const optionTokenIndexes: number[] = []
   const optionTokens: string[] = []
-  const argumentTokenIndexes: number[] = []
 
   for (let index = ghIndex + 1; index < tokens.length; index += 1) {
     const token = tokens[index]
@@ -76,12 +72,10 @@ function scanGhInvocation(tokens: string[], ghIndex: number): GhInvocationScan {
     }
 
     if (token === '--repo' || token === '-R') {
-      if (actionIndex !== undefined) argumentTokenIndexes.push(index)
       optionTokens.push(token)
       optionTokenIndexes.push(index)
       const value = tokens[index + 1]
       if (value !== undefined && !isGhCommandSeparator(value)) {
-        if (actionIndex !== undefined) argumentTokenIndexes.push(index + 1)
         optionTokens.push(value)
         optionTokenIndexes.push(index + 1)
         index += 1
@@ -93,7 +87,6 @@ function scanGhInvocation(tokens: string[], ghIndex: number): GhInvocationScan {
       optionValueFromLongToken(token, '--repo') !== null ||
       attachedShortOptionValue(token, '-R') !== null
     ) {
-      if (actionIndex !== undefined) argumentTokenIndexes.push(index)
       optionTokens.push(token)
       optionTokenIndexes.push(index)
       continue
@@ -108,10 +101,9 @@ function scanGhInvocation(tokens: string[], ghIndex: number): GhInvocationScan {
       continue
     }
 
-    argumentTokenIndexes.push(index)
     optionTokens.push(token)
     optionTokenIndexes.push(index)
   }
 
-  return { actionIndex, areaIndex, argumentTokenIndexes, optionTokenIndexes, optionTokens }
+  return { actionIndex, areaIndex, optionTokenIndexes, optionTokens }
 }

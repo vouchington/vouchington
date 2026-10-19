@@ -12,7 +12,9 @@ Claude Code and Codex load `vouchington-workflow:pr-description`; Grok, Cursor, 
 ## Vouchington additions
 
 Use the `pr_create`, `pr_update`, and `pr_validate` tools of the `vouchington-tooling` MCP server
-rather than raw `gh pr create` or `gh pr edit --body*`, which the Codex hook blocks. The tools take
+for PR creation and body updates. They validate the content and provenance and preserve the
+Shepherd Journal; shell hooks retain merge and stack protections but do not intercept raw
+`gh pr create` or `gh pr edit --body*` commands. The tools take
 the structured `title`, `summary`, `impact`, `relatedIssues`, `details`, and `workspaceSetup`
 input (the server derives the trusted `mode` and the `Agent:` line from its own environment; omit
 `agent` and `model`) and

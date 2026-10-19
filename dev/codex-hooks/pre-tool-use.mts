@@ -10,16 +10,10 @@
 // Working directory: the worktree root comes from this script's own location, never from the Bash
 // tool call's cwd, so a `cd` earlier in the session cannot change which checkout the policy judges.
 //
-// Home repositories: `sessionHomeRepositories` resolves the session checkout's GitHub repositories
-// (its remotes plus the root package.json `repository`). It is injected lazily into the policy
-// so PR and issue content rules skip commands aimed at a different repository. When the home
-// repositories cannot be determined, every content rule stays enforced.
-
 import * as path from 'node:path'
 
 import { persistHookRealSessionId } from '../agent-session-id/persist.mts'
 import { isAttendedClaudeSession, isAutomationContext, preToolUseOutput } from './policy.mts'
-import { sessionHomeRepositories } from './policy/github-checkout-repositories.mts'
 import { readHookPayload, resolvePreToolUseRuntime } from './hook-payload.mts'
 
 // This script's own location is a stable worktree anchor, independent of the Bash tool call's
@@ -37,7 +31,6 @@ const output = preToolUseOutput(payload, {
   attended: isAttendedClaudeSession(),
   automationContext: isAutomationContext(),
   runtime,
-  sessionRepositories: () => sessionHomeRepositories(worktreeRoot),
 })
 if (output.stdout !== '') process.stdout.write(output.stdout)
 if (output.stderr !== '') process.stderr.write(output.stderr)

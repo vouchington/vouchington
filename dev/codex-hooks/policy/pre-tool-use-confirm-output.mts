@@ -15,8 +15,6 @@ export type PreToolUseOptions = {
   attended?: boolean
   /** See GitHubWorkflowPolicyOptions.automationContext in policy/core.mts. */
   automationContext?: boolean
-  /** See GitHubWorkflowPolicyOptions.sessionRepositories in policy/core.mts. */
-  sessionRepositories?: () => ReadonlySet<string> | undefined
 }
 
 /**
