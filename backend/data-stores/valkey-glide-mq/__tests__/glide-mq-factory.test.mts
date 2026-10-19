@@ -1,6 +1,11 @@
 import type { JobOptions, Queue } from 'glide-mq'
 import { describe, expect, it, vi } from 'vitest'
-import { createQueue, createWorker } from '../glide-mq-factory.mts'
+import {
+  closeAndUnregisterGlideMQInstance,
+  createMaintenanceQueue,
+  createQueue,
+  createWorker,
+} from '../glide-mq-factory.mts'
 import {
   createBulkEnqueueFunction,
   createEnqueueFunction,
@@ -78,6 +83,20 @@ describe('glide-mq factory', () => {
     } finally {
       await ranked.close()
       await none.close()
+    }
+  })
+
+  it('hands out maintenance handles that leave a shared queue priority kind alone', async () => {
+    const name = `maintenance-${crypto.randomUUID()}`
+    const owner = createQueue(name, { priorityKind: 'none' })
+    const handle = createMaintenanceQueue(name)
+    try {
+      expect(getGlideMQInstances()).toContain(handle)
+      expect(owner.priorityKind).toBe('none')
+      await expect(owner.add('job', {}, { priority: 0 })).resolves.toBeDefined()
+    } finally {
+      await closeAndUnregisterGlideMQInstance(handle)
+      await owner.close()
     }
   })
 
