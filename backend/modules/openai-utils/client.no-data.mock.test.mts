@@ -6,9 +6,9 @@ import { isFetchSafePort } from '@ts-shared/utils/fetch-ports'
 import { MissingModelClientCredentialError } from './missing-client-credential.mts'
 
 // The default export is a Proxy that lazily constructs the real OpenAI client on first property
-// access (see client.mts) and memoizes it for the life of the module. Mocking the external
-// 'openai' package (not an internal @modules boundary) lets this test observe exactly what the
-// Proxy passes to `new OpenAI(...)` without needing real credentials or network access.
+// access (see client.mts) and reuses it only while the credential is unchanged. Mocking the
+// external 'openai' package (not an internal @modules boundary) lets this test observe exactly
+// what the Proxy passes to `new OpenAI(...)` without needing real credentials or network access.
 const openAIConstructorMock = vi.hoisted(() => vi.fn<VitestLooseMock>())
 
 vi.mock<typeof import('openai')>(import('openai'), async importOriginal => ({
@@ -62,6 +62,24 @@ describe('openai client', () => {
     } finally {
       vi.unstubAllEnvs()
     }
+  })
+
+  it('rejects a cleared credential instead of reusing the client constructed earlier', () => {
+    void (openaiClient as unknown as Record<string, unknown>).apiKey
+    const constructedBeforeClear = openAIConstructorMock.mock.calls.length
+
+    vi.stubEnv('OPENAI_API_KEY', '')
+    expect(() => {
+      void (openaiClient as unknown as Record<string, unknown>).apiKey
+    }).toThrow(MissingModelClientCredentialError)
+    expect(openAIConstructorMock.mock.calls).toHaveLength(constructedBeforeClear)
+
+    vi.stubEnv('OPENAI_API_KEY', 'replacement-key')
+    void (openaiClient as unknown as Record<string, unknown>).apiKey
+    expect(openAIConstructorMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({ apiKey: 'replacement-key' }),
+    )
+    vi.unstubAllEnvs()
   })
 })
 

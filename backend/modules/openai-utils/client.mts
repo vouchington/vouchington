@@ -3,14 +3,15 @@ import { getLongRunningExternalFetch } from '@modules/utils'
 import { MissingModelClientCredentialError } from './missing-client-credential.mts'
 
 let client: OpenAI | undefined
+let clientKey: string | undefined
 
+// Recheck the credential on every access so a cleared key cannot reuse a cached client.
 function getClient(): OpenAI {
-  if (!client) {
-    const OPENAI_API_KEY = process.env.OPENAI_API_KEY?.trim()
-    if (!OPENAI_API_KEY) {
-      throw new MissingModelClientCredentialError('OpenAI')
-    }
-    client = new OpenAI({ apiKey: OPENAI_API_KEY, fetch: getLongRunningExternalFetch() })
+  const apiKey = process.env.OPENAI_API_KEY?.trim()
+  if (!apiKey) throw new MissingModelClientCredentialError('OpenAI')
+  if (!client || clientKey !== apiKey) {
+    client = new OpenAI({ apiKey, fetch: getLongRunningExternalFetch() })
+    clientKey = apiKey
   }
   return client
 }

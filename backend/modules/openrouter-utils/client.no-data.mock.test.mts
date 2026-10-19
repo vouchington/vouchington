@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getLongRunningExternalFetch } from '@modules/utils'
 import { MissingModelClientCredentialError } from '@modules/openai-utils/missing-client-credential'
 
@@ -12,6 +12,11 @@ vi.mock<typeof import('openai')>(import('openai'), async importOriginal => ({
 import openRouterClient from './client.mts'
 
 describe('openrouter client', () => {
+  beforeEach(() => {
+    process.env.OPENROUTER_API_KEY = 'test-key'
+    openAIConstructorMock.mockClear()
+  })
+
   it('requires a key before construction, then configures the guarded SDK client', async () => {
     vi.stubEnv('OPENROUTER_API_KEY', '')
     try {
@@ -35,6 +40,21 @@ describe('openrouter client', () => {
         defaultHeaders: { 'X-OpenRouter-Metadata': 'enabled' },
       })
       expect(options.fetch).toBe(getLongRunningExternalFetch())
+    } finally {
+      vi.unstubAllEnvs()
+    }
+  })
+
+  it('rejects a cleared credential instead of reusing the client constructed earlier', () => {
+    void (openRouterClient as unknown as Record<string, unknown>).apiKey
+    const constructedBeforeClear = openAIConstructorMock.mock.calls.length
+
+    vi.stubEnv('OPENROUTER_API_KEY', '')
+    try {
+      expect(() => {
+        void (openRouterClient as unknown as Record<string, unknown>).apiKey
+      }).toThrow(MissingModelClientCredentialError)
+      expect(openAIConstructorMock.mock.calls).toHaveLength(constructedBeforeClear)
     } finally {
       vi.unstubAllEnvs()
     }
