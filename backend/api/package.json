@@ -98,7 +98,6 @@
     "@queues/sitemaps": "workspace:^",
     "@queues/story-post-related-url-projections": "workspace:^",
     "@queues/urls-domains-blacklist": "workspace:^",
-    "@queues/user-rss-feed-imports": "workspace:^",
     "@queues/vote-aggregation": "workspace:^",
     "@services/account-data-requests": "workspace:^",
     "@services/admin-imports": "workspace:^",

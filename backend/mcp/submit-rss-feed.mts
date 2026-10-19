@@ -1,7 +1,7 @@
 import createHttpError from 'http-errors'
 import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
 import { isUUID } from '@modules/utils'
-import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
+import { getPaginationLimitsForContract } from '@services/pagination'
 import {
   getRssFeedImport,
   rssFeedImportStatusPagination,
@@ -125,7 +125,10 @@ const statusSource: MergedToolSource<
     const query: Record<string, unknown> = {}
     if (args.after !== undefined) query.after = args.after
     if (args.limit !== undefined) query.limit = String(args.limit)
-    const page = parseRuntimePagination(rssFeedImportStatusPagination, query)
+    const page = rssFeedImportStatusPagination.parse(
+      query,
+      getPaginationLimitsForContract(rssFeedImportStatusPagination.queryContract),
+    )
     const result = await getRssFeedImport(user.id, args.import_id, {
       limit: args.limit === undefined ? undefined : page.limit,
       after: page.after,

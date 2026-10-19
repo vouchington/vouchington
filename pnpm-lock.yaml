@@ -864,9 +864,6 @@ importers:
       '@queues/urls-domains-blacklist':
         specifier: workspace:^
         version: link:../queues/urls-domains-blacklist
-      '@queues/user-rss-feed-imports':
-        specifier: workspace:^
-        version: link:../queues/user-rss-feed-imports
       '@queues/vote-aggregation':
         specifier: workspace:^
         version: link:../queues/vote-aggregation
