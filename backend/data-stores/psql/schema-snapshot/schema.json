@@ -117481,7 +117481,7 @@
           "validated": true
         }
       },
-      "growth": "bounded",
+      "growth": "unbounded",
       "indexes": {
         "idx_stripe_event_processing_work_items__claim": {
           "accessMethod": "btree",
