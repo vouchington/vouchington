@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Queue } from 'glide-mq'
 import type { ScanAndUnlinkKeysClient } from 'valkyries'
@@ -6,6 +7,8 @@ import {
   allLiveWorkerQueueNames,
   UNIVERSAL_WORKER_QUEUE_NAMES,
 } from '@modules/worker-queue-inventory'
+import { enqueueSendCopyrightNoticeEmail } from '@queues/emails/enqueues'
+import { emails } from '@queues/emails/queues'
 import {
   flushQueues,
   getQueueFlushTargetNames,
@@ -133,6 +136,18 @@ describe('flushQueues', () => {
     expect(obliterate).toHaveBeenCalledTimes(getQueueFlushTargetNames().length)
     for (const call of obliterate.mock.calls) expect(call[0]).toEqual({ force: true })
     expect(close).toHaveBeenCalledTimes(getQueueFlushTargetNames().length)
+  })
+
+  it('leaves each live queue enqueueable under its own priority kind', async () => {
+    obliterate.mockResolvedValue(undefined)
+    close.mockResolvedValue(undefined)
+
+    await flushQueues()
+
+    // Queues are shared by name in the in-memory adapter; a flush handle that claimed `ranked`
+    // would make every later email enqueue (a `none` queue) throw "accepts only priority 0".
+    expect(emails.priorityKind).toBe('none')
+    await expect(enqueueSendCopyrightNoticeEmail(randomUUID())).resolves.toBeDefined()
   })
 
   it('reports an obliterate failure and still closes every temporary handle', async () => {

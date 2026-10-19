@@ -1,4 +1,7 @@
-import { closeAndUnregisterGlideMQInstance, createQueue } from '@data-stores/valkey-glide-mq'
+import {
+  closeAndUnregisterGlideMQInstance,
+  createMaintenanceQueue,
+} from '@data-stores/valkey-glide-mq'
 import { removeScheduledJobScheduler } from '@modules/scheduled-job-manifest'
 
 /**
@@ -6,7 +9,7 @@ import { removeScheduledJobScheduler } from '@modules/scheduled-job-manifest'
  * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
  */
 export async function removeQueueScheduler(queueName: string, schedulerId: string) {
-  const queue = createQueue(queueName, { priorityKind: 'ranked' })
+  const queue = createMaintenanceQueue(queueName)
   try {
     return await removeScheduledJobScheduler(queue, schedulerId)
   } finally {
