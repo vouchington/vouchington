@@ -172,6 +172,7 @@ describe('same-owner repositories keep their own content policy', () => {
     expect(reasonOf(editPr('5 --unknown https://github.com/acme/platform/pull/5'))).toContain(
       'pr_update',
     )
+    expect(reasonOf(editPr('5 -Racme/app -btext'))).toContain('pr_update')
     expect(reasonOf(editPr('5 https://github.com/acme/platform/pull/5'))).toContain('pr_update')
   })
 })
