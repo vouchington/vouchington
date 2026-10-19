@@ -35,6 +35,8 @@ export type PostPublicationChange = {
   impactedPostIds?: readonly string[]
   impactedCommunityIds?: readonly string[]
   impactedRssFeedItemIds?: readonly string[]
+  /** Alias text retained with the alias scope's impact keys in one insert. */
+  topicAliasText?: string
   footprint?: PostPublicationFootprint
 }
 export type PostPublicationFootprint = {
@@ -47,8 +49,6 @@ export type PostPublicationFootprint = {
   priorPostSlug?: string
   /** Previous slug for a community scope. */
   priorCommunitySlug?: string
-  /** Exact old sitemap shard required when a post moves out of public eligibility. */
-  priorSitemapTarget?: { postType: string; day: string }
 }
 export type PostPublicationDirtyWork = {
   id: string

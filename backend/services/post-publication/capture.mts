@@ -5,11 +5,7 @@ import {
   type PostPublicationDirtyWork,
 } from './types.mts'
 import { postPublicationScopeIdentifier } from './lock.mts'
-import {
-  retainCurrentPostPublicationKeys,
-  retainPostPublicationFootprintKeys,
-  retainPostPublicationImpactKeys,
-} from './capture-keys.mts'
+import { retainRecordedPublicationKeys } from './capture-keys.mts'
 import { upsertPostPublicationDirtyWork } from './upsert-dirty-work.mts'
 import { preparePostPublicationIdentityBridges } from './prepare-identity-bridges.mts'
 
@@ -20,6 +16,15 @@ export async function recordPostPublicationChange(
   change: PostPublicationChange,
 ): Promise<PostPublicationDirtyWork> {
   assertChange(change)
+  const work = await prepareAndUpsertPostPublicationChange(query, change)
+  await retainRecordedPublicationKeys(query, work.id, change)
+  return work
+}
+
+async function prepareAndUpsertPostPublicationChange(
+  query: TransactionQuery,
+  change: PostPublicationChange,
+): Promise<PostPublicationDirtyWork> {
   await preparePostPublicationIdentityBridges(query, [change])
   const [work] = await upsertPostPublicationDirtyWork(
     query,
@@ -28,15 +33,6 @@ export async function recordPostPublicationChange(
     [change.reason],
   )
   if (!work) throw new Error('Post publication dirty work upsert returned no row')
-  // ast-grep-ignore: no-three-sequential-awaits -- all retained keys must commit with the dirty generation.
-  await retainPostPublicationImpactKeys(query, work.id, {
-    postIds: change.impactedPostIds,
-    topicIds: change.impactedTopicIds,
-    communityIds: change.impactedCommunityIds,
-    rssFeedItemIds: change.impactedRssFeedItemIds,
-  })
-  await retainPostPublicationFootprintKeys(query, work.id, change.footprint)
-  await retainCurrentPostPublicationKeys(query, work.id, change.scope)
   return work
 }
 

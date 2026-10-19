@@ -3,6 +3,7 @@ import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic
 import { describe, expect, it } from 'vitest'
 import {
   beginTransaction,
+  getTestPostPublicationDirtyWorkForScope,
   hardDeleteTestPost,
   expireTestPostPublicationDirtyWorkLease,
   scrubTestUserUsernameInTransaction,
@@ -164,7 +165,7 @@ describe('bounded publication receipt retention and reclamation', () => {
   })
 
   it('stages orphan receipt retention before exposing effects or deleting the receipt', async () => {
-    const { work, candidate } = await createTestPublicationSnapshotWork()
+    const { candidate } = await createTestPublicationSnapshotWork()
     const oldSlugs = Array.from({ length: 5 }, (_, index) => `orphan-${candidate.id}-${index}`)
     await seedTestPublicationReceipt(candidate.id, 'orphan-prior', {
       topicIds: [],
@@ -172,20 +173,27 @@ describe('bounded publication receipt retention and reclamation', () => {
       sitemapTargets: [],
     })
     await hardDeleteTestPost(candidate.id)
-    const first = await reconcilePostPublicationDirtyWork(work, 2)
+    const deleted = await getTestPostPublicationDirtyWorkForScope({
+      type: 'post',
+      id: candidate.id,
+    })
+    if (!deleted) throw new Error('Expected orphan hard-delete publication work')
+    const claimed = await claimPostPublicationDirtyWork(deleted, 60)
+    if (!claimed) throw new Error('Expected orphan hard-delete publication lease')
+    const retainedSlugCount = async () =>
+      (await readTestPublicationRetainedKeys(claimed.id)).filter(key =>
+        oldSlugs.includes(key.value),
+      ).length
+    const first = await reconcilePostPublicationDirtyWork(claimed, 2)
     expect(first.hasIncompleteSnapshots).toBe(true)
     expect(first.identityKeys).toHaveLength(0)
-    expect(
-      (await readTestPublicationRetainedKeys(work.id)).filter(key => oldSlugs.includes(key.value)),
-    ).toHaveLength(2)
-    const second = await reconcilePostPublicationDirtyWork(work, 2)
+    expect(await retainedSlugCount()).toBe(2)
+    const second = await reconcilePostPublicationDirtyWork(claimed, 2)
     expect(second.hasIncompleteSnapshots).toBe(true)
-    const third = await reconcilePostPublicationDirtyWork(work, 2)
+    const third = await reconcilePostPublicationDirtyWork(claimed, 2)
     expect(third.hasIncompleteSnapshots).toBe(false)
     expect(third.hasMoreIdentityKeys).toBe(true)
-    expect(
-      (await readTestPublicationRetainedKeys(work.id)).filter(key => oldSlugs.includes(key.value)),
-    ).toHaveLength(5)
+    expect(await retainedSlugCount()).toBe(5)
     expect(await readTestPublicationReceipt(candidate.id)).toEqual({
       snapshotId: expect.any(String),
       fingerprint: 'orphan-prior',

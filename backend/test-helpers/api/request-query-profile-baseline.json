@@ -40,20 +40,6 @@
     "code": "backend/services/copyright-notices/email-manual-association.mts:52"
   },
   {
-    "annotation": "backfillCategoriesForTopicAliases",
-    "route": null,
-    "maxCount": null,
-    "reason": "The update runs after the candidate scan and item locks, so it can return a short page while matching rows remain beyond the LIMIT; the re-read after the batch write must see rows a concurrent writer changed (backend/services/rss-feed-items/backfill-categories-for-topic-aliases.mts:backfillCategoryBatch)",
-    "issue": 3336
-  },
-  {
-    "annotation": "backfillCategoriesForTopicAliases.candidateItems",
-    "route": null,
-    "maxCount": null,
-    "reason": "The terminal candidate scan re-reads after the batch write to see rows a concurrent writer changed; a short update page does not prove exhaustion (backend/services/rss-feed-items/backfill-categories-for-topic-aliases.mts:backfillCategoryBatch)",
-    "issue": 3336
-  },
-  {
     "annotation": "blockHostname_findPostRelatedUrlPosts",
     "route": null,
     "maxCount": null,
@@ -125,13 +111,7 @@
     "permanent": true,
     "code": "backend/services/my/email-address-verification.mts:54"
   },
-  {
-    "annotation": "createPublicationAliasIdentityStaging",
-    "route": null,
-    "maxCount": null,
-    "reason": "Each alias claim stages its source posts in its own claim sequence; merging claims needs a batched alias capture (#3336)",
-    "issue": 3336
-  },
+  {},
   {
     "annotation": "createTopicRevision",
     "route": null,
@@ -183,8 +163,9 @@
     "annotation": "fencePublicationIdentityBridgeCapture",
     "route": null,
     "maxCount": null,
-    "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3336)",
-    "issue": 3336
+    "reason": "Prepare locks each identity family in global order before dirty work is written, then the scope upsert locks that same bridge again before the foreign-key insert.",
+    "permanent": true,
+    "code": "backend/services/post-publication/identity-bridges.mts:72"
   },
   {
     "annotation": "fetchElectionVoteRowsByUser",
@@ -275,13 +256,6 @@
     "code": "backend/services/entity-fetch/rss-feeds.mts:12"
   },
   {
-    "annotation": "getTopicAliasesForMergeRevision",
-    "route": null,
-    "maxCount": null,
-    "reason": "The destination aliases are re-read after the alias move and source-slug alias writes, so the after snapshot must see them",
-    "issue": 3336
-  },
-  {
     "annotation": "getTopicByAny",
     "route": null,
     "maxCount": null,
@@ -321,41 +295,7 @@
     "permanent": true,
     "code": "backend/services/copyright-notices/email-promotion.mts:356"
   },
-  {
-    "annotation": "listDescendantPostPublicationSitemapPage",
-    "route": null,
-    "maxCount": null,
-    "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3336)",
-    "issue": 3336
-  },
-  {
-    "annotation": "listPostPublicationIdentityNativeSourcePage",
-    "route": null,
-    "maxCount": null,
-    "reason": "Eight source branches page sequentially under one row budget and cursor; one statement would change page boundaries (#3336)",
-    "issue": 3336
-  },
-  {
-    "annotation": "listPublicationIdentityFeedItem",
-    "route": null,
-    "maxCount": null,
-    "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3336)",
-    "issue": 3336
-  },
-  {
-    "annotation": "listPublicationIdentityFeedSourcePage",
-    "route": null,
-    "maxCount": null,
-    "reason": "Feed items page under the shared source row budget and cursor; one statement would change page boundaries (#3336)",
-    "issue": 3336
-  },
-  {
-    "annotation": "listTopicAliasPublicationPostImpacts",
-    "route": null,
-    "maxCount": null,
-    "reason": "Each alias retains its own ownership pages under its own dirty-work row (#3336)",
-    "issue": 3336
-  },
+  {},
   {
     "annotation": "lockApiKeyOwner",
     "route": null,
@@ -416,43 +356,41 @@
     "annotation": "lockExistingTopicAliasPublicationScopes",
     "route": null,
     "maxCount": null,
-    "reason": "Each alias claim locks its alias scope before its own row lock and rechecks after it (#3336)",
-    "issue": 3336
+    "reason": "Alias claim re-reads alias rows after topic creation so the lock sees aliases inserted earlier in the transaction.",
+    "permanent": true,
+    "code": "backend/services/topics/alias-publication-locks.mts:16"
   },
   {
     "annotation": "lockPostPublicationCaptures",
     "route": null,
     "maxCount": null,
-    "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3336)",
-    "issue": 3336
-  },
-  {
-    "annotation": "lockPostPublicationRssFeedScopes",
-    "route": null,
-    "maxCount": null,
-    "reason": "Per-item lock order: the final feed scopes must be locked before the dirty-work upsert, because the impact re-read after the item-row wait can include feeds the caller's pre-lock scan missed (backend/services/post-publication/capture-rss-feeds.mts:recordRssFeedTopicPublicationChanges)",
-    "issue": 3336
+    "reason": "Post-scope advisory locks stay in one sorted order when the id set is split across capture-batch pages.",
+    "permanent": true,
+    "code": "backend/services/post-publication/capture-posts.mts:100"
   },
   {
     "annotation": "lockPostPublicationScope",
     "route": null,
     "maxCount": null,
-    "reason": "Author, post and feed scope locks are distinct keys taken at separate sites, and the nested rss-feed state change re-locks its feed as its own entry point (#3336)",
-    "issue": 3336
+    "reason": "Distinct scope families take separate advisory locks, and a nested author or feed change re-locks its own scope as its entry point.",
+    "permanent": true,
+    "code": "backend/services/post-publication/lock.mts:29"
   },
   {
     "annotation": "lockPreparedPublicationScopes",
     "route": null,
     "maxCount": null,
-    "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3336)",
-    "issue": 3336
+    "reason": "A multi-scope capture takes the sorted advisory locks for its whole declared set before the first dirty-work write.",
+    "permanent": true,
+    "code": "backend/services/post-publication/prepare-identity-bridges.mts:21"
   },
   {
     "annotation": "lockRssFeedHardDeleteTopicAliasPublicationScopes",
     "route": null,
     "maxCount": null,
-    "reason": "The capture re-reads category aliases after the feed lifecycle and row locks to catch aliases added since the first read",
-    "issue": 3336
+    "reason": "The hard-delete capture re-reads category aliases after the feed row lock so it sees aliases committed by the previous lock holder.",
+    "permanent": true,
+    "code": "backend/services/post-publication/capture-rss-feed-hard-delete-aliases.mts:13"
   },
   {
     "annotation": "lockSurfaceOwnerDomains",
@@ -461,13 +399,6 @@
     "reason": "User deletion locks the user image-owner domain first (users/delete.mts:77), then locks the profile-link domains it discovers by reading user_profile_links under that lock (users/delete.mts:86-89); the second lock needs ids only readable after the first",
     "permanent": true,
     "code": "backend/services/users/delete.mts:77"
-  },
-  {
-    "annotation": "lockTopicAliasPublicationCaptures",
-    "route": null,
-    "maxCount": null,
-    "reason": "Each alias capture locks its scope before its own write; merging needs a batched alias capture (#3336)",
-    "issue": 3336
   },
   {
     "annotation": "maybeResolveCases",
@@ -481,22 +412,9 @@
     "annotation": "orderPostPublicationRetainedKeyInput",
     "route": null,
     "maxCount": null,
-    "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3336)",
-    "issue": 3336
-  },
-  {
-    "annotation": "pagePublicationAliasIdentityStaging",
-    "route": null,
-    "maxCount": null,
-    "reason": "Each alias claim pages its own staged post identities in global UUID order (#3336)",
-    "issue": 3336
-  },
-  {
-    "annotation": "pagePublicationAliasSourceIdentities",
-    "route": null,
-    "maxCount": null,
-    "reason": "Authored and relation sources are separate keyset walks per alias; one statement would change plans and cursors (#3336)",
-    "issue": 3336
+    "reason": "Each scope orders its retained keys only after that scope's advisory lock and dirty-work row exist.",
+    "permanent": true,
+    "code": "backend/services/post-publication/retained-key-writes.mts:107"
   },
   {
     "annotation": "readBlueskyLinkAuthorization",
@@ -574,8 +492,9 @@
     "annotation": "recordPostTopicRelationPublicationChanges:aliases",
     "route": null,
     "maxCount": null,
-    "reason": "Each relation write resolves canonical topics at its own write boundary; merging writes needs a request-level capture coordinator (#3336)",
-    "issue": 3336
+    "reason": "A later relation mutation resolves canonical topics after its own write so it sees aliases inserted earlier in the request.",
+    "permanent": true,
+    "code": "backend/services/entity-relations/post-topic-publication.mts:169"
   },
   {
     "annotation": "recordTerritorialCopyrightRedressDecision:request",
@@ -626,39 +545,36 @@
     "code": "backend/services/elections-votes/entity-relation/resolve-election-target.mts:28"
   },
   {
-    "annotation": "resolvePublicationPostScopeLiveOwner",
-    "route": null,
-    "maxCount": null,
-    "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3336)",
-    "issue": 3336
-  },
-  {
     "annotation": "retainCurrentRssFeedPublicationKeys",
     "route": null,
     "maxCount": null,
-    "reason": "The topic-change capture runs after the feed UPDATE and must see the new topic that the earlier state-change capture did not",
-    "issue": 3336
+    "reason": "The topic-change capture reads the feed after the topic update, so it sees the topic the earlier state-change capture did not.",
+    "permanent": true,
+    "code": "backend/services/post-publication/capture-rss-feeds.mts:153"
   },
   {
     "annotation": "retainPostPublicationDirtyWorkKeys",
     "route": null,
     "maxCount": null,
-    "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3336)",
-    "issue": 3336
+    "reason": "Each scope inserts its retained keys only after that scope's advisory lock and dirty-work row exist.",
+    "permanent": true,
+    "code": "backend/services/post-publication/retained-key-writes.mts:92"
   },
   {
     "annotation": "retainPublicationIdentityBridges",
     "route": null,
     "maxCount": null,
-    "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3336)",
-    "issue": 3336
+    "reason": "Prepare locks each identity family in global order before dirty work is written, then the scope upsert locks that same bridge again before the foreign-key insert.",
+    "permanent": true,
+    "code": "backend/services/post-publication/identity-bridges.mts:98"
   },
   {
     "annotation": "retainPublicationIdentityRoots",
     "route": null,
     "maxCount": null,
-    "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3336)",
-    "issue": 3336
+    "reason": "Prepare locks each identity family in global order before dirty work is written, then the scope upsert locks that same bridge again before the foreign-key insert.",
+    "permanent": true,
+    "code": "backend/services/post-publication/identity-bridges.mts:80"
   },
   {
     "annotation": "revokeAllAuthenticatedSessions",
@@ -712,8 +628,9 @@
     "annotation": "sharePublicationIdentityBridgeOwnership",
     "route": null,
     "maxCount": null,
-    "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3336)",
-    "issue": 3336
+    "reason": "Prepare locks each identity family in global order before dirty work is written, then the scope upsert locks that same bridge again before the foreign-key insert.",
+    "permanent": true,
+    "code": "backend/services/post-publication/identity-bridges.mts:106"
   },
   {
     "annotation": "updateEntityRelationElectionVoteStatsFromPrimaryBatch",
@@ -743,8 +660,9 @@
     "annotation": "upsertPostPublicationDirtyWork",
     "route": null,
     "maxCount": null,
-    "reason": "Each capture site declares its scopes, identity bridges and keys in global order before its own write; merging sites needs a request-level capture coordinator (#3336)",
-    "issue": 3336
+    "reason": "Each scope family upserts through its own conflict column, after that family's identity lock and before its keys.",
+    "permanent": true,
+    "code": "backend/services/post-publication/upsert-dirty-work.mts:30"
   },
   {
     "annotation": "upsertUrlHostnames",

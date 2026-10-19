@@ -5,4 +5,7 @@ export * from './capture-story-topics.mts'
 export * from './capture-deletions.mts'
 export * from './capture-rss-feeds.mts'
 export * from './capture-topic-merge.mts'
-export { prepareTopicAliasPublicationIdentityBridges } from './prepare-alias-identities.mts'
+export {
+  retainHardDeletedPostPublication,
+  retainUserCascadeHardDeletedPosts,
+} from './capture-hard-delete.mts'

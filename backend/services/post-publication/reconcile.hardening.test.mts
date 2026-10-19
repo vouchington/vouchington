@@ -3,6 +3,7 @@ import {
   beginTransaction,
   createTestOrphanPostPublicationProjectionReceipts,
   createTestPost,
+  getTestPostPublicationDirtyWorkForScope,
   hardDeleteTestPost,
 } from '@voucha/test-helpers'
 import { describe, expect, it } from 'vitest'
@@ -56,7 +57,9 @@ describe('post publication orphan-receipt reconciliation', () => {
     await retainPostPublicationImpactKeys(query, work.id, { postIds: [post.id] })
     await query.commit()
     await hardDeleteTestPost(post.id)
-    const claimed = await claimPostPublicationDirtyWork(work, 60)
+    const deleted = await getTestPostPublicationDirtyWorkForScope({ type: 'post', id: post.id })
+    if (!deleted) throw new Error('Expected deleted-post publication work')
+    const claimed = await claimPostPublicationDirtyWork(deleted, 60)
     if (!claimed) throw new Error('Expected deleted-post publication work lease')
 
     await expect(reconcilePostPublicationDirtyWork(claimed)).resolves.toMatchObject({

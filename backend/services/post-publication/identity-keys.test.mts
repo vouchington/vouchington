@@ -58,7 +58,7 @@ describe('post publication retained identity keys', () => {
     expect(secondPage.identityKeys[0]).not.toEqual(firstPage.identityKeys[0])
   })
 
-  it('retains author, community, community-slug, and post-slug tombstones before deletion', async () => {
+  it('retains the author and prior username when authored posts stay live', async () => {
     const user = await createTestUser()
     if (!user) throw new Error('Expected deletion identity author')
     const community = await insertTestCommunity({ createdById: user.id })
@@ -68,15 +68,17 @@ describe('post publication retained identity keys', () => {
     await updateTestPostSlugInTransaction(query, post.id, oldSlug)
     await processAuthorDeletionPublicationBatch(query, user.id, user.username ?? null, 100)
     await query.commit()
-    await expect(
-      listTestPostPublicationIdentityKeys({ authorUserId: user.id, postId: post.id }),
-    ).resolves.toEqual(
+    const keys = await listTestPostPublicationIdentityKeys({
+      authorUserId: user.id,
+      postId: post.id,
+    })
+    expect(keys).toEqual(
       expect.arrayContaining([
         { kind: 'author', value: user.id },
-        { kind: 'community', value: community.id },
-        { kind: 'post_slug', value: oldSlug },
+        { kind: 'author', value: user.username },
       ]),
     )
+    expect(keys.filter(key => key.kind === 'community' || key.kind === 'post_slug')).toEqual([])
   })
 
   it('retains an author username for a retry after the profile scrub clears it', async () => {

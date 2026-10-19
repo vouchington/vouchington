@@ -9,7 +9,6 @@ import {
   retainPostPublicationImpacts,
   type PostPublicationImpactsByScope,
 } from './capture-impacts.mts'
-import { retainPostPublicationPostScopeContext } from './capture-post-context.mts'
 import { normalizePostPublicationIdentifiers } from './identifiers.mts'
 import { upsertPostPublicationDirtyWork } from './upsert-dirty-work.mts'
 import { preparePostPublicationIdentityBridges } from './prepare-identity-bridges.mts'
@@ -70,19 +69,21 @@ async function recordPostPublicationChangeBatch(
   batch: readonly PostPublicationImpactsByScope[],
 ): Promise<PostPublicationDirtyWork[]> {
   const postIds = batch.map(change => change.scopeId)
-  await lockPostPublicationPostScopes(query, postIds)
-  const work = await upsertPostPublicationDirtyWork(query, 'post', postIds, [reason])
+  const work = await lockAndUpsertPostPublicationBatch(query, reason, postIds)
   const workByPostId = new Map(
     work.flatMap(row => (row.post_identity_id ? [[row.post_identity_id, row.id] as const] : [])),
   )
-  await retainPostPublicationPostScopeContext(
-    query,
-    work.flatMap(row =>
-      row.post_identity_id ? [{ dirtyWorkId: row.id, postId: row.post_identity_id }] : [],
-    ),
-  )
   await retainPostPublicationImpacts(query, workByPostId, batch)
   return work
+}
+
+async function lockAndUpsertPostPublicationBatch(
+  query: TransactionQuery,
+  reason: PostPublicationReason,
+  postIds: readonly string[],
+): Promise<PostPublicationDirtyWork[]> {
+  await lockPostPublicationPostScopes(query, postIds)
+  return upsertPostPublicationDirtyWork(query, 'post', postIds, [reason])
 }
 
 /** Pre-locks a set of post scopes in one global order before split capture paths run. */
