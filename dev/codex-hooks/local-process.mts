@@ -82,35 +82,6 @@ export function gitResolveRef(cwd: string, ref: string): string | undefined {
   }
 }
 
-export function gitRemoteVerbose(cwd: string): string | undefined {
-  try {
-    return execFileSync('git', ['remote', '-v'], {
-      cwd,
-      encoding: 'utf8',
-      env: gitEnvForCwd(),
-      stdio: ['ignore', 'pipe', 'ignore'],
-      timeout: 5_000,
-    })
-  } catch {
-    return undefined
-  }
-}
-
-// `git config --get-regexp` exits 1 when nothing matches, which is an empty answer, not a failure.
-export function gitConfiguredRemoteDefaults(cwd: string): string | undefined {
-  try {
-    return execFileSync('git', ['config', '--get-regexp', '^remote\\..+\\.gh-resolved$'], {
-      cwd,
-      encoding: 'utf8',
-      env: gitEnvForCwd(),
-      stdio: ['ignore', 'pipe', 'ignore'],
-      timeout: 5_000,
-    })
-  } catch (err) {
-    return (err as { status?: number | null }).status === 1 ? '' : undefined
-  }
-}
-
 export function gitHeadPathExists(cwd: string, relativePath: string): boolean {
   try {
     execFileSync('git', ['show', `HEAD:${relativePath}`], {

@@ -28,13 +28,11 @@ Interactively, only a lone `gh pr merge` or numeric `gh stack merge` in an atten
 gets the silent allow. Every other interactive merge gets no hook opinion. Cursor and Grok run the
 same Claude-compat hook but resolve as their own runtimes, so a lone merge there gets no hook
 opinion even when they inherit `CLAUDE_CODE_SESSION_ATTENDED=1`. Every other hook policy
-(force-push, `--amend`, dev-server launches, hook-bypass flags, PR draft-first, closing-ref
-validation) is unrelated to merge authority and blocks the same way in automation and interactive
-sessions, and those blocks win over the merge allow. The PR and issue content rules (draft-first,
-closing-ref validation, `--base`, raw `Plan:` issues) are also scoped to the session checkout's home
-GitHub owners: they skip a `gh` command that provably targets another owner's repository, while the
-merge shapes stay global. See the [Codex hook policy](../../.agents/skills/agent-workflow/git-and-prs.md)
-and #434.
+(force-push, `--amend`, dev-server launches, hook-bypass flags, and native stack workflow controls)
+is unrelated to merge authority and blocks the same way in
+automation and interactive sessions, and those blocks win over the merge allow. PR body validation,
+provenance, and Shepherd Journal preservation live in the structured `pr_create` and `pr_update` MCP
+tools and do not affect the merge decision. See the [Codex hook policy](../../.agents/skills/agent-workflow/git-and-prs.md).
 
 **Confirm strength differs by runtime.** Claude's `permissionDecision: "allow"` proceeds silently no
 matter what auto-mode is active, so the hook emits it only for an attended session. An unattended

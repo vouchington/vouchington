@@ -99,7 +99,7 @@ describe('Codex hook gh policies behind a modeled wrapper chain', () => {
   it.each([
     'env -C /tmp gh pr create --title t --body "Closes #1"',
     'nohup env -u GH_TOKEN gh pr create --title t --body "Closes #1"',
-  ])('blocks raw PR creation behind a wrapper: %s', command => {
-    expect(findPreToolUseBlock({ tool_input: { command } })?.reason).toContain('pr_create')
+  ])('allows raw PR creation behind a wrapper: %s', command => {
+    expect(findPreToolUseBlock({ tool_input: { command } })).toBeNull()
   })
 })

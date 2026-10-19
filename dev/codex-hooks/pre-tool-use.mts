@@ -10,16 +10,10 @@
 // Working directory: the worktree root comes from this script's own location, never from the Bash
 // tool call's cwd, so a `cd` earlier in the session cannot change which checkout the policy judges.
 //
-// Home owners: `sessionHomeOwners` resolves the GitHub owners that the session's checkout belongs
-// to (its remotes plus the root package.json `repository`). It is injected lazily into the policy
-// so only `gh pr create/new/edit` and `gh issue create` aimed at a different owner skip the repository
-// content rules; when the owners cannot be determined, every content rule stays enforced.
-
 import * as path from 'node:path'
 
 import { persistHookRealSessionId } from '../agent-session-id/persist.mts'
 import { isAttendedClaudeSession, isAutomationContext, preToolUseOutput } from './policy.mts'
-import { sessionHomeOwners } from './policy/github-checkout-owners.mts'
 import { readHookPayload, resolvePreToolUseRuntime } from './hook-payload.mts'
 
 // This script's own location is a stable worktree anchor, independent of the Bash tool call's
@@ -37,7 +31,6 @@ const output = preToolUseOutput(payload, {
   attended: isAttendedClaudeSession(),
   automationContext: isAutomationContext(),
   runtime,
-  sessionOwners: () => sessionHomeOwners(worktreeRoot),
 })
 if (output.stdout !== '') process.stdout.write(output.stdout)
 if (output.stderr !== '') process.stderr.write(output.stderr)

@@ -5,11 +5,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import {
   gitConfigValue,
-  gitConfiguredRemoteDefaults,
   gitCurrentBranch,
   gitHeadPathExists,
   gitIsAncestor,
-  gitRemoteVerbose,
   gitResolveRef,
   oxfmtFailure,
 } from '../../codex-hooks/local-process.mts'
@@ -28,13 +26,6 @@ describe('codex hook local process boundary', () => {
       git(dir, 'config', `branch.${branch}.gh-merge-base`, 'feature-auth')
       vi.stubEnv('GIT_DIR', join(dir, 'missing-git-dir'))
       expect(gitConfigValue(dir, `branch.${branch}.gh-merge-base`)).toBe('feature-auth')
-    })
-  })
-
-  it('preserves raw remote output and treats no configured remote default as empty', async () => {
-    await withRepo({ origin: 'git@github.com:acme/tool.git' }, dir => {
-      expect(gitRemoteVerbose(dir)).toContain('origin\tgit@github.com:acme/tool.git (fetch)')
-      expect(gitConfiguredRemoteDefaults(dir)).toBe('')
     })
   })
 

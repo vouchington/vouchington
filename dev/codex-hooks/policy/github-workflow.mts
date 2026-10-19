@@ -6,11 +6,9 @@ import {
 import { commandsToInspectForGitHubPolicy } from './github-command-context.mts'
 import { commandCwd } from './github-command-cwd.mts'
 import { commandPrefixAt } from './github-command-position.mts'
-import { contentRuleExemption } from './github-content-rule-scope.mts'
 import { findAutomationMergeBlock } from './github-merge-authority.mts'
 import { parseGhOrGhStackInvocation } from './github-invocation.mts'
 import { findGitHubStackWorkflowBlock } from './github-stack-workflow.mts'
-import { githubPrBodyDecision } from './github-workflow-pr-body.mts'
 import { tokenizeShellWordsDetailed } from './shell-tokenizer.mts'
 
 export function findGitHubWorkflowBlock(
@@ -20,12 +18,10 @@ export function findGitHubWorkflowBlock(
 ): BlockDecision | null {
   const commandsToInspect = commandsToInspectForGitHubPolicy(command)
 
-  for (const [inspectIndex, commandToInspect] of commandsToInspect.entries()) {
-    const detailedTokens = tokenizeShellWordsDetailed(commandToInspect, {
-      splitRedirections: true,
-    })
-    const tokens = detailedTokens.map(token => token.value)
-    const exemptFromContentRules = contentRuleExemption(detailedTokens, options, inspectIndex === 0)
+  for (const commandToInspect of commandsToInspect) {
+    const tokens = tokenizeShellWordsDetailed(commandToInspect, { splitRedirections: true }).map(
+      token => token.value,
+    )
 
     for (let index = 0; index < tokens.length; index += 1) {
       if (!mayRunGh(tokens[index])) {
@@ -39,15 +35,6 @@ export function findGitHubWorkflowBlock(
         continue
       }
       const invocationCwd = commandCwd(tokens, index, cwd)
-      const contentRulesApply = !exemptFromContentRules(invocation, index, invocationCwd)
-
-      const prBodyDecision = githubPrBodyDecision({
-        contentRulesApply,
-        invocation,
-        invocationCwd,
-      })
-      if (prBodyDecision !== 'fallthrough') return prBodyDecision
-
       const stackBlock = findGitHubStackWorkflowBlock(invocation, invocationCwd)
       if (stackBlock !== null) {
         return stackBlock
