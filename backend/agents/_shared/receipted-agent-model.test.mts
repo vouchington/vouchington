@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { getOpenAIResponseAttemptHooks } from '@modules/openai-utils/create-response'
+import { MissingModelClientCredentialError } from '@modules/openai-utils/missing-client-credential'
 import { resolveAnthropicCredentials } from '@modules/model-providers/anthropic-client'
 import { ModelProviderError } from '@modules/model-providers/errors'
 import { assertSupportedRequest } from '@modules/model-providers/generate'
@@ -159,14 +160,19 @@ describe('paid agent receipt after provider validation', () => {
   })
 
   it.each(['direct', 'openrouter'] as const)(
-    'releases a missing %s client credential without dispatching a request',
+    'releases a provider-reported missing %s client credential without dispatching a request',
     async transport => {
       await spendCapConfig.waitForInitialization()
       const restoreAdmission = overrideDynamicConfigFieldsForTest(spendCapConfig, {
         enabled: false,
       })
-      vi.stubEnv('OPENAI_API_KEY', '')
-      vi.stubEnv('OPENROUTER_API_KEY', '')
+      const missingCredential = new MissingModelClientCredentialError(
+        transport === 'direct' ? 'OpenAI' : 'OpenRouter',
+      )
+      const deps =
+        transport === 'direct'
+          ? { createOpenAIResponse: () => Promise.reject(missingCredential) }
+          : { createOpenRouterResponse: () => Promise.reject(missingCredential) }
       const operationId = randomUUID()
       const params = {
         agentSlug: 'story-post',
@@ -181,19 +187,24 @@ describe('paid agent receipt after provider validation', () => {
           callReceiptedAgentModel({
             ...params,
             callModel: () =>
-              callOpenAIJson(TEST_OPENAI_SELECTION.model, transport, {
-                instructions: 'Return a title.',
-                input: params.input,
-                schemaName: 'title',
-                schema: {
-                  type: 'object',
-                  properties: { title: { type: 'string' } },
-                  required: ['title'],
-                  additionalProperties: false,
+              callOpenAIJson(
+                TEST_OPENAI_SELECTION.model,
+                transport,
+                {
+                  instructions: 'Return a title.',
+                  input: params.input,
+                  schemaName: 'title',
+                  schema: {
+                    type: 'object',
+                    properties: { title: { type: 'string' } },
+                    required: ['title'],
+                    additionalProperties: false,
+                  },
+                  parse: value => value as { title: string },
+                  maxOutputTokens: 100,
                 },
-                parse: value => value as { title: string },
-                maxOutputTokens: 100,
-              }),
+                deps,
+              ),
           }),
         ).rejects.toMatchObject({
           name: 'ModelProviderError',
@@ -215,7 +226,6 @@ describe('paid agent receipt after provider validation', () => {
           }),
         ).resolves.toMatchObject({ output })
       } finally {
-        vi.unstubAllEnvs()
         restoreAdmission()
       }
     },

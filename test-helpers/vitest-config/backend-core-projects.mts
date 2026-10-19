@@ -16,6 +16,7 @@ export const backendNoDataUnitTestFiles = [
   'backend/entrypoints/worker-cpu/grafana-heartbeat.test.mts',
   'backend/data-stores/graceful-shutdown/index.test.mts',
   'backend/services/oauth/__tests__/authorization-account-microsoft.test.mts',
+  'backend/modules/model-providers/openai-generate.no-data.test.mts',
 ]
 
 export const backendCoreProjects: TestProjectConfiguration[] = [
@@ -42,6 +43,7 @@ export const backendCoreProjects: TestProjectConfiguration[] = [
         '**/node_modules/**',
         '**/.git/**',
         '**/*.mock.test.mts',
+        ...backendNoDataUnitTestFiles,
         '**/*.anthropic*.test.mts',
         '**/*.openrouter.test.mts',
         '**/*.stripe.test.mts',
