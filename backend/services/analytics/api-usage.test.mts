@@ -133,9 +133,7 @@ describe('api-usage', () => {
       trackApiUsage(request, eventId)
       await flush()
 
-      const [row] = await query(
-        `SELECT event_id FROM api_usage WHERE user_id = '${request.user_id}'`,
-      )
+      const [row] = await query(`SELECT * FROM api_usage WHERE user_id = '${request.user_id}'`)
 
       expect(row!.event_id).toBe(eventId)
     })

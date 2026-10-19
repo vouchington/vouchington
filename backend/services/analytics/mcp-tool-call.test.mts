@@ -61,9 +61,10 @@ function event(overrides: Partial<McpToolCallPlanEvent> = {}): McpToolCallPlanEv
 
 async function rows(requestEventId: string): Promise<Record<string, unknown>[]> {
   await flush()
-  return query(
-    `SELECT * FROM mcp_tool_call WHERE request_event_id = '${requestEventId}' ORDER BY batch_index`,
+  const found = await query(
+    `SELECT * FROM mcp_tool_call WHERE request_event_id = '${requestEventId}'`,
   )
+  return found.toSorted((left, right) => Number(left.batch_index) - Number(right.batch_index))
 }
 
 function settle(
@@ -251,7 +252,7 @@ describe('mcp_tool_call', () => {
     )
 
     const recorded = await rows(analytics.requestEventId)
-    const [usage] = await query(`SELECT event_id FROM api_usage WHERE user_id = '${owner.userId}'`)
+    const [usage] = await query(`SELECT * FROM api_usage WHERE user_id = '${owner.userId}'`)
 
     expect(recorded.map(row => Number(row.batch_index))).toEqual([0, 1, 2])
     expect(new Set(recorded.map(row => row.request_event_id)).size).toBe(1)
