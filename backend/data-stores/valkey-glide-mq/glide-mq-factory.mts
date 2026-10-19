@@ -38,6 +38,11 @@ type SharedWorkerOptions = Omit<WorkerOptions, 'connection' | 'commandClient' | 
    */
   dedicatedCommandClient?: boolean
 }
+const sharedQueueConnection = {
+  connection: workerQueueConnection,
+  prefix: workerQueuePrefix,
+  client: workerQueueCommandClient,
+}
 export type PriorityQueue<T> = Queue<T> & { readonly priorityKind: QueuePriorityKind }
 
 export function createQueue<T = unknown>(
@@ -45,12 +50,7 @@ export function createQueue<T = unknown>(
   options: SharedQueueOptions & { priorityKind: QueuePriorityKind },
 ): PriorityQueue<T> {
   const { priorityKind, ...queueOptions } = options
-  const queue = new Queue<T>(name, {
-    connection: workerQueueConnection,
-    prefix: workerQueuePrefix,
-    client: workerQueueCommandClient,
-    ...queueOptions,
-  })
+  const queue = new Queue<T>(name, { ...sharedQueueConnection, ...queueOptions })
   const originalAdd = queue.add
   const originalAddBulk = queue.addBulk
   // ast-grep-ignore: backend-no-direct-scheduler-upsert -- intercept the queue's scheduler API to enforce priority before the manifest runtime calls it
@@ -79,6 +79,19 @@ export function createQueue<T = unknown>(
   const priorityQueue = Object.assign(queue, { priorityKind })
   registerGlideMQInstance(priorityQueue)
   return priorityQueue
+}
+
+/**
+ * A handle for queue maintenance (obliterate, scheduler removal) that never adds jobs, so it
+ * carries no priority contract. Use it instead of `createQueue` when the caller does not own the
+ * queue's `priorityKind`: where queues are shared by name (the in-memory test adapter), `createQueue`
+ * re-wraps the shared instance and overwrites its `priorityKind`, which breaks every later enqueue
+ * on a queue of the other kind.
+ */
+export function createMaintenanceQueue<T = unknown>(name: string): Queue<T> {
+  const queue = new Queue<T>(name, sharedQueueConnection)
+  registerGlideMQInstance(queue)
+  return queue
 }
 
 export function createWorker<D = unknown, R = unknown>(

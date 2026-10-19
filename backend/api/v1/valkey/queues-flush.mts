@@ -1,6 +1,6 @@
 import {
   closeAndUnregisterGlideMQInstance,
-  createQueue,
+  createMaintenanceQueue,
   workerQueueCommandClient,
   workerQueuePrefix,
 } from '@data-stores/valkey-glide-mq'
@@ -64,9 +64,7 @@ export async function flushQueues(
   client: ScanAndUnlinkKeysClient = workerQueueCommandClient,
 ): Promise<{ concern: 'queues'; keysRemoved: number | null }> {
   signal?.throwIfAborted()
-  const targets = getQueueFlushTargetNames().map(name =>
-    createQueue(name, { priorityKind: 'ranked' }),
-  )
+  const targets = getQueueFlushTargetNames().map(name => createMaintenanceQueue(name))
   let obliterateError: Error | undefined
 
   try {
