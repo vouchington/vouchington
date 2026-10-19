@@ -149,6 +149,6 @@ runtime-public config such as `NEXT_PUBLIC_GOOGLE_RECAPTCHA_SITE_KEY`). Names an
 - Turnstile service: ../../../docs/overview/architecture/services/README.md
 - Staging always-approve: [../../operations/staging-turnstile-always-approve.md](../../operations/staging-turnstile-always-approve.md)
 - reCAPTCHA service: ../../../docs/overview/architecture/services/README.md
-- Dynamic Config API: ../../../docs/requirements/api/v1/dynamic-config/README.md
+- Dynamic Config: [architecture](dynamic-config.md)
 - Local env var matrix: [../../development/local-env-vars.md](../../development/local-env-vars.md)
 - Feature flags vs DynamicConfig: [feature-flags.md](feature-flags.md)

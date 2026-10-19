@@ -2,7 +2,10 @@ import { dynamicConfigRegistry } from '../services/dynamic-config-admin/registry
 import {
   resetDynamicConfigToTestBaseline,
   snapshotDynamicConfigFieldsForTest,
+  type TestDynamicConfig,
 } from './dynamic-config.mts'
+
+type ClosableTestDynamicConfig = TestDynamicConfig & { close: () => Promise<void> }
 
 let initialization: Promise<void> | undefined
 
@@ -10,18 +13,25 @@ let initialization: Promise<void> | undefined
 export async function initializeEmbeddingCreationConfig(): Promise<() => void> {
   initialization ??= initialize()
   await initialization
-  return snapshotDynamicConfigFieldsForTest(dynamicConfigRegistry.map(entry => entry.config))
+  return snapshotDynamicConfigFieldsForTest(
+    dynamicConfigRegistry.entries.map(entry => entry.config as unknown as TestDynamicConfig),
+  )
 }
 
 async function initialize(): Promise<void> {
   const initialized = await Promise.allSettled(
-    dynamicConfigRegistry.map(({ config }) => config.waitForInitialization()),
+    dynamicConfigRegistry.entries.map(({ config }) => config.waitForInitialization()),
   )
-  const closed = await Promise.allSettled(dynamicConfigRegistry.map(({ config }) => config.close()))
+  const closed = await Promise.allSettled(
+    dynamicConfigRegistry.entries.map(({ config }) =>
+      (config as unknown as ClosableTestDynamicConfig).close(),
+    ),
+  )
   const errors = [...initialized, ...closed].flatMap(result =>
     result.status === 'rejected' ? [result.reason] : [],
   )
   if (errors.length)
     throw new AggregateError(errors, 'Embedding configuration initialization failed')
-  for (const { config } of dynamicConfigRegistry) resetDynamicConfigToTestBaseline(config)
+  for (const { config } of dynamicConfigRegistry.entries)
+    resetDynamicConfigToTestBaseline(config as unknown as TestDynamicConfig)
 }

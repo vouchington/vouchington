@@ -1,6 +1,6 @@
 import { autotaggerPaidLimitsConfig } from '@services/autotagger/limits-config'
 import { manualTagLimitConfig } from '@services/tag-limits/config'
-import { defineDynamicConfigNamespace } from './registry-descriptor.mts'
+import { defineDynamicConfigNamespace } from 'valkyries/dynamic-config'
 import { TAG_LIMIT_MAX_EXEMPTION } from './registry-entry-utils.mts'
 import { validateAutotaggerPaidLimitsConfig } from './autotagger-paid-limits-validation.mts'
 import { validateMembershipPlanLimits } from './registry-membership-limit-validators.mts'
@@ -75,12 +75,12 @@ export const tagLimitsDynamicConfigRegistryEntries = [
 function tagLimitField(description: string) {
   return {
     description,
-    min_value: 0,
-    max_value_exemption: TAG_LIMIT_MAX_EXEMPTION,
+    minValue: 0,
+    maxValueExemption: TAG_LIMIT_MAX_EXEMPTION,
     integer: true,
   }
 }
 
 function agentBoundField(description: string, maxValue: number) {
-  return { description, min_value: 1, max_value: maxValue, integer: true }
+  return { description, minValue: 1, maxValue: maxValue, integer: true }
 }

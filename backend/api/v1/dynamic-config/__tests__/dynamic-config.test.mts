@@ -1,16 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { countDynamicConfigAuditRows, createTestUser } from '@voucha/test-helpers'
-import {
-  closeScopedDynamicConfigContext,
-  createDynamicConfigForTest,
-  createDynamicConfigTestKey,
-} from '@voucha/test-helpers/dynamic-config'
 import { withPostgresPoolQueryFailureForTest } from '@voucha/test-helpers/postgres-pool-query-failure'
-import {
-  dynamicConfigRegistry,
-  type getDynamicConfigRegistryEntry,
-} from '@services/dynamic-config-admin/registry'
+import { dynamicConfigRegistry } from '@services/dynamic-config-admin/registry'
+import { withIsolatedDynamicConfigForTest } from '@voucha/test-helpers/isolated-dynamic-config'
 
 describe('PATCH /api/v1/dynamic-config/namespaces/:namespace audit failure', () => {
   it('returns a server error without changing the config when its audit insert fails', async () => {
@@ -18,32 +11,19 @@ describe('PATCH /api/v1/dynamic-config/namespaces/:namespace audit failure', () 
     const request = createRequest()
     await request.authenticateAs(developer)
     const requestId = crypto.randomUUID()
-    const namespace = createDynamicConfigTestKey('api-audit-failure')
-    const config = createDynamicConfigForTest({
-      key: namespace,
-      fieldTypes: { enabled: 'boolean' },
-      defaultFields: { enabled: false },
-    })
-    const entry: NonNullable<ReturnType<typeof getDynamicConfigRegistryEntry>> = {
-      namespace,
-      label: 'Owned audit failure config',
-      description: 'Isolated boolean configuration for an audit failure.',
-      config,
-      access: { update_roles: ['developer'] },
-      fields: { enabled: { description: 'Enable this isolated configuration.' } },
-    }
-    dynamicConfigRegistry.push(entry)
-    try {
-      await config.waitForInitialization()
-      expect(config.getFields()).toEqual({ enabled: false })
-      const beforeCount = await countDynamicConfigAuditRows(namespace)
+    const namespace = 'feature-flags'
+    const entry = dynamicConfigRegistry.get(namespace)!
+    await withIsolatedDynamicConfigForTest(entry, async config => {
+      const previous = config.getFields().memberships
+      const next = !previous
+      const beforeCount = await countDynamicConfigAuditRows(namespace, developer.id)
       const { result: response, error } = await withPostgresPoolQueryFailureForTest(
         '/* recordDynamicConfigChange */',
         () =>
           request
             .patch(`/api/v1/dynamic-config/namespaces/${namespace}`)
             .set('x-request-id', requestId)
-            .send({ config: { enabled: true } })
+            .send({ config: { memberships: next } })
             .expect(500),
         { command: 'INSERT', requestId },
       )
@@ -54,14 +34,10 @@ describe('PATCH /api/v1/dynamic-config/namespaces/:namespace audit failure', () 
         message: error.message,
         request_id: requestId,
       })
-      expect(config.getFields()).toEqual({ enabled: false })
+      expect(config.getFields().memberships).toBe(previous)
       await config.refresh()
-      expect(config.getFields()).toEqual({ enabled: false })
-      await expect(countDynamicConfigAuditRows(namespace)).resolves.toBe(beforeCount)
-    } finally {
-      const index = dynamicConfigRegistry.indexOf(entry)
-      if (index >= 0) dynamicConfigRegistry.splice(index, 1)
-      await closeScopedDynamicConfigContext([config])
-    }
+      expect(config.getFields().memberships).toBe(previous)
+      await expect(countDynamicConfigAuditRows(namespace, developer.id)).resolves.toBe(beforeCount)
+    })
   })
 })

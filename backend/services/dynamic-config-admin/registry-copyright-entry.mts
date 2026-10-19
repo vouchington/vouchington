@@ -1,5 +1,5 @@
 import { copyrightConfig } from '@services/copyright-notices/config'
-import { defineDynamicConfigNamespace } from './registry-descriptor.mts'
+import { defineDynamicConfigNamespace } from 'valkyries/dynamic-config'
 import { validateCopyrightDsaSorDatabaseFrom } from './registry-copyright-validators.mts'
 
 export const copyrightRegistryEntry = defineDynamicConfigNamespace({
@@ -17,8 +17,8 @@ export const copyrightRegistryEntry = defineDynamicConfigNamespace({
     reviewTargetMinutes: {
       description:
         'Minutes a copyright case may wait for a moderator before the review-target sweep sends a Sentry warning. 0 means unset: no review-target page. Missed statutory deadlines page regardless.',
-      min_value: 0,
-      max_value: 10_080,
+      minValue: 0,
+      maxValue: 10_080,
       integer: true,
     },
     evidenceRetentionDeletion: {
@@ -28,15 +28,15 @@ export const copyrightRegistryEntry = defineDynamicConfigNamespace({
     evidenceRetentionDays: {
       description:
         'Days a copyright case is kept after its last lifecycle event before the retention sweep may delete its evidence. 0 means unset: nothing is deleted even when the switch is on. Set only to an owner-approved period.',
-      min_value: 0,
-      max_value: 3650,
+      minValue: 0,
+      maxValue: 3650,
       integer: true,
     },
     emailThreadGraphMaxRows: {
       description:
         'Maximum total email intakes and ancestor edges inspected when a staff approval links waiting replies. A larger graph still opens the notice and leaves replies for staff review.',
-      min_value: 1,
-      max_value: 1000,
+      minValue: 1,
+      maxValue: 1000,
       integer: true,
     },
     staydownMatching: {
@@ -66,29 +66,29 @@ export const copyrightRegistryEntry = defineDynamicConfigNamespace({
     automaticWithholdingMinTrustTier: {
       description:
         'Lowest claimant trust tier whose clear-screened notice may be withheld automatically. -1 means unset: every gate must be set before any automatic withholding happens, and an unset gate sends the notice to a moderator.',
-      min_value: -1,
-      max_value: 5,
+      minValue: -1,
+      maxValue: 5,
       integer: true,
     },
     automaticWithholdingMinAccountAgeDays: {
       description:
         'Days a claimant account must exist before its clear-screened notice may be withheld automatically. -1 means unset: automatic withholding is refused and the notice goes to a moderator.',
-      min_value: -1,
-      max_value: 3650,
+      minValue: -1,
+      maxValue: 3650,
       integer: true,
     },
     automaticWithholdingClaimantDailyCap: {
       description:
         'Most notices per claimant in a rolling 24 hours that may be withheld automatically. Notices over the cap go to a moderator and are never dropped. -1 means unset: automatic withholding is refused.',
-      min_value: -1,
-      max_value: 10_000,
+      minValue: -1,
+      maxValue: 10_000,
       integer: true,
     },
     automaticWithholdingPosterDailyCap: {
       description:
         'Most automatic withholdings against one poster in a rolling 24 hours, so one account cannot be taken down by a burst of notices. Notices over the cap go to a moderator and are never dropped. -1 means unset: automatic withholding is refused.',
-      min_value: -1,
-      max_value: 10_000,
+      minValue: -1,
+      maxValue: 10_000,
       integer: true,
     },
   },

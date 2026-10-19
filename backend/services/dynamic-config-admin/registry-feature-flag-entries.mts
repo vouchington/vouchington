@@ -1,5 +1,5 @@
 import { featureFlagsConfig } from '@services/feature-flags/config'
-import { defineDynamicConfigNamespace } from './registry-descriptor.mts'
+import { defineDynamicConfigNamespace } from 'valkyries/dynamic-config'
 
 export const featureFlagDynamicConfigRegistryEntries = [
   defineDynamicConfigNamespace({

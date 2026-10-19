@@ -5,8 +5,8 @@ import {
 } from '@modules/model-providers/routing'
 import { modelRoutingConfig } from '@services/ai-usage/model-routing-config'
 import { validateModelRoutingConfig } from './registry-ai-usage-validators.mts'
-import { defineDynamicConfigNamespace } from './registry-descriptor.mts'
-import type { DynamicConfigRegistryEntry } from './types.mts'
+import { defineDynamicConfigNamespace } from 'valkyries/dynamic-config'
+import type { DynamicConfigRegistryEntry } from '@vouchington/dynamic-config'
 
 const serviceFields = Object.fromEntries(
   MODEL_SERVICE_SLUGS.flatMap(slug => [

@@ -1,19 +1,8 @@
 import { minimumImageBatchSizeMB } from '@services/bedrock-embeddings/batch/input-size-limits'
-import { BEDROCK_BATCH_MAX_VALUES } from '@services/bedrock-embeddings/batch/config'
-import { DynamicConfigValidationError } from './namespace.mts'
-import type { DynamicConfigFields } from './types.mts'
-import { validatePositiveIntegerFields } from './registry-validators.mts'
+import type { DynamicConfigFields } from '@vouchington/dynamic-config'
+import { DynamicConfigValidationError } from 'valkyries/dynamic-config'
 
 export function validateBedrockBatchConfig(next: DynamicConfigFields): void {
-  validatePositiveIntegerFields(next)
-  for (const [key, maxValue] of Object.entries(BEDROCK_BATCH_MAX_VALUES)) {
-    const value = next[key]
-    if (typeof value === 'number' && value > maxValue) {
-      throw new DynamicConfigValidationError(
-        `Field ${key} must be less than or equal to ${maxValue}`,
-      )
-    }
-  }
   for (const ceiling of ['max_requests_per_file', 'max_requests_per_hour']) {
     if (Number(next.min_records_per_job) > Number(next[ceiling]))
       throw new DynamicConfigValidationError(`min_records_per_job must be <= ${ceiling}`)

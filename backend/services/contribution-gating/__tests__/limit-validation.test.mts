@@ -25,9 +25,9 @@ describe('validateContributionLimitConfig', () => {
 
   it('reports authored policy limits with a positive staff-config minimum', () => {
     const metadata = contributionLimitFieldMetadata()
-    expect(metadata.discussion_free_daily_limit?.min_value).toBe(1)
-    expect(metadata.authored_post_safety_daily_limit?.min_value).toBe(1)
-    expect(metadata.community_free_daily_limit?.min_value).toBe(-1)
+    expect(metadata.discussion_free_daily_limit?.minValue).toBe(1)
+    expect(metadata.authored_post_safety_daily_limit?.minValue).toBe(1)
+    expect(metadata.community_free_daily_limit?.minValue).toBe(-1)
   })
 
   it('accepts the shipped matrix', () => {

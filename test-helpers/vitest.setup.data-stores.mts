@@ -101,7 +101,7 @@ export async function setup() {
   await timedSetupPhase('seed', seed)
   await timedSetupPhase('dynamic-config', () =>
     settleSetupOperations(
-      dynamicConfigRegistry.map(({ config }) =>
+      dynamicConfigRegistry.entries.map(({ config }) =>
         timedSetupPhase(`dynamic-config:${config.key}`, async () => {
           await config.waitForInitialization()
           await persistDynamicConfigTestBaseline(config)

@@ -8,7 +8,7 @@ import {
 } from '@services/rss-feeds/crawl-config'
 import { rssFeedDiscoverabilityConfig } from '@services/rss-feeds/discoverability-config'
 import { webRiskConfig } from '@services/web-risk/config'
-import { defineDynamicConfigNamespace } from './registry-descriptor.mts'
+import { defineDynamicConfigNamespace } from 'valkyries/dynamic-config'
 import { scoreField } from './registry-entry-utils.mts'
 import { membershipBillingRegistryEntry } from './registry-membership-billing-entry.mts'
 import { postRelatedUrlDisplayRegistryEntries } from './registry-post-related-url-entries.mts'
@@ -17,7 +17,7 @@ import { userImportExportRegistryEntry } from './registry-user-import-export-ent
 import {
   validateRssFeedCrawlConfig,
   validateRssFeedDiscoverabilityConfig,
-} from './registry-validators.mts'
+} from './product-config-validators.mts'
 
 export const operationalDynamicConfigRegistryEntries = [
   ...postRelatedUrlDisplayRegistryEntries,
@@ -52,8 +52,8 @@ export const operationalDynamicConfigRegistryEntries = [
       ),
       make_discoverable_min_subscriptions: {
         description: 'Subscription count required for the alternate discoverability threshold.',
-        min_value: 0,
-        max_value_exemption:
+        minValue: 0,
+        maxValueExemption:
           'Subscription thresholds intentionally remain operator-tunable because feed popularity distribution changes over time.',
         integer: true,
       },
@@ -95,21 +95,21 @@ export const operationalDynamicConfigRegistryEntries = [
     fields: {
       topic_import_attempt_batch_size: {
         description: 'Topic import attempt rows per retention page.',
-        min_value: 1,
-        max_value: 250,
+        minValue: 1,
+        maxValue: 250,
         integer: true,
       },
       batch_size: {
         description: 'Rows each data retention cleanup deletes per batch.',
-        min_value: 1,
-        max_value: DATA_RETENTION_MAX_VALUES.batch_size,
+        minValue: 1,
+        maxValue: DATA_RETENTION_MAX_VALUES.batch_size,
         integer: true,
       },
       max_batches_per_run: {
         description:
           'Maximum batches each data retention cleanup runs per daily job. A cleanup that hits the cap reports more work and resumes on the next run.',
-        min_value: 1,
-        max_value: DATA_RETENTION_MAX_VALUES.max_batches_per_run,
+        minValue: 1,
+        maxValue: DATA_RETENTION_MAX_VALUES.max_batches_per_run,
         integer: true,
       },
     },
@@ -165,8 +165,8 @@ export const operationalDynamicConfigRegistryEntries = [
 function rssFeedCrawlField(description: string, key: keyof typeof RSS_FEED_CRAWL_MIN_VALUES) {
   return {
     description,
-    min_value: RSS_FEED_CRAWL_MIN_VALUES[key],
-    max_value: RSS_FEED_CRAWL_MAX_VALUES[key],
+    minValue: RSS_FEED_CRAWL_MIN_VALUES[key],
+    maxValue: RSS_FEED_CRAWL_MAX_VALUES[key],
     integer: true,
   }
 }

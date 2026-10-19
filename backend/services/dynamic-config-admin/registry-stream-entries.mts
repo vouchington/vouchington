@@ -4,7 +4,7 @@ import { referralUnfurlDispatchConfig } from '@services/referral-link-unfurl/wor
 import { friendsDispatchConfig } from '@services/friend-recommendations/work-limits'
 import { crawlDispatchConfig } from '@services/crawls/work-limits'
 import { crawlerRefreshWorkConfig } from '@services/crawlers/refresh-limits'
-import { defineDynamicConfigNamespace } from './registry-descriptor.mts'
+import { defineDynamicConfigNamespace } from 'valkyries/dynamic-config'
 
 export const streamDynamicConfigRegistryEntries = [
   defineDynamicConfigNamespace({
@@ -16,39 +16,39 @@ export const streamDynamicConfigRegistryEntries = [
     fields: {
       weekly_refresh_batch_size: {
         description: 'Hostname rows per weekly refresh page.',
-        min_value: 1,
-        max_value: 5000,
+        minValue: 1,
+        maxValue: 5000,
         integer: true,
       },
       weekly_refresh_max_rows_per_run: {
         description: 'Maximum weekly hostname refresh rows before retained-job continuation.',
-        min_value: 1,
-        max_value: 50000,
+        minValue: 1,
+        maxValue: 50000,
         integer: true,
       },
       hostname_batch_size: {
         description: 'Maximum hostnames per enqueue batch in hostname scheduling.',
-        min_value: 1,
-        max_value: 5000,
+        minValue: 1,
+        maxValue: 5000,
         integer: true,
       },
       hostname_max_rows_per_run: {
         description:
           'Maximum hostname candidates and threshold probes per run before continuation.',
-        min_value: 1,
-        max_value: 100000,
+        minValue: 1,
+        maxValue: 100000,
         integer: true,
       },
       batch_size: {
         description: 'Maximum URLs per enqueue batch.',
-        min_value: 1,
-        max_value: 5000,
+        minValue: 1,
+        maxValue: 5000,
         integer: true,
       },
       max_rows_per_run: {
         description: 'Maximum URLs per run; a fixed-sweep continuation resumes remaining work.',
-        min_value: 1,
-        max_value: 100000,
+        minValue: 1,
+        maxValue: 100000,
         integer: true,
       },
     },
@@ -63,8 +63,8 @@ export const streamDynamicConfigRegistryEntries = [
     fields: {
       retry_crawl_url_count: {
         description: 'Maximum alternative URL candidates considered for one hostname.',
-        min_value: 1,
-        max_value: 20,
+        minValue: 1,
+        maxValue: 20,
         integer: true,
       },
     },
@@ -79,20 +79,20 @@ export const streamDynamicConfigRegistryEntries = [
     fields: {
       failure_retry_hours: {
         description: 'Hours before retrying a failed referral crawl.',
-        min_value: 1,
-        max_value: 24,
+        minValue: 1,
+        maxValue: 24,
         integer: true,
       },
       batch_size: {
         description: 'Maximum rows per enqueue batch.',
-        min_value: 1,
-        max_value: 5000,
+        minValue: 1,
+        maxValue: 5000,
         integer: true,
       },
       max_rows_per_run: {
         description: 'Maximum eligible rows per dispatch run.',
-        min_value: 1,
-        max_value: 100000,
+        minValue: 1,
+        maxValue: 100000,
         integer: true,
       },
     },
@@ -107,14 +107,14 @@ export const streamDynamicConfigRegistryEntries = [
     fields: {
       batch_size: {
         description: 'Maximum rows per enqueue batch.',
-        min_value: 1,
-        max_value: 5000,
+        minValue: 1,
+        maxValue: 5000,
         integer: true,
       },
       max_rows_per_run: {
         description: 'Maximum eligible rows per dispatch run.',
-        min_value: 1,
-        max_value: 100000,
+        minValue: 1,
+        maxValue: 100000,
         integer: true,
       },
     },
@@ -129,14 +129,14 @@ export const streamDynamicConfigRegistryEntries = [
     fields: {
       batch_size: {
         description: 'Maximum rows per enqueue batch.',
-        min_value: 1,
-        max_value: 5000,
+        minValue: 1,
+        maxValue: 5000,
         integer: true,
       },
       max_rows_per_provider_per_run: {
         description: 'Maximum eligible rows per dispatch run.',
-        min_value: 1,
-        max_value: 100000,
+        minValue: 1,
+        maxValue: 100000,
         integer: true,
       },
     },
@@ -151,26 +151,26 @@ export const streamDynamicConfigRegistryEntries = [
     fields: {
       lookback_seconds: {
         description: 'Fixed source lookback; raise after an outage.',
-        min_value: 1,
-        max_value: 31536000,
+        minValue: 1,
+        maxValue: 31536000,
         integer: true,
       },
       replica_margin_seconds: {
         description: 'Replica visibility safety margin.',
-        min_value: 1,
-        max_value: 3600,
+        minValue: 1,
+        maxValue: 3600,
         integer: true,
       },
       batch_size: {
         description: 'Maximum candidates per cursor batch.',
-        min_value: 1,
-        max_value: 5000,
+        minValue: 1,
+        maxValue: 5000,
         integer: true,
       },
       max_rows_per_run: {
         description: 'Maximum candidates per run before a durable continuation.',
-        min_value: 1,
-        max_value: 100000,
+        minValue: 1,
+        maxValue: 100000,
         integer: true,
       },
     },

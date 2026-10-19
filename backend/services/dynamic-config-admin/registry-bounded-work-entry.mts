@@ -1,5 +1,5 @@
-import { defineDynamicConfigNamespace } from './registry-descriptor.mts'
-import type { DynamicConfigLike } from './types.mts'
+import { defineDynamicConfigNamespace } from 'valkyries/dynamic-config'
+import type { DynamicConfigLike } from '@vouchington/dynamic-config'
 
 export function defineBoundedWorkNamespace(options: {
   namespace: string
@@ -37,8 +37,8 @@ export function defineBoundedWorkNamespace(options: {
         field,
         {
           description,
-          min_value: 1,
-          max_value: maxValues[field],
+          minValue: 1,
+          maxValue: maxValues[field],
           integer: true,
         },
       ]),

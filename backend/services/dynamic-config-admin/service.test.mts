@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createTestUser, softDeleteUser } from '@voucha/test-helpers'
+import { getDynamicConfigAuditRowId } from '@voucha/test-helpers/sql-dynamic-config'
 import { recordDynamicConfigChange } from '@services/dynamic-config-audit'
 import {
   getDynamicConfigNamespace,
@@ -43,10 +44,11 @@ describe('dynamic-config-admin service authorization guards', () => {
       { memberships: false },
       { memberships: true },
     )
+    const auditId = await getDynamicConfigAuditRowId('feature-flags', actor.id)
     await softDeleteUser(actor.id)
 
     const history = await listDynamicConfigNamespaceHistory(admin, 'feature-flags')
 
-    expect(history?.[0]?.changed_by).toBeNull()
+    expect(history?.find(row => row.id === auditId)?.changed_by).toBeNull()
   })
 })

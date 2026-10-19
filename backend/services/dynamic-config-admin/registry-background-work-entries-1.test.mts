@@ -163,7 +163,9 @@ describe('registered background work limits', () => {
   it('matches owner fields/defaults/ceilings and reads updates after module import', () => {
     for (const owner of owners) {
       const namespace = owner.config.key.slice('dynamic-config:'.length)
-      const entry = dynamicConfigRegistry.find(candidate => candidate.namespace === namespace)!
+      const entry = dynamicConfigRegistry.entries.find(
+        candidate => candidate.namespace === namespace,
+      )!
       expect(entry).toBeDefined()
       expect(entry.config).toBe(owner.config)
       expect(Object.keys(entry.fields).toSorted()).toEqual(Object.keys(owner.maxima).toSorted())
@@ -171,9 +173,9 @@ describe('registered background work limits', () => {
         const maximum = (owner.maxima as Record<string, number>)[field]!
         expect(defaultValue).toBeLessThanOrEqual(maximum)
         expect(entry.fields[field]).toMatchObject({
-          min_value: 1,
+          minValue: 1,
           integer: true,
-          max_value: maximum,
+          maxValue: maximum,
         })
         const restore = overrideDynamicConfigFieldsForTest(owner.config, { [field]: 1 })
         try {

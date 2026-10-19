@@ -139,7 +139,7 @@ describe('native pruning coverage artifacts', () => {
     const migration = stepIndexRunning(steps, 'node data-stores/psql/migrate.mts')
     const rss = stepIndexRunning(steps, 'node backend/scripts/check-rss-feed-crawl-tiers.mts')
     const seed = stepIndexRunning(steps, 'node backend/scripts/seeds/dev-seed.mts')
-    const converter = steps[stepIndexRunning(steps, 'node node_modules/c8/bin/c8.js report')]
+    const converter = steps[stepIndexRunning(steps, 'pnpm exec coverage-check native-v8-to-lcov')]
 
     expect(migration).toBeLessThan(rss)
     expect(rss).toBeLessThan(seed)
@@ -174,11 +174,13 @@ describe('native pruning coverage artifacts', () => {
     expect(pruning?.env?.NODE_V8_COVERAGE).toBe(
       '${{ github.workspace }}/backend/scripts/explain-analyze/output/pruning-v8',
     )
-    const converter = steps[stepIndexRunning(steps, 'node node_modules/c8/bin/c8.js report')]
-    expect(converter?.run).toContain('node node_modules/c8/bin/c8.js report')
-    expect(converter?.run).toContain('--reporter lcovonly')
-    expect(converter?.run).toContain('--extension .mts')
-    expect(converter?.run).toContain('backend/scripts/explain-analyze/output/retirement-coverage')
+    const converter = steps[stepIndexRunning(steps, 'pnpm exec coverage-check native-v8-to-lcov')]
+    expect(converter?.run).toContain('pnpm exec coverage-check native-v8-to-lcov')
+    expect(converter?.run).toContain('--v8-dir backend/scripts/explain-analyze/output/pruning-v8')
+    expect(converter?.run).toContain('--source-root "$GITHUB_WORKSPACE"')
+    expect(converter?.run).toContain(
+      '--output backend/scripts/explain-analyze/output/retirement-coverage/lcov.info',
+    )
     expect(steps.find(step => step.name === 'Upload EXPLAIN ANALYZE results')?.with?.path).toBe(
       'backend/scripts/explain-analyze/output/',
     )
@@ -188,7 +190,7 @@ describe('native pruning coverage artifacts', () => {
 describe('native migration coverage fan-in', () => {
   it('publishes the real native producer LCOV before the required backend coverage check', () => {
     const { steps } = explainAnalyzeJob()
-    const conversion = stepIndexRunning(steps, 'node node_modules/c8/bin/c8.js report')
+    const conversion = stepIndexRunning(steps, 'pnpm exec coverage-check native-v8-to-lcov')
     const preserve = stepIndexRunning(
       steps,
       'cp backend/scripts/explain-analyze/output/retirement-coverage/lcov.info',

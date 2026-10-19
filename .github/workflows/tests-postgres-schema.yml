@@ -124,18 +124,15 @@ jobs:
         working-directory: backend
         run: node data-stores/psql/schema-snapshot/generate.mts --check
         timeout-minutes: 2
-      - name: Convert native materialized-view coverage with published c8
+      - name: Convert native materialized-view coverage
         if: ${{ inputs.publish_coverage }}
         timeout-minutes: 1
-        # --all adds zero-hit TypeScript records for modules this native check never loaded;
-        # the backend unit suites cover those modules in the merged patch-coverage gate.
         run: >-
-          node node_modules/c8/bin/c8.js report
-          --temp-directory "$RUNNER_TEMP/native-mv-v8"
-          --reports-dir "$RUNNER_TEMP/native-mv-coverage"
-          --reporter json --reporter json-summary --reporter lcovonly
-          --extension .mts --src backend
-          --include 'backend/{api,data-stores,modules,queues,services,workers}/**'
+          pnpm exec coverage-check native-v8-to-lcov
+          --v8-dir "$RUNNER_TEMP/native-mv-v8"
+          --source-root "$GITHUB_WORKSPACE"
+          --output "$RUNNER_TEMP/native-mv-coverage/lcov.info"
+          --include 'backend/{api,data-stores,modules,queues,services,workers}/**/*.mts'
           --exclude '**/*.test.mts'
       - name: Preserve full native materialized-view LCOV
         if: ${{ inputs.publish_coverage }}

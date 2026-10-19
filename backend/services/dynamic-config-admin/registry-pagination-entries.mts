@@ -1,4 +1,4 @@
-import { defineDynamicConfigNamespace } from './registry-descriptor.mts'
+import { defineDynamicConfigNamespace } from 'valkyries/dynamic-config'
 import { paginationConfig, paginationMaxima } from '@services/pagination/config'
 
 const descriptions = {
@@ -30,8 +30,8 @@ export const paginationRegistryEntries = [
         field,
         {
           description,
-          min_value: 1,
-          max_value: paginationMaxima[field as keyof typeof paginationMaxima],
+          minValue: 1,
+          maxValue: paginationMaxima[field as keyof typeof paginationMaxima],
           integer: true,
         },
       ]),

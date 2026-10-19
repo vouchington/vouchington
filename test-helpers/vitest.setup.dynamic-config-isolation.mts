@@ -4,18 +4,45 @@ import { afterEach, beforeEach } from 'vitest'
 import {
   resetDynamicConfigToTestBaseline,
   snapshotDynamicConfigFieldsForTest,
+  type TestDynamicConfig,
 } from '../backend/test-helpers/dynamic-config.mts'
 
+type IsolatedTestDynamicConfig = TestDynamicConfig & {
+  waitForInitialization: () => Promise<void>
+  close: () => Promise<void>
+}
+type RegisteredDynamicConfig = (typeof dynamicConfigRegistry.entries)[number]['config']
+
+function assertIsolatedTestDynamicConfig(
+  config: RegisteredDynamicConfig,
+): asserts config is RegisteredDynamicConfig & IsolatedTestDynamicConfig {
+  if (
+    typeof config !== 'object' ||
+    config === null ||
+    !('fields' in config) ||
+    !(config.fields instanceof Map) ||
+    !('waitForInitialization' in config) ||
+    typeof config.waitForInitialization !== 'function' ||
+    !('close' in config) ||
+    typeof config.close !== 'function'
+  ) {
+    throw new TypeError('Registered dynamic configs must expose isolated test runtime state')
+  }
+}
+
+const isolatedConfigs = dynamicConfigRegistry.entries.map(entry => {
+  assertIsolatedTestDynamicConfig(entry.config)
+  return entry.config
+})
+
 await Promise.all(
-  dynamicConfigRegistry.map(async entry => {
-    const { config } = entry
+  isolatedConfigs.map(async config => {
     await config.waitForInitialization()
     await config.close()
     resetDynamicConfigToTestBaseline(config)
   }),
 )
 
-const isolatedConfigs = dynamicConfigRegistry.map(entry => entry.config)
 let restoreTestSnapshot: (() => void) | undefined
 
 beforeEach(() => {

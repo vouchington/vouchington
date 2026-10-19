@@ -1,7 +1,7 @@
+import { DynamicConfigValidationError } from 'valkyries/dynamic-config'
 import assert from 'http-assert'
 import createHttpError from 'http-errors'
 import {
-  DynamicConfigValidationError,
   listDynamicConfigNamespaces,
   getDynamicConfigNamespace,
   listDynamicConfigNamespaceHistory,

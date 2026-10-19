@@ -1,6 +1,6 @@
 import { apiEgressProxyConfig } from '@services/api-egress-proxy'
 import { oauthAuthorizationBrokerConfig } from '@services/oauth'
-import { defineDynamicConfigNamespace } from './registry-descriptor.mts'
+import { defineDynamicConfigNamespace } from 'valkyries/dynamic-config'
 
 // Per-service direct/proxied routing flags for external API calls. Kept in its own file so future flags
 // (one field per migrated integration) don't push registry-operational-entries.mts over the

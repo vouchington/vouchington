@@ -12,7 +12,7 @@ import {
   membershipWorkConfig,
   membershipAdditionalWorkMaxValues,
 } from '@services/memberships/work-limits'
-import { defineDynamicConfigNamespace } from './registry-descriptor.mts'
+import { defineDynamicConfigNamespace } from 'valkyries/dynamic-config'
 
 export const workDynamicConfigRegistryEntries = [
   defineDynamicConfigNamespace({
@@ -25,8 +25,8 @@ export const workDynamicConfigRegistryEntries = [
       enabled: { description: 'Enable Kagi Small Web feed import dispatcher.' },
       candidate_batch_size: {
         description: 'Maximum fetched feed URLs per indexed deduplication probe.',
-        min_value: 1,
-        max_value: 5000,
+        minValue: 1,
+        maxValue: 5000,
         integer: true,
       },
     },
@@ -40,21 +40,21 @@ export const workDynamicConfigRegistryEntries = [
     fields: {
       bloom_batch_size: {
         description: 'API key hashes per bloom population chunk.',
-        min_value: 1,
-        max_value: 10000,
+        minValue: 1,
+        maxValue: 10000,
         integer: true,
       },
       batch_size: {
         description: 'Maximum rows per page.',
-        min_value: 1,
-        max_value: 5000,
+        minValue: 1,
+        maxValue: 5000,
         integer: true,
       },
       max_batches_per_run: {
         description:
           'Maximum pages per run; remaining work resumes through durable state or a continuation.',
-        min_value: 1,
-        max_value: 2000,
+        minValue: 1,
+        maxValue: 2000,
         integer: true,
       },
     },
@@ -67,22 +67,22 @@ export const workDynamicConfigRegistryEntries = [
     access: { update_roles: ['developer'] },
     fields: {
       ...Object.fromEntries(
-        Object.entries(accountDataRequestsAdditionalMaxValues).map(([field, max_value]) => [
+        Object.entries(accountDataRequestsAdditionalMaxValues).map(([field, maxValue]) => [
           field,
-          { description: field.replaceAll('_', ' '), min_value: 1, max_value, integer: true },
+          { description: field.replaceAll('_', ' '), minValue: 1, maxValue, integer: true },
         ]),
       ),
       batch_size: {
         description: 'Maximum rows per page.',
-        min_value: 1,
-        max_value: 5000,
+        minValue: 1,
+        maxValue: 5000,
         integer: true,
       },
       max_batches_per_run: {
         description:
           'Maximum pages per run; remaining work resumes through durable state or a continuation.',
-        min_value: 1,
-        max_value: 2000,
+        minValue: 1,
+        maxValue: 2000,
         integer: true,
       },
     },
@@ -95,27 +95,27 @@ export const workDynamicConfigRegistryEntries = [
     access: { update_roles: ['developer'] },
     fields: {
       ...Object.fromEntries(
-        Object.entries(membershipAdditionalWorkMaxValues).map(([field, max_value]) => [
+        Object.entries(membershipAdditionalWorkMaxValues).map(([field, maxValue]) => [
           field,
           {
             description: `Membership processing ${field.replaceAll('_', ' ')}.`,
-            min_value: 1,
-            max_value,
+            minValue: 1,
+            maxValue,
             integer: true,
           },
         ]),
       ),
       batch_size: {
         description: 'Maximum rows per page.',
-        min_value: 1,
-        max_value: 5000,
+        minValue: 1,
+        maxValue: 5000,
         integer: true,
       },
       max_batches_per_run: {
         description:
           'Maximum pages per run; remaining work resumes through durable state or a continuation.',
-        min_value: 1,
-        max_value: 2000,
+        minValue: 1,
+        maxValue: 2000,
         integer: true,
       },
     },
@@ -128,22 +128,22 @@ export const workDynamicConfigRegistryEntries = [
     access: { update_roles: ['developer'] },
     fields: {
       ...Object.fromEntries(
-        Object.entries(copyrightNoticesAdditionalMaxValues).map(([field, max_value]) => [
+        Object.entries(copyrightNoticesAdditionalMaxValues).map(([field, maxValue]) => [
           field,
-          { description: field.replaceAll('_', ' '), min_value: 1, max_value, integer: true },
+          { description: field.replaceAll('_', ' '), minValue: 1, maxValue, integer: true },
         ]),
       ),
       batch_size: {
         description: 'Maximum rows per page.',
-        min_value: 1,
-        max_value: 100,
+        minValue: 1,
+        maxValue: 100,
         integer: true,
       },
       max_batches_per_run: {
         description:
           'Maximum pages per run; remaining work resumes through durable state or a continuation.',
-        min_value: 1,
-        max_value: 2000,
+        minValue: 1,
+        maxValue: 2000,
         integer: true,
       },
     },

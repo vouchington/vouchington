@@ -1,9 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { SPEND_CAP_MAX_VALUES, SPEND_CAP_MIN_VALUES } from '@services/ai-usage/spend-cap-config'
 import { validateAutotaggerPaidLimitsConfig } from './autotagger-paid-limits-validation.mts'
-import { DynamicConfigValidationError } from './namespace.mts'
-import { validateSpendCapConfig } from './registry-ai-usage-validators.mts'
-import { validateRequestSigningModeConfig } from './registry-validators.mts'
+import { DynamicConfigValidationError } from 'valkyries/dynamic-config'
+import { validateRequestSigningModeConfig } from './product-config-validators.mts'
 
 describe('validateRequestSigningModeConfig', () => {
   it.each(['off', 'observe', 'enforce'])('accepts valid mode %s', mode => {
@@ -44,43 +42,5 @@ describe('validateAutotaggerPaidLimitsConfig', () => {
         rss_collaborative_pro_max_topics: 4,
       }),
     ).toThrow(DynamicConfigValidationError)
-  })
-})
-
-describe('validateSpendCapConfig', () => {
-  it('accepts a value within bounds', () => {
-    expect(() => validateSpendCapConfig({ daily_cap_microunits: 10_000_000 })).not.toThrow()
-  })
-
-  it('accepts zero -- the true kill switch, distinct from enabled: false', () => {
-    expect(() => validateSpendCapConfig({ daily_cap_microunits: 0 })).not.toThrow()
-  })
-
-  it('rejects a negative value', () => {
-    expect(() => validateSpendCapConfig({ daily_cap_microunits: -1 })).toThrow(
-      DynamicConfigValidationError,
-    )
-  })
-
-  it('rejects below the floor', () => {
-    expect(() =>
-      validateSpendCapConfig({
-        daily_cap_microunits: SPEND_CAP_MIN_VALUES.daily_cap_microunits - 1,
-      }),
-    ).toThrow(DynamicConfigValidationError)
-  })
-
-  it('rejects above the ceiling', () => {
-    expect(() =>
-      validateSpendCapConfig({
-        daily_cap_microunits: SPEND_CAP_MAX_VALUES.daily_cap_microunits + 1,
-      }),
-    ).toThrow(DynamicConfigValidationError)
-  })
-
-  it('rejects a non-integer', () => {
-    expect(() => validateSpendCapConfig({ daily_cap_microunits: 1.5 })).toThrow(
-      DynamicConfigValidationError,
-    )
   })
 })

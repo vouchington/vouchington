@@ -14,13 +14,8 @@ import {
 import { recaptchaConfig } from '@services/recaptcha/config'
 import { requestClientInfoConfig } from '@services/request-client-info/config'
 import { validateBedrockBatchConfig } from './registry-bedrock-validator.mts'
-import { defineDynamicConfigNamespace } from './registry-descriptor.mts'
-import {
-  validateModerationConfig,
-  validatePostContentLimitsConfig,
-  validateRecaptchaConfig,
-  validateRequestSigningModeConfig,
-} from './registry-validators.mts'
+import { defineDynamicConfigNamespace } from 'valkyries/dynamic-config'
+import { validateRequestSigningModeConfig } from './product-config-validators.mts'
 export const coreDynamicConfigRegistryEntries = [
   defineDynamicConfigNamespace({
     namespace: 'request-client-info',
@@ -68,11 +63,10 @@ export const coreDynamicConfigRegistryEntries = [
       blocking_enabled: { description: 'Reject low-score requests instead of logging only.' },
       block_threshold: {
         description: 'Minimum acceptable reCAPTCHA Enterprise score.',
-        min_value: 0,
-        max_value: 1,
+        minValue: 0,
+        maxValue: 1,
       },
     },
-    validate: validateRecaptchaConfig,
   }),
   defineDynamicConfigNamespace({
     namespace: 'turnstile-config',
@@ -98,15 +92,14 @@ export const coreDynamicConfigRegistryEntries = [
             name === 'data_point_topic_ids_max_items'
               ? 'Maximum topic IDs allowed in one data point payload.'
               : 'Maximum review topic ratings allowed in one review payload.',
-          min_value:
+          minValue:
             POST_CONTENT_LIMITS_MIN_VALUES[name as keyof typeof POST_CONTENT_LIMITS_MIN_VALUES],
-          max_value:
+          maxValue:
             POST_CONTENT_LIMITS_MAX_VALUES[name as keyof typeof POST_CONTENT_LIMITS_MAX_VALUES],
           integer: true,
         },
       ]),
     ),
-    validate: validatePostContentLimitsConfig,
   }),
   defineDynamicConfigNamespace({
     namespace: 'moderation-config',
@@ -117,11 +110,10 @@ export const coreDynamicConfigRegistryEntries = [
     fields: {
       ai_generated_confidence_threshold: {
         description: 'Confidence threshold above which text is flagged as AI-generated (0–1).',
-        min_value: 0,
-        max_value: 1,
+        minValue: 0,
+        maxValue: 1,
       },
     },
-    validate: validateModerationConfig,
   }),
   defineDynamicConfigNamespace({
     namespace: 'bedrock-embeddings-batch-config',
@@ -193,8 +185,8 @@ export const coreDynamicConfigRegistryEntries = [
 function bedrockField(key: keyof typeof BEDROCK_BATCH_MAX_VALUES, description: string) {
   return {
     description,
-    min_value: 1,
-    max_value: BEDROCK_BATCH_MAX_VALUES[key],
+    minValue: 1,
+    maxValue: BEDROCK_BATCH_MAX_VALUES[key],
     integer: true,
   }
 }

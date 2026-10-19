@@ -85,9 +85,9 @@ importers:
       agent-blackboard:
         specifier: ^0.7.0
         version: 0.7.0(supports-color@10.2.2)(zod@4.6.5)
-      c8:
-        specifier: ^12.0.0
-        version: 12.0.0(monocart-coverage-reports@2.13.0)
+      coverage-check:
+        specifier: ^0.18.0
+        version: 0.18.0(@vitest/coverage-v8@5.0.5)(vitest@5.0.5)
       csv-parse:
         specifier: ^7.0.3
         version: 7.0.3
@@ -2148,6 +2148,9 @@ importers:
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
+      valkyries:
+        specifier: ^0.10.0
+        version: 0.10.0
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -6068,12 +6071,18 @@ importers:
       '@voucha/config':
         specifier: workspace:^
         version: link:../../config
+      '@vouchington/dynamic-config':
+        specifier: ^0.3.0
+        version: 0.3.0(valkyries@0.10.0)
       '@workers/ses-inbound':
         specifier: workspace:^
         version: link:../../workers/ses-inbound
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+      valkyries:
+        specifier: ^0.10.0
+        version: 0.10.0
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -13999,8 +14008,8 @@ importers:
         specifier: ^0.2.2
         version: 0.2.2(react@19.3.1)
       coverage-check:
-        specifier: ^0.17.0
-        version: 0.17.0(@vitest/coverage-v8@5.0.5)(vitest@5.0.5)
+        specifier: ^0.18.0
+        version: 0.18.0(@vitest/coverage-v8@5.0.5)(vitest@5.0.5)
       jsonc-parser:
         specifier: ^3.3.1
         version: 3.3.1
@@ -14824,10 +14833,6 @@ packages:
     resolution: {integrity: sha512-WEH4L1Sf9e5YiMDwBTCj3NOtDquB+AlWyQ/BpfRyLqNuYIOLcf3N2LXJodoap50KjG5j9SDLg3RmJ/Ack0t7jA==}
     engines: {node: '>=22'}
 
-  '@aws-sdk/checksums@3.1001.1':
-    resolution: {integrity: sha512-x12Q17KYlJAd3nKf8LV5LV0vt8sh8/6YfQLGPtrGnQf/tW4jqxPGq5GPpuVitpQYM3eUR4XB7CbxZf751NMbLw==}
-    engines: {node: '>=20.0.0'}
-
   '@aws-sdk/checksums@3.1001.3':
     resolution: {integrity: sha512-CcAkVyEUKGngbEqJdVdSc53Iy52+XzVL5NIcTen2BlK8UByNC1DThVtf5VKSrNzyA+SqyTvs+3S+knVBbOUizQ==}
     engines: {node: '>=20.0.0'}
@@ -14856,8 +14861,8 @@ packages:
     resolution: {integrity: sha512-uTz4u9qdYezbTUWGF8+dAtbO4JrnCMDkGOhXsEq1Gq3DAYZAL+RDuEg9cFRCGtFkCNsgjELeY1l9cTij9RCtpQ==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/client-s3@3.1121.0':
-    resolution: {integrity: sha512-hBnoqaVBeWdkgXcJElMXA2yUZWkBCBntu2qmN+tfqmzC+j4LzJC3ox8qIgS2WdMS1cb8UwyBogUVrkRXybNm0A==}
+  '@aws-sdk/client-s3@3.1149.0':
+    resolution: {integrity: sha512-wEccG+3/ap7iIBO4DbWwqNHh2u5Qm5OCQJzJaAvtVFIoZbp0qia8HIXv4rpnNmJJEX8205mlq67F9QJ0nKlcxg==}
     engines: {node: '>=20.0.0'}
 
   '@aws-sdk/client-s3@3.1152.0':
@@ -14874,10 +14879,6 @@ packages:
 
   '@aws-sdk/client-ssm@3.1152.0':
     resolution: {integrity: sha512-kaXb3zkCVVSjq5xDtTapBEiRkTSwagWNLP9Ch0JPS88Xh29fWfda7LXDVJ0WBIagSrxK7zucF9LZQx8zIvTn3g==}
-    engines: {node: '>=20.0.0'}
-
-  '@aws-sdk/core@3.978.1':
-    resolution: {integrity: sha512-LbY9aGsEiznDWmUc30Nwv3aIX/+dbwTx8KfS0yOC3NPYMO+O91e6jkT1azf34FwjOndq8/Q+RcVVZz5xnerwdg==}
     engines: {node: '>=20.0.0'}
 
   '@aws-sdk/core@3.978.3':
@@ -14940,10 +14941,6 @@ packages:
     resolution: {integrity: sha512-4yvdTVwPGKCnrwuwlYEmwLqQXKwk0unx3f/FvBi4FA9ruK/WGoPJyqfK7hOYurheIyQL44FR0ovgOHqvkfdpAQ==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/middleware-sdk-s3@3.972.77':
-    resolution: {integrity: sha512-E7W2UOeUoc+lg3uIfR/dM7ZwusHwhBQrKMnlkRv4EXRR+C0YtV1pg25xC7GdZIhXH+NAMgZPCbE7o5to2cjFiw==}
-    engines: {node: '>=20.0.0'}
-
   '@aws-sdk/middleware-sdk-s3@3.972.79':
     resolution: {integrity: sha512-UfgAQosf4IEXldMsyntVuHsJnaQzlH6pmkOr6dQy7CaOYSlGz3mWiW4Di7XfQ/kPJP6xE7oMshz1V0E8RqGdRg==}
     engines: {node: '>=20.0.0'}
@@ -14962,10 +14959,6 @@ packages:
 
   '@aws-sdk/s3-request-presigner@3.1152.0':
     resolution: {integrity: sha512-hddG6iscvmJaToltXuAjyszhIfOe6Fw+Xcy/0V5DslTmX91AH5DKG5VMZdKso+9LK4+8dJbyPxEl2/tT06ySkg==}
-    engines: {node: '>=20.0.0'}
-
-  '@aws-sdk/signature-v4-multi-region@3.996.47':
-    resolution: {integrity: sha512-Zk08macMvQTHzQJCLJVkOlviVoqwYMrpXv4lmLN7b7sAbiMoOK7Go0NYdR5UeF+MW8LIbRmwrNy9u/5VvX1U5g==}
     engines: {node: '>=20.0.0'}
 
   '@aws-sdk/signature-v4-multi-region@3.996.48':
@@ -15808,10 +15801,6 @@ packages:
   '@isaacs/cliui@8.0.2':
     resolution: {integrity: sha512-O8jcjabXaleOG9DQ0+ARXWZBTfnP4WNAqzuiJK7ll44AmxGKv/J2M4TPjxjY3znBCfvBXFzucm1twdyFybFqEA==}
     engines: {node: '>=12'}
-
-  '@istanbuljs/schema@0.1.6':
-    resolution: {integrity: sha512-+Sg6GCR/wy1oSmQDFq4LQDAhm3ETKnorxN+y5nbLULOR3P0c14f2Wurzj3/xqPXtasLFfHd5iRFQ7AJt4KH2cw==}
-    engines: {node: '>=8'}
 
   '@jongleberry/api-server@3.0.1':
     resolution: {integrity: sha512-0LRSCERVQ03Uy/LVlc1tuFYNLwc1vIPaMNUcACIxi3fVUQnxDKzu1gpnszXnxNHtQFcsi/xSmjt5edXUsafWsg==}
@@ -19126,9 +19115,6 @@ packages:
   '@types/http-errors@2.0.5':
     resolution: {integrity: sha512-r8Tayk8HJnX0FztbZN7oVqGccWgw98T/0neJphO91KkmOzug1KkofZURD4UaD5uH8AqcFLfdPErnBod0u71/qg==}
 
-  '@types/istanbul-lib-coverage@2.0.6':
-    resolution: {integrity: sha512-2QF/t/auWm0lsy8XtKVPG19v3sSOQlJe/YHZgfjb/KBBHOGSV+J2q/S671rcq9uTBrLAXmZpqJiaQbMT+zNU1w==}
-
   '@types/jsdom@30.0.0':
     resolution: {integrity: sha512-uAHGxujGE0cDaKGdK28zgDotFtNA7MKq5DXl8LrfdxdCI8VHcg15oJz+amHTChPNI5JpgEPQWc2xFdrw3em/nQ==}
 
@@ -19565,6 +19551,12 @@ packages:
     resolution: {integrity: sha512-JyQzxxDvD8BDU5ThlKA8dmztIWJhO8Hx9pLFh+3pNE5eSJdMlgFoovR6jjcqB/2y6P38Q09hVM9pmrGF42OhUA==}
     engines: {node: '>=24.0.0'}
 
+  '@vouchington/dynamic-config@0.3.0':
+    resolution: {integrity: sha512-CL4s6M/dLYV5PFHnkLGfb/xv5JpSdD0ufgx/pxoB0l04u3gNgHz7vwYaFHPv0tn83cXkR2+mpTFM9GxEVv+26g==}
+    engines: {node: '>=24.0.0'}
+    peerDependencies:
+      valkyries: ^0.10.0
+
   '@vouchington/edge@0.2.0':
     resolution: {integrity: sha512-VM2a424JaDsCR/5G7aKfuBFjjV2BPJkuyx77mF6Pr9DgYujgwaHEioWUeA7eK6KoLOa7DlkdLopc5XaRasWb2Q==}
     engines: {node: '>=24.0.0'}
@@ -19987,16 +19979,6 @@ packages:
     resolution: {integrity: sha512-U1Z/ob71V/bXfVABvNr/Kumf5VyeQRBEm6Txb0PQ6S7V5GpBM3w4Cbqz/xPDicR5tN0uvDifng8C+5qECeGwyQ==}
     engines: {node: '>=6.0.0'}
 
-  c8@12.0.0:
-    resolution: {integrity: sha512-4zpJvrd1nKWutnnKC2pXkFmb6iM1l+ffN//o1CzlTNwW7GSOs9a1xrLqkC48nU8oEkjmPZLPiwMsIaOvoF4Pqg==}
-    engines: {node: ^20.19.0 || ^22.12.0 || >=23}
-    hasBin: true
-    peerDependencies:
-      monocart-coverage-reports: ^2
-    peerDependenciesMeta:
-      monocart-coverage-reports:
-        optional: true
-
   call-bind-apply-helpers@1.0.2:
     resolution: {integrity: sha512-Sp1ablJ0ivDkSzjcaJdxEunN5/XvksFJ2sMBFfq6x0ryhQV/2b/KwFe21cMpmHtPOSij8K99/wSfoEuTObmuMQ==}
     engines: {node: '>= 0.4'}
@@ -20206,8 +20188,8 @@ packages:
       typescript:
         optional: true
 
-  coverage-check@0.17.0:
-    resolution: {integrity: sha512-YhPPmnpKQbHqj8ple70SxU7g5+D3Yg4AJYClRSMp37BfpMISrUQ0ONQ08GZB/hL1r0U7Lufq/dgU9cUPfnsLdg==}
+  coverage-check@0.18.0:
+    resolution: {integrity: sha512-/ruQBUCS+UvnG6uS7etpO0sjNQlmoj3lo0nQqWcXJoFUxcp/MEXLTvMx1Y7K2Z5lKwgAdG5J4WiHG6xLBo/ecA==}
     engines: {node: '>=22.0.0'}
     hasBin: true
     peerDependencies:
@@ -23081,10 +23063,6 @@ packages:
     engines: {node: '>=10'}
     hasBin: true
 
-  test-exclude@8.0.0:
-    resolution: {integrity: sha512-ZOffsNrXYggvU1mDGHk54I96r26P8SyMjO5slMKSc7+IWmtB/MQKnEC2fP51imB3/pT6YK5cT5E8f+Dd9KdyOQ==}
-    engines: {node: 20 || >=22}
-
   tiny-inflate@1.0.3:
     resolution: {integrity: sha512-pkY1fj1cKHb2seWDy0B16HeWyczlJA9/WW3u3c4z/NiWDsO3DOU5D7nhTLE9CF0yXv/QZFY7sEJmj24dK+Rrqw==}
 
@@ -23337,10 +23315,6 @@ packages:
   uuid@14.0.3:
     resolution: {integrity: sha512-Sc5u1VVln93y1Xnz4R+CunOZc7R9LUcTmhj7Rc7Eg3HVcf7rVn2FOoa812fe0W8p3jD7xeoGSYbfqCGGH2B6xw==}
     hasBin: true
-
-  v8-to-istanbul@9.3.0:
-    resolution: {integrity: sha512-kiGUalWN+rgBJ/1OHZsBtU4rXZOfj/7rKQxULKlIzwzQSvMJUUNgPwJEEh7gU6xEVxC0ahoOBvN2YI8GH6FNgA==}
-    engines: {node: '>=10.12.0'}
 
   validator@13.15.35:
     resolution: {integrity: sha512-TQ5pAGhd5whStmqWvYF4OjQROlmv9SMFVt37qoCBdqRffuuklWYQlCNnEs2ZaIBD1kZRNnikiZOS1eqgkar0iw==}
@@ -23960,14 +23934,6 @@ snapshots:
       '@atproto/lexicon': 0.7.16
       zod: 3.25.76
 
-  '@aws-sdk/checksums@3.1001.1':
-    dependencies:
-      '@aws-sdk/core': 3.978.1
-      '@aws-sdk/types': 3.974.6
-      '@smithy/core': 3.35.0
-      '@smithy/types': 4.19.0
-      tslib: 2.8.1
-
   '@aws-sdk/checksums@3.1001.3':
     dependencies:
       '@aws-sdk/core': 3.978.3
@@ -24050,15 +24016,15 @@ snapshots:
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
-  '@aws-sdk/client-s3@3.1121.0':
+  '@aws-sdk/client-s3@3.1149.0':
     dependencies:
-      '@aws-sdk/checksums': 3.1001.1
-      '@aws-sdk/core': 3.978.1
-      '@aws-sdk/credential-provider-node': 3.972.84
-      '@aws-sdk/middleware-sdk-s3': 3.972.77
-      '@aws-sdk/signature-v4-multi-region': 3.996.47
+      '@aws-sdk/checksums': 3.1001.3
+      '@aws-sdk/core': 3.978.3
+      '@aws-sdk/credential-provider-node': 3.972.86
+      '@aws-sdk/middleware-sdk-s3': 3.972.79
+      '@aws-sdk/signature-v4-multi-region': 3.996.48
       '@aws-sdk/types': 3.974.6
-      '@smithy/core': 3.35.0
+      '@smithy/core': 3.35.2
       '@smithy/fetch-http-handler': 5.8.0
       '@smithy/node-http-handler': 4.12.1
       '@smithy/types': 4.19.0
@@ -24110,17 +24076,6 @@ snapshots:
       '@smithy/fetch-http-handler': 5.8.0
       '@smithy/node-http-handler': 4.12.1
       '@smithy/types': 4.19.0
-      tslib: 2.8.1
-
-  '@aws-sdk/core@3.978.1':
-    dependencies:
-      '@aws-sdk/types': 3.974.6
-      '@aws-sdk/xml-builder': 3.972.41
-      '@aws/lambda-invoke-store': 0.3.0
-      '@smithy/core': 3.35.0
-      '@smithy/signature-v4': 5.7.4
-      '@smithy/types': 4.19.0
-      bowser: 2.14.1
       tslib: 2.8.1
 
   '@aws-sdk/core@3.978.3':
@@ -24266,15 +24221,6 @@ snapshots:
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
-  '@aws-sdk/middleware-sdk-s3@3.972.77':
-    dependencies:
-      '@aws-sdk/core': 3.978.1
-      '@aws-sdk/signature-v4-multi-region': 3.996.47
-      '@aws-sdk/types': 3.974.6
-      '@smithy/core': 3.35.0
-      '@smithy/types': 4.19.0
-      tslib: 2.8.1
-
   '@aws-sdk/middleware-sdk-s3@3.972.79':
     dependencies:
       '@aws-sdk/core': 3.978.3
@@ -24318,13 +24264,6 @@ snapshots:
       '@aws-sdk/signature-v4-multi-region': 3.996.48
       '@aws-sdk/types': 3.974.6
       '@smithy/core': 3.35.2
-      '@smithy/types': 4.19.0
-      tslib: 2.8.1
-
-  '@aws-sdk/signature-v4-multi-region@3.996.47':
-    dependencies:
-      '@aws-sdk/types': 3.974.6
-      '@smithy/signature-v4': 5.7.4
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
@@ -25093,8 +25032,6 @@ snapshots:
       strip-ansi-cjs: strip-ansi@6.0.1
       wrap-ansi: 8.1.0
       wrap-ansi-cjs: wrap-ansi@7.0.0
-
-  '@istanbuljs/schema@0.1.6': {}
 
   '@jongleberry/api-server@3.0.1':
     dependencies:
@@ -28101,8 +28038,6 @@ snapshots:
 
   '@types/http-errors@2.0.5': {}
 
-  '@types/istanbul-lib-coverage@2.0.6': {}
-
   '@types/jsdom@30.0.0':
     dependencies:
       '@types/node': 26.6.5
@@ -28535,6 +28470,10 @@ snapshots:
 
   '@vouchington/domain-verification@0.0.0': {}
 
+  '@vouchington/dynamic-config@0.3.0(valkyries@0.10.0)':
+    dependencies:
+      valkyries: 0.10.0
+
   '@vouchington/edge@0.2.0(@cloudflare/workers-types@5.20261016.1)':
     dependencies:
       '@vouchington/utils': 0.7.4
@@ -28778,16 +28717,12 @@ snapshots:
       mime-types: 3.0.2
       negotiator: 1.1.0
 
-  acorn-import-phases@1.0.4(acorn@8.18.0):
+  acorn-import-phases@1.0.4(acorn@8.19.0):
     dependencies:
-      acorn: 8.18.0
+      acorn: 8.19.0
     optional: true
 
   acorn-jsx-walk@2.0.0: {}
-
-  acorn-jsx@5.3.2(acorn@8.18.0):
-    dependencies:
-      acorn: 8.18.0
 
   acorn-jsx@5.3.2(acorn@8.19.0):
     dependencies:
@@ -28991,22 +28926,6 @@ snapshots:
 
   bytestreamjs@2.0.1: {}
 
-  c8@12.0.0(monocart-coverage-reports@2.13.0):
-    dependencies:
-      '@bcoe/v8-coverage': 1.0.2
-      '@istanbuljs/schema': 0.1.6
-      find-up: 5.0.0
-      foreground-child: 3.3.1
-      istanbul-lib-coverage: 3.2.2
-      istanbul-lib-report: 3.0.1
-      istanbul-reports: 3.2.0
-      test-exclude: 8.0.0
-      v8-to-istanbul: 9.3.0
-      yargs: 18.2.0
-      yargs-parser: 21.1.1
-    optionalDependencies:
-      monocart-coverage-reports: 2.13.0
-
   call-bind-apply-helpers@1.0.2:
     dependencies:
       es-errors: 1.3.0
@@ -29194,12 +29113,17 @@ snapshots:
     optionalDependencies:
       typescript: '@typescript/typescript6@6.0.2'
 
-  coverage-check@0.17.0(@vitest/coverage-v8@5.0.5)(vitest@5.0.5):
+  coverage-check@0.18.0(@vitest/coverage-v8@5.0.5)(vitest@5.0.5):
     dependencies:
-      '@aws-sdk/client-s3': 3.1121.0
+      '@aws-sdk/client-s3': 3.1149.0
       '@jridgewell/trace-mapping': 0.3.31
       '@smithy/node-http-handler': 4.12.1
+      acorn: 8.19.0
+      ast-v8-to-istanbul: 1.0.7
       esbuild: 0.28.2
+      istanbul-lib-coverage: 3.2.2
+      istanbul-lib-report: 3.0.1
+      istanbul-reports: 3.2.0
       js-yaml: 5.4.2
       minimatch: 10.2.6
       monocart-coverage-reports: 2.13.0
@@ -29635,8 +29559,8 @@ snapshots:
 
   espree@11.2.0:
     dependencies:
-      acorn: 8.18.0
-      acorn-jsx: 5.3.2(acorn@8.18.0)
+      acorn: 8.19.0
+      acorn-jsx: 5.3.2(acorn@8.19.0)
       eslint-visitor-keys: 5.0.1
 
   esprima@4.0.1: {}
@@ -30979,7 +30903,7 @@ snapshots:
 
   monocart-coverage-reports@2.13.0:
     dependencies:
-      acorn: 8.18.0
+      acorn: 8.19.0
       acorn-loose: 8.5.2
       acorn-walk: 8.3.5
       commander: 14.0.3
@@ -32440,16 +32364,10 @@ snapshots:
   terser@5.49.0:
     dependencies:
       '@jridgewell/source-map': 0.3.11
-      acorn: 8.18.0
+      acorn: 8.19.0
       commander: 2.20.3
       source-map-support: 0.5.21
     optional: true
-
-  test-exclude@8.0.0:
-    dependencies:
-      '@istanbuljs/schema': 0.1.6
-      glob: 13.0.6
-      minimatch: 10.2.6
 
   tiny-inflate@1.0.3: {}
 
@@ -32679,12 +32597,6 @@ snapshots:
 
   uuid@14.0.3: {}
 
-  v8-to-istanbul@9.3.0:
-    dependencies:
-      '@jridgewell/trace-mapping': 0.3.31
-      '@types/istanbul-lib-coverage': 2.0.6
-      convert-source-map: 2.0.0
-
   validator@13.15.35: {}
 
   valkyries@0.10.0:
@@ -32868,8 +32780,8 @@ snapshots:
       '@webassemblyjs/ast': 1.14.1
       '@webassemblyjs/wasm-edit': 1.14.1
       '@webassemblyjs/wasm-parser': 1.14.1
-      acorn: 8.18.0
-      acorn-import-phases: 1.0.4(acorn@8.18.0)
+      acorn: 8.19.0
+      acorn-import-phases: 1.0.4(acorn@8.19.0)
       browserslist: 4.29.0
       chrome-trace-event: 1.0.4
       enhanced-resolve: 5.26.0

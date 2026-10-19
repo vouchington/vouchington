@@ -340,11 +340,7 @@
       },
       {
         "name": "valkyries/dynamic-config",
-        "allowImportNames": [
-          "getBoundedPositiveIntegerField",
-          "BoundedPositiveIntegerLimits",
-          "dynamicConfigs"
-        ],
+        "importNames": ["DynamicConfig"],
         "message": "Construct DynamicConfig through the registered-key @data-stores/valkey facade."
       },
       "sanitize-html",

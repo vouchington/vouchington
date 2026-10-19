@@ -2682,6 +2682,8 @@ rules:
     scope: repository
     options:
       permanentPackages:
+        - name: '@vouchington/dynamic-config'
+          reason: First-party dynamic-config primitives published by the repo author.
         - name: '@jongleberry/api-server'
           reason: First-party API server utility published by the repo author.
         - name: '@jongleberry/vurst-ai'

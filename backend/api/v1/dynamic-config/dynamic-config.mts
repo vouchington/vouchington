@@ -1,14 +1,14 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import {
-  DynamicConfigValidationError,
   currentUserCanAccessDynamicConfigNamespace,
-  getDynamicConfigRegistryEntry,
+  dynamicConfigRegistry,
   getDynamicConfigNamespace,
   listDynamicConfigNamespaceHistory,
   listDynamicConfigNamespaces,
   updateDynamicConfigNamespace,
 } from '@services/dynamic-config-admin'
+import { DynamicConfigValidationError } from 'valkyries/dynamic-config'
 import { requireAuth, parseJsonBody, validateRequestContract } from '../../response-helpers.mts'
 
 type UpdateDynamicConfigNamespaceRequest = { config: Record<string, unknown> }
@@ -24,7 +24,7 @@ app.route('/api/v1/dynamic-config/namespaces/:namespace/history').get(async (ctx
     'GET:/api/v1/dynamic-config/namespaces/:namespace/history',
   )
   const namespace = ctx.params.namespace!
-  const entry = getDynamicConfigRegistryEntry(namespace)
+  const entry = dynamicConfigRegistry.get(namespace)
   ctx.assert(entry, 404, 'Dynamic config namespace not found')
   ctx.assert(
     currentUserCanAccessDynamicConfigNamespace(currentUser, entry, 'view'),
@@ -42,7 +42,7 @@ app.route('/api/v1/dynamic-config/namespaces/:namespace/history').get(async (ctx
 app.route('/api/v1/dynamic-config/namespaces/:namespace').get(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/dynamic-config/namespaces/:namespace')
   const namespace = ctx.params.namespace!
-  const entry = getDynamicConfigRegistryEntry(namespace)
+  const entry = dynamicConfigRegistry.get(namespace)
   ctx.assert(entry, 404, 'Dynamic config namespace not found')
   ctx.assert(
     currentUserCanAccessDynamicConfigNamespace(currentUser, entry, 'view'),
@@ -60,7 +60,7 @@ app.route('/api/v1/dynamic-config/namespaces/:namespace').get(async (ctx: Contex
 app.route('/api/v1/dynamic-config/namespaces/:namespace').patch(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'PATCH:/api/v1/dynamic-config/namespaces/:namespace')
   const namespace = ctx.params.namespace!
-  const entry = getDynamicConfigRegistryEntry(namespace)
+  const entry = dynamicConfigRegistry.get(namespace)
   ctx.assert(entry, 404, 'Dynamic config namespace not found')
   ctx.assert(
     currentUserCanAccessDynamicConfigNamespace(currentUser, entry, 'update'),
