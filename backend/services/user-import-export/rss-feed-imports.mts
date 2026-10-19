@@ -2,7 +2,6 @@ import type { BasicUser } from '@services/users/types'
 import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import { getPrivateUserByAny } from '@services/users/get'
 import { isAdminUser } from '@services/users/authorization'
-import createHttpError from 'http-errors'
 import { UnrecoverableError } from '@vouchington/queue-errors'
 import { enqueueUserRssFeedImportDispatch } from '@queues/user-rss-feed-imports/enqueues'
 import onError from '@modules/on-error'
@@ -54,7 +53,7 @@ export async function submitRssFeedImport(
   options: { should_follow_imported_feeds?: boolean } = {},
 ): Promise<CreateUserRssFeedImportResult> {
   const dedupedUrls = dedupedImportUrls(urls)
-  if (dedupedUrls.length === 0) throw createHttpError(400, 'At least one URL is required')
+  if (dedupedUrls.length === 0) throw new UnrecoverableError('At least one URL is required')
 
   const should_follow_imported_feeds = options.should_follow_imported_feeds !== false
 

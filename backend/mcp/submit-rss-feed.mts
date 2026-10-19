@@ -93,7 +93,12 @@ const importSource: MergedToolSource<
   function: currentUser => async (args, invocationContext) => {
     const user = await requireActiveToolUser(currentUser)
     getDelegatedToolAuthority(user, invocationContext)
-    return submitAndDispatchRssFeedImport(user, getRequestContentProvenance(), args.rss_feed_urls, {
+    const rssFeedUrls = args.rss_feed_urls.flatMap(url => {
+      const trimmed = url.trim()
+      return trimmed ? [trimmed] : []
+    })
+    if (rssFeedUrls.length === 0) throw createHttpError(400, 'At least one URL is required')
+    return submitAndDispatchRssFeedImport(user, getRequestContentProvenance(), rssFeedUrls, {
       should_follow_imported_feeds: args.follow,
     })
   },
