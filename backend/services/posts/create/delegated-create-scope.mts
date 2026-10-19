@@ -1,3 +1,4 @@
+import type { TransactionQuery } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import type { PrivateUser } from '@services/users/types'
 import createHttpError from 'http-errors'
@@ -9,7 +10,7 @@ import type { CreatePostInput, Post } from '../types.mts'
 
 /** One pre-lock parent row, then the post-lock read that sees the previous lock holder's commit. */
 export async function prepareDelegatedCreateScope(
-  query: NonNullable<QueryOptions['query']>,
+  query: TransactionQuery,
   creator: PrivateUser,
   input: CreatePostInput,
   postType: string,
