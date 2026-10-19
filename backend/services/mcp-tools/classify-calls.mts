@@ -7,6 +7,8 @@ import { resolveMcpToolCall } from './resolve-tool-call.mts'
 import { toolRouteKeys } from './tool-route-keys.mts'
 import { validateToolArguments } from './validate-tool-arguments.mts'
 
+export { mcpNotificationShapedToolCall, mcpToolCallIsDispatched } from './tool-call-shape.mts'
+
 // Only these methods are ever written to the audit log. Anything else, including text an arbitrary
 // caller chose, is recorded as an invalid request with no method.
 const AUDITED_METHODS: ReadonlySet<string> = new Set([
@@ -169,17 +171,6 @@ function uncharged(event: McpCallAuditEvent): ClassifiedMessage {
 function readRequestId(message: unknown): string | number | null {
   const { id } = message as { id?: unknown }
   return typeof id === 'string' || (typeof id === 'number' && Number.isInteger(id)) ? id : null
-}
-
-export function mcpToolCallIsDispatched(message: unknown): boolean {
-  return CallToolRequestSchema.safeParse(message).success && readRequestId(message) !== null
-}
-
-// A tools/call without a JSON-RPC id is a notification. The server never runs it.
-export function mcpNotificationShapedToolCall(message: unknown): boolean {
-  if (typeof message !== 'object' || message === null) return false
-  const { method, id } = message as { method?: unknown; id?: unknown }
-  return method === 'tools/call' && (id === undefined || id === null)
 }
 
 function readAuditedMethod(message: unknown): string | null {
