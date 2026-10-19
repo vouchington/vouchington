@@ -17,7 +17,8 @@ permissions:
 jobs:
   explain-analyze:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # Setup plus the 10-minute run step no longer fits in 10 minutes (run 39276118528).
+    timeout-minutes: 20
     env:
       S3_BUCKET_IMAGES: test-images
       S3_BUCKET_IMAGE_UPLOADS: test-image-uploads
