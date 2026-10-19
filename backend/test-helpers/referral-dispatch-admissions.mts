@@ -43,9 +43,9 @@ export async function withOwnedReferralDispatchAdmissions<T>(
   let actionFailed = false
   try {
     value = await action({
-      crawlJobs: linkId => readOwnedJobs(receipts, 'crawl_referral_link', 'linkId', linkId),
+      crawlJobs: linkId => readOwnedJobs(receipts, 'crawl.crawl_referral_link', 'linkId', linkId),
       dispatcherJobs: urlId =>
-        readOwnedJobs(receipts, 'crawl_referral_links_dispatcher', 'urlId', urlId),
+        readOwnedJobs(receipts, 'crawl.crawl_referral_links_dispatcher', 'urlId', urlId),
     })
   } catch (err) {
     actionError = err
@@ -81,10 +81,10 @@ function ownsInput(
   urlId: string | undefined,
 ): boolean {
   if (typeof input !== 'object' || input === null) return false
-  if (name === 'crawl_referral_link')
+  if (name === 'crawl.crawl_referral_link')
     return 'linkId' in input && typeof input.linkId === 'string' && linkIds.has(input.linkId)
   return (
-    name === 'crawl_referral_links_dispatcher' &&
+    name === 'crawl.crawl_referral_links_dispatcher' &&
     urlId !== undefined &&
     'urlId' in input &&
     input.urlId === urlId
