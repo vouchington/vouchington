@@ -62,7 +62,7 @@ export const updatePost = async (
       await query(sql`/* updatePost.lock */ SELECT id FROM posts WHERE id = ${post.id} FOR UPDATE`)
       const currentPost = await getPostByAny(post.id, options)
       if (!currentPost) throw createHttpError(404, 'Post not found')
-      if (delegated) await loadWritablePost(creator, post.id, true, options)
+      if (delegated) await loadWritablePost(creator, post.id, true, options, currentPost)
       if (hashtagIntent)
         effectiveChanges = await prepareLockedHashtagIntentChanges(
           creator,

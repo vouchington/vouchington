@@ -9,6 +9,7 @@ import { buildCommunityImagePlacementSelect } from './search/image-placements.mt
 export function selectCommunityWithOwner(
   select: SQLStatement,
   extra?: { columns: SQLStatement; join: SQLStatement },
+  from: SQLStatement = sql` FROM communities c LEFT JOIN users u ON u.id = c.created_by_id`,
 ): SQLStatement {
   const statement = select
     .append(communityColumns('c'))
@@ -17,7 +18,7 @@ export function selectCommunityWithOwner(
     )
     .append(buildCommunityImagePlacementSelect())
   if (extra) statement.append(extra.columns)
-  statement.append(sql` FROM communities c LEFT JOIN users u ON u.id = c.created_by_id`)
+  statement.append(from)
   if (extra) statement.append(extra.join)
   return statement
 }

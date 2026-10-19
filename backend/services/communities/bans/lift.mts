@@ -35,7 +35,7 @@ export async function liftCommunityBan(
       403,
       'Forbidden',
     )
-    await assertModeratorMayLiftAll(currentUser, communityId, bans, options)
+    await assertModeratorMayLiftAll(currentUser, communityId, currentMembership, bans, options)
   }
 
   // Lift all currently-active ban rows for this user. The WHERE clause mirrors the active-ban
@@ -69,10 +69,10 @@ export async function liftCommunityBan(
 async function assertModeratorMayLiftAll(
   currentUser: PrivateUser,
   communityId: string,
+  actorMembership: { role: string } | null,
   bans: CommunityBan[],
   options: QueryOptions,
 ): Promise<void> {
-  const actorMembership = await getCommunityMember(communityId, currentUser.id, options)
   if (actorMembership?.role !== 'moderator') return
 
   // Deduplicate banner IDs that need a privilege check.

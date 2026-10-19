@@ -6,6 +6,7 @@ import {
 } from '@services/media-delivery-safety'
 import { recordPostPublicationChange } from '@services/post-publication'
 import type { CommunityWithOwner } from './get.mts'
+import { mapCommunityWithOwner, type CommunityRowWithOwner } from './get-mapping.mts'
 import type { UpdateCommunityInput } from './update-types.mts'
 import type { CommunityVisibility } from './types.mts'
 
@@ -16,9 +17,12 @@ export async function updateCommunityInTransaction(input: {
   update: UpdateCommunityInput
   statement: { text: string; values: unknown[] }
   query: TransactionQuery
-}): Promise<{ visibility: CommunityVisibility; slug: string } | null> {
-  const { locked, rowCount } = await applyLockedCommunityUpdate(input)
-  if ((rowCount ?? 0) > 0 && locked && publicationChanged(input.update, locked)) {
+}): Promise<{
+  prior: { visibility: CommunityVisibility; slug: string } | null
+  updated: CommunityWithOwner | null
+}> {
+  const { locked, updated } = await applyLockedCommunityUpdate(input)
+  if (updated && locked && publicationChanged(input.update, locked)) {
     await recordPostPublicationChange(input.query, {
       scope: { type: 'community', communityId: input.communityId },
       reason: 'community_visibility_changed',
@@ -26,7 +30,7 @@ export async function updateCommunityInTransaction(input: {
       footprint: { priorCommunityId: input.communityId, priorCommunitySlug: locked.slug },
     })
   }
-  return (rowCount ?? 0) > 0 ? locked : null
+  return { prior: updated ? locked : null, updated }
 }
 
 async function applyLockedCommunityUpdate(
@@ -45,15 +49,19 @@ async function applyLockedCommunityUpdate(
     )
   }
   const locked = await lockCommunityPublicationInputs(input.query, input.communityId)
-  const rowCount = await prepublishAndUpdateCommunity(input)
-  return { locked, rowCount }
+  const updated = await prepublishAndUpdateCommunity(input)
+  return { locked, updated }
 }
 
 async function prepublishAndUpdateCommunity(
   input: Parameters<typeof updateCommunityInTransaction>[0],
-): Promise<number | null> {
-  const result = await input.query(input.statement.text, input.statement.values)
-  return result.rowCount
+): Promise<CommunityWithOwner | null> {
+  const result = await input.query<CommunityRowWithOwner>(
+    input.statement.text,
+    input.statement.values,
+  )
+  const row = result.rows[0]
+  return row ? mapCommunityWithOwner(row) : null
 }
 
 async function lockCommunityPublicationInputs(

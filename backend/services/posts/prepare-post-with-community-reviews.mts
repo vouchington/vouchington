@@ -12,19 +12,14 @@ import { insertPost } from './create/insert-post.mts'
 import { applyPostTransactionSideEffects } from './create/transaction-side-effects.mts'
 import { validateCreatePostInput, validatePostCategories } from './create/validation.mts'
 import { addUrl } from '@services/urls/upsert'
-import { getUrlById } from '@services/urls/get'
+import { prepareDelegatedCreateScope } from './create/delegated-create-scope.mts'
 import { recordCreatedPostPublicationChange } from './create/publication-change.mts'
 import sql from 'sql-template-strings'
 import { persistPostSourceUrlRelation } from './create/source-url-relation.mts'
 import { lockActivePostAuthorImageAdmission } from './create/active-author.mts'
 import { preparePostImageDeliveryMutation } from './media-delivery.mts'
 import { enqueueReconcileMediaDeliveryRegistry } from '@queues/notifications/enqueues'
-import {
-  loadWritablePost,
-  assertDelegatedCommunityPostAllowed,
-  assertDelegatedPostActorActive,
-} from './authorization.mts'
-import { lockDelegatedPostThread, lockDelegatedPostCommunity } from './delegated-write-locks.mts'
+import { assertDelegatedPostActorActive } from './authorization.mts'
 import { finalizePreparedPost } from './create/finalize.mts'
 export const preparePostWithCommunityReviews = async (
   creator: PrivateUser,
@@ -56,21 +51,9 @@ export const preparePostWithCommunityReviews = async (
     })
     const options = { query }
     if (delegated) await assertDelegatedPostActorActive(creator.id, options)
-    if (delegated && input.community_id && input.parent_post_id) {
-      const source = await getPostByAny(input.parent_post_id, options)
-      if (source?.community_id)
-        throw createHttpError(422, 'Only global posts can be discussed in a community')
-    }
-    if (delegated && input.community_id) {
-      await lockDelegatedPostCommunity(query, input.community_id, creator.id)
-      await assertDelegatedCommunityPostAllowed(input.community_id, defaults.postType, options)
-    }
-    if (delegated && input.parent_post_id) {
-      await lockDelegatedPostThread(query, input.parent_post_id, creator.id)
-      const parent = await loadWritablePost(creator, input.parent_post_id, false, options)
-      if (parent.community_id)
-        await assertDelegatedCommunityPostAllowed(parent.community_id, defaults.postType, options)
-    }
+    const delegatedParent = delegated
+      ? await prepareDelegatedCreateScope(query, creator, input, defaults.postType)
+      : undefined
     // Resolve url string → url_id for link posts inside the transaction so the url row
     // is visible to the INSERT. addUrl returns null for blocked/non-public hosts → 422.
     if (defaults.postType === 'link' && updates.url && !updates.url_id) {
@@ -80,12 +63,7 @@ export const preparePostWithCommunityReviews = async (
       sourceUrlId = viewUrl.id
       resolvedUrlStrings = [input.url!]
       // Carry the canonical hostname out for post-commit crawler setup without replica lag.
-      if (viewUrl.canonical_url_id) {
-        const canonicalUrl = await getUrlById(viewUrl.canonical_url_id, options)
-        resolvedUrlHostnameId = canonicalUrl?.hostname.id ?? viewUrl.hostname.id
-      } else {
-        resolvedUrlHostnameId = viewUrl.hostname.id
-      }
+      resolvedUrlHostnameId = viewUrl.canonical_hostname_id ?? viewUrl.hostname.id
       if (!updates.title?.trim()) {
         updates = { ...updates, title: input.url!.slice(0, 255).trim() }
       }
@@ -130,7 +108,11 @@ export const preparePostWithCommunityReviews = async (
     }
     const scopeInput = { creator, defaults, options, updates }
     // ast-grep-ignore: no-three-sequential-awaits -- scope validation, insert and source URL relation depend on each other inside the same transaction
-    const scope = await resolvePostScope({ ...scopeInput, communityLockHeld: delegated })
+    const scope = await resolvePostScope({
+      ...scopeInput,
+      communityLockHeld: delegated,
+      parentPost: delegatedParent,
+    })
     const insertedPost = await insertPost({
       creator,
       provenance,

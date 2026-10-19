@@ -1,4 +1,5 @@
 export * from './get.mts'
+export * from './request-user.mts'
 export * from './search.mts'
 export * from './privacy.mts'
 export * from './update-contact-info.mts'

@@ -4,7 +4,6 @@ import { requireAuth, validateRequestContract } from '../../response-helpers.mts
 import { apiHeaders } from '@vouchington/utils/api-response-contract'
 import {
   communityAllowsPostType,
-  getCommunityOrThrow,
   isCommunityRootPostType,
   loadCommunityForViewer,
 } from '@services/communities'
@@ -102,9 +101,8 @@ app.route('/api/v1/communities/:idOrSlug/posts').post(async (ctx: Context) => {
     idempotencyKeyHeader: ctx.req.headers['idempotency-key'],
     intent: { route: 'communities.posts.create', community_id: community.id, body: input },
     beforeCapacity: async () => {
-      const currentCommunity = await getCommunityOrThrow(community.id, { readOnly: false })
       ctx.assert(
-        communityAllowsPostType(currentCommunity, postType),
+        communityAllowsPostType(community, postType),
         403,
         `${postType} posts are not enabled for this community`,
       )

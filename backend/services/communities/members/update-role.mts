@@ -1,7 +1,7 @@
 import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
-import { getCommunityMember } from './get.mts'
+import { getActiveCommunityMembersForUsers } from './batch.mts'
 import { enqueueOnCommunityAgentPromptsDeactivated } from '@queues/entity-listeners/enqueues'
 import { enqueueSendCommunityRoleChangeEmail } from '@queues/emails/enqueues'
 import { lockCommunityUsers } from '../bans/lock.mts'
@@ -37,10 +37,15 @@ export async function updateMemberRole(
 
   await lockCommunityUsers(communityId, [currentUserId, targetUserId], options)
 
-  const currentMembership = await getCommunityMember(communityId, currentUserId, options)
+  const members = await getActiveCommunityMembersForUsers(
+    communityId,
+    [currentUserId, targetUserId],
+    options,
+  )
+  const currentMembership = members.get(currentUserId) ?? null
   assert(currentMembership?.role === 'owner', 403, 'Only owners can change member roles')
 
-  const targetMembership = await getCommunityMember(communityId, targetUserId, options)
+  const targetMembership = members.get(targetUserId) ?? null
   assert(targetMembership, 404, 'Target user is not a member of this community')
   assert(targetMembership.role !== 'owner', 422, 'Cannot change the role of another owner')
 

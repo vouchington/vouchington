@@ -1,4 +1,3 @@
-import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { PrivateUser } from '@services/users/types'
@@ -6,6 +5,7 @@ import { invalidate } from '@services/entity-cache/invalidate'
 import type { CommunityAutomodAction, CommunityMember } from './types.mts'
 import { getCommunity, type CommunityWithOwner } from './get.mts'
 import { currentUserCanModerateCommunity } from './authorization.mts'
+import { writeCommunityUpdate } from './community-update-returning.mts'
 
 export const COMMUNITY_AUTOMOD_ACTIONS = [
   'record_only',
@@ -37,16 +37,16 @@ export async function updateCommunityAutomodSettings(
     'automod_action must be record_only, review_queue or unpublish',
   )
 
-  const { rowCount } = await write(sql`/* updateCommunityAutomodSettings */
-    UPDATE communities
+  const updated = await writeCommunityUpdate(
+    sql`/* updateCommunityAutomodSettings */`,
+    sql`UPDATE communities
     SET automod_action = ${input.automod_action}
-    WHERE id = ${communityId} AND deleted_at IS NULL AND archived_at IS NULL`)
-  if (!rowCount) {
-    assert(await getCommunity(communityId), 404, 'Community not found')
+    WHERE id = ${communityId} AND deleted_at IS NULL AND archived_at IS NULL`,
+  )
+  if (!updated) {
+    assert(await getCommunity(communityId, { readOnly: false }), 404, 'Community not found')
     assert(false, 403, 'Cannot update archived community')
   }
-  const updated = await getCommunity(communityId)
-  assert(updated, 404, 'Community not found after update')
   await invalidate.communities(community, updated)
   return updated
 }

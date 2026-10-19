@@ -2,7 +2,6 @@ import { upsertUrlHostnames } from '@services/urls-hostnames'
 import { upsertMediaTypes } from './media-types.mts'
 import type { QueryOptions } from '@data-stores/psql/types'
 import type { ViewUrl } from './types.mts'
-import { getUrlsByIds } from './get.mts'
 import { getOrCreateCrawlerForHostname } from '@services/crawlers'
 import createError from 'http-errors'
 import { isPublicHostname, normalizeUrlForUrlTable } from '@modules/utils/urls'
@@ -38,7 +37,7 @@ export function createUrlUpsert(checkUrl = assertUrlAllowedByWebRisk) {
     userId: string | null,
     hrefs: string[],
     options: AddUrlOptions = {},
-  ): Promise<ViewUrl[]> => {
+  ): Promise<Array<ViewUrl & { canonical_hostname_id: string | null }>> => {
     const {
       content_type,
       skipCreatedEvents = false,
@@ -95,13 +94,12 @@ export function createUrlUpsert(checkUrl = assertUrlAllowedByWebRisk) {
       queryOptions,
     )
 
-    const idsByUrl = new Map(rows.map(row => [row.url as string, row.id as string]))
-    const orderedIds = uniqueUrls.flatMap(url => idsByUrl.get(url.toString()) ?? [])
-    const viewUrlsById = new Map((await getUrlsByIds(orderedIds, queryOptions)).map(u => [u.id, u]))
-    const viewUrls = orderedIds.flatMap(id => {
-      const url = viewUrlsById.get(id)
-      return url ? [url] : []
+    const idsByUrl = new Map(rows.map(row => [row.url, row]))
+    const viewUrls = uniqueUrls.flatMap(url => {
+      const row = idsByUrl.get(url.toString())
+      return row ? [toViewUrl(row)] : []
     })
+    const viewUrlsById = new Map(viewUrls.map(url => [url.id, url]))
 
     for (const viewUrl of viewUrls) {
       if (viewUrl.hostname.is_blocked) {
@@ -135,7 +133,7 @@ export function createUrlUpsert(checkUrl = assertUrlAllowedByWebRisk) {
     userId: string | null,
     url: string,
     options?: AddUrlOptions,
-  ): Promise<ViewUrl | null> =>
+  ): Promise<(ViewUrl & { canonical_hostname_id: string | null }) | null> =>
     Promise.resolve().then(() => {
       const preserveHttp = options?.preserveHttp ?? false
       const normalizedUrl = normalizeUrlForUrlTable(url, { preserveHttp })
@@ -176,6 +174,21 @@ async function processUrlCreatedInline(
     if (url.hostname.is_blocked || !url.hostname.is_crawlable) return
     await getOrCreateCrawlerForHostname(null, url.hostname.id, options)
   }, Promise.resolve())
+}
+
+function toViewUrl(
+  row: Awaited<ReturnType<typeof upsertUrlRows>>[number],
+): ViewUrl & { canonical_hostname_id: string | null } {
+  return {
+    __entity_type: row.__entity_type,
+    id: row.id,
+    hostname: row.hostname,
+    canonical_url_id: row.canonical_url_id,
+    url: row.url,
+    pathname: row.pathname,
+    search_params: row.search_params,
+    canonical_hostname_id: row.canonical_hostname_id,
+  }
 }
 
 function hasTransactionQuery(query: QueryOptions['query']): query is TransactionQueryWithClient {

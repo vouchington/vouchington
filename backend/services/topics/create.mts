@@ -9,7 +9,7 @@ import type { QueryOptions } from '@data-stores/psql/types'
 import { isUUID, validateSlug } from '@modules/utils'
 import { normalizeKey } from '@ts-shared/utils/strings'
 import { beginTransaction, write } from '@data-stores/psql'
-import { getTopicByAny } from './get.mts'
+import { mapTopicWithRedirect, type TopicRedirectRow } from './get-with-redirect-mapping.mts'
 import { currentUserCanCreateTopic } from './authorization.mts'
 import { getUrlById } from '@services/urls'
 import assert from 'http-assert'
@@ -18,6 +18,24 @@ import { addEntityBloomKeys } from '@services/entity-cache/bloom-filter-repair'
 import { createTopicRevision, computeTopicChanges } from '@services/topic-revisions'
 import { claimTopicAlias, linkTopicAlias } from './aliases.mts'
 import { invalidatePostsForTopicAliases } from './invalidate-posts-for-topic-aliases.mts'
+
+export async function readCreatedTopic(topicId: string, options?: QueryOptions): Promise<Topic> {
+  const { rows } = await write<TopicRedirectRow>(
+    sql`/* createTopicReturning */
+      SELECT
+        view_topics.*,
+        NULL::uuid AS source_topic_id,
+        NULL::text AS source_topic_slug,
+        NULL::text AS source_topic_type
+      FROM view_topics
+      WHERE view_topics.id = ${topicId}
+      LIMIT 1
+    `,
+    options,
+  )
+  assert(rows[0], 500, 'Created topic was not readable')
+  return mapTopicWithRedirect(rows[0]).topic
+}
 
 export function finalizeCreatedTopic(topic: Topic, updates: CreateTopicUpdates): void {
   void addEntityBloomKeys('topics', [topic.id, topic.slug, ...topic.aliases].map(normalizeKey))
@@ -146,7 +164,7 @@ async function createTopicInDatabase(
     await setTopicHostnameLink(topicId, hostnameId, options)
   }
 
-  const topic = (await getTopicByAny(topicId, options))!
+  const topic = await readCreatedTopic(topicId, options)
   const changes = computeTopicChanges(null, topic)
   await createTopicRevision(topicId, 'create', changes, creator.id, options)
   return topic

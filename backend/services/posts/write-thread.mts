@@ -6,8 +6,8 @@ import { getPostByAny } from './get.mts'
 import type { Post } from './types.mts'
 
 /** Load a complete ordered thread and hydrate live rows on the caller's query connection. */
-export async function loadPostWriteThread(id: string, options: QueryOptions) {
-  const post = await getPostByAny(id, options)
+export async function loadPostWriteThread(id: string, options: QueryOptions, knownPost?: Post) {
+  const post = knownPost?.id === id ? knownPost : await getPostByAny(id, options)
   if (!post) throw createHttpError(404, 'Post not found')
   const nodes =
     post.post_type === 'comment' ? await getCommentAncestorsByAny(post.id, options) : [post]

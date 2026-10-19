@@ -1,12 +1,35 @@
 import { write } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
+import type { ViewUrl } from './types.mts'
 
-type UpsertedUrlRow = {
+export type UpsertedUrlRow = ViewUrl & {
   hostname_id: string
-  id: string
   inserted: boolean
-  url: string
+  canonical_hostname_id: string | null
 }
+
+const hydratedUrlSelect = `
+  SELECT
+    'url' AS __entity_type,
+    upserted.inserted,
+    upserted.hostname_id,
+    upserted.id,
+    upserted.url,
+    upserted.pathname,
+    upserted.search_params,
+    upserted.canonical_url_id,
+    CASE
+      WHEN upserted.canonical_url_id IS NULL OR upserted.canonical_url_id = upserted.id
+        THEN upserted.hostname_id
+      ELSE canonical.hostname_id
+    END AS canonical_hostname_id,
+    (TO_JSONB(view_url_hostnames) - 'publicly_introduced_at')::json AS hostname
+  FROM upserted
+  JOIN view_url_hostnames ON view_url_hostnames.id = upserted.hostname_id
+  LEFT JOIN urls canonical
+    ON canonical.id = upserted.canonical_url_id
+   AND canonical.id <> upserted.id
+`
 
 export async function upsertUrlRows(
   values: unknown[],
@@ -16,21 +39,24 @@ export async function upsertUrlRows(
   if (contentTypeIds === null) {
     const { rows } = await write<UpsertedUrlRow>(
       `/* addUrls */
-        INSERT INTO urls (url, hostname_id, pathname, search_params, created_by_id)
-        SELECT
-          input.url,
-          input.hostname_id,
-          input.pathname,
-          input.search_params,
-          input.created_by_id
-        FROM unnest(
-          $1::text[], $2::uuid[], $3::text[], $4::jsonb[], $5::uuid[]
-        ) AS input(url, hostname_id, pathname, search_params, created_by_id)
-        ORDER BY input.url
-        ON CONFLICT (url)
-        DO UPDATE
-        SET hostname_id = EXCLUDED.hostname_id
-        RETURNING id, url, hostname_id, (xmax = 0) AS inserted
+        WITH upserted AS (
+          INSERT INTO urls (url, hostname_id, pathname, search_params, created_by_id)
+          SELECT
+            input.url,
+            input.hostname_id,
+            input.pathname,
+            input.search_params,
+            input.created_by_id
+          FROM unnest(
+            $1::text[], $2::uuid[], $3::text[], $4::jsonb[], $5::uuid[]
+          ) AS input(url, hostname_id, pathname, search_params, created_by_id)
+          ORDER BY input.url
+          ON CONFLICT (url)
+          DO UPDATE
+          SET hostname_id = EXCLUDED.hostname_id
+          RETURNING id, url, hostname_id, pathname, search_params, canonical_url_id, (xmax = 0) AS inserted
+        )
+        ${hydratedUrlSelect}
       `,
       values,
       queryOptions,
@@ -40,38 +66,41 @@ export async function upsertUrlRows(
 
   const { rows } = await write<UpsertedUrlRow>(
     `/* addUrls:withContentType */
-      INSERT INTO urls (
-        url,
-        hostname_id,
-        pathname,
-        search_params,
-        created_by_id,
-        media_type_id
+      WITH upserted AS (
+        INSERT INTO urls (
+          url,
+          hostname_id,
+          pathname,
+          search_params,
+          created_by_id,
+          media_type_id
+        )
+        SELECT
+          input.url,
+          input.hostname_id,
+          input.pathname,
+          input.search_params,
+          input.created_by_id,
+          input.media_type_id
+        FROM unnest(
+          $1::text[], $2::uuid[], $3::text[], $4::jsonb[], $5::uuid[], $6::bigint[]
+        ) AS input(
+          url,
+          hostname_id,
+          pathname,
+          search_params,
+          created_by_id,
+          media_type_id
+        )
+        ORDER BY input.url
+        ON CONFLICT (url)
+        DO UPDATE
+        SET
+          hostname_id = EXCLUDED.hostname_id,
+          media_type_id = EXCLUDED.media_type_id
+        RETURNING id, url, hostname_id, pathname, search_params, canonical_url_id, (xmax = 0) AS inserted
       )
-      SELECT
-        input.url,
-        input.hostname_id,
-        input.pathname,
-        input.search_params,
-        input.created_by_id,
-        input.media_type_id
-      FROM unnest(
-        $1::text[], $2::uuid[], $3::text[], $4::jsonb[], $5::uuid[], $6::bigint[]
-      ) AS input(
-        url,
-        hostname_id,
-        pathname,
-        search_params,
-        created_by_id,
-        media_type_id
-      )
-      ORDER BY input.url
-      ON CONFLICT (url)
-      DO UPDATE
-      SET
-        hostname_id = EXCLUDED.hostname_id,
-        media_type_id = EXCLUDED.media_type_id
-      RETURNING id, url, hostname_id, (xmax = 0) AS inserted
+      ${hydratedUrlSelect}
     `,
     [...values, contentTypeIds],
     queryOptions,

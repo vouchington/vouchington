@@ -14,7 +14,7 @@ import { decorateModerationEnqueueError } from './enqueue-observability.mts'
 import { enqueueReportIntegrityCheck } from './integrity.mts'
 import type { CreateModerationReportInput } from './parse.mts'
 import { getRssFeedItemById } from '@services/rss-feed-items/get'
-import { getPrivateUserByAny, isAdminUser } from '@services/users'
+import { isAdminUser, loadRequestPrivateUser } from '@services/users'
 import {
   currentUserCanReportVisiblePost,
   type ReportablePostAccessInput,
@@ -92,7 +92,7 @@ async function assertReportableEntity(
 
   const canSeePrivateHostname =
     input.entityType === 'url_hostname' &&
-    isAdminUser(await getPrivateUserByAny(currentUserId, { readOnly: false }))
+    isAdminUser(await loadRequestPrivateUser(currentUserId, { readOnly: false }))
 
   const { rows } = await read(sql`/* assertReportableEntity */
     SELECT
@@ -143,7 +143,7 @@ async function assertReportablePost(
   assert(post, 404, 'Reportable entity not found')
   assert(post.target_created_by_id !== currentUserId, 422, 'Cannot report yourself')
 
-  const currentUser = await getPrivateUserByAny(currentUserId, { readOnly: false })
+  const currentUser = await loadRequestPrivateUser(currentUserId, { readOnly: false })
   assert(currentUser, 404, 'Reportable entity not found')
   assert(
     await currentUserCanReportVisiblePost(currentUser, post),

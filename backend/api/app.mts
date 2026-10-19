@@ -7,6 +7,7 @@ import { createRequestClientInfoListener } from '@modules/request-client-info/li
 import { isRequestClientInfoEnforced } from '@services/request-client-info'
 import { verifyDeviceAndSessionTokens } from '@services/jwt-session'
 import { createOriginGuardedListener as createListenerWithOriginGuard } from './app-origin-guard.mts'
+import { createRequestContextListener } from './request-context.mts'
 import applyContext from './context/index.mts'
 import applyRateLimitContext from './context/rate-limit.mts'
 import applyRequestVerificationContext from './context/request-verification.mts'
@@ -67,11 +68,13 @@ export function createOriginGuardedListener(
 }
 
 export function createApiRequestGuardedListener(listener: HttpListener): HttpListener {
-  return createRequestClientInfoListener(listener, {
-    isEnforced: isRequestClientInfoEnforced,
-    mintDeviceId: v7,
-    verifyDeviceIdentity: verifyRequestDeviceIdentity,
-  })
+  return createRequestContextListener(
+    createRequestClientInfoListener(listener, {
+      isEnforced: isRequestClientInfoEnforced,
+      mintDeviceId: v7,
+      verifyDeviceIdentity: verifyRequestDeviceIdentity,
+    }),
+  )
 }
 
 export async function verifyRequestDeviceIdentity(

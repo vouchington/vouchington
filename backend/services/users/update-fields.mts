@@ -25,7 +25,7 @@ export async function updateUserFields(
   userId: string,
   options: UpdateUserOptions,
   loadedUser?: Pick<PrivateUser, 'username'>,
-) {
+): Promise<PrivateUser | undefined> {
   const invalidatesUserMetrics = hasUserMetricsVisibilityUpdate(options)
   const {
     username,
@@ -66,7 +66,7 @@ export async function updateUserFields(
     assert(existingUser, 404, 'User not found')
   }
 
-  const query = sql`/* updateUserFields */ UPDATE users SET`
+  const query = sql`UPDATE users SET`
   let hasSet = false
 
   // Only validate and set if provided and not empty (empty strings are ignored)
@@ -87,8 +87,6 @@ export async function updateUserFields(
 
   if (typeof username === 'string') {
     validatedUsername = validateUsername(username)
-    const existing = await getPrivateUserByAny(validatedUsername)
-    assert(!existing || existing.id === userId, 422, 'Username is already taken')
     hasSet = appendSet(query, hasSet, sql`username = ${validatedUsername}`)
   }
 
@@ -128,14 +126,20 @@ export async function updateUserFields(
 
   if (!hasSet) return
 
-  query.append(sql`
+  // view_users_private scans users, so it cannot see this UPDATE in the same statement.
+  // RETURNING supplies the replaced username; the private row is the next statement.
+  const update = sql`/* updateUserFields */ `
+  update.append(query)
+  update.append(sql`
     WHERE id = ${userId} AND deleted_at IS NULL
-    RETURNING WITH (OLD AS prior) prior.username AS previous_username
+    RETURNING WITH (OLD AS prior) prior.username AS previous_username, id
   `)
-
-  // An authenticated row can predate another rename; invalidate the version this UPDATE replaced.
-  const { rows } = await write<{ previous_username: string | null }>(query)
-  const previousUsername = typeof username === 'string' ? rows[0]?.previous_username : undefined
+  const { rows } = await writeUpdatedUser(update)
+  const written = rows[0]
+  assert(written, 404, 'User not found')
+  const previousUsername = typeof username === 'string' ? written.previous_username : undefined
+  const updatedUser = await getPrivateUserByAny(userId, { readOnly: false })
+  assert(updatedUser, 404, 'User not found')
 
   if (typeof username === 'string') {
     void addEntityBloomKeys('users', [normalizeKey(username)])
@@ -144,6 +148,21 @@ export async function updateUserFields(
   await invalidateUser(userId, previousUsername, validatedUsername)
 
   void enqueueOnUserUpdated(userId)
+  return updatedUser
+}
+
+async function writeUpdatedUser(
+  query: ReturnType<typeof sql>,
+): Promise<{ rows: Array<{ previous_username: string | null; id: string }> }> {
+  try {
+    return await write<{ previous_username: string | null; id: string }>(query)
+  } catch (err) {
+    const pgError = err as { code?: string; constraint?: string }
+    if (pgError.code === '23505' && pgError.constraint === 'idx_users__username') {
+      assert(false, 422, 'Username is already taken')
+    }
+    throw err
+  }
 }
 
 function hasUserMetricsVisibilityUpdate(options: UpdateUserOptions): boolean {

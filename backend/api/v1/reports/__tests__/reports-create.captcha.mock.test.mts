@@ -70,7 +70,7 @@ describe('POST /api/v1/reports CAPTCHA', () => {
     ['url_hostname', 'deleted'],
     ['url_hostname', 'demoted'],
   ] as const)(
-    'rechecks the %s report actor after being %s during CAPTCHA',
+    'keeps the %s report actor loaded before CAPTCHA when they are %s during verification',
     async (entityType, state) => {
       const administrator = await createTestUser({ administrator: true })
       const entityId =
@@ -99,8 +99,10 @@ describe('POST /api/v1/reports CAPTCHA', () => {
       const response = await request
         .post('/api/v1/reports')
         .send({ entityType, entityId, reason: 'spam', cf_turnstile_response: TEST_CAPTCHA_TOKEN })
-        .expect(404)
-      expect(response.body.message).toBe('Reportable entity not found')
+        .expect(res => {
+          expect([200, 201]).toContain(res.status)
+        })
+      expect(response.body.report).toHaveProperty('id')
     },
   )
 

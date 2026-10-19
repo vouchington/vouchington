@@ -3,7 +3,7 @@ import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import { isAdminUser } from '@services/users/authorization'
 import { getPublicUserByAny } from '@services/users/get'
-import { getCommunityMember } from '../members/get.mts'
+import { getActiveCommunityMembersForUsers } from '../members/batch.mts'
 import { lockCommunityUsers } from './lock.mts'
 import { enqueueOnCommunityAgentPromptsDeactivated } from '@queues/entity-listeners/enqueues'
 import onError from '@modules/on-error'
@@ -33,7 +33,12 @@ export async function banUserFromCommunity(
   await lockCommunityUsers(communityId, [currentUser.id, targetUserId], options)
 
   const isAdmin = isAdminUser(currentUser) || (opts?.bypassCommunityMemberCheck ?? false)
-  const targetMembership = await getCommunityMember(communityId, targetUserId, options)
+  const members = await getActiveCommunityMembersForUsers(
+    communityId,
+    [currentUser.id, targetUserId],
+    options,
+  )
+  const targetMembership = members.get(targetUserId) ?? null
   targetRoleBeforeBan = targetMembership?.role ?? null
 
   // Owners can never be banned, by anyone (including site admins) — a banned owner would
@@ -44,7 +49,7 @@ export async function banUserFromCommunity(
   // act on regular members, so their kick is also scoped to role = 'member'.
   let callerIsModeratorOnly = false
   if (!isAdmin) {
-    const currentMembership = await getCommunityMember(communityId, currentUser.id, options)
+    const currentMembership = members.get(currentUser.id) ?? null
     assert(currentMembership, 403, 'Forbidden')
     assert(
       currentMembership.role === 'owner' || currentMembership.role === 'moderator',
@@ -80,7 +85,10 @@ export async function banUserFromCommunity(
   const kickRolePredicate = callerIsModeratorOnly
     ? sql`AND role = 'member'`
     : sql`AND role <> 'owner'`
-  await write(
+  // Role writers (updateMemberRole, transferLockedCommunityOwnership) take lockCommunityUsers
+  // before changing community_members.role. The kick WHERE is the promotion guard: RETURNING
+  // the role of the row this statement removed, with no follow-up membership read.
+  await write<{ role: CommunityMemberRole }>(
     sql`/* banUserFromCommunity:kick */
     UPDATE community_members
     SET removed_at = CURRENT_TIMESTAMP, removed_by_id = ${currentUser.id}
@@ -89,20 +97,9 @@ export async function banUserFromCommunity(
       AND removed_at IS NULL
     `
       .append(' ')
-      .append(kickRolePredicate),
+      .append(kickRolePredicate)
+      .append(sql` RETURNING role`),
     options,
-  )
-
-  // If a concurrent role change promoted the target past what the caller may ban (to owner for
-  // any caller, or to moderator for a moderator caller) after the membership read above, abort
-  // the whole ban — the throw rolls back the inserted/updated ban row so no privileged member is
-  // left carrying an active ban.
-  const postKickMembership = await getCommunityMember(communityId, targetUserId, options)
-  assert(postKickMembership?.role !== 'owner', 409, 'User became a community owner; ban aborted')
-  assert(
-    !(callerIsModeratorOnly && postKickMembership?.role === 'moderator'),
-    409,
-    'User became a community moderator; ban aborted',
   )
 
   const ban = rows[0] as CommunityBan

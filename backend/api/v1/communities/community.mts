@@ -110,6 +110,8 @@ app
         input,
         archive as boolean,
         membership,
+        undefined,
+        community,
       )
     } else if (archive === undefined) {
       updated = await updateCommunity(currentUser, community.id, input, membership, { community })

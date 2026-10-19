@@ -4,7 +4,7 @@ import { assertNotSuspended } from '@services/users/suspension-guard'
 import { loadPostWriteThread } from './write-thread.mts'
 import { canViewDelegatedPostsBatch } from './check-delegated-access-batch.mts'
 import type { QueryOptions } from '@data-stores/psql'
-import { getCommunityOrThrow } from '@services/communities/get'
+import { getCommunityOrThrow, type CommunityWithOwner } from '@services/communities/get'
 import {
   communityAllowsPostType,
   isCommunityRootPostType,
@@ -116,8 +116,9 @@ export async function loadWritablePost(
   id: string,
   requireOwnership = true,
   options: QueryOptions = { readOnly: false },
+  knownPost?: Post,
 ): Promise<Post> {
-  const { post, nodes, posts } = await loadPostWriteThread(id, options)
+  const { post, nodes, posts } = await loadPostWriteThread(id, options, knownPost)
   if (requireOwnership && (post.post_type === 'story' || post.post_type === 'topic_recommendation'))
     throw createHttpError(404, 'Post not found')
   if (nodes.some(node => node.post_type === 'topic_recommendation'))
@@ -132,8 +133,9 @@ export async function assertDelegatedCommunityPostAllowed(
   communityId: string,
   postType: string,
   options: QueryOptions,
+  loadedCommunity?: CommunityWithOwner,
 ): Promise<void> {
-  const community = await getCommunityOrThrow(communityId, options)
+  const community = loadedCommunity ?? (await getCommunityOrThrow(communityId, options))
   assertDelegatedCommunityWritable(community)
   if (postType === 'comment') return
   assert(

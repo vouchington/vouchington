@@ -84,15 +84,17 @@
     "annotation": "canViewDelegatedPostsBatch",
     "route": null,
     "maxCount": null,
-    "reason": "Delegated create, update and delete recheck thread access after lockDelegatedPostThread acquires lifecycle and post locks",
-    "issue": 3113
+    "reason": "loadWritablePost re-reads thread visibility after lockDelegatedPostThread takes FOR NO KEY UPDATE, so it sees the previous lock holder's commit",
+    "permanent": true,
+    "code": "backend/services/posts/authorization.mts:126"
   },
   {
     "annotation": "canViewPostsBatch",
     "route": null,
     "maxCount": null,
-    "reason": "Anonymous outbound-federation visibility is rechecked after the vote transaction commits",
-    "issue": 3113
+    "reason": "Anonymous federation visibility is checked once after the vote transaction commits, after the voter's earlier visibility pre-check",
+    "permanent": true,
+    "code": "backend/services/posts/vote-handler-options.mts:97"
   },
   {
     "annotation": "claimContributionAdmission.insert",
@@ -248,25 +250,12 @@
     "issue": 3121
   },
   {
-    "annotation": "getCommunityById",
-    "route": null,
-    "maxCount": null,
-    "reason": "Community settings/archive output is read after writes",
-    "issue": 3113
-  },
-  {
-    "annotation": "getCommunityMember",
-    "route": null,
-    "maxCount": null,
-    "reason": "Membership authority is read after pair advisory locks; bans recheck target membership after the kick UPDATE to reject concurrent role promotion",
-    "issue": 3113
-  },
-  {
     "annotation": "getCommunityWithViewerById",
     "route": null,
     "maxCount": null,
-    "reason": "Community post creation reloads community and membership after admission begins its write transaction; delegated creation also holds lifecycle and membership locks",
-    "issue": 3113
+    "reason": "Community post creation re-reads community and membership inside the execution transaction after CAPTCHA and admission, so an archive or ban that committed while admission waited is rejected",
+    "permanent": true,
+    "code": "backend/services/posts/create/community-scope.mts:76"
   },
   {
     "annotation": "getLandingPageRowForUser",
@@ -303,22 +292,25 @@
     "annotation": "getPostByAny",
     "route": null,
     "maxCount": null,
-    "reason": "Post mutations reload after locks and writes; follower sends revalidate in their independent write transaction after route preflight; approval and vote federation reread after committed mutations",
-    "issue": 3113
+    "reason": "Post update re-reads the row after SELECT FOR UPDATE, and delete re-reads after lockDelegatedPostThread's FOR NO KEY UPDATE, so each sees the previous lock holder's commit",
+    "permanent": true,
+    "code": "backend/services/posts/update.mts:63"
   },
   {
     "annotation": "getPrivateUserByAny",
     "route": null,
     "maxCount": null,
-    "reason": "Authenticated self reads and same-phase mutation inputs reuse rows; distinct actor/target reads remain unresolved pending the route-aware auth-loader decision (#3113), alongside fresh report authorization after CAPTCHA/admission, post-body target resolution and postwrite reloads",
-    "issue": 3113
+    "reason": "Delegated post mutations re-read the actor after lockAuthorPublicationLifecycle, the same fence ensureUserSuspendedInTransaction takes before writing user_suspensions (backend/services/users/suspension.mts:59), so a suspension that committed while this transaction waited is visible. A profile update reads the private projection in the next statement after its UPDATE (backend/services/users/update-fields.mts:141), because view_users_private scans users and cannot see that UPDATE in the same statement",
+    "permanent": true,
+    "code": "backend/services/posts/authorization.mts:162"
   },
   {
     "annotation": "getPublicUserByAny",
     "route": null,
     "maxCount": null,
-    "reason": "Follow commits before its independent best-effort trust vote checks the target; ban-evasion flag claiming and banning have separate committed retry boundaries",
-    "issue": 3113
+    "reason": "Follow commits before its best-effort trust vote loads the target (backend/services/bookmarks/upsert.mts:134). Ban-evasion confirm loads the source user only after the flag-claim transaction commits, then the ban loads the target in its own transaction (backend/services/communities/ban-evasion/confirm.mts:44)",
+    "permanent": true,
+    "code": "backend/services/communities/ban-evasion/confirm.mts:44"
   },
   {
     "annotation": "getRelatablePostIds",
@@ -346,8 +338,9 @@
     "annotation": "getTopicByAny",
     "route": null,
     "maxCount": null,
-    "reason": "Topic create and update return state after topic/alias writes; merged destination output is reloaded after the merge transaction commits",
-    "issue": 3113
+    "reason": "Topic update returns the row after alias and field writes, and merge reloads the destination after the merge transaction commits",
+    "permanent": true,
+    "code": "backend/services/topics/update.mts:95"
   },
   {
     "annotation": "getTopicDataPointInsights",
@@ -360,22 +353,17 @@
     "annotation": "getTopicsByAnyBatch",
     "route": null,
     "maxCount": null,
-    "reason": "Post creation rechecks active topic state on the primary execution transaction after CAPTCHA/admission; link title resolution also rechecks categories after URL writes",
-    "issue": 3113
+    "reason": "Post creation rechecks active topics on the primary execution transaction after the replica preamble read, so an archive or merge that committed during CAPTCHA or admission is rejected",
+    "permanent": true,
+    "code": "backend/services/posts/create/validation-categories.mts:50"
   },
   {
     "annotation": "getUrlById",
     "route": null,
     "maxCount": null,
-    "reason": "Stored URL existence is checked again in the intentional execution transaction after CAPTCHA and the separately committed capacity transaction (contribution-gating/admission.mts:69-79), so removed URLs reject before the post insert",
-    "issue": 3113
-  },
-  {
-    "annotation": "getUrlsByIds",
-    "route": null,
-    "maxCount": null,
-    "reason": "Root URL creation hydrates URLs after their upserts in the shared approval transaction before writing each ordered relation",
-    "issue": 3113
+    "reason": "Link creation rechecks the stored URL in the execution transaction after CAPTCHA and the committed capacity transaction, so a URL removed in between is rejected before the post insert",
+    "permanent": true,
+    "code": "backend/services/posts/create/validation.mts:66"
   },
   {
     "annotation": "getUserTagRelationById",
