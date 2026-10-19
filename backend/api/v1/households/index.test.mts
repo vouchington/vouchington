@@ -66,7 +66,7 @@ describe('Households API Routes', () => {
       const getResponse = await ownerRequest.get(`/api/v1/households/${householdId}`).expect(200)
       expect(getResponse.body.household.id).toBe(householdId)
 
-      await ownerRequest.patch(`/api/v1/households/${householdId}`).send({}).expect(405)
+      await ownerRequest.patch(`/api/v1/households/${householdId}`).send({}).expect(404)
 
       await ownerRequest.delete(`/api/v1/households/${householdId}`).expect(204)
       await ownerRequest.get(`/api/v1/households/${householdId}`).expect(404)
