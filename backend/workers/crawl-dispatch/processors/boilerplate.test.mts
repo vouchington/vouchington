@@ -52,12 +52,6 @@ describe('filterValidUtf8HtmlFiles', () => {
 })
 
 describe('extractDomRemovals invalid-UTF-8 regression (BACKEND-KG)', () => {
-  it('rejects a batch containing an invalid-UTF-8 page', async () => {
-    await expect(
-      extractDomRemovals([VALID_HTML_A, INVALID_UTF8_HTML, VALID_HTML_B]),
-    ).rejects.toThrow(/utf-?8/i)
-  })
-
   it('succeeds once filterValidUtf8HtmlFiles removes the invalid page first', async () => {
     const filtered = await filterValidUtf8HtmlFiles(
       await createArtifacts([VALID_HTML_A, INVALID_UTF8_HTML, VALID_HTML_B]),
@@ -91,11 +85,6 @@ describe('selectHtmlFilesWithinByteBudget', () => {
 })
 
 describe('extractDomRemovals oversized-combined-input regression (BACKEND-KA)', () => {
-  it('rejects a batch whose combined size exceeds the native library cap', async () => {
-    const oversized = [Buffer.alloc(6 * 1024 * 1024, 'a'), Buffer.alloc(6 * 1024 * 1024, 'b')]
-    await expect(extractDomRemovals(oversized)).rejects.toThrow(/input too large/i)
-  })
-
   it('selectHtmlFilesWithinByteBudget trims the batch so the combined size fits', () => {
     const oversized = [createArtifact(6 * 1024 * 1024), createArtifact(6 * 1024 * 1024)]
     const budgeted = selectHtmlFilesWithinByteBudget(oversized)

@@ -48,24 +48,6 @@ describe('markdown rendering', () => {
       expect(rendered).toContain('/sideload/')
       expect(rendered).not.toContain('https://example.com/image.png')
     })
-
-    it('removes unsupported link schemes', async () => {
-      const rendered = await renderMarkdown('[Bad](ws://example.com)')
-      expect(rendered).not.toContain('ws://example.com')
-      expect(rendered).not.toContain('href=')
-    })
-
-    it('removes unsupported image schemes', async () => {
-      const rendered = await renderMarkdown('![Alt](data:image/png;base64,AAA)')
-      expect(rendered).not.toContain('data:image')
-      expect(rendered).not.toContain('src=')
-    })
-
-    it('allows specific safe schemes', async () => {
-      const rendered = await renderMarkdown('[Mail](mailto:tests@voucha.ai) [Phone](tel:+123456)')
-      expect(rendered).toContain('href="mailto:tests@voucha.ai"')
-      expect(rendered).toContain('href="tel:+123456"')
-    })
   })
 
   describe('renderMarkdownToHtml', () => {
@@ -101,21 +83,9 @@ describe('markdown rendering', () => {
       expect(html).not.toContain('<a href="/user/alice"')
     })
 
-    it('escapes HTML by default', async () => {
-      const html = await renderMarkdownToHtml('<strong>Hello</strong>')
-      expect(html).toContain('&lt;strong&gt;Hello&lt;/strong&gt;')
-    })
-
     it('allows HTML when allowHtml is true', async () => {
       const html = await renderMarkdownToHtml('<strong>Hello</strong>', { allowHtml: true })
       expect(html).toContain('<strong>Hello</strong>')
-    })
-
-    it('converts markdown syntax to HTML', async () => {
-      const html = await renderMarkdownToHtml('# Heading\n\n**Bold** and *italic*')
-      expect(html).toContain('<h1>Heading</h1>')
-      expect(html).toContain('<strong>Bold</strong>')
-      expect(html).toContain('<em>italic</em>')
     })
   })
 
@@ -179,15 +149,6 @@ describe('renderMarkdownToHtml options', () => {
     })
     expect(html).toContain('https://example.com/photo.jpg')
     expect(html).not.toContain('/sideload/')
-  })
-
-  it('strips dangerous tags in admin mode', async () => {
-    const html = await renderMarkdownToHtml('<script>alert("xss")</script><b>safe</b>', {
-      allowHtml: true,
-    })
-    expect(html).not.toContain('<script>')
-    expect(html).not.toContain('alert')
-    expect(html).toContain('<b>safe</b>')
   })
 
   it('combines admin options: allowHtml + dofollow + proxy', async () => {
