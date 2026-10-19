@@ -134,7 +134,7 @@ export async function readHouseholdMemberManageAccess(
     `,
   )
   const row = rows[0]
-  const individualExists = row?.individual_exists === true
+  const individualExists = row?.individual_exists ?? false
   if (!row?.can_view) return { access: 'hidden', individualExists }
   if (!row.can_manage) return { access: 'forbidden', individualExists }
   return { access: 'allowed', individualExists }
