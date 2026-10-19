@@ -2,6 +2,7 @@ import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
 import { upsertEntityRelation } from '@services/entity-relations/upsert'
+import { upsertPostCategoryRelationRows } from '@services/posts/category-relation-insert'
 import { deletePendingRecommendation } from '@services/topic-recommendations/delete-pending-recommendation'
 import { replaceTopicRecommendationHostnames } from '@services/topic-recommendations/materialize-topic-recommendation'
 import { createTopicRecommendationLinkRelation } from '@services/topic-recommendations/create-topic-recommendation-link-relation'
@@ -153,6 +154,44 @@ export async function runRelationRoundTripScenarios(): Promise<void> {
         [{ id: seedUuid(1, '05') }],
         { query: transaction, vote: false },
       )
+    },
+    undefined,
+    'buildInsertQuery',
+  )
+
+  registerScenarioContract('post-category-relation-insert', {
+    expectations: [
+      { kind: 'maxProcessedRows', relation: 'relation__post__category__topic_alias', max: 2 },
+      { kind: 'maxProcessedRows', relation: 'relation__post__category__topic', max: 3 },
+    ],
+  })
+  const { rows: aliasRows } = await write<{ id: string }>(
+    `/* postCategoryRelationInsert.alias */ SELECT id FROM topic_aliases WHERE topic_id = $1 LIMIT 1`,
+    [seedTopicId],
+  )
+  const aliasId = aliasRows[0]?.id
+  if (!aliasId) throw new Error('seed topic alias missing')
+  await runAndCapture(
+    'post-category-relation-insert',
+    async () => {
+      await using transaction = await beginTransaction()
+      await upsertPostCategoryRelationRows({
+        aliasIds: [aliasId],
+        aliasRelation: getEntityRelationMetadataOrThrow({
+          subjectType: 'post',
+          objectType: 'topic_alias',
+          predicate: 'category',
+        }),
+        creator: seedUser,
+        options: { query: transaction },
+        postId: seedPostId,
+        topicIds: [seedTopicId],
+        topicRelation: getEntityRelationMetadataOrThrow({
+          subjectType: 'post',
+          objectType: 'topic',
+          predicate: 'category',
+        }),
+      })
     },
     undefined,
     'buildInsertQuery',

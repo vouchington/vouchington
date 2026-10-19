@@ -2,6 +2,7 @@
   "version": 1,
   "capture_api": "backend/services/post-publication/capture.mts",
   "captured_writers": [
+    "backend/services/posts/category-relation-insert.mts",
     "backend/services/posts/prepare-post-with-community-reviews.mts",
     "backend/services/posts/update.mts",
     "backend/services/posts/delete.mts",

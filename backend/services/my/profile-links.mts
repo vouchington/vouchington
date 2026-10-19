@@ -2,7 +2,6 @@ import { beginTransaction, read } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { addUrl } from '@services/urls/upsert'
-import { assertUrlNotBlocked } from '@services/domain-blacklist-check'
 import {
   lockImageAssetAdmission,
   lockUserProfileLinkImageOwners,
@@ -39,7 +38,6 @@ export async function createProfileLink(
 ): Promise<ProfileLink> {
   assertProfileLinkType(input.link_type)
   validateProfileLinkFields(input.link_type, input.url, input.handle)
-  if (input.url) await assertUrlNotBlocked(input.url)
   const urlId = await resolveUrlId(userId, input.url)
   // Atomic INSERT: compute next sort_order and enforce per-user limit in one query.
   // HAVING COUNT(*) < MAX_PROFILE_LINKS prevents insert when at the limit.
@@ -94,7 +92,6 @@ export async function updateProfileLink(
 ): Promise<ProfileLink> {
   if (typeof input.url === 'string' && input.url.length > 0) {
     validateProfileUrl(input.url)
-    await assertUrlNotBlocked(input.url)
   }
   if (typeof input.handle === 'string' && input.handle.length > 0) {
     assert(

@@ -12,4 +12,5 @@ export const RELATION_READ_BATCH_SCENARIO_IDS = [
   'topic-recommendation-hostname-replace',
   'topic-landing-page-hostname-conflict',
   'bidirectional-relation-insert',
+  'post-category-relation-insert',
 ] as const

@@ -2,8 +2,8 @@ import type { QueryOptions } from '@data-stores/psql/types'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
-import { upsertEntityRelation } from '@services/entity-relations'
 import { softDeleteEntityRelation } from '@services/entity-relations/delete'
+import { upsertPostCategoryRelationRows } from './category-relation-insert.mts'
 import { createUnlinkedTopicAlias } from '@services/topics/aliases'
 import type { PrivateUser } from '@services/users/types'
 import type { CreatePostUpdates } from './types.mts'
@@ -73,35 +73,30 @@ export async function syncPostHashtagCategoriesInTransaction(
     if (![...aliases.values()].some(alias => alias.id === id)) removedAliasIds.push({ id })
   }
   await softDeleteEntityRelation(creator, aliasRelation, { id: postId }, removedAliasIds, options)
-  await upsertEntityRelation(
-    creator,
+  const topicRelation = getEntityRelationMetadataOrThrow({
+    subjectType: 'post',
+    objectType: 'topic',
+    predicate: 'category',
+  })
+  const topicIds =
+    updates.categories === undefined
+      ? []
+      : [
+          ...new Set(
+            updates.categories.flatMap(category =>
+              category.type === 'topic' ? [category.topic_id] : [],
+            ),
+          ),
+        ]
+  await upsertPostCategoryRelationRows({
+    aliasIds: [...aliases.values()].map(alias => alias.id),
     aliasRelation,
-    { id: postId },
-    [...aliases.values()].map(alias => ({ id: alias.id })),
-    { ...options, vote: false, suppressNotificationReconcile: true },
-  )
-  const topicIds = [
-    ...new Set(
-      (updates.categories ?? []).flatMap(category =>
-        category.type === 'topic' ? [category.topic_id] : [],
-      ),
-    ),
-  ]
-  if (updates.categories !== undefined) {
-    const topicRelation = getEntityRelationMetadataOrThrow({
-      subjectType: 'post',
-      objectType: 'topic',
-      predicate: 'category',
-    })
-    if (topicIds.length > 0)
-      await upsertEntityRelation(
-        creator,
-        topicRelation,
-        { id: postId },
-        topicIds.map(id => ({ id })),
-        { ...options, vote: false, suppressNotificationReconcile: true },
-      )
-  }
+    creator,
+    options,
+    postId,
+    topicIds,
+    topicRelation,
+  })
 }
 
 export function getPostHashtagKeys(updates: CreatePostUpdates): string[] {

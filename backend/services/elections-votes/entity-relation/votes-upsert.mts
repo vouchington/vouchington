@@ -35,17 +35,12 @@ export async function upsertEntityRelationElectionVotes(
   userId: string,
   votes: Array<{ entityId: string; score: ElectionVoteScore }>,
   context: VoteEventContext = NULL_VOTE_CONTEXT,
-  relationMetadata?: EntityRelationMetadata,
+  relationMetadata?: EntityRelationMetadata | readonly EntityRelationMetadata[],
   options: QueryOptions & { enqueueVoteStats?: boolean } = {},
 ): Promise<ElectionVoteMutationResult[]> {
   if (votes.length === 0) return []
   const normalizedUserId = userId.toLowerCase()
-  if (relationMetadata && !relationMetadata.election) {
-    throw new Error(
-      `Entity relation ${relationMetadata.table_name} does not support election votes`,
-    )
-  }
-  const targetRelations = relationMetadata ? [relationMetadata] : electionRelations
+  const targetRelations = electionVoteTargetRelations(relationMetadata)
 
   const deduplicated = new Map<string, ElectionVoteScore>()
   for (const vote of votes) deduplicated.set(vote.entityId.toLowerCase(), vote.score)
@@ -154,9 +149,11 @@ export async function upsertEntityRelationElectionVotes(
       ? await withTransactionOptions(queryOptions, run)
       : await upsertEntityRelationElectionVotesInOwnedTransaction(run)
   const upsertedVotes = rows as Array<ElectionVoteMutationResult & { entity_relation: string }>
-  const voteStatsTargets = relationMetadata
+  const singleRelation =
+    relationMetadata && !Array.isArray(relationMetadata) ? relationMetadata : undefined
+  const voteStatsTargets = singleRelation
     ? values.map(vote =>
-        createEntityRelationElectionTarget(vote.entityId, relationMetadata.table_name),
+        createEntityRelationElectionTarget(vote.entityId, singleRelation.table_name),
       )
     : upsertedVotes.map(vote =>
         createEntityRelationElectionTarget(vote.entity_id, vote.entity_relation),
@@ -165,6 +162,19 @@ export async function upsertEntityRelationElectionVotes(
     void enqueueBulkUpdateEntityRelationElectionVoteStats(voteStatsTargets)
   }
   return upsertedVotes.map(({ entity_relation: _relationTable, ...vote }) => vote)
+}
+
+function electionVoteTargetRelations(
+  relationMetadata: EntityRelationMetadata | readonly EntityRelationMetadata[] | undefined,
+): EntityRelationMetadata[] {
+  if (!relationMetadata) return electionRelations
+  const relations = Array.isArray(relationMetadata) ? [...relationMetadata] : [relationMetadata]
+  for (const relation of relations) {
+    if (!relation.election) {
+      throw new Error(`Entity relation ${relation.table_name} does not support election votes`)
+    }
+  }
+  return relations
 }
 
 async function upsertEntityRelationElectionVotesInOwnedTransaction<T>(
