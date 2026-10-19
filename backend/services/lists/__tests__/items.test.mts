@@ -5,6 +5,7 @@ import {
   insertTestPost,
   insertTestTopic,
   createTestRssFeedItemWithUrl,
+  deleteTestPost,
   insertTestRssFeed,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
@@ -107,6 +108,45 @@ describe('items service', () => {
     it('returns page_info', async () => {
       const { page_info } = await searchListItems(listId)
       expect(page_info).toHaveProperty('has_next_page')
+    })
+
+    it('omits a post deleted after it was added and pages the posts that remain', async () => {
+      const list = await createList(user.id, WEB_PROVENANCE, {
+        name: `Deleted page ${createRandomString(8)}`,
+      })
+      const older = await insertTestPost({
+        title: `Older ${createRandomString(8)}`,
+        slug: `older-${createRandomString(8)}`,
+        createdById: user.id,
+        markdown: 'older',
+      })
+      const middle = await insertTestPost({
+        title: `Middle ${createRandomString(8)}`,
+        slug: `middle-${createRandomString(8)}`,
+        createdById: user.id,
+        markdown: 'middle',
+      })
+      const newer = await insertTestPost({
+        title: `Newer ${createRandomString(8)}`,
+        slug: `newer-${createRandomString(8)}`,
+        createdById: user.id,
+        markdown: 'newer',
+      })
+      await addListItem(list.id, 'post', older)
+      await addListItem(list.id, 'post', middle)
+      await addListItem(list.id, 'post', newer)
+      await deleteTestPost(middle)
+
+      const first = await searchListItems(list.id, { limit: 1, currentUserId: user.id })
+      expect(first.results.map(item => item.entity_id)).toEqual([newer])
+      expect(first.page_info.has_next_page).toBe(true)
+      const second = await searchListItems(list.id, {
+        limit: 1,
+        after: first.page_info.end_cursor ?? undefined,
+        currentUserId: user.id,
+      })
+      expect(second.results.map(item => item.entity_id)).toEqual([older])
+      expect(second.page_info.has_next_page).toBe(false)
     })
   })
 

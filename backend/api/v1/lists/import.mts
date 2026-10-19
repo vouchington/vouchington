@@ -3,7 +3,7 @@ import type { Context } from '@jongleberry/api-server'
 import { requireAuth, validateRequestContract, validateUUIDParam } from '../../response-helpers.mts'
 import { loadCommunityForViewer } from '@services/communities'
 import { getManageableList, importCommunityList } from '@services/lists'
-import { assertNotSuspended } from '@services/users'
+import { assertNotSuspended, entityRelationViewerFor } from '@services/users'
 
 type ImportCommunityListBody = { community_slug: string }
 
@@ -19,7 +19,10 @@ app.route('/api/v1/lists/:id/import').post(async (ctx: Context) => {
 
   const { community } = await loadCommunityForViewer(currentUser, body.community_slug)
 
-  const result = await importCommunityList(list, { communityId: community.id })
+  const result = await importCommunityList(list, {
+    communityId: community.id,
+    viewer: entityRelationViewerFor(currentUser),
+  })
 
   ctx.setStatus(200)
   ctx.json(result)

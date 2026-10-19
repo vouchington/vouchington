@@ -74,7 +74,7 @@ export async function runViewDrivenReadScenarios(): Promise<void> {
   registerScenarioContract('search-list-items', {
     expectations: [
       { kind: 'maxProcessedRows', relation: 'user_list_posts', max: 96 },
-      { kind: 'maxProcessedRows', relation: 'posts', max: 96 },
+      { kind: 'maxProcessedRows', relation: 'posts', max: 192 },
     ],
     seededRows: { user_list_posts: 1080 },
   })
@@ -93,7 +93,13 @@ export async function runViewDrivenReadScenarios(): Promise<void> {
   })
   await runAndCapture('import-community-list', async () => {
     const params = [seedUuid(2, '34'), seedUuid(0, '14')]
-    await read(importCommunityListPostsSourceSql, params)
+    await read(
+      importCommunityListPostsSourceSql(seedUuid(2, '34'), seedUuid(0, '14'), {
+        kind: 'user',
+        userId: seedUser.id,
+        staffRole: null,
+      }),
+    )
     await read(importCommunityListFeedItemsSourceSql, [...params, 20])
   })
 

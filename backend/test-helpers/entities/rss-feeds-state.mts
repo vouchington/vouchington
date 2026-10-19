@@ -20,6 +20,13 @@ export async function deleteRssFeedsByIds(feedIds: string[]): Promise<void> {
   await write(sql`/* deleteRssFeedsByIds */ DELETE FROM rss_feeds WHERE id = ANY(${feedIds})`)
 }
 
+export async function disableTestRssFeed(feedId: string): Promise<void> {
+  await write(sql`/* disableTestRssFeed */
+    INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, is_enabled, reason)
+    VALUES ('enablement', ${feedId}, FALSE, 'list visibility test')
+  `)
+}
+
 export async function ensureTestRssFeedEnabled(feedId: string): Promise<void> {
   await write(sql`/* ensureTestRssFeedEnabled */
     INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, is_enabled, reason)

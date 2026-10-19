@@ -7311,12 +7311,21 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@modules/feed-query-builders':
+        specifier: workspace:^
+        version: link:../../modules/feed-query-builders
       '@modules/pagination':
         specifier: workspace:^
         version: link:../../modules/pagination
+      '@modules/utils':
+        specifier: workspace:^
+        version: link:../../modules/utils
       '@services/entity-cache':
         specifier: workspace:^
         version: link:../entity-cache
+      '@services/entity-relations':
+        specifier: workspace:^
+        version: link:../entity-relations
       '@services/pagination':
         specifier: workspace:^
         version: link:../pagination
@@ -7326,6 +7335,9 @@ importers:
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
+      sql-template-strings:
+        specifier: ^2.2.2
+        version: 2.2.2
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^

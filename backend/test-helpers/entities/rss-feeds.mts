@@ -16,6 +16,7 @@ import {
 
 export {
   deleteRssFeedsByIds,
+  disableTestRssFeed,
   ensureTestRssFeedEnabled,
   getRssFeedDeletedAt,
   updateRssFeedTiming,

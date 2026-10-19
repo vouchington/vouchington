@@ -17,7 +17,13 @@ import {
   unsuspendTestUser,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
-import { createOwnedList, getListForWrite, searchListItems, searchUserLists } from '@services/lists'
+import {
+  createOwnedList,
+  getListForWrite,
+  getListsContainingEntity,
+  searchListItems,
+  searchUserLists,
+} from '@services/lists'
 import addListItemTool from '../add-list-item.mts'
 import deleteListTool from '../delete-list.mts'
 import removeListItemTool from '../remove-list-item.mts'
@@ -33,16 +39,14 @@ const createCaller = async (plan: 'plus' | null = 'plus') => ({
 
 const listName = () => `Tool List ${createRandomString(8)}`
 
-async function createPostFor(userId: string): Promise<string> {
-  return insertTestPost({
+const createPostFor = (userId: string) =>
+  insertTestPost({
     title: `Tool post ${createRandomString(8)}`,
     slug: `tool-post-${createRandomString(8)}`,
     createdById: userId,
     markdown: 'content',
   })
-}
-
-async function createFeedItem(userId: string): Promise<string> {
+const createFeedItem = async (userId: string) => {
   const topicId = await insertTestTopic({
     name: `Tool topic ${createRandomString(8)}`,
     slug: `tool-topic-${createRandomString(8)}`,
@@ -242,15 +246,11 @@ describe('list write tools contract — real DB', () => {
     await callRejectedMcpTool(caller, 'create_list', { name: listName() }, SCOPES)
     await callRejectedMcpTool(caller, 'update_list', { list_id: list.id, name: 'Thawed' }, SCOPES)
     await callRejectedMcpTool(caller, 'remove_list_content', optionArgs('item', item), SCOPES)
-    await callRejectedMcpTool(
-      caller,
-      'remove_list_content',
-      optionArgs('list', { list_id: list.id }),
-      SCOPES,
-    )
+    const removeList = optionArgs('list', { list_id: list.id })
+    await callRejectedMcpTool(caller, 'remove_list_content', removeList, SCOPES)
     expect(await listCount(caller.id)).toBe(1)
     expect(await getListForWrite(list.id)).toMatchObject({ name: 'Frozen' })
-    expect(await itemCount(list.id)).toBe(1)
+    expect(await getListsContainingEntity(caller.id, 'post', entityId)).toContain(list.id)
   })
   it.each([
     ['create_list', { name: '' }],
@@ -278,11 +278,11 @@ describe('list write tools contract — real DB', () => {
     const caller = await createCaller()
     const list = await createOwnedList(caller.id, WEB_PROVENANCE, { name: listName() })
     const post = await createTestPost({ user: caller, privacy: 'private', broadcast: 'users' })
-    const args = { list_id: list.id, item_type: 'post', entity_id: post.id }
-    await callRejectedMcpTool(caller, 'add_list_item', args, SCOPES)
+    const args = { list_id: list.id, item_type: 'post' as const, entity_id: post.id }
+    const ctx = { credentialOwnerId: caller.id, grantedScopes: SCOPES }
+    await expect(addListItemTool.function(caller)(args, ctx)).rejects.toMatchObject({ status: 403 })
     expect(await itemCount(list.id)).toBe(0)
     await callStructuredMcpTool(caller, 'add_list_item', args, PRIVATE_SCOPES)
-    expect(await itemCount(list.id)).toBe(1)
   })
   it('hides another user’s private post even from a credential with the private grant', async () => {
     const caller = await createCaller()

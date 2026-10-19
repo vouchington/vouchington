@@ -367,6 +367,13 @@
       "reason": "Batched role reader receives subject and object eligibility predicates from the owning post-access boundary.",
       "owner_path": "backend/services/entity-relations/post-access.mts",
       "owner_classification": "mixed-discovery-sql"
+    },
+    {
+      "path": "backend/services/entity-relations/post-mutation-snapshots.mts",
+      "classification": "mutation",
+      "reason": "Private-root consent snapshot for a relation write. The caller already limited the ids through the named-scope gate in post-access.",
+      "owner_path": "backend/services/entity-relations/post-access.mts",
+      "owner_classification": "mixed-discovery-sql"
     }
   ]
 }

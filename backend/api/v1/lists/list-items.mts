@@ -17,6 +17,7 @@ import {
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 
 import { getListForWrite, searchListItems, currentUserCanViewList } from '@services/lists'
+import { isAdminUser } from '@services/users'
 
 const listItemsQuery = defineQueryContract({
   after: queryString(),
@@ -53,7 +54,10 @@ app.route('/api/v1/lists/:id/items').get(async (ctx: Context) => {
     mediaType,
     limit,
     after,
-    ...(read !== undefined && currentUser ? { read, currentUserId: currentUser.id } : {}),
+    ...(currentUser
+      ? { currentUserId: currentUser.id, isAdministrator: isAdminUser(currentUser) }
+      : {}),
+    ...(read !== undefined && currentUser ? { read } : {}),
   })
 
   if (!currentUser) {

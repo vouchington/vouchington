@@ -2,7 +2,12 @@ import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { requireAuth, validateRequestContract, validateUUIDParam } from '../../response-helpers.mts'
 import type { ApiUuidContract } from '../../request-contract-types.mts'
-import { addListItem, getManageableList, removeListItem } from '@services/lists'
+import {
+  addListItem,
+  assertListableRssFeedItemId,
+  getManageableList,
+  removeListItem,
+} from '@services/lists'
 import { assertNotSuspended } from '@services/users'
 
 type AddListRssFeedItemBody = { rss_feed_item_id: ApiUuidContract }
@@ -19,6 +24,7 @@ app.route('/api/v1/lists/:id/items/rss-feed-items').post(async (ctx: Context) =>
     body,
   })
 
+  await assertListableRssFeedItemId(body.rss_feed_item_id)
   const item = await addListItem(list.id, 'rss_feed_item', body.rss_feed_item_id)
   ctx.setStatus(201)
   ctx.json({ list_item: item })
