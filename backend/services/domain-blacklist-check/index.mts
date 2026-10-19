@@ -34,9 +34,3 @@ export async function assertNoBlockedDomains(markdown: string): Promise<void> {
   ]
   await assertDomainsAndUrlsAllowed(domains, allUrls)
 }
-
-export async function assertUrlNotBlocked(url: string): Promise<void> {
-  const domain = extractDomain(url)
-  if (domain === 'unknown') return
-  await assertDomainsAndUrlsAllowed([domain], [url])
-}

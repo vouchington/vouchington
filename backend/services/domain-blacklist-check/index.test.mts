@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest'
-import { assertNoBlockedDomains, assertUrlNotBlocked } from './index.mts'
+import { assertNoBlockedDomains } from './index.mts'
 import { insertTestDomainBlacklist, createTestBlacklistSource } from '@voucha/test-helpers'
 import { addDomainsToBloomFilter } from '@services/urls-domains-blacklist/bloom-filter'
 
@@ -50,26 +50,6 @@ describe('index', () => {
         status: 400,
         message: expect.stringContaining(TEST_BLOCKED_DOMAIN),
       })
-    })
-  })
-
-  describe('assertUrlNotBlocked', () => {
-    it('passes for a clean URL', async () => {
-      const hostname = `profile-clean-${RANDOM_ID}.com`
-      await expect(assertUrlNotBlocked(`https://${hostname}/page`)).resolves.toBeUndefined()
-    })
-
-    it('rejects a blocked domain (status 400)', async () => {
-      await expect(
-        assertUrlNotBlocked(`https://${TEST_BLOCKED_DOMAIN}/page`),
-      ).rejects.toMatchObject({
-        status: 400,
-        message: expect.stringContaining(TEST_BLOCKED_DOMAIN),
-      })
-    })
-
-    it('passes for an invalid URL (domain resolves to unknown)', async () => {
-      await expect(assertUrlNotBlocked('not-a-valid-url')).resolves.toBeUndefined()
     })
   })
 })
