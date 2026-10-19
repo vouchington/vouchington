@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS household_members (
   -- the individual that is a member of the household
   individual_id UUID NOT NULL REFERENCES individuals ON DELETE CASCADE,
 
-  relationship TEXT, -- e.g. husband, wife, child, etc.
+  relationship TEXT CHECK (relationship IS NULL OR char_length(relationship) <= 64), -- e.g. husband, wife, child, etc.
 
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,

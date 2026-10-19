@@ -93,6 +93,7 @@ settings page does not satisfy the route.
   state.
 - Member identity displays as `@username`, or exactly `Household member` when no username exists.
   Internal UUIDs and UUID prefixes are never rendered. Relationships render only when nonblank.
+  A stored relationship is limited by the household membership contract.
 - Member removal is owner-only and requires confirmation. The confirmed row disappears
   optimistically. Duplicate requests for the same membership are suppressed, removals for different
   memberships may remain in flight together, and a failure restores the row at its original clamped

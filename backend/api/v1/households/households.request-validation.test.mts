@@ -18,7 +18,6 @@ describe('household routes - request contract validation', () => {
       ['get', `/api/v1/households?access=other`, undefined],
       ['post', '/api/v1/households', { extra: true }],
       ['get', `/api/v1/households/${malformedId}`, undefined],
-      ['patch', `/api/v1/households/${malformedId}`, { extra: true }],
       ['delete', `/api/v1/households/${malformedId}`, undefined],
       ['get', `/api/v1/households/${malformedId}/memberships?limit=abc`, undefined],
       ['post', `/api/v1/households/${malformedId}/memberships`, { individual_id: 5 }],
@@ -32,7 +31,6 @@ describe('household routes - request contract validation', () => {
   describe('authenticated callers', () => {
     it.each([
       ['get', `/api/v1/households/${malformedId}`],
-      ['patch', `/api/v1/households/${malformedId}`],
       ['delete', `/api/v1/households/${malformedId}`],
       ['get', `/api/v1/households/${malformedId}/memberships`],
       ['post', `/api/v1/households/${malformedId}/memberships`],
@@ -54,18 +52,32 @@ describe('household routes - request contract validation', () => {
     it.each([
       ['an array body', []],
       ['an unknown field', { extra: true }],
-    ])('rejects %s on household create and update without side effects', async (_name, body) => {
+    ])('rejects %s on household create without side effects', async (_name, body) => {
       const request = createRequest()
       await request.authenticateAs(owner)
-      const created = await request.post('/api/v1/households').send({}).expect(201)
-      const householdId = created.body.household.id as string
+      await request.post('/api/v1/households').send({}).expect(201)
       const before = await request.get('/api/v1/households').query({ access: 'owned' }).expect(200)
 
       await request.post('/api/v1/households').send(body).expect(422)
-      await request.patch(`/api/v1/households/${householdId}`).send(body).expect(422)
 
       const after = await request.get('/api/v1/households').query({ access: 'owned' }).expect(200)
       expect(after.body.results).toHaveLength(before.body.results.length)
+    })
+
+    it('rejects a relationship longer than 64 characters and accepts 64', async () => {
+      const request = createRequest()
+      await request.authenticateAs(owner)
+      const created = await request.post('/api/v1/households').send({}).expect(201)
+      const individual = await request.get('/api/v1/me/individual').expect(200)
+      const path = `/api/v1/households/${created.body.household.id}/memberships`
+      await request
+        .post(path)
+        .send({ individual_id: individual.body.individual.id, relationship: 'a'.repeat(65) })
+        .expect(422)
+      await request
+        .post(path)
+        .send({ individual_id: individual.body.individual.id, relationship: 'a'.repeat(64) })
+        .expect(201)
     })
 
     it.each([

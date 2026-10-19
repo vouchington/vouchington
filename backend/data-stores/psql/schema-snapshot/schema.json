@@ -45676,7 +45676,9 @@
       "uniqueConstraints": {}
     },
     "household_members": {
-      "checkConstraints": {},
+      "checkConstraints": {
+        "household_members_relationship_check": "CHECK (((relationship IS NULL) OR (char_length(relationship) <= 64)))"
+      },
       "columns": {
         "created_at": {
           "collation": null,

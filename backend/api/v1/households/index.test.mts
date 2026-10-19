@@ -52,8 +52,8 @@ describe('Households API Routes', () => {
     })
   })
 
-  describe('POST/PATCH/DELETE /api/v1/households/:id', () => {
-    it('should allow owners to create, update, and delete a household', async () => {
+  describe('POST/DELETE /api/v1/households/:id', () => {
+    it('should allow owners to create and delete a household', async () => {
       const owner = await createTestUser()
       const ownerRequest = createRequest()
       await ownerRequest.authenticateAs(owner!)
@@ -66,11 +66,7 @@ describe('Households API Routes', () => {
       const getResponse = await ownerRequest.get(`/api/v1/households/${householdId}`).expect(200)
       expect(getResponse.body.household.id).toBe(householdId)
 
-      const patchResponse = await ownerRequest
-        .patch(`/api/v1/households/${householdId}`)
-        .send({})
-        .expect(200)
-      expect(patchResponse.body.household.id).toBe(householdId)
+      await ownerRequest.patch(`/api/v1/households/${householdId}`).send({}).expect(404)
 
       await ownerRequest.delete(`/api/v1/households/${householdId}`).expect(204)
       await ownerRequest.get(`/api/v1/households/${householdId}`).expect(404)
@@ -191,7 +187,8 @@ describe('Households API Routes', () => {
         ),
       ).toBe(true)
 
-      await strangerRequest.get(`/api/v1/households/${householdId}`).expect(403)
+      const hidden = await strangerRequest.get(`/api/v1/households/${householdId}`).expect(404)
+      expect(hidden.body.message).toBe('Household not found')
 
       await ownerRequest
         .delete(`/api/v1/households/${householdId}/memberships/${membershipId}`)

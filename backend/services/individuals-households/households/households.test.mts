@@ -229,7 +229,7 @@ describe('households', () => {
         after: first.page_info.end_cursor!,
         limit: 1,
       }),
-    ).rejects.toMatchObject({ status: 403 })
+    ).rejects.toMatchObject({ status: 404, message: 'Household not found' })
   })
 
   it('preserves owner, member, and administrator membership visibility', async () => {
@@ -253,7 +253,7 @@ describe('households', () => {
     }
     await expect(
       getHouseholdMemberships(stranger, household.id, { limit: 25 }),
-    ).rejects.toMatchObject({ status: 403 })
+    ).rejects.toMatchObject({ status: 404, message: 'Household not found' })
   })
 
   it('returns household not found before role authorization for every caller class', async () => {

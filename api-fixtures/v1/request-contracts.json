@@ -11790,6 +11790,7 @@
           "type": "string"
         },
         "relationship": {
+          "maxLength": 64,
           "type": "string"
         }
       },
@@ -21236,6 +21237,120 @@
     "GrowthRange": {
       "enum": ["30d", "7d", "90d", "all", "today"],
       "type": "string"
+    },
+    "HouseholdIndividual": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "updated_at": {
+          "type": "string"
+        },
+        "user_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "username": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "required": ["id", "updated_at", "user_id", "username"],
+      "type": "object"
+    },
+    "HouseholdMembership": {
+      "additionalProperties": false,
+      "properties": {
+        "household_id": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "individual": {
+          "$ref": "#/components/schemas/HouseholdIndividual"
+        },
+        "relationship": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "updated_at": {
+          "type": "string"
+        }
+      },
+      "required": ["household_id", "id", "individual", "relationship", "updated_at"],
+      "type": "object"
+    },
+    "HouseholdMembershipPage": {
+      "additionalProperties": false,
+      "properties": {
+        "page_info": {
+          "$ref": "#/components/schemas/PageInfo"
+        },
+        "results": {
+          "items": {
+            "$ref": "#/components/schemas/HouseholdMembership"
+          },
+          "type": "array"
+        }
+      },
+      "required": ["page_info", "results"],
+      "type": "object"
+    },
+    "HouseholdMembershipResponse": {
+      "additionalProperties": false,
+      "properties": {
+        "membership": {
+          "$ref": "#/components/schemas/HouseholdMembership"
+        }
+      },
+      "required": ["membership"],
+      "type": "object"
+    },
+    "HouseholdPage": {
+      "additionalProperties": false,
+      "properties": {
+        "page_info": {
+          "$ref": "#/components/schemas/PageInfo"
+        },
+        "results": {
+          "items": {
+            "$ref": "#/components/schemas/HouseholdRow"
+          },
+          "type": "array"
+        }
+      },
+      "required": ["page_info", "results"],
+      "type": "object"
+    },
+    "HouseholdResponse": {
+      "additionalProperties": false,
+      "properties": {
+        "household": {
+          "$ref": "#/components/schemas/HouseholdRow"
+        }
+      },
+      "required": ["household"],
+      "type": "object"
     },
     "HouseholdRow": {
       "additionalProperties": false,
@@ -35421,11 +35536,6 @@
       },
       "type": "object"
     },
-    "UpdateHouseholdBody": {
-      "additionalProperties": false,
-      "properties": {},
-      "type": "object"
-    },
     "UpdateIdentityRequest": {
       "additionalProperties": false,
       "properties": {
@@ -45355,20 +45465,6 @@
         "type": "object"
       }
     },
-    "PATCH:/api/v1/households/:id": {
-      "body": {
-        "$ref": "#/components/schemas/UpdateHouseholdBody"
-      },
-      "path": {
-        "properties": {
-          "id": {
-            "type": "string"
-          }
-        },
-        "required": ["id"],
-        "type": "object"
-      }
-    },
     "PATCH:/api/v1/lists/:id": {
       "body": {
         "$ref": "#/components/schemas/UpdateListBody"
@@ -49663,6 +49759,15 @@
     "GET:/api/v1/growth-metrics": {
       "$ref": "#/components/schemas/GrowthMetrics"
     },
+    "GET:/api/v1/households": {
+      "$ref": "#/components/schemas/HouseholdPage"
+    },
+    "GET:/api/v1/households/:id": {
+      "$ref": "#/components/schemas/HouseholdResponse"
+    },
+    "GET:/api/v1/households/:id/memberships": {
+      "$ref": "#/components/schemas/HouseholdMembershipPage"
+    },
     "GET:/api/v1/localization": {
       "$ref": "#/components/schemas/Record_string_unknown"
     },
@@ -49888,6 +49993,12 @@
     },
     "POST:/api/v1/fediverse/instances": {
       "$ref": "#/components/schemas/CreateInstanceResult"
+    },
+    "POST:/api/v1/households": {
+      "$ref": "#/components/schemas/HouseholdResponse"
+    },
+    "POST:/api/v1/households/:id/memberships": {
+      "$ref": "#/components/schemas/HouseholdMembershipResponse"
     },
     "POST:/api/v1/my/messages": {
       "additionalProperties": false,

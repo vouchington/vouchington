@@ -22,7 +22,8 @@ Not partitioned — growth: unbounded.
 - `uniq_household_members__household_id_individual_id`: `UNIQUE (household_id, individual_id)`
 
 **Check constraints:**
-_none_
+
+- `household_members_relationship_check`: `CHECK (((relationship IS NULL) OR (char_length(relationship) <= 64)))`
 
 **Foreign keys:**
 

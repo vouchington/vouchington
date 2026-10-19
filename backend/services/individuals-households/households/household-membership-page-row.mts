@@ -2,6 +2,25 @@ import { isPreciseTimestampString } from '@modules/pagination'
 import { isUUID } from '@modules/utils/ids'
 import type { HouseholdMembershipRow } from '../types.mts'
 
+/** Precise membership timestamp shared by the list query and membership create. */
+export function membershipUpdatedAtSql(alias: string): string {
+  return `to_char(${sqlIdentifier(alias)}.updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`
+}
+
+/** Individual object shared by the list query and membership create. */
+export function membershipIndividualSql(individualAlias: string, userAlias: string): string {
+  const individual = sqlIdentifier(individualAlias)
+  const user = sqlIdentifier(userAlias)
+  return `json_build_object('id', ${individual}.id, 'user_id', ${user}.id, 'username', ${user}.username, 'updated_at', ${individual}.updated_at)`
+}
+
+function sqlIdentifier(alias: string): string {
+  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(alias)) {
+    throw new Error(`Invalid SQL identifier: ${alias}`)
+  }
+  return alias
+}
+
 export type HouseholdMembershipPageSqlRow = {
   id: string | null
   household_id: string | null
