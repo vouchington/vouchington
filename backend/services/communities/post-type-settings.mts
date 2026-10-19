@@ -1,4 +1,3 @@
-import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { PrivateUser } from '@services/users/types'
@@ -6,6 +5,7 @@ import type { Community, CommunityMember } from './types.mts'
 import { getCommunity, type CommunityWithOwner } from './get.mts'
 import { currentUserCanModerateCommunity } from './authorization.mts'
 import { invalidate } from '@services/entity-cache/invalidate'
+import { writeCommunityUpdate } from './community-update-returning.mts'
 
 export type CommunityRootPostType = 'discussion' | 'review' | 'data_point'
 
@@ -54,8 +54,7 @@ export async function updateCommunityPostTypeSettings(
     )
   }
 
-  const updateQuery = sql`/* updateCommunityPostTypeSettings */
-    UPDATE communities SET `
+  const updateQuery = sql`UPDATE communities SET `
   const updates: ReturnType<typeof sql>[] = []
 
   if ('should_allow_review_posts' in input) {
@@ -74,13 +73,14 @@ export async function updateCommunityPostTypeSettings(
     WHERE id = ${communityId}
       AND deleted_at IS NULL AND archived_at IS NULL`)
 
-  const { rowCount } = await write(updateQuery)
-  if (!rowCount) {
-    assert(await getCommunity(communityId), 404, 'Community not found')
+  const updated = await writeCommunityUpdate(
+    sql`/* updateCommunityPostTypeSettings */`,
+    updateQuery,
+  )
+  if (!updated) {
+    assert(await getCommunity(communityId, { readOnly: false }), 404, 'Community not found')
     assert(false, 403, 'Cannot update archived community')
   }
-  const updated = await getCommunity(communityId)
-  assert(updated, 404, 'Community not found after update')
   await invalidate.communities(community, updated)
   return updated
 }

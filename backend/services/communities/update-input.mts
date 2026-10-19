@@ -26,7 +26,7 @@ export function validateCommunityUpdateInput(input: UpdateCommunityInput): void 
 }
 
 export function buildCommunityUpdateStatement(communityId: string, input: UpdateCommunityInput) {
-  const statement = sql`/* updateCommunity */ UPDATE communities SET `
+  const statement = sql`UPDATE communities SET `
   const updates: ReturnType<typeof sql>[] = []
   if (input.name !== undefined) updates.push(sql`name = ${input.name}`)
   if (input.slug !== undefined) updates.push(sql`slug = ${input.slug}`)

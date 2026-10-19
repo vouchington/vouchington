@@ -36,6 +36,7 @@ import { runHostnameBlocklistScenario } from './run-scenarios/hostname-blocklist
 import { runCommunityRoundTripScenarios } from './run-scenarios/community-round-trips.mts'
 import { runImageDeliveryFoldScenarios } from './run-scenarios/image-delivery-folds.mts'
 import { runRoundTripShapeScenarios } from './run-scenarios/round-trip-shapes.mts'
+import { runRequestContextFoldScenarios } from './run-scenarios/request-context-folds.mts'
 import { runMaterializedViewRefreshScenarios } from './run-scenarios/materialized-view-refreshes.mts'
 import { runViewDrivenReadScenarios } from './run-scenarios/view-driven-reads.mts'
 import { runUserProfileRoundTripScenarios } from './run-scenarios/user-profile-round-trips.mts'
@@ -75,6 +76,7 @@ async function main() {
     await seedMediaDeliveryReplay()
     await runMediaDeliveryReplayScenarios()
     await runRoundTripShapeScenarios()
+    await runRequestContextFoldScenarios()
     await runCommunityRoundTripScenarios()
     await runImageDeliveryFoldScenarios()
     await runUserProfileRoundTripScenarios()

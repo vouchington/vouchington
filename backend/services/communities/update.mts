@@ -1,6 +1,7 @@
 import { beginTransaction, withTransactionOptions } from '@data-stores/psql'
 import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
 import assert from 'http-assert'
+import sql from 'sql-template-strings'
 import createHttpError from 'http-errors'
 import { normalizeKey } from '@ts-shared/utils/strings'
 import type { PrivateUser } from '@services/users/types'
@@ -15,6 +16,7 @@ import { invalidateAllCommunityMemberUserMetrics } from './members/invalidate-us
 import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
 import { enqueueReconcileMediaDeliveryRegistry } from '@queues/notifications/enqueues'
 import { buildCommunityUpdateStatement, validateCommunityUpdateInput } from './update-input.mts'
+import { communityUpdateReturning } from './community-update-returning.mts'
 import { updateCommunityInTransaction } from './update-transaction.mts'
 import type { UpdateCommunityInput } from './update-types.mts'
 export type { UpdateCommunityInput } from './update-types.mts'
@@ -33,7 +35,10 @@ export async function updateCommunity(
   assert(currentUserCanUpdateCommunity(currentUser, community, membership), 403, 'Forbidden')
 
   validateCommunityUpdateInput(input)
-  const updateStatement = buildCommunityUpdateStatement(communityId, input)
+  const updateStatement = communityUpdateReturning(
+    sql`/* updateCommunity */`,
+    buildCommunityUpdateStatement(communityId, input),
+  )
   const run = (query: TransactionQuery) =>
     updateCommunityInTransaction({
       community,
@@ -44,13 +49,13 @@ export async function updateCommunity(
       query,
     })
 
-  let priorCommunity: Awaited<ReturnType<typeof updateCommunityInTransaction>>
+  let outcome: Awaited<ReturnType<typeof updateCommunityInTransaction>>
   try {
     if (options?.query || options?.client) {
-      priorCommunity = await withTransactionOptions(options, run)
+      outcome = await withTransactionOptions(options, run)
     } else {
       await using transaction = await beginTransaction()
-      priorCommunity = await run(transaction)
+      outcome = await run(transaction)
       await transaction.commit()
       if ('profile_image_id' in input || 'banner_image_id' in input) {
         void enqueueReconcileMediaDeliveryRegistry()
@@ -64,7 +69,8 @@ export async function updateCommunity(
     throw err
   }
 
-  const updated = await getCommunity(communityId, options)
+  const updated = outcome.updated
+  const priorCommunity = outcome.prior
   assert(updated, 404, 'Community not found after update')
   void addEntityBloomKeys('communities', [normalizeKey(updated.id), normalizeKey(updated.slug)])
   if (!options?.query) {

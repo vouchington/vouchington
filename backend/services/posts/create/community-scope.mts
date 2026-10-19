@@ -1,6 +1,6 @@
 import type { QueryOptions } from '@data-stores/psql/types'
 import type { PrivateUser } from '@services/users/types'
-import type { CreatePostInput } from '../types.mts'
+import type { CreatePostInput, Post } from '../types.mts'
 import type { CreatePostDefaults } from './validation.mts'
 import { isUUID } from '@modules/utils'
 import { createCodedError } from '@modules/on-error/create-coded-error'
@@ -22,6 +22,7 @@ export async function resolvePostScope({
   options,
   updates,
   communityLockHeld,
+  parentPost,
 }: {
   creator: PrivateUser
   defaults: CreatePostDefaults
@@ -29,9 +30,11 @@ export async function resolvePostScope({
   updates: CreatePostInput
   /** The caller holds this community/user lock in options.query. */
   communityLockHeld?: boolean
+  /** Parent already read after the delegated thread lock. */
+  parentPost?: Post
 }): Promise<PostScope> {
   if (defaults.postType === 'comment') {
-    return resolveCommentScope({ creator, options, updates })
+    return resolveCommentScope({ creator, options, updates, parentPost })
   }
   if (updates.community_id !== undefined) {
     return resolveCommunityPostScope({

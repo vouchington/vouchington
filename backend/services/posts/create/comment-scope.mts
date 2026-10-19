@@ -1,6 +1,6 @@
 import type { QueryOptions } from '@data-stores/psql/types'
 import type { PrivateUser } from '@services/users/types'
-import type { CreatePostInput } from '../types.mts'
+import type { CreatePostInput, Post } from '../types.mts'
 import type { PostScope } from './community-scope-types.mts'
 import { isUUID } from '@modules/utils'
 import { createCodedError } from '@modules/on-error/create-coded-error'
@@ -16,10 +16,12 @@ export async function resolveCommentScope({
   creator,
   options,
   updates,
+  parentPost,
 }: {
   creator: PrivateUser
   options: QueryOptions
   updates: CreatePostInput
+  parentPost?: Post
 }): Promise<PostScope> {
   assert(updates.parent_post_id, 422, 'parent_post_id is required for comments')
   assert(isUUID(updates.parent_post_id), 422, 'Invalid parent_post_id')
@@ -28,7 +30,10 @@ export async function resolveCommentScope({
     422,
     'Comments inherit community scope from their parent',
   )
-  const parent = await getPostByAny(updates.parent_post_id, options)
+  const parent =
+    parentPost?.id === updates.parent_post_id
+      ? parentPost
+      : await getPostByAny(updates.parent_post_id, options)
   assert(parent, 422, 'Parent post not found')
   assert(!parent.deleted_at, 422, 'Cannot reply to a deleted post or comment')
   if (parent.locked_at) {

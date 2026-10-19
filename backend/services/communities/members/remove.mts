@@ -1,7 +1,7 @@
 import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
-import { getCommunityMember } from './get.mts'
+import { getActiveCommunityMembersForUsers } from './batch.mts'
 import type { Community } from '../types.mts'
 import { enqueueOnCommunityAgentPromptsDeactivated } from '@queues/entity-listeners/enqueues'
 import { lockCommunityUsers } from '../bans/lock.mts'
@@ -24,7 +24,12 @@ export async function removeMember(
 
   await lockCommunityUsers(communityId, [currentUserId, targetUserId], options)
 
-  const currentMembership = await getCommunityMember(communityId, currentUserId, options)
+  const members = await getActiveCommunityMembersForUsers(
+    communityId,
+    [currentUserId, targetUserId],
+    options,
+  )
+  const currentMembership = members.get(currentUserId) ?? null
   assert(currentMembership, 403, 'Forbidden')
   assert(
     currentMembership.role === 'owner' || currentMembership.role === 'moderator',
@@ -32,7 +37,7 @@ export async function removeMember(
     'Forbidden',
   )
 
-  const targetMembership = await getCommunityMember(communityId, targetUserId, options)
+  const targetMembership = members.get(targetUserId) ?? null
   assert(targetMembership, 404, 'Target user is not a member of this community')
 
   // Owners can remove anyone, moderators can only remove regular members

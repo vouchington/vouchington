@@ -1,5 +1,6 @@
 import { McpError, ErrorCode, type CallToolResult } from '@modelcontextprotocol/sdk/types.js'
 import onError from '@modules/on-error'
+import { runWithRequestContext } from '@modules/utils/request-context'
 import { isHttpError } from 'http-errors'
 import {
   CONFLICT,
@@ -64,7 +65,9 @@ export async function callMcpTool(
       grantedScopes: permissions,
       ...(rateLimitContext ? { mcpRateLimit: { ip: rateLimitContext.ip } } : {}),
     }
-    const result = await tool.function(user)(args as never, invocationContext)
+    const result = await runWithRequestContext(() =>
+      tool.function(user)(args as never, invocationContext),
+    )
     return buildToolResult(
       toolName,
       result,

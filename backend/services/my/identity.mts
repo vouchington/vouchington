@@ -1,6 +1,7 @@
 import { beginTransaction, read, write } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
+import { clearRequestCurrentUser } from '@modules/utils/request-context'
 import { validateUsername } from '@modules/utils'
 import onError from '@modules/on-error'
 import { getPrivateUserByAny } from '@services/users'
@@ -17,6 +18,7 @@ export async function updateUsername(userId: string, username: string): Promise<
   await write(
     sql`/* updateUsername */ UPDATE users SET username = ${validated} WHERE id = ${userId} AND deleted_at IS NULL`,
   )
+  clearRequestCurrentUser(userId)
   void enqueueOnUserUpdated(userId)
   ensureDefaultLandingPage(userId, validated).catch(onError)
 }
@@ -43,6 +45,7 @@ export async function updateProfileImageId(
   )
   assert(rowCount === 1, 404, 'User not found')
   await transaction.commit()
+  clearRequestCurrentUser(userId)
   void enqueueReconcileMediaDeliveryRegistry()
   void enqueueOnUserUpdated(userId)
 }

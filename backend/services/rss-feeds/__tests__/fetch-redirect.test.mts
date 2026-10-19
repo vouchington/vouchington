@@ -127,10 +127,8 @@ describe('fetchRssFeed redirect persistence failures', () => {
       .reply(301, '', { headers: { location: targetUrl } })
 
     const { result, error } = await withMockAgentDefaultFetchForTest(agent, () =>
-      withPostgresPoolQueryFailureForTest(
-        '/* addUrls */',
-        () => fetchRssFeed(source.id, 0).catch((err: unknown) => err),
-        { command: 'INSERT' },
+      withPostgresPoolQueryFailureForTest('/* addUrls */', () =>
+        fetchRssFeed(source.id, 0).catch((err: unknown) => err),
       ),
     )
 

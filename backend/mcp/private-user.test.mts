@@ -8,6 +8,7 @@ import {
 import { describe, expect, it } from 'vitest'
 import { ACCOUNT_SUSPENDED } from '@modules/on-error/error-codes'
 import type { BasicUser } from '@services/users/types'
+import { runWithRequestContext } from '@modules/utils/request-context'
 import { requireActiveToolUser, requirePrivateToolUser } from './private-user.mts'
 
 describe('requirePrivateToolUser', () => {
@@ -24,6 +25,15 @@ describe('requirePrivateToolUser', () => {
 
     expect(privateUser.id).toBe(currentUser.id)
     expect(privateUser.email_address).toBe(currentUser.email_address)
+  })
+
+  it('reads the actor loaded earlier in the same tools/call', async () => {
+    const currentUser = await createTestUser()
+    await runWithRequestContext(async () => {
+      const first = await requirePrivateToolUser(currentUser)
+      const second = await requirePrivateToolUser(currentUser)
+      expect(second).toBe(first)
+    })
   })
 
   it('rejects missing hydrated users', async () => {

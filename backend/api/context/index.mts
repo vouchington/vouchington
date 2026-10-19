@@ -12,8 +12,9 @@ import {
   type DeviceTokenPayload,
   type VerifyDeviceAndSessionTokenResult,
 } from '@services/jwt-session'
-import { getPrivateUserByAny } from '@services/users/get'
 import { setAuthenticationCookies } from '@modules/api-utils'
+import { getPrivateUserByAny } from '@services/users/get'
+import { loadCurrentUser } from './current-user.mts'
 import { v7 } from 'uuid'
 import type { PrivateUser } from '@services/users/types'
 
@@ -150,47 +151,7 @@ const extensions = {
   },
 
   async getCurrentUser(this: Context) {
-    if (this.currentUser !== undefined) {
-      return this.currentUser
-    }
-
-    if (this.currentUserPromise) {
-      return this.currentUserPromise
-    }
-
-    this.currentUserPromise = (async () => {
-      const sessionData = await this.getSessionTokenData()
-
-      if (!sessionData.uid) {
-        this.currentUser = null
-        return null
-      }
-
-      const user = await getPrivateUserByAny(sessionData.uid, { readOnly: false })
-      if (!user) {
-        const deviceData = await this.getDeviceTokenData()
-        const deviceClass = 'dc' in deviceData ? deviceData.dc : undefined
-        const { deviceToken, sessionToken } = await createDeviceAndSessionTokens({
-          did: sessionData.did,
-          deviceClass,
-        })
-        setAuthenticationCookies(this, {
-          dt: deviceToken.token,
-          st: sessionToken.token,
-          deviceClass,
-        })
-        this.currentUser = null
-        return null
-      }
-      this.currentUser = user
-      return user
-    })()
-
-    try {
-      return await this.currentUserPromise
-    } finally {
-      this.currentUserPromise = undefined
-    }
+    return loadCurrentUser(this)
   },
 }
 

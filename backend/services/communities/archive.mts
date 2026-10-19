@@ -1,10 +1,12 @@
 import { beginTransaction, withTransactionOptions } from '@data-stores/psql'
 import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
 import assert from 'http-assert'
+import sql from 'sql-template-strings'
 import type { PrivateUser } from '@services/users/types'
 import { currentUserCanDeleteCommunity } from './authorization.mts'
 import { getCommunity, type CommunityWithOwner } from './get.mts'
 import type { CommunityMember } from './types.mts'
+import { writeCommunityUpdate } from './community-update-returning.mts'
 import { updateCommunity, type UpdateCommunityInput } from './update.mts'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { invalidateAllCommunityMemberUserMetrics } from './members/invalidate-user-metrics.mts'
@@ -26,19 +28,14 @@ export async function archiveCommunity(
   communityId: string,
   archivedById: string | null,
   options?: QueryOptions,
-): Promise<void> {
-  const run = async (query: TransactionQuery): Promise<void> => {
-    const { rowCount } = await query(
-      `/* archiveCommunity */
-      UPDATE communities
-      SET archived_at = CURRENT_TIMESTAMP,
-          archived_by_id = $1
-      WHERE id = $2
-        AND deleted_at IS NULL
-        AND archived_at IS NULL`,
-      [archivedById, communityId],
-    )
-    if ((rowCount ?? 0) > 0) {
+): Promise<CommunityWithOwner | null> {
+  const update = sql`
+    UPDATE communities
+    SET archived_at = CURRENT_TIMESTAMP, archived_by_id = ${archivedById}
+    WHERE id = ${communityId} AND deleted_at IS NULL AND archived_at IS NULL`
+  const run = async (query: TransactionQuery): Promise<CommunityWithOwner | null> => {
+    const updated = await writeCommunityUpdate(sql`/* archiveCommunity */`, update, { query })
+    if (updated) {
       await recordPostPublicationChange(query, {
         scope: { type: 'community', communityId },
         reason: 'community_visibility_changed',
@@ -46,29 +43,26 @@ export async function archiveCommunity(
         footprint: { priorCommunityId: communityId },
       })
     }
+    return updated
   }
   if (options?.query || options?.client) return withTransactionOptions(options, run)
   await using transaction = await beginTransaction()
-  await run(transaction)
+  const updated = await run(transaction)
   await transaction.commit()
+  return updated
 }
 
 export async function unarchiveCommunity(
   communityId: string,
   options?: QueryOptions,
-): Promise<void> {
-  const run = async (query: TransactionQuery): Promise<void> => {
-    const { rowCount } = await query(
-      `/* unarchiveCommunity */
-      UPDATE communities
-      SET archived_at = NULL,
-          archived_by_id = NULL
-      WHERE id = $1
-        AND deleted_at IS NULL
-        AND archived_at IS NOT NULL`,
-      [communityId],
-    )
-    if ((rowCount ?? 0) > 0) {
+): Promise<CommunityWithOwner | null> {
+  const update = sql`
+    UPDATE communities
+    SET archived_at = NULL, archived_by_id = NULL
+    WHERE id = ${communityId} AND deleted_at IS NULL AND archived_at IS NOT NULL`
+  const run = async (query: TransactionQuery): Promise<CommunityWithOwner | null> => {
+    const updated = await writeCommunityUpdate(sql`/* unarchiveCommunity */`, update, { query })
+    if (updated) {
       await recordPostPublicationChange(query, {
         scope: { type: 'community', communityId },
         reason: 'community_visibility_changed',
@@ -76,11 +70,13 @@ export async function unarchiveCommunity(
         footprint: { priorCommunityId: communityId },
       })
     }
+    return updated
   }
   if (options?.query || options?.client) return withTransactionOptions(options, run)
   await using transaction = await beginTransaction()
-  await run(transaction)
+  const updated = await run(transaction)
   await transaction.commit()
+  return updated
 }
 
 export async function setCommunityArchiveState(
@@ -95,14 +91,11 @@ export async function setCommunityArchiveState(
   assert(currentCommunity, 404, 'Community not found')
   assert(currentUserCanDeleteCommunity(currentUser, currentCommunity, membership), 403, 'Forbidden')
 
-  if (archive) {
-    assert(!currentCommunity.archived_at, 409, 'Community is already archived')
-    await archiveCommunity(communityId, currentUser.id, options)
-  } else {
-    await unarchiveCommunity(communityId, options)
-  }
-
-  const updated = await getCommunity(communityId, options)
+  if (archive) assert(!currentCommunity.archived_at, 409, 'Community is already archived')
+  const written = archive
+    ? await archiveCommunity(communityId, currentUser.id, options)
+    : await unarchiveCommunity(communityId, options)
+  const updated = written ?? (await getCommunity(communityId, { ...options, readOnly: false }))
   assert(updated, 404, 'Community not found after archive update')
   if (!options?.query) {
     await invalidate.communities(currentCommunity, updated)
@@ -120,9 +113,11 @@ export async function updateCommunityAndSetArchiveState(
   archive: boolean,
   membership?: CommunityMember | null,
   dependencies: Partial<UpdateCommunityAndSetArchiveStateDependencies> = updateCommunityAndSetArchiveStateDependencies,
+  loadedCommunity?: CommunityWithOwner,
 ): Promise<CommunityWithOwner> {
   await using transaction = await beginTransaction()
-  const currentCommunity = await getCommunity(communityId, { query: transaction })
+  const currentCommunity =
+    loadedCommunity ?? (await getCommunity(communityId, { query: transaction }))
   assert(currentCommunity, 404, 'Community not found')
   const community = await updateCommunity(currentUser, communityId, input, membership, {
     query: transaction,

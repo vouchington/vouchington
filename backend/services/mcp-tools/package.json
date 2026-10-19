@@ -18,6 +18,7 @@
     "@modules/on-error": "workspace:^",
     "@modules/scopes": "workspace:^",
     "@modules/token-secrets": "workspace:^",
+    "@modules/utils": "workspace:^",
     "@services/api-keys": "workspace:^",
     "@services/oauth-authorization-server": "workspace:^",
     "@services/openai-agents": "workspace:^",

@@ -4,6 +4,11 @@ import type { Context } from '@jongleberry/api-server'
 import type { PrivateUser } from '@services/users/types'
 import { ACCOUNT_SUSPENDED } from '@modules/on-error/error-codes'
 import {
+  getRequestCurrentUser,
+  runWithRequestContext,
+  setRequestCurrentUser,
+} from '@modules/utils/request-context'
+import {
   getOptionalAuthAndRateLimit,
   getOptionalProtocolAuthAndRateLimit,
   requireAuth,
@@ -91,15 +96,25 @@ describe('suspension policy in route helpers', () => {
 
   it('keeps signature failure precedence over the suspension error', async () => {
     const signatureError = new Error('invalid attested request signature')
-    const ctx = makeContext({ ...user, suspended_at: new Date() }, signatureError)
+    const suspended = { ...user, suspended_at: new Date() }
+    await runWithRequestContext(async () => {
+      const ctx = makeContext(suspended, signatureError)
+      const loadUser = ctx.getCurrentUser
+      ctx.getCurrentUser = async () => {
+        const current = await loadUser()
+        setRequestCurrentUser(current)
+        return current
+      }
 
-    await expect(requireAuth(ctx, 'POST:/api/v1/posts')).rejects.toBe(signatureError)
-    expect(ctx.events).toEqual([
-      'rate-limit-charge:POST:/api/v1/posts',
-      'currentUser',
-      'signature',
-      'rate-limit:POST:/api/v1/posts',
-    ])
+      await expect(requireAuth(ctx, 'POST:/api/v1/posts')).rejects.toBe(signatureError)
+      expect(getRequestCurrentUser()).toEqual(suspended)
+      expect(ctx.events).toEqual([
+        'rate-limit-charge:POST:/api/v1/posts',
+        'currentUser',
+        'signature',
+        'rate-limit:POST:/api/v1/posts',
+      ])
+    })
   })
 
   it('permits only a registered route through the exception helper', async () => {

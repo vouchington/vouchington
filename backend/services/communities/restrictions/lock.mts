@@ -5,7 +5,7 @@ import { lockActiveUserLifecycleForMutation } from '@services/users/active-user-
 import { getPrivateUserByAny } from '@services/users/get'
 import { assertNotSuspended } from '@services/users'
 import { lockCommunityUser } from '../bans/lock.mts'
-import { getCommunityWithViewer } from '../load-with-viewer.mts'
+import { lockCommunityWithViewer } from '../load-with-viewer.mts'
 import { currentUserCanModerateCommunity } from '../authorization.mts'
 import { runSequentially } from '@modules/utils/run-sequentially'
 
@@ -24,19 +24,12 @@ export async function lockCommunityRestrictionWrites(
     WHERE community_id = ${communityId} AND user_id = ${actorId} AND removed_at IS NULL
     FOR NO KEY UPDATE`),
   ])
-  const { rows } = await query<{
-    archived_at: Date | null
-  }>(sql`/* lockCommunityRestrictionWrites */
-    SELECT archived_at FROM communities
-    WHERE id = ${communityId} AND deleted_at IS NULL
-    FOR NO KEY UPDATE`)
-  assert(rows[0], 404, 'Community not found')
   const actor = await getPrivateUserByAny(actorId, { query })
   assert(actor, 401, 'User not found')
   assertNotSuspended(actor)
-  const loaded = await getCommunityWithViewer(communityId, actorId, { query })
+  const loaded = await lockCommunityWithViewer(query, communityId, actorId)
   assert(loaded, 404, 'Community not found')
   const { community, membership } = loaded
   assert(currentUserCanModerateCommunity(actor, community, membership), 403, 'Forbidden')
-  return rows[0]
+  return { archived_at: community.archived_at }
 }

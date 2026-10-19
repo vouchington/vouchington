@@ -13,4 +13,11 @@ export const ROUND_TRIP_SHAPE_SCENARIO_IDS = [
   'community-invite-redeem',
   'community-application-questions',
   'rss-feed-state-changes',
+  'post-visibility-batch',
+  'community-members-for-users',
+  'community-update-returning',
+  'url-upsert-hydration',
+  'topic-create-returning',
+  'community-restriction-lock',
+  'user-update-returning',
 ] as const

@@ -1,5 +1,5 @@
 import { read } from '@data-stores/psql'
-import type { QueryOptions } from '@data-stores/psql/types'
+import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
 import { isUUID } from '@modules/utils'
 import assert from 'http-assert'
 import sql, { type SQLStatement } from 'sql-template-strings'
@@ -52,17 +52,21 @@ function viewerColumns(viewerId: string | null, includePendingApplication: boole
  * Loads a community (UUID id, otherwise lower-cased slug) together with the viewer's active
  * membership in one statement. A null viewer binds NULL, so the membership join matches nothing.
  */
+function viewerExtra(viewerId: string | null, includePendingApplication: boolean) {
+  return {
+    columns: viewerColumns(viewerId, includePendingApplication),
+    join: sql` LEFT JOIN community_members cm
+    ON cm.community_id = c.id AND cm.user_id = ${viewerId}::uuid AND cm.removed_at IS NULL`,
+  }
+}
+
 async function queryCommunityWithViewer(
   idOrSlug: string,
   viewerId: string | null,
   options: QueryOptions | undefined,
   includePendingApplication: boolean,
 ): Promise<LoadedCommunity | null> {
-  const extra = {
-    columns: viewerColumns(viewerId, includePendingApplication),
-    join: sql` LEFT JOIN community_members cm
-    ON cm.community_id = c.id AND cm.user_id = ${viewerId}::uuid AND cm.removed_at IS NULL`,
-  }
+  const extra = viewerExtra(viewerId, includePendingApplication)
   const byId = isUUID(idOrSlug)
   const query = byId
     ? selectCommunityWithOwner(sql`/* getCommunityWithViewerById */ SELECT `, extra).append(
@@ -72,7 +76,24 @@ async function queryCommunityWithViewer(
         sql` WHERE c.slug = ${idOrSlug.toLowerCase()} AND c.deleted_at IS NULL LIMIT 1`,
       )
   const { rows } = await read(query.text, query.values, options)
-  const row = rows[0] as ViewerRow | undefined
+  return mapViewerRow(rows[0] as ViewerRow | undefined)
+}
+
+/** Community and viewer membership on the community row lock, after membership is already locked. */
+export async function lockCommunityWithViewer(
+  query: TransactionQuery,
+  communityId: string,
+  viewerId: string,
+): Promise<LoadedCommunity | null> {
+  const statement = selectCommunityWithOwner(
+    sql`/* lockCommunityRestrictionWrites */ SELECT `,
+    viewerExtra(viewerId, false),
+  ).append(sql` WHERE c.id = ${communityId} AND c.deleted_at IS NULL FOR NO KEY UPDATE OF c`)
+  const { rows } = await query(statement.text, statement.values)
+  return mapViewerRow(rows[0] as ViewerRow | undefined)
+}
+
+function mapViewerRow(row: ViewerRow | undefined): LoadedCommunity | null {
   if (!row) return null
   const {
     membership_id,

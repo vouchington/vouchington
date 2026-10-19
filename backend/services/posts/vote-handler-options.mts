@@ -1,6 +1,6 @@
 import { getPostElectionVote, upsertPostElectionVotes } from '@services/elections-votes/post'
 import { getPostByAnyCached } from './get-cached.mts'
-import { canViewPost, canViewPostsBatch } from '@services/posts/check-privacy-access'
+import { canViewPostsBatch } from '@services/posts/check-privacy-access'
 import type { Post } from './types.mts'
 import { enqueueDistributeActivity } from '@queues/activitypub/enqueues/delivery'
 import onError from '@modules/on-error'
@@ -91,10 +91,14 @@ export const postVoteOptions: CreateVoteHandlerOptions<
     // succeeded. Fail closed: log and skip the federation side effect rather than fail the request.
     try {
       const votedPost = await getPostByAnyCached(entityId)
-      if (!votedPost || !(await canViewPost(null, votedPost))) return
+      if (!votedPost) return
       const rootPost = await getRouteAccessPost(votedPost)
-      if (!rootPost || (rootPost.id !== votedPost.id && !(await canViewPost(null, rootPost))))
-        return
+      if (!rootPost) return
+      const visible = await canViewPostsBatch(
+        null,
+        rootPost.id === votedPost.id ? [votedPost] : [votedPost, rootPost],
+      )
+      if (!visible.get(votedPost.id) || !visible.get(rootPost.id)) return
       if (!vote.id) throw new Error('Post vote event is missing its durable identity')
       const activityId = isLike ? vote.outbound_activitypub_like_activity_id : vote.id
       const originalActivityId = vote.previous_outbound_ap_like_activity_id

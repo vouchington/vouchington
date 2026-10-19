@@ -12,8 +12,8 @@ import {
   executeTestAdmittedPost,
   archiveTestCommunity,
   removeTestCommunityMember,
+  setTestCommunityVisibility,
 } from '@voucha/test-helpers'
-import { updateCommunity } from '@services/communities/update'
 import { normalizeRouteAdmissionIntent } from '@services/contribution-gating/admit-route-contribution'
 import { runContributionAdmission } from '@services/contribution-gating/admission'
 import { CONTRIBUTION_ADMISSION_CLAIM_SECONDS } from '@services/contribution-gating/config'
@@ -131,7 +131,7 @@ describe('POST /api/v1/communities/:idOrSlug/posts CAPTCHA', () => {
     async state => {
       const user = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
       const community = await insertTestCommunity({ createdById: user.id })
-      const membership = await insertTestCommunityMember({
+      await insertTestCommunityMember({
         communityId: community.id,
         userId: user.id,
         role: 'owner',
@@ -144,7 +144,10 @@ describe('POST /api/v1/communities/:idOrSlug/posts CAPTCHA', () => {
         } else if (state === 'removed') {
           await removeTestCommunityMember(community.id, user.id)
         } else {
-          await updateCommunity(user, community.id, { visibility: 'private' }, membership)
+          await setTestCommunityVisibility({
+            communityId: community.id,
+            visibility: 'private',
+          })
         }
         return new UndiciResponse(JSON.stringify({ success: true }))
       })

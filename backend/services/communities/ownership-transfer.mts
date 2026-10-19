@@ -3,7 +3,7 @@ import type { QueryOptions } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import createHttpError from 'http-errors'
-import { getCommunityMember } from './members/get.mts'
+import { getActiveCommunityMembersForUsers } from './members/batch.mts'
 import type { Community } from './types.mts'
 import { lockCommunityUsers } from './bans/lock.mts'
 import { getPrivateUserByAny } from '@services/users/get'
@@ -33,10 +33,13 @@ export async function initiateOwnershipTransfer(
 
   await lockCommunityUsers(communityId, [currentUserId, targetUserId], opts)
 
-  const [currentMember, targetMember] = await Promise.all([
-    getCommunityMember(communityId, currentUserId, opts),
-    getCommunityMember(communityId, targetUserId, opts),
-  ])
+  const members = await getActiveCommunityMembersForUsers(
+    communityId,
+    [currentUserId, targetUserId],
+    opts,
+  )
+  const currentMember = members.get(currentUserId) ?? null
+  const targetMember = members.get(targetUserId) ?? null
 
   assert(currentMember?.role === 'owner', 403, 'Only owners can transfer ownership')
   assert(targetMember, 404, 'Target user is not a member of this community')

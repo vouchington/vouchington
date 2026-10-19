@@ -2,6 +2,7 @@ import { lockCommunityUser } from '@services/communities/bans/lock'
 import createHttpError from 'http-errors'
 import { getCommentAncestorsByAny } from '@services/comments/ancestors'
 import { getPostByAny } from './get.mts'
+import type { Post } from './types.mts'
 import type { TransactionQuery } from '@data-stores/psql'
 import { lockPostPublicationPostScopes } from '@services/post-publication'
 import { runSequentially } from '@modules/utils/run-sequentially'
@@ -12,8 +13,9 @@ export async function lockDelegatedPostThread(
   query: TransactionQuery,
   postId: string,
   actorId: string,
+  knownPost?: Post | null,
 ): Promise<void> {
-  const post = await getPostByAny(postId, { query })
+  const post = knownPost !== undefined ? knownPost : await getPostByAny(postId, { query })
   if (!post) throw createHttpError(404, 'Post not found')
   const nodes =
     post.post_type === 'comment' ? await getCommentAncestorsByAny(postId, { query }) : [post]
