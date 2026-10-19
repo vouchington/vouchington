@@ -47862,7 +47862,12 @@
       "uniqueConstraints": {}
     },
     "household_members": {
-      "checkConstraints": {},
+      "checkConstraints": {
+        "household_members_relationship_check": {
+          "definition": "CHECK (((relationship IS NULL) OR (char_length(relationship) <= 64)))",
+          "validated": true
+        }
+      },
       "columns": {
         "created_at": {
           "comment": null,
