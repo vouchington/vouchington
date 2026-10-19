@@ -5,6 +5,7 @@ import {
   getTestPostPublicationDirtyWorkForScope,
   safeUsername,
 } from '@voucha/test-helpers'
+import { createRequest } from '@voucha/test-helpers/api/server'
 import { claimPostPublicationDirtyWork } from '@services/post-publication'
 import { reconcileTestPublicationUntilSnapshotsComplete } from '@voucha/test-helpers/post-publication-fixtures'
 import * as cachePurgeEnqueues from '@queues/cache-purge/enqueues'
@@ -20,7 +21,9 @@ describe('username publication', () => {
     const oldUsername = user.username
     const newUsername = safeUsername('renamed')
     await createTestPost({ user })
-    await updateUserFields(user.id, { username: newUsername }, user)
+    const request = createRequest()
+    await request.authenticateAs(user)
+    await request.patch('/api/v1/my/identity').send({ username: newUsername }).expect(200)
 
     const work = await getTestPostPublicationDirtyWorkForScope({ type: 'author', id: user.id })
     if (!work) throw new Error('Expected author publication work')
@@ -52,6 +55,9 @@ describe('username publication', () => {
   it('records no author publication work when the username is unchanged', async () => {
     const user = await createTestUser()
     if (!user.username) throw new Error('Expected username')
+    const request = createRequest()
+    await request.authenticateAs(user)
+    await request.patch('/api/v1/my/identity').send({ username: user.username }).expect(200)
     await updateUserFields(user.id, { username: user.username }, user)
     expect(
       await getTestPostPublicationDirtyWorkForScope({ type: 'author', id: user.id }),
