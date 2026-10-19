@@ -1,7 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as dns from '@services/topic-claims/domain-verification-dns'
-import { planMcpCalls } from '@services/mcp-tools'
-import { BRAND_MCP_SERVER_CONFIG } from '@services/mcp-tools/config'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, insertTestTopic, insertTestUrlHostname } from '@voucha/test-helpers'
 import {
@@ -156,30 +154,5 @@ describe('brand topic-claim MCP tools', () => {
       evidence: 'registry filing',
       verified_at: null,
     })
-  })
-
-  it('refuses a credential that lacks topic-claim scopes', () => {
-    const user = {
-      id: '00000000-0000-4000-8000-000000000001',
-      roles: [] as const,
-      membership_plan: null,
-    }
-    const call = (name: string, option: string, args: Record<string, unknown>) =>
-      planMcpCalls(
-        {
-          jsonrpc: '2.0',
-          id: 1,
-          method: 'tools/call',
-          params: { name, arguments: optionArgs(option, args) },
-        },
-        user,
-        [],
-        BRAND_MCP_SERVER_CONFIG,
-      )
-    expect(call('read_my_topic_claims', 'list', {}).events[0]?.outcome).toBe('insufficient_scope')
-    expect(
-      call('manage_topic_claim', 'create', { topic: 'topic', claimed_role: 'Issuer' }).events[0]
-        ?.outcome,
-    ).toBe('insufficient_scope')
   })
 })

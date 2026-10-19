@@ -108,7 +108,6 @@
     "valkyries": "^0.10.0"
   },
   "devDependencies": {
-    "@services/mcp-tools": "workspace:^",
     "@types/http-errors": "^2.0.5",
     "@voucha/test-helpers": "workspace:^"
   }

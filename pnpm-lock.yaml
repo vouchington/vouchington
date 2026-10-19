@@ -2161,9 +2161,6 @@ importers:
         specifier: ^0.10.0
         version: 0.10.0
     devDependencies:
-      '@services/mcp-tools':
-        specifier: workspace:^
-        version: link:../services/mcp-tools
       '@types/http-errors':
         specifier: ^2.0.5
         version: 2.0.5
