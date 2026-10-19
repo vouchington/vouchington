@@ -1,7 +1,7 @@
 export type RequestContractExemptionReason = 'no-input' | 'protocol-parser' | 'fixed-status'
 
 // Audited route-specific reasons from #298; B18a adds fixed-status GET/DELETE routes
-// for the community moderation and legal MCP audiences.
+// for the community moderation and legal MCP audiences. Brand adds the same pair.
 export const REQUEST_CONTRACT_EXEMPTIONS: Readonly<Record<string, RequestContractExemptionReason>> =
   {
     'DELETE:/api/v1/admin/mcp': 'fixed-status',
