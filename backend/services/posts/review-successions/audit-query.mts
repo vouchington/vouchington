@@ -5,6 +5,8 @@ import {
 } from '@modules/feed-query-builders'
 import sql from 'sql-template-strings'
 
+const START_OF_IDS = '00000000-0000-0000-0000-000000000000'
+
 export type ReviewSuccessionHistoryAuditRow = {
   id: string
   archived_at: Date | null
@@ -27,12 +29,12 @@ export async function listReviewSuccessionHistoryAuditRows(
   pageSize: number,
 ): Promise<ReviewSuccessionHistoryAuditRow[]> {
   const queryLimit = pageSize + 1
+  const afterId = cursor ?? START_OF_IDS
   const statement = sql`/* listReviewSuccessionHistoryAuditRows */
     WITH archived_page AS MATERIALIZED (
       SELECT review.id
-      -- no-mistakes-disable-next-line postgres-required-predicates: preserve existing cross-partition lookup pending query review; see #3255
       FROM posts review
-      WHERE (${cursor}::uuid IS NULL OR review.id > ${cursor}::uuid)
+      WHERE review.id > ${afterId}::uuid
         AND review.post_type = 'review'
         AND review.root_post_id IS NULL
         AND review.archived_at IS NOT NULL
@@ -45,7 +47,7 @@ export async function listReviewSuccessionHistoryAuditRows(
     ), active_page AS MATERIALIZED (
       SELECT succession.predecessor_post_id
       FROM review_successions succession
-      WHERE (${cursor}::uuid IS NULL OR succession.predecessor_post_id > ${cursor}::uuid)
+      WHERE succession.predecessor_post_id > ${afterId}::uuid
         AND succession.predecessor_archived_at <= ${cutoffArchivedAt}::timestamptz
         AND succession.automatically_restored_at IS NULL
         AND succession.manual_override_at IS NULL

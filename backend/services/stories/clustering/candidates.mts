@@ -64,7 +64,7 @@ async function findNeighbors(
       SELECT
         c.id,
         c.story_id,
-        -- no-mistakes-disable-next-line postgres-required-predicates: preserve existing cross-partition lookup pending query review; see #3255
+        -- no-mistakes-disable-next-line postgres-required-predicates: nearest-neighbor search over every partition; story members can be older than any published_at window, and splitting the OR would change the approximate HNSW top-K
         (c.bedrock_nova_multimodal_v1_embedding <=> source.embedding) AS distance
       FROM rss_feed_items c
       LEFT JOIN stories s ON s.id = c.story_id AND s.deleted_at IS NULL

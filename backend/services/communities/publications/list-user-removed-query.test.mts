@@ -23,7 +23,7 @@ describe('buildUserRemovedPostsQuery', () => {
             p.rejected_at AS removed_at,
             1 AS removal_tier,
             'platform'::TEXT AS post_removal_kind
-          -- no-mistakes-disable-next-line postgres-required-predicates: preserve existing cross-partition lookup pending query review; see #3255
+          -- no-mistakes-disable-next-line postgres-required-predicates: posts are selected by author with no time window; an author id does not bound post ids (seeded posts predate their author, and author deletion reassigns created_by_id), so every id partition is read through idx_posts__default__created_by_rejected_at_id
           FROM posts p
           LEFT JOIN communities c ON c.id = p.community_id
           WHERE p.created_by_id = $1
