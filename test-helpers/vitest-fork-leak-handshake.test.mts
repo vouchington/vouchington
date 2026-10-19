@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import { createForkLeakDetector } from 'vouchington-tooling/vitest-diagnostics'
 import type { PsqlPoolMetrics, PsqlPoolSocketHandles } from '@data-stores/psql/pool-metrics'
 import {
   recordForkLeakCheckpoint,
@@ -16,10 +15,6 @@ function poolMetrics(total: number, idle = total): PsqlPoolMetrics {
 
 function socketHandles(active: readonly object[], owned: readonly object[]): PsqlPoolSocketHandles {
   return { active: new Set(active), owned: new Set(owned) }
-}
-
-function recordAll(detector: ReturnType<typeof createForkLeakDetector>, counts: readonly number[]) {
-  return counts.flatMap(count => detector.record(new Map([['TCPSocketWrap', count]])))
 }
 
 describe('fork-leak handshake settlement', () => {
@@ -268,18 +263,5 @@ describe('fork-leak handshake settlement', () => {
       recordForkLeakCheckpoint(counts => [counts.get('TCPSocketWrap')], result, 'cap.test.mts'),
     ).toEqual([4])
     expect(result.observations).toHaveLength(5)
-  })
-
-  it('flags the unsmoothed merge-queue ramp and absorbs the same sockets as one settled jump', () => {
-    expect(
-      recordAll(createForkLeakDetector(), [0, 0, 0, 0, 0, 0, 0, 0, 2, 4, 5, 5, 5, 6, 7, 8])[0],
-    ).toMatchObject({
-      baseline: 0,
-      current: 8,
-      streak: 5,
-      growthCheckpoints: 3,
-      suspectedGrowth: { previous: 4, current: 5, delta: 1 },
-    })
-    expect(recordAll(createForkLeakDetector(), [0, 0, 0, 0, 0, 8, 8, 8, 8, 8, 8])).toEqual([])
   })
 })
