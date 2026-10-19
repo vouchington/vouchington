@@ -1,5 +1,6 @@
 import { enqueueOnUserUpdated } from '@queues/entity-listeners/enqueues'
 import { write } from '@data-stores/psql'
+import { getRequestCurrentUser, setRequestCurrentUser } from '@modules/utils/request-context'
 import { getPrivateUserByAny } from './get.mts'
 import assert from 'http-assert'
 import { validateUsername } from '@modules/utils'
@@ -140,6 +141,8 @@ export async function updateUserFields(
   const previousUsername = typeof username === 'string' ? written.previous_username : undefined
   const updatedUser = await getPrivateUserByAny(userId, { readOnly: false })
   assert(updatedUser, 404, 'User not found')
+  if (getRequestCurrentUser<PrivateUser>()?.id === updatedUser.id)
+    setRequestCurrentUser(updatedUser)
 
   if (typeof username === 'string') {
     void addEntityBloomKeys('users', [normalizeKey(username)])

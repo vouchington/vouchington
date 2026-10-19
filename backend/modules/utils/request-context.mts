@@ -41,3 +41,11 @@ export function setRequestCurrentUser(currentUser: unknown): void {
   if (!store) return
   store.currentUser = currentUser
 }
+
+/** Drops the memo for this user so the next read sees a later write in the same request. */
+export function clearRequestCurrentUser(userId: string): void {
+  const store = requestContext.getStore()
+  if (!store || !Object.hasOwn(store, 'currentUser')) return
+  if ((store.currentUser as { id?: string } | null)?.id !== userId) return
+  store.currentUser = undefined
+}

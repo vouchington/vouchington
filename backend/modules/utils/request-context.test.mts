@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  clearRequestCurrentUser,
   getRequestCurrentUser,
   runWithRequestContext,
   setRequestCurrentUser,
@@ -19,5 +20,15 @@ describe('request context store', () => {
       expect(getRequestCurrentUser()).toBeNull()
     })
     expect(getRequestCurrentUser()).toBeUndefined()
+  })
+
+  it('drops the acting user after a later write', async () => {
+    await runWithRequestContext(async () => {
+      setRequestCurrentUser({ id: 'actor' })
+      clearRequestCurrentUser('someone-else')
+      expect(getRequestCurrentUser()).toEqual({ id: 'actor' })
+      clearRequestCurrentUser('actor')
+      expect(getRequestCurrentUser()).toBeUndefined()
+    })
   })
 })
