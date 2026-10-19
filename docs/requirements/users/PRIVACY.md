@@ -58,6 +58,10 @@ surfaces remain owner/admin-only unless a separate product change adds public pr
   See User Relation Matrix.
 - **Follow-context (votes)**: Users with `likes_visibility` set to a restrictive level are excluded from follow-context vote results for unauthorized viewers
 - **Follow-context (topic follows)**: Users with `topic_follows_visibility` set to a restrictive level are excluded from follow-context topic results for unauthorized viewers
+- **RSS recommendations**: Friend and collaborative RSS recommendations use another account's followed
+  feeds only when `rss_feed_follows_visibility` allows that viewer to see them. A soft-deleted account
+  or an account with processing restricted is not a recommendation signal. Administrators still see
+  hidden follows; processing restriction still applies.
 - **Community memberships**: Community member rosters enforce each regular member's
   `community_memberships_visibility`. Owners and moderators remain visible to anyone who can view
   the community. Communities can also restrict regular roster rows with
