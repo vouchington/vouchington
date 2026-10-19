@@ -25,12 +25,11 @@
 - Search [docs](docs/README.md); update owning page. Docs hold only why, impact, architecture,
   runbooks, and unenforced invariants; no restated code or drifting numbers ([rules](docs/AGENTS.md)).
 - Agent hooks and harness configuration follow [hook instructions](dev/codex-hooks/AGENTS.md).
-  Keep shared `AGENTS.md`; do not introduce shadowing `CLAUDE.md` files.
+  Keep shared `AGENTS.md`; no shadowing `CLAUDE.md` files.
 - No local AST parsers. Vouchington-specific parsing belongs in `vouchington-tooling`;
-  generalizable rules belong in `no-mistakes`. Before building AST parsing, ask a human for an
-  architectural decision. ast-grep and Oxlint rules may live here; Oxlint plugins belong in
+  generalizable rules belong in `no-mistakes`. Before building AST parsing, ask a human. ast-grep and Oxlint rules may live here; Oxlint plugins belong in
   `vouchington-tooling`.
-- Tests follow the [suite rules](docs/development/tests.md#test-suite-rules).
+- Tests follow the [suite rules](docs/development/tests.md#test-suite-rules). Delete tests of dependencies, even our own packages.
 - Tests use synthetic Git refs; keep production pins, checksums, and intentional historical refs exact.
   Test helpers belong only in `test-helpers/**` or immediately below
   a top-level workspace; never add nested helpers or `test-support` directories.
