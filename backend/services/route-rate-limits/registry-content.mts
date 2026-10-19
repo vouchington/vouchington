@@ -10,4 +10,8 @@ export const CONTENT_ROUTE_REGISTRY: Record<string, RouteRateLimitEntry> = {
   'POST:/api/v1/topics': { category: 'write' },
   'POST:/api/v1/rss-feeds': { category: 'write' },
   'POST:/api/v1/communities': { category: 'write' },
+  // Outbound DNS and HTTPS, so this is not the default write category.
+  'POST:/api/v1/topics/:idOrSlug/claims/:claimId/domain-verification': {
+    category: 'sensitive',
+  },
 }

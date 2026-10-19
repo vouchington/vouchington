@@ -40,7 +40,8 @@ describe('GET /api/v1/my/topic-claims', () => {
     expect(response.body.claims.length).toBeGreaterThan(0)
     expect(
       response.body.claims.every(
-        (c: { claimant_user_id: string }) => c.claimant_user_id === claimUser.id,
+        (c: { claimant_user_id: string; state: string }) =>
+          c.claimant_user_id === claimUser.id && c.state === 'pending',
       ),
     ).toBe(true)
   })

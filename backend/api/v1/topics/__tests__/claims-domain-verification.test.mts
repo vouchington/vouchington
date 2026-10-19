@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, insertTestTopic, insertTestUrlHostname } from '@voucha/test-helpers'
 import { createTopicClaim } from '@services/topic-claims/create'
+import { issueDomainVerificationToken } from '@services/topic-claims/generate-verification-token'
+import { rejectTopicClaim } from '@services/topic-claims/admin-verify'
 import * as topicClaimsModule from '@services/topic-claims'
 import { verifyTopicClaimDomain as verifyTopicClaimDomainReal } from '@services/topic-claims/verify-domain'
 
@@ -72,6 +74,24 @@ describe('topic claim domain-verification API', () => {
       .expect(200)
     expect(verifyResponse.body.claim.verified_at).not.toBeNull()
     expect(verifyResponse.body.claim.verification_method).toBe('dns_txt')
+    expect(verifyResponse.body.claim.state).toBe('verified')
+    expect(h.mockResolveTxtRecords).toHaveBeenCalledWith(
+      tokenResponse.body.dnsInstructions.hostname,
+    )
+  })
+
+  it('returns 409 when verifying a rejected claim', async () => {
+    const { claimant, topicSlug, claimId } = await makeClaimOnTopicWithHostname()
+    const staff = await createTestUser({ administrator: true })
+    await issueDomainVerificationToken(claimant.id, claimId)
+    await rejectTopicClaim(staff.id, claimId, 'Not the owner')
+    const request = createRequest()
+    await request.authenticateAs(claimant)
+    await request
+      .post(`/api/v1/topics/${topicSlug}/claims/${claimId}/domain-verification`)
+      .set('Content-Type', 'application/json')
+      .send({})
+      .expect(409)
   })
 
   it('returns 401 for unauthenticated domain-verification', async () => {
@@ -86,13 +106,14 @@ describe('topic claim domain-verification API', () => {
 })
 
 describe('GET /api/v1/topics/:idOrSlug/claims/:claimId', () => {
-  it('claimant gets their claim; staff gets it; other user is 403; unknown is 404', async () => {
-    const { claimant, topicSlug, claimId } = await makeClaimOnTopicWithHostname()
+  it('claimant gets their claim; staff gets it; other user and unknown are 404', async () => {
+    const { claimant, creator, topicSlug, claimId } = await makeClaimOnTopicWithHostname()
 
     const claimantReq = createRequest()
     await claimantReq.authenticateAs(claimant)
     const own = await claimantReq.get(`/api/v1/topics/${topicSlug}/claims/${claimId}`).expect(200)
     expect(own.body.claim.id).toBe(claimId)
+    expect(own.body.claim.state).toBe('pending')
 
     const staff = await createTestUser({ administrator: true })
     const staffReq = createRequest()
@@ -102,10 +123,32 @@ describe('GET /api/v1/topics/:idOrSlug/claims/:claimId', () => {
     const other = await createTestUser()
     const otherReq = createRequest()
     await otherReq.authenticateAs(other)
-    await otherReq.get(`/api/v1/topics/${topicSlug}/claims/${claimId}`).expect(403)
+    await otherReq.get(`/api/v1/topics/${topicSlug}/claims/${claimId}`).expect(404)
 
     const missingReq = createRequest()
     await missingReq.authenticateAs(claimant)
     await missingReq.get(`/api/v1/topics/${topicSlug}/claims/${crypto.randomUUID()}`).expect(404)
+
+    const otherTopicSlug = `dvapi-other-${crypto.randomUUID().slice(0, 8)}`
+    await insertTestTopic({
+      name: `DVApi Other ${crypto.randomUUID().slice(0, 8)}`,
+      slug: otherTopicSlug,
+      createdById: creator.id,
+    })
+    await claimantReq.get(`/api/v1/topics/${otherTopicSlug}/claims/${claimId}`).expect(404)
+    await claimantReq
+      .post(`/api/v1/topics/${otherTopicSlug}/claims/${claimId}/verification-token`)
+      .expect(404)
+    await claimantReq
+      .post(`/api/v1/topics/${otherTopicSlug}/claims/${claimId}/domain-verification`)
+      .set('Content-Type', 'application/json')
+      .send({})
+      .expect(404)
+    await claimantReq
+      .post(`/api/v1/topics/${otherTopicSlug}/claims/${claimId}/manual-review-submission`)
+      .set('Content-Type', 'application/json')
+      .send({ evidence: 'proof' })
+      .expect(404)
+    await staffReq.get(`/api/v1/topics/${otherTopicSlug}/claims/${claimId}`).expect(404)
   })
 })

@@ -2,17 +2,20 @@ import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { TopicClaim } from './config.mts'
+import { assertTopicClaimEvidenceWithinLimit } from './parse.mts'
 
 export async function submitTopicClaimForManualReview(
   currentUserId: string,
   claimId: string,
   evidence: string,
 ): Promise<TopicClaim> {
-  assert(evidence.trim().length > 0, 422, 'evidence is required for manual review')
+  const trimmedEvidence = evidence.trim()
+  assert(trimmedEvidence.length > 0, 422, 'evidence is required for manual review')
+  assertTopicClaimEvidenceWithinLimit(trimmedEvidence)
   const { rows } = await write(sql`/* submitTopicClaimForManualReview */
     UPDATE topic_claims
     SET submitted_at = NOW(),
-        evidence = ${evidence.trim()}
+        evidence = ${trimmedEvidence}
     WHERE id = ${claimId}
       AND claimant_user_id = ${currentUserId}
       AND verified_at IS NULL

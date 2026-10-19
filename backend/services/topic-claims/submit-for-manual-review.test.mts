@@ -4,6 +4,7 @@ import type { PrivateUser } from '@services/users/types'
 import { createTopicClaim } from './create.mts'
 import { adminVerifyTopicClaim } from './admin-verify.mts'
 import { submitTopicClaimForManualReview } from './submit-for-manual-review.mts'
+import { TOPIC_CLAIM_EVIDENCE_MAX_LENGTH } from './parse.mts'
 
 describe('submitTopicClaimForManualReview', () => {
   let claimant: PrivateUser
@@ -48,6 +49,21 @@ describe('submitTopicClaimForManualReview', () => {
     await expect(submitTopicClaimForManualReview(claimant.id, claim.id, '')).rejects.toMatchObject({
       status: 422,
     })
+  })
+
+  it('throws 422 when evidence exceeds 10000 characters', async () => {
+    const { claim } = await createTopicClaim(claimant.id, {
+      topicId,
+      claimedRole: 'Operator',
+      evidence: '',
+    })
+    await expect(
+      submitTopicClaimForManualReview(
+        claimant.id,
+        claim.id,
+        'e'.repeat(TOPIC_CLAIM_EVIDENCE_MAX_LENGTH + 1),
+      ),
+    ).rejects.toMatchObject({ status: 422 })
   })
 
   it('throws 422 when evidence is whitespace only', async () => {

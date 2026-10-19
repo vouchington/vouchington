@@ -9,7 +9,8 @@ import {
 import { mergeTopicForTest } from '@voucha/test-helpers/entities/topics'
 import type { PrivateUser } from '@services/users/types'
 import { createTopicClaim } from './create.mts'
-import { rejectTopicClaim } from './admin-verify.mts'
+import { adminVerifyTopicClaim, rejectTopicClaim } from './admin-verify.mts'
+import { submitTopicClaimForManualReview } from './submit-for-manual-review.mts'
 
 describe('createTopicClaim', () => {
   let claimant: PrivateUser
@@ -126,6 +127,65 @@ describe('createTopicClaim', () => {
 
     expect(isDuplicate).toBe(true)
     expect(claim.claimed_role).toBe('Program operator')
+    expect(claim.evidence).toBe('Updated evidence')
+  })
+
+  it('returns the verified claim unchanged', async () => {
+    const user = await createTestUser()
+    const staff = await createTestUser({ administrator: true })
+    const creator = await createTestUser()
+    const tid = await insertTestTopic({
+      name: `TC Verified Topic ${crypto.randomUUID().slice(0, 8)}`,
+      slug: `tc-verified-${crypto.randomUUID().slice(0, 8)}`,
+      createdById: creator.id,
+    })
+    const { claim: created } = await createTopicClaim(user.id, {
+      topicId: tid,
+      claimedRole: 'Issuer',
+      evidence: 'Original evidence',
+    })
+    await adminVerifyTopicClaim(staff.id, created.id)
+
+    const { claim, isDuplicate } = await createTopicClaim(user.id, {
+      topicId: tid,
+      claimedRole: 'Different role',
+      evidence: 'Replaced evidence',
+    })
+
+    expect(isDuplicate).toBe(true)
+    expect(claim.id).toBe(created.id)
+    expect(claim.claimed_role).toBe('Issuer')
+    expect(claim.evidence).toBe('Original evidence')
+    expect(claim.verified_at).not.toBeNull()
+  })
+
+  it('returns a submitted claim unchanged', async () => {
+    const user = await createTestUser()
+    const creator = await createTestUser()
+    const tid = await insertTestTopic({
+      name: `TC Submitted Topic ${crypto.randomUUID().slice(0, 8)}`,
+      slug: `tc-submitted-${crypto.randomUUID().slice(0, 8)}`,
+      createdById: creator.id,
+    })
+    const { claim: created } = await createTopicClaim(user.id, {
+      topicId: tid,
+      claimedRole: 'Issuer',
+      evidence: 'Original evidence',
+    })
+    await submitTopicClaimForManualReview(user.id, created.id, 'Review evidence')
+
+    const { claim, isDuplicate } = await createTopicClaim(user.id, {
+      topicId: tid,
+      claimedRole: 'Different role',
+      evidence: 'Replaced evidence',
+    })
+
+    expect(isDuplicate).toBe(true)
+    expect(claim.id).toBe(created.id)
+    expect(claim.claimed_role).toBe('Issuer')
+    expect(claim.evidence).toBe('Review evidence')
+    expect(claim.submitted_at).not.toBeNull()
+    expect(claim.verified_at).toBeNull()
   })
 
   it('allows a new claim after previous claim was rejected', async () => {

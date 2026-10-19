@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseCreateTopicClaimInput } from './parse.mts'
+import { parseCreateTopicClaimInput, TOPIC_CLAIM_EVIDENCE_MAX_LENGTH } from './parse.mts'
 
 describe('parseCreateTopicClaimInput', () => {
   it('parses valid input with all fields', () => {
@@ -65,6 +65,26 @@ describe('parseCreateTopicClaimInput', () => {
         evidence: '',
       }),
     ).toThrow(/too long/)
+  })
+
+  it('throws 422 when evidence exceeds 10000 characters', () => {
+    expect(() =>
+      parseCreateTopicClaimInput({
+        topic_id: 'id',
+        claimed_role: 'Issuer',
+        evidence: 'e'.repeat(TOPIC_CLAIM_EVIDENCE_MAX_LENGTH + 1),
+      }),
+    ).toThrow(/evidence too long/)
+  })
+
+  it('accepts evidence of exactly 10000 characters', () => {
+    const evidence = 'e'.repeat(TOPIC_CLAIM_EVIDENCE_MAX_LENGTH)
+    const result = parseCreateTopicClaimInput({
+      topic_id: 'id',
+      claimed_role: 'Issuer',
+      evidence,
+    })
+    expect(result.evidence).toBe(evidence)
   })
 
   it('accepts claimed_role of exactly 255 characters', () => {

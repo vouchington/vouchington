@@ -18551,6 +18551,7 @@
           "type": "string"
         },
         "evidence": {
+          "maxLength": 10000,
           "type": "string"
         }
       },
@@ -34232,6 +34233,7 @@
       "additionalProperties": false,
       "properties": {
         "evidence": {
+          "maxLength": 10000,
           "type": "string"
         }
       },
@@ -34857,6 +34859,195 @@
     "TopicClaimState": {
       "enum": ["pending", "rejected", "revoked", "verified"],
       "type": "string"
+    },
+    "TopicClaimWithState": {
+      "additionalProperties": false,
+      "properties": {
+        "claimant_user_id": {
+          "type": "string"
+        },
+        "claimed_role": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "domain_verified_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "evidence": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "rejected_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "rejected_by_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "rejection_reason": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "revocation_reason": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "revoked_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "revoked_by_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "submitted_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "state": {
+          "$ref": "#/components/schemas/TopicClaimState"
+        },
+        "topic_id": {
+          "type": "string"
+        },
+        "updated_at": {
+          "type": "string"
+        },
+        "verification_hostname_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "verification_method": {
+          "anyOf": [
+            {
+              "const": "dns_txt"
+            },
+            {
+              "const": "manual_admin"
+            },
+            {
+              "const": "well_known_file"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "verification_token_issued_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "verified_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "verified_by_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "required": [
+        "claimant_user_id",
+        "claimed_role",
+        "created_at",
+        "domain_verified_at",
+        "evidence",
+        "id",
+        "rejected_at",
+        "rejected_by_id",
+        "rejection_reason",
+        "revocation_reason",
+        "revoked_at",
+        "revoked_by_id",
+        "submitted_at",
+        "state",
+        "topic_id",
+        "updated_at",
+        "verification_hostname_id",
+        "verification_method",
+        "verification_token_issued_at",
+        "verified_at",
+        "verified_by_id"
+      ],
+      "type": "object"
     },
     "TopicConflict": {
       "additionalProperties": false,
@@ -49753,6 +49944,19 @@
     "GET:/api/v1/my/spending-categories": {
       "$ref": "#/components/schemas/HouseholdSpendingCategoryPage"
     },
+    "GET:/api/v1/my/topic-claims": {
+      "additionalProperties": false,
+      "properties": {
+        "claims": {
+          "items": {
+            "$ref": "#/components/schemas/TopicClaimWithState"
+          },
+          "type": "array"
+        }
+      },
+      "required": ["claims"],
+      "type": "object"
+    },
     "GET:/api/v1/platform-stats": {
       "$ref": "#/components/schemas/PlatformStats"
     },
@@ -49812,6 +50016,29 @@
     },
     "GET:/api/v1/topics/:idOrSlug": {
       "$ref": "#/components/schemas/Record_string_unknown"
+    },
+    "GET:/api/v1/topics/:idOrSlug/claims": {
+      "additionalProperties": false,
+      "properties": {
+        "claims": {
+          "items": {
+            "$ref": "#/components/schemas/TopicClaimWithState"
+          },
+          "type": "array"
+        }
+      },
+      "required": ["claims"],
+      "type": "object"
+    },
+    "GET:/api/v1/topics/:idOrSlug/claims/:claimId": {
+      "additionalProperties": false,
+      "properties": {
+        "claim": {
+          "$ref": "#/components/schemas/TopicClaimWithState"
+        }
+      },
+      "required": ["claim"],
+      "type": "object"
     },
     "GET:/api/v1/topics/compare": {
       "$ref": "#/components/schemas/Record_string_unknown"
@@ -49933,6 +50160,39 @@
     },
     "POST:/api/v1/topic-recommendations": {
       "$ref": "#/components/schemas/TopicRecommendationMutationResponse"
+    },
+    "POST:/api/v1/topics/:idOrSlug/claims": {
+      "additionalProperties": false,
+      "properties": {
+        "claim": {
+          "$ref": "#/components/schemas/TopicClaimWithState"
+        },
+        "isDuplicate": {
+          "type": "boolean"
+        }
+      },
+      "required": ["claim", "isDuplicate"],
+      "type": "object"
+    },
+    "POST:/api/v1/topics/:idOrSlug/claims/:claimId/domain-verification": {
+      "additionalProperties": false,
+      "properties": {
+        "claim": {
+          "$ref": "#/components/schemas/TopicClaimWithState"
+        }
+      },
+      "required": ["claim"],
+      "type": "object"
+    },
+    "POST:/api/v1/topics/:idOrSlug/claims/:claimId/manual-review-submission": {
+      "additionalProperties": false,
+      "properties": {
+        "claim": {
+          "$ref": "#/components/schemas/TopicClaimWithState"
+        }
+      },
+      "required": ["claim"],
+      "type": "object"
     },
     "POST:/api/v1/topics/:idOrSlug/claims/:claimId/verification-token": {
       "$ref": "#/components/schemas/VerificationTokenResult"
