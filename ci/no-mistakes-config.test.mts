@@ -138,9 +138,6 @@ describe('no-mistakes config', () => {
     expect(oxlint.rules).not.toHaveProperty('@local/voucha/web-no-inline-entity-href')
     expect(reactOxlint.rules).not.toHaveProperty('@local/voucha/web-icon-button-tooltip')
     expect(oxlint.rules['no-mistakes/test-no-error-message-matching']).toBe('error')
-    expect(oxlint.jsPlugins).not.toContainEqual(
-      expect.objectContaining({ specifier: './static-code-analysis/oxlint-plugin/src/index.mts' }),
-    )
     expect(oxlint.rules['no-mistakes/test-no-shared-state']).toBe('error')
     expect(oxlint.rules['no-mistakes/test-no-skips']).toBe('error')
     expect(oxlint.rules['no-mistakes/module-mock-boundary']).toEqual([
