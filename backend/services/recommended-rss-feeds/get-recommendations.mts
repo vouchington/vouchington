@@ -2,6 +2,7 @@ import { clampLimit } from '@services/pagination'
 import { read } from '@data-stores/psql'
 import { buildPageInfo, decodeUuidCursor, isScoreCursor } from '@modules/pagination'
 
+import { rssFollowSignalEligibilitySql } from './rss-follow-signal-eligibility.mts'
 import type { GetRecommendedRssFeedsOptions, GetRecommendedRssFeedsResult } from './types.mts'
 
 const DEFAULT_LIMIT = 20
@@ -43,6 +44,16 @@ export async function getRecommendedRssFeeds(
   const { rows } = await read(
     `/* getRecommendedRssFeeds */
     WITH
+    viewer AS (
+      SELECT EXISTS (
+        SELECT 1
+        FROM user_roles viewer_role
+        JOIN user_role_types viewer_role_type
+          ON viewer_role_type.id = viewer_role.role_type_id
+        WHERE viewer_role.user_id = $1
+          AND viewer_role_type.slug = 'administrator'
+      ) AS is_administrator
+    ),
     -- Feeds the current user already follows (to exclude)
     user_followed_feeds AS (
       SELECT object_id AS feed_id
@@ -74,6 +85,8 @@ export async function getRecommendedRssFeeds(
       JOIN relation__user__follow__rss_feed ufr
         ON ufr.subject_id = ufu.object_id
         AND ufr.deleted_at IS NULL
+      JOIN users source_user ON source_user.id = ufr.subject_id
+      CROSS JOIN viewer
       JOIN rss_feeds rf
         ON rf.id = ufr.object_id
         AND rf.deleted_at IS NULL
@@ -83,6 +96,7 @@ export async function getRecommendedRssFeeds(
         AND current_state.is_discoverable = TRUE
       WHERE ufu.subject_id = $1
         AND ufu.deleted_at IS NULL
+        AND ${rssFollowSignalEligibilitySql}
         AND NOT EXISTS (SELECT 1 FROM user_followed_feeds WHERE user_followed_feeds.feed_id = ufr.object_id)
         AND NOT EXISTS (SELECT 1 FROM user_muted_feeds WHERE user_muted_feeds.feed_id = ufr.object_id)
     ),
@@ -114,6 +128,8 @@ export async function getRecommendedRssFeeds(
         ON ufr2.subject_id = ufr1.subject_id
         AND ufr2.object_id != ufr1.object_id
         AND ufr2.deleted_at IS NULL
+      JOIN users source_user ON source_user.id = ufr1.subject_id
+      CROSS JOIN viewer
       JOIN rss_feeds rf
         ON rf.id = ufr2.object_id
         AND rf.deleted_at IS NULL
@@ -124,6 +140,7 @@ export async function getRecommendedRssFeeds(
       WHERE ufr1.subject_id != $1
         AND ufr1.object_id IN (SELECT feed_id FROM user_followed_feeds)
         AND ufr1.deleted_at IS NULL
+        AND ${rssFollowSignalEligibilitySql}
         AND NOT EXISTS (SELECT 1 FROM user_followed_feeds WHERE user_followed_feeds.feed_id = ufr2.object_id)
         AND NOT EXISTS (SELECT 1 FROM user_muted_feeds WHERE user_muted_feeds.feed_id = ufr2.object_id)
     ),
