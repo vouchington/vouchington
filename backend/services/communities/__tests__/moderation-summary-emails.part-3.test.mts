@@ -14,6 +14,52 @@ const ONE_DAY_MS = 24 * 60 * 60 * 1000
 const ONE_WEEK_MS = 7 * ONE_DAY_MS
 
 describe('getCommunityModerationSummaryCommunities activity digest engagement', () => {
+  it.each(['2025-02-01T00:00:00.000Z', '2024-03-01T00:00:00.000Z', '2025-01-01T00:00:00.000Z'])(
+    'includes the exact UTC window start and excludes the exact end at %s',
+    async anchor => {
+      const owner = await createTestUser()
+      const community = await insertTestCommunity({ createdById: owner.id })
+      const instant = new Date(anchor)
+      await insertTestCommunityMember({
+        communityId: community.id,
+        userId: owner.id,
+        role: 'owner',
+        approvedById: owner.id,
+        createdAt: new Date(instant.getTime() - ONE_DAY_MS),
+      })
+      const postId = await insertTestPost({
+        title: 'At the UTC boundary',
+        slug: `moderation-window-boundary-${owner.id}`,
+        createdById: owner.id,
+        markdown: 'Boundary discussion.',
+        communityId: community.id,
+        postType: 'discussion',
+        createdAt: instant,
+      })
+      await insertTestPendingCommunityPostReview({
+        communityId: community.id,
+        postId,
+        submittedById: owner.id,
+      })
+
+      const count = async (start: Date, end: Date): Promise<number> => {
+        const summaries = await getCommunityModerationSummaryCommunities(owner.id, start, end)
+        return summaries.find(summary => summary.name === community.name)?.newDiscussionPosts ?? 0
+      }
+      expect(await count(instant, new Date(instant.getTime() + ONE_DAY_MS))).toBe(1)
+      expect(
+        await count(new Date(instant.getTime() - 1), new Date(instant.getTime() + ONE_DAY_MS)),
+      ).toBe(1)
+      expect(
+        await count(new Date(instant.getTime() + 1), new Date(instant.getTime() + ONE_DAY_MS)),
+      ).toBe(0)
+      expect(await count(new Date(instant.getTime() - ONE_DAY_MS), instant)).toBe(0)
+      expect(
+        await count(new Date(instant.getTime() - ONE_DAY_MS), new Date(instant.getTime() + 1)),
+      ).toBe(1)
+    },
+  )
+
   it('excludes comments from the post-type breakdown but counts commenters as active members', async () => {
     const commenter = await createTestUser()
     const { owner, community, outsideWindow, pendingPostId } =

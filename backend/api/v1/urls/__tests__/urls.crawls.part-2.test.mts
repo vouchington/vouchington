@@ -6,8 +6,8 @@ import {
   insertTestUrlHostname,
   insertTestCrawl,
   createTestMembership,
-  updateTestMembershipExpiresAt,
 } from '@voucha/test-helpers'
+import { updateTestMembershipExpiresAtRelativeToDatabaseNow } from '@voucha/test-helpers/entities/membership-expiry'
 import { updateCrawl } from '@services/crawls'
 import type { PrivateUser } from '@services/users/types'
 
@@ -53,7 +53,7 @@ describe('URLs Routes - crawl detail og_image_sideload', () => {
   it('denies crawl history after a finite paid grant expires', async () => {
     const elapsedUser = await createTestUser()
     const membership = await createTestMembership({ user_id: elapsedUser.id, plan: 'plus' })
-    await updateTestMembershipExpiresAt(membership.id, new Date(Date.now() - 1_000))
+    await updateTestMembershipExpiresAtRelativeToDatabaseNow(membership.id, -1_000)
     const random = Math.random().toString(36).slice(2, 8)
     const hostnameId = await insertTestUrlHostname({
       hostname: `elapsed-lifecycle-${random}.example.com`,

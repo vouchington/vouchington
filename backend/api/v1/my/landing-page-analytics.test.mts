@@ -4,9 +4,9 @@ import {
   createTestUserDirect,
   createTestLandingPage,
   createTestMembership,
-  updateTestMembershipExpiresAt,
   setUserReferrerId,
 } from '@voucha/test-helpers'
+import { updateTestMembershipExpiresAtRelativeToDatabaseNow } from '@voucha/test-helpers/entities/membership-expiry'
 import { createDeviceAndSessionTokens } from '@services/jwt-session'
 import { v7 } from 'uuid'
 
@@ -65,7 +65,7 @@ describe('landing-page-analytics', () => {
     it('returns 403 after a finite paid grant expires', async () => {
       const elapsedUser = await createTestUserDirect()
       const membership = await createTestMembership({ user_id: elapsedUser!.id, plan: 'plus' })
-      await updateTestMembershipExpiresAt(membership.id, new Date(Date.now() - 1_000))
+      await updateTestMembershipExpiresAtRelativeToDatabaseNow(membership.id, -1_000)
       const { landingPageId: elapsedLandingPageId } = await createTestLandingPage(
         elapsedUser!.id,
         'Elapsed Analytics Dashboard Test',

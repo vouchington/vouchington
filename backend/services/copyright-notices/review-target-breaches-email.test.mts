@@ -24,6 +24,35 @@ function readEmails(emailIntakeIds: string[], reviewTargetMinutes: number | null
 }
 
 describe('readCopyrightReviewTargetBreaches email intakes', () => {
+  it.each([
+    '2024-01-31T23:59:59.999Z',
+    '2024-02-01T00:00:00.000Z',
+    '2024-02-29T23:59:59.999Z',
+    '2024-03-01T00:00:00.000Z',
+    '2024-12-31T23:59:59.999Z',
+    '2025-01-01T00:00:00.000Z',
+  ])('includes an owned email at its exact target cutoff around %s', async instant => {
+    const receivedAt = new Date(instant)
+    const intake = await createParsedCopyrightEmailIntake(receivedAt)
+    const cutoffAt = receivedAt.getTime() + HOUR_MS
+    const readAt = (delta: number) =>
+      readCopyrightReviewTargetBreaches({
+        now: new Date(cutoffAt + delta),
+        reviewTargetMinutes: 60,
+        emailIntakeIds: [intake.id],
+      })
+
+    expect((await readAt(-1)).emailIntakesWaitingPastTarget).toEqual(noEmails)
+    expect((await readAt(0)).emailIntakesWaitingPastTarget).toEqual({
+      count: 1,
+      emailIntakeIds: [intake.id],
+    })
+    expect((await readAt(1)).emailIntakesWaitingPastTarget).toEqual({
+      count: 1,
+      emailIntakeIds: [intake.id],
+    })
+  })
+
   it('counts emails waiting past the target, oldest first, and only while the target is set', async () => {
     const older = await createParsedCopyrightEmailIntake(hoursAgo(3))
     const newer = await createParsedCopyrightEmailIntake(hoursAgo(2))

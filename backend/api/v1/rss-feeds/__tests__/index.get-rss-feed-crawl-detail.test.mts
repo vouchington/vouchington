@@ -8,8 +8,8 @@ import {
   insertTestRssFeedCrawl,
   createTestUser,
   createTestMembership,
-  updateTestMembershipExpiresAt,
 } from '@voucha/test-helpers'
+import { updateTestMembershipExpiresAtRelativeToDatabaseNow } from '@voucha/test-helpers/entities/membership-expiry'
 
 describe('index', () => {
   describe('RSS Feeds Routes', () => {
@@ -151,7 +151,7 @@ describe('index', () => {
       it('returns 403 after a finite paid grant expires', async () => {
         const elapsedUser = await createTestUser()
         const membership = await createTestMembership({ user_id: elapsedUser.id, plan: 'plus' })
-        await updateTestMembershipExpiresAt(membership.id, new Date(Date.now() - 1_000))
+        await updateTestMembershipExpiresAtRelativeToDatabaseNow(membership.id, -1_000)
         const random = Math.random().toString(36).slice(2, 8)
         const topicId = await insertTestTopic({
           name: `Elapsed Crawl Detail Topic ${random}`,

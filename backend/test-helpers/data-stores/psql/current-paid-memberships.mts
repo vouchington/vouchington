@@ -1,6 +1,8 @@
 import { randomUUID } from 'node:crypto'
-import { read, write } from '@data-stores/psql'
+import { beginTransaction, read, write } from '@data-stores/psql'
+import type { QueryOptions } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
+import { updateTestMembershipExpiresAtRelativeToDatabaseNow } from '../../entities/membership-expiry.mts'
 
 export type CurrentPaidMembership = { user_id: string; plan: 'plus' | 'pro' }
 export type MembershipViewStatus = { status: 'active' | 'expired' | 'past_due'; user_id: string }
@@ -58,9 +60,14 @@ export async function createElapsedAdminGrantForCurrentPaidMembershipView(
 
 export async function getCurrentPaidMemberships(
   userIds: string[],
+  options?: QueryOptions,
 ): Promise<CurrentPaidMembership[]> {
-  const { rows } = await read<CurrentPaidMembership>(sql`/* getStaleCurrentPaidMemberships */
-    SELECT user_id, plan FROM view_current_paid_memberships WHERE user_id = ANY(${userIds}) ORDER BY user_id`)
+  const { rows } = await read<CurrentPaidMembership>(
+    sql`/* getStaleCurrentPaidMemberships */
+      SELECT user_id, plan FROM view_current_paid_memberships
+      WHERE user_id = ANY(${userIds}) ORDER BY user_id`,
+    options,
+  )
   return rows
 }
 
@@ -86,4 +93,24 @@ export async function getPrivateUserMemberships(
     SELECT id, membership_plan FROM view_users_private WHERE id = ANY(${userIds})
     ORDER BY membership_plan IS NULL, id`)
   return rows
+}
+
+/** Returns the real paid view for owned fixtures at transaction-stable expiry offsets. */
+export async function readTestCurrentPaidMembershipsAtExpiryOffsets(
+  fixtures: Array<{ membershipId: string; offset: number; userId: string }>,
+): Promise<CurrentPaidMembership[]> {
+  await using transaction = await beginTransaction()
+  await Promise.all(
+    fixtures.map(fixture =>
+      updateTestMembershipExpiresAtRelativeToDatabaseNow(
+        fixture.membershipId,
+        fixture.offset,
+        transaction,
+      ),
+    ),
+  )
+  return await getCurrentPaidMemberships(
+    fixtures.map(({ userId }) => userId),
+    { query: transaction },
+  )
 }

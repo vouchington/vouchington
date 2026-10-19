@@ -1,9 +1,16 @@
+import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
+import {
+  createTestFamilyMembership,
+  createTestMembership,
+  createTestSku,
+} from '@voucha/test-helpers'
 import { createLocalTestUser } from '../../../test-helpers/data-stores/psql/users.mts'
 import {
   createElapsedAdminGrantForCurrentPaidMembershipView,
   createStaleProviderMembershipSource,
   getCurrentPaidMemberships,
+  readTestCurrentPaidMembershipsAtExpiryOffsets,
   getCurrentPaidMembershipTestProducts,
   getMembershipBillingIdentities,
   getMembershipStatuses,
@@ -11,6 +18,48 @@ import {
 } from '../../../test-helpers/data-stores/psql/current-paid-memberships.mts'
 
 describe('current paid membership views', () => {
+  it('uses transaction-stable PostgreSQL time at finite source expiry boundaries', async () => {
+    const grantFixtures = await Promise.all(
+      [-1, 0, 1].map(async offset => {
+        const user = await createLocalTestUser()
+        const membership = await createTestMembership({
+          effective_at: new Date('2020-01-01T00:00:00.000Z'),
+          user_id: user.id,
+          plan: 'plus',
+        })
+        return { membershipId: membership.id, offset, userId: user.id }
+      }),
+    )
+    const familySku = await createTestSku({
+      plan: 'plus',
+      provider_application_id: `current-paid-expiry-${randomUUID()}`,
+    })
+    const familyFixtures = await Promise.all(
+      [-1, 0, 1].map(async offset => {
+        const user = await createLocalTestUser()
+        const membership = await createTestFamilyMembership({
+          applicationId: familySku.provider_application_id,
+          effectiveAt: new Date('2020-01-01T00:00:00.000Z'),
+          expiresAt: new Date('2031-01-01T00:00:00.000Z'),
+          membershipProductId: familySku.id,
+          membershipProviderProductId: familySku.membership_provider_product_id,
+          sourceEffectiveAt: new Date('2020-01-01T00:00:00.000Z'),
+          userId: user.id,
+        })
+        return { membershipId: membership.id, offset, userId: user.id }
+      }),
+    )
+    const fixtures = [...grantFixtures, ...familyFixtures]
+    const currentPaid = await readTestCurrentPaidMembershipsAtExpiryOffsets(fixtures)
+    expect(currentPaid).toEqual(
+      expect.arrayContaining([
+        { user_id: grantFixtures[2]!.userId, plan: 'plus' },
+        { user_id: familyFixtures[2]!.userId, plan: 'plus' },
+      ]),
+    )
+    expect(currentPaid).toHaveLength(2)
+  })
+
   it('derives elapsed family and administrator-grant sources as expired', async () => {
     const [directUser, familyUser, grantUser] = await Promise.all([
       createLocalTestUser(),

@@ -8,8 +8,8 @@ import {
   insertTestCommunityMember,
   removeTestCommunityMember,
   updateTestCommunityMemberRole,
-  updateTestMembershipExpiresAt,
 } from '@voucha/test-helpers'
+import { updateTestMembershipExpiresAtRelativeToDatabaseNow } from '@voucha/test-helpers/entities/membership-expiry'
 import type { PrivateUser } from '@services/users/types'
 
 describe('GET /api/v1/communities/:idOrSlug/moderation-transparency', () => {
@@ -121,7 +121,7 @@ describe('GET /api/v1/communities/:idOrSlug/moderation-transparency', () => {
       plan: 'pro',
       status: 'active',
     })
-    await updateTestMembershipExpiresAt(membership.id, new Date(Date.now() - 1_000))
+    await updateTestMembershipExpiresAtRelativeToDatabaseNow(membership.id, -1_000)
 
     const request = createRequest()
     await request.authenticateAs(user)

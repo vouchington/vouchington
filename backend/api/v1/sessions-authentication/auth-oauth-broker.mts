@@ -91,12 +91,15 @@ app.route('/api/v1/auth/oauth/:provider/broker-callback').get(async (ctx: Contex
   validateRequestContract(ctx, 'GET:/api/v1/auth/oauth/:provider/broker-callback', {
     path: ctx.params,
   })
-  const result = await receiveOAuthAuthorizationCallback({
-    provider,
-    state: typeof ctx.query.state === 'string' ? ctx.query.state : '',
-    code: typeof ctx.query.code === 'string' ? ctx.query.code : undefined,
-    error: typeof ctx.query.error === 'string' ? ctx.query.error : undefined,
-  })
+  const result = await receiveOAuthAuthorizationCallback(
+    {
+      provider,
+      state: typeof ctx.query.state === 'string' ? ctx.query.state : '',
+      code: typeof ctx.query.code === 'string' ? ctx.query.code : undefined,
+      error: typeof ctx.query.error === 'string' ? ctx.query.error : undefined,
+    },
+    () => new Date(),
+  )
   if (result.exchangeRequired) {
     await enqueueInitialOAuthAuthorizationExchangeBestEffort(result.flowId)
   }

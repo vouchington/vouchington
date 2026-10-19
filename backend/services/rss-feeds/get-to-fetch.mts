@@ -1,4 +1,4 @@
-import { read } from '@data-stores/psql'
+import { read, type QueryOptions } from '@data-stores/psql'
 import * as crawlConfig from './crawl-config.mts'
 
 export type RssFeedToFetch = {
@@ -134,13 +134,11 @@ export function getRssFeedsToFetch({
   return getRssFeedsTiered(budget, new Date(asOfMs), cursor)
 }
 
-type GetRssFeedByIdToFetchOptions = {
-  ttl?: number
-}
+type GetRssFeedByIdToFetchOptions = QueryOptions & { ttl?: number }
 
 export async function getRssFeedByIdToFetch(
   rssFeedId: string,
-  { ttl = 60_000 }: GetRssFeedByIdToFetchOptions = {},
+  { ttl = 60_000, ...queryOptions }: GetRssFeedByIdToFetchOptions = {},
 ): Promise<RssFeedToFetch | null> {
   const params: unknown[] = [rssFeedId]
   const ttlFilter =
@@ -162,6 +160,6 @@ ${FEED_COLUMNS.slice(1)},
       ${ttlFilter}
     LIMIT 1`
 
-  const { rows } = await read<RssFeedToFetch>(query, params)
+  const { rows } = await read<RssFeedToFetch>(query, params, queryOptions)
   return rows[0] ?? null
 }

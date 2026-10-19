@@ -40,12 +40,15 @@ type ReceiveOAuthAuthorizationCallbackTransactionResult =
   | ReceiveOAuthAuthorizationCallbackResult
   | { expired: true }
 
-export async function receiveOAuthAuthorizationCallback(options: {
-  provider: BrokerOAuthProvider
-  state: string
-  code?: string
-  error?: string
-}): Promise<ReceiveOAuthAuthorizationCallbackResult> {
+export async function receiveOAuthAuthorizationCallback(
+  options: {
+    provider: BrokerOAuthProvider
+    state: string
+    code?: string
+    error?: string
+  },
+  now: () => Date,
+): Promise<ReceiveOAuthAuthorizationCallbackResult> {
   if (!options.state) throw createHttpError(400, 'OAuth callback is invalid')
   if (!options.code && !options.error) throw createHttpError(400, 'OAuth callback is invalid')
 
@@ -72,7 +75,9 @@ export async function receiveOAuthAuthorizationCallback(options: {
     )
     const authorization = rows[0] as OAuthAuthorizationRow | undefined
     if (!authorization) throw createHttpError(400, 'OAuth callback is invalid')
-    if (authorization.expires_at.getTime() <= Date.now()) {
+    const decisionAtMs = now().getTime()
+    if (!Number.isFinite(decisionAtMs)) throw new RangeError('Invalid OAuth callback time')
+    if (authorization.expires_at.getTime() <= decisionAtMs) {
       if (authorization.status !== 'completed') {
         await query(
           `/* receiveOAuthAuthorizationCallback */ UPDATE oauth_authorizations
