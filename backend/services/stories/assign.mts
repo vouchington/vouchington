@@ -70,7 +70,7 @@ export async function adminAssignItemToStory(
       ].toSorted()
       for (const affectedStoryId of affectedStoryIds) {
         // oxlint-disable no-await-in-loop -- sorted refreshes acquire story relation locks in one global order.
-        // no-mistakes-disable-next-line query-reached-per-item: preserve existing per-item behavior pending batching review; see #3256
+        // no-mistakes-disable-next-line query-reached-per-item: at most two stories (new and prior); each refresh rewrites one story post under its own publication lock, posts are never batched, and sorted order is the global story lock order.
         const refreshResult = await refreshStoryPost(
           affectedStoryId,
           { query },
