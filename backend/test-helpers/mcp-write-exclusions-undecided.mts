@@ -16,7 +16,6 @@ export const undecidedExclusions = [
   ]),
   ...pending([
     'POST /households',
-    'PATCH /households/:id',
     'DELETE /households/:id',
     'POST /households/:id/memberships',
     'DELETE /households/:id/memberships/:membershipId',

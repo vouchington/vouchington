@@ -11,6 +11,8 @@ import type {
 import { buildPageInfo, decodeScopedPreciseTimestampCursor } from '@modules/pagination'
 import {
   isAuthorizedHouseholdMembershipCursorRow,
+  membershipIndividualSql,
+  membershipUpdatedAtSql,
   type HouseholdMembershipPageSqlRow,
 } from './household-membership-page-row.mts'
 
@@ -117,21 +119,13 @@ export async function getHouseholdMemberships(
     SELECT
       hm.id,
       hm.household_id,
-      hm.relationship,
-      to_char(
-        hm.updated_at AT TIME ZONE 'UTC',
-        'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'
-      ) AS updated_at,
-      to_char(
-        hm.updated_at AT TIME ZONE 'UTC',
-        'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'
-      ) AS cursor_updated_at,
-      json_build_object(
-        'id', i.id,
-        'user_id', u.id,
-        'username', u.username,
-        'updated_at', i.updated_at
-      ) AS individual,
+      hm.relationship, `
+  query.append(membershipUpdatedAtSql('hm'))
+  query.append(sql` AS updated_at, `)
+  query.append(membershipUpdatedAtSql('hm'))
+  query.append(sql` AS cursor_updated_at, `)
+  query.append(membershipIndividualSql('i', 'u'))
+  query.append(sql` AS individual,
       access_check.household_exists,
       access_check.can_view
     FROM access_check
@@ -139,7 +133,7 @@ export async function getHouseholdMemberships(
       SELECT member.id, member.household_id, member.individual_id, member.relationship,
         member.updated_at
       FROM household_members member
-      WHERE member.household_id = ${householdId}`
+      WHERE member.household_id = ${householdId}`)
   if (after) {
     query.append(sql`
         AND (member.updated_at, member.id) < (${after.timestamp}::timestamptz, ${after.id})`)
@@ -156,7 +150,7 @@ export async function getHouseholdMemberships(
   const firstRow = rows[0]
   assert(firstRow, 500, 'Invalid household membership page')
   assert(firstRow.household_exists === true, 404, 'Household not found')
-  assert(firstRow.can_view === true, 403, 'Forbidden')
+  assert(firstRow.can_view === true, 404, 'Household not found')
   assert(
     rows.every(row => row.id === null || isAuthorizedHouseholdMembershipCursorRow(row)),
     500,

@@ -84,3 +84,12 @@ when it is false. Member report lists omit the field. Copyright queues refresh e
 staff polling stops after a bounded wait with a visible refresh prompt. Native adoption is tracked
 as dependent client work under
 [clients #373](https://github.com/vouchington/vouchington-clients/issues/373); the producer lands first.
+
+## Household membership create
+
+`POST /api/v1/households/:id/memberships` returns the same membership object as one result of
+`GET /api/v1/households/:id/memberships`, including the individual's user id and username.
+`PATCH /api/v1/households/:id` is gone. Web does not call either route; its membership type already
+matches the list item. Native clients that decode the previous narrower create body, or that call
+the removed update route, need a dependent client change. The producer lands first. Household MCP
+tools stay out of this change.
