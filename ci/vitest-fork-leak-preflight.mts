@@ -22,15 +22,16 @@ async function runPostResetWorkFixture(withForkLeakHook: boolean): Promise<Fixtu
   const dir = await mkdtemp(join(tmpdir(), 'voucha-fork-leak-post-reset-'))
   try {
     const workerSetupPath = join(dir, 'worker-setup.mts')
-    await writeFile(
-      workerSetupPath,
-      `import { Worker, getOrCreateQueue } from ${JSON.stringify(runtimeTestingPath)}
+    const fixtureWrites = [
+      writeFile(
+        workerSetupPath,
+        `import { Worker, getOrCreateQueue } from ${JSON.stringify(runtimeTestingPath)}
 new Worker(getOrCreateQueue('background'), async () => undefined)
 `,
-    )
-    await writeFile(
-      join(dir, 'vitest.config.mts'),
-      `export default {
+      ),
+      writeFile(
+        join(dir, 'vitest.config.mts'),
+        `export default {
   resolve: { alias: [{ find: /^glide-mq$/, replacement: ${JSON.stringify(runtimeTestingPath)} }] },
   test: {
     server: { deps: { inline: ${JSON.stringify(workerRuntimeTestingInline)} } },
@@ -40,10 +41,10 @@ new Worker(getOrCreateQueue('background'), async () => undefined)
   },
 }
 `,
-    )
-    await writeFile(
-      join(dir, 'post-reset.test.mts'),
-      `import { afterAll, expect, it, vi } from 'vitest'
+      ),
+      writeFile(
+        join(dir, 'post-reset.test.mts'),
+        `import { afterAll, expect, it, vi } from 'vitest'
 let completed = false
 let worker
 // The worker must finish between the two test checkpoints, not during setup.
@@ -62,7 +63,9 @@ it('sees runnable work settled before the next test', () => {
   expect(completed).toBe(true)
 })
 `,
-    )
+      ),
+    ]
+    await Promise.all(fixtureWrites)
     try {
       const { stdout, stderr } = await execFileAsync(process.execPath, [vitestCliPath, 'run'], {
         cwd: dir,

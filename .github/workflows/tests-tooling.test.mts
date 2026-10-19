@@ -57,6 +57,21 @@ function numberField(value: unknown, label: string): number {
 }
 
 describe('tests-tooling.yml setup timing', () => {
+  it('starts disposable Valkey before the fork-leak preflight runs', () => {
+    const steps = workflow.jobs?.tooling?.steps ?? []
+    const valkeyIndex = steps.findIndex(step => step.uses === './.github/actions/start-valkey')
+    const setupIndex = steps.findIndex(step => step.uses === './.github/actions/setup-backend')
+    const testIndex = steps.findIndex(step => step.name === 'Run tooling tests')
+    const logs = steps.find(step => step.uses === './.github/actions/valkey-logs')
+
+    expect(valkeyIndex).toBeGreaterThan(0)
+    expect(valkeyIndex).toBeLessThan(setupIndex)
+    expect(setupIndex).toBeLessThan(testIndex)
+    expect(steps[valkeyIndex]?.['timeout-minutes']).toBeGreaterThan(0)
+    expect(logs?.if).toBe('failure()')
+    expect(logs?.['timeout-minutes']).toBeGreaterThan(0)
+  })
+
   it('installs configured Gitleaks and Lychee binaries for tooling tests', () => {
     const toolingSteps = workflow.jobs?.tooling?.steps ?? []
     const installTools = toolingSteps.find(
@@ -111,6 +126,9 @@ describe('tests-tooling.yml setup timing', () => {
     const setupBackend = toolingJob?.steps?.find(
       step => step.uses === './.github/actions/setup-backend' && step.id === 'setup-backend',
     )
+    const startValkey = toolingJob?.steps?.find(
+      step => step.uses === './.github/actions/start-valkey',
+    )
     const installTools = toolingJob?.steps?.find(
       step => step.name === 'Install Gitleaks and Lychee for tooling tests',
     )
@@ -120,6 +138,7 @@ describe('tests-tooling.yml setup timing', () => {
     const runToolingTests = toolingJob?.steps?.find(step => step.name === 'Run tooling tests')
 
     const jobTimeout = numberField(toolingJob?.['timeout-minutes'], 'tooling job timeout')
+    const valkeyTimeout = numberField(startValkey?.['timeout-minutes'], 'Valkey startup timeout')
     const setupTimeout = numberField(setupBackend?.['timeout-minutes'], 'setup-backend timeout')
     const toolsInstallTimeout = numberField(
       installTools?.['timeout-minutes'],
@@ -132,7 +151,7 @@ describe('tests-tooling.yml setup timing', () => {
     const testTimeout = numberField(runToolingTests?.['timeout-minutes'], 'tooling test timeout')
 
     expect(jobTimeout).toBeGreaterThan(
-      setupTimeout + toolsInstallTimeout + toolsVerifyTimeout + testTimeout,
+      valkeyTimeout + setupTimeout + toolsInstallTimeout + toolsVerifyTimeout + testTimeout,
     )
   })
 

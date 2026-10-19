@@ -32,6 +32,11 @@ use `--loglevel=warn`, Docker build steps disable buildx provenance metadata, Tr
 artifacts with only nonzero findings printed, and Storybook's repeated bundler warning prints once.
 Each is enforced by a workflow test, so do not undo one to chase a different symptom.
 
+The tooling fork-leak preflight reaches a real backend command client through its shared setup,
+even though its generated job uses an in-memory queue. Its workflow therefore needs an
+owned disposable Valkey service; passing the generated test assertions alone does not establish
+that the process completed without unhandled connection errors.
+
 ## Principles
 
 Keep workflow triggers narrow, reproduce failures locally before rerunning, and keep tests
