@@ -4457,6 +4457,10 @@ rules:
         # Healthy max was 381 seconds (the test step 337) across 1,552 GitHub-hosted successes in #2260.
         - job: '.github/workflows/tests-web.yml#web-tests'
           maxMinutes: 30
+        # Steps sum to 49m; cap 20m is below it. A healthy run finished in about 8m; run
+        # 39276118528 was cancelled at the 10m job ceiling while the plan step is allowed 10m.
+        - job: '.github/workflows/explain-analyze.yml#explain-analyze'
+          maxMinutes: 20
 
   - name: tracked TypeScript files belong to a tsconfig program
     rule: tsconfig-file-coverage
