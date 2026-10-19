@@ -3,14 +3,19 @@ import { getLongRunningExternalFetch } from '@modules/utils'
 import { MissingModelClientCredentialError } from './missing-client-credential.mts'
 
 let client: OpenAI | undefined
+let clientKey: string | undefined
 
 function getClient(): OpenAI {
-  if (!client) {
-    const OPENAI_API_KEY = process.env.OPENAI_API_KEY?.trim()
-    if (!OPENAI_API_KEY) {
-      throw new MissingModelClientCredentialError('OpenAI')
-    }
-    client = new OpenAI({ apiKey: OPENAI_API_KEY, fetch: getLongRunningExternalFetch() })
+  // Recheck the credential on every access. A client constructed while the key was set must not
+  // survive a later clear: tests stub the key empty after another file in the same worker has
+  // already constructed the singleton, and a real dispatch would ignore that missing credential.
+  const apiKey = process.env.OPENAI_API_KEY?.trim()
+  if (!apiKey) {
+    throw new MissingModelClientCredentialError('OpenAI')
+  }
+  if (!client || clientKey !== apiKey) {
+    client = new OpenAI({ apiKey, fetch: getLongRunningExternalFetch() })
+    clientKey = apiKey
   }
   return client
 }
