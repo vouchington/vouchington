@@ -21,14 +21,11 @@ const hydratedUrlSelect = `
     CASE
       WHEN upserted.canonical_url_id IS NULL OR upserted.canonical_url_id = upserted.id
         THEN upserted.hostname_id
-      ELSE canonical.hostname_id
+      ELSE NULL
     END AS canonical_hostname_id,
     (TO_JSONB(view_url_hostnames) - 'publicly_introduced_at')::json AS hostname
   FROM upserted
   JOIN view_url_hostnames ON view_url_hostnames.id = upserted.hostname_id
-  LEFT JOIN urls canonical
-    ON canonical.id = upserted.canonical_url_id
-   AND canonical.id <> upserted.id
 `
 
 export async function upsertUrlRows(
@@ -61,7 +58,7 @@ export async function upsertUrlRows(
       values,
       queryOptions,
     )
-    return rows
+    return attachDistinctCanonicalHostnames(rows, queryOptions)
   }
 
   const { rows } = await write<UpsertedUrlRow>(
@@ -105,5 +102,38 @@ export async function upsertUrlRows(
     [...values, contentTypeIds],
     queryOptions,
   )
-  return rows
+  return attachDistinctCanonicalHostnames(rows, queryOptions)
+}
+
+/**
+ * The upsert statement's snapshot is taken before its row-lock wait. A canonical target committed
+ * during that wait is visible only to a later statement.
+ */
+async function attachDistinctCanonicalHostnames(
+  rows: UpsertedUrlRow[],
+  options: QueryOptions,
+): Promise<UpsertedUrlRow[]> {
+  const canonicalIds = [
+    ...new Set(
+      rows.flatMap(row =>
+        row.canonical_url_id && row.canonical_url_id !== row.id ? [row.canonical_url_id] : [],
+      ),
+    ),
+  ]
+  if (canonicalIds.length === 0) return rows
+  const { rows: canonicals } = await write<{ id: string; hostname_id: string }>(
+    `/* addUrls.canonicalHostnames */
+      SELECT id, hostname_id
+      FROM urls
+      WHERE id = ANY($1::uuid[])
+    `,
+    [canonicalIds],
+    options,
+  )
+  const hostnameById = new Map(canonicals.map(row => [row.id, row.hostname_id]))
+  return rows.map(row => {
+    if (!row.canonical_url_id || row.canonical_url_id === row.id) return row
+    const hostnameId = hostnameById.get(row.canonical_url_id)
+    return hostnameId ? { ...row, canonical_hostname_id: hostnameId } : row
+  })
 }
