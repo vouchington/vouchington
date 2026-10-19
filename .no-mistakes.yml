@@ -3424,6 +3424,12 @@ rules:
             - key: rules.no-restricted-properties.0
               kind: equals
               value: error
+            - key: rules.radix
+              kind: equals
+              value: error
+            - key: rules.node/no-path-concat
+              kind: equals
+              value: error
             - key: rules.no-restricted-properties.[]
               kind: object-shape
               match: any
