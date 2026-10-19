@@ -29,7 +29,7 @@
 - No local AST parsers. Vouchington-specific parsing belongs in `vouchington-tooling`;
   generalizable rules belong in `no-mistakes`. Before building AST parsing, ask a human. ast-grep and Oxlint rules may live here; Oxlint plugins belong in
   `vouchington-tooling`.
-- Tests follow the [suite rules](docs/development/tests.md#test-suite-rules). Delete tests of dependencies, including our own packages.
+- Tests follow the [suite rules](docs/development/tests.md#test-suite-rules). Delete tests of dependencies, even our own packages.
 - Tests use synthetic Git refs; keep production pins, checksums, and intentional historical refs exact.
   Test helpers belong only in `test-helpers/**` or immediately below
   a top-level workspace; never add nested helpers or `test-support` directories.
