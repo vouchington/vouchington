@@ -50,8 +50,10 @@ const tool: Tool<CreateReferralLinkArgs, { success: true; referral_link: UserRef
     outputSchema: REFERRAL_LINK_RESULT_SCHEMA,
   },
   function: (currentUser: BasicUser) => async (args: CreateReferralLinkArgs) => {
-    const user = await requireActiveToolUser(currentUser)
-    const programId = await entityIdOrMissing('topic', args.referral_program_id)
+    const [user, programId] = await Promise.all([
+      requireActiveToolUser(currentUser),
+      entityIdOrMissing('topic', args.referral_program_id),
+    ])
     const referral_link = await createUserReferralLink(user, getRequestContentProvenance(), {
       user_id: user.id,
       referral_program_id: programId,
