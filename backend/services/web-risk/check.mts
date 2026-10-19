@@ -63,7 +63,7 @@ export function createWebRiskChecker(state: WebRiskState) {
  * instead of N. Pass `policies` when the caller already read them.
  */
 export async function assertUrlsAllowedByWebRisk(
-  urls: string[],
+  urls: readonly string[],
   options: WebRiskCheckOptions = {},
 ): Promise<void> {
   await assertUrlsAllowedByWebRiskWithState(productionState, urls, options)
