@@ -6,7 +6,6 @@ import {
 import { commandsToInspectForGitHubPolicy } from './github-command-context.mts'
 import { commandCwd } from './github-command-cwd.mts'
 import { commandPrefixAt } from './github-command-position.mts'
-import { findHandRolledStackBaseBlock } from './github-configured-base.mts'
 import { findAutomationMergeBlock } from './github-merge-authority.mts'
 import { parseGhOrGhStackInvocation } from './github-invocation.mts'
 import { findGitHubStackWorkflowBlock } from './github-stack-workflow.mts'
@@ -36,20 +35,6 @@ export function findGitHubWorkflowBlock(
         continue
       }
       const invocationCwd = commandCwd(tokens, index, cwd)
-      if (
-        invocation.area === 'pr' &&
-        (invocation.action === 'create' ||
-          invocation.action === 'new' ||
-          invocation.action === 'edit')
-      ) {
-        const baseBlock = findHandRolledStackBaseBlock(
-          invocation.action,
-          invocation.optionTokens,
-          invocationCwd,
-        )
-        if (baseBlock !== null) return baseBlock
-      }
-
       const stackBlock = findGitHubStackWorkflowBlock(invocation, invocationCwd)
       if (stackBlock !== null) {
         return stackBlock

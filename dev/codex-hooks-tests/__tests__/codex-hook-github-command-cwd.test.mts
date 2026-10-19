@@ -1,13 +1,10 @@
-import { execFileSync } from 'node:child_process'
 import { resolve } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
-import { findPreToolUseBlock } from '../../codex-hooks/policy.mts'
 import { commandCwd } from '../../codex-hooks/policy/github-command-cwd.mts'
 import { commandPrefixAt } from '../../codex-hooks/policy/github-command-position.mts'
 import { tokenizeShellWords } from '../../codex-hooks/policy-helpers.mts'
-import { withTestTempDir } from '../test-temp-root.mts'
 
 const BASE_CWD = '/filaments-session'
 
@@ -91,35 +88,5 @@ describe('commandCwd sequential cd tracking', () => {
 
   it('returns the shell cwd for a word that is an argument, not a command', () => {
     expect(commandCwd(tokensOf('cd /right && echo gh'), 4, BASE_CWD)).toBe('/right')
-  })
-})
-
-describe('Codex hook GitHub policy uses command-local cwd', () => {
-  it('uses gh-merge-base from the cd checkout', async () => {
-    await withTestTempDir('voucha-cd-merge-base-', async dir => {
-      const env = Object.fromEntries(
-        Object.entries(process.env).filter(
-          ([key]) =>
-            key !== 'GIT_DIR' &&
-            key !== 'GIT_WORK_TREE' &&
-            key !== 'GIT_INDEX_FILE' &&
-            key !== 'GIT_PREFIX',
-        ),
-      )
-      execFileSync('git', ['init', '-q', '-b', 'feature-api'], { cwd: dir, env })
-      execFileSync(
-        'git',
-        ['config', '--local', 'branch.feature-api.gh-merge-base', 'feature-auth'],
-        { cwd: dir, env },
-      )
-      expect(
-        findPreToolUseBlock({
-          tool_input: {
-            command: `cd ${dir} && gh pr create --draft --fill`,
-            cwd: BASE_CWD,
-          },
-        })?.reason,
-      ).toContain('PRs must target main')
-    })
   })
 })

@@ -134,7 +134,7 @@ describe('preToolUseOutput — merge disposition serialization', () => {
     ['gh pr merge 1 && git push --force origin main', 'Force pushes are banned'],
     ['git commit --no-verify -m x; gh pr merge 1', '--no-verify'],
     ['HUSKY=0 gh pr merge 1', 'HUSKY'],
-    ['gh pr merge 1; gh pr create --base feature-auth --title t --body x', 'PRs must target main'],
+    ['gh pr merge 1; gh stack submit --open', 'opened as draft first'],
   ])('lets a block anywhere in the command beat the merge allow: %s', (command, reason) => {
     expect(parsed(output(command, ATTENDED_CLAUDE))).toEqual(block(reason))
   })
