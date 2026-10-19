@@ -8,6 +8,7 @@ import {
 } from '../run-services.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { read, write } from '@data-stores/psql'
+import { deletionRequestPriorUsernameQuery } from '@services/data-retention/cleanup-soft-deleted-user'
 import sql from 'sql-template-strings'
 import { runAndCapture, seedUser } from '../run-support.mts'
 
@@ -157,12 +158,14 @@ export async function runUserProfileRoundTripScenarios(): Promise<void> {
     'reorderProfileLinks',
   )
 
-  await write(sql`
+  const { rows: insertedDeletionRequests } = await write<{ user_id: string }>(sql`
     /* explainDeletedUserPriorUsername */
     INSERT INTO user_deletion_requests (user_id, requested_by_id, prior_username)
     VALUES (${seedUser.id}, ${seedUser.id}, ${seedUser.username})
     ON CONFLICT (user_id) DO NOTHING
+    RETURNING user_id
   `)
+  const insertedDeletionRequestUserId = insertedDeletionRequests[0]?.user_id
   registerScenarioContract('deleted-user-prior-username', {
     expectations: [
       {
@@ -176,10 +179,16 @@ export async function runUserProfileRoundTripScenarios(): Promise<void> {
   })
   await runAndCapture(
     'deleted-user-prior-username',
-    () =>
-      read(sql`/* cleanupSoftDeletedUserBatch:priorUsername */
-        SELECT prior_username FROM user_deletion_requests WHERE user_id = ${seedUser.id}`),
+    () => read(deletionRequestPriorUsernameQuery(seedUser.id)),
     undefined,
     'cleanupSoftDeletedUserBatch:priorUsername',
+    {
+      afterCapture: async () => {
+        if (!insertedDeletionRequestUserId) return
+        await write(sql`/* explain-cleanup-deletion-request */
+          DELETE FROM user_deletion_requests WHERE user_id = ${insertedDeletionRequestUserId}
+        `)
+      },
+    },
   )
 }
