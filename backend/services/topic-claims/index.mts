@@ -1,7 +1,6 @@
 export { getTopicClaimState } from './config.mts'
 export { createTopicClaim } from './create.mts'
 export {
-  getTopicClaimById,
   getUnresolvedTopicClaimForClaimant,
   listTopicClaimsForTopic,
   listTopicClaimsForUser,

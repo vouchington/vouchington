@@ -85,7 +85,7 @@ describe('MCP server audience isolation through HTTP', () => {
       expect(response.headers['www-authenticate']).toContain(
         getOAuthResourceMetadataUrl(target.audience),
       )
-      expect(await validateOAuthAccessToken(token, 'brand')).toBeNull()
+      expect(await validateOAuthAccessToken(token, target.audience)).toBeNull()
     },
   )
 
