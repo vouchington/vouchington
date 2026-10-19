@@ -15,17 +15,43 @@ See also:
 
 ---
 
-## Surfaces
+## Audience
 
-Each tool declares one or more surfaces in `meta.surfaces`. The default when absent is
-`['internal']`.
+A tool declares at most one `meta.audience`. With no audience, the tool is internal-only:
+server-side agents can call it, and no external MCP server lists it. The registry test "lists each
+tool on exactly one audience" keeps each exposed tool on a single server, and a grant reaches only
+that server's tools.
 
-`internal` tools are available to server-side agents. The user-facing `mcp` surface serves
-MCP-connected clients; `admin_mcp` is restricted to staff by role.
+| Audience               | `serverName`                      | Route                              | API keys | Per-call audit |
+| ---------------------- | --------------------------------- | ---------------------------------- | -------- | -------------- |
+| `user`                 | `voucha-user-mcp`                 | `/api/v1/mcp`                      | yes      | yes            |
+| `community_moderation` | `voucha-community-moderation-mcp` | `/api/v1/community-moderation/mcp` | yes      | yes            |
+| `brand`                | `voucha-brand-mcp`                | `/api/v1/brand/mcp`                | yes      | yes            |
+| `admin`                | `voucha-admin-mcp`                | `/api/v1/admin/mcp`                | no       | yes            |
+| `legal`                | `voucha-legal-mcp`                | `/api/v1/legal/mcp`                | no       | yes            |
 
-A tool may be on multiple surfaces simultaneously. Most user-facing tools carry `internal` and
-`mcp`; staff tools carry `admin_mcp` in place of `mcp`. A tool must not carry both
-`mcp` and `admin_mcp` if it mutates data — see [Plan Gating](#plan-gating).
+The brand server stays unmounted until the brand topic-claim tools land. User, community
+moderation, and brand accept API keys. Admin and legal take OAuth only and require an
+administrator, which keeps staff authority on a staff session.
+
+## Suspended callers
+
+Authentication rejects a suspended account on every audience except `user`, where a paying owner or
+a `messages:read` holder may continue. The check runs on every request because access-token
+validation and refresh do not look at suspension, and a new authorization still rejects a suspended
+user. Moderation, brand, staff, and legal servers stay closed to a suspended account. After
+authentication, each tool still declares whether a suspended caller may run it.
+
+## Per-call audit
+
+An agent's actions on an account must be answerable. Every server with `auditCalls: true` writes
+`mcp_call_audit_events` before the call runs and fails closed: if the rows cannot be stored, the
+request returns 503 and the call never runs.
+
+## JSON-RPC batches
+
+A request may carry up to 25 JSON-RPC messages (`MAX_AUDITED_MCP_MESSAGES`). A larger batch returns
+413, which bounds the audit rows and route charges one request can spend.
 
 ---
 
@@ -47,40 +73,34 @@ User tool write hints follow `PUT`/`DELETE`, or a required UUID `idempotency_key
 Each MCP server also sends `instructions` on `initialize`
 ([`instructions.mts`](../../../../backend/services/mcp-tools/instructions.mts)) so agents learn how the tools fit together before calling them. A result over the MCP response limit returns a tool error that asks the caller to narrow the query or lower the limit.
 
-A tool may set `meta.outputSchema` (JSON Schema, `object` root) so `tools/call` also returns validated `structuredContent`; see Structured tool results. Every tool exposed on `mcp` or `admin_mcp` declares one, and the [static-backend live catalog check](../../../../ci/check-live-mcp-catalog.mjs) fails for any that does not.
+A tool may set `meta.outputSchema` (JSON Schema, `object` root) so `tools/call` also returns validated `structuredContent`; see Structured tool results. Every tool with a `meta.audience` declares one, and the [static-backend live catalog check](../../../../ci/check-live-mcp-catalog.mjs) fails for any that does not.
 
 ---
 
 ## Plan Gating
 
-`meta.plan` sets the minimum membership plan required to dispatch a tool on the external
-user `mcp` surface (`tools/list` / `tools/call`; enforced by
-[`isToolAllowedForPlan`](../../../../backend/mcp/registry/select.mts) in both
-`listMcpToolsForUser` and `callMcpTool`). Possible values:
+`meta.plan` is the minimum membership required to dispatch a tool. It is enforced only on the `user`
+and `community_moderation` audiences (`tools/list` and `tools/call`, through
+[`isToolAllowedForPlan`](../../../../backend/mcp/registry/select.mts)). Other audiences are free.
+Direct REST routes and internal-agent calls stay outside this gate.
 
-- `'free'` (default when absent) — available to all authenticated users
+- `'free'` (default when absent) — available to every authenticated caller on those audiences
 - `'plus'` — requires Plus or Pro membership
 - `'pro'` — requires Pro membership
 
-Native agents use the same user MCP dispatch boundary over OAuth, so the same plan gate applies:
-every mutating user-MCP tool requires Plus, and a Free member's in-app agent gets the read tools
-only. There is no native exception. Consent always applies. Direct REST routes and internal-agent
-calls are outside this MCP gate. First-party native OAuth clients use the client IDs
-`<site origin>/api/v1/oauth/native-clients/ios`, `/macos`, and `/windows`; see the
-OAuth documentation for redirects and authorization.
+Native agents use the same user audience over OAuth, so the same plan gate applies: every mutating
+tool on the user audience requires a paid plan, and a Free member's in-app agent gets the read tools
+only. There is no native exception. Consent always applies. First-party native OAuth clients use the
+client IDs `<site origin>/api/v1/oauth/native-clients/ios`, `/macos`, and `/windows`; see the OAuth
+documentation for redirects and authorization.
 
-Direct messages require exact private-data grants; umbrella scopes exclude them. Reads remain available
-for Free and suspended members; writes require Plus and an active account. Member text is sanitized
-and fenced. AI chat transcripts remain outside this grant.
+Direct messages require exact private-data grants; umbrella scopes exclude them. Reads remain
+available for Free and suspended members; writes require Plus and an active account. Member text is
+sanitized and fenced. AI chat transcripts remain outside this grant.
 
-The plan must stay unset (or `'free'`) on any tool exposed on `admin_mcp` — a single `plan`
-field cannot express separate per-surface plans, so a mutating tool cannot share the `mcp`
-and `admin_mcp` surfaces until the metadata model can (enforced by the registry invariant
-tests in `backend/mcp/registry/registry.test.mts`).
-
-Every mutating tool currently exposed on the user `mcp` surface requires `plan: 'plus'`; every
-user-`mcp` read tool stays `'free'`. No production tool requires `'pro'` yet — see the generated
-[tool catalog](catalog.md)'s Plan column for the authoritative per-tool value.
+Every mutating tool on the user and community-moderation audiences declares a paid plan; every read
+on those audiences stays `'free'`. The generated [tool catalog](catalog.md) Plan column is the
+per-tool value.
 
 ---
 
@@ -101,14 +121,12 @@ removal. Moderator thread access and subject selection also follow REST.
 
 ## Generated Artifacts
 
-The `static-backend` CI gate runs the [live registry contract check](../../../../ci/check-live-mcp-catalog.mjs) and `pnpm run mcp:catalog -- --check` for the committed artifacts. Run `pnpm run mcp:catalog` from the repository root after adding or modifying tools to regenerate them:
+The `static-backend` CI gate runs the [live registry contract check](../../../../ci/check-live-mcp-catalog.mjs) and `pnpm run mcp:catalog -- --check` for the committed artifacts. Run `pnpm run mcp:catalog` from the repository root after adding or modifying tools to regenerate them.
 
-| Artifact                                                                               | Contents                                                                                                      |
-| -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| [`api-fixtures/v1/mcp.json`](../../../../api-fixtures/v1/mcp.json)                     | Each MCP server's endpoint and the full `tools/list` entry, minimum plan, roles, and REST equivalent per tool |
-| [`catalog.md`](catalog.md)                                                             | The generated tool table between its `BEGIN GENERATED` and `END GENERATED` markers                            |
-| [`api-fixtures/v1/mcp-results.json`](../../../../api-fixtures/v1/mcp-results.json)     | Versioned MCP result cases with tool arguments and structured results validated against the catalog schemas   |
-| [`api-fixtures/v1/mcp-date-time.json`](../../../../api-fixtures/v1/mcp-date-time.json) | Shared date-time acceptance cases for the producer and native clients                                         |
+- [`api-fixtures/v1/mcp.json`](../../../../api-fixtures/v1/mcp.json) — each server's endpoint and the full `tools/list` entry, minimum plan, roles, and REST equivalent per tool
+- [`catalog.md`](catalog.md) — the generated tool table between its `BEGIN GENERATED` and `END GENERATED` markers
+- [`api-fixtures/v1/mcp-results.json`](../../../../api-fixtures/v1/mcp-results.json) — versioned MCP result cases with tool arguments and structured results validated against the catalog schemas
+- [`api-fixtures/v1/mcp-date-time.json`](../../../../api-fixtures/v1/mcp-date-time.json) — shared date-time acceptance cases for the producer and native clients
 
 The live check asserts that each server's catalog equals what `tools/list` returns to a caller
 holding every role, the Pro plan, and every scope, that every listed tool has a title and output schema,
@@ -133,6 +151,12 @@ private docs site at `/mcp/`, alongside the PostgreSQL reference.
   `GET /api/v1/trending-posts` (both in `ts-shared/feed-capabilities`).
 - **Alternatives** — `get_domain_ratings` takes exactly one of `url` or `hostname`; its schema
   enforces this with `minProperties`/`maxProperties`, which MCP argument validation checks.
+
+### Merged tools
+
+A merged tool is one MCP name whose input is `{ option, arguments }`. Every option in that tool
+shares its identity metadata (audience, scopes, plan, and hints). The `manage-my-*` tools below
+keep their own `action` enum.
 
 ### `manage-my-*` tools (`action` enum → REST verb)
 
@@ -161,8 +185,7 @@ the referral link and topic recommendation tools do too; see Relation, Referral 
 
 ## Server-Only Tools Rationale
 
-Tools with `surfaces: ['internal']` are excluded from external MCP surfaces for one of
-these reasons:
+Tools with no `meta.audience` are excluded from external MCP servers for one of these reasons:
 
 - **Internal-only data** — `search_rss_feed_items` reads workflow data that is not exposed
   directly to clients.
