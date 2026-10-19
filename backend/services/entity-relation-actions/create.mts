@@ -8,6 +8,7 @@ import {
 import {
   assertPostMutationAccess,
   assertRelatablePostAccess,
+  loadPostMutationAccess,
 } from '@services/entity-relations/post-access'
 import { refreshEntityRelationVoteStatsFromPrimaryWithFallback } from '@services/elections-votes/entity-relation/refresh-stats'
 import { createEntityRelationElectionTarget } from '@services/elections-votes/entity-relation/target'
@@ -65,10 +66,15 @@ export async function createEntityRelationAction(
   )
 
   const viewer = entityRelationViewerFor(currentUser)
-  const postIds = postParticipantIds(parsed.metadata, parsed.subjectId.id, parsed.objectIds)
+  const postIds = {
+    subjectIds: parsed.metadata.subject_type === 'post' ? [parsed.subjectId.id] : [],
+    objectIds:
+      parsed.metadata.object_type === 'post' ? parsed.objectIds.map(object => object.id) : [],
+  }
   const membershipPlan = getLoadedMembershipPlan(currentUser)
   // ast-grep-ignore: no-three-sequential-awaits -- preserve visibility, user-tag/community admission, relation quota, then delegated-private authorization error order.
-  const relatable = await assertRelatablePostAccess(viewer, postIds)
+  const loaded = await loadPostMutationAccess(viewer, postIds)
+  await assertRelatablePostAccess(viewer, postIds, undefined, loaded)
   const resolvedUserTagTargetId = await resolveUserTagTarget(currentUser, parsed, membershipPlan)
   await assertCommunityAuthorization(currentUser, parsed)
   await assertRelationLimit(currentUser, parsed, membershipPlan)
@@ -78,7 +84,7 @@ export async function createEntityRelationAction(
     postIds,
     undefined,
     undefined,
-    relatable,
+    loaded,
   )
   const relations = await upsertEntityRelation(
     currentUser,
@@ -124,17 +130,6 @@ export async function createEntityRelationAction(
   )
   if (!relation) throw new Error('A created entity relation is hidden from its creator')
   return { relation, viewer, metadata: parsed.metadata }
-}
-
-function postParticipantIds(
-  metadata: { subject_type: string; object_type: string },
-  subjectId: string,
-  objectIds: readonly { id: string }[],
-) {
-  return {
-    subjectIds: metadata.subject_type === 'post' ? [subjectId] : [],
-    objectIds: metadata.object_type === 'post' ? objectIds.map(object => object.id) : [],
-  }
 }
 
 async function resolveUserTagTarget(

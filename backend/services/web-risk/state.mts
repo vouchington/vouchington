@@ -46,16 +46,25 @@ export function createWebRiskState({
 
   /** One pipelined read of the exact-URL clean verdict and the provider cooldown. */
   async function readProviderGate(url: URL): Promise<ProviderGate> {
-    const batch = new Batch(false).get(cleanCacheKey(url)).pttl(cooldownKey)
+    const [gate] = await readProviderGates([url])
+    return gate!
+  }
+
+  /** One pipeline for every URL's clean verdict plus the shared provider cooldown. */
+  async function readProviderGates(urls: readonly URL[]): Promise<ProviderGate[]> {
+    if (urls.length === 0) return []
+    const batch = new Batch(false)
+    for (const url of urls) batch.get(cleanCacheKey(url))
+    batch.pttl(cooldownKey)
     const result = await rateLimiterValkeyClient.exec(batch, true)
     // A non-atomic pipeline only returns null for a conflicted transaction, but the type is shared.
     /* v8 ignore start -- a non-atomic pipeline cannot return null; forced client failure would destabilize shared Valkey state. */
-    if (result === null || result.length < 2) {
-      throw new Error('readProviderGate: valkey batch exec returned no result')
+    if (result === null || result.length < urls.length + 1) {
+      throw new Error('readProviderGates: valkey batch exec returned no result')
     }
     /* v8 ignore stop */
-    const [cleanVerdict, cooldownTtl] = result
-    return { cleanCached: cleanVerdict === '1', coolingDown: Number(cooldownTtl) > 0 }
+    const coolingDown = Number(result[urls.length]) > 0
+    return urls.map((_, index) => ({ cleanCached: result[index] === '1', coolingDown }))
   }
 
   async function setProviderCooldownFromResponse(response: Response): Promise<void> {
@@ -106,6 +115,7 @@ export function createWebRiskState({
   return {
     isLocallyRateLimited,
     readProviderGate,
+    readProviderGates,
     setProviderCooldownFromResponse,
     setProviderCooldown,
     cacheCleanVerdict,

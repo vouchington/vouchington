@@ -46,7 +46,10 @@ async function getEntityRelationElectionForRoute(id: string) {
 async function getEntityRelationElectionForVoteRoute(id: string) {
   const election = await getEntityRelationElectionForRoute(id)
   if (!election) return null
-  const userTagRelation = await getUserTagRelationById(election.id)
+  const userTagRelation =
+    election.target.relationTable === 'relation__user__category__topic'
+      ? await getUserTagRelationById(election.id)
+      : null
   return { ...election, userTagRelation }
 }
 
@@ -78,7 +81,10 @@ const entityRelationVoteOptions: CreateVoteHandlerOptions = {
     }
   },
   assertClearAccess: (_ctx, currentUser) => assertNotSuspended(currentUser),
-  onVote: async (_currentUser, relationId) => refreshUserTagVoteStats(relationId),
+  onVote: async (_currentUser, relationId, _score, entity) => {
+    if (!(entity as EntityRelationVoteRouteEntity).userTagRelation) return
+    await refreshUserTagVoteStats(relationId, { confirmed: true })
+  },
   onNoop: (_currentUser, relationId) => refreshVoteStatsAfterNoop(relationId),
 }
 
@@ -94,7 +100,8 @@ function createEntityRelationVoteHandler(isClear: boolean) {
           }
         : {}),
       getCurrentVote: async (userId, entityId) => {
-        // Resolve inside the request lock; the preflight lookup predates that boundary.
+        // Resolve inside the request lock. A relation soft-deleted after preflight must be
+        // invisible here, or a neutral PUT writes a zero vote and returns 204 instead of 422.
         resolvedTarget = await resolveEntityRelationElectionTargetById(entityId)
         return resolvedTarget
           ? getEntityRelationElectionVote(userId, entityId, resolvedTarget)

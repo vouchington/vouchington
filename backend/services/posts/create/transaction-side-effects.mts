@@ -14,8 +14,6 @@ import { createCommunityPostReview } from '@services/communities/publications/ad
 import { createPostRevision, computePostChanges } from '@services/post-revisions'
 import { syncPostHashtagCategoriesInTransaction } from '../hashtags.mts'
 import { syncPostExplicitTopicCategoriesInTransaction } from '../explicit-topic-categories.mts'
-import { upsertEntityRelation } from '@services/entity-relations'
-import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
 import { castPostCategoryVotesInTransaction } from '../hashtag-votes.mts'
 import { syncPostImagePlacements } from '../image-placements.mts'
 
@@ -43,10 +41,9 @@ export async function applyPostTransactionSideEffects({
       ? createCommunityPostReview(creator.id, post.id, post.community_id, options, 'unfinalized')
       : Promise.resolve(null)
   const changes = computePostChanges(null, post)
-  const [, , , , , review] = await Promise.all([
+  const [, , , , review] = await Promise.all([
     insertReviewRatings({ options, postId: post.id, postType, updates }),
     insertDataPointTopics({ options, postId: post.id, postType, updates }),
-    insertDataPointTopicRelations({ creator, options, post, postType, updates }),
     typeof updates.slug === 'string' || updates.title
       ? createPostSlug(post, updates.slug, options)
       : Promise.resolve(),
@@ -102,40 +99,6 @@ async function insertDataPointTopics({
   if (postType !== 'data_point') return
   const dpTopicIds = (updates.structured_data as { topic_ids: string[] }).topic_ids
   await insertPostDataPointTopics(postId, dpTopicIds, options)
-}
-
-/**
- * Data-point topic relations are part of the submitted post, so persist relation rows in the
- * admission transaction. The category-vote helper applies their owner's vote in the same tx.
- */
-async function insertDataPointTopicRelations({
-  creator,
-  options,
-  post,
-  postType,
-  updates,
-}: {
-  creator: PrivateUser
-  options: QueryOptions
-  post: { id: string }
-  postType: string
-  updates: CreatePostInput
-}): Promise<void> {
-  if (postType !== 'data_point') return
-  const topicIds = (updates.structured_data as { topic_ids: string[] }).topic_ids
-  if (topicIds.length === 0) return
-  const relation = getEntityRelationMetadataOrThrow({
-    subjectType: 'post',
-    objectType: 'topic',
-    predicate: 'category',
-  })
-  await upsertEntityRelation(
-    creator,
-    relation,
-    { id: post.id },
-    topicIds.map(id => ({ id })),
-    { ...options, vote: false, enqueueVoteStats: false, suppressNotificationReconcile: true },
-  )
 }
 
 async function insertImages({

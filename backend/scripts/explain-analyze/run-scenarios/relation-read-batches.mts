@@ -17,9 +17,11 @@ import { caches } from '@services/entity-cache/caches'
 import { getPostAndModerationVotes } from '@services/elections-votes/shared/post-moderation-votes'
 import { assertUrlsHaveNoBlockedHostnames } from '@services/urls/assert-hostname-not-blocked'
 import { runRelatablePostAccessScenario } from './relatable-post-access.mts'
+import { runRelationRoundTripScenarios } from './relation-round-trips.mts'
 
 // Budgets are the larger of both plan modes and capture passes, plus 20% rounded up.
 export async function runRelationReadBatchScenarios(): Promise<void> {
+  await runRelationRoundTripScenarios()
   await runRelatablePostAccessScenario()
   registerScenarioContract('url-blocked-policy-with-values', {
     expectations: [

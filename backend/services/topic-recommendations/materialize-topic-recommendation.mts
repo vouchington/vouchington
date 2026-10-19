@@ -52,26 +52,24 @@ export async function replaceTopicRecommendationHostnames(
   hostnameIds: string[],
   options: QueryOptions,
 ): Promise<void> {
+  // Deleted ids and inserted ids are disjoint, so the CTE cannot miss a row the insert adds.
   await write(
     sql`/* replaceTopicRecommendationHostnames */
-      DELETE FROM post_topic_recommendation_hostnames
-      WHERE post_id = ${postId}
-    `,
-    options,
-  )
-
-  if (hostnameIds.length === 0) return
-
-  await write(
-    sql`/* replaceTopicRecommendationHostnames */
+      WITH removed AS (
+        DELETE FROM post_topic_recommendation_hostnames
+        WHERE post_id = ${postId}
+          AND hostname_id <> ALL(${hostnameIds}::uuid[])
+        RETURNING hostname_id
+      )
       INSERT INTO post_topic_recommendation_hostnames (post_id, hostname_id)
-      SELECT input.post_id, input.hostname_id
-      FROM (
-        SELECT ${postId}::uuid AS post_id, hostname_id
-        FROM UNNEST(${hostnameIds}::uuid[]) AS hostnames(hostname_id)
-      ) AS input
-      ORDER BY input.post_id ASC NULLS LAST, input.hostname_id ASC NULLS LAST
+      SELECT ${postId}::uuid, hostnames.hostname_id
+      FROM UNNEST(${hostnameIds}::uuid[]) AS hostnames(hostname_id)
+      WHERE NOT EXISTS (
+        SELECT 1 FROM removed WHERE removed.hostname_id = hostnames.hostname_id
+      )
+      ORDER BY hostnames.hostname_id
       ON CONFLICT (post_id, hostname_id) DO NOTHING
+      RETURNING hostname_id
     `,
     options,
   )

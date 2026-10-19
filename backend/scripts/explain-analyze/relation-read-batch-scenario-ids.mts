@@ -7,4 +7,10 @@ export const RELATION_READ_BATCH_SCENARIO_IDS = [
   'cached-post-moderation-elections',
   'post-moderation-viewer-votes',
   'url-blocked-policy-with-values',
+  'topic-recommendation-pending-delete',
+  'topic-recommendation-update-write',
+  'topic-recommendation-hostname-replace',
+  'topic-landing-page-hostname-conflict',
+  'bidirectional-relation-insert',
+  'post-category-relation-insert',
 ] as const

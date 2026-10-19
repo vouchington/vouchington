@@ -1,6 +1,6 @@
 import assert from 'http-assert'
-import type { QueryOptions } from '@data-stores/psql/types'
 import type { EntityRelationMetadata } from './metadata.mts'
+import type { UpsertEntityRelationsOptions } from './upsert-helpers-types.mts'
 import { getRegisteredBlockedHostnameGuard } from './blocked-hostname-guard-registry.mts'
 import { getRegisteredReferralLinkGuard } from './referral-link-guard-registry.mts'
 import { getEntityId, type EntityIdentifier, type UpsertEntityTypes } from './upsert-helpers.mts'
@@ -9,7 +9,7 @@ export async function assertUrlObjectsAreValid(
   relation: EntityRelationMetadata,
   objects: Array<UpsertEntityTypes | EntityIdentifier>,
   userId: string | null,
-  options?: QueryOptions,
+  options?: UpsertEntityRelationsOptions,
 ): Promise<void> {
   if (relation.object_type !== 'url') return
   // No relation config today points a url-object relation at a null (remote-actor) creator —
@@ -18,7 +18,9 @@ export async function assertUrlObjectsAreValid(
   assert(userId, 500, 'URL-object entity relations require a non-null creator')
 
   const urlIds = objects.map(getEntityId)
-  await getRegisteredBlockedHostnameGuard()(urlIds, userId)
+  if (!options?.skipBlockedHostnameGuard) {
+    await getRegisteredBlockedHostnameGuard()(urlIds, userId)
+  }
   if (relation.predicate === 'related') {
     await getRegisteredReferralLinkGuard()(urlIds, userId, options)
   }

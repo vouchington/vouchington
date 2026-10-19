@@ -1,16 +1,20 @@
 import type { TransactionQuery } from '@data-stores/psql'
-import type sql from 'sql-template-strings'
+import type { SQLStatement } from 'sql-template-strings'
 
-/** Inserts the two stored directions after their user-subject fence is held. */
+type StoredRelationRow = { direction?: string; ordinality?: unknown }
+
+/** Inserts both stored directions in the statement `lockBidirectionalRelationPairs` already serializes. */
 export async function insertBidirectionalRelationRows<T>(
   query: TransactionQuery,
-  forwardQuery: ReturnType<typeof sql>,
-  reverseQuery: ReturnType<typeof sql>,
+  statement: SQLStatement,
 ): Promise<{ relations: T[]; reverseRelations: T[] }> {
-  const { rows } = await query(forwardQuery)
-  const { rows: reverseRows } = await query(reverseQuery)
-  return {
-    relations: rows as T[],
-    reverseRelations: reverseRows as T[],
+  const { rows } = await query(statement)
+  const relations: T[] = []
+  const reverseRelations: T[] = []
+  for (const row of rows as Array<T & StoredRelationRow>) {
+    const { direction, ordinality: _ordinality, ...stored } = row
+    if (direction === 'reverse') reverseRelations.push(stored as T)
+    else relations.push(stored as T)
   }
+  return { relations, reverseRelations }
 }

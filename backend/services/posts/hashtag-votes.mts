@@ -1,13 +1,16 @@
 import { write, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { upsertEntityRelation } from '@services/entity-relations'
 import {
   getEntityRelationMetadataOrThrow,
   type EntityRelationMetadata,
 } from '@services/entity-relations/metadata'
 import type { PrivateUser } from '@services/users/types'
-import { upsertEntityRelationElectionVotes } from '@services/elections-votes/entity-relation/votes-upsert'
 import { getEntityRelationVoteTableName } from '@voucha/types/entities/entity-relations-metadata'
+import {
+  ensureTopicCategoryRelations,
+  loadActorAliasRelations,
+  writeCategoryVotes,
+} from './category-vote-cast.mts'
 import { refreshPostCategoryVoteStatsInTransaction } from './category-vote-stats.mts'
 import { getRemovedPositivePostHashtagRelations } from './hashtag-vote-removals.mts'
 
@@ -24,61 +27,57 @@ export async function castPostCategoryVotesInTransaction(
     objectType: 'topic_alias',
     predicate: 'category',
   })
+  const topicRelation = getEntityRelationMetadataOrThrow({
+    subjectType: 'post',
+    objectType: 'topic',
+    predicate: 'category',
+  })
   // ast-grep-ignore: no-three-sequential-awaits -- category reads and writes are ordered on one transaction to preserve deterministic vote replacement
-  const activeAliasIds = await getActivePostHashtagRelationObjectIds(
-    query,
-    aliasRelation.table_name,
-    postId,
-    actor.id,
-  )
+  const activeAliasRelations = await loadActorAliasRelations(query, aliasRelation, actor, postId)
   const removedAliasRelations = await getRemovedPositivePostHashtagRelations(
     actor.id,
     aliasRelation,
     postId,
     { query },
   )
-  await writeVotes(query, actor.id, aliasRelation, removedAliasRelations, 0)
-  const activeAliasRelations = await upsertEntityRelation(
+  const topicIds = await getPersistedPostTopicIds(query, postId)
+  const retainedTopicRelations = await ensureTopicCategoryRelations(
+    query,
     actor,
-    aliasRelation,
-    { id: postId },
-    activeAliasIds.map(id => ({ id })),
-    { query, enqueueVoteStats: false, vote: false, suppressNotificationReconcile: true },
+    topicRelation,
+    postId,
+    topicIds,
   )
-  await writeVotes(query, actor.id, aliasRelation, activeAliasRelations, 1)
   collectRelationIds(relationIdsByTable, aliasRelation.table_name, [
     ...removedAliasRelations,
     ...activeAliasRelations,
   ])
-
-  const topicRelation = getEntityRelationMetadataOrThrow({
-    subjectType: 'post',
-    objectType: 'topic',
-    predicate: 'category',
-  })
-  const topicIds = await getPersistedPostTopicIds(query, postId)
-  const retainedTopicRelations = await upsertEntityRelation(
-    actor,
-    topicRelation,
-    { id: postId },
-    topicIds.map(id => ({ id })),
-    { query, enqueueVoteStats: false, vote: false, suppressNotificationReconcile: true },
-  )
   collectRelationIds(relationIdsByTable, topicRelation.table_name, retainedTopicRelations)
 
-  if (topicCategoryOwnerId && (await isActiveUser(query, topicCategoryOwnerId))) {
-    // ast-grep-ignore: no-three-sequential-awaits -- removed and retained topic votes are ordered within the transaction
-    const removedTopicRelations = await getRemovedPositiveTopicRelations(
-      query,
-      topicCategoryOwnerId,
-      topicRelation,
-      postId,
-      topicIds,
-    )
-    await writeVotes(query, topicCategoryOwnerId, topicRelation, removedTopicRelations, 0)
-    await writeVotes(query, topicCategoryOwnerId, topicRelation, retainedTopicRelations, 1)
+  const activeTopicOwnerId =
+    topicCategoryOwnerId && (await isActiveUser(query, topicCategoryOwnerId))
+      ? topicCategoryOwnerId
+      : null
+  const removedTopicRelations = activeTopicOwnerId
+    ? await getRemovedPositiveTopicRelations(
+        query,
+        activeTopicOwnerId,
+        topicRelation,
+        postId,
+        topicIds,
+      )
+    : []
+  if (removedTopicRelations.length > 0) {
     collectRelationIds(relationIdsByTable, topicRelation.table_name, removedTopicRelations)
   }
+  await writeCategoryVotes(query, actor.id, activeTopicOwnerId, {
+    aliasRelation,
+    removedAliasRelations,
+    activeAliasRelations,
+    topicRelation,
+    removedTopicRelations,
+    retainedTopicRelations,
+  })
 
   await refreshPostCategoryVoteStatsInTransaction(
     query,
@@ -108,25 +107,6 @@ async function getPersistedPostTopicIds(
   return rows.map(row => row.topic_id)
 }
 
-async function getActivePostHashtagRelationObjectIds(
-  query: TransactionQuery,
-  tableName: string,
-  postId: string,
-  contributorId: string,
-): Promise<string[]> {
-  const statement = sql`/* castPostCategoryVotesInTransaction.aliases */ SELECT DISTINCT relation.object_id FROM `
-  statement.append(tableName)
-  statement.append(sql` relation
-    JOIN post_topic_alias_sources source
-      ON source.post_id = relation.subject_id
-      AND source.topic_alias_id = relation.object_id
-    WHERE relation.subject_id = ${postId}
-      AND relation.deleted_at IS NULL
-      AND source.contributor_user_id = ${contributorId}`)
-  const { rows } = await write<{ object_id: string }>(statement, { query })
-  return rows.map(row => row.object_id)
-}
-
 async function getRemovedPositiveTopicRelations(
   query: TransactionQuery,
   voterId: string,
@@ -149,21 +129,6 @@ async function getRemovedPositiveTopicRelations(
       AND NOT relation.object_id = ANY(${retainedTopicIds}::uuid[])`)
   const { rows } = await write<{ id: string }>(statement, { query })
   return rows
-}
-
-async function writeVotes(
-  query: TransactionQuery,
-  voterId: string,
-  relation: EntityRelationMetadata,
-  relations: Array<{ id?: string }>,
-  score: 0 | 1,
-): Promise<void> {
-  const votes = relations.flatMap(item => (item.id ? [{ entityId: item.id, score }] : []))
-  if (votes.length === 0) return
-  await upsertEntityRelationElectionVotes(voterId, votes, undefined, relation, {
-    query,
-    enqueueVoteStats: false,
-  })
 }
 
 function collectRelationIds(

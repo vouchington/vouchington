@@ -21,6 +21,6 @@ export async function runRelatablePostAccessScenario(): Promise<void> {
         throw new Error('Both roles must retain the seeded public post')
     },
     undefined,
-    'getRelatablePostIds',
+    'assertPostMutationAccess',
   )
 }

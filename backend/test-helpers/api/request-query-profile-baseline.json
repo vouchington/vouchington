@@ -1,12 +1,5 @@
 [
   {
-    "annotation": "addUrls",
-    "route": null,
-    "maxCount": null,
-    "reason": "Topic recommendation approval creates a root URL for each proposed hostname",
-    "issue": 3121
-  },
-  {
     "annotation": "allocateCommunityAgentPromptSlot",
     "route": null,
     "maxCount": null,
@@ -26,8 +19,9 @@
     "annotation": "assertPostMutationAccess",
     "route": null,
     "maxCount": null,
-    "reason": "Relation creation reloads effective root and privacy after transaction publication locks to reject a concurrent root or visibility change",
-    "issue": 3121
+    "reason": "The preflight and the re-read after the publication lock must see a root or privacy change committed while waiting.",
+    "permanent": true,
+    "code": "backend/services/entity-relations/post-access-visibility.mts:36"
   },
   {
     "annotation": "assertReferralProgramExists",
@@ -36,13 +30,6 @@
     "reason": "Two allowed mechanisms: the check at backend/services/referral-program-link-validations/create-and-link.mts:76 runs before slug validation and the insert, so it sets which 4xx a request gets (a bad or duplicate slug with a missing program); the check at backend/services/topics/validation.mts:127-146 runs after the validation-row insert and must see that new row",
     "permanent": true,
     "code": "backend/services/referral-program-link-validations/create-and-link.mts:76"
-  },
-  {
-    "annotation": "assertUrlsHaveNoBlockedHostnames",
-    "route": null,
-    "maxCount": null,
-    "reason": "Approval checks the root URL of each proposed hostname against blocked hostnames",
-    "issue": 3121
   },
   {
     "annotation": "associateCopyrightEmailIntakeWithNotice:decision",
@@ -70,15 +57,9 @@
     "annotation": "blockHostname_findPostRelatedUrlPosts",
     "route": null,
     "maxCount": null,
-    "reason": "Each bounded discovery follows the preceding publication-locked relation deletion and must find only the remaining active rows",
-    "issue": 3121
-  },
-  {
-    "annotation": "buildInsertQuery",
-    "route": null,
-    "maxCount": null,
-    "reason": "Bidirectional relations write forward then reverse under the pair lock so overlapping inputs observe prior resurrection and newly-active state",
-    "issue": 3121
+    "reason": "Discovery takes no lock because publication locks must come before relation-row locks. The terminal read catches rows committed during the lock wait.",
+    "permanent": true,
+    "code": "backend/services/hostname-blocking/soft-delete-relations.mts:81"
   },
   {
     "annotation": "canViewDelegatedPostsBatch",
@@ -152,13 +133,6 @@
     "issue": 3336
   },
   {
-    "annotation": "createTopicRecommendationLinkRelation",
-    "route": null,
-    "maxCount": null,
-    "reason": "Pending #3121 design decision: conflict checks stay fresh after earlier hostname URL/provider/relation writes; batching requires a shared hostname-ownership serialization protocol.",
-    "issue": 3121
-  },
-  {
     "annotation": "createTopicRevision",
     "route": null,
     "maxCount": null,
@@ -172,13 +146,6 @@
     "reason": "The authenticator insert runs after fn_lock_active_user_for_mutation so account deletion cannot race factor creation",
     "permanent": true,
     "code": "backend/services/totp/create.mts:25"
-  },
-  {
-    "annotation": "deletePendingRecommendation",
-    "route": null,
-    "maxCount": null,
-    "reason": "Pending-review admission is reread under FOR UPDATE before ordered extension and owning-post deletion writes",
-    "issue": 3121
   },
   {
     "annotation": "deleteProfileLink",
@@ -223,8 +190,9 @@
     "annotation": "fetchElectionVoteRowsByUser",
     "route": null,
     "maxCount": null,
-    "reason": "Relation, vote and topic lookups repeat per target",
-    "issue": 3121
+    "reason": "The caller's own vote is re-read under the election request lock after the pre-lock ballot admission. Visibility changes do not take that lock.",
+    "permanent": true,
+    "code": "backend/services/elections-votes/shared/vote-queries.mts:34"
   },
   {
     "annotation": "findAutomaticWithholdingSwitchOnTime",
@@ -243,13 +211,6 @@
     "code": "backend/services/moderation-training/automod-feedback.mts:48-70"
   },
   {
-    "annotation": "getBlocklistedDomainKeys",
-    "route": null,
-    "maxCount": null,
-    "reason": "RSS source validation repeats blocklist fallback across protocol/provider attempts; remaining freshness and sequencing work is tracked in #3121",
-    "issue": 3121
-  },
-  {
     "annotation": "getCommunityWithViewerById",
     "route": null,
     "maxCount": null,
@@ -264,13 +225,6 @@
     "reason": "PATCH is_default rereads the owned page after acquiring the per-user landing-page advisory lock, so a concurrent deletion or ownership change is rejected before default writes (backend/services/my/landing-pages/reads.mts:14-15, backend/services/my/landing-pages/set-default.mts:26)",
     "permanent": true,
     "code": "backend/services/my/landing-pages/reads.mts:14"
-  },
-  {
-    "annotation": "getLocalHostnamePolicies",
-    "route": null,
-    "maxCount": null,
-    "reason": "Relation, vote and topic lookups repeat per target",
-    "issue": 3121
   },
   {
     "annotation": "getMembershipPurchaseIntent",
@@ -313,13 +267,6 @@
     "code": "backend/services/communities/ban-evasion/confirm.mts:44"
   },
   {
-    "annotation": "getRelatablePostIds",
-    "route": null,
-    "maxCount": null,
-    "reason": "Relation creation rechecks both participant roles after publication locks to reject visibility changes while waiting",
-    "issue": 3121
-  },
-  {
     "annotation": "getRssFeedsByIdBatch",
     "route": "GET /api/v1/rss-feeds/trending",
     "maxCount": 2,
@@ -343,13 +290,6 @@
     "code": "backend/services/topics/update.mts:95"
   },
   {
-    "annotation": "getTopicDataPointInsights",
-    "route": null,
-    "maxCount": null,
-    "reason": "Relation, vote and topic lookups repeat per target",
-    "issue": 3121
-  },
-  {
     "annotation": "getTopicsByAnyBatch",
     "route": null,
     "maxCount": null,
@@ -364,13 +304,6 @@
     "reason": "Link creation rechecks the stored URL in the execution transaction after CAPTCHA and the committed capacity transaction, so a URL removed in between is rejected before the post insert",
     "permanent": true,
     "code": "backend/services/posts/create/validation.mts:66"
-  },
-  {
-    "annotation": "getUserTagRelationById",
-    "route": null,
-    "maxCount": null,
-    "reason": "The committed vote append is followed by a fresh active-tag check before primary stats refresh, preserving concurrent deletion state",
-    "issue": 3121
   },
   {
     "annotation": "grantConsent",
@@ -424,13 +357,6 @@
     "issue": 3336
   },
   {
-    "annotation": "lockActiveUserForEntityRelationElectionVoteMutation",
-    "route": null,
-    "maxCount": null,
-    "reason": "Each separately committed relation-vote append transaction must acquire its own active-user admission fence",
-    "issue": 3121
-  },
-  {
     "annotation": "lockApiKeyOwner",
     "route": null,
     "maxCount": null,
@@ -479,18 +405,12 @@
     "code": "backend/services/copyright-notices/repeat-infringer-incidents.mts:138"
   },
   {
-    "annotation": "lockEntityRelationElectionVoteMutations",
-    "route": null,
-    "maxCount": null,
-    "reason": "Each append transaction acquires sorted advisory vote locks; bidirectional direction ordering prevents inverse-call deadlocks",
-    "issue": 3121
-  },
-  {
     "annotation": "lockEntityRelationVoteStatsPostPublicationScopes",
     "route": null,
     "maxCount": null,
-    "reason": "Each bounded stats-update transaction acquires publication locks before relation row locks; committed prior chunks cannot lend their locks",
-    "issue": 3121
+    "reason": "Publication scopes are locked before the relation FOR UPDATE, and the lookup is chunked with bounded iteration.",
+    "permanent": true,
+    "code": "backend/services/elections-votes/entity-relation/vote-stats-batch-publication-locks.mts:33"
   },
   {
     "annotation": "lockExistingTopicAliasPublicationScopes",
@@ -690,13 +610,6 @@
     "code": "backend/services/contribution-gating/admission.mts:49-51"
   },
   {
-    "annotation": "replaceTopicRecommendationHostnames",
-    "route": null,
-    "maxCount": null,
-    "reason": "Replacement deletes existing hostname membership before inserting the new sorted set in the same transaction",
-    "issue": 3121
-  },
-  {
     "annotation": "replayClientGeneratedTurn",
     "route": null,
     "maxCount": null,
@@ -708,8 +621,9 @@
     "annotation": "resolveEntityRelationElectionTargetById",
     "route": null,
     "maxCount": null,
-    "reason": "Relation, vote and topic lookups repeat per target",
-    "issue": 3121
+    "reason": "The in-lock resolve sees a soft-delete committed after preflight. Reusing that earlier target lets a neutral PUT write a zero vote and return 204 instead of 422.",
+    "permanent": true,
+    "code": "backend/services/elections-votes/entity-relation/resolve-election-target.mts:28"
   },
   {
     "annotation": "resolvePublicationPostScopeLiveOwner",
@@ -805,15 +719,17 @@
     "annotation": "updateEntityRelationElectionVoteStatsFromPrimaryBatch",
     "route": null,
     "maxCount": null,
-    "reason": "Each bounded stats chunk updates locked rows and captures publication transitions in its own transaction",
-    "issue": 3121
+    "reason": "Stats refresh is chunked with bounded iteration, and publication scopes are locked before the relation FOR UPDATE.",
+    "permanent": true,
+    "code": "backend/services/elections-votes/entity-relation/vote-stats-batch.mts:131"
   },
   {
     "annotation": "updateTopicRecommendation",
     "route": null,
     "maxCount": null,
-    "reason": "The pending-state FOR UPDATE snapshot supplies omitted patch fields before ordered post and extension updates",
-    "issue": 3121
+    "reason": "The FOR UPDATE snapshot feeds materialization, so the locked read stays ahead of the folded write.",
+    "permanent": true,
+    "code": "backend/services/topic-recommendations/update-topic-recommendation.mts:37"
   },
   {
     "annotation": "upsertAuthenticatedSession",
@@ -822,13 +738,6 @@
     "reason": "The session upsert runs after the user advisory lock and user-agent persistence, seeing any revocation or deletion that won the lock",
     "permanent": true,
     "code": "backend/services/jwt-session/user-sessions.mts:25"
-  },
-  {
-    "annotation": "upsertEntityRelationElectionVotes",
-    "route": null,
-    "maxCount": null,
-    "reason": "Sorted bidirectional append transactions acquire admission and advisory locks; overlapping writes must observe the previously appended score",
-    "issue": 3121
   },
   {
     "annotation": "upsertPostPublicationDirtyWork",
@@ -841,8 +750,9 @@
     "annotation": "upsertUrlHostnames",
     "route": null,
     "maxCount": null,
-    "reason": "Relation, vote and topic lookups repeat per target",
-    "issue": 3121
+    "reason": "Within one call the INSERT parent-block snapshot is taken after the promotion-lock wait, so the preceding read stays.",
+    "permanent": true,
+    "code": "backend/services/urls-hostnames/upsert.mts:105"
   },
   {
     "annotation": "upsertUserAgentString",

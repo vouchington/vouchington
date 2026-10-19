@@ -2,6 +2,7 @@
   "version": 1,
   "capture_api": "backend/services/post-publication/capture.mts",
   "captured_writers": [
+    "backend/services/posts/category-relation-insert.mts",
     "backend/services/posts/prepare-post-with-community-reviews.mts",
     "backend/services/posts/update.mts",
     "backend/services/posts/delete.mts",
@@ -88,6 +89,10 @@
     {
       "path": "backend/services/communities/update-input.mts",
       "reason": "builds the bounded update statement executed by the captured transactional writer"
+    },
+    {
+      "path": "backend/services/entity-relations/build-bidirectional-insert-query.mts",
+      "reason": "builds the bidirectional relation insert executed by the captured entity-relation upsert"
     },
     {
       "path": "backend/services/images/delete.mts",

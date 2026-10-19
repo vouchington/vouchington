@@ -3632,6 +3632,9 @@ importers:
       '@services/stories':
         specifier: workspace:^
         version: link:../services/stories
+      '@services/topic-recommendations':
+        specifier: workspace:^
+        version: link:../services/topic-recommendations
       '@services/topics':
         specifier: workspace:^
         version: link:../services/topics
@@ -10074,6 +10077,9 @@ importers:
       '@services/urls':
         specifier: workspace:^
         version: link:../urls
+      '@services/urls-domains-blacklist':
+        specifier: workspace:^
+        version: link:../urls-domains-blacklist
       '@services/urls-domains-robots':
         specifier: workspace:^
         version: link:../urls-domains-robots

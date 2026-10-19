@@ -52,6 +52,7 @@
     "@services/topic-revisions": "workspace:^",
     "@services/topics": "workspace:^",
     "@services/urls": "workspace:^",
+    "@services/urls-domains-blacklist": "workspace:^",
     "@services/urls-domains-robots": "workspace:^",
     "@services/urls-hostnames": "workspace:^",
     "@services/users": "workspace:^",

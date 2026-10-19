@@ -5,6 +5,7 @@ import {
   insertTestBankAccount,
   createTestUserWithAge,
   CONTRIBUTING_USER_AGE_MS,
+  getEntityRelation,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 
@@ -85,6 +86,9 @@ describe('posts.data-points', () => {
       expect(post.structured_data.credit_limit).toEqual({ amount: 1_500_000, currency: 'usd' })
       expect(post.structured_data.application_method).toBe('online')
       expect(post.structured_data.schema_version).toBe(1)
+      expect(
+        await getEntityRelation('relation__post__category__topic', post.id, cardTopicId),
+      ).toHaveLength(1)
     })
 
     it('creates a bank account data point post', async () => {

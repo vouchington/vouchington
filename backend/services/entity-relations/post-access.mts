@@ -8,11 +8,12 @@ import {
   buildViewerPostDiscoveryEligibilityFilter,
 } from '@modules/feed-query-builders'
 import { postEligibilityFor, type EntityRelationViewer } from './viewer.mts'
-import { selectAccessiblePostIdsByRole } from './post-access-visibility.mts'
 import {
-  isDelegatedPrivateRootDenied,
-  readPostMutationAccessSnapshots,
-} from './post-mutation-snapshots.mts'
+  selectPostMutationAccess,
+  type PostMutationAccess,
+  type PostMutationSnapshot,
+} from './post-access-visibility.mts'
+import { isDelegatedPrivateRootDenied } from './post-mutation-snapshots.mts'
 
 /**
  * Whether object posts are listed (discovery rules, like feeds) or named by id (direct rules, like
@@ -81,12 +82,16 @@ export function buildObjectPostAccessFilter(
  * The subject and object posts a new relation may name, read from the primary so a post created
  * moments ago is visible. Uses the same filters as the write's read-back.
  */
-export async function getRelatablePostIds(
+export async function loadPostMutationAccess(
   viewer: EntityRelationViewer,
   posts: { readonly subjectIds: readonly string[]; readonly objectIds: readonly string[] },
   options?: QueryOptions,
-): Promise<{ subjectIds: Set<string>; objectIds: Set<string> }> {
-  return selectAccessiblePostIdsByRole(
+): Promise<PostMutationAccess> {
+  const identifiers = [...posts.subjectIds, ...posts.objectIds]
+  if (identifiers.length > 0 && !identifiers.every(isUUID)) {
+    throw createHttpError(404, 'Not found')
+  }
+  return selectPostMutationAccess(
     [
       {
         role: 'subject',
@@ -103,6 +108,15 @@ export async function getRelatablePostIds(
   )
 }
 
+export async function getRelatablePostIds(
+  viewer: EntityRelationViewer,
+  posts: { readonly subjectIds: readonly string[]; readonly objectIds: readonly string[] },
+  options?: QueryOptions,
+): Promise<{ subjectIds: Set<string>; objectIds: Set<string> }> {
+  const access = await loadPostMutationAccess(viewer, posts, options)
+  return { subjectIds: access.subjectIds, objectIds: access.objectIds }
+}
+
 /**
  * Rechecks ordinary post visibility before inspecting delegated private-content ownership. Call
  * this after the canonical publication scopes are locked: a root can become private or change
@@ -114,26 +128,11 @@ export async function assertPostMutationAccess(
   posts: { readonly subjectIds: readonly string[]; readonly objectIds: readonly string[] },
   options?: QueryOptions,
   expectedRootIds?: ReadonlyMap<string, string>,
-  preflight?: Awaited<ReturnType<typeof getRelatablePostIds>>,
+  loaded?: PostMutationAccess,
 ): Promise<Map<string, string>> {
-  if (preflight) assertRelatablePostIds(posts, preflight)
-  else await assertRelatablePostAccess(viewer, posts, options)
-  const postIds = [...new Set([...posts.subjectIds, ...posts.objectIds])]
-  if (postIds.length === 0) return new Map()
-  const snapshots = await getPostMutationAccessSnapshots(postIds, options)
-  if (expectedRootIds) {
-    for (const snapshot of snapshots) {
-      if (expectedRootIds.get(snapshot.id) !== snapshot.root_post_id) {
-        throw createHttpError(404, 'Not found')
-      }
-    }
-  }
-  if (authority.kind === 'delegated') {
-    for (const post of snapshots) {
-      if (isDelegatedPrivateRootDenied(authority, post)) throw createHttpError(403, 'Forbidden')
-    }
-  }
-  return new Map(snapshots.map(snapshot => [snapshot.id, snapshot.root_post_id]))
+  const access = loaded ?? (await loadPostMutationAccess(viewer, posts, options))
+  assertRelatablePostIds(posts, access)
+  return authorizePostMutationSnapshots(authority, [...access.snapshots.values()], expectedRootIds)
 }
 
 /** Ordinary existence/visibility preflight, deliberately separate from private diagnostics. */
@@ -141,12 +140,13 @@ export async function assertRelatablePostAccess(
   viewer: EntityRelationViewer,
   posts: { readonly subjectIds: readonly string[]; readonly objectIds: readonly string[] },
   options?: QueryOptions,
+  loaded?: { subjectIds: Set<string>; objectIds: Set<string> },
 ): Promise<Awaited<ReturnType<typeof getRelatablePostIds>>> {
   const identifiers = [...posts.subjectIds, ...posts.objectIds]
   if (!identifiers.every(isUUID)) {
     throw createHttpError(404, 'Not found')
   }
-  const relatable = await getRelatablePostIds(viewer, posts, options)
+  const relatable = loaded ?? (await getRelatablePostIds(viewer, posts, options))
   assertRelatablePostIds(posts, relatable)
   return relatable
 }
@@ -163,8 +163,22 @@ function assertRelatablePostIds(
   }
 }
 
-async function getPostMutationAccessSnapshots(postIds: readonly string[], options?: QueryOptions) {
-  const rows = await readPostMutationAccessSnapshots(postIds, options)
-  if (rows.length !== postIds.length) throw createHttpError(404, 'Not found')
-  return rows
+function authorizePostMutationSnapshots(
+  authority: PostMutationAuthority,
+  snapshots: readonly PostMutationSnapshot[],
+  expectedRootIds?: ReadonlyMap<string, string>,
+): Map<string, string> {
+  if (expectedRootIds) {
+    for (const snapshot of snapshots) {
+      if (expectedRootIds.get(snapshot.id) !== snapshot.root_post_id) {
+        throw createHttpError(404, 'Not found')
+      }
+    }
+  }
+  if (authority.kind === 'delegated') {
+    for (const post of snapshots) {
+      if (isDelegatedPrivateRootDenied(authority, post)) throw createHttpError(403, 'Forbidden')
+    }
+  }
+  return new Map(snapshots.map(snapshot => [snapshot.id, snapshot.root_post_id]))
 }
