@@ -57,13 +57,3 @@ export async function createTopicRecommendationUrlRelations(
     urlId: url.id,
   }))
 }
-
-export async function createTopicRecommendationUrlRelation(
-  currentUser: PrivateUser,
-  topic: Topic,
-  url: string,
-  options: UrlRelationOptions,
-): Promise<UrlRelationResult> {
-  const [result] = await createTopicRecommendationUrlRelations(currentUser, topic, [url], options)
-  return result ?? { relation: null, urlId: null }
-}
