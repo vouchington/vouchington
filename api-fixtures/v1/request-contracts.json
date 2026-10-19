@@ -21712,8 +21712,11 @@
             },
             "urls": {
               "items": {
+                "maxLength": 2083,
                 "type": "string"
               },
+              "maxItems": 500,
+              "minItems": 1,
               "type": "array"
             }
           },
@@ -37534,6 +37537,7 @@
             "INVALID_FEED_CONTENT",
             "FEED_FETCH_TIMEOUT",
             "CONTRIBUTION_LIMIT_EXCEEDED",
+            "ACCOUNT_SUSPENDED",
             "IMPORT_FAILED"
           ],
           "type": "string"
@@ -49779,6 +49783,19 @@
     },
     "GET:/api/v1/my/import/rss-feeds/:importId": {
       "$ref": "#/components/schemas/UserRssFeedImport"
+    },
+    "POST:/api/v1/my/import/rss-feeds": {
+      "additionalProperties": false,
+      "properties": {
+        "import": {
+          "$ref": "#/components/schemas/UserRssFeedImportSummary"
+        },
+        "status_url": {
+          "type": "string"
+        }
+      },
+      "required": ["import", "status_url"],
+      "type": "object"
     },
     "GET:/api/v1/my/messages": {
       "additionalProperties": false,

@@ -415,12 +415,12 @@
       },
       "submit_rss_feed": {
         "measured": {
-          "list": 1286,
-          "core": 495
+          "list": 3358,
+          "core": 1460
         },
         "max": {
-          "list": 2000,
-          "core": 1000
+          "list": 4000,
+          "core": 2000
         }
       },
       "start_discussion": {

@@ -1,6 +1,6 @@
 import { write } from '@data-stores/psql'
 import assert from 'http-assert'
-import { buildPageInfo, decodeScopedUuidCursor } from '@modules/pagination'
+import { buildPageInfo, createPaginationParser, decodeScopedUuidCursor } from '@modules/pagination'
 import { isUUID } from '@modules/utils'
 import sql from 'sql-template-strings'
 import { getUserImportExportConfig } from './config.mts'
@@ -12,6 +12,12 @@ import {
   toImportRowResult,
   toImportSummary,
 } from './rss-feed-import-types.mts'
+
+// A page never exceeds `import_status_page_size`; `limit` can only narrow it.
+export const rssFeedImportStatusPagination = createPaginationParser({
+  cursor: { type: 'simple', paramName: 'after' },
+  limit: { default: 100, max: 1000 },
+})
 
 type StatusRow = UserRssFeedImportBatchRow &
   Pick<UserRssFeedImportRow, 'input_url' | 'outcome' | 'error_message' | 'rss_feed_id'> & {

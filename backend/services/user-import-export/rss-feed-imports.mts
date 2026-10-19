@@ -1,7 +1,10 @@
 import type { BasicUser } from '@services/users/types'
 import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import { getPrivateUserByAny } from '@services/users/get'
+import { isAdminUser } from '@services/users/authorization'
 import { UnrecoverableError } from '@vouchington/queue-errors'
+import { enqueueUserRssFeedImportDispatch } from '@queues/user-rss-feed-imports/enqueues'
+import onError from '@modules/on-error'
 import { getUserImportExportConfig } from './config.mts'
 import {
   importSingleRssFeed,
@@ -21,7 +24,27 @@ import { assertWithinRssFeedImportDailyLimit } from '@services/contribution-gati
 import { withRssFeedImportRowLock } from './rss-feed-import-row-lock.mts'
 type CompletedImportRssFeedStatus = Exclude<ImportRssFeedStatus, 'error'>
 
-export { getRssFeedImport, getRssFeedImportSummary } from './rss-feed-import-status.mts'
+export {
+  getRssFeedImport,
+  getRssFeedImportSummary,
+  rssFeedImportStatusPagination,
+} from './rss-feed-import-status.mts'
+
+/** One normalized URL is one row, so a repeated feed is reported once. */
+function dedupedImportUrls(urls: string[]): string[] {
+  const seen = new Set<string>()
+  const deduped: string[] = []
+  for (const url of urls) {
+    const trimmed = url.trim()
+    if (!trimmed) continue
+    const validation = validateRssFeedUrl(trimmed)
+    const canonical = validation.valid ? validation.canonicalUrl : trimmed
+    if (seen.has(canonical)) continue
+    seen.add(canonical)
+    deduped.push(canonical)
+  }
+  return deduped
+}
 
 export async function submitRssFeedImport(
   currentUser: BasicUser,
@@ -29,16 +52,36 @@ export async function submitRssFeedImport(
   urls: string[],
   options: { should_follow_imported_feeds?: boolean } = {},
 ): Promise<CreateUserRssFeedImportResult> {
-  const trimmedUrls = urls.flatMap(url => {
-    const trimmed = url.trim()
-    return trimmed ? [trimmed] : []
-  })
-  const totalRows = trimmedUrls.length
-  if (totalRows === 0) throw new UnrecoverableError('At least one URL is required')
+  const dedupedUrls = dedupedImportUrls(urls)
+  if (dedupedUrls.length === 0) throw new UnrecoverableError('At least one URL is required')
 
   const should_follow_imported_feeds = options.should_follow_imported_feeds !== false
 
-  return createRssFeedImport(currentUser.id, provenance, trimmedUrls, should_follow_imported_feeds)
+  return createRssFeedImport(currentUser.id, provenance, dedupedUrls, should_follow_imported_feeds)
+}
+
+/**
+ * The route and the MCP import option share this submit. Administrators do not follow unless they
+ * opt in; every other caller follows.
+ */
+export async function submitAndDispatchRssFeedImport(
+  currentUser: BasicUser,
+  provenance: ContentProvenance,
+  urls: string[],
+  options: { should_follow_imported_feeds?: boolean } = {},
+): Promise<CreateUserRssFeedImportResult & { status_url: string }> {
+  const should_follow_imported_feeds =
+    options.should_follow_imported_feeds ?? !isAdminUser(currentUser)
+  const submitted = await submitRssFeedImport(currentUser, provenance, urls, {
+    should_follow_imported_feeds,
+  })
+  // One dispatcher pages the rows onto the queue. The import is already committed, so a failed
+  // enqueue is reported and the recovery sweep dispatches it; the caller still gets the import.
+  await enqueueUserRssFeedImportDispatch(submitted.import.id).catch(onError)
+  return {
+    import: submitted.import,
+    status_url: `/api/v1/my/import/rss-feeds/${submitted.import.id}`,
+  }
 }
 
 export async function processRssFeedImportRow(
@@ -74,9 +117,16 @@ async function processLockedRssFeedImportRow(
 
   if (row.completed_at || row.failed_at) return
 
-  const user = await getPrivateUserByAny(batch.user_id)
+  const user = await getPrivateUserByAny(batch.user_id, { readOnly: false })
   if (!user) {
     await updateRssFeedImportRowFailed(row.id, 'Import user not found', { isFinalAttempt: true })
+    return
+  }
+  // Suspension after submit must not create sources or follows for the rows still pending.
+  if (user.suspended_at) {
+    await updateRssFeedImportRowFailed(row.id, 'Your account has been suspended', {
+      isFinalAttempt: true,
+    })
     return
   }
 

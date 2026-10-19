@@ -12863,7 +12863,7 @@
           "tool": {
             "name": "submit_rss_feed",
             "title": "Submit RSS Feed",
-            "description": "submit: Submit a feed URL for asynchronous processing. Poll status_url for the result. Follow defaults to true.",
+            "description": "submit: Submit a feed URL for asynchronous processing. Poll status_url for the result. Follow defaults to true.\nimport: Import a JSON list of up to 500 feed URLs. Poll import_status with import.id. Follow defaults to false for administrators.\nimport_status: Read one page of an RSS feed import. import_id is the import id. after is page_info.end_cursor. limit is 1 to 1000.",
             "inputSchema": {
               "type": "object",
               "oneOf": [
@@ -12889,15 +12889,163 @@
                   },
                   "required": ["option", "arguments"],
                   "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["import"]
+                    },
+                    "arguments": {
+                      "type": "object",
+                      "properties": {
+                        "rss_feed_urls": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "maxLength": 2083
+                          },
+                          "minItems": 1,
+                          "maxItems": 500
+                        },
+                        "follow": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": ["rss_feed_urls"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["import_status"]
+                    },
+                    "arguments": {
+                      "type": "object",
+                      "properties": {
+                        "import_id": {
+                          "type": "string"
+                        },
+                        "after": {
+                          "type": "string"
+                        },
+                        "limit": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 1000
+                        }
+                      },
+                      "required": ["import_id"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
                 }
               ],
               "$defs": {}
             },
             "outputSchema": {
               "type": "object",
-              "additionalProperties": false,
-              "properties": {
-                "import": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/S2"
+                },
+                {
+                  "$ref": "#/$defs/S2"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "import": {
+                      "$ref": "#/$defs/S1"
+                    },
+                    "page_info": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "end_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "has_next_page": {
+                          "type": "boolean"
+                        },
+                        "start_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        }
+                      },
+                      "required": ["end_cursor", "has_next_page", "start_cursor"],
+                      "type": "object"
+                    },
+                    "rows": {
+                      "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "entity_id": {
+                            "type": "string"
+                          },
+                          "error_code": {
+                            "enum": [
+                              "INVALID_URL",
+                              "INVALID_FEED_CONTENT",
+                              "FEED_FETCH_TIMEOUT",
+                              "CONTRIBUTION_LIMIT_EXCEEDED",
+                              "ACCOUNT_SUSPENDED",
+                              "IMPORT_FAILED"
+                            ],
+                            "type": "string"
+                          },
+                          "id": {
+                            "type": "string"
+                          },
+                          "input": {
+                            "type": "string"
+                          },
+                          "topic_slug": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "enum": [
+                              "already_following",
+                              "error",
+                              "followed",
+                              "imported",
+                              "pending",
+                              "source_created"
+                            ],
+                            "type": "string"
+                          }
+                        },
+                        "required": ["id", "input", "status"],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": ["import", "page_info", "rows"],
+                  "type": "object"
+                }
+              ],
+              "$defs": {
+                "S1": {
                   "additionalProperties": false,
                   "properties": {
                     "completed_at": {
@@ -12940,11 +13088,20 @@
                   ],
                   "type": "object"
                 },
-                "status_url": {
-                  "type": "string"
+                "S2": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "import": {
+                      "$ref": "#/$defs/S1"
+                    },
+                    "status_url": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["import", "status_url"]
                 }
-              },
-              "required": ["import", "status_url"]
+              }
             },
             "annotations": {
               "readOnlyHint": false,
@@ -12954,7 +13111,9 @@
             "_meta": {
               "voucha/requiredScopes": ["rss-feeds:read", "rss-feeds:write"],
               "voucha/optionOutputPointers": {
-                "submit": "#"
+                "submit": "#/anyOf/0",
+                "import": "#/anyOf/1",
+                "import_status": "#/anyOf/2"
               }
             }
           },
@@ -12964,6 +13123,14 @@
             {
               "method": "POST",
               "path": "/api/v1/rss-feeds"
+            },
+            {
+              "method": "POST",
+              "path": "/api/v1/my/import/rss-feeds"
+            },
+            {
+              "method": "GET",
+              "path": "/api/v1/my/import/rss-feeds/:importId"
             }
           ]
         },

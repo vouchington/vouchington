@@ -112,7 +112,7 @@ function expectedGrantBudget(
     }
   }
   if (audience === 'user' && grant === 'Plus') {
-    return { count: actual.count, list: 222000, core: 110000, output: 240000 }
+    return { count: actual.count, list: 228000, core: 110000, output: 240000 }
   }
   return {
     count: actual.count,

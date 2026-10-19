@@ -6,16 +6,13 @@ import { parseCsvToUrls } from '@modules/csv'
 import { parseOpmlOutlines } from '@services/user-import-export/opml'
 import {
   getRssFeedImport,
-  submitRssFeedImport,
+  rssFeedImportStatusPagination,
+  submitAndDispatchRssFeedImport,
 } from '@services/user-import-export/rss-feed-imports'
-import { enqueueUserRssFeedImportDispatch } from '@queues/user-rss-feed-imports/enqueues'
 import { getUserImportExportConfig } from '@services/user-import-export/config'
-import onError from '@modules/on-error'
 import { isUUID } from '@modules/utils'
-import { createPaginationParser } from '@modules/pagination'
 import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
-import { isAdminUser } from '@services/users'
 import { apiResponse } from '@vouchington/utils/api-response-contract'
 import { apiQuery } from '../../api-query-contract.mts'
 import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
@@ -49,48 +46,29 @@ app.route('/api/v1/my/import/rss-feeds').post(async (ctx: Context) => {
 
   const body = await parseJsonBody<ImportRssFeedsRequest>(
     ctx,
-    // The body limit, not a row count, bounds an import; it is read per request so an operator's
-    // change applies at once.
+    // OPML and CSV stay bounded by this byte cap. `{ urls }` also has its contract list cap. The
+    // cap is read per request so an operator's change applies at once.
     `${getUserImportExportConfig().import_max_body_bytes}b`,
   )
   validateRequestContract(ctx, 'POST:/api/v1/my/import/rss-feeds', { body })
 
-  const should_follow_imported_feeds =
-    body.should_follow_imported_feeds ?? !isAdminUser(currentUser)
   // The schema fixes which source key is present and its type; counts are semantic checks.
   const urls = parseImportUrls(ctx, body)
   ctx.assert(urls.length > 0, 400, 'At least one URL is required')
 
-  const submitted = await submitRssFeedImport(currentUser, provenance, urls, {
-    should_follow_imported_feeds,
+  const submitted = await submitAndDispatchRssFeedImport(currentUser, provenance, urls, {
+    should_follow_imported_feeds: body.should_follow_imported_feeds,
   })
-  // One dispatcher pages the rows onto the queue, so a large import never floods it. The import is
-  // already committed, so a failed enqueue is reported and the recovery sweep dispatches it; the
-  // caller gets the import instead of an error that would invite a duplicate submission.
-  await enqueueUserRssFeedImportDispatch(submitted.import.id).catch(onError)
-
-  const statusUrl = `/api/v1/my/import/rss-feeds/${submitted.import.id}`
   ctx.setStatus(201)
-  ctx.set('Location', statusUrl)
-  ctx.json(
-    apiResponse('POST:/api/v1/my/import/rss-feeds', {
-      import: submitted.import,
-      status_url: statusUrl,
-    }),
-  )
-})
-
-// A page never exceeds `import_status_page_size`; `limit` can only narrow it.
-const importStatusPagination = createPaginationParser({
-  cursor: { type: 'simple', paramName: 'after' },
-  limit: { default: 100, max: 1000 },
+  ctx.set('Location', submitted.status_url)
+  ctx.json(apiResponse('POST:/api/v1/my/import/rss-feeds', submitted))
 })
 
 app.route('/api/v1/my/import/rss-feeds/:importId').get(async (ctx: Context) => {
-  apiQuery('GET:/api/v1/my/import/rss-feeds/:importId', importStatusPagination)
+  apiQuery('GET:/api/v1/my/import/rss-feeds/:importId', rssFeedImportStatusPagination)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/my/import/rss-feeds/:importId')
-  const page = parseRuntimePagination(importStatusPagination, ctx.query)
-  const query = prepareQueryForValidation(ctx.query, importStatusPagination.queryContract)
+  const page = parseRuntimePagination(rssFeedImportStatusPagination, ctx.query)
+  const query = prepareQueryForValidation(ctx.query, rssFeedImportStatusPagination.queryContract)
   if (ctx.query.limit !== undefined) query.limit = page.limit
   validateRequestContract(ctx, 'GET:/api/v1/my/import/rss-feeds/:importId', {
     path: ctx.params,

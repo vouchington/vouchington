@@ -40,6 +40,23 @@ describe('findApiHintConflicts', () => {
       { tool: 'discussion', conflict: 'idempotentHint should be false' },
     ])
   })
+  it('allows the RSS import status read on the submit write tool', () => {
+    const tool = fixtureTool('submit_rss_feed', WRITE, ['POST'])
+    tool.meta!.api = [
+      { method: 'POST', path: '/api/v1/rss-feeds' },
+      { method: 'POST', path: '/api/v1/my/import/rss-feeds' },
+      { method: 'GET', path: '/api/v1/my/import/rss-feeds/:importId' },
+    ]
+    expect(findApiHintConflicts([tool])).toEqual([])
+    tool.meta!.api = [
+      { method: 'POST', path: '/api/v1/rss-feeds' },
+      { method: 'GET', path: '/api/v1/rss-feeds' },
+    ]
+    expect(findApiHintConflicts([tool])).toEqual([
+      { tool: 'submit_rss_feed', conflict: 'a write tool names a GET operation' },
+    ])
+  })
+
   it('recognizes feed submission service idempotence without inferring it for other POST routes', () => {
     const tool = fixtureTool('submit', IDEMPOTENT_WRITE, ['POST'])
     tool.meta!.api = [{ method: 'POST', path: '/api/v1/rss-feeds' }]

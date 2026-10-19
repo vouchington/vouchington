@@ -14,6 +14,7 @@ const SOURCE_IMPORT_ERROR_MESSAGE_KEYS = {
   FEED_FETCH_TIMEOUT: 'extracted.api.errorHelpers.theRequestTimedOutPleaseTry_e5893a0d',
   CONTRIBUTION_LIMIT_EXCEEDED:
     'extracted.posts.contributionGatedCta.youHaveReachedTheCurrentContribution_b3fa428c',
+  ACCOUNT_SUSPENDED: 'extracted.accountStatus.page.yourAccountHasBeenSuspended_b51655b9',
   IMPORT_FAILED: 'extracted.api.errorHelpers.anErrorOccurredPleaseTryAgain_9c170dda',
 } as const satisfies Record<RssFeedImportErrorCode, MessageKey>
 
