@@ -35,7 +35,8 @@ function hintConflict(
     return methods.every(method => method === 'GET')
       ? null
       : 'a read-only tool names a non-GET operation'
-  if (methods.includes('GET')) return 'a write tool names a GET operation'
+  if (methods.includes('GET') && !rssImportStatusRead(api))
+    return 'a write tool names a GET operation'
   if (staffAction)
     return typeof annotations.idempotentHint === 'boolean'
       ? null
@@ -46,6 +47,16 @@ function hintConflict(
     (!annotations.idempotentHint || idempotent)
     ? null
     : `idempotentHint should be ${idempotent}`
+}
+
+// submit_rss_feed stays one write tool. Its import_status option reads the import it just created.
+function rssImportStatusRead(api: readonly ToolApiEndpoint[]): boolean {
+  const reads = api.filter(route => route.method === 'GET')
+  return (
+    reads.length > 0 &&
+    api.some(route => route.method !== 'GET') &&
+    reads.every(route => route.path === '/api/v1/my/import/rss-feeds/:importId')
+  )
 }
 
 function hasRequiredIdempotencyKey(tool: Tool): boolean {
