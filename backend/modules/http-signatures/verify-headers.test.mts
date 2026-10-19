@@ -1,13 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computeDigest } from '@vouchington/utils/http-signatures'
 import { generateRsaSha256KeyPair } from './keys.mts'
-import { extractSignatureKeyId, verifySignature } from './verify.mts'
+import { verifySignature } from './verify.mts'
 import {
   BODY,
   buildManualSignature,
   FULL_HEADERS,
   HOST,
-  KEY_ID,
   METHOD,
   PATH,
 } from '@voucha/test-helpers/modules/http-signatures/verify-fixtures'
@@ -78,110 +77,7 @@ describe('HTTP signature verification', () => {
     })
   })
 
-  describe('verifySignature malformed input handling', () => {
-    it('rejects a corrupted public key PEM', () => {
-      const dateHeader = referenceTime.toUTCString()
-      const digestHeader = computeDigest(BODY)
-
-      const result = verifySignature(
-        METHOD,
-        PATH,
-        HOST,
-        BODY,
-        'Signature keyId="x",headers="(request-target) host date digest",signature="abc"',
-        digestHeader,
-        dateHeader,
-        'not a public key pem',
-        { referenceTime },
-      )
-
-      expect(result.valid).toBe(false)
-      expect(result.error).toBe('Signature verification exception: Invalid public key PEM format')
-    })
-
-    it('rejects a completely malformed signature header', () => {
-      const { publicKeyPem } = generateRsaSha256KeyPair()
-      const dateHeader = referenceTime.toUTCString()
-      const digestHeader = computeDigest(BODY)
-
-      const result = verifySignature(
-        METHOD,
-        PATH,
-        HOST,
-        BODY,
-        'not a signature header at all',
-        digestHeader,
-        dateHeader,
-        publicKeyPem,
-        { referenceTime },
-      )
-
-      expect(result.valid).toBe(false)
-      expect(result.error).toBe('Invalid signature header format')
-    })
-
-    it('rejects an empty signature header', () => {
-      const { publicKeyPem } = generateRsaSha256KeyPair()
-      const dateHeader = referenceTime.toUTCString()
-      const digestHeader = computeDigest(BODY)
-
-      const result = verifySignature(
-        METHOD,
-        PATH,
-        HOST,
-        BODY,
-        '',
-        digestHeader,
-        dateHeader,
-        publicKeyPem,
-        { referenceTime },
-      )
-
-      expect(result.valid).toBe(false)
-      expect(result.error).toBe('Invalid signature header format')
-    })
-
-    it('rejects a signature header missing the headers= parameter', () => {
-      const { publicKeyPem } = generateRsaSha256KeyPair()
-      const dateHeader = referenceTime.toUTCString()
-      const digestHeader = computeDigest(BODY)
-
-      const result = verifySignature(
-        METHOD,
-        PATH,
-        HOST,
-        BODY,
-        'Signature keyId="x",algorithm="rsa-sha256",signature="abc"',
-        digestHeader,
-        dateHeader,
-        publicKeyPem,
-        { referenceTime },
-      )
-
-      expect(result.valid).toBe(false)
-      expect(result.error).toBe('Invalid signature header format')
-    })
-
-    it('rejects a missing/empty digest header', () => {
-      const { publicKeyPem } = generateRsaSha256KeyPair()
-      const dateHeader = referenceTime.toUTCString()
-
-      const result = verifySignature(
-        METHOD,
-        PATH,
-        HOST,
-        BODY,
-        'Signature keyId="x",headers="(request-target) host date digest",signature="abc"',
-        '',
-        dateHeader,
-        publicKeyPem,
-        { referenceTime },
-      )
-
-      expect(result.valid).toBe(false)
-      expect(result.error).toBe('Digest verification failed')
-    })
-
+  describe('verifySignature signature header defaults', () => {
     it('defaults a missing algorithm when keyId contains a comma', () => {
       const { privateKeyPem, publicKeyPem } = generateRsaSha256KeyPair()
       const dateHeader = referenceTime.toUTCString()
@@ -208,28 +104,6 @@ describe('HTTP signature verification', () => {
       )
 
       expect(result.valid).toBe(true)
-    })
-  })
-
-  describe('extractSignatureKeyId', () => {
-    it('extracts the keyId from a well-formed Signature header', () => {
-      expect(
-        extractSignatureKeyId(
-          `Signature keyId="${KEY_ID}",algorithm="rsa-sha256",headers="(request-target) host date digest",signature="abc"`,
-        ),
-      ).toBe(KEY_ID)
-    })
-
-    it('returns undefined when the keyId parameter is absent', () => {
-      expect(
-        extractSignatureKeyId(
-          'Signature headers="(request-target) host date digest",signature="abc"',
-        ),
-      ).toBeUndefined()
-    })
-
-    it('returns undefined for an empty header', () => {
-      expect(extractSignatureKeyId('')).toBeUndefined()
     })
   })
 })

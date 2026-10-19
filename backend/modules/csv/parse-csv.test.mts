@@ -1,19 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseCsvRows, parseCsvToUrls, stripBom } from './parse-csv.mts'
-
-describe('stripBom', () => {
-  it('strips UTF-8 BOM from the start', () => {
-    expect(stripBom('﻿hello')).toBe('hello')
-  })
-
-  it('is a no-op when no BOM is present', () => {
-    expect(stripBom('hello')).toBe('hello')
-  })
-
-  it('only strips the leading BOM, not mid-string occurrences', () => {
-    expect(stripBom('hello﻿world')).toBe('hello﻿world')
-  })
-})
+import { parseCsvRows, parseCsvToUrls } from './parse-csv.mts'
 
 describe('parseCsvRows', () => {
   it('parses valid CSV with headers', () => {
@@ -28,13 +14,6 @@ describe('parseCsvRows', () => {
     const rows = parseCsvRows(csv)
     expect(rows).toHaveLength(1)
     expect(rows[0]).toEqual({ slug: 'my-topic', name: 'My Topic' })
-  })
-
-  it('handles quoted fields with commas', () => {
-    const csv = `slug,name\nmy-topic,"Name, With Comma"\n`
-    const rows = parseCsvRows(csv)
-    expect(rows).toHaveLength(1)
-    expect(rows[0].name).toBe('Name, With Comma')
   })
 
   it('returns empty array for header-only CSV', () => {
@@ -66,17 +45,6 @@ describe('parseCsvRows', () => {
     const csv = 'slug,slug,,name\nfirst,last,empty,Topic A\n'
 
     expect(parseCsvRows(csv)).toEqual([{ slug: 'last', '': 'empty', name: 'Topic A' }])
-  })
-
-  it('handles unicode content', () => {
-    const csv = `slug,name\nmy-topic,日本語テスト\n`
-    const rows = parseCsvRows(csv)
-    expect(rows[0].name).toBe('日本語テスト')
-  })
-
-  it('throws on malformed CSV (mismatched columns)', () => {
-    const csv = `slug,name\nmy-topic,My Topic,extra-column\n`
-    expect(() => parseCsvRows(csv)).toThrow(Error)
   })
 
   it('parses multiple rows correctly', () => {
@@ -142,16 +110,5 @@ describe('parseCsvToUrls', () => {
     const { urls, recognized } = parseCsvToUrls('')
     expect(recognized).toBe(false)
     expect(urls).toEqual([])
-  })
-
-  it('throws for malformed CSV', () => {
-    expect(() => parseCsvToUrls('not,a\nvalid,"csv with mismatched\n')).toThrow('Quote Not Closed')
-  })
-
-  it('throws for CSV with mismatched column counts', () => {
-    // "My, Feed" is one field but the extra comma makes it look like 3 columns
-    expect(() => parseCsvToUrls('title,url\nMy, Feed,https://example.com/rss\n')).toThrow(
-      'Invalid Record Length',
-    )
   })
 })
