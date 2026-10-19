@@ -1,9 +1,5 @@
 import type { TransactionQuery } from '@data-stores/psql'
-import type {
-  PostPublicationChange,
-  PostPublicationFootprint,
-  PostPublicationScope,
-} from './types.mts'
+import type { PostPublicationChange } from './types.mts'
 import { retainCurrentRssFeedPublicationKeys } from './capture-rss-feeds.mts'
 import {
   retainPostPublicationKeys,
@@ -35,21 +31,6 @@ export async function retainPostPublicationImpactKeys(
   ]
   await retainPostPublicationKeys(query, dirtyWorkId, keys)
 }
-export async function retainPostPublicationFootprintKeys(
-  query: TransactionQuery,
-  dirtyWorkId: string,
-  footprint: PostPublicationFootprint | undefined,
-): Promise<void> {
-  if (!footprint) return
-  const keys: PostPublicationRetainedKey[] = []
-  addUuidKey(keys, 'identity_author', footprint.priorAuthorUserId)
-  addTextKey(keys, 'identity_author_username', footprint.priorAuthorUsername)
-  addUuidKey(keys, 'identity_community', footprint.priorCommunityId)
-  addUuidKey(keys, 'impact_post', footprint.priorRootId)
-  addTextKey(keys, 'identity_post_slug', footprint.priorPostSlug)
-  addTextKey(keys, 'identity_community_slug', footprint.priorCommunitySlug)
-  await retainPostPublicationKeys(query, dirtyWorkId, keys)
-}
 export async function retainRecordedPublicationKeys(
   query: TransactionQuery,
   dirtyWorkId: string,
@@ -71,38 +52,6 @@ export async function retainRecordedPublicationKeys(
     addTextKey(keys, 'identity_community_slug', rows[0]?.slug ?? undefined)
   }
   if (keys.length > 0) await retainPostPublicationKeys(query, dirtyWorkId, keys)
-}
-export async function retainCurrentPostPublicationKeys(
-  query: TransactionQuery,
-  dirtyWorkId: string,
-  scope: PostPublicationScope,
-): Promise<void> {
-  const keys: PostPublicationRetainedKey[] = []
-  switch (scope.type) {
-    case 'author':
-      addUuidKey(keys, 'identity_author', scope.authorUserId)
-      break
-    case 'community':
-      addUuidKey(keys, 'identity_community', scope.communityId)
-      break
-    case 'rss_feed':
-      await retainCurrentRssFeedPublicationKeys(query, [
-        { id: dirtyWorkId, rss_feed_identity_id: scope.rssFeedId },
-      ])
-      return
-    case 'post':
-      return
-    default:
-      break
-  }
-  if (scope.type === 'community') {
-    const { rows } = await query<{ slug: string | null }>(
-      `/* getCurrentCommunityPublicationKeys */ SELECT community.slug FROM post_publication_community_identities identity JOIN communities community ON community.id = identity.community_id WHERE identity.id = $1`,
-      [scope.communityId],
-    )
-    addTextKey(keys, 'identity_community_slug', rows[0]?.slug ?? undefined)
-  }
-  await retainPostPublicationKeys(query, dirtyWorkId, keys)
 }
 function recordedPublicationKeys(change: PostPublicationChange): PostPublicationRetainedKey[] {
   const keys: PostPublicationRetainedKey[] = [

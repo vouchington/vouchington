@@ -5,7 +5,4 @@ export * from './capture-story-topics.mts'
 export * from './capture-deletions.mts'
 export * from './capture-rss-feeds.mts'
 export * from './capture-topic-merge.mts'
-export {
-  retainHardDeletedPostPublication,
-  retainUserCascadeHardDeletedPosts,
-} from './capture-hard-delete.mts'
+export { retainUserCascadeHardDeletedPosts } from './capture-hard-delete.mts'
