@@ -7,7 +7,13 @@ export {
 } from './audit.mts'
 export { authenticateMcpBearer } from './authenticate.mts'
 export { buildMcpBearerChallenge } from './challenge.mts'
-export { exceedsMcpAuditBatchLimit, planMcpCalls, type McpCallPlan } from './classify-calls.mts'
+export {
+  exceedsMcpAuditBatchLimit,
+  mcpNotificationShapedToolCall,
+  mcpToolCallIsDispatched,
+  planMcpCalls,
+  type McpCallPlan,
+} from './classify-calls.mts'
 export { handleMcpHttpRequest } from './handle-request.mts'
 export { buildMcpContextUser } from './list-tools.mts'
 export { findMcpStepUpScopes } from './resolve-tool-call.mts'

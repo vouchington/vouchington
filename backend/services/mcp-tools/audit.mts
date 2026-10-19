@@ -3,23 +3,10 @@ import { write } from '@data-stores/psql'
 import { getOAuthResourceUrl } from '@services/oauth-authorization-server'
 import { encryptSecret } from '@modules/token-secrets'
 import { v7 as uuidv7 } from 'uuid'
+import type { McpCallAuditOutcome } from '@voucha/types/mcp-call-audit-outcome'
 import type { McpServerConfig } from './config.mts'
 
-// Mirrors the mcp_call_audit_events.outcome CHECK. `accepted` means the call passed authentication
-// and authorization and was handed to the MCP server; `tool_error` is the follow-up row for an
-// admitted tool call that then failed.
-export type McpCallAuditOutcome =
-  | 'accepted'
-  | 'tool_error'
-  | 'invalid_request'
-  | 'invalid_arguments'
-  | 'not_found'
-  | 'role_denied'
-  | 'plan_denied'
-  | 'suspended'
-  | 'scopes_undeclared'
-  | 'insufficient_scope'
-  | 'rate_limited'
+export type { McpCallAuditOutcome } from '@voucha/types/mcp-call-audit-outcome'
 
 // Only validated copyright decision calls may carry a rationale; arbitrary arguments and results
 // remain absent from this event.

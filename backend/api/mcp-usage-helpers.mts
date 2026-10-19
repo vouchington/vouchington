@@ -1,5 +1,16 @@
 import type { Context } from '@jongleberry/api-server'
-import type { authenticateMcpBearer, McpCallAuditEvent, McpServerConfig } from '@services/mcp-tools'
+import {
+  createMcpToolCallAnalytics,
+  type McpToolCallAnalytics,
+  type McpToolCallContext,
+} from '@services/analytics'
+import {
+  mcpNotificationShapedToolCall,
+  mcpToolCallIsDispatched,
+  type authenticateMcpBearer,
+  type McpCallAuditEvent,
+  type McpServerConfig,
+} from '@services/mcp-tools'
 import {
   checkUsageQuota,
   resolveUsagePlan,
@@ -21,6 +32,7 @@ export type McpUsageMeter = {
   checkQuota: () => Promise<UsageQuotaCheck>
   recordPlannedEvents: (events: readonly McpCallAuditEvent[]) => void
   markRateLimited: (messageIndex: number) => void
+  toolCalls: McpToolCallAnalytics
 }
 
 // Message positions, rather than JSON-RPC ids, identify refusals: a batch may reuse an id.
@@ -61,15 +73,51 @@ export function startMcpUsageMeter(
   const scopeClass = resolveUsageScopeClass(authentication.scopes)
   const quota = selectUsageQuota({ surface, plan, scopeClass })
   const messages = createMcpMessageMeter()
+  const toolCalls = createMcpToolCallAnalytics(toolCallContext(config, authentication, plan), {
+    isDispatched: mcpToolCallIsDispatched,
+    isNotification: mcpNotificationShapedToolCall,
+  })
 
-  settleUsageOnClose(ctx, { surface, identity, plan, scopeClass, quota }, startedAt, () =>
-    messages.resolveUnits(ctx.res.statusCode),
+  settleUsageOnClose(
+    ctx,
+    { surface, identity, plan, scopeClass, quota, eventId: toolCalls.requestEventId },
+    startedAt,
+    () => messages.resolveUnits(ctx.res.statusCode),
   )
 
   return {
     checkQuota: () => checkUsageQuota(surface, identity.userId, quota),
     recordPlannedEvents: messages.recordPlannedEvents,
     markRateLimited: messages.markRateLimited,
+    toolCalls,
+  }
+}
+
+function toolCallContext(
+  config: McpServerConfig,
+  authentication: AuthenticatedMcpCredential,
+  plan: McpToolCallContext['plan'],
+): McpToolCallContext {
+  const userId = authentication.owner.id
+  if (authentication.credential === 'api_key') {
+    return {
+      audience: config.audience,
+      credential: 'api_key',
+      userId,
+      apiKeyId: authentication.apiKeyId,
+      oauthClientId: null,
+      oauthGrantId: null,
+      plan,
+    }
+  }
+  return {
+    audience: config.audience,
+    credential: 'oauth',
+    userId,
+    apiKeyId: null,
+    oauthClientId: authentication.oauthClientId,
+    oauthGrantId: authentication.oauthGrantId,
+    plan,
   }
 }
 

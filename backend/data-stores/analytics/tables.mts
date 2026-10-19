@@ -1,6 +1,7 @@
 export * from './table-records.mts'
 export * from './table-records-pg.mts'
 
+import type { McpToolCallRecord } from './table-records-mcp.mts'
 import type {
   CrawlerRequestRecord,
   ValkeyCacheCallRecord,
@@ -20,6 +21,8 @@ import type {
   PgVoteDriftRecord,
 } from './table-records-pg.mts'
 
+export type { McpToolCallRecord }
+
 // ---------------------------------------------------------------------------
 // Registry
 // ---------------------------------------------------------------------------
@@ -36,6 +39,7 @@ export interface AnalyticsTableRegistry {
   auth_sessions: AuthSessionRecord
   contribution_admission: ContributionAdmissionRecord
   api_usage: ApiUsageRecord
+  mcp_tool_call: McpToolCallRecord
   pg_query_timing: PgQueryTimingRecord
   pg_pool_stats: PgPoolStatsRecord
   pg_vote_drift: PgVoteDriftRecord
@@ -55,6 +59,7 @@ export const ANALYTICS_TABLES: AnalyticsTableName[] = [
   'auth_sessions',
   'contribution_admission',
   'api_usage',
+  'mcp_tool_call',
   'pg_query_timing',
   'pg_pool_stats',
   'pg_vote_drift',

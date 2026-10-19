@@ -42,7 +42,11 @@ export async function callMcpTool(
   permissions: readonly ApiScope[],
   config: McpServerConfig,
   copyrightDecisionToolsEnabled = false,
-  rateLimitContext?: { ip: string | undefined; onRateLimited: () => Promise<void> },
+  rateLimitContext?: {
+    ip: string | undefined
+    onRateLimited: () => Promise<void>
+    onInvoked?: (durationMs: number) => void
+  },
 ): Promise<CallToolResult> {
   const resolution = resolveMcpToolCall(
     toolName,
@@ -65,9 +69,15 @@ export async function callMcpTool(
       grantedScopes: permissions,
       ...(rateLimitContext ? { mcpRateLimit: { ip: rateLimitContext.ip } } : {}),
     }
-    const result = await runWithRequestContext(() =>
-      tool.function(user)(args as never, invocationContext),
-    )
+    const started = performance.now()
+    let result: unknown
+    try {
+      result = await runWithRequestContext(() =>
+        tool.function(user)(args as never, invocationContext),
+      )
+    } finally {
+      rateLimitContext?.onInvoked?.(Math.round(performance.now() - started))
+    }
     return buildToolResult(
       toolName,
       result,

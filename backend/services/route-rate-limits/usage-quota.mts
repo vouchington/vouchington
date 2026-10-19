@@ -88,7 +88,7 @@ export async function settleUsage(
       reportError(err instanceof Error ? err : new Error(String(err)))
     }
   }
-  trackApiUsage(toApiUsage(settlement, units))
+  trackApiUsage(toApiUsage(settlement, units), settlement.eventId)
 }
 
 function toApiUsage(settlement: UsageSettlement, units: number): ApiUsage {

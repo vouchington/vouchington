@@ -4,6 +4,7 @@ import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprot
 import { resolveMcpToolCall } from './resolve-tool-call.mts'
 import { listMcpToolsForUser } from './list-tools.mts'
 import { callMcpTool } from './call-tool.mts'
+import { mcpToolCallIsDispatched } from './classify-calls.mts'
 import { buildRateLimitedToolResult } from './rate-limited-result.mts'
 import { validateRegisteredMcpRequest } from './validate-registered-request.mts'
 import { MCP_SERVER_INSTRUCTIONS } from './instructions.mts'
@@ -25,6 +26,11 @@ type McpRequestContext = {
   // Awaited after an admitted tool call returns an error result, so the caller can record it.
   onToolError?: (toolName: string, option?: string) => Promise<void>
   onToolRateLimited?: (toolName: string, messageIndex: number, option?: string) => Promise<void>
+  // Fired once when a dispatched tools/call settles. Analytics only; it must not change the result.
+  onToolCallSettled?: (
+    messageIndex: number,
+    settlement: { durationMs: number | null; toolError: boolean; rateLimited: boolean },
+  ) => void
   clientIp?: string
   // The retry delay of each `tools/call` whose REST route bucket was spent, by message index.
   // Those calls are refused in-band without running, and are already audited as rate limited.
@@ -40,9 +46,8 @@ export async function handleMcpHttpRequest(ctx: McpRequestContext): Promise<McpH
   const callIndexesById = new Map<string | number, number[]>()
   const messages = Array.isArray(ctx.parsedBody) ? ctx.parsedBody : [ctx.parsedBody]
   messages.forEach((message, index) => {
-    if (!CallToolRequestSchema.safeParse(message).success) return
-    const id = (message as { id?: unknown }).id
-    if (typeof id !== 'string' && !(typeof id === 'number' && Number.isInteger(id))) return
+    if (!mcpToolCallIsDispatched(message)) return
+    const id = (message as { id: string | number }).id
     const indexes = callIndexesById.get(id) ?? []
     indexes.push(index)
     callIndexesById.set(id, indexes)
@@ -67,8 +72,19 @@ export async function handleMcpHttpRequest(ctx: McpRequestContext): Promise<McpH
   server.setRequestHandler(CallToolRequestSchema, (request, extra) => {
     const call = (async () => {
       const messageIndex = callIndexesById.get(extra.requestId)?.shift()
+      const settle = (settlement: {
+        durationMs: number | null
+        toolError: boolean
+        rateLimited: boolean
+      }) => {
+        if (messageIndex === undefined) return
+        ctx.onToolCallSettled?.(messageIndex, settlement)
+      }
       const retryAfterSeconds = ctx.rateLimitedCalls.get(messageIndex ?? -1)
-      if (retryAfterSeconds !== undefined) return buildRateLimitedToolResult(retryAfterSeconds)
+      if (retryAfterSeconds !== undefined) {
+        settle({ durationMs: null, toolError: false, rateLimited: true })
+        return buildRateLimitedToolResult(retryAfterSeconds)
+      }
       const resolution = resolveMcpToolCall(
         request.params.name,
         ctx.user,
@@ -81,25 +97,36 @@ export async function handleMcpHttpRequest(ctx: McpRequestContext): Promise<McpH
           ? (resolution.tool.meta?.auditOption?.(request.params.arguments ?? {}) ?? undefined)
           : undefined
       let rateLimited = false
-      const result = await callMcpTool(
-        request.params.name,
-        request.params.arguments ?? {},
-        ctx.user,
-        ctx.permissions,
-        ctx.config,
-        ctx.copyrightDecisionToolsEnabled,
-        {
-          ip: ctx.clientIp,
-          onRateLimited: async () => {
-            rateLimited = true
-            if (messageIndex !== undefined) {
-              await ctx.onToolRateLimited?.(request.params.name, messageIndex, option)
-            }
+      let durationMs: number | null = null
+      try {
+        const result = await callMcpTool(
+          request.params.name,
+          request.params.arguments ?? {},
+          ctx.user,
+          ctx.permissions,
+          ctx.config,
+          ctx.copyrightDecisionToolsEnabled,
+          {
+            ip: ctx.clientIp,
+            onInvoked: elapsed => {
+              durationMs = elapsed
+            },
+            onRateLimited: async () => {
+              rateLimited = true
+              if (messageIndex !== undefined) {
+                await ctx.onToolRateLimited?.(request.params.name, messageIndex, option)
+              }
+            },
           },
-        },
-      )
-      if (result.isError && !rateLimited) await ctx.onToolError?.(request.params.name, option)
-      return result
+        )
+        const toolError = result.isError === true && !rateLimited
+        settle({ durationMs, toolError, rateLimited })
+        if (toolError) await ctx.onToolError?.(request.params.name, option)
+        return result
+      } catch (err) {
+        settle({ durationMs, toolError: false, rateLimited })
+        throw err
+      }
     })()
     pendingToolCalls.add(call)
     void call.then(
