@@ -18,13 +18,15 @@ export async function deleteRssFeedImportBatchWithoutRowsForTest(importId: strin
 }
 
 export async function getRssFeedImportFollowForTest(importId: string): Promise<boolean> {
-  const { rows } = await read<{ follow: boolean }>(sql`/* getRssFeedImportFollowForTest */
+  const { rows } = await read<{ should_follow_imported_feeds: boolean }>(
+    sql`/* getRssFeedImportFollowForTest */
     SELECT should_follow_imported_feeds
     FROM user_rss_feed_import_batches
     WHERE id = ${importId}
     LIMIT 1
-  `)
-  return rows[0]!.follow
+  `,
+  )
+  return rows[0]!.should_follow_imported_feeds
 }
 
 export async function countRssFeedImportBatchesForTest(userId: string): Promise<number> {

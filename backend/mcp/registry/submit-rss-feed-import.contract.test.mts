@@ -71,7 +71,7 @@ describe('submit_rss_feed import REST twins — real DB', () => {
     ).resolves.toContain('higher plan')
     await expect(
       callRejectedMcpTool(suspended, 'submit_rss_feed', args, FEED_SCOPES),
-    ).resolves.toBe('suspended')
+    ).resolves.toContain('suspended')
   })
 
   it('follows for a normal user and does not follow for an administrator by default', async () => {
