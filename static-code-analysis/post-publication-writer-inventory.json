@@ -90,6 +90,10 @@
       "reason": "builds the bounded update statement executed by the captured transactional writer"
     },
     {
+      "path": "backend/services/entity-relations/build-bidirectional-insert-query.mts",
+      "reason": "builds the bidirectional relation insert executed by the captured entity-relation upsert"
+    },
+    {
       "path": "backend/services/images/delete.mts",
       "reason": "image lifecycle is not a publication predicate"
     },
