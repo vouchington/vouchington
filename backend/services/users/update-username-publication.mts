@@ -14,7 +14,15 @@ export async function commitUserFieldUpdate(
     return undefined
   }
   await using query = await beginTransaction()
-  return await commitLockedUsernameChange(query, userId, statement, validatedUsername)
+  const previousUsername = await commitLockedUsernameChange(
+    query,
+    userId,
+    statement,
+    validatedUsername,
+  )
+  // ast-grep-ignore: no-three-sequential-awaits -- commit follows the locked update and the capture that reads its previous username
+  await query.commit()
+  return previousUsername
 }
 
 async function commitLockedUsernameChange(
@@ -28,10 +36,9 @@ async function commitLockedUsernameChange(
   const { rows } = await query<{ previous_username: string | null }>(statement)
   const previousUsername = rows[0]?.previous_username ?? null
   if (rows.length > 0 && previousUsername !== validatedUsername) {
-    // ast-grep-ignore: no-three-sequential-awaits -- the author advisory lock, locked username update, and publication capture commit together
+    // ast-grep-ignore: no-three-sequential-awaits -- the capture needs previous_username from this locked update, and the author advisory lock must be held before that update
     await recordUsernameChange(query, userId, previousUsername)
   }
-  await query.commit()
   return rows.length > 0 ? previousUsername : undefined
 }
 
