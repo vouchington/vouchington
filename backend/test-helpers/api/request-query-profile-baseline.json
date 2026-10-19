@@ -40,6 +40,14 @@
     "code": "backend/services/copyright-notices/email-manual-association.mts:52"
   },
   {
+    "annotation": "backfillCategoriesForTopicAliases.candidateItems",
+    "route": null,
+    "maxCount": null,
+    "reason": "The next candidate page is a new statement after the bounded category update. Under READ COMMITTED it must see rows past LIMIT and category rows a concurrent writer committed after the previous page.",
+    "permanent": true,
+    "code": "backend/services/rss-feed-items/backfill-categories-for-topic-aliases.mts:38"
+  },
+  {
     "annotation": "blockHostname_findPostRelatedUrlPosts",
     "route": null,
     "maxCount": null,
@@ -254,6 +262,14 @@
     "reason": "A mixed stale-hit and true-miss RSS feed batch can issue one refresh-ahead SQL batch and one miss SQL batch for disjoint feed IDs in this route; no third batch is expected",
     "permanent": true,
     "code": "backend/services/entity-fetch/rss-feeds.mts:12"
+  },
+  {
+    "annotation": "getTopicAliasesForMergeRevision",
+    "route": null,
+    "maxCount": null,
+    "reason": "The destination alias list is read again after the alias move and source-slug insert, so the merge revision's after snapshot includes those writes.",
+    "permanent": true,
+    "code": "backend/services/topics/merge-alias-revisions.mts:35"
   },
   {
     "annotation": "getTopicByAny",
