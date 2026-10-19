@@ -43,6 +43,11 @@ export type UpsertEntityRelationsOptions = QueryOptions & {
   // resendAcceptForDuplicateFollow) — a genuine new write (e.g. a fresh Follow activity) must
   // still resurrect an unrelated prior soft-delete unconditionally.
   skipIfDeleted?: boolean
+  // Topic approval already threw for a blocked hostname inside the same transaction. The
+  // pooled blocked-hostname guard cannot see those uncommitted URL rows.
+  skipBlockedHostnameGuard?: boolean
+  // The caller already holds hostname-ownership advisory locks for these URL hostnames.
+  skipHostnameOwnershipLock?: boolean
   // Trusted commands that need a state-dependent authorization recheck supply their participating
   // post scopes and callback here. upsert invokes it inside its own mutation transaction, after
   // canonical locks and before the insert, so post-commit effects never survive a failed guard.

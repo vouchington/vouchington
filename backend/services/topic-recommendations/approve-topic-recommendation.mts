@@ -6,11 +6,13 @@ import type { QueryOptions } from '@data-stores/psql/types'
 import { createTopic } from '@services/topics/create'
 import { updateTopic } from '@services/topics/update'
 import type { EntityRelation } from '@services/entity-relations/upsert-helpers'
+import { lockHostnameOwnership } from '@services/entity-relations/hostname-ownership-lock'
+import { normalizeUrlHostname } from '@services/urls-hostnames/upsert'
 import { getPostByAny } from '@services/posts'
 import assert from 'http-assert'
 import { createTopicAliases } from '@services/topics/aliases'
-import { createTopicRecommendationLinkRelation } from './create-topic-recommendation-link-relation.mts'
-import { createTopicRecommendationUrlRelation } from './create-topic-recommendation-url-relation.mts'
+import { createTopicRecommendationLinkRelations } from './create-topic-recommendation-link-relation.mts'
+import { createTopicRecommendationUrlRelations } from './create-topic-recommendation-url-relation.mts'
 import { getLockedTopicRecommendationApproval } from './get-locked-topic-recommendation-approval.mts'
 import { markTopicRecommendationApproved } from './mark-topic-recommendation-approved.mts'
 import { setTopicRecommendationApprovalError } from './set-topic-recommendation-approval-error.mts'
@@ -56,19 +58,6 @@ export async function approveTopicRecommendationInTransaction(
 
   const relations: EntityRelation[] = []
   const urlIds: string[] = []
-
-  for (const hostname of lockedRecommendation.hostnames) {
-    // oxlint-disable-next-line no-await-in-loop -- URL creation and relation insertion share this transaction-scoped query
-    const relationResult = await createTopicRecommendationLinkRelation(
-      currentUser,
-      topic,
-      hostname,
-      options,
-    )
-    if (relationResult.relation) relations.push(relationResult.relation)
-    if (relationResult.urlId) urlIds.push(relationResult.urlId)
-  }
-
   const typedUrls: string[] = []
   if (
     lockedRecommendation.topic_type === 'referral_program' &&
@@ -79,9 +68,24 @@ export async function approveTopicRecommendationInTransaction(
     typedUrls.push(...lockedRecommendation.landing_page_urls)
   }
 
-  for (const url of typedUrls) {
-    // oxlint-disable-next-line no-await-in-loop -- typed URL relations must be inserted in order on the shared transaction
-    const result = await createTopicRecommendationUrlRelation(currentUser, topic, url, options)
+  await lockHostnameOwnership(options.query, [
+    ...lockedRecommendation.hostnames.map(hostname => normalizeUrlHostname(hostname.hostname)),
+    ...typedUrls.map(url => normalizeUrlHostname(url)),
+  ])
+  const relationOptions = { ...options, hostnameOwnershipLocked: true }
+  const linkResults = await createTopicRecommendationLinkRelations(
+    currentUser,
+    topic,
+    lockedRecommendation.hostnames,
+    relationOptions,
+  )
+  const urlResults = await createTopicRecommendationUrlRelations(
+    currentUser,
+    topic,
+    typedUrls,
+    relationOptions,
+  )
+  for (const result of [...linkResults, ...urlResults]) {
     if (result.relation) relations.push(result.relation)
     if (result.urlId) urlIds.push(result.urlId)
   }

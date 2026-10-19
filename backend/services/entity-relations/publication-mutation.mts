@@ -12,6 +12,7 @@ import {
   lockTopicAliasPublicationScopes,
 } from '@services/post-publication'
 import { lockActiveUserSubjectsForMutation } from '@services/user-deletions/active-user-mutation-lock'
+import { lockHostnameOwnershipForUrls } from './hostname-ownership-lock.mts'
 
 type PublicationMutationOptions = UpsertEntityRelationsOptions
 
@@ -26,6 +27,12 @@ export async function runRelationPublicationMutation<
   mutation: (query: TransactionQuery) => Promise<T[]>,
 ): Promise<T[]> {
   const run = async (query: TransactionQuery): Promise<T[]> => {
+    if (
+      relationTable === 'relation__topic__landing_page__url' &&
+      !options?.skipHostnameOwnershipLock
+    ) {
+      await lockHostnameOwnershipForUrls(query, objectIds)
+    }
     await lockActiveUserSubjectsForMutation(query, activeUserSubjectIds)
     const capturePublication = options?.capturePublication !== false
     const postScopeIds = [

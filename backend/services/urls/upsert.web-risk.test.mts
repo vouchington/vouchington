@@ -17,7 +17,9 @@ describe('addUrl integrates with Google Web Risk blocking', () => {
     const domain = `changed-policy-${crypto.randomUUID()}.example.com`
     const url = `https://${domain}/new-profile-url`
     const hostnames = await upsertUrlHostnames(null, [domain])
-    const { addUrl } = createUrlUpsert(fixture.check)
+    const { addUrl } = createUrlUpsert(async urls => {
+      await Promise.all(urls.map(url => fixture.check(url)))
+    })
     try {
       await fixture.check(url)
       await updateUrlHostnameBlocked(hostnames.get(domain)!, true)
@@ -44,7 +46,9 @@ describe('addUrl integrates with Google Web Risk blocking', () => {
         throw new Error('The preloaded checker uses a different Undici fetch object')
       }
       currentFetchSpy.mockRejectedValue(new Error('Unexpected Web Risk provider request'))
-      const { addUrl } = createUrlUpsert(ownedFixture.check)
+      const { addUrl } = createUrlUpsert(async urls => {
+        await Promise.all(urls.map(url => ownedFixture.check(url)))
+      })
       const domain = `prewrite-risk-${crypto.randomUUID()}.test`
       const url = `https://${domain}/bad`
       currentFetchSpy.mockResolvedValueOnce(

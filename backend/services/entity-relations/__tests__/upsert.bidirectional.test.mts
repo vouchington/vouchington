@@ -8,6 +8,7 @@ import {
   createTestPost,
   createTestUser,
   getEntityRelation,
+  getLatestTestEntityRelationVoteScore,
   insertTestUrlDirect,
 } from '@voucha/test-helpers'
 
@@ -169,5 +170,52 @@ describe('upsert.bidirectional', () => {
       postA.id,
     )) as Array<{ deleted_at: Date | null }>
     expect(reverseRestored[0].deleted_at).toBeNull()
+  })
+
+  it('records both related directions from one vote write', async () => {
+    const user = await createTestUser({ administrator: true })
+    const postA = await createTestPost()
+    const postB = await createTestPost()
+    const metadata = entityRelationMetadatum.find(
+      item =>
+        item.subject_type === 'post' && item.object_type === 'post' && item.predicate === 'related',
+    )!
+    await upsertEntityRelation(user, metadata, postA, [postB])
+    const [forward] = (await getEntityRelation(
+      'relation__post__related__post',
+      postA.id,
+      postB.id,
+    )) as Array<{ id: string }>
+    const [reverse] = (await getEntityRelation(
+      'relation__post__related__post',
+      postB.id,
+      postA.id,
+    )) as Array<{ id: string }>
+    await expect(
+      getLatestTestEntityRelationVoteScore({
+        relationTable: 'relation__post__related__post',
+        relationId: forward!.id,
+        userId: user.id,
+      }),
+    ).resolves.toBe(1)
+    await expect(
+      getLatestTestEntityRelationVoteScore({
+        relationTable: 'relation__post__related__post',
+        relationId: reverse!.id,
+        userId: user.id,
+      }),
+    ).resolves.toBe(1)
+  })
+
+  it('stores one row when a post is related to itself', async () => {
+    const user = await createTestUser({ administrator: true })
+    const post = await createTestPost()
+    const metadata = entityRelationMetadatum.find(
+      item =>
+        item.subject_type === 'post' && item.object_type === 'post' && item.predicate === 'related',
+    )!
+    await upsertEntityRelation(user, metadata, post, [post])
+    const rows = await getEntityRelation('relation__post__related__post', post.id, post.id)
+    expect(rows).toHaveLength(1)
   })
 })

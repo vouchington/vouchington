@@ -41,8 +41,11 @@ export async function upsertEntityRelationVotesById(
 }
 
 /** Refreshes the stats of a user-tag relation from the primary after its vote changed. */
-export async function refreshUserTagVoteStats(relationId: string): Promise<void> {
-  if (await getUserTagRelationById(relationId)) {
+export async function refreshUserTagVoteStats(
+  relationId: string,
+  options?: { confirmed?: boolean },
+): Promise<void> {
+  if (options?.confirmed || (await getUserTagRelationById(relationId))) {
     await refreshEntityRelationVoteStatsFromPrimaryWithFallback(
       createEntityRelationElectionTarget(relationId, 'relation__user__category__topic'),
     )

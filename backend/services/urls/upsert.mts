@@ -7,7 +7,7 @@ import createError from 'http-errors'
 import { isPublicHostname, normalizeUrlForUrlTable } from '@modules/utils/urls'
 import { enqueueBulkOnUrlCreated } from '@queues/entity-listeners/enqueues'
 import { invalidate } from '@services/entity-cache'
-import { assertUrlAllowedByWebRisk } from '@services/web-risk/check'
+import { assertUrlsAllowedByWebRisk } from '@services/web-risk/check'
 import { upsertUrlRows } from './upsert-write.mts'
 
 type AddUrlOptions = {
@@ -32,7 +32,9 @@ export function extractInsertedUrlIds(
 export const { addUrls, addUrl } = createUrlUpsert()
 
 /** Binds real URL persistence/prewrite validation to its actual Web Risk checker owner. */
-export function createUrlUpsert(checkUrl = assertUrlAllowedByWebRisk) {
+export function createUrlUpsert(
+  checkUrls: (urls: readonly string[]) => Promise<void> = assertUrlsAllowedByWebRisk,
+) {
   const addUrls = async (
     userId: string | null,
     hrefs: string[],
@@ -64,7 +66,7 @@ export function createUrlUpsert(checkUrl = assertUrlAllowedByWebRisk) {
       return true
     })
 
-    await Promise.all(uniqueUrls.map(url => checkUrl(url.toString())))
+    await checkUrls(uniqueUrls.map(url => url.toString()))
 
     const hostnames = await upsertUrlHostnames(
       userId,

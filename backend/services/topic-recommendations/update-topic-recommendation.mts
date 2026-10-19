@@ -6,11 +6,13 @@ import { assertValidTopicRecommendationInput } from './shared.mts'
 import assert from 'http-assert'
 import { getPostByAny } from '@services/posts'
 import { beginTransaction, write } from '@data-stores/psql'
+import type { QueryOptions } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { enqueueOnPostUpdated } from '@queues/entity-listeners/enqueues'
 import {
   materializeTopicRecommendationInput,
   replaceTopicRecommendationHostnames,
+  type MaterializedTopicRecommendationInput,
 } from './materialize-topic-recommendation.mts'
 import { replaceTopicRecommendationLandingPageUrls } from './replace-landing-page-urls.mts'
 import { lockPostPublication, recordPostPublicationChange } from '@services/post-publication'
@@ -103,35 +105,13 @@ export async function updateTopicRecommendation(
       options,
     )
 
-    await write(
-      sql`/* updateTopicRecommendation */
-          UPDATE posts
-          SET title = ${materialized.title},
-            markdown = ${materialized.markdown},
-            updated_by_id = ${currentUser.id},
-            bedrock_nova_multimodal_v1_content_sha256 = ${materialized.embedding_content_sha}
-          WHERE id = ${recommendation.id}
-        `,
+    const extensionResult = await writeTopicRecommendationUpdate(
+      currentUser.id,
+      recommendation.id,
+      materialized,
       options,
     )
-
-    const extensionResult = await write(
-      sql`/* updateTopicRecommendation */
-          UPDATE post_topic_recommendations
-          SET topic_title = ${materialized.topic_title},
-            topic_slug = ${materialized.topic_slug},
-            topic_markdown = ${materialized.topic_markdown},
-            aliases = ${materialized.topic_aliases},
-            hostname_id = ${materialized.hostname_id},
-            topic_type = ${materialized.topic_type ?? 'topic'},
-            example_referral_url_id = ${materialized.example_referral_url_id},
-            approval_error_message = NULL
-          WHERE post_id = ${recommendation.id}
-            AND reviewed_at IS NULL
-        `,
-      options,
-    )
-    assert(extensionResult.rowCount === 1, 422, 'Recommendation is no longer editable')
+    assert(extensionResult === 1, 422, 'Recommendation is no longer editable')
 
     // ast-grep-ignore: no-three-sequential-awaits -- hostname replacement, publication capture, and the transaction-consistent reload are ordered
     await replaceTopicRecommendationLandingPageUrls(
@@ -175,4 +155,40 @@ export async function updateTopicRecommendation(
     onError(localErr)
     throw err
   }
+}
+
+/** One write for the post and its pending recommendation. The locked SELECT stays separate. */
+export async function writeTopicRecommendationUpdate(
+  currentUserId: string,
+  recommendationId: string,
+  materialized: MaterializedTopicRecommendationInput,
+  options: QueryOptions,
+): Promise<number> {
+  const result = await write(
+    sql`/* updateTopicRecommendation */
+      WITH updated_post AS (
+        UPDATE posts
+        SET title = ${materialized.title},
+          markdown = ${materialized.markdown},
+          updated_by_id = ${currentUserId},
+          bedrock_nova_multimodal_v1_content_sha256 = ${materialized.embedding_content_sha}
+        WHERE id = ${recommendationId}
+        RETURNING id
+      )
+      UPDATE post_topic_recommendations
+      SET topic_title = ${materialized.topic_title},
+        topic_slug = ${materialized.topic_slug},
+        topic_markdown = ${materialized.topic_markdown},
+        aliases = ${materialized.topic_aliases},
+        hostname_id = ${materialized.hostname_id},
+        topic_type = ${materialized.topic_type ?? 'topic'},
+        example_referral_url_id = ${materialized.example_referral_url_id},
+        approval_error_message = NULL
+      WHERE post_id = (SELECT id FROM updated_post)
+        AND reviewed_at IS NULL
+      RETURNING post_id
+    `,
+    options,
+  )
+  return result.rowCount ?? 0
 }

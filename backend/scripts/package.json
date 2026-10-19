@@ -85,6 +85,7 @@
     "@services/rss-feed-items": "workspace:^",
     "@services/rss-feeds": "workspace:^",
     "@services/stories": "workspace:^",
+    "@services/topic-recommendations": "workspace:^",
     "@services/topics": "workspace:^",
     "@services/trending-communities": "workspace:^",
     "@services/trending-posts": "workspace:^",

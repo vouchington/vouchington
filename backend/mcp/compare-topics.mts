@@ -1,7 +1,7 @@
 import type { MergedToolSource } from './create-merged-tool.mts'
 import type { BasicUser } from '@services/users/types'
 import {
-  getTopicDataPointInsights,
+  getTopicDataPointInsightsBatch,
   type TopicDataPointInsights,
 } from '@services/data-points/insights'
 import { DATA_POINT_VERTICALS } from '@ts-shared/data-points'
@@ -80,10 +80,10 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
       }
 
       const options = { vertical: args.vertical }
-      const [insightsA, insightsB] = await Promise.all([
-        getTopicDataPointInsights(topicA.id, options),
-        getTopicDataPointInsights(topicB.id, options),
-      ])
+      const insights = await getTopicDataPointInsightsBatch([topicA.id, topicB.id], options)
+      const insightsA = insights.get(topicA.id)
+      const insightsB = insights.get(topicB.id)
+      if (!insightsA || !insightsB) return { success: false, error: 'Topic not found' }
 
       return {
         success: true,

@@ -13,6 +13,7 @@ import { followRssFeedRelation, createSourceWithRetry } from './create-source-he
 import { findExistingFeedByUrlId, findExistingFeedByUrl } from './find-existing-feed.mts'
 import { resolveProtocolAndClassify } from './resolve-protocol.mts'
 import { assertUrlAllowedByWebRisk } from '@services/web-risk/check'
+import { getHostnamePolicies } from '@services/urls-domains-blacklist/domains'
 import { isPublicRssFeedUrl } from './url-validation.mts'
 import type { CreateSourceOptions, CreateSourceResult } from './create-source-types.mts'
 import { assertWithinFeedBudget, raceFeedBudget } from './feed-budget.mts'
@@ -48,13 +49,15 @@ async function createSource(
 ): Promise<CreateSourceResult> {
   assert(isPublicRssFeedUrl(rssFeedUrl), 422, 'rss_feed_url must be a valid URL')
   assert(hopCount <= MAX_REDIRECT_HOPS, 422, 'Too many redirects while resolving RSS feed URL')
-  await raceFeedBudget(signal, assertUrlAllowedByWebRisk(rssFeedUrl, { signal }))
+  const policies = await getHostnamePolicies([new URL(rssFeedUrl).hostname])
+  await raceFeedBudget(signal, assertUrlAllowedByWebRisk(rssFeedUrl, { signal, policies }))
 
   if (new URL(rssFeedUrl).protocol === 'http:') {
     const httpsUrl = normalizeUrlForUrlTable(rssFeedUrl).href
     const httpUrl = normalizeUrlForUrlTable(rssFeedUrl, { preserveHttp: true }).href
     const existingHttps = await findExistingFeedByUrl(httpsUrl)
-    if (existingHttps) await raceFeedBudget(signal, assertUrlAllowedByWebRisk(httpsUrl, { signal }))
+    if (existingHttps)
+      await raceFeedBudget(signal, assertUrlAllowedByWebRisk(httpsUrl, { signal, policies }))
     const existing = existingHttps ?? (await findExistingFeedByUrl(httpUrl))
     if (existing) {
       await upsertAutomaticTopicUpvote(currentUser, existing.topic_id)
@@ -79,7 +82,6 @@ async function createSource(
       beforeFetch: url => {
         const alreadyChecked = firstAttempt && url === rssFeedUrl
         firstAttempt = false
-        // Reuse only this attempt's initial proof; protocol fallback and later hops revalidate.
         return alreadyChecked ? Promise.resolve() : assertUrlAllowedByWebRisk(url, { signal })
       },
       fetchAndClassifyFeedImpl,
@@ -123,7 +125,6 @@ async function createSource(
   }
 
   const { title: feedTitle, feedType } = classification
-
   const normalizedUrl = normalizeUrlForUrlTable(resolvedUrl, { preserveHttp: isHttpUrl })
   const normalizedFeedUrl = normalizedUrl.href
   const rawHostname = normalizedUrl.hostname
@@ -146,7 +147,6 @@ async function createSource(
     }
   }
 
-  // The budget races remote work only; it is checked before the writes, never during them.
   assertWithinFeedBudget(signal)
   // ast-grep-ignore: no-three-sequential-awaits -- service workflow has dependent validation, mutation, and follow-up side effects
   await assertContributionLimit?.()

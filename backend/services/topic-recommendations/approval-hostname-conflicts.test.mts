@@ -2,9 +2,12 @@ import { describe, expect, it } from 'vitest'
 import {
   createTestUser,
   createTestTopic,
+  getTestPostgresBackendProcessId,
+  waitForTestPostgresLockWaiter,
   WEB_PROVENANCE,
   beginTransaction,
 } from '@voucha/test-helpers'
+import { lockHostnameOwnership } from '@services/entity-relations/hostname-ownership-lock'
 import { createTopicRecommendation, approveTopicRecommendation } from './index.mts'
 import { getPostByAny } from '@services/posts'
 import { getTopicByAny } from '@services/topics'
@@ -66,6 +69,35 @@ describe('approval hostname conflicts', () => {
     expect((await getPostByAny(second.id))?.topic_recommendation).toMatchObject({
       status: 'pending',
       approval_error_message: `Hostname ${commonHostname} is already associated with another topic`,
+    })
+  })
+
+  it('makes a concurrent claim wait until the hostname ownership lock commits', async () => {
+    const admin = await createTestUser({ administrator: true })
+    const otherAdmin = await createTestUser({ administrator: true })
+    const topic = (await getTopicByAny((await createTestTopic({ user: admin })).id))!
+    const competitor = (await getTopicByAny((await createTestTopic({ user: otherAdmin })).id))!
+    const hostname = `owned-${crypto.randomUUID()}.example.com`
+    const ids = await upsertUrlHostnames(admin.id, [hostname])
+    const host = { id: ids.get(hostname)!, hostname }
+    await using holder = await beginTransaction()
+    await lockHostnameOwnership(holder, [hostname])
+    const holderPid = await getTestPostgresBackendProcessId(holder)
+    await using claimTx = await beginTransaction()
+    const claim = createTopicRecommendationLinkRelation(otherAdmin, competitor, host, {
+      query: claimTx,
+    }).then(
+      () => {
+        throw new Error('The competing hostname claim should have been rejected')
+      },
+      (err: unknown) => err,
+    )
+    await waitForTestPostgresLockWaiter(holderPid, 'lockHostnameOwnership')
+    await createTopicRecommendationLinkRelation(admin, topic, host, { query: holder })
+    await holder.commit()
+    await expect(claim).resolves.toMatchObject({
+      status: 422,
+      message: `Hostname ${hostname} is already associated with another topic`,
     })
   })
 })

@@ -6,6 +6,7 @@ import {
   type UpsertEntityRelationOptions,
 } from './upsert-options.mts'
 import { buildInsertQuery } from './build-insert-query.mts'
+import { buildBidirectionalInsertQuery } from './build-bidirectional-insert-query.mts'
 import {
   handleElectionVotes,
   type EntityIdentifier,
@@ -45,13 +46,13 @@ export const upsertEntityRelation = async (
   const { deferredNotification, relationOptions, suppressNotificationReconcile } =
     prepareUpsertEntityRelationOptions(options)
   await assertEntityRelationUpsertAllowed(creator, relation, subject, objects, relationOptions)
-  const query = buildInsertQuery(
-    relation,
-    creator,
-    objects.map(object => ({ subject, object })),
-    relationOptions,
-  )
   if (!relation.bidirectional || relation.subject_type !== relation.object_type) {
+    const query = buildInsertQuery(
+      relation,
+      creator,
+      objects.map(object => ({ subject, object })),
+      relationOptions,
+    )
     const internalRelations = await runRelationPublicationMutation(
       relationOptions,
       relation.table_name,
@@ -133,10 +134,12 @@ export const upsertEntityRelation = async (
     objectType: relation.subject_type,
     predicate: relation.predicate,
   })
-  const reverseQuery = buildInsertQuery(
-    reverseRelation,
+  const reversePairs = objects.map(object => ({ subject: object, object: subject }))
+  const insertQuery = buildBidirectionalInsertQuery(
+    relation,
     creator,
-    objects.map(object => ({ subject: object, object: subject })),
+    objects.map(object => ({ subject, object })),
+    reversePairs,
     relationOptions,
   )
   const run = async (
@@ -160,8 +163,7 @@ export const upsertEntityRelation = async (
     await relationOptions?.postMutationGuard?.assertAllowed(transactionQuery)
     return insertBidirectionalRelationRows<InternalEntityRelationMutationResult>(
       transactionQuery,
-      query,
-      reverseQuery,
+      insertQuery,
     )
   }
   const { relations: internalRelations, reverseRelations: internalReverseRelations } =

@@ -1,28 +1,17 @@
-import createHttpError from 'http-errors'
-import onError from '@modules/on-error'
-import { isPublicHostname } from '@modules/utils/urls'
-import { getDomain } from 'tldts'
-import { getHostnamePolicies, getHostnamePolicy } from '@services/urls-domains-blacklist/domains'
-import {
-  getLocalHostnamePolicy,
-  normalizeHostnameForPolicy,
-  type HostnamePolicy,
-} from '@services/urls-hostnames/policies'
-import { upsertUrlHostnames } from '@services/urls-hostnames/upsert'
-import { blockHostname } from '@services/hostname-blocking/block-hostname'
-import { getSystemUserByUsername, upsertSystemUser } from '@services/users/system-users'
+import { getHostnamePolicy } from '@services/urls-domains-blacklist/domains'
+import { normalizeHostnameForPolicy, type HostnamePolicy } from '@services/urls-hostnames/policies'
 import { createWebRiskState, type ProviderGate, type WebRiskState } from './state.mts'
 import { isWebRiskEnabled } from './config.mts'
+import { hasWebRiskApiKey } from './provider.mts'
 import {
-  checkWebRiskUrl,
-  hasWebRiskApiKey,
-  SHORT_FAILURE_COOLDOWN_SECONDS,
-  WebRiskRateLimitError,
-  type WebRiskThreat,
-} from './provider.mts'
+  assertUrlsAllowedByWebRiskWithState,
+  decideWebRiskUrl,
+  parseWebRiskUrl,
+} from './check-batch.mts'
 
 const productionState = createWebRiskState()
 export const assertUrlAllowedByWebRisk = createWebRiskChecker(productionState)
+export { parseWebRiskUrl }
 
 /** Hostname policies already read for a batch of URLs, keyed by `normalizeHostnameForPolicy`. */
 type PrecomputedHostnamePolicies = ReadonlyMap<string, HostnamePolicy>
@@ -34,19 +23,6 @@ type WebRiskCheckOptions = {
 }
 
 const NO_PROVIDER_GATE: ProviderGate = { cleanCached: false, coolingDown: false }
-
-/** Parses only the public http(s) URLs this service checks; anything else is out of scope. */
-export function parseWebRiskUrl(url: string): URL | null {
-  let parsed: URL
-  try {
-    parsed = new URL(url)
-  } catch {
-    return null
-  }
-  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return null
-  if (!isPublicHostname(parsed.hostname)) return null
-  return parsed
-}
 
 /**
  * Binds the real preflight/provider pipeline to one persistent Web Risk state owner.
@@ -73,42 +49,12 @@ export function createWebRiskChecker(state: WebRiskState) {
     ])
     if (policyResult.status === 'rejected') throw policyResult.reason
     const policy = policyResult.value
-
-    if (policy.is_blocked) {
-      throw createHttpError(400, `Domain is blocked: ${parsed.hostname}`)
+    if (policy.is_blocked || !providerActive || policy.should_skip_web_risk) {
+      await decideWebRiskUrl(state, parsed, policy, NO_PROVIDER_GATE, options)
+      return
     }
-
-    if (!providerActive) return
-    if (policy.should_skip_web_risk) return
     if (gateResult.status === 'rejected') throw gateResult.reason
-    if (gateResult.value.cleanCached || gateResult.value.coolingDown) return
-    if (await state.isLocallyRateLimited()) return
-
-    let threat: WebRiskThreat | null
-    try {
-      threat = await checkWebRiskUrl(parsed, state, options.signal)
-    } catch (err) {
-      if (options.signal?.aborted) throw err
-      if (err instanceof WebRiskRateLimitError) {
-        onError(err)
-        return
-      }
-      await state.setProviderCooldown(SHORT_FAILURE_COOLDOWN_SECONDS)
-      onError(err instanceof Error ? err : new Error(String(err)))
-      return
-    }
-
-    if (!threat) {
-      await state.cacheCleanVerdict(parsed)
-      return
-    }
-
-    const blockedDomain = getRegistrableDomain(parsed.hostname)
-    const blockPolicy = await getLocalHostnamePolicy(blockedDomain)
-    if (blockPolicy.should_skip_web_risk) return
-
-    await blockWebRiskDomain(blockedDomain, parsed.toString(), threat)
-    throw createHttpError(400, `Domain is blocked: ${blockedDomain}`)
+    await decideWebRiskUrl(state, parsed, policy, gateResult.value, options)
   }
 }
 
@@ -120,36 +66,5 @@ export async function assertUrlsAllowedByWebRisk(
   urls: string[],
   options: WebRiskCheckOptions = {},
 ): Promise<void> {
-  const uniqueUrls = [...new Set(urls)]
-  const policies = options.policies ?? (await readPolicies(uniqueUrls))
-  await Promise.all(uniqueUrls.map(url => assertUrlAllowedByWebRisk(url, { ...options, policies })))
-}
-
-async function readPolicies(urls: string[]): Promise<PrecomputedHostnamePolicies> {
-  const hostnames = urls.flatMap(url => parseWebRiskUrl(url)?.hostname ?? [])
-  return getHostnamePolicies(hostnames)
-}
-
-async function blockWebRiskDomain(
-  hostname: string,
-  checkedUrl: string,
-  threat: WebRiskThreat,
-): Promise<void> {
-  const systemUser = (await getSystemUserByUsername('system')) ?? (await upsertSystemUser('system'))
-  const hostnameMap = await upsertUrlHostnames(systemUser.id, [hostname])
-  const hostnameId = hostnameMap.get(hostname)
-  if (!hostnameId) throw new Error(`Failed to upsert Web Risk hostname ${hostname}`)
-  await blockHostname(systemUser.id, hostnameId, {
-    blockedSource: 'google_web_risk',
-    penalizeCreators: false,
-    webRiskCheckedUrl: checkedUrl,
-    webRiskThreatTypes: threat.threatTypes,
-    webRiskExpireAt: threat.expireTime,
-  })
-}
-
-function getRegistrableDomain(hostname: string): string {
-  return (
-    getDomain(hostname, { allowPrivateDomains: true }) ?? hostname.toLowerCase().replace(/\.+$/, '')
-  )
+  await assertUrlsAllowedByWebRiskWithState(productionState, urls, options)
 }
