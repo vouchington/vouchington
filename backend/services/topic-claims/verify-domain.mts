@@ -59,11 +59,11 @@ export async function verifyTopicClaimDomain(
 
   assert(claim, 404, 'Claim not found')
   assert(claim.claimant_user_id === currentUserId, 404, 'Claim not found')
-  assert(claim.hostname, 422, 'Topic has no hostname for domain verification')
-  assert(claim.verification_token_hash, 422, 'Verification token not issued yet')
   assert(!claim.rejected_at, 409, 'Claim has been rejected')
   assert(!claim.revoked_at, 409, 'Claim has been revoked')
   assert(!claim.verified_at, 409, 'Claim is already verified')
+  assert(claim.hostname, 422, 'Topic has no hostname for domain verification')
+  assert(claim.verification_token_hash, 422, 'Verification token not issued yet')
 
   const { hostname, verification_token_hash } = claim
 
