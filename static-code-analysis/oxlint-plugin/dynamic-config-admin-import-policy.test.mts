@@ -12,6 +12,33 @@ const apiDirectory = resolve('backend/api/v1/dynamic-config')
 const mcpDirectory = resolve('backend/mcp/admin')
 
 describe('dynamic-config-admin Oxlint import exception', () => {
+  it.each([apiDirectory, mcpDirectory])('keeps unrelated global bans in %s', directory => {
+    const deadline = createFixtureDeadline()
+    const fixture = mkdtempSync(join(directory, '.import-policy-'))
+    try {
+      for (const specifier of [
+        'next/cache',
+        'sanitize-html',
+        'marked',
+        'remark',
+        'rehype',
+        'remark-gfm',
+        'rehype-raw',
+        '@mdx-js/mdx',
+      ]) {
+        const result = runOxlint(
+          fixture,
+          `import * as value from '${specifier}'\nexport { value }\n`,
+          deadline,
+        )
+        expect(result.stdout).toContain('eslint(no-restricted-imports)')
+        expect(result.status).toBe(1)
+      }
+    } finally {
+      rmSync(fixture, { recursive: true, force: true })
+    }
+  })
+
   it('allows published primitives only in the consumer and still rejects raw DynamicConfig', () => {
     const deadline = createFixtureDeadline()
     const consumerFixture = mkdtempSync(join(consumerDirectory, '.import-policy-'))

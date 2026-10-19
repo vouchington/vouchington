@@ -1,6 +1,8 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { countDynamicConfigAuditRows, createTestUser } from '@voucha/test-helpers'
+import { dynamicConfigRegistry } from '@services/dynamic-config-admin/registry'
+import { withIsolatedDynamicConfigForTest } from '@voucha/test-helpers/isolated-dynamic-config'
 import type { PrivateUser } from '@services/users/types'
 
 describe('dynamic-config', () => {
@@ -83,28 +85,35 @@ describe('dynamic-config', () => {
   describe('PATCH /api/v1/dynamic-config/namespaces/:namespace', () => {
     it('updates a field, records audit history, and returns changed fields', async () => {
       const namespace = 'feature-flags'
-      const request = createRequest()
-      await request.authenticateAs(admin)
+      const entry = dynamicConfigRegistry.get(namespace)!
+      const original = entry.config
+      await withIsolatedDynamicConfigForTest(entry, async config => {
+        expect(config.key).toMatch(/^dynamic-config:test-/)
+        const request = createRequest()
+        await request.authenticateAs(admin)
 
-      const patchResponse = await request
-        .patch(`/api/v1/dynamic-config/namespaces/${namespace}`)
-        .send({ config: { memberships: true } })
-        .expect(200)
+        const patchResponse = await request
+          .patch(`/api/v1/dynamic-config/namespaces/${namespace}`)
+          .send({ config: { memberships: true } })
+          .expect(200)
 
-      expect(patchResponse.body.changed).toBe(true)
-      expect(patchResponse.body.namespace.config.memberships).toBe(true)
+        expect(patchResponse.body.changed).toBe(true)
+        expect(patchResponse.body.namespace.config.memberships).toBe(true)
 
-      const historyResponse = await request
-        .get(`/api/v1/dynamic-config/namespaces/${namespace}/history`)
-        .expect(200)
+        const historyResponse = await request
+          .get(`/api/v1/dynamic-config/namespaces/${namespace}/history`)
+          .expect(200)
 
-      expect(historyResponse.body.history[0]).toMatchObject({
-        namespace,
-        changed_by: { id: admin.id },
-        changed_fields: {
-          memberships: expect.objectContaining({ previous: expect.any(Boolean), next: true }),
-        },
+        const history = historyResponse.body.history as Array<{ changed_by: { id: string } | null }>
+        expect(history.find(row => row.changed_by?.id === admin.id)).toMatchObject({
+          namespace,
+          changed_by: { id: admin.id },
+          changed_fields: {
+            memberships: expect.objectContaining({ previous: expect.any(Boolean), next: true }),
+          },
+        })
       })
+      expect(entry.config).toBe(original)
     })
 
     it('does not write audit rows for no-op updates', async () => {
@@ -114,7 +123,7 @@ describe('dynamic-config', () => {
         .get('/api/v1/dynamic-config/namespaces/recaptcha-config')
         .expect(200)
       const enabled = before.body.namespace.config.enabled as boolean
-      const beforeCount = await countDynamicConfigAuditRows('recaptcha-config')
+      const beforeCount = await countDynamicConfigAuditRows('recaptcha-config', admin.id)
 
       const response = await request
         .patch('/api/v1/dynamic-config/namespaces/recaptcha-config')
@@ -122,7 +131,7 @@ describe('dynamic-config', () => {
         .expect(200)
 
       expect(response.body.changed).toBe(false)
-      expect(await countDynamicConfigAuditRows('recaptcha-config')).toBe(beforeCount)
+      expect(await countDynamicConfigAuditRows('recaptcha-config', admin.id)).toBe(beforeCount)
     })
 
     it('returns validation errors for invalid updates', async () => {
