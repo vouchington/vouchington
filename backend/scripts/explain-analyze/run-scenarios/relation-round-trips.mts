@@ -3,10 +3,7 @@ import sql from 'sql-template-strings'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
 import { upsertEntityRelation } from '@services/entity-relations/upsert'
 import { deletePendingRecommendation } from '@services/topic-recommendations/delete-pending-recommendation'
-import {
-  replaceTopicRecommendationHostnames,
-  type MaterializedTopicRecommendationInput,
-} from '@services/topic-recommendations/materialize-topic-recommendation'
+import { replaceTopicRecommendationHostnames } from '@services/topic-recommendations/materialize-topic-recommendation'
 import { createTopicRecommendationLinkRelation } from '@services/topic-recommendations/create-topic-recommendation-link-relation'
 import { writeTopicRecommendationUpdate } from '@services/topic-recommendations/update-topic-recommendation'
 import { createPostTextEmbeddingContent } from '@services/posts/content'
@@ -78,11 +75,17 @@ export async function runRelationRoundTripScenarios(): Promise<void> {
           topic_title: 'explain',
           topic_slug: 'explain-update',
           topic_markdown: null,
+          topic_hostname: null,
+          topic_hostnames: [],
           topic_aliases: [],
-          hostname_id: null,
           topic_type: 'topic',
+          example_referral_link: null,
+          landing_page_urls: [],
           example_referral_url_id: null,
-        } as MaterializedTopicRecommendationInput,
+          landing_page_url_ids: [],
+          hostname_id: null,
+          hostname_ids: [],
+        },
         {},
       ),
     undefined,

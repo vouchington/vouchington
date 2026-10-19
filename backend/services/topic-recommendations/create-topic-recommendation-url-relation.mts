@@ -1,4 +1,4 @@
-import type { QueryOptions } from '@data-stores/psql/types'
+import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
 import { addUrls } from '@services/urls'
 import { writeEntityRelations } from '@services/entity-relations/write-relations'
 import type { EntityRelation } from '@services/entity-relations/upsert-helpers'
@@ -15,7 +15,10 @@ const landingPageRelation = getEntityRelationMetadataOrThrow({
   predicate: 'landing_page',
 })
 
-type UrlRelationOptions = QueryOptions & { hostnameOwnershipLocked?: boolean }
+type UrlRelationOptions = Omit<QueryOptions, 'query'> & {
+  query: TransactionQuery
+  hostnameOwnershipLocked?: boolean
+}
 type UrlRelationResult = { relation: EntityRelation | null; urlId: string | null }
 
 export async function createTopicRecommendationUrlRelations(
