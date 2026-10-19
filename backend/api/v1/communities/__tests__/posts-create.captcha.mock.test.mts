@@ -1,3 +1,4 @@
+import { write } from '@data-stores/psql'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { TEST_CAPTCHA_TOKEN } from '@voucha/test-helpers/captcha/test-captcha-token'
@@ -13,7 +14,6 @@ import {
   archiveTestCommunity,
   removeTestCommunityMember,
 } from '@voucha/test-helpers'
-import { updateCommunity } from '@services/communities/update'
 import { normalizeRouteAdmissionIntent } from '@services/contribution-gating/admit-route-contribution'
 import { runContributionAdmission } from '@services/contribution-gating/admission'
 import { CONTRIBUTION_ADMISSION_CLAIM_SECONDS } from '@services/contribution-gating/config'
@@ -131,7 +131,7 @@ describe('POST /api/v1/communities/:idOrSlug/posts CAPTCHA', () => {
     async state => {
       const user = await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS)
       const community = await insertTestCommunity({ createdById: user.id })
-      const membership = await insertTestCommunityMember({
+      await insertTestCommunityMember({
         communityId: community.id,
         userId: user.id,
         role: 'owner',
@@ -144,7 +144,10 @@ describe('POST /api/v1/communities/:idOrSlug/posts CAPTCHA', () => {
         } else if (state === 'removed') {
           await removeTestCommunityMember(community.id, user.id)
         } else {
-          await updateCommunity(user, community.id, { visibility: 'private' }, membership)
+          await write(
+            `/* postsCreateCaptcha.privateCommunity */ UPDATE communities SET visibility = 'private' WHERE id = $1`,
+            [community.id],
+          )
         }
         return new UndiciResponse(JSON.stringify({ success: true }))
       })
