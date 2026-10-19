@@ -108,7 +108,6 @@ describe('brand topic-claim MCP tools', () => {
     expect(hostname).toBe(restToken.body.dnsInstructions.hostname)
     expect(hostname.startsWith('_voucha-verification.')).toBe(true)
     vi.spyOn(dns, 'resolveTxtRecords').mockResolvedValue([restToken.body.rawToken])
-    vi.spyOn(dns, 'fetchWellKnownToken').mockResolvedValue(null)
 
     const verified = await writeTool(owner, 'verify_domain', {
       topic: topic.slug,

@@ -1354,6 +1354,9 @@ importers:
       '@aws-sdk/client-s3':
         specifier: ^3.1152.0
         version: 3.1152.0
+      '@modelcontextprotocol/sdk':
+        specifier: ^1.32.1
+        version: 1.32.1(supports-color@10.2.2)(zod@4.6.5)
       '@modules/structured-decisions':
         specifier: workspace:^
         version: link:../modules/structured-decisions
@@ -2158,6 +2161,9 @@ importers:
         specifier: ^0.10.0
         version: 0.10.0
     devDependencies:
+      '@services/mcp-tools':
+        specifier: workspace:^
+        version: link:../services/mcp-tools
       '@types/http-errors':
         specifier: ^2.0.5
         version: 2.0.5
