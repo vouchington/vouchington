@@ -1,5 +1,5 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
-import { write, type QueryOptions } from '@data-stores/psql'
+import type { QueryOptions } from '@data-stores/psql'
 import { isUUID } from '@modules/utils'
 import createHttpError from 'http-errors'
 import {
@@ -9,6 +9,10 @@ import {
 } from '@modules/feed-query-builders'
 import { postEligibilityFor, type EntityRelationViewer } from './viewer.mts'
 import { selectAccessiblePostIdsByRole } from './post-access-visibility.mts'
+import {
+  isDelegatedPrivateRootDenied,
+  readPostMutationAccessSnapshots,
+} from './post-mutation-snapshots.mts'
 
 /**
  * Whether object posts are listed (discovery rules, like feeds) or named by id (direct rules, like
@@ -124,17 +128,9 @@ export async function assertPostMutationAccess(
       }
     }
   }
-  if (authority.kind === 'first_party') {
-    return new Map(snapshots.map(snapshot => [snapshot.id, snapshot.root_post_id]))
-  }
-  for (const post of snapshots) {
-    if (post.root_privacy !== 'private') continue
-    if (
-      !authority.grantedScopes.includes('post-relations.owned-private:write') ||
-      post.candidate_created_by_id !== authority.credentialOwnerId ||
-      post.root_created_by_id !== authority.credentialOwnerId
-    ) {
-      throw createHttpError(403, 'Forbidden')
+  if (authority.kind === 'delegated') {
+    for (const post of snapshots) {
+      if (isDelegatedPrivateRootDenied(authority, post)) throw createHttpError(403, 'Forbidden')
     }
   }
   return new Map(snapshots.map(snapshot => [snapshot.id, snapshot.root_post_id]))
@@ -168,28 +164,7 @@ function assertRelatablePostIds(
 }
 
 async function getPostMutationAccessSnapshots(postIds: readonly string[], options?: QueryOptions) {
-  const { rows } = await write<{
-    id: string
-    root_post_id: string
-    candidate_created_by_id: string | null
-    root_created_by_id: string | null
-    root_privacy: 'public' | 'private'
-  }>(
-    sql`/* assertPostMutationAccess */
-      SELECT
-        candidate_post.id,
-        access_post.id AS root_post_id,
-        candidate_post.created_by_id AS candidate_created_by_id,
-        access_post.created_by_id AS root_created_by_id,
-        access_post.privacy AS root_privacy
-      FROM posts candidate_post
-      JOIN posts access_post ON access_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)
-      WHERE candidate_post.id = ANY(${postIds}::uuid[])
-    `,
-    options,
-  )
-  if (rows.length !== postIds.length) {
-    throw createHttpError(404, 'Not found')
-  }
+  const rows = await readPostMutationAccessSnapshots(postIds, options)
+  if (rows.length !== postIds.length) throw createHttpError(404, 'Not found')
   return rows
 }

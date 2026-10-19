@@ -1,4 +1,5 @@
 import { searchListItems } from '@services/lists'
+import { isAdminUser } from '@services/users'
 import type { ToolInvocationContext } from '@services/openai-agents/tool-types'
 import type { MergedToolSource } from './create-merged-tool.mts'
 import type { BasicUser } from '@services/users/types'
@@ -61,7 +62,9 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
           limit: clampToolLimit(args.limit, defaultLimit, max),
           after: args.after,
           mediaType: args.media_type,
-          ...(args.read !== undefined && { read: args.read, currentUserId: currentUser.id }),
+          currentUserId: currentUser.id,
+          isAdministrator: isAdminUser(currentUser),
+          ...(args.read !== undefined && { read: args.read }),
         }),
       )
       if (!page) return INVALID_CURSOR_RESULT

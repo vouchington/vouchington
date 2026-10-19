@@ -1,5 +1,10 @@
-import { assertPostTargetAccess } from '@services/entity-relation-actions'
-import { addListItem, type ListItem } from '@services/lists'
+import {
+  addListItem,
+  assertListablePostId,
+  assertListableRssFeedItemId,
+  type ListItem,
+} from '@services/lists'
+import { entityRelationViewerFor } from '@services/users'
 import type { BasicUser } from '@services/users/types'
 import { getDelegatedToolAuthority } from './delegated-authority.mts'
 import {
@@ -44,10 +49,10 @@ const tool: Tool<ListItemToolArgs, { success: true; list_item: ListItem }> = {
     async (args: ListItemToolArgs, invocationContext?: ToolInvocationContext) => {
       const { user, list } = await getListWriteContext(currentUser, args.list_id)
       const authority = getDelegatedToolAuthority(user, invocationContext)
-      // A credential reaches a post only through the same visibility and private-post rules a
-      // relation to it would need, so a list cannot become a way around them.
       if (args.item_type === 'post') {
-        await assertPostTargetAccess(user, authority, args.entity_id)
+        await assertListablePostId(entityRelationViewerFor(user), authority, args.entity_id)
+      } else {
+        await assertListableRssFeedItemId(args.entity_id)
       }
       return {
         success: true,

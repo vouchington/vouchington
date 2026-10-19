@@ -3,7 +3,9 @@ import { read, write } from '@data-stores/psql'
 import assert from 'http-assert'
 import { buildPageInfo, decodeUuidCursor, isSimpleCursor } from '@modules/pagination'
 import type { PageInfo } from '@voucha/types/pagination'
+import sql from 'sql-template-strings'
 import { getListItemStorageConfig } from './catalog.mts'
+import { listPostDiscoveryFilter } from './listable.mts'
 import type { ListItem, ListItemType } from './types.mts'
 import { invalidate } from '@services/entity-cache/invalidate'
 
@@ -110,6 +112,7 @@ export async function searchListItems(
     mediaType?: string
     read?: boolean
     currentUserId?: string
+    isAdministrator?: boolean
   } = {},
 ): Promise<{ results: ListItem[]; page_info: PageInfo }> {
   const requestedLimit = options.limit ?? clampLimit(undefined, 20)
@@ -117,8 +120,7 @@ export async function searchListItems(
   assert(requestedLimit > 0 && requestedLimit <= 100, 422, 'limit must be between 1 and 100')
   const limit = clampLimit(requestedLimit, 20)
 
-  const params: unknown[] = [listId]
-  let sql = `/* searchListItems */
+  const query = sql`/* searchListItems */
     WITH list_items AS (
       SELECT li.id, li.user_list_id AS list_id,
         'rss_feed_item'::user_list_item_types AS item_type,
@@ -126,36 +128,43 @@ export async function searchListItems(
         rfi.media_type::text AS media_type
       FROM user_list_rss_feed_items li
       JOIN rss_feed_items rfi ON rfi.id = li.rss_feed_item_id AND rfi.deleted_at IS NULL
-      WHERE li.user_list_id = $1 AND li.removed_at IS NULL
+      WHERE li.user_list_id = ${listId}::uuid AND li.removed_at IS NULL
       UNION ALL
       SELECT li.id, li.user_list_id AS list_id,
         'post'::user_list_item_types AS item_type,
         li.post_id AS entity_id, li.order_index, li.created_at,
         NULL::text AS media_type
       FROM user_list_posts li
-      WHERE li.user_list_id = $1 AND li.removed_at IS NULL
+      JOIN posts candidate_post
+        ON candidate_post.id = li.post_id AND candidate_post.deleted_at IS NULL
+      JOIN posts root_post
+        ON root_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)
+       AND root_post.deleted_at IS NULL
+      WHERE li.user_list_id = ${listId}::uuid AND li.removed_at IS NULL
+        AND `
+  query.append(listPostDiscoveryFilter(options.currentUserId, options.isAdministrator === true))
+  query.append(sql`
     )
     SELECT id, list_id, item_type, entity_id, order_index, created_at, media_type
     FROM list_items
-    WHERE true
-  `
+    WHERE true`)
 
-  if (options.mediaType) {
-    params.push(options.mediaType)
-    sql += ` AND media_type = $${params.length}`
-  }
+  if (options.mediaType) query.append(sql` AND media_type = ${options.mediaType}`)
 
   if (options.read !== undefined && options.currentUserId) {
-    params.push(options.currentUserId)
-    const paramIdx = params.length
-    const readExistsClause = `(
+    const userId = options.currentUserId
+    const readExists = sql`(
       CASE
-        WHEN item_type = 'rss_feed_item' THEN EXISTS (SELECT 1 FROM rss_feed_item_read_states WHERE user_id = $${paramIdx}::uuid AND rss_feed_item_id = entity_id::uuid)
-        WHEN item_type = 'post' THEN EXISTS (SELECT 1 FROM post_read_states WHERE user_id = $${paramIdx}::uuid AND post_id = entity_id::uuid)
+        WHEN item_type = 'rss_feed_item' THEN EXISTS (
+          SELECT 1 FROM rss_feed_item_read_states
+          WHERE user_id = ${userId}::uuid AND rss_feed_item_id = entity_id::uuid)
+        WHEN item_type = 'post' THEN EXISTS (
+          SELECT 1 FROM post_read_states
+          WHERE user_id = ${userId}::uuid AND post_id = entity_id::uuid)
         ELSE NULL
       END
     )`
-    sql += options.read ? ` AND ${readExistsClause}` : ` AND NOT ${readExistsClause}`
+    query.append(options.read ? sql` AND ` : sql` AND NOT `).append(readExists)
   }
 
   if (options.after) {
@@ -164,14 +173,12 @@ export async function searchListItems(
       isSimpleCursor,
       'Invalid cursor format: expected id cursor',
     )
-    params.push(cursor.id)
-    sql += ` AND id < $${params.length}::uuid`
+    query.append(sql` AND id < ${cursor.id}::uuid`)
   }
 
-  sql += ` ORDER BY id DESC LIMIT $${params.length + 1}`
-  params.push(limit + 1)
+  query.append(sql` ORDER BY id DESC LIMIT ${limit + 1}`)
 
-  const { rows } = await read(sql, params)
+  const { rows } = await read(query)
   const hasNextPage = rows.length > limit
   const results = rows.slice(0, limit).map(row => rowToListItem(row, row.item_type as ListItemType))
 

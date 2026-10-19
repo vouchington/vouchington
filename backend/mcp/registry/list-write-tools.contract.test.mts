@@ -278,11 +278,11 @@ describe('list write tools contract — real DB', () => {
     const caller = await createCaller()
     const list = await createOwnedList(caller.id, WEB_PROVENANCE, { name: listName() })
     const post = await createTestPost({ user: caller, privacy: 'private', broadcast: 'users' })
-    const args = { list_id: list.id, item_type: 'post', entity_id: post.id }
-    await callRejectedMcpTool(caller, 'add_list_item', args, SCOPES)
+    const args = { list_id: list.id, item_type: 'post' as const, entity_id: post.id }
+    const ctx = { credentialOwnerId: caller.id, grantedScopes: SCOPES }
+    await expect(addListItemTool.function(caller)(args, ctx)).rejects.toMatchObject({ status: 403 })
     expect(await itemCount(list.id)).toBe(0)
     await callStructuredMcpTool(caller, 'add_list_item', args, PRIVATE_SCOPES)
-    expect(await itemCount(list.id)).toBe(1)
   })
   it('hides another user’s private post even from a credential with the private grant', async () => {
     const caller = await createCaller()

@@ -1,5 +1,6 @@
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { v7 as uuidv7 } from 'uuid'
 import { getCommunityListItemStorageConfig } from '@voucha/types/entities/community-list-item-storage'
 import type { CommunityListItem, CommunityListItemType } from '@voucha/types/entities/community'
 
@@ -36,6 +37,25 @@ export async function insertTestCommunityListItem(
     added_by_id: (row.added_by_id as string | null) ?? null,
     created_at: row.created_at as Date,
   }
+}
+
+/** Attaches posts in array order; index 0 is the oldest list row and the last index is the newest. */
+export async function insertTestCommunityListPostBatch(options: {
+  communityId: string
+  postIds: readonly string[]
+  addedById: string
+}): Promise<{ oldestPostId: string; newestPostId: string }> {
+  const postIds = [...options.postIds]
+  if (postIds.length === 0) throw new Error('insertTestCommunityListPostBatch requires posts')
+  const base = Date.UTC(2020, 0, 1)
+  const itemIds = postIds.map((_, index) => uuidv7({ msecs: base + index * 1000 }))
+  await write(sql`/* insertTestCommunityListPostBatch */
+    INSERT INTO community_list_posts (id, community_id, post_id, added_by_id, order_index)
+    SELECT item_id, ${options.communityId}::uuid, post_id, ${options.addedById}::uuid, ordinality::int
+    FROM unnest(${itemIds}::uuid[], ${postIds}::uuid[]) WITH ORDINALITY
+      AS row(item_id, post_id, ordinality)
+  `)
+  return { oldestPostId: postIds[0]!, newestPostId: postIds.at(-1)! }
 }
 
 export async function removeTestCommunityListItem(
