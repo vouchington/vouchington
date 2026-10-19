@@ -3,6 +3,7 @@ import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, insertTestTopic } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import { createTopicClaim } from '@services/topic-claims/create'
+import { adminVerifyTopicClaim } from '@services/topic-claims/admin-verify'
 
 describe('POST /api/v1/topics/:idOrSlug/claims', () => {
   let regularUser: PrivateUser
@@ -61,6 +62,7 @@ describe('POST /api/v1/topics/:idOrSlug/claims', () => {
 
     expect(response.body.claim).toBeDefined()
     expect(response.body.claim.topic_id).toBe(topicId)
+    expect(response.body.claim.state).toBe('pending')
     expect(response.body.isDuplicate).toBe(false)
   })
 
@@ -82,6 +84,44 @@ describe('POST /api/v1/topics/:idOrSlug/claims', () => {
       .expect(200)
 
     expect(second.body.isDuplicate).toBe(true)
+    expect(second.body.claim.state).toBe('pending')
+    expect(second.body.claim.claimed_role).toBe('Operator')
+  })
+
+  it('returns 200 and leaves a verified claim unchanged', async () => {
+    const claimant = await createTestUser()
+    const staff = await createTestUser({ administrator: true })
+    const request = createRequest()
+    await request.authenticateAs(claimant)
+    const created = await request
+      .post(`/api/v1/topics/${topicId}/claims`)
+      .set('Content-Type', 'application/json')
+      .send({ claimed_role: 'Issuer', evidence: 'Original evidence' })
+      .expect(201)
+    await adminVerifyTopicClaim(staff.id, created.body.claim.id)
+
+    const second = await request
+      .post(`/api/v1/topics/${topicId}/claims`)
+      .set('Content-Type', 'application/json')
+      .send({ claimed_role: 'Different role', evidence: 'Replaced evidence' })
+      .expect(200)
+
+    expect(second.body.isDuplicate).toBe(true)
+    expect(second.body.claim.id).toBe(created.body.claim.id)
+    expect(second.body.claim.claimed_role).toBe('Issuer')
+    expect(second.body.claim.evidence).toBe('Original evidence')
+    expect(second.body.claim.state).toBe('verified')
+  })
+
+  it('returns 422 when evidence exceeds 10000 characters', async () => {
+    const claimant = await createTestUser()
+    const request = createRequest()
+    await request.authenticateAs(claimant)
+    await request
+      .post(`/api/v1/topics/${topicId}/claims`)
+      .set('Content-Type', 'application/json')
+      .send({ claimed_role: 'Issuer', evidence: 'e'.repeat(10_001) })
+      .expect(422)
   })
 
   it('masks foreign and absent manual-review claims before malformed body details', async () => {

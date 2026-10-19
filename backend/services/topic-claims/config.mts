@@ -1,3 +1,6 @@
+/** Published at `_voucha-verification.<hostname>`, the name domain proof must resolve. */
+export const TOPIC_CLAIM_DNS_TXT_PREFIX = '_voucha-verification'
+
 export const TOPIC_CLAIM_VERIFICATION_METHODS = [
   'dns_txt',
   'well_known_file',

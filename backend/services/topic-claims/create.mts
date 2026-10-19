@@ -12,33 +12,63 @@ export async function createTopicClaim(
   assert(topic, 404, 'Topic not found')
 
   const { rows } = await write(sql`/* createTopicClaim */
-    INSERT INTO topic_claims (
-      topic_id,
-      claimant_user_id,
-      claimed_role,
-      evidence,
-      verification_hostname_id
+    WITH upsert AS (
+      INSERT INTO topic_claims (
+        topic_id,
+        claimant_user_id,
+        claimed_role,
+        evidence,
+        verification_hostname_id
+      )
+      VALUES (
+        ${topic.id},
+        ${currentUserId},
+        ${input.claimedRole},
+        ${input.evidence},
+        ${topic.hostname_id}
+      )
+      ON CONFLICT (topic_id, claimant_user_id)
+      WHERE rejected_at IS NULL AND revoked_at IS NULL
+      DO UPDATE SET
+        claimed_role = EXCLUDED.claimed_role,
+        evidence = EXCLUDED.evidence
+      WHERE topic_claims.verified_at IS NULL
+        AND topic_claims.submitted_at IS NULL
+      RETURNING
+        (xmax = 0) AS inserted,
+        id, topic_id, claimant_user_id, verification_method,
+        claimed_role, evidence, submitted_at,
+        verified_at, verified_by_id, rejected_at, rejected_by_id, rejection_reason,
+        revoked_at, revoked_by_id, revocation_reason,
+        verification_hostname_id, verification_token_issued_at,
+        domain_verified_at, created_at, updated_at
     )
-    VALUES (
-      ${topic.id},
-      ${currentUserId},
-      ${input.claimedRole},
-      ${input.evidence},
-      ${topic.hostname_id}
-    )
-    ON CONFLICT (topic_id, claimant_user_id)
-    WHERE rejected_at IS NULL AND revoked_at IS NULL
-    DO UPDATE SET
-      claimed_role = EXCLUDED.claimed_role,
-      evidence = EXCLUDED.evidence
-    RETURNING
-      (xmax = 0) AS inserted,
+    SELECT
+      inserted,
       id, topic_id, claimant_user_id, verification_method,
       claimed_role, evidence, submitted_at,
       verified_at, verified_by_id, rejected_at, rejected_by_id, rejection_reason,
       revoked_at, revoked_by_id, revocation_reason,
       verification_hostname_id, verification_token_issued_at,
       domain_verified_at, created_at, updated_at
+    FROM upsert
+    UNION ALL
+    SELECT
+      FALSE AS inserted,
+      id, topic_id, claimant_user_id, verification_method,
+      claimed_role, evidence, submitted_at,
+      verified_at, verified_by_id, rejected_at, rejected_by_id, rejection_reason,
+      revoked_at, revoked_by_id, revocation_reason,
+      verification_hostname_id, verification_token_issued_at,
+      domain_verified_at, created_at, updated_at
+    FROM topic_claims
+    WHERE NOT EXISTS (SELECT 1 FROM upsert)
+      AND topic_id = ${topic.id}
+      AND claimant_user_id = ${currentUserId}
+      AND rejected_at IS NULL
+      AND revoked_at IS NULL
+      AND (verified_at IS NOT NULL OR submitted_at IS NOT NULL)
+    LIMIT 1
   `)
 
   const result = rows[0] as (TopicClaim & { inserted: boolean }) | undefined

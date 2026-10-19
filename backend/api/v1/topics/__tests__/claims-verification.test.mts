@@ -33,13 +33,13 @@ describe('POST /api/v1/topics/:idOrSlug/claims/:claimId/verification-token', () 
       .expect(401)
   })
 
-  it('returns 403 for non-claimant user', async () => {
+  it('returns 404 for non-claimant user', async () => {
     const other = await createTestUser()
     const request = createRequest()
     await request.authenticateAs(other)
     await request
       .post(`/api/v1/topics/${topicSlug}/claims/${claimId}/verification-token`)
-      .expect(403)
+      .expect(404)
   })
 
   it('returns 422 for claim id not a UUID', async () => {
@@ -113,6 +113,17 @@ describe('POST /api/v1/topics/:idOrSlug/claims/:claimId/manual-review-submission
 
     expect(response.body.claim).toBeDefined()
     expect(response.body.claim.submitted_at).not.toBeNull()
+    expect(response.body.claim.state).toBe('pending')
+  })
+
+  it('returns 422 when evidence exceeds 10000 characters', async () => {
+    const request = createRequest()
+    await request.authenticateAs(claimant)
+    await request
+      .post(`/api/v1/topics/${topicSlug}/claims/${claimId}/manual-review-submission`)
+      .set('Content-Type', 'application/json')
+      .send({ evidence: 'e'.repeat(10_001) })
+      .expect(422)
   })
 
   it('rejects a non-string evidence body for the claimant', async () => {

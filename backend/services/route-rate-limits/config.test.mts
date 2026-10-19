@@ -278,4 +278,10 @@ describe('route rate-limit registry', () => {
     expect(missingRegistryEntries).toEqual([])
     expect(nonVoteEntries).toEqual([])
   })
+
+  it('classifies topic-claim domain verification as sensitive', () => {
+    expect(
+      getRouteConfig('POST:/api/v1/topics/:idOrSlug/claims/:claimId/domain-verification').category,
+    ).toBe('sensitive')
+  })
 })

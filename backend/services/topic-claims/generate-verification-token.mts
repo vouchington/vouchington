@@ -3,6 +3,7 @@ import { write, read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import { hashToken } from '@modules/token-secrets'
+import { TOPIC_CLAIM_DNS_TXT_PREFIX } from './config.mts'
 
 export interface VerificationTokenResult {
   rawToken: string
@@ -52,7 +53,7 @@ export async function issueDomainVerificationToken(
       }
     | undefined
   assert(claimRow, 404, 'Claim not found')
-  assert(claimRow.claimant_user_id === currentUserId, 403, 'Forbidden')
+  assert(claimRow.claimant_user_id === currentUserId, 404, 'Claim not found')
   assert(!claimRow.verified_at, 409, 'Claim is already verified')
   assert(!claimRow.rejected_at, 409, 'Claim has been rejected')
   assert(
@@ -77,7 +78,7 @@ export async function issueDomainVerificationToken(
     rawToken,
     dnsInstructions: {
       recordType: 'TXT',
-      hostname: `_voucha-verification.${hostname}`,
+      hostname: `${TOPIC_CLAIM_DNS_TXT_PREFIX}.${hostname}`,
       value: rawToken,
     },
     wellKnownInstructions: {
