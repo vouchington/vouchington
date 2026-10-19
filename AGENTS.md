@@ -30,7 +30,7 @@
   generalizable rules belong in `no-mistakes`. Before building AST parsing, ask a human for an
   architectural decision. ast-grep and Oxlint rules may live here; Oxlint plugins belong in
   `vouchington-tooling`.
-- Tests follow the [suite rules](docs/development/tests.md#test-suite-rules).
+- Tests follow the [suite rules](docs/development/tests.md#test-suite-rules). Tests exercise code this repository owns; delete tests of dependencies, including our own published packages.
 - Tests use synthetic Git refs; keep production pins, checksums, and intentional historical refs exact.
   Test helpers belong only in `test-helpers/**` or immediately below
   a top-level workspace; never add nested helpers or `test-support` directories.
