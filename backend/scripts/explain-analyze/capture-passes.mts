@@ -9,8 +9,12 @@ import {
 import { assertRequiredPlanShape } from './plan-gates.mts'
 import { hasLaunchedParallelWorkers } from './plan-node-stats.mts'
 import { getScenarioContract } from './plan-expectations.mts'
-import { getLargeTableRelations, getLargeTableSeqScanRelations } from './plan-warnings.mts'
-import { getExplainResultIdentity, SEQ_SCAN_BASELINE } from './seq-scan-baseline.mts'
+import { getLargeTableSeqScanRelations } from './plan-warnings.mts'
+import {
+  getExplainResultIdentity,
+  getResampleRelations,
+  SEQ_SCAN_BASELINE,
+} from './seq-scan-baseline.mts'
 import { costWithoutSeqScan, forcedSeqScan, type ProbedExplainResult } from './seq-scan-ties.mts'
 
 export type Capture = {
@@ -31,8 +35,12 @@ const seedPlanDiagnosticScenarios = new Set([
   'topic-search-text',
 ])
 
+const resample = { statements: 0, milliseconds: 0 }
+
 export function resetRepeatedResults(): void {
   repeatedResults.length = 0
+  resample.statements = 0
+  resample.milliseconds = 0
 }
 
 // The paired captures share one database, so they cannot show that a sequential scan is a coin
@@ -146,11 +154,14 @@ export async function captureScenarioTwice(
 
   // No fixture row change is committed between passes. Every EXPLAIN runs in a rolled-back
   // transaction, while the service callback and fixture cleanup run only before this pair.
-  const relations = [...new Set(firstResults.flatMap(getLargeTableRelations))].toSorted()
-  // getLargeTableRelations only returns parents from the fixed large-table registry (at most 22).
+  const relations = getResampleRelations(firstResults)
+  // Both sources only name parents from the fixed large-table registry (at most 22).
   if (relations.length > 0) {
     const names = relations.map(relation => `"${relation.replaceAll('"', '""')}"`).join(', ')
+    const startedAt = performance.now()
     await write(`/* explainSeqScanStability */ ANALYZE ${names}`)
+    resample.statements += 1
+    resample.milliseconds += performance.now() - startedAt
   }
 
   for (const input of inputs) {
@@ -170,4 +181,7 @@ export function writeSecondPassResults(firstPath: string, completedScenarioIds: 
     JSON.stringify({ results: repeatedResults, completedScenarioIds }, null, 2),
   )
   console.log(`Repeated EXPLAIN results written to: ${secondPath}`)
+  console.log(
+    `Between-pass ANALYZE: ${resample.statements} statements, ${(resample.milliseconds / 1000).toFixed(1)}s`,
+  )
 }

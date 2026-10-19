@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { analyzeResult, getLargeTableRelations } from './plan-warnings.mts'
+import { analyzeResult } from './plan-warnings.mts'
 import type { ExplainResult } from '@data-stores/psql'
 
 function makeResult(plan: unknown, opts?: Partial<ExplainResult>): ExplainResult {
@@ -80,7 +80,6 @@ describe('analyzeResult', () => {
     }
     const { seqScans } = analyzeResult(makeResult(plan))
     expect(seqScans).toHaveLength(0)
-    expect(getLargeTableRelations(makeResult(plan))).toEqual(['posts'])
   })
 
   it('does not flag never-executed seq scans with zero loops', () => {
@@ -126,7 +125,6 @@ describe('analyzeResult', () => {
     const { estimateMismatches } = analyzeResult(makeResult(plan))
     expect(estimateMismatches).toHaveLength(1)
     expect(estimateMismatches[0].ratio).toBe(1000)
-    expect(getLargeTableRelations(makeResult(plan))).toEqual(['posts'])
   })
 
   it('does not flag estimate mismatches with ratio <= 10', () => {

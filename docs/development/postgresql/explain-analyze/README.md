@@ -74,8 +74,10 @@ or swapped; it proves label completeness, not function coverage.
   seeds.
 - **Sequential-scan baseline.** Fingerprints key each query and plan mode to its scanned large
   relations; partition children use the parent name so rollover is not a new fingerprint. Each
-  scenario is captured twice with `ANALYZE` between, and a fingerprint missing from the baseline
-  fails only if both captures show it. The captures share one database, so they cannot reveal a scan
+  scenario is captured twice, and a fingerprint missing from the baseline fails only if both
+  captures show it. Between the captures, `ANALYZE` re-samples only the large relations the first
+  capture scanned and the baselined relations it skipped, because only those can change the gate;
+  re-analyzing every large relation a plan touched took most of the run. The captures share one database, so they cannot reveal a scan
   that is a coin flip across databases: each large scan is also planned with `enable_seqscan = off`,
   and when avoiding it costs at most a quarter more (`SEQ_SCAN_TIE_RATIO`) it is a near-tie and
   advisory. A missing index keeps the scan in the probe plan and a real regression costs far more,

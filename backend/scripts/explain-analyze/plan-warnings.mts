@@ -54,18 +54,6 @@ export function isLargeTable(relationName: string): boolean {
   return LARGE_TABLES.has(parentRelationName(relationName))
 }
 
-export function getLargeTableRelations(result: ExplainResult): string[] {
-  return [
-    ...new Set(
-      collectNodes(result.plan).flatMap(node =>
-        node.relationName && isLargeTable(node.relationName)
-          ? [parentRelationName(node.relationName)]
-          : [],
-      ),
-    ),
-  ].toSorted()
-}
-
 export function getLargeTableSeqScanRelations(result: ExplainResult): string[] {
   return [
     ...new Set(analyzeResult(result).seqScans.map(scan => parentRelationName(scan.relationName))),
