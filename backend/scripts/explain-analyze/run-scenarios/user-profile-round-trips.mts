@@ -156,4 +156,30 @@ export async function runUserProfileRoundTripScenarios(): Promise<void> {
     undefined,
     'reorderProfileLinks',
   )
+
+  await write(sql`
+    /* explainDeletedUserPriorUsername */
+    INSERT INTO user_deletion_requests (user_id, requested_by_id, prior_username)
+    VALUES (${seedUser.id}, ${seedUser.id}, ${seedUser.username})
+    ON CONFLICT (user_id) DO NOTHING
+  `)
+  registerScenarioContract('deleted-user-prior-username', {
+    expectations: [
+      {
+        kind: 'usesIndexes',
+        indexes: ['user_deletion_requests_user_id_key'],
+        queryContains: 'prior_username',
+      },
+      // One unique-index lookup. Budget is the measured row plus 20%.
+      { kind: 'maxProcessedRows', relation: 'user_deletion_requests', max: 2 },
+    ],
+  })
+  await runAndCapture(
+    'deleted-user-prior-username',
+    () =>
+      read(sql`/* cleanupSoftDeletedUserBatch:priorUsername */
+        SELECT prior_username FROM user_deletion_requests WHERE user_id = ${seedUser.id}`),
+    undefined,
+    'cleanupSoftDeletedUserBatch:priorUsername',
+  )
 }

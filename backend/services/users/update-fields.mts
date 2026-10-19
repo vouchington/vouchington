@@ -1,5 +1,4 @@
 import { enqueueOnUserUpdated } from '@queues/entity-listeners/enqueues'
-import { write } from '@data-stores/psql'
 import { getRequestCurrentUser, setRequestCurrentUser } from '@modules/utils/request-context'
 import { getPrivateUserByAny } from './get.mts'
 import assert from 'http-assert'
@@ -13,6 +12,7 @@ import sql from 'sql-template-strings'
 import { appendSet, appendVisibilityFields } from './update-fields-visibility.mts'
 import { appendCountryField, appendUiLocaleField } from './update-fields-locale.mts'
 import { appendUserPreferenceFields, hasUserFieldUpdates } from './update-fields-preferences.mts'
+import { commitUserFieldUpdate } from './update-username-publication.mts'
 
 const userMetricsVisibilityFields = [
   'community_memberships_visibility',
@@ -135,10 +135,8 @@ export async function updateUserFields(
     WHERE id = ${userId} AND deleted_at IS NULL
     RETURNING WITH (OLD AS prior) prior.username AS previous_username, id
   `)
-  const { rows } = await writeUpdatedUser(update)
-  const written = rows[0]
-  assert(written, 404, 'User not found')
-  const previousUsername = typeof username === 'string' ? written.previous_username : undefined
+  // An authenticated row can predate another rename; invalidate the version this UPDATE replaced.
+  const previousUsername = await commitUsernameAwareUpdate(userId, update, validatedUsername)
   const updatedUser = await getPrivateUserByAny(userId, { readOnly: false })
   assert(updatedUser, 404, 'User not found')
   if (getRequestCurrentUser<PrivateUser>()?.id === updatedUser.id)
@@ -154,11 +152,14 @@ export async function updateUserFields(
   return updatedUser
 }
 
-async function writeUpdatedUser(
-  query: ReturnType<typeof sql>,
-): Promise<{ rows: Array<{ previous_username: string | null; id: string }> }> {
+async function commitUsernameAwareUpdate(
+  userId: string,
+  statement: ReturnType<typeof sql>,
+  validatedUsername: string | undefined,
+): Promise<string | null | undefined> {
   try {
-    return await write<{ previous_username: string | null; id: string }>(query)
+    const previousUsername = await commitUserFieldUpdate(userId, statement, validatedUsername)
+    return typeof validatedUsername === 'string' ? previousUsername : undefined
   } catch (err) {
     const pgError = err as { code?: string; constraint?: string }
     if (pgError.code === '23505' && pgError.constraint === 'idx_users__username') {
