@@ -6,7 +6,7 @@ Backend database tests run in parallel forks against one persistent, dirty datab
 
 ## Shared rows and locks
 
-- **Materialized-view refreshes share one advisory lock.** `refreshMaterializedView` is nonblocking and throws a retryable error when another fork holds the lock. Tests that need a refresh to finish use `refreshMaterializedViewForTest`. Never replace the production lock with a blocking wait.
+- **Materialized-view refreshes share one advisory lock.** The production refresh is nonblocking and throws a retryable contention error. Native preflights own refreshed-snapshot assertions in one process; database unit tests do not refresh views. The lock serializes individual refreshes, not an entire snapshot contract across multiple processes. Never replace it with a blocking production wait.
 - **Exact global aggregates need owned windows.** Randomized ids prevent collisions but cannot isolate an exact query over a shared aggregate. Reserve an owned window and register release with `onTestFinished`. Do not replace this with a production filter, unreserved random dates, or one global lock: those change product semantics, stay probabilistic, or serialize parallel tests.
 - **Canonical URL upserts share one row.** `addUrl` returns the same `urls` row for the same normalized URL, so an absence assertion must use a URL the test just created. Do not reuse a fixed example URL or delete the shared row.
 - **Jurisdiction policy approvals share one lock per jurisdiction.** Read-committed visibility means an uncommitted concealment still sees another test's committed approval. Concealment and approval inserts take the same transaction advisory lock; do not replace it with `LOCK TABLE`.

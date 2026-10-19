@@ -39,7 +39,8 @@ const repoRoot = path.join(backendDir, '..')
 // dependency-cruiser reports `from.path` as a POSIX repo-relative path regardless of
 // host OS, so this pattern is POSIX-only (`/`) by design — no `[\\/]` alternation needed.
 const NON_RUNTIME_SOURCE_PATTERN =
-  '^backend/test-helpers/|(?:^|/)__tests__/|\\.test\\.|\\.d\\.[mc]?ts$'
+  '^backend/test-helpers/|^backend/scripts/check-materialized-view-contracts\\.mts$|' +
+  '^backend/scripts/native-mv-contracts/|(?:^|/)__tests__/|\\.test\\.|\\.d\\.[mc]?ts$'
 
 function toRepoRelativePosix(absoluteDir) {
   return path.relative(repoRoot, absoluteDir).split(path.sep).join('/')

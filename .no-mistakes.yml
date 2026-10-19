@@ -637,6 +637,128 @@ rules:
         # queries after each update to observe the production selector at each exact boundary.
         - { file: backend/scripts/rss-crawl-tier-contract.mts, callee: 'updateRssFeedTiming' }
         - { file: backend/scripts/rss-crawl-tier-contract.mts, callee: 'getRssFeedsToFetch' }
+        # The native MV preflight constructs owned assertion fixtures and observes sequential
+        # states. The tied-feed count follows the original 0.2% population threshold, while
+        # the hashtag fixtures use finite literal case sets; these are not production item loops.
+        - {
+            file: backend/scripts/native-mv-contracts/crawl-tiers.mts,
+            callee: 'setLocalRssFeedOwningTopicVoteScore',
+          }
+        - {
+            file: backend/scripts/native-mv-contracts/hashtag-author-deletion.mts,
+            callee: 'createPost',
+          }
+        - {
+            file: backend/scripts/native-mv-contracts/hashtag-author-deletion.mts,
+            callee: 'approveTestPost',
+          }
+        - {
+            file: backend/scripts/native-mv-contracts/hashtag-community.mts,
+            callee: 'createTestUser',
+          }
+        - {
+            file: backend/scripts/native-mv-contracts/hashtag-community.mts,
+            callee: 'createTestPost',
+          }
+        - {
+            file: backend/scripts/native-mv-contracts/hashtag-community.mts,
+            callee: 'createTopHashtagPostSourceForTest',
+          }
+        - {
+            file: backend/scripts/native-mv-contracts/hashtag-community.mts,
+            callee: 'insertTestCommunityPostReview',
+          }
+        - {
+            file: backend/scripts/native-mv-contracts/hashtag-eligibility.mts,
+            callee: 'createTestPost',
+          }
+        - {
+            file: backend/scripts/native-mv-contracts/hashtag-eligibility.mts,
+            callee: 'createTopHashtagPostSourceForTest',
+          }
+        - {
+            file: backend/scripts/native-mv-contracts/hashtag-eligibility.mts,
+            callee: 'setTopHashtagPostRelationScoreForTest',
+          }
+        - {
+            file: backend/scripts/native-mv-contracts/hashtag-eligibility.mts,
+            callee: 'checkPostExclusion',
+          }
+        - {
+            file: backend/scripts/native-mv-contracts/hashtag-eligibility.mts,
+            callee: 'createRssHashtagItem',
+          }
+        - {
+            file: backend/scripts/native-mv-contracts/hashtag-root-visibility.mts,
+            callee: 'createTestUser',
+          }
+        - {
+            file: backend/scripts/native-mv-contracts/hashtag-root-visibility.mts,
+            callee: 'createTestPost',
+          }
+        - {
+            file: backend/scripts/native-mv-contracts/hashtag-root-visibility.mts,
+            callee: 'createTopHashtagPostSourceForTest',
+          }
+        - {
+            file: backend/scripts/native-mv-contracts/hashtag-search-ranking.mts,
+            callee: 'createTestUser',
+          }
+        - {
+            file: backend/scripts/native-mv-contracts/hashtag-search-ranking.mts,
+            callee: 'createTestPost',
+          }
+        - {
+            file: backend/scripts/native-mv-contracts/hashtag-search-ranking.mts,
+            callee: 'createTopHashtagPostSourceForTest',
+          }
+        - {
+            file: backend/scripts/native-mv-contracts/hashtag-search-rss.mts,
+            callee: 'createTestUser',
+          }
+        - {
+            file: backend/scripts/native-mv-contracts/hashtag-search-rss.mts,
+            callee: 'createTestPost',
+          }
+        - {
+            file: backend/scripts/native-mv-contracts/hashtag-search-rss.mts,
+            callee: 'insertTestPendingCommunityPostReview',
+          }
+        - {
+            file: backend/scripts/native-mv-contracts/hashtag-search-rss.mts,
+            callee: 'createTopHashtagPostSourceForTest',
+          }
+        - {
+            file: backend/scripts/native-mv-contracts/hashtag-search-rss.mts,
+            callee: 'insertTestTopic',
+          }
+        - {
+            file: backend/scripts/native-mv-contracts/hashtag-search-rss.mts,
+            callee: 'insertTestRssFeedWithUrlId',
+          }
+        - {
+            file: backend/scripts/native-mv-contracts/hashtag-search-rss.mts,
+            callee: 'addTopHashtagRssFeedSourceForTest',
+          }
+        - {
+            file: backend/scripts/native-mv-contracts/hashtag-search-rss.mts,
+            callee: 'createRssHashtagItem',
+          }
+        # The contention probe retries one owned refresh after a concurrent lock holder releases.
+        - {
+            file: backend/scripts/native-mv-contracts/refresh-lock.mts,
+            callee: 'refreshMaterializedView',
+          }
+        # The single-owner native queue contract inserts exactly three owned RSS feeds to assert
+        # two paged fetch jobs and the exhausted run budget, then deletes those fixture rows.
+        - {
+            file: backend/scripts/native-mv-contracts/rss-worker-paged.mts,
+            callee: 'insertTestRssFeedDirect',
+          }
+        - {
+            file: backend/scripts/native-mv-contracts/trending-http.mts,
+            callee: 'insertEntityRelation',
+          }
         - { file: backend/scripts/explain-analyze/pruning/capture.mts, callee: 'explainAnalyze' }
         - {
             file: backend/scripts/explain-analyze/pruning/capture.mts,

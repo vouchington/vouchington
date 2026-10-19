@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import {
+  findUnbaselinedRepeats,
   formatClosedBaselineIssues,
   parseRepeatBaseline,
   temporaryBaselineEntries,
@@ -10,9 +11,17 @@ const BASELINE_URL = new URL(
   '../../test-helpers/api/request-query-profile-baseline.json',
   import.meta.url,
 )
-const temporary = { annotation: 'a', reason: 'covered by the owning issue', issue: 1 }
+const temporary = {
+  annotation: 'a',
+  route: null,
+  maxCount: null,
+  reason: 'covered by the owning issue',
+  issue: 1,
+}
 const permanent = {
   annotation: 'b',
+  route: null,
+  maxCount: null,
   reason: 'rereads after a lock',
   permanent: true as const,
   code: 'backend/services/x.mts:12',
@@ -45,9 +54,40 @@ describe('request query profile baseline shapes', () => {
     expect(bad).toEqual([])
   })
 
+  it('keeps the committed RSS batch allowance to two calls on the trending route', () => {
+    const entries = parseRepeatBaseline(JSON.parse(readFileSync(BASELINE_URL, 'utf8')))
+    const two = [{ annotation: 'getRssFeedsByIdBatch', count: 2 }]
+    const three = [{ annotation: 'getRssFeedsByIdBatch', count: 3 }]
+    expect(findUnbaselinedRepeats('GET /api/v1/rss-feeds/trending', two, entries)).toEqual([])
+    expect(findUnbaselinedRepeats('GET /api/v1/rss-feeds/recommended', two, entries)).toEqual(two)
+    expect(findUnbaselinedRepeats('GET /api/v1/rss-feeds/trending', three, entries)).toEqual(three)
+  })
+
   it('accepts a temporary and a permanent entry', () => {
     expect(parseRepeatBaseline([temporary, permanent])).toEqual([temporary, permanent])
     expect(temporaryBaselineEntries([temporary, permanent])).toEqual([temporary])
+  })
+
+  it('accepts only a precise route/count pair or an explicit all-route/unbounded pair', () => {
+    const scoped = {
+      ...permanent,
+      annotation: 'getRssFeedsByIdBatch',
+      route: 'GET /api/v1/rss-feeds/trending',
+      maxCount: 2,
+    }
+    expect(parseRepeatBaseline([scoped, permanent])).toEqual([scoped, permanent])
+    for (const bad of [
+      { ...scoped, route: null },
+      { ...scoped, maxCount: null },
+      { ...scoped, maxCount: 1 },
+      { ...scoped, maxCount: 2.5 },
+      { ...scoped, maxCount: Number.POSITIVE_INFINITY },
+      { ...scoped, route: 'GET /api/v1/rss-feeds/trending?limit=1' },
+      { ...scoped, route: '' },
+    ])
+      expect(parseError([bad])).not.toBe('')
+    expect(parseError([{ ...scoped, route: undefined }])).not.toBe('')
+    expect(parseError([{ ...scoped, maxCount: undefined }])).not.toBe('')
   })
 
   it('rejects permanent pointers outside the repository', () => {
@@ -70,7 +110,7 @@ describe('request query profile baseline shapes', () => {
   })
 
   it('rejects malformed and duplicate entries with a message naming each', () => {
-    const base = { annotation: 'a', reason: 'r' }
+    const base = { annotation: 'a', route: null, maxCount: null, reason: 'r' }
     const shape =
       'must be temporary { annotation, reason, issue } or permanent { annotation, reason, permanent: true, code }'
     const message = parseError([
@@ -102,9 +142,9 @@ describe('request query profile baseline shapes', () => {
 
   it('names each temporary entry whose issue is closed or missing', () => {
     const entries = parseRepeatBaseline([
-      { annotation: 'open', reason: 'r', issue: 1 },
-      { annotation: 'closed', reason: 'r', issue: 2 },
-      { annotation: 'gone', reason: 'r', issue: 3 },
+      { annotation: 'open', route: null, maxCount: null, reason: 'r', issue: 1 },
+      { annotation: 'closed', route: null, maxCount: null, reason: 'r', issue: 2 },
+      { annotation: 'gone', route: null, maxCount: null, reason: 'r', issue: 3 },
       permanent,
     ])
     const states = new Map([

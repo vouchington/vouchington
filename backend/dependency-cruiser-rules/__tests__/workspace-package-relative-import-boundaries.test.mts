@@ -70,4 +70,36 @@ describe('workspace-package-relative-import-boundaries', () => {
       expect(rule.to.dependencyTypesNot).toEqual(['type-only'])
     })
   })
+
+  it('allows only the standalone native MV CI scripts to use direct non-runtime fixtures', () => {
+    const scriptsRule = rules.find(
+      rule => rule.name === 'workspace-package-boundary-backend-scripts',
+    )
+    if (!scriptsRule) throw new Error('missing generated backend/scripts package rule')
+    const excluded = new RegExp(scriptsRule.from.pathNot)
+    expect(excluded.test('backend/scripts/check-materialized-view-contracts.mts')).toBe(true)
+    expect(excluded.test('backend/scripts/native-mv-contracts/trending-http.mts')).toBe(true)
+    expect(excluded.test('backend/scripts/check-materialized-view-contracts-copy.mts')).toBe(false)
+    expect(excluded.test('backend/scripts/native-mv-contracts-copy/trending-http.mts')).toBe(false)
+  })
+})
+
+describe('native MV data-store preflight exception', () => {
+  const dataStoreRules = require('../data-stores-primary.cjs') as Array<{
+    name: string
+    from: { pathNot: string[] }
+  }>
+  const rule = dataStoreRules.find(
+    candidate => candidate.name === 'no-data-stores-imports-unrestricted',
+  )
+  if (!rule) throw new Error('missing data-store import boundary rule')
+  const excluded = (path: string) =>
+    rule.from.pathNot.some(pattern => new RegExp(pattern).test(path))
+
+  it('admits the exact native preflight sources and rejects similarly named scripts', () => {
+    expect(excluded('backend/scripts/check-materialized-view-contracts.mts')).toBe(true)
+    expect(excluded('backend/scripts/native-mv-contracts/refresh-lock.mts')).toBe(true)
+    expect(excluded('backend/scripts/check-materialized-view-contracts-copy.mts')).toBe(false)
+    expect(excluded('backend/scripts/native-mv-contracts-copy/refresh-lock.mts')).toBe(false)
+  })
 })

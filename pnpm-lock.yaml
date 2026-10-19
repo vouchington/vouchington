@@ -3452,6 +3452,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../data-stores/psql
+      '@data-stores/valkey-glide-mq':
+        specifier: workspace:^
+        version: link:../data-stores/valkey-glide-mq
       '@modules/csv':
         specifier: workspace:^
         version: link:../modules/csv
@@ -3467,6 +3470,12 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../modules/utils
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../queues/background
+      '@queues/rss-feeds':
+        specifier: workspace:^
+        version: link:../queues/rss-feeds
       '@queues/vote-aggregation':
         specifier: workspace:^
         version: link:../queues/vote-aggregation
@@ -3674,6 +3683,12 @@ importers:
       '@vouchington/rss-parser':
         specifier: ^0.1.0
         version: 0.1.0
+      '@workers/rss-feeds':
+        specifier: workspace:^
+        version: link:../workers/rss-feeds
+      glide-mq:
+        specifier: ^0.18.0
+        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
       pgvector:
         specifier: ^0.3.0
         version: 0.3.0
@@ -10903,15 +10918,9 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
     devDependencies:
-      '@services/rss-feeds':
-        specifier: workspace:^
-        version: link:../rss-feeds
       '@types/http-errors':
         specifier: ^2.0.5
         version: 2.0.5
-      '@voucha/test-helpers':
-        specifier: workspace:^
-        version: link:../../test-helpers
 
   backend/services/trending-topics:
     dependencies:

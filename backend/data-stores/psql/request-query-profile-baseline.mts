@@ -1,10 +1,15 @@
-import {
-  REQUEST_PROFILE_PREFIX,
-  type RepeatedAnnotation,
-} from './request-query-profile-summary.mts'
+import type { RepeatedAnnotation } from './request-query-profile-summary.mts'
+import { baselineEntryProblem } from './request-query-profile-baseline-validation.mts'
 
 /** A repeat tolerated until the open `issue` removes it. */
-export interface TemporaryBaselineEntry {
+interface BaselineScope {
+  /** Null preserves an intentional exception on every route. */
+  route: string | null
+  /** Null preserves an intentional unbounded exception. A bounded exception names one route. */
+  maxCount: number | null
+}
+
+export interface TemporaryBaselineEntry extends BaselineScope {
   annotation: string
   reason: string
   /** Number of the open GitHub issue that owns removing the repeat. */
@@ -12,7 +17,7 @@ export interface TemporaryBaselineEntry {
 }
 
 /** A repeat the code needs on purpose; the reason names the mechanism. */
-export interface PermanentBaselineEntry {
+export interface PermanentBaselineEntry extends BaselineScope {
   annotation: string
   reason: string
   permanent: true
@@ -21,41 +26,6 @@ export interface PermanentBaselineEntry {
 }
 
 export type RepeatBaselineEntry = TemporaryBaselineEntry | PermanentBaselineEntry
-
-const CODE_POINTER = /^[\w./-]+\.\w+:(?:[1-9]\d*(?:-[1-9]\d*)?|[A-Za-z_$][\w$.]*)$/
-
-function rangeIsOrdered(code: string): boolean {
-  const range = /:(\d+)-(\d+)$/.exec(code)
-  return range === null || Number(range[1]) <= Number(range[2])
-}
-
-function entryProblem(entry: unknown): string | undefined {
-  if (typeof entry !== 'object' || entry === null) return 'is not an object'
-  const { annotation, reason, ...rest } = entry as Record<string, unknown>
-  if (typeof annotation !== 'string' || annotation.trim() === '')
-    return 'needs a non-empty annotation'
-  if (typeof reason !== 'string' || reason.trim() === '') return 'needs a non-empty reason'
-  const keys = Object.keys(rest).toSorted().join(',')
-  if (keys === 'issue') {
-    const { issue } = rest
-    if (typeof issue !== 'number' || !Number.isInteger(issue) || issue <= 0)
-      return 'needs `issue` to be a positive issue number'
-    return undefined
-  }
-  if (keys === 'code,permanent') {
-    if (rest.permanent !== true) return 'needs `permanent: true`'
-    if (
-      typeof rest.code !== 'string' ||
-      !CODE_POINTER.test(rest.code) ||
-      rest.code.startsWith('/') ||
-      !rangeIsOrdered(rest.code) ||
-      rest.code.split(':')[0]!.split('/').includes('..')
-    )
-      return 'needs `code` as "<repo path>:<line or symbol>"'
-    return undefined
-  }
-  return 'must be temporary { annotation, reason, issue } or permanent { annotation, reason, permanent: true, code }'
-}
 
 /**
  * Parsed baseline, or an error naming every malformed or duplicate entry.
@@ -67,7 +37,7 @@ export function parseRepeatBaseline(raw: unknown): RepeatBaselineEntry[] {
   const problems: string[] = []
   const seen = new Set<unknown>()
   raw.forEach((entry: unknown, index) => {
-    const problem = entryProblem(entry)
+    const problem = baselineEntryProblem(entry)
     const name = (entry as { annotation?: unknown } | null)?.annotation
     if (problem) problems.push(`entry ${index} (${JSON.stringify(name)}) ${problem}`)
     else if (seen.has(name))
@@ -88,81 +58,24 @@ export function temporaryBaselineEntries(
 }
 
 /**
- * Repeats that are not in the baseline, in the order given. A baselined annotation may repeat on
- * any route and any number of times: the baseline is per annotation, not per route.
+ * Repeats outside their exact baseline scope and maximum, in the order given.
  *
  * @public used by the API test server in backend/test-helpers, which production analysis ignores
  */
 export function findUnbaselinedRepeats(
+  route: string,
   repeats: readonly RepeatedAnnotation[],
   baseline: readonly RepeatBaselineEntry[],
 ): RepeatedAnnotation[] {
-  const known = new Set(baseline.map(entry => entry.annotation))
-  return repeats.filter(({ annotation }) => !known.has(annotation))
-}
-
-/**
- * Baseline entries whose annotation was not observed repeating. Report-only: a stale entry means
- * the fix landed, so the entry should be deleted, but it never fails a run.
- *
- * @public used by the stale-entry report in backend/test-helpers
- */
-export function findStaleBaselineEntries(
-  baseline: readonly RepeatBaselineEntry[],
-  observedAnnotations: ReadonlySet<string>,
-): RepeatBaselineEntry[] {
-  return baseline.filter(({ annotation }) => !observedAnnotations.has(annotation))
-}
-
-/** Completed main merge-group Backend runs a stale report needs before it is safe to act on. */
-export const MIN_STALE_EVIDENCE_LOGS = 5
-
-export interface StaleReport {
-  logCount: number
-  /** False when fewer than {@link MIN_STALE_EVIDENCE_LOGS} logs were given. */
-  sufficient: boolean
-  stale: RepeatBaselineEntry[]
-}
-
-/**
- * Stale entries across independent run logs (one log text per run): an entry is stale only when it
- * is absent from every log, because a data-dependent repeat can miss any single run.
- *
- * @public used by the stale-entry report in backend/test-helpers
- */
-export function buildStaleReport(
-  baseline: readonly RepeatBaselineEntry[],
-  logTexts: readonly string[],
-): StaleReport {
-  const observed = new Set<string>()
-  for (const text of logTexts) {
-    for (const annotation of observedRepeatAnnotations(text)) observed.add(annotation)
-  }
-  return {
-    logCount: logTexts.length,
-    sufficient: logTexts.length >= MIN_STALE_EVIDENCE_LOGS,
-    stale: findStaleBaselineEntries(baseline, observed),
-  }
-}
-
-/**
- * Annotations that repeated in `[pg-request-profile]` lines of CI log text (one run, any shard).
- *
- * @public used by the stale-entry report in backend/test-helpers
- */
-export function observedRepeatAnnotations(logText: string): Set<string> {
-  const observed = new Set<string>()
-  for (const line of logText.split('\n')) {
-    const start = line.indexOf(REQUEST_PROFILE_PREFIX)
-    if (start === -1) continue
-    // Annotations may contain spaces ("fn variant"), so the list runs to the end of the line.
-    const repeats = / repeats=(.*)$/.exec(line.slice(start).trimEnd())?.[1]
-    if (!repeats || repeats === 'none') continue
-    for (const match of repeats.matchAll(/([^,]+?)\(x\d+\)(?:,|$)/g)) {
-      if (match[1]) observed.add(match[1])
-    }
-  }
-  return observed
+  const known = new Map(baseline.map(entry => [entry.annotation, entry]))
+  return repeats.filter(({ annotation, count }) => {
+    const entry = known.get(annotation)
+    return (
+      !entry ||
+      (entry.route !== null && entry.route !== route) ||
+      (entry.maxCount !== null && count > entry.maxCount)
+    )
+  })
 }
 
 /**

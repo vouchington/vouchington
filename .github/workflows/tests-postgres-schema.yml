@@ -2,6 +2,12 @@ name: PostgreSQL Schema Tests
 
 on:
   workflow_call:
+    inputs:
+      publish_coverage:
+        description: Publish native materialized-view LCOV for backend coverage
+        required: false
+        type: boolean
+        default: false
   workflow_dispatch:
 
 permissions:
@@ -67,6 +73,26 @@ jobs:
         working-directory: backend
         run: node scripts/check-platform-stats-snapshot.mts
         timeout-minutes: 2
+      - name: Check native materialized-view contracts
+        working-directory: backend
+        timeout-minutes: 3
+        env:
+          NODE_DISABLE_COMPILE_CACHE: '1'
+          NODE_V8_COVERAGE: ${{ runner.temp }}/native-mv-v8
+          ANALYTICS_BACKEND: local
+          ANALYTICS_LOCAL_DIR: ${{ runner.temp }}/native-mv-analytics
+          VOUCHA_STORED_SECRET_ENCRYPTION_KEYS: fake-native-mv-ci-key:raw32:this fake test key is not secret
+          VOUCHA_OTP_TOKEN_HASH_SECRET: this is a fake native MV CI OTP HMAC secret
+          S3_BUCKET_IMAGES: test-images
+          S3_BUCKET_IMAGE_UPLOADS: test-image-uploads
+          S3_BUCKET_SITEMAPS: test-sitemaps
+          S3_BUCKET_RENDERS: test-renders
+          S3_BUCKET_ASSETS: test-assets
+          S3_BUCKET_CRAWLS: test-crawls
+          S3_BUCKET_USER_EXPORTS: test-user-exports
+          S3_BUCKET_QUARANTINE: test-quarantine
+          S3_BUCKET_BEDROCK_BATCH: test-bedrock-batch
+        run: python3 "$GITHUB_WORKSPACE/ci/run-bounded.py" 120 node scripts/check-materialized-view-contracts.mts
       - name: Clear stale PostgreSQL schema JUnit report
         timeout-minutes: 1
         run: rm -f postgres-schema-test-report.junit.xml
@@ -98,6 +124,51 @@ jobs:
         working-directory: backend
         run: node data-stores/psql/schema-snapshot/generate.mts --check
         timeout-minutes: 2
+      - name: Convert native materialized-view coverage with published c8
+        if: ${{ inputs.publish_coverage }}
+        timeout-minutes: 1
+        # --all adds zero-hit TypeScript records for modules this native check never loaded;
+        # the backend unit suites cover those modules in the merged patch-coverage gate.
+        run: >-
+          node node_modules/c8/bin/c8.js report
+          --temp-directory "$RUNNER_TEMP/native-mv-v8"
+          --reports-dir "$RUNNER_TEMP/native-mv-coverage"
+          --reporter json --reporter json-summary --reporter lcovonly
+          --extension .mts --src backend
+          --include 'backend/{api,data-stores,modules,queues,services,workers}/**'
+          --exclude '**/*.test.mts'
+      - name: Preserve full native materialized-view LCOV
+        if: ${{ inputs.publish_coverage }}
+        timeout-minutes: 1
+        run: |
+          mkdir -p coverage-full
+          cp "$RUNNER_TEMP/native-mv-coverage/lcov.info" coverage-full/lcov.info
+      - name: Upload full native materialized-view LCOV (attempt 1)
+        id: full-lcov-1
+        if: ${{ inputs.publish_coverage }}
+        continue-on-error: true
+        timeout-minutes: 3
+        uses: ./.github/actions/upload-full-lcov
+        with:
+          suite: backend-native-mv
+      - name: Upload full native materialized-view LCOV (attempt 2)
+        id: full-lcov-1-retry
+        if: ${{ inputs.publish_coverage && steps.full-lcov-1.outcome == 'failure' }}
+        continue-on-error: true
+        timeout-minutes: 3
+        uses: ./.github/actions/upload-full-lcov
+        with:
+          suite: backend-native-mv
+          name-suffix: -retry
+      - name: Require persisted native materialized-view LCOV
+        if: ${{ inputs.publish_coverage }}
+        timeout-minutes: 1
+        env:
+          FAMILY: full-lcov
+          SUITE: backend-native-mv
+          FIRST_OUTCOME: ${{ steps.full-lcov-1.outcome }}
+          RETRY_OUTCOME: ${{ steps.full-lcov-1-retry.outcome }}
+        run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
       - if: failure()
         uses: ./.github/actions/valkey-logs
         timeout-minutes: 1

@@ -3,12 +3,8 @@ import { readFileSync } from 'node:fs'
 import type http from 'node:http'
 import { describe, expect, it, vi } from 'vitest'
 import {
-  buildStaleReport,
-  findStaleBaselineEntries,
-  MIN_STALE_EVIDENCE_LOGS,
   findUnbaselinedRepeats,
   formatUnbaselinedRepeats,
-  observedRepeatAnnotations,
 } from './request-query-profile-baseline.mts'
 import {
   computeSerialDepth,
@@ -108,52 +104,44 @@ const BASELINE_URL = new URL(
 )
 
 describe('request query profile baseline', () => {
-  const baseline = [{ annotation: 'knownRepeat', reason: 'covered by the owning issue', issue: 1 }]
+  const baseline = [
+    { annotation: 'knownRepeat', route: null, maxCount: null, reason: 'r', issue: 1 },
+  ]
   const repeat = (annotation: string, count = 2) => ({ annotation, count })
 
   it('allows a baselined repeat and reports a new one naming route and annotation', () => {
-    expect(findUnbaselinedRepeats([repeat('knownRepeat', 5)], baseline)).toEqual([])
-    const fresh = findUnbaselinedRepeats([repeat('knownRepeat'), repeat('newRepeat', 3)], baseline)
+    expect(
+      findUnbaselinedRepeats('GET /v1/things/:id', [repeat('knownRepeat', 5)], baseline),
+    ).toEqual([])
+    const fresh = findUnbaselinedRepeats(
+      'GET /v1/things/:id',
+      [repeat('knownRepeat'), repeat('newRepeat', 3)],
+      baseline,
+    )
     expect(fresh).toEqual([{ annotation: 'newRepeat', count: 3 }])
     expect(formatUnbaselinedRepeats('GET /v1/things/:id', fresh)).toContain(
       'GET /v1/things/:id: newRepeat (x3)',
     )
   })
 
-  it('reports a stale entry without failing', () => {
-    const logs = [
-      '[pg-request-profile] route=GET /a queries=3 serialDepth=3 repeats=other(x2),third variant(x2)',
-      'ts [pg-request-profile] route=GET /b queries=1 serialDepth=1 repeats=none',
-    ].join('\n')
-    const observed = observedRepeatAnnotations(logs)
-    expect([...observed].toSorted()).toEqual(['other', 'third variant'])
-    expect(findStaleBaselineEntries(baseline, observed)).toEqual(baseline)
-    expect(findStaleBaselineEntries(baseline, new Set(['knownRepeat']))).toEqual([])
-  })
-
-  it('calls an entry stale only when every run log lacks it', () => {
-    const entries = [
-      { annotation: 'a', reason: 'r', issue: 1 },
-      { annotation: 'b', reason: 'r', issue: 2 },
-      { annotation: 'c', reason: 'r', issue: 3 },
+  it('allows exactly two on the named route while guarding other routes and a third query', () => {
+    const scoped = [
+      {
+        annotation: 'getRssFeedsByIdBatch',
+        route: 'GET /api/v1/rss-feeds/trending',
+        maxCount: 2,
+        reason: 'r',
+        permanent: true as const,
+        code: 'backend/services/entity-fetch/rss-feeds.mts:12',
+      },
     ]
-    const line = (repeats: string) =>
-      `[pg-request-profile] route=GET /x queries=2 serialDepth=2 repeats=${repeats}`
-    const runs = Array.from({ length: MIN_STALE_EVIDENCE_LOGS }, () => line('none'))
-    runs[0] = line('a(x2)')
-    runs[2] = line('b(x3)')
-    const report = buildStaleReport(entries, runs)
-    expect(report.stale).toEqual([entries[2]])
-    expect(report.logCount).toBe(MIN_STALE_EVIDENCE_LOGS)
-    expect(report.sufficient).toBe(true)
-  })
-
-  it('flags a stale report built from too few logs as insufficient', () => {
-    const entries = [{ annotation: 'a', reason: 'r', issue: 1 }]
-    const report = buildStaleReport(entries, ['[pg-request-profile] route=GET /x repeats=none'])
-    expect(report.stale).toEqual(entries)
-    expect(report.logCount).toBe(1)
-    expect(report.sufficient).toBe(false)
+    const repeats = [repeat('getRssFeedsByIdBatch', 2)]
+    expect(findUnbaselinedRepeats(scoped[0]!.route, repeats, scoped)).toEqual([])
+    expect(findUnbaselinedRepeats('GET /api/v1/rss-feeds/recommended', repeats, scoped)).toEqual(
+      repeats,
+    )
+    const three = [repeat('getRssFeedsByIdBatch', 3)]
+    expect(findUnbaselinedRepeats(scoped[0]!.route, three, scoped)).toEqual(three)
   })
 
   it('attributes queries recorded by a module instance loaded after vi.resetModules()', async () => {
@@ -170,6 +158,37 @@ describe('request query profile baseline', () => {
       })
     })
     expect(profile.summarize().totalQueries).toBe(1)
+  })
+
+  it('guards the profiled trending request at exactly two RSS batch queries', async () => {
+    const { profileRequestQueries } =
+      await import('../../test-helpers/api/request-query-profile.mts')
+    const { withRequestQueryProfileGuard } =
+      await import('../../test-helpers/api/request-query-profile-violations.mts')
+    const serve = (url: string, count: number) =>
+      withRequestQueryProfileGuard(async () => {
+        const res = new EventEmitter() as unknown as http.ServerResponse
+        const req = { method: 'GET', url } as http.IncomingMessage
+        profileRequestQueries(req, res, () => {
+          for (let i = 0; i < count; i++) {
+            recordQueryTiming({
+              pool: 'read',
+              durationMs: 0,
+              rowCount: 0,
+              error: false,
+              annotation: 'getRssFeedsByIdBatch',
+            })
+          }
+        })
+        res.emit('finish')
+      })
+    await expect(serve('/api/v1/rss-feeds/trending?limit=30', 2)).resolves.toBeUndefined()
+    await expect(serve('/api/v1/rss-feeds/trending', 3)).rejects.toThrow(
+      'GET /api/v1/rss-feeds/trending: getRssFeedsByIdBatch (x3)',
+    )
+    await expect(serve('/api/v1/rss-feeds/recommended', 2)).rejects.toThrow(
+      'GET /api/v1/rss-feeds/recommended: getRssFeedsByIdBatch (x2)',
+    )
   })
 
   it('enforces new repeats without writing routine diagnostics by default', async () => {
@@ -253,6 +272,25 @@ describe('request query profile baseline', () => {
       expect.stringContaining('GET /v1/aborted: repeatBeforeDisconnect (x2)'),
     ])
     res.emit('finish')
+    expect(takeRequestQueryProfileViolations()).toEqual([])
+  })
+
+  it('drains the native guard after work and preserves both a request and profile failure', async () => {
+    const {
+      recordRequestQueryProfileViolation,
+      takeRequestQueryProfileViolations,
+      withRequestQueryProfileGuard,
+    } = await import('../../test-helpers/api/request-query-profile-violations.mts')
+    takeRequestQueryProfileViolations()
+    const primary = new Error('request failed')
+    await expect(
+      withRequestQueryProfileGuard(async () => {
+        recordRequestQueryProfileViolation('query repeated')
+        throw primary
+      }),
+    ).rejects.toMatchObject({
+      errors: [primary, expect.objectContaining({ message: 'query repeated' })],
+    })
     expect(takeRequestQueryProfileViolations()).toEqual([])
   })
 })

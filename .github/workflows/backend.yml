@@ -89,6 +89,8 @@ jobs:
   test-postgres-schema:
     needs: [static-backend]
     uses: ./.github/workflows/tests-postgres-schema.yml
+    with:
+      publish_coverage: true
     permissions:
       actions: read
       contents: read
@@ -149,7 +151,14 @@ jobs:
       packages: write
 
   coverage:
-    needs: [static-backend, test-backend-modules, test-backend-unit, test-explain-analyze]
+    needs:
+      [
+        static-backend,
+        test-backend-modules,
+        test-backend-unit,
+        test-explain-analyze,
+        test-postgres-schema,
+      ]
     if: >-
       !cancelled() &&
       github.event_name == 'pull_request' &&
@@ -166,18 +175,19 @@ jobs:
   # Informational; the `backend` gate does not wait on it. Compare each producer:
   # contains(needs.*.result, 'success') is true when every producer was skipped.
   codecov:
-    needs: [test-backend-modules, test-backend-unit, test-explain-analyze]
+    needs: [test-backend-modules, test-backend-unit, test-explain-analyze, test-postgres-schema]
     if: >-
       !cancelled() &&
       (needs.test-backend-modules.result == 'success' ||
       needs.test-backend-unit.result == 'success' ||
-      needs.test-explain-analyze.result == 'success') &&
+      needs.test-explain-analyze.result == 'success' ||
+      needs.test-postgres-schema.result == 'success') &&
       !contains(needs.*.result, 'failure') &&
       !contains(needs.*.result, 'cancelled')
     uses: ./.github/workflows/ci-upload-codecov.yml
     with:
       uploads: >-
-        [{"flag":"backend-modules","pattern":"lcov-full-backend-modules*"},{"flag":"backend-unit","pattern":"lcov-full-backend-shard-*"},{"flag":"backend-native-migrations","pattern":"lcov-full-backend-native-migrations*"}]
+        [{"flag":"backend-modules","pattern":"lcov-full-backend-modules*"},{"flag":"backend-unit","pattern":"lcov-full-backend-shard-*"},{"flag":"backend-native-migrations","pattern":"lcov-full-backend-native-migrations*"},{"flag":"backend-native-mv","pattern":"lcov-full-backend-native-mv*"}]
     permissions:
       actions: read
       contents: read

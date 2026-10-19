@@ -24,7 +24,7 @@ describe('independent worker query profiles', () => {
       return worker
     })
     expect(request.summarize().totalQueries).toBe(2)
-    expect(findUnbaselinedRepeats(request.summarize().repeats, [])).toEqual([
+    expect(findUnbaselinedRepeats('GET /owned', request.summarize().repeats, [])).toEqual([
       { annotation: 'genuineRequestRepeat', count: 2 },
     ])
     expect(result.profile.queries()).toHaveLength(2)
@@ -93,7 +93,7 @@ describe('independent worker query profiles', () => {
       runIndependentWorker(identity('rejected'), () => {
         recordRequestQueryTiming({ ...timing, annotation: 'beforeFailure' })
         return new Promise<never>((_resolve, reject) => {
-          // oxlint-disable-next-line typescript/prefer-promise-reject-errors -- verifies exact preservation of an undefined rejection from a processor.
+          // oxlint-disable-next-line typescript/prefer-promise-reject-errors -- Verify exact passthrough of an undefined worker rejection.
           reject()
         })
       }),

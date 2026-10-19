@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import { refreshMaterializedViewForTest } from '@voucha/test-helpers/refresh-materialized-view'
 import {
   approveTestPost,
   CONTRIBUTING_USER_AGE_MS,
@@ -10,7 +9,7 @@ import {
   getEntityRelation,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
-import { createUnlinkedTopicAlias, linkTopicAlias, searchTopHashtags } from '@services/topics'
+import { createUnlinkedTopicAlias, linkTopicAlias } from '@services/topics'
 import { deleteUserAndDrainForTest } from '@voucha/test-helpers/services/users/delete-test-support'
 import { createPost } from '../create.mts'
 import { getPostByAny } from '../get.mts'
@@ -58,10 +57,6 @@ describe('deleteUser hashtag retention', () => {
     expect(
       (await getPostIds(viewer, { hashtag_topic_ids: [topic.id], limit: 100 })).results,
     ).not.toEqual(expect.arrayContaining([expect.objectContaining({ id: sourcePost!.id })]))
-
-    await refreshMaterializedViewForTest('mv_top_hashtags')
-    const { results } = await searchTopHashtags({ q: hashtag })
-    expect(results).not.toContainEqual(expect.objectContaining({ topic_alias_id: alias.id }))
   })
 
   it('retains a hashtag vote from an editor who moved it to a new source', async () => {

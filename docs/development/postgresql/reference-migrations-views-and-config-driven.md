@@ -15,10 +15,11 @@
   views with `RESTRICT`, never `CASCADE`, so an unmanaged dependent blocks the rebuild instead of
   being silently removed.
 
-The schema workflow checks RSS crawl-tier dispatch against a refreshed materialized view after
-migration. That refresh is DDL, so the tiered contract runs in the standalone schema preflight;
-the by-id RSS lookup remains in the database unit suite. A failure there indicates either a
-snapshot refresh or dispatch projection/eligibility mismatch, not a reason to reset unit fixtures.
+Refreshed materialized-view contracts run in native CI preflights against the migrated database.
+They exercise real PostgreSQL refreshes together with their HTTP, service, and queue consumers;
+the database unit suite keeps DML and non-DDL validation checks. This preserves snapshot behavior
+without introducing schema mutation into shared unit fixtures. A failed snapshot contract is a
+projection or eligibility failure to diagnose, not a reason to reset unit resources.
 
 See [prelaunch relational storage](../postgres-schema-rules.md#prelaunch-relational-storage).
 
