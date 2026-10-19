@@ -28,21 +28,23 @@ export async function listPublicationCandidates(
       SELECT candidate.id
       FROM post_publication_dirty_work_keys retained
       JOIN post_publication_post_identities identity ON identity.id = retained.impact_post_identity_id
-      -- no-mistakes-disable-next-line postgres-required-predicates: preserve existing cross-partition lookup pending query review; see #3253
-      JOIN posts candidate ON candidate.id = identity.post_id OR candidate.root_post_id = identity.post_id
+      JOIN posts candidate
+        ON (candidate.id = identity.post_id OR candidate.root_post_id = identity.post_id)
+       AND candidate.id >= fn_min_child_uuidv7(identity.post_id)
       WHERE retained.dirty_work_id = ${work.id} AND retained.impact_post_identity_id IS NOT NULL
       UNION
       SELECT candidate.id
       FROM post_publication_dirty_work_keys retained
       JOIN post_publication_community_identities identity ON identity.id = retained.impact_community_identity_id
       JOIN posts root ON root.community_id = identity.community_id AND root.root_post_id IS NULL
-      -- no-mistakes-disable-next-line postgres-required-predicates: preserve existing cross-partition lookup pending query review; see #3253
-      JOIN posts candidate ON candidate.id = root.id OR candidate.root_post_id = root.id
+      JOIN posts candidate
+        ON (candidate.id = root.id OR candidate.root_post_id = root.id)
+       AND candidate.id >= fn_min_child_uuidv7(root.id)
       WHERE retained.dirty_work_id = ${work.id} AND retained.impact_community_identity_id IS NOT NULL
       UNION SELECT post_id FROM live_scope WHERE post_id IS NOT NULL
       UNION
       SELECT candidate.id
-      -- no-mistakes-disable-next-line postgres-required-predicates: preserve existing cross-partition lookup pending query review; see #3253
+      -- no-mistakes-disable-next-line postgres-required-predicates: author, community and RSS-feed scopes reconcile every post they own across all time, so candidate.id has no bound; the outer cursor and LIMIT page the result
       FROM posts candidate
       JOIN posts root ON root.id = COALESCE(candidate.root_post_id, candidate.id) CROSS JOIN live_scope scope
       WHERE (scope.post_id IS NOT NULL AND (candidate.id = scope.post_id OR root.id = scope.post_id))
@@ -63,7 +65,7 @@ export async function listPublicationCandidates(
       ) source
       UNION
       SELECT DISTINCT relation.subject_id
-      -- no-mistakes-disable-next-line postgres-required-predicates: preserve existing cross-partition lookup pending query review; see #3253
+      -- no-mistakes-disable-next-line postgres-required-predicates: a topic-alias scope reconciles every post tagged with the alias, and posts can predate the alias, so subject_id has no bound
       FROM relation__post__category__topic_alias relation
       WHERE relation.object_id = (SELECT topic_alias_id FROM live_scope)
         AND relation.deleted_at IS NULL
@@ -87,10 +89,10 @@ export async function listPublicationCandidates(
     query.append(sql`), scoped_posts AS (
       SELECT id FROM directly_scoped_posts
       UNION
-      -- no-mistakes-disable-next-line postgres-required-predicates: preserve existing cross-partition lookup pending query review; see #3253
       SELECT child.id FROM posts child
       JOIN scoped_posts ancestor ON child.parent_post_id = ancestor.id
       WHERE child.post_type = 'comment'
+        AND child.id >= fn_min_child_uuidv7(ancestor.id)
     )`)
   query.append(sql` SELECT candidate.id, candidate.parent_post_id, candidate.root_post_id,
       candidate.created_by_id,
