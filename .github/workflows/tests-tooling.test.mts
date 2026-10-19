@@ -5,6 +5,7 @@ import { TOOLING_HANG_WALL_CLOCK_MS } from '../../ci/tooling-test-hang-watchdog.
 
 type WorkflowStep = {
   env?: Record<string, string>
+  if?: string
   id?: string
   name?: string
   'timeout-minutes'?: number
