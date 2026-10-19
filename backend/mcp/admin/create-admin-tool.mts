@@ -10,7 +10,7 @@ import type {
   ToolOutputSchema,
 } from '@services/openai-agents/tool-types'
 import { requirePrivateToolUser } from '../private-user.mts'
-import { entityIdOrMissing } from '../resolve-entity-reference.mts'
+import { resolveReferenceFields } from '../resolve-entity-reference.mts'
 import { findSchemaViolation } from '../schema-validator.mts'
 import { adminOutputSchema, wrapAdminOutput } from '../untrusted-output.mts'
 
@@ -84,12 +84,7 @@ const ADMIN_REFERENCE_FIELDS = {
 async function resolveAdminReferences<TArgs>(args: TArgs): Promise<TArgs> {
   if (!args || typeof args !== 'object') return args
   const next = { ...(args as Record<string, unknown>) }
-  await Promise.all(
-    Object.entries(ADMIN_REFERENCE_FIELDS).map(async ([key, entityType]) => {
-      const value = next[key]
-      if (typeof value === 'string') next[key] = await entityIdOrMissing(entityType, value)
-    }),
-  )
+  await resolveReferenceFields(next, ADMIN_REFERENCE_FIELDS)
   return next as TArgs
 }
 export const TEXT_INPUT = { type: 'string', minLength: 1, maxLength: 2000 }

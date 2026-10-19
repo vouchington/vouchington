@@ -33,6 +33,7 @@ import {
   postReferenceSchema,
   topicReferenceSchema,
 } from './entity-reference-schema.mts'
+import { getDelegatedToolAuthority } from './delegated-authority.mts'
 import { requireActiveToolUser } from './private-user.mts'
 import { toWrittenMcpPost, type McpPost } from './mcp-post-output.mts'
 import {

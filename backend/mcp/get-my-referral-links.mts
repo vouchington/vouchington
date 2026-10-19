@@ -100,7 +100,7 @@ const tool: Tool<ToolArgs, ToolResult> = {
         getUserReferralLinks(privateUser, privateUser.id, {
           limit: clampToolLimit(args.limit, defaultLimit, max),
           after: args.after,
-          referral_program_id: programId,
+          referral_program_id: programId ?? undefined,
         }),
       )
       if (!page) return INVALID_CURSOR_RESULT

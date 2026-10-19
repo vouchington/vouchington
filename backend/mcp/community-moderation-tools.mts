@@ -4,7 +4,7 @@ import { createMergedTool } from './create-merged-tool.mts'
 import { requireActiveToolUser, requirePrivateToolUser } from './private-user.mts'
 import { findSchemaViolation } from './schema-validator.mts'
 import {
-  entityIdOrMissing,
+  resolveReferenceFields,
   canonicalEntityIds,
   MISSING_REFERENCE_ID,
 } from './resolve-entity-reference.mts'
@@ -34,12 +34,7 @@ const REFERENCE_FIELDS = {
 
 async function resolveModerationReferences(args: unknown): Promise<CommunityModerationArgs> {
   const next = { ...(args as Record<string, unknown>) }
-  await Promise.all(
-    Object.entries(REFERENCE_FIELDS).map(async ([key, entityType]) => {
-      const value = next[key]
-      if (typeof value === 'string') next[key] = await entityIdOrMissing(entityType, value)
-    }),
-  )
+  await resolveReferenceFields(next, REFERENCE_FIELDS)
   if (Array.isArray(next.post_ids)) {
     const ids = await canonicalEntityIds(
       'post',

@@ -16,6 +16,7 @@ import {
   type PagedSearchArgs,
   type SearchPageInfo,
 } from './paged-search.mts'
+import { resolveReadableThread } from './mcp-post-access.mts'
 import { canonicalEntityId } from './resolve-entity-reference.mts'
 import { resolvedTopicFilters } from './resolve-topic.mts'
 import { objectSchema, outcomeSchema } from './output-schema-shapes.mts'

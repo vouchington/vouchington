@@ -14,7 +14,7 @@ import {
   topicReferenceSchema,
   userReferenceSchema,
 } from '../entity-reference-schema.mts'
-import { entityIdOrMissing } from '../resolve-entity-reference.mts'
+import { canonicalEntityIds, MISSING_REFERENCE_ID } from '../resolve-entity-reference.mts'
 
 export const APPROVE_COPYRIGHT_EMAIL_INTAKE_PATH = '/api/v1/copyright-email-intakes/:id/approvals'
 
@@ -111,19 +111,35 @@ export async function approveCopyrightEmailIntakeFromToolArgs(
   args: ApproveCopyrightEmailIntakeArgs,
 ) {
   assertCopyrightIntakeEnabled()
-  const targets = await Promise.all(
-    args.targets.map(async target => {
-      const owner = TARGET_OWNER_FIELDS[target.surface as keyof typeof TARGET_OWNER_FIELDS]
-      if (!owner || owner === 'user_profile_link_id') return target
-      const entityType =
-        owner === 'post_id'
-          ? 'post'
-          : owner === 'user_id'
-            ? 'user'
-            : owner === 'topic_id'
-              ? 'topic'
-              : 'community'
-      return { ...target, [owner]: await entityIdOrMissing(entityType, target[owner]!) }
+  const targets = args.targets.map(target => ({ ...target }))
+  const groups = new Map<string, Array<{ index: number; field: string }>>()
+  for (const [index, target] of targets.entries()) {
+    const field = TARGET_OWNER_FIELDS[target.surface as keyof typeof TARGET_OWNER_FIELDS]
+    const entityType =
+      field === 'post_id'
+        ? 'post'
+        : field === 'user_id'
+          ? 'user'
+          : field === 'topic_id'
+            ? 'topic'
+            : field === 'community_id'
+              ? 'community'
+              : null
+    if (!entityType) continue
+    const rows = groups.get(entityType) ?? []
+    rows.push({ index, field })
+    groups.set(entityType, rows)
+  }
+  await Promise.all(
+    [...groups].map(async ([entityType, rows]) => {
+      // no-mistakes-disable-next-line query-reached-per-item: one lookup statement per entity type
+      const ids = await canonicalEntityIds(
+        entityType,
+        rows.map(row => targets[row.index]![row.field]!),
+      )
+      for (const [offset, row] of rows.entries()) {
+        targets[row.index]![row.field] = ids[offset] ?? MISSING_REFERENCE_ID
+      }
     }),
   )
   const { intake_id: intakeId, ...body } = { ...args, targets }

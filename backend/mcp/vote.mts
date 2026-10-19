@@ -68,7 +68,7 @@ function voteSource(
                   : {
                       type: 'string',
                       format: 'uuid',
-                      description: entity === 'user_vouch' ? 'The user ID.' : `The ${label} ID.`,
+                      description: `The ${label} ID.`,
                     },
           ...(isClear ? {} : { choice: { type: 'string', enum: choices } }),
         },

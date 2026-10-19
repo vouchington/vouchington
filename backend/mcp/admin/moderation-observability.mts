@@ -2,7 +2,7 @@ import { searchModeratorActions, MODERATOR_ACTION_TYPES } from '@services/modera
 import { getUserPublicByAnyCachedBatch } from '@services/entity-fetch'
 import { getModerationAnalytics } from '@services/moderation-analytics'
 import type { ModerationAnalyticsRange } from '@services/moderation-analytics/types'
-import { createAdminTool, adminInput, UUID_INPUT, PAGE_INPUT } from './create-admin-tool.mts'
+import { createAdminTool, adminInput, PAGE_INPUT } from './create-admin-tool.mts'
 import { communityReferenceSchema, userReferenceSchema } from '../entity-reference-schema.mts'
 import { adminRouteOutputSchema } from './output-schema.mts'
 

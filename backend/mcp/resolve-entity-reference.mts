@@ -78,3 +78,27 @@ export const MISSING_REFERENCE_ID = '00000000-0000-4000-8000-000000000000'
 export async function entityIdOrMissing(entityType: string, reference: string): Promise<string> {
   return (await canonicalEntityId(entityType, reference)) ?? MISSING_REFERENCE_ID
 }
+
+/** One lookup per entity type for the named fields present on the arguments. */
+export async function resolveReferenceFields(
+  args: Record<string, unknown>,
+  fields: Readonly<Record<string, string>>,
+): Promise<void> {
+  const keysByType = new Map<string, string[]>()
+  for (const [key, entityType] of Object.entries(fields)) {
+    if (typeof args[key] !== 'string') continue
+    const keys = keysByType.get(entityType) ?? []
+    keys.push(key)
+    keysByType.set(entityType, keys)
+  }
+  await Promise.all(
+    [...keysByType].map(async ([entityType, keys]) => {
+      // no-mistakes-disable-next-line query-reached-per-item: one lookup statement per entity type
+      const ids = await canonicalEntityIds(
+        entityType,
+        keys.map(key => args[key] as string),
+      )
+      for (const [index, key] of keys.entries()) args[key] = ids[index] ?? MISSING_REFERENCE_ID
+    }),
+  )
+}

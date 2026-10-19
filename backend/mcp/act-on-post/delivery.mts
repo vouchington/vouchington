@@ -40,10 +40,11 @@ function distributionSource(
       const user = await requireActiveToolUser(currentUser)
       getDelegatedToolAuthority(user, invocationContext)
       const { id, ...body } = args
-      const resolvedBody = Array.isArray(body.recipient_user_ids)
+      const recipientUserIds = 'recipient_user_ids' in body ? body.recipient_user_ids : undefined
+      const resolvedBody = Array.isArray(recipientUserIds)
         ? {
             ...body,
-            recipient_user_ids: (await canonicalEntityIds('user', body.recipient_user_ids)).map(
+            recipient_user_ids: (await canonicalEntityIds('user', recipientUserIds)).map(
               userId => userId ?? MISSING_REFERENCE_ID,
             ),
           }
