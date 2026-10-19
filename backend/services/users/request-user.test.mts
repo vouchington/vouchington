@@ -21,4 +21,14 @@ describe('request acting user', () => {
       await expect(loadRequestPrivateUser(user.id)).resolves.toBe(user)
     })
   })
+
+  it('reads the primary again when the caller refuses the replica', async () => {
+    const user = await createTestUser()
+    await runWithRequestContext(async () => {
+      setRequestCurrentUser({ ...user, roles: ['administrator'] })
+      const loaded = await loadRequestPrivateUser(user.id, { readOnly: false })
+      expect(loaded?.id).toBe(user.id)
+      expect(loaded?.roles).not.toContain('administrator')
+    })
+  })
 })
