@@ -117,6 +117,16 @@ describe('runReportJudgementAgent manual reruns', () => {
     expect(judgement!.rerun_by_id).toBe(rerunUser.id)
   })
 
+  it('ignores a replica checkout that is not part of the observed invocation', () => {
+    const routing = observePostgresReadRoutingForTest()
+    try {
+      routing.emitUnscopedReplicaAcquire()
+      expect(routing.replicaAcquisitions()).toBe(0)
+    } finally {
+      routing.close()
+    }
+  })
+
   it('reads the manual rerun input from the primary and exits that scope before model IO', async () => {
     const author = await createTestUser()
     const reporter = await createTestUser()
@@ -135,25 +145,27 @@ describe('runReportJudgementAgent manual reruns', () => {
     })
     const routing = observePostgresReadRoutingForTest()
     try {
-      await runReportJudgementAgent(
-        {
-          entityType: 'post',
-          entityId: postId,
-          triggeringReportId: reportId,
-          rerunById: rerunUser.id,
-        },
-        TEST_MODEL_SELECTION,
-        async () => {
-          expect(routing.primaryAcquisitions()).toBeGreaterThan(0)
-          expect(routing.replicaAcquisitions()).toBe(0)
-          await routing.probeReplicaRead()
-          expect(routing.replicaAcquisitions()).toBeGreaterThan(0)
-          return makeModelCallResult({
-            recommended_action: 'warn',
-            public_response: 'Warning issued.',
-            internal_response: 'Primary-routed rerun.',
-          })
-        },
+      await routing.run(() =>
+        runReportJudgementAgent(
+          {
+            entityType: 'post',
+            entityId: postId,
+            triggeringReportId: reportId,
+            rerunById: rerunUser.id,
+          },
+          TEST_MODEL_SELECTION,
+          async () => {
+            expect(routing.primaryAcquisitions()).toBeGreaterThan(0)
+            expect(routing.replicaAcquisitions()).toBe(0)
+            await routing.probeReplicaRead()
+            expect(routing.replicaAcquisitions()).toBeGreaterThan(0)
+            return makeModelCallResult({
+              recommended_action: 'warn',
+              public_response: 'Warning issued.',
+              internal_response: 'Primary-routed rerun.',
+            })
+          },
+        ),
       )
     } finally {
       routing.close()
