@@ -1,4 +1,3 @@
-import { write } from '@data-stores/psql'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { TEST_CAPTCHA_TOKEN } from '@voucha/test-helpers/captcha/test-captcha-token'
@@ -13,6 +12,7 @@ import {
   executeTestAdmittedPost,
   archiveTestCommunity,
   removeTestCommunityMember,
+  setTestCommunityVisibility,
 } from '@voucha/test-helpers'
 import { normalizeRouteAdmissionIntent } from '@services/contribution-gating/admit-route-contribution'
 import { runContributionAdmission } from '@services/contribution-gating/admission'
@@ -144,10 +144,10 @@ describe('POST /api/v1/communities/:idOrSlug/posts CAPTCHA', () => {
         } else if (state === 'removed') {
           await removeTestCommunityMember(community.id, user.id)
         } else {
-          await write(
-            `/* postsCreateCaptcha.privateCommunity */ UPDATE communities SET visibility = 'private' WHERE id = $1`,
-            [community.id],
-          )
+          await setTestCommunityVisibility({
+            communityId: community.id,
+            visibility: 'private',
+          })
         }
         return new UndiciResponse(JSON.stringify({ success: true }))
       })
