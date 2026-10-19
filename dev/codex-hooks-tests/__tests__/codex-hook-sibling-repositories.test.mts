@@ -69,6 +69,12 @@ describe('same-owner repositories keep their own content policy', () => {
     expect(reasonOf(nonDraftPr('', 'GH_REPO=acme/platform '))).toBeUndefined()
   })
 
+  it('does not treat a create flag value as a repository selector', () => {
+    expect(reasonOf(nonDraftPr('--head -Racme/platform', 'GH_HOST=github.com '))).toContain(
+      'pr_create',
+    )
+  })
+
   it.each([
     'HOME=/srv/other ',
     'XDG_CONFIG_HOME=/srv/other ',
@@ -96,6 +102,8 @@ describe('same-owner repositories keep their own content policy', () => {
     ).toBeUndefined()
     expect(reasonOf(nonDraftPr('--repo https://www.github.com/acme/platform'))).toBeUndefined()
     expect(reasonOf(nonDraftPr('--repo https://www.github.com/acme/app'))).toContain('pr_create')
+    expect(reasonOf(nonDraftPr('--repo www.github.com/acme/platform'))).toBeUndefined()
+    expect(reasonOf(nonDraftPr('--repo www.github.com/acme/app'))).toContain('pr_create')
     expect(
       reasonOf(editPr('https://www.github.com/acme/platform/pull/5', '--repo acme/app')),
     ).toBeUndefined()
@@ -110,8 +118,8 @@ describe('same-owner repositories keep their own content policy', () => {
   })
 
   it.each([
-    'gh --repo github.com/acme/app pr edit 5 --body no refs',
-    'gh pr --repo github.com/acme/app edit 5 --body no refs',
+    'gh --repo github.com/acme/app pr edit 5 --body "no refs"',
+    'gh pr --repo github.com/acme/app edit 5 --body "no refs"',
   ])('honors a global repository selector in %s', async command => {
     await withRepo({ origin: 'https://github.com/widgets-inc/tool.git' }, dir => {
       expect(findGitHubWorkflowBlock(command, dir, SESSION)?.reason).toContain('pr_update')

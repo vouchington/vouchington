@@ -16,8 +16,9 @@ export function repositoryOfRepoSelector(value: string): string | undefined {
     ) {
       return undefined
     }
-  } else if (segments.length === 3 && segments.shift()?.toLowerCase() !== 'github.com') {
-    return undefined
+  } else if (segments.length === 3) {
+    const host = segments.shift()?.toLowerCase()
+    if (host !== 'github.com' && host !== 'www.github.com') return undefined
   }
   return segments.length === 2 ? githubRepository(segments[0], segments[1], isUrl) : undefined
 }

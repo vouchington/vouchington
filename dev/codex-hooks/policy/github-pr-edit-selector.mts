@@ -62,7 +62,7 @@ export function editRepositorySelector(
   return parsed.repository ?? globalRepositorySelectors(invocation, words).at(-1) ?? null
 }
 
-function globalRepositorySelectors(invocation: GhInvocation, words: ShellWord[]): string[] {
+export function globalRepositorySelectors(invocation: GhInvocation, words: ShellWord[]): string[] {
   const argumentIndexes = new Set(invocation.argumentTokenIndexes)
   const optionIndexes = invocation.optionTokenIndexes.filter(index => !argumentIndexes.has(index))
   const repositories: string[] = []

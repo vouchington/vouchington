@@ -3,7 +3,7 @@ import { editRepositorySelector, editSelectorRepositories } from './github-pr-ed
 import { implicitRepository, invocationRepositorySelector } from './github-implicit-repository.mts'
 import type { GhInvocation } from './github-invocation.mts'
 import type { ShellWord } from './shell-tokenizer.mts'
-import { parseGhOptions } from './github-options.mts'
+import { contentCommandRepositorySelector } from './github-content-command-selector.mts'
 
 /**
  * Returns, for one inspected command, whether a gh invocation in it is exempt from Vouchington's
@@ -33,7 +33,7 @@ export function contentRuleExemption(
     const repo =
       area === 'pr' && action === 'edit'
         ? editRepositorySelector(invocation, words)
-        : (parseGhOptions(invocation.optionTokens).repo.at(-1) ?? null)
+        : contentCommandRepositorySelector(invocation, words)
     if (repo === undefined) return false
     const base =
       repo === null
