@@ -26,9 +26,12 @@ See also: [Native Client Strategy](../overview/architecture/native-clients.md),
 
 ## RSS feed submission
 
-REST `POST /api/v1/rss-feeds` and MCP `submit_rss_feed` return the same pending import and
-`status_url`. Clients poll the private import status endpoint and use the completed row's
-`entity_id` to open the feed, or map its stable `error_code` to localized copy. Native client adoption is tracked in
+REST `POST /api/v1/rss-feeds` and MCP `submit_rss_feed` option `submit` return the same pending
+import and `status_url`. Option `import` submits the JSON URL list on
+`POST /api/v1/my/import/rss-feeds`. Option `import_status` reads the same page as the private
+import status endpoint. `status_url` is not an MCP call, so clients poll with `import.id`. Clients
+use the completed row's `entity_id` to open the feed, or map its stable `error_code` to localized
+copy. Native client adoption is tracked in
 [clients #368](https://github.com/vouchington/vouchington-clients/issues/368); the producer lands
 first.
 

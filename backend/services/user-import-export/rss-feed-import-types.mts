@@ -29,6 +29,7 @@ export type RssFeedImportErrorCode =
   | 'INVALID_FEED_CONTENT'
   | 'FEED_FETCH_TIMEOUT'
   | 'CONTRIBUTION_LIMIT_EXCEEDED'
+  | 'ACCOUNT_SUSPENDED'
   | 'IMPORT_FAILED'
 
 export type UserRssFeedImport = {
@@ -120,5 +121,6 @@ function publicImportErrorCode(message: string): RssFeedImportErrorCode {
     return 'INVALID_FEED_CONTENT'
   if (message === 'RSS feed processing exceeded its time budget') return 'FEED_FETCH_TIMEOUT'
   if (message.startsWith('Contribution limit exceeded')) return 'CONTRIBUTION_LIMIT_EXCEEDED'
+  if (message === 'Your account has been suspended') return 'ACCOUNT_SUSPENDED'
   return 'IMPORT_FAILED'
 }

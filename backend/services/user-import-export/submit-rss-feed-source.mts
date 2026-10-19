@@ -2,10 +2,8 @@ import assert from 'http-assert'
 import type { BasicUser } from '@services/users/types'
 import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import { assertWithinContributionSubmissionLimit } from '@services/contribution-gating/limits'
-import { submitRssFeedImport } from '@services/user-import-export/rss-feed-imports'
+import { submitAndDispatchRssFeedImport } from '@services/user-import-export/rss-feed-imports'
 import { validateRssFeedUrl } from '@services/user-import-export/validate-rss-feed-url'
-import { enqueueUserRssFeedImportDispatch } from '@queues/user-rss-feed-imports/enqueues'
-import onError from '@modules/on-error'
 import { getUserActivePlan } from '@services/memberships'
 
 export async function submitRssFeedSource(
@@ -21,27 +19,7 @@ export async function submitRssFeedSource(
     await getUserActivePlan(currentUser.id),
     'rss_feed',
   )
-  const submitted = await persistAndDispatchRssFeedImport(
-    currentUser,
-    provenance,
-    validation.canonicalUrl,
-    follow,
-  )
-  return {
-    import: submitted.import,
-    status_url: `/api/v1/my/import/rss-feeds/${submitted.import.id}`,
-  }
-}
-
-async function persistAndDispatchRssFeedImport(
-  currentUser: BasicUser,
-  provenance: ContentProvenance,
-  canonicalUrl: string,
-  follow: boolean,
-) {
-  const submitted = await submitRssFeedImport(currentUser, provenance, [canonicalUrl], {
+  return submitAndDispatchRssFeedImport(currentUser, provenance, [validation.canonicalUrl], {
     should_follow_imported_feeds: follow,
   })
-  await enqueueUserRssFeedImportDispatch(submitted.import.id).catch(onError)
-  return submitted
 }

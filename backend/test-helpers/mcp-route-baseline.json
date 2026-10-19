@@ -1446,7 +1446,9 @@
     "I179": [
       ["audience", "id", "recipient_user_ids"],
       ["audience", "id"]
-    ]
+    ],
+    "I180": [["follow", "rss_feed_urls"]],
+    "I181": [["after", "import_id", "limit"]]
   },
   "routes": {
     "DELETE:/api/v1/agent-moderations/:id/vote": [
@@ -4671,6 +4673,38 @@
           "decision": false,
           "inputFields": "I128",
           "requestBodyFields": ["follow", "rss_feed_url"]
+        }
+      ]
+    },
+    "POST:/api/v1/my/import/rss-feeds": {
+      "pullRequest": 9003356,
+      "contracts": [
+        {
+          "audience": "user",
+          "facts": "F92",
+          "operation": {
+            "tool": "submit_rss_feed",
+            "option": "import"
+          },
+          "decision": false,
+          "inputFields": "I180",
+          "requestBodyFields": ["should_follow_imported_feeds", "urls"]
+        }
+      ]
+    },
+    "GET:/api/v1/my/import/rss-feeds/:importId": {
+      "pullRequest": 9003356,
+      "contracts": [
+        {
+          "audience": "user",
+          "facts": "F92",
+          "operation": {
+            "tool": "submit_rss_feed",
+            "option": "import_status"
+          },
+          "decision": false,
+          "inputFields": "I181",
+          "requestBodyFields": null
         }
       ]
     },

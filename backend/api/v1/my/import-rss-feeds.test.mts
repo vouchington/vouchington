@@ -94,19 +94,30 @@ describe('RSS feed import status and line-list parsing', () => {
     await request.post('/api/v1/my/import/rss-feeds').send({ csv }).expect(400)
   })
 
-  it('accepts a list above 500 URLs and starts one dispatcher for it', async () => {
+  it('bounds a URL list at 500 items of 2083 characters and starts one dispatcher', async () => {
     const request = createRequest()
     await request.authenticateAs(user)
-    const urls = Array.from({ length: 501 }, feedUrl)
+    const prefix = 'https://bounds.example/feed.xml?'
+    const acceptedUrl = prefix + 'a'.repeat(2083 - prefix.length)
+    const urls = Array.from({ length: 500 }, (_, index) => (index === 0 ? acceptedUrl : feedUrl()))
 
     const created = await request.post('/api/v1/my/import/rss-feeds').send({ urls }).expect(201)
 
-    expect(created.body.import).toMatchObject({ total_rows: 501, pending_rows: 501 })
+    expect(created.body.import).toMatchObject({ total_rows: 500, pending_rows: 500 })
     const dispatchers = await background.searchJobs({
       name: IMPORTS_DISPATCH_USER_RSS_FEED_IMPORT_JOB.name,
       data: { importId: created.body.import.id },
     })
     expect(dispatchers).toHaveLength(1)
+
+    await request
+      .post('/api/v1/my/import/rss-feeds')
+      .send({ urls: [...urls, feedUrl()] })
+      .expect(422)
+    await request
+      .post('/api/v1/my/import/rss-feeds')
+      .send({ urls: [`${acceptedUrl}a`] })
+      .expect(422)
   })
 
   it('reads the body limit from config on every request', async () => {

@@ -33653,7 +33653,7 @@
     },
     "GET:/api/v1/my/import/rss-feeds/:importId": {
       "bodyKind": "content",
-      "hash": "053f3d89b9d93d2eb5417a86fc66a1afd6b5a2fe4f2b50da6fb8a19607be9720",
+      "hash": "0facec5bd7c8be39b8171d5d631614431b53001779e0f168adee6741a7f5a5d8",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -33759,6 +33759,10 @@
                     {
                       "type": "literal",
                       "value": "CONTRIBUTION_LIMIT_EXCEEDED"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "ACCOUNT_SUSPENDED"
                     },
                     {
                       "type": "literal",

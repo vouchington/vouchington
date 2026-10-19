@@ -23,6 +23,7 @@ export type RssFeedImportErrorCode =
   | 'INVALID_FEED_CONTENT'
   | 'FEED_FETCH_TIMEOUT'
   | 'CONTRIBUTION_LIMIT_EXCEEDED'
+  | 'ACCOUNT_SUSPENDED'
   | 'IMPORT_FAILED'
 
 export interface ImportResult {
