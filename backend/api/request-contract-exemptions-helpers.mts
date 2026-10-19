@@ -5,6 +5,7 @@ export type RequestContractExemptionReason = 'no-input' | 'protocol-parser' | 'f
 export const REQUEST_CONTRACT_EXEMPTIONS: Readonly<Record<string, RequestContractExemptionReason>> =
   {
     'DELETE:/api/v1/admin/mcp': 'fixed-status',
+    'DELETE:/api/v1/brand/mcp': 'fixed-status',
     'DELETE:/api/v1/community-moderation/mcp': 'fixed-status',
     'DELETE:/api/v1/legal/mcp': 'fixed-status',
     'DELETE:/api/v1/auth/bluesky/link': 'no-input',
@@ -19,6 +20,7 @@ export const REQUEST_CONTRACT_EXEMPTIONS: Readonly<Record<string, RequestContrac
     'GET:/.well-known/webfinger': 'protocol-parser',
     'GET:/ap/users/:userId': 'protocol-parser',
     'GET:/api/v1/admin/mcp': 'fixed-status',
+    'GET:/api/v1/brand/mcp': 'fixed-status',
     'GET:/api/v1/community-moderation/mcp': 'fixed-status',
     'GET:/api/v1/legal/mcp': 'fixed-status',
     'GET:/api/v1/admin/postgresql/stream': 'no-input',

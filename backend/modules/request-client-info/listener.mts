@@ -23,6 +23,7 @@ const EXEMPT_API_PREFIXES = [
   '/api/v1/mcp',
   '/api/v1/admin/mcp',
   '/api/v1/community-moderation/mcp',
+  '/api/v1/brand/mcp',
   '/api/v1/legal/mcp',
   '/api/v1/email-unsubscribe',
 ]

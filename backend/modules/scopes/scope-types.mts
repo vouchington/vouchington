@@ -12,6 +12,8 @@ export type ScopeDescriptionKey =
   | 'community_moderation_write'
   | 'messages_read'
   | 'messages_write'
+  | 'topic_claims_read'
+  | 'topic_claims_write'
 
 export type ApiScope =
   | 'appeals:read'
@@ -86,6 +88,8 @@ export type ApiScope =
   | 'feeds:read'
   | 'spending:read'
   | 'spending:write'
+  | 'topic-claims:read'
+  | 'topic-claims:write'
   | 'topic-recommendations:read'
   | 'topic-recommendations:write'
   | 'topics:read'

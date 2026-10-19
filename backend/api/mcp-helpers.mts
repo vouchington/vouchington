@@ -9,7 +9,7 @@ import {
   findMcpStepUpScopes,
   handleMcpHttpRequest,
   planMcpCalls,
-  MOUNTED_MCP_SERVER_CONFIGS,
+  ALL_MCP_SERVER_CONFIGS,
   type McpCallAuditOutcome,
   type McpServerConfig,
   type McpHttpResponse,
@@ -37,7 +37,7 @@ export async function dispatchMcpRequest(
   ctx: Context,
   audience: McpServerConfig['audience'],
 ): Promise<McpHttpResponse> {
-  const config = MOUNTED_MCP_SERVER_CONFIGS.find(server => server.audience === audience)
+  const config = ALL_MCP_SERVER_CONFIGS.find(server => server.audience === audience)
   if (!config) throw new Error(`MCP audience is not mounted: ${audience}`)
   ctx.assert(ctx.request.is('json'), 415, 'Invalid Content-Type')
   const authentication = await authenticateMcpBearer(ctx.req.headers.authorization, config)

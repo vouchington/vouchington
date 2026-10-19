@@ -1,5 +1,6 @@
 import { myMessageGroups } from '../mcp/my-messages.mts'
 import type { ApiScope } from '../modules/scopes/index.mts'
+import { brandTopicClaimGroups } from '../mcp/brand/topic-claims.mts'
 import { communityModerationGroups } from '../mcp/community-moderation-tools.mts'
 import { participationWriteGroups } from '../mcp/registry/participation-write-groups.mts'
 import userFixtures from './merged-user-options.json' with { type: 'json' }
@@ -35,6 +36,7 @@ const userMergedNames = new Set(
     ...participationWriteGroups,
     ...communityModerationGroups,
     ...myMessageGroups,
+    ...brandTopicClaimGroups,
   ].map(group => group.name),
 )
 const adminMergedNames = new Set(adminMergedGroups.map(group => group.name))
@@ -135,7 +137,11 @@ function singleCases(audience: Audience, mergedNames: ReadonlySet<string>): Oper
 }
 
 export function currentOperationCases(): OperationCase[] {
-  const participation = [...participationWriteGroups, ...myMessageGroups].flatMap(group =>
+  const participation = [
+    ...participationWriteGroups,
+    ...myMessageGroups,
+    ...brandTopicClaimGroups,
+  ].flatMap(group =>
     group.options.map(entry => {
       const args = sampleMcpToolArguments(entry.source as Tool)
       const tool = ALL_TOOLS.find(candidate => candidate.schema.name === group.name)!
@@ -161,8 +167,8 @@ export function currentOperationCases(): OperationCase[] {
     ...audiences.flatMap(audience => singleCases(audience, mergedNames)),
   ]
   if (
-    cases.length !== 322 ||
-    new Set(cases.map(row => `${row.name}.${row.option ?? ''}`)).size !== 317
+    cases.length !== 328 ||
+    new Set(cases.map(row => `${row.name}.${row.option ?? ''}`)).size !== 323
   )
     throw new Error('current operation inventory drift')
   for (const audience of audiences) {

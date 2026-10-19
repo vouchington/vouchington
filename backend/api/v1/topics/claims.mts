@@ -12,8 +12,9 @@ import {
   verifyTopicClaimDomain,
   submitTopicClaimForManualReview,
   listTopicClaimsForTopic,
-  getTopicClaimById,
   getUnresolvedTopicClaimForClaimant,
+  getReadableTopicClaim,
+  requireTopicClaimOnTopic,
   currentUserCanClaimTopic,
   getTopicClaimState,
 } from '@services/topic-claims'
@@ -33,16 +34,6 @@ type SubmitTopicClaimManualReviewBody = {
 
 function claimBody(claim: TopicClaim) {
   return { ...claim, state: getTopicClaimState(claim) }
-}
-
-/** The four :claimId routes share this so a claim id cannot be read through another topic. */
-async function requireClaimOnTopic(ctx: Context, claimId: string): Promise<TopicClaim> {
-  const topic = await getTopicByAny(ctx.params.idOrSlug ?? '')
-  ctx.assert(topic, 404, 'Topic not found')
-  const claim = await getTopicClaimById(claimId)
-  ctx.assert(claim, 404, 'Claim not found')
-  ctx.assert(claim.topic_id === topic.id, 404, 'Claim not found')
-  return claim
 }
 
 // POST /api/v1/topics/:idOrSlug/claims — submit a claim on a topic
@@ -84,7 +75,7 @@ app
       },
     )
     const claimId = validateUUIDParam(ctx, 'claimId')
-    await requireClaimOnTopic(ctx, claimId)
+    await requireTopicClaimOnTopic(ctx.params.idOrSlug ?? '', claimId)
 
     const result = await issueDomainVerificationToken(currentUser.id, claimId)
 
@@ -109,7 +100,7 @@ app
       },
     )
     const claimId = validateUUIDParam(ctx, 'claimId')
-    await requireClaimOnTopic(ctx, claimId)
+    await requireTopicClaimOnTopic(ctx.params.idOrSlug ?? '', claimId)
 
     const claim = await verifyTopicClaimDomain(currentUser.id, claimId)
 
@@ -131,7 +122,7 @@ app
       { path: ctx.params },
     )
     const claimId = validateUUIDParam(ctx, 'claimId')
-    await requireClaimOnTopic(ctx, claimId)
+    await requireTopicClaimOnTopic(ctx.params.idOrSlug ?? '', claimId)
     const existingClaim = await getUnresolvedTopicClaimForClaimant(claimId, currentUser.id)
     ctx.assert(existingClaim, 404, 'Claim not found or already resolved')
 
@@ -177,12 +168,7 @@ app.route('/api/v1/topics/:idOrSlug/claims/:claimId').get(async (ctx: Context) =
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/topics/:idOrSlug/claims/:claimId')
   validateRequestContract(ctx, 'GET:/api/v1/topics/:idOrSlug/claims/:claimId', { path: ctx.params })
   const claimId = validateUUIDParam(ctx, 'claimId')
-  const claim = await requireClaimOnTopic(ctx, claimId)
-  ctx.assert(
-    isModerationStaff(currentUser) || claim.claimant_user_id === currentUser.id,
-    404,
-    'Claim not found',
-  )
+  const claim = await getReadableTopicClaim(currentUser, ctx.params.idOrSlug ?? '', claimId)
 
   ctx.json({ claim: claimBody(claim) })
 })

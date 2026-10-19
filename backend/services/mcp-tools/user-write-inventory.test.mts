@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { ALL_TOOLS } from '@voucha/mcp/registry/index'
 import { adminMergedGroups } from '@voucha/mcp/registry/admin-merged-tools'
+import { brandTopicClaimGroups } from '@voucha/mcp/brand/topic-claims'
 import { communityModerationGroups } from '@voucha/mcp/community-moderation-tools'
 import { participationWriteGroups } from '@voucha/mcp/registry/participation-write-groups'
 import { userMergedAccountGroups } from '@voucha/mcp/registry/user-merged-account-tools'
@@ -13,12 +14,11 @@ import {
   writeExclusions,
 } from '@voucha/test-helpers/mcp-write-exclusions'
 import { REQUEST_CONTRACT_EXEMPTIONS } from '../../api/request-contract-exemptions-helpers.mts'
-import { ALL_MCP_SERVER_CONFIGS, MOUNTED_MCP_SERVER_CONFIGS } from './config.mts'
+import { ALL_MCP_SERVER_CONFIGS } from './config.mts'
 
 // The authoritative inventory of REST writes exposed through any MCP server (#208).
 // Every non-GET request-contract or exempt operation must map to exactly one tool option on one
-// audience or have an explicit categorized exclusion. The brand
-// audience is part of the catalog but remains unmounted and empty until its tools land.
+// audience or have an explicit categorized exclusion.
 
 const requestContracts = JSON.parse(
   readFileSync(new URL('../../../api-fixtures/v1/request-contracts.json', import.meta.url), 'utf8'),
@@ -33,6 +33,7 @@ const mergedGroups = [
   ...userMergedAccountGroups,
   ...adminMergedGroups,
   ...communityModerationGroups,
+  ...brandTopicClaimGroups,
 ]
 const mergedNames = new Set(mergedGroups.map(group => group.name))
 const sources = [
@@ -53,7 +54,7 @@ const operations = [
     ...Object.keys(REQUEST_CONTRACT_EXEMPTIONS).filter(isWrite),
   ]),
 ].toSorted()
-const protocolOperations = MOUNTED_MCP_SERVER_CONFIGS.flatMap(config =>
+const protocolOperations = ALL_MCP_SERVER_CONFIGS.flatMap(config =>
   ['POST', 'GET', 'DELETE'].map(method => `${method}:${config.routePath}`),
 )
 const inventoryOperations = [...new Set([...operations, ...protocolOperations])].toSorted()
@@ -92,10 +93,13 @@ describe('all-audience MCP write inventory', () => {
     expect(duplicates).toEqual([])
   })
 
-  it('keeps brand configured but unmounted and empty until its first tools land', () => {
+  it('mounts the brand server with its topic-claim tools', () => {
     expect(ALL_MCP_SERVER_CONFIGS.some(config => config.audience === 'brand')).toBe(true)
-    expect(MOUNTED_MCP_SERVER_CONFIGS.some(config => config.audience === 'brand')).toBe(false)
-    expect(ALL_TOOLS.some(tool => tool.meta?.audience === 'brand')).toBe(false)
+    expect(
+      ALL_TOOLS.filter(tool => tool.meta?.audience === 'brand')
+        .map(tool => tool.schema.name)
+        .toSorted(),
+    ).toEqual(['manage_topic_claim', 'read_my_topic_claims'])
   })
 
   it('has no stale exclusion for a removed route or a route any audience now maps', () => {

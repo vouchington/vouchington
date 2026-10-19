@@ -59,6 +59,12 @@ describe('listScopeCatalog', () => {
     expect(
       catalog.find(entry => entry.scope === 'community-moderation:write')?.description_key,
     ).toBe('community_moderation_write')
+    expect(catalog.find(entry => entry.scope === 'topic-claims:read')?.description_key).toBe(
+      'topic_claims_read',
+    )
+    expect(catalog.find(entry => entry.scope === 'topic-claims:write')?.description_key).toBe(
+      'topic_claims_write',
+    )
     expect(catalog.find(entry => entry.scope === 'cards:read')?.description_key).toBeNull()
   })
 

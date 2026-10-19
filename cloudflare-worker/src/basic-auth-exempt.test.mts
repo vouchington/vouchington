@@ -96,7 +96,7 @@ describe('isBasicAuthExemptRequest', () => {
       expect(path.length > 1 && path.endsWith('/')).toBe(false)
     }
   })
-  it.each(['/api/v1/community-moderation/mcp', '/api/v1/legal/mcp'])(
+  it.each(['/api/v1/brand/mcp', '/api/v1/community-moderation/mcp', '/api/v1/legal/mcp'])(
     'allows only POST MCP transport at %s',
     path => {
       expect(isBasicAuthExemptRequest('POST', path)).toBe(true)

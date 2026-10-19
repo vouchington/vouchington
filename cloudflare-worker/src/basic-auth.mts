@@ -42,6 +42,7 @@ const BASIC_AUTH_EXEMPT_METHODS_BY_PATH: ReadonlyMap<string, ReadonlySet<string>
   ['/api/v1/mcp', new Set(['POST'])],
   ['/api/v1/admin/mcp', new Set(['POST'])],
   ['/api/v1/community-moderation/mcp', new Set(['POST'])],
+  ['/api/v1/brand/mcp', new Set(['POST'])],
   ['/api/v1/legal/mcp', new Set(['POST'])],
   ['/api/v1/memberships/apple-app-store/notifications', new Set(['POST'])],
   ['/api/v1/memberships/google-play/notifications', new Set(['POST'])],

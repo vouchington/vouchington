@@ -48836,6 +48836,14 @@
                     {
                       "type": "literal",
                       "value": "messages_write"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "topic_claims_read"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "topic_claims_write"
                     }
                   ]
                 }

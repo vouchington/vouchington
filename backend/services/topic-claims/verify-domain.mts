@@ -15,16 +15,13 @@ type VerifyTopicClaimDomainDeps = {
   fetchWellKnownToken: typeof fetchWellKnownToken
 }
 
-const defaultDeps: VerifyTopicClaimDomainDeps = {
-  resolveTxtRecords,
-  fetchWellKnownToken,
-}
-
 export async function verifyTopicClaimDomain(
   currentUserId: string,
   claimId: string,
-  deps: VerifyTopicClaimDomainDeps = defaultDeps,
+  deps?: VerifyTopicClaimDomainDeps,
 ): Promise<TopicClaim> {
+  // Read the resolver at call time so a test can replace the DNS module binding.
+  const lookup = deps ?? { resolveTxtRecords, fetchWellKnownToken }
   const { rows } = await read(sql`/* verifyTopicClaimDomain:getClaim */
     -- no-mistakes-disable-next-line postgres-required-predicates: existing claim rows on merged source topics may still verify when the destination is active
     SELECT tc.id, tc.claimant_user_id, tc.verification_token_hash,
@@ -70,7 +67,7 @@ export async function verifyTopicClaimDomain(
   let matchedMethod: TopicClaimVerificationMethod | null = null
 
   try {
-    const txtRecords = await deps.resolveTxtRecords(`${TOPIC_CLAIM_DNS_TXT_PREFIX}.${hostname}`)
+    const txtRecords = await lookup.resolveTxtRecords(`${TOPIC_CLAIM_DNS_TXT_PREFIX}.${hostname}`)
     for (const record of txtRecords) {
       const recordHash = hashToken('topic_claim_domain', record)
       if (recordHash === verification_token_hash) {
@@ -83,7 +80,7 @@ export async function verifyTopicClaimDomain(
   }
 
   if (!matchedMethod) {
-    const wellKnownContent = await deps.fetchWellKnownToken(hostname)
+    const wellKnownContent = await lookup.fetchWellKnownToken(hostname)
     if (wellKnownContent) {
       const contentHash = hashToken('topic_claim_domain', wellKnownContent)
       if (contentHash === verification_token_hash) {
