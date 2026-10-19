@@ -142,6 +142,10 @@ export function buildUnboundedUnpartitionedTables(
         'notification_push_intent_subscription_receipts',
         'Generation receipts retained with pending push intents; terminal intents expire after 90 days.',
       ],
+      [
+        'stripe_event_processing_work_items',
+        'One processing row per immutable Stripe event stays after its outcome is stamped. stripe_events rejects direct deletion, no retention job removes either row, and primary-key lookup plus the partial unfinished-work index stay selective.',
+      ],
       ['web_push_endpoint_owners', 'Global claim key preserves cross-user endpoint uniqueness.'],
     ],
   })

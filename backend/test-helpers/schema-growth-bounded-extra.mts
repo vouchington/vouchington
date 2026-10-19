@@ -44,10 +44,6 @@ export const EXTRA_BOUNDED_TABLES = new Map<string, string>([
     'One adapter processing task per retained verification; parent retention cascades its work.',
   ],
   [
-    'stripe_event_processing_work_items',
-    'One processing work item per immutable Stripe event, retained for deduplicated replay and bounded by inbound event retention.',
-  ],
-  [
     'retained_identity_cleanup_cursors',
     'One bounded cleanup cursor for each of seven concrete retained root identity families.',
   ],
