@@ -7,7 +7,7 @@ import {
   runWithRequestContext,
   setRequestCurrentUser,
   getRequestCurrentUser,
-} from '../request-context.mts'
+} from '../context/request-context.mts'
 import {
   getOptionalAuthAndRateLimit,
   getOptionalProtocolAuthAndRateLimit,

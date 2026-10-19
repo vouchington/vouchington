@@ -3,7 +3,7 @@ import { setAuthenticationCookies } from '@modules/api-utils'
 import { getPrivateUserByAny } from '@services/users/get'
 import type { PrivateUser } from '@services/users/types'
 import { createDeviceAndSessionTokens } from '@services/jwt-session'
-import { setRequestCurrentUser } from '../request-context.mts'
+import { setRequestCurrentUser } from './request-context.mts'
 
 /** Memoized primary read of the acting user. Fills the request store and does not authenticate. */
 export async function loadCurrentUser(context: Context): Promise<PrivateUser | null> {

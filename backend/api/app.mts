@@ -7,7 +7,7 @@ import { createRequestClientInfoListener } from '@modules/request-client-info/li
 import { isRequestClientInfoEnforced } from '@services/request-client-info'
 import { verifyDeviceAndSessionTokens } from '@services/jwt-session'
 import { createOriginGuardedListener as createListenerWithOriginGuard } from './app-origin-guard.mts'
-import { createRequestContextListener } from './request-context.mts'
+import { createRequestContextListener } from './context/request-context.mts'
 import applyContext from './context/index.mts'
 import applyRateLimitContext from './context/rate-limit.mts'
 import applyRequestVerificationContext from './context/request-verification.mts'
