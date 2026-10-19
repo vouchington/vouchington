@@ -177,18 +177,17 @@ export async function runUserProfileRoundTripScenarios(): Promise<void> {
       { kind: 'maxProcessedRows', relation: 'user_deletion_requests', max: 2 },
     ],
   })
-  await runAndCapture(
-    'deleted-user-prior-username',
-    () => read(deletionRequestPriorUsernameQuery(seedUser.id)),
-    undefined,
-    'cleanupSoftDeletedUserBatch:priorUsername',
-    {
-      afterCapture: async () => {
-        if (!insertedDeletionRequestUserId) return
-        await write(sql`/* explain-cleanup-deletion-request */
-          DELETE FROM user_deletion_requests WHERE user_id = ${insertedDeletionRequestUserId}
-        `)
-      },
-    },
-  )
+  try {
+    await runAndCapture(
+      'deleted-user-prior-username',
+      () => read(deletionRequestPriorUsernameQuery(seedUser.id)),
+      undefined,
+      'cleanupSoftDeletedUserBatch:priorUsername',
+    )
+  } finally {
+    if (insertedDeletionRequestUserId)
+      await write(sql`/* explain-cleanup-deletion-request */
+        DELETE FROM user_deletion_requests WHERE user_id = ${insertedDeletionRequestUserId}
+      `)
+  }
 }
