@@ -144,7 +144,7 @@ jobs:
         timeout-minutes: 10
         env:
           NODE_DISABLE_COMPILE_CACHE: '1'
-          # Both canonical native runners append stock V8 records to the existing c8 input.
+          # Both canonical native runners append stock V8 records to the existing native coverage input.
           NODE_V8_COVERAGE: ${{ github.workspace }}/backend/scripts/explain-analyze/output/pruning-v8
           EXPLAIN_PLAN_CACHE_MODE: compare
           VOUCHA_STORED_SECRET_ENCRYPTION_KEYS: fake-explain-analyze-ci-key:raw32:this fake test key is not secret
@@ -159,16 +159,13 @@ jobs:
           NODE_DISABLE_COMPILE_CACHE: '1'
           NODE_V8_COVERAGE: ${{ github.workspace }}/backend/scripts/explain-analyze/output/pruning-v8
         run: node backend/scripts/explain-analyze/pruning/run.mts
-      - name: Convert native EXPLAIN and pruning coverage with published c8
+      - name: Convert native EXPLAIN and pruning coverage
         timeout-minutes: 1
-        # Use c8's declared public CLI entrypoint: Knip treats the bare c8 binary as a
-        # child-command wrapper and otherwise mistakes its report subcommand for a binary.
         run: >-
-          node node_modules/c8/bin/c8.js report
-          --temp-directory backend/scripts/explain-analyze/output/pruning-v8
-          --reports-dir backend/scripts/explain-analyze/output/retirement-coverage
-          --reporter json --reporter json-summary --reporter lcovonly
-          --extension .mts --all --src backend
+          pnpm exec coverage-check native-v8-to-lcov
+          --v8-dir backend/scripts/explain-analyze/output/pruning-v8
+          --source-root "$GITHUB_WORKSPACE"
+          --output backend/scripts/explain-analyze/output/retirement-coverage/lcov.info
           --include 'backend/data-stores/psql/migration-runner/before-retire-monthly-partition.mts'
           --include 'backend/data-stores/psql/migrate.mts'
           --include 'backend/data-stores/psql/explain-analyze.mts'

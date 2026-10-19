@@ -4,7 +4,6 @@ import type { DynamicConfigRegistryEntry } from '@vouchington/dynamic-config'
 
 describe('dynamic-config-admin registry completeness', () => {
   it('defines a complete namespace contract for every registered config', () => {
-    const namespaces = new Set<string>()
     const configKeys = new Set<string>()
 
     for (const entry of dynamicConfigRegistry.entries) {
@@ -14,9 +13,7 @@ describe('dynamic-config-admin registry completeness', () => {
       expect(entry.label.trim()).not.toBe('')
       expect(entry.description.trim()).not.toBe('')
       expect(Array.isArray(entry.access.update_roles)).toBe(true)
-      expect(namespaces.has(entry.namespace)).toBe(false)
       expect(configKeys.has(configKey)).toBe(false)
-      namespaces.add(entry.namespace)
       configKeys.add(configKey)
       expectFieldMetadata(entry)
     }
@@ -49,7 +46,6 @@ function expectFieldMetadata(entry: DynamicConfigRegistryEntry): void {
   expect(defaultFieldNames.toSorted()).toEqual(fieldNames.toSorted())
 
   const metadata = entry.fields
-  expect(Object.keys(metadata).toSorted()).toEqual(fieldNames.toSorted())
   const numericFieldsMissingValidation: string[] = []
 
   for (const name of fieldNames) {

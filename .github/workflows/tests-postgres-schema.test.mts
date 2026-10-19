@@ -111,15 +111,14 @@ describe('PostgreSQL Schema Tests workflow', () => {
 
     expect(conversion).toBeGreaterThan(snapshot)
     expect(publisher).toBeGreaterThan(conversion)
-    expect(conversionStep).toContain('node node_modules/c8/bin/c8.js report')
-    expect(conversionStep).toContain('--temp-directory "$RUNNER_TEMP/native-mv-v8"')
-    expect(conversionStep).toContain('--reports-dir "$RUNNER_TEMP/native-mv-coverage"')
-    expect(conversionStep).toContain('--reporter json --reporter json-summary --reporter lcovonly')
-    expect(conversionStep).toContain('--extension .mts --src backend')
-    expect(conversionStep.split('run: >-')[1]).not.toContain('--all')
+    expect(conversionStep).toContain('pnpm exec coverage-check native-v8-to-lcov')
+    expect(conversionStep).toContain('--v8-dir "$RUNNER_TEMP/native-mv-v8"')
+    expect(conversionStep).toContain('--output "$RUNNER_TEMP/native-mv-coverage/lcov.info"')
+    expect(conversionStep).toContain('--source-root "$GITHUB_WORKSPACE"')
     expect(conversionStep).toContain(
-      "--include 'backend/{api,data-stores,modules,queues,services,workers}/**'",
+      "--include 'backend/{api,data-stores,modules,queues,services,workers}/**/*.mts'",
     )
+    expect(conversionStep).toContain("--exclude '**/*.test.mts'")
     expect(workflow).toContain(
       'cp "$RUNNER_TEMP/native-mv-coverage/lcov.info" coverage-full/lcov.info',
     )
