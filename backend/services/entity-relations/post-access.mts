@@ -9,7 +9,6 @@ import {
 } from '@modules/feed-query-builders'
 import { postEligibilityFor, type EntityRelationViewer } from './viewer.mts'
 import {
-  selectAccessiblePostIdsByRole,
   selectPostMutationAccess,
   type PostMutationAccess,
   type PostMutationSnapshot,
@@ -114,21 +113,8 @@ export async function getRelatablePostIds(
   posts: { readonly subjectIds: readonly string[]; readonly objectIds: readonly string[] },
   options?: QueryOptions,
 ): Promise<{ subjectIds: Set<string>; objectIds: Set<string> }> {
-  return selectAccessiblePostIdsByRole(
-    [
-      {
-        role: 'subject',
-        ids: posts.subjectIds,
-        filter: buildSubjectPostAccessFilter('candidate_post', 'access_post', viewer),
-      },
-      {
-        role: 'object',
-        ids: posts.objectIds,
-        filter: buildObjectPostAccessFilter('candidate_post', 'access_post', viewer, 'named'),
-      },
-    ],
-    options,
-  )
+  const access = await loadPostMutationAccess(viewer, posts, options)
+  return { subjectIds: access.subjectIds, objectIds: access.objectIds }
 }
 
 /**

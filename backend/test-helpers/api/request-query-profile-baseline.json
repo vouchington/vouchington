@@ -21,7 +21,7 @@
     "maxCount": null,
     "reason": "The preflight and the re-read after the publication lock must see a root or privacy change committed while waiting.",
     "permanent": true,
-    "code": "backend/services/entity-relations/post-access-visibility.mts:61"
+    "code": "backend/services/entity-relations/post-access-visibility.mts:36"
   },
   {
     "annotation": "assertReferralProgramExists",
