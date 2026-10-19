@@ -1,3 +1,4 @@
+import createHttpError from 'http-errors'
 import type { Context } from '@jongleberry/api-server'
 import { isAdminUser } from '@services/users'
 import { assertNotSuspended } from '@services/users/suspension-guard'
@@ -34,6 +35,8 @@ export type VoteMutationRequest<AccessContext extends Pick<Context, 'assert'>> =
   getSessionData: () => Promise<{ did: string; sid: string } | null>
   ip: string | undefined
   userAgent: string | null
+  /** REST sets `Retry-After` before the 429 throw. MCP reads the error property instead. */
+  setRetryAfter?: (seconds: number) => void
 }
 
 /** The common REST/MCP admission, ballot and post-commit sequence. */
@@ -102,13 +105,18 @@ export async function applyVoteMutation<
   }
 
   const sessionData = await request.getSessionData()
-  const { limited } = await chargeElectionVoteRateLimit(
+  const { limited, retryAfterSeconds } = await chargeElectionVoteRateLimit(
     options.rateLimitPrefix,
     currentUser.id,
     ip,
     sessionData,
   )
-  ctx.assert(!limited, 429, 'Too many requests. Please try again later.')
+  if (limited) {
+    request.setRetryAfter?.(retryAfterSeconds)
+    throw createHttpError(429, 'Too many requests. Please try again later.', {
+      retryAfterSeconds,
+    })
+  }
 
   const context: VoteEventContext = {
     ipAddress: ip ?? null,

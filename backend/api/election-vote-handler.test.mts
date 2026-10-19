@@ -265,11 +265,14 @@ describe('election-vote-handler', () => {
       const request = createRequest()
       await request.authenticateAs(rateLimitUser)
 
-      // The limit is 31 requests per 60s — send 30 to exhaust and the 31st triggers 429
       for (let i = 0; i < 30; i++) {
         await request.put(`/api/v1/topics/${topicId}/vote`).send({ choice: 'like' })
       }
-      await request.put(`/api/v1/topics/${topicId}/vote`).send({ choice: 'like' }).expect(429)
+      const limited = await request
+        .put(`/api/v1/topics/${topicId}/vote`)
+        .send({ choice: 'like' })
+        .expect(429)
+      expect(limited.headers['retry-after']).toBe('60')
     }, 30_000)
   })
 
