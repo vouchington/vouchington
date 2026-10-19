@@ -4677,7 +4677,7 @@
       ]
     },
     "POST:/api/v1/my/import/rss-feeds": {
-      "pullRequest": 9003356,
+      "pullRequest": 3380,
       "contracts": [
         {
           "audience": "user",
@@ -4693,7 +4693,7 @@
       ]
     },
     "GET:/api/v1/my/import/rss-feeds/:importId": {
-      "pullRequest": 9003356,
+      "pullRequest": 3380,
       "contracts": [
         {
           "audience": "user",
