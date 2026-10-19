@@ -90,6 +90,10 @@ export const accountExclusions = [
     'DELETE /my/landing-pages/:pageId',
     'PUT /my/landing-pages/:pageId/items',
   ]),
+  ...profile(
+    'A full account export would hand one delegated credential every piece of account data, beyond any granted scope; users request it from account settings',
+    ['POST /users/:idOrSlug/data-request'],
+  ),
   ...exclusions(
     'billing',
     'Payment, plan or refund flow owned by the billing provider integration',
@@ -125,6 +129,16 @@ export const accountExclusions = [
     ],
   ),
   ...exclusions(
+    'stateless-or-telemetry',
+    'Client playback telemetry for native and web players; MCP telemetry lives on the MCP requests (#3344)',
+    ['PUT /podcast-episodes/:id/playback-position'],
+  ),
+  ...exclusions(
+    'stateless-or-telemetry',
+    'Client view telemetry tied to the browser session; MCP telemetry lives on the MCP requests (#3344)',
+    ['POST /rss-feeds/:rssFeedId/views', 'POST /rss-feed-items/:id/views'],
+  ),
+  ...exclusions(
     'recorded-no-tool',
     'Casting is request-bound (rate limit, contribution gating, quota) and has no policy for a token',
     ['PUT /entity-relations/:id/vote'],
@@ -144,5 +158,15 @@ export const accountExclusions = [
       'DELETE /my/conversations/:conversationId',
       'POST /my/conversations/:conversationId/title',
     ],
+  ),
+  ...exclusions(
+    'recorded-no-tool',
+    'Image upload is a binary transfer to a presigned storage URL that MCP clients cannot perform; web and native clients own image attachment',
+    ['POST /images/upload-url', 'POST /images/:id/completions', 'PUT /posts/:idOrSlug/images'],
+  ),
+  ...exclusions(
+    'recorded-no-tool',
+    'Fediverse instance creation is a niche directory contribution made from the web directory page',
+    ['POST /fediverse/instances'],
   ),
 ]

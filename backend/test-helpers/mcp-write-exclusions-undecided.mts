@@ -6,21 +6,13 @@ const pending = (routes: string[]) => exclusions('undecided', 'Tool decision pen
 
 export const undecidedExclusions = [
   ...pending([
-    'PUT /posts/:idOrSlug/images',
-    'POST /fediverse/instances',
     'POST /topics/:idOrSlug/claims',
     'POST /topics/:idOrSlug/claims/:claimId/domain-verification',
     'POST /topics/:idOrSlug/claims/:claimId/manual-review-submission',
     'POST /topics/:idOrSlug/claims/:claimId/verification-token',
-    'PUT /podcast-episodes/:id/playback-position',
-    'POST /rss-feeds/:rssFeedId/views',
-    'POST /rss-feed-items/:id/views',
-    'POST /images/upload-url',
-    'POST /images/:id/completions',
     'POST /my/import/rss-feeds',
     'POST /my/import/topics',
     'POST /lists/:id/import',
-    'POST /users/:idOrSlug/data-request',
   ]),
   ...pending([
     'POST /households',
