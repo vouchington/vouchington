@@ -75,6 +75,7 @@
     "@services/oauth": "workspace:^",
     "@services/oauth-authorization-server": "workspace:^",
     "@services/platform-stats": "workspace:^",
+    "@services/post-publication": "workspace:^",
     "@services/posts": "workspace:^",
     "@services/prioritized-referral-links": "workspace:^",
     "@services/recently-viewed": "workspace:^",

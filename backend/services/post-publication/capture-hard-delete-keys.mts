@@ -38,8 +38,8 @@ export async function listHardDeletedPostPublicationKeys(
       UNION ALL
       SELECT post.id, root.id, post.created_by_id, post.community_id, post.post_type, post.created_at,
         post.root_post_id
-      -- no-mistakes-disable-next-line postgres-required-predicates: descendant rows are keyed by root_post_id across id partitions; see #3336
       FROM roots root
+      -- no-mistakes-disable-next-line postgres-required-predicates: descendant rows are keyed by root_post_id across id partitions; see #3336
       JOIN posts post ON post.root_post_id = root.id
     ), unreceived AS (
       SELECT subtree.* FROM subtree

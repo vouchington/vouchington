@@ -1,10 +1,10 @@
 import {
   retainHardDeletedPostPublication,
   retainUserCascadeHardDeletedPosts,
-} from '../../../services/post-publication/capture-hard-delete.mts'
-import { retainHardDeletedPostPublicationKeys } from '../../../services/post-publication/capture-hard-delete-keys.mts'
-import { retainPublicationIdentityBridges } from '../../../services/post-publication/identity-bridges.mts'
-import { upsertPostPublicationDirtyWork } from '../../../services/post-publication/upsert-dirty-work.mts'
+} from '@services/post-publication/capture-hard-delete'
+import { retainHardDeletedPostPublicationKeys } from '@services/post-publication/capture-hard-delete-keys'
+import { retainPublicationIdentityBridges } from '@services/post-publication/identity-bridges'
+import { upsertPostPublicationDirtyWork } from '@services/post-publication/upsert-dirty-work'
 import { beginTransaction } from '@data-stores/psql'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { SEED_PREFIX, runAndCapture, seedPostId } from '../run-support.mts'

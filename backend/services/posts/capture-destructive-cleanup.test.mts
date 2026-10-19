@@ -1,6 +1,10 @@
+import {
+  acknowledgePostPublicationProjectionReceipts,
+  claimPostPublicationDirtyWork,
+} from '@services/post-publication'
 import { createPost, updatePost } from '@services/posts'
-import { hardDeleteRssFeedById } from '@services/rss-feeds/delete.mts'
-import { createTopicAliases, unlinkTopicAlias } from '@services/topics/aliases.mts'
+import { hardDeleteRssFeedById } from '@services/rss-feeds/delete'
+import { createTopicAliases, unlinkTopicAlias } from '@services/topics/aliases'
 import {
   CONTRIBUTING_USER_AGE_MS,
   WEB_PROVENANCE,
@@ -23,10 +27,6 @@ import { onceElectionVoteStatsCompleted } from '@voucha/test-helpers/election-vo
 import { seedTestPublicationReceipt } from '@voucha/test-helpers/entities/post-publication-snapshots'
 import { reconcileTestPublicationUntilSnapshotsComplete } from '@voucha/test-helpers/post-publication-fixtures'
 import { describe, expect, it, onTestFinished } from 'vitest'
-import {
-  acknowledgePostPublicationProjectionReceipts,
-  claimPostPublicationDirtyWork,
-} from './public.mts'
 
 describe('destructive publication cleanup', () => {
   it('retains subtree keys before a post with no receipt is hard-deleted', async () => {
