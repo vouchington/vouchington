@@ -38,6 +38,11 @@ type SharedWorkerOptions = Omit<WorkerOptions, 'connection' | 'commandClient' | 
    */
   dedicatedCommandClient?: boolean
 }
+const sharedQueueConnection = {
+  connection: workerQueueConnection,
+  prefix: workerQueuePrefix,
+  client: workerQueueCommandClient,
+}
 export type PriorityQueue<T> = Queue<T> & { readonly priorityKind: QueuePriorityKind }
 
 export function createQueue<T = unknown>(
@@ -45,12 +50,7 @@ export function createQueue<T = unknown>(
   options: SharedQueueOptions & { priorityKind: QueuePriorityKind },
 ): PriorityQueue<T> {
   const { priorityKind, ...queueOptions } = options
-  const queue = new Queue<T>(name, {
-    connection: workerQueueConnection,
-    prefix: workerQueuePrefix,
-    client: workerQueueCommandClient,
-    ...queueOptions,
-  })
+  const queue = new Queue<T>(name, { ...sharedQueueConnection, ...queueOptions })
   const originalAdd = queue.add
   const originalAddBulk = queue.addBulk
   // ast-grep-ignore: backend-no-direct-scheduler-upsert -- intercept the queue's scheduler API to enforce priority before the manifest runtime calls it
@@ -89,11 +89,7 @@ export function createQueue<T = unknown>(
  * on a queue of the other kind.
  */
 export function createMaintenanceQueue<T = unknown>(name: string): Queue<T> {
-  const queue = new Queue<T>(name, {
-    connection: workerQueueConnection,
-    prefix: workerQueuePrefix,
-    client: workerQueueCommandClient,
-  })
+  const queue = new Queue<T>(name, sharedQueueConnection)
   registerGlideMQInstance(queue)
   return queue
 }
