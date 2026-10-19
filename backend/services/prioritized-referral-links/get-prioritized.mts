@@ -68,10 +68,10 @@ active_links AS (
     query.append(sql`
 ),
 linked_topic_ids AS (
-  -- no-mistakes-disable-next-line postgres-required-predicates: preserve merged-topic eligibility pending owner decision; see #3257
   SELECT id FROM topics
   WHERE referral_program_topic_id = ${referralProgramId}
     AND deleted_at IS NULL
+    AND merged_into_topic_id IS NULL
   UNION
   SELECT CAST(${referralProgramId} AS uuid)
 ),
@@ -81,7 +81,7 @@ user_contributions AS (
     BOOL_OR(p.post_type = 'data_point') AS has_data_point,
     BOOL_OR(p.post_type = 'review') AS has_review,
     MAX(p.votes_score_net) AS best_score
-  -- no-mistakes-disable-next-line postgres-required-predicates: preserve existing cross-partition lookup pending query review; see #3254
+  -- no-mistakes-disable-next-line postgres-required-predicates: posts are selected by author with no time window; an author id does not bound post ids (seeded posts predate their seeded author, and author deletion reassigns created_by_id), so every id partition is read through idx_posts__created_by_id
   FROM posts p
   JOIN posts root_post ON root_post.id = COALESCE(p.root_post_id, p.id)
   WHERE p.deleted_at IS NULL
@@ -108,7 +108,7 @@ user_reviews AS (
       WHERE prt.post_id = p.id
         AND prt.topic_id IN (SELECT id FROM linked_topic_ids)
     ) AS review_avg_rating
-  -- no-mistakes-disable-next-line postgres-required-predicates: preserve existing cross-partition lookup pending query review; see #3254
+  -- no-mistakes-disable-next-line postgres-required-predicates: posts are selected by author with no time window; an author id does not bound post ids (seeded posts predate their seeded author, and author deletion reassigns created_by_id), so every id partition is read through idx_posts__created_by_id
   FROM posts p
   JOIN posts root_post ON root_post.id = COALESCE(p.root_post_id, p.id)
   WHERE p.deleted_at IS NULL
@@ -165,14 +165,14 @@ ranked AS (
         WHERE f.subject_id = ${currentUserId}::uuid AND f.object_id = al.user_id AND f.deleted_at IS NULL
       ) THEN 2
       WHEN ${currentUserId}::uuid IS NOT NULL AND EXISTS (
-        -- no-mistakes-disable-next-line postgres-required-predicates: preserve existing cross-partition lookup pending query review; see #3254
         SELECT 1 FROM session_referral_attributions sra
         WHERE sra.user_id = ${currentUserId}::uuid AND sra.referrer_user_id = al.user_id
+          AND sra.id >= fn_min_child_uuidv7(al.user_id)
       ) THEN 3
       WHEN ${currentUserId}::uuid IS NOT NULL AND EXISTS (
         SELECT 1 FROM (
           SELECT DISTINCT ON (post_id) post_id, score
-          -- no-mistakes-disable-next-line postgres-required-predicates: preserve existing cross-partition lookup pending query review; see #3254
+          -- no-mistakes-disable-next-line postgres-required-predicates: the viewer's latest vote per post is read across their whole vote history, which spans every post_id partition; post ids here come from those votes and have no bound
           FROM post_votes
           WHERE user_id = ${currentUserId}::uuid
           ORDER BY post_id, id DESC
