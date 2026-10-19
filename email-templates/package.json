@@ -30,7 +30,7 @@
   },
   "devDependencies": {
     "@react-email/render": "^2.1.1",
-    "@react-email/ui": "^6.11.2",
+    "@react-email/ui": "^6.11.3",
     "@ts-shared/languages": "workspace:^",
     "@types/node": "^26.6.5",
     "@types/react": "^19.3.0",
