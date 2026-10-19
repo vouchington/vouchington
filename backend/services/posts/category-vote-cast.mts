@@ -43,7 +43,7 @@ export async function loadActorAliasRelations(
     missing.map(id => ({ id })),
     { query, ...relationWriteOptions },
   )
-  return [...existing, ...inserted]
+  return [...existing, ...inserted.flatMap(row => (row.id ? [{ id: row.id }] : []))]
 }
 
 /** Reads topic rows sync already wrote. Data-point topics are inserted here when sync had none. */
@@ -73,7 +73,10 @@ export async function ensureTopicCategoryRelations(
     missing.map(id => ({ id })),
     { query, ...relationWriteOptions },
   )
-  return [...rows.map(row => ({ id: row.id })), ...inserted]
+  return [
+    ...rows.map(row => ({ id: row.id })),
+    ...inserted.flatMap(row => (row.id ? [{ id: row.id }] : [])),
+  ]
 }
 
 /** One vote statement when the actor and the topic owner are the same user. */

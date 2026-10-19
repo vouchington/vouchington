@@ -150,7 +150,7 @@ export async function upsertEntityRelationElectionVotes(
       : await upsertEntityRelationElectionVotesInOwnedTransaction(run)
   const upsertedVotes = rows as Array<ElectionVoteMutationResult & { entity_relation: string }>
   const singleRelation =
-    relationMetadata && !Array.isArray(relationMetadata) ? relationMetadata : undefined
+    relationMetadata && isSingleElectionRelation(relationMetadata) ? relationMetadata : undefined
   const voteStatsTargets = singleRelation
     ? values.map(vote =>
         createEntityRelationElectionTarget(vote.entityId, singleRelation.table_name),
@@ -162,6 +162,12 @@ export async function upsertEntityRelationElectionVotes(
     void enqueueBulkUpdateEntityRelationElectionVoteStats(voteStatsTargets)
   }
   return upsertedVotes.map(({ entity_relation: _relationTable, ...vote }) => vote)
+}
+
+function isSingleElectionRelation(
+  relationMetadata: EntityRelationMetadata | readonly EntityRelationMetadata[],
+): relationMetadata is EntityRelationMetadata {
+  return !Array.isArray(relationMetadata)
 }
 
 function electionVoteTargetRelations(
