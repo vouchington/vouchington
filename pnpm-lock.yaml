@@ -10604,6 +10604,9 @@ importers:
       '@services/moderator-actions':
         specifier: workspace:^
         version: link:../moderator-actions
+      '@services/topics':
+        specifier: workspace:^
+        version: link:../topics
       '@services/users':
         specifier: workspace:^
         version: link:../users
