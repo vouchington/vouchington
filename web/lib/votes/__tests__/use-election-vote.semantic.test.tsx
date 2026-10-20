@@ -1,4 +1,4 @@
-import { render } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import { useLayoutEffect } from 'react'
 import { describe, expect, it } from 'vitest'
 import { AuthProvider } from '@/lib/auth/auth-provider'
@@ -166,5 +166,125 @@ describe('useElectionVote identity state', () => {
       countUp: 2,
       countDown: 0,
     })
+  })
+})
+
+function holdRequest(): { promise: Promise<void>; settle: () => void } {
+  let settle: () => void = () => {}
+  const promise = new Promise<void>(resolve => {
+    settle = resolve
+  })
+  return { promise, settle }
+}
+
+function PendingVoteControls({
+  submitVote,
+  clearVote,
+}: {
+  submitVote: (choice: 'like' | 'disavow') => Promise<void>
+  clearVote: () => Promise<void>
+}) {
+  const vote = useElectionVote('post', 'election-1', {
+    initialVote: null,
+    initialCountUp: 0,
+    initialCountDown: 0,
+    submitVote,
+    clearVote,
+  })
+  return (
+    <>
+      <button
+        type='button'
+        disabled={vote.isLoading}
+        onClick={() => void vote.handleVote('like')}
+      >
+        like
+      </button>
+      <button
+        type='button'
+        disabled={vote.isLoading}
+        onClick={() => void vote.handleVote('disavow')}
+      >
+        disavow
+      </button>
+      <output>{vote.isLoading ? 'loading' : 'ready'}</output>
+    </>
+  )
+}
+
+function pendingViewer(
+  userId: string,
+  submitVote: (choice: 'like' | 'disavow') => Promise<void>,
+  clearVote: () => Promise<void>,
+) {
+  const initialUser: ClientAuthUser = {
+    id: userId,
+    roles: ['user'],
+    account_type: 'official',
+  }
+  return (
+    <AuthProvider initialUser={initialUser}>
+      <VoteStoreProvider>
+        <PendingVoteControls
+          submitVote={submitVote}
+          clearVote={clearVote}
+        />
+      </VoteStoreProvider>
+    </AuthProvider>
+  )
+}
+
+describe('useElectionVote in-flight requests', () => {
+  it('keeps each account pending until that account request settles', async () => {
+    const calls: string[] = []
+    const accountA = holdRequest()
+    const accountB = holdRequest()
+    const gates = new Map<string, Promise<void>>([
+      ['user-a', accountA.promise],
+      ['user-b', accountB.promise],
+    ])
+    const submitVoteFor = (userId: string) => async (choice: 'like' | 'disavow') => {
+      calls.push(`${userId}:${choice}`)
+      const gate = gates.get(userId)
+      if (!gate) throw new Error(`missing gate ${userId}`)
+      await gate
+    }
+    const clearVote = async () => {
+      calls.push('clear')
+    }
+
+    const rendered = render(pendingViewer('user-a', submitVoteFor('user-a'), clearVote))
+    fireEvent.click(screen.getByRole('button', { name: 'like' }))
+    expect(screen.getByRole('status')).toHaveTextContent('loading')
+    expect(screen.getByRole('button', { name: 'like' })).toBeDisabled()
+    expect(calls).toEqual(['user-a:like'])
+
+    rendered.rerender(pendingViewer('user-b', submitVoteFor('user-b'), clearVote))
+    expect(screen.getByRole('status')).toHaveTextContent('ready')
+    fireEvent.click(screen.getByRole('button', { name: 'disavow' }))
+    expect(screen.getByRole('status')).toHaveTextContent('loading')
+    expect(calls).toEqual(['user-a:like', 'user-b:disavow'])
+
+    rendered.rerender(pendingViewer('user-a', submitVoteFor('user-a'), clearVote))
+    expect(screen.getByRole('status')).toHaveTextContent('loading')
+    expect(screen.getByRole('button', { name: 'disavow' })).toBeDisabled()
+    fireEvent.click(screen.getByRole('button', { name: 'disavow' }))
+    expect(calls).toEqual(['user-a:like', 'user-b:disavow'])
+
+    await act(async () => {
+      accountB.settle()
+    })
+    expect(screen.getByRole('status')).toHaveTextContent('loading')
+    expect(calls).toEqual(['user-a:like', 'user-b:disavow'])
+
+    await act(async () => {
+      accountA.settle()
+    })
+    expect(screen.getByRole('status')).toHaveTextContent('ready')
+
+    rendered.rerender(pendingViewer('user-b', submitVoteFor('user-b'), clearVote))
+    expect(screen.getByRole('status')).toHaveTextContent('ready')
+    fireEvent.click(screen.getByRole('button', { name: 'like' }))
+    expect(calls).toEqual(['user-a:like', 'user-b:disavow', 'user-b:like'])
   })
 })
