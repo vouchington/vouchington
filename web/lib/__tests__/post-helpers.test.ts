@@ -31,7 +31,7 @@ const postTypePathCases = [
   ['review', 'review'],
   ['data_point', 'data-point'],
   ['topic_recommendation', 'topic-recommendations'],
-  ['story', 'discussion'],
+  ['story', 'story'],
   ['article', 'article'],
   ['blog_post', 'blog-post'],
 ] satisfies ReadonlyArray<readonly [Exclude<PostType, 'comment'>, string]>
@@ -54,9 +54,9 @@ describe('getPostPath', () => {
 })
 
 describe('getCanonicalPostPath', () => {
-  it('uses the canonical discussion path for stories', () => {
-    const post = makePost({ id: 'story-1', post_type: 'story' })
-    expect(getCanonicalPostPath(post)).toBe('/discussion/story-1')
+  it('uses the indexed /story route for story posts', () => {
+    const post = makePost({ id: 'story-1', slug: 'test-story', post_type: 'story' })
+    expect(getCanonicalPostPath(post)).toBe('/story/test-story')
   })
 
   it('uses the canonical topic recommendation path', () => {

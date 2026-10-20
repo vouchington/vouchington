@@ -9,7 +9,7 @@ const POST_TYPE_PATHS: Record<RoutablePostType, string> = {
   review: 'review',
   data_point: 'data-point',
   topic_recommendation: 'topic-recommendations',
-  story: 'discussion',
+  story: 'story',
   article: 'article',
   blog_post: 'blog-post',
   link: 'link',
