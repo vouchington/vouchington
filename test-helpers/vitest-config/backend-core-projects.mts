@@ -15,6 +15,7 @@ export const backendNoDataUnitTestFiles = [
   'backend/services/users/settle-deletion-operations.test.mts',
   'backend/services/users/enqueue-delete-user-bookmark-bloom-filter.test.mts',
   'backend/entrypoints/api/startup.test.mts',
+  'backend/entrypoints/api/glidemq-dashboard.test.mts',
   'backend/entrypoints/worker-cpu/grafana-heartbeat.test.mts',
   'backend/data-stores/graceful-shutdown/index.test.mts',
   'backend/services/oauth/__tests__/authorization-account-microsoft.test.mts',

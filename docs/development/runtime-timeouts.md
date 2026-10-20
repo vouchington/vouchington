@@ -20,7 +20,8 @@ like any dropped connection. API routes cycle through `startSSE`.
 The GlideMQ dashboard event stream is an Express route in the API process, so the entrypoint ends
 that response on the same cycle and still writes no named error event. The dashboard page
 reconnects. Queue rows stay in the queue; event lines that existed only on the dropped connection
-are an accepted loss.
+are an accepted loss. The package's job-output SSE route already ends after a bounded stream read,
+so it is not a keep-open Spot connection.
 
 Production WebSocket upgrades are rejected. The only proxied WebSocket is local Next.js HMR, and
 it stays disabled outside local development, so it is not a Spot connection.

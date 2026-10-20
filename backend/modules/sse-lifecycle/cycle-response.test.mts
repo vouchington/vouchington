@@ -58,6 +58,10 @@ describe('armDashboardEventStream', () => {
     try {
       armDashboardEventStream({ method: 'GET', url: '/api/queues' }, response)
       armDashboardEventStream({ method: 'POST', url: '/api/events' }, response)
+      armDashboardEventStream(
+        { method: 'GET', url: '/api/queues/background/jobs/job-1/stream?lastId=0-0' },
+        response,
+      )
 
       await vi.advanceTimersByTimeAsync(MAX_SSE_CYCLE_DURATION_MS)
       expect(response.endCount).toBe(0)

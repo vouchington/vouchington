@@ -36,7 +36,8 @@ function dashboardEventStreamPath(url = ''): string {
 /**
  * Ends the GlideMQ dashboard event stream when its cycle elapses. Writes nothing, so the page's
  * EventSource treats the close like any dropped connection and reconnects. Other dashboard routes
- * are left untouched.
+ * stay untouched, including the package job-output SSE route, which already ends after a bounded
+ * stream read.
  */
 export function armDashboardEventStream(
   request: DashboardEventRequest,
