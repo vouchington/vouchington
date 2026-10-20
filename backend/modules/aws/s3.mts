@@ -1,5 +1,6 @@
 import { S3Client } from '@aws-sdk/client-s3'
 import createHttpError from 'http-errors'
+import { getReceiverBoundProperty } from '@modules/utils/receiver-bound-property'
 import { AWS_DUALSTACK_CLIENT_CONFIG } from '@vouchington/aws/request-handler'
 import { AWS_REGION, createResponseBodyBoundAwsRequestHandler } from './config.mts'
 import { getS3Credentials, hasS3Credentials } from './credentials.mts'
@@ -59,10 +60,7 @@ export const S3Buckets = buildS3Buckets()
 /* no-mistakes: integration=aws */
 export const S3ImagesClient = new Proxy({} as S3Client, {
   get(_, prop) {
-    const target = getS3ImagesClient()
-    const receiver = target as unknown as Record<PropertyKey, (...args: unknown[]) => unknown>
-    const value = (target as unknown as Record<PropertyKey, unknown>)[prop]
-    return typeof value === 'function' ? (...args: unknown[]) => receiver[prop](...args) : value
+    return getReceiverBoundProperty(getS3ImagesClient(), prop)
   },
 })
 
@@ -82,10 +80,7 @@ function getS3ImagesClient(): S3Client {
 /* no-mistakes: integration=aws */
 export const S3ImageUploadsClient = new Proxy({} as S3Client, {
   get(_, prop) {
-    const target = getS3ImageUploadsClient()
-    const receiver = target as unknown as Record<PropertyKey, (...args: unknown[]) => unknown>
-    const value = (target as unknown as Record<PropertyKey, unknown>)[prop]
-    return typeof value === 'function' ? (...args: unknown[]) => receiver[prop](...args) : value
+    return getReceiverBoundProperty(getS3ImageUploadsClient(), prop)
   },
 })
 

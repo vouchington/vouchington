@@ -1,3 +1,4 @@
+import { getReceiverBoundProperty } from '@modules/utils/receiver-bound-property'
 import { SQS_CLIENT_CONFIG } from '@vouchington/aws/sqs'
 import { SQSClient as CreateSQSClient } from '@aws-sdk/client-sqs'
 import createHttpError from 'http-errors'
@@ -15,10 +16,7 @@ const TEST_SQS_CREDENTIALS = {
 /* no-mistakes: integration=aws */
 export const SQSClient = new Proxy({} as CreateSQSClient, {
   get(_, prop) {
-    const target = getSQSClient()
-    const receiver = target as unknown as Record<PropertyKey, (...args: unknown[]) => unknown>
-    const value = (target as unknown as Record<PropertyKey, unknown>)[prop]
-    return typeof value === 'function' ? (...args: unknown[]) => receiver[prop](...args) : value
+    return getReceiverBoundProperty(getSQSClient(), prop)
   },
 })
 

@@ -1,4 +1,5 @@
 import { S3Client } from '@aws-sdk/client-s3'
+import { getReceiverBoundProperty } from '@modules/utils/receiver-bound-property'
 import { AWS_DUALSTACK_CLIENT_CONFIG } from '@vouchington/aws/request-handler'
 import { BEDROCK_AWS_REGION, createResponseBodyBoundAwsRequestHandler } from './config.mts'
 import { getBedrockCredentials, hasBedrockCredentials } from './credentials.mts'
@@ -18,18 +19,12 @@ function resolveBedrockBatchBucket(env: NodeJS.ProcessEnv): string {
 export const S3BedrockBatchClient = new Proxy({} as S3Client, {
   get(targetObject, prop) {
     if (prop in targetObject) {
-      return getClientProperty(targetObject, prop)
+      return getReceiverBoundProperty(targetObject, prop)
     }
     const target = getBedrockBatchS3Client()
-    return getClientProperty(target, prop)
+    return getReceiverBoundProperty(target, prop)
   },
 })
-
-function getClientProperty(target: object, prop: string | symbol): unknown {
-  const receiver = target as unknown as Record<PropertyKey, (...args: unknown[]) => unknown>
-  const value = (target as unknown as Record<PropertyKey, unknown>)[prop]
-  return typeof value === 'function' ? (...args: unknown[]) => receiver[prop](...args) : value
-}
 
 function getBedrockBatchS3Client(): S3Client {
   if (!bedrockBatchClient) {

@@ -4,6 +4,7 @@ import {
   type PutMetricDataCommandInput,
   type PutMetricDataCommandOutput,
 } from '@aws-sdk/client-cloudwatch'
+import { getReceiverBoundProperty } from '@modules/utils/receiver-bound-property'
 import { AWS_DUALSTACK_CLIENT_CONFIG } from '@vouchington/aws/request-handler'
 import { AWS_REGION, createResponseBodyBoundAwsRequestHandler } from './config.mts'
 
@@ -15,7 +16,7 @@ let cloudWatchClient: CloudWatchClient | undefined
 export const CloudWatchMetricsClient = new Proxy({} as CloudWatchClient, {
   get(targetObject, prop) {
     const target = prop in targetObject ? targetObject : getCloudWatchClient()
-    return getClientProperty(target, prop)
+    return getReceiverBoundProperty(target, prop)
   },
 })
 
@@ -24,12 +25,6 @@ export async function putCloudWatchMetricData(
   input: PutMetricDataCommandInput,
 ): Promise<PutMetricDataCommandOutput> {
   return CloudWatchMetricsClient.send(new PutMetricDataCommand(input))
-}
-
-function getClientProperty(target: object, prop: string | symbol): unknown {
-  const receiver = target as unknown as Record<PropertyKey, (...args: unknown[]) => unknown>
-  const value = (target as unknown as Record<PropertyKey, unknown>)[prop]
-  return typeof value === 'function' ? (...args: unknown[]) => receiver[prop](...args) : value
 }
 
 function getCloudWatchClient(): CloudWatchClient {
