@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { BasicUser } from '@voucha/types/entities/user'
 import { getEntityRelationMetadataOrThrow } from './metadata.mts'
-import { buildBidirectionalInsertQuery } from './build-bidirectional-insert-query.mts'
 import { buildInsertQuery } from './build-insert-query.mts'
 
 const creator: BasicUser = {
@@ -39,10 +38,6 @@ describe('buildInsertQuery', () => {
       { vote: true },
     )
 
-    expect(query.text).toContain('created_by_id, id')
-    expect(query.text).toContain('uuid_extract_timestamp(input.subject_id)')
-    expect(query.text).toContain('uuid_extract_timestamp(input.object_id)')
-    expect(query.text).toContain("interval '1 second'")
     expect(query.text).toContain('FROM unnest($1::uuid[], $2::uuid[]) WITH ORDINALITY')
     expect(query.text).toContain('ORDER BY input.subject_id, input.object_id')
     expect(query.text).toContain('ORDER BY input.ordinality')
@@ -107,26 +102,5 @@ describe('buildInsertQuery', () => {
     expect(query.values[0]).toHaveLength(3)
     expect(query.values[1]).toHaveLength(3)
     expect(query.text).toBe(buildInsertQuery(relation, creator, [pairs[0]!]).text)
-  })
-
-  it('mints a bidirectional relation id after either endpoint', () => {
-    const related = getEntityRelationMetadataOrThrow({
-      subjectType: 'post',
-      objectType: 'post',
-      predicate: 'related',
-    })
-    const forward = {
-      subject: { id: '01900000-0000-7000-8000-000000000002' },
-      object: { id: '01900000-0000-7000-8000-000000000003' },
-    }
-    const query = buildBidirectionalInsertQuery(
-      related,
-      creator,
-      [forward],
-      [{ subject: forward.object, object: forward.subject }],
-    )
-
-    expect(query.text).toContain('created_by_id, id')
-    expect(query.text.match(/uuid_extract_timestamp\(input\.subject_id\)/g)).toHaveLength(2)
   })
 })

@@ -1,7 +1,6 @@
 import type { BasicUser } from '@voucha/types/entities/user'
 import type { EntityRelationMetadata } from './metadata.mts'
 import sql, { type SQLStatement } from 'sql-template-strings'
-import { appendRelationIdAfterEndpoints } from './relation-id-after-endpoints.mts'
 import type { EntityIdentifier, UpsertEntityTypes } from './upsert-helpers.mts'
 import type { UpsertEntityRelationsOptions } from './upsert-helpers-types.mts'
 
@@ -18,7 +17,6 @@ function buildRelationColumns(relation: EntityRelationMetadata): {
   if (relation.order_index) {
     columns.push('order_index')
   }
-  columns.push('id')
 
   return { columns, primaryKeyColumns }
 }
@@ -76,8 +74,6 @@ export function buildInsertQuery(
   if (relation.order_index) {
     query.append(sql`, ${options?.order_index ?? 0}`)
   }
-  query.append(sql`, `)
-  appendRelationIdAfterEndpoints(query)
   query.append(sql`
       FROM input
       LEFT JOIN existing

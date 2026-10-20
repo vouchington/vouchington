@@ -1,7 +1,6 @@
 import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
 import type { PrivateUser } from '@services/users/types'
 import { upsertEntityRelation } from '@services/entity-relations'
-import { appendRelationIdAfterEndpoints } from '@services/entity-relations/relation-id-after-endpoints'
 import type { EntityRelationMetadata } from '@services/entity-relations/metadata'
 import { runRelationPublicationMutation } from '@services/entity-relations/publication-mutation'
 import { recordPostTopicRelationPublicationChanges } from '@services/entity-relations/post-topic-publication'
@@ -157,10 +156,8 @@ function appendRelationUpsert(
     ), ${prefix}_upserted AS (
       INSERT INTO `)
   query.append(relation.table_name)
-  query.append(sql` (subject_id, object_id, created_by_id, id)
-      SELECT input.subject_id, input.object_id, ${creatorId}, `)
-  appendRelationIdAfterEndpoints(query)
-  query.append(sql`
+  query.append(sql` (subject_id, object_id, created_by_id)
+      SELECT input.subject_id, input.object_id, ${creatorId}
       FROM `)
   query.append(`${prefix}_input input
       LEFT JOIN ${prefix}_existing existing
