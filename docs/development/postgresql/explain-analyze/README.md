@@ -66,6 +66,10 @@ validates scenario identities and expectation kinds, and fails if a registered s
 capture. The manifest ratchets the set of scenario identities so one cannot be dropped, duplicated,
 or swapped; it proves label completeness, not function coverage.
 
+A failing scenario or scenario group is recorded and the run continues, so one run lists every
+failed scenario and run check before it exits non-zero. A scenario missing from the manifest after a
+failure did not run because its group stopped at a setup step.
+
 - **Declarative contracts** cap processed rows (returned rows, filter removals, and index rechecks,
   times loops), require indexes, bind queries to the selected page, forbid correlated aggregates,
   and require single-leaf partition access. Budgets derive from measured work across both plan

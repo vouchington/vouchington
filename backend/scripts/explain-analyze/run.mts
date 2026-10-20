@@ -7,13 +7,14 @@ import { runFollowerDistributionScenarios } from './run-scenarios/follower-distr
 import { gracefulShutdown } from '@data-stores/graceful-shutdown'
 import {
   assertScenarioManifest,
-  assertSeedAnchorMatches,
   getCompletedScenarioIds,
   getResults,
   prepareOutputDir,
   writeResults,
 } from './run-support.mts'
 import { EXPLAIN_SCENARIO_MANIFEST } from './scenario-manifest.mts'
+import { assertSeedAnchorMatches } from './seed-anchor-check.mts'
+import { assertNoScenarioFailures, continueAfterFailure } from './scenario-failures.mts'
 import { assertPlanRegistry } from './plan-expectations.mts'
 import { runEntityAndCommunityScenarios } from './run-scenarios/entities-and-communities.mts'
 import { runFeedAndMetricScenarios } from './run-scenarios/feed-and-metrics.mts'
@@ -47,50 +48,65 @@ import { runSharedLoaderScenarios } from './run-scenarios/shared-loaders.mts'
 import { runModerationReportContextScenarios } from './run-scenarios/moderation-report-contexts.mts'
 import { runRssFeedStateChangeScenarios } from './run-scenarios/rss-feed-state-changes.mts'
 
+// A failing step is recorded and the run continues, so one run reports every failure.
+const RUN_STEPS: readonly (() => Promise<unknown>)[] = [
+  runBloomReconciliationScenarios,
+  runMaterializedViewRefreshScenarios,
+  runHostnameBlocklistScenario,
+  runHostnameCrawlSweepScenarios,
+  runFeedAndMetricScenarios,
+  runHeavyFollowScenarios,
+  runPostFeedShareScenarios,
+  runStoryMemberPageScenarios,
+  runStoryByIdScenario,
+  runSearchAndFacetScenarios,
+  runOAuthClientVerificationScenarios,
+  runFollowerDistributionScenarios,
+  runEntityAndCommunityScenarios,
+  runViewDrivenReadScenarios,
+  runTopicImportAttemptScenarios,
+  runHotPathLoaderScenarios,
+  runSharedLoaderScenarios,
+  runMembershipRefundScenarios,
+  runRemoteFollowerScenarios,
+  runReviewSuccessionScenarios,
+  runClassifierHumanVoteComparisonScenarios,
+  runCopyrightStatementFactsScenarios,
+  runCopyrightDeliveryBatchScenarios,
+  runEmbeddingReconciliationScenarios,
+  seedMediaDeliveryReplay,
+  runMediaDeliveryReplayScenarios,
+  runRoundTripShapeScenarios,
+  runRequestContextFoldScenarios,
+  runCommunityRoundTripScenarios,
+  runImageDeliveryFoldScenarios,
+  runUserProfileRoundTripScenarios,
+  runRelationReadBatchScenarios,
+  runDispatchWorkPlanScenarios,
+  runModerationReportContextScenarios,
+  runRssFeedStateChangeScenarios,
+  // Keep the mixed membership corpus out of unrelated aggregate and candidate plans.
+  seedVoteWeightDispatch,
+  runVoteWeightDispatchScenarios,
+]
+
 async function main() {
   prepareOutputDir()
   try {
     await assertSeedAnchorMatches()
-    await runBloomReconciliationScenarios()
-    await runMaterializedViewRefreshScenarios()
-    await runHostnameBlocklistScenario()
-    await runHostnameCrawlSweepScenarios()
-    await runFeedAndMetricScenarios()
-    await runHeavyFollowScenarios()
-    await runPostFeedShareScenarios()
-    await runStoryMemberPageScenarios()
-    await runStoryByIdScenario()
-    await runSearchAndFacetScenarios()
-    await runOAuthClientVerificationScenarios()
-    await runFollowerDistributionScenarios()
-    await runEntityAndCommunityScenarios()
-    await runViewDrivenReadScenarios()
-    await runTopicImportAttemptScenarios()
-    await runHotPathLoaderScenarios()
-    await runSharedLoaderScenarios()
-    await runMembershipRefundScenarios()
-    await runRemoteFollowerScenarios()
-    await runReviewSuccessionScenarios()
-    await runClassifierHumanVoteComparisonScenarios()
-    await runCopyrightStatementFactsScenarios()
-    await runCopyrightDeliveryBatchScenarios()
-    await runEmbeddingReconciliationScenarios()
-    await seedMediaDeliveryReplay()
-    await runMediaDeliveryReplayScenarios()
-    await runRoundTripShapeScenarios()
-    await runRequestContextFoldScenarios()
-    await runCommunityRoundTripScenarios()
-    await runImageDeliveryFoldScenarios()
-    await runUserProfileRoundTripScenarios()
-    await runRelationReadBatchScenarios()
-    await runDispatchWorkPlanScenarios()
-    await runModerationReportContextScenarios()
-    await runRssFeedStateChangeScenarios()
-    // Keep the mixed membership corpus out of unrelated aggregate and candidate plans.
-    await seedVoteWeightDispatch()
-    await runVoteWeightDispatchScenarios()
-    assertScenarioManifest(getCompletedScenarioIds(), EXPLAIN_SCENARIO_MANIFEST)
-    assertPlanRegistry(getResults().map(result => result.scenario_id ?? ''))
+    for (const step of RUN_STEPS) await continueAfterFailure(step.name, step)
+    const runErrors: unknown[] = []
+    for (const check of [
+      () => assertScenarioManifest(getCompletedScenarioIds(), EXPLAIN_SCENARIO_MANIFEST),
+      () => assertPlanRegistry(getResults().map(result => result.scenario_id ?? '')),
+    ]) {
+      try {
+        check()
+      } catch (err) {
+        runErrors.push(err)
+      }
+    }
+    assertNoScenarioFailures(runErrors)
   } finally {
     writeResults()
   }
