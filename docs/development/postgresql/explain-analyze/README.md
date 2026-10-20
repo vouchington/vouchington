@@ -71,8 +71,9 @@ capture. The manifest ratchets the set of scenario identities so one cannot be d
 or swapped; it proves label completeness, not function coverage.
 
 A failing scenario or scenario group is recorded and the run continues, so one run lists every
-failed scenario and run check before it exits non-zero. A scenario missing from the manifest after a
-failure did not run because its group stopped at a setup step.
+failed scenario and run check before it exits non-zero. After a failure, the manifest check also
+reports as missing each scenario that failed and each scenario that never ran because its group
+stopped at a setup step.
 
 - **Declarative contracts** cap processed rows (returned rows, filter removals, and index rechecks,
   times loops), require indexes, bind queries to the selected page, forbid correlated aggregates,
