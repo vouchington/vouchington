@@ -18,7 +18,7 @@ import {
   seedTopicId,
   seedUser,
 } from '../run-support.mts'
-import { seedUuid } from '../seed-data/common.mts'
+import { RELATION_INSERT_POST_INDEXES, seedUuid } from '../seed-data/common.mts'
 
 // Budgets are the larger of both plan modes and capture passes, plus 20% rounded up.
 export async function runRelationRoundTripScenarios(): Promise<void> {
@@ -150,8 +150,8 @@ export async function runRelationRoundTripScenarios(): Promise<void> {
           objectType: 'post',
           predicate: 'related',
         }),
-        { id: seedPostId },
-        [{ id: seedUuid(1, '05') }],
+        { id: seedUuid(RELATION_INSERT_POST_INDEXES[0], '05') },
+        [{ id: seedUuid(RELATION_INSERT_POST_INDEXES[1], '05') }],
         { query: transaction, vote: false },
       )
     },
