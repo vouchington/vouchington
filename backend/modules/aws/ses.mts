@@ -8,6 +8,7 @@ import {
 } from '@vouchington/aws/ses'
 import onError from '@modules/on-error'
 import { assertValidSendEmailOptions, type SendEmailOptions } from '@modules/utils/email'
+import { getReceiverBoundProperty } from '@modules/utils/receiver-bound-property'
 import { isProductionEnvironment } from '@ts-shared/deploy-environment'
 import { SendRawEmailCommand, SESClient as CreateSESClient } from '@aws-sdk/client-ses'
 
@@ -34,10 +35,7 @@ export function getBccAddresses(options: Pick<SendEmailOptions, 'allowGlobalBcc'
 
 export const SESClient = new Proxy({} as CreateSESClient, {
   get(_, prop) {
-    const target = getSESClient()
-    const receiver = target as unknown as Record<PropertyKey, (...args: unknown[]) => unknown>
-    const value = (target as unknown as Record<PropertyKey, unknown>)[prop]
-    return typeof value === 'function' ? (...args: unknown[]) => receiver[prop](...args) : value
+    return getReceiverBoundProperty(getSESClient(), prop)
   },
 })
 

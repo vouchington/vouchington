@@ -4,6 +4,7 @@ import {
   type PutRecordBatchCommandInput,
   type PutRecordBatchCommandOutput,
 } from '@aws-sdk/client-firehose'
+import { getReceiverBoundProperty } from '@modules/utils/receiver-bound-property'
 import { AWS_DUALSTACK_CLIENT_CONFIG } from '@vouchington/aws/request-handler'
 import { AWS_REGION, createResponseBodyBoundAwsRequestHandler } from './config.mts'
 import { getFirehoseCredentials, hasFirehoseCredentials } from './credentials.mts'
@@ -16,10 +17,10 @@ let firehoseClient: FirehoseClient | undefined
 export const FirehoseDeliveryClient = new Proxy({} as FirehoseClient, {
   get(targetObject, prop) {
     if (prop in targetObject) {
-      return getClientProperty(targetObject, prop)
+      return getReceiverBoundProperty(targetObject, prop)
     }
     const target = getFirehoseClient()
-    return getClientProperty(target, prop)
+    return getReceiverBoundProperty(target, prop)
   },
 })
 
@@ -28,12 +29,6 @@ export async function putFirehoseRecordBatch(
   input: PutRecordBatchCommandInput,
 ): Promise<PutRecordBatchCommandOutput> {
   return FirehoseDeliveryClient.send(new PutRecordBatchCommand(input))
-}
-
-function getClientProperty(target: object, prop: string | symbol): unknown {
-  const receiver = target as unknown as Record<PropertyKey, (...args: unknown[]) => unknown>
-  const value = (target as unknown as Record<PropertyKey, unknown>)[prop]
-  return typeof value === 'function' ? (...args: unknown[]) => receiver[prop](...args) : value
 }
 
 function getFirehoseClient(): FirehoseClient {
