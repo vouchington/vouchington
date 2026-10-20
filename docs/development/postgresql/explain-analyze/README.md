@@ -45,6 +45,10 @@ regressions remain distinguishable from batching and cursor failures.
   fresh CI databases, instead of depending on autovacuum timing, and refreshes statistics after the
   first post batch because a fresh database plans the retained-identity trigger against empty-table
   statistics.
+- Materialized views are refreshed after that statistics pass. Refresh replaces the heap and leaves
+  column statistics empty, so each view is analyzed again before capture. Without `window_name`
+  statistics, equality uses default selectivity and the trending ranking index is planned as a
+  small bitmap that reads the whole window.
 - Seeding is idempotent (`ON CONFLICT DO NOTHING`); CI uses a fresh database per job.
 - A fixture restored after a captured write needs fresh statistics for its participating relations
   before replay: bulk-seed statistics may no longer describe those rows. The hostname invalidation
