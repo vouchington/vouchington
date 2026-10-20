@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
+  RELATION_INSERT_POST_INDEXES,
   commentSeedTimestampMs,
+  postSeedTimestampMs,
   seedUuid,
   seedUuidAtTimestamp,
   seedRelationIdAfterPost,
@@ -163,6 +165,17 @@ describe('commentSeedTimestampMs', () => {
       expect(after).toBe(before)
     } finally {
       vi.useRealTimers()
+    }
+  })
+})
+
+describe('RELATION_INSERT_POST_INDEXES', () => {
+  it('stamps both posts before the anchor UTC day so a clock uuidv7() sorts after them', () => {
+    const startOfAnchorDay = postSeedTimestampMs(0) - 12 * 60 * 60 * 1000
+
+    expect(RELATION_INSERT_POST_INDEXES).toHaveLength(2)
+    for (const index of RELATION_INSERT_POST_INDEXES) {
+      expect(timestampMsOf(seedUuid(index, '05'))).toBeLessThan(startOfAnchorDay)
     }
   })
 })
