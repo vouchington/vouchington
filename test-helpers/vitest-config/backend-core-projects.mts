@@ -9,6 +9,7 @@ export const backendNoDataUnitTestFiles = [
   'backend/services/urls-domains-robots/__tests__/fetch-pinned-budget.test.mts',
   'backend/scripts/explain-analyze/pruning/migration-command-failure.test.mts',
   'backend/scripts/explain-analyze/pruning/migration-control-clients.test.mts',
+  'backend/scripts/explain-analyze/seed-data/materialized-view-maintenance.test.mts',
   'backend/services/oauth/__tests__/authorization-provider-url.test.mts',
   'backend/services/users/settle-deletion-operations.test.mts',
   'backend/services/users/enqueue-delete-user-bookmark-bloom-filter.test.mts',
