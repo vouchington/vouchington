@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   mockGetReportJudgementRun,
@@ -35,11 +35,11 @@ describe('ReportsClient exact rerun polling', () => {
       />,
     )
 
-    fireEvent.click(screen.getByRole('button', { name: /re-run ai judgement/i }))
-    await waitFor(() =>
-      expect(mockUsePendingAiRefresh.mock.lastCall?.[2]).toBe(
-        'rerun:report-1:report_judgement_test-run',
-      ),
+    await act(async () =>
+      fireEvent.click(screen.getByRole('button', { name: /re-run ai judgement/i })),
+    )
+    expect(mockUsePendingAiRefresh.mock.lastCall?.[2]).toBe(
+      'rerun:report-1:report_judgement_test-run',
     )
     const refreshCountAfterAdmission = mockNav.refresh.mock.calls.length
 
