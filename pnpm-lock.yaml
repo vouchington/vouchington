@@ -2318,8 +2318,8 @@ importers:
   backend/modules/bluesky-oauth:
     dependencies:
       '@atproto-labs/fetch-node':
-        specifier: ^0.4.0
-        version: 0.4.0
+        specifier: ^0.4.1
+        version: 0.4.1
       '@atproto-labs/handle-resolver-node':
         specifier: ^0.2.12
         version: 0.2.12
@@ -14755,10 +14755,6 @@ packages:
     resolution: {integrity: sha512-SPWOcJG/rsqrp2XQZQe8ctC9Y604mivZfXTrCsXbo7dXeAukYSgljPPa/7yWAlTvCbqUSNKScVEWpdCyel/nFw==}
     engines: {node: '>=22'}
 
-  '@atproto-labs/fetch-node@0.4.0':
-    resolution: {integrity: sha512-5Yi8fz/JDGEoObRgRJuglcodB/MJeQnnoqokOGSQK5ItISObSttbGIgHE1UMU1njcwxbvKtbGMWHUCRgqML2Dw==}
-    engines: {node: '>=22'}
-
   '@atproto-labs/fetch-node@0.4.1':
     resolution: {integrity: sha512-7mHaXKuBYY8WTAVY4PtTEoeAWZlLk6TWAnljuOqmNKt8x1ZKWWBTHcspWAWYgtcMzyJ9yifTThHYUGbHfyneiQ==}
     engines: {node: '>=22'}
@@ -23796,15 +23792,6 @@ snapshots:
       '@atproto/did': 0.5.6
       zod: 3.25.76
 
-  '@atproto-labs/fetch-node@0.4.0':
-    dependencies:
-      '@atproto-labs/fetch': 0.3.6
-      '@atproto-labs/pipe': 0.2.4
-      ipaddr.js: 2.5.0
-      undici_v6: undici@6.28.1
-      undici_v7: undici@7.29.1
-      undici_v8: undici@8.11.2
-
   '@atproto-labs/fetch-node@0.4.1':
     dependencies:
       '@atproto-labs/fetch': 0.4.0
@@ -23812,7 +23799,7 @@ snapshots:
       ipaddr.js: 2.5.0
       undici_v6: undici@6.28.1
       undici_v7: undici@7.29.1
-      undici_v8: undici@8.11.2
+      undici_v8: undici@8.12.2
 
   '@atproto-labs/fetch@0.3.6':
     dependencies:
