@@ -1,6 +1,7 @@
 'use client'
 
 import { use, useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
+import { useOptionalAuth } from '@/lib/auth/context'
 import {
   nextEntryFor,
   makeVoteKey,
@@ -41,7 +42,7 @@ export function useElectionVote<TChoice extends Exclude<VoteChoice, null>>(
 ): UseElectionVoteResult<TChoice> {
   const store = use(VoteStoreContext)
   const emailRecovery = useEmailVerificationRecovery()
-  const [isLoading, setIsLoading] = useState(false)
+  const viewerId = useOptionalAuth()?.currentUser?.id ?? null
   const propsEntry = useMemo<VoteEntry>(
     () => ({
       currentVote: options.initialVote,
@@ -51,8 +52,11 @@ export function useElectionVote<TChoice extends Exclude<VoteChoice, null>>(
     [options.initialVote, options.initialCountUp, options.initialCountDown],
   )
   const electionKey = useMemo(() => makeVoteKey(entityType, electionId), [entityType, electionId])
-  const [localEntry, setLocalEntry] = useState({ key: electionKey, value: propsEntry })
-  const currentLocalEntry = localEntry.key === electionKey ? localEntry.value : propsEntry
+  const localKey = `${viewerId ?? ''}:${electionKey}`
+  const [localEntry, setLocalEntry] = useState({ key: localKey, value: propsEntry })
+  const currentLocalEntry = localEntry.key === localKey ? localEntry.value : propsEntry
+  const [pendingKey, setPendingKey] = useState<string | null>(null)
+  const isLoading = pendingKey === localKey
   useEffect(() => {
     store?.hydrate(entityType, electionId, propsEntry)
   }, [store, entityType, electionId, propsEntry])
@@ -70,24 +74,25 @@ export function useElectionVote<TChoice extends Exclude<VoteChoice, null>>(
     async (next: TChoice | null) => {
       if (options.disabled || isLoading || next === entry.currentVote) return
 
+      const requestKey = localKey
       const rollback = store?.applyOptimistic(entityType, electionId, next)
       const optimisticEntry = store ? undefined : nextEntryFor(entry, next)
-      if (optimisticEntry) setLocalEntry({ key: electionKey, value: optimisticEntry })
+      if (optimisticEntry) setLocalEntry({ key: requestKey, value: optimisticEntry })
 
-      setIsLoading(true)
+      setPendingKey(requestKey)
       try {
         if (next === null) await options.clearVote()
         else await options.submitVote(next)
       } catch (err) {
         rollback?.()
-        if (optimisticEntry) setLocalEntry({ key: electionKey, value: entry })
+        if (optimisticEntry) setLocalEntry({ key: requestKey, value: entry })
         if (isEmailVerificationRequired(err)) emailRecovery?.openEmailVerificationRecovery()
         else options.onError?.(err)
       } finally {
-        setIsLoading(false)
+        setPendingKey(current => (current === requestKey ? null : current))
       }
     },
-    [options, isLoading, entry, store, entityType, electionId, electionKey, emailRecovery],
+    [options, isLoading, entry, store, entityType, electionId, localKey, emailRecovery],
   )
 
   return {
