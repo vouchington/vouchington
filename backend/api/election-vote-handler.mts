@@ -41,6 +41,9 @@ function createVoteMutationHandler<VoteResult extends ElectionVoteMutationResult
       },
       getSessionData: () => ctx.getSessionTokenData(),
       ip: ctx.ip,
+      setRetryAfter: seconds => {
+        ctx.set('Retry-After', String(seconds))
+      },
       get userAgent() {
         return (ctx.req.headers['user-agent'] as string | undefined) ?? null
       },

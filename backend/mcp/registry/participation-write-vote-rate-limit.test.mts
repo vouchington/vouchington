@@ -37,6 +37,7 @@ describe('vote MCP election limit', () => {
         code: RATE_LIMIT,
         message: 'Rate limit exceeded. Please try again later.',
         retryable: true,
+        retryAfterSeconds: 60,
       },
     })
     expect(onRateLimited).toHaveBeenCalledOnce()
