@@ -3,10 +3,13 @@ import { PassThrough } from 'node:stream'
 import type { ChannelSubscription } from '@data-stores/valkey-pubsub'
 import onError from '@modules/on-error'
 import type { ApiSseEvent } from '@vouchington/utils/api-response-contract'
-import { SSE_CYCLE_EXPIRED } from '@modules/sse-lifecycle'
+import {
+  assertSseCycleDuration,
+  DEFAULT_SSE_CYCLE_DURATION_MS,
+  SSE_CYCLE_EXPIRED,
+} from '@modules/sse-lifecycle'
 
-export const DEFAULT_SSE_CYCLE_DURATION_MS = 60_000
-export const MAX_SSE_CYCLE_DURATION_MS = 120_000
+export { DEFAULT_SSE_CYCLE_DURATION_MS, MAX_SSE_CYCLE_DURATION_MS } from '@modules/sse-lifecycle'
 
 export type SSEContext = {
   stream: PassThrough
@@ -82,9 +85,7 @@ export function watchForAbortBeforeSSE(
 
 export function startSSE(ctx: Context, options: { cycleDurationMs?: number } = {}): SSEContext {
   const cycleDurationMs = options.cycleDurationMs ?? DEFAULT_SSE_CYCLE_DURATION_MS
-  if (cycleDurationMs > MAX_SSE_CYCLE_DURATION_MS) {
-    throw new RangeError(`SSE cycle duration must not exceed ${MAX_SSE_CYCLE_DURATION_MS} ms`)
-  }
+  assertSseCycleDuration(cycleDurationMs)
 
   ctx.setType('text/event-stream')
   ctx.set('Cache-Control', 'no-cache')

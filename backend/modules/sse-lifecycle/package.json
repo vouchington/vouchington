@@ -2,7 +2,7 @@
   "name": "@modules/sse-lifecycle",
   "version": "1.0.0",
   "private": true,
-  "description": "Cross-process SSE cycle-expiry signal shared by the API and workers",
+  "description": "Shared SSE cycle bound and the API-to-worker cycle-expiry signal",
   "license": "UNLICENSED",
   "type": "module",
   "main": "index.mts",

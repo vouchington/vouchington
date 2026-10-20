@@ -15,7 +15,15 @@ short bounded duration and clients reconnect continuously through native `EventS
 so a Spot drop is indistinguishable from a routine cycle. The cap does not speed up shutdown; it
 keeps the reconnect path warm. New SSE endpoints default to a short cap unless a documented
 exemption applies. Routine cycle expiry emits no named error event, so native retry treats it
-like any dropped connection. `startSSE` owns the lifecycle.
+like any dropped connection. API routes cycle through `startSSE`.
+
+The GlideMQ dashboard event stream is an Express route in the API process, so the entrypoint ends
+that response on the same cycle and still writes no named error event. The dashboard page
+reconnects. Queue rows stay in the queue; event lines that existed only on the dropped connection
+are an accepted loss.
+
+Production WebSocket upgrades are rejected. The only proxied WebSocket is local Next.js HMR, and
+it stays disabled outside local development, so it is not a Spot connection.
 
 `server.timeout` (legacy socket inactivity) stays disabled on the API server: a positive value
 would cut sparse-write SSE streams mid-flight.
