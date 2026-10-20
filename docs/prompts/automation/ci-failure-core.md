@@ -64,7 +64,10 @@ Every flaky test and every defect in this repository gets one fix PR per group:
 5. **Implement and validate** the smallest complete change. When the fix adds or tightens an
    assertion, first show that the assertion fails for the expected reason against the pre-fix
    source, per [Implementation](../../../.agents/skills/agent-workflow/implementation.md)'s
-   regression-test rule, and record that evidence under `### Implementation choice`.
+   regression-test rule, and record that evidence under `### Implementation choice`. When the
+   failing job runs many scenarios in one process, such as explain-analyze, the evidence is a full
+   run of that job with no failure, not the failing scenario passing alone: a sibling scenario can
+   share the cause.
 6. **Publish.** Create one draft PR with the
    `pr_create` tool of the `vouchington-tooling` MCP server. Supply `### Root cause`,
    `### Implementation choice`, and `### Options considered` as `details` entries: `pr_create`

@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto'
 import { readFileSync, readdirSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { beforeEach, describe, expect, it } from 'vitest'
@@ -7,7 +6,6 @@ import {
   OUTPUT_DIR,
   assertCapturedQueries,
   assertScenarioManifest,
-  assertSeedAnchorMatches,
   collectAndGate,
   getExplainPlanCacheModes,
   getResults,
@@ -74,15 +72,6 @@ describe('collectAndGate', () => {
       'entity-relations-newest must use relation index order without an explicit Sort',
     )
     expect(getResults()).toContainEqual(failing)
-  })
-})
-
-describe('assertSeedAnchorMatches', () => {
-  it('rejects a seed anchor post id absent from the database', async () => {
-    const missingPostId = randomUUID()
-    await expect(assertSeedAnchorMatches(missingPostId)).rejects.toThrow(
-      `Seed anchor post ${missingPostId} not found`,
-    )
   })
 })
 

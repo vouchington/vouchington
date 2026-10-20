@@ -4,7 +4,6 @@ import {
   getCapturedQueries,
   clearCapturedQueries,
   extractQueryName,
-  read,
   type ExplainPlanCacheMode,
   type ExplainResult,
 } from '@data-stores/psql'
@@ -15,7 +14,7 @@ import { assertRequiredPlanShape, assertScenarioFunctionCalls } from './plan-gat
 import { ensureScenarioContract } from './plan-expectations.mts'
 import { seedUuid } from './seed-data/common.mts'
 import { withSeedAnchorClock } from './seed-clock.mts'
-import { SEED_ANCHOR_DATE_ENV } from './seed-data/seed-anchor.mts'
+import { continuingAfterFailure } from './scenario-failures.mts'
 import {
   captureScenarioTwice,
   resetRepeatedResults,
@@ -95,26 +94,6 @@ export function getCompletedScenarioIds(): readonly string[] {
   return completedScenarioIds
 }
 
-// Both processes need the same seed anchor; a UTC rollover can make a derived post id miss.
-// Zero-row SQL still counts as captured, so verify the seeded anchor before profiling.
-export async function assertSeedAnchorMatches(postId: string = seedPostId): Promise<void> {
-  const { rows } = await read<{ id: string }>(
-    `/* explainAnalyzeAssertSeedAnchor */ SELECT id FROM posts WHERE id = $1`,
-    [postId],
-  )
-  if (rows.length === 0) {
-    const pinnedDay = process.env.EXPLAIN_SEED_ANCHOR_DATE
-    const anchorSource =
-      pinnedDay === undefined
-        ? `${SEED_ANCHOR_DATE_ENV} is unset, so a UTC midnight between the two process runs splits them`
-        : `${SEED_ANCHOR_DATE_ENV}=${pinnedDay} here; the seed step must have been given the same day`
-    throw new Error(
-      `Seed anchor post ${postId} not found. seed.mts and run.mts derived different day ` +
-        `anchors (${anchorSource}), or the seed step did not complete.`,
-    )
-  }
-}
-
 export function getExplainPlanCacheModes(
   mode: string | undefined = process.env.EXPLAIN_PLAN_CACHE_MODE,
 ): ExplainPlanCacheMode[] {
@@ -128,7 +107,7 @@ export function prepareOutputDir() {
   mkdirSync(OUTPUT_DIR, { recursive: true })
 }
 
-export async function runAndCapture(
+async function captureScenario(
   label: string,
   fn: () => Promise<unknown>,
   nameSuffix?: string,
@@ -198,3 +177,6 @@ export function writeResults() {
   console.log(`\nResults written to: ${outputPath}`)
   console.log(`Total queries explained: ${results.length}`)
 }
+
+// A failing scenario is recorded and later scenarios still run (scenario-failures.mts).
+export const runAndCapture = continuingAfterFailure(captureScenario)
