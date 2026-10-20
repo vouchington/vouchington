@@ -13117,6 +13117,9 @@ importers:
       '@queues/emails':
         specifier: workspace:^
         version: link:../../queues/emails
+      '@services/account-data-requests':
+        specifier: workspace:^
+        version: link:../../services/account-data-requests
       '@services/contribution-gating':
         specifier: workspace:^
         version: link:../../services/contribution-gating

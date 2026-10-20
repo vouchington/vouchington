@@ -10,7 +10,6 @@ import {
   ownershipVariableKeys,
   roleVariableKeys,
 } from './job-payload-contract.mts'
-import { JobPayloadError } from './job-payload-error.mts'
 import {
   asRecord,
   assertExactKeys,
@@ -21,15 +20,9 @@ import {
 } from './job-payload-read.mts'
 
 export function dataExportVariables(data: unknown): Record<string, unknown> {
-  const record = stringVariables<ProcessSendDataExportReadyEmailVariables>(
-    data,
-    dataExportVariableKeys,
-    ['downloadUrl'],
-  )
-  if (typeof record.expiresInDays !== 'number' || Number.isNaN(record.expiresInDays)) {
-    throw new JobPayloadError('expiresInDays must be a number')
-  }
-  return record
+  return stringVariables<ProcessSendDataExportReadyEmailVariables>(data, dataExportVariableKeys, [
+    'requestId',
+  ])
 }
 
 export function applicationDecisionVariables(data: unknown): Record<string, unknown> {

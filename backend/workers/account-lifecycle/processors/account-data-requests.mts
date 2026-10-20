@@ -12,9 +12,7 @@ import {
   zipDir,
   uploadExportToS3,
   deleteExportFromS3,
-  getExportDownloadUrl,
   wasDataRequestMadeBySubject,
-  SEVEN_DAYS_SECONDS,
 } from '@services/account-data-requests'
 import { getPrivateUserByAny } from '@services/users/get'
 import { enqueueSendDataExportReadyEmail } from '@queues/emails/enqueues'
@@ -25,7 +23,6 @@ type ExportRequestDependencies = {
   deleteExportFromS3: typeof deleteExportFromS3
   enqueueSendDataExportReadyEmail: typeof enqueueSendDataExportReadyEmail
   finishDataRequestUpload: typeof finishDataRequestUpload
-  getExportDownloadUrl: typeof getExportDownloadUrl
   getPrivateUserByAny: typeof getPrivateUserByAny
   leaseDataRequestUpload: typeof leaseDataRequestUpload
   markDataRequestFailed: typeof markDataRequestFailed
@@ -48,7 +45,6 @@ export async function processExportRequest(
   const deps = {
     deleteExportFromS3,
     enqueueSendDataExportReadyEmail,
-    getExportDownloadUrl,
     getPrivateUserByAny,
     finishDataRequestUpload,
     leaseDataRequestUpload,
@@ -119,14 +115,9 @@ export async function processExportRequest(
         ? await deps.getPrivateUserByAny(userId)
         : null
       if (user) {
-        const downloadUrl = await deps.getExportDownloadUrl(s3Key, SEVEN_DAYS_SECONDS)
         await deps.enqueueSendDataExportReadyEmail(
-          { userId },
-          {
-            downloadUrl,
-            expiresInDays: DATA_EXPORT_EXPIRY_DAYS,
-            uiLocale: user.ui_locale ?? null,
-          },
+          { userId, uiLocale: user.ui_locale ?? null },
+          { requestId },
         )
       }
     } catch {

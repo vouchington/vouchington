@@ -33,9 +33,7 @@ export const welcomeVariableKeys = {
 } as const satisfies Record<keyof ProcessSendWelcomeEmailVariables, true>
 
 export const dataExportVariableKeys = {
-  downloadUrl: true,
-  expiresInDays: true,
-  uiLocale: true,
+  requestId: true,
 } as const satisfies Record<keyof ProcessSendDataExportReadyEmailVariables, true>
 
 export const applicationVariableKeys = {

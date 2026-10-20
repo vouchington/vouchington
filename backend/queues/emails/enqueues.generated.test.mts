@@ -43,11 +43,6 @@ describe('enqueues.generated', () => {
           inviterName: 'Test User',
           code: 'a3f9c2e1',
         }),
-      processSendDataExportReadyEmail: () =>
-        enqueueSendDataExportReadyEmail(input, {
-          downloadUrl: 'https://downloads.example/export.zip?signature=secret',
-          expiresInDays: 7,
-        }),
     }
 
     it.each(Object.entries(credentialEnqueues))(
@@ -72,6 +67,28 @@ describe('enqueues.generated', () => {
         name: 'processSendWelcomeEmail',
         opts: { removeOnComplete: true, removeOnFail: true },
       })
+    })
+
+    it('enqueues a data-export notification by request id without a download URL', async () => {
+      const requestId = crypto.randomUUID()
+      const exportInput = { userId: crypto.randomUUID(), uiLocale: 'fr' }
+      const job = await readEnqueuedJob(
+        emails,
+        await enqueueSendDataExportReadyEmail(exportInput, { requestId }),
+      )
+
+      expect(job).toMatchObject({
+        name: 'processSendDataExportReadyEmail',
+        data: { input: exportInput, variables: { requestId } },
+        opts: {
+          priority: 0,
+          removeOnComplete: true,
+          removeOnFail: true,
+          jobId: `data-export-ready__${requestId}`,
+          deduplication: { id: `data-export-ready__${requestId}`, mode: 'simple' },
+        },
+      })
+      expect(JSON.stringify(job?.data)).not.toMatch(/downloadUrl|signature|X-Amz-/)
     })
 
     it('removes copyright notification email jobs after their terminal outcome', async () => {
