@@ -1,6 +1,6 @@
 import type { BasicUser, PrivateUser } from '@services/users/types'
 import type { Tool, ToolApiEndpoint, ToolMeta } from '@services/openai-agents/tool-types'
-import { requirePrivateToolUser } from './private-user.mts'
+import { requireActiveToolUser } from './private-user.mts'
 import { selectApiByArgument } from './select-api-by-argument.mts'
 import { objectSchema, successSchema } from './output-schema-shapes.mts'
 import { componentSchema } from './route-response-schema.mts'
@@ -81,7 +81,7 @@ export function createManageEntityTool<
     function:
       (currentUser: BasicUser) =>
       async (args: ManageEntityArgs<TAdd, TUpdate>): Promise<ManageEntityResult> => {
-        const user = await requirePrivateToolUser(currentUser)
+        const user = await requireActiveToolUser(currentUser)
 
         switch (args.action) {
           case 'add': {
