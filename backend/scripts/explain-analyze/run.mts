@@ -14,6 +14,7 @@ import {
 } from './run-support.mts'
 import { EXPLAIN_SCENARIO_MANIFEST } from './scenario-manifest.mts'
 import { assertSeedAnchorMatches } from './seed-anchor-check.mts'
+import { SEED_ANCHOR_DATE_ENV, assertSeedAnchorNotFuture } from './seed-data/seed-anchor.mts'
 import { assertNoScenarioFailures, continueAfterFailure } from './scenario-failures.mts'
 import { assertPlanRegistry } from './plan-expectations.mts'
 import { runEntityAndCommunityScenarios } from './run-scenarios/entities-and-communities.mts'
@@ -93,6 +94,7 @@ const RUN_STEPS: readonly (() => Promise<unknown>)[] = [
 async function main() {
   prepareOutputDir()
   try {
+    assertSeedAnchorNotFuture(process.env[SEED_ANCHOR_DATE_ENV])
     await assertSeedAnchorMatches()
     for (const step of RUN_STEPS) await continueAfterFailure(step.name, step)
     const runErrors: unknown[] = []

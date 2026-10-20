@@ -28,16 +28,16 @@ const POST_SEED_MINUTES_APART_MS = 60_000
 // run-scenarios/*.mts) re-derives that same post's id via the identical seedUuid(postIndex, '05')
 // call to locate it, rather than duplicating the address as a hardcoded literal. Both processes
 // therefore must agree on the anchor. explain-analyze.yml hands them one shared UTC day through
-// EXPLAIN_SEED_ANCHOR_DATE; with it unset (a local run) the anchor falls back to the current UTC
-// day, which two local invocations only share when no UTC midnight falls between them. The
-// month-granularity CRAWL_SEED_PREFIX below derives from the same day, so crawl ids agree too.
-// Day granularity keeps a post within ~12h of "now" — safely inside the `time_range: '1w'` window
-// the heavy feed scenarios filter on.
-const { dayAnchorMs: POST_SEED_ANCHOR_MS, monthUuidv7Prefix } = resolveSeedAnchor(
+// EXPLAIN_SEED_ANCHOR_DATE; with it unset (a local run) the anchor falls back to
+// seedAnchorDayFor(now), which two local invocations only share when no anchor-day boundary falls
+// between them. CRAWL_SEED_PREFIX below derives from the same anchor, so crawl ids agree too.
+// The anchor stays at most ~24h behind "now" — safely inside the `time_range: '1w'` window the
+// heavy feed scenarios filter on — and never after it (seed-anchor.mts).
+const { dayAnchorMs: POST_SEED_ANCHOR_MS, crawlUuidv7Prefix } = resolveSeedAnchor(
   process.env.EXPLAIN_SEED_ANCHOR_DATE,
 )
 
-export const CRAWL_SEED_PREFIX = monthUuidv7Prefix
+export const CRAWL_SEED_PREFIX = crawlUuidv7Prefix
 
 export function seedUuid(index: number, tableTag = '00'): string {
   const indexHex = index.toString(16).padStart(12, '0')
@@ -82,12 +82,11 @@ export function seedFreshRelationId(index: number): string {
   return seedUuidAtTimestamp(postSeedTimestampMs(0) + 2000, index)
 }
 
-// Relation inserts omit id, so relation tables use their uuidv7() default, the database clock.
-// Each relation table checks id > subject_id and id > object_id. Posts at the anchor noon sort
-// after that clock id until noon UTC, so a scenario that inserts a post relation uses these posts.
-// Index 0 is that noon; each later index is one minute older. 24 hours before noon is 12 hours
-// before the anchor day starts, so a clock id during that day sorts after both posts. seedPosts
-// inserts indexes 0 through 99_999.
+// Relation inserts omit id, so relation tables use their uuidv7() default, the database clock,
+// and each relation table checks id > subject_id and id > object_id. The anchor is never after
+// the run (seed-anchor.mts), so any seeded post satisfies that; the relation-insert scenarios keep
+// these posts, a day before the anchor, because their row budgets were measured on them (#3410).
+// Index 0 is the anchor; each later index is one minute older. seedPosts inserts 0 through 99_999.
 export const RELATION_INSERT_POST_INDEXES = [24 * 60, 24 * 60 + 1] as const
 
 // seedComments (comments-and-recently-viewed.mts) builds a 3-level comment tree under one root

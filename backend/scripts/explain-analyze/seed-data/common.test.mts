@@ -48,19 +48,20 @@ describe('seedUuid', () => {
     }
   })
 
-  it('derives the same post id whether an unpinned process starts early or late in the same UTC calendar day', async () => {
+  it('derives the same post id whether an unpinned process starts early or late in the same anchor day', async () => {
     // With EXPLAIN_SEED_ANCHOR_DATE unset (a local run), this module's day-anchor falls back to
-    // the current UTC day, captured once at import time. vi.resetModules() + a dynamic import
+    // seedAnchorDayFor(now), captured once at import time: an anchor day runs from 12:15 UTC to
+    // 12:15 UTC the next day (seed-anchor.mts). vi.resetModules() + a dynamic import
     // forces a genuinely fresh module evaluation, simulating the seed.mts/run.mts process
     // boundary. The pinned-day variant lives in seed-anchor.test.mts.
     vi.stubEnv('EXPLAIN_SEED_ANCHOR_DATE', undefined)
     vi.useFakeTimers()
     try {
-      vi.setSystemTime(new Date('2026-03-05T00:05:00.000Z'))
+      vi.setSystemTime(new Date('2026-03-05T12:20:00.000Z'))
       vi.resetModules()
       const early = await import('./common.mts')
 
-      vi.setSystemTime(new Date('2026-03-05T23:50:00.000Z'))
+      vi.setSystemTime(new Date('2026-03-06T12:10:00.000Z'))
       vi.resetModules()
       const late = await import('./common.mts')
 
@@ -69,9 +70,9 @@ describe('seedUuid', () => {
       // Negative control: if vi.resetModules() silently failed to force a fresh module
       // evaluation, `early`/`late`/`nextDay` would all be the same cached module instance and
       // the positive assertion above would pass vacuously regardless of the anchor's day
-      // granularity. Asserting a genuine divergence across a real UTC day boundary proves the
+      // granularity. Asserting a genuine divergence across a real anchor-day boundary proves the
       // reset actually re-evaluated the module each time.
-      vi.setSystemTime(new Date('2026-03-06T00:05:00.000Z'))
+      vi.setSystemTime(new Date('2026-03-06T12:20:00.000Z'))
       vi.resetModules()
       const nextDay = await import('./common.mts')
 

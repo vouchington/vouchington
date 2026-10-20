@@ -91,8 +91,10 @@ import {
 import { seedMembershipChange } from './seed-data/membership-changes.mts'
 import { seedSharedLoaders } from './seed-data/shared-loaders.mts'
 import { seedModerationReportContexts } from './seed-data/moderation-report-contexts.mts'
+import { SEED_ANCHOR_DATE_ENV, assertSeedAnchorNotFuture } from './seed-data/seed-anchor.mts'
 
 async function main() {
+  assertSeedAnchorNotFuture(process.env[SEED_ANCHOR_DATE_ENV])
   await seedUsers(20_000)
   await seedAdminEmails()
   await seedTopicImportAttempts()
