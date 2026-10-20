@@ -1,6 +1,8 @@
 import { render } from '@testing-library/react'
 import { useLayoutEffect } from 'react'
 import { describe, expect, it } from 'vitest'
+import { AuthProvider } from '@/lib/auth/auth-provider'
+import type { ClientAuthUser } from '@/lib/auth/client-auth-user'
 import { useElectionVote } from '../use-election-vote'
 import { VoteStoreProvider } from '../vote-store-provider'
 import type { VoteEntityType } from '../store'
@@ -113,5 +115,56 @@ describe('useElectionVote identity state', () => {
         countDown: 8,
       },
     ])
+  })
+
+  it.each([
+    { nextUserId: 'user-b', label: 'another account' },
+    { nextUserId: null, label: 'signed out' },
+  ])('shows the current viewer vote when the signed-in user becomes $label', ({ nextUserId }) => {
+    const observations: Observation[] = []
+    const onObserve = (observation: Observation) => observations.push(observation)
+    function viewer(
+      userId: string | null,
+      initialVote: 'like' | 'disavow' | null,
+      countUp: number,
+    ) {
+      const initialUser: ClientAuthUser | null = userId
+        ? { id: userId, roles: ['user'], account_type: 'official' }
+        : null
+      return (
+        <AuthProvider initialUser={initialUser}>
+          <VoteStoreProvider>
+            <VoteProbe
+              electionId='election-1'
+              initialVote={initialVote}
+              initialCountUp={countUp}
+              initialCountDown={0}
+              onObserve={onObserve}
+            />
+          </VoteStoreProvider>
+        </AuthProvider>
+      )
+    }
+
+    const rendered = render(viewer('user-a', 'like', 5))
+    const beforeSwitch = observations.length
+    rendered.rerender(viewer(nextUserId, null, 1))
+
+    expect(observations.slice(beforeSwitch)).toEqual([
+      {
+        electionId: 'election-1',
+        currentVote: null,
+        countUp: 1,
+        countDown: 0,
+      },
+    ])
+
+    rendered.rerender(viewer('user-a', 'disavow', 2))
+    expect(observations.at(-1)).toEqual({
+      electionId: 'election-1',
+      currentVote: 'disavow',
+      countUp: 2,
+      countDown: 0,
+    })
   })
 })
