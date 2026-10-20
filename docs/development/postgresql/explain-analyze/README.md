@@ -32,9 +32,13 @@ regressions remain distinguishable from batching and cursor failures.
 ## Determinism
 
 - The seed and the run are separate processes that re-derive seeded ids from a shared UTC anchor
-  day (`EXPLAIN_SEED_ANCHOR_DATE`). CI exports it once per job so a UTC midnight between steps
-  cannot split ids; a red anchor check near midnight is a real defect, not a reason to rerun.
-- While each scenario builds its query, `Date` is pinned to the anchor day's noon so time-range
+  day (`EXPLAIN_SEED_ANCHOR_DATE`). CI exports it once per job so a boundary between steps
+  cannot split ids; a red anchor check near a boundary is a real defect, not a reason to rerun.
+- Seeded rows are never dated after the run. The anchor day is the latest day whose noon, plus the
+  largest forward offset any seed helper adds, has already passed. Rows the database stamps itself
+  (`uuidv7()` ids, `now()`) therefore sort after every seeded row; relation tables check
+  `id > subject_id`, and a noon anchor on the run's own day failed that check every morning.
+- While each scenario builds its query, `Date` is pinned to the anchor noon so time-range
   cutoffs sit at a fixed offset from seeded rows. Under the wall clock a one-week window held a
   different number of posts per hour, which flipped a plan between a seq scan and a bitmap scan.
 - Relation-insert scenarios leave the relation id to `uuidv7()`, and every relation table requires

@@ -28,16 +28,16 @@ const POST_SEED_MINUTES_APART_MS = 60_000
 // run-scenarios/*.mts) re-derives that same post's id via the identical seedUuid(postIndex, '05')
 // call to locate it, rather than duplicating the address as a hardcoded literal. Both processes
 // therefore must agree on the anchor. explain-analyze.yml hands them one shared UTC day through
-// EXPLAIN_SEED_ANCHOR_DATE; with it unset (a local run) the anchor falls back to the current UTC
-// day, which two local invocations only share when no UTC midnight falls between them. The
-// month-granularity CRAWL_SEED_PREFIX below derives from the same day, so crawl ids agree too.
-// Day granularity keeps a post within ~12h of "now" — safely inside the `time_range: '1w'` window
-// the heavy feed scenarios filter on.
-const { dayAnchorMs: POST_SEED_ANCHOR_MS, monthUuidv7Prefix } = resolveSeedAnchor(
+// EXPLAIN_SEED_ANCHOR_DATE; with it unset (a local run) the anchor falls back to
+// seedAnchorDayFor(now), which two local invocations only share when no anchor-day boundary falls
+// between them. CRAWL_SEED_PREFIX below derives from the same anchor, so crawl ids agree too.
+// The anchor stays at most ~24h behind "now" — safely inside the `time_range: '1w'` window the
+// heavy feed scenarios filter on — and never after it (seed-anchor.mts).
+const { dayAnchorMs: POST_SEED_ANCHOR_MS, crawlUuidv7Prefix } = resolveSeedAnchor(
   process.env.EXPLAIN_SEED_ANCHOR_DATE,
 )
 
-export const CRAWL_SEED_PREFIX = monthUuidv7Prefix
+export const CRAWL_SEED_PREFIX = crawlUuidv7Prefix
 
 export function seedUuid(index: number, tableTag = '00'): string {
   const indexHex = index.toString(16).padStart(12, '0')

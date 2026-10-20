@@ -60,7 +60,7 @@ describe('explain-analyze seed anchor day', () => {
     expect(steps.filter(candidate => candidate.run?.includes(`${ANCHOR_ENV}=`))).toHaveLength(1)
   })
 
-  it('exports the pinned UTC day, not the runner zone day', () => {
+  it('exports the UTC day 735 minutes before the job, not the runner zone day', () => {
     const pinStep = explainAnalyzeJob().steps.find(candidate =>
       candidate.run?.includes(`${ANCHOR_ENV}=`),
     )
@@ -72,8 +72,8 @@ describe('explain-analyze seed anchor day', () => {
 set -euo pipefail
 date() {
   case "$*" in
-    "-u +%Y-%m-%d") printf '%s\\n' "$VOUCH_UTC_DAY" ;;
-    "+%Y-%m-%d") printf '%s\\n' "$VOUCH_LOCAL_DAY" ;;
+    "-u -d -735 minutes +%Y-%m-%d") printf '%s\\n' "$VOUCH_UTC_DAY" ;;
+    "-d -735 minutes +%Y-%m-%d") printf '%s\\n' "$VOUCH_LOCAL_DAY" ;;
     *) echo "unexpected date call: $*" >&2; return 1 ;;
   esac
 }
@@ -83,7 +83,8 @@ printf '%s\\n' "$VOUCH_UTC_DAY" "$VOUCH_LOCAL_DAY"
     for (const instant of proofInstants()) {
       const directory = mkdtempSync(join(tmpdir(), 'explain-anchor-'))
       const githubEnv = join(directory, 'github-env')
-      const at = new Date(instant)
+      // seed-anchor.mts SEED_ANCHOR_LAG_MS: the anchor day's noon has passed by 15 minutes.
+      const at = new Date(new Date(instant).getTime() - 735 * 60_000)
       const zone = at.getUTCHours() >= 10 ? 'Pacific/Kiritimati' : 'Pacific/Pago_Pago'
       const utcDay = at.toISOString().slice(0, 10)
       const localDay = new Intl.DateTimeFormat('en-CA', { timeZone: zone }).format(at)
