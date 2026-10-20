@@ -11,13 +11,7 @@ import { createPostTextEmbeddingContent } from '@services/posts/content'
 import type { TopicRecommendationPost } from '@services/topic-recommendations/types'
 import { getTopicByAny } from '@services/topics'
 import { registerScenarioContract } from '../plan-expectations.mts'
-import {
-  runAndCapture,
-  seedHostnameIds,
-  seedPostId,
-  seedTopicId,
-  seedUser,
-} from '../run-support.mts'
+import { runAndCapture, seedHostnameIds, seedTopicId, seedUser } from '../run-support.mts'
 import { RELATION_INSERT_POST_INDEXES, seedUuid } from '../seed-data/common.mts'
 
 // Budgets are the larger of both plan modes and capture passes, plus 20% rounded up.
@@ -184,7 +178,7 @@ export async function runRelationRoundTripScenarios(): Promise<void> {
         }),
         creator: seedUser,
         options: { query: transaction },
-        postId: seedPostId,
+        postId: seedUuid(RELATION_INSERT_POST_INDEXES[0], '05'),
         topicIds: [seedTopicId],
         topicRelation: getEntityRelationMetadataOrThrow({
           subjectType: 'post',

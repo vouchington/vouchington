@@ -82,11 +82,12 @@ export function seedFreshRelationId(index: number): string {
   return seedUuidAtTimestamp(postSeedTimestampMs(0) + 2000, index)
 }
 
-// upsertEntityRelation omits id, so relation__post__related__post uses its uuidv7() default, the
-// database clock. The table checks id > subject_id and id > object_id. Posts at the anchor noon
-// sort after that clock id until noon UTC. Index 0 is that noon; each later index is one minute
-// older. 24 hours before noon is 12 hours before the anchor day starts, so a clock id during that
-// day sorts after both posts. seedPosts inserts indexes 0 through 99_999.
+// Relation inserts omit id, so relation tables use their uuidv7() default, the database clock.
+// Each relation table checks id > subject_id and id > object_id. Posts at the anchor noon sort
+// after that clock id until noon UTC, so a scenario that inserts a post relation uses these posts.
+// Index 0 is that noon; each later index is one minute older. 24 hours before noon is 12 hours
+// before the anchor day starts, so a clock id during that day sorts after both posts. seedPosts
+// inserts indexes 0 through 99_999.
 export const RELATION_INSERT_POST_INDEXES = [24 * 60, 24 * 60 + 1] as const
 
 // seedComments (comments-and-recently-viewed.mts) builds a 3-level comment tree under one root
