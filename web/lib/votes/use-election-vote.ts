@@ -55,8 +55,8 @@ export function useElectionVote<TChoice extends Exclude<VoteChoice, null>>(
   const localKey = `${viewerId ?? ''}:${electionKey}`
   const [localEntry, setLocalEntry] = useState({ key: localKey, value: propsEntry })
   const currentLocalEntry = localEntry.key === localKey ? localEntry.value : propsEntry
-  const [pendingKey, setPendingKey] = useState<string | null>(null)
-  const isLoading = pendingKey === localKey
+  const [pendingKeys, setPendingKeys] = useState<ReadonlySet<string>>(() => new Set())
+  const isLoading = pendingKeys.has(localKey)
   useEffect(() => {
     store?.hydrate(entityType, electionId, propsEntry)
   }, [store, entityType, electionId, propsEntry])
@@ -79,7 +79,12 @@ export function useElectionVote<TChoice extends Exclude<VoteChoice, null>>(
       const optimisticEntry = store ? undefined : nextEntryFor(entry, next)
       if (optimisticEntry) setLocalEntry({ key: requestKey, value: optimisticEntry })
 
-      setPendingKey(requestKey)
+      setPendingKeys(current => {
+        if (current.has(requestKey)) return current
+        const nextKeys = new Set(current)
+        nextKeys.add(requestKey)
+        return nextKeys
+      })
       try {
         if (next === null) await options.clearVote()
         else await options.submitVote(next)
@@ -89,7 +94,12 @@ export function useElectionVote<TChoice extends Exclude<VoteChoice, null>>(
         if (isEmailVerificationRequired(err)) emailRecovery?.openEmailVerificationRecovery()
         else options.onError?.(err)
       } finally {
-        setPendingKey(current => (current === requestKey ? null : current))
+        setPendingKeys(current => {
+          if (!current.has(requestKey)) return current
+          const nextKeys = new Set(current)
+          nextKeys.delete(requestKey)
+          return nextKeys
+        })
       }
     },
     [options, isLoading, entry, store, entityType, electionId, localKey, emailRecovery],
