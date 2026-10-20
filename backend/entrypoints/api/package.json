@@ -32,6 +32,7 @@
     "@modules/api-egress-proxy": "workspace:^",
     "@modules/bluesky-oauth": "workspace:^",
     "@modules/on-error": "workspace:^",
+    "@modules/sse-lifecycle": "workspace:^",
     "@modules/utils": "workspace:^",
     "@services/api-egress-proxy": "workspace:^",
     "@services/bluesky-accounts": "workspace:^",

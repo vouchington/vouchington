@@ -1597,6 +1597,9 @@ importers:
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
+      '@modules/sse-lifecycle':
+        specifier: workspace:^
+        version: link:../../modules/sse-lifecycle
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
