@@ -51,6 +51,28 @@ describe('armDashboardEventStream', () => {
     }
   })
 
+  it('cycles the trailing-slash and case-insensitive event-stream paths Express serves', async () => {
+    vi.useFakeTimers()
+    const slashResponse = openResponse()
+    const caseResponse = openResponse()
+
+    try {
+      armDashboardEventStream({ method: 'GET', url: '/api/events/?cursor=1' }, slashResponse)
+      armDashboardEventStream({ method: 'GET', url: '/API/events' }, caseResponse)
+
+      await vi.advanceTimersByTimeAsync(DEFAULT_SSE_CYCLE_DURATION_MS - 1)
+      expect(slashResponse.writableEnded).toBe(false)
+      expect(caseResponse.writableEnded).toBe(false)
+
+      await vi.advanceTimersByTimeAsync(1)
+      expect(slashResponse.endCount).toBe(1)
+      expect(caseResponse.endCount).toBe(1)
+      expect(vi.getTimerCount()).toBe(0)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('leaves other dashboard routes open past the cycle', async () => {
     vi.useFakeTimers()
     const response = openResponse()

@@ -30,7 +30,9 @@ export function assertSseCycleDuration(cycleDurationMs: number): void {
 
 function dashboardEventStreamPath(url = ''): string {
   const queryIndex = url.indexOf('?')
-  return queryIndex === -1 ? url : url.slice(0, queryIndex)
+  const path = queryIndex === -1 ? url : url.slice(0, queryIndex)
+  // Express non-strict routing treats `/api/events/` as `/api/events`.
+  return path.length > 1 && path.endsWith('/') ? path.slice(0, -1) : path
 }
 
 /**
@@ -47,7 +49,7 @@ export function armDashboardEventStream(
   assertSseCycleDuration(cycleDurationMs)
   if (
     request.method !== 'GET' ||
-    dashboardEventStreamPath(request.url) !== DASHBOARD_EVENT_STREAM_PATH
+    dashboardEventStreamPath(request.url).toLowerCase() !== DASHBOARD_EVENT_STREAM_PATH
   ) {
     return
   }
