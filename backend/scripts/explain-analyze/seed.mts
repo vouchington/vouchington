@@ -79,7 +79,9 @@ import {
 import { seedTopHashtags } from './seed-data/top-hashtags.mts'
 import { seedViewDrivenOAuth } from './seed-data/view-driven-oauth.mts'
 import { seedViewDrivenIdentity } from './seed-data/view-driven-identity.mts'
+import { write } from '@data-stores/psql'
 import { refreshMaterializedView } from '@data-stores/psql/migration-runner/refresh-materialized-view'
+import { refreshExplainMaterializedViews } from './seed-data/materialized-view-maintenance.mts'
 import { RSS_FEED_SEED_COUNT, RSS_FEED_ITEM_SEED_COUNT } from './seed-data/common.mts'
 import {
   seedMembershipRefunds,
@@ -172,11 +174,7 @@ async function main() {
   await seedClassifierHumanVoteComparison()
   await seedRelationVoteReads()
   await runAnalyze()
-  await refreshMaterializedView('mv_rss_feed_crawl_tiers')
-  await refreshMaterializedView('mv_platform_stats')
-  await refreshMaterializedView('mv_trending_rss_feeds')
-  await refreshMaterializedView('mv_revenue_memberships')
-  await refreshMaterializedView('mv_revenue_changes')
+  await refreshExplainMaterializedViews(refreshMaterializedView, statement => write(statement))
   await printRowCounts()
   console.log('\nSeed complete.')
   process.exit(0)
