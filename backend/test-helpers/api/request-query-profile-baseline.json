@@ -119,7 +119,6 @@
     "permanent": true,
     "code": "backend/services/my/email-address-verification.mts:54"
   },
-  {},
   {
     "annotation": "createTopicRevision",
     "route": null,
@@ -311,7 +310,6 @@
     "permanent": true,
     "code": "backend/services/copyright-notices/email-promotion.mts:356"
   },
-  {},
   {
     "annotation": "lockApiKeyOwner",
     "route": null,
