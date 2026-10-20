@@ -3548,5 +3548,182 @@
   "web.admin.mq.queues.domains.retry-failed.default": {
     "success": true,
     "retried": 2
+  },
+  "native.moderation.appeals.member.default": {
+    "appeals": [
+      {
+        "approved_at": null,
+        "community_ban_id": null,
+        "community_id": null,
+        "created_at": "2026-06-01T11:45:00.000Z",
+        "id": "00000000-0000-7000-8000-000000000102",
+        "is_overdue": false,
+        "post_id": "post-1",
+        "post_removal_kind": "platform",
+        "public_response": null,
+        "resolution_action": null,
+        "resolved_at": null,
+        "sent_at": null,
+        "status": "pending",
+        "target_context": {
+          "community": null,
+          "decided_at": "2026-06-01T11:30:00.000Z",
+          "id": "post-1",
+          "kind": "platform",
+          "declared_language": null,
+          "lingua_rs_detected_language": "en",
+          "public_reason": "The post did not meet the content policy.",
+          "title": "A removed review",
+          "type": "post_removal"
+        },
+        "updated_at": "2026-06-01T12:00:00.000Z",
+        "user_suspension_id": null,
+        "user_warning_id": null
+      }
+    ],
+    "page_info": {
+      "start_cursor": "eyJpZCI6IjAwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDEwMiIsInNjb3BlIjoiYXBwZWFsczpwZW5kaW5nOnVzZXItMTppZC1kZXNjIn0",
+      "end_cursor": "eyJpZCI6IjAwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDEwMiIsInNjb3BlIjoiYXBwZWFsczpwZW5kaW5nOnVzZXItMTppZC1kZXNjIn0",
+      "has_next_page": true
+    }
+  },
+  "native.moderation.appeals.member.page-2": {
+    "appeals": [
+      {
+        "approved_at": null,
+        "community_ban_id": null,
+        "community_id": null,
+        "created_at": "2026-06-02T11:45:00.000Z",
+        "id": "00000000-0000-7000-8000-000000000101",
+        "is_overdue": false,
+        "post_id": null,
+        "post_removal_kind": null,
+        "public_response": null,
+        "resolution_action": null,
+        "resolved_at": null,
+        "sent_at": null,
+        "status": "pending",
+        "target_context": {
+          "community": null,
+          "created_at": "2026-06-02T11:30:00.000Z",
+          "id": "warning-2",
+          "public_message": "Please stop posting repeated promotional links.",
+          "type": "warning"
+        },
+        "updated_at": "2026-06-02T12:00:00.000Z",
+        "user_suspension_id": null,
+        "user_warning_id": "warning-2"
+      }
+    ],
+    "page_info": {
+      "start_cursor": "eyJpZCI6IjAwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDEwMSIsInNjb3BlIjoiYXBwZWFsczpwZW5kaW5nOnVzZXItMTppZC1kZXNjIn0",
+      "end_cursor": null,
+      "has_next_page": false
+    }
+  },
+  "native.moderation.appeals.detail.member.default": {
+    "appeal": {
+      "approved_at": null,
+      "community_ban_id": null,
+      "community_id": null,
+      "created_at": "2026-06-01T11:45:00.000Z",
+      "id": "00000000-0000-7000-8000-000000000102",
+      "is_overdue": false,
+      "post_id": "post-1",
+      "post_removal_kind": "platform",
+      "public_response": null,
+      "resolution_action": null,
+      "resolved_at": null,
+      "sent_at": null,
+      "status": "pending",
+      "target_context": {
+        "community": null,
+        "decided_at": "2026-06-01T11:30:00.000Z",
+        "id": "post-1",
+        "kind": "platform",
+        "declared_language": null,
+        "lingua_rs_detected_language": "en",
+        "public_reason": "The post did not meet the content policy.",
+        "title": "A removed review",
+        "type": "post_removal"
+      },
+      "updated_at": "2026-06-01T12:00:00.000Z",
+      "user_suspension_id": null,
+      "user_warning_id": null
+    }
+  },
+  "native.moderation.appeals.detail.member.sent": {
+    "appeal": {
+      "approved_at": "2026-06-01T12:10:00.000Z",
+      "community_ban_id": null,
+      "community_id": null,
+      "created_at": "2026-06-01T11:45:00.000Z",
+      "id": "00000000-0000-7000-8000-000000000102",
+      "is_overdue": false,
+      "post_id": "post-1",
+      "post_removal_kind": "platform",
+      "public_response": "We reviewed your appeal and reduced the action.",
+      "resolution_action": "reduce",
+      "resolved_at": "2026-06-01T12:20:00.000Z",
+      "sent_at": "2026-06-01T12:15:00.000Z",
+      "status": "resolved",
+      "updated_at": "2026-06-01T12:20:00.000Z",
+      "user_suspension_id": null,
+      "user_warning_id": null
+    }
+  },
+  "native.moderation.appeals.create.member.default": {
+    "appeal": {
+      "approved_at": null,
+      "community_ban_id": null,
+      "community_id": null,
+      "created_at": "2026-06-01T11:45:00.000Z",
+      "id": "00000000-0000-7000-8000-000000000103",
+      "is_overdue": false,
+      "post_id": null,
+      "post_removal_kind": null,
+      "public_response": null,
+      "resolution_action": null,
+      "resolved_at": null,
+      "sent_at": null,
+      "status": "pending",
+      "target_context": {
+        "type": "suspension",
+        "id": "00000000-0000-7000-8000-000000000104",
+        "reason": "Repeated violations",
+        "created_at": "2026-06-01T11:30:00.000Z"
+      },
+      "updated_at": "2026-06-01T12:00:00.000Z",
+      "user_suspension_id": "00000000-0000-7000-8000-000000000104",
+      "user_warning_id": null
+    },
+    "isDuplicate": false
+  },
+  "native.moderation.appeals.member.resolved": {
+    "appeals": [
+      {
+        "approved_at": "2026-06-01T12:10:00.000Z",
+        "community_ban_id": null,
+        "community_id": null,
+        "created_at": "2026-06-01T11:45:00.000Z",
+        "id": "00000000-0000-7000-8000-000000000102",
+        "is_overdue": false,
+        "post_id": "post-1",
+        "post_removal_kind": "platform",
+        "public_response": "We reviewed your appeal and reduced the action.",
+        "resolution_action": "reduce",
+        "resolved_at": "2026-06-01T12:20:00.000Z",
+        "sent_at": "2026-06-01T12:15:00.000Z",
+        "status": "resolved",
+        "updated_at": "2026-06-01T12:20:00.000Z",
+        "user_suspension_id": null,
+        "user_warning_id": null
+      }
+    ],
+    "page_info": {
+      "start_cursor": "eyJpZCI6IjAwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDEwMiIsInNjb3BlIjoiYXBwZWFsczpyZXNvbHZlZDp1c2VyLTE6aWQtZGVzYyJ9",
+      "end_cursor": null,
+      "has_next_page": false
+    }
   }
 }

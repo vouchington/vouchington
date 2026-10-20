@@ -9,6 +9,44 @@ export const moderationParityEndpointRegistry: Record<string, ManifestEndpoint> 
     method: 'GET',
     path: '/api/v1/reports/019f6559-6b31-7171-b5b1-ccd9d702c45e/judgements/00000000-0000-7000-8000-000000000303',
   },
+  'native.moderation.appeals.member.default': {
+    method: 'GET',
+    path: '/api/v1/appeals',
+    query: { limit: '25', status: 'pending' },
+  },
+  'native.moderation.appeals.member.page-2': {
+    method: 'GET',
+    path: '/api/v1/appeals',
+    query: {
+      after: Buffer.from(
+        JSON.stringify({
+          id: '00000000-0000-7000-8000-000000000102',
+          scope: 'appeals:pending:user-1:id-desc',
+        }),
+      ).toString('base64url'),
+      limit: '25',
+      status: 'pending',
+    },
+  },
+  'native.moderation.appeals.member.resolved': {
+    method: 'GET',
+    path: '/api/v1/appeals',
+    query: { limit: '25', status: 'resolved' },
+  },
+  'native.moderation.appeals.detail.member.default': {
+    method: 'GET',
+    path: '/api/v1/appeals/00000000-0000-7000-8000-000000000102',
+  },
+  'native.moderation.appeals.detail.member.sent': {
+    method: 'GET',
+    path: '/api/v1/appeals/00000000-0000-7000-8000-000000000102',
+  },
+  'native.moderation.appeals.create.member.default': {
+    method: 'POST',
+    path: '/api/v1/appeals',
+    requestBody: { target_type: 'suspension', appeal_reason: '[other] Please review this again.' },
+  },
+
   'native.moderation.disputes.detail.default': {
     method: 'GET',
     path: disputePath,

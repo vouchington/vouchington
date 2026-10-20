@@ -1,0 +1,38 @@
+{
+  "appeals": [
+    {
+      "approved_at": null,
+      "community_ban_id": null,
+      "community_id": null,
+      "created_at": "2026-06-01T11:45:00.000Z",
+      "id": "00000000-0000-7000-8000-000000000102",
+      "is_overdue": false,
+      "post_id": "post-1",
+      "post_removal_kind": "platform",
+      "public_response": null,
+      "resolution_action": null,
+      "resolved_at": null,
+      "sent_at": null,
+      "status": "pending",
+      "target_context": {
+        "community": null,
+        "decided_at": "2026-06-01T11:30:00.000Z",
+        "declared_language": null,
+        "id": "post-1",
+        "kind": "platform",
+        "lingua_rs_detected_language": "en",
+        "public_reason": "The post did not meet the content policy.",
+        "title": "A removed review",
+        "type": "post_removal"
+      },
+      "updated_at": "2026-06-01T12:00:00.000Z",
+      "user_suspension_id": null,
+      "user_warning_id": null
+    }
+  ],
+  "page_info": {
+    "end_cursor": "eyJpZCI6IjAwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDEwMiIsInNjb3BlIjoiYXBwZWFsczpwZW5kaW5nOnVzZXItMTppZC1kZXNjIn0",
+    "has_next_page": true,
+    "start_cursor": "eyJpZCI6IjAwMDAwMDAwLTAwMDAtNzAwMC04MDAwLTAwMDAwMDAwMDEwMiIsInNjb3BlIjoiYXBwZWFsczpwZW5kaW5nOnVzZXItMTppZC1kZXNjIn0"
+  }
+}

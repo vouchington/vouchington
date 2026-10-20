@@ -65,7 +65,16 @@ app.route('/api/v1/appeals').post(async (ctx: Context) => {
   const { appeal, isDuplicate } = await createModerationAppeal(currentUser, provenance, input)
   const isStaff = isModerationStaff(currentUser)
   ctx.setStatus(isDuplicate ? 200 : 201)
-  ctx.json({ appeal: isStaff ? appeal : redactModerationAppeal(appeal), isDuplicate })
+  if (isStaff) {
+    ctx.json({ appeal, isDuplicate })
+    return
+  }
+  ctx.json(
+    apiResponse('POST:/api/v1/appeals#member', {
+      appeal: redactModerationAppeal(appeal),
+      isDuplicate,
+    }),
+  )
 })
 
 app.route('/api/v1/appeals').get(async (ctx: Context) => {
@@ -92,7 +101,12 @@ app.route('/api/v1/appeals').get(async (ctx: Context) => {
     return
   }
 
-  ctx.json({ appeals: listRedactedModerationAppeals(appeals), page_info })
+  ctx.json(
+    apiResponse('GET:/api/v1/appeals#member', {
+      appeals: listRedactedModerationAppeals(appeals),
+      page_info,
+    }),
+  )
 })
 
 app.route('/api/v1/appeals/:id').get(async (ctx: Context) => {
@@ -114,5 +128,7 @@ app.route('/api/v1/appeals/:id').get(async (ctx: Context) => {
     ctx.json(apiResponse('GET:/api/v1/appeals/:id#staff', { appeal }))
     return
   }
-  ctx.json({ appeal: redactModerationAppeal(appeal) })
+  ctx.json(
+    apiResponse('GET:/api/v1/appeals/:id#member', { appeal: redactModerationAppeal(appeal) }),
+  )
 })
