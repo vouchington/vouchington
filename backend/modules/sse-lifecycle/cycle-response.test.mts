@@ -51,6 +51,24 @@ describe('armDashboardEventStream', () => {
     }
   })
 
+  it('cycles HEAD on the event stream because Express dispatches it to GET', async () => {
+    vi.useFakeTimers()
+    const response = openResponse()
+
+    try {
+      armDashboardEventStream({ method: 'HEAD', url: '/api/events' }, response)
+
+      await vi.advanceTimersByTimeAsync(DEFAULT_SSE_CYCLE_DURATION_MS - 1)
+      expect(response.writableEnded).toBe(false)
+
+      await vi.advanceTimersByTimeAsync(1)
+      expect(response.endCount).toBe(1)
+      expect(vi.getTimerCount()).toBe(0)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('cycles the trailing-slash and case-insensitive event-stream paths Express serves', async () => {
     vi.useFakeTimers()
     const slashResponse = openResponse()
