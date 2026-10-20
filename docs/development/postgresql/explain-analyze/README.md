@@ -37,6 +37,9 @@ regressions remain distinguishable from batching and cursor failures.
 - While each scenario builds its query, `Date` is pinned to the anchor day's noon so time-range
   cutoffs sit at a fixed offset from seeded rows. Under the wall clock a one-week window held a
   different number of posts per hour, which flipped a plan between a seq scan and a bitmap scan.
+- Relation inserts take the later of the database clock and a moment after the newer endpoint.
+  The noon post is still ahead of that clock before noon, and the relation id check would reject
+  the row. A morning run then writes the same pairs an afternoon run writes.
 - After bulk seeding, the seed runs `VACUUM`/`ANALYZE` on the relations whose plans varied across
   fresh CI databases, instead of depending on autovacuum timing, and refreshes statistics after the
   first post batch because a fresh database plans the retained-identity trigger against empty-table

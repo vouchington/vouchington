@@ -4,6 +4,7 @@ import sql, { type SQLStatement } from 'sql-template-strings'
 import type { EntityIdentifier, UpsertEntityTypes } from './upsert-helpers.mts'
 import type { UpsertEntityRelationsOptions } from './upsert-helpers-types.mts'
 import { buildInsertQuery } from './build-insert-query.mts'
+import { appendRelationIdAfterEndpoints } from './relation-id-after-endpoints.mts'
 
 type RelationPair = {
   subject: UpsertEntityTypes | EntityIdentifier
@@ -95,8 +96,10 @@ function appendDirection(
     ), ${prefix}_upserted AS (
       INSERT INTO `)
   query.append(relation.table_name)
-  query.append(sql` (subject_id, object_id, created_by_id)
-      SELECT input.subject_id, input.object_id, ${creator?.id ?? null}
+  query.append(sql` (subject_id, object_id, created_by_id, id)
+      SELECT input.subject_id, input.object_id, ${creator?.id ?? null}, `)
+  appendRelationIdAfterEndpoints(query)
+  query.append(sql`
       FROM `)
   query.append(`${prefix}_input input
       LEFT JOIN ${prefix}_existing existing
