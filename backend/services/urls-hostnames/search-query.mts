@@ -1,4 +1,5 @@
 import { decodeUuidCursor, isNameCursor, isScoreCursor } from '@modules/pagination'
+import { escapeLikePattern } from '@modules/search-utils'
 import { appendTopicDescendantsCte } from '@voucha/types/entities/topic-descendants'
 import sql from 'sql-template-strings'
 import type { SearchUrlHostnamesOptions } from './search-types.mts'
@@ -21,7 +22,8 @@ export function buildSearchUrlHostnamesQuery(options: SearchUrlHostnamesOptions)
   const textQuery = options.query || options.hostname
   if (typeof textQuery === 'string' && textQuery) {
     searchQuery.append(sql`text_match_ids AS MATERIALIZED (
-      SELECT id FROM url_hostnames WHERE hostname ILIKE ${`%${textQuery.toLowerCase()}%`}
+      SELECT id FROM url_hostnames
+      WHERE hostname ILIKE ${`%${escapeLikePattern(textQuery.toLowerCase())}%`} ESCAPE '\\'
     ), `)
   }
 

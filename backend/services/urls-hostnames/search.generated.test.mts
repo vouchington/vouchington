@@ -23,6 +23,18 @@ describe('search.generated', () => {
     expect(results.some(h => h.hostname === h2)).toBe(true)
   })
 
+  it('treats LIKE wildcards in the hostname query as literal characters', async () => {
+    const literal = `wild-${suffix}-a_b.example.com`
+    const widened = `wild-${suffix}-axb.example.com`
+    await upsertUrlHostnames(null, [literal, widened])
+
+    const { results } = await searchUrlHostnames({ query: `wild-${suffix}-a_b` })
+    expect(results.map(row => row.hostname)).toEqual([literal])
+
+    const wildcardOnly = await searchUrlHostnames({ query: '%%%', limit: 10 })
+    expect(wildcardOnly.results).toHaveLength(0)
+  })
+
   it('searchUrlHostnames filters by is_blocked status', async () => {
     const blockedHost = `search-is_blocked-${suffix}.com`
     const hostnamesMap = await upsertUrlHostnames(null, [
