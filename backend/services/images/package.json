@@ -32,6 +32,7 @@
     "@modules/on-error": "workspace:^",
     "@modules/utils": "workspace:^",
     "@queues/background": "workspace:^",
+    "@queues/content-analysis": "workspace:^",
     "@queues/entity-listeners": "workspace:^",
     "@queues/image-uploads": "workspace:^",
     "@services/media-delivery-safety": "workspace:^",

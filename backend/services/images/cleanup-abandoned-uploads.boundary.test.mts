@@ -1,10 +1,10 @@
+import { createOwnedUploadRecoveryQueue } from '@voucha/test-helpers/image-upload-cleanup-queue'
 import { randomBytes } from 'node:crypto'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import {
   onEnqueueAdmission,
   type EnqueueAdmission,
 } from '@data-stores/valkey-glide-mq/glide-mq-admission'
-import { imageUploadsQueue } from '@queues/image-uploads/queues'
 import { readEnqueuedJob } from '@voucha/test-helpers/queue-jobs'
 import {
   backdateImageUploadStagedAt,
@@ -14,7 +14,9 @@ import {
 import { cleanupAbandonedUploads } from './cleanup-abandoned-uploads.mts'
 import { createImageUploadUrl } from './create-upload-url.mts'
 import { getImageById } from './get.mts'
-import * as s3Module from './s3-upload-lifecycle.mts'
+import { cleanupOwnedTestUploads } from '@voucha/test-helpers/image-upload-cleanup'
+import { installOwnedUploadCleanupStorage } from '@voucha/test-helpers/image-upload-cleanup-storage'
+import { S3Buckets } from '@modules/aws'
 
 const HOUR_MS = 60 * 60 * 1000
 const DAY_MS = 24 * HOUR_MS
@@ -27,7 +29,16 @@ const UTC_ROLLOVERS = [
   '2026-01-01T00:00:00.001Z',
 ] as const
 
+let recoveryTarget: ReturnType<typeof createOwnedUploadRecoveryQueue>
+const runCleanup: typeof cleanupAbandonedUploads = (sweep, save) =>
+  cleanupAbandonedUploads(sweep, save, recoveryTarget.queue)
 describe('abandoned upload exact cutoff boundaries', () => {
+  beforeEach(context => {
+    const target = createOwnedUploadRecoveryQueue()
+    recoveryTarget = target
+    context.onTestFinished(() => target.close())
+  })
+
   afterEach(() => vi.restoreAllMocks())
 
   it.each(UTC_ROLLOVERS)('enqueues recovery only before the one-hour edge at %s', async instant => {
@@ -43,12 +54,12 @@ describe('abandoned upload exact cutoff boundaries', () => {
       await setImageHashAndProcessing(upload.image_id, randomBytes(32))
       ids.push(upload.image_id)
     }
-    vi.spyOn(s3Module, 'deleteImageUploadSourceFromS3').mockResolvedValue(undefined)
+    installOwnedUploadCleanupStorage(ids)
     const admissions: EnqueueAdmission[] = []
     const off = onEnqueueAdmission(event => {
       const input = event.inputs[0]
       if (
-        event.queue === imageUploadsQueue &&
+        event.queue === recoveryTarget.queue &&
         event.jobName === 'extract-metadata' &&
         input &&
         typeof input === 'object' &&
@@ -60,9 +71,9 @@ describe('abandoned upload exact cutoff boundaries', () => {
       }
       return undefined
     })
-    let result: Awaited<ReturnType<typeof cleanupAbandonedUploads>> | undefined
+    let result: Awaited<ReturnType<typeof cleanupOwnedTestUploads>> | undefined
     try {
-      result = await cleanupAbandonedUploads({ imageIds: ids, now })
+      result = await cleanupOwnedTestUploads(runCleanup, ids, now)
     } finally {
       off()
       await Promise.allSettled(admissions.map(admission => admission.completion))
@@ -77,7 +88,7 @@ describe('abandoned upload exact cutoff boundaries', () => {
     if (!expectedId) throw new Error('Missing owned image upload ID')
     const jobs = await Promise.all(
       admissions.map(async admission =>
-        readEnqueuedJob(imageUploadsQueue, await admission.completion),
+        readEnqueuedJob(recoveryTarget.queue, await admission.completion),
       ),
     )
     expect(jobs.map(job => job.data)).toEqual([{ id: expectedId }])
@@ -95,15 +106,13 @@ describe('abandoned upload exact cutoff boundaries', () => {
       await backdateImageUploadStagedAt(upload.image_id, new Date(now.getTime() - DAY_MS + delta))
       ids.push(upload.image_id)
     }
-    const deleteStorage = vi
-      .spyOn(s3Module, 'deleteKnownImageStorageFromS3')
-      .mockResolvedValue(undefined)
+    const storage = installOwnedUploadCleanupStorage(ids)
 
-    const result = await cleanupAbandonedUploads({ imageIds: ids, now })
+    const result = await cleanupOwnedTestUploads(runCleanup, ids, now)
 
     expect(result.cleaned).toBe(1)
     expect(result.recovered).toBe(0)
-    expect(deleteStorage).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ id: ids[0] }))
+    expect(storage.calls).toEqual([{ Bucket: S3Buckets.imageUploads, Key: ids[0] }])
     expect(await getImageById(ids[0]!)).toBeNull()
     expect(await getImageById(ids[1]!)).not.toBeNull()
     expect(await getImageById(ids[2]!)).not.toBeNull()

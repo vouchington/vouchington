@@ -1,11 +1,12 @@
 import { createEnqueueFunction } from '@data-stores/valkey-glide-mq'
+import type { CleanupAbandonedUploadsData } from '../types.mts'
 import type { EnqueueReturnType } from '@voucha/types'
 import { BACKGROUND_CPU_QUEUE_NAME } from '@queues/background-cpu/config'
 import { requireBackgroundCpuJob } from '@queues/background-cpu/enqueues/registry'
 import { backgroundCpu } from '@queues/background-cpu/queues'
 
 const enqueueCleanupJob = createEnqueueFunction<
-  Record<string, never>,
+  CleanupAbandonedUploadsData,
   'content-analysis.cleanup-abandoned-uploads'
 >({
   queue: backgroundCpu,

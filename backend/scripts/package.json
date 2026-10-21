@@ -61,6 +61,7 @@
     "@services/friend-recommendations": "workspace:^",
     "@services/growth-metrics": "workspace:^",
     "@services/identity-verification": "workspace:^",
+    "@services/images": "workspace:^",
     "@services/individuals-households": "workspace:^",
     "@services/jwt-session": "workspace:^",
     "@services/language-detection": "workspace:^",

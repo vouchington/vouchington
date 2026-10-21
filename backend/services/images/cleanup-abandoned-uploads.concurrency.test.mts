@@ -1,53 +1,56 @@
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createOwnedUploadRecoveryQueue } from '@voucha/test-helpers/image-upload-cleanup-queue'
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import { backdateImageUploadStagedAt, createTestUser } from '@voucha/test-helpers'
-import type { PrivateUser } from '@voucha/types/entities/user'
+import {
+  insertOwnedUploadCleanupCluster,
+  makeOwnedUploadCleanupSweep,
+} from '@voucha/test-helpers/image-upload-cleanup'
+import { installOwnedUploadCleanupStorage } from '@voucha/test-helpers/image-upload-cleanup-storage'
 import { cleanupAbandonedUploads } from './cleanup-abandoned-uploads.mts'
-import { createImageUploadUrl } from './create-upload-url.mts'
-import * as imageStorage from './s3-upload-lifecycle.mts'
 
+let recoveryTarget: ReturnType<typeof createOwnedUploadRecoveryQueue>
+const runCleanup: typeof cleanupAbandonedUploads = (sweep, save) =>
+  cleanupAbandonedUploads(sweep, save, recoveryTarget.queue)
 describe('cleanupAbandonedUploads staged-source concurrency', () => {
-  let user: PrivateUser
-
-  beforeAll(async () => {
-    user = await createTestUser()
+  beforeEach(context => {
+    const target = createOwnedUploadRecoveryQueue()
+    recoveryTarget = target
+    context.onTestFinished(() => target.close())
   })
 
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
+  afterEach(() => vi.restoreAllMocks())
 
   it('bounds cleanup above the advisory-lock pool size', async () => {
     const now = new Date()
-    const uploadStagedAt = new Date(now.getTime() - 2 * 60 * 60 * 1000)
-    const imageIds = await Promise.all(
-      Array.from({ length: 5 }, async () => {
-        const { image_id } = await createImageUploadUrl(user, {
-          contentType: 'image/jpeg',
-          contentLength: 1024,
-        })
-        await backdateImageUploadStagedAt(image_id, uploadStagedAt, 'complete')
-        return image_id
-      }),
-    )
+    const stagedAt = new Date(now.getTime() - 2 * 60 * 60 * 1000)
+    const user = await createTestUser()
+    const ids = await insertOwnedUploadCleanupCluster(user.id, 5, stagedAt)
+    await Promise.all(ids.map(id => backdateImageUploadStagedAt(id, stagedAt, 'complete')))
     let active = 0
     let maximumActive = 0
     const saturated = Promise.withResolvers<void>()
     const release = Promise.withResolvers<void>()
-    vi.spyOn(imageStorage, 'deleteImageUploadSourceFromS3').mockImplementation(async image => {
-      if (!imageIds.includes(image.id)) return
+    const storage = installOwnedUploadCleanupStorage(ids, async () => {
       active += 1
       maximumActive = Math.max(maximumActive, active)
       if (active === 4) saturated.resolve()
-      await release.promise
-      active -= 1
+      try {
+        await release.promise
+      } finally {
+        active -= 1
+      }
     })
-
-    const cleanup = cleanupAbandonedUploads({ imageIds, now })
-    await saturated.promise
-    expect(maximumActive).toBe(4)
-    release.resolve()
+    const sweep = await makeOwnedUploadCleanupSweep(ids, now)
+    const cleanup = runCleanup(sweep, async () => {})
+    void cleanup.catch(() => {})
+    try {
+      await saturated.promise
+      expect(maximumActive).toBe(4)
+    } finally {
+      release.resolve()
+    }
     const result = await cleanup
-
-    expect(result.stagedSourcesDeleted).toBe(imageIds.length)
+    expect(result.stagedSourcesDeleted).toBe(ids.length)
+    expect(storage.calls.map(call => call.Key).toSorted()).toEqual([...ids].toSorted())
   })
 })
