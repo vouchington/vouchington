@@ -1,4 +1,5 @@
-import { read } from '@data-stores/psql'
+import { read, write } from '@data-stores/psql'
+import type { QueryOptions } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { getEntityRelationTableNameOrThrow } from './metadata.mts'
 
@@ -21,6 +22,7 @@ const muteTable = getEntityRelationTableNameOrThrow({
 export async function areUsersBlockedOrMutedEitherWay(
   userId1: string,
   userId2: string,
+  options: QueryOptions = {},
 ): Promise<boolean> {
   const query = sql`/* areUsersBlockedOrMutedEitherWay */ SELECT (EXISTS (SELECT 1 FROM `
   query.append(blockTable)
@@ -31,7 +33,8 @@ export async function areUsersBlockedOrMutedEitherWay(
   query.append(
     sql` WHERE ((subject_id = ${userId1} AND object_id = ${userId2}) OR (subject_id = ${userId2} AND object_id = ${userId1})) AND deleted_at IS NULL)) AS blocked`,
   )
-  const { rows } = await read(query)
+  // A caller inside a writer transaction must see its own snapshot, not a lagging replica.
+  const { rows } = await (options.query ? write : read)(query, options)
   return rows[0]?.blocked === true
 }
 

@@ -70,14 +70,17 @@ describe('household invitation actions', () => {
       <HouseholdInvitations
         {...(kind === 'sent' ? { kind, householdId: first.household_id } : { kind })}
         initialPage={makeHouseholdInvitationPage([first, second])}
+        usernames={{
+          [kind === 'received' ? first.invited_by_id : first.invited_user_id]: 'first',
+        }}
       />,
     )
     expect(screen.getAllByRole('listitem')).toHaveLength(2)
-    for (const invitation of [first, second]) {
-      const userId = kind === 'received' ? invitation.invited_by_id : invitation.invited_user_id
-      const row = within(screen.getByRole('link', { name: userId }).closest('li')!)
-      expect(row.getByRole('link', { name: userId }).getAttribute('href')).toContain(userId)
-      expect(row.getByText(invitation.household_id)).toBeTruthy()
+    expect(screen.getAllByText('A Voucha member')).toHaveLength(1)
+    const rows = screen.getAllByRole('listitem')
+    for (const [index, invitation] of [second, first].entries()) {
+      const row = within(rows[index]!)
+      expect(row.queryByText(invitation.household_id)).toBeNull()
       expect(
         row.getByRole('button', { name: kind === 'received' ? 'Accept' : 'Revoke invitation' }),
       ).toBeTruthy()

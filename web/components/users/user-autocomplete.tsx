@@ -14,6 +14,8 @@ interface Props {
   placeholder?: string
   id?: string
   disabled?: boolean
+  /** Accessible name; defaults to the generic search label. Include any visible label text. */
+  ariaLabel?: string
   /** Clear the stored id when the user edits the search text without re-selecting a result. */
   clearOnTextEdit?: boolean
   dataPw?: {
@@ -29,6 +31,7 @@ export function UserAutocomplete({
   placeholder,
   id,
   disabled,
+  ariaLabel,
   clearOnTextEdit,
   dataPw,
 }: Props) {
@@ -43,7 +46,7 @@ export function UserAutocomplete({
       getKey={(user: PublicUser) => user.id}
       getItemValue={(user: PublicUser) => user.id}
       placeholder={placeholder ?? t('extracted.users.userAutocomplete.searchUsers_beb0e209')}
-      ariaLabel={t('extracted.users.userAutocomplete.searchUsers_e4bb77af')}
+      ariaLabel={ariaLabel ?? t('extracted.users.userAutocomplete.searchUsers_e4bb77af')}
       emptyText={t('extracted.users.userAutocomplete.noUsersFound_ce0171e5')}
       id={id}
       disabled={disabled}

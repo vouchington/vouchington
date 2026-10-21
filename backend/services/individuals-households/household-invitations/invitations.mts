@@ -52,9 +52,9 @@ export async function createHouseholdInvitation(
   )
   await using transaction = await beginTransaction()
   const options = { query: transaction }
-  const { rows: lockedHouseholds } = await write<{ id: string }>(
+  const { rows: lockedHouseholds } = await write<{ id: string; owner_user_id: string }>(
     sql`/* createHouseholdInvitation:lock-household */
-      SELECT id FROM households WHERE id = ${householdId} FOR UPDATE`,
+      SELECT id, owner_user_id FROM households WHERE id = ${householdId} FOR UPDATE`,
     options,
   )
   assert(lockedHouseholds[0], 404, 'Household not found')
@@ -62,11 +62,16 @@ export async function createHouseholdInvitation(
   const invitedUser = await getPublicUserByAny(input.user, { ...options, readOnly: false })
   assert(invitedUser, 404, 'User not found')
   assert(
-    !(await areUsersBlockedOrMutedEitherWay(currentUser.id, invitedUser.id)),
+    !(await areUsersBlockedOrMutedEitherWay(currentUser.id, invitedUser.id, options)),
     404,
     'User not found',
   )
   assert(invitedUser.id !== currentUser.id, 422, 'You cannot invite yourself')
+  assert(
+    lockedHouseholds[0].owner_user_id !== invitedUser.id,
+    409,
+    'User is already a household member',
+  )
   const { rows: existingMembers } = await write<{ exists: boolean }>(
     sql`/* createHouseholdInvitation:member */
       SELECT EXISTS (
@@ -166,16 +171,27 @@ export async function revokeHouseholdInvitation(
   assertNotSuspended(currentUser)
   validateUUID(householdId)
   validateUUID(invitationId)
-  assertManageAccess(await readHouseholdMemberManageAccess(currentUser, householdId))
-  const { rows } = await write<{ id: string }>(sql`/* revokeHouseholdInvitation */
+  await using transaction = await beginTransaction()
+  const options = { query: transaction }
+  assertManageAccess(await readHouseholdMemberManageAccess(currentUser, householdId, null, options))
+  const { rows } = await write<{ id: string }>(
+    sql`/* revokeHouseholdInvitation */
     UPDATE household_invitations SET revoked_at = CURRENT_TIMESTAMP
     WHERE id = ${invitationId} AND household_id = ${householdId}
       AND accepted_at IS NULL AND declined_at IS NULL AND revoked_at IS NULL
-    RETURNING id`)
-  if (rows.length > 0) return
-  const { rows: existing } = await read<{ id: string }>(sql`/* revokeHouseholdInvitation:existing */
+    RETURNING id`,
+    options,
+  )
+  if (rows.length > 0) {
+    await transaction.commit()
+    return
+  }
+  const { rows: existing } = await write<{ id: string }>(
+    sql`/* revokeHouseholdInvitation:existing */
     SELECT id FROM household_invitations
-    WHERE id = ${invitationId} AND household_id = ${householdId}`)
+    WHERE id = ${invitationId} AND household_id = ${householdId}`,
+    options,
+  )
   assert(existing[0], 404, 'Invitation not found')
   assert(false, 409, 'Invitation is no longer pending')
 }

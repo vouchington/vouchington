@@ -135,6 +135,15 @@ describe('household invitations', () => {
     }
   })
 
+  it('rejects an administrator inviting the household owner', async () => {
+    const owner = await createTestUserDirect()
+    const administrator = await createTestUserDirect({ administrator: true })
+    const household = await insertTestHousehold(owner.id)
+    await expect(
+      createHouseholdInvitation(administrator, household.id, { user: owner.id }),
+    ).rejects.toMatchObject({ status: 409 })
+  })
+
   it('guards visibility, ownership, invitee identity, membership, and suspended callers', async () => {
     const owner = await createTestUserDirect()
     const invitee = await createTestUserDirect()

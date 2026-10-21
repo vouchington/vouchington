@@ -55,6 +55,7 @@ export function HouseholdInvitationsView(props: HouseholdInvitationsViewProps) {
             value={props.selectedUserId}
             label=''
             placeholder='Search by username'
+            ariaLabel='Username'
             clearOnTextEdit
             onChange={props.onSelectUser}
             disabled={props.pending}
@@ -111,10 +112,12 @@ export function HouseholdInvitationsView(props: HouseholdInvitationsViewProps) {
                     props.usernames,
                   )}
                   className='underline'
-                />
-              </p>
-              <p className='break-all text-sm text-muted-foreground'>
-                Household: <span>{invitation.household_id}</span>
+                >
+                  {usernameLabel(
+                    sent ? invitation.invited_user_id : invitation.invited_by_id,
+                    props.usernames,
+                  )}
+                </UserLink>
               </p>
               {invitation.relationship && (
                 <p className='text-sm text-muted-foreground'>{invitation.relationship}</p>
@@ -169,4 +172,9 @@ export function HouseholdInvitationsView(props: HouseholdInvitationsViewProps) {
 
 function userFor(id: string, usernames: Readonly<Record<string, string>> = {}) {
   return { id, username: usernames[id] ?? null }
+}
+
+/** Never expose an opaque id as link text when no username has been resolved. */
+function usernameLabel(id: string, usernames: Readonly<Record<string, string>> = {}) {
+  return usernames[id] ? `@${usernames[id]}` : 'A Voucha member'
 }
