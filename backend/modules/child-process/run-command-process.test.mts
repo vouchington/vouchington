@@ -42,6 +42,29 @@ describe('runCommand process edges', () => {
     expect(destinationReport).toHaveBeenCalledOnce()
   })
 
+  it('releases a streamed stdin once when the child errors and then closes', () => {
+    const child = fakeChild()
+    const report = vi.fn<(err: Error) => void>()
+    const source = new PassThrough()
+    pipeStdin(child, source, report)
+    child.emit('error', new Error('spawn failed'))
+    child.emit('close', null, null)
+    expect(source.destroyed).toBe(true)
+    expect(source.listenerCount('error')).toBe(0)
+    expect(report).not.toHaveBeenCalled()
+  })
+
+  it('destroys an unfinished stdin and drops its error listener when the child closes', () => {
+    const child = fakeChild()
+    const report = vi.fn<(err: Error) => void>()
+    const source = new PassThrough()
+    pipeStdin(child, source, report)
+    child.emit('close', 0, null)
+    expect(source.destroyed).toBe(true)
+    expect(source.listenerCount('error')).toBe(0)
+    expect(report).not.toHaveBeenCalled()
+  })
+
   it('wraps a non-Error spawn failure', async () => {
     const child = new EventEmitter()
     const pending = waitForChild(child as ChildProcess)

@@ -28,10 +28,21 @@ export function pipeStdin(
     input.end(stdin)
     return
   }
-  stdin.on('error', err => {
+  const onSourceError = (err: Error) => {
     onError(err instanceof Error ? err : new Error(String(err)))
     killChild(child)
-  })
+  }
+  stdin.on('error', onSourceError)
+  // A child that exits first leaves a Readable paused with its descriptor open.
+  let released = false
+  const releaseStdin = () => {
+    if (released) return
+    released = true
+    stdin.removeListener('error', onSourceError)
+    if (!stdin.readableEnded) stdin.destroy()
+  }
+  child.once('close', releaseStdin)
+  child.once('error', releaseStdin)
   stdin.pipe(input)
 }
 

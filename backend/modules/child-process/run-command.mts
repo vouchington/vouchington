@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process'
 import { Writable } from 'node:stream'
+import { finished } from 'node:stream/promises'
 import { CommandFailedError } from './command-failed-error.mts'
 import {
   classifyFailure,
@@ -84,6 +85,10 @@ export async function runCommand(options: RunCommandOptions): Promise<{ stderr: 
   try {
     const outcome = await waitForChild(child)
     if (outcome.kind === 'error') throw outcome.error
+    // The child can close before an async stdout destination finishes its writes.
+    await settleStdout(options.stdout, err => {
+      if (!stdoutError) stdoutError = err
+    })
     const failure = classifyFailure({
       command: options.command,
       aborted,
@@ -99,5 +104,17 @@ export async function runCommand(options: RunCommandOptions): Promise<{ stderr: 
   } finally {
     clearTimeout(timer)
     options.signal?.removeEventListener('abort', onAbort)
+  }
+}
+
+async function settleStdout(
+  stdout: Writable | undefined,
+  onError: (err: Error) => void,
+): Promise<void> {
+  if (!stdout) return
+  try {
+    await finished(stdout)
+  } catch (err) {
+    onError(err instanceof Error ? err : new Error(String(err)))
   }
 }

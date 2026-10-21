@@ -1,3 +1,5 @@
+import { createReadStream } from 'node:fs'
+import { once } from 'node:events'
 import { Readable, Writable } from 'node:stream'
 import { describe, expect, it } from 'vitest'
 import { CommandFailedError, runCommand } from './run-command.mts'
@@ -111,6 +113,71 @@ describe('runCommand', () => {
       }),
     )
     expect(stdoutErr).toMatchObject({ message: 'stdout broke' })
+  })
+
+  it('resolves only after a delayed stdout write finishes', async () => {
+    const gate = Promise.withResolvers<(error?: Error | null) => void>()
+    let settled = false
+    const stdout = new Writable({
+      write(_chunk, _encoding, callback) {
+        gate.resolve(callback)
+      },
+    })
+    const pending = runCommand({
+      command: node,
+      args: ['-e', 'process.stdout.write("hi")'],
+      stdout,
+      timeoutMs: 2_000,
+    }).finally(() => {
+      settled = true
+    })
+    const callback = await gate.promise
+    expect(settled).toBe(false)
+    callback()
+    await expect(pending).resolves.toMatchObject({ stderr: expect.any(Buffer) })
+    expect(settled).toBe(true)
+  })
+
+  it('rejects when a delayed stdout write fails after the child exits', async () => {
+    const gate = Promise.withResolvers<(error?: Error | null) => void>()
+    const stdout = new Writable({
+      write(_chunk, _encoding, callback) {
+        gate.resolve(callback)
+      },
+    })
+    const pending = runCommand({
+      command: node,
+      args: ['-e', 'process.stdout.write("hi")'],
+      stdout,
+      timeoutMs: 2_000,
+    })
+    const settled = pending.then(
+      value => ({ settled: 'fulfilled' as const, value }),
+      (err: unknown) => ({ settled: 'rejected' as const, err }),
+    )
+    const callback = await gate.promise
+    callback(Object.assign(new Error('disk write failed'), { code: 'EIO' }))
+    await expect(settled).resolves.toMatchObject({
+      settled: 'rejected',
+      err: expect.objectContaining({ code: 'EIO' }),
+    })
+  })
+
+  it('destroys a streamed stdin that the child never finishes', async () => {
+    const source = createReadStream('/dev/zero')
+    await once(source, 'open')
+    const controller = new AbortController()
+    const pending = runCommand({
+      command: node,
+      args: ['-e', 'setInterval(() => {}, 1000)'],
+      stdin: source,
+      timeoutMs: 4_000,
+      signal: controller.signal,
+    })
+    controller.abort()
+    await expect(pending).rejects.toBeInstanceOf(CommandFailedError)
+    await once(source, 'close')
+    expect(source.destroyed).toBe(true)
   })
 
   it('forces LC_ALL=C and passes argv literally', async () => {
