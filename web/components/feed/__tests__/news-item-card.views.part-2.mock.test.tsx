@@ -82,6 +82,24 @@ describe('NewsItemCard content language', () => {
     const excerpt = screen.getByText('This is a test article excerpt.')
     expect(excerpt).toHaveAttribute('lang', 'ar')
     expect(excerpt).toHaveAttribute('dir', 'rtl')
+
+    const title = screen.getByText('Test Article Title')
+    expect(title).toHaveAttribute('lang', 'ar')
+    expect(title).toHaveAttribute('dir', 'rtl')
+    expect(title.closest('a')).toHaveAttribute('data-pw', 'news-item-title-link')
+  })
+
+  it('leaves the untitled fallback outside the content language', () => {
+    const item: RssFeedItem = {
+      ...mockItem,
+      lingua_rs_detected_language: 'ar',
+      data: { ...mockItem.data, title: undefined },
+    }
+    render(<NewsItemCard item={item} />)
+
+    const fallback = screen.getByText('Untitled')
+    expect(fallback).not.toHaveAttribute('lang')
+    expect(fallback).not.toHaveAttribute('dir')
   })
 })
 

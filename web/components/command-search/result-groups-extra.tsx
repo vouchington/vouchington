@@ -28,10 +28,10 @@ export function NewsResults({ activeTab, onOpenChange, results }: CommonProps) {
           href={isExternalHref(item.url.url) ? appendUtm(item.url.url, OUTBOUND_UTM) : item.url.url}
           external
           label={{
-            kind: 'ui-text',
-            text: decodeHtmlEntities(
-              item.data.title || t('extracted.commandSearch.resultGroupsExtra.untitled_f59ab8d1'),
-            ),
+            kind: 'rss-item-title',
+            title: item.data.title ? decodeHtmlEntities(item.data.title) : null,
+            detectedLanguage: item.lingua_rs_detected_language ?? null,
+            fallback: t('extracted.commandSearch.resultGroupsExtra.untitled_f59ab8d1'),
           }}
           sublabel={item.rss_feed.title}
           onOpenChange={onOpenChange}

@@ -57,4 +57,52 @@ describe('CommandLinkItem authored language', () => {
     expect(screen.getByText('Untitled Post')).not.toHaveAttribute('lang')
     expect(screen.getByText('Untitled Post')).not.toHaveAttribute('dir')
   })
+
+  it('marks an RSS item title with its detected language and leaves the fallback unmarked', () => {
+    const { rerender } = render(
+      <Command shouldFilter={false}>
+        <CommandList>
+          <CommandLinkItem
+            href='https://example.com/article'
+            external
+            label={{
+              kind: 'rss-item-title',
+              title: 'عنوان',
+              detectedLanguage: 'ar',
+              fallback: 'Untitled',
+            }}
+            sublabel='Daily Feed'
+            onOpenChange={vi.fn<(open: boolean) => void>()}
+          />
+        </CommandList>
+      </Command>,
+    )
+
+    const title = screen.getByText('عنوان')
+    expect(title).toHaveAttribute('lang', 'ar')
+    expect(title).toHaveAttribute('dir', 'rtl')
+
+    rerender(
+      <Command shouldFilter={false}>
+        <CommandList>
+          <CommandLinkItem
+            href='https://example.com/article'
+            external
+            label={{
+              kind: 'rss-item-title',
+              title: null,
+              detectedLanguage: 'ar',
+              fallback: 'Untitled',
+            }}
+            sublabel='Daily Feed'
+            onOpenChange={vi.fn<(open: boolean) => void>()}
+          />
+        </CommandList>
+      </Command>,
+    )
+
+    const fallback = screen.getByText('Untitled')
+    expect(fallback).not.toHaveAttribute('lang')
+    expect(fallback).not.toHaveAttribute('dir')
+  })
 })
