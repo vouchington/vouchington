@@ -6077,7 +6077,7 @@
 {"id":"copy.scopeDescription.spendingRead","value":"Ler suas categorias de gastos, valores, frequência e notas."},
 {"id":"copy.scopeDescription.spendingWrite","value":"Adicionar, atualizar ou remover suas categorias de gastos, valores, frequência e notas."},
 {"id":"copy.scopeDescription.topicClaimsRead","value":"Veja suas reivindicações de tópicos de marca"},
-{"id":"copy.scopeDescription.topicClaimsWrite","value":"Crie e verifique as reivindicações de tópicos de marca da sua conta, ou envie evidências para revisão manual"},
+{"id":"copy.scopeDescription.topicClaimsWrite","value":"Crie e verifique as reivindicações de tópicos de marca da sua conta"},
 {"id":"copy.settings.activeSessions.confirmCurrentDescription","value":"Isso encerrará sua sessão atual e enviará você de volta para o login."},
 {"id":"copy.settings.activeSessions.confirmCurrentTitle","value":"Sair neste dispositivo?"},
 {"id":"copy.settings.activeSessions.confirmSessionDescription","value":"Isso encerrará a sessão desse navegador ou dispositivo na próxima solicitação."},

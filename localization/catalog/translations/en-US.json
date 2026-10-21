@@ -6077,7 +6077,7 @@
 {"id":"copy.scopeDescription.spendingRead","value":"Read your spending categories, amounts, frequency and notes."},
 {"id":"copy.scopeDescription.spendingWrite","value":"Add, update or remove your spending categories, amounts, frequency and notes."},
 {"id":"copy.scopeDescription.topicClaimsRead","value":"See your brand topic claims"},
-{"id":"copy.scopeDescription.topicClaimsWrite","value":"Create and verify brand topic claims for your account, or submit evidence for manual review"},
+{"id":"copy.scopeDescription.topicClaimsWrite","value":"Create and verify brand topic claims for your account"},
 {"id":"copy.settings.activeSessions.confirmCurrentDescription","value":"This will end your current session and send you back to login."},
 {"id":"copy.settings.activeSessions.confirmCurrentTitle","value":"Sign out on this device?"},
 {"id":"copy.settings.activeSessions.confirmSessionDescription","value":"This will sign out that browser or device the next time it makes a request."},
