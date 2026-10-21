@@ -3414,6 +3414,30 @@ rules:
             - key: rules.node/no-path-concat
               kind: equals
               value: error
+            - key: rules.unicorn/no-empty-file
+              kind: equals
+              value: error
+            - key: rules.unicorn/no-array-fill-with-reference-type
+              kind: equals
+              value: error
+            - key: rules.unicorn/prefer-array-find
+              kind: equals
+              value: error
+            - key: rules.unicorn/no-array-reverse
+              kind: equals
+              value: error
+            - key: rules.unicorn/no-anonymous-default-export
+              kind: equals
+              value: error
+            - key: rules.unicorn/prefer-array-some
+              kind: equals
+              value: error
+            - key: rules.typescript/no-base-to-string
+              kind: equals
+              value: error
+            - key: rules.typescript/no-misused-spread
+              kind: equals
+              value: error
             - key: rules.no-restricted-properties.[]
               kind: object-shape
               match: any

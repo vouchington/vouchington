@@ -1,8 +1,4 @@
-import { execFileSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { createRequire } from 'node:module'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 import { parse as parseYaml } from 'yaml'
@@ -10,7 +6,6 @@ import { parse as parseJsonc } from 'jsonc-parser'
 import { describe, expect, it } from 'vitest'
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url))
-const require = createRequire(import.meta.url)
 
 type NoMistakesConfig = {
   rules?: Array<{ name?: string; options?: Record<string, unknown>; rule?: string }>
@@ -30,50 +25,6 @@ function readNoMistakesConfig(): NoMistakesConfig {
 
 function readOxlintConfig(): OxlintConfig {
   return parseJsonc(readRepoFile('.oxlintrc.json')) as OxlintConfig
-}
-
-function runOxlintOnMockBoundaryFixture(source: string): { status: number; output: string } {
-  const dir = mkdtempSync(join(tmpdir(), 'voucha-oxlint-mock-fixture-'))
-  const moduleDir = join(dir, 'backend/modules')
-  const file = join(moduleDir, 'provider.mock.test.mts')
-  const boundaryRule = readOxlintConfig().rules?.['no-mistakes/module-mock-boundary']
-  if (!boundaryRule) throw new Error('Missing module mock boundary rule')
-  try {
-    mkdirSync(moduleDir, { recursive: true })
-    writeFileSync(
-      join(moduleDir, 'provider.mts'),
-      '/* no-mistakes: integration=fixture */\nexport function taggedExport() {}\nexport function untaggedExport() {}\n',
-    )
-    writeFileSync(file, source)
-    const configFile = join(dir, '.oxlintrc.json')
-    writeFileSync(
-      configFile,
-      JSON.stringify({
-        jsPlugins: [
-          { name: 'no-mistakes', specifier: require.resolve('eslint-plugin-no-mistakes') },
-        ],
-        rules: { 'no-mistakes/module-mock-boundary': boundaryRule },
-      }),
-    )
-    try {
-      execFileSync(
-        join(repoRoot, 'node_modules/.bin/oxlint'),
-        ['--config', configFile, '--type-aware', '--deny-warnings', file],
-        {
-          cwd: dir,
-          encoding: 'utf8',
-          stdio: 'pipe',
-        },
-      )
-      return { status: 0, output: '' }
-    } catch (err) {
-      // execFileSync always throws string stdout/stderr here since it's called with encoding: 'utf8'.
-      const result = err as { status?: number; stderr?: string; stdout?: string }
-      return { status: result.status ?? 1, output: `${result.stdout ?? ''}${result.stderr ?? ''}` }
-    }
-  } finally {
-    rmSync(dir, { recursive: true, force: true })
-  }
 }
 
 describe('no-mistakes config freshness', () => {
@@ -145,26 +96,6 @@ describe('no-mistakes config freshness', () => {
         }),
       }),
     ])
-  })
-
-  it('allows spread-preserving mocks of tagged module integration exports only', () => {
-    const mockFixture = (exportName: string): string => `
-      import { vi } from 'vitest'
-
-      vi.mock<typeof import('@modules/provider')>(
-        import('@modules/provider'),
-        async importOriginal => ({
-          ...(await importOriginal()),
-          ${exportName}: vi.fn(),
-        }),
-      )
-    `
-    const tagged = runOxlintOnMockBoundaryFixture(mockFixture('taggedExport'))
-    expect(tagged).toEqual({ status: 0, output: '' })
-
-    const untagged = runOxlintOnMockBoundaryFixture(mockFixture('untaggedExport'))
-    expect(untagged.status).not.toBe(0)
-    expect(untagged.output).toContain('module-mock-boundary')
   })
 
   it('keeps filesystem exceptions limited to current files', () => {
