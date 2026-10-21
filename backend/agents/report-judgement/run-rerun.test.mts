@@ -117,13 +117,13 @@ describe('runReportJudgementAgent manual reruns', () => {
     expect(judgement!.rerun_by_id).toBe(rerunUser.id)
   })
 
-  it('ignores a replica checkout that is not part of the observed invocation', () => {
-    const routing = observePostgresReadRoutingForTest()
+  it('ignores a replica checkout that is not part of the observed invocation', async () => {
+    const routing = await observePostgresReadRoutingForTest()
     try {
-      routing.emitUnscopedReplicaAcquire()
+      await routing.probeReplicaRead()
       expect(routing.replicaAcquisitions()).toBe(0)
     } finally {
-      routing.close()
+      await routing.close()
     }
   })
 
@@ -143,7 +143,7 @@ describe('runReportJudgementAgent manual reruns', () => {
       entityId: postId,
       reason: 'spam',
     })
-    const routing = observePostgresReadRoutingForTest()
+    const routing = await observePostgresReadRoutingForTest()
     try {
       await routing.run(() =>
         runReportJudgementAgent(
@@ -168,7 +168,7 @@ describe('runReportJudgementAgent manual reruns', () => {
         ),
       )
     } finally {
-      routing.close()
+      await routing.close()
     }
   })
 })
