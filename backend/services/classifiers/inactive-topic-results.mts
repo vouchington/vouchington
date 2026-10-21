@@ -11,9 +11,9 @@ export async function readInactiveClassifierTopicIds(
 ): Promise<ReadonlySet<string>> {
   if (topicIds.length === 0) return new Set()
   const { rows } = await query<{ id: string; inactive: boolean }>(
-    // no-mistakes-disable-next-line postgres-required-predicates: lifecycle classification must include inactive identities
     sql`/* readInactiveClassifierTopicIds */ SELECT id,
       (${includeDeleted} AND deleted_at IS NOT NULL) OR merged_into_topic_id IS NOT NULL AS inactive
+      -- no-mistakes-disable-next-line postgres-required-predicates: lifecycle classification must include inactive identities; missing IDs still fail foreign keys
       FROM topics WHERE id = ANY(${[...topicIds]}::uuid[]) ORDER BY id FOR SHARE`,
   )
   return new Set(rows.flatMap(row => (row.inactive ? [row.id] : [])))
