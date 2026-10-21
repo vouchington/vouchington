@@ -1,3 +1,5 @@
+import { setTimeout as delay } from 'node:timers/promises'
+
 /**
  * Upper bound for one backend global-setup phase. Normal phases finish in seconds, even under
  * coverage on a contended runner; the step timeout is 10 minutes. A phase still pending here is
@@ -20,22 +22,20 @@ export async function withSetupPhaseDeadline<T>(
   run: () => Promise<T>,
   deadlineMs: number = SETUP_PHASE_DEADLINE_MS,
 ): Promise<T> {
-  // The runtime owns the unref'd timer behind AbortSignal.timeout, so the deadline is an abort
-  // event to await rather than a timer this helper schedules or must clear.
-  const signal = AbortSignal.timeout(deadlineMs)
-  const listener = new AbortController()
-  const deadline = new Promise<never>((_resolve, reject) => {
-    signal.addEventListener(
-      'abort',
-      () => {
-        reject(new SetupPhaseDeadlineError(phase, deadlineMs))
-      },
-      { once: true, signal: listener.signal },
-    )
-  })
+  // A referenced timer, unlike AbortSignal.timeout's unref'd one, keeps the process alive while a
+  // handle-less phase is pending, so the deadline fires instead of the process exiting 0. It is
+  // cancelled once the race settles; a cancelled deadline never settles, so nothing is left to
+  // reject unhandled.
+  const cancel = new AbortController()
+  const deadline = delay(deadlineMs, undefined, { signal: cancel.signal }).then(
+    () => {
+      throw new SetupPhaseDeadlineError(phase, deadlineMs)
+    },
+    () => new Promise<never>(() => {}),
+  )
   try {
     return await Promise.race([run(), deadline])
   } finally {
-    listener.abort()
+    cancel.abort()
   }
 }
