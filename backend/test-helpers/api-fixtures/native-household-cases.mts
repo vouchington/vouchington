@@ -53,7 +53,7 @@ export const nativeHouseholdApiFixtureCases: ApiFixtureCase[] = [
         updated_at: '2026-07-02T00:00:00Z',
       },
     },
-    consumers: [...consumers],
+    consumers: ['swift-core', 'swift-ui', 'dotnet-core'],
     migratedFrom,
   },
   {

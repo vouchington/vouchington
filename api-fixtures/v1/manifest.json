@@ -93355,7 +93355,7 @@
       "auth": "fixture-user",
       "backendResponseContractKey": "GET:/api/v1/me/individual",
       "bodyFile": "responses/native.me.individual.json",
-      "consumers": ["web", "swift-core", "swift-ui", "dotnet-core"],
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
       "id": "native.me.individual",
       "method": "GET",
       "migratedFrom": [
