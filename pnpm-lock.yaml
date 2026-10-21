@@ -7295,6 +7295,9 @@ importers:
       '@data-stores/valkey':
         specifier: workspace:^
         version: link:../../data-stores/valkey
+      '@modules/child-process':
+        specifier: workspace:^
+        version: link:../../modules/child-process
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
@@ -7316,6 +7319,9 @@ importers:
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
+      pg-copy-streams:
+        specifier: ^7.0.0
+        version: 7.0.0
       undici:
         specifier: ^8.11.2
         version: 8.11.2
@@ -7326,6 +7332,9 @@ importers:
       '@services/topics':
         specifier: workspace:^
         version: link:../topics
+      '@types/pg-copy-streams':
+        specifier: ^1.2.5
+        version: 1.2.5
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers

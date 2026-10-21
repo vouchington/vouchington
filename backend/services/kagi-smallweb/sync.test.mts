@@ -9,7 +9,7 @@ import {
 } from '@queues/background/enqueues/kagi-smallweb-jobs'
 import { kagiSmallWeb } from '@queues/kagi-smallweb/queues'
 import { readAllQueueJobs } from '@voucha/test-helpers'
-import { getExistingRssFeedUrls } from './get-existing-feed-urls.mts'
+import { readPool, writePool } from '@data-stores/psql'
 import { getTopicByAny } from '@services/topics/get'
 import { getRssFeedByTopicId } from '@services/rss-feeds/get'
 import type { ParsedFeedEntry } from './parse.mts'
@@ -85,30 +85,6 @@ describe('processFeedEntry', () => {
   })
 })
 
-describe('getExistingRssFeedUrls', () => {
-  it('returns a set of existing feed URLs', async () => {
-    const suffix = randomSuffix()
-    const hostname = `kagi-existing-${suffix}.example.com`
-    const feedUrl = `https://${hostname}/feed.xml`
-
-    const entry: ParsedFeedEntry = {
-      feedUrl,
-      name: hostname,
-      slug: `kagi-existing-${suffix}-example-com`,
-      sourceType: 'web',
-    }
-    await processFeedEntry(entry)
-
-    overrideDynamicConfigFieldsForTest(kagiSmallWebImportConfig, { candidate_batch_size: 1 })
-    const urls = await getExistingRssFeedUrls([
-      `https://missing-${suffix}.example.com/feed`,
-      feedUrl,
-    ])
-    expect(urls.size).toBe(1)
-    expect(urls.has(feedUrl)).toBe(true)
-  })
-})
-
 describe('dispatchKagiSmallWeb', () => {
   it('returns disabled when kagi import is not enabled', async () => {
     const result = await dispatchKagiSmallWeb()
@@ -149,4 +125,103 @@ describe('dispatchKagiSmallWebPage', () => {
       sorted.filter(entry => entry !== sorted[1]).map(entry => entry.feedUrl),
     )
   })
+
+  it('keeps the later entry when a URL is listed twice', async () => {
+    const suffix = randomSuffix()
+    const feedUrl = `https://kagi-last-${suffix}.example.com/feed.xml`
+    const later = {
+      feedUrl,
+      name: 'Later name',
+      slug: `kagi-last-${suffix}-later`,
+      sourceType: 'web' as const,
+    }
+    const result = await dispatchKagiSmallWebPage([
+      { ...later, name: 'Earlier name', slug: `kagi-last-${suffix}-earlier` },
+      later,
+    ])
+    expect(result).toEqual({ enqueued: 1, total: 1 })
+    const jobs = (await readAllQueueJobs(kagiSmallWeb))
+      .filter(job => job.name === KAGI_SMALLWEB_PROCESS_FEED_JOB.name)
+      .map(job => job.data as KagiFeedJobData)
+      .filter(data => data.feedUrl === feedUrl)
+    expect(jobs).toEqual([later])
+  })
+
+  it('does not enqueue a second job when the same page is replayed', async () => {
+    const suffix = randomSuffix()
+    const entry: ParsedFeedEntry = {
+      feedUrl: `https://kagi-replay-${suffix}.example.com/feed.xml`,
+      name: `Kagi Replay ${suffix}`,
+      slug: `kagi-replay-${suffix}`,
+      sourceType: 'web',
+    }
+    await dispatchKagiSmallWebPage([entry])
+    await dispatchKagiSmallWebPage([entry])
+    const jobs = (await readAllQueueJobs(kagiSmallWeb)).filter(
+      job =>
+        job.name === KAGI_SMALLWEB_PROCESS_FEED_JOB.name &&
+        (job.data as KagiFeedJobData).feedUrl === entry.feedUrl,
+    )
+    expect(jobs).toHaveLength(1)
+  })
+
+  it('copies current feed URLs from the reader', async () => {
+    const captured = captureConnectedSql()
+    try {
+      await dispatchKagiSmallWebPage([])
+    } finally {
+      captured.restore()
+    }
+    expect(captured.pools).toEqual(['read'])
+  })
 })
+
+function captureConnectedSql(): { pools: Array<'read' | 'write'>; restore: () => void } {
+  const pools: Array<'read' | 'write'> = []
+  const restoreRead = wrapPoolConnect(readPool, 'read', pools)
+  const restoreWrite = wrapPoolConnect(writePool, 'write', pools)
+  return {
+    pools,
+    restore() {
+      restoreRead()
+      restoreWrite()
+    },
+  }
+}
+
+function wrapPoolConnect(
+  pool: typeof readPool,
+  label: 'read' | 'write',
+  pools: Array<'read' | 'write'>,
+): () => void {
+  const descriptor = Object.getOwnPropertyDescriptor(pool, 'connect')
+  const original = pool.connect
+  Object.defineProperty(pool, 'connect', {
+    configurable: true,
+    enumerable: true,
+    writable: true,
+    value: ((...args: unknown[]) => {
+      if (args.some(arg => typeof arg === 'function')) return Reflect.apply(original, pool, args)
+      return Promise.resolve(Reflect.apply(original, pool, args)).then(client => {
+        if (!client) return client
+        const query = client.query
+        client.query = ((...queryArgs: unknown[]) => {
+          const text = sqlText(queryArgs[0])
+          if (text.includes('copyExistingFeedUrls')) pools.push(label)
+          return Reflect.apply(query, client, queryArgs)
+        }) as typeof client.query
+        return client
+      })
+    }) as typeof pool.connect,
+  })
+  return () => {
+    if (descriptor) Object.defineProperty(pool, 'connect', descriptor)
+    else Reflect.deleteProperty(pool, 'connect')
+  }
+}
+
+function sqlText(input: unknown): string {
+  if (typeof input === 'string') return input
+  if (typeof input === 'object' && input !== null && 'text' in input) return String(input.text)
+  return ''
+}

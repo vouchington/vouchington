@@ -1,10 +1,18 @@
+import { existsSync } from 'node:fs'
 import { FEED_LIST_SOURCES } from './sources.mts'
-import { fetchFeedList, forgetFeedListValidators } from './fetch-feed-list.mts'
-import { parseFeedList, type ParsedFeedEntry } from './parse.mts'
-import { getExistingRssFeedUrls } from './get-existing-feed-urls.mts'
+import { fetchFeedList, forgetFeedListValidators, type FeedListRead } from './fetch-feed-list.mts'
+import type { ParsedFeedEntry } from './parse.mts'
 import { getKagiCandidateBatchSize, isKagiSmallWebImportEnabled } from './import-config.mts'
 import { enqueueBulkProcessKagiFeeds } from '@queues/kagi-smallweb/enqueues'
 import onError from '@modules/on-error'
+import {
+  createFeedListDirectory,
+  prepareFeedListDiff,
+  prepareParsedEntriesDiff,
+  readFeedListPage,
+  removeFeedListDirectory,
+  type FeedListChunkSource,
+} from './feed-list-temp-file.mts'
 
 export type DispatchKagiSmallWebResult = {
   disabled?: true
@@ -15,104 +23,167 @@ export type DispatchKagiSmallWebResult = {
   /** True when a continuation was enqueued for the entries after this page. */
   hasMore?: true
   nextCursor?: string
+  /** Set while later pages of this run still need the on-disk diff. */
+  feedListDir?: string
   commitValidators?: () => Promise<void>
 }
 
+let activeFeedListDirectory: string | undefined
+
 /**
- * One bounded page of the Small Web lists. The first page (no cursor) only reads lists that changed
- * since the last sync; a continuation reads every list again and resumes after `cursor`, the last
- * feed URL of the page before it. Entries are ordered by feed URL so the cursor is a stable keyset.
+ * One bounded page of the Small Web lists. The root downloads each changed list once. A
+ * continuation resumes from that run's file and does not download or sort the lists again.
+ * The cursor is the last feed URL of the page before it.
  */
 export async function dispatchKagiSmallWeb(
   cursor?: string,
   pageSize = getKagiCandidateBatchSize(),
+  feedListDir?: string,
 ): Promise<DispatchKagiSmallWebResult> {
-  if (!isKagiSmallWebImportEnabled()) {
-    return { disabled: true, enqueued: 0, total: 0 }
-  }
+  if (!isKagiSmallWebImportEnabled()) return { disabled: true, enqueued: 0, total: 0 }
 
-  const conditional = cursor === undefined
-  const fetchResults = await Promise.allSettled(
-    FEED_LIST_SOURCES.map(source => fetchFeedList(source.name, source.url, { conditional })),
-  )
-
-  const responses = fetchResults.map((result, i) => {
-    if (result.status === 'rejected') {
-      onError(result.reason instanceof Error ? result.reason : new Error(String(result.reason)))
-      return null
-    }
-    return { read: result.value, source: FEED_LIST_SOURCES[i] }
-  })
-
-  // A page that missed a list would skip that list's entries at or below the cursor once the
-  // continuation resumes, so a paged read retries whole instead of carrying on without it.
-  const failure = fetchResults.find(result => result.status === 'rejected')
-  const missing = responses.some(r => r?.read == null)
-
-  const changedResponses = responses.filter(r => r?.read != null)
-  if (changedResponses.length === 0 && !(cursor !== undefined && missing)) {
-    /* v8 ignore next -- requires all fetchFeedList calls to return 304 simultaneously; HTTP boundary tested in fetch-feed-list.mock.test.mts */
-    return { skipped: true, enqueued: 0, total: 0 }
-  }
+  const existing = recordedDirectory(cursor, feedListDir)
+  if (existing) return pageRecordedDirectory(existing, cursor, pageSize)
 
   try {
-    if (cursor !== undefined && missing) {
-      throw failure?.reason instanceof Error
-        ? failure.reason
-        : new Error('A Kagi Small Web list is unavailable; retrying the page')
+    const fetched = await fetchChangedLists(cursor)
+    if (fetched.kind === 'skipped') return { skipped: true, enqueued: 0, total: 0 }
+    const directory = await createFeedListDirectory()
+    try {
+      await prepareFeedListDiff(fetched.lists, directory)
+      activeFeedListDirectory = directory
+      const result = await enqueueFeedListPage(directory, cursor, pageSize, fetched.incomplete)
+      if (result.hasMore) {
+        return { ...result, feedListDir: directory, commitValidators: fetched.commitValidators }
+      }
+      await fetched.commitValidators()
+      await finishFeedListDirectory(directory)
+      return result
+    } catch (err) {
+      await finishFeedListDirectory(directory)
+      throw err
     }
-    const allEntries = changedResponses.flatMap(r => parseFeedList(r!.read!.text, r!.source.type))
-    const result = await dispatchKagiSmallWebPage(allEntries, cursor, {
-      incomplete: Boolean(failure),
-      pageSize,
-    })
-    const commitValidators = async () => {
-      await Promise.all(changedResponses.map(r => r!.read!.commitValidators()))
-    }
-    // A root may commit its snapshot validators only after its continuation is durably admitted.
-    // Later list changes (including URLs below this cursor) still differ from that snapshot.
-    if (result.hasMore) return { ...result, commitValidators }
-    await commitValidators()
-    return result
   } catch (err) {
-    // A continuation that fails must make the next root read the lists again. A root commits
-    // nothing until its page is admitted, so it has nothing to undo.
-    if (cursor !== undefined) {
+    // A continuation that fails must make the next root read the lists again.
+    if (cursor !== undefined)
       await forgetFeedListValidators(FEED_LIST_SOURCES.map(source => source.name))
-    }
     throw err
   }
 }
 
-/** Enqueues the new entries of the next page of `allEntries` and continues after it when more remain. */
+/** Enqueues the new entries of the next page. Callers that already hold entries share this diff. */
 export async function dispatchKagiSmallWebPage(
   allEntries: readonly ParsedFeedEntry[],
   cursor?: string,
   options: { incomplete?: boolean; pageSize?: number } = {},
 ): Promise<DispatchKagiSmallWebResult> {
-  const unique = new Map<string, ParsedFeedEntry>()
-  for (const entry of allEntries) {
-    if (cursor === undefined || entry.feedUrl > cursor) unique.set(entry.feedUrl, entry)
-  }
-  const remaining = [...unique.values()].toSorted((a, b) => (a.feedUrl < b.feedUrl ? -1 : 1))
-
   const pageSize = options.pageSize ?? getKagiCandidateBatchSize()
-  if (options.incomplete && remaining.length > pageSize) {
+  const directory = await createFeedListDirectory()
+  try {
+    await prepareParsedEntriesDiff(allEntries, directory)
+    return await enqueueFeedListPage(directory, cursor, pageSize, Boolean(options.incomplete))
+  } finally {
+    await removeFeedListDirectory(directory)
+  }
+}
+
+function recordedDirectory(
+  cursor: string | undefined,
+  feedListDir: string | undefined,
+): string | undefined {
+  if (cursor === undefined) return undefined
+  const directory = feedListDir ?? activeFeedListDirectory
+  return directory && existsSync(directory) ? directory : undefined
+}
+
+async function pageRecordedDirectory(
+  directory: string,
+  cursor: string | undefined,
+  pageSize: number,
+): Promise<DispatchKagiSmallWebResult> {
+  try {
+    const result = await enqueueFeedListPage(directory, cursor, pageSize, false)
+    if (result.hasMore) return { ...result, feedListDir: directory }
+    await finishFeedListDirectory(directory)
+    return result
+  } catch (err) {
+    if (cursor !== undefined)
+      await forgetFeedListValidators(FEED_LIST_SOURCES.map(source => source.name))
+    throw err
+  }
+}
+
+async function enqueueFeedListPage(
+  directory: string,
+  cursor: string | undefined,
+  pageSize: number,
+  incomplete: boolean,
+): Promise<DispatchKagiSmallWebResult> {
+  const page = await readFeedListPage(directory, cursor, pageSize)
+  if (incomplete && page.total > pageSize) {
     throw new Error('A Kagi Small Web list is unavailable and more pages follow; retrying the page')
   }
-  const page = remaining.slice(0, pageSize)
-  const existingUrls = await getExistingRssFeedUrls(page.map(entry => entry.feedUrl))
-  const newEntries = page.filter(entry => !existingUrls.has(entry.feedUrl))
-
-  if (newEntries.length > 0) {
-    await enqueueBulkProcessKagiFeeds(newEntries)
-  }
-
-  const hasMore = remaining.length > page.length
-
+  if (page.newEntries.length > 0) await enqueueBulkProcessKagiFeeds(page.newEntries)
+  const hasMore = page.total > page.page.length
   return {
-    enqueued: newEntries.length,
-    total: remaining.length,
-    ...(hasMore && { hasMore, nextCursor: page.at(-1)!.feedUrl }),
+    enqueued: page.newEntries.length,
+    total: page.total,
+    ...(hasMore && { hasMore, nextCursor: page.page.at(-1)!.feedUrl }),
+  }
+}
+
+async function finishFeedListDirectory(directory: string): Promise<void> {
+  if (activeFeedListDirectory === directory) activeFeedListDirectory = undefined
+  await removeFeedListDirectory(directory)
+}
+
+type FetchedLists =
+  | { kind: 'skipped' }
+  | {
+      kind: 'ready'
+      lists: FeedListChunkSource[]
+      incomplete: boolean
+      commitValidators: () => Promise<void>
+    }
+
+async function fetchChangedLists(cursor: string | undefined): Promise<FetchedLists> {
+  const conditional = cursor === undefined
+  const fetchResults = await Promise.allSettled(
+    FEED_LIST_SOURCES.map(source => fetchFeedList(source.name, source.url, { conditional })),
+  )
+  const responses = fetchResults.map((result, index) => {
+    if (result.status === 'rejected') {
+      onError(result.reason instanceof Error ? result.reason : new Error(String(result.reason)))
+      return null
+    }
+    return { read: result.value, source: FEED_LIST_SOURCES[index]! }
+  })
+  const failure = fetchResults.find(result => result.status === 'rejected')
+  const missing = responses.some(response => response?.read == null)
+  const changed = responses.filter(
+    (response): response is { read: FeedListRead; source: (typeof FEED_LIST_SOURCES)[number] } =>
+      response?.read != null,
+  )
+  // A page that missed a list would skip that list's entries at or below the cursor once the
+  // continuation resumes, so a paged read retries whole instead of carrying on without it.
+  if (changed.length === 0 && !(cursor !== undefined && missing)) {
+    /* v8 ignore next -- requires all fetchFeedList calls to return 304 simultaneously; HTTP boundary tested in fetch-feed-list.mock.test.mts */
+    return { kind: 'skipped' }
+  }
+  if (cursor !== undefined && missing) {
+    throw failure?.reason instanceof Error
+      ? failure.reason
+      : new Error('A Kagi Small Web list is unavailable; retrying the page')
+  }
+  return {
+    kind: 'ready',
+    incomplete: Boolean(failure),
+    lists: changed.map(response => ({
+      chunks: response.read.stream,
+      sourceType: response.source.type,
+    })),
+    commitValidators: async () => {
+      await Promise.all(changed.map(response => response.read.commitValidators()))
+    },
   }
 }

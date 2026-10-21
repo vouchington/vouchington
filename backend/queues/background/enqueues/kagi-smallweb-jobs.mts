@@ -18,8 +18,11 @@ const DEFAULTS = {
   removeOnFail: 100,
 } as const
 
-/** One page of the Small Web lists; `cursor` is the last feed URL of the page before it. */
-export type KagiSyncData = { cursor?: string }
+/**
+ * One page of the Small Web lists. `cursor` is the last feed URL of the page before it.
+ * `feedListDir` is that run's on-disk diff, so a continuation does not download the lists again.
+ */
+export type KagiSyncData = { cursor?: string; feedListDir?: string }
 
 export type KagiFeedJobData = {
   feedUrl: string
