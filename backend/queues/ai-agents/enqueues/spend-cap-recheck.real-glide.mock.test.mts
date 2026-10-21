@@ -44,7 +44,7 @@ describe('spend-cap recheck priority-ten scheduling with real GlideMQ', () => {
       async (job: Job<SpendCapRecheckJobData>) => {
         processedIds.push(job.id)
       },
-      { ...connection, blockTimeout: 10_000, promotionInterval: 25 },
+      { ...connection, blockTimeout: 1_000, promotionInterval: 25 },
     )
 
     let onDelayedCompleted: ((completedJob: Job<SpendCapRecheckJobData>) => void) | undefined
