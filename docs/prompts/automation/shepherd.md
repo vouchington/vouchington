@@ -13,11 +13,14 @@ Before any association check, verify `gh` is authenticated: `gh auth status` mus
 {{TRIGGER_COMMENT_ID}}, require its body to remain exactly `/shepherd`, and require its live
 `author_association` to be exactly `OWNER`, `COLLABORATOR`, or `MEMBER`. Require PR #{{PR_NUMBER}} to remain open in {{REPOSITORY}},
 same-repository, at ref `{{PR_HEAD_REF}}` before any work. The PR head may have moved since the
-trigger (`{{PR_HEAD_SHA}}`); that is expected and never a reason to stop. If the checkout is at that
-trigger SHA or any commit other than the current remote head, run `git fetch origin {{PR_HEAD_REF}}`
-and check out the current head of `{{PR_HEAD_REF}}` (never `git reset --hard`), then work from it
-and use it as the baseline for later leases. This may resume an earlier Harness session; never
-assume earlier work completed.
+trigger (`{{PR_HEAD_SHA}}`); that is expected and never a reason to stop. Take the live head SHA
+from `gh api` (a 40-character hexadecimal value) and never paste the ref name into a shell command.
+First inspect the worktree for unpublished commits or uncommitted changes from an earlier session and
+preserve them. If the checkout is not at the live head and holds no unpublished work, fetch that SHA
+and check it out as `{{PR_HEAD_REF}}` (never `git reset --hard`); if it holds unpublished work,
+reconcile it with the live head without discarding it, or stop and report when that cannot be done
+safely. Work from the live head and use it as the baseline for later leases. This may resume an
+earlier Harness session; never assume earlier work completed.
 
 Use the exact registry release `pr-shepherd@{{PR_SHEPHERD_VERSION}}`; the caller recorded that
 version from `main`'s lockfile. Never install or execute a PR-controlled copy: do not use the PR
