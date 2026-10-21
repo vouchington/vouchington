@@ -122,6 +122,22 @@ export async function listBlacklistDomainsBySource(
   return result.rows.map(row => row.domain)
 }
 
+/** Plan for the C-ordered membership read. The planner settings roll back with the transaction. */
+export async function explainBlocklistedDomainOrderPlan(
+  sourceId: DomainBlacklistSourceId,
+): Promise<string> {
+  await using transaction = await beginTransaction()
+  await transaction(`/* explainMembership */ SET LOCAL enable_seqscan = off`)
+  await transaction(`/* explainMembership */ SET LOCAL enable_bitmapscan = off`)
+  const explained = await transaction<{ 'QUERY PLAN': string }>(
+    `/* explainMembership */ EXPLAIN SELECT domain FROM blocklisted_domains
+     WHERE source_id = $1::bigint
+     ORDER BY domain COLLATE "C"`,
+    [sourceId],
+  )
+  return explained.rows.map(row => row['QUERY PLAN']).join('\n')
+}
+
 /**
  * Check if any URL-type domain blacklist entries exist
  */

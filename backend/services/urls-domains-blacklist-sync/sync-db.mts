@@ -1,14 +1,12 @@
-import { mkdtempSync, rmSync, createReadStream } from 'node:fs'
+import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { pipeline } from 'node:stream/promises'
 import {
   beginTransaction,
   writePool,
   type PoolClient,
   type TransactionQuery,
 } from '@data-stores/psql'
-import { from as copyFrom } from 'pg-copy-streams'
 import onError from '@modules/on-error'
 import {
   rebuildBloomForSource,
@@ -25,8 +23,12 @@ import {
 } from './sync-cache.mts'
 import { drainHostnameCacheInvalidationWork } from '@services/entity-cache/hostname-invalidation-drain'
 import { entityCacheWorkConfig } from '@services/entity-cache/work-limits'
-import { writeCommDiff, writeSortedDesiredDomains } from './diff-files.mts'
-import { copySourceMembership } from './reader-membership-copy.mts'
+import { writeSortedDesiredDomains } from './diff-files.mts'
+import {
+  stageBothDiffFiles,
+  stageMembershipDiff,
+  type MembershipDiffPaths,
+} from './membership-diff-stage.mts'
 
 type AppliedDomainDiff = { result: SyncBlacklistSourceResult; inlineHostnameIds: string[] }
 
@@ -49,14 +51,12 @@ export async function syncDomainsWithDatabase(
     await writeSortedDesiredDomains(response, desiredPath)
     // Copy membership only after the source lock, so a concurrent sync of this
     // source cannot diff against a snapshot that predates the previous commit.
-    const result = await applyLockedDomainDiff(sourceId, sourceType, async client => {
-      await copySourceMembership(sourceId, membershipPath)
-      await writeCommDiff({ membershipPath, desiredPath, addedPath, removedPath })
-      await stageDiffFile(client, ADDED_DOMAINS_TABLE, addedPath)
-      await stageDiffFile(client, REMOVED_DOMAINS_TABLE, removedPath)
+    return await diffLockedMembership(sourceId, sourceType, bloomRebuildDependencies, {
+      membershipPath,
+      desiredPath,
+      addedPath,
+      removedPath,
     })
-    await rebuildBloomForSource(sourceType, bloomRebuildDependencies)
-    return result
   } finally {
     rmSync(directory, { recursive: true, force: true })
   }
@@ -73,10 +73,22 @@ export async function applyDomainDiffFiles(
   addedPath: string,
   removedPath: string,
 ): Promise<SyncBlacklistSourceResult> {
-  return applyLockedDomainDiff(sourceId, sourceType, async client => {
-    await stageDiffFile(client, ADDED_DOMAINS_TABLE, addedPath)
-    await stageDiffFile(client, REMOVED_DOMAINS_TABLE, removedPath)
-  })
+  return applyLockedDomainDiff(sourceId, sourceType, client =>
+    stageBothDiffFiles(client, addedPath, removedPath),
+  )
+}
+
+async function diffLockedMembership(
+  sourceId: DomainBlacklistSourceId,
+  sourceType: 'url' | 'email',
+  bloomRebuildDependencies: BloomRebuildDependencies,
+  paths: MembershipDiffPaths,
+): Promise<SyncBlacklistSourceResult> {
+  const result = await applyLockedDomainDiff(sourceId, sourceType, client =>
+    stageMembershipDiff(client, sourceId, paths),
+  )
+  await rebuildBloomForSource(sourceType, bloomRebuildDependencies)
+  return result
 }
 
 async function applyLockedDomainDiff(
@@ -88,9 +100,7 @@ async function applyLockedDomainDiff(
   const client = await writePool.connect()
   try {
     await using transaction = await beginTransaction({ client })
-    await lockSourceForDiff(transaction, sourceId, sourceType)
-    await stage(client)
-    const applied = await applyPreparedDomainDiff(transaction, sourceId, sourceType)
+    const applied = await stageLockedDiff(transaction, client, sourceId, sourceType, stage)
     await transaction.commit()
     await drainHostnameCacheInvalidationWork({ hostnameIds: applied.inlineHostnameIds }).catch(
       onError,
@@ -100,6 +110,18 @@ async function applyLockedDomainDiff(
     await dropSyncTempTables(client).catch(onError)
     client.release()
   }
+}
+
+async function stageLockedDiff(
+  transaction: Awaited<ReturnType<typeof beginTransaction>>,
+  client: PoolClient,
+  sourceId: DomainBlacklistSourceId,
+  sourceType: 'url' | 'email',
+  stage: (client: PoolClient) => Promise<void>,
+): Promise<AppliedDomainDiff> {
+  await lockSourceForDiff(transaction, sourceId, sourceType)
+  await stage(client)
+  return applyPreparedDomainDiff(transaction, sourceId, sourceType)
 }
 
 async function lockSourceForDiff(
@@ -118,18 +140,6 @@ async function lockSourceForDiff(
   )
   if (rows[0]?.type !== sourceType)
     throw new Error('Domain blacklist source type changed during sync')
-}
-
-async function stageDiffFile(client: PoolClient, table: string, path: string): Promise<void> {
-  await client.query(
-    `/* syncDomainsWithDatabase */ CREATE TEMP TABLE ${table} (domain TEXT NOT NULL)`,
-  )
-  // no-mistakes-disable-next-line postgres-required-predicates: COPY FROM STDIN loads one diff file into a temporary staging table
-  const copyStream = client.query(
-    copyFrom(`/* syncDomainsWithDatabase */ COPY ${table} (domain) FROM STDIN`),
-  )
-  await pipeline(createReadStream(path), copyStream)
-  await client.query(`/* syncDomainsWithDatabase */ CREATE INDEX ON ${table} (domain)`)
 }
 
 async function applyPreparedDomainDiff(

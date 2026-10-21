@@ -12,13 +12,14 @@ import { join } from 'node:path'
 import { createInterface } from 'node:readline'
 import { finished } from 'node:stream/promises'
 import { describe, expect, it } from 'vitest'
-import { beginTransaction, readPool, writePool } from '@data-stores/psql'
 import {
   countBlacklistEntriesBySource,
   createTestBlacklistSource,
   deleteTestBlacklistSource,
+  explainBlocklistedDomainOrderPlan,
   insertTestDomainBlacklist,
   listBlacklistDomainsBySource,
+  observeTestPostgresClientQueries,
 } from '@voucha/test-helpers'
 import { ADDED_DOMAINS_TABLE } from './sync-cache.mts'
 import { writeCommDiff, writeSortedDesiredDomains } from './diff-files.mts'
@@ -39,21 +40,24 @@ describe('blocklist file diff', () => {
       name: `file-diff-${suffix}`,
       url: 'https://example.com/file-diff.txt',
     })
-    const captured = captureConnectedSql()
+    const observed = await observeTestPostgresClientQueries(() =>
+      syncDomainsWithDatabase(sourceId, new Response(`${domain}\n`), 'url'),
+    )
     try {
-      const result = await syncDomainsWithDatabase(sourceId, new Response(`${domain}\n`), 'url')
-      expect(captured.pools).toEqual(['read'])
-      expect(result).toEqual({ skipped: false, domainsAdded: 1, domainsRemoved: 0 })
-      expect(captured.queries.some(text => text.includes('tmp_domain_blacklist_raw_domains'))).toBe(
-        false,
+      const membership = observed.queries.filter(query =>
+        query.text.includes('copySourceMembership'),
       )
-      expect(captured.queries.some(text => text.includes('tmp_domain_blacklist_new_domains'))).toBe(
-        false,
-      )
-      expect(captured.queries.some(text => text.includes(ADDED_DOMAINS_TABLE))).toBe(true)
+      expect(membership.map(query => query.pool)).toEqual(['read'])
+      expect(observed.result).toEqual({ skipped: false, domainsAdded: 1, domainsRemoved: 0 })
+      expect(
+        observed.queries.some(query => query.text.includes('tmp_domain_blacklist_raw_domains')),
+      ).toBe(false)
+      expect(
+        observed.queries.some(query => query.text.includes('tmp_domain_blacklist_new_domains')),
+      ).toBe(false)
+      expect(observed.queries.some(query => query.text.includes(ADDED_DOMAINS_TABLE))).toBe(true)
       await expect(listBlacklistDomainsBySource(sourceId)).resolves.toEqual([domain])
     } finally {
-      captured.restore()
       await deleteTestBlacklistSource(sourceId)
     }
   })
@@ -120,16 +124,7 @@ describe('blocklist file diff', () => {
     })
     try {
       await insertTestDomainBlacklist(`explain-${suffix}.example`, name)
-      await using transaction = await beginTransaction()
-      await transaction(`/* explainMembership */ SET LOCAL enable_seqscan = off`)
-      await transaction(`/* explainMembership */ SET LOCAL enable_bitmapscan = off`)
-      const explained = await transaction<{ 'QUERY PLAN': string }>(
-        `/* explainMembership */ EXPLAIN SELECT domain FROM blocklisted_domains
-         WHERE source_id = $1::bigint
-         ORDER BY domain COLLATE "C"`,
-        [sourceId],
-      )
-      const plan = explained.rows.map(row => row['QUERY PLAN']).join('\n')
+      const plan = await explainBlocklistedDomainOrderPlan(sourceId)
       expect(plan).toContain('idx_blocklisted_domains__source_id__domain')
       expect(plan).toMatch(/Index (?:Only )?Scan/)
       expect(plan).not.toContain('Sort')
@@ -156,64 +151,6 @@ describe('blocklist file diff', () => {
     }
   })
 })
-
-function captureConnectedSql(): {
-  pools: Array<'read' | 'write'>
-  queries: string[]
-  restore: () => void
-} {
-  const pools: Array<'read' | 'write'> = []
-  const queries: string[] = []
-  const restoreRead = wrapPoolConnect(readPool, 'read', pools, queries)
-  const restoreWrite = wrapPoolConnect(writePool, 'write', pools, queries)
-  return {
-    pools,
-    queries,
-    restore() {
-      restoreRead()
-      restoreWrite()
-    },
-  }
-}
-
-function wrapPoolConnect(
-  pool: typeof readPool,
-  label: 'read' | 'write',
-  pools: Array<'read' | 'write'>,
-  queries: string[],
-): () => void {
-  const descriptor = Object.getOwnPropertyDescriptor(pool, 'connect')
-  const original = pool.connect
-  Object.defineProperty(pool, 'connect', {
-    configurable: true,
-    enumerable: true,
-    writable: true,
-    value: ((...args: unknown[]) => {
-      if (args.some(arg => typeof arg === 'function')) return Reflect.apply(original, pool, args)
-      return Promise.resolve(Reflect.apply(original, pool, args)).then(client => {
-        if (!client) return client
-        const query = client.query
-        client.query = ((...queryArgs: unknown[]) => {
-          const text = sqlText(queryArgs[0])
-          if (text.includes('copySourceMembership')) pools.push(label)
-          if (text.includes('tmp_domain_blacklist')) queries.push(text)
-          return Reflect.apply(query, client, queryArgs)
-        }) as typeof client.query
-        return client
-      })
-    }) as typeof pool.connect,
-  })
-  return () => {
-    if (descriptor) Object.defineProperty(pool, 'connect', descriptor)
-    else Reflect.deleteProperty(pool, 'connect')
-  }
-}
-
-function sqlText(input: unknown): string {
-  if (typeof input === 'string') return input
-  if (typeof input === 'object' && input !== null && 'text' in input) return String(input.text)
-  return ''
-}
 
 function interruptedDownload(): Response {
   const encoder = new TextEncoder()

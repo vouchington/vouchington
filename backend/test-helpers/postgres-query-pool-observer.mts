@@ -6,6 +6,11 @@ import { runPoolObservationExclusively } from './postgres-pool-observation-queue
 
 export type ObservedPostgresQueryPool = 'read' | 'write'
 
+export type ObservedClientQuery = {
+  pool: ObservedPostgresQueryPool
+  text: string
+}
+
 interface PoolObservationContext {
   active: boolean
   pools: Set<ObservedPostgresQueryPool>
@@ -66,6 +71,60 @@ async function observePoolQueries<Result>(
       restoreQueryProperty(writePool, writeQueryDescriptor)
     }
   }
+}
+
+/** Records SQL run on a borrowed client. COPY does not go through `pool.query`. */
+export async function observeTestPostgresClientQueries<Result>(
+  operation: () => Promise<Result>,
+): Promise<{ result: Result; queries: ObservedClientQuery[] }> {
+  return runPoolObservationExclusively(async () => {
+    const queries: ObservedClientQuery[] = []
+    const restoreRead = tapClientQueries(readPool, 'read', queries)
+    const restoreWrite = tapClientQueries(writePool, 'write', queries)
+    try {
+      const result = await operation()
+      return { result, queries }
+    } finally {
+      restoreWrite()
+      restoreRead()
+    }
+  })
+}
+
+function tapClientQueries(
+  pool: pg.Pool,
+  label: ObservedPostgresQueryPool,
+  queries: ObservedClientQuery[],
+): () => void {
+  const descriptor = Object.getOwnPropertyDescriptor(pool, 'connect')
+  const original = pool.connect
+  Object.defineProperty(pool, 'connect', {
+    configurable: true,
+    enumerable: true,
+    writable: true,
+    value: ((...args: unknown[]) => {
+      if (args.some(arg => typeof arg === 'function')) return Reflect.apply(original, pool, args)
+      return Promise.resolve(Reflect.apply(original, pool, args)).then(client => {
+        if (!client) return client
+        const query = client.query
+        client.query = ((...queryArgs: unknown[]) => {
+          queries.push({ pool: label, text: clientQueryText(queryArgs[0]) })
+          return Reflect.apply(query, client, queryArgs)
+        }) as typeof client.query
+        return client
+      })
+    }) as typeof pool.connect,
+  })
+  return () => {
+    if (descriptor) Object.defineProperty(pool, 'connect', descriptor)
+    else Reflect.deleteProperty(pool, 'connect')
+  }
+}
+
+function clientQueryText(input: unknown): string {
+  if (typeof input === 'string') return input
+  if (typeof input === 'object' && input !== null && 'text' in input) return String(input.text)
+  return ''
 }
 
 function installQueryWrapper(pool: pg.Pool, query: pg.Pool['query']): void {
