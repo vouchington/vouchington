@@ -7,6 +7,7 @@ import { upsertPostPublicationDirtyWork } from './upsert-dirty-work.mts'
 import type { PostPublicationDirtyWork } from './types.mts'
 
 const RSS_FEED_PUBLICATION_REASON = 'rss_feed_discoverability_changed' as const
+const rssFeedScopesLockedInQuery = new WeakMap<TransactionQuery, Set<string>>()
 
 type RssFeedTopicPublicationChange = {
   rssFeedId: string
@@ -88,7 +89,12 @@ export async function lockPostPublicationRssFeedScopes(
   rssFeedIds: readonly string[],
 ): Promise<void> {
   const POST_PUBLICATION_CAPTURE_BATCH_SIZE = getPostPublicationWorkLimit('capture_batch_size')
-  const ids = normalizePostPublicationIdentifiers(rssFeedIds)
+  const held = rssFeedScopesLockedInQuery.get(query) ?? new Set<string>()
+  // This query already holds these advisory locks until commit.
+  // Feeds found after an item-row wait are still locked below.
+  const ids = normalizePostPublicationIdentifiers(rssFeedIds).filter(id => !held.has(id))
+  if (ids.length === 0) return
+  rssFeedScopesLockedInQuery.set(query, held)
   for (let offset = 0; offset < ids.length; offset += POST_PUBLICATION_CAPTURE_BATCH_SIZE) {
     const batch = ids.slice(offset, offset + POST_PUBLICATION_CAPTURE_BATCH_SIZE)
     // oxlint-disable-next-line no-await-in-loop -- ascending batches preserve global feed lock order.
@@ -99,6 +105,7 @@ export async function lockPostPublicationRssFeedScopes(
       ORDER BY rss_feed_id`,
       [batch],
     )
+    for (const id of batch) held.add(id)
   }
 }
 

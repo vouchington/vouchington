@@ -10,6 +10,7 @@ import {
   getCompletedScenarioIds,
   getResults,
   prepareOutputDir,
+  seedPostId,
   writeResults,
 } from './run-support.mts'
 import { EXPLAIN_SCENARIO_MANIFEST } from './scenario-manifest.mts'
@@ -48,6 +49,10 @@ import { seedVoteWeightDispatch } from './seed-data/vote-weight-dispatch.mts'
 import { runSharedLoaderScenarios } from './run-scenarios/shared-loaders.mts'
 import { runModerationReportContextScenarios } from './run-scenarios/moderation-report-contexts.mts'
 import { runRssFeedStateChangeScenarios } from './run-scenarios/rss-feed-state-changes.mts'
+import {
+  removeCommittedHardDeleteWork,
+  runHardDeletedPostPublicationScenarios,
+} from './run-scenarios/hard-deleted-post-publication.mts'
 
 // A failing step is recorded and the run continues, so one run reports every failure.
 const RUN_STEPS: readonly (() => Promise<unknown>)[] = [
@@ -86,6 +91,7 @@ const RUN_STEPS: readonly (() => Promise<unknown>)[] = [
   runDispatchWorkPlanScenarios,
   runModerationReportContextScenarios,
   runRssFeedStateChangeScenarios,
+  runHardDeletedPostPublicationScenarios,
   // Keep the mixed membership corpus out of unrelated aggregate and candidate plans.
   seedVoteWeightDispatch,
   runVoteWeightDispatchScenarios,
@@ -96,6 +102,7 @@ async function main() {
   try {
     assertSeedAnchorNotFuture(process.env[SEED_ANCHOR_DATE_ENV])
     await assertSeedAnchorMatches()
+    await removeCommittedHardDeleteWork(seedPostId)
     for (const step of RUN_STEPS) await continueAfterFailure(step.name, step)
     const runErrors: unknown[] = []
     for (const check of [

@@ -1,9 +1,10 @@
 import type { RetentionWorkBudget } from './work-budget.mts'
 import { getDataRetentionLimits } from './config.mts'
-import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
+import { beginTransaction, type QueryExecutor, type TransactionQuery } from '@data-stores/psql'
 import {
   lockAuthorPublicationLifecycle,
   processAuthorDeletionPublicationBatch,
+  retainUserCascadeHardDeletedPosts,
 } from '@services/post-publication'
 import sql from 'sql-template-strings'
 import { cleanupUserPreservedRows } from './cleanup-user-preserved-rows.mts'
@@ -45,11 +46,17 @@ export async function cleanupSoftDeletedUser(
     await query.commit()
     return { deleted: 0, hasMore: true }
   }
+  const deleted = await deletePurgedUser(query, targetId)
+  budget.remainingRows -= deleted
+  await query.commit()
+  return { deleted, hasMore: false }
+}
+
+async function deletePurgedUser(query: TransactionQuery, targetId: string): Promise<number> {
+  await retainUserCascadeHardDeletedPosts(query, targetId)
   const { rowCount } = await query(sql`/* cleanupSoftDeletedUserBatch:delete */
       DELETE FROM users WHERE id = ${targetId}`)
-  budget.remainingRows -= rowCount ?? 0
-  await query.commit()
-  return { deleted: rowCount ?? 0, hasMore: false }
+  return rowCount ?? 0
 }
 
 async function lockFinalUserPurge(query: QueryExecutor, targetId: string): Promise<void> {

@@ -1,9 +1,7 @@
 import type { TransactionQuery } from '@data-stores/psql'
 import {
   recordPostPublicationChange,
-  retainPostPublicationTopicAliasIdentity,
   retainTopicAliasPublicationPostImpacts,
-  prepareTopicAliasPublicationIdentityBridges,
 } from '@services/post-publication'
 
 type TopicAliasOwnershipChange = {
@@ -16,6 +14,7 @@ type TopicAliasOwnershipChange = {
 export async function recordTopicAliasPublicationChanges(
   query: TransactionQuery,
   changes: readonly TopicAliasOwnershipChange[],
+  options: { retainDestroyedPostImpacts?: boolean } = {},
 ): Promise<void> {
   const changesByAliasId = new Map<string, { alias: string; topicIds: Set<string> }>()
   for (const change of changes) {
@@ -34,7 +33,6 @@ export async function recordTopicAliasPublicationChanges(
 
   const aliasIds = [...changesByAliasId.keys()].toSorted()
   if (aliasIds.length === 0) return
-  await prepareTopicAliasPublicationIdentityBridges(query, aliasIds)
   for (const aliasId of aliasIds) {
     const retained = changesByAliasId.get(aliasId)!
     // oxlint-disable-next-line no-await-in-loop -- one coalesced durable alias scope per mutation.
@@ -42,10 +40,10 @@ export async function recordTopicAliasPublicationChanges(
       scope: { type: 'topic_alias', topicAliasId: aliasId },
       reason: 'post_topics_changed',
       impactedTopicIds: [...retained.topicIds].toSorted(),
+      topicAliasText: retained.alias,
     })
-    // oxlint-disable-next-line no-await-in-loop -- the alias identity must share the capture transaction.
-    await retainPostPublicationTopicAliasIdentity(query, work.id, retained.alias)
-    // oxlint-disable-next-line no-await-in-loop -- each alias fanout is retained in bounded pages.
+    if (!options.retainDestroyedPostImpacts) continue
+    // oxlint-disable-next-line no-await-in-loop -- each destroyed alias's post impacts are retained in bounded pages.
     await retainTopicAliasPublicationPostImpacts(query, work.id, aliasId)
   }
 }

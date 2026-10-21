@@ -1,6 +1,5 @@
 import type { TransactionQuery } from '@data-stores/psql'
-import type { PostPublicationFootprint, PostPublicationScope } from './types.mts'
-import { retainPostPublicationPostScopeContext } from './capture-post-context.mts'
+import type { PostPublicationChange } from './types.mts'
 import { retainCurrentRssFeedPublicationKeys } from './capture-rss-feeds.mts'
 import {
   retainPostPublicationKeys,
@@ -32,76 +31,61 @@ export async function retainPostPublicationImpactKeys(
   ]
   await retainPostPublicationKeys(query, dirtyWorkId, keys)
 }
-export async function retainPostPublicationFootprintKeys(
+export async function retainRecordedPublicationKeys(
   query: TransactionQuery,
   dirtyWorkId: string,
-  footprint: PostPublicationFootprint | undefined,
+  change: PostPublicationChange,
 ): Promise<void> {
-  if (!footprint) return
-  const keys: PostPublicationRetainedKey[] = []
-  addUuidKey(keys, 'identity_author', footprint.priorAuthorUserId)
-  addTextKey(keys, 'identity_author_username', footprint.priorAuthorUsername)
-  addUuidKey(keys, 'identity_community', footprint.priorCommunityId)
-  addUuidKey(keys, 'impact_post', footprint.priorRootId)
-  addTextKey(keys, 'identity_post_slug', footprint.priorPostSlug)
-  addTextKey(keys, 'identity_community_slug', footprint.priorCommunitySlug)
-  if (footprint.priorSitemapTarget) {
-    keys.push({
-      kind: 'sitemap_target',
-      postType: footprint.priorSitemapTarget.postType,
-      day: footprint.priorSitemapTarget.day,
-    })
+  const keys = recordedPublicationKeys(change)
+  if (change.scope.type === 'rss_feed') {
+    if (keys.length > 0) await retainPostPublicationKeys(query, dirtyWorkId, keys)
+    await retainCurrentRssFeedPublicationKeys(query, [
+      { id: dirtyWorkId, rss_feed_identity_id: change.scope.rssFeedId },
+    ])
+    return
   }
-  await retainPostPublicationKeys(query, dirtyWorkId, keys)
-}
-export async function retainPostPublicationTopicAliasIdentity(
-  query: TransactionQuery,
-  dirtyWorkId: string,
-  alias: string,
-): Promise<void> {
-  await retainPostPublicationKeys(query, dirtyWorkId, [
-    { kind: 'identity_topic_alias', textValue: alias },
-  ])
-}
-export async function retainCurrentPostPublicationKeys(
-  query: TransactionQuery,
-  dirtyWorkId: string,
-  scope: PostPublicationScope,
-): Promise<void> {
-  const keys: PostPublicationRetainedKey[] = []
-  switch (scope.type) {
-    case 'author':
-      addUuidKey(keys, 'identity_author', scope.authorUserId)
-      break
-    case 'community':
-      addUuidKey(keys, 'identity_community', scope.communityId)
-      break
-    case 'rss_feed':
-      await retainCurrentRssFeedPublicationKeys(query, [
-        { id: dirtyWorkId, rss_feed_identity_id: scope.rssFeedId },
-      ])
-      return
-    case 'post':
-      await retainCurrentPostScopeKeys(query, dirtyWorkId, scope.postId)
-      return
-    default:
-      break
-  }
-  if (scope.type === 'community') {
+  if (change.scope.type === 'community') {
     const { rows } = await query<{ slug: string | null }>(
       `/* getCurrentCommunityPublicationKeys */ SELECT community.slug FROM post_publication_community_identities identity JOIN communities community ON community.id = identity.community_id WHERE identity.id = $1`,
-      [scope.communityId],
+      [change.scope.communityId],
     )
     addTextKey(keys, 'identity_community_slug', rows[0]?.slug ?? undefined)
   }
-  await retainPostPublicationKeys(query, dirtyWorkId, keys)
+  if (keys.length > 0) await retainPostPublicationKeys(query, dirtyWorkId, keys)
 }
-async function retainCurrentPostScopeKeys(
-  query: TransactionQuery,
-  dirtyWorkId: string,
-  postId: string,
-): Promise<void> {
-  await retainPostPublicationPostScopeContext(query, [{ dirtyWorkId, postId }])
+function recordedPublicationKeys(change: PostPublicationChange): PostPublicationRetainedKey[] {
+  const keys: PostPublicationRetainedKey[] = [
+    ...uniqueIds(change.impactedPostIds).map(uuidValue => ({
+      kind: 'impact_post' as const,
+      uuidValue,
+    })),
+    ...uniqueIds(change.impactedTopicIds).map(uuidValue => ({
+      kind: 'impact_topic' as const,
+      uuidValue,
+    })),
+    ...uniqueIds(change.impactedCommunityIds).map(uuidValue => ({
+      kind: 'impact_community' as const,
+      uuidValue,
+    })),
+    ...uniqueIds(change.impactedRssFeedItemIds).map(uuidValue => ({
+      kind: 'impact_rss_feed_item' as const,
+      uuidValue,
+    })),
+  ]
+  const footprint = change.footprint
+  if (footprint) {
+    addUuidKey(keys, 'identity_author', footprint.priorAuthorUserId)
+    addTextKey(keys, 'identity_author_username', footprint.priorAuthorUsername)
+    addUuidKey(keys, 'identity_community', footprint.priorCommunityId)
+    addUuidKey(keys, 'impact_post', footprint.priorRootId)
+    addTextKey(keys, 'identity_post_slug', footprint.priorPostSlug)
+    addTextKey(keys, 'identity_community_slug', footprint.priorCommunitySlug)
+  }
+  if (change.scope.type === 'author') addUuidKey(keys, 'identity_author', change.scope.authorUserId)
+  if (change.scope.type === 'community')
+    addUuidKey(keys, 'identity_community', change.scope.communityId)
+  addTextKey(keys, 'identity_topic_alias', change.topicAliasText)
+  return keys
 }
 function addUuidKey(
   keys: PostPublicationRetainedKey[],

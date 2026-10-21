@@ -60,14 +60,18 @@ export async function unlinkTopicAlias(
     assert(existing.alias !== existing.active_topic_slug, 409, 'Cannot unlink an active topic slug')
     const preservesAlias = Boolean(normalizeHashtag(existing.alias))
     if (!preservesAlias && existing.topic_id) {
-      await recordTopicAliasPublicationChanges(query, [
-        {
-          aliasId: existing.id,
-          alias: existing.alias,
-          previousTopicId: existing.topic_id,
-          nextTopicId: null,
-        },
-      ])
+      await recordTopicAliasPublicationChanges(
+        query,
+        [
+          {
+            aliasId: existing.id,
+            alias: existing.alias,
+            previousTopicId: existing.topic_id,
+            nextTopicId: null,
+          },
+        ],
+        { retainDestroyedPostImpacts: true },
+      )
     }
     if (preservesAlias) {
       await query(

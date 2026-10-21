@@ -1322,23 +1322,6 @@ rules:
             file: backend/services/post-publication/capture-impacts.mts,
             callee: 'retainPostPublicationKeys',
           }
-        - {
-            file: backend/services/post-publication/capture-post-context.mts,
-            callee: 'listPublicationIdentitySourcePage',
-          }
-        - { file: backend/services/post-publication/capture-post-context.mts, callee: 'query' }
-        - {
-            file: backend/services/post-publication/capture-post-context.mts,
-            callee: 'retainPostPublicationKeys',
-          }
-        - {
-            file: backend/services/post-publication/capture-post-context.mts,
-            callee: 'retainPostScope',
-          }
-        - {
-            file: backend/services/post-publication/capture-post-context.mts,
-            callee: 'retainSnapshotPage',
-          }
         - { file: backend/services/post-publication/capture-posts.mts, callee: 'query' }
         - {
             file: backend/services/post-publication/capture-posts.mts,
@@ -1423,11 +1406,6 @@ rules:
         - {
             file: backend/services/post-publication/orphan-identities.mts,
             callee: 'retainSnapshotReceiptPage',
-          }
-        - { file: backend/services/post-publication/prepare-alias-identities.mts, callee: 'query' }
-        - {
-            file: backend/services/post-publication/prepare-alias-identities.mts,
-            callee: 'retainPublicationIdentityBridges',
           }
         - { file: backend/services/post-publication/prepare-identity-bridges.mts, callee: 'query' }
         - {

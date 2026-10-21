@@ -8,8 +8,6 @@ import {
   createTopHashtagAliasForTest,
   createTopHashtagPostSourceForTest,
   getTestPostPublicationDirtyWorkForScope,
-  insertTestPostBatch,
-  insertTestPostTopicAliasSourceBatch,
   insertTestRssFeedDirect,
   listTestPostPublicationImpactPostIds,
   listTestPostPublicationImpactTopicIds,
@@ -58,18 +56,19 @@ describe('topic alias publication capture', () => {
     await expect(listTestPostPublicationImpactPostIds(work!.id)).resolves.toEqual([])
   })
 
-  it('retains high-fanout alias post ownership across bounded pages', async () => {
+  it('does not enumerate post ownership when claiming an alias', async () => {
     const user = await createTestUser({ administrator: true })
     const topic = await createTestTopic({
       user,
       name: `Bounded alias owner ${crypto.randomUUID()}`,
     })
     const alias = await createUnlinkedTopicAlias(`#bounded-${crypto.randomUUID()}`)
-    const postIds = await insertTestPostBatch(user.id, 1_001)
-    await insertTestPostTopicAliasSourceBatch({
-      postIds,
+    const post = await createTestPost({ user, title: `Bounded alias post ${crypto.randomUUID()}` })
+    await createTopHashtagPostSourceForTest({
+      postId: post.id,
       topicAliasId: alias.id,
-      contributorId: user.id,
+      userId: user.id,
+      authoredToken: '#bounded',
     })
 
     await claimTopicAlias(topic.id, alias.alias)
@@ -78,9 +77,8 @@ describe('topic alias publication capture', () => {
       type: 'topic_alias',
       id: alias.id,
     })
-    await expect(listTestPostPublicationImpactPostIds(work!.id)).resolves.toEqual(
-      [...postIds].toSorted(),
-    )
+    await expect(listTestPostPublicationImpactPostIds(work!.id)).resolves.toEqual([])
+    await expect(listTestPostPublicationImpactTopicIds(work!.id)).resolves.toEqual([topic.id])
   })
 
   it('captures an active source-less alias relation and retains its post', async () => {
@@ -101,7 +99,7 @@ describe('topic alias publication capture', () => {
       id: alias.id,
     })
     await expect(listTestPostPublicationImpactTopicIds(work!.id)).resolves.toEqual([topic.id])
-    await expect(listTestPostPublicationImpactPostIds(work!.id)).resolves.toEqual([post.id])
+    await expect(listTestPostPublicationImpactPostIds(work!.id)).resolves.toEqual([])
     await expect(
       listTestPostPublicationRetainedTextKeys(work!.id, 'identity_topic_alias'),
     ).resolves.toEqual([alias.alias])
@@ -209,9 +207,9 @@ describe('topic alias publication capture', () => {
       user,
       name: `Ordinary alias owner ${crypto.randomUUID()}`,
     })
-    const alias = await createUnlinkedTopicAlias(`ordinary-${crypto.randomUUID()}`)
+    const [alias] = await createTopicAliases(topic.id, `ordinary alias ${crypto.randomUUID()}`)
+    if (!alias) throw new Error('Expected ordinary alias')
     const post = await createTestPost({ user, title: `Ordinary alias post ${crypto.randomUUID()}` })
-    await linkTopicAlias(topic.id, alias.id)
     const linked = await getTestPostPublicationDirtyWorkForScope({
       type: 'topic_alias',
       id: alias.id,
