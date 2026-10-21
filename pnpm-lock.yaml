@@ -12681,6 +12681,9 @@ importers:
       '@queues/crawler':
         specifier: workspace:^
         version: link:../../queues/crawler
+      '@services/language-detection':
+        specifier: workspace:^
+        version: link:../../services/language-detection
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers

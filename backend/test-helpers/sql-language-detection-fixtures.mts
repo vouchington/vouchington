@@ -3,6 +3,7 @@ import sql from 'sql-template-strings'
 import { v7 as uuidv7 } from 'uuid'
 
 export async function insertLanguageDetectionPostForTest(params: {
+  id?: string
   createdById: string
   title: string
   markdown: string
@@ -11,13 +12,13 @@ export async function insertLanguageDetectionPostForTest(params: {
   deleted?: boolean
 }): Promise<string> {
   const { rows } = await write<{ id: string }>(sql`/* insertLanguageDetectionPostForTest */
-    INSERT INTO posts (created_via,
+    INSERT INTO posts (id, created_via,
       post_type, title, markdown, declared_language, created_by_id, broadcast, privacy, is_anonymous,
       bedrock_nova_multimodal_v1_content_sha256,
       llm_moderation_content_sha256,
       lingua_rs_input_sha256,
       deleted_at
-    ) VALUES ('system',
+    ) VALUES (COALESCE(${params.id ?? null}::uuid, uuidv7()), 'system',
       'discussion',
       ${params.title},
       ${params.markdown},
@@ -35,6 +36,7 @@ export async function insertLanguageDetectionPostForTest(params: {
 }
 
 export async function insertLanguageDetectionCommunityForTest(params: {
+  id?: string
   createdById: string
   name: string
   slug: string
@@ -43,11 +45,11 @@ export async function insertLanguageDetectionCommunityForTest(params: {
   deleted?: boolean
 }): Promise<string> {
   const { rows } = await write<{ id: string }>(sql`/* insertLanguageDetectionCommunityForTest */
-    INSERT INTO communities (created_via,
+    INSERT INTO communities (id, created_via,
       name, slug, visibility, member_roster_visibility, created_by_id, default_language,
       lingua_rs_input_sha256, deleted_at
     )
-    VALUES ('system',
+    VALUES (COALESCE(${params.id ?? null}::uuid, uuidv7()), 'system',
       ${params.name},
       ${params.slug},
       'public',
@@ -63,6 +65,7 @@ export async function insertLanguageDetectionCommunityForTest(params: {
 }
 
 export async function insertLanguageDetectionUserForTest(params: {
+  id?: string
   username: string
   markdown?: string
   inputSha256?: Buffer
@@ -71,7 +74,7 @@ export async function insertLanguageDetectionUserForTest(params: {
   const { rows } = await write<{ id: string }>(sql`/* insertLanguageDetectionUserForTest */
     INSERT INTO users (id, username, markdown, lingua_rs_input_sha256)
     VALUES (
-      COALESCE(${params.createdAt ? uuidv7({ msecs: params.createdAt.getTime() }) : null}::uuid, uuidv7()),
+      COALESCE(${params.id ?? (params.createdAt ? uuidv7({ msecs: params.createdAt.getTime() }) : null)}::uuid, uuidv7()),
       ${params.username}, ${params.markdown ?? ''}, ${params.inputSha256 ?? null}
     )
     RETURNING id
@@ -94,6 +97,7 @@ export async function updateUserMarkdownForLanguageDetectionForTest(
 }
 
 export async function insertLanguageDetectionTopicForTest(params: {
+  id?: string
   createdById: string
   name: string
   slug: string
@@ -101,11 +105,11 @@ export async function insertLanguageDetectionTopicForTest(params: {
   deleted?: boolean
 }): Promise<string> {
   const { rows } = await write<{ id: string }>(sql`/* insertLanguageDetectionTopicForTest */
-    INSERT INTO topics (created_via,
+    INSERT INTO topics (id, created_via,
       name, slug, created_by_id, topic_type, is_noindexed, should_allow_reviews,
       bedrock_nova_multimodal_v1_content_sha256, lingua_rs_input_sha256
     )
-    VALUES ('system',
+    VALUES (COALESCE(${params.id ?? null}::uuid, uuidv7()), 'system',
       ${params.name},
       ${params.slug},
       ${params.createdById},
@@ -130,6 +134,7 @@ export async function insertLanguageDetectionTopicForTest(params: {
 }
 
 export async function insertLanguageDetectionCrawlForTest(params: {
+  id?: string
   hostname: string
   url: string
   markdown: string
@@ -154,10 +159,11 @@ export async function insertLanguageDetectionCrawlForTest(params: {
   `)
   const { rows } = await write<{ id: string }>(sql`/* insertLanguageDetectionCrawlForTest */
     INSERT INTO crawls (
-      url_id, response_status_code, title, language, markdown, completed_at, embeddings_generated_at,
+      id, url_id, response_status_code, title, language, markdown, completed_at, embeddings_generated_at,
       network_error, lingua_rs_input_sha256
     )
     VALUES (
+      COALESCE(${params.id ?? null}::uuid, uuidv7()),
       ${urlResult.rows[0]!.id},
       200,
       ${params.title ?? null},
