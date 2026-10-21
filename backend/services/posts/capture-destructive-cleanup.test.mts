@@ -2,7 +2,7 @@ import {
   acknowledgePostPublicationProjectionReceipts,
   claimPostPublicationDirtyWork,
 } from '@services/post-publication'
-import { createPost, updatePost } from '@services/posts'
+import { createPost, getPostByAny, updatePost } from '@services/posts'
 import { hardDeleteRssFeedById } from '@services/rss-feeds/delete'
 import { createTopicAliases, unlinkTopicAlias } from '@services/topics/aliases'
 import {
@@ -16,8 +16,10 @@ import {
   createTestUser,
   createTestUserWithAge,
   getTestPostPublicationDirtyWorkForScope,
+  listTestPostPublicationImpactPostIds,
   hardDeleteTestPost,
   hardDeleteTestPosts,
+  insertTestPost,
   insertTestRssFeedDirect,
   insertTestStoryCategoryPublicationBatch,
   insertTestUrlDirect,
@@ -29,6 +31,56 @@ import { reconcileTestPublicationUntilSnapshotsComplete } from '@voucha/test-hel
 import { describe, expect, it, onTestFinished } from 'vitest'
 
 describe('destructive publication cleanup', () => {
+  it('captures a reply when its mid-thread parent is hard-deleted', async () => {
+    const user = await createTestUser()
+    const suffix = createRandomString(8)
+    const createdAt = Date.now()
+    const rootId = await insertTestPost({
+      title: `Hard delete root ${suffix}`,
+      slug: `hard-delete-root-${suffix}`,
+      markdown: 'Root',
+      createdById: user.id,
+      createdAt: new Date(createdAt),
+    })
+    onTestFinished(() => hardDeleteTestPost(rootId))
+    const commentId = await insertTestPost({
+      title: `Hard delete comment ${suffix}`,
+      slug: `hard-delete-comment-${suffix}`,
+      markdown: 'Comment',
+      postType: 'comment',
+      createdById: user.id,
+      rootId,
+      parentId: rootId,
+      createdAt: new Date(createdAt + 1_000),
+    })
+    const replyId = await insertTestPost({
+      title: `Hard delete reply ${suffix}`,
+      slug: `hard-delete-reply-${suffix}`,
+      markdown: 'Reply',
+      postType: 'comment',
+      createdById: user.id,
+      rootId,
+      parentId: commentId,
+      createdAt: new Date(createdAt + 2_000),
+    })
+
+    await hardDeleteTestPost(commentId)
+    await expect(getPostByAny(commentId)).resolves.toBeNull()
+    await expect(getPostByAny(replyId)).resolves.toBeNull()
+    await expect(getPostByAny(rootId)).resolves.not.toBeNull()
+
+    const work = await getTestPostPublicationDirtyWorkForScope({ type: 'post', id: commentId })
+    if (!work) throw new Error('Expected comment hard-delete publication work')
+    await expect(listTestPostPublicationImpactPostIds(work.id)).resolves.toEqual(
+      expect.arrayContaining([commentId, replyId]),
+    )
+    const claimed = await claimPostPublicationDirtyWork(work, 60)
+    if (!claimed) throw new Error('Expected comment hard-delete lease')
+    const reconciliation = await reconcileTestPublicationUntilSnapshotsComplete(claimed)
+    expect(reconciliation.missingPostIds).toEqual(expect.arrayContaining([commentId, replyId]))
+    expect(reconciliation.missingPostIds).not.toContain(rootId)
+  })
+
   it('retains subtree keys before a post with no receipt is hard-deleted', async () => {
     const user = await createTestUser()
     const topic = await createTestTopic({

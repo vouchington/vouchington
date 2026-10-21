@@ -28,30 +28,30 @@ export async function listHardDeletedPostPublicationKeys(
 ): Promise<HardDeletedPublicationKey[]> {
   const { rows } = await query<HardDeletedKeyRow>(
     `/* listHardDeletedPostPublicationKeys */
-    WITH roots AS (
-      SELECT id FROM unnest($1::uuid[]) AS input(id)
-    ), subtree AS (
-      SELECT post.id, root.id AS root_id, post.created_by_id, post.community_id, post.post_type,
-        post.created_at, post.root_post_id
-      FROM roots root
-      JOIN posts post ON post.id = root.id
+    WITH RECURSIVE roots AS (SELECT id FROM unnest($1::uuid[]) AS input(id)), parent_subtree AS (
+      SELECT post.id, root.id AS root_id
+      FROM roots root JOIN posts post ON post.id = root.id
       UNION ALL
-      SELECT post.id, root.id, post.created_by_id, post.community_id, post.post_type, post.created_at,
-        post.root_post_id
-      FROM roots root
+      SELECT child.id, parent_subtree.root_id FROM parent_subtree
+      -- no-mistakes-disable-next-line postgres-required-predicates: parent_post_id descendants span id partitions; see #3336
+      JOIN posts child ON child.parent_post_id = parent_subtree.id
+    ), subtree_ids AS (
+      SELECT root_id, id FROM parent_subtree UNION
+      SELECT root.id AS root_id, post.id FROM roots root
       -- no-mistakes-disable-next-line postgres-required-predicates: descendant rows are keyed by root_post_id across id partitions; see #3336
       JOIN posts post ON post.root_post_id = root.id
+    ), subtree AS (
+      SELECT subtree_ids.root_id, post.id, post.created_by_id, post.community_id,
+        post.post_type, post.created_at, post.root_post_id
+      FROM subtree_ids JOIN posts post ON post.id = subtree_ids.id
     ), unreceived AS (
-      SELECT subtree.* FROM subtree
-      WHERE NOT EXISTS (
-        SELECT 1 FROM post_publication_projection_receipts receipt
-        WHERE receipt.post_identity_id = subtree.id
-      )
+      -- Scalar LIMIT keeps the receipt probe correlated to each subtree post.
+      SELECT subtree.* FROM subtree WHERE (SELECT receipt.post_identity_id FROM post_publication_projection_receipts receipt
+        WHERE receipt.post_identity_id = subtree.id LIMIT 1) IS NULL
     ), publication_root AS (
       SELECT unreceived.root_id, unreceived.id AS post_id, post.community_id
       -- no-mistakes-disable-next-line postgres-required-predicates: the publication root follows root_post_id across id partitions; see #3336
-      FROM unreceived
-      JOIN posts post ON post.id = COALESCE(unreceived.root_post_id, unreceived.id)
+      FROM unreceived JOIN posts post ON post.id = COALESCE(unreceived.root_post_id, unreceived.id)
     )
     SELECT subtree.root_id, 'impact_post'::text AS kind, subtree.id AS uuid_value, NULL::text AS text_value,
       NULL::text AS post_type, NULL::text AS day

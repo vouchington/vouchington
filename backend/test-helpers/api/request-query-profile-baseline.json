@@ -123,8 +123,9 @@
     "annotation": "createTopicRevision",
     "route": null,
     "maxCount": null,
-    "reason": "Topic create and alias-link revisions record different completed writes, and a merge inserts source then destination revisions (#3336)",
-    "issue": 3336
+    "reason": "Approval records topic-create and alias-link revisions (backend/services/topics/create.mts:169 and aliases.mts:176); merge records source and destination revisions as distinct documents in one transaction",
+    "permanent": true,
+    "code": "backend/services/topics/merge-alias-revisions.mts:36"
   },
   {
     "annotation": "createTotpAuthenticator",
