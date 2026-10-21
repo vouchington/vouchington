@@ -24,6 +24,7 @@ import * as clientEntityRelations from '../../../lib/api/client/entity-relations
 import * as clientFeatureFlags from '../../../lib/api/client/feature-flags'
 import * as clientFriendRecommendations from '../../../lib/api/client/friend-recommendations'
 import * as clientHouseholds from '../../../lib/api/client/households'
+import * as clientHouseholdInvitations from '../../../lib/api/client/household-invitations'
 import * as clientImportExport from '../../../lib/api/client/import-export'
 import * as clientMemberships from '../../../lib/api/client/memberships'
 import * as clientModmail from '../../../lib/api/client/modmail'
@@ -58,6 +59,7 @@ import * as serverFeatureFlags from '../../../lib/api/server/feature-flags'
 import * as serverFeeds from '../../../lib/api/server/feeds'
 import * as serverGrowthMetrics from '../../../lib/api/server/growth-metrics'
 import * as serverHouseholds from '../../../lib/api/server/households'
+import * as serverHouseholdInvitations from '../../../lib/api/server/household-invitations'
 import * as serverModerationAnalytics from '../../../lib/api/server/moderation-analytics'
 import * as serverModmail from '../../../lib/api/server/modmail'
 import * as serverMy from '../../../lib/api/server/my'
@@ -103,6 +105,7 @@ export const WEB_FIXTURE_ENDPOINT_CONTEXT = {
     featureFlags: clientFeatureFlags,
     friendRecommendations: clientFriendRecommendations,
     households: clientHouseholds,
+    householdInvitations: clientHouseholdInvitations,
     importExport: clientImportExport,
     memberships: clientMemberships,
     modmail: clientModmail,
@@ -139,6 +142,7 @@ export const WEB_FIXTURE_ENDPOINT_CONTEXT = {
     feeds: serverFeeds,
     growthMetrics: serverGrowthMetrics,
     households: serverHouseholds,
+    householdInvitations: serverHouseholdInvitations,
     moderationAnalytics: serverModerationAnalytics,
     modmail: serverModmail,
     my: serverMy,

@@ -1,14 +1,33 @@
 import '@/test-helpers/i18n/mock-json-messages'
 import { render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  makeHouseholdInvitation,
+  makeHouseholdInvitationList,
+} from '@/test-helpers/api-responses/household-invitations'
 
-const { mockRequireCurrentUser, mockGetHouseholdMemberships, mockGetHouseholds } = vi.hoisted(
-  () => ({
-    mockRequireCurrentUser: vi.fn<VitestLooseMock>(),
-    mockGetHouseholdMemberships: vi.fn<VitestLooseMock>(),
-    mockGetHouseholds: vi.fn<VitestLooseMock>(),
-  }),
-)
+const { mockSentInvitations, mockReceivedInvitations } = vi.hoisted(() => ({
+  mockSentInvitations:
+    vi.fn<typeof import('@/lib/api/server/household-invitations').getHouseholdInvitations>(),
+  mockReceivedInvitations:
+    vi.fn<typeof import('@/lib/api/server/household-invitations').getMyHouseholdInvitations>(),
+}))
+vi.mock(import('@/lib/api/server/household-invitations'), () => ({
+  getHouseholdInvitations: mockSentInvitations,
+  getMyHouseholdInvitations: mockReceivedInvitations,
+}))
+
+const {
+  mockRequireCurrentUser,
+  mockGetHouseholdMemberships,
+  mockGetHouseholds,
+  mockGetUserProfile,
+} = vi.hoisted(() => ({
+  mockRequireCurrentUser: vi.fn<VitestLooseMock>(),
+  mockGetHouseholdMemberships: vi.fn<VitestLooseMock>(),
+  mockGetHouseholds: vi.fn<VitestLooseMock>(),
+  mockGetUserProfile: vi.fn<VitestLooseMock>(),
+}))
 
 vi.mock(import('@/lib/auth/require-current-user'), () => ({
   requireCurrentUser: mockRequireCurrentUser,
@@ -17,10 +36,11 @@ vi.mock(import('@/lib/auth/require-current-user'), () => ({
 vi.mock(import('@/lib/api/server'), () => ({
   getHouseholdMemberships: mockGetHouseholdMemberships,
   getHouseholds: mockGetHouseholds,
+  getUserProfile: mockGetUserProfile,
 }))
 
-vi.mock(import('@/components/my/household-manager'), () => ({
-  HouseholdManager: (props: object) => (
+vi.mock(import('@/components/my/household-page-content'), () => ({
+  HouseholdPageContent: (props: object) => (
     <pre data-pw='household-manager'>{JSON.stringify(props)}</pre>
   ),
 }))
@@ -44,6 +64,8 @@ describe('HouseholdPage', () => {
     vi.clearAllMocks()
     mockRequireCurrentUser.mockResolvedValue({ id: 'user-1', username: 'alice' })
     mockGetHouseholdMemberships.mockResolvedValue({ results: [], page_info: pageInfo })
+    mockSentInvitations.mockResolvedValue(makeHouseholdInvitationList([]))
+    mockReceivedInvitations.mockResolvedValue(makeHouseholdInvitationList([]))
   })
 
   it('requests owned and member-only households independently with bounded first pages', async () => {
@@ -63,6 +85,8 @@ describe('HouseholdPage', () => {
     expect(mockGetHouseholds).toHaveBeenNthCalledWith(2, { access: 'member', limit: 25 })
     expect(mockGetHouseholdMemberships).toHaveBeenCalledWith('owned-newest', { limit: 25 })
     expect(mockGetHouseholdMemberships).toHaveBeenCalledWith('shared-1', { limit: 25 })
+    expect(mockSentInvitations).toHaveBeenCalledExactlyOnceWith('owned-newest', { limit: 25 })
+    expect(mockReceivedInvitations).toHaveBeenCalledExactlyOnceWith({ limit: 25 })
     expect(managerProps()).toMatchObject({
       initialOwnedSection: { household: { id: 'owned-newest' }, isOwner: true },
       initialSharedPage: {
@@ -72,6 +96,28 @@ describe('HouseholdPage', () => {
       ownedProbeSucceeded: true,
       sharedLoadError: false,
     })
+  })
+
+  it('resolves invitation user ids to usernames and omits unresolved users', async () => {
+    const invitation = makeHouseholdInvitation()
+    mockGetHouseholds.mockResolvedValue({ results: [], page_info: pageInfo })
+    mockReceivedInvitations.mockResolvedValue(makeHouseholdInvitationList([invitation]))
+    mockGetUserProfile.mockImplementation(async (id: string) =>
+      id === invitation.invited_by_id ? { user: { id, username: 'alex' } } : null,
+    )
+    render(await HouseholdPage())
+    expect(managerProps().usernames).toEqual({ [invitation.invited_by_id]: 'alex' })
+  })
+
+  it('projects a failed incoming invitation load separately from an empty page', async () => {
+    mockGetHouseholds.mockResolvedValue({ results: [], page_info: pageInfo })
+    mockReceivedInvitations.mockRejectedValueOnce(new Error('Unavailable'))
+    render(await HouseholdPage())
+    expect(managerProps()).toMatchObject({
+      sentInvitations: null,
+      receivedInvitations: { invitations: [], loadError: true },
+    })
+    expect(mockSentInvitations).not.toHaveBeenCalled()
   })
 
   it('enables creation only after a successful empty owned probe', async () => {

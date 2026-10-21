@@ -1,4 +1,5 @@
-import { read } from '@data-stores/psql'
+import { read, write } from '@data-stores/psql'
+import type { QueryOptions } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { getEntityRelationTableNameOrThrow } from './metadata.mts'
 
@@ -39,6 +40,7 @@ export async function areUsersBlockedOrMutedEitherWay(
 export async function getUserIdsBlockedOrMutedEitherWay(
   senderId: string,
   recipientIds: string[],
+  options: QueryOptions = {},
 ): Promise<Set<string>> {
   if (recipientIds.length === 0) return new Set()
   const query = sql`/* getUserIdsBlockedOrMutedEitherWay */ SELECT user_id FROM (
@@ -53,7 +55,8 @@ export async function getUserIdsBlockedOrMutedEitherWay(
     sql` WHERE ((subject_id = ${senderId} AND object_id = ANY(${recipientIds}::uuid[])) OR (object_id = ${senderId} AND subject_id = ANY(${recipientIds}::uuid[]))) AND deleted_at IS NULL
     ) blocked_or_muted`,
   )
-  const { rows } = await read<{ user_id: string }>(query)
+  // A caller inside a writer transaction must see its own snapshot, not a lagging replica.
+  const { rows } = await (options.query ? write : read)<{ user_id: string }>(query, options)
   return new Set(rows.map(row => row.user_id))
 }
 

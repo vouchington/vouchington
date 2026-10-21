@@ -96,7 +96,7 @@ export async function addHouseholdMembership(
   assert(
     currentUser.roles?.includes('administrator') || currentUser.individual_id === individualId,
     403,
-    'Cannot add another user to a household without an invitation',
+    'Invite another user to the household before adding them as a member',
   )
   assert(individualExists, 404, 'Individual not found')
 

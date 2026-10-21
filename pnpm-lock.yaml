@@ -7141,6 +7141,12 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@services/entity-relations':
+        specifier: workspace:^
+        version: link:../entity-relations
+      '@services/notifications':
+        specifier: workspace:^
+        version: link:../notifications
       '@services/pagination':
         specifier: workspace:^
         version: link:../pagination

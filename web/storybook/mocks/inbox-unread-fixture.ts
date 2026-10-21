@@ -18,6 +18,7 @@ export function inboxUnreadFixture(): NotificationsUnreadSummaryResponseBody {
         user_warning_id: null,
         conversation_id: null,
         community_id: null,
+        household_id: null,
         copyright_notice_id: null,
         event_key: null,
         title: '@alex started following you',

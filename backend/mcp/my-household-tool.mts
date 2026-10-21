@@ -1,5 +1,5 @@
 import type { PrivateUser } from '@services/users/types'
-import type { ToolApiEndpoint } from '@services/openai-agents/tool-types'
+import type { ToolApiEndpoint, ToolOutputSchema } from '@services/openai-agents/tool-types'
 import type { MergedToolSource } from './create-merged-tool.mts'
 import { requirePrivateToolUser } from './private-user.mts'
 import { getDelegatedToolAuthority } from './delegated-authority.mts'
@@ -27,6 +27,7 @@ export function source<TArgs>(
   required: string[],
   execute: (currentUser: PrivateUser, args: TArgs) => Promise<unknown>,
   write = false,
+  outputSchema?: ToolOutputSchema,
 ): MergedToolSource<TArgs> {
   return {
     schema: {
@@ -42,7 +43,8 @@ export function source<TArgs>(
         ? { readOnlyHint: false, destructiveHint: true, idempotentHint: false }
         : { readOnlyHint: true },
       api: [api],
-      outputSchema: api.method === 'DELETE' ? successSchema({}) : routeResponseSchema(api),
+      outputSchema:
+        outputSchema ?? (api.method === 'DELETE' ? successSchema({}) : routeResponseSchema(api)),
     },
     function: currentUser => async (args, invocationContext) => {
       const user = await requirePrivateToolUser(currentUser)

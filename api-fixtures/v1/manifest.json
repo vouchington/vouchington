@@ -48,6 +48,22 @@
       "statusCodes": [204],
       "statusKnowledge": "explicit"
     },
+    "DELETE:/api/v1/households/:id/invitations/:invitationId": {
+      "bodyKind": "none",
+      "hash": "4088de9fb3560826dcfb7fea014b55c235e18ed712559ee5ae3f7bd3862942f0",
+      "mediaTypeKnowledge": "none",
+      "method": "DELETE",
+      "routeTemplate": "/api/v1/households/:id/invitations/:invitationId",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "type": "null"
+        }
+      },
+      "source": "backend/api/v1/households/household-invitations.mts",
+      "statusCodes": [204],
+      "statusKnowledge": "explicit"
+    },
     "DELETE:/api/v1/households/:id/memberships/:membershipId": {
       "bodyKind": "none",
       "hash": "4088de9fb3560826dcfb7fea014b55c235e18ed712559ee5ae3f7bd3862942f0",
@@ -28587,6 +28603,178 @@
       "source": "backend/api/v1/households/households.mts",
       "statusKnowledge": "default"
     },
+    "GET:/api/v1/households/:id/invitations": {
+      "bodyKind": "content",
+      "hash": "6f4048c3c334dfffbc65ea02cef56941f1316aaab55c67357ea5ab32b25f50bc",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "GET",
+      "routeTemplate": "/api/v1/households/:id/invitations",
+      "schema": {
+        "definitions": {
+          "PageInfo": {
+            "additionalProperties": false,
+            "properties": {
+              "end_cursor": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "has_next_page": {
+                "required": true,
+                "schema": {
+                  "type": "boolean"
+                }
+              },
+              "start_cursor": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          }
+        },
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "page_info": {
+              "required": true,
+              "schema": {
+                "name": "PageInfo",
+                "type": "ref"
+              }
+            },
+            "results": {
+              "required": true,
+              "schema": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "accepted_at": {
+                      "required": true,
+                      "schema": {
+                        "type": "union",
+                        "variants": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      }
+                    },
+                    "created_at": {
+                      "required": true,
+                      "schema": {
+                        "type": "string"
+                      }
+                    },
+                    "declined_at": {
+                      "required": true,
+                      "schema": {
+                        "type": "union",
+                        "variants": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      }
+                    },
+                    "household_id": {
+                      "required": true,
+                      "schema": {
+                        "type": "string"
+                      }
+                    },
+                    "id": {
+                      "required": true,
+                      "schema": {
+                        "type": "string"
+                      }
+                    },
+                    "invited_by_id": {
+                      "required": true,
+                      "schema": {
+                        "type": "string"
+                      }
+                    },
+                    "invited_user_id": {
+                      "required": true,
+                      "schema": {
+                        "type": "string"
+                      }
+                    },
+                    "relationship": {
+                      "required": true,
+                      "schema": {
+                        "type": "union",
+                        "variants": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      }
+                    },
+                    "revoked_at": {
+                      "required": true,
+                      "schema": {
+                        "type": "union",
+                        "variants": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      }
+                    },
+                    "updated_at": {
+                      "required": true,
+                      "schema": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/households/household-invitations.mts",
+      "statusCodes": [200],
+      "statusKnowledge": "explicit"
+    },
     "GET:/api/v1/households/:id/memberships": {
       "bodyKind": "content",
       "hash": "daade691d459e881da78fb55d4fc0b9ee9fdf8f42aeb70e38051567ae8e54f80",
@@ -33834,6 +34022,178 @@
       "source": "backend/api/v1/friend-recommendations/friend-recommendations.mts",
       "statusKnowledge": "default"
     },
+    "GET:/api/v1/my/household-invitations": {
+      "bodyKind": "content",
+      "hash": "6f4048c3c334dfffbc65ea02cef56941f1316aaab55c67357ea5ab32b25f50bc",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "GET",
+      "routeTemplate": "/api/v1/my/household-invitations",
+      "schema": {
+        "definitions": {
+          "PageInfo": {
+            "additionalProperties": false,
+            "properties": {
+              "end_cursor": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "has_next_page": {
+                "required": true,
+                "schema": {
+                  "type": "boolean"
+                }
+              },
+              "start_cursor": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          }
+        },
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "page_info": {
+              "required": true,
+              "schema": {
+                "name": "PageInfo",
+                "type": "ref"
+              }
+            },
+            "results": {
+              "required": true,
+              "schema": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "accepted_at": {
+                      "required": true,
+                      "schema": {
+                        "type": "union",
+                        "variants": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      }
+                    },
+                    "created_at": {
+                      "required": true,
+                      "schema": {
+                        "type": "string"
+                      }
+                    },
+                    "declined_at": {
+                      "required": true,
+                      "schema": {
+                        "type": "union",
+                        "variants": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      }
+                    },
+                    "household_id": {
+                      "required": true,
+                      "schema": {
+                        "type": "string"
+                      }
+                    },
+                    "id": {
+                      "required": true,
+                      "schema": {
+                        "type": "string"
+                      }
+                    },
+                    "invited_by_id": {
+                      "required": true,
+                      "schema": {
+                        "type": "string"
+                      }
+                    },
+                    "invited_user_id": {
+                      "required": true,
+                      "schema": {
+                        "type": "string"
+                      }
+                    },
+                    "relationship": {
+                      "required": true,
+                      "schema": {
+                        "type": "union",
+                        "variants": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      }
+                    },
+                    "revoked_at": {
+                      "required": true,
+                      "schema": {
+                        "type": "union",
+                        "variants": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      }
+                    },
+                    "updated_at": {
+                      "required": true,
+                      "schema": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/households/household-invitations.mts",
+      "statusCodes": [200],
+      "statusKnowledge": "explicit"
+    },
     "GET:/api/v1/my/identity": {
       "bodyKind": "content",
       "hash": "e1466a56af2bce1816c399ae489ba58684bbb23978ece77a096ed1b582cb7371",
@@ -37289,6 +37649,10 @@
                     },
                     {
                       "type": "literal",
+                      "value": "household_invitation"
+                    },
+                    {
+                      "type": "literal",
                       "value": "moderation_report"
                     },
                     {
@@ -37323,6 +37687,20 @@
                 }
               },
               "event_key": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "household_id": {
                 "required": true,
                 "schema": {
                   "type": "union",
@@ -37439,6 +37817,25 @@
                           "schema": {
                             "type": "literal",
                             "value": "community"
+                          }
+                        },
+                        "id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "__entity_type": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "household"
                           }
                         },
                         "id": {
@@ -84840,6 +85237,127 @@
       "statusCodes": [201],
       "statusKnowledge": "explicit"
     },
+    "POST:/api/v1/households/:id/invitations": {
+      "bodyKind": "content",
+      "hash": "2853b75f044ebbb272adb1355346cfafd2ebde3ea582cc5a43ca2dd023b6a016",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "POST",
+      "routeTemplate": "/api/v1/households/:id/invitations",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "invitation": {
+              "required": true,
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "accepted_at": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "created_at": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "declined_at": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "household_id": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "id": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "invited_by_id": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "invited_user_id": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "relationship": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "revoked_at": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "updated_at": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "type": "object"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/households/household-invitations.mts",
+      "statusCodes": [200, 201],
+      "statusKnowledge": "explicit"
+    },
     "POST:/api/v1/lists/:id/import": {
       "bodyKind": "content",
       "hash": "61903f7a3460db4344e72d92cd565ab42021b91dee99fd9e097d828b8a5c9d66",
@@ -86600,6 +87118,173 @@
       },
       "source": "backend/api/v1/my/email-addresses.mts",
       "statusKnowledge": "default"
+    },
+    "POST:/api/v1/my/household-invitations/:invitationId/acceptance": {
+      "bodyKind": "content",
+      "hash": "e7e5668e889039056a4720976597d604301c3d3368c470b91f78bfa95f56b7a7",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "POST",
+      "routeTemplate": "/api/v1/my/household-invitations/:invitationId/acceptance",
+      "schema": {
+        "definitions": {
+          "PageInfo": {
+            "additionalProperties": false,
+            "properties": {
+              "end_cursor": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "has_next_page": {
+                "required": true,
+                "schema": {
+                  "type": "boolean"
+                }
+              },
+              "start_cursor": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          }
+        },
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "membership": {
+              "required": true,
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "household_id": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "id": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "individual": {
+                    "required": true,
+                    "schema": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "updated_at": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        },
+                        "user_id": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        },
+                        "username": {
+                          "required": true,
+                          "schema": {
+                            "type": "union",
+                            "variants": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string"
+                              }
+                            ]
+                          }
+                        }
+                      },
+                      "type": "object"
+                    }
+                  },
+                  "relationship": {
+                    "required": true,
+                    "schema": {
+                      "type": "union",
+                      "variants": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "updated_at": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "type": "object"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/households/household-invitations.mts",
+      "statusCodes": [200],
+      "statusKnowledge": "explicit"
+    },
+    "POST:/api/v1/my/household-invitations/:invitationId/decline": {
+      "bodyKind": "none",
+      "hash": "4088de9fb3560826dcfb7fea014b55c235e18ed712559ee5ae3f7bd3862942f0",
+      "mediaTypeKnowledge": "none",
+      "method": "POST",
+      "routeTemplate": "/api/v1/my/household-invitations/:invitationId/decline",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "type": "null"
+        }
+      },
+      "source": "backend/api/v1/households/household-invitations.mts",
+      "statusCodes": [204],
+      "statusKnowledge": "explicit"
     },
     "POST:/api/v1/my/import/rss-feeds": {
       "bodyKind": "content",
@@ -93583,6 +94268,154 @@
     },
     {
       "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/households/:id/invitations",
+      "bodyFile": "responses/web.household-invitations.sent.json",
+      "consumers": ["web"],
+      "id": "web.household-invitations.sent",
+      "method": "GET",
+      "migratedFrom": ["docs/requirements/users/USER_SETTINGS.md"],
+      "path": "/api/v1/households/00000000-0000-7000-8000-000000000101/invitations",
+      "responseSchema": {
+        "hash": "e5afe008540530d27af2ae3f711f839f531147c731121c2203b59e076abc6229",
+        "key": "web.household-invitations.sent"
+      },
+      "route": {
+        "pathParams": {
+          "id": "00000000-0000-7000-8000-000000000101"
+        },
+        "routeTemplate": "/api/v1/households/:id/invitations"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/household-invitation-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/my/household-invitations",
+      "bodyFile": "responses/web.household-invitations.received.json",
+      "consumers": ["web"],
+      "id": "web.household-invitations.received",
+      "method": "GET",
+      "migratedFrom": ["docs/requirements/users/USER_SETTINGS.md"],
+      "path": "/api/v1/my/household-invitations",
+      "responseSchema": {
+        "hash": "e5afe008540530d27af2ae3f711f839f531147c731121c2203b59e076abc6229",
+        "key": "web.household-invitations.received"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/my/household-invitations"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/household-invitation-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "POST:/api/v1/households/:id/invitations",
+      "bodyFile": "responses/web.household-invitations.create.json",
+      "consumers": ["web"],
+      "id": "web.household-invitations.create",
+      "method": "POST",
+      "migratedFrom": ["docs/requirements/users/USER_SETTINGS.md"],
+      "path": "/api/v1/households/00000000-0000-7000-8000-000000000101/invitations",
+      "requestBody": {
+        "relationship": "partner",
+        "user": "household-invitee"
+      },
+      "responseSchema": {
+        "hash": "decdd88dab0c35ee510560aa3dedb720b6805810ebfd6db50d4ab160095ef517",
+        "key": "web.household-invitations.create"
+      },
+      "route": {
+        "pathParams": {
+          "id": "00000000-0000-7000-8000-000000000101"
+        },
+        "routeTemplate": "/api/v1/households/:id/invitations"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/household-invitation-cases.mts"
+      },
+      "status": 201
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "DELETE:/api/v1/households/:id/invitations/:invitationId",
+      "bodyFile": "responses/web.household-invitations.revoke.json",
+      "consumers": ["web"],
+      "id": "web.household-invitations.revoke",
+      "method": "DELETE",
+      "migratedFrom": ["docs/requirements/users/USER_SETTINGS.md"],
+      "path": "/api/v1/households/00000000-0000-7000-8000-000000000101/invitations/00000000-0000-7000-8000-000000000401",
+      "responseSchema": {
+        "hash": "bcde375ebd4cbacf651311181173836b169d5a360c6ac158c6a2cdaf49be3f61",
+        "key": "web.household-invitations.revoke"
+      },
+      "route": {
+        "pathParams": {
+          "id": "00000000-0000-7000-8000-000000000101",
+          "invitationId": "00000000-0000-7000-8000-000000000401"
+        },
+        "routeTemplate": "/api/v1/households/:id/invitations/:invitationId"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/household-invitation-cases.mts"
+      },
+      "status": 204
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "POST:/api/v1/my/household-invitations/:invitationId/acceptance",
+      "bodyFile": "responses/web.household-invitations.accept.json",
+      "consumers": ["web"],
+      "id": "web.household-invitations.accept",
+      "method": "POST",
+      "migratedFrom": ["docs/requirements/users/USER_SETTINGS.md"],
+      "path": "/api/v1/my/household-invitations/00000000-0000-7000-8000-000000000401/acceptance",
+      "requestBody": {},
+      "responseSchema": {
+        "hash": "6ad6995da8868d9763ef4b77794c926ed2fe215eb6359ea9cf0b540cc11abaaf",
+        "key": "web.household-invitations.accept"
+      },
+      "route": {
+        "pathParams": {
+          "invitationId": "00000000-0000-7000-8000-000000000401"
+        },
+        "routeTemplate": "/api/v1/my/household-invitations/:invitationId/acceptance"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/household-invitation-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "POST:/api/v1/my/household-invitations/:invitationId/decline",
+      "bodyFile": "responses/web.household-invitations.decline.json",
+      "consumers": ["web"],
+      "id": "web.household-invitations.decline",
+      "method": "POST",
+      "migratedFrom": ["docs/requirements/users/USER_SETTINGS.md"],
+      "path": "/api/v1/my/household-invitations/00000000-0000-7000-8000-000000000401/decline",
+      "requestBody": {},
+      "responseSchema": {
+        "hash": "bcde375ebd4cbacf651311181173836b169d5a360c6ac158c6a2cdaf49be3f61",
+        "key": "web.household-invitations.decline"
+      },
+      "route": {
+        "pathParams": {
+          "invitationId": "00000000-0000-7000-8000-000000000401"
+        },
+        "routeTemplate": "/api/v1/my/household-invitations/:invitationId/decline"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/household-invitation-cases.mts"
+      },
+      "status": 204
+    },
+    {
+      "auth": "fixture-user",
       "backendResponseContractKey": "GET:/api/v1/households",
       "bodyFile": "responses/native.households.owned.json",
       "consumers": ["web", "swift-core", "swift-ui", "dotnet-core"],
@@ -96955,7 +97788,7 @@
         "limit": "20"
       },
       "responseSchema": {
-        "hash": "cf930d413cfa290663c99177b9490473d3c97ac188de0599bd31ad5e680aa68e",
+        "hash": "2679b80ed6406e7170b80f3bd2ffaee5079bda66c9826982d3e04a1c333d3e73",
         "key": "swift.notifications.default"
       },
       "route": {

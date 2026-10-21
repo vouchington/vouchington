@@ -14,7 +14,7 @@
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'notification_entity_types') THEN
-    CREATE TYPE notification_entity_types AS ENUM ('post', 'rss_feed_item', 'follow', 'referral_signup', 'referral_click', 'moderation_report', 'review_dispute', 'user_warning', 'moderation_appeal', 'community_ban', 'direct_message', 'modmail', 'critical_moderation_alert', 'community_application_decision', 'community_role_change', 'community_ownership_transfer', 'community_activity_digest', 'copyright_notice');
+    CREATE TYPE notification_entity_types AS ENUM ('post', 'rss_feed_item', 'follow', 'referral_signup', 'referral_click', 'moderation_report', 'review_dispute', 'user_warning', 'moderation_appeal', 'community_ban', 'direct_message', 'modmail', 'critical_moderation_alert', 'community_application_decision', 'community_role_change', 'community_ownership_transfer', 'community_activity_digest', 'household_invitation', 'copyright_notice');
   END IF;
 
   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'notification_delivery_types') THEN
@@ -62,7 +62,12 @@ CREATE TABLE IF NOT EXISTS notifications (
   community_ban_id uuid,
   conversation_id UUID REFERENCES conversations ON DELETE CASCADE,
   community_id UUID,
+  household_id UUID REFERENCES households(id) ON DELETE CASCADE,
   event_key TEXT,
+  CONSTRAINT chk_notifications__household_invitation_shape CHECK (
+    (entity_type = 'household_invitation' AND household_id IS NOT NULL AND community_id IS NULL)
+    OR (entity_type <> 'household_invitation' AND household_id IS NULL)
+  ),
   CONSTRAINT chk_notifications__entity_columns
     CHECK (
       (
@@ -186,7 +191,21 @@ CREATE TABLE IF NOT EXISTS notifications (
         AND conversation_id IS NULL
       )
       OR (
-        post_id IS NULL
+        entity_type = 'household_invitation'
+        AND household_id IS NOT NULL
+        AND post_id IS NULL
+        AND rss_feed_item_id IS NULL
+        AND actor_user_id IS NULL
+        AND moderation_report_id IS NULL
+        AND review_dispute_id IS NULL
+        AND user_warning_id IS NULL
+        AND moderation_appeal_id IS NULL
+        AND community_ban_id IS NULL
+        AND conversation_id IS NULL
+      )
+      OR (
+        entity_type <> 'household_invitation'
+        AND post_id IS NULL
         AND rss_feed_item_id IS NULL
         AND actor_user_id IS NULL
         AND moderation_report_id IS NULL
@@ -216,7 +235,8 @@ CREATE TABLE IF NOT EXISTS notifications (
         entity_type IN (
           'community_application_decision',
           'community_role_change',
-          'community_ownership_transfer'
+          'community_ownership_transfer',
+          'household_invitation'
         )
         AND target_path IS NULL
         AND target_intent IS NULL
@@ -225,7 +245,8 @@ CREATE TABLE IF NOT EXISTS notifications (
         entity_type NOT IN (
           'community_application_decision',
           'community_role_change',
-          'community_ownership_transfer'
+          'community_ownership_transfer',
+          'household_invitation'
         )
         AND num_nonnulls(target_path, target_intent) = 1
       )
@@ -238,7 +259,8 @@ CREATE TABLE IF NOT EXISTS notifications (
         'community_application_decision',
         'community_role_change',
         'community_ownership_transfer',
-        'community_activity_digest'
+        'community_activity_digest',
+        'household_invitation'
       )
       OR (
         event_key IS NOT NULL
@@ -257,6 +279,12 @@ CREATE TABLE IF NOT EXISTS notifications (
             entity_type = 'community_activity_digest'
             AND community_id IS NULL
             AND target_intent = 'notifications_inbox'
+          )
+          OR (
+            entity_type = 'household_invitation'
+            AND household_id IS NOT NULL
+            AND community_id IS NULL
+            AND target_intent IS NULL
           )
         )
       )
@@ -301,6 +329,10 @@ WHERE actor_user_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_notifications__community_ban_id
 ON notifications (community_ban_id)
 WHERE community_ban_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_notifications__household_id
+ON notifications (household_id)
+WHERE household_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_notifications__moderation_appeal_id
@@ -464,12 +496,14 @@ COMMENT ON COLUMN notifications.title IS 'Notification title text.';
 COMMENT ON COLUMN notifications.body IS 'Notification body text.';
 COMMENT ON COLUMN notifications.actor_label IS 'Optional display label for the actor who triggered the notification.';
 COMMENT ON COLUMN notifications.target_path IS 'URL path the notification links to. Producers that navigate by path still write this column.';
-COMMENT ON COLUMN notifications.target_intent IS 'Structured application navigation intent. Community entity targets are derived from community_id instead of a stored document.';
+COMMENT ON COLUMN notifications.target_intent IS 'Structured application navigation intent. Community and household entity targets are derived from relational IDs instead of a stored document.';
+COMMENT ON COLUMN notifications.household_id IS 'Household associated with an invitation notification; deletion cascades its notifications.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_notification_target_entity(
   notification_entity_type notification_entity_types,
-  notification_community_id UUID
+  notification_community_id UUID,
+  notification_household_id UUID
 ) RETURNS JSONB
 LANGUAGE sql
 IMMUTABLE
@@ -480,12 +514,14 @@ AS $$
       'community_role_change',
       'community_ownership_transfer'
     ) THEN jsonb_build_object('__entity_type', 'community', 'id', notification_community_id)
+    WHEN notification_entity_type = 'household_invitation'
+      THEN jsonb_build_object('__entity_type', 'household', 'id', notification_household_id)
     ELSE NULL
   END
 $$;
 
-COMMENT ON FUNCTION fn_notification_target_entity(notification_entity_types, uuid) IS
-  'Derives the public community target_entity envelope from the concrete community relationship. It does not authorize access to that community.';
+COMMENT ON FUNCTION fn_notification_target_entity(notification_entity_types, uuid, uuid) IS
+  'Derives public community and household target_entity envelopes from concrete relationships. It does not authorize access.';
 COMMENT ON COLUMN notifications.event_key IS 'Stable producer-defined idempotency key, unique per recipient even after dismissal.';
 COMMENT ON COLUMN notifications.read_at IS 'When the user read this notification.';
 COMMENT ON COLUMN notifications.pushed_at IS 'When a push notification was sent for this notification.';

@@ -1,4 +1,5 @@
-import { read } from '@data-stores/psql'
+import { read, write } from '@data-stores/psql'
+import type { QueryOptions } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import type { PrivateUser, UserPrivacyAudience } from '@services/users/types'
 import { currentUserCanViewUserContent } from '@services/users/authorization'
@@ -93,9 +94,12 @@ export async function readHouseholdMemberManageAccess(
   currentUser: PrivateUser,
   householdId: string,
   individualId: string | null = null,
+  options: QueryOptions = {},
 ): Promise<{ access: HouseholdMemberManageAccess; individualExists: boolean }> {
   const isAdministrator = currentUser.roles.includes('administrator')
-  const { rows } = await read<{
+  // A caller inside a writer transaction must read its own snapshot, not a lagging replica.
+  const runQuery = options.query ? write : read
+  const { rows } = await runQuery<{
     can_view: boolean
     can_manage: boolean
     individual_exists: boolean
@@ -132,6 +136,7 @@ export async function readHouseholdMemberManageAccess(
       FROM (VALUES (TRUE)) AS singleton(singleton_value)
       LEFT JOIN households h ON h.id = ${householdId}
     `,
+    options,
   )
   const row = rows[0]
   const individualExists = row?.individual_exists ?? false

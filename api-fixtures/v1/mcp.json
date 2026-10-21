@@ -799,7 +799,7 @@
           "tool": {
             "name": "read_my_households",
             "title": "Read My Households",
-            "description": "list: List households you own or belong to. Use access to select all, owned, or member households.\nget: Read a household by household_id when you own it or belong to it.\nmemberships: List members of a household you own or belong to.\nmy_individual: Read your individual_id for adding yourself to a household.",
+            "description": "list: List households you own or belong to. Use access to select all, owned, or member households.\nget: Read a household by household_id when you own it or belong to it.\nmemberships: List members of a household you own or belong to.\nmy_individual: Read your individual_id for adding yourself to a household.\ninvitations: List pending invitations for a household you own or administer.\nmy_invitations: List household invitations addressed to you.",
             "inputSchema": {
               "type": "object",
               "oneOf": [
@@ -817,10 +817,10 @@
                           "enum": ["all", "owned", "member"]
                         },
                         "after": {
-                          "$ref": "#/$defs/S1"
+                          "$ref": "#/$defs/S2"
                         },
                         "limit": {
-                          "$ref": "#/$defs/S2"
+                          "$ref": "#/$defs/S3"
                         }
                       },
                       "required": [],
@@ -858,21 +858,7 @@
                       "enum": ["memberships"]
                     },
                     "arguments": {
-                      "type": "object",
-                      "properties": {
-                        "household_id": {
-                          "type": "string",
-                          "format": "uuid"
-                        },
-                        "after": {
-                          "$ref": "#/$defs/S1"
-                        },
-                        "limit": {
-                          "$ref": "#/$defs/S2"
-                        }
-                      },
-                      "required": ["household_id"],
-                      "additionalProperties": false
+                      "$ref": "#/$defs/S1"
                     }
                   },
                   "required": ["option", "arguments"],
@@ -893,14 +879,69 @@
                   },
                   "required": ["option", "arguments"],
                   "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["invitations"]
+                    },
+                    "arguments": {
+                      "$ref": "#/$defs/S1"
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["my_invitations"]
+                    },
+                    "arguments": {
+                      "type": "object",
+                      "properties": {
+                        "after": {
+                          "$ref": "#/$defs/S2"
+                        },
+                        "limit": {
+                          "$ref": "#/$defs/S3"
+                        }
+                      },
+                      "required": [],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
                 }
               ],
               "$defs": {
                 "S1": {
+                  "type": "object",
+                  "properties": {
+                    "household_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "after": {
+                      "type": "string",
+                      "description": "Opaque cursor from this option’s previous page."
+                    },
+                    "limit": {
+                      "type": "integer",
+                      "description": "Page size; uses the REST default and maximum."
+                    }
+                  },
+                  "required": ["household_id"],
+                  "additionalProperties": false
+                },
+                "S2": {
                   "type": "string",
                   "description": "Opaque cursor from this option’s previous page."
                 },
-                "S2": {
+                "S3": {
                   "type": "integer",
                   "description": "Page size; uses the REST default and maximum."
                 }
@@ -1011,6 +1052,67 @@
                   },
                   "required": ["individual"],
                   "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "page_info": {
+                      "$ref": "#/$defs/S1"
+                    },
+                    "results": {
+                      "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "accepted_at": {
+                            "$ref": "#/$defs/S3"
+                          },
+                          "created_at": {
+                            "type": "string"
+                          },
+                          "declined_at": {
+                            "$ref": "#/$defs/S3"
+                          },
+                          "household_id": {
+                            "type": "string"
+                          },
+                          "id": {
+                            "type": "string"
+                          },
+                          "invited_by_id": {
+                            "type": "string"
+                          },
+                          "invited_user_id": {
+                            "type": "string"
+                          },
+                          "relationship": {
+                            "$ref": "#/$defs/S3"
+                          },
+                          "revoked_at": {
+                            "$ref": "#/$defs/S3"
+                          },
+                          "updated_at": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "accepted_at",
+                          "created_at",
+                          "declined_at",
+                          "household_id",
+                          "id",
+                          "invited_by_id",
+                          "invited_user_id",
+                          "relationship",
+                          "revoked_at",
+                          "updated_at"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": ["page_info", "results"],
+                  "type": "object"
                 }
               ],
               "$defs": {
@@ -1085,7 +1187,9 @@
                 "list": "#/anyOf/0",
                 "get": "#/anyOf/1",
                 "memberships": "#/anyOf/2",
-                "my_individual": "#/anyOf/3"
+                "my_individual": "#/anyOf/3",
+                "invitations": "#/anyOf/4",
+                "my_invitations": "#/anyOf/4"
               }
             }
           },
@@ -1107,6 +1211,14 @@
             {
               "method": "GET",
               "path": "/api/v1/me/individual"
+            },
+            {
+              "method": "GET",
+              "path": "/api/v1/households/:id/invitations"
+            },
+            {
+              "method": "GET",
+              "path": "/api/v1/my/household-invitations"
             }
           ]
         },
@@ -1114,7 +1226,7 @@
           "tool": {
             "name": "manage_my_households",
             "title": "Manage My Households",
-            "description": "create: Create a household that you own.\ndelete: Delete your household by household_id. This also deletes its spending entries.\nadd_member: Add your own individual_id to a household you own. Another user requires an invitation.\nremove_member: Remove a household membership by membership_id. Only the household owner can remove members.",
+            "description": "create: Create a household that you own.\ndelete: Delete your household by household_id. This also deletes its spending entries.\nadd_member: Add your own individual_id to a household you own. Another user requires an invitation.\nremove_member: Remove a household membership by membership_id. Only the household owner can remove members.\ninvite: Invite an existing user to a household you own or administer using their user ID or username.\nrevoke_invitation: Revoke a pending invitation from a household you own or administer.\naccept_invitation: Accept a pending household invitation addressed to you.\ndecline_invitation: Decline a pending household invitation addressed to you.",
             "inputSchema": {
               "type": "object",
               "oneOf": [
@@ -1208,9 +1320,101 @@
                   },
                   "required": ["option", "arguments"],
                   "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["invite"]
+                    },
+                    "arguments": {
+                      "type": "object",
+                      "properties": {
+                        "household_id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "user": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "relationship": {
+                          "type": "string",
+                          "maxLength": 64
+                        }
+                      },
+                      "required": ["household_id", "user"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["revoke_invitation"]
+                    },
+                    "arguments": {
+                      "type": "object",
+                      "properties": {
+                        "household_id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "invitation_id": {
+                          "type": "string",
+                          "format": "uuid"
+                        }
+                      },
+                      "required": ["household_id", "invitation_id"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["accept_invitation"]
+                    },
+                    "arguments": {
+                      "$ref": "#/$defs/S1"
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["decline_invitation"]
+                    },
+                    "arguments": {
+                      "$ref": "#/$defs/S1"
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
                 }
               ],
-              "$defs": {}
+              "$defs": {
+                "S1": {
+                  "type": "object",
+                  "properties": {
+                    "invitation_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  },
+                  "required": ["invitation_id"],
+                  "additionalProperties": false
+                }
+              }
             },
             "outputSchema": {
               "type": "object",
@@ -1301,6 +1505,61 @@
                   },
                   "required": ["membership"],
                   "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "invitation": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "accepted_at": {
+                          "$ref": "#/$defs/S1"
+                        },
+                        "created_at": {
+                          "type": "string"
+                        },
+                        "declined_at": {
+                          "$ref": "#/$defs/S1"
+                        },
+                        "household_id": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "invited_by_id": {
+                          "type": "string"
+                        },
+                        "invited_user_id": {
+                          "type": "string"
+                        },
+                        "relationship": {
+                          "$ref": "#/$defs/S1"
+                        },
+                        "revoked_at": {
+                          "$ref": "#/$defs/S1"
+                        },
+                        "updated_at": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "accepted_at",
+                        "created_at",
+                        "declined_at",
+                        "household_id",
+                        "id",
+                        "invited_by_id",
+                        "invited_user_id",
+                        "relationship",
+                        "revoked_at",
+                        "updated_at"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": ["invitation"],
+                  "type": "object"
                 }
               ],
               "$defs": {
@@ -1327,7 +1586,11 @@
                 "create": "#/anyOf/0",
                 "delete": "#/anyOf/1",
                 "add_member": "#/anyOf/2",
-                "remove_member": "#/anyOf/1"
+                "remove_member": "#/anyOf/1",
+                "invite": "#/anyOf/3",
+                "revoke_invitation": "#/anyOf/1",
+                "accept_invitation": "#/anyOf/2",
+                "decline_invitation": "#/anyOf/1"
               }
             }
           },
@@ -1349,6 +1612,22 @@
             {
               "method": "DELETE",
               "path": "/api/v1/households/:id/memberships/:membershipId"
+            },
+            {
+              "method": "POST",
+              "path": "/api/v1/households/:id/invitations"
+            },
+            {
+              "method": "DELETE",
+              "path": "/api/v1/households/:id/invitations/:invitationId"
+            },
+            {
+              "method": "POST",
+              "path": "/api/v1/my/household-invitations/:invitationId/acceptance"
+            },
+            {
+              "method": "POST",
+              "path": "/api/v1/my/household-invitations/:invitationId/decline"
             }
           ]
         },
@@ -9238,6 +9517,7 @@
                           "critical_moderation_alert",
                           "direct_message",
                           "follow",
+                          "household_invitation",
                           "moderation_report",
                           "modmail",
                           "post",
@@ -9261,6 +9541,16 @@
                       },
                       "id": {
                         "type": "string"
+                      },
+                      "household_id": {
+                        "anyOf": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
                       },
                       "moderation_report_id": {
                         "anyOf": [
@@ -9338,6 +9628,19 @@
                             "type": "object"
                           },
                           {
+                            "additionalProperties": false,
+                            "properties": {
+                              "__entity_type": {
+                                "const": "household"
+                              },
+                              "id": {
+                                "type": "string"
+                              }
+                            },
+                            "required": ["__entity_type", "id"],
+                            "type": "object"
+                          },
+                          {
                             "type": "null"
                           }
                         ]
@@ -9384,6 +9687,7 @@
                       "entity_type",
                       "event_key",
                       "id",
+                      "household_id",
                       "moderation_report_id",
                       "post_id",
                       "pushed_at",

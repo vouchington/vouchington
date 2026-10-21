@@ -45,4 +45,27 @@ describe('buildNotificationPushPayload', () => {
       url: '/',
     })
   })
+
+  it('opens the household page for household invitation targets', () => {
+    const householdId = crypto.randomUUID()
+    const payload = buildNotificationPushPayload(
+      {
+        id: crypto.randomUUID(),
+        entity_type: 'household_invitation',
+        title: 'Invitation',
+        body: 'Body',
+        target_path: null,
+        target_entity: { __entity_type: 'household', id: householdId },
+        target_intent: null,
+        community_slug: null,
+      },
+      { endpoint: 'https://push.example.test/subscription', id: crypto.randomUUID() },
+    )
+
+    expect(JSON.parse(payload)).toMatchObject({
+      target_intent: null,
+      target_entity: { __entity_type: 'household', id: householdId },
+      url: '/my/household',
+    })
+  })
 })

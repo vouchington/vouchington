@@ -99,6 +99,7 @@ export interface WebFixtureClientEndpointContext {
     typeof import('@/lib/api/client/friend-recommendations'),
     'getFriendRecommendations'
   >
+  readonly householdInvitations: typeof import('@/lib/api/client/household-invitations')
   readonly households: Pick<
     typeof import('@/lib/api/client/households'),
     | 'createHousehold'

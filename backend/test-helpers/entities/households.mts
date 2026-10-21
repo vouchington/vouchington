@@ -1,4 +1,4 @@
-import { write } from '@data-stores/psql'
+import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { definePlanStatisticsRefresh, type PlanStatisticsRefresh } from '../query-plans.mts'
 
@@ -14,6 +14,21 @@ type TestHouseholdMembership = {
 }
 
 type DeletedTestHousehold = Pick<TestHousehold, 'id'>
+
+export async function countHouseholdInvitationNotificationsForTest(
+  userId: string,
+  invitationId: string,
+): Promise<number> {
+  const { rows } = await read<{ id: string }>(sql`/* countHouseholdInvitationNotificationsForTest */
+    SELECT id FROM notifications WHERE user_id = ${userId}
+      AND event_key = ${`household-invitation:${invitationId}`}`)
+  return rows.length
+}
+
+export async function unlinkTestUserIndividualForInvitationFallback(userId: string): Promise<void> {
+  await write(sql`/* unlinkTestUserIndividualForInvitationFallback */
+    UPDATE users SET individual_id = NULL WHERE id = ${userId}`)
+}
 
 export async function deleteOwnedHouseholdsForTestUser(userId: string): Promise<number> {
   const { rows } = await write<DeletedTestHousehold>(sql`/* deleteOwnedHouseholdsForTestUser */

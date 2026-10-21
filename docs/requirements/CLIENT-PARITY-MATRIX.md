@@ -112,3 +112,15 @@ as dependent client work under
 matches the list item. Native clients that decode the previous narrower create body, or that call
 the removed update route, need a dependent client change. The producer lands first. Household MCP
 tools stay out of this change.
+
+## Household invitations
+
+| Capability                                                                                | Web  | Swift                   | .NET                    |
+| ----------------------------------------------------------------------------------------- | ---- | ----------------------- | ----------------------- |
+| Invite an existing user; review, accept, decline, or revoke pending household invitations | Full | Pending client adoption | Pending client adoption |
+
+Invitations require the invitee's decision before another user's individual joins a household. Web
+provides owner and invitee actions on the household page and opens that page from invitation
+notifications. Household MCP tools share the REST authority and invitation lifecycle. Swift and
+.NET household management remains partial until these actions and notifications are adopted.
+A vouchington-clients issue is needed for native adoption. The producer lands first.

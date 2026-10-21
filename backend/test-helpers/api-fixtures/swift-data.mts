@@ -53,6 +53,7 @@ export const swiftNotification = {
   copyright_notice_id: null,
   conversation_id: null,
   community_id: null,
+  household_id: null,
   event_key: null,
   title: 'Fixture notification',
   body: 'A shared API fixture notification.',

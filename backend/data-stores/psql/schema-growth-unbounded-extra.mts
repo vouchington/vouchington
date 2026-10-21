@@ -37,6 +37,7 @@ export const EXTRA_UNBOUNDED_TABLES = [
   'classifier_prompt_versions',
   'classifiers',
   'community_invites',
+  'household_invitations',
   'community_member_vacations',
   'community_post_reviews',
   'community_restrictions',

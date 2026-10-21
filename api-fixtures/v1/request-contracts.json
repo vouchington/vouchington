@@ -11782,6 +11782,15 @@
       "required": ["email_address"],
       "type": "object"
     },
+    "AddHouseholdInvitationBody": {
+      "additionalProperties": false,
+      "properties": {
+        "relationship": { "maxLength": 64, "type": "string" },
+        "user": { "minLength": 1, "type": "string" }
+      },
+      "required": ["user"],
+      "type": "object"
+    },
     "AddHouseholdMembershipBody": {
       "additionalProperties": false,
       "properties": {
@@ -21272,6 +21281,52 @@
       "required": ["id", "updated_at", "user_id", "username"],
       "type": "object"
     },
+    "HouseholdInvitation": {
+      "additionalProperties": false,
+      "properties": {
+        "accepted_at": { "anyOf": [{ "type": "null" }, { "type": "string" }] },
+        "created_at": { "type": "string" },
+        "declined_at": { "anyOf": [{ "type": "null" }, { "type": "string" }] },
+        "household_id": { "type": "string" },
+        "id": { "type": "string" },
+        "invited_by_id": { "type": "string" },
+        "invited_user_id": { "type": "string" },
+        "relationship": { "anyOf": [{ "type": "null" }, { "type": "string" }] },
+        "revoked_at": { "anyOf": [{ "type": "null" }, { "type": "string" }] },
+        "updated_at": { "type": "string" }
+      },
+      "required": [
+        "accepted_at",
+        "created_at",
+        "declined_at",
+        "household_id",
+        "id",
+        "invited_by_id",
+        "invited_user_id",
+        "relationship",
+        "revoked_at",
+        "updated_at"
+      ],
+      "type": "object"
+    },
+    "HouseholdInvitationPage": {
+      "additionalProperties": false,
+      "properties": {
+        "page_info": { "$ref": "#/components/schemas/PageInfo" },
+        "results": {
+          "items": { "$ref": "#/components/schemas/HouseholdInvitation" },
+          "type": "array"
+        }
+      },
+      "required": ["page_info", "results"],
+      "type": "object"
+    },
+    "HouseholdInvitationResponse": {
+      "additionalProperties": false,
+      "properties": { "invitation": { "$ref": "#/components/schemas/HouseholdInvitation" } },
+      "required": ["invitation"],
+      "type": "object"
+    },
     "HouseholdMembership": {
       "additionalProperties": false,
       "properties": {
@@ -25361,6 +25416,7 @@
             "critical_moderation_alert",
             "direct_message",
             "follow",
+            "household_invitation",
             "moderation_report",
             "modmail",
             "post",
@@ -25384,6 +25440,16 @@
         },
         "id": {
           "type": "string"
+        },
+        "household_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
         },
         "moderation_report_id": {
           "anyOf": [
@@ -25461,6 +25527,19 @@
               "type": "object"
             },
             {
+              "additionalProperties": false,
+              "properties": {
+                "__entity_type": {
+                  "const": "household"
+                },
+                "id": {
+                  "type": "string"
+                }
+              },
+              "required": ["__entity_type", "id"],
+              "type": "object"
+            },
+            {
               "type": "null"
             }
           ]
@@ -25517,6 +25596,7 @@
         "entity_type",
         "event_key",
         "id",
+        "household_id",
         "moderation_report_id",
         "post_id",
         "pushed_at",
@@ -39869,6 +39949,13 @@
         "type": "object"
       }
     },
+    "DELETE:/api/v1/households/:id/invitations/:invitationId": {
+      "path": {
+        "properties": { "id": { "type": "string" }, "invitationId": { "type": "string" } },
+        "required": ["id", "invitationId"],
+        "type": "object"
+      }
+    },
     "DELETE:/api/v1/households/:id/memberships/:membershipId": {
       "path": {
         "properties": {
@@ -42696,6 +42783,20 @@
         "type": "object"
       }
     },
+    "GET:/api/v1/households/:id/invitations": {
+      "path": {
+        "properties": { "id": { "type": "string" } },
+        "required": ["id"],
+        "type": "object"
+      },
+      "query": {
+        "properties": {
+          "after": { "type": "string" },
+          "limit": { "default": 25, "maximum": 100, "minimum": 1, "type": "integer" }
+        },
+        "type": "object"
+      }
+    },
     "GET:/api/v1/households/:id/memberships": {
       "path": {
         "properties": {
@@ -43099,6 +43200,15 @@
             "minimum": 1,
             "type": "integer"
           }
+        },
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/my/household-invitations": {
+      "query": {
+        "properties": {
+          "after": { "type": "string" },
+          "limit": { "default": 25, "maximum": 100, "minimum": 1, "type": "integer" }
         },
         "type": "object"
       }
@@ -48174,6 +48284,10 @@
         "$ref": "#/components/schemas/CreateHouseholdBody"
       }
     },
+    "POST:/api/v1/households/:id/invitations": {
+      "body": { "$ref": "#/components/schemas/AddHouseholdInvitationBody" },
+      "path": { "properties": { "id": { "type": "string" } }, "required": ["id"], "type": "object" }
+    },
     "POST:/api/v1/households/:id/memberships": {
       "body": {
         "$ref": "#/components/schemas/AddHouseholdMembershipBody"
@@ -48498,6 +48612,22 @@
           }
         },
         "required": ["email"],
+        "type": "object"
+      }
+    },
+    "POST:/api/v1/my/household-invitations/:invitationId/acceptance": {
+      "body": { "additionalProperties": false, "properties": {}, "type": "object" },
+      "path": {
+        "properties": { "invitationId": { "type": "string" } },
+        "required": ["invitationId"],
+        "type": "object"
+      }
+    },
+    "POST:/api/v1/my/household-invitations/:invitationId/decline": {
+      "body": { "additionalProperties": false, "properties": {}, "type": "object" },
+      "path": {
+        "properties": { "invitationId": { "type": "string" } },
+        "required": ["invitationId"],
         "type": "object"
       }
     },
@@ -49986,6 +50116,9 @@
     "GET:/api/v1/households/:id": {
       "$ref": "#/components/schemas/HouseholdResponse"
     },
+    "GET:/api/v1/households/:id/invitations": {
+      "$ref": "#/components/schemas/HouseholdInvitationPage"
+    },
     "GET:/api/v1/households/:id/memberships": {
       "$ref": "#/components/schemas/HouseholdMembershipPage"
     },
@@ -49997,6 +50130,9 @@
     },
     "GET:/api/v1/my/cards": {
       "$ref": "#/components/schemas/IndividualCardPage"
+    },
+    "GET:/api/v1/my/household-invitations": {
+      "$ref": "#/components/schemas/HouseholdInvitationPage"
     },
     "GET:/api/v1/my/import/rss-feeds/:importId": {
       "$ref": "#/components/schemas/UserRssFeedImport"
@@ -50270,7 +50406,13 @@
     "POST:/api/v1/households": {
       "$ref": "#/components/schemas/HouseholdResponse"
     },
+    "POST:/api/v1/households/:id/invitations": {
+      "$ref": "#/components/schemas/HouseholdInvitationResponse"
+    },
     "POST:/api/v1/households/:id/memberships": {
+      "$ref": "#/components/schemas/HouseholdMembershipResponse"
+    },
+    "POST:/api/v1/my/household-invitations/:invitationId/acceptance": {
       "$ref": "#/components/schemas/HouseholdMembershipResponse"
     },
     "POST:/api/v1/my/messages": {

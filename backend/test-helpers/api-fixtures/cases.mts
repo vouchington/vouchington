@@ -10,6 +10,7 @@ import { copyrightDsaApiFixtureCases } from './copyright-dsa-cases.mts'
 import { copyrightTrustedFlaggerApiFixtureCases } from './copyright-trusted-flagger-cases.mts'
 import { webCopyrightEmailIntakeApiFixtureCases } from './web-copyright-email-intake-cases.mts'
 import { nativeHouseholdApiFixtureCases } from './native-household-cases.mts'
+import { householdInvitationApiFixtureCases } from './household-invitation-cases.mts'
 import { nativeCardApiFixtureCases } from './native-card-cases.mts'
 import { nativePointValuationApiFixtureCases } from './native-point-valuation-cases.mts'
 import { nativeSpendingCategoryApiFixtureCases } from './native-spending-category-cases.mts'
@@ -37,7 +38,6 @@ import { referralApiFixtureCases } from './referral-cases.mts'
 import { swiftApiFixtureCases } from './swift-cases.mts'
 import type { ApiFixtureCase, ResolvedApiFixtureCase } from './types.mts'
 import { webApiFixtureCases } from './web-cases.mts'
-
 function fromCaseFile(caseFile: string, cases: ApiFixtureCase[]): ResolvedApiFixtureCase[] {
   return cases.map(fixtureCase => {
     if (!fixtureCase.route)
@@ -52,7 +52,6 @@ function fromCaseFile(caseFile: string, cases: ApiFixtureCase[]): ResolvedApiFix
     }
   })
 }
-
 export const apiFixtureCases: ResolvedApiFixtureCase[] = [
   ...fromCaseFile(
     'backend/test-helpers/api-fixtures/copyright-dsa-cases.mts',
@@ -114,6 +113,10 @@ export const apiFixtureCases: ResolvedApiFixtureCase[] = [
   ...fromCaseFile(
     'backend/test-helpers/api-fixtures/native-household-cases.mts',
     nativeHouseholdApiFixtureCases,
+  ),
+  ...fromCaseFile(
+    'backend/test-helpers/api-fixtures/household-invitation-cases.mts',
+    householdInvitationApiFixtureCases,
   ),
   ...fromCaseFile(
     'backend/test-helpers/api-fixtures/native-household-pagination-cases.mts',

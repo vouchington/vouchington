@@ -76,7 +76,7 @@ describe('manage_my_households REST twins — real DB', () => {
         optionArgs('add_member', { household_id, individual_id: other.individual_id }),
         WRITE,
       ),
-    ).toContain('Cannot add another user to a household without an invitation')
+    ).toContain('Invite another user to the household before adding them as a member')
     await request.authenticateAs(other)
     await request
       .post(`/api/v1/households/${household_id}/memberships`)
