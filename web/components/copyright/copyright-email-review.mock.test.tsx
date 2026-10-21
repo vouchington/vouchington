@@ -158,7 +158,7 @@ describe('CopyrightEmailReview', () => {
         null,
       )
     })
-    expect(screen.getByRole('alert')).toHaveTextContent('API rejected the action')
+    expect(await screen.findByRole('alert')).toHaveTextContent('API rejected the action')
   })
 
   it('keeps detail-load failures visible to the moderator', async () => {
