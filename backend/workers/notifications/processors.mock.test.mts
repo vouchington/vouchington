@@ -233,7 +233,7 @@ describe('notification push-intent recovery across pages', () => {
     await expect(
       getTestNotificationPushRecoveryIntentStates({ userId: recipient.id, notificationIds }),
     ).resolves.toEqual([])
-  }, 30_000)
+  })
 })
 function recoveryDependencies(enqueues: RecordedEnqueue[], notificationIds: readonly string[]) {
   return {

@@ -1,19 +1,6 @@
 import { backgroundHandler } from '@queues/background-cpu/enqueues/define-handler'
 import { BACKGROUND_CPU_JOBS } from '@queues/background-cpu/enqueues/registry'
 import type { BackgroundCpuHandler } from '@queues/background-cpu/types'
-import { processCrawlerJob } from '@workers/crawler/processors'
-import { processCrawlDispatchJob } from '@workers/crawl-dispatch/processors'
-import { processCrawlReferralLinksJob } from '@workers/crawl-referral-links/processors'
-import { processUnfurlReferralLinksJob } from '@workers/unfurl-referral-links/processors'
-import { processBedrockNovaMultimodalV1SingleJob } from '@workers/bedrock-embeddings/processors/nova-multimodal-v1-single'
-import { processEmbeddingCreationJob } from '@workers/bedrock-embeddings-batch/processors/creation'
-import { processBedrockEmbeddingsBatchJob } from '@workers/bedrock-embeddings-batch/processors/worker-router'
-import { processSpendCapRecheckJob } from '@workers/ai-agents/processors/spend-cap-recheck'
-import {
-  processLanguageDetection,
-  processLanguageDetectionBackfill,
-} from '@workers/content-analysis/processors'
-import { processStaydownHash } from '@workers/content-analysis/processors/staydown-hash'
 import { cleanupAbandonedUploads } from '@services/images/cleanup-abandoned-uploads'
 import type { BatchJobType } from '@services/bedrock-embeddings/batch/types'
 import type {
@@ -103,39 +90,74 @@ function resolveCpuJobRoute(name: string): string | undefined {
 
 async function runCpuJob(job: Job): Promise<unknown> {
   const route = resolveCpuJobRoute(job.name)
-  if (route === 'crawler') return processCrawlerJob(job)
-  if (route === 'crawl-dispatch') return processCrawlDispatchJob(job)
-  if (route === 'crawl-referral') return processCrawlReferralLinksJob(job)
-  if (route === 'crawl-unfurl') return processUnfurlReferralLinksJob(job)
+  if (route === 'crawler') {
+    const { processCrawlerJob } = await import('@workers/crawler/processors')
+    return processCrawlerJob(job)
+  }
+  if (route === 'crawl-dispatch') {
+    const { processCrawlDispatchJob } = await import('@workers/crawl-dispatch/processors')
+    return processCrawlDispatchJob(job)
+  }
+  if (route === 'crawl-referral') {
+    const { processCrawlReferralLinksJob } =
+      await import('@workers/crawl-referral-links/processors')
+    return processCrawlReferralLinksJob(job)
+  }
+  if (route === 'crawl-unfurl') {
+    const { processUnfurlReferralLinksJob } =
+      await import('@workers/unfurl-referral-links/processors')
+    return processUnfurlReferralLinksJob(job)
+  }
   if (route === 'bedrock-single')
-    return withBedrockRateLimit(() => processBedrockNovaMultimodalV1SingleJob(job))
+    return withBedrockRateLimit(async () => {
+      const { processBedrockNovaMultimodalV1SingleJob } =
+        await import('@workers/bedrock-embeddings/processors/nova-multimodal-v1-single')
+      return processBedrockNovaMultimodalV1SingleJob(job)
+    })
   const creationType = BEDROCK_CREATION.get(job.name)
   if (route === 'bedrock-creation' && creationType)
-    return withBedrockRateLimit(() => processEmbeddingCreationJob(job, creationType))
+    return withBedrockRateLimit(async () => {
+      const { processEmbeddingCreationJob } =
+        await import('@workers/bedrock-embeddings-batch/processors/creation')
+      return processEmbeddingCreationJob(job, creationType)
+    })
   if (route === 'bedrock-batch')
-    return withBedrockRateLimit(() => processBedrockEmbeddingsBatchJob(job))
-  if (route === 'spend-cap') return processSpendCapRecheckJob(job)
+    return withBedrockRateLimit(async () => {
+      const { processBedrockEmbeddingsBatchJob } =
+        await import('@workers/bedrock-embeddings-batch/processors/worker-router')
+      return processBedrockEmbeddingsBatchJob(job)
+    })
+  if (route === 'spend-cap') {
+    const { processSpendCapRecheckJob } =
+      await import('@workers/ai-agents/processors/spend-cap-recheck')
+    return processSpendCapRecheckJob(job)
+  }
   if (route === 'upload-cleanup') return cleanupAbandonedUploads()
   if (route === 'staydown-hash') {
     const id = job.data?.id
     if (typeof id !== 'string') throw new Error('Staydown hash job requires id')
+    const { processStaydownHash } =
+      await import('@workers/content-analysis/processors/staydown-hash')
     await processStaydownHash(id)
     return { success: true }
   }
   if (route === 'language-backfill' || route === 'language-detection') {
     const localName = job.name.slice('content-analysis.'.length)
     if (LANGUAGE_BACKFILL.has(localName))
-      return processRetainedSweep(job, save =>
-        processLanguageDetectionBackfill(
+      return processRetainedSweep(job, async save => {
+        const { processLanguageDetectionBackfill } =
+          await import('@workers/content-analysis/processors')
+        return processLanguageDetectionBackfill(
           localName as LanguageDetectionBackfillJobName,
           undefined,
           job.data?.cursor as LanguageDetectionBackfillCursor | undefined,
           cursor => save({ cursor }),
-        ),
-      )
+        )
+      })
     if (LANGUAGE_DETECTION.has(localName)) {
       const id = job.data?.id
       if (typeof id !== 'string') throw new Error('Language detection job requires id')
+      const { processLanguageDetection } = await import('@workers/content-analysis/processors')
       await processLanguageDetection(localName as LanguageDetectionEntityType, id)
       return { success: true }
     }

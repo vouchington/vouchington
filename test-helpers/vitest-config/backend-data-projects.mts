@@ -63,8 +63,8 @@ const backendMocksProject = {
       './backend/test-helpers/vitest.setup.server-error-responses.mts',
       './backend/test-helpers/vitest.setup.request-query-profile.mts',
     ],
-    testTimeout: 15_000,
-    hookTimeout: 15_000,
+    testTimeout: 5_000,
+    hookTimeout: 5_000,
   },
 } satisfies TestProjectConfiguration
 

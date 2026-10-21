@@ -19,6 +19,7 @@
     "@services/copyright-notices": "workspace:^"
   },
   "devDependencies": {
+    "@voucha/config": "workspace:^",
     "@voucha/test-helpers": "workspace:^"
   }
 }

@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { SITEMAP_CONFIG } from '@voucha/config/sitemaps'
 import {
   createTestUser,
   insertTestImage,
@@ -84,9 +85,7 @@ describe('copyright form screening agent', () => {
       statutory_fields_complete: true,
       claimant_display_name: 'Claimant',
       work_description: 'A photograph',
-      hosted_use_urls: [
-        expect.stringMatching(/^https:\/\/voucha\.ai\/[a-z-]+\/form-agent-[0-9a-f-]+$/),
-      ],
+      hosted_use_urls: [intake.expectedHostedUseUrl],
       has_claimant_contact: true,
       has_claimant_email: true,
       has_electronic_signature: true,
@@ -125,15 +124,17 @@ async function createScreeningForm(
   claimant: { claimantContact?: string; claimantEmail?: string; electronicSignature?: string } = {},
 ) {
   const user = await createTestUser()
+  const slug = `form-agent-${randomUUID()}`
   const postId = await insertTestPost({
     title: `form agent ${randomUUID()}`,
-    slug: `form-agent-${randomUUID()}`,
+    slug,
+    postType: 'discussion',
     createdById: user.id,
     markdown: 'image',
   })
   const imageId = await insertTestImage(user.id)
   await insertTestPostImage({ postId, imageId })
-  return createCopyrightFormIntake({
+  const intake = await createCopyrightFormIntake({
     currentUser: user,
     requesterIdentity: `user:${user.id}`,
     idempotencyKey: randomUUID(),
@@ -157,4 +158,8 @@ async function createScreeningForm(
       ],
     },
   })
+  return {
+    ...intake,
+    expectedHostedUseUrl: new URL(`/discussion/${slug}`, SITEMAP_CONFIG.BASE_URL).href,
+  }
 }
