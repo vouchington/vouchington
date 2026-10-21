@@ -1,37 +1,23 @@
-import { readdirSync, readFileSync } from 'node:fs'
-
 import { describe, expect, it } from 'vitest'
-import { parse } from 'yaml'
+import { areaGateViolations } from './area-gate-policy.mts'
 
 import { makeCtx } from '../test-helpers/transient-retry/helpers.mts'
 import { isAreaGateJob } from './ci-aggregate-jobs.mts'
 import { decide } from './decide.mts'
 import { RULES } from './rules.mts'
 
-type Workflow = {
-  name?: string
-  jobs?: Record<string, { name?: string; steps?: Array<{ uses?: string }> }>
-}
-
-const workflowsDir = '.github/workflows'
-// Match the action path, not its pinned SHA, so a tooling bump keeps the contract intact.
-const resultGateAction = 'vouchington/vouchington-tooling/.github/actions/ci-required-result-gate@'
-
-// The classifier sees the reported check name, which is the gate job's `name:` when it has one.
-const gatedWorkflows = readdirSync(workflowsDir)
-  .filter(file => file.endsWith('.yml'))
-  .map(file => parse(readFileSync(`${workflowsDir}/${file}`, 'utf8')) as Workflow)
-  .map(({ name, jobs }) => ({
-    workflow: name ?? '',
-    gates: Object.entries(jobs ?? {})
-      .filter(([, job]) => job.steps?.some(step => step.uses?.startsWith(resultGateAction)))
-      .map(([id, job]) => job.name ?? id),
-  }))
-  .filter(({ gates }) => gates.length > 0)
-const areaGates = gatedWorkflows.flatMap(({ workflow, gates }) =>
-  gates.map(gate => ({ workflow, gate })),
+const areaGates = [
+  ['Static', 'static'],
+  ['Backend', 'backend'],
+  ['Web', 'web'],
+  ['Cloudflare Worker', 'cloudflare-worker'],
+  ['Lambdas', 'lambdas'],
+  ['Tooling', 'tooling'],
+].map(([workflow, gate]) => ({ workflow: workflow!, gate: gate! }))
+const workflows = areaGates.map(
+  ({ workflow, gate }) =>
+    `name: ${workflow}\njobs:\n  ${gate}:\n    steps:\n      - uses: vouchington/vouchington-tooling/.github/actions/ci-required-result-gate@fixture`,
 )
-
 const backendJob = 'test-backend-unit / backend-tests (1)'
 const shutdownLog = [
   'pnpm exec ./ci/with-node-test-options vitest run --project backend-data-stores',
@@ -40,9 +26,25 @@ const shutdownLog = [
 ].join('\n')
 
 describe('area gate classification', () => {
-  it('derives exactly one required gate from each of the six area workflows', () => {
-    expect(gatedWorkflows).toHaveLength(6)
-    expect(gatedWorkflows.filter(({ gates }) => gates.length !== 1)).toEqual([])
+  it('accepts the complete finite area inventory', () => {
+    expect(areaGateViolations(workflows)).toEqual([])
+  })
+  it('rejects missing, duplicate and mismatched required gates', () => {
+    expect(areaGateViolations(workflows.slice(1))).toContain(
+      'Expected six area workflows with required gates',
+    )
+    expect(
+      areaGateViolations([
+        ...workflows.slice(1),
+        workflows[0]!.replace('name: Static', 'name: Wrong'),
+      ]),
+    ).toContain('Wrong: unrecognized required gate static')
+    expect(
+      areaGateViolations([
+        `${workflows[0]!}\n  extra:\n    steps:\n      - uses: vouchington/vouchington-tooling/.github/actions/ci-required-result-gate@fixture`,
+        ...workflows.slice(1),
+      ]),
+    ).toContain('Static: expected exactly one required gate')
   })
 
   it.each(areaGates)('recognizes only the $workflow workflow gate', ({ workflow, gate }) => {
