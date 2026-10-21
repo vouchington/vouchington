@@ -79,6 +79,16 @@ describe('topic remote checks', () => {
     }
   })
 
+  it('accepts omitted inactive results but still rejects a missing active result', () => {
+    const emptyDecision = persistedFor([], { scope: globalScope })
+    expect(() =>
+      assertPersistedDecisionMatchesRun(pinned, emptyDecision, new Set([topicId])),
+    ).not.toThrow()
+    expect(() => assertPersistedDecisionMatchesRun(pinned, emptyDecision, new Set())).toThrow(
+      'exact reserved candidates',
+    )
+  })
+
   it('judges a captured plan by the topics its receipt captured', () => {
     const captured = leaseFor(topicPlan([], true), [topicId])
     expect(hasNoCapturedCandidates(captured)).toBe(false)

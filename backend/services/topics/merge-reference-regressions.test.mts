@@ -1,3 +1,4 @@
+import { rethrowTopicMergeError } from './merge-preflight.mts'
 import { createClassifierFixture } from '@voucha/test-helpers/data-stores/psql/classifiers'
 import {
   getTopicMergeClassifierConfiguration,
@@ -26,6 +27,22 @@ async function createFullTestTopic(options: Parameters<typeof createTestTopic>[0
 }
 
 describe('topic merge reference regressions', () => {
+  it('maps a restored-feed unique conflict to a stable 409 and preserves other failures', () => {
+    const conflict = Object.assign(new Error('restored feed collision'), {
+      code: '23505',
+      constraint: 'idx_rss_feeds__topic_id__unique',
+    })
+    expect(() => rethrowTopicMergeError(conflict)).toThrow(
+      expect.objectContaining({ status: 409, code: 'topic_merge_feed_conflict', cause: conflict }),
+    )
+    const other = Object.assign(new Error('different constraint'), {
+      code: '23505',
+      constraint: 'other_unique',
+    })
+    expect(() => rethrowTopicMergeError(other)).toThrow(other)
+    expect(() => rethrowTopicMergeError(new Error('preflight failed'))).toThrow('preflight failed')
+  })
+
   it('merges a source with a logo while retaining its immutable image placement history', async () => {
     const admin = await createTestUser({ administrator: true })
     const source = await createFullTestTopic({ user: admin })
