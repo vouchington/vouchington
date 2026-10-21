@@ -14614,6 +14614,9 @@ importers:
       '@vouchington/localization':
         specifier: ^0.2.1
         version: 0.2.1(react@19.3.1)
+      '@vouchington/script-loader':
+        specifier: ^0.1.0
+        version: 0.1.0(react@19.3.1)
       '@vouchington/utils':
         specifier: ^0.7.5
         version: 0.7.5
@@ -19771,6 +19774,12 @@ packages:
   '@vouchington/rss-parser@0.1.0':
     resolution: {integrity: sha512-RwNRYzH880mVly43ZUKKQspV766UTTXiT58JA/Ja8LDJkm88VG2n66h8aILyzO1ExUwS6kJN3eLHKvIhaHehmg==}
     engines: {node: '>=24.0.0'}
+
+  '@vouchington/script-loader@0.1.0':
+    resolution: {integrity: sha512-ZUm6O2XlF7yCgV4gOYFznU0ZAlxF0ugdlu2xGp+2zzKoQ8qJjkZxGZLomHni+1ltWHav3SfSPMi167Grmk8aCg==}
+    engines: {node: '>=24.0.0'}
+    peerDependencies:
+      react: ^19.0.0
 
   '@vouchington/session-jwt@0.0.2':
     resolution: {integrity: sha512-YWvIqV50Mt1T1Ytkr8v+imuw2Qm1Ssu7JD9+If0FJ/nvORUggT7oOO+esWQynujVx7ss8+PKz+u+XvYcOKMd6w==}
@@ -28720,6 +28729,10 @@ snapshots:
   '@vouchington/rss-parser@0.1.0':
     dependencies:
       feedsmith: 3.0.1
+
+  '@vouchington/script-loader@0.1.0(react@19.3.1)':
+    dependencies:
+      react: 19.3.1
 
   '@vouchington/session-jwt@0.0.2':
     dependencies:

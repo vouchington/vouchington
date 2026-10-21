@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useSyncExternalStore } from 'react'
-import { useLoadScript } from '@/hooks/use-load-script'
+import { useLoadScript } from '@vouchington/script-loader'
 import { hasAnalyticsConsent, subscribeToCookieConsent } from '@/lib/privacy/cookie-consent'
 import { getValidGtmId } from './gtm-id'
 import { GTM_ORIGIN } from './gtm-origin'

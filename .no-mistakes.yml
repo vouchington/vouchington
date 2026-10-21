@@ -2755,6 +2755,8 @@ rules:
           reason: First-party RSS, Atom, RDF, and JSON Feed parser published by the repo author.
         - name: '@vouchington/robots'
           reason: First-party robots.txt parsing and evaluation primitives published by the repo author.
+        - name: '@vouchington/script-loader'
+          reason: First-party React script-loading and Turnstile hooks published by the repo author.
         - name: '@vouchington/session-jwt'
           reason: First-party portable JWT primitive library published by the repo author.
         - name: '@vouchington/typed-entities'

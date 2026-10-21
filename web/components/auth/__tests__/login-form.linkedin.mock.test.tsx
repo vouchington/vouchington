@@ -36,7 +36,7 @@ vi.mock(
       useFacebookSDK: () => ({ isAvailable: false }),
     }) as unknown as typeof import('@/hooks/use-facebook-sdk'),
 )
-vi.mock(import('@/hooks/use-turnstile'), () => ({
+vi.mock(import('@vouchington/script-loader/turnstile'), () => ({
   useTurnstile: () => ({ ref: () => {}, reset: vi.fn<VitestLooseMock>(), isError: false }),
 }))
 vi.mock(

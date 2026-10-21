@@ -2,10 +2,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { TURNSTILE_ALWAYS_APPROVE_TOKEN } from '@/hooks/use-turnstile-always-approve'
 
-const useLoadScriptMock = vi.hoisted(() =>
-  vi.fn<VitestLooseMock>(() => ({ isLoaded: true, isError: false })),
-)
-vi.mock(import('@/hooks/use-load-script'), () => ({ useLoadScript: useLoadScriptMock }))
+vi.mock(import('@vouchington/script-loader/turnstile'), () => ({
+  useTurnstile: () => ({ ref: () => {}, reset: () => {}, isError: false }),
+}))
 
 const fetchCaptchaConfigMock = vi.hoisted(() =>
   vi.fn<VitestLooseMock>(() => Promise.resolve({ always_approve: false })),
@@ -19,7 +18,6 @@ import { useLoginTurnstile } from '@/hooks/use-login-turnstile'
 describe('useLoginTurnstile', () => {
   beforeEach(() => {
     fetchCaptchaConfigMock.mockResolvedValue({ always_approve: false })
-    useLoadScriptMock.mockReturnValue({ isLoaded: true, isError: false })
   })
 
   afterEach(() => {

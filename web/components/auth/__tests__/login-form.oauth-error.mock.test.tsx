@@ -84,7 +84,7 @@ vi.mock(import('../oauth-login-button'), () => ({
   ),
 }))
 
-vi.mock(import('@/hooks/use-turnstile'), () => ({
+vi.mock(import('@vouchington/script-loader/turnstile'), () => ({
   useTurnstile: () => ({ ref: () => {}, reset: vi.fn<VitestLooseMock>(), isError: false }),
 }))
 

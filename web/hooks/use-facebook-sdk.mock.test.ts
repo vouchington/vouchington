@@ -6,7 +6,7 @@ import {
   setRuntimePublicConfigForTest,
 } from '@/test-helpers/runtime-public-config'
 
-vi.mock(import('./use-load-script'), () => ({
+vi.mock(import('@vouchington/script-loader'), () => ({
   useLoadScript: () => ({ isLoaded: true, isError: false }),
 }))
 

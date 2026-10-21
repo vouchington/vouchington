@@ -21,7 +21,7 @@ function callbackUrl(path: string): string {
   return `${window.location.origin}${path}`
 }
 
-vi.mock(import('../use-load-script'), () => ({
+vi.mock(import('@vouchington/script-loader'), () => ({
   useLoadScript: useLoadScriptMock,
 }))
 
