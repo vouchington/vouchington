@@ -3,12 +3,12 @@
 import { postLogout } from '@/lib/api/client'
 import { admissionIdempotency } from '@/lib/api/client/admission-idempotency'
 import { clearPushBinding } from '@/lib/push-service-worker'
-import {
-  PUSH_OWNERSHIP_ACTIVATION_TIMEOUT_MS,
-  waitForActiveServiceWorker,
-} from '@/lib/service-worker-activation'
+import { waitForActiveServiceWorker } from '@vouchington/utils/service-worker-activation'
 import { withWebPushOwnershipLock } from '@/lib/push-ownership-lock'
-import { getPushManager } from '@/components/notifications/push-utils'
+import {
+  getPushManager,
+  PUSH_OWNERSHIP_ACTIVATION_TIMEOUT_MS,
+} from '@/components/notifications/push-utils'
 
 export async function logout(
   reloadPage: () => void = () => window.location.reload(),

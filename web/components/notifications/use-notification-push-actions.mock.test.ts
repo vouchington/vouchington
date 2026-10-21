@@ -41,8 +41,7 @@ vi.mock(import('@/lib/push-service-worker'), () => ({
   clearPushBinding: clearBindingMock,
 }))
 
-vi.mock(import('@/lib/service-worker-activation'), () => ({
-  PUSH_OWNERSHIP_ACTIVATION_TIMEOUT_MS: 5000 as const,
+vi.mock(import('@vouchington/utils/service-worker-activation'), () => ({
   waitForActiveServiceWorker: waitForActiveServiceWorkerMock,
 }))
 

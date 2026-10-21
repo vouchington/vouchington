@@ -22,7 +22,7 @@
   "scripts": {},
   "dependencies": {
     "@vouchington/session-jwt": "^0.0.2",
-    "@vouchington/utils": "^0.7.4",
+    "@vouchington/utils": "^0.7.5",
     "jose": "^6.2.12",
     "uuid": "^14.0.3"
   }

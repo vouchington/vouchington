@@ -1,14 +1,11 @@
 import { createMyWebPushSubscription, deleteMyWebPushSubscription } from '@/lib/api/client/my'
 import * as Sentry from '@sentry/nextjs'
 import { bindPushBinding, clearPushBinding } from '@/lib/push-service-worker'
-import {
-  PUSH_OWNERSHIP_ACTIVATION_TIMEOUT_MS,
-  waitForActiveServiceWorker,
-} from '@/lib/service-worker-activation'
+import { waitForActiveServiceWorker } from '@vouchington/utils/service-worker-activation'
 import { bootstrapAuthenticatedPushBinding } from '@/lib/push-bootstrap'
 import { withWebPushOwnershipLock } from '@/lib/push-ownership-lock'
 import { base64UrlToUint8Array } from './utils'
-import { getPushManager } from './push-utils'
+import { getPushManager, PUSH_OWNERSHIP_ACTIVATION_TIMEOUT_MS } from './push-utils'
 import type { WebPushSubscription } from '@/types/api-responses'
 
 type NotificationPushSubscription = Pick<WebPushSubscription, 'id' | 'endpoint'>

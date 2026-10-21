@@ -77,8 +77,8 @@ importers:
         specifier: ^0.0.16
         version: 0.0.16
       '@vouchington/utils':
-        specifier: ^0.7.4
-        version: 0.7.4
+        specifier: ^0.7.5
+        version: 0.7.5
       '@vouchington/worker-runtime':
         specifier: ^0.1.3
         version: 0.1.3(glide-mq@0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
@@ -1318,8 +1318,8 @@ importers:
         specifier: ^0.2.0
         version: 0.2.0(@jongleberry/api-server@3.0.1)(valkyries@0.10.0)
       '@vouchington/utils':
-        specifier: ^0.7.4
-        version: 0.7.4
+        specifier: ^0.7.5
+        version: 0.7.5
       glide-mq:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -1464,8 +1464,8 @@ importers:
         specifier: ^0.0.16
         version: 0.0.16
       '@vouchington/utils':
-        specifier: ^0.7.4
-        version: 0.7.4
+        specifier: ^0.7.5
+        version: 0.7.5
       pg:
         specifier: ^8.23.1
         version: 8.23.1
@@ -2388,8 +2388,8 @@ importers:
   backend/modules/http-signatures:
     dependencies:
       '@vouchington/utils':
-        specifier: ^0.7.4
-        version: 0.7.4
+        specifier: ^0.7.5
+        version: 0.7.5
 
   backend/modules/markdown-extraction:
     dependencies:
@@ -2540,8 +2540,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/utils':
-        specifier: ^0.7.4
-        version: 0.7.4
+        specifier: ^0.7.5
+        version: 0.7.5
 
   backend/modules/rss-unreliable-status-codes:
     dependencies:
@@ -2565,8 +2565,8 @@ importers:
   backend/modules/scopes:
     dependencies:
       '@vouchington/utils':
-        specifier: ^0.7.4
-        version: 0.7.4
+        specifier: ^0.7.5
+        version: 0.7.5
 
   backend/modules/search-utils:
     dependencies:
@@ -2588,8 +2588,8 @@ importers:
         specifier: workspace:^
         version: link:../../config
       '@vouchington/utils':
-        specifier: ^0.7.4
-        version: 0.7.4
+        specifier: ^0.7.5
+        version: 0.7.5
       stripe:
         specifier: ^23.0.0
         version: 23.0.0(@types/node@26.6.5)
@@ -2616,8 +2616,8 @@ importers:
   backend/modules/token-secrets:
     dependencies:
       '@vouchington/utils':
-        specifier: ^0.7.4
-        version: 0.7.4
+        specifier: ^0.7.5
+        version: 0.7.5
 
   backend/modules/utils:
     dependencies:
@@ -2646,8 +2646,8 @@ importers:
         specifier: ^0.0.0
         version: 0.0.0
       '@vouchington/utils':
-        specifier: ^0.7.4
-        version: 0.7.4
+        specifier: ^0.7.5
+        version: 0.7.5
       '@vouchington/uuid-v7':
         specifier: ^0.0.0
         version: 0.0.0
@@ -6640,8 +6640,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/utils':
-        specifier: ^0.7.4
-        version: 0.7.4
+        specifier: ^0.7.5
+        version: 0.7.5
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -7388,8 +7388,8 @@ importers:
         specifier: workspace:^
         version: link:../../../ts-shared/utils
       '@vouchington/utils':
-        specifier: ^0.7.4
-        version: 0.7.4
+        specifier: ^0.7.5
+        version: 0.7.5
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -7586,8 +7586,8 @@ importers:
         specifier: ^0.2.0
         version: 0.2.0
       '@vouchington/utils':
-        specifier: ^0.7.4
-        version: 0.7.4
+        specifier: ^0.7.5
+        version: 0.7.5
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -7982,8 +7982,8 @@ importers:
         specifier: workspace:^
         version: link:../../../ts-shared/utils
       '@vouchington/utils':
-        specifier: ^0.7.4
-        version: 0.7.4
+        specifier: ^0.7.5
+        version: 0.7.5
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -8502,8 +8502,8 @@ importers:
         specifier: workspace:^
         version: link:../../config
       '@vouchington/utils':
-        specifier: ^0.7.4
-        version: 0.7.4
+        specifier: ^0.7.5
+        version: 0.7.5
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -9969,8 +9969,8 @@ importers:
         specifier: ^0.0.2
         version: 0.0.2
       '@vouchington/utils':
-        specifier: ^0.7.4
-        version: 0.7.4
+        specifier: ^0.7.5
+        version: 0.7.5
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -14144,8 +14144,8 @@ importers:
         specifier: ^0.2.0
         version: 0.2.0(@jongleberry/api-server@3.0.1)(valkyries@0.8.2)
       '@vouchington/utils':
-        specifier: ^0.7.4
-        version: 0.7.4
+        specifier: ^0.7.5
+        version: 0.7.5
       isbot:
         specifier: ^5.2.2
         version: 5.2.2
@@ -14242,8 +14242,8 @@ importers:
         specifier: ^0.2.0
         version: 0.2.0
       '@vouchington/utils':
-        specifier: ^0.7.4
-        version: 0.7.4
+        specifier: ^0.7.5
+        version: 0.7.5
       satori:
         specifier: ^0.44.3
         version: 0.44.3
@@ -14350,8 +14350,8 @@ importers:
   ts-shared/cache:
     dependencies:
       '@vouchington/utils':
-        specifier: ^0.7.4
-        version: 0.7.4
+        specifier: ^0.7.5
+        version: 0.7.5
 
   ts-shared/data-points:
     dependencies:
@@ -14362,40 +14362,40 @@ importers:
   ts-shared/deploy-environment:
     dependencies:
       '@vouchington/utils':
-        specifier: ^0.7.4
-        version: 0.7.4
+        specifier: ^0.7.5
+        version: 0.7.5
 
   ts-shared/env-contract:
     dependencies:
       '@vouchington/utils':
-        specifier: ^0.7.4
-        version: 0.7.4
+        specifier: ^0.7.5
+        version: 0.7.5
 
   ts-shared/feature-flags:
     dependencies:
       '@vouchington/utils':
-        specifier: ^0.7.4
-        version: 0.7.4
+        specifier: ^0.7.5
+        version: 0.7.5
 
   ts-shared/feed-capabilities: {}
 
   ts-shared/languages:
     dependencies:
       '@vouchington/utils':
-        specifier: ^0.7.4
-        version: 0.7.4
+        specifier: ^0.7.5
+        version: 0.7.5
 
   ts-shared/money:
     dependencies:
       '@vouchington/utils':
-        specifier: ^0.7.4
-        version: 0.7.4
+        specifier: ^0.7.5
+        version: 0.7.5
 
   ts-shared/request-client-info:
     dependencies:
       '@vouchington/utils':
-        specifier: ^0.7.4
-        version: 0.7.4
+        specifier: ^0.7.5
+        version: 0.7.5
 
   ts-shared/route-classification:
     dependencies:
@@ -14411,8 +14411,8 @@ importers:
         specifier: ^0.0.2
         version: 0.0.2
       '@vouchington/utils':
-        specifier: ^0.7.4
-        version: 0.7.4
+        specifier: ^0.7.5
+        version: 0.7.5
       jose:
         specifier: ^6.2.12
         version: 6.2.12
@@ -14429,8 +14429,8 @@ importers:
         specifier: ^0.2.1
         version: 0.2.1(react@19.3.1)
       '@vouchington/utils':
-        specifier: ^0.7.4
-        version: 0.7.4
+        specifier: ^0.7.5
+        version: 0.7.5
       fast-xml-parser:
         specifier: ^5.11.2
         version: 5.11.2
@@ -14438,8 +14438,8 @@ importers:
   ts-shared/url-signing:
     dependencies:
       '@vouchington/utils':
-        specifier: ^0.7.4
-        version: 0.7.4
+        specifier: ^0.7.5
+        version: 0.7.5
 
   ts-shared/user-profile-collections:
     dependencies:
@@ -14459,14 +14459,14 @@ importers:
         specifier: ^0.0.0
         version: 0.0.0
       '@vouchington/utils':
-        specifier: ^0.7.4
-        version: 0.7.4
+        specifier: ^0.7.5
+        version: 0.7.5
 
   ts-shared/utm:
     dependencies:
       '@vouchington/utils':
-        specifier: ^0.7.4
-        version: 0.7.4
+        specifier: ^0.7.5
+        version: 0.7.5
 
   web:
     dependencies:
@@ -14582,8 +14582,8 @@ importers:
         specifier: ^0.2.1
         version: 0.2.1(react@19.3.1)
       '@vouchington/utils':
-        specifier: ^0.7.4
-        version: 0.7.4
+        specifier: ^0.7.5
+        version: 0.7.5
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -19711,6 +19711,10 @@ packages:
 
   '@vouchington/utils@0.7.4':
     resolution: {integrity: sha512-EANChQVGZlLE9CPTSNVT8y0yIC0lnH1WnT3w/R+MzEGD2bI7cA+8hQZtZMXnX+9lyQuKoUH/ce3JyDN3vHvp3A==}
+    engines: {node: '>=24.0.0'}
+
+  '@vouchington/utils@0.7.5':
+    resolution: {integrity: sha512-yvSXtmsPSJuTZYQbdiYqWmS0ztUxt3I3DOV2GRu88M4aTQw3iFsUuwfjAltiMMnLgYhZLFj233OticjRTrwl5Q==}
     engines: {node: '>=24.0.0'}
 
   '@vouchington/uuid-v7@0.0.0':
@@ -28498,7 +28502,7 @@ snapshots:
 
   '@vouchington/edge@0.2.0(@cloudflare/workers-types@5.20261018.1)':
     dependencies:
-      '@vouchington/utils': 0.7.4
+      '@vouchington/utils': 0.7.5
     optionalDependencies:
       '@cloudflare/workers-types': 5.20261018.1
 
@@ -28552,7 +28556,7 @@ snapshots:
 
   '@vouchington/oauth-server@0.2.0':
     dependencies:
-      '@vouchington/utils': 0.7.4
+      '@vouchington/utils': 0.7.5
 
   '@vouchington/pagination@0.0.3':
     dependencies:
@@ -28613,6 +28617,8 @@ snapshots:
       '@vouchington/utils': 0.7.4
 
   '@vouchington/utils@0.7.4': {}
+
+  '@vouchington/utils@0.7.5': {}
 
   '@vouchington/uuid-v7@0.0.0':
     dependencies:

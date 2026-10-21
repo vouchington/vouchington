@@ -4,7 +4,7 @@ import { admissionIdempotency } from '@/lib/api/client/admission-idempotency'
 import { MemoryLockManager } from '@/lib/api/client/admission-idempotency-fixtures'
 import { withWebPushOwnershipLock } from '@/lib/push-ownership-lock'
 import { clearPushBinding } from '@/lib/push-service-worker'
-import { waitForActiveServiceWorker } from '@/lib/service-worker-activation'
+import { waitForActiveServiceWorker } from '@vouchington/utils/service-worker-activation'
 import { logout } from './logout'
 
 const mockAdmissionDrain = vi.spyOn(admissionIdempotency, 'drain').mockResolvedValue(true)
@@ -19,8 +19,7 @@ vi.mock(import('@/lib/push-service-worker'), () => ({
   clearPushBinding: vi.fn<VitestLooseMock>(),
 }))
 
-vi.mock(import('@/lib/service-worker-activation'), () => ({
-  PUSH_OWNERSHIP_ACTIVATION_TIMEOUT_MS: 5000 as const,
+vi.mock(import('@vouchington/utils/service-worker-activation'), () => ({
   waitForActiveServiceWorker: vi.fn<VitestLooseMock>(),
 }))
 

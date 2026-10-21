@@ -65,7 +65,7 @@
     "@ts-shared/utils": "workspace:^",
     "@voucha/types": "workspace:^",
     "@vouchington/localization": "^0.2.1",
-    "@vouchington/utils": "^0.7.4",
+    "@vouchington/utils": "^0.7.5",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
