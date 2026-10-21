@@ -10,7 +10,7 @@ import {
 import type { Topic } from './types.mts'
 import { recordTopicAliasPublicationChanges } from './publication-change.mts'
 import { recordTopicMergePublicationChanges } from '@services/post-publication'
-import { lockTopicRssFeedAttachmentLifecycle } from '@services/post-publication/lock'
+import { lockTopicRssFeedAttachmentLifecycles } from '@services/post-publication/lock'
 import { lockTopicMergeAliasPublicationScopes } from './alias-publication-locks.mts'
 import { prepublishImageSurfaceDenials } from '@services/media-delivery-safety'
 import { finalizeTopicAliasMerge } from './merge-aliases-finalize.mts'
@@ -34,12 +34,7 @@ export async function mergeTopicAliases(
     sourceTopic.id,
     sourceTopic.slug,
   )
-  for (const topicId of [sourceTopic.id, destinationTopic.id].toSorted()) {
-    // oxlint-disable no-await-in-loop -- topic attachment scopes have one global id order.
-    // no-mistakes-disable-next-line query-reached-per-item: exactly two sorted topic attachment locks preserve the global publication lock order.
-    await lockTopicRssFeedAttachmentLifecycle(query, topicId)
-    // oxlint-enable no-await-in-loop
-  }
+  await lockTopicRssFeedAttachmentLifecycles(query, [sourceTopic.id, destinationTopic.id])
   // ast-grep-ignore: no-three-sequential-awaits -- reject conflicts before publication writes; capture and external denials precede topic row locks.
   await assertTopicMergeReferenceCompatibility(query, sourceTopic.id, destinationTopic.id)
   await recordTopicMergePublicationChanges(

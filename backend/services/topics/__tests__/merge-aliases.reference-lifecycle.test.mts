@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { randomUUID } from 'node:crypto'
 import { createTestTopic, createTestUser } from '@voucha/test-helpers'
 import {
   getTopicReferenceGuardCoverage,
@@ -28,6 +29,18 @@ describe('topic merge reference lifecycle', () => {
         TOPIC_MERGE_REFERENCE_GROUPS[key] !== 'history' && key !== 'topics.merged_into_topic_id'
       expect({ key, guarded: row.guarded }).toEqual({ key, guarded: shouldGuard })
     }
+  })
+
+  it('preserves the canonical foreign key error for missing topics', async () => {
+    const user = await createTestUser()
+    await expect(
+      insertTopicReferenceGuardFollow(
+        `00000000-0000-7000-8000-${randomUUID().slice(-12)}`,
+        user.id,
+      ),
+    ).rejects.toMatchObject({
+      code: '23503',
+    })
   })
 
   it('rejects a contending new reference instead of waiting behind publication locks', async () => {

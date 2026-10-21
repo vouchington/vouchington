@@ -24,10 +24,11 @@ BEGIN
         MESSAGE = 'Topic references are changing; retry the request',
         DETAIL = json_build_object('code', 'topic_reference_busy', 'topic_id', referenced_topic_id)::TEXT;
     END IF;
+    -- Missing identities remain the foreign key constraint's responsibility.
     -- A separate volatile SPI query observes the state after acquiring the lifecycle fence.
-    IF NOT EXISTS (
+    IF EXISTS (
       SELECT 1 FROM topics WHERE id = referenced_topic_id
-        AND deleted_at IS NULL AND merged_into_topic_id IS NULL
+        AND (deleted_at IS NOT NULL OR merged_into_topic_id IS NOT NULL)
     ) THEN
       RAISE EXCEPTION USING ERRCODE = 'V0409',
         MESSAGE = 'Topic reference must identify an active topic',

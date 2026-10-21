@@ -1,9 +1,9 @@
 import { beforeAll, describe, expect, it } from 'vitest'
+import { mergeReferencedTopicsForTest } from '@voucha/test-helpers/merge-topic-lifecycle'
 import {
   createTestUserDirect,
   createTestUrlWithHostname,
   insertTestUserReferralProgramLink,
-  mergeTopicForTest,
   softDeleteTopic,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
@@ -205,7 +205,7 @@ describe('get', () => {
       expect(ids).not.toContain(childId)
     })
 
-    it('excludes links for merged and soft-deleted referral programs', async () => {
+    it('repoints merged program links to the destination and excludes deleted programs', async () => {
       const owner = await createTestUserDirect()
       const suffix = Math.random().toString(36).slice(2, 12)
       const activeProgram = await createReferralProgramFixture({
@@ -226,7 +226,7 @@ describe('get', () => {
         referral_program_id: activeProgram.referralProgramId,
         url: activeUrl,
       })
-      await createUserReferralLink(owner, WEB_PROVENANCE, {
+      const mergedLink = await createUserReferralLink(owner, WEB_PROVENANCE, {
         user_id: owner.id,
         referral_program_id: mergedProgram.referralProgramId,
         url: `https://${mergedProgram.hostname}/ref/merged-${suffix}`,
@@ -237,10 +237,9 @@ describe('get', () => {
         url: `https://${deletedProgram.hostname}/ref/deleted-${suffix}`,
       })
 
-      await mergeTopicForTest(
+      await mergeReferencedTopicsForTest(
         mergedProgram.referralProgramId,
         activeProgram.referralProgramId,
-        owner.id,
       )
       await softDeleteTopic(deletedProgram.referralProgramId, owner.id)
 
@@ -253,14 +252,23 @@ describe('get', () => {
           referral_program_slug: link.referral_program_slug,
           url: link.url,
         })),
-      ).toEqual([
-        {
-          id: activeLink.id,
-          referral_program_name: `Referral Program ${suffix}active`,
-          referral_program_slug: `referral-program-${suffix}active`,
-          url: activeUrl,
-        },
-      ])
+      ).toEqual(
+        expect.arrayContaining([
+          {
+            id: activeLink.id,
+            referral_program_name: `Referral Program ${suffix}active`,
+            referral_program_slug: `referral-program-${suffix}active`,
+            url: activeUrl,
+          },
+          {
+            id: mergedLink.id,
+            referral_program_name: `Referral Program ${suffix}active`,
+            referral_program_slug: `referral-program-${suffix}active`,
+            url: `https://${mergedProgram.hostname}/ref/merged-${suffix}`,
+          },
+        ]),
+      )
+      expect(result.results).toHaveLength(2)
     })
   })
 

@@ -36,7 +36,6 @@ export async function finalizeTopicAliasMerge(input: {
   await repairMergedTopicBookmarkBlooms(input.bookmarkMoves)
   await Promise.all([
     invalidate.entity_relation_elections(...input.previousRelationElectionTargets),
-    invalidate.topic_elections(sourceTopic.id, destinationTopic.id),
     invalidate.topicsWithMetrics(
       sourceTopic.id,
       sourceTopic.slug,

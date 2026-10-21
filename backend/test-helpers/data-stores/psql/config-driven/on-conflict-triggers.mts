@@ -15,6 +15,8 @@ const REPLAY_SAFE_TRIGGER_FUNCTIONS = new Set([
   'fn_update_updated_at',
   'fn_lock_agent_moderation_transparency_agent',
   'fn_project_topic_aliases',
+  // Validation and transaction-scoped fencing do not mutate replayed row state.
+  'fn_ensure_active_topic_references',
 ])
 
 function hasEvent(trigger: PostgresSqlTrigger, kind: 'insert' | 'update'): boolean {

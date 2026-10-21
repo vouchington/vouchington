@@ -85,6 +85,21 @@ describe('generated-ddl-insert-invariants + real schema.json trigger data', () =
     ).not.toBeNull()
   })
 
+  it('accepts active-topic validation without allowing unknown trigger side effects', async () => {
+    const validation = triggerFactsForTable('topic_aliases')?.filter(
+      trigger => trigger?.function?.parts.at(-1)?.value === 'fn_ensure_active_topic_references',
+    )
+    expect(validation).toHaveLength(1)
+    expect(replayUnsafeTrigger(validation!, new Set(['topic_id']), new Set(), undefined)).toBe(
+      false,
+    )
+    const unknown = await parseTrigger(
+      'CREATE TRIGGER custom BEFORE INSERT OR UPDATE ON topic_aliases ' +
+        'FOR EACH ROW EXECUTE FUNCTION fn_custom_side_effect();',
+    )
+    expect(replayUnsafeTrigger([unknown], new Set(['topic_id']), new Set(), undefined)).toBe(true)
+  })
+
   it('still accepts the moderation-lock trigger in isolation', async () => {
     const moderationLockTriggers = triggerFactsForTable('agents')?.filter(
       trigger =>

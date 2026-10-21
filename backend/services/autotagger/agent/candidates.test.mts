@@ -8,8 +8,9 @@ import {
 import { createHumanTopicRelation } from '@voucha/test-helpers/data-stores/psql/classifier-runs/subject-topic-relations'
 import { createTestTopic } from '@voucha/test-helpers/entities/create-test-entities'
 import { softDeleteScoredPostTopicCategoryRelation } from '@voucha/test-helpers/entities/entity-relations-posts'
-import { mergeTopicForTest, softDeleteTopic } from '@voucha/test-helpers/entities/topics/deletion'
+import { softDeleteTopic } from '@voucha/test-helpers/entities/topics/deletion'
 import { describe, expect, it } from 'vitest'
+import { mergeReferencedTopicsForTest } from '@voucha/test-helpers/merge-topic-lifecycle'
 import {
   AUTOTAGGER_AGENT_MAX_CANDIDATES,
   captureAutotaggerAgentCandidateTopicIds,
@@ -100,20 +101,21 @@ describe('C7 candidate capture (real PG)', () => {
     expect(fixture.topics.some(unfollowed => captured.includes(unfollowed.id))).toBe(false)
   })
 
-  it('skips a deleted topic and a topic merged away', async () => {
+  it('skips deleted topics and offers the destination of a followed merged topic', async () => {
     const fixture = await createAutotaggerPostFixture({ topicCount: 0 })
     const [deleted, merged, live] = await Promise.all([
       followedTopic(fixture.embedding),
       followedTopic(fixture.embedding),
       followedTopic(fixture.embedding),
     ])
-    const target = await createTestTopic({})
+    const target = await createNearbyTopic(fixture.embedding)
     await softDeleteTopic(deleted.topic.id, deleted.user.id)
-    await mergeTopicForTest(merged.topic.id, target.id, merged.user.id)
+    await mergeReferencedTopicsForTest(merged.topic.id, target.id)
 
     const captured = await capture(fixture)
 
     expect(captured).toContain(live.topic.id)
+    expect(captured).toContain(target.id)
     expect(captured).not.toContain(deleted.topic.id)
     expect(captured).not.toContain(merged.topic.id)
   })

@@ -41,15 +41,31 @@ export async function lockPostPublication(query: TransactionQuery, postId: strin
 }
 
 /** Serializes attachment of an RSS feed to an existing topic with topic merges. */
+export async function lockTopicRssFeedAttachmentLifecycles(
+  query: TransactionQuery,
+  topicIds: readonly string[],
+): Promise<void> {
+  const ids = [...new Set(topicIds.map(id => id.toLowerCase()))].toSorted()
+  if (ids.length === 0) return
+  await query(
+    `/* lockTopicRssFeedAttachmentLifecycles */
+    WITH ordered_ids AS MATERIALIZED (
+      SELECT DISTINCT topic_id
+      FROM UNNEST($1::uuid[]) AS ids(topic_id)
+      ORDER BY topic_id
+    )
+    SELECT pg_advisory_xact_lock(hashtextextended('topic-rss-feed-attachment:' || topic_id::text, 0))
+    FROM ordered_ids
+    ORDER BY topic_id`,
+    [ids],
+  )
+}
+
 export async function lockTopicRssFeedAttachmentLifecycle(
   query: TransactionQuery,
   topicId: string,
 ): Promise<void> {
-  await query(
-    `/* lockTopicRssFeedAttachmentLifecycle */
-    SELECT pg_advisory_xact_lock(hashtextextended('topic-rss-feed-attachment:' || $1::text, 0))`,
-    [topicId],
-  )
+  await lockTopicRssFeedAttachmentLifecycles(query, [topicId])
 }
 
 export async function withPostPublicationReconciliationLock<Result>(

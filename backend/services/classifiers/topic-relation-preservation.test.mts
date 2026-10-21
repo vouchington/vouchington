@@ -131,13 +131,14 @@ describe('applyTopicClassifierDecisionRelations preservation', () => {
     const { fixture, actor, human, first, second, subject } = await createCase()
     const third = (await createTestTopic({})).id
     const target = (await createTestTopic({})).id
-    await softDeleteTopic(first, human.id)
-    await mergeTopicForTest(second, target, human.id)
     const decision = await persistSubjectTopicDecision(fixture, subject, [
       { topicId: first, probability: 0.9 },
       { topicId: second, probability: 0.9 },
       { topicId: third, probability: 0.9 },
     ])
+    // Complete persistence requires active candidates; deactivation can race later application.
+    await softDeleteTopic(first, human.id)
+    await mergeTopicForTest(second, target, human.id)
 
     await expect(
       applyDecisionRelationsForTest(decision, actor.id, [first, second, third]),

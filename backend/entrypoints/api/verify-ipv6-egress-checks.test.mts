@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import { mergeReferencedTopicsForTest } from '@voucha/test-helpers/merge-topic-lifecycle'
 import { reportSection } from './verify-ipv6-egress-checks.mts'
 import {
   createTestUserDirect,
@@ -7,7 +8,6 @@ import {
   insertTestFediverseInstanceIntegrationChange,
   insertTestTopic,
   insertTestUrlHostname,
-  mergeTopicForTest,
   softDeleteTopic,
 } from '@voucha/test-helpers'
 import {
@@ -178,7 +178,7 @@ describe('approved Fediverse instance host evidence', () => {
     }
   })
 
-  it('excludes a merged formerly-approved hostname', async () => {
+  it('reports the destination hostname when an approved instance facet moves', async () => {
     const user = await createTestUserDirect()
     const suffix = randomSuffix()
     const hostname = `verify-ipv6-merged-${suffix}.example.com`
@@ -192,16 +192,22 @@ describe('approved Fediverse instance host evidence', () => {
     })
     await insertTestFediverseInstanceExtension({ topicId })
     await insertTestFediverseInstanceIntegrationChange({ topicId, integrationStatus: 'approved' })
+    const destinationHostname = `verify-ipv6-dest-${suffix}.example.com`
+    const destinationHostnameId = await insertTestUrlHostname({ hostname: destinationHostname })
     const destinationId = await insertTestTopic({
       name: `Merge destination ${suffix}`,
       slug: `verify-ipv6-merge-dest-${suffix}`,
       createdById: user.id,
+      topicType: 'fediverse_instance',
+      hostnameId: destinationHostnameId,
     })
-    await mergeTopicForTest(topicId, destinationId, user.id)
+    await mergeReferencedTopicsForTest(topicId, destinationId)
     const log = vi.spyOn(console, 'log').mockImplementation(() => {})
     try {
       await reportApprovedFediverseInstanceHosts()
-      expect(readLoggedPayload(log).hosts).not.toContain(hostname)
+      const hosts = readLoggedPayload(log).hosts
+      expect(hosts).not.toContain(hostname)
+      expect(hosts).toContain(destinationHostname)
     } finally {
       log.mockRestore()
     }

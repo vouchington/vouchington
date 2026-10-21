@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest'
+import { mergeReferencedTopicsForTest } from '@voucha/test-helpers/merge-topic-lifecycle'
 import {
   createTestUser,
   insertTestPost,
@@ -8,7 +9,6 @@ import {
   insertTestAgentModerationFalseyResults,
   insertTestTopic,
   insertScoredPostTopicCategoryRelation,
-  mergeTopicForTest,
   setPostOpenAIModerationResults,
   setPostOpenAIModerationFlaggedOnly,
   setPostOpenAIModerationResultsNoCategoryKey,
@@ -105,6 +105,7 @@ describe('getPostModerationContextBatch', () => {
     let postId: string
     let agentSlug: string
     let topicSlug: string
+    let destinationSlug: string
 
     beforeAll(async () => {
       const suffix = crypto.randomUUID().slice(0, 8)
@@ -132,6 +133,7 @@ describe('getPostModerationContextBatch', () => {
           categories: ['violence', 'hate'],
         },
       })
+      destinationSlug = `merge-destination-topic-${suffix}`
       const [topicId, mergedTopicId, mergeDestinationTopicId] = await Promise.all([
         insertTestTopic({ name: `Mod Topic ${suffix}`, slug: topicSlug, createdById: author.id }),
         insertTestTopic({
@@ -141,7 +143,7 @@ describe('getPostModerationContextBatch', () => {
         }),
         insertTestTopic({
           name: `Merge Destination Topic ${suffix}`,
-          slug: `merge-destination-topic-${suffix}`,
+          slug: destinationSlug,
           createdById: author.id,
         }),
       ])
@@ -149,7 +151,7 @@ describe('getPostModerationContextBatch', () => {
         insertScoredPostTopicCategoryRelation(postId, topicId, agent.system_user_id),
         insertScoredPostTopicCategoryRelation(postId, mergedTopicId, agent.system_user_id),
       ])
-      await mergeTopicForTest(mergedTopicId, mergeDestinationTopicId, author.id)
+      await mergeReferencedTopicsForTest(mergedTopicId, mergeDestinationTopicId)
     })
 
     it('staff tier: platform_moderation has flagged=true and populated categories', async () => {
@@ -174,9 +176,11 @@ describe('getPostModerationContextBatch', () => {
       expect(mod!.categories).toContain('hate')
     })
 
-    it('staff tier: agent_added_tags retains active tags and excludes merged tags', async () => {
+    it('staff tier: agent_added_tags retains active tags and resolves merged tags to the destination', async () => {
       const result = await getPostModerationContextBatch([postId], 'staff')
-      expect(result.get(postId)!.agent_added_tags).toEqual([topicSlug])
+      expect(result.get(postId)!.agent_added_tags.toSorted()).toEqual(
+        [topicSlug, destinationSlug].toSorted(),
+      )
     })
 
     it('public tier: platform_moderation has flagged but no categories key', async () => {

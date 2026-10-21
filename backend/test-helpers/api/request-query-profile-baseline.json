@@ -415,6 +415,14 @@
     "code": "backend/services/users/delete.mts:77"
   },
   {
+    "annotation": "lockTopicRssFeedAttachmentLifecycles",
+    "route": null,
+    "maxCount": null,
+    "reason": "Each transaction owns its attachment lifecycle locks: a topic merge fences both topics before publication capture, then the primary metric refresh must reacquire the destination fence in a new transaction after the merge commits. Transaction-scoped locks cannot be reused across that commit.",
+    "permanent": true,
+    "code": "backend/services/topics/merge-aliases-finalize.mts:refreshMergedTopicMetrics"
+  },
+  {
     "annotation": "maybeResolveCases",
     "route": null,
     "maxCount": null,
