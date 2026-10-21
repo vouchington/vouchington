@@ -66,6 +66,18 @@ export const SEEDED_ROW_COUNT_TARGETS: readonly TableInfo[] = [
   { table: 'facebook_friends', column: 'facebook_friend_id', pattern: 'seed-fb-user-%' },
 ]
 
+export const PLAN_STABILITY_VACUUM_TARGETS = [
+  'relation__post__category__topic',
+  'rss_feeds',
+  'rss_feed_item_categories',
+  'topics',
+  'post_review_topic_ratings',
+  'post_data_point_topics',
+  'communities',
+  'community_post_reviews',
+  'community_search_counts',
+] as const
+
 export const ANALYZE_TARGETS = [
   ...new Set([
     ...SEEDED_ROW_COUNT_TARGETS.map(({ table }) => table),
@@ -87,6 +99,7 @@ export const ANALYZE_TARGETS = [
     'relation__topic__category__topic',
     'relation__post__category__topic_alias',
     'relation__rss_feed_item__category__topic_alias',
+    'community_search_counts',
   ]),
 ]
 
@@ -121,24 +134,17 @@ export async function runAnalyze(): Promise<void> {
       console.error(`seedExplainData: ANALYZE "${table}" failed`, err),
     )
   }
-  // Paired CI captures changed scans on these seeded relations across fresh databases while
-  // retaining their SQL and row counts. Settle their visibility maps and statistics before the
-  // first capture, rather than letting autovacuum timing choose the measured plan. PostgreSQL
-  // includes each partition's default child when vacuuming its parent.
-  await write(
-    '/* seedExplainData */ VACUUM (ANALYZE) "relation__post__category__topic", "rss_feeds", "rss_feed_item_categories", "topics", "post_review_topic_ratings", "post_data_point_topics"',
-  )
+  // Vacuum these seeded relations before the first capture so fresh databases do not let
+  // autovacuum timing choose community search visibility maps and list-item statistics.
+  // PostgreSQL includes each partition's default child when vacuuming its parent.
+  const vacuumTargets = PLAN_STABILITY_VACUUM_TARGETS.map(table => `"${table}"`).join(', ')
+  await write(`/* seedExplainData */ VACUUM (ANALYZE) ${vacuumTargets}`)
   const relationNames = [
     // Heap size and `id` correlation decide the posts window-scan plans; CI logs never carried them.
     'posts__default',
-    'relation__post__category__topic',
+    ...PLAN_STABILITY_VACUUM_TARGETS,
     'relation__post__category__topic__default',
-    'rss_feeds',
-    'rss_feed_item_categories',
-    'topics',
-    'post_review_topic_ratings',
     'post_review_topic_ratings__default',
-    'post_data_point_topics',
     'post_data_point_topics__default',
   ]
   const relationStats = await write(
