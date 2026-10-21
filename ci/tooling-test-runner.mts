@@ -9,6 +9,7 @@ import {
 } from '../test-helpers/vitest-config/tooling-project-registry.mts'
 import { formatDeadlineReport } from './backend-unit-unfinished-files.mts'
 import { propagateVitestChildCompletion } from './run-vitest-project-group.mts'
+import { runForkLeakPreflight } from './vitest-fork-leak-preflight.mts'
 import {
   startToolingHangWatchdog,
   type ToolingHangWatchdogDeps,
@@ -172,7 +173,8 @@ export async function runToolingTestsWatched(
 }
 
 if (import.meta.main) {
-  runToolingTestsWatched(process.argv.slice(2))
+  runForkLeakPreflight()
+    .then(() => runToolingTestsWatched(process.argv.slice(2)))
     .then(propagateVitestChildCompletion)
     .catch(err => {
       process.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`)

@@ -26,16 +26,20 @@ export interface RemoteActorRow {
 const REMOTE_ACTOR_CACHE_TTL_MS = 60 * 60 * 1000 // 1 hour
 const REMOTE_ACTOR_STALE_KEY_FALLBACK_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000 // 7 days
 
-function isFresh(row: RemoteActorRow): boolean {
-  return getCacheAgeMs(row) < REMOTE_ACTOR_CACHE_TTL_MS
+function isFresh(row: RemoteActorRow, now: () => number): boolean {
+  return getCacheAgeMs(row, now) < REMOTE_ACTOR_CACHE_TTL_MS
 }
 
-function canFallBackToStaleKey(row: RemoteActorRow): boolean {
-  return getCacheAgeMs(row) < REMOTE_ACTOR_STALE_KEY_FALLBACK_MAX_AGE_MS
+function canFallBackToStaleKey(row: RemoteActorRow, now: () => number): boolean {
+  return getCacheAgeMs(row, now) < REMOTE_ACTOR_STALE_KEY_FALLBACK_MAX_AGE_MS
 }
 
-function getCacheAgeMs(row: RemoteActorRow): number {
-  return Date.now() - row.fetched_at.getTime()
+function getCacheAgeMs(row: RemoteActorRow, now: () => number): number {
+  const nowMs = now()
+  if (!Number.isFinite(nowMs)) {
+    throw new TypeError('Remote actor cache clock must return a finite timestamp')
+  }
+  return nowMs - row.fetched_at.getTime()
 }
 
 export async function getRemoteActorByKeyId(keyId: string): Promise<RemoteActorRow | null> {
@@ -87,9 +91,10 @@ async function lookupHostnameId(actorUri: string): Promise<string | null> {
 export async function getOrFetchRemoteActorByKeyId(
   keyId: string,
   fetchDeps?: FetchRemoteActorDocumentDeps,
+  now: () => number = Date.now,
 ): Promise<RemoteActorRow> {
   const existing = await getRemoteActorByKeyId(keyId)
-  if (existing && isFresh(existing)) return existing
+  if (existing && isFresh(existing, now)) return existing
 
   const actorUri = deriveActorUriFromKeyId(keyId)
   let document: RemoteActorDocument
@@ -99,7 +104,7 @@ export async function getOrFetchRemoteActorByKeyId(
       : await fetchRemoteActorDocument(actorUri)
   } catch (err) {
     if (err instanceof RemoteActorFetchAvailabilityError) {
-      if (existing && canFallBackToStaleKey(existing)) return existing
+      if (existing && canFallBackToStaleKey(existing, now)) return existing
     }
     throw err
   }

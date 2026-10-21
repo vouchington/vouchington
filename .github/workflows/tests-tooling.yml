@@ -37,6 +37,8 @@ jobs:
         timeout-minutes: 1
         with:
           fetch-depth: 1
+      - uses: ./.github/actions/start-valkey
+        timeout-minutes: 2
       - uses: ./.github/actions/setup-backend
         id: setup-backend
         timeout-minutes: 5
@@ -105,6 +107,9 @@ jobs:
           FIRST_OUTCOME: ${{ steps.full-lcov-1.outcome }}
           RETRY_OUTCOME: ${{ steps.full-lcov-1-retry.outcome }}
         run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
+      - if: failure()
+        uses: ./.github/actions/valkey-logs
+        timeout-minutes: 1
 
   i18n-route-bounds:
     runs-on: ubuntu-latest

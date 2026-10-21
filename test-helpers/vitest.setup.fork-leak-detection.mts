@@ -2,6 +2,7 @@
    afterEach hook must observe every test in the project's fork to build an accurate per-fork
    growth baseline, so it cannot be wrapped in a describe block. */
 import { afterEach } from 'vitest'
+import { getOrCreateQueue, settleRunnableQueueJobs } from '@vouchington/worker-runtime/testing'
 import { waitForResourceCloseCallbacks } from 'vouchington-tooling/vitest-diagnostics'
 import {
   formatForkLeakDiagnostics,
@@ -25,6 +26,17 @@ const detector = getForkLeakDetector()
 
 afterEach(async context => {
   if (detectionDisabled) return
+
+  // The worker setup owns this queue, but vi.resetModules() can give a test another module-local
+  // queue registry. Wait for both the setup worker and that test's current background queue.
+  // Delayed and suspended jobs remain parked.
+  const setupBackgroundQueue = getOrCreateQueue('background')
+  const { getOrCreateQueue: getCurrentQueue } = await import('@vouchington/worker-runtime/testing')
+  const currentBackgroundQueue = getCurrentQueue('background')
+  await settleRunnableQueueJobs(setupBackgroundQueue)
+  if (currentBackgroundQueue !== setupBackgroundQueue) {
+    await settleRunnableQueueJobs(currentBackgroundQueue)
+  }
 
   // Let pending handle-close callbacks run before snapshotting, so a socket already being
   // closed by the test's own cleanup doesn't read as newly elevated. setImmediate (check phase)

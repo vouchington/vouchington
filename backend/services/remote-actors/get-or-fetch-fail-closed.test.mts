@@ -11,6 +11,7 @@ import {
 
 const DAY_MS = 24 * 60 * 60 * 1000
 const VALID_PUBLIC_KEY_PEM = VALID_REMOTE_ACTOR_PUBLIC_KEY_PEM
+const FIXED_FALLBACK_NOW_MS = Date.parse('2025-01-15T12:34:56.000Z')
 
 function makeOversizedResponse(): Response {
   const stream = new ReadableStream<Uint8Array>({
@@ -64,73 +65,109 @@ describe('remote actor stale-key fail-closed policy', () => {
     const { actorUri, keyId } = await cacheRemoteActor(fetchWithTimeout, validateUrl)
     const transportCause = Object.assign(new Error('connection reset'), { code: 'ECONNRESET' })
     const transportError = new TypeError('fetch failed', { cause: transportCause })
-    const belowCutoff = new Date(Date.now() - 7 * DAY_MS + 60_000)
+    const belowCutoff = new Date(FIXED_FALLBACK_NOW_MS - 7 * DAY_MS + 60_000)
     await setTestRemoteActorFetchedAt(actorUri, belowCutoff)
     fetchWithTimeout.mockRejectedValueOnce(transportError)
+    const belowCutoffNow = vi.fn<() => number>(() => FIXED_FALLBACK_NOW_MS)
 
-    const fallback = await getOrFetchRemoteActorByKeyId(keyId, {
-      fetchWithTimeout,
-      validateUrl,
-    })
+    const fallback = await getOrFetchRemoteActorByKeyId(
+      keyId,
+      {
+        fetchWithTimeout,
+        validateUrl,
+      },
+      belowCutoffNow,
+    )
     expect(fallback.fetched_at).toEqual(belowCutoff)
 
-    await setTestRemoteActorFetchedAt(actorUri, new Date(Date.now() - 7 * DAY_MS))
+    const cutoffFetchedAt = new Date(FIXED_FALLBACK_NOW_MS - 7 * DAY_MS)
+    await setTestRemoteActorFetchedAt(actorUri, cutoffFetchedAt)
     fetchWithTimeout.mockRejectedValueOnce(transportError)
-    const cutoffError = await getOrFetchRemoteActorByKeyId(keyId, {
-      fetchWithTimeout,
-      validateUrl,
-    }).catch((err: unknown) => err)
+    const cutoffNow = vi.fn<() => number>(() => FIXED_FALLBACK_NOW_MS)
+    const cutoffError = await getOrFetchRemoteActorByKeyId(
+      keyId,
+      {
+        fetchWithTimeout,
+        validateUrl,
+      },
+      cutoffNow,
+    ).catch((err: unknown) => err)
 
     expect(cutoffError).toBeInstanceOf(RemoteActorFetchAvailabilityError)
     expect((cutoffError as Error).cause).toBe(transportError)
+    expect(cutoffNow).toHaveBeenCalledTimes(2)
   })
 
   it('bounds DNS validation timeout fallback at the exact seven-day cutoff', async () => {
     const { actorUri, keyId } = await cacheRemoteActor(fetchWithTimeout, validateUrl)
     const validationTimeout = new DOMException('DNS validation timed out', 'AbortError')
-    const belowCutoff = new Date(Date.now() - 7 * DAY_MS + 60_000)
+    const belowCutoff = new Date(FIXED_FALLBACK_NOW_MS - 7 * DAY_MS + 60_000)
     await setTestRemoteActorFetchedAt(actorUri, belowCutoff)
     validateUrl.mockRejectedValueOnce(validationTimeout)
+    const belowCutoffNow = vi.fn<() => number>(() => FIXED_FALLBACK_NOW_MS)
 
-    const fallback = await getOrFetchRemoteActorByKeyId(keyId, {
-      fetchWithTimeout,
-      validateUrl,
-    })
+    const fallback = await getOrFetchRemoteActorByKeyId(
+      keyId,
+      {
+        fetchWithTimeout,
+        validateUrl,
+      },
+      belowCutoffNow,
+    )
     expect(fallback.fetched_at).toEqual(belowCutoff)
 
-    await setTestRemoteActorFetchedAt(actorUri, new Date(Date.now() - 7 * DAY_MS))
+    const cutoffFetchedAt = new Date(FIXED_FALLBACK_NOW_MS - 7 * DAY_MS)
+    await setTestRemoteActorFetchedAt(actorUri, cutoffFetchedAt)
     validateUrl.mockRejectedValueOnce(validationTimeout)
-    const cutoffError = await getOrFetchRemoteActorByKeyId(keyId, {
-      fetchWithTimeout,
-      validateUrl,
-    }).catch((err: unknown) => err)
+    const cutoffNow = vi.fn<() => number>(() => FIXED_FALLBACK_NOW_MS)
+    const cutoffError = await getOrFetchRemoteActorByKeyId(
+      keyId,
+      {
+        fetchWithTimeout,
+        validateUrl,
+      },
+      cutoffNow,
+    ).catch((err: unknown) => err)
 
     expect(cutoffError).toBeInstanceOf(RemoteActorFetchAvailabilityError)
     expect((cutoffError as Error).cause).toBe(validationTimeout)
+    expect(cutoffNow).toHaveBeenCalledTimes(2)
   })
 
   it('bounds DNS resolver failure fallback at the exact seven-day cutoff', async () => {
     const { actorUri, keyId } = await cacheRemoteActor(fetchWithTimeout, validateUrl)
     const resolverError = Object.assign(new Error('temporary DNS failure'), { code: 'EAI_AGAIN' })
-    const belowCutoff = new Date(Date.now() - 7 * DAY_MS + 60_000)
+    const belowCutoff = new Date(FIXED_FALLBACK_NOW_MS - 7 * DAY_MS + 60_000)
     await setTestRemoteActorFetchedAt(actorUri, belowCutoff)
     validateUrl.mockRejectedValueOnce(resolverError)
+    const belowCutoffNow = vi.fn<() => number>(() => FIXED_FALLBACK_NOW_MS)
 
-    const fallback = await getOrFetchRemoteActorByKeyId(keyId, {
-      fetchWithTimeout,
-      validateUrl,
-    })
+    const fallback = await getOrFetchRemoteActorByKeyId(
+      keyId,
+      {
+        fetchWithTimeout,
+        validateUrl,
+      },
+      belowCutoffNow,
+    )
     expect(fallback.fetched_at).toEqual(belowCutoff)
 
-    await setTestRemoteActorFetchedAt(actorUri, new Date(Date.now() - 7 * DAY_MS))
+    const cutoffFetchedAt = new Date(FIXED_FALLBACK_NOW_MS - 7 * DAY_MS)
+    await setTestRemoteActorFetchedAt(actorUri, cutoffFetchedAt)
     validateUrl.mockRejectedValueOnce(resolverError)
-    const cutoffError = await getOrFetchRemoteActorByKeyId(keyId, {
-      fetchWithTimeout,
-      validateUrl,
-    }).catch((err: unknown) => err)
+    const cutoffNow = vi.fn<() => number>(() => FIXED_FALLBACK_NOW_MS)
+    const cutoffError = await getOrFetchRemoteActorByKeyId(
+      keyId,
+      {
+        fetchWithTimeout,
+        validateUrl,
+      },
+      cutoffNow,
+    ).catch((err: unknown) => err)
 
     expect(cutoffError).toBeInstanceOf(RemoteActorFetchAvailabilityError)
     expect((cutoffError as Error).cause).toBe(resolverError)
+    expect(cutoffNow).toHaveBeenCalledTimes(2)
   })
 
   it('does not fall back when URL validation rejects an unsafe address', async () => {
@@ -170,29 +207,41 @@ describe('remote actor stale-key fail-closed policy', () => {
     const { actorUri, keyId } = await cacheRemoteActor(fetchWithTimeout, validateUrl)
     const socketCause = Object.assign(new Error('socket closed'), { code: 'UND_ERR_SOCKET' })
     const bodyError = new TypeError('terminated', { cause: socketCause })
-    const belowCutoff = new Date(Date.now() - 7 * DAY_MS + 60_000)
+    const belowCutoff = new Date(FIXED_FALLBACK_NOW_MS - 7 * DAY_MS + 60_000)
     await setTestRemoteActorFetchedAt(actorUri, belowCutoff)
     fetchWithTimeout.mockResolvedValueOnce(
       fetchWithTimeoutResult(makeInterruptedBodyResponse(bodyError)),
     )
+    const belowCutoffNow = vi.fn<() => number>(() => FIXED_FALLBACK_NOW_MS)
 
-    const fallback = await getOrFetchRemoteActorByKeyId(keyId, {
-      fetchWithTimeout,
-      validateUrl,
-    })
+    const fallback = await getOrFetchRemoteActorByKeyId(
+      keyId,
+      {
+        fetchWithTimeout,
+        validateUrl,
+      },
+      belowCutoffNow,
+    )
     expect(fallback.fetched_at).toEqual(belowCutoff)
 
-    await setTestRemoteActorFetchedAt(actorUri, new Date(Date.now() - 7 * DAY_MS))
+    const cutoffFetchedAt = new Date(FIXED_FALLBACK_NOW_MS - 7 * DAY_MS)
+    await setTestRemoteActorFetchedAt(actorUri, cutoffFetchedAt)
     fetchWithTimeout.mockResolvedValueOnce(
       fetchWithTimeoutResult(makeInterruptedBodyResponse(bodyError)),
     )
-    const cutoffError = await getOrFetchRemoteActorByKeyId(keyId, {
-      fetchWithTimeout,
-      validateUrl,
-    }).catch((err: unknown) => err)
+    const cutoffNow = vi.fn<() => number>(() => FIXED_FALLBACK_NOW_MS)
+    const cutoffError = await getOrFetchRemoteActorByKeyId(
+      keyId,
+      {
+        fetchWithTimeout,
+        validateUrl,
+      },
+      cutoffNow,
+    ).catch((err: unknown) => err)
 
     expect(cutoffError).toBeInstanceOf(RemoteActorFetchAvailabilityError)
     expect((cutoffError as Error).cause).toBe(bodyError)
+    expect(cutoffNow).toHaveBeenCalledTimes(2)
   })
 
   it('does not fall back for an unexpected TypeError from the fetch implementation', async () => {
