@@ -1,6 +1,8 @@
 import type { NotificationPushSubscription } from './notification-push-subscription'
 import type { WebPushBinding } from '@/lib/push-service-worker'
 
+export const PUSH_OWNERSHIP_ACTIVATION_TIMEOUT_MS = 5000
+
 export function getPushManager(registration: ServiceWorkerRegistration) {
   return (registration as ServiceWorkerRegistration & { pushManager: PushManager }).pushManager
 }

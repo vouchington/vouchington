@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from '@/lib/api/error'
 import { MemoryLockManager } from '@/lib/api/client/admission-idempotency-fixtures'
 import { clearPushBinding } from '@/lib/push-service-worker'
-import { waitForActiveServiceWorker } from '@/lib/service-worker-activation'
+import { waitForActiveServiceWorker } from '@vouchington/utils/service-worker-activation'
 import { clearRuntimePublicConfigForTest } from '@/test-helpers/runtime-public-config'
 import { useNotificationPushActions } from '../use-notification-push-actions'
 import { bootstrapPushBinding } from '../push-registration'
@@ -28,8 +28,7 @@ vi.mock(import('@/lib/push-service-worker'), () => ({
   clearPushBinding: clearBindingMock,
 }))
 
-vi.mock(import('@/lib/service-worker-activation'), () => ({
-  PUSH_OWNERSHIP_ACTIVATION_TIMEOUT_MS: 5000 as const,
+vi.mock(import('@vouchington/utils/service-worker-activation'), () => ({
   waitForActiveServiceWorker: waitForActiveServiceWorkerMock,
 }))
 

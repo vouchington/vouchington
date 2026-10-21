@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMyWebPushSubscription, deleteMyWebPushSubscription } from '@/lib/api/client/my'
 import { MemoryLockManager } from '@/lib/api/client/admission-idempotency-fixtures'
 import { bindPushBinding, clearPushBinding } from '@/lib/push-service-worker'
-import { waitForActiveServiceWorker } from '@/lib/service-worker-activation'
+import { waitForActiveServiceWorker } from '@vouchington/utils/service-worker-activation'
 import { bootstrapPushBinding, registerAndSavePush } from './push-registration'
 
 const bootstrapBindingMock = vi.hoisted(() => vi.fn<VitestLooseMock>())
@@ -21,8 +21,7 @@ vi.mock(import('@/lib/push-service-worker'), () => ({
   clearPushBinding: vi.fn<VitestLooseMock>(),
 }))
 
-vi.mock(import('@/lib/service-worker-activation'), () => ({
-  PUSH_OWNERSHIP_ACTIVATION_TIMEOUT_MS: 5000 as const,
+vi.mock(import('@vouchington/utils/service-worker-activation'), () => ({
   waitForActiveServiceWorker: vi.fn<VitestLooseMock>(),
 }))
 

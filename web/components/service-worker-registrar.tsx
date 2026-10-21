@@ -5,7 +5,7 @@ import { getMyWebPushSubscriptionsClient } from '@/lib/api/client/my'
 import { ApiError } from '@/lib/api/error'
 import { bootstrapAuthenticatedPushBinding } from '@/lib/push-bootstrap'
 import { clearPushBinding } from '@/lib/push-service-worker'
-import { waitForActiveServiceWorker } from '@/lib/service-worker-activation'
+import { waitForActiveServiceWorker } from '@vouchington/utils/service-worker-activation'
 import { withWebPushOwnershipLock } from '@/lib/push-ownership-lock'
 
 const bootstrapInFlight = new Map<string, Promise<void>>()

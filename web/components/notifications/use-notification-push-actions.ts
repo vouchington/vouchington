@@ -5,16 +5,17 @@ import { toast } from 'sonner'
 import { deleteMyWebPushSubscription, getMyWebPushSubscriptionsClient } from '@/lib/api/client/my'
 import { ApiError } from '@/lib/api/error'
 import type { NotificationPushSubscription } from './notification-push-subscription'
-import { getCurrentSubscription, getPushManager } from './push-utils'
+import {
+  getCurrentSubscription,
+  getPushManager,
+  PUSH_OWNERSHIP_ACTIVATION_TIMEOUT_MS,
+} from './push-utils'
 import { useCurrentPushBinding } from './use-current-push-binding'
 import { useRuntimePublicConfig } from '@/lib/runtime-public-config-context'
 import type { ListResponse, WebPushSubscriptionsResponseBody } from '@/types/api-responses'
 import { usePaginatedList } from '@/hooks/use-paginated-list'
 import { clearPushBinding } from '@/lib/push-service-worker'
-import {
-  PUSH_OWNERSHIP_ACTIVATION_TIMEOUT_MS,
-  waitForActiveServiceWorker,
-} from '@/lib/service-worker-activation'
+import { waitForActiveServiceWorker } from '@vouchington/utils/service-worker-activation'
 import { withWebPushOwnershipLock } from '@/lib/push-ownership-lock'
 import { bootstrapPushBinding, registerAndSavePush } from './push-registration'
 
