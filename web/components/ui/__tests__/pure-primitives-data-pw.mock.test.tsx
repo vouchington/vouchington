@@ -185,6 +185,35 @@ describe('pure ui primitive data-pw contracts', () => {
     expect(empty).not.toHaveClass('h-2')
   })
 
+  it('keeps Progress indeterminate without a value and fills to max', () => {
+    render(
+      <>
+        <Progress aria-label='Unknown' />
+        <Progress
+          value={null}
+          aria-label='Waiting'
+        />
+        <Progress
+          value={50}
+          max={50}
+          aria-label='Done'
+        />
+      </>,
+    )
+    const unknown = screen.getByRole('progressbar', { name: 'Unknown' })
+    const waiting = screen.getByRole('progressbar', { name: 'Waiting' })
+    const done = screen.getByRole('progressbar', { name: 'Done' })
+
+    expect(unknown).not.toHaveAttribute('aria-valuenow')
+    expect(unknown).toHaveAttribute('data-state', 'indeterminate')
+    expect(waiting).not.toHaveAttribute('aria-valuenow')
+    expect(done).toHaveAttribute('aria-valuenow', '50')
+    expect(done).toHaveAttribute('aria-valuemax', '50')
+    expect(done.querySelector('[data-slot="progress-indicator"]')).toHaveStyle({
+      transform: 'translateX(0%)',
+    })
+  })
+
   it('renders Input and Skeleton data-pw', () => {
     const { container } = render(
       <>
