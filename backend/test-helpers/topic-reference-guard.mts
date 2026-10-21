@@ -28,7 +28,7 @@ export async function getTopicReferenceGuardCoverage() {
         SELECT 1 FROM pg_trigger trigger_record
         JOIN pg_proc procedure_record ON procedure_record.oid = trigger_record.tgfoid
         WHERE trigger_record.tgrelid = constraint_record.conrelid
-          AND procedure_record.proname = 'fn_guard_active_topic_references'
+          AND procedure_record.proname = 'fn_ensure_active_topic_references'
           AND trigger_record.tgenabled <> 'D'
           AND position(
             decode('00', 'hex') || convert_to(attribute.attname, 'UTF8') || decode('00', 'hex')

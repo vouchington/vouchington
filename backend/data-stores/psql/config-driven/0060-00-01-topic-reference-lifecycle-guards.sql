@@ -1,5 +1,5 @@
 -- Generated relations and handwritten references share the merge's attachment lifecycle fence.
-CREATE OR REPLACE FUNCTION fn_guard_active_topic_references()
+CREATE OR REPLACE FUNCTION fn_ensure_active_topic_references()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
@@ -38,7 +38,7 @@ BEGIN
 END;
 $$;
 
-COMMENT ON FUNCTION fn_guard_active_topic_references() IS
+COMMENT ON FUNCTION fn_ensure_active_topic_references() IS
   'Fences new topic references against merges without waiting behind a publication or child-row lock. Historical references remain unfenced.';
 
 DO $$
@@ -71,7 +71,7 @@ BEGIN
     ORDER BY namespace.nspname, source.relname
   LOOP
     EXECUTE format(
-      'CREATE OR REPLACE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON %s FOR EACH ROW EXECUTE FUNCTION fn_guard_active_topic_references(%s)',
+      'CREATE OR REPLACE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON %s FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references(%s)',
       reference_table.qualified_name, reference_table.column_arguments
     );
     EXECUTE format(
