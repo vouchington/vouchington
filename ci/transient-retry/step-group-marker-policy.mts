@@ -7,6 +7,11 @@ import { buildWebTargetsStepMarker } from './runner-shutdown-consumer-registry.m
 
 type YamlStep = { run?: unknown; uses?: unknown }
 type YamlWorkflow = { jobs?: Record<string, { steps?: YamlStep[] }>; runs?: { steps?: YamlStep[] } }
+// Table A: repo-owned `##[group]Run <run:|uses:>` step-header markers whose source of truth is a
+// `run:` or local `uses:` step in this repo's own YAML. sliceGithubActionsStepGroup() slices logs by
+// exact substring, so a stale marker never matches and a prefix marker slices the wrong step.
+// Headers are grouped per job (GitHub's log boundary); `split('\n')[0]` covers plain, `|`, and `>-`
+// run scalars.
 export const markerExpectations = [
   {
     marker: cloudflareWorkerTscStepMarker,
