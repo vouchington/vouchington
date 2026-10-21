@@ -16,16 +16,15 @@ const randomSuffix = () => Math.random().toString(36).slice(2, 10)
 const [WEB, COMIC, YOUTUBE] = FEED_LIST_SOURCES.map(source => source.url)
 
 /** Buffering the list calls one of these. Streaming the body does not. */
-class UnbufferedResponse extends Response {
-  override text(): Promise<string> {
-    throw new Error('feed list buffered as text')
+function unbufferedResponse(body: string): Response {
+  const response = new Response(body)
+  const rejectBuffered = (kind: string) => () => {
+    throw new Error(`feed list buffered as ${kind}`)
   }
-  override arrayBuffer(): Promise<ArrayBuffer> {
-    throw new Error('feed list buffered as array')
-  }
-  override json(): Promise<unknown> {
-    throw new Error('feed list buffered as json')
-  }
+  Object.defineProperty(response, 'text', { value: rejectBuffered('text') })
+  Object.defineProperty(response, 'arrayBuffer', { value: rejectBuffered('array') })
+  Object.defineProperty(response, 'json', { value: rejectBuffered('json') })
+  return response
 }
 
 describe('dispatchKagiSmallWeb with the import enabled', () => {
@@ -45,7 +44,7 @@ describe('dispatchKagiSmallWeb with the import enabled', () => {
       ],
     ])
     fetchSpy.mockReset()
-    fetchSpy.mockImplementation(async (url: string) => new UnbufferedResponse(lists.get(url) ?? ''))
+    fetchSpy.mockImplementation(async (url: string) => unbufferedResponse(lists.get(url) ?? ''))
 
     const first = await dispatchKagiSmallWeb()
     expect(first).toMatchObject({ enqueued: 1, hasMore: true, total: 4 })
