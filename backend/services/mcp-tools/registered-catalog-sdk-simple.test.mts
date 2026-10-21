@@ -76,7 +76,9 @@ describe('registered catalog SDK', () => {
           if (!fixture.postId || !fixture.postTitle)
             throw new Error('Expected an owned dispute post')
           expect(result).toMatchObject({
-            disputes: expect.arrayContaining([expect.objectContaining({ status: 'pending' })]),
+            disputes: expect.arrayContaining([
+              expect.objectContaining({ id: fixture.id, status: 'pending' }),
+            ]),
           })
           const detail = await callAndValidate(catalog, 'read_review_dispute', 'get', {
             id: fixture.id,
