@@ -1,6 +1,7 @@
 import '@/test-helpers/components/shared/markdown-highlighter.mock-support'
 import '@/test-helpers/i18n/mock-json-messages'
 import { render, screen } from '@testing-library/react'
+import type { ReactNode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { RssFeedItemModal } from './rss-feed-item-modal'
 import type { RssFeedItem } from '@/types/rss-feed-items'
@@ -29,9 +30,8 @@ vi.mock(
 vi.mock(import('@/lib/i18n/get-resolved-ui-locale'), () => ({
   getResolvedUiLocale: mockGetResolvedUiLocale,
 }))
-
 vi.mock(import('./rss-feed-item-modal-shell'), () => ({
-  RssFeedItemModalShell: ({ children, title }: { children: React.ReactNode; title: string }) => (
+  RssFeedItemModalShell: ({ children, title }: { children: ReactNode; title: string | null }) => (
     <section>
       <h1>{title}</h1>
       {children}
