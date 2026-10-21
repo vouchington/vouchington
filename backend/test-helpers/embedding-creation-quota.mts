@@ -5,6 +5,7 @@ import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name
 import type { PoolClient } from '@data-stores/psql/types'
 import { initializeEmbeddingCreationConfig } from './embedding-creation-config.mts'
 import { claimEmbeddingQuotaLease } from './embedding-creation-quota-lease.mts'
+import { assertOwnedSubmittedControl } from './embedding-creation-submitted-control.mts'
 import {
   cleanupTestEmbeddingsBatches,
   insertTestEmbeddingsBatch,
@@ -72,6 +73,24 @@ export async function acquireEmbeddingQuotaFixture() {
       await assertOwnedAccountingRemoved(ownedIds)
       ids.length = 0
       return { verifiedAbsentCount: ownedIds.length, remainingCount: 0 }
+    },
+    insertSubmittedControl: () => {
+      assertOpen()
+      const id = mintUUIDv7()
+      ids.push(id)
+      const operation = Promise.resolve().then(async () => {
+        assertOpen()
+        await insertTestEmbeddingsBatch({
+          id,
+          bedrockStatus: 'Submitted',
+          batchData: { metadata: { inputSizeMB: 1 } },
+        })
+        await assertOwnedSubmittedControl(id)
+        return { id }
+      })
+      writes.push(operation)
+      void operation.catch(() => {})
+      return operation
     },
     insertCompletedControl: () => {
       assertOpen()
