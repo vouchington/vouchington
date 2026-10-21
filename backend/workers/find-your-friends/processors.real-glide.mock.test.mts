@@ -1,3 +1,4 @@
+import { createTestOAuthAccountSweepWindow } from '@voucha/test-helpers/oauth-account-sweep-window'
 import { randomUUID } from 'node:crypto'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import {
@@ -29,10 +30,12 @@ describe('friend dispatcher continuations', () => {
     it(`reaches ${provider} tails despite unfinished earlier accounts`, async () => {
       const prefix = `bounded-${randomUUID()}`
       const ids = ['a', 'b', 'c'].map(suffix => `${prefix}-${suffix}`)
-      const accountIds: string[] = []
-      for (const id of ids) {
+      const window = createTestOAuthAccountSweepWindow()
+      const accountIds = [window.firstId, window.secondId, window.upperId]
+      for (const [index, id] of ids.entries()) {
         const owner = await createTestUser()
-        accountIds.push((await insertTestOAuthAccount(provider, id)).account_id!)
+        const account = await insertTestOAuthAccount(provider, id, null, accountIds[index])
+        expect(account.account_id).toBe(accountIds[index])
         await connectTestOAuthAccount(provider, owner.id, id)
         await setTestOAuthAccountTokens(provider, id, { accessToken: 'synthetic-access-token' })
       }
@@ -46,8 +49,20 @@ describe('friend dispatcher continuations', () => {
       const data: FriendsDispatchData = {
         sweepStartedAt,
         upperIds: { facebook: null, x: null, github: null, [provider]: accountIds[2]! },
-        afterIds: { [provider]: '00000000-0000-0000-0000-000000000000' },
+        afterIds: { [provider]: window.afterId },
       }
+      expect(
+        await processFindYourFriendsDispatcher(undefined, {
+          ...data,
+          sweepStartedAt: '1970-01-01T00:00:00.000Z',
+        }),
+      ).toEqual({ count: 0, hasMore: false })
+      expect(
+        await processFindYourFriendsDispatcher(undefined, {
+          ...data,
+          upperIds: { facebook: null, x: null, github: null, [provider]: accountIds[0]! },
+        }),
+      ).toEqual({ count: 1, hasMore: false })
       const saved: FriendsDispatchData[] = []
       expect(
         await processFindYourFriendsDispatcher(undefined, data, async next => {
@@ -84,6 +99,11 @@ describe('friend dispatcher continuations', () => {
       const key = { facebook: 'facebookAccountId', x: 'xAccountId', github: 'githubAccountId' }[
         provider
       ]
+      for (const accountId of accountIds) {
+        expect(
+          await findYourFriendsQueue.searchJobs({ name: syncName, data: { [key]: accountId } }),
+        ).not.toEqual([])
+      }
       expect(
         await findYourFriendsQueue.searchJobs({ name: syncName, data: { [key]: laterAccountId } }),
       ).toEqual([])
