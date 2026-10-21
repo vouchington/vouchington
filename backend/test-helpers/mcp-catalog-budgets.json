@@ -5,10 +5,10 @@
     "user": {
       "all": {
         "on": {
-          "count": 76,
-          "list": 247000,
-          "core": 105000,
-          "output": 231000
+          "count": 78,
+          "list": 254000,
+          "core": 109000,
+          "output": 237000
         }
       },
       "Reader": {

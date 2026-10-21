@@ -262,6 +262,8 @@ describe('validateScopeSet', () => {
     'financial-profile:write',
     'spending:read',
     'spending:write',
+    'households:read',
+    'households:write',
   ] as const)('requires an exact grant for %s', scope => {
     expect(hasScope(['mcp.user:read', 'mcp.user:write'], scope)).toBe(false)
     expect(hasScope([scope], scope)).toBe(true)

@@ -3,6 +3,14 @@
   "formula": "ceil(measured * 1.015 / 1000) * 1000",
   "servers": {
     "user": {
+      "read_my_households": {
+        "measured": { "list": 3855, "core": 1746 },
+        "max": { "list": 4000, "core": 2000 }
+      },
+      "manage_my_households": {
+        "measured": { "list": 3134, "core": 1672 },
+        "max": { "list": 4000, "core": 2000 }
+      },
       "read_my_messages": {
         "measured": {
           "list": 4794,

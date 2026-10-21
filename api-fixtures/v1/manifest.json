@@ -29354,6 +29354,46 @@
       "source": "backend/api/v1/lists/list-contains.mts",
       "statusKnowledge": "default"
     },
+    "GET:/api/v1/me/individual": {
+      "bodyKind": "content",
+      "hash": "e658f9f62efe6ac1beaa504ad79d3b9b3e64b3d04784328681a6a1a4843dbf4c",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "GET",
+      "routeTemplate": "/api/v1/me/individual",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "individual": {
+              "required": true,
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  },
+                  "updated_at": {
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "type": "object"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/individuals/index.mts",
+      "statusKnowledge": "default"
+    },
     "GET:/api/v1/membership-verifications/:verificationId": {
       "bodyKind": "content",
       "hash": "21ec9923bf6d6c94db0cad278c3fffae3a162cd517ab2394c02b35f4404b043b",
@@ -48723,7 +48763,7 @@
     },
     "GET:/api/v1/scopes": {
       "bodyKind": "content",
-      "hash": "aae2e48e686ee27ca7d7a82cb8283b8ea8446f1c56fe7f1655a6d149952596dc",
+      "hash": "d7d8ebe853d6cd46b14e57e14d652d80a26f4ef4acd0e2471a63c3bbcd78bc5b",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -48844,6 +48884,14 @@
                     {
                       "type": "literal",
                       "value": "topic_claims_write"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "households_read"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "households_write"
                     }
                   ]
                 }
@@ -93300,6 +93348,30 @@
       },
       "source": {
         "caseFile": "backend/test-helpers/api-fixtures/native-account-pagination-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/me/individual",
+      "bodyFile": "responses/native.me.individual.json",
+      "consumers": ["web", "swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.me.individual",
+      "method": "GET",
+      "migratedFrom": [
+        "docs/requirements/users/USER_SETTINGS.md",
+        "web/components/my/household-manager.tsx"
+      ],
+      "path": "/api/v1/me/individual",
+      "responseSchema": {
+        "hash": "852abcc5b9b32ffeb52292a0475764c8f63b18b2c46451720833a10a2dca7b57",
+        "key": "native.me.individual"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/me/individual"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-household-cases.mts"
       },
       "status": 200
     },

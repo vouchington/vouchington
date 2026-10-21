@@ -51,6 +51,9 @@ describe('household response contracts', () => {
     expect(requestContracts.responses['POST:/api/v1/households/:id/memberships']).toEqual(
       responseRef('HouseholdMembershipResponse'),
     )
+    expect(requestContracts.responses['GET:/api/v1/me/individual']).toEqual(
+      responseRef('IndividualResponse'),
+    )
     expect(requestContracts.responses['PATCH:/api/v1/households/:id']).toBeUndefined()
   })
 
@@ -75,10 +78,12 @@ describe('household response contracts', () => {
     const householdPage = manifest.backendResponseContracts['GET:/api/v1/households']!
     const membershipPage =
       manifest.backendResponseContracts['GET:/api/v1/households/:id/memberships']!
+    const individualBody = manifest.backendResponseContracts['GET:/api/v1/me/individual']!
     expect(validateResponseContract(householdBody.schema, created.body)).toEqual([])
     expect(validateResponseContract(householdBody.schema, fetched.body)).toEqual([])
     expect(validateResponseContract(householdPage.schema, listed.body)).toEqual([])
     expect(validateResponseContract(membershipPage.schema, memberships.body)).toEqual([])
+    expect(validateResponseContract(individualBody.schema, individual.body)).toEqual([])
     expect(
       validateResponseContract(membershipResponseSchema(membershipPage.schema), added.body),
     ).toEqual([])

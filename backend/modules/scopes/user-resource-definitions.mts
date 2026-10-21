@@ -11,6 +11,7 @@ const USER_RESOURCE_SCOPES = {
   feeds: ['read'],
   'entity-relations': ['read', 'write'],
   'financial-profile': ['read', 'write'],
+  households: ['read', 'write'],
   hostnames: ['read'],
   lists: ['read', 'write'],
   messages: ['read', 'write'],
@@ -41,6 +42,8 @@ const SENSITIVE_DESCRIPTIONS: Record<string, ScopeDescriptionKey> = {
   'spending:write': 'spending_write',
   'messages:read': 'messages_read',
   'messages:write': 'messages_write',
+  'households:read': 'households_read',
+  'households:write': 'households_write',
 }
 
 export function userResourceDefinitions(): Record<string, ScopeDefinition> {

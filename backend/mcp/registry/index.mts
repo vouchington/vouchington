@@ -1,4 +1,5 @@
 import { myMessageTools } from '../my-messages.mts'
+import { myHouseholdTools } from '../my-households.mts'
 import { adminMergedTools, replacedAdminToolNames } from './admin-merged-tools.mts'
 import { userMergedReadingTools } from './user-merged-reading-tools.mts'
 import { userMergedParticipationTools } from './user-merged-participation-tools.mts'
@@ -95,6 +96,7 @@ const adminSourceTools = [
 
 export const ALL_TOOLS: readonly Tool[] = [
   ...myMessageTools,
+  ...myHouseholdTools,
   ...userMergedReadingTools,
   ...userMergedParticipationTools,
   ...userMergedAccountTools,

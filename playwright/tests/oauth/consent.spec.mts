@@ -5,7 +5,7 @@ import { expect, test } from '../../helpers/test.mts'
 
 const USER_MCP_RESOURCE_METADATA_PATH = '/.well-known/oauth-protected-resource/api/v1/mcp'
 const SCOPES =
-  'mcp.user:read financial-profile:read financial-profile:write spending:read spending:write entity-relations:read entity-relations:write post-relations.owned-private:write'
+  'mcp.user:read financial-profile:read financial-profile:write spending:read spending:write households:read households:write entity-relations:read entity-relations:write post-relations.owned-private:write'
 
 test.describe('OAuth consent', () => {
   test.use({ storageState: AUTH_STATE })
@@ -71,6 +71,12 @@ test.describe('OAuth consent', () => {
       'financial-profile:read',
     )
     await expect(page.getByTestId('oauth-consent-sensitive-scopes')).toContainText('spending:write')
+    await expect(page.getByTestId('oauth-consent-sensitive-scopes')).toContainText(
+      'households:read',
+    )
+    await expect(page.getByTestId('oauth-consent-sensitive-scopes')).toContainText(
+      'See your households and their members',
+    )
     await expect(page.getByTestId('oauth-consent-sensitive-scopes')).toContainText('credit score')
     await expect(page.getByTestId('oauth-consent-scopes')).toContainText(
       'excluding financial profile',

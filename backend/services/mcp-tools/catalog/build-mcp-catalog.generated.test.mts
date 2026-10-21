@@ -4,6 +4,7 @@ import { SCOPE_DEFINITIONS, type ApiScope } from '@modules/scopes'
 import { ALL_TOOLS } from '@voucha/mcp/registry/index'
 import { myMessageGroups } from '@voucha/mcp/my-messages'
 import { brandTopicClaimGroups } from '@voucha/mcp/brand/topic-claims'
+import { myHouseholdGroups } from '@voucha/mcp/my-households'
 import { communityModerationGroups } from '@voucha/mcp/community-moderation-tools'
 import { userMergedReadingGroups } from '@voucha/mcp/registry/user-merged-reading-tools'
 import { userMergedAccountGroups } from '@voucha/mcp/registry/user-merged-account-tools'
@@ -35,6 +36,7 @@ const length = (value: unknown) => JSON.stringify(value).length
 
 const groups = [
   ...myMessageGroups,
+  ...myHouseholdGroups,
   ...userMergedReadingGroups,
   ...userMergedAccountGroups,
   ...userMergedParticipationGroups,
@@ -58,7 +60,8 @@ const plusScopes = (Object.keys(SCOPE_DEFINITIONS) as ApiScope[]).filter(
   scope =>
     SCOPE_DEFINITIONS[scope].audience === 'user' &&
     !scope.startsWith('community-moderation:') &&
-    !scope.startsWith('messages:'),
+    !scope.startsWith('messages:') &&
+    !scope.startsWith('households:'),
 )
 
 describe('generated MCP catalog contracts', () => {
