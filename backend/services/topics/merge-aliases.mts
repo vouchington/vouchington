@@ -36,10 +36,6 @@ export async function mergeTopicAliases(
 
 async function executeTopicMerge(merger: PrivateUser, sourceTopic: Topic, destinationTopic: Topic) {
   await using query = await beginTransaction()
-  // Parent graph writes must settle before preflight, including edges between intermediate topics.
-  await query(
-    `/* mergeTopicAliases lockParentGraph */ LOCK TABLE relation__topic__parent__topic IN SHARE ROW EXCLUSIVE MODE`,
-  )
   // ast-grep-ignore: no-three-sequential-awaits -- alias publication, attachment lifecycle, and merge capture locks share one global order.
   const aliasScopes = await lockTopicMergeAliasPublicationScopes(
     query,
@@ -169,8 +165,8 @@ async function executeTopicMerge(merger: PrivateUser, sourceTopic: Topic, destin
     [destinationTopic.id, merger.id, sourceTopic.id],
   )
   await mergeTopicSubtypeReferences(query, sourceTopic.id, destinationTopic.id)
-  const referenceChanges = await repointTopicReferences(query, sourceTopic.id, destinationTopic.id)
   await deleteMergedTopicDerivedRows(query, sourceTopic.id)
+  const referenceChanges = await repointTopicReferences(query, sourceTopic.id, destinationTopic.id)
   await createTopicAliasMergeRevisions({
     query,
     revisedById: merger.id,

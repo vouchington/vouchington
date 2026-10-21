@@ -69,7 +69,7 @@ BEGIN
         'admin_import_rows', 'fediverse_instance_integration_changes', 'moderator_actions',
         'review_disputes', 'topic_revisions', 'user_import_requests', 'vote_integrity_flags',
         'image_surface_placements', 'topic_classifier_results',
-        'topic_metrics', 'bedrock_embedding_batch_entities', 'classifier_candidates',
+        'topic_metrics', 'bedrock_embedding_batch_entities',
         'classifier_run_candidates', 'post_autotagger_result_topics',
         'rss_feed_item_autotagger_result_topics', 'autotagger_agent_run_topics',
         'post_classifier_local_outcomes'

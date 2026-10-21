@@ -35,3 +35,8 @@ precedence. Merging directly related topics removes the resulting self-relation,
 that would create an indirect parent cycle is refused. Image placements retain their source identity as history. Delayed classification applies no
 effects to inactive topics. A dedicated merge fence protects new current references without refusing
 ordinary reference writes during feed or vote-stat updates. Derived batch rows remain unfenced.
+
+Classifier candidates are administrative configuration: source-only candidates keep their identity
+and dependent thresholds, overrides, and reserved snapshots when moved. A destination candidate
+wins a uniqueness collision. Classifier results remain derived; obsolete topic results are skipped
+without retargeting the provider's answer to the destination.

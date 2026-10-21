@@ -6,6 +6,7 @@ import {
 import sql from 'sql-template-strings'
 import {
   assertPersistedDecisionMatchesRun,
+  readInactiveRunTopicIds,
   hasNoCapturedCandidates,
   remoteCandidateKind,
 } from './run-remote-checks.mts'
@@ -62,6 +63,10 @@ export async function readClassifierRunOutcomes<C, L, E>(
     ? await readCompleteClassifierDecision(options.query, row.decision_batch_id, candidateKind)
     : await readCompleteClassifierDecisionIfExistsFromPrimary(row.decision_batch_id, candidateKind)
   if (!remoteDecision) throw new Error('classifier run lost its committed remote decision')
-  assertPersistedDecisionMatchesRun(lease, remoteDecision)
+  assertPersistedDecisionMatchesRun(
+    lease,
+    remoteDecision,
+    await readInactiveRunTopicIds(query, lease),
+  )
   return { local, remoteDecision }
 }

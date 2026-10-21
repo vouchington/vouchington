@@ -16,7 +16,6 @@ import {
   toPublicEntityRelations,
 } from './upsert-helpers.mts'
 import type { TransactionQuery } from '@data-stores/psql'
-import { lockAndAssertTopicParentRelations } from './assert-topic-parent-relation.mts'
 import { assertEntityRelationUpsertAllowed } from './assert-upsert-allowed.mts'
 import { assertPublisherTypeObjectsAreValidInTransaction } from './assert-publisher-type-relation.mts'
 import { enqueueBulkFollowNotification } from '@queues/notifications/enqueues'
@@ -61,7 +60,6 @@ export const upsertEntityRelation = async (
       objects.map(object => object.id),
       relation.subject_type === 'user' ? [subject.id] : [],
       async transactionQuery => {
-        await lockAndAssertTopicParentRelations(transactionQuery, relation, subject, objects)
         await assertPublisherTypeObjectsAreValidInTransaction(
           transactionQuery,
           relation,

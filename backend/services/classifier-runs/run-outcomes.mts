@@ -6,6 +6,7 @@ import { lockHeldClassifierRun } from './run-lock.mts'
 import { persistRunLocal, validateRunLocal } from './run-local.mts'
 import {
   assertPersistedDecisionMatchesRun,
+  readInactiveRunTopicIds,
   assertRemoteInputCandidates,
   assertRemoteInputIdentity,
   hasNoCapturedCandidates,
@@ -45,7 +46,11 @@ export async function persistClassifierRunOutcomes<C, L, E>(
     assertRemoteInputIdentity(lease, input.remoteDecision)
     assertRemoteInputCandidates(lease, input.remoteDecision)
     const persisted = await persistClassifierDecision(input.remoteDecision, { query })
-    assertPersistedDecisionMatchesRun(lease, persisted.decision)
+    assertPersistedDecisionMatchesRun(
+      lease,
+      persisted.decision,
+      await readInactiveRunTopicIds(query, lease),
+    )
   }
   await persistRunLocal(adapter, query, lease, input.local)
   await query(sql`/* persistClassifierRunOutcomes */

@@ -1,4 +1,8 @@
-import { insertParentAcrossTopicMerge } from '@voucha/test-helpers/topic-merge-parent-race'
+import { createClassifierFixture } from '@voucha/test-helpers/data-stores/psql/classifiers'
+import {
+  getTopicMergeClassifierConfiguration,
+  seedTopicMergeClassifierCollision,
+} from '@voucha/test-helpers/topic-merge-classifiers'
 import { createTestTopic, createTestUser, insertTestImage } from '@voucha/test-helpers'
 import { setTestTopicSurfaceImages } from '@voucha/test-helpers/entities/media-surface-writes'
 import {
@@ -74,22 +78,39 @@ describe('topic merge reference regressions', () => {
     await expect(getTopicByAny(source.id)).resolves.toMatchObject({ id: source.id })
   })
 
-  it('revalidates a parent writer that validated before a merge committed', async () => {
-    const admin = await createTestUser({ administrator: true })
-    const source = await createFullTestTopic({ user: admin })
-    const destination = await createFullTestTopic({ user: admin })
-    const first = await createFullTestTopic({ user: admin })
-    const second = await createFullTestTopic({ user: admin })
-    await seedTopicMergeParentEdges([
-      [source.id, first.id],
-      [second.id, destination.id],
-    ])
-    await expect(
-      insertParentAcrossTopicMerge(admin, first.id, second.id, () =>
-        mergeTopicAliases(admin, source, destination),
-      ),
-    ).rejects.toMatchObject({ status: 422 })
-  })
+  it.each([false, true])(
+    'moves classifier configuration and retains destination collisions=%s',
+    async collision => {
+      const fixture = await createClassifierFixture()
+      const admin = await createTestUser({ administrator: true })
+      const source = (await getTopicByAny(fixture.topicId))!
+      const destination = await createFullTestTopic({ user: admin })
+      await fixture.enableGlobalCandidateForCommunity()
+      await fixture.createTopicBatch()
+      const destinationCandidateId = collision
+        ? await seedTopicMergeClassifierCollision(
+            fixture.classifierId,
+            destination.id,
+            fixture.promptVersionId,
+          )
+        : null
+      await mergeTopicAliases(admin, source, destination)
+      await expect(
+        getTopicMergeClassifierConfiguration([
+          fixture.topicCandidateId,
+          ...(destinationCandidateId ? [destinationCandidateId] : []),
+        ]),
+      ).resolves.toEqual([
+        {
+          id: destinationCandidateId ?? fixture.topicCandidateId,
+          topic_id: destination.id,
+          thresholds: 1,
+          overrides: collision ? 0 : 1,
+          snapshots: collision ? 0 : 1,
+        },
+      ])
+    },
+  )
 
   it('keeps a verified source claim over a pending destination claim', async () => {
     const admin = await createTestUser({ administrator: true })

@@ -48,10 +48,17 @@ export function assertApplicationInput(input: TopicClassifierApplicationInput): 
 export function validateTopicDecision(
   decision: PersistedClassifierDecision,
   expectedBindings: readonly ExpectedTopicClassifierBinding[],
+  inactive: ReadonlySet<string> = new Set(),
 ): readonly PersistedTopicDecisionResult[] {
   const callIds = new Set(decision.calls.map(call => call.id))
-  const expected = new Set(expectedBindings.map(bindingKey))
-  const results = decision.results
+  const expected = new Set(
+    expectedBindings.flatMap(binding =>
+      inactive.has(binding.topicId) ? [] : [bindingKey(binding)],
+    ),
+  )
+  const results = decision.results.filter(
+    result => result.candidateKind !== 'topic' || !inactive.has(result.topicId),
+  )
   if (
     results.length !== expected.size ||
     results.some(result => result.candidateKind !== 'topic')
