@@ -148,5 +148,7 @@ function recordReferencesSecret(
 
 function referencesSecretExpression(value: string, secretName: string): boolean {
   const escaped = secretName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  return new RegExp(String.raw`secrets\.${escaped}\b`).test(value)
+  return new RegExp(String.raw`secrets(?:\.${escaped}\b|\[\s*['"]${escaped}['"]\s*\])`, 'i').test(
+    value,
+  )
 }

@@ -82,6 +82,49 @@ describe('optional secret forwards with mixed consumers and aliased bindings', (
     expect(unprovisionedSecretsWithoutReadinessStep(topology, INVENTORY)).toEqual([])
   })
 
+  it('still flags bracket and case-insensitive env bindings of the source secret', () => {
+    for (const expression of [
+      `\${{ secrets['${SECRET}'] }}`,
+      `\${{ secrets["${SECRET.toLowerCase()}"] }}`,
+    ]) {
+      const job = { ...publishJob(), env: { TOKEN: expression } }
+      const topology = {
+        ...fixtureTopology(
+          [
+            fixtureWorkflow('caller', CALLER_PATH, { jobIds: [job.id] }),
+            fixtureCallableWorkflow('callee', CALLEE_PATH, { [SECRET]: { required: false } }),
+          ],
+          [job],
+        ),
+        edges: [explicitEdge(job, { [SECRET]: `\${{ secrets.${SECRET} }}` })],
+      }
+
+      expect(unprovisionedSecretsWithoutReadinessStep(topology, INVENTORY)).toEqual([
+        `${CALLER_PATH}: "${SECRET}" is unprovisioned with no early-fail readiness step ` +
+          '(expected a step binding `secrets.PROVIDER_API_TOKEN` to an env var, then ' +
+          '`if [ -z "$VAR" ]; then ...; exit 1; fi` — see harness-dispatch.yml)',
+      ])
+    }
+  })
+
+  it('clears a bracket-syntax forward to a required:false destination', () => {
+    const job = publishJob()
+    const topology = {
+      ...fixtureTopology(
+        [
+          fixtureWorkflow('caller', CALLER_PATH, { jobIds: [job.id] }),
+          fixtureCallableWorkflow('callee', CALLEE_PATH, {
+            OPTIONAL_TOKEN: { required: false },
+          }),
+        ],
+        [job],
+      ),
+      edges: [explicitEdge(job, { OPTIONAL_TOKEN: `\${{ secrets['${SECRET}'] }}` })],
+    }
+
+    expect(unprovisionedSecretsWithoutReadinessStep(topology, INVENTORY)).toEqual([])
+  })
+
   it('still flags a source secret that also binds a required destination', () => {
     const job = publishJob()
     const topology = {
