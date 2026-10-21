@@ -8497,7 +8497,7 @@
         "idx_blocklisted_domains__source_id__domain": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_blocklisted_domains__source_id__domain ON public.blocklisted_domains USING btree (source_id, domain)",
+          "definition": "CREATE INDEX idx_blocklisted_domains__source_id__domain ON public.blocklisted_domains USING btree (source_id, domain COLLATE \"C\")",
           "includedColumns": [],
           "keys": [
             {
