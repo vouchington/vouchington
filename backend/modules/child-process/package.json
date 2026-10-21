@@ -10,6 +10,11 @@
       "types": "./index.mts",
       "import": "./index.mts",
       "default": "./index.mts"
+    },
+    "./image-smoke": {
+      "types": "./image-smoke.mts",
+      "import": "./image-smoke.mts",
+      "default": "./image-smoke.mts"
     }
   },
   "scripts": {},

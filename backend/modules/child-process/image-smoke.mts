@@ -1,7 +1,12 @@
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { Writable } from 'node:stream'
-import { CommandFailedError, runCommand } from './index.mts'
+import {
+  CommandFailedError,
+  runCommand,
+  type CommandFailureReason,
+  type RunCommandOptions,
+} from './index.mts'
 
 const SORT_BIN = '/usr/bin/sort'
 const COMM_BIN = '/usr/bin/comm'
@@ -39,10 +44,14 @@ export async function runWorkerIoCliSmoke(): Promise<void> {
   }
 }
 
+function smokeFailure(reason: CommandFailureReason, err: CommandFailedError): Error {
+  return new Error(`worker-io cli smoke failed (${reason}): ${err.message}`, { cause: err })
+}
+
 async function collectStdout(
-  command: string,
-  args: readonly string[],
-  stdin?: string,
+  command: RunCommandOptions['command'],
+  args: RunCommandOptions['args'],
+  stdin?: RunCommandOptions['stdin'],
 ): Promise<string> {
   const chunks: Buffer[] = []
   const stdout = new Writable({
@@ -55,7 +64,7 @@ async function collectStdout(
     await runCommand({ command, args, stdin, stdout, timeoutMs: SMOKE_TIMEOUT_MS })
   } catch (err) {
     if (err instanceof CommandFailedError) {
-      throw new Error(`worker-io cli smoke failed: ${err.message}`, { cause: err })
+      throw smokeFailure(err.reason, err)
     }
     throw err
   }
