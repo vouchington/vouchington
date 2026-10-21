@@ -14,7 +14,7 @@ import {
   waitForQueueDomainTestResult,
 } from '@voucha/test-helpers/queue-domain-controls'
 import { createBackgroundCpuWorker } from '../workers/create-worker.mts'
-import { BACKGROUND_CPU_HANDLERS } from './handlers.mts'
+import { BACKGROUND_CPU_HANDLERS } from '../processors/handlers.mts'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
