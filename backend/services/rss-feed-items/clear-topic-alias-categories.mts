@@ -10,7 +10,7 @@ export async function clearCategoriesForUnlinkedTopicAlias(
   topicAliasId: string,
   formerTopicId: string,
   options: QueryOptions = {},
-): Promise<{ updated: number }> {
+): Promise<{ updated: number; hasMore: boolean }> {
   const run = (query: TransactionQuery) =>
     query<{ alias: string; topic_id: string | null }>(
       `/* clearCategoriesForUnlinkedTopicAlias.alias */
@@ -22,7 +22,7 @@ export async function clearCategoriesForUnlinkedTopicAlias(
 
   const { rows } = await runInTransaction(options, run)
   const alias = rows[0]
-  if (!alias || alias.topic_id !== null) return { updated: 0 }
+  if (!alias || alias.topic_id !== null) return { updated: 0, hasMore: false }
   return clearUnlinkedTopicAliasCategories(topicAliasId, alias.alias, formerTopicId, options)
 }
 

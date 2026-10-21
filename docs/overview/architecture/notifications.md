@@ -39,6 +39,9 @@ flowchart TD
   never alter a replacement owner. Payloads without the exact binding are rejected.
 - **Reports leak nothing.** Report-review notifications are generic and route to the inbox; copy
   never exposes the reported target, reporter note, or moderator identity.
+- **Digest catch-up preserves complete weeks.** Scheduled recovery creates and dispatches a bounded
+  page of persisted weekly windows. Continuations keep the original closed-window target; recipient
+  leases remain independent so one unfinished window does not restart completed delivery.
 - **No raw external URLs.** RSS item notifications carry only an internal redirect id; the server
   resolves the destination.
 

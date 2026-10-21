@@ -115,7 +115,7 @@ describe('rss-feed categories', () => {
       // Create the topic and run the backfill
       const topic = await createTestTopic({ slug, name: slug })
       const count = await backfillCategoriesForTopicAlias(topic.id)
-      expect(count).toBeGreaterThan(0)
+      expect(count.updated).toBeGreaterThan(0)
 
       const after = await getRssFeedCategories(feed.id)
       expect(after.find(r => r.category_text === slug)?.topic_id).toBe(topic.id)
@@ -127,7 +127,7 @@ describe('rss-feed categories', () => {
         name: `No Match ${createRandomString(8)}`,
       })
       const count = await backfillCategoriesForTopicAlias(topic.id)
-      expect(count).toBe(0)
+      expect(count).toEqual({ updated: 0, hasMore: false })
     })
   })
 

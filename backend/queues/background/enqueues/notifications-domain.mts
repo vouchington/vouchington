@@ -75,3 +75,5 @@ export type ReconcileMediaDeliveryRegistryData =
     }
 export type ReplayMediaDeliveryRegistryData = { actorUserId: string; after?: string }
 export type ApplyMediaDeliveryRegistryRecordData = { mediaDeliveryRegistryRecordId: string }
+
+export type CommunityActivityDigestScheduleData = { targetWindowStart?: string }

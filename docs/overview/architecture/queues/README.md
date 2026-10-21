@@ -44,6 +44,11 @@ flowchart LR
 
 ## Why queues are shaped this way
 
+Moderation reconciliation and Bedrock batch polling carry a fixed sweep boundary through bounded
+continuations, so unchanged active rows cannot monopolize every page. Invalid-crawl cleanup retains
+its age cutoff while committed deletions advance the remaining-work predicate. A continuation keeps
+work eligible without holding a worker through the entire backlog.
+
 - **PostgreSQL is the source of truth; the queue is a delivery hint.** Deduplication reduces
   duplicate enqueues but is never the correctness boundary, so every processor is idempotent against
   durable state. There is no dead-letter queue: each queue needs a backfill, a self-healing
@@ -123,3 +128,8 @@ bounded dispatcher and does not recalculate weights or change administrator over
   execution while embed enrichment keeps its destination-host-limited I/O path.
 - [AI platform](../ai-platform.md) describes model and embedding work.
 - [Fediverse federation](../fediverse-federation.md) describes federation work.
+
+RSS alias category recovery resumes from mismatched category rows. An alias dirty generation is
+acknowledged only after both item and feed mappings finish; capped pages chain through the existing
+maintenance queue. Community digest catch-up likewise chains bounded weekly-window pages while
+retaining the original closed-window target.

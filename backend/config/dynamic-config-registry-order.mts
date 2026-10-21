@@ -90,6 +90,7 @@ export const REGISTRY_ORDER = [
   'app-attestation-config',
   'activitypub-inbox',
   'oauth-authorization-broker',
+  'oauth-authorization-exchange-work-config',
   'api-egress-proxy',
 ] as const
 

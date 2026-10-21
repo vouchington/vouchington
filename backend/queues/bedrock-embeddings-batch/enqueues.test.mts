@@ -1,13 +1,38 @@
 import { randomUUID } from 'node:crypto'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import { isDeduplicatedEnqueue, readAllQueueJobs, readEnqueuedJob } from '@voucha/test-helpers'
-import { enqueueReconcileExistingEmbeddings, reconciliationJobOptions } from './enqueues.mts'
+import {
+  enqueueReconcileExistingEmbeddings,
+  reconciliationJobOptions,
+  enqueueEmbeddingsBatchPollDispatcher,
+  enqueueEmbeddingsBatchStaleCleanupDispatcher,
+} from './enqueues.mts'
 import { backgroundCpu as bedrock_embeddings_batch } from '@queues/background-cpu/queues'
 import { PRIORITY_DISPATCHER } from './config.mts'
 import { requireBackgroundCpuJob } from '@queues/background-cpu/enqueues/registry'
 import { reconciliationScheduleEntries } from './enqueues/reconciliation-schedules.mts'
 
 describe('embedding reconciliation enqueues', () => {
+  it.each([
+    ['poll_dispatcher', enqueueEmbeddingsBatchPollDispatcher],
+    ['stale_cleanup_dispatcher', enqueueEmbeddingsBatchStaleCleanupDispatcher],
+  ] as const)('persists %s continuation with a cursor-specific identity', async (name, enqueue) => {
+    const cursor = { afterId: randomUUID(), throughId: randomUUID() }
+    const enqueued = await enqueue({ cursor })
+    const job = await readEnqueuedJob(bedrock_embeddings_batch, enqueued)
+    onTestFinished(() => job.remove())
+    expect(job).toMatchObject({
+      name: `bedrock-embeddings.${name}`,
+      data: { cursor },
+      opts: {
+        removeOnComplete: true,
+        removeOnFail: true,
+        jobId: `bedrock-embeddings__${name}__${cursor.throughId}__${cursor.afterId}`,
+      },
+    })
+    expect(job.opts.deduplication).toBeUndefined()
+  })
+
   it('dispatches each scheduled copy root with its entity payload and reconciliation lane', async () => {
     for (const entityType of ['topics', 'posts', 'rss_feed_items'] as const) {
       const entry = reconciliationScheduleEntries.find(

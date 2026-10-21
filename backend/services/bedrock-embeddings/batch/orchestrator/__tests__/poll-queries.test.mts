@@ -1,5 +1,7 @@
 import { getMinUUIDv7ForDate, mintUUIDv7 } from '@modules/utils/ids'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, onTestFinished } from 'vitest'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { bedrockEmbeddingsBatchConfig } from '../../config.mts'
 import {
   cleanupTestEmbeddingsBatches,
   insertTestEmbeddingsBatch,
@@ -25,6 +27,27 @@ describe('getPendingBatches', () => {
     return id
   }
 
+  it('caps a sweep, advances past unchanged active rows and excludes later IDs', async () => {
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, {
+        batch_listing_page_size: 1,
+      }),
+    )
+    const timestamp = Date.now() + 86_400_000 + Math.floor(Math.random() * 1_000_000_000)
+    const ids = [0, 1, 2].map(offset => getMinUUIDv7ForDate(new Date(timestamp + offset)))
+    onTestFinished(() => cleanupTestEmbeddingsBatches(ids))
+    await Promise.all(ids.map(id => insertTestEmbeddingsBatch({ id, bedrockStatus: 'Submitted' })))
+    const first = await getPendingBatches({
+      afterId: getMinUUIDv7ForDate(new Date(timestamp - 1)),
+      throughId: getMinUUIDv7ForDate(new Date(timestamp + 2)),
+    })
+    expect(first.batches.map(row => row.id)).toEqual([ids[0]])
+    expect(first.hasMore).toBe(true)
+    const last = await getPendingBatches(first.nextCursor)
+    expect(last.batches.map(row => row.id)).toEqual([ids[1]])
+    expect(last.hasMore).toBe(false)
+  })
+
   it('returns only active batches (submitted_at set, no terminal timestamp)', async () => {
     const activeId1 = batchId()
     const activeId2 = batchId()
@@ -43,7 +66,7 @@ describe('getPendingBatches', () => {
     ])
 
     const pending = await getPendingBatches()
-    const pendingIds = pending.map(r => r.id)
+    const pendingIds = pending.batches.map(r => r.id)
 
     expect(pendingIds).toContain(activeId1)
     expect(pendingIds).toContain(activeId2)
@@ -96,7 +119,7 @@ describe('getActiveBatchStats', () => {
 
     // Verify via getPendingBatches that active/non-active classification is correct.
     const pending = await getPendingBatches()
-    const pendingIds = pending.map(r => r.id)
+    const pendingIds = pending.batches.map(r => r.id)
     expect(pendingIds).toContain(activeId)
     expect(pendingIds).not.toContain(completedId)
     expect(pendingIds).not.toContain(failedId)

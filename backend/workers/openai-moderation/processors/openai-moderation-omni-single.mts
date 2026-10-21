@@ -1,4 +1,5 @@
 import {
+  type PostModerationReconciliationData,
   OPENAI_MODERATION_BACKFILL_IMAGES_JOB,
   OPENAI_MODERATION_BACKFILL_POSTS_JOB,
   OPENAI_MODERATION_IMAGE_JOB,
@@ -31,6 +32,7 @@ import {
 } from '@services/post-clearance'
 import { enqueueReconcilePostNotifications } from '@queues/notifications/enqueues'
 import {
+  enqueueReconcilePostModerationContinuation,
   enqueueBackfillImageModerationContinuation,
   enqueueBackfillPostModerationContinuation,
   enqueueCreatePostModerationBatch,
@@ -39,7 +41,7 @@ import {
 } from '@queues/openai-moderation/enqueues'
 import { enqueueSpamDetection } from '@queues/moderation-signals/enqueues'
 
-type OpenAIModerationJobData = { id?: string; afterId?: string }
+type OpenAIModerationJobData = { id?: string; afterId?: string } & PostModerationReconciliationData
 
 export async function handleOpenAIModerationOmniSingleJob(
   job: Job<OpenAIModerationJobData>,
@@ -103,7 +105,11 @@ export async function handleOpenAIModerationOmniSingleJob(
       case OPENAI_MODERATION_RECONCILE_IMAGE_QUARANTINES_JOB.name:
         return await reconcilePendingImageQuarantines(scope?.imageIds)
       case OPENAI_MODERATION_RECONCILE_POST_MODERATION_JOB.name: {
-        const reconciliation = await reconcilePostModerationWork(100, scope?.postIds)
+        const reconciliation = await reconcilePostModerationWork(
+          undefined,
+          scope?.postIds,
+          job.data.cursor,
+        )
         await Promise.all(
           reconciliation.due.map(({ post_id: postId, source }) =>
             source === 'openai_omni'
@@ -112,7 +118,10 @@ export async function handleOpenAIModerationOmniSingleJob(
           ),
         )
         await Promise.all(reconciliation.exhausted_post_ids.map(checkPostClearance))
+        if (reconciliation.nextCursor)
+          await enqueueReconcilePostModerationContinuation(reconciliation.nextCursor)
         return {
+          hasMore: reconciliation.hasMore,
           enqueued: reconciliation.due.length,
           moved_to_review: reconciliation.exhausted_post_ids.length,
         }

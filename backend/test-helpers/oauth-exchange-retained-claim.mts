@@ -35,7 +35,7 @@ export async function recoverTestRetainedOAuthClaim(
   let firstAttempts = 0
   let outcome:
     | {
-        recovered: string[]
+        recovered: { ids: string[]; hasMore: boolean }
         before: Awaited<ReturnType<typeof getTestOAuthAuthorization>>
         after: Awaited<ReturnType<typeof getTestOAuthAuthorization>>
         firstState: string

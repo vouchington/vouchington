@@ -82,6 +82,7 @@ describe('clearCategoriesForUnlinkedTopicAlias votes', () => {
 
     await expect(clearCategoriesForUnlinkedTopicAlias(alias!.id, topic.id)).resolves.toEqual({
       updated: 1,
+      hasMore: false,
     })
     await expect(getEntityRelationElectionVote(categorizer!.id, relationId!)).resolves.toBeNull()
   })

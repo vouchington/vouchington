@@ -9,6 +9,7 @@ import type {
   enqueueBulkDeliverNotificationPushIntents,
   enqueueCommunityActivityDigestBatch,
   enqueueCommunityActivityDigestDispatch,
+  enqueueCommunityActivityDigestScheduleTick,
   CommunityActivityDigestBatchData,
 } from '@queues/notifications/enqueues'
 import type { createCommunityActivityDigestBatch } from '@services/notifications/community-activity-digest'
@@ -25,6 +26,8 @@ const mockEnqueueBulkDeliverNotificationPushIntents =
 const mockEnqueueCommunityActivityDigestBatch = vi.fn<typeof enqueueCommunityActivityDigestBatch>()
 const mockEnqueueCommunityActivityDigestDispatch =
   vi.fn<typeof enqueueCommunityActivityDigestDispatch>()
+const mockEnqueueCommunityActivityDigestScheduleTick =
+  vi.fn<typeof enqueueCommunityActivityDigestScheduleTick>()
 const mockCreateCommunityActivityDigestBatch = vi.fn<typeof createCommunityActivityDigestBatch>()
 const mockPrepareDispatchWindows = vi.fn<typeof prepareCommunityActivityDigestWorkItems>()
 const mockMarkDispatchWindowEnqueued = vi.fn<typeof claimCommunityActivityDigestWorkItem>()
@@ -76,16 +79,19 @@ describe('community activity digest processors', () => {
     try {
       vi.setSystemTime(new Date('2026-07-15T18:42:00.000Z'))
       mockEnqueueCommunityActivityDigestDispatch.mockResolvedValue(undefined)
-      mockPrepareDispatchWindows.mockResolvedValue([
-        {
-          windowStart: new Date('2026-06-29T00:00:00.000Z'),
-          windowEnd: new Date('2026-07-06T00:00:00.000Z'),
-        },
-        {
-          windowStart: new Date('2026-07-06T00:00:00.000Z'),
-          windowEnd: new Date('2026-07-13T00:00:00.000Z'),
-        },
-      ])
+      mockPrepareDispatchWindows.mockResolvedValue({
+        windows: [
+          {
+            windowStart: new Date('2026-06-29T00:00:00.000Z'),
+            windowEnd: new Date('2026-07-06T00:00:00.000Z'),
+          },
+          {
+            windowStart: new Date('2026-07-06T00:00:00.000Z'),
+            windowEnd: new Date('2026-07-13T00:00:00.000Z'),
+          },
+        ],
+        hasMore: false,
+      })
       mockMarkDispatchWindowEnqueued.mockResolvedValue('digest-lease')
 
       await processCommunityActivityDigestScheduleTick(
@@ -106,6 +112,51 @@ describe('community activity digest processors', () => {
     } finally {
       vi.useRealTimers()
     }
+  })
+
+  it('continues a capped catch-up while dispatching every retained prior window', async () => {
+    const targetWindowStart = '2026-07-13T00:00:00.000Z'
+    const priorWindow = {
+      windowStart: new Date('2026-06-29T00:00:00.000Z'),
+      windowEnd: new Date('2026-07-06T00:00:00.000Z'),
+    }
+    const currentWindow = {
+      windowStart: new Date('2026-07-06T00:00:00.000Z'),
+      windowEnd: new Date(targetWindowStart),
+    }
+    mockPrepareDispatchWindows.mockResolvedValue({
+      windows: [priorWindow, currentWindow],
+      hasMore: true,
+    })
+    mockMarkDispatchWindowEnqueued
+      .mockResolvedValueOnce('prior-lease')
+      .mockResolvedValueOnce('current-lease')
+    mockEnqueueCommunityActivityDigestDispatch.mockResolvedValue(undefined)
+    mockEnqueueCommunityActivityDigestScheduleTick.mockResolvedValue(undefined)
+
+    await processCommunityActivityDigestScheduleTick(
+      { targetWindowStart },
+      {
+        enqueueCommunityActivityDigestDispatch: mockEnqueueCommunityActivityDigestDispatch,
+        enqueueCommunityActivityDigestScheduleTick: mockEnqueueCommunityActivityDigestScheduleTick,
+        prepareCommunityActivityDigestWorkItems: mockPrepareDispatchWindows,
+        claimCommunityActivityDigestWorkItem: mockMarkDispatchWindowEnqueued,
+      },
+    )
+
+    expect(mockEnqueueCommunityActivityDigestDispatch).toHaveBeenNthCalledWith(1, {
+      windowStart: priorWindow.windowStart.toISOString(),
+      windowEnd: priorWindow.windowEnd.toISOString(),
+      leaseToken: 'prior-lease',
+    })
+    expect(mockEnqueueCommunityActivityDigestDispatch).toHaveBeenNthCalledWith(2, {
+      windowStart: currentWindow.windowStart.toISOString(),
+      windowEnd: currentWindow.windowEnd.toISOString(),
+      leaseToken: 'current-lease',
+    })
+    expect(mockEnqueueCommunityActivityDigestScheduleTick).toHaveBeenCalledExactlyOnceWith({
+      targetWindowStart,
+    })
   })
 
   it('creates a batch, enqueues pushes, and continues the recipient cursor', async () => {

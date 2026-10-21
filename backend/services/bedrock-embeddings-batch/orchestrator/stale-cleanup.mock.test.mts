@@ -1,5 +1,7 @@
-import { mintUUIDv7 } from '@modules/utils/ids'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { mintUUIDv7, getMinUUIDv7ForDate } from '@modules/utils/ids'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { bedrockEmbeddingsBatchConfig } from '@services/bedrock-embeddings/batch/config'
+import { afterEach, beforeEach, describe, expect, it, vi, onTestFinished } from 'vitest'
 import { BedrockControlClient } from '@modules/aws/bedrock-control'
 import {
   cleanupTestEmbeddingsBatches,
@@ -35,6 +37,39 @@ describe('runStaleCleanup', () => {
     await cleanupTestEmbeddingsBatches(createdBatchIds.splice(0))
   })
 
+  it('bounds stale provider work and continues past batches still awaiting result ingestion', async () => {
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, {
+        batch_listing_page_size: 1,
+      }),
+    )
+    const timestamp = Date.now() + 86_400_000 + Math.floor(Math.random() * 1_000_000_000)
+    const ids = [0, 1].map(offset => getMinUUIDv7ForDate(new Date(timestamp + offset)))
+    onTestFinished(() => cleanupTestEmbeddingsBatches(ids))
+    await Promise.all(
+      ids.map(id =>
+        insertTestEmbeddingsBatch({
+          id,
+          jobArn: `arn:aws:bedrock:us-west-2:123456789012:model-invocation-job/${id}`,
+          bedrockStatus: 'Submitted',
+          submittedAt: new Date(Date.now() - 7_200_000),
+        }),
+      ),
+    )
+    // Completed provider jobs remain locally pending until their output is downloaded.
+    vi.mocked(BedrockControlClient.send).mockResolvedValue({ status: 'Completed' } as never)
+    const first = await runStaleCleanup(1, {
+      afterId: getMinUUIDv7ForDate(new Date(timestamp - 1)),
+      throughId: getMinUUIDv7ForDate(new Date(timestamp + 2)),
+    })
+    expect(first).toMatchObject({ inspected: 1, hasMore: true, reconciled: 1 })
+    expect(first.nextCursor?.afterId).toBe(ids[0])
+    expect(BedrockControlClient.send).toHaveBeenCalledTimes(1)
+    const last = await runStaleCleanup(1, first.nextCursor)
+    expect(last).toMatchObject({ inspected: 1, hasMore: false, reconciled: 1 })
+    expect(BedrockControlClient.send).toHaveBeenCalledTimes(2)
+  })
+
   it('returns empty result when no batches are stale', async () => {
     const id = batchId()
     // 30 minutes old — not stale with 1h TTL
@@ -46,7 +81,7 @@ describe('runStaleCleanup', () => {
 
     const result = await runStaleCleanup(1)
 
-    expect(result).toEqual({ inspected: 0, reconciled: 0, forcedCancellations: [] })
+    expect(result).toEqual({ inspected: 0, reconciled: 0, forcedCancellations: [], hasMore: false })
     expect(BedrockControlClient.send).not.toHaveBeenCalled()
   })
 

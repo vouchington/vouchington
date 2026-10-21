@@ -22,27 +22,27 @@ describe('rss feed item category processor', () => {
   })
 
   it('backfills item categories for topic aliases', async () => {
-    mockBackfillCategoriesForTopicAliases.mockResolvedValue({ updated: 2 })
+    mockBackfillCategoriesForTopicAliases.mockResolvedValue({ updated: 2, hasMore: false })
 
     await expect(
       processBackfillCategoriesForTopicAliases(
         { topicId: 'topic-1' },
         { backfillCategoriesForTopicAliases: mockBackfillCategoriesForTopicAliases },
       ),
-    ).resolves.toEqual({ updated: 2 })
+    ).resolves.toEqual({ updated: 2, hasMore: false })
 
     expect(mockBackfillCategoriesForTopicAliases).toHaveBeenCalledWith('topic-1')
   })
 
   it('backfills RSS feed categories for a topic alias', async () => {
-    mockBackfillCategoriesForTopicAlias.mockResolvedValue(3)
+    mockBackfillCategoriesForTopicAlias.mockResolvedValue({ updated: 3, hasMore: false })
 
     await expect(
       processBackfillRssFeedCategoriesForTopicAlias(
         { topicId: 'topic-2' },
         { backfillCategoriesForTopicAlias: mockBackfillCategoriesForTopicAlias },
       ),
-    ).resolves.toBe(3)
+    ).resolves.toEqual({ updated: 3, hasMore: false })
 
     expect(mockBackfillCategoriesForTopicAlias).toHaveBeenCalledWith('topic-2')
   })

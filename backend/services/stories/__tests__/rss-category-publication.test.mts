@@ -262,7 +262,10 @@ describe('RSS category story-post publication', () => {
       urlId,
     })
 
-    await expect(backfillCategoriesForTopicAliases(topic.id)).resolves.toEqual({ updated: 500 })
+    await expect(backfillCategoriesForTopicAliases(topic.id)).resolves.toEqual({
+      updated: 500,
+      hasMore: true,
+    })
     await expect(countTestStoryPostPublicationDirtyWork(storyIds)).resolves.toBe(500)
   })
 

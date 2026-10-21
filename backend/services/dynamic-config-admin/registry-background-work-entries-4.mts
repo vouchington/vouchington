@@ -3,12 +3,26 @@ import {
   backgroundCpuQueueConfig,
   backgroundCpuQueueMaxValues,
 } from '@queues/background-cpu/config'
+import {
+  oauthAuthorizationExchangeWorkConfig,
+  oauthAuthorizationExchangeWorkMaxValues,
+} from '@services/oauth/work-limits'
 import { defineBoundedWorkNamespace } from './registry-bounded-work-entry.mts'
 import { oauthGithubWorkConfig, oauthGithubWorkMaxValues } from '@services/oauth-github/work-limits'
 import { oauthXWorkConfig, oauthXWorkMaxValues } from '@services/oauth-x/work-limits'
 import { sesInboundWorkConfig, sesInboundWorkMaxValues } from '@workers/ses-inbound/work-limits'
 
 export const backgroundWorkEntries4 = [
+  defineBoundedWorkNamespace({
+    namespace: 'oauth-authorization-exchange-work-config',
+    config: oauthAuthorizationExchangeWorkConfig,
+    label: 'OAuth authorization exchange',
+    maxValues: oauthAuthorizationExchangeWorkMaxValues,
+    descriptions: {
+      authorization_exchange_recovery_batch_size:
+        'Authorization exchanges recovered per dispatcher run.',
+    },
+  }),
   defineBoundedWorkNamespace({
     namespace: 'background-cpu-queue-config',
     config: backgroundCpuQueueConfig,

@@ -184,7 +184,7 @@ describe('bedrock embeddings batch worker processor', () => {
       processBedrockEmbeddingsBatchJob(
         makeJob('bedrock-embeddings.poll_dispatcher', {}, 'bedrock-embeddings:dispatcher'),
       ),
-    ).resolves.toEqual({ count: expect.any(Number) })
+    ).resolves.toEqual({ count: expect.any(Number), hasMore: expect.any(Boolean) })
 
     await expect(
       processBedrockEmbeddingsBatchJob(

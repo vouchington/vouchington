@@ -13,6 +13,7 @@ import {
 } from './dsa-statement-submission-build-failure.mts'
 import { isDsaTransparencyDatabaseConfigured } from './dsa-statement-submission-config.mts'
 import { isCopyrightDsaSorDatabaseEnabled, getCopyrightDsaSorDatabaseFrom } from './config.mts'
+import { getCopyrightSweepLimits } from './work-limits.mts'
 import sql from 'sql-template-strings'
 
 const RECONCILE_JOB_NAME = 'processReconcileDsaStatementSubmissions'
@@ -44,7 +45,7 @@ const defaultDependencies: DsaStatementSweepDependencies = {
 /** Checks both audited gates, materializes eligible decisions once, and never enqueues without credentials. */
 export async function prepareDsaStatementSubmissionSweep(
   overrides: Partial<DsaStatementSweepDependencies> & { restrictionIds?: readonly string[] } = {},
-): Promise<Date | null> {
+): Promise<{ from: Date; hasMore: boolean } | null> {
   const { restrictionIds, ...dependencyOverrides } = overrides
   const dependencies = { ...defaultDependencies, ...dependencyOverrides }
   if (!(await dependencies.isEnabled())) return null
@@ -54,7 +55,7 @@ export async function prepareDsaStatementSubmissionSweep(
     return null
   }
 
-  await materializeDsaStatementSubmissions(from, {
+  const materialized = await materializeDsaStatementSubmissions(from, {
     buildPayload: dependencies.buildPayload,
     reportBuildFailure: dependencies.reportBuildFailure,
     restrictionIds,
@@ -65,7 +66,7 @@ export async function prepareDsaStatementSubmissionSweep(
     dependencies.recordConfigMissing(RECONCILE_JOB_NAME, DATABASE_CREDENTIAL_NAMES)
     return null
   }
-  return from
+  return { from, hasMore: materialized.hasMore }
 }
 
 /**
@@ -78,13 +79,13 @@ export async function materializeDsaStatementSubmissions(
   overrides: Partial<Pick<DsaStatementSweepDependencies, 'buildPayload' | 'reportBuildFailure'>> & {
     restrictionIds?: readonly string[]
   } = {},
-): Promise<number> {
+): Promise<{ inserted: number; hasMore: boolean }> {
   const { restrictionIds, ...dependencyOverrides } = overrides
   const dependencies = { ...defaultDependencies, ...dependencyOverrides }
   // One bounded page per scheduled run. Inserted rows disappear from the next run's
   // NOT EXISTS work predicate, so the table itself is the durable resume marker.
   const page = await queryCopyrightSweepIdPage(
-    { limit: 100, ids: restrictionIds },
+    { limit: getCopyrightSweepLimits().batchSize, ids: restrictionIds },
     'Invalid DSA submission restriction cursor',
     'searchUnmaterializedDsaStatementRestrictionIds',
     'rowId',
@@ -105,7 +106,7 @@ export async function materializeDsaStatementSubmissions(
     // oxlint-disable-next-line no-await-in-loop -- each payload and insert is one transaction.
     if (await materializeDsaStatementSubmission(restrictionId, from, dependencies)) inserted += 1
   }
-  return inserted
+  return { inserted, hasMore: page.page_info.has_next_page }
 }
 
 /** Returns true when a payload row was inserted. Only a builder HttpError is recorded and skipped. */

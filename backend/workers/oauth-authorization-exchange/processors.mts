@@ -1,21 +1,25 @@
 import { hasRetainedUnarmedOAuthExchangeClaim } from '@queues/oauth-authorization-exchange/enqueues/recovery'
-import { getRecoverableOAuthAuthorizationIds } from '@services/oauth'
+import {
+  getOAuthAuthorizationExchangeWorkLimit,
+  getRecoverableOAuthAuthorizationIds,
+} from '@services/oauth'
 import { enqueueOrReactivateBulkOAuthAuthorizationExchanges } from '@queues/oauth-authorization-exchange/enqueues'
 
 export async function processDispatchOAuthAuthorizationExchanges(
   authorizationIds?: readonly string[],
 ): Promise<{
   enqueued: number
+  hasMore: boolean
 }> {
-  const recoverableIds = await getRecoverableOAuthAuthorizationIds(
-    500,
+  const recovery = await getRecoverableOAuthAuthorizationIds(
+    getOAuthAuthorizationExchangeWorkLimit('authorization_exchange_recovery_batch_size'),
     authorizationIds,
     hasRetainedUnarmedOAuthExchangeClaim,
   )
-  if (recoverableIds.length > 0) {
+  if (recovery.ids.length > 0) {
     await enqueueOrReactivateBulkOAuthAuthorizationExchanges(
-      recoverableIds.map(authorizationId => ({ authorizationId })),
+      recovery.ids.map(authorizationId => ({ authorizationId })),
     )
   }
-  return { enqueued: recoverableIds.length }
+  return { enqueued: recovery.ids.length, hasMore: recovery.hasMore }
 }

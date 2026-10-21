@@ -130,7 +130,7 @@ describe('topic alias category mapping reconciliation', () => {
     ).resolves.toBe(1)
     await expect(
       owned.run(() => processReconcileTopicAliasCategoryMappings(undefined, [alias!.id])),
-    ).resolves.toEqual({ reconciled: 0, updated: 0 })
+    ).resolves.toEqual({ reconciled: 0, updated: 0, hasMore: false })
     await owned.run(() => deleteTopicAliasCategoryMappingDirtyRowsForTest([foreignId]))
   })
 
@@ -178,6 +178,7 @@ describe('topic alias category mapping reconciliation', () => {
     ).resolves.toEqual({
       reconciled: 2,
       updated: 0,
+      hasMore: true,
     })
     await expect(
       owned.run(() => countTopicAliasCategoryMappingDirtyRowsForTest(ids)),
@@ -190,12 +191,14 @@ describe('topic alias category mapping reconciliation', () => {
     ).resolves.toEqual({
       reconciled: 1,
       updated: 0,
+      hasMore: false,
     })
     await expect(
       owned.run(() => processReconcileTopicAliasCategoryMappings(undefined, ids)),
     ).resolves.toEqual({
       reconciled: 0,
       updated: 0,
+      hasMore: false,
     })
     await expect(
       owned.run(() => countTopicAliasCategoryMappingDirtyRowsForTest([foreignId])),

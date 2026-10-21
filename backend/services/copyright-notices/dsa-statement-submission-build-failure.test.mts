@@ -55,7 +55,7 @@ describe('DSA statement payload build failures', () => {
         reportBuildFailure: report,
         restrictionIds: ownedIds,
       }),
-    ).resolves.toBe(2)
+    ).resolves.toMatchObject({ inserted: 2, hasMore: false })
     expect(report).toHaveBeenCalledExactlyOnceWith({
       restrictionId: broken.restrictionId,
       failureCode: 'http_404',
@@ -75,7 +75,7 @@ describe('DSA statement payload build failures', () => {
         reportBuildFailure: report,
         restrictionIds: ownedIds,
       }),
-    ).resolves.toBe(0)
+    ).resolves.toMatchObject({ inserted: 0, hasMore: false })
     expect(report).toHaveBeenCalledOnce()
     await expect(
       recordDsaStatementBuildFailure(broken.restrictionId, from, 'http_404'),
@@ -119,7 +119,7 @@ describe('DSA statement payload build failures', () => {
         reportBuildFailure: report,
         restrictionIds: [late.restrictionId],
       }),
-    ).resolves.toBe(1)
+    ).resolves.toMatchObject({ inserted: 1, hasMore: false })
   })
 
   it('records a restriction whose builder rejects an invalid payload as a 422 and keeps going', async () => {
@@ -138,7 +138,7 @@ describe('DSA statement payload build failures', () => {
         reportBuildFailure: report,
         restrictionIds: ownedIds,
       }),
-    ).resolves.toBe(1)
+    ).resolves.toMatchObject({ inserted: 1, hasMore: false })
     expect(report).toHaveBeenCalledExactlyOnceWith({
       restrictionId: invalid.restrictionId,
       failureCode: 'http_422',
@@ -157,7 +157,7 @@ describe('DSA statement payload build failures', () => {
         reportBuildFailure: report,
         restrictionIds: ownedIds,
       }),
-    ).resolves.toBe(0)
+    ).resolves.toMatchObject({ inserted: 0, hasMore: false })
     expect(await countTestDsaSubmissionsForRestriction(foreign.restrictionId)).toBe(0)
     expect(report).toHaveBeenCalledOnce()
   })
@@ -173,7 +173,7 @@ describe('DSA statement payload build failures', () => {
         reportBuildFailure: vi.fn<DsaStatementSweepDependencies['reportBuildFailure']>(),
         restrictionIds: [broken.restrictionId],
       }),
-    ).resolves.toBe(0)
+    ).resolves.toMatchObject({ inserted: 0, hasMore: false })
     expect(await countTestDsaSubmissionsForRestriction(foreign.restrictionId)).toBe(0)
     const failed = await readTestDsaSubmissionForRestriction(broken.restrictionId)
     const administrator = await createTestUser({ extraRoles: ['administrator'] })

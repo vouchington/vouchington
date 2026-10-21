@@ -12,6 +12,7 @@ export type RateLimitConfig = {
 }
 
 const DEFAULTS = {
+  batch_listing_page_size: 100,
   max_inflight_jobs: 100,
   max_requests_per_hour: 100000,
   max_requests_per_file: 100000,
@@ -30,6 +31,7 @@ const DEFAULTS = {
 }
 
 export const BEDROCK_BATCH_MAX_VALUES: Record<keyof typeof DEFAULTS, number> = {
+  batch_listing_page_size: 1000,
   max_inflight_jobs: 10_000,
   max_requests_per_hour: 100_000_000,
   max_requests_per_file: 1_000_000,
@@ -49,6 +51,7 @@ export const BEDROCK_BATCH_MAX_VALUES: Record<keyof typeof DEFAULTS, number> = {
 export const bedrockEmbeddingsBatchConfig = new DynamicConfig({
   key: 'bedrock-embeddings-batch-config',
   fieldTypes: {
+    batch_listing_page_size: 'number',
     max_inflight_jobs: 'number',
     max_requests_per_hour: 'number',
     max_requests_per_file: 'number',
@@ -125,4 +128,8 @@ export function getEmbeddingReconciliationPageSize(): number {
 
 export function getEmbeddingBloomPopulationBatchSize(): number {
   return positiveInteger('bloom_population_batch_size')
+}
+
+export function getBatchListingPageSize(): number {
+  return positiveInteger('batch_listing_page_size')
 }

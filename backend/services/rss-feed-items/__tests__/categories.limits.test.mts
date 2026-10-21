@@ -164,7 +164,7 @@ describe('categories limits', () => {
     }
   })
 
-  it('backfills aliases beyond one ordered database batch', async () => {
+  it('caps alias backfill and resumes from the remaining mismatched rows', async () => {
     const restoreBatchSize = overrideDynamicConfigFieldsForTest(rssFeedItemsWorkConfig, {
       category_backfill_batch_size: 2,
     })
@@ -191,7 +191,11 @@ describe('categories limits', () => {
 
       const result = await backfillCategoriesForTopicAliases(topic.id)
 
-      expect(result.updated).toBe(3)
+      expect(result).toEqual({ updated: 2, hasMore: true })
+      await expect(backfillCategoriesForTopicAliases(topic.id)).resolves.toEqual({
+        updated: 1,
+        hasMore: false,
+      })
       await expect(getRssFeedItemCategories(items[0]!.id)).resolves.toEqual([
         expect.objectContaining({ category_text: alias, topic_id: topic.id }),
       ])
@@ -246,7 +250,7 @@ describe('categories limits', () => {
 
     release.resolve()
     await holder
-    await expect(backfill).resolves.toEqual({ updated: 1 })
+    await expect(backfill).resolves.toEqual({ updated: 1, hasMore: false })
     await expect(getRssFeedItemCategories(item!.id)).resolves.toEqual([
       expect.objectContaining({ category_text: alias, topic_id: topic.id }),
     ])

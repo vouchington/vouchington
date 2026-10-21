@@ -14,17 +14,42 @@ export async function clearUnlinkedTopicAliasCategoryBatch(
   topicAliasId: string,
   alias: string,
   formerTopicId: string | undefined,
-): Promise<ReResolvedCategoryTopicMapping[]> {
+): Promise<{ rows: ReResolvedCategoryTopicMapping[]; hasMore: boolean }> {
   const CATEGORY_CLEAR_BATCH_SIZE = getRssFeedItemsWorkLimit('category_clear_batch_size')
   const parameters = [topicAliasId, alias, formerTopicId ?? null, CATEGORY_CLEAR_BATCH_SIZE]
-  const { rows: candidateItems } = await query<{ rss_feed_item_id: string }>(
+  const { rows: candidateItems } = await query<{
+    rss_feed_item_id: string
+    candidate_count: string
+  }>(
     `/* clearCategoriesForUnlinkedTopicAlias.candidateItems */
-      SELECT DISTINCT rss_feed_item_id FROM (
+      SELECT DISTINCT rss_feed_item_id, count(*) OVER () AS candidate_count FROM (
         SELECT category.rss_feed_item_id, category.category_text
         FROM rss_feed_item_categories category
         JOIN rss_category_identities identity ON identity.id = category.category_identity_id
+        LEFT JOIN topic_aliases source_alias ON source_alias.id = $1
+        LEFT JOIN LATERAL (
+          SELECT topic.id AS topic_id
+          FROM topics topic
+          WHERE topic.deleted_at IS NULL
+            AND topic.merged_into_topic_id IS NULL
+            AND (
+              LOWER(topic.name) IN (
+                identity.category_text,
+                CASE WHEN LEFT(identity.category_text, 1) = '#' THEN SUBSTRING(identity.category_text FROM 2) ELSE identity.category_text END,
+                LOWER(source_alias.alias)
+              )
+              OR topic.slug IN (
+                identity.category_text,
+                CASE WHEN LEFT(identity.category_text, 1) = '#' THEN SUBSTRING(identity.category_text FROM 2) ELSE identity.category_text END,
+                LOWER(source_alias.alias)
+              )
+            )
+          ORDER BY topic.id
+          LIMIT 1
+        ) replacement ON TRUE
         WHERE (category.topic_alias_id = $1 OR identity.category_text = LOWER($2))
           AND category.topic_id IS NOT NULL
+          AND category.topic_id IS DISTINCT FROM replacement.topic_id
           AND ($3::uuid IS NULL OR category.topic_id = $3)
           AND NOT EXISTS (
             SELECT 1 FROM topic_aliases current_alias
@@ -71,6 +96,7 @@ export async function clearUnlinkedTopicAliasCategoryBatch(
         WHERE (category.topic_alias_id = $1 OR identity.category_text = LOWER($2))
           AND category.rss_feed_item_id = ANY($5::uuid[])
           AND category.topic_id IS NOT NULL
+          AND category.topic_id IS DISTINCT FROM replacement.topic_id
           AND ($3::uuid IS NULL OR category.topic_id = $3)
           AND NOT EXISTS (
             SELECT 1
@@ -95,5 +121,8 @@ export async function clearUnlinkedTopicAliasCategoryBatch(
         candidates.replacement_topic_id`,
     [...parameters, candidateItemIds],
   )
-  return rows
+  return {
+    rows,
+    hasMore: Number(candidateItems[0]?.candidate_count ?? 0) === CATEGORY_CLEAR_BATCH_SIZE,
+  }
 }

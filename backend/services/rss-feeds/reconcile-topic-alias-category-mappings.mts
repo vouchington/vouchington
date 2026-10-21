@@ -24,14 +24,16 @@ export async function processReconcileTopicAliasCategoryMappings(
 ): Promise<{
   reconciled: number
   updated: number
+  hasMore: boolean
 }> {
-  if (topicAliasIds?.length === 0) return { reconciled: 0, updated: 0 }
+  if (topicAliasIds?.length === 0) return { reconciled: 0, updated: 0, hasMore: false }
   const candidates = await getTopicAliasCategoryMappingDirtyRows(limit, topicAliasIds)
   const { errors, ...result } = await reconcileTopicAliasCategoryMappingDirtyRows(
     candidates,
     0,
     0,
     [],
+    candidates.length === limit,
   )
   if (errors.length > 0) {
     throw new AggregateError(errors, 'Topic alias category mapping reconciliation failed')
@@ -73,32 +75,41 @@ async function reconcileTopicAliasCategoryMappingDirtyRows(
   reconciled: number,
   updated: number,
   errors: unknown[],
-): Promise<{ reconciled: number; updated: number; errors: unknown[] }> {
+  hasMore: boolean,
+): Promise<{ reconciled: number; updated: number; errors: unknown[]; hasMore: boolean }> {
   const [candidate, ...remaining] = candidates
-  if (!candidate) return { reconciled, updated, errors }
+  if (!candidate) return { reconciled, updated, errors, hasMore }
   try {
     const result = await reconcileTopicAliasCategoryMappingDirtyRow(candidate)
     return await reconcileTopicAliasCategoryMappingDirtyRows(
       remaining,
-      reconciled + 1,
+      reconciled + (result.hasMore ? 0 : 1),
       updated + result.updated,
       errors,
+      hasMore || result.hasMore,
     )
   } catch (err) {
     errors.push(err)
   }
-  return reconcileTopicAliasCategoryMappingDirtyRows(remaining, reconciled, updated, errors)
+  return reconcileTopicAliasCategoryMappingDirtyRows(
+    remaining,
+    reconciled,
+    updated,
+    errors,
+    hasMore,
+  )
 }
 
 async function reconcileTopicAliasCategoryMappingDirtyRow(
   candidate: TopicAliasCategoryMappingDirtyRow,
-): Promise<{ updated: number }> {
+): Promise<{ updated: number; hasMore: boolean }> {
   const currentAlias = await getCurrentTopicAlias(candidate.topic_alias_id)
   const updated = currentAlias?.topic_id
     ? await backfillLinkedTopicAliasCategories(currentAlias.topic_id)
     : await clearAllCategoriesForUnlinkedTopicAlias(candidate.topic_alias_id, candidate.alias)
-  await acknowledgeTopicAliasCategoryMappingDirtyRow(candidate)
-  return updated
+  if (updated.hasMore) return updated
+  const acknowledged = await acknowledgeTopicAliasCategoryMappingDirtyRow(candidate)
+  return { ...updated, hasMore: !acknowledged }
 }
 
 async function getCurrentTopicAlias(topicAliasId: string): Promise<CurrentTopicAlias | undefined> {
@@ -112,22 +123,28 @@ async function getCurrentTopicAlias(topicAliasId: string): Promise<CurrentTopicA
   return rows[0]
 }
 
-async function backfillLinkedTopicAliasCategories(topicId: string): Promise<{ updated: number }> {
+async function backfillLinkedTopicAliasCategories(
+  topicId: string,
+): Promise<{ updated: number; hasMore: boolean }> {
   const [itemBackfill, feedBackfill] = await Promise.all([
     backfillCategoriesForTopicAliases(topicId),
     backfillCategoriesForTopicAlias(topicId),
   ])
-  return { updated: itemBackfill.updated + feedBackfill }
+  return {
+    updated: itemBackfill.updated + feedBackfill.updated,
+    hasMore: itemBackfill.hasMore || feedBackfill.hasMore,
+  }
 }
 
 async function acknowledgeTopicAliasCategoryMappingDirtyRow(
   candidate: TopicAliasCategoryMappingDirtyRow,
-): Promise<void> {
-  await write(
+): Promise<boolean> {
+  const { rowCount } = await write(
     `/* acknowledgeTopicAliasCategoryMappingDirtyRow */
       DELETE FROM topic_alias_category_mapping_reconciliations
       WHERE topic_alias_id = $1
         AND generation = $2`,
     [candidate.topic_alias_id, candidate.generation],
   )
+  return rowCount === 1
 }

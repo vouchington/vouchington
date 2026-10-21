@@ -2,7 +2,7 @@ import { entityReconciliationConfig } from '@services/entity-listener-reconcilia
 import { referralCrawlDispatchConfig } from '@services/crawler-referral-links/work-limits'
 import { referralUnfurlDispatchConfig } from '@services/referral-link-unfurl/work-limits'
 import { friendsDispatchConfig } from '@services/friend-recommendations/work-limits'
-import { crawlDispatchConfig } from '@services/crawls/work-limits'
+import { crawlDispatchConfig, crawlCleanupMaxValues } from '@services/crawls/work-limits'
 import { crawlerRefreshWorkConfig } from '@services/crawlers/refresh-limits'
 import { defineDynamicConfigNamespace } from 'valkyries/dynamic-config'
 
@@ -14,6 +14,24 @@ export const streamDynamicConfigRegistryEntries = [
     config: crawlDispatchConfig,
     access: { update_roles: ['developer'] },
     fields: {
+      cleanup_max_batches_per_run: {
+        description: 'Maximum deletion pages per retained cleanup run.',
+        minValue: 1,
+        maxValue: crawlCleanupMaxValues.maxBatches,
+        integer: true,
+      },
+      cleanup_batch_size: {
+        description: 'Maximum invalid crawls deleted per retained cleanup run.',
+        minValue: 1,
+        maxValue: crawlCleanupMaxValues.batchSize,
+        integer: true,
+      },
+      cleanup_age_days: {
+        description: 'Minimum age in days before an invalid crawl is eligible for cleanup.',
+        minValue: 1,
+        maxValue: crawlCleanupMaxValues.ageDays,
+        integer: true,
+      },
       weekly_refresh_batch_size: {
         description: 'Hostname rows per weekly refresh page.',
         minValue: 1,

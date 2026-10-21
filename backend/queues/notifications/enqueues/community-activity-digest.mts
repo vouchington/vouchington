@@ -3,6 +3,7 @@ import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
 import { createBackgroundEnqueue } from '@queues/background/enqueues'
 import type {
   CommunityActivityDigestBatchData,
+  CommunityActivityDigestScheduleData,
   CommunityActivityDigestDispatchData,
 } from '@queues/background/enqueues/notifications-domain'
 import {
@@ -55,8 +56,10 @@ export function enqueueCommunityActivityDigestDispatch(
   } satisfies Partial<JobOptions>)
 }
 
-export function enqueueCommunityActivityDigestScheduleTick(): EnqueueReturnType {
-  return enqueueScheduleTickJob({})
+export function enqueueCommunityActivityDigestScheduleTick(
+  data: CommunityActivityDigestScheduleData = {},
+): EnqueueReturnType {
+  return enqueueScheduleTickJob(data)
 }
 
 export function enqueueCommunityActivityDigestBatch(

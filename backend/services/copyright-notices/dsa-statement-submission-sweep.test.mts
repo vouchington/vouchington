@@ -4,7 +4,9 @@ import {
 } from '@voucha/test-helpers/dsa-approval-withdrawal-fixtures'
 import { readTestDsaSubmissionForRestriction } from '@voucha/test-helpers/dsa-statement-build-failure-fixtures'
 import { withdrawCopyrightJurisdictionPolicyApproval } from './jurisdiction-policy.mts'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { copyrightSweepConfig } from './work-limits.mts'
 import {
   createTestCopyrightImageFixture,
   createTestCopyrightRestrictionForImage,
@@ -39,6 +41,37 @@ async function restrictionIdFor(noticeId: string): Promise<string> {
 }
 
 describe('DSA statement submission materialization', () => {
+  it('reports remaining materialization work through the configured sweep and resumes next tick', async () => {
+    onTestFinished(overrideDynamicConfigFieldsForTest(copyrightSweepConfig, { batch_size: 1 }))
+    const from = new Date('2026-07-01T00:00:00.000Z')
+    const first = await createTestCopyrightRestrictionForImage(
+      await createTestCopyrightImageFixture('post-image'),
+    )
+    const second = await createTestCopyrightRestrictionForImage(
+      await createTestCopyrightImageFixture('post-image'),
+    )
+    const options = {
+      isEnabled: async () => true,
+      getFrom: async () => from,
+      url: () => 'https://dsa.example.test',
+      token: () => 'synthetic-dsa-token',
+      restrictionIds: [first.restrictionId, second.restrictionId],
+    }
+
+    await expect(prepareDsaStatementSubmissionSweep(options)).resolves.toEqual({
+      from,
+      hasMore: true,
+    })
+    expect(await countTestDsaSubmissionsForRestriction(first.restrictionId)).toBe(1)
+    expect(await countTestDsaSubmissionsForRestriction(second.restrictionId)).toBe(0)
+    await expect(prepareDsaStatementSubmissionSweep(options)).resolves.toEqual({
+      from,
+      hasMore: false,
+    })
+    expect(await countTestDsaSubmissionsForRestriction(first.restrictionId)).toBe(1)
+    expect(await countTestDsaSubmissionsForRestriction(second.restrictionId)).toBe(1)
+  })
+
   it('stops before searching or recording work when the configured start date is absent', async () => {
     const warning = vi.fn<DsaStatementSweepDependencies['recordConfigMissing']>()
     const buildPayload = vi.fn<DsaStatementSweepDependencies['buildPayload']>()
@@ -154,7 +187,10 @@ describe('DSA statement submission materialization', () => {
     }
     expect(await countTestDsaSubmissionsForRestriction(dayBefore.restrictionId)).toBe(0)
     expect(await countTestDsaSubmissionsForRestriction(foreign.restrictionId)).toBe(0)
-    expect(await materializeDsaStatementSubmissions(from, { restrictionIds: scope })).toBe(0)
+    expect(await materializeDsaStatementSubmissions(from, { restrictionIds: scope })).toEqual({
+      inserted: 0,
+      hasMore: false,
+    })
   })
 
   it('materializes an existing restriction after its receipt approval is withdrawn before the first sweep', async () => {
@@ -185,14 +221,20 @@ describe('DSA statement submission materialization', () => {
     expect(await countTestDsaSubmissionsForRestriction(restrictionId)).toBe(0)
     const from = new Date('2026-07-01T00:00:00.000Z')
     const scope = { restrictionIds: [restrictionId] }
-    expect(await materializeDsaStatementSubmissions(from, scope)).toBe(1)
+    expect(await materializeDsaStatementSubmissions(from, scope)).toEqual({
+      inserted: 1,
+      hasMore: false,
+    })
     expect(await countTestDsaSubmissionsForRestriction(restrictionId)).toBe(1)
     const submission = await readTestDsaSubmissionForRestriction(restrictionId)
     expect(submission.payload?.puid).toBe(restrictionId)
     expect(submission.failed_at).toBeNull()
     expect(submission.failure_code).toBeNull()
     expect(await countTestDsaSubmissionsForRestriction(foreign.restrictionId)).toBe(0)
-    expect(await materializeDsaStatementSubmissions(from, scope)).toBe(0)
+    expect(await materializeDsaStatementSubmissions(from, scope)).toEqual({
+      inserted: 0,
+      hasMore: false,
+    })
     expect(await readTestDsaSubmissionForRestriction(restrictionId)).toEqual(submission)
     expect(await countTestDsaSubmissionsForRestriction(foreign.restrictionId)).toBe(0)
   })

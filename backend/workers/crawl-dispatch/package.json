@@ -25,6 +25,7 @@
     "@services/boilerplate-removals": "workspace:^",
     "@services/crawlers": "workspace:^",
     "@services/crawls": "workspace:^",
+    "@services/data-retention": "workspace:^",
     "glide-mq": "^0.18.0"
   },
   "devDependencies": {

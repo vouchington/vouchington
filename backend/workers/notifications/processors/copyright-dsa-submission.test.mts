@@ -145,6 +145,7 @@ describe('DSA statement reconciliation notification processor', () => {
 
     await expect(processReconcileDsaStatementSubmissions({ search })).resolves.toEqual({
       enqueued: 0,
+      hasMore: false,
     })
     expect(search).not.toHaveBeenCalled()
     expect(await readTestDsaAttempts(submissionId)).toEqual([])
@@ -166,11 +167,11 @@ describe('DSA statement reconciliation notification processor', () => {
 
     await expect(
       processReconcileDsaStatementSubmissions({
-        prepare: async () => from,
+        prepare: async () => ({ from, hasMore: false }),
         search,
         enqueue,
       }),
-    ).resolves.toEqual({ enqueued: 2 })
+    ).resolves.toEqual({ enqueued: 2, hasMore: false })
     expect(search).toHaveBeenCalledExactlyOnceWith({ from, limit: 100 })
     expect(enqueue).toHaveBeenCalledExactlyOnceWith([firstId, secondId])
     expect(enqueuedJobs).toMatchObject([
@@ -209,7 +210,10 @@ describe('DSA statement reconciliation notification processor', () => {
     })
     await expect(
       processReconcileDsaStatementSubmissions({
-        prepare: async () => new Date('2020-01-01T00:00:00.000Z'),
+        prepare: async () => ({
+          from: new Date('2020-01-01T00:00:00.000Z'),
+          hasMore: false,
+        }),
         search: async () => toCopyrightSweepIdPage([{ id: submissionId }], 100),
         enqueue,
       }),

@@ -1,7 +1,10 @@
 import { getRssFeedsWorkLimit } from '@services/rss-feeds/work-limits'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { updateTopicEmbeddingContentHash } from '@services/topics/content'
-import { enqueueBackfillCategoriesForTopicAliases } from '@queues/rss-feed-maintenance/enqueues/item-categories'
+import {
+  enqueueBackfillCategoriesForTopicAliases,
+  enqueueBackfillRssFeedCategoriesForTopicAlias,
+} from '@queues/rss-feed-maintenance/enqueues/item-categories'
 import {
   enqueueContinueInvalidatingPostsForTopicAliases,
   enqueueContinueTopicAliasCategoryMappingReconciliation,
@@ -52,7 +55,7 @@ export const processReconcileTopicAliasCategoryMappings = async (
     TOPIC_ALIAS_CATEGORY_MAPPING_RECONCILIATION_BATCH_SIZE,
     data.topicAliasIds,
   )
-  if (result.reconciled === TOPIC_ALIAS_CATEGORY_MAPPING_RECONCILIATION_BATCH_SIZE) {
+  if (result.hasMore) {
     await enqueueContinuation(data.topicAliasIds)
   }
   return result
@@ -66,7 +69,9 @@ export const processTopicAliasesUpdate = async ({
   removedTopicAliasId?: string
 }) => {
   if (removedTopicAliasId) {
-    await clearCategoriesForUnlinkedTopicAlias(removedTopicAliasId, topicId)
+    const cleared = await clearCategoriesForUnlinkedTopicAlias(removedTopicAliasId, topicId)
+    if (cleared.hasMore)
+      await enqueueContinueTopicAliasCategoryMappingReconciliation([removedTopicAliasId])
   }
 
   // The database projects the alias cache; refresh readers after the committed write.
@@ -81,5 +86,6 @@ export const processTopicAliasesUpdate = async ({
   await enqueueBackfillCategoriesForTopicAliases(topicId)
 
   // Backfill feed-level podcast categories for the same alias change
-  await backfillCategoriesForTopicAlias(topicId)
+  const feedBackfill = await backfillCategoriesForTopicAlias(topicId)
+  if (feedBackfill.hasMore) await enqueueBackfillRssFeedCategoriesForTopicAlias(topicId)
 }

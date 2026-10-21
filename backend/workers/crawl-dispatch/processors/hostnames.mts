@@ -1,8 +1,8 @@
 import { processPagedDispatcher } from '@data-stores/valkey-glide-mq/paged-dispatcher'
 import { backgroundCpu } from '@queues/background-cpu/queues'
-import { getWeeklyHostnameRefreshLimits } from '@services/crawls/work-limits'
+import { getWeeklyHostnameRefreshLimits, getCrawlCleanupLimits } from '@services/crawls/work-limits'
 import type { CrawlHostnameDispatchCursor } from '@queues/crawl-dispatch/types'
-import { deleteOldInvalidCrawls } from '@services/crawls/cleanup'
+import { deleteOldInvalidCrawls, getCrawlCleanupCutoff } from '@services/crawls/cleanup'
 import { searchHostnameIdsNeedingCrawlerRefresh } from '@services/crawlers'
 import {
   refreshHostnameCrawler,
@@ -15,6 +15,7 @@ import { createEnqueueFunction, processRetainedSweep } from '@data-stores/valkey
 import { enqueueBulkRefreshHostnameCrawler } from '@queues/crawl-dispatch/enqueues/hostnames'
 import { enqueueBulkCrawlUrls } from '@queues/crawler/enqueues'
 import { computeRateLimitForHostname } from '@services/crawls/hostname-rate-limit'
+import { runBoundedBatches } from '@services/data-retention/run-bounded-batches'
 import type { Job } from 'glide-mq'
 
 type CrawlHostnamesProcessorDependencies = {
@@ -48,11 +49,16 @@ function getDependencies(
   }
 }
 
-const processCrawlCleanup = async (dependencies?: Partial<CrawlHostnamesProcessorDependencies>) => {
-  const deps = getDependencies(dependencies)
-  return {
-    crawls_deleted_invalid: await deps.deleteOldInvalidCrawls(),
-  }
+async function processCrawlCleanup(job: Job, dependencies: CrawlHostnamesProcessorDependencies) {
+  const cutoffId = job.data?.cutoffId ?? getCrawlCleanupCutoff()
+  await job.updateData({ cutoffId })
+  return processRetainedSweep(job, async () => {
+    const result = await runBoundedBatches(getCrawlCleanupLimits(), async batchSize => {
+      const page = await dependencies.deleteOldInvalidCrawls({ cutoffId, limit: batchSize })
+      return page.deleted
+    })
+    return { crawls_deleted_invalid: result.deleted, hasMore: result.hasMore }
+  })
 }
 
 async function dispatchWeeklyHostnameCrawlerRefresh(
@@ -159,7 +165,7 @@ export async function processCrawlHostnamesJob(
         deps.dispatchTier2CrawlUrls(job.data?.cursor, cursor => save({ cursor })),
       )
     case 'crawl.crawl_cleanup':
-      return processCrawlCleanup(deps)
+      return processCrawlCleanup(job, deps)
     case 'crawl.refresh_hostname_crawler_dispatcher':
       return processRetainedSweep(job, save =>
         dispatchWeeklyHostnameCrawlerRefresh(

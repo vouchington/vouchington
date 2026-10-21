@@ -1,5 +1,7 @@
 import { randomBytes } from 'node:crypto'
-import { beforeAll, describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it, onTestFinished } from 'vitest'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { postClearanceWorkConfig } from './work-limits.mts'
 import {
   createTestUser,
   expireTestPostModerationVersion,
@@ -10,7 +12,10 @@ import {
   safeUsername,
   setPostLLMModerationContentSha256,
 } from '@voucha/test-helpers'
-import { getTestPostModerationWorkAttemptCount } from '@voucha/test-helpers/post-moderation-attempt-state'
+import {
+  countTestPostModerationIncompleteWork,
+  getTestPostModerationWorkAttemptCount,
+} from '@voucha/test-helpers/post-moderation-attempt-state'
 import {
   beginPostModerationAttempt,
   completePostModerationAttempt,
@@ -231,5 +236,29 @@ describe('post moderation ledger', () => {
     expect(reconciliation.exhausted_post_ids).toContain(postId)
     await checkPostClearance(postId)
     expect(await getPostClearanceStatus(postId)).toBe('in_review')
+  })
+  it('expires one configured page and resumes after the exact source within a version', async () => {
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(postClearanceWorkConfig, {
+        reconciliation_batch_size: 1,
+      }),
+    )
+    const postId = await insertTestPost({
+      title: `ledger-bound-${crypto.randomUUID()}`,
+      slug: `ledger-bound-${crypto.randomUUID()}`,
+      markdown: 'ordinary content',
+      createdById: userId,
+      clearanceStatus: 'pending',
+    })
+    const version = await ensureCurrentPostModerationVersion(postId)
+    await expireTestPostModerationVersion(version.id)
+    expect(await countTestPostModerationIncompleteWork(postId)).toBe(2)
+    const first = await reconcilePostModerationWork(undefined, [postId])
+    expect(first).toMatchObject({ exhausted_post_ids: [postId], due: [], hasMore: true })
+    expect(first.nextCursor?.afterVersionId).toBe(version.id)
+    expect(await countTestPostModerationIncompleteWork(postId)).toBe(1)
+    const last = await reconcilePostModerationWork(undefined, [postId], first.nextCursor)
+    expect(last).toMatchObject({ exhausted_post_ids: [postId], due: [], hasMore: false })
+    expect(await countTestPostModerationIncompleteWork(postId)).toBe(0)
   })
 })

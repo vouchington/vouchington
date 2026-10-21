@@ -27,7 +27,8 @@ export async function clearUnlinkedTopicAliasCategories(
   alias: string,
   formerTopicId: string | undefined,
   options: QueryOptions,
-): Promise<{ updated: number }> {
+): Promise<{ updated: number; hasMore: boolean }> {
+  const feedBatchSize = getRssFeedItemsWorkLimit('category_clear_batch_size')
   const clearFeedCategories = (query: TransactionQuery) =>
     query(
       `/* clearCategoriesForUnlinkedTopicAlias.feedCategories */
@@ -62,33 +63,41 @@ export async function clearUnlinkedTopicAliasCategories(
           WHERE feed_category.topic_id IS NOT NULL
             AND identity.category_text = LOWER($2)
             AND ($3::uuid IS NULL OR feed_category.topic_id = $3)
+            AND feed_category.topic_id IS DISTINCT FROM replacement.topic_id
             AND NOT EXISTS (
               SELECT 1
               FROM topic_aliases current_alias
               WHERE current_alias.alias = LOWER($2)
                 AND current_alias.topic_id IS NOT NULL
             )
+          ORDER BY feed_category.rss_feed_id, feed_category.category_identity_id
+          LIMIT $4
+          FOR UPDATE OF feed_category
         )
         UPDATE rss_feed_categories target
         SET topic_id = candidates.replacement_topic_id
         FROM candidates
         WHERE target.rss_feed_id = candidates.rss_feed_id
           AND target.category_identity_id = candidates.category_identity_id`,
-      [topicAliasId, alias, formerTopicId ?? null],
+      [topicAliasId, alias, formerTopicId ?? null, feedBatchSize],
     )
 
-  await runInTransaction(options, clearFeedCategories)
-  return clearCategoryBatch(topicAliasId, alias, formerTopicId, 0, options)
+  const feedResult = await runInTransaction(options, clearFeedCategories)
+  const itemResult = await clearCategoryBatch(topicAliasId, alias, formerTopicId, options)
+  const feedUpdated = feedResult.rowCount ?? 0
+  return {
+    updated: feedUpdated + itemResult.updated,
+    hasMore: feedUpdated === feedBatchSize || itemResult.hasMore,
+  }
 }
 async function clearCategoryBatch(
   topicAliasId: string,
   alias: string,
   formerTopicId: string | undefined,
-  updated: number,
   options: QueryOptions,
-): Promise<{ updated: number }> {
+): Promise<{ updated: number; hasMore: boolean }> {
   const run = async (query: TransactionQuery) => {
-    const rows = await clearUnlinkedTopicAliasCategoryBatch(
+    const { rows, hasMore } = await clearUnlinkedTopicAliasCategoryBatch(
       query,
       topicAliasId,
       alias,
@@ -131,15 +140,18 @@ async function clearCategoryBatch(
         })),
       ),
     ])
-    return { rows, statTargets }
+    return { rows, statTargets, hasMore }
   }
   const result = await runInTransaction(options, run)
-  const { rows, statTargets } = result
-  if (rows.length === 0) return { updated }
+  const { rows, statTargets, hasMore } = result
+  if (rows.length === 0) return { updated: 0, hasMore }
 
   await publishEntityRelationElectionVoteStats(statTargets, { enqueueTopHashtagRefresh: false })
   await invalidateRssFeedItemChunks([...new Set(rows.map(row => row.rss_feed_item_id))])
-  return clearCategoryBatch(topicAliasId, alias, formerTopicId, updated + rows.length, options)
+  return {
+    updated: rows.length,
+    hasMore,
+  }
 }
 
 async function runInTransaction<Result>(

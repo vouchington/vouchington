@@ -74,3 +74,13 @@ export async function getTestPostModerationWorkHoldMs(
   `)
   return rows[0] ? Number(rows[0].hold_ms) : null
 }
+
+/** Counts only this fixture's current work so a bounded expiry assertion is dirty-DB safe. */
+export async function countTestPostModerationIncompleteWork(postId: string): Promise<number> {
+  const { rows } = await read<{ count: number }>(sql`/* countTestPostModerationIncompleteWork */
+    SELECT count(*)::int AS count FROM post_moderation_work_items work
+    JOIN post_moderation_versions version ON version.id = work.version_id
+    WHERE version.post_id = ${postId} AND work.completed_at IS NULL
+  `)
+  return rows[0]!.count
+}

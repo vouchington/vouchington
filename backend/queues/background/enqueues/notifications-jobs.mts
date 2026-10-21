@@ -5,6 +5,7 @@ import {
   NOTIFICATIONS_DOMAIN as DOMAIN,
   type ApplyMediaDeliveryRegistryRecordData,
   type CommunityActivityDigestBatchData,
+  type CommunityActivityDigestScheduleData,
   type CommunityActivityDigestDispatchData,
   type ConversationMessageNotificationData,
   type CopyrightIntentData,
@@ -81,11 +82,12 @@ export const NOTIFICATIONS_DIGEST_DISPATCH_JOB =
     ...DISPATCH,
     ...RETRY,
   })
-export const NOTIFICATIONS_DIGEST_SCHEDULE_TICK_JOB = defineBackgroundJob<EmptyData>(DOMAIN, {
-  name: 'processCommunityActivityDigestScheduleTick',
-  ...DISPATCH,
-  ...RETRY,
-})
+export const NOTIFICATIONS_DIGEST_SCHEDULE_TICK_JOB =
+  defineBackgroundJob<CommunityActivityDigestScheduleData>(DOMAIN, {
+    name: 'processCommunityActivityDigestScheduleTick',
+    ...DISPATCH,
+    ...RETRY,
+  })
 export const NOTIFICATIONS_DIGEST_BATCH_JOB = defineBackgroundJob<CommunityActivityDigestBatchData>(
   DOMAIN,
   { name: 'processCommunityActivityDigestBatch', ...TASK, ...RETRY },

@@ -225,11 +225,11 @@ describe('crawl-dispatch hostname jobs through real GlideMQ', () => {
     const { url: otherUrl } = await crawlableUrl('old-invalid-neighbor')
     const oldCrawlId = await insertOldInvalidCrawlForTest(url.id)
     onTestFinished(async () => {
-      await deleteOldInvalidCrawls(30, oldCrawlId)
+      await deleteOldInvalidCrawls({ ids: [oldCrawlId] })
     })
     const otherCrawlId = await insertOldInvalidCrawlForTest(otherUrl.id)
     onTestFinished(async () => {
-      await deleteOldInvalidCrawls(30, otherCrawlId)
+      await deleteOldInvalidCrawls({ ids: [otherCrawlId] })
     })
     expect(await getCrawlData(url.id, oldCrawlId)).toBeDefined()
     expect(await getCrawlData(otherUrl.id, otherCrawlId)).toBeDefined()
@@ -237,7 +237,7 @@ describe('crawl-dispatch hostname jobs through real GlideMQ', () => {
       processCrawlDispatchJob(current, {
         processCrawlHostnamesJob: job =>
           processCrawlHostnamesJob(job, {
-            deleteOldInvalidCrawls: () => deleteOldInvalidCrawls(30, oldCrawlId),
+            deleteOldInvalidCrawls: () => deleteOldInvalidCrawls({ ids: [oldCrawlId] }),
           }),
       }),
     )

@@ -23,20 +23,22 @@ import {
 export async function backfillCategoriesForTopicAliases(
   topicId: string,
   options: QueryOptions = {},
-): Promise<{ updated: number }> {
-  return backfillCategoryBatch(topicId, 0, options)
+): Promise<{ updated: number; hasMore: boolean }> {
+  return backfillCategoryBatch(topicId, options)
 }
 
 async function backfillCategoryBatch(
   topicId: string,
-  updated: number,
   options: QueryOptions,
-): Promise<{ updated: number }> {
+): Promise<{ updated: number; hasMore: boolean }> {
   const CATEGORY_BACKFILL_BATCH_SIZE = getRssFeedItemsWorkLimit('category_backfill_batch_size')
   const run = async (query: TransactionQuery) => {
-    const { rows: candidateItems } = await query<{ rss_feed_item_id: string }>(
+    const { rows: candidateItems } = await query<{
+      rss_feed_item_id: string
+      candidate_count: string
+    }>(
       `/* backfillCategoriesForTopicAliases.candidateItems */
-      SELECT DISTINCT rss_feed_item_id FROM (
+      SELECT DISTINCT rss_feed_item_id, count(*) OVER () AS candidate_count FROM (
         SELECT category.rss_feed_item_id, category.category_text
         FROM rss_feed_item_categories category
         JOIN rss_category_identities identity ON identity.id = category.category_identity_id
@@ -52,8 +54,10 @@ async function backfillCategoryBatch(
       ) candidates ORDER BY rss_feed_item_id`,
       [topicId, CATEGORY_BACKFILL_BATCH_SIZE],
     )
+    const hasMore = Number(candidateItems[0]?.candidate_count ?? 0) === CATEGORY_BACKFILL_BATCH_SIZE
     const candidateItemIds = candidateItems.map(row => row.rss_feed_item_id)
-    if (candidateItemIds.length === 0) return { rows: [], changedItemIds: [], statTargets: [] }
+    if (candidateItemIds.length === 0)
+      return { rows: [], changedItemIds: [], statTargets: [], hasMore }
     await lockRssFeedItemsForStoryPublicationChanges(query, candidateItemIds)
     const { rows } = await query<{
       rss_feed_item_id: string
@@ -116,15 +120,15 @@ async function backfillCategoryBatch(
         })),
       ),
     ])
-    return { rows, changedItemIds, statTargets }
+    return { rows, changedItemIds, statTargets, hasMore }
   }
   const result = await runInTransaction(options, run)
-  const { rows, changedItemIds, statTargets } = result
-  if (rows.length === 0) return { updated }
+  const { rows, changedItemIds, statTargets, hasMore } = result
+  if (rows.length === 0) return { updated: 0, hasMore }
   await publishEntityRelationElectionVoteStats(statTargets, { enqueueTopHashtagRefresh: false })
   await invalidateRssFeedItemChunks(changedItemIds)
   void enqueueRefreshTopHashtags()
-  return backfillCategoryBatch(topicId, updated + rows.length, options)
+  return { updated: rows.length, hasMore }
 }
 
 async function runInTransaction<Result>(
