@@ -1,5 +1,6 @@
 import { addAbortListener } from 'node:events'
 import { acquireTestPostgresAdvisoryLock } from './postgres-advisory-lock.mts'
+import { parseTestStatementTimeout } from './statement-timeout-constant.mts'
 import sql from 'sql-template-strings'
 import { write } from '@data-stores/psql'
 
@@ -25,7 +26,7 @@ export function acquireContentAnalysisTestReservation(mode: 'shared' | 'exclusiv
     namespace: 1_129_333_328,
     key: 1,
     mode,
-    timeout: '4s',
+    timeout: `${parseTestStatementTimeout(process.env.PG_TEST_STATEMENT_TIMEOUT_MS)}ms`,
   })
 }
 
