@@ -9,7 +9,7 @@ import { isSideloadImageSrc } from '@/lib/utils/assert-proxied-image-src'
 import { highlightCodeBlocks } from './markdown-code-block-highlighter'
 import { appendUtm, isExternalHref, OUTBOUND_UTM } from '@/lib/url/utm'
 import { getContentLanguageDir } from '@ts-shared/languages/content-languages'
-import type { SafeHtmlFragment } from '@/lib/html/safe-html-fragment'
+import type { SafeHtmlFragment } from '@vouchington/html-sanitizer'
 import type { MarkdownContentFeatures } from './markdown-content-features'
 
 function appendWidthParam(src: string, width: number): string {

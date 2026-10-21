@@ -101,7 +101,7 @@ ast-grep rules enforce the ban statically.
   the item entities. Raw URLs are kept in the DB; proxying happens at read time so key rotation
   requires no backfill.
 - **Frontend defense-in-depth**: `MarkdownContent` sanitizes all HTML fragments through
-  `web/lib/html/safe-html-fragment.ts` before either parsed React-node rendering or
+  `@vouchington/html-sanitizer` before either parsed React-node rendering or
   feature-enabled `dangerouslySetInnerHTML`. It preserves markdown/prose classes and safe
   structural attributes while blocking unsafe attributes/URL schemes if an upstream sanitizer
   regresses.

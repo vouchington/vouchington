@@ -83,6 +83,7 @@ minimumReleaseAgeExclude:
   - '@vouchington/domain-verification'
   - '@vouchington/edge'
   - '@vouchington/frontmatter'
+  - '@vouchington/html-sanitizer'
   - '@vouchington/html-utils'
   - '@vouchington/http-transport'
   - '@vouchington/image-resize'

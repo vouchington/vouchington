@@ -2720,6 +2720,8 @@ rules:
           reason: First-party policy-injected edge runtime primitives published by the repo author.
         - name: '@vouchington/frontmatter'
           reason: First-party deterministic YAML frontmatter serializer published by the repo author.
+        - name: '@vouchington/html-sanitizer'
+          reason: First-party allowlist HTML fragment sanitizer published by the repo author.
         - name: '@vouchington/html-utils'
           reason: First-party HTML entity and text-safe escaping primitives published by the repo author.
         - name: '@vouchington/http-transport'
