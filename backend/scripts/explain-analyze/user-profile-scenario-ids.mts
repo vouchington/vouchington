@@ -7,5 +7,4 @@ export const USER_PROFILE_SCENARIO_IDS = [
   'profile-link-reorder',
   'profile-links',
   'post-and-creator-bookmarks',
-  'deleted-user-prior-username',
 ] as const
