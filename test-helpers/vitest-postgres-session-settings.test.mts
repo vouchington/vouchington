@@ -6,11 +6,11 @@ import {
 } from '../backend/test-helpers/statement-timeout-constant.mts'
 
 describe('PostgreSQL test statement deadline', () => {
-  it('defaults to two seconds with room for test cleanup', () => {
+  it('defaults to two seconds with room for five-second test cleanup', () => {
     expect(parseTestStatementTimeout(undefined)).toBe(2_000)
   })
 
-  it.each(['1000', '1500', '2000'])('accepts the bounded positive override %s', raw => {
+  it.each(['1000', '1500', '2000', '20000'])('accepts the bounded positive override %s', raw => {
     expect(parseTestStatementTimeout(raw)).toBe(Number(raw))
   })
 
@@ -28,10 +28,9 @@ describe('PostgreSQL test statement deadline', () => {
     '1500ms',
     'NaN',
     'Infinity',
-    '2001',
-    '4999',
-    '5000',
-  ])('rejects an invalid or insufficient-headroom override %j', raw => {
+    '20001',
+    '30000',
+  ])('rejects an invalid or out-of-range override %j', raw => {
     expect(() => parseTestStatementTimeout(raw)).toThrow(RangeError)
   })
 })
@@ -70,6 +69,25 @@ describe('PostgreSQL test session configuration', () => {
     const once = env.DATABASE_URL
     configureTestPostgresSessions(env)
     expect(env.DATABASE_URL).toBe(once)
+  })
+
+  it('applies a project worker budget after the shared setup budget', () => {
+    const env = {
+      DATABASE_URL: 'postgres://localhost/owned',
+      READ_DATABASE_URL: 'postgres://localhost/owned_read',
+      PG_TEST_STATEMENT_TIMEOUT_MS: '2000',
+    }
+    configureTestPostgresSessions(env)
+    env.PG_TEST_STATEMENT_TIMEOUT_MS = '20000'
+    configureTestPostgresSessions(env)
+    for (const key of ['DATABASE_URL', 'READ_DATABASE_URL'] as const) {
+      const options = new URL(env[key]).searchParams.get('options')
+      expect(options).toContain('-c statement_timeout=2000')
+      expect(options).toMatch(/-c statement_timeout=20000 -c hnsw\.ef_search=\d+$/u)
+    }
+    const once = { ...env }
+    configureTestPostgresSessions(env)
+    expect(env).toEqual(once)
   })
 
   it('preserves literal and encoded plus signs in existing options for both pools', () => {

@@ -99,6 +99,9 @@ export default defineConfig({
           pool: 'forks',
           isolate: true,
           name: 'backend-real-glide-mq',
+          env: {
+            PG_TEST_STATEMENT_TIMEOUT_MS: process.env.PG_TEST_STATEMENT_TIMEOUT_MS ?? '20000',
+          },
           setupFiles: ['./test-helpers/vitest.setup.postgres-sessions.mts'],
           include: ['backend/**/*.real-glide.mock.test.mts'],
           exclude: [

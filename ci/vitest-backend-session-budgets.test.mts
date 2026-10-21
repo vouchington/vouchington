@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import config from '../vitest.config.mts'
 import {
+  FAST_TEST_STATEMENT_TIMEOUT_MS,
   MAX_TEST_STATEMENT_TIMEOUT_MS,
-  TEST_STATEMENT_TIMEOUT_MS,
+  parseTestStatementTimeout,
 } from '../backend/test-helpers/statement-timeout-constant.mts'
 
 interface SessionProject {
@@ -10,6 +11,7 @@ interface SessionProject {
     name?: string
     globalSetup?: string | string[]
     setupFiles?: string[]
+    env?: { PG_TEST_STATEMENT_TIMEOUT_MS?: string }
     testTimeout?: number
     hookTimeout?: number
   }
@@ -41,12 +43,19 @@ describe('backend Vitest project config', () => {
         'backend-real-glide-mq',
       ]),
     )
-    expect(TEST_STATEMENT_TIMEOUT_MS).toBeLessThanOrEqual(MAX_TEST_STATEMENT_TIMEOUT_MS)
+    expect(parseTestStatementTimeout(undefined)).toBe(FAST_TEST_STATEMENT_TIMEOUT_MS)
     for (const project of consumers) {
+      const statementTimeoutMs = parseTestStatementTimeout(
+        project.test?.env?.PG_TEST_STATEMENT_TIMEOUT_MS ?? process.env.PG_TEST_STATEMENT_TIMEOUT_MS,
+      )
+      expect(statementTimeoutMs).toBeLessThanOrEqual(MAX_TEST_STATEMENT_TIMEOUT_MS)
       for (const deadline of [project.test?.testTimeout, project.test?.hookTimeout]) {
         expect(typeof deadline).toBe('number')
         if (typeof deadline !== 'number') throw new Error('Missing database consumer deadline')
-        expect(MAX_TEST_STATEMENT_TIMEOUT_MS).toBeLessThan(deadline)
+        expect(statementTimeoutMs).toBeLessThan(deadline)
+        const projectMaximum =
+          deadline <= 5_000 ? FAST_TEST_STATEMENT_TIMEOUT_MS : MAX_TEST_STATEMENT_TIMEOUT_MS
+        expect(statementTimeoutMs).toBeLessThanOrEqual(projectMaximum)
       }
     }
   })

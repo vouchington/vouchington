@@ -1,10 +1,12 @@
-/** Leave attribution and rollback headroom inside the five-second test deadline. */
-export const MAX_TEST_STATEMENT_TIMEOUT_MS = 2_000
+/** Keep the longest test SQL statement below the existing thirty-second project deadline. */
+export const MAX_TEST_STATEMENT_TIMEOUT_MS = 20_000
+/** Five-second projects reserve their remaining time for assertions and cleanup. */
+export const FAST_TEST_STATEMENT_TIMEOUT_MS = 2_000
 /** Shared notice observers require a full second; smaller operation-local bounds stay separate. */
 export const MIN_TEST_STATEMENT_TIMEOUT_MS = 1_000
 
 export function parseTestStatementTimeout(raw: string | undefined): number {
-  if (raw === undefined) return MAX_TEST_STATEMENT_TIMEOUT_MS
+  if (raw === undefined) return FAST_TEST_STATEMENT_TIMEOUT_MS
   const value = Number(raw)
   if (
     !/^[1-9]\d*$/u.test(raw) ||
