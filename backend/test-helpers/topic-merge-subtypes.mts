@@ -85,3 +85,15 @@ export async function seedTopicMergeRetailerCollision(
     [sourceId, destinationId],
   )
 }
+
+export async function seedTopicMergeLifetimeChain(
+  sourceId: string,
+  destinationId: string,
+  ownerId: string,
+) {
+  await write(
+    `/* seedTopicMergeLifetimeChain */ INSERT INTO rewards_program_status_topics (topic_id, lifetime_version_id)
+    VALUES ($1::uuid, $2::uuid), ($2::uuid, NULL), ($3::uuid, $1::uuid)`,
+    [sourceId, destinationId, ownerId],
+  )
+}

@@ -14,7 +14,11 @@ import { lockTopicRssFeedAttachmentLifecycles } from '@services/post-publication
 import { lockTopicMergeAliasPublicationScopes } from './alias-publication-locks.mts'
 import { prepublishImageSurfaceDenials } from '@services/media-delivery-safety'
 import { finalizeTopicAliasMerge } from './merge-aliases-finalize.mts'
-import { assertTopicMergeReferenceCompatibility } from './merge-preflight.mts'
+import {
+  assertTopicMergeReferenceCompatibility,
+  lockTopicMergeLifecycles,
+  rethrowTopicMergeError,
+} from './merge-preflight.mts'
 import { repointTopicReferences } from './merge-references.mts'
 import { mergeTopicSubtypeReferences } from './merge-subtypes.mts'
 import { deleteMergedTopicDerivedRows } from './merge-derived.mts'
@@ -27,7 +31,15 @@ export async function mergeTopicAliases(
 ) {
   assert(currentUserCanMergeTopic(merger), 403, 'Forbidden')
   assert(sourceTopic.id !== destinationTopic.id, 409, 'Cannot merge a topic into itself')
+  return executeTopicMerge(merger, sourceTopic, destinationTopic).catch(rethrowTopicMergeError)
+}
+
+async function executeTopicMerge(merger: PrivateUser, sourceTopic: Topic, destinationTopic: Topic) {
   await using query = await beginTransaction()
+  // Parent graph writes must settle before preflight, including edges between intermediate topics.
+  await query(
+    `/* mergeTopicAliases lockParentGraph */ LOCK TABLE relation__topic__parent__topic IN SHARE ROW EXCLUSIVE MODE`,
+  )
   // ast-grep-ignore: no-three-sequential-awaits -- alias publication, attachment lifecycle, and merge capture locks share one global order.
   const aliasScopes = await lockTopicMergeAliasPublicationScopes(
     query,
@@ -35,6 +47,7 @@ export async function mergeTopicAliases(
     sourceTopic.slug,
   )
   await lockTopicRssFeedAttachmentLifecycles(query, [sourceTopic.id, destinationTopic.id])
+  await lockTopicMergeLifecycles(query, [sourceTopic.id, destinationTopic.id])
   // ast-grep-ignore: no-three-sequential-awaits -- reject conflicts before publication writes; capture and external denials precede topic row locks.
   await assertTopicMergeReferenceCompatibility(query, sourceTopic.id, destinationTopic.id)
   await recordTopicMergePublicationChanges(
@@ -60,7 +73,6 @@ export async function mergeTopicAliases(
   const destinationRow = topicRows.find(row => row.id === destinationTopic.id)
   assert(sourceRow && !sourceRow.is_deleted, 404, 'Source topic not found')
   assert(destinationRow && !destinationRow.is_deleted, 404, 'Destination topic not found')
-  assert(sourceRow.topic_type === destinationRow.topic_type, 409, 'Topics must have the same type')
   assert(!sourceRow.is_merged, 409, 'Source topic has already been merged')
   assert(!destinationRow.is_merged, 409, 'Destination topic has already been merged')
   const { rows: inboundMergeRows } = await query<{ id: string }>(

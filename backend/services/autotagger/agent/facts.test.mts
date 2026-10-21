@@ -1,3 +1,5 @@
+import { softDeleteTopic } from '@voucha/test-helpers/entities/topics/deletion'
+import { createTestUser } from '@voucha/test-helpers'
 import { persistClassifierRunOutcomes, readClassifierRunOutcomes } from '@services/classifier-runs'
 import {
   claimAutotaggerAgentLease,
@@ -30,6 +32,20 @@ describe('autotagger agent facts (real PG)', () => {
     const outcomes = await readClassifierRunOutcomes(adapter, lease)
     expect(outcomes).toEqual({
       local: { topicIds: [lease.capturedTopicIds[0], lease.capturedTopicIds[2]] },
+      remoteDecision: null,
+    })
+  })
+
+  it('skips inactive captured topics while persisting the active sibling', async () => {
+    const lease = await leasedAgentRun()
+    const actor = await createTestUser()
+    const [inactive, active] = lease.capturedTopicIds
+    await softDeleteTopic(inactive!, actor.id)
+    await expect(
+      persistClassifierRunOutcomes(adapter, { lease, local: { topicIds: [inactive!, active!] } }),
+    ).resolves.toBe('persisted')
+    expect(await readClassifierRunOutcomes(adapter, lease)).toEqual({
+      local: { topicIds: [active] },
       remoteDecision: null,
     })
   })

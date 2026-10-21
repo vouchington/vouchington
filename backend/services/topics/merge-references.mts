@@ -35,6 +35,7 @@ export const collisionReferences: readonly MergeReferenceTable[] = [
   },
   {
     table: 'topic_claims',
+    preferVerified: true,
     columns: ['topic_id'],
     collisionKey: ['topic_id', 'claimant_user_id'],
     live: 'rejected_at IS NULL AND revoked_at IS NULL',

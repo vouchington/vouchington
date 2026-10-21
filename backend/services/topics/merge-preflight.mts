@@ -9,18 +9,42 @@ export async function assertTopicMergeReferenceCompatibility(
   destinationTopicId: string,
 ): Promise<void> {
   const { rows } = await query<{
-    kind: 'feed' | 'lifetime_version' | 'subtype_reference' | 'audit_flag'
+    kind:
+      | 'feed'
+      | 'lifetime_version'
+      | 'subtype_reference'
+      | 'audit_flag'
+      | 'parent_cycle'
+      | 'topic_type'
     source_id: string
     destination_id: string
   }>(
     `/* assertTopicMergeReferenceCompatibility */
+      WITH RECURSIVE parent_edges AS NOT MATERIALIZED (
+        SELECT CASE WHEN subject_id = $1::uuid THEN $2::uuid ELSE subject_id END AS subject_id,
+          CASE WHEN object_id = $1::uuid THEN $2::uuid ELSE object_id END AS object_id
+        FROM relation__topic__parent__topic WHERE deleted_at IS NULL
+      ), ancestors(id) AS (
+        SELECT object_id FROM parent_edges WHERE subject_id = $2::uuid AND object_id <> subject_id
+        UNION
+        SELECT e.object_id FROM parent_edges e JOIN ancestors a ON e.subject_id = a.id
+        WHERE e.object_id <> e.subject_id
+      )
+      SELECT 'topic_type' AS kind, s.id AS source_id, d.id AS destination_id
+      FROM topics s JOIN topics d ON d.id = $2::uuid
+      WHERE s.id = $1::uuid AND s.topic_type <> d.topic_type
+        AND s.deleted_at IS NULL AND s.merged_into_topic_id IS NULL
+        AND d.deleted_at IS NULL AND d.merged_into_topic_id IS NULL
+      UNION ALL
+      SELECT 'parent_cycle', $1::uuid, $2::uuid FROM ancestors WHERE id = $2::uuid
+      UNION ALL
       SELECT 'feed' AS kind, s.id AS source_id, d.id AS destination_id
       FROM rss_feeds s JOIN rss_feeds d ON d.topic_id = $2::uuid AND d.deleted_at IS NULL
       WHERE s.topic_id = $1::uuid AND s.deleted_at IS NULL
       UNION ALL
       SELECT 'lifetime_version', s.topic_id, d.topic_id
       FROM rewards_program_status_topics s JOIN rewards_program_status_topics d
-        ON d.lifetime_version_id = $2::uuid AND d.topic_id <> $1::uuid
+        ON d.lifetime_version_id = $2::uuid
       WHERE s.lifetime_version_id = $1::uuid AND s.topic_id <> $1::uuid
       UNION ALL
       SELECT 'lifetime_version', status.topic_id, $2::uuid
@@ -62,7 +86,11 @@ export async function assertTopicMergeReferenceCompatibility(
       ? 'topic_merge_feed_conflict'
       : conflict.kind === 'lifetime_version'
         ? 'topic_merge_lifetime_version_conflict'
-        : 'topic_merge_reference_conflict'
+        : conflict.kind === 'parent_cycle'
+          ? 'topic_merge_parent_cycle'
+          : conflict.kind === 'topic_type'
+            ? 'topic_merge_type_conflict'
+            : 'topic_merge_reference_conflict'
   throw Object.assign(
     createCodedError(
       409,
@@ -74,4 +102,30 @@ export async function assertTopicMergeReferenceCompatibility(
       destination_id: conflict.destination_id,
     },
   )
+}
+
+export async function lockTopicMergeLifecycles(
+  query: TransactionQuery,
+  topicIds: readonly string[],
+): Promise<void> {
+  await query(
+    `/* lockTopicMergeLifecycles */
+      SELECT pg_advisory_xact_lock(hashtextextended('topic-merge-lifecycle:' || id::text, 0))
+      FROM (SELECT DISTINCT unnest($1::uuid[]) AS id ORDER BY id) ordered_ids`,
+    [topicIds],
+  )
+}
+
+export function rethrowTopicMergeError(err: unknown): never {
+  const pgError = err as { code?: string; constraint?: string }
+  if (pgError.code === '23505' && pgError.constraint === 'idx_rss_feeds__topic_id__unique')
+    throw Object.assign(
+      createCodedError(
+        409,
+        'Cannot merge topics with conflicting live feeds',
+        'topic_merge_feed_conflict',
+      ),
+      { cause: err },
+    )
+  throw err
 }

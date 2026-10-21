@@ -29,3 +29,9 @@ Merging across primary kinds would discard a different structured identity, so b
 have the same primary kind. The destination owns the surviving extension data. When a unique
 subtype relationship has no defined consolidation policy, the merge refuses the conflict instead
 of silently losing either relationship. Conflicting live feed ownership follows the same rule.
+
+Live relations survive collisions with removed relations; among live claims, verification takes
+precedence. Merging directly related topics removes the resulting self-relation, while a merge
+that would create an indirect parent cycle is refused. Image placements retain their source identity as history. Delayed classification applies no
+effects to inactive topics. A dedicated merge fence protects new current references without refusing
+ordinary reference writes during feed or vote-stat updates. Derived batch rows remain unfenced.

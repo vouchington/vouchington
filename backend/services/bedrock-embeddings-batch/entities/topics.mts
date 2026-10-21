@@ -31,7 +31,7 @@ export async function* streamPendingTopics(
     SELECT t.id, t.name, t.aliases, t.markdown
     FROM topics t
     WHERE t.id < $1::uuid AND ($2::uuid IS NULL OR t.id < $2::uuid)
-      AND t.deleted_at IS NULL
+      AND t.deleted_at IS NULL AND t.merged_into_topic_id IS NULL
       AND (
         t.bedrock_nova_multimodal_v1_input_sha256 IS NULL
         OR t.bedrock_nova_multimodal_v1_input_sha256 != t.bedrock_nova_multimodal_v1_content_sha256
