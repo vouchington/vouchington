@@ -1,4 +1,4 @@
-import { Writable } from 'node:stream'
+import { Readable, Writable } from 'node:stream'
 import { describe, expect, it } from 'vitest'
 import { CommandFailedError, runCommand } from './run-command.mts'
 
@@ -67,6 +67,52 @@ describe('runCommand', () => {
     expect(stderr.toString('utf8')).toBe('x'.repeat(128))
   })
 
+  it('rejects an empty command, a non-positive timeout, and an already-aborted signal', async () => {
+    await expect(runCommand({ command: '', timeoutMs: 1_000 })).rejects.toThrow(
+      'command must not be empty',
+    )
+    await expect(runCommand({ command: node, timeoutMs: 0 })).rejects.toThrow(
+      'timeoutMs must be a positive finite number',
+    )
+    const controller = new AbortController()
+    controller.abort()
+    const err = await rejectionOf(
+      runCommand({ command: node, timeoutMs: 1_000, signal: controller.signal }),
+    )
+    expect(err).toBeInstanceOf(CommandFailedError)
+    expect(err).toMatchObject({ reason: 'abort' })
+  })
+
+  it('writes string stdin and rejects when that stream or stdout fails', async () => {
+    const text = await collectStdout(node, ['-e', 'process.stdin.pipe(process.stdout)'], 'hello')
+    expect(text).toBe('hello')
+
+    const stdin = new Readable({
+      read() {
+        this.destroy(new Error('stdin broke'))
+      },
+    })
+    const stdinErr = await rejectionOf(
+      runCommand({ command: node, args: ['-e', ''], stdin, timeoutMs: 2_000 }),
+    )
+    expect(stdinErr).toMatchObject({ message: 'stdin broke' })
+
+    const stdout = new Writable({
+      write(_chunk, _encoding, callback) {
+        callback(new Error('stdout broke'))
+      },
+    })
+    const stdoutErr = await rejectionOf(
+      runCommand({
+        command: node,
+        args: ['-e', 'process.stdout.write("hi")'],
+        stdout,
+        timeoutMs: 2_000,
+      }),
+    )
+    expect(stdoutErr).toMatchObject({ message: 'stdout broke' })
+  })
+
   it('forces LC_ALL=C and passes argv literally', async () => {
     const text = await collectStdout(node, [
       '-e',
@@ -77,7 +123,11 @@ describe('runCommand', () => {
   })
 })
 
-async function collectStdout(command: string, args: readonly string[]): Promise<string> {
+async function collectStdout(
+  command: string,
+  args: readonly string[],
+  stdin?: string,
+): Promise<string> {
   const chunks: Buffer[] = []
   const stdout = new Writable({
     write(chunk, _encoding, callback) {
@@ -88,6 +138,7 @@ async function collectStdout(command: string, args: readonly string[]): Promise<
   await runCommand({
     command,
     args,
+    stdin,
     stdout,
     timeoutMs: 2_000,
     env: { LC_ALL: 'en_US.UTF-8' },
