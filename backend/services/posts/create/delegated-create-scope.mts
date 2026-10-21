@@ -27,7 +27,7 @@ export async function prepareDelegatedCreateScope(
   }
   if (!input.parent_post_id) return undefined
   await lockDelegatedPostThread(query, input.parent_post_id, creator.id, prelockedParent)
-  const parent = await loadWritablePost(creator, input.parent_post_id, false, options)
+  const { post: parent } = await loadWritablePost(creator, input.parent_post_id, 'reply', options)
   if (parent.community_id && parent.community_id !== input.community_id)
     await assertLoadedCommunityAllowsPost(parent.community_id, creator.id, postType, options)
   return parent

@@ -25,6 +25,7 @@ import type { CommunityMemberRole } from '@services/communities/types'
 import { isPlatformAccount } from '@services/users'
 import { canViewPost } from './check-privacy-access.mts'
 import { getRouteAccessPost, getRoutePostByAnyCached } from './route-access.mts'
+import { getCommunityMember } from '@services/communities/members/get'
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000
 
@@ -114,19 +115,27 @@ export function currentUserCanCreatePost(currentUser: PrivateUser): boolean {
 export async function loadWritablePost(
   user: PrivateUser,
   id: string,
-  requireOwnership = true,
+  operation: 'edit' | 'delete' | 'reply',
   options: QueryOptions = { readOnly: false },
   knownPost?: Post,
-): Promise<Post> {
+  knownCommunityMemberRole?: CommunityMemberRole | null,
+): Promise<{ post: Post; communityMemberRole: CommunityMemberRole | null }> {
   const { post, nodes, posts } = await loadPostWriteThread(id, options, knownPost)
-  if (requireOwnership && (post.post_type === 'story' || post.post_type === 'topic_recommendation'))
-    throw createHttpError(404, 'Post not found')
   if (nodes.some(node => node.post_type === 'topic_recommendation'))
     throw createHttpError(404, 'Post not found')
   const visible = await canViewDelegatedPostsBatch(user, posts, options)
   if (!posts.every(node => visible.get(node.id))) throw createHttpError(404, 'Post not found')
-  if (requireOwnership && post.created_by_id !== user.id) throw createHttpError(403, 'Forbidden')
-  return post
+  const communityMemberRole =
+    operation === 'delete' && post.community_id && post.post_type === 'comment'
+      ? knownCommunityMemberRole !== undefined
+        ? knownCommunityMemberRole
+        : ((await getCommunityMember(post.community_id, user.id, options))?.role ?? null)
+      : null
+  if (operation === 'edit' && !currentUserCanUpdatePost(user, post))
+    throw createHttpError(403, 'Forbidden')
+  if (operation === 'delete' && !currentUserCanDeletePost(user, post, { communityMemberRole }))
+    throw createHttpError(403, 'Forbidden')
+  return { post, communityMemberRole }
 }
 
 export async function assertDelegatedCommunityPostAllowed(

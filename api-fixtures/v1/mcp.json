@@ -10494,7 +10494,7 @@
           "tool": {
             "name": "act_on_post",
             "title": "Act on Post",
-            "description": "edit: Edit your own post or comment. Send only fields to change; archive true archives it and archive false restores it. Content edits retain the REST edit window and per-type rules.\nadd_rating: Rate a topic on a review you may edit. Ratings may not all match when several topics are rated.\nedit_rating: Change the rating or order_index of a topic already rated on a review you may edit. Send at least one.\ndelete_rating: Remove a topic rating from a review you may edit.\nshare: Share a post with your followers, at most once per day.\nsend: Send a post to all or selected current followers, at most once per day.\nread: Mark a post you can see read.\nunread: Mark a post you can see unread.",
+            "description": "edit: Edit a post or comment when you have the same edit permission as on the website. Send only fields to change; archive true archives it and archive false restores it. Content edits retain the REST edit window and per-type rules.\nadd_rating: Rate a topic on a review you may edit. Ratings may not all match when several topics are rated.\nedit_rating: Change the rating or order_index of a topic already rated on a review you may edit. Send at least one.\ndelete_rating: Remove a topic rating from a review you may edit.\nshare: Share a post with your followers, at most once per day.\nsend: Send a post to all or selected current followers, at most once per day.\nread: Mark a post you can see read.\nunread: Mark a post you can see unread.",
             "inputSchema": {
               "type": "object",
               "oneOf": [
@@ -11023,8 +11023,8 @@
         {
           "tool": {
             "name": "delete_post",
-            "title": "Delete Own Post",
-            "description": "Delete your own post or comment. Another user’s post cannot be deleted. A deleted or missing target is not found.",
+            "title": "Delete Post",
+            "description": "Delete a post or comment when you have the same delete permission as on the website. A deleted or missing target is not found.",
             "inputSchema": {
               "type": "object",
               "properties": {

@@ -174,7 +174,7 @@ const tool: Tool<Args, { success: true; post: McpPost }> = {
         assertCanCreateAdminOnlyPostType(user, postType)
         assertOfficialAccountCanCreatePost(user, body.post_type)
         await validateCreatePostInput(user, body, membershipPlan)
-        if (body.parent_post_id) await loadWritablePost(user, body.parent_post_id, false)
+        if (body.parent_post_id) await loadWritablePost(user, body.parent_post_id, 'reply')
       },
       execute: query =>
         executePreparedContribution<AdmittedPost>(query, async () => {

@@ -190,7 +190,9 @@ describe('delegated post mutation contracts and transaction fences', () => {
         postId: root,
         submittedById: user.id,
       })
-      await expect(loadWritablePost(user, root)).resolves.toMatchObject({ id: root })
+      await expect(loadWritablePost(user, root, 'edit')).resolves.toMatchObject({
+        post: { id: root },
+      })
       const args =
         name === 'create_post'
           ? {

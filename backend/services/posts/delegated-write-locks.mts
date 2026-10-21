@@ -7,6 +7,7 @@ import type { TransactionQuery } from '@data-stores/psql'
 import { lockPostPublicationPostScopes } from '@services/post-publication'
 import { runSequentially } from '@modules/utils/run-sequentially'
 import sql from 'sql-template-strings'
+import type { CommunityMemberRole } from '@services/communities/types'
 
 /** Lock the same publication and thread fences as privacy edits/deletion and thread locking. */
 export async function lockDelegatedPostThread(
@@ -14,14 +15,16 @@ export async function lockDelegatedPostThread(
   postId: string,
   actorId: string,
   knownPost?: Post | null,
-): Promise<void> {
+): Promise<CommunityMemberRole | null> {
   const post = knownPost !== undefined ? knownPost : await getPostByAny(postId, { query })
   if (!post) throw createHttpError(404, 'Post not found')
   const nodes =
     post.post_type === 'comment' ? await getCommentAncestorsByAny(postId, { query }) : [post]
   if (nodes.at(-1)?.id !== post.id || nodes[0]?.id !== (post.root_post_id ?? post.id))
     throw createHttpError(404, 'Post not found')
-  if (post.community_id) await lockDelegatedPostCommunity(query, post.community_id, actorId)
+  const communityMemberRole = post.community_id
+    ? await lockDelegatedPostCommunity(query, post.community_id, actorId)
+    : null
   const ids = nodes.map(node => node.id).toSorted()
   await runSequentially([
     () => lockPostPublicationPostScopes(query, ids),
@@ -33,6 +36,7 @@ export async function lockDelegatedPostThread(
       query(sql`/* lockDelegatedPostThread.rows */
       SELECT id FROM posts WHERE id = ANY(${ids}::uuid[]) ORDER BY id FOR NO KEY UPDATE`),
   ])
+  return communityMemberRole
 }
 
 /** Settings UPDATEs and visibility changes take the same physical community row fence. */
@@ -40,18 +44,18 @@ export async function lockDelegatedPostCommunity(
   query: TransactionQuery,
   communityId: string,
   actorId: string,
-): Promise<void> {
-  await runSequentially([
-    () => lockCommunityUser(communityId, actorId, { query }),
-    // leaveCommunity uses only this row UPDATE; removals/bans also hold the pair advisory fence.
-    () =>
-      query(sql`/* lockDelegatedPostCommunity.membership */
-    SELECT id FROM community_members
+): Promise<CommunityMemberRole | null> {
+  await lockCommunityUser(communityId, actorId, { query })
+  // leaveCommunity uses only this row UPDATE; removals/bans also hold the pair advisory fence.
+  const membership = await query<{
+    role: CommunityMemberRole
+  }>(sql`/* lockDelegatedPostCommunity.membership */
+    SELECT role FROM community_members
     WHERE community_id = ${communityId} AND user_id = ${actorId} AND removed_at IS NULL
-    FOR NO KEY UPDATE`),
-  ])
+    FOR NO KEY UPDATE`)
   const { rows } = await query<{ archived_at: Date | null }>(sql`/* lockDelegatedPostCommunity */
     SELECT archived_at FROM communities WHERE id = ${communityId} AND deleted_at IS NULL FOR NO KEY UPDATE`)
   const community = rows[0]
   if (!community) throw createHttpError(404, 'Post not found')
+  return membership.rows[0]?.role ?? null
 }
