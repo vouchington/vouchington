@@ -212,26 +212,27 @@ describe('request client information listener', () => {
       mintDeviceId: mintUUIDv7,
       verifyDeviceIdentity: async () => null,
     })
-    listener({ method: 'GET', headers: {}, socket: {} } as IncomingMessage, {} as ServerResponse)
+    const missingUrlRequest = { method: 'GET', headers: {}, socket: {} } as IncomingMessage
+    await listener(missingUrlRequest, {} as ServerResponse)
     expect(next).toHaveBeenCalledOnce()
 
-    await new Promise<void>(resolve => {
-      listener(
-        {
-          method: 'GET',
-          url: '/api/v1/posts',
-          headers: {
-            ...validHeaders(),
-            'x-voucha-request-kind': ['bot', 'cache-fill'],
-          },
-          socket: { remoteAddress: '127.0.0.1' },
-        } as unknown as IncomingMessage,
-        {
-          writeHead: vi.fn<ServerResponse['writeHead']>(),
-          end: () => resolve(),
-        } as unknown as ServerResponse,
-      )
-    })
+    const ended = Promise.withResolvers<void>()
+    await listener(
+      {
+        method: 'GET',
+        url: '/api/v1/posts',
+        headers: {
+          ...validHeaders(),
+          'x-voucha-request-kind': ['bot', 'cache-fill'],
+        },
+        socket: { remoteAddress: '127.0.0.1' },
+      } as unknown as IncomingMessage,
+      {
+        writeHead: vi.fn<ServerResponse['writeHead']>(),
+        end: () => ended.resolve(),
+      } as unknown as ServerResponse,
+    )
+    await ended.promise
     expect(next).toHaveBeenCalledOnce()
   })
 })
