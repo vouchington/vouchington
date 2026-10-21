@@ -18,6 +18,30 @@ export function verifyRejectedPlaywrightSkipTypes(subject: typeof canonicalTest)
     // @ts-expect-error no only-body skip
     info.skip(true, 'hidden')
   })
+  subject.fail('expected failure', async ({ browserName: _browserName }, info) => {
+    // @ts-expect-error no fail-body skip
+    info.skip(true, 'hidden')
+  })
+  subject.fail(
+    'expected failure',
+    { tag: '@probe' },
+    async ({ browserName: _browserName }, info) => {
+      // @ts-expect-error no fail-body fixme
+      info.fixme(true, 'hidden')
+    },
+  )
+  subject.fail.only('focused failure', async ({ browserName: _browserName }, info) => {
+    // @ts-expect-error no fail.only-body skip
+    info.skip(true, 'hidden')
+  })
+  subject.fail.only(
+    'focused failure',
+    { tag: '@probe' },
+    async ({ browserName: _browserName }, info) => {
+      // @ts-expect-error no fail.only-body fixme
+      info.fixme(true, 'hidden')
+    },
+  )
   // @ts-expect-error no suite skip
   subject.describe.skip('suite', () => {})
   // @ts-expect-error no serial fixme

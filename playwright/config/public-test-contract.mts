@@ -16,17 +16,21 @@ type RunnableCallback<Value> = Value extends (...args: infer Args) => infer Resu
       : Value
   : Value
 
-// Current public test, describe, and hook APIs have at most three call overloads. Compiler
+// Current public test APIs have at most five call overloads (including test.fail). Compiler
 // contracts exercise each supported overload and check the source member independently.
 export type RunnableCalls<Callable> = Callable extends {
   (...args: infer First): infer FirstResult
   (...args: infer Second): infer SecondResult
   (...args: infer Third): infer ThirdResult
+  (...args: infer Fourth): infer FourthResult
+  (...args: infer Fifth): infer FifthResult
 }
   ? {
       (...args: { [Key in keyof First]: RunnableCallback<First[Key]> }): FirstResult
       (...args: { [Key in keyof Second]: RunnableCallback<Second[Key]> }): SecondResult
       (...args: { [Key in keyof Third]: RunnableCallback<Third[Key]> }): ThirdResult
+      (...args: { [Key in keyof Fourth]: RunnableCallback<Fourth[Key]> }): FourthResult
+      (...args: { [Key in keyof Fifth]: RunnableCallback<Fifth[Key]> }): FifthResult
     }
   : never
 
@@ -95,6 +99,7 @@ type ReplacedMembers =
   | 'info'
   | 'use'
   | 'only'
+  | 'fail'
   | 'beforeEach'
   | 'afterEach'
   | 'beforeAll'
@@ -105,6 +110,9 @@ export type RunnablePlaywrightTest<Tests extends {}, Workers extends {}> = Runna
 > &
   Omit<TestType<Tests, Workers>, ReplacedMembers> & {
     only: RunnableCalls<TestType<Tests, Workers>['only']>
+    fail: RunnableCalls<TestType<Tests, Workers>['fail']> & {
+      only: RunnableCalls<TestType<Tests, Workers>['fail']['only']>
+    }
     beforeEach: RunnableCalls<TestType<Tests, Workers>['beforeEach']>
     afterEach: RunnableCalls<TestType<Tests, Workers>['afterEach']>
     beforeAll: RunnableCalls<TestType<Tests, Workers>['beforeAll']>

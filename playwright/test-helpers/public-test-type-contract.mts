@@ -112,6 +112,29 @@ export function verifyPublicPlaywrightContract(subject: typeof canonicalTest): v
     const title: string = info.title
     void title
   })
+  subject.fail('expected failure', async ({ page }, info) => {
+    await page.title()
+    const title: string = info.title
+    void title
+  })
+  subject.fail('expected failure', { tag: '@probe' }, async ({ page }, info) => {
+    await page.title()
+    const title: string = info.title
+    void title
+  })
+  subject.fail(true, 'expected failure')
+  subject.fail(({ browserName }) => browserName === 'chromium', 'conditional failure')
+  subject.fail()
+  subject.fail.only('focused failure', async ({ page }, info) => {
+    await page.title()
+    const title: string = info.title
+    void title
+  })
+  subject.fail.only('focused failure', { tag: '@probe' }, async ({ page }, info) => {
+    await page.title()
+    const title: string = info.title
+    void title
+  })
   subject.describe.only('suite', () => {})
   subject.describe.only(() => {})
   subject.describe.only('suite', { tag: '@probe' }, () => {})
@@ -133,6 +156,7 @@ export function verifyPublicPlaywrightContract(subject: typeof canonicalTest): v
 
 export function verifyPlaywrightMembers<T extends {}, W extends {}>(source: TestType<T, W>) {
   const only: RunnablePlaywrightTest<T, W>['only'] = source.only
+  const fail: RunnablePlaywrightTest<T, W>['fail'] = source.fail
   const use: RunnablePlaywrightTest<T, W>['use'] = source.use
   const info: RunnablePlaywrightTest<T, W>['info'] = source.info
   const beforeEach: RunnablePlaywrightTest<T, W>['beforeEach'] = source.beforeEach
@@ -141,7 +165,7 @@ export function verifyPlaywrightMembers<T extends {}, W extends {}>(source: Test
   const afterAll: RunnablePlaywrightTest<T, W>['afterAll'] = source.afterAll
   const describe: RunnablePlaywrightTest<T, W>['describe'] = source.describe
   const calls: RunnableCalls<TestType<T, W>> = source
-  return { only, use, info, beforeEach, afterEach, beforeAll, afterAll, describe, calls }
+  return { only, fail, use, info, beforeEach, afterEach, beforeAll, afterAll, describe, calls }
 }
 export function verifyPlaywrightExtension<T extends {}, W extends {}, A extends {}, B extends {}>(
   source: TestType<T, W>,

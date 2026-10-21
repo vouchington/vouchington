@@ -1,4 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import TestLifecycleReporter from '../playwright/test-lifecycle-reporter.mts'
+import { createReporter } from '../playwright/config/web-server-command.mts'
 
 const ORIGINAL_PORT = process.env.PORT
 const ORIGINAL_WORKER_PORT = process.env.WORKER_PORT
@@ -20,6 +22,7 @@ function loadPlaywrightConfig() {
 
 describe('Playwright shared config', () => {
   afterEach(() => {
+    vi.unstubAllEnvs()
     if (ORIGINAL_PORT === undefined) {
       delete process.env.PORT
     } else {
@@ -260,5 +263,29 @@ describe('Playwright shared config', () => {
     const workerServer = webServers.find(server => server.name === 'cloudflare-worker')
 
     expect(workerServer?.env).toMatchObject({ CSP_ASSET_ORIGIN: 'http://localhost:3000' })
+  })
+  it.each([
+    ['ordinary', () => import('../playwright.config.mts'), ['setup', 'chromium']],
+    ['credentialed', () => import('../playwright.credentialed.config.mts'), ['chromium']],
+  ] as const)(
+    'selects the lifecycle gate for every %s CI project',
+    async (_, load, projectNames) => {
+      vi.stubEnv('CI', '1')
+      vi.resetModules()
+      const { default: config } = await load()
+      expect(config.reporter).toEqual(
+        expect.arrayContaining([
+          ['github'],
+          ['junit', { outputFile: expect.any(String) }],
+          [TestLifecycleReporter.modulePath],
+        ]),
+      )
+      expect(config.projects?.map(project => project.name)).toEqual(projectNames)
+      expect(config.forbidOnly).toBe(true)
+    },
+  )
+
+  it('preserves the existing local HTML reporter selection', () => {
+    expect(createReporter('local-results.xml', false)).toEqual([['html', { open: 'never' }]])
   })
 })
