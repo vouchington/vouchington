@@ -55,8 +55,10 @@ describe('web area wiring for the credentialed Playwright job', () => {
   })
 
   it('is ignored by pr-shepherd, which blocks on every failing pull-request check', () => {
-    const { ignoreChecks } = load(readFileSync('.pr-shepherdrc.yml', 'utf8')) as {
-      ignoreChecks: string[]
+    const {
+      checks: { ignore: ignoreChecks },
+    } = load(readFileSync('.pr-shepherdrc.yml', 'utf8')) as {
+      checks: { ignore: string[] }
     }
 
     expect(ignoreChecks).toContain('test-playwright-credentialed / playwright-credentialed-tests')
