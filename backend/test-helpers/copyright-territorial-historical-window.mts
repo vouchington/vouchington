@@ -10,6 +10,7 @@ import { createDeterministicCopyrightCorrespondenceInTransaction } from '../serv
 /** An old guest decision, created in chronological order without rewriting immutable evidence. */
 export async function createTestHistoricalEuDecisionWindow(
   options: {
+    decidedAt?: Date
     initialState?: 'sent' | 'pending' | 'failed' | 'bounced'
     requesterUserId?: string
   } = {},
@@ -20,7 +21,9 @@ export async function createTestHistoricalEuDecisionWindow(
   windowEndsAt: Date
 }> {
   const now = new Date()
-  const decidedAt = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 8, 15, 12))
+  const decidedAt = options.decidedAt
+    ? new Date(options.decidedAt.getTime())
+    : new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 8, 15, 12))
   const receivedAt = new Date(decidedAt.getTime() - 86_400_000)
   const sentAt = new Date(decidedAt.getTime() + 3_600_000)
   const windowEndsAt = new Date(

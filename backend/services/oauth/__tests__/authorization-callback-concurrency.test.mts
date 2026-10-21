@@ -21,11 +21,20 @@ describe('concurrent OAuth authorization callbacks', () => {
       state,
       code: `provider-code-${randomUUID()}`,
     }
+    let firstSamples = 0
+    let secondSamples = 0
     const [first, second] = await Promise.all([
-      receiveOAuthAuthorizationCallback(options),
-      receiveOAuthAuthorizationCallback(options),
+      receiveOAuthAuthorizationCallback(options, () => {
+        firstSamples++
+        return new Date()
+      }),
+      receiveOAuthAuthorizationCallback(options, () => {
+        secondSamples++
+        return new Date()
+      }),
     ])
 
+    expect([firstSamples, secondSamples]).toEqual([1, 1])
     expect(first).toMatchObject({ flowId, exchangeRequired: true })
     expect(second).toEqual(first)
     const stored = await getTestOAuthAuthorization(flowId)

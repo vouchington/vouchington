@@ -100,17 +100,24 @@ export async function removeTestCommunityMember(
   communityId: string,
   userId: string,
   options: QueryOptions = {},
-): Promise<void> {
-  await write(
+): Promise<Date | null> {
+  const { rows } = await write<{ removed_at: Date | null }>(
     sql`/* removeTestCommunityMember */
     UPDATE community_members
     SET removed_at = CURRENT_TIMESTAMP
     WHERE community_id = ${communityId}
       AND user_id = ${userId}
       AND removed_at IS NULL
+    RETURNING removed_at
     `,
     options,
   )
+  const removedAt = rows[0]?.removed_at
+  if (removedAt == null) return null
+  if (!(removedAt instanceof Date) || !Number.isFinite(removedAt.getTime())) {
+    throw new Error('Expected a persisted community member removal time')
+  }
+  return removedAt
 }
 
 export async function lockTestCommunityMemberForUpdate(

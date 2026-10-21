@@ -105,6 +105,7 @@ export async function concealJurisdictionPolicyApprovals(
         SELECT 1 FROM copyright_jurisdiction_policy_withdrawals withdrawal
         WHERE withdrawal.copyright_jurisdiction_policy_approval_id = approval.id
       )
+    ON CONFLICT (copyright_jurisdiction_policy_approval_id) DO NOTHING
   `)
 }
 

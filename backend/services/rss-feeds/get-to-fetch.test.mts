@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { getRssFeedByIdToFetch, getRssFeedsToFetch } from './get-to-fetch.mts'
 import { updateUrlHostnameUnreliableStatusCodes, updateRssFeedTiming } from '@voucha/test-helpers'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
+import { readTestRssFeedAtTtlOffset } from '@voucha/test-helpers/rss-feed-ttl-boundary'
 import { getRssFeedById } from './get.mts'
 import { updateRssFeedById } from './update.mts'
 import { rssFeedCrawlConfig } from './crawl-config.mts'
@@ -44,6 +45,15 @@ describe('get-to-fetch', () => {
   it('getRssFeedByIdToFetch returns null when recently fetched', async () => {
     const feed = await getRssFeedByIdToFetch(recentFetchedId, { ttl: TTL_MS })
     expect(feed).toBeNull()
+  })
+
+  it.each([
+    [-1, true],
+    [0, true],
+    [1, false],
+  ] as const)('includes an owned feed at TTL offset %i ms: %s', async (offsetMs, due) => {
+    const feed = await readTestRssFeedAtTtlOffset(neverFetchedId, TTL_MS, offsetMs)
+    expect(feed?.id ?? null).toBe(due ? neverFetchedId : null)
   })
 
   it('getRssFeedByIdToFetch returns null for non-existent feed', async () => {

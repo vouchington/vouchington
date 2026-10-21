@@ -25,6 +25,41 @@ async function createReviewedNotice(): Promise<{ noticeId: string; actorUserId: 
 }
 
 describe('readCopyrightReviewTargetBreaches', () => {
+  it.each(['2027-01-01T00:00:00.000Z', '2028-03-01T00:00:00.000Z', '2029-01-01T00:00:00.000Z'])(
+    'pages owned escalation and restoration at their exact deadlines around %s',
+    async instant => {
+      const { noticeId, actorUserId } = await createReviewedNotice()
+      const escalationAt = new Date(instant)
+      const restorationDeadlineAt = new Date(escalationAt.getTime() + 86_400_000)
+      await insertOpenCopyrightDeadline({
+        noticeId,
+        actorUserId,
+        escalationAt,
+        restorationDeadlineAt,
+      })
+      const readAt = (now: Date) =>
+        readCopyrightReviewTargetBreaches({ now, reviewTargetMinutes: null, noticeIds: [noticeId] })
+
+      expect((await readAt(new Date(escalationAt.getTime() - 1))).missedEscalation).toEqual(none)
+      expect((await readAt(escalationAt)).missedEscalation).toEqual({
+        count: 1,
+        noticeIds: [noticeId],
+      })
+      expect((await readAt(new Date(escalationAt.getTime() + 1))).missedEscalation.count).toBe(1)
+      expect(
+        (await readAt(new Date(restorationDeadlineAt.getTime() - 1))).missedRestorationDeadline,
+      ).toEqual(none)
+      expect((await readAt(restorationDeadlineAt)).missedRestorationDeadline).toEqual({
+        count: 1,
+        noticeIds: [noticeId],
+      })
+      expect(
+        (await readAt(new Date(restorationDeadlineAt.getTime() + 1))).missedRestorationDeadline
+          .count,
+      ).toBe(1)
+    },
+  )
+
   it('pages a filing still unassessed at its deadline', async () => {
     const { noticeId, actorUserId } = await createReviewedNotice()
     await insertOpenCopyrightDeadline({
