@@ -9,8 +9,12 @@ describe('createMonthlyPartitions', () => {
 
     await createMonthlyPartitions(writer)
 
-    expect(statements).toHaveLength(1)
-    expect(statements[0]).toContain('CREATE')
+    expect(statements.some(statement => statement.includes('CREATE'))).toBe(true)
+    expect(
+      statements.some(statement =>
+        statement.includes('DROP TABLE IF EXISTS rss_feed_crawls__default'),
+      ),
+    ).toBe(false)
   })
 })
 
