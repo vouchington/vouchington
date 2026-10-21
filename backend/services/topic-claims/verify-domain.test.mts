@@ -5,7 +5,8 @@ import {
   insertTestUrlHostname,
   softDeleteTopic,
 } from '@voucha/test-helpers'
-import { mergeTopicForTest } from '@voucha/test-helpers/entities/topics'
+import { mergeTopicAliases } from '../topics/merge-aliases.mts'
+import { getTopicByAny } from '../topics/get.mts'
 import { createTopicClaim } from './create.mts'
 import { adminVerifyTopicClaim, rejectTopicClaim } from './admin-verify.mts'
 import { revokeTopicClaim } from './revoke.mts'
@@ -14,10 +15,23 @@ import { verifyTopicClaimDomain } from './verify-domain.mts'
 import { TOPIC_CLAIM_DNS_TXT_PREFIX } from './config.mts'
 import { getTopicClaimById } from './get.mts'
 
+async function mergeClaimTopic(
+  sourceId: string,
+  destinationId: string,
+  creator: Parameters<typeof mergeTopicAliases>[0],
+) {
+  const [source, destination] = await Promise.all([
+    getTopicByAny(sourceId),
+    getTopicByAny(destinationId),
+  ])
+  if (!source || !destination) throw new Error('Claim topic fixture missing')
+  await mergeTopicAliases(creator, source, destination)
+}
+
 async function makeClaimWithToken() {
   const staff = await createTestUser({ administrator: true })
   const claimant = await createTestUser()
-  const creator = await createTestUser()
+  const creator = await createTestUser({ administrator: true })
   const hostname = `verify-${crypto.randomUUID().slice(0, 8)}.example.com`
   const hostnameId = await insertTestUrlHostname({
     hostname,
@@ -79,7 +93,7 @@ describe('verifyTopicClaimDomain', () => {
 
   it('issues a token for a claim created before its topic was merged', async () => {
     const claimant = await createTestUser()
-    const creator = await createTestUser()
+    const creator = await createTestUser({ administrator: true })
     const hostnameId = await insertTestUrlHostname({
       hostname: `merged-verify-${crypto.randomUUID().slice(0, 8)}.example.com`,
     })
@@ -89,22 +103,27 @@ describe('verifyTopicClaimDomain', () => {
       createdById: creator.id,
       hostnameId,
     })
+    const destinationHostname = `destination-verify-${crypto.randomUUID()}.example.com`
+    const destinationHostnameId = await insertTestUrlHostname({ hostname: destinationHostname })
     const destinationId = await insertTestTopic({
       name: `VD Destination Topic ${crypto.randomUUID().slice(0, 8)}`,
       slug: `vd-destination-${crypto.randomUUID().slice(0, 8)}`,
       createdById: creator.id,
+      hostnameId: destinationHostnameId,
     })
     const { claim } = await createTopicClaim(claimant.id, {
       topicId: sourceId,
       claimedRole: 'Issuer',
       evidence: '',
     })
-    await mergeTopicForTest(sourceId, destinationId, creator.id)
+    await mergeClaimTopic(sourceId, destinationId, creator)
 
     const tokenResult = await issueDomainVerificationToken(claimant.id, claim.id)
 
     expect(tokenResult.rawToken).toMatch(/^voucha-site-verification=/)
-    expect(tokenResult.dnsInstructions.hostname).toContain('merged-verify-')
+    expect(tokenResult.dnsInstructions.hostname).toBe(
+      `${TOPIC_CLAIM_DNS_TXT_PREFIX}.${destinationHostname}`,
+    )
   })
 
   it('throws 422 when neither DNS nor well-known contains the token', async () => {
@@ -182,7 +201,7 @@ describe('verifyTopicClaimDomain', () => {
       slug: `vd-deleted-destination-${crypto.randomUUID().slice(0, 8)}`,
       createdById: creator.id,
     })
-    await mergeTopicForTest(claim.topic_id, destinationId, creator.id)
+    await mergeClaimTopic(claim.topic_id, destinationId, creator)
     await softDeleteTopic(destinationId, creator.id)
 
     await expect(verifyClaim(claimant.id, claim.id)).rejects.toMatchObject({ status: 404 })
@@ -195,11 +214,12 @@ describe('verifyTopicClaimDomain', () => {
       slug: `vd-active-destination-${crypto.randomUUID().slice(0, 8)}`,
       createdById: creator.id,
     })
-    await mergeTopicForTest(claim.topic_id, destinationId, creator.id)
+    await mergeClaimTopic(claim.topic_id, destinationId, creator)
     resolveTxtRecords.mockResolvedValueOnce([tokenResult.rawToken])
 
     const verified = await verifyClaim(claimant.id, claim.id)
 
     expect(verified.verification_method).toBe('dns_txt')
+    expect(verified.topic_id).toBe(destinationId)
   })
 })

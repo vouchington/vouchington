@@ -9,28 +9,20 @@ export async function getLandingPageReferralLinksByIds(
 ): Promise<Map<string, LandingPageCandidateReferralLink>> {
   if (ids.length === 0) return new Map()
   const query = sql`/* getLandingPageReferralLinksByIds */
-    -- no-mistakes-disable-next-line postgres-required-predicates: existing referral links may still point at merged source topics; resolve them to active destinations
     SELECT
       urpl.id,
-      COALESCE(destination_topic.id, source_topic.id) AS referral_program_id,
-      COALESCE(destination_topic.name, source_topic.name) AS referral_program_name,
-      COALESCE(destination_topic.slug, source_topic.slug) AS referral_program_slug,
+      topic.id AS referral_program_id,
+      topic.name AS referral_program_name,
+      topic.slug AS referral_program_slug,
       urpl.label,
       u.url
+    -- no-mistakes-disable-next-line postgres-required-predicates: topic merges transactionally repoint referral-program foreign keys; only deletion remains relevant
     FROM user_referral_program_links urpl
-    JOIN topics source_topic ON source_topic.id = urpl.referral_program_topic_id
-    LEFT JOIN topics destination_topic ON destination_topic.id = source_topic.merged_into_topic_id
+    JOIN topics topic ON topic.id = urpl.referral_program_topic_id
     JOIN urls u ON u.id = urpl.url_id
     WHERE urpl.user_id = ${userId}
       AND urpl.id = ANY(${ids}::uuid[])
-      AND source_topic.deleted_at IS NULL
-      AND (
-        source_topic.merged_into_topic_id IS NULL
-        OR (
-          destination_topic.deleted_at IS NULL
-          AND destination_topic.merged_into_topic_id IS NULL
-        )
-      )
+      AND topic.deleted_at IS NULL
       AND urpl.deleted_at IS NULL
   `
   if (publicOnly) {
@@ -44,27 +36,19 @@ export async function getOwnedLandingPageReferralLinks(
   userId: string,
 ): Promise<LandingPageCandidateReferralLink[]> {
   const { rows } = await read(sql`/* getOwnedLandingPageReferralLinks */
-    -- no-mistakes-disable-next-line postgres-required-predicates: existing referral links may still point at merged source topics; resolve them to active destinations
     SELECT
       urpl.id,
-      COALESCE(destination_topic.id, source_topic.id) AS referral_program_id,
-      COALESCE(destination_topic.name, source_topic.name) AS referral_program_name,
-      COALESCE(destination_topic.slug, source_topic.slug) AS referral_program_slug,
+      topic.id AS referral_program_id,
+      topic.name AS referral_program_name,
+      topic.slug AS referral_program_slug,
       urpl.label,
       u.url
+    -- no-mistakes-disable-next-line postgres-required-predicates: topic merges transactionally repoint referral-program foreign keys; only deletion remains relevant
     FROM user_referral_program_links urpl
-    JOIN topics source_topic ON source_topic.id = urpl.referral_program_topic_id
-    LEFT JOIN topics destination_topic ON destination_topic.id = source_topic.merged_into_topic_id
+    JOIN topics topic ON topic.id = urpl.referral_program_topic_id
     JOIN urls u ON u.id = urpl.url_id
     WHERE urpl.user_id = ${userId}
-      AND source_topic.deleted_at IS NULL
-      AND (
-        source_topic.merged_into_topic_id IS NULL
-        OR (
-          destination_topic.deleted_at IS NULL
-          AND destination_topic.merged_into_topic_id IS NULL
-        )
-      )
+      AND topic.deleted_at IS NULL
       AND urpl.deleted_at IS NULL
       AND urpl.activated_at IS NOT NULL
       AND urpl.deactivated_at IS NULL
@@ -78,29 +62,10 @@ export async function getLandingPageTopicsByIds(
 ): Promise<Map<string, LandingPageTopic>> {
   if (ids.length === 0) return new Map()
   const { rows } = await read(sql`/* getLandingPageTopicsByIds */
-    -- no-mistakes-disable-next-line postgres-required-predicates: saved topic groups may still point at merged source topics; resolve them to active destinations
-    SELECT
-      requested.topic_id AS lookup_id,
-      COALESCE(destination_topic.id, source_topic.id) AS id,
-      COALESCE(destination_topic.name, source_topic.name) AS name,
-      COALESCE(destination_topic.slug, source_topic.slug) AS slug,
-      COALESCE(destination_topic.topic_type, source_topic.topic_type) AS topic_type
-    FROM unnest(${ids}::uuid[]) AS requested(topic_id)
-    JOIN topics source_topic ON source_topic.id = requested.topic_id
-    LEFT JOIN topics destination_topic ON destination_topic.id = source_topic.merged_into_topic_id
-    WHERE source_topic.deleted_at IS NULL
-      AND (
-        source_topic.merged_into_topic_id IS NULL
-        OR (
-          destination_topic.deleted_at IS NULL
-          AND destination_topic.merged_into_topic_id IS NULL
-        )
-      )
+    SELECT id, name, slug, topic_type
+    FROM topics
+    WHERE id = ANY(${ids}::uuid[])
+      AND deleted_at IS NULL AND merged_into_topic_id IS NULL
   `)
-  return new Map(
-    (rows as Array<LandingPageTopic & { lookup_id: string }>).map(({ lookup_id, ...topic }) => [
-      lookup_id,
-      topic,
-    ]),
-  )
+  return new Map((rows as LandingPageTopic[]).map(topic => [topic.id, topic]))
 }

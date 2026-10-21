@@ -26,23 +26,15 @@ export async function verifyTopicClaimDomain(
   deps: VerifyTopicClaimDomainDeps = defaultDeps,
 ): Promise<TopicClaim> {
   const { rows } = await read(sql`/* verifyTopicClaimDomain:getClaim */
-    -- no-mistakes-disable-next-line postgres-required-predicates: existing claim rows on merged source topics may still verify when the destination is active
     SELECT tc.id, tc.claimant_user_id, tc.verification_token_hash,
            tc.verified_at, tc.rejected_at, tc.revoked_at,
            uh.hostname
+    -- no-mistakes-disable-next-line postgres-required-predicates: topic merges transactionally repoint claim foreign keys; verification preserves its recorded hostname
     FROM topic_claims tc
     LEFT JOIN url_hostnames uh ON uh.id = tc.verification_hostname_id
     LEFT JOIN topics t ON t.id = tc.topic_id
-    LEFT JOIN topics destination_topic ON destination_topic.id = t.merged_into_topic_id
     WHERE tc.id = ${claimId}
       AND t.deleted_at IS NULL
-      AND (
-        t.merged_into_topic_id IS NULL
-        OR (
-          destination_topic.deleted_at IS NULL
-          AND destination_topic.merged_into_topic_id IS NULL
-        )
-      )
     LIMIT 1
   `)
   const claim = rows[0] as
