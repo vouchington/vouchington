@@ -131,8 +131,9 @@ describe('ImportExportManager — file import and stream', () => {
     fireEvent.change(textarea, { target: { value: 'https://example.com/feed.xml' } })
     fireEvent.click(screen.getByRole('button', { name: /import urls/i }))
     await waitFor(() => {
-      expect(screen.getByText(/Processing|Done/)).toBeDefined()
+      expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '50')
     })
+    expect(screen.getByText(/Processing… 1 \/ 2/)).toBeDefined()
   })
 
   it('swallows AbortError from stream without calling onError', async () => {

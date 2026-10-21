@@ -90,6 +90,7 @@
   "menubar.stories.tsx": ["Default"],
   "point-valuations-manager.stories.tsx": ["EmptyState", "WithItems"],
   "popover.stories.tsx": ["Default"],
+  "progress.stories.tsx": ["Default"],
   "pure-components.stories.tsx": [
     "SharedBadgesAndLinks",
     "SharedDropdownControls",

@@ -58,6 +58,7 @@ import { Input } from '../input'
 import { Kbd, KbdGroup } from '../kbd'
 import { Label } from '../label'
 import { Menubar, MenubarContent, MenubarItem, MenubarMenu, MenubarTrigger } from '../menubar'
+import { Progress } from '../progress'
 import { Separator } from '../separator'
 import { Skeleton } from '../skeleton'
 import { Spinner } from '../spinner'
@@ -156,6 +157,61 @@ describe('pure ui primitive data-pw contracts', () => {
     expect(decorative).toHaveLength(3)
     expect(decorative[2]).toHaveAttribute('aria-hidden', 'true')
     expect(screen.getAllByRole('status')).toHaveLength(2)
+  })
+
+  it('renders Progress value, data-pw, and height overrides', () => {
+    render(
+      <>
+        <Progress
+          value={40}
+          aria-label='Upload'
+        />
+        <Progress
+          value={0}
+          aria-label='Empty'
+          className='h-1'
+        />
+      </>,
+    )
+    const upload = screen.getByRole('progressbar', { name: 'Upload' })
+    const empty = screen.getByRole('progressbar', { name: 'Empty' })
+
+    expect(upload).toHaveAttribute('data-pw', 'progress')
+    expect(upload).toHaveAttribute('aria-valuenow', '40')
+    expect(upload.querySelector('[data-slot="progress-indicator"]')).toHaveStyle({
+      transform: 'translateX(-60%)',
+    })
+    expect(empty).toHaveClass('h-1')
+    expect(empty).not.toHaveClass('h-2')
+  })
+
+  it('keeps Progress indeterminate without a value and fills to max', () => {
+    render(
+      <>
+        <Progress aria-label='Unknown' />
+        <Progress
+          value={null}
+          aria-label='Waiting'
+        />
+        <Progress
+          value={50}
+          max={50}
+          aria-label='Done'
+        />
+      </>,
+    )
+    const unknown = screen.getByRole('progressbar', { name: 'Unknown' })
+    const waiting = screen.getByRole('progressbar', { name: 'Waiting' })
+    const done = screen.getByRole('progressbar', { name: 'Done' })
+
+    expect(unknown).not.toHaveAttribute('aria-valuenow')
+    expect(unknown).toHaveAttribute('data-state', 'indeterminate')
+    expect(waiting).not.toHaveAttribute('aria-valuenow')
+    expect(done).toHaveAttribute('aria-valuenow', '50')
+    expect(done).toHaveAttribute('aria-valuemax', '50')
+    expect(done.querySelector('[data-slot="progress-indicator"]')).toHaveStyle({
+      transform: 'translateX(0%)',
+    })
   })
 
   it('renders Input and Skeleton data-pw', () => {

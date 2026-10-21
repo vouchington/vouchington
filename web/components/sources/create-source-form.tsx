@@ -1,10 +1,11 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { Progress } from '@/components/ui/progress'
 import { createSource } from '@/lib/api/client'
 import { getSourceImportErrorMessages, waitForSourceImport } from '@/lib/api/client/source-import'
 import { importRssFeeds } from '@/lib/api/client/import-export'
@@ -17,6 +18,7 @@ import { onSuccess as onSuccessToast } from '@/lib/on-error'
 export function CreateSourceForm({ onSuccess }: { onSuccess?: () => void }) {
   const t = useTranslations()
   const { push } = useRouter()
+  const progressLabelId = useId()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [urls, setUrls] = useState('')
@@ -154,13 +156,14 @@ export function CreateSourceForm({ onSuccess }: { onSuccess?: () => void }) {
           className='space-y-2'
           data-pw='create-source-form-progress'
         >
-          <div className='h-2 w-full overflow-hidden rounded-full bg-secondary'>
-            <div
-              className='h-full bg-primary transition-all duration-300'
-              style={{ width: `${progressPct}%` }}
-            />
-          </div>
-          <p className='text-sm text-muted-foreground'>
+          <Progress
+            value={progressPct}
+            aria-labelledby={progressLabelId}
+          />
+          <p
+            id={progressLabelId}
+            className='text-sm text-muted-foreground'
+          >
             {importProgress.done
               ? t('extracted.sources.createSourceForm.doneCompletedImportedFailedFailed_d5eddc9e', {
                   completed: importProgress.completed,
