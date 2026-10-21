@@ -990,6 +990,25 @@
         "idempotentHint": false,
         "openWorldHint": true
       }
+    },
+    "F100": {
+      "scopes": ["households:read"],
+      "roles": null,
+      "plan": "free",
+      "annotations": {
+        "readOnlyHint": true,
+        "idempotentHint": true
+      }
+    },
+    "F101": {
+      "scopes": ["households:read", "households:write"],
+      "roles": null,
+      "plan": "plus",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false
+      }
     }
   },
   "inputs": {
@@ -1476,7 +1495,12 @@
     "I183": [["idempotency_key", "predicate", "recommend_unknown_topics", "targets"]],
     "I184": [["claim_id", "topic"]],
     "I185": [["claimed_role", "evidence", "topic"]],
-    "I186": [["claim_id", "evidence", "topic"]]
+    "I186": [["claim_id", "evidence", "topic"]],
+    "I187": [["access", "after", "limit"]],
+    "I188": [["household_id"]],
+    "I189": [["after", "household_id", "limit"]],
+    "I190": [["household_id", "individual_id", "relationship"]],
+    "I191": [["household_id", "membership_id"]]
   },
   "routes": {
     "DELETE:/api/v1/agent-moderations/:id/vote": [
@@ -6266,6 +6290,134 @@
           "decision": false,
           "inputFields": "I186",
           "requestBodyFields": ["evidence"]
+        }
+      ]
+    },
+    "GET:/api/v1/households": {
+      "pullRequest": 3444,
+      "contracts": [
+        {
+          "audience": "user",
+          "facts": "F100",
+          "operation": {
+            "tool": "read_my_households",
+            "option": "list"
+          },
+          "decision": false,
+          "inputFields": "I187",
+          "requestBodyFields": null
+        }
+      ]
+    },
+    "GET:/api/v1/households/:id": {
+      "pullRequest": 3444,
+      "contracts": [
+        {
+          "audience": "user",
+          "facts": "F100",
+          "operation": {
+            "tool": "read_my_households",
+            "option": "get"
+          },
+          "decision": false,
+          "inputFields": "I188",
+          "requestBodyFields": null
+        }
+      ]
+    },
+    "GET:/api/v1/households/:id/memberships": {
+      "pullRequest": 3444,
+      "contracts": [
+        {
+          "audience": "user",
+          "facts": "F100",
+          "operation": {
+            "tool": "read_my_households",
+            "option": "memberships"
+          },
+          "decision": false,
+          "inputFields": "I189",
+          "requestBodyFields": null
+        }
+      ]
+    },
+    "GET:/api/v1/me/individual": {
+      "pullRequest": 3444,
+      "contracts": [
+        {
+          "audience": "user",
+          "facts": "F100",
+          "operation": {
+            "tool": "read_my_households",
+            "option": "my_individual"
+          },
+          "decision": false,
+          "inputFields": "I009",
+          "requestBodyFields": null
+        }
+      ]
+    },
+    "POST:/api/v1/households": {
+      "pullRequest": 3444,
+      "contracts": [
+        {
+          "audience": "user",
+          "facts": "F101",
+          "operation": {
+            "tool": "manage_my_households",
+            "option": "create"
+          },
+          "decision": false,
+          "inputFields": "I009",
+          "requestBodyFields": []
+        }
+      ]
+    },
+    "DELETE:/api/v1/households/:id": {
+      "pullRequest": 3444,
+      "contracts": [
+        {
+          "audience": "user",
+          "facts": "F101",
+          "operation": {
+            "tool": "manage_my_households",
+            "option": "delete"
+          },
+          "decision": false,
+          "inputFields": "I188",
+          "requestBodyFields": null
+        }
+      ]
+    },
+    "POST:/api/v1/households/:id/memberships": {
+      "pullRequest": 3444,
+      "contracts": [
+        {
+          "audience": "user",
+          "facts": "F101",
+          "operation": {
+            "tool": "manage_my_households",
+            "option": "add_member"
+          },
+          "decision": false,
+          "inputFields": "I190",
+          "requestBodyFields": ["individual_id", "relationship"]
+        }
+      ]
+    },
+    "DELETE:/api/v1/households/:id/memberships/:membershipId": {
+      "pullRequest": 3444,
+      "contracts": [
+        {
+          "audience": "user",
+          "facts": "F101",
+          "operation": {
+            "tool": "manage_my_households",
+            "option": "remove_member"
+          },
+          "decision": false,
+          "inputFields": "I191",
+          "requestBodyFields": null
         }
       ]
     }

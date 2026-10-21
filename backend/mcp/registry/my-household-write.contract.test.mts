@@ -1,9 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
-import { createTestUser } from '@voucha/test-helpers'
 import {
+  countTestHouseholdSpendingEntries,
+  createTestUser,
+  insertTestHouseholdSpendingEntry,
+  insertTestSpendingCategory,
+} from '@voucha/test-helpers'
+import {
+  callRejectedMcpTool,
   callStructuredMcpTool,
-  expectMcpToolFunctionThrows,
   optionArgs,
   type McpContractCaller,
 } from '@voucha/test-helpers/mcp-tool-contract'
@@ -44,9 +49,16 @@ describe('manage_my_households REST twins — real DB', () => {
         membership_id: membership.id,
       }),
     ).toEqual({ success: true })
+    const category = await insertTestSpendingCategory({ createdById: owner.id })
+    await insertTestHouseholdSpendingEntry({
+      householdId: household_id,
+      spendingCategoryId: category,
+    })
+    expect(await countTestHouseholdSpendingEntries(household_id)).toBe(1)
     expect(await writeHouseholds(plus(owner), 'delete', { household_id })).toEqual({
       success: true,
     })
+    expect(await countTestHouseholdSpendingEntries(household_id)).toBe(0)
     await request.get(`/api/v1/households/${household_id}`).expect(404)
   })
 
@@ -57,23 +69,27 @@ describe('manage_my_households REST twins — real DB', () => {
     await request.authenticateAs(owner)
     const household_id = (await request.post('/api/v1/households').send({}).expect(201)).body
       .household.id as string
-    await expectMcpToolFunctionThrows(
-      plus(owner),
-      'manage_my_households',
-      optionArgs('add_member', { household_id, individual_id: other.individual_id }),
-      { status: 403, message: 'Cannot add another user to a household without an invitation' },
-    )
+    expect(
+      await callRejectedMcpTool(
+        plus(owner),
+        'manage_my_households',
+        optionArgs('add_member', { household_id, individual_id: other.individual_id }),
+        WRITE,
+      ),
+    ).toContain('Cannot add another user to a household without an invitation')
     await request.authenticateAs(other)
     await request
       .post(`/api/v1/households/${household_id}/memberships`)
       .send({ individual_id: other.individual_id })
       .expect(404)
-    await expectMcpToolFunctionThrows(
-      plus(other),
-      'manage_my_households',
-      optionArgs('add_member', { household_id, individual_id: other.individual_id }),
-      { status: 404, message: 'Household not found' },
-    )
+    expect(
+      await callRejectedMcpTool(
+        plus(other),
+        'manage_my_households',
+        optionArgs('add_member', { household_id, individual_id: other.individual_id }),
+        WRITE,
+      ),
+    ).toContain('Household not found')
   })
 
   it('honors administrator bypass for another household, another user, and membership removal', async () => {
