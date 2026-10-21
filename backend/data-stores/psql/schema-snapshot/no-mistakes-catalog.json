@@ -941,6 +941,7 @@
         "community_role_change",
         "community_ownership_transfer",
         "community_activity_digest",
+        "household_invitation",
         "copyright_notice"
       ]
     },
@@ -1338,8 +1339,8 @@
     "fn_min_uuidv7(p_at timestamp with time zone)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_min_uuidv7(p_at timestamp with time zone)\n RETURNS uuid\n LANGUAGE sql\n STABLE PARALLEL SAFE\nAS $function$\n  SELECT (lpad(to_hex(floor(extract(epoch FROM p_at) * 1000)::bigint), 12, '0') || '70008000000000000000')::uuid\n$function$\n"
     },
-    "fn_notification_target_entity(notification_entity_type notification_entity_types, notification_community_id uuid)": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_notification_target_entity(notification_entity_type notification_entity_types, notification_community_id uuid)\n RETURNS jsonb\n LANGUAGE sql\n IMMUTABLE\nAS $function$\n  SELECT CASE\n    WHEN notification_entity_type IN (\n      'community_application_decision',\n      'community_role_change',\n      'community_ownership_transfer'\n    ) THEN jsonb_build_object('__entity_type', 'community', 'id', notification_community_id)\n    ELSE NULL\n  END\n$function$\n"
+    "fn_notification_target_entity(notification_entity_type notification_entity_types, notification_community_id uuid, notification_household_id uuid)": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_notification_target_entity(notification_entity_type notification_entity_types, notification_community_id uuid, notification_household_id uuid)\n RETURNS jsonb\n LANGUAGE sql\n IMMUTABLE\nAS $function$\n  SELECT CASE\n    WHEN notification_entity_type IN (\n      'community_application_decision',\n      'community_role_change',\n      'community_ownership_transfer'\n    ) THEN jsonb_build_object('__entity_type', 'community', 'id', notification_community_id)\n    WHEN notification_entity_type = 'household_invitation'\n      THEN jsonb_build_object('__entity_type', 'household', 'id', notification_household_id)\n    ELSE NULL\n  END\n$function$\n"
     },
     "fn_project_activitypub_inbox_delivery_retention()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_activitypub_inbox_delivery_retention()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  unverified_deadline TIMESTAMPTZ := NEW.received_at + INTERVAL '1 hour';\n  failure_deadline TIMESTAMPTZ;\nBEGIN\n  IF TG_OP = 'INSERT' THEN\n    IF NEW.failed_at IS NOT NULL THEN\n      NEW.first_failed_at := NEW.failed_at;\n    ELSE\n      NEW.first_failed_at := NULL;\n    END IF;\n  ELSIF OLD.first_failed_at IS NOT NULL THEN\n    NEW.first_failed_at := OLD.first_failed_at;\n  ELSIF NEW.failed_at IS NOT NULL THEN\n    NEW.first_failed_at := NEW.failed_at;\n  ELSE\n    NEW.first_failed_at := NULL;\n  END IF;\n\n  IF NEW.first_failed_at IS NOT NULL THEN\n    failure_deadline := NEW.first_failed_at + INTERVAL '7 days';\n  END IF;\n\n  IF NEW.verified_at IS NULL THEN\n    NEW.retention_expires_at := LEAST(\n      COALESCE(NEW.retention_expires_at, unverified_deadline),\n      unverified_deadline,\n      COALESCE(failure_deadline, unverified_deadline)\n    );\n  ELSIF NEW.first_failed_at IS NULL THEN\n    NEW.retention_expires_at := NULL;\n  ELSE\n    NEW.retention_expires_at := LEAST(\n      COALESCE(OLD.retention_expires_at, NEW.retention_expires_at, failure_deadline),\n      COALESCE(NEW.retention_expires_at, failure_deadline),\n      failure_deadline\n    );\n  END IF;\n\n  RETURN NEW;\nEND;\n$function$\n"
@@ -47901,6 +47902,325 @@
       "triggers": {},
       "uniqueConstraints": {}
     },
+    "household_invitations": {
+      "checkConstraints": {
+        "chk_household_invitations__terminal_state": {
+          "definition": "CHECK ((num_nonnulls(accepted_at, declined_at, revoked_at) <= 1))",
+          "validated": true
+        },
+        "household_invitations_relationship_check": {
+          "definition": "CHECK (((relationship IS NULL) OR (char_length(relationship) <= 64)))",
+          "validated": true
+        }
+      },
+      "columns": {
+        "accepted_at": {
+          "comment": "Time the invitee accepted and gained membership.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6
+        },
+        "created_at": {
+          "comment": null,
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 9
+        },
+        "declined_at": {
+          "comment": "Time the invitee declined.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7
+        },
+        "household_id": {
+          "comment": "Household whose owner or administrator issued the invitation.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2
+        },
+        "id": {
+          "comment": null,
+          "dataType": "uuid",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        },
+        "invited_by_id": {
+          "comment": "User who created the invitation.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4
+        },
+        "invited_user_id": {
+          "comment": "Only this user may accept or decline the invitation.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3
+        },
+        "relationship": {
+          "comment": "Optional relationship assigned to the resulting membership.",
+          "dataType": "text",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5
+        },
+        "revoked_at": {
+          "comment": "Time an owner or administrator revoked the invitation.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8
+        },
+        "updated_at": {
+          "comment": null,
+          "dataType": "timestamp with time zone",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 10
+        }
+      },
+      "comment": "Invitations for an existing user to join a household as an individual member.",
+      "foreignKeys": {
+        "household_invitations_household_id_fkey": {
+          "columns": ["household_id"],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "households",
+          "validated": true
+        },
+        "household_invitations_invited_by_id_fkey": {
+          "columns": ["invited_by_id"],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        },
+        "household_invitations_invited_user_id_fkey": {
+          "columns": ["invited_user_id"],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        }
+      },
+      "indexes": {
+        "household_invitations_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX household_invitations_pkey ON public.household_invitations USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_household_invitations__household_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_household_invitations__household_id ON public.household_invitations USING btree (household_id, id DESC)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "household_id",
+              "descending": false,
+              "expression": "household_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_household_invitations__invited_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_household_invitations__invited_by_id ON public.household_invitations USING btree (invited_by_id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "invited_by_id",
+              "descending": false,
+              "expression": "invited_by_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_household_invitations__invited_user_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_household_invitations__invited_user_id ON public.household_invitations USING btree (invited_user_id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "invited_user_id",
+              "descending": false,
+              "expression": "invited_user_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_household_invitations__pending_household_user": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_household_invitations__pending_household_user ON public.household_invitations USING btree (household_id, invited_user_id) WHERE ((accepted_at IS NULL) AND (declined_at IS NULL) AND (revoked_at IS NULL))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "household_id",
+              "descending": false,
+              "expression": "household_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "invited_user_id",
+              "descending": false,
+              "expression": "invited_user_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "((accepted_at IS NULL) AND (declined_at IS NULL) AND (revoked_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_household_invitations__pending_invitee_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_household_invitations__pending_invitee_id ON public.household_invitations USING btree (invited_user_id, id DESC) WHERE ((accepted_at IS NULL) AND (declined_at IS NULL) AND (revoked_at IS NULL))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "invited_user_id",
+              "descending": false,
+              "expression": "invited_user_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "((accepted_at IS NULL) AND (declined_at IS NULL) AND (revoked_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        }
+      },
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"]
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_household_invitations_updated_at": {
+          "definition": "CREATE TRIGGER trigger_household_invitations_updated_at BEFORE UPDATE ON public.household_invitations FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        }
+      },
+      "uniqueConstraints": {}
+    },
     "household_members": {
       "checkConstraints": {
         "household_members_relationship_check": {
@@ -71044,7 +71364,7 @@
     "notifications": {
       "checkConstraints": {
         "chk_notifications__community_event_shape": {
-          "definition": "CHECK (((entity_type <> ALL (ARRAY['community_application_decision'::notification_entity_types, 'community_role_change'::notification_entity_types, 'community_ownership_transfer'::notification_entity_types, 'community_activity_digest'::notification_entity_types])) OR ((event_key IS NOT NULL) AND (target_path IS NULL) AND (((entity_type = ANY (ARRAY['community_application_decision'::notification_entity_types, 'community_role_change'::notification_entity_types, 'community_ownership_transfer'::notification_entity_types])) AND (community_id IS NOT NULL) AND (target_intent IS NULL)) OR ((entity_type = 'community_activity_digest'::notification_entity_types) AND (community_id IS NULL) AND (target_intent = 'notifications_inbox'::notification_target_intents))))))",
+          "definition": "CHECK (((entity_type <> ALL (ARRAY['community_application_decision'::notification_entity_types, 'community_role_change'::notification_entity_types, 'community_ownership_transfer'::notification_entity_types, 'community_activity_digest'::notification_entity_types, 'household_invitation'::notification_entity_types])) OR ((event_key IS NOT NULL) AND (target_path IS NULL) AND (((entity_type = ANY (ARRAY['community_application_decision'::notification_entity_types, 'community_role_change'::notification_entity_types, 'community_ownership_transfer'::notification_entity_types])) AND (community_id IS NOT NULL) AND (target_intent IS NULL)) OR ((entity_type = 'community_activity_digest'::notification_entity_types) AND (community_id IS NULL) AND (target_intent = 'notifications_inbox'::notification_target_intents)) OR ((entity_type = 'household_invitation'::notification_entity_types) AND (household_id IS NOT NULL) AND (community_id IS NULL) AND (target_intent IS NULL))))))",
           "validated": true
         },
         "chk_notifications__delete_reason": {
@@ -71063,12 +71383,16 @@
           "definition": "CHECK (((event_key IS NULL) OR ((length(event_key) >= 1) AND (length(event_key) <= 300))))",
           "validated": true
         },
+        "chk_notifications__household_invitation_shape": {
+          "definition": "CHECK ((((entity_type = 'household_invitation'::notification_entity_types) AND (household_id IS NOT NULL) AND (community_id IS NULL)) OR ((entity_type <> 'household_invitation'::notification_entity_types) AND (household_id IS NULL))))",
+          "validated": true
+        },
         "chk_notifications__structured_target": {
           "definition": "CHECK (((target_intent IS NULL) OR (target_intent = 'notifications_inbox'::notification_target_intents)))",
           "validated": true
         },
         "chk_notifications__target": {
-          "definition": "CHECK ((((entity_type = ANY (ARRAY['community_application_decision'::notification_entity_types, 'community_role_change'::notification_entity_types, 'community_ownership_transfer'::notification_entity_types])) AND (target_path IS NULL) AND (target_intent IS NULL)) OR ((entity_type <> ALL (ARRAY['community_application_decision'::notification_entity_types, 'community_role_change'::notification_entity_types, 'community_ownership_transfer'::notification_entity_types])) AND (num_nonnulls(target_path, target_intent) = 1))))",
+          "definition": "CHECK ((((entity_type = ANY (ARRAY['community_application_decision'::notification_entity_types, 'community_role_change'::notification_entity_types, 'community_ownership_transfer'::notification_entity_types, 'household_invitation'::notification_entity_types])) AND (target_path IS NULL) AND (target_intent IS NULL)) OR ((entity_type <> ALL (ARRAY['community_application_decision'::notification_entity_types, 'community_role_change'::notification_entity_types, 'community_ownership_transfer'::notification_entity_types, 'household_invitation'::notification_entity_types])) AND (num_nonnulls(target_path, target_intent) = 1))))",
           "validated": true
         },
         "notifications_actor_label_check": {
@@ -71101,7 +71425,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22
+          "ordinalPosition": 23
         },
         "actor_user_id": {
           "comment": "The user who performed the action triggering this notification. For follow: the follower. For referral_signup: the newly signed-up user (not the referrer). Required for follow and referral_signup types.",
@@ -71121,7 +71445,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 21
+          "ordinalPosition": 22
         },
         "community_ban_id": {
           "comment": "The community ban this notification refers to; set when entity_type is community_ban.",
@@ -71171,7 +71495,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 29
+          "ordinalPosition": 30
         },
         "delete_reason": {
           "comment": "Why this notification was deleted: system_pruned or user_deleted.",
@@ -71181,7 +71505,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 28
+          "ordinalPosition": 29
         },
         "deleted_at": {
           "comment": null,
@@ -71191,7 +71515,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 27
+          "ordinalPosition": 28
         },
         "delivery_type": {
           "comment": "How the notification was triggered: subscription (automatic) or manual_send.",
@@ -71201,7 +71525,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 18
+          "ordinalPosition": 19
         },
         "entity_type": {
           "comment": "The type of entity this notification is about: post, rss_feed_item, follow, referral_signup, moderation_report, review_dispute, or user_warning.",
@@ -71216,6 +71540,16 @@
         "event_key": {
           "comment": "Stable producer-defined idempotency key, unique per recipient even after dismissal.",
           "dataType": "text",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 18
+        },
+        "household_id": {
+          "comment": "Household associated with an invitation notification; deletion cascades its notifications.",
+          "dataType": "uuid",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -71291,7 +71625,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 26
+          "ordinalPosition": 27
         },
         "read_at": {
           "comment": "When the user read this notification.",
@@ -71301,7 +71635,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 25
+          "ordinalPosition": 26
         },
         "review_dispute_id": {
           "comment": "The review dispute this notification refers to; set when entity_type is review_dispute.",
@@ -71331,17 +71665,17 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19
+          "ordinalPosition": 20
         },
         "target_intent": {
-          "comment": "Structured application navigation intent. Community entity targets are derived from community_id instead of a stored document.",
+          "comment": "Structured application navigation intent. Community and household entity targets are derived from relational IDs instead of a stored document.",
           "dataType": "notification_target_intents",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 24
+          "ordinalPosition": 25
         },
         "target_path": {
           "comment": "URL path the notification links to. Producers that navigate by path still write this column.",
@@ -71351,7 +71685,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23
+          "ordinalPosition": 24
         },
         "title": {
           "comment": "Notification title text.",
@@ -71361,7 +71695,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 20
+          "ordinalPosition": 21
         },
         "updated_at": {
           "comment": null,
@@ -71371,7 +71705,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 30
+          "ordinalPosition": 31
         },
         "user_id": {
           "comment": "The user receiving this notification; also the partition key.",
@@ -71474,6 +71808,14 @@
           "onUpdate": "NO ACTION",
           "referencedColumns": ["id"],
           "referencedTable": "conversations",
+          "validated": true
+        },
+        "notifications_household_id_fkey": {
+          "columns": ["household_id"],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "households",
           "validated": true
         },
         "notifications_post_id_fkey": {
@@ -71651,6 +71993,29 @@
           ],
           "live": true,
           "predicate": "(copyright_notice_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_notifications__household_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_notifications__household_id ON ONLY public.notifications USING btree (household_id) WHERE (household_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "household_id",
+              "descending": false,
+              "expression": "household_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(household_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,

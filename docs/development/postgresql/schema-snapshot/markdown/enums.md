@@ -1241,6 +1241,7 @@
 - `community_role_change`
 - `community_ownership_transfer`
 - `community_activity_digest`
+- `household_invitation`
 - `copyright_notice`
 
 ## `notification_push_endpoint_statuses`

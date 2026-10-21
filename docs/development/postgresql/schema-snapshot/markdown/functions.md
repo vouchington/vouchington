@@ -259,10 +259,10 @@ CREATE OR REPLACE FUNCTION public.fn_min_uuidv7(p_at timestamp with time zone)
  STABLE PARALLEL SAFE
 ```
 
-## `fn_notification_target_entity(notification_entity_type notification_entity_types, notification_community_id uuid)`
+## `fn_notification_target_entity(notification_entity_type notification_entity_types, notification_community_id uuid, notification_household_id uuid)`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_notification_target_entity(notification_entity_type notification_entity_types, notification_community_id uuid)
+CREATE OR REPLACE FUNCTION public.fn_notification_target_entity(notification_entity_type notification_entity_types, notification_community_id uuid, notification_household_id uuid)
  RETURNS jsonb
  LANGUAGE sql
  IMMUTABLE
