@@ -27,8 +27,10 @@
     "glide-mq": "^0.18.0"
   },
   "devDependencies": {
+    "@modules/utils": "workspace:^",
     "@services/entity-cache": "workspace:^",
     "@services/users": "workspace:^",
-    "@voucha/test-helpers": "workspace:^"
+    "@voucha/test-helpers": "workspace:^",
+    "uuid": "^14.0.3"
   }
 }

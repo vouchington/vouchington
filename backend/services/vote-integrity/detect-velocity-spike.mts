@@ -25,7 +25,10 @@ type VelocitySpikeResult = {
 export async function detectVelocitySpike(
   entityType: string,
   entityId: string,
+  asOf: Date,
 ): Promise<VelocitySpikeResult> {
+  const asOfMs = asOf.getTime()
+  if (!Number.isFinite(asOfMs)) throw new RangeError('asOf must be a finite date')
   const tableConfig = await resolveEntityVoteTableConfig(entityType, entityId)
   if (!tableConfig) {
     return {
@@ -39,9 +42,9 @@ export async function detectVelocitySpike(
     }
   }
 
-  const windowStart = new Date(Date.now() - VELOCITY_SPIKE_WINDOW_MINUTES * 60 * 1000)
+  const windowStart = new Date(asOfMs - VELOCITY_SPIKE_WINDOW_MINUTES * 60 * 1000)
   const lowerBoundId = getMinUUIDv7ForDate(windowStart)
-  const youngAccountCutoff = new Date(Date.now() - YOUNG_ACCOUNT_AGE_DAYS * 24 * 60 * 60 * 1000)
+  const youngAccountCutoff = new Date(asOfMs - YOUNG_ACCOUNT_AGE_DAYS * 24 * 60 * 60 * 1000)
   const youngAccountCutoffId = getMinUUIDv7ForDate(youngAccountCutoff)
 
   const query = sql`/* detectVelocitySpike */

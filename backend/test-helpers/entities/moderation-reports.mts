@@ -23,6 +23,7 @@ export async function insertTestModerationReport(options: {
   reason?: ModerationReportReason
   note?: string
   createdAt?: Date
+  id?: string
   communityId?: string
 }): Promise<string> {
   const fkColumn = ENTITY_TYPE_TO_REPORT_FK[options.entityType]
@@ -31,9 +32,9 @@ export async function insertTestModerationReport(options: {
     entityType: options.entityType,
     entityId: options.entityId,
   })
-  const reportId = options.createdAt
-    ? uuidv7({ msecs: options.createdAt.getTime(), seq: 0 })
-    : undefined
+  const reportId =
+    options.id ??
+    (options.createdAt ? uuidv7({ msecs: options.createdAt.getTime(), seq: 0 }) : undefined)
   const query = sql`/* insertTestModerationReport */ INSERT INTO moderation_reports (`
   if (reportId) query.append(sql`id, `)
   query.append(sql`reporter_user_id, `)

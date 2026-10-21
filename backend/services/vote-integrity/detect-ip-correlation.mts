@@ -28,7 +28,10 @@ type IpCorrelationResult = {
 export async function detectIpCorrelation(
   entityType: string,
   entityId: string,
+  asOf: Date,
 ): Promise<IpCorrelationResult> {
+  const asOfMs = asOf.getTime()
+  if (!Number.isFinite(asOfMs)) throw new RangeError('asOf must be a finite date')
   const tableConfig = await resolveEntityVoteTableConfig(entityType, entityId)
   if (!tableConfig) {
     return {
@@ -41,7 +44,7 @@ export async function detectIpCorrelation(
     }
   }
 
-  const windowStart = new Date(Date.now() - IP_CORRELATION_WINDOW_MINUTES * 60 * 1000)
+  const windowStart = new Date(asOfMs - IP_CORRELATION_WINDOW_MINUTES * 60 * 1000)
   const lowerBoundId = getMinUUIDv7ForDate(windowStart)
 
   const query = sql`/* detectIpCorrelation */

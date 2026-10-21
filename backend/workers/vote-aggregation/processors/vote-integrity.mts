@@ -9,10 +9,11 @@ export async function processVoteIntegrityCheck(
 ): Promise<void> {
   try {
     const { entityType, entityId } = data
+    const asOf = new Date()
 
     const [velocityResult, ipResult] = await Promise.all([
-      detectVelocitySpike(entityType, entityId),
-      detectIpCorrelation(entityType, entityId),
+      detectVelocitySpike(entityType, entityId, asOf),
+      detectIpCorrelation(entityType, entityId, asOf),
     ])
 
     if (velocityResult.flagged) {

@@ -20,7 +20,7 @@ export async function processReportIntegrityCheck(
   try {
     const { entityType, entityId } = data
 
-    const result = await detectMassReportCampaign(entityType, entityId)
+    const result = await detectMassReportCampaign(entityType, entityId, new Date())
 
     if (result.flagged) {
       await createReportIntegrityFlag(
