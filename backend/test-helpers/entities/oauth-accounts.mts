@@ -13,8 +13,14 @@ export async function insertTestOAuthAccount(
   provider: OAuthProvider,
   providerUserId: string,
   providerUserEmailAddress: string | null = null,
+  accountId?: string,
 ): Promise<OAuthAccount> {
   const config = providerTableConfigs[provider]
+  if (accountId !== undefined && !config.accountIdColumn) {
+    throw new Error(`insertTestOAuthAccount: ${provider} has no account ID column`)
+  }
+  const idColumn = accountId === undefined ? '' : `${config.accountIdColumn},`
+  const idValue = accountId === undefined ? '' : `$${provider === 'x' ? 3 : 4},`
   const emailDomainHostnameId =
     provider !== 'x' && providerUserEmailAddress
       ? await upsertTestEmailDomainHostnameId(providerUserEmailAddress)
@@ -23,12 +29,13 @@ export async function insertTestOAuthAccount(
   const emailDomainValue = provider === 'x' ? '' : '$3,'
   const query = `
     INSERT INTO ${config.table} (
+      ${idColumn}
       ${config.providerUserIdColumn},
       ${config.emailColumn},
       ${emailDomainColumn}
       ${config.dataColumn}
     )
-    VALUES ($1, $2, ${emailDomainValue} '{}')
+    VALUES (${idValue} $1, $2, ${emailDomainValue} '{}')
     RETURNING
       user_id,
       ${config.providerUserIdColumn} AS provider_user_id,
@@ -40,6 +47,7 @@ export async function insertTestOAuthAccount(
     provider === 'x'
       ? [providerUserId, providerUserEmailAddress]
       : [providerUserId, providerUserEmailAddress, emailDomainHostnameId]
+  if (accountId !== undefined) values.push(accountId)
   const { rows } = await write<OAuthAccount>(allowUnannotatedQuery(query), values)
   return rows[0]
 }

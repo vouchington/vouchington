@@ -1,11 +1,12 @@
 import { TEST_HNSW_EF_SEARCH } from '../backend/test-helpers/vector-search-recall-constant.mts'
-import { TEST_STATEMENT_TIMEOUT_MS } from '../backend/test-helpers/statement-timeout-constant.mts'
+import { parseTestStatementTimeout } from '../backend/test-helpers/statement-timeout-constant.mts'
 
 export function configureTestPostgresSessions(env: NodeJS.ProcessEnv = process.env): void {
+  const statementTimeoutMs = parseTestStatementTimeout(env.PG_TEST_STATEMENT_TIMEOUT_MS)
   for (const key of ['DATABASE_URL', 'READ_DATABASE_URL'] as const) {
     const value = env[key]
     if (!value) continue
-    const settings = `-c statement_timeout=${TEST_STATEMENT_TIMEOUT_MS} -c hnsw.ef_search=${TEST_HNSW_EF_SEARCH}`
+    const settings = `-c statement_timeout=${statementTimeoutMs} -c hnsw.ef_search=${TEST_HNSW_EF_SEARCH}`
     const fragmentAt = value.indexOf('#')
     const beforeFragment = fragmentAt < 0 ? value : value.slice(0, fragmentAt)
     const fragment = fragmentAt < 0 ? '' : value.slice(fragmentAt)

@@ -21,6 +21,7 @@ import {
   cleanupSoftDeletedUsers,
 } from './cleanup.mts'
 import { getRetentionCutoffDate } from './cleanup-options.mts'
+import { cleanupSoftDeletedUser } from './cleanup-soft-deleted-user.mts'
 
 const THIRTY_DAY_UTC_EDGES = [
   ['2025-01-31T23:59:59.999Z', '2025-01-01T23:59:59.999Z'],
@@ -155,23 +156,40 @@ describe('cleanup retention windows', () => {
 })
 
 describe('retention publication capture', () => {
-  it('captures every authored post before purging a high-volume author', async () => {
+  it('captures every authored post across bounded pages before purging its owner', async () => {
     const window = createTestRetentionWindow()
     const user = await createTestUserDirect()
-    const postIds = await insertTestPostBatch(user.id, 1_001)
+    const postIds = await insertTestPostBatch(user.id, 2)
     onTestFinished(async () => hardDeleteTestPosts(postIds))
-
     await softDeleteUserAt(user.id, window.firstEligibleDate)
-    await cleanupSoftDeletedUsers(window)
 
-    expect(await getTestUserRaw(user.id)).toBeNull()
+    const cutoffDate = getRetentionCutoffDate(window.retentionDays, window.now)
+    // Target the owned user: the global one-row selector may choose a concurrent test's user.
+    const nextPage = () =>
+      cleanupSoftDeletedUser(user.id, cutoffDate, window.lowerBoundDate, 1, { remainingRows: 1 })
+
+    await expect(nextPage()).resolves.toEqual({ deleted: 0, hasMore: true })
+    expect(await getTestUserRaw(user.id)).not.toBeNull()
     const authorWork = await getTestPostPublicationDirtyWorkForScope({
       type: 'author',
       id: user.id,
     })
     expect(authorWork).toMatchObject({ author_identity_id: user.id })
-    await expect(listTestPostPublicationImpactPostIds(authorWork!.id)).resolves.toHaveLength(
-      postIds.length,
+    const firstPageIds = await listTestPostPublicationImpactPostIds(authorWork!.id)
+    expect(firstPageIds).toHaveLength(1)
+    expect(postIds).toContain(firstPageIds[0])
+
+    await expect(nextPage()).resolves.toEqual({ deleted: 0, hasMore: true })
+    expect(await getTestUserRaw(user.id)).not.toBeNull()
+    const allImpactIds = postIds.toSorted()
+    await expect(listTestPostPublicationImpactPostIds(authorWork!.id)).resolves.toEqual(
+      allImpactIds,
+    )
+
+    await expect(nextPage()).resolves.toEqual({ deleted: 1, hasMore: false })
+    expect(await getTestUserRaw(user.id)).toBeNull()
+    await expect(listTestPostPublicationImpactPostIds(authorWork!.id)).resolves.toEqual(
+      allImpactIds,
     )
   })
 })

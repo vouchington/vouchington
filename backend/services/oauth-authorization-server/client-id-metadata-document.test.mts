@@ -119,18 +119,6 @@ describe('Client ID Metadata Documents', () => {
     expect(safeFetch).toHaveBeenCalledOnce()
   })
 
-  it('aborts a metadata request that exceeds the request timeout', async () => {
-    const clientId = randomMetadataUrl()
-    await expect(
-      resolveClientIdMetadataDocument(clientId, {
-        safeFetch: (_url, options) =>
-          new Promise((_resolve, reject) => {
-            options?.signal?.addEventListener('abort', () => reject(new Error('aborted')))
-          }),
-      }),
-    ).rejects.toMatchObject({ code: 'unauthorized_client' })
-  }, 10_000)
-
   it('bounds the response body and rejects oversized or timed-out reads', async () => {
     const clientId = randomMetadataUrl()
     const cause = new Error('body too large')

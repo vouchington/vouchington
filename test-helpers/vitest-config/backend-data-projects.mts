@@ -4,6 +4,9 @@ import { backendNoDataUnitTestFiles } from './backend-core-projects.mts'
 const backendDataStoreTestDefaults = {
   pool: 'forks' as const,
   isolate: false,
+  // These existing 30s data suites include real plan and lock-boundary queries. The
+  // five-second projects retain the default 2s SQL budget.
+  env: { PG_TEST_STATEMENT_TIMEOUT_MS: process.env.PG_TEST_STATEMENT_TIMEOUT_MS ?? '20000' },
   globalSetup: './test-helpers/vitest.setup.data-stores.mts',
   setupFiles: [
     // Must run before glide-mq-workers: that setup preloads workers that transitively
@@ -36,6 +39,7 @@ const backendMocksProject = {
     pool: 'forks',
     isolate: true,
     name: 'backend-mocks',
+    env: { PG_TEST_STATEMENT_TIMEOUT_MS: '2000' },
     runner: './test-helpers/vitest.runner.shared-db-scope-guard.mts',
     include: [
       'backend/{agents,api,modules,data-stores,entrypoints,queues,scripts,services,sitemaps,mcp,worker-runtime,workers}/**/*.mock.test.mts',

@@ -9,6 +9,7 @@ import { PodcastPlayerProvider } from '@/lib/podcast-player/context'
 import { PodcastMiniPlayer } from '@/lib/podcast-player/mini-player'
 import type { ViewRssFeed } from '@/types/rss-feeds'
 import { EntityStoryFrame } from './entity-story-frame'
+import podcastMiniPlayerAudioUrl from './fixtures/podcast-mini-player-silence.wav'
 
 const t = createTranslator('en', await loadJsonMessages('en'))
 
@@ -165,7 +166,9 @@ function MiniPlayerDemo() {
       <PodcastMiniPlayer
         episode={{
           episodeId: 'story-ep-1',
-          enclosureUrl: 'https://feeds.example.com/episode.mp3',
+          enclosureUrl: podcastMiniPlayerAudioUrl,
+          enclosureType: 'audio/wav',
+          durationSeconds: 3,
           title: "The real horror of 'Alien: Romulus' – and what makes a great sci-fi horror film",
           showId: 'show-1',
           showTitle: 'Planet Money',

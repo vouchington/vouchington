@@ -58,7 +58,7 @@ describe('image upload worker', () => {
           await releaseAnalysis.promise
           return { success: true }
         },
-        { connection: workerQueueConnection, prefix, concurrency },
+        { connection: workerQueueConnection, prefix, concurrency, blockTimeout: 1_000 },
       )
       await analysisWorker.waitUntilReady()
       await analysis.addBulk(
@@ -75,12 +75,16 @@ describe('image upload worker', () => {
         (await analysis.getJobs('waiting')).length + (await analysis.getJobs('delayed')).length,
       ).toBe(1)
 
-      uploadWorker = createImageUploadsWorker(prefix, {
-        getImageFromS3: async () => ({
-          $metadata: {},
-          Body: Readable.from([jpeg]) as never,
-        }),
-      })
+      uploadWorker = createImageUploadsWorker(
+        prefix,
+        {
+          getImageFromS3: async () => ({
+            $metadata: {},
+            Body: Readable.from([jpeg]) as never,
+          }),
+        },
+        { blockTimeout: 1_000 },
+      )
       await uploadWorker.waitUntilReady()
       const completed = Promise.withResolvers<{ job: Job; result: unknown }>()
       const failed = Promise.withResolvers<Error>()

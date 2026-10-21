@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { read, write } from '@data-stores/psql'
+import { read, write, writePool } from '@data-stores/psql'
 import {
   advisoryLockPool,
   beginBoundedTransaction,
@@ -52,4 +52,45 @@ export async function runStatementTimeoutAttributionProbe(): Promise<void> {
     [lockKey],
   )
   await transaction.commit()
+}
+
+/** Exercise the inherited deadline and reuse that same connection after rollback. */
+export async function captureDefaultStatementTimeoutAttribution() {
+  const lockKey = randomUUID()
+  await using holder = await beginTransaction({ client: advisoryLockPool })
+  await holder(
+    '/* holdDefaultStatementTimeoutProbe */ SELECT pg_advisory_xact_lock(hashtextextended($1, 0))',
+    [lockKey],
+  )
+  const client = await writePool.connect()
+  let reusable = false
+  try {
+    const before = await client.query<{ pid: number; timeout_ms: number }>(
+      `/* defaultStatementTimeoutProbeBefore */
+       SELECT pg_backend_pid() AS pid,
+         (SELECT setting::integer FROM pg_settings WHERE name = 'statement_timeout') AS timeout_ms`,
+    )
+    let failure: unknown
+    {
+      await using transaction = await beginTransaction({ client })
+      try {
+        await transaction(
+          '/* guardDefaultStatementTimeoutProbe */ SELECT pg_advisory_xact_lock(hashtextextended($1, 0))',
+          [lockKey],
+        )
+      } catch (err) {
+        failure = err
+      }
+    }
+    // This query would fail with 25P02 if the cancellation left its transaction open.
+    const after = await client.query<{ pid: number; timeout_ms: number; usable: number }>(
+      `/* defaultStatementTimeoutProbeAfter */
+       SELECT pg_backend_pid() AS pid, 1 AS usable,
+         (SELECT setting::integer FROM pg_settings WHERE name = 'statement_timeout') AS timeout_ms`,
+    )
+    reusable = true
+    return { failure, before: before.rows[0], after: after.rows[0] }
+  } finally {
+    client.release(!reusable)
+  }
 }

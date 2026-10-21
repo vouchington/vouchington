@@ -1,4 +1,4 @@
-import { describe, it, expect, afterAll } from 'vitest'
+import { describe, it, expect } from 'vitest'
 
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
@@ -12,8 +12,6 @@ import { registerTopicProgramAttributeRouteTests } from '../../../../test-helper
 const longPublicCacheControl = `public, max-age=${HTTP_CACHE_LONG_MAX_AGE_SECONDS}`
 
 describe('topic.referral-program', () => {
-  afterAll(async () => {}, 30000)
-
   describe('Topic Referral Program Routes', () => {
     registerTopicProgramAttributeRouteTests('referral', ['get'], longPublicCacheControl)
 

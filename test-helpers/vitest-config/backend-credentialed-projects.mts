@@ -31,8 +31,10 @@ export const backendCredentialedTestProjects: TestProjectConfiguration[] = [
       pool: 'forks',
       isolate: false,
       name: 'backend-openrouter',
+      env: { PG_TEST_STATEMENT_TIMEOUT_MS: process.env.PG_TEST_STATEMENT_TIMEOUT_MS ?? '20000' },
       include: ['backend/**/*.openrouter.test.mts'],
       exclude: ['**/node_modules/**', '**/.git/**'],
+      setupFiles: ['./test-helpers/vitest.setup.postgres-sessions.mts'],
       testTimeout: 30_000,
       hookTimeout: 30_000,
     },
@@ -43,6 +45,7 @@ export const backendCredentialedTestProjects: TestProjectConfiguration[] = [
       pool: 'forks',
       isolate: false,
       name: 'backend-aws',
+      env: { PG_TEST_STATEMENT_TIMEOUT_MS: process.env.PG_TEST_STATEMENT_TIMEOUT_MS ?? '20000' },
       include: [
         'backend/**/*.s3.test.mts',
         'backend/modules/aws/s3.test.mts',

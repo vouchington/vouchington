@@ -1,4 +1,4 @@
-import { describe, it, expect, afterAll } from 'vitest'
+import { describe, it, expect } from 'vitest'
 
 import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
 import { createRequest } from '@voucha/test-helpers/api/server'
@@ -10,8 +10,6 @@ import {
 import { registerTopicProgramAttributeRouteTests } from '../../../../test-helpers/topic-program-attribute-route-tests.mts'
 
 describe('topic.referral-program', () => {
-  afterAll(async () => {}, 30000)
-
   describe('Topic Referral Program Routes', () => {
     describe('DELETE /api/v1/topics/:referralProgramId/referral-program/link-validations/:validationId', () => {
       it('returns 401 when unauthenticated', async () => {

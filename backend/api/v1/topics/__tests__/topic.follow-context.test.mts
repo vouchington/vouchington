@@ -1,4 +1,4 @@
-import { describe, it, expect, afterAll, vi } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   createTestUser,
@@ -14,8 +14,6 @@ import { getTopicTypeSlug } from '@voucha/types/entities/topic'
 import { onceElectionVoteStatsCompleted } from '@voucha/test-helpers/election-vote-stats'
 
 describe('topic', () => {
-  afterAll(async () => {}, 30000) // Increased timeout for cleanup when Playwright test data exists
-
   describe('Topic Individual Routes', () => {
     describe('GET /api/v1/topics/:idOrSlug/follow-context', () => {
       it('returns only followed-user vote and follower context', async () => {

@@ -21,6 +21,10 @@ export type BackgroundCpuWorkerOptions = {
   /** An isolated key prefix, for tests that must not touch the shared queue. */
   prefix?: string
   concurrency?: number
+  /** Override the blocking read timeout for isolated worker lifecycle tests. */
+  blockTimeout?: number
+  /** Override the scheduler promotion cadence for isolated worker lifecycle tests. */
+  promotionInterval?: number
 }
 
 /**
@@ -40,6 +44,10 @@ export function createBackgroundCpuWorker(options: BackgroundCpuWorkerOptions) {
       backoffStrategies: pagedDispatchBackoffStrategies(),
       maxStalledCount: PAGED_DISPATCHER_MAX_STALLED_COUNT,
       ...(options.prefix ? { prefix: options.prefix } : {}),
+      ...(options.blockTimeout === undefined ? {} : { blockTimeout: options.blockTimeout }),
+      ...(options.promotionInterval === undefined
+        ? {}
+        : { promotionInterval: options.promotionInterval }),
       concurrency:
         options.concurrency ??
         getWorkerConcurrency('background-cpu', { baseline, max: baseline * 4 }),

@@ -161,6 +161,7 @@ export const backendCoreProjects: TestProjectConfiguration[] = [
       pool: 'forks',
       isolate: true,
       name: 'backend/analytics-integration',
+      env: { PG_TEST_STATEMENT_TIMEOUT_MS: '2000' },
       runner: './test-helpers/vitest.runner.shared-db-scope-guard.mts',
       include: [
         'backend/services/jwt-session/create.test.mts',
