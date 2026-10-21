@@ -74,6 +74,6 @@ _none_
 
 **Triggers:**
 
-- `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.user_referral_program_links FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('referral_program_topic_id')`
+- `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE OF referral_program_topic_id ON public.user_referral_program_links FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('referral_program_topic_id')`
 - `trigger_user_referra_program_links_content_provenance_immutable`: `CREATE TRIGGER trigger_user_referra_program_links_content_provenance_immutable AFTER UPDATE ON public.user_referral_program_links FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_reject_mutation()`
 - `trigger_user_referral_program_links_updated_at`: `CREATE TRIGGER trigger_user_referral_program_links_updated_at BEFORE UPDATE ON public.user_referral_program_links FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

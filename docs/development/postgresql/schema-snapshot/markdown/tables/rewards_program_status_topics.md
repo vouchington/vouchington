@@ -34,5 +34,5 @@ _none_
 
 **Triggers:**
 
-- `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.rewards_program_status_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('lifetime_version_id', 'topic_id')`
+- `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE OF lifetime_version_id, topic_id ON public.rewards_program_status_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('lifetime_version_id', 'topic_id')`
 - `trigger_rewards_program_status_topics_updated_at`: `CREATE TRIGGER trigger_rewards_program_status_topics_updated_at BEFORE UPDATE ON public.rewards_program_status_topics FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

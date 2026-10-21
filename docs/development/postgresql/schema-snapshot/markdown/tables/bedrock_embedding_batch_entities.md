@@ -49,5 +49,4 @@ _none_
 
 **Triggers:**
 
-- `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.bedrock_embedding_batch_entities FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')`
 - `trigger_bedrock_embedding_batch_entities_updated_at`: `CREATE TRIGGER trigger_bedrock_embedding_batch_entities_updated_at BEFORE UPDATE ON public.bedrock_embedding_batch_entities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

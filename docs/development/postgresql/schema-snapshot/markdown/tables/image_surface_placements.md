@@ -57,6 +57,5 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
-- `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.image_surface_placements FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')`
 - `trigger_image_surface_placement_guard`: `CREATE TRIGGER trigger_image_surface_placement_guard BEFORE INSERT OR DELETE OR UPDATE ON public.image_surface_placements FOR EACH ROW EXECUTE FUNCTION fn_reject_image_surface_placement()`
 - `trigger_image_surface_placements_updated_at`: `CREATE TRIGGER trigger_image_surface_placements_updated_at BEFORE UPDATE ON public.image_surface_placements FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

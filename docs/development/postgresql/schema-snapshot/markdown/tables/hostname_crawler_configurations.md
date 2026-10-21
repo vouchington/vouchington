@@ -50,5 +50,5 @@ _none_
 
 **Triggers:**
 
-- `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.hostname_crawler_configurations FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('referral_program_topic_id')`
+- `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE OF referral_program_topic_id ON public.hostname_crawler_configurations FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('referral_program_topic_id')`
 - `trigger_hostname_crawler_configurations_updated_at`: `CREATE TRIGGER trigger_hostname_crawler_configurations_updated_at BEFORE UPDATE ON public.hostname_crawler_configurations FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
