@@ -5,6 +5,7 @@ import {
   deleteTestBlacklistSource,
   getTestHostnameRow,
   insertTestDomainBlacklist,
+  observeTestPostgresQueryPools,
 } from '@voucha/test-helpers'
 import { caches } from '@services/entity-cache/caches'
 import { getUrlHostnameByAnyCached } from '../../entity-fetch/get.mts'
@@ -52,7 +53,10 @@ describe('blacklist source cache invalidation', () => {
       expect((await getTestHostnameRow(hostnameId))?.is_blocked).toBe(false)
       expect((await getUrlHostnameByAnyCached(hostnameId))?.is_blocked).toBe(true)
 
-      await invalidateSourceHostnameCaches([sourceId])
+      const observed = await observeTestPostgresQueryPools('invalidateSourceHostnameCaches', () =>
+        invalidateSourceHostnameCaches([sourceId]),
+      )
+      expect(observed.pools).toEqual(['read'])
       for (const key of [hostnameId, domain]) {
         expect((await getUrlHostnameByAnyCached(key))?.is_blocked).toBe(false)
       }

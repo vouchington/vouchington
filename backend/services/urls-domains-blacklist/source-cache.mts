@@ -1,4 +1,4 @@
-import { write } from '@data-stores/psql'
+import { read } from '@data-stores/psql'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { caches } from '@services/entity-cache/caches'
 import { getEntityCacheWorkLimit } from '@services/entity-cache/work-limits'
@@ -11,8 +11,9 @@ export async function invalidateSourceHostnameCaches(
   for (const sourceId of sourceIds) {
     let after = ''
     for (;;) {
+      // The type-change transaction writes domain_blocklist_sources only, so replica lag cannot hide membership rows that transaction added.
       // oxlint-disable-next-line no-await-in-loop -- the source-leading index bounds each keyset read.
-      const { rows } = await write<{ domain: string }>( // no-mistakes-disable-line query-reached-per-item: one bounded keyset page, evicted before the cursor advances
+      const { rows } = await read<{ domain: string }>( // no-mistakes-disable-line query-reached-per-item: one bounded keyset page, evicted before the cursor advances
         `/* invalidateSourceHostnameCaches */
         SELECT domain FROM blocklisted_domains
         WHERE source_id = $1::bigint AND domain > $2::text
