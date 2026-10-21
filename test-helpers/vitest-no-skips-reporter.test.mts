@@ -57,7 +57,9 @@ describe('CI whole-test skip acceptance', () => {
       const gates = reporters.filter(reporter => reporter instanceof VitestNoSkipsReporter)
       expect(gates).toHaveLength(1)
       expect(reporters).toContain('junit')
-      await expect(gates[0]!.onTestRunEnd([moduleWithSkipped(1)], [], 'passed')).rejects.toThrow(
+      const gate = gates[0]
+      if (!(gate instanceof VitestNoSkipsReporter)) throw new Error('CI skip reporter missing')
+      await expect(gate.onTestRunEnd([moduleWithSkipped(1)], [], 'passed')).rejects.toThrow(
         '1 skipped results',
       )
     },
