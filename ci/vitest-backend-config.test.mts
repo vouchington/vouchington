@@ -22,7 +22,6 @@ interface BackendProject {
     name?: string
     pool?: string
     runner?: string
-    sequence?: { groupOrder?: number }
     setupFiles?: string[]
     testTimeout?: number
   }
@@ -150,23 +149,6 @@ describe('backend Vitest project config', () => {
     expect(backendAliases().find(alias => String(alias.find) === '/^glide-mq$/')?.replacement).toBe(
       fileURLToPath(import.meta.resolve('@vouchington/worker-runtime/testing')),
     )
-    const capacity = ((config.test?.projects ?? []) as BackendProject[]).find(
-      p => p.test?.name === 'backend-embedding-creation-capacity',
-    )
-    const path =
-      'backend/workers/bedrock-embeddings-batch/processors/creation.real-glide.mock.test.mts'
-    expect(
-      ((config.test?.projects ?? []) as BackendProject[]).filter(p => projectOwnsPath(p, path)),
-    ).toEqual([capacity])
-    expect(capacity?.test).toMatchObject({
-      sequence: { groupOrder: 0 },
-      testTimeout: 5000,
-      hookTimeout: 5000,
-    })
-    expect(config.test?.sequence?.groupOrder).toBe(1)
-    expect(
-      mergeConfig({ resolve: config.resolve }, { resolve: capacity?.resolve }).resolve?.alias,
-    ).toEqual(effectiveAliases)
   })
 
   it('keeps no-data mocks disjoint from DB-backed mocks without service setup', () => {
