@@ -8,7 +8,6 @@ export const derivedReferences = [
   ['post_autotagger_result_topics', 'topic_id'],
   ['rss_feed_item_autotagger_result_topics', 'topic_id'],
   ['autotagger_agent_run_topics', 'topic_id'],
-  ['post_classifier_local_outcomes', 'local_topic_id'],
 ] as const
 
 export async function deleteMergedTopicDerivedRows(

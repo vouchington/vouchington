@@ -40,3 +40,6 @@ Classifier candidates are administrative configuration: source-only candidates k
 and dependent thresholds, overrides, and reserved snapshots when moved. A destination candidate
 wins a uniqueness collision. Classifier results remain derived; obsolete topic results are skipped
 without retargeting the provider's answer to the destination.
+
+Local detector outcomes are immutable run receipts needed for completion and replay, so a merge
+retains them. An inactive label topic cannot produce a current relation or vote.

@@ -19,7 +19,7 @@ export const TOPIC_MERGE_REFERENCE_GROUPS = {
   'individual_rewards_program_statuses.rewards_program_status_topic_id': 'subtype',
   'moderator_actions.topic_id': 'history',
   'post_autotagger_result_topics.topic_id': 'derived',
-  'post_classifier_local_outcomes.local_topic_id': 'derived',
+  'post_classifier_local_outcomes.local_topic_id': 'history',
   'post_data_point_topics.topic_id': 'collisions',
   'post_explicit_topic_categories.topic_id': 'collisions',
   'post_review_topic_ratings.topic_id': 'collisions',
