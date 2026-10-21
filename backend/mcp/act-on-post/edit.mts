@@ -18,7 +18,7 @@ const parameters = postWriteParameters('PATCH:/api/v1/posts/:idOrSlug')
 export const updatePostSource: MergedToolSource<Args, { success: true; post: McpPost }> = {
   schema: {
     description:
-      'Edit your own post or comment. Send only fields to change; archive true archives it and archive false restores it. Content edits retain the REST edit window and per-type rules.',
+      'Edit a post or comment when you have the same edit permission as on the website. Send only fields to change; archive true archives it and archive false restores it. Content edits retain the REST edit window and per-type rules.',
     parameters: {
       ...parameters,
       properties: { ...parameters.properties, id: POST_ID_SCHEMA },
@@ -32,7 +32,7 @@ export const updatePostSource: MergedToolSource<Args, { success: true; post: Mcp
   function: currentUser => async args => {
     const user = await requireActiveToolUser(currentUser)
     const { id, ...changes } = args
-    const post = await loadWritablePost(user, id)
+    const { post } = await loadWritablePost(user, id, 'edit')
     assert(changes.slug === undefined || isAdminUser(user), 403, 'Only admins can set a post slug')
     assert(
       post.post_type !== 'comment' ||

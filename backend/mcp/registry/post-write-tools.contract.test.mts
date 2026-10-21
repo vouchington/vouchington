@@ -136,15 +136,12 @@ describe('post and comment MCP writes — real services', () => {
     })
   })
 
-  it('checks strict ownership before edits and deletion, including for an administrator', async () => {
+  it('lets an administrator delete another author’s public post', async () => {
     const [author, admin] = await Promise.all([caller(), caller(true)])
     const post = await createTestPost({ user: author })
-    for (const [name, args] of [
-      ['act_on_post', optionArgs('edit', { id: post.id, title: 'Not mine' })],
-      ['delete_post', { id: post.id }],
-    ] as const) {
-      expect(await callRejectedMcpTool(admin, name, args, SCOPES)).toContain('Forbidden')
-    }
-    expect((await getPostByAny(post.id, { readOnly: false }))?.title).toBe(post.title)
+    expect(await callStructuredMcpTool(admin, 'delete_post', { id: post.id }, SCOPES)).toEqual({
+      success: true,
+    })
+    expect(await getPostByAny(post.id, { readOnly: false })).toBeNull()
   })
 })

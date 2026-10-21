@@ -6,6 +6,7 @@ import {
   insertTestCommunityMember,
   insertTestCommunityPostReview,
   insertTestPost,
+  removeTestCommunityMember,
 } from '@voucha/test-helpers'
 import {
   callRejectedMcpTool,
@@ -17,7 +18,7 @@ import {
   withConcurrentCommunityArchiveForTest,
 } from '@voucha/test-helpers/post-delegated-write-race'
 import { loadWritablePost } from '@services/posts/authorization'
-import { getPostByAny } from '@services/posts'
+import { deletePost, getPostByAny } from '@services/posts'
 import { withCapturedTestQueries } from '@voucha/test-helpers/query-capture'
 
 const SCOPES = ['posts:read', 'posts:write'] as const
@@ -66,7 +67,7 @@ describe('delegated private community membership fences', () => {
         parentId: root,
         clearanceStatus: 'approved',
       })
-      await expect(loadWritablePost(user, id)).resolves.toMatchObject({ id })
+      await expect(loadWritablePost(user, id, 'edit')).resolves.toMatchObject({ post: { id } })
       const args =
         tool === 'create_post'
           ? {
@@ -86,6 +87,60 @@ describe('delegated private community membership fences', () => {
       expect((await getPostByAny(id, { readOnly: false }))?.markdown).toBe('Own comment')
     },
   )
+})
+
+describe('delegated moderator deletion recheck', () => {
+  it('rejects a stale moderator role after membership removal without another lookup', async () => {
+    const owner = await createTestUser()
+    const moderator = { ...(await createTestUser()), membership_plan: 'plus' as const }
+    await createTestMembership({ user_id: moderator.id, plan: 'plus' })
+    const community = await insertTestCommunity({ createdById: owner.id })
+    await insertTestCommunityMember({ communityId: community.id, userId: owner.id, role: 'owner' })
+    await insertTestCommunityMember({
+      communityId: community.id,
+      userId: moderator.id,
+      role: 'moderator',
+    })
+    const root = await insertTestPost({
+      title: 'Community root',
+      slug: crypto.randomUUID(),
+      markdown: 'Root',
+      createdById: owner.id,
+      communityId: community.id,
+      clearanceStatus: 'approved',
+    })
+    await insertTestCommunityPostReview({
+      communityId: community.id,
+      postId: root,
+      submittedById: owner.id,
+    })
+    const comment = await insertTestPost({
+      postType: 'comment',
+      title: '',
+      slug: crypto.randomUUID(),
+      markdown: 'Comment',
+      createdById: owner.id,
+      communityId: community.id,
+      rootId: root,
+      parentId: root,
+      clearanceStatus: 'approved',
+    })
+    const { post, communityMemberRole } = await loadWritablePost(moderator, comment, 'delete')
+    expect(communityMemberRole).toBe('moderator')
+    await removeTestCommunityMember(community.id, moderator.id)
+    const { queries } = await withCapturedTestQueries(() =>
+      expect(
+        deletePost(moderator, post, { communityMemberRole, delegated: true }),
+      ).rejects.toMatchObject({
+        status: 403,
+      }),
+    )
+    expect((await getPostByAny(comment, { readOnly: false }))?.id).toBe(comment)
+    expect(queries.filter(item => item.text.includes('getCommunityMember'))).toHaveLength(0)
+    expect(
+      queries.filter(item => item.text.includes('lockDelegatedPostCommunity.membership')),
+    ).toHaveLength(1)
+  })
 })
 
 describe('delegated archived community mutations', () => {

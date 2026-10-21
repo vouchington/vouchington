@@ -3,13 +3,14 @@ import type { Tool } from '@services/openai-agents/tool-types'
 import { requireActiveToolUser } from './private-user.mts'
 import { loadWritablePost, POST_ID_SCHEMA, POST_WRITE_SCOPES } from './post-write-tool-support.mts'
 import { successSchema } from './output-schema-shapes.mts'
+import type { PrivateUser } from '@services/users/types'
 
 const tool: Tool<{ id: string }, { success: true }> = {
   schema: {
     name: 'delete_post',
     type: 'function',
     description:
-      'Delete your own post or comment. Another user’s post cannot be deleted. A deleted or missing target is not found.',
+      'Delete a post or comment when you have the same delete permission as on the website. A deleted or missing target is not found.',
     parameters: {
       type: 'object',
       properties: { id: POST_ID_SCHEMA },
@@ -20,7 +21,7 @@ const tool: Tool<{ id: string }, { success: true }> = {
   },
   meta: {
     audience: 'user',
-    title: 'Delete Own Post',
+    title: 'Delete Post',
     plan: 'plus',
     requiredScopes: POST_WRITE_SCOPES,
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
@@ -31,9 +32,14 @@ const tool: Tool<{ id: string }, { success: true }> = {
     currentUser =>
     async ({ id }) => {
       const user = await requireActiveToolUser(currentUser)
-      await deletePost(user, await loadWritablePost(user, id), { delegated: true })
+      await deleteAuthorizedPost(user, id)
       return { success: true }
     },
+}
+
+async function deleteAuthorizedPost(user: PrivateUser, id: string): Promise<void> {
+  const { post, communityMemberRole } = await loadWritablePost(user, id, 'delete')
+  await deletePost(user, post, { communityMemberRole, delegated: true })
 }
 
 export default tool

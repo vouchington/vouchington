@@ -285,8 +285,8 @@
       },
       "act_on_post": {
         "measured": {
-          "list": 6511,
-          "core": 4280
+          "list": 6561,
+          "core": 4330
         },
         "max": {
           "list": 7000,
@@ -295,8 +295,8 @@
       },
       "delete_post": {
         "measured": {
-          "list": 597,
-          "core": 301
+          "list": 606,
+          "core": 314
         },
         "max": {
           "list": 1000,
