@@ -1,7 +1,6 @@
 import { encodeCursor } from '@modules/pagination'
-import type { HouseholdInvitation } from './invitations.mts'
 
-export function page(rows: HouseholdInvitation[], limit: number) {
+export function page<T extends { id: string }>(rows: T[], limit: number) {
   const results = rows.slice(0, limit)
   const hasNextPage = rows.length > limit
   return {
