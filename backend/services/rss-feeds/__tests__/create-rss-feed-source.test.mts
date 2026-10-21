@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { createRssFeedSource } from '../create-source-helpers.mts'
 import { createRssFeedUrlId } from '../rss-feed-url-id.mts'
 import { upsertUrlHostnames } from '@services/urls-hostnames/upsert'
+import { mergeTopicAliases } from '@services/topics/merge-aliases'
 import { getTopicByAny } from '@services/topics/get'
 import { getTopicAliasRecords } from '@services/topics/get-topic-aliases'
 import { getRssFeedByTopicId } from '@services/rss-feeds/get'
@@ -13,7 +14,6 @@ import {
   createTestUserDirect,
   insertTestTopic,
   softDeleteTopic,
-  mergeTopicForTest,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 
@@ -177,12 +177,11 @@ describe('createRssFeedSource', () => {
   })
 })
 
-describe('findExistingFeed* — dedup invariant: spans all topic lifecycle states', () => {
+describe('findExistingFeed* — dedup with soft-deleted and merged owners', () => {
   // Regression guard: these queries intentionally omit the active-topic filter
   // (deleted_at IS NULL AND merged_into_topic_id IS NULL) because dedup lookups
-  // must match feeds whose topic was later merged or soft-deleted. Adding that
-  // filter causes false-negative dedup and downstream unique violations. This suite
-  // breaks CI the moment someone adds the "obvious" active-state filter.
+  // must match feeds whose topic was soft-deleted. Merges instead repoint feed
+  // ownership to the canonical destination, which dedup returns.
 
   it('findExistingFeedByUrlId and findExistingFeedByUrl still return a feed after its topic is soft-deleted', async () => {
     const user = await createTestUserDirect()
@@ -216,7 +215,7 @@ describe('findExistingFeed* — dedup invariant: spans all topic lifecycle state
   })
 
   it('findExistingFeedByUrlId and findExistingFeedByUrl still return a feed after its topic is merged', async () => {
-    const user = await createTestUserDirect()
+    const user = await createTestUserDirect({ administrator: true })
     if (!user) throw new Error('createTestUserDirect returned null')
     const suffix = randomSuffix()
     const hostname = `rss-dedup-mrg-${suffix}.example.com`
@@ -237,18 +236,22 @@ describe('findExistingFeed* — dedup invariant: spans all topic lifecycle state
 
     const destTopicId = await insertTestTopic({
       name: `Dedup Merge Dest ${suffix}`,
+      topicType: 'rss_feed',
       slug: `rss-dedup-mrg-dest-${suffix}`,
       createdById: user.id,
     })
-    await mergeTopicForTest(created!.topicId, destTopicId, user.id)
+    const source = await getTopicByAny(created!.topicId)
+    const destination = await getTopicByAny(destTopicId)
+    if (!source || !destination) throw new Error('Test topics not found')
+    await mergeTopicAliases(user, source, destination)
 
     const byUrlId = await findExistingFeedByUrlId(rssFeedUrlId)
     expect(byUrlId).not.toBeNull()
-    expect(byUrlId!.topic_id).toBe(created!.topicId)
+    expect(byUrlId!.topic_id).toBe(destTopicId)
 
     const byUrl = await findExistingFeedByUrl(feedUrl)
     expect(byUrl).not.toBeNull()
-    expect(byUrl!.topic_id).toBe(created!.topicId)
+    expect(byUrl!.topic_id).toBe(destTopicId)
   })
 })
 

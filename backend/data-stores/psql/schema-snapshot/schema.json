@@ -1309,6 +1309,9 @@
     "fn_current_copyright_form_screening(submission_id uuid, screening_id uuid)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_current_copyright_form_screening(submission_id uuid, screening_id uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE\nAS $function$\n  SELECT EXISTS (\n    SELECT 1 FROM copyright_notice_form_intakes intake\n    JOIN LATERAL (SELECT * FROM copyright_notice_form_screening_attempts attempt WHERE attempt.copyright_notice_form_intake_id = intake.id ORDER BY attempt.attempt_number DESC LIMIT 1) execution ON execution.state = 'completed'\n    JOIN copyright_notice_form_screenings screening\n      ON screening.id = execution.copyright_notice_form_screening_id\n    JOIN copyright_notice_submissions submission ON submission.id = intake.copyright_notice_submission_id\n    JOIN copyright_notices notice ON notice.id = intake.copyright_notice_id\n    WHERE submission.id = submission_id AND screening.id = screening_id\n      AND screening.recommendation = 'not_obviously_invalid'\n      AND submission.kind = 'notice' AND submission.source_kind = 'signed_in_form'\n      AND intake.requester_user_id IS NOT NULL AND notice.jurisdiction = 'us_dmca'\n      AND char_length(notice.claimant_contact_ciphertext) > 0\n      AND char_length(btrim(notice.work_description)) > 0\n      AND intake.has_good_faith_belief AND intake.has_accuracy_authority_under_penalty_of_perjury\n      AND char_length(intake.electronic_signature_ciphertext) > 0\n      AND EXISTS (\n        SELECT 1 FROM copyright_notice_targets target\n        JOIN copyright_notice_target_images image ON image.copyright_notice_target_id = target.id\n        WHERE target.copyright_notice_id = notice.id AND char_length(btrim(target.hosted_use_url)) > 0\n      )\n      AND EXISTS (\n        SELECT 1 FROM copyright_notice_delivery_work_items receipt\n        JOIN copyright_notice_delivery_recipients recipient ON recipient.copyright_notice_delivery_work_item_id = receipt.id\n        WHERE receipt.copyright_notice_id = notice.id AND receipt.recipient_role = 'claimant'\n          AND receipt.channel = 'email' AND receipt.delivery_kind = 'claimant_receipt'\n      )\n      AND NOT EXISTS (\n        SELECT 1 FROM copyright_notice_form_intake_reviews review\n        WHERE review.copyright_notice_form_intake_id = intake.id AND NOT review.is_accepted\n      )\n  );\n$function$\n"
     },
+    "fn_ensure_active_topic_references": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_ensure_active_topic_references()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  reference_column TEXT;\n  referenced_topic_id UUID;\nBEGIN\n  FOREACH reference_column IN ARRAY TG_ARGV LOOP\n    IF TG_OP = 'UPDATE' AND\n      (to_jsonb(NEW) -> reference_column) IS NOT DISTINCT FROM (to_jsonb(OLD) -> reference_column)\n    THEN\n      CONTINUE;\n    END IF;\n    referenced_topic_id := (to_jsonb(NEW) ->> reference_column)::UUID;\n    IF referenced_topic_id IS NULL THEN CONTINUE; END IF;\n\n    -- Never wait while holding a child row or publication scope: the merge takes this fence first.\n    IF NOT pg_try_advisory_xact_lock_shared(hashtextextended(\n      'topic-rss-feed-attachment:' || referenced_topic_id::TEXT, 0\n    )) THEN\n      RAISE EXCEPTION USING ERRCODE = 'V0409',\n        MESSAGE = 'Topic references are changing; retry the request',\n        DETAIL = json_build_object('code', 'topic_reference_busy', 'topic_id', referenced_topic_id)::TEXT;\n    END IF;\n    -- Missing identities remain the foreign key constraint's responsibility.\n    -- A separate volatile SPI query observes the state after acquiring the lifecycle fence.\n    IF EXISTS (\n      SELECT 1 FROM topics WHERE id = referenced_topic_id\n        AND (deleted_at IS NOT NULL OR merged_into_topic_id IS NOT NULL)\n    ) THEN\n      RAISE EXCEPTION USING ERRCODE = 'V0409',\n        MESSAGE = 'Topic reference must identify an active topic',\n        DETAIL = json_build_object('code', 'topic_reference_inactive', 'topic_id', referenced_topic_id)::TEXT;\n    END IF;\n  END LOOP;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
     "fn_ensure_retained_actor_identity": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_ensure_retained_actor_identity()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE actor_user_id UUID := (to_jsonb(NEW) ->> TG_ARGV[0])::uuid;\nBEGIN\n  IF actor_user_id IS NOT NULL THEN\n    PERFORM fn_ensure_retained_identity('user', actor_user_id);\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
@@ -7489,7 +7492,9 @@
         "definition": "PRIMARY KEY (run_id, topic_id)"
       },
       "relationKind": "table",
-      "triggers": {},
+      "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.autotagger_agent_run_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
+      },
       "uniqueConstraints": {}
     },
     "bedrock_embedding_batch_entities": {
@@ -7820,6 +7825,7 @@
       "primaryKey": null,
       "relationKind": "table",
       "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.bedrock_embedding_batch_entities FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')",
         "trigger_bedrock_embedding_batch_entities_updated_at": "CREATE TRIGGER trigger_bedrock_embedding_batch_entities_updated_at BEFORE UPDATE ON public.bedrock_embedding_batch_entities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
@@ -9706,6 +9712,7 @@
       },
       "relationKind": "table",
       "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.card_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('bank_topic_id', 'brand_topic_id', 'topic_id')",
         "trigger_card_topics_updated_at": "CREATE TRIGGER trigger_card_topics_updated_at BEFORE UPDATE ON public.card_topics FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
@@ -10920,6 +10927,7 @@
       },
       "relationKind": "table",
       "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.classifier_candidates FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')",
         "trigger_classifier_candidates_identity_immutable": "CREATE TRIGGER trigger_classifier_candidates_identity_immutable BEFORE UPDATE OF id, classifier_id, candidate_kind, topic_id, story_id, community_id ON public.classifier_candidates FOR EACH ROW WHEN (((((((old.id IS DISTINCT FROM new.id) OR (old.classifier_id IS DISTINCT FROM new.classifier_id)) OR (old.candidate_kind IS DISTINCT FROM new.candidate_kind)) OR (old.topic_id IS DISTINCT FROM new.topic_id)) OR (old.story_id IS DISTINCT FROM new.story_id)) OR (old.community_id IS DISTINCT FROM new.community_id))) EXECUTE FUNCTION fn_reject_mutation()",
         "trigger_classifier_candidates_updated_at": "CREATE TRIGGER trigger_classifier_candidates_updated_at BEFORE UPDATE ON public.classifier_candidates FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
@@ -12619,6 +12627,7 @@
       },
       "relationKind": "table",
       "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.classifier_run_candidates FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')",
         "trigger_classifier_run_candidates_append_only": "CREATE TRIGGER trigger_classifier_run_candidates_append_only BEFORE UPDATE ON public.classifier_run_candidates FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()"
       },
       "uniqueConstraints": {}
@@ -17705,6 +17714,7 @@
       },
       "relationKind": "table",
       "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.community_list_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')",
         "trigger_project_community_list_topics_count": "CREATE TRIGGER trigger_project_community_list_topics_count AFTER INSERT OR DELETE OR UPDATE OF community_id, removed_at ON public.community_list_topics FOR EACH ROW EXECUTE FUNCTION fn_project_community_active_count()"
       },
       "uniqueConstraints": {}
@@ -41800,7 +41810,9 @@
         "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
-      "triggers": {},
+      "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.curated_aside_items FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
+      },
       "uniqueConstraints": {}
     },
     "currencies": {
@@ -43333,6 +43345,7 @@
       },
       "relationKind": "table",
       "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.fediverse_instance_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')",
         "trigger_fediverse_instance_topics_updated_at": "CREATE TRIGGER trigger_fediverse_instance_topics_updated_at BEFORE UPDATE ON public.fediverse_instance_topics FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
@@ -45120,6 +45133,7 @@
       },
       "relationKind": "table",
       "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.hostname_crawler_configurations FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('referral_program_topic_id')",
         "trigger_hostname_crawler_configurations_updated_at": "CREATE TRIGGER trigger_hostname_crawler_configurations_updated_at BEFORE UPDATE ON public.hostname_crawler_configurations FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
@@ -47383,6 +47397,7 @@
       },
       "relationKind": "table",
       "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.image_surface_placements FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')",
         "trigger_image_surface_placement_guard": "CREATE TRIGGER trigger_image_surface_placement_guard BEFORE INSERT OR DELETE OR UPDATE ON public.image_surface_placements FOR EACH ROW EXECUTE FUNCTION fn_reject_image_surface_placement()",
         "trigger_image_surface_placements_updated_at": "CREATE TRIGGER trigger_image_surface_placements_updated_at BEFORE UPDATE ON public.image_surface_placements FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
@@ -48196,6 +48211,7 @@
       },
       "relationKind": "table",
       "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.individual_cards FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('card_topic_id')",
         "trigger_individual_cards_fn_update_updated_at": "CREATE TRIGGER trigger_individual_cards_fn_update_updated_at BEFORE UPDATE ON public.individual_cards FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
@@ -48655,6 +48671,7 @@
       },
       "relationKind": "table",
       "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.individual_rewards_program_point_valuations FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('rewards_program_topic_id')",
         "trigger_individual_rewards_program_point_valuations_updated_at": "CREATE TRIGGER trigger_individual_rewards_program_point_valuations_updated_at BEFORE UPDATE ON public.individual_rewards_program_point_valuations FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {
@@ -48846,6 +48863,7 @@
       },
       "relationKind": "table",
       "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.individual_rewards_program_statuses FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('rewards_program_status_topic_id')",
         "trigger_individual_rewards_program_statuses_updated_at": "CREATE TRIGGER trigger_individual_rewards_program_statuses_updated_at BEFORE UPDATE ON public.individual_rewards_program_statuses FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
@@ -74406,7 +74424,9 @@
         "definition": "PRIMARY KEY (post_id, prompt_id, topic_id)"
       },
       "relationKind": "table",
-      "triggers": {},
+      "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.post_autotagger_result_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
+      },
       "uniqueConstraints": {}
     },
     "post_autotagger_results": {
@@ -74849,6 +74869,7 @@
       },
       "relationKind": "table",
       "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.post_classifier_local_outcomes FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('local_topic_id')",
         "trigger_post_classifier_local_outcomes_append_only": "CREATE TRIGGER trigger_post_classifier_local_outcomes_append_only BEFORE UPDATE ON public.post_classifier_local_outcomes FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()"
       },
       "uniqueConstraints": {}
@@ -75264,6 +75285,7 @@
       },
       "relationKind": "partitioned table",
       "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.post_data_point_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')",
         "trigger_post_data_point_topics_updated_at": "CREATE TRIGGER trigger_post_data_point_topics_updated_at BEFORE UPDATE ON public.post_data_point_topics FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
@@ -75670,6 +75692,7 @@
       },
       "relationKind": "partitioned table",
       "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.post_explicit_topic_categories FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')",
         "trigger_post_explicit_topic_categories_updated_at": "CREATE TRIGGER trigger_post_explicit_topic_categories_updated_at BEFORE UPDATE ON public.post_explicit_topic_categories FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
@@ -80301,6 +80324,7 @@
       },
       "relationKind": "partitioned table",
       "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.post_review_topic_ratings FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')",
         "trigger_post_review_topic_ratings_updated_at": "CREATE TRIGGER trigger_post_review_topic_ratings_updated_at BEFORE UPDATE ON public.post_review_topic_ratings FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
@@ -81574,6 +81598,7 @@
       },
       "relationKind": "partitioned table",
       "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.post_topic_recommendations FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('created_topic_id')",
         "trigger_post_topic_recommendations_updated_at": "CREATE TRIGGER trigger_post_topic_recommendations_updated_at BEFORE UPDATE ON public.post_topic_recommendations FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
@@ -84130,7 +84155,9 @@
         "definition": "PRIMARY KEY (referral_program_topic_id, referral_program_link_validation_rule_set_id)"
       },
       "relationKind": "table",
-      "triggers": {},
+      "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.referral_program_topic_link_validation_rule_sets FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('referral_program_topic_id')"
+      },
       "uniqueConstraints": {}
     },
     "referral_program_topics": {
@@ -84277,6 +84304,7 @@
       },
       "relationKind": "table",
       "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.referral_program_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('company_topic_id', 'topic_id')",
         "trigger_referral_program_topics_updated_at": "CREATE TRIGGER trigger_referral_program_topics_updated_at BEFORE UPDATE ON public.referral_program_topics FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
@@ -84488,7 +84516,9 @@
         "definition": "PRIMARY KEY (subject_id, object_id)"
       },
       "relationKind": "table",
-      "triggers": {},
+      "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.relation__community__mute__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
+      },
       "uniqueConstraints": {}
     },
     "relation__community__mute__url_hostname": {
@@ -85194,7 +85224,9 @@
         "definition": "PRIMARY KEY (subject_id, object_id)"
       },
       "relationKind": "partitioned table",
-      "triggers": {},
+      "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.relation__post__category__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
+      },
       "uniqueConstraints": {
         "relation__post__category__topic_subject_id_id_key": {
           "columns": ["subject_id", "id"],
@@ -86820,7 +86852,9 @@
         "definition": "PRIMARY KEY (subject_id, object_id)"
       },
       "relationKind": "partitioned table",
-      "triggers": {},
+      "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.relation__post__mentioned__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
+      },
       "uniqueConstraints": {}
     },
     "relation__post__mentioned__user": {
@@ -89449,7 +89483,9 @@
         "definition": "PRIMARY KEY (subject_id, object_id)"
       },
       "relationKind": "table",
-      "triggers": {},
+      "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.relation__rss_feed_item__category__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
+      },
       "uniqueConstraints": {
         "relation__rss_feed_item__category__topic_subject_id_id_key": {
           "columns": ["subject_id", "id"],
@@ -91115,7 +91151,9 @@
         "definition": "PRIMARY KEY (subject_id, object_id)"
       },
       "relationKind": "table",
-      "triggers": {},
+      "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.relation__topic__category__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id', 'subject_id')"
+      },
       "uniqueConstraints": {
         "relation__topic__category__topic_subject_id_id_key": {
           "columns": ["subject_id", "id"],
@@ -91948,7 +91986,9 @@
         "definition": "PRIMARY KEY (subject_id, object_id)"
       },
       "relationKind": "table",
-      "triggers": {},
+      "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.relation__topic__faq__post FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('subject_id')"
+      },
       "uniqueConstraints": {
         "relation__topic__faq__post_subject_id_id_key": {
           "columns": ["subject_id", "id"],
@@ -92781,7 +92821,9 @@
         "definition": "PRIMARY KEY (subject_id, object_id)"
       },
       "relationKind": "table",
-      "triggers": {},
+      "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.relation__topic__faq__url FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('subject_id')"
+      },
       "uniqueConstraints": {
         "relation__topic__faq__url_subject_id_id_key": {
           "columns": ["subject_id", "id"],
@@ -93614,7 +93656,9 @@
         "definition": "PRIMARY KEY (subject_id, object_id)"
       },
       "relationKind": "table",
-      "triggers": {},
+      "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.relation__topic__guide__url FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('subject_id')"
+      },
       "uniqueConstraints": {
         "relation__topic__guide__url_subject_id_id_key": {
           "columns": ["subject_id", "id"],
@@ -94447,7 +94491,9 @@
         "definition": "PRIMARY KEY (subject_id, object_id)"
       },
       "relationKind": "table",
-      "triggers": {},
+      "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.relation__topic__landing_page__url FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('subject_id')"
+      },
       "uniqueConstraints": {
         "relation__topic__landing_page__url_subject_id_id_key": {
           "columns": ["subject_id", "id"],
@@ -95003,7 +95049,9 @@
         "definition": "PRIMARY KEY (subject_id, object_id)"
       },
       "relationKind": "table",
-      "triggers": {},
+      "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.relation__topic__mentioned__post FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('subject_id')"
+      },
       "uniqueConstraints": {}
     },
     "relation__topic__parent__topic": {
@@ -95213,7 +95261,9 @@
         "definition": "PRIMARY KEY (subject_id, object_id)"
       },
       "relationKind": "table",
-      "triggers": {},
+      "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.relation__topic__parent__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id', 'subject_id')"
+      },
       "uniqueConstraints": {}
     },
     "relation__topic__publisher_type__topic": {
@@ -95700,7 +95750,9 @@
         "definition": "PRIMARY KEY (subject_id, object_id)"
       },
       "relationKind": "table",
-      "triggers": {},
+      "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.relation__topic__publisher_type__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id', 'subject_id')"
+      },
       "uniqueConstraints": {
         "relation__topic__publisher_type__topic_subject_id_id_key": {
           "columns": ["subject_id", "id"],
@@ -96533,7 +96585,9 @@
         "definition": "PRIMARY KEY (subject_id, object_id)"
       },
       "relationKind": "table",
-      "triggers": {},
+      "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.relation__topic__related__post FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('subject_id')"
+      },
       "uniqueConstraints": {
         "relation__topic__related__post_subject_id_id_key": {
           "columns": ["subject_id", "id"],
@@ -97366,7 +97420,9 @@
         "definition": "PRIMARY KEY (subject_id, object_id)"
       },
       "relationKind": "table",
-      "triggers": {},
+      "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.relation__topic__related__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id', 'subject_id')"
+      },
       "uniqueConstraints": {
         "relation__topic__related__topic_subject_id_id_key": {
           "columns": ["subject_id", "id"],
@@ -98199,7 +98255,9 @@
         "definition": "PRIMARY KEY (subject_id, object_id)"
       },
       "relationKind": "table",
-      "triggers": {},
+      "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.relation__topic__related__url FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('subject_id')"
+      },
       "uniqueConstraints": {
         "relation__topic__related__url_subject_id_id_key": {
           "columns": ["subject_id", "id"],
@@ -99032,7 +99090,9 @@
         "definition": "PRIMARY KEY (subject_id, object_id)"
       },
       "relationKind": "table",
-      "triggers": {},
+      "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.relation__topic__terms_of_service__url FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('subject_id')"
+      },
       "uniqueConstraints": {
         "relation__topic__terms_of_service__url_subject_id_id_key": {
           "columns": ["subject_id", "id"],
@@ -99588,7 +99648,9 @@
         "definition": "PRIMARY KEY (subject_id, object_id)"
       },
       "relationKind": "table",
-      "triggers": {},
+      "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.relation__user__block__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
+      },
       "uniqueConstraints": {}
     },
     "relation__user__block__url_hostname": {
@@ -100495,7 +100557,9 @@
         "definition": "PRIMARY KEY (subject_id, object_id)"
       },
       "relationKind": "table",
-      "triggers": {},
+      "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.relation__user__category__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
+      },
       "uniqueConstraints": {
         "relation__user__category__topic_subject_id_id_key": {
           "columns": ["subject_id", "id"],
@@ -101051,7 +101115,9 @@
         "definition": "PRIMARY KEY (subject_id, object_id)"
       },
       "relationKind": "table",
-      "triggers": {},
+      "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.relation__user__dismiss_recommendation__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
+      },
       "uniqueConstraints": {}
     },
     "relation__user__dismiss_recommendation__user": {
@@ -101918,7 +101984,9 @@
         "definition": "PRIMARY KEY (subject_id, object_id)"
       },
       "relationKind": "table",
-      "triggers": {},
+      "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.relation__user__follow__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
+      },
       "uniqueConstraints": {}
     },
     "relation__user__follow__user": {
@@ -103189,7 +103257,9 @@
         "definition": "PRIMARY KEY (subject_id, object_id)"
       },
       "relationKind": "table",
-      "triggers": {},
+      "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.relation__user__mute__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
+      },
       "uniqueConstraints": {}
     },
     "relation__user__mute__url_hostname": {
@@ -105713,7 +105783,9 @@
         "definition": "PRIMARY KEY (subject_id, object_id)"
       },
       "relationKind": "table",
-      "triggers": {},
+      "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.relation__user__subscribe_posts__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
+      },
       "uniqueConstraints": {}
     },
     "relation__user__subscribe_rss_feed_items__topic": {
@@ -105923,7 +105995,9 @@
         "definition": "PRIMARY KEY (subject_id, object_id)"
       },
       "relationKind": "table",
-      "triggers": {},
+      "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.relation__user__subscribe_rss_feed_items__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
+      },
       "uniqueConstraints": {}
     },
     "remote_actors": {
@@ -107106,7 +107180,9 @@
         "definition": "PRIMARY KEY (retailer_topic_id, country_id)"
       },
       "relationKind": "table",
-      "triggers": {},
+      "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.retailer_countries FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('retailer_topic_id')"
+      },
       "uniqueConstraints": {}
     },
     "retailer_topics": {
@@ -107189,6 +107265,7 @@
       },
       "relationKind": "table",
       "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.retailer_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')",
         "trigger_retailer_topics_updated_at": "CREATE TRIGGER trigger_retailer_topics_updated_at BEFORE UPDATE ON public.retailer_topics FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
@@ -110695,6 +110772,7 @@
       },
       "relationKind": "table",
       "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.rewards_program_status_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('lifetime_version_id', 'topic_id')",
         "trigger_rewards_program_status_topics_updated_at": "CREATE TRIGGER trigger_rewards_program_status_topics_updated_at BEFORE UPDATE ON public.rewards_program_status_topics FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
@@ -110819,6 +110897,7 @@
       },
       "relationKind": "table",
       "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.rewards_program_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('company_topic_id', 'topic_id')",
         "trigger_rewards_program_topics_updated_at": "CREATE TRIGGER trigger_rewards_program_topics_updated_at BEFORE UPDATE ON public.rewards_program_topics FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
@@ -111103,6 +111182,7 @@
       },
       "relationKind": "table",
       "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.rss_feed_categories FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')",
         "trigger_rss_feed_categories_updated_at": "CREATE TRIGGER trigger_rss_feed_categories_updated_at BEFORE UPDATE ON public.rss_feed_categories FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
@@ -111427,7 +111507,9 @@
         "definition": "PRIMARY KEY (rss_feed_item_autotagger_result_id, topic_id)"
       },
       "relationKind": "table",
-      "triggers": {},
+      "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.rss_feed_item_autotagger_result_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
+      },
       "uniqueConstraints": {}
     },
     "rss_feed_item_autotagger_results": {
@@ -111981,6 +112063,7 @@
       },
       "relationKind": "table",
       "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.rss_feed_item_categories FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')",
         "trigger_refresh_rss_feed_item_unmapped_category_count": "CREATE TRIGGER trigger_refresh_rss_feed_item_unmapped_category_count AFTER INSERT OR DELETE OR UPDATE OF category_identity_id, topic_id ON public.rss_feed_item_categories FOR EACH ROW EXECUTE FUNCTION fn_project_refresh_rss_feed_item_unmapped_category_count()",
         "trigger_rss_feed_item_categories_updated_at": "CREATE TRIGGER trigger_rss_feed_item_categories_updated_at BEFORE UPDATE ON public.rss_feed_item_categories FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
@@ -115086,6 +115169,7 @@
       },
       "relationKind": "table",
       "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.rss_feeds FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')",
         "trigger_rss_feeds_content_provenance_immutable": "CREATE TRIGGER trigger_rss_feeds_content_provenance_immutable AFTER UPDATE ON public.rss_feeds FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_reject_mutation()",
         "trigger_rss_feeds_updated_at": "CREATE TRIGGER trigger_rss_feeds_updated_at BEFORE UPDATE ON public.rss_feeds FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
@@ -115455,6 +115539,7 @@
       },
       "relationKind": "table",
       "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.spending_category_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')",
         "trigger_spending_category_topics_updated_at": "CREATE TRIGGER trigger_spending_category_topics_updated_at BEFORE UPDATE ON public.spending_category_topics FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
@@ -115741,6 +115826,7 @@
       },
       "relationKind": "table",
       "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.spending_entries FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('spending_category_topic_id')",
         "trigger_spending_entries_fn_update_updated_at": "CREATE TRIGGER trigger_spending_entries_fn_update_updated_at BEFORE UPDATE ON public.spending_entries FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
@@ -118395,6 +118481,7 @@
       },
       "relationKind": "table",
       "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.topic_aliases FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')",
         "trigger_topic_aliases_mark_category_mapping_dirty": "CREATE TRIGGER trigger_topic_aliases_mark_category_mapping_dirty AFTER INSERT OR DELETE OR UPDATE OF topic_id ON public.topic_aliases FOR EACH ROW EXECUTE FUNCTION fn_project_mark_topic_alias_category_mapping_dirty()",
         "trigger_topic_aliases_project_delete": "CREATE TRIGGER trigger_topic_aliases_project_delete AFTER DELETE ON public.topic_aliases REFERENCING OLD TABLE AS old_aliases FOR EACH STATEMENT EXECUTE FUNCTION fn_project_topic_aliases()",
         "trigger_topic_aliases_project_insert": "CREATE TRIGGER trigger_topic_aliases_project_insert AFTER INSERT ON public.topic_aliases REFERENCING NEW TABLE AS new_aliases FOR EACH STATEMENT EXECUTE FUNCTION fn_project_topic_aliases()",
@@ -118938,6 +119025,7 @@
       },
       "relationKind": "table",
       "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.topic_claims FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')",
         "trigger_topic_claims_updated_at": "CREATE TRIGGER trigger_topic_claims_updated_at BEFORE UPDATE ON public.topic_claims FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
@@ -119444,6 +119532,7 @@
       },
       "relationKind": "partitioned table",
       "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.topic_classifier_results FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')",
         "trigger_topic_classifier_results_append_only": "CREATE TRIGGER trigger_topic_classifier_results_append_only BEFORE UPDATE ON public.topic_classifier_results FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()",
         "trigger_topic_classifier_results_batch_scope": "CREATE TRIGGER trigger_topic_classifier_results_batch_scope BEFORE INSERT OR UPDATE OF batch_id, scope_category, scope_community_id ON public.topic_classifier_results FOR EACH ROW EXECUTE FUNCTION fn_reject_classifier_result_batch_scope()"
       },
@@ -119710,6 +119799,7 @@
       },
       "relationKind": "table",
       "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.topic_metrics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')",
         "trigger_topic_metrics_updated_at": "CREATE TRIGGER trigger_topic_metrics_updated_at BEFORE UPDATE ON public.topic_metrics FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
@@ -120190,7 +120280,9 @@
         "definition": "PRIMARY KEY (topic_id, id)"
       },
       "relationKind": "partitioned table",
-      "triggers": {},
+      "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.topic_votes FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')"
+      },
       "uniqueConstraints": {}
     },
     "topics": {
@@ -121437,6 +121529,7 @@
       },
       "relationKind": "table",
       "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('referral_program_topic_id', 'rewards_program_topic_id')",
         "trigger_create_topic_metrics": "CREATE TRIGGER trigger_create_topic_metrics AFTER INSERT ON public.topics FOR EACH ROW EXECUTE FUNCTION fn_create_metrics('topic_metrics', 'topic_id')",
         "trigger_register_retained_topic_identity": "CREATE TRIGGER trigger_register_retained_topic_identity BEFORE INSERT ON public.topics FOR EACH ROW EXECUTE FUNCTION fn_register_retained_identity('topic')",
         "trigger_sync_topic_image_placements": "CREATE TRIGGER trigger_sync_topic_image_placements AFTER INSERT OR UPDATE OF logo_image_id, hero_image_id, deleted_at, merged_into_topic_id ON public.topics FOR EACH ROW EXECUTE FUNCTION fn_project_topic_image_placements()",
@@ -122867,6 +122960,7 @@
       },
       "relationKind": "table",
       "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.url_hostnames FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')",
         "trigger_url_hostnames_crawl_policy_changed_at": "CREATE TRIGGER trigger_url_hostnames_crawl_policy_changed_at BEFORE UPDATE ON public.url_hostnames FOR EACH ROW EXECUTE FUNCTION fn_update_url_hostname_crawl_policy_changed_at()",
         "trigger_url_hostnames_updated_at": "CREATE TRIGGER trigger_url_hostnames_updated_at BEFORE UPDATE ON public.url_hostnames FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
@@ -127335,6 +127429,7 @@
       },
       "relationKind": "table",
       "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.user_landing_page_items FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')",
         "trigger_user_landing_page_items_updated_at": "CREATE TRIGGER trigger_user_landing_page_items_updated_at BEFORE UPDATE ON public.user_landing_page_items FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
@@ -130689,6 +130784,7 @@
       },
       "relationKind": "table",
       "triggers": {
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.user_referral_program_links FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('referral_program_topic_id')",
         "trigger_user_referra_program_links_content_provenance_immutable": "CREATE TRIGGER trigger_user_referra_program_links_content_provenance_immutable AFTER UPDATE ON public.user_referral_program_links FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_reject_mutation()",
         "trigger_user_referral_program_links_updated_at": "CREATE TRIGGER trigger_user_referral_program_links_updated_at BEFORE UPDATE ON public.user_referral_program_links FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
@@ -137986,7 +138082,7 @@
     },
     "mv_top_hashtags": {
       "comment": "Rolling 30-day top-hashtag recommendations from public posts and discoverable RSS items. Refreshes are debounce-enqueued from content, moderation, and topic lifecycle events and hourly as a safety net.",
-      "definition": " WITH eligible_post_hashtags AS (\n         SELECT source.topic_alias_id,\n            source.authored_token,\n            source.post_id AS content_id,\n            'post'::text AS content_kind,\n            p.created_at AS content_published_at,\n            ('user:'::text || (source.contributor_user_id)::text) AS contributor_user_id\n           FROM (((post_topic_alias_sources source\n             JOIN posts p ON ((p.id = source.post_id)))\n             JOIN view_public_post_eligibility eligibility ON ((eligibility.post_id = p.id)))\n             JOIN relation__post__category__topic_alias relation ON (((relation.subject_id = source.post_id) AND (relation.object_id = source.topic_alias_id) AND (relation.deleted_at IS NULL) AND (relation.votes_score_net > (0)::double precision))))\n          WHERE ((p.post_type <> 'topic_recommendation'::post_types) AND (EXISTS ( SELECT 1\n                   FROM users contributor\n                  WHERE ((contributor.id = source.contributor_user_id) AND (contributor.platform_account_kind IS NULL) AND (contributor.deleted_at IS NULL)))) AND (EXISTS ( SELECT 1\n                   FROM users post_creator\n                  WHERE ((post_creator.id = p.created_by_id) AND (post_creator.platform_account_kind IS NULL)))) AND (NOT (EXISTS ( SELECT 1\n                   FROM user_suspensions suspension\n                  WHERE ((suspension.user_id = source.contributor_user_id) AND (suspension.lifted_at IS NULL))))) AND (p.id >= fn_min_uuidv7((CURRENT_TIMESTAMP - '30 days'::interval))) AND (source.post_id >= fn_min_uuidv7((CURRENT_TIMESTAMP - '30 days'::interval))) AND (relation.subject_id >= fn_min_uuidv7((CURRENT_TIMESTAMP - '30 days'::interval))))\n        ), eligible_rss_hashtags AS (\n         SELECT category.topic_alias_id,\n            category.category_text AS authored_token,\n            category.rss_feed_item_id AS content_id,\n            'rss_feed_item'::text AS content_kind,\n            item.published_at AS content_published_at,\n            ('rss:'::text || (identity.url_hostname_id)::text) AS contributor_user_id\n           FROM ((rss_feed_item_categories category\n             JOIN rss_feed_items item ON ((item.id = category.rss_feed_item_id)))\n             JOIN rss_feed_item_guids identity ON ((identity.id = item.id)))\n          WHERE ((category.topic_alias_id IS NOT NULL) AND (category.rss_feed_item_id >= fn_min_uuidv7((CURRENT_TIMESTAMP - '30 days'::interval))) AND (item.id >= fn_min_uuidv7((CURRENT_TIMESTAMP - '30 days'::interval))) AND (identity.id >= fn_min_uuidv7((CURRENT_TIMESTAMP - '30 days'::interval))) AND (item.deleted_at IS NULL) AND (item.published_at >= (CURRENT_TIMESTAMP - '30 days'::interval)) AND (EXISTS ( SELECT 1\n                   FROM ((rss_feed_item_sources source\n                     JOIN rss_feeds feed ON ((feed.id = source.rss_feed_id)))\n                     JOIN topics feed_topic ON ((feed_topic.id = feed.topic_id)))\n                  WHERE ((source.rss_feed_item_id = item.id) AND (source.rss_feed_item_id >= fn_min_uuidv7((CURRENT_TIMESTAMP - '30 days'::interval))) AND (feed.deleted_at IS NULL) AND (feed.is_enabled = true) AND (feed.is_discoverable = true) AND (feed_topic.deleted_at IS NULL) AND (feed_topic.merged_into_topic_id IS NULL)))) AND (EXISTS ( SELECT 1\n                   FROM relation__rss_feed_item__category__topic_alias relation\n                  WHERE ((relation.subject_id = item.id) AND (relation.subject_id >= fn_min_uuidv7((CURRENT_TIMESTAMP - '30 days'::interval))) AND (relation.object_id = category.topic_alias_id) AND (relation.deleted_at IS NULL) AND (relation.votes_score_net > (0)::double precision)))))\n        ), occurrences AS (\n         SELECT eligible_post_hashtags.topic_alias_id,\n            eligible_post_hashtags.authored_token,\n            eligible_post_hashtags.content_id,\n            eligible_post_hashtags.content_kind,\n            eligible_post_hashtags.content_published_at,\n            eligible_post_hashtags.contributor_user_id\n           FROM eligible_post_hashtags\n        UNION ALL\n         SELECT eligible_rss_hashtags.topic_alias_id,\n            eligible_rss_hashtags.authored_token,\n            eligible_rss_hashtags.content_id,\n            eligible_rss_hashtags.content_kind,\n            eligible_rss_hashtags.content_published_at,\n            eligible_rss_hashtags.contributor_user_id\n           FROM eligible_rss_hashtags\n        ), casing_frequency AS (\n         SELECT occurrences.topic_alias_id,\n            occurrences.authored_token,\n            count(DISTINCT ((occurrences.content_kind || ':'::text) || (occurrences.content_id)::text)) AS item_count,\n            max(occurrences.content_published_at) AS latest_content_at,\n            (array_agg(occurrences.content_id ORDER BY occurrences.content_published_at DESC, occurrences.content_id DESC))[1] AS latest_content_id\n           FROM occurrences\n          GROUP BY occurrences.topic_alias_id, occurrences.authored_token\n        ), casing AS (\n         SELECT DISTINCT ON (casing_frequency.topic_alias_id) casing_frequency.topic_alias_id,\n            casing_frequency.authored_token AS display_hashtag\n           FROM casing_frequency\n          ORDER BY casing_frequency.topic_alias_id, casing_frequency.item_count DESC, casing_frequency.latest_content_at DESC, casing_frequency.latest_content_id DESC, casing_frequency.authored_token\n        ), aggregate AS (\n         SELECT occurrences.topic_alias_id,\n            count(DISTINCT ((occurrences.content_kind || ':'::text) || (occurrences.content_id)::text)) AS item_count,\n            count(DISTINCT occurrences.contributor_user_id) AS contributor_count,\n            max(occurrences.content_published_at) AS latest_content_at,\n            (array_agg(occurrences.content_id ORDER BY occurrences.content_published_at DESC, occurrences.content_id DESC))[1] AS latest_content_id\n           FROM occurrences\n          GROUP BY occurrences.topic_alias_id\n        )\n SELECT aggregate.topic_alias_id,\n    casing.display_hashtag,\n    aggregate.item_count,\n    aggregate.contributor_count,\n    aggregate.latest_content_at,\n    aggregate.latest_content_id\n   FROM (aggregate\n     JOIN casing USING (topic_alias_id))\n  WHERE (aggregate.contributor_count >= 3);",
+      "definition": " WITH eligible_post_hashtags AS (\n         SELECT source.topic_alias_id,\n            source.authored_token,\n            source.post_id AS content_id,\n            'post'::text AS content_kind,\n            p.created_at AS content_published_at,\n            ('user:'::text || (source.contributor_user_id)::text) AS contributor_user_id\n           FROM (((post_topic_alias_sources source\n             JOIN posts p ON ((p.id = source.post_id)))\n             JOIN view_public_post_eligibility eligibility ON ((eligibility.post_id = p.id)))\n             JOIN relation__post__category__topic_alias relation ON (((relation.subject_id = source.post_id) AND (relation.object_id = source.topic_alias_id) AND (relation.deleted_at IS NULL) AND (relation.votes_score_net > (0)::double precision))))\n          WHERE ((p.post_type <> 'topic_recommendation'::post_types) AND (EXISTS ( SELECT 1\n                   FROM users contributor\n                  WHERE ((contributor.id = source.contributor_user_id) AND (contributor.platform_account_kind IS NULL) AND (contributor.deleted_at IS NULL)))) AND (EXISTS ( SELECT 1\n                   FROM users post_creator\n                  WHERE ((post_creator.id = p.created_by_id) AND (post_creator.platform_account_kind IS NULL)))) AND (NOT (EXISTS ( SELECT 1\n                   FROM user_suspensions suspension\n                  WHERE ((suspension.user_id = source.contributor_user_id) AND (suspension.lifted_at IS NULL))))) AND (p.id >= fn_min_uuidv7((CURRENT_TIMESTAMP - '30 days'::interval))) AND (source.post_id >= fn_min_uuidv7((CURRENT_TIMESTAMP - '30 days'::interval))) AND (relation.subject_id >= fn_min_uuidv7((CURRENT_TIMESTAMP - '30 days'::interval))))\n        ), eligible_rss_hashtags AS (\n         SELECT category.topic_alias_id,\n            category.category_text AS authored_token,\n            category.rss_feed_item_id AS content_id,\n            'rss_feed_item'::text AS content_kind,\n            item.published_at AS content_published_at,\n            ('rss:'::text || (identity.url_hostname_id)::text) AS contributor_user_id\n           FROM ((rss_feed_item_categories category\n             JOIN rss_feed_items item ON ((item.id = category.rss_feed_item_id)))\n             JOIN rss_feed_item_guids identity ON ((identity.id = item.id)))\n          WHERE ((category.topic_alias_id IS NOT NULL) AND (category.rss_feed_item_id >= fn_min_uuidv7((CURRENT_TIMESTAMP - '30 days'::interval))) AND (item.id >= fn_min_uuidv7((CURRENT_TIMESTAMP - '30 days'::interval))) AND (identity.id >= fn_min_uuidv7((CURRENT_TIMESTAMP - '30 days'::interval))) AND (item.deleted_at IS NULL) AND (item.published_at >= (CURRENT_TIMESTAMP - '30 days'::interval)) AND (EXISTS ( SELECT 1\n                   FROM ((rss_feed_item_sources source\n                     JOIN rss_feeds feed ON ((feed.id = source.rss_feed_id)))\n                     JOIN topics feed_topic ON ((feed_topic.id = feed.topic_id)))\n                  WHERE ((source.rss_feed_item_id = item.id) AND (source.rss_feed_item_id >= fn_min_uuidv7((CURRENT_TIMESTAMP - '30 days'::interval))) AND (feed.deleted_at IS NULL) AND (feed.is_enabled = true) AND (feed.is_discoverable = true) AND (feed_topic.deleted_at IS NULL)))) AND (EXISTS ( SELECT 1\n                   FROM relation__rss_feed_item__category__topic_alias relation\n                  WHERE ((relation.subject_id = item.id) AND (relation.subject_id >= fn_min_uuidv7((CURRENT_TIMESTAMP - '30 days'::interval))) AND (relation.object_id = category.topic_alias_id) AND (relation.deleted_at IS NULL) AND (relation.votes_score_net > (0)::double precision)))))\n        ), occurrences AS (\n         SELECT eligible_post_hashtags.topic_alias_id,\n            eligible_post_hashtags.authored_token,\n            eligible_post_hashtags.content_id,\n            eligible_post_hashtags.content_kind,\n            eligible_post_hashtags.content_published_at,\n            eligible_post_hashtags.contributor_user_id\n           FROM eligible_post_hashtags\n        UNION ALL\n         SELECT eligible_rss_hashtags.topic_alias_id,\n            eligible_rss_hashtags.authored_token,\n            eligible_rss_hashtags.content_id,\n            eligible_rss_hashtags.content_kind,\n            eligible_rss_hashtags.content_published_at,\n            eligible_rss_hashtags.contributor_user_id\n           FROM eligible_rss_hashtags\n        ), casing_frequency AS (\n         SELECT occurrences.topic_alias_id,\n            occurrences.authored_token,\n            count(DISTINCT ((occurrences.content_kind || ':'::text) || (occurrences.content_id)::text)) AS item_count,\n            max(occurrences.content_published_at) AS latest_content_at,\n            (array_agg(occurrences.content_id ORDER BY occurrences.content_published_at DESC, occurrences.content_id DESC))[1] AS latest_content_id\n           FROM occurrences\n          GROUP BY occurrences.topic_alias_id, occurrences.authored_token\n        ), casing AS (\n         SELECT DISTINCT ON (casing_frequency.topic_alias_id) casing_frequency.topic_alias_id,\n            casing_frequency.authored_token AS display_hashtag\n           FROM casing_frequency\n          ORDER BY casing_frequency.topic_alias_id, casing_frequency.item_count DESC, casing_frequency.latest_content_at DESC, casing_frequency.latest_content_id DESC, casing_frequency.authored_token\n        ), aggregate AS (\n         SELECT occurrences.topic_alias_id,\n            count(DISTINCT ((occurrences.content_kind || ':'::text) || (occurrences.content_id)::text)) AS item_count,\n            count(DISTINCT occurrences.contributor_user_id) AS contributor_count,\n            max(occurrences.content_published_at) AS latest_content_at,\n            (array_agg(occurrences.content_id ORDER BY occurrences.content_published_at DESC, occurrences.content_id DESC))[1] AS latest_content_id\n           FROM occurrences\n          GROUP BY occurrences.topic_alias_id\n        )\n SELECT aggregate.topic_alias_id,\n    casing.display_hashtag,\n    aggregate.item_count,\n    aggregate.contributor_count,\n    aggregate.latest_content_at,\n    aggregate.latest_content_id\n   FROM (aggregate\n     JOIN casing USING (topic_alias_id))\n  WHERE (aggregate.contributor_count >= 3);",
       "materialized": true
     },
     "mv_trending_rss_feeds": {
@@ -138011,7 +138107,7 @@
     },
     "view_embedded_topics": {
       "comment": "Compact topic references embedded in current entity responses.",
-      "definition": " SELECT 'topic'::text AS __entity_type,\n    id,\n    name,\n    slug,\n    markdown,\n    topic_type,\n    is_noindexed,\n    should_allow_reviews,\n    created_at,\n    hostname_id,\n    homepage_url_id,\n    logo_image_id,\n    hero_image_id,\n    ( SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id) AS jsonb_build_object\n           FROM ((image_surface_placements surface\n             JOIN media_placements placement ON ((placement.id = surface.placement_id)))\n             JOIN view_publicly_projected_image_placements public_delivery ON (((public_delivery.placement_id = placement.id) AND (public_delivery.placement_revision = placement.revision) AND (public_delivery.image_id = surface.image_id))))\n          WHERE ((surface.surface_kind = 'topic-logo-image'::image_surface_placement_surface_kinds) AND (surface.topic_id = topics.id) AND (placement.retired_at IS NULL))\n          ORDER BY placement.id DESC\n         LIMIT 1) AS logo_image_placement,\n    ( SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id) AS jsonb_build_object\n           FROM ((image_surface_placements surface\n             JOIN media_placements placement ON ((placement.id = surface.placement_id)))\n             JOIN view_publicly_projected_image_placements public_delivery ON (((public_delivery.placement_id = placement.id) AND (public_delivery.placement_revision = placement.revision) AND (public_delivery.image_id = surface.image_id))))\n          WHERE ((surface.surface_kind = 'topic-hero-image'::image_surface_placement_surface_kinds) AND (surface.topic_id = topics.id) AND (placement.retired_at IS NULL))\n          ORDER BY placement.id DESC\n         LIMIT 1) AS hero_image_placement,\n    rewards_program_topic_id AS rewards_program_id,\n    referral_program_topic_id AS referral_program_id,\n    ( SELECT t2.slug\n           FROM topics t2\n          WHERE ((t2.id = topics.referral_program_topic_id) AND (t2.deleted_at IS NULL) AND (t2.merged_into_topic_id IS NULL))\n         LIMIT 1) AS referral_program_slug,\n    lingua_rs_detected_language\n   FROM topics\n  WHERE ((deleted_at IS NULL) AND (merged_into_topic_id IS NULL));",
+      "definition": " SELECT 'topic'::text AS __entity_type,\n    id,\n    name,\n    slug,\n    markdown,\n    topic_type,\n    is_noindexed,\n    should_allow_reviews,\n    created_at,\n    hostname_id,\n    homepage_url_id,\n    logo_image_id,\n    hero_image_id,\n    ( SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id) AS jsonb_build_object\n           FROM ((image_surface_placements surface\n             JOIN media_placements placement ON ((placement.id = surface.placement_id)))\n             JOIN view_publicly_projected_image_placements public_delivery ON (((public_delivery.placement_id = placement.id) AND (public_delivery.placement_revision = placement.revision) AND (public_delivery.image_id = surface.image_id))))\n          WHERE ((surface.surface_kind = 'topic-logo-image'::image_surface_placement_surface_kinds) AND (surface.topic_id = topics.id) AND (placement.retired_at IS NULL))\n          ORDER BY placement.id DESC\n         LIMIT 1) AS logo_image_placement,\n    ( SELECT jsonb_build_object('placement_id', placement.id, 'placement_revision', placement.revision, 'image_id', surface.image_id) AS jsonb_build_object\n           FROM ((image_surface_placements surface\n             JOIN media_placements placement ON ((placement.id = surface.placement_id)))\n             JOIN view_publicly_projected_image_placements public_delivery ON (((public_delivery.placement_id = placement.id) AND (public_delivery.placement_revision = placement.revision) AND (public_delivery.image_id = surface.image_id))))\n          WHERE ((surface.surface_kind = 'topic-hero-image'::image_surface_placement_surface_kinds) AND (surface.topic_id = topics.id) AND (placement.retired_at IS NULL))\n          ORDER BY placement.id DESC\n         LIMIT 1) AS hero_image_placement,\n    rewards_program_topic_id AS rewards_program_id,\n    referral_program_topic_id AS referral_program_id,\n    ( SELECT t2.slug\n           FROM topics t2\n          WHERE ((t2.id = topics.referral_program_topic_id) AND (t2.deleted_at IS NULL))\n         LIMIT 1) AS referral_program_slug,\n    lingua_rs_detected_language\n   FROM topics\n  WHERE ((deleted_at IS NULL) AND (merged_into_topic_id IS NULL));",
       "materialized": false
     },
     "view_embedded_users": {
@@ -138041,7 +138137,7 @@
     },
     "view_posts": {
       "comment": "Current post response projection; callers enforce publication, deletion and audience access.",
-      "definition": " SELECT 'post'::text AS __entity_type,\n    posts.id,\n    posts.post_type,\n    posts.title,\n    posts.markdown,\n    posts.ai_summary_markdown,\n    posts.root_post_id,\n    posts.parent_post_id,\n    posts.broadcast,\n    posts.privacy,\n    posts.is_anonymous,\n    posts.created_at,\n    posts.updated_at,\n    ( SELECT row_to_json(eu.*) AS row_to_json\n           FROM view_embedded_users eu\n          WHERE (eu.id = posts.created_by_id)) AS created_by,\n    ( SELECT row_to_json(eu.*) AS row_to_json\n           FROM view_embedded_users eu\n          WHERE (eu.id = posts.updated_by_id)) AS updated_by,\n    ( SELECT post_slugs.slug\n           FROM post_slugs\n          WHERE (post_slugs.post_id = posts.id)\n          ORDER BY post_slugs.id DESC\n         LIMIT 1) AS slug,\n        CASE\n            WHEN (posts.post_type = 'review'::post_types) THEN COALESCE(( SELECT json_agg(jsonb_build_object('topic_id', prtr.topic_id, 'rating', prtr.rating, 'order_index', prtr.order_index, 'updated_at', prtr.updated_at, 'topic', to_jsonb(review_topics.*), 'category_slug', cat.slug) ORDER BY prtr.order_index) AS json_agg\n               FROM ((post_review_topic_ratings prtr\n                 JOIN view_embedded_topics review_topics ON ((prtr.topic_id = review_topics.id)))\n                 LEFT JOIN LATERAL ( SELECT t_cat.slug\n                       FROM (relation__topic__category__topic rel_cat\n                         JOIN topics t_cat ON (((t_cat.id = rel_cat.object_id) AND (t_cat.deleted_at IS NULL))))\n                      WHERE ((rel_cat.subject_id = prtr.topic_id) AND (rel_cat.deleted_at IS NULL) AND (rel_cat.votes_score_net > (0)::double precision))\n                      ORDER BY rel_cat.votes_score_sort DESC, rel_cat.created_at DESC, rel_cat.object_id\n                     LIMIT 1) cat ON (true))\n              WHERE (prtr.post_id = posts.id)), '[]'::json)\n            ELSE NULL::json\n        END AS review_topic_ratings,\n    COALESCE(( SELECT json_agg(to_jsonb(topics.*) ORDER BY top5.votes_score_net DESC) AS json_agg\n           FROM (( SELECT rel.object_id,\n                    rel.votes_score_net\n                   FROM relation__post__category__topic rel\n                  WHERE ((rel.subject_id = posts.id) AND (rel.deleted_at IS NULL) AND (rel.votes_score_net > (0)::double precision))\n                  ORDER BY rel.votes_score_net DESC\n                 LIMIT 5) top5\n             JOIN view_embedded_topics topics ON ((topics.id = top5.object_id)))), '[]'::json) AS post_related_topics,\n    COALESCE(( SELECT json_agg(jsonb_build_object('id', alias.id, 'key', alias.alias, 'display_token', source.authored_token, 'topic_id', alias.topic_id) ORDER BY alias.alias) AS json_agg\n           FROM (( SELECT DISTINCT ON (post_topic_alias_sources.topic_alias_id) post_topic_alias_sources.topic_alias_id,\n                    post_topic_alias_sources.authored_token\n                   FROM post_topic_alias_sources\n                  WHERE (post_topic_alias_sources.post_id = posts.id)\n                  ORDER BY post_topic_alias_sources.topic_alias_id,\n                        CASE post_topic_alias_sources.source\n                            WHEN 'title'::post_topic_alias_source_types THEN 0\n                            WHEN 'markdown'::post_topic_alias_source_types THEN 1\n                            ELSE 2\n                        END) source\n             JOIN topic_aliases alias ON ((alias.id = source.topic_alias_id)))), '[]'::json) AS post_hashtags,\n    COALESCE(( SELECT json_agg(explicit_categories.category ORDER BY explicit_categories.category_type, explicit_categories.category_label) AS json_agg\n           FROM ( SELECT jsonb_build_object('type', 'topic', 'topic_id', topic.id, 'topic_name', topic.name) AS category,\n                    'topic'::text AS category_type,\n                    topic.name AS category_label\n                   FROM (post_explicit_topic_categories explicit\n                     JOIN view_embedded_topics topic ON ((topic.id = explicit.topic_id)))\n                  WHERE (explicit.post_id = posts.id)\n                UNION ALL\n                 SELECT jsonb_build_object('type', 'hashtag', 'hashtag', source.authored_token) AS category,\n                    'hashtag'::text AS category_type,\n                    source.authored_token AS category_label\n                   FROM post_topic_alias_sources source\n                  WHERE ((source.post_id = posts.id) AND (source.source = 'explicit'::post_topic_alias_source_types))) explicit_categories), '[]'::json) AS post_explicit_categories,\n    COALESCE(( WITH selected_post_images AS MATERIALIZED (\n                 SELECT post_images_1.post_id,\n                    post_images_1.image_id,\n                    post_images_1.order_index,\n                    post_images_1.caption\n                   FROM post_images post_images_1\n                  WHERE (post_images_1.post_id = posts.id)\n                  ORDER BY post_images_1.order_index\n                )\n         SELECT json_agg(json_build_object('image_id', post_images.image_id, 'placement_id', placement.id, 'placement_revision', placement.revision, 'order_index', post_images.order_index, 'caption', post_images.caption) ORDER BY post_images.order_index) AS json_agg\n           FROM (((selected_post_images post_images\n             JOIN image_placements image_placement ON (((image_placement.post_id = post_images.post_id) AND (image_placement.image_id = post_images.image_id))))\n             JOIN media_placements placement ON (((placement.id = image_placement.placement_id) AND (placement.retired_at IS NULL))))\n             JOIN view_publicly_projected_image_placements public_delivery ON (((public_delivery.placement_id = placement.id) AND (public_delivery.placement_revision = placement.revision) AND (public_delivery.image_id = post_images.image_id))))\n          WHERE (post_images.post_id = posts.id)), '[]'::json) AS images,\n    posts.community_id,\n    posts.data_point_vertical,\n    posts.structured_data,\n    posts.created_by_id,\n    posts.updated_by_id,\n    posts.deleted_at,\n    posts.deleted_by_id,\n        CASE\n            WHEN (openai_moderation.disposition IS NULL) THEN NULL::boolean\n            ELSE (openai_moderation.disposition <> 'pass'::post_moderation_disposition_types)\n        END AS is_flagged_by_openai_omni_moderation,\n    clearance.clearance_status,\n    clearance.clearance_updated_at,\n        CASE\n            WHEN (posts.post_type = 'topic_recommendation'::post_types) THEN ( SELECT jsonb_build_object('post_id', ptr.post_id, 'topic_title', ptr.topic_title, 'topic_slug', ptr.topic_slug, 'topic_markdown', ptr.topic_markdown, 'aliases', ptr.aliases, 'hostname_id', ptr.hostname_id, 'hostname', ( SELECT to_jsonb(vuh.*) AS to_jsonb\n                       FROM view_url_hostnames vuh\n                      WHERE (vuh.id = ptr.hostname_id)\n                     LIMIT 1), 'hostnames', COALESCE(( SELECT json_agg(to_jsonb(vuh.*) ORDER BY vuh.hostname) AS json_agg\n                       FROM (post_topic_recommendation_hostnames ptrh\n                         JOIN view_url_hostnames vuh ON ((vuh.id = ptrh.hostname_id)))\n                      WHERE (ptrh.post_id = ptr.post_id)), '[]'::json), 'topic_type', ptr.topic_type, 'example_referral_link', ( SELECT urls.url\n                       FROM urls\n                      WHERE (urls.id = ptr.example_referral_url_id)), 'landing_page_urls', COALESCE(( SELECT array_agg(urls.url ORDER BY submitted.sort_order) AS array_agg\n                       FROM (post_topic_recommendation_landing_page_urls submitted\n                         JOIN urls ON ((urls.id = submitted.url_id)))\n                      WHERE (submitted.post_id = ptr.post_id)), '{}'::text[]), 'approval_error_message', ptr.approval_error_message, 'status',\n                    CASE\n                        WHEN (ptr.reviewed_at IS NULL) THEN 'pending'::text\n                        WHEN (ptr.created_topic_id IS NOT NULL) THEN 'approved'::text\n                        ELSE 'rejected'::text\n                    END, 'reviewed_at', ptr.reviewed_at, 'reviewed_by_id', ptr.reviewed_by_id, 'rejection_reason', ptr.rejection_reason, 'created_topic_id', ptr.created_topic_id, 'created_topic_slug', ( SELECT t.slug\n                       FROM topics t\n                      WHERE ((t.id = ptr.created_topic_id) AND (t.deleted_at IS NULL) AND (t.merged_into_topic_id IS NULL))\n                     LIMIT 1)) AS jsonb_build_object\n               FROM post_topic_recommendations ptr\n              WHERE (ptr.post_id = posts.id)\n              ORDER BY ptr.created_at DESC\n             LIMIT 1)\n            ELSE NULL::jsonb\n        END AS topic_recommendation,\n    posts.archived_at,\n    posts.archived_by_id,\n    posts.approved_at,\n    posts.rejected_at,\n    posts.in_review_at,\n    posts.declared_language,\n    posts.lingua_rs_detected_language,\n    posts.url_id,\n    pl.locked_at,\n    pl.locked_by_id,\n    clearance.clearance_reason\n   FROM (((posts\n     JOIN view_post_clearance_status clearance ON ((clearance.post_id = posts.id)))\n     LEFT JOIN LATERAL ( SELECT disposition.disposition\n           FROM (post_moderation_versions version\n             JOIN post_moderation_dispositions disposition ON ((disposition.version_id = version.id)))\n          WHERE ((version.post_id = posts.id) AND (version.content_sha256 = posts.llm_moderation_content_sha256) AND (version.policy_revision = '2026-09-09.1'::text) AND (disposition.source = 'openai_omni'::post_moderation_sources))\n          ORDER BY disposition.id DESC\n         LIMIT 1) openai_moderation ON (true))\n     LEFT JOIN LATERAL ( SELECT post_locks.created_at AS locked_at,\n            post_locks.locked_by_id\n           FROM post_locks\n          WHERE ((post_locks.post_id = posts.id) AND (post_locks.lifted_at IS NULL))\n          ORDER BY post_locks.id DESC\n         LIMIT 1) pl ON (true))\n  WHERE (posts.deleted_at IS NULL);",
+      "definition": " SELECT 'post'::text AS __entity_type,\n    posts.id,\n    posts.post_type,\n    posts.title,\n    posts.markdown,\n    posts.ai_summary_markdown,\n    posts.root_post_id,\n    posts.parent_post_id,\n    posts.broadcast,\n    posts.privacy,\n    posts.is_anonymous,\n    posts.created_at,\n    posts.updated_at,\n    ( SELECT row_to_json(eu.*) AS row_to_json\n           FROM view_embedded_users eu\n          WHERE (eu.id = posts.created_by_id)) AS created_by,\n    ( SELECT row_to_json(eu.*) AS row_to_json\n           FROM view_embedded_users eu\n          WHERE (eu.id = posts.updated_by_id)) AS updated_by,\n    ( SELECT post_slugs.slug\n           FROM post_slugs\n          WHERE (post_slugs.post_id = posts.id)\n          ORDER BY post_slugs.id DESC\n         LIMIT 1) AS slug,\n        CASE\n            WHEN (posts.post_type = 'review'::post_types) THEN COALESCE(( SELECT json_agg(jsonb_build_object('topic_id', prtr.topic_id, 'rating', prtr.rating, 'order_index', prtr.order_index, 'updated_at', prtr.updated_at, 'topic', to_jsonb(review_topics.*), 'category_slug', cat.slug) ORDER BY prtr.order_index) AS json_agg\n               FROM ((post_review_topic_ratings prtr\n                 JOIN view_embedded_topics review_topics ON ((prtr.topic_id = review_topics.id)))\n                 LEFT JOIN LATERAL ( SELECT t_cat.slug\n                       FROM (relation__topic__category__topic rel_cat\n                         JOIN topics t_cat ON (((t_cat.id = rel_cat.object_id) AND (t_cat.deleted_at IS NULL))))\n                      WHERE ((rel_cat.subject_id = prtr.topic_id) AND (rel_cat.deleted_at IS NULL) AND (rel_cat.votes_score_net > (0)::double precision))\n                      ORDER BY rel_cat.votes_score_sort DESC, rel_cat.created_at DESC, rel_cat.object_id\n                     LIMIT 1) cat ON (true))\n              WHERE (prtr.post_id = posts.id)), '[]'::json)\n            ELSE NULL::json\n        END AS review_topic_ratings,\n    COALESCE(( SELECT json_agg(to_jsonb(topics.*) ORDER BY top5.votes_score_net DESC) AS json_agg\n           FROM (( SELECT rel.object_id,\n                    rel.votes_score_net\n                   FROM relation__post__category__topic rel\n                  WHERE ((rel.subject_id = posts.id) AND (rel.deleted_at IS NULL) AND (rel.votes_score_net > (0)::double precision))\n                  ORDER BY rel.votes_score_net DESC\n                 LIMIT 5) top5\n             JOIN view_embedded_topics topics ON ((topics.id = top5.object_id)))), '[]'::json) AS post_related_topics,\n    COALESCE(( SELECT json_agg(jsonb_build_object('id', alias.id, 'key', alias.alias, 'display_token', source.authored_token, 'topic_id', alias.topic_id) ORDER BY alias.alias) AS json_agg\n           FROM (( SELECT DISTINCT ON (post_topic_alias_sources.topic_alias_id) post_topic_alias_sources.topic_alias_id,\n                    post_topic_alias_sources.authored_token\n                   FROM post_topic_alias_sources\n                  WHERE (post_topic_alias_sources.post_id = posts.id)\n                  ORDER BY post_topic_alias_sources.topic_alias_id,\n                        CASE post_topic_alias_sources.source\n                            WHEN 'title'::post_topic_alias_source_types THEN 0\n                            WHEN 'markdown'::post_topic_alias_source_types THEN 1\n                            ELSE 2\n                        END) source\n             JOIN topic_aliases alias ON ((alias.id = source.topic_alias_id)))), '[]'::json) AS post_hashtags,\n    COALESCE(( SELECT json_agg(explicit_categories.category ORDER BY explicit_categories.category_type, explicit_categories.category_label) AS json_agg\n           FROM ( SELECT jsonb_build_object('type', 'topic', 'topic_id', topic.id, 'topic_name', topic.name) AS category,\n                    'topic'::text AS category_type,\n                    topic.name AS category_label\n                   FROM (post_explicit_topic_categories explicit\n                     JOIN view_embedded_topics topic ON ((topic.id = explicit.topic_id)))\n                  WHERE (explicit.post_id = posts.id)\n                UNION ALL\n                 SELECT jsonb_build_object('type', 'hashtag', 'hashtag', source.authored_token) AS category,\n                    'hashtag'::text AS category_type,\n                    source.authored_token AS category_label\n                   FROM post_topic_alias_sources source\n                  WHERE ((source.post_id = posts.id) AND (source.source = 'explicit'::post_topic_alias_source_types))) explicit_categories), '[]'::json) AS post_explicit_categories,\n    COALESCE(( WITH selected_post_images AS MATERIALIZED (\n                 SELECT post_images_1.post_id,\n                    post_images_1.image_id,\n                    post_images_1.order_index,\n                    post_images_1.caption\n                   FROM post_images post_images_1\n                  WHERE (post_images_1.post_id = posts.id)\n                  ORDER BY post_images_1.order_index\n                )\n         SELECT json_agg(json_build_object('image_id', post_images.image_id, 'placement_id', placement.id, 'placement_revision', placement.revision, 'order_index', post_images.order_index, 'caption', post_images.caption) ORDER BY post_images.order_index) AS json_agg\n           FROM (((selected_post_images post_images\n             JOIN image_placements image_placement ON (((image_placement.post_id = post_images.post_id) AND (image_placement.image_id = post_images.image_id))))\n             JOIN media_placements placement ON (((placement.id = image_placement.placement_id) AND (placement.retired_at IS NULL))))\n             JOIN view_publicly_projected_image_placements public_delivery ON (((public_delivery.placement_id = placement.id) AND (public_delivery.placement_revision = placement.revision) AND (public_delivery.image_id = post_images.image_id))))\n          WHERE (post_images.post_id = posts.id)), '[]'::json) AS images,\n    posts.community_id,\n    posts.data_point_vertical,\n    posts.structured_data,\n    posts.created_by_id,\n    posts.updated_by_id,\n    posts.deleted_at,\n    posts.deleted_by_id,\n        CASE\n            WHEN (openai_moderation.disposition IS NULL) THEN NULL::boolean\n            ELSE (openai_moderation.disposition <> 'pass'::post_moderation_disposition_types)\n        END AS is_flagged_by_openai_omni_moderation,\n    clearance.clearance_status,\n    clearance.clearance_updated_at,\n        CASE\n            WHEN (posts.post_type = 'topic_recommendation'::post_types) THEN ( SELECT jsonb_build_object('post_id', ptr.post_id, 'topic_title', ptr.topic_title, 'topic_slug', ptr.topic_slug, 'topic_markdown', ptr.topic_markdown, 'aliases', ptr.aliases, 'hostname_id', ptr.hostname_id, 'hostname', ( SELECT to_jsonb(vuh.*) AS to_jsonb\n                       FROM view_url_hostnames vuh\n                      WHERE (vuh.id = ptr.hostname_id)\n                     LIMIT 1), 'hostnames', COALESCE(( SELECT json_agg(to_jsonb(vuh.*) ORDER BY vuh.hostname) AS json_agg\n                       FROM (post_topic_recommendation_hostnames ptrh\n                         JOIN view_url_hostnames vuh ON ((vuh.id = ptrh.hostname_id)))\n                      WHERE (ptrh.post_id = ptr.post_id)), '[]'::json), 'topic_type', ptr.topic_type, 'example_referral_link', ( SELECT urls.url\n                       FROM urls\n                      WHERE (urls.id = ptr.example_referral_url_id)), 'landing_page_urls', COALESCE(( SELECT array_agg(urls.url ORDER BY submitted.sort_order) AS array_agg\n                       FROM (post_topic_recommendation_landing_page_urls submitted\n                         JOIN urls ON ((urls.id = submitted.url_id)))\n                      WHERE (submitted.post_id = ptr.post_id)), '{}'::text[]), 'approval_error_message', ptr.approval_error_message, 'status',\n                    CASE\n                        WHEN (ptr.reviewed_at IS NULL) THEN 'pending'::text\n                        WHEN (ptr.created_topic_id IS NOT NULL) THEN 'approved'::text\n                        ELSE 'rejected'::text\n                    END, 'reviewed_at', ptr.reviewed_at, 'reviewed_by_id', ptr.reviewed_by_id, 'rejection_reason', ptr.rejection_reason, 'created_topic_id', ptr.created_topic_id, 'created_topic_slug', ( SELECT t.slug\n                       FROM topics t\n                      WHERE ((t.id = ptr.created_topic_id) AND (t.deleted_at IS NULL))\n                     LIMIT 1)) AS jsonb_build_object\n               FROM post_topic_recommendations ptr\n              WHERE (ptr.post_id = posts.id)\n              ORDER BY ptr.created_at DESC\n             LIMIT 1)\n            ELSE NULL::jsonb\n        END AS topic_recommendation,\n    posts.archived_at,\n    posts.archived_by_id,\n    posts.approved_at,\n    posts.rejected_at,\n    posts.in_review_at,\n    posts.declared_language,\n    posts.lingua_rs_detected_language,\n    posts.url_id,\n    pl.locked_at,\n    pl.locked_by_id,\n    clearance.clearance_reason\n   FROM (((posts\n     JOIN view_post_clearance_status clearance ON ((clearance.post_id = posts.id)))\n     LEFT JOIN LATERAL ( SELECT disposition.disposition\n           FROM (post_moderation_versions version\n             JOIN post_moderation_dispositions disposition ON ((disposition.version_id = version.id)))\n          WHERE ((version.post_id = posts.id) AND (version.content_sha256 = posts.llm_moderation_content_sha256) AND (version.policy_revision = '2026-09-09.1'::text) AND (disposition.source = 'openai_omni'::post_moderation_sources))\n          ORDER BY disposition.id DESC\n         LIMIT 1) openai_moderation ON (true))\n     LEFT JOIN LATERAL ( SELECT post_locks.created_at AS locked_at,\n            post_locks.locked_by_id\n           FROM post_locks\n          WHERE ((post_locks.post_id = posts.id) AND (post_locks.lifted_at IS NULL))\n          ORDER BY post_locks.id DESC\n         LIMIT 1) pl ON (true))\n  WHERE (posts.deleted_at IS NULL);",
       "materialized": false
     },
     "view_public_post_eligibility": {
@@ -138066,7 +138162,7 @@
     },
     "view_rss_feeds": {
       "comment": "RSS feed response projection with current discoverability and topic references.",
-      "definition": " SELECT 'rss_feed'::text AS __entity_type,\n    rss_feeds.id,\n    rss_feeds.title,\n    current_state.is_enabled,\n    current_state.is_discoverable,\n    rss_feeds.etag,\n    rss_feeds.last_modified_at,\n    rss_feeds.last_fetched_at,\n    rss_feeds.feed_type,\n    rss_feeds.canonical_rss_feed_id,\n    json_build_object('__entity_type', 'url', 'id', feed_url.id, 'url', feed_url.url, 'pathname', feed_url.pathname, 'search_params', feed_url.search_params, 'canonical_url_id', feed_url.canonical_url_id, 'hostname', json_build_object('__entity_type', 'hostname', 'id', feed_hostname.id, 'hostname', feed_hostname.hostname, 'topic_id', feed_hostname.topic_id, 'is_blocked', feed_hostname.is_blocked, 'is_crawlable', feed_hostname.is_crawlable, 'should_follow_link_rel', feed_hostname.should_follow_link_rel)) AS rss_feed_url,\n        CASE\n            WHEN (topic_hostname.hostname IS NULL) THEN NULL::json\n            ELSE json_build_object('url', concat('https://', topic_hostname.hostname, '/'))\n        END AS home_page_url,\n    row_to_json(view_embedded_topics.*) AS topic,\n        CASE\n            WHEN (publisher_type_topic.id IS NULL) THEN NULL::json\n            ELSE json_build_object('id', publisher_type_topic.id, 'slug', publisher_type_topic.slug, 'topic_type', publisher_type_topic.topic_type, 'name', publisher_type_topic.name)\n        END AS publisher_type,\n        CASE\n            WHEN (topic_hostname.id IS NULL) THEN NULL::json\n            ELSE json_build_object('__entity_type', topic_hostname.__entity_type, 'id', topic_hostname.id, 'hostname', topic_hostname.hostname, 'topic_id', topic_hostname.topic_id)\n        END AS hostname,\n        CASE\n            WHEN (podcast_show.rss_feed_id IS NULL) THEN NULL::json\n            ELSE json_build_object('itunes_author', podcast_show.itunes_author, 'itunes_owner_name', podcast_show.itunes_owner_name, 'cover_art_url', podcast_show.cover_art_url, 'is_explicit', podcast_show.is_explicit, 'itunes_type', podcast_show.itunes_type, 'description', podcast_show.description)\n        END AS podcast_show,\n    COALESCE(( SELECT json_agg(json_build_object('category_text', category_identity.category_text, 'topic_id', c.topic_id, 'topic_slug', t.slug) ORDER BY category_identity.category_text) AS json_agg\n           FROM ((rss_feed_categories c\n             JOIN rss_category_identities category_identity ON ((category_identity.id = c.category_identity_id)))\n             LEFT JOIN topics t ON (((t.id = c.topic_id) AND (t.deleted_at IS NULL) AND (t.merged_into_topic_id IS NULL))))\n          WHERE (c.rss_feed_id = rss_feeds.id)), '[]'::json) AS categories\n   FROM (((((((rss_feeds\n     JOIN urls feed_url ON ((feed_url.id = rss_feeds.rss_feed_url_id)))\n     JOIN url_hostnames feed_hostname ON ((feed_hostname.id = feed_url.hostname_id)))\n     JOIN view_embedded_topics ON ((view_embedded_topics.id = rss_feeds.topic_id)))\n     LEFT JOIN view_url_hostnames topic_hostname ON ((topic_hostname.id = view_embedded_topics.hostname_id)))\n     JOIN view_rss_feed_current_states current_state ON ((current_state.rss_feed_id = rss_feeds.id)))\n     LEFT JOIN LATERAL ( SELECT topics.id,\n            topics.slug,\n            topics.name,\n            topics.topic_type\n           FROM (relation__topic__publisher_type__topic relation\n             JOIN topics ON ((topics.id = relation.object_id)))\n          WHERE ((relation.subject_id = rss_feeds.topic_id) AND (relation.deleted_at IS NULL) AND (relation.votes_score_net > (0)::double precision) AND (topics.deleted_at IS NULL))\n          ORDER BY relation.votes_score_net DESC NULLS LAST, relation.id\n         LIMIT 1) publisher_type_topic ON (true))\n     LEFT JOIN podcast_shows podcast_show ON ((podcast_show.rss_feed_id = rss_feeds.id)));",
+      "definition": " SELECT 'rss_feed'::text AS __entity_type,\n    rss_feeds.id,\n    rss_feeds.title,\n    current_state.is_enabled,\n    current_state.is_discoverable,\n    rss_feeds.etag,\n    rss_feeds.last_modified_at,\n    rss_feeds.last_fetched_at,\n    rss_feeds.feed_type,\n    rss_feeds.canonical_rss_feed_id,\n    json_build_object('__entity_type', 'url', 'id', feed_url.id, 'url', feed_url.url, 'pathname', feed_url.pathname, 'search_params', feed_url.search_params, 'canonical_url_id', feed_url.canonical_url_id, 'hostname', json_build_object('__entity_type', 'hostname', 'id', feed_hostname.id, 'hostname', feed_hostname.hostname, 'topic_id', feed_hostname.topic_id, 'is_blocked', feed_hostname.is_blocked, 'is_crawlable', feed_hostname.is_crawlable, 'should_follow_link_rel', feed_hostname.should_follow_link_rel)) AS rss_feed_url,\n        CASE\n            WHEN (topic_hostname.hostname IS NULL) THEN NULL::json\n            ELSE json_build_object('url', concat('https://', topic_hostname.hostname, '/'))\n        END AS home_page_url,\n    row_to_json(view_embedded_topics.*) AS topic,\n        CASE\n            WHEN (publisher_type_topic.id IS NULL) THEN NULL::json\n            ELSE json_build_object('id', publisher_type_topic.id, 'slug', publisher_type_topic.slug, 'topic_type', publisher_type_topic.topic_type, 'name', publisher_type_topic.name)\n        END AS publisher_type,\n        CASE\n            WHEN (topic_hostname.id IS NULL) THEN NULL::json\n            ELSE json_build_object('__entity_type', topic_hostname.__entity_type, 'id', topic_hostname.id, 'hostname', topic_hostname.hostname, 'topic_id', topic_hostname.topic_id)\n        END AS hostname,\n        CASE\n            WHEN (podcast_show.rss_feed_id IS NULL) THEN NULL::json\n            ELSE json_build_object('itunes_author', podcast_show.itunes_author, 'itunes_owner_name', podcast_show.itunes_owner_name, 'cover_art_url', podcast_show.cover_art_url, 'is_explicit', podcast_show.is_explicit, 'itunes_type', podcast_show.itunes_type, 'description', podcast_show.description)\n        END AS podcast_show,\n    COALESCE(( SELECT json_agg(json_build_object('category_text', category_identity.category_text, 'topic_id', c.topic_id, 'topic_slug', t.slug) ORDER BY category_identity.category_text) AS json_agg\n           FROM ((rss_feed_categories c\n             JOIN rss_category_identities category_identity ON ((category_identity.id = c.category_identity_id)))\n             LEFT JOIN topics t ON (((t.id = c.topic_id) AND (t.deleted_at IS NULL))))\n          WHERE (c.rss_feed_id = rss_feeds.id)), '[]'::json) AS categories\n   FROM (((((((rss_feeds\n     JOIN urls feed_url ON ((feed_url.id = rss_feeds.rss_feed_url_id)))\n     JOIN url_hostnames feed_hostname ON ((feed_hostname.id = feed_url.hostname_id)))\n     JOIN view_embedded_topics ON ((view_embedded_topics.id = rss_feeds.topic_id)))\n     LEFT JOIN view_url_hostnames topic_hostname ON ((topic_hostname.id = view_embedded_topics.hostname_id)))\n     JOIN view_rss_feed_current_states current_state ON ((current_state.rss_feed_id = rss_feeds.id)))\n     LEFT JOIN LATERAL ( SELECT topics.id,\n            topics.slug,\n            topics.name,\n            topics.topic_type\n           FROM (relation__topic__publisher_type__topic relation\n             JOIN topics ON ((topics.id = relation.object_id)))\n          WHERE ((relation.subject_id = rss_feeds.topic_id) AND (relation.deleted_at IS NULL) AND (relation.votes_score_net > (0)::double precision) AND (topics.deleted_at IS NULL))\n          ORDER BY relation.votes_score_net DESC NULLS LAST, relation.id\n         LIMIT 1) publisher_type_topic ON (true))\n     LEFT JOIN podcast_shows podcast_show ON ((podcast_show.rss_feed_id = rss_feeds.id)));",
       "materialized": false
     },
     "view_topic_metrics": {

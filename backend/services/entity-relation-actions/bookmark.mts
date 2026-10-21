@@ -11,6 +11,7 @@ import type { PrivateUser } from '@services/users/types'
 import { currentUserCanBookmarkTarget } from './authorization.mts'
 import type { EntityRelationActionAuthority } from './create.mts'
 import { assertPostTargetAccess } from './post-target-access.mts'
+import { getTopicByAnyWithRedirectCached } from '@services/entity-fetch'
 
 export type BookmarkActionInput = {
   readonly entityType: string
@@ -40,7 +41,10 @@ export async function upsertBookmarkAction(
   )
   assert(isBookmarkable, 422, 'Invalid bookmark type.')
   const type = entityType as EntityRelationEntityType
-  assert(await currentUserCanBookmarkTarget(currentUser, type, entityId), 404, 'Entity not found')
+  const targetId =
+    type === 'topic' ? (await getTopicByAnyWithRedirectCached(entityId))?.topic.id : entityId
+  assert(targetId, 404, 'Entity not found')
+  assert(await currentUserCanBookmarkTarget(currentUser, type, targetId), 404, 'Entity not found')
   // A first-party session keeps the ordinary visibility rule above; only a credential needs more.
   const postMutationGuard =
     type === 'post' && authority.kind === 'delegated'
@@ -51,7 +55,7 @@ export async function upsertBookmarkAction(
     return await bookmarkEntity(
       currentUser,
       type,
-      { id: entityId },
+      { id: targetId },
       predicate as EntityRelationPredicateType,
       postMutationGuard ? { postMutationGuard } : undefined,
     )
@@ -70,10 +74,14 @@ export async function upsertBookmarkAction(
 export async function deleteBookmarkAction(currentUser: PrivateUser, input: BookmarkActionInput) {
   assertNotSuspended(currentUser)
   assert(isUUID(input.entityId), 422, 'Invalid entity ID')
+  const targetId =
+    input.entityType === 'topic'
+      ? ((await getTopicByAnyWithRedirectCached(input.entityId))?.topic.id ?? input.entityId)
+      : input.entityId
   await unbookmarkEntity(
     currentUser,
     input.entityType as EntityRelationEntityType,
-    { id: input.entityId },
+    { id: targetId },
     input.predicate as EntityRelationPredicateType,
   )
 }

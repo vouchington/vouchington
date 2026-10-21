@@ -188,31 +188,45 @@ describe('create.generated', () => {
     const destinationHolder = holdDestinationTopicRow()
     await destinationRowLocked.promise
     const lockAttachment = publicationLock.lockTopicRssFeedAttachmentLifecycle
+    const lockAttachments = publicationLock.lockTopicRssFeedAttachmentLifecycles
     const sourceLocked = Promise.withResolvers<void>()
     const attachmentSpy = vi
-      .spyOn(publicationLock, 'lockTopicRssFeedAttachmentLifecycle')
-      .mockImplementation(async (query, topicId) => {
-        await lockAttachment(query, topicId)
-        if (topicId === source.id) sourceLocked.resolve()
+      .spyOn(publicationLock, 'lockTopicRssFeedAttachmentLifecycles')
+      .mockImplementation(async (query, topicIds) => {
+        await lockAttachments(query, topicIds)
+        if (topicIds.includes(source.id)) sourceLocked.resolve()
       })
 
     const merging = mergeTopicAliases(user, sourceTopic, destinationTopic)
-    await sourceLocked.promise
-    await expect(contendForSourceAttachmentLifecycle()).rejects.toMatchObject({ code: '55P03' })
-    const creating = createRssFeed({
-      provenance: WEB_PROVENANCE,
-      skipRemoteValidation: true,
-      rss_feed_url: `https://example.com/attachment-merge-${crypto.randomUUID()}.xml`,
-      topic_id: source.id,
-      title: 'Attachment after merge',
-    })
-    const creationOutcome = creating.then(
+    const mergeOutcome = merging.then(
       () => undefined,
       (err: unknown) => err,
     )
+    let creationOutcome: Promise<unknown> | undefined
     try {
+      await Promise.race([
+        sourceLocked.promise,
+        mergeOutcome.then(error => {
+          if (error instanceof Error) throw error
+          throw new Error('Merge completed before locking the source attachment', { cause: error })
+        }),
+      ])
+      await expect(contendForSourceAttachmentLifecycle()).rejects.toMatchObject({ code: '55P03' })
+      const creating = createRssFeed({
+        provenance: WEB_PROVENANCE,
+        skipRemoteValidation: true,
+        rss_feed_url: `https://example.com/attachment-merge-${crypto.randomUUID()}.xml`,
+        topic_id: source.id,
+        title: 'Attachment after merge',
+      })
+      creationOutcome = creating.then(
+        () => undefined,
+        (err: unknown) => err,
+      )
       releaseDestinationRow.resolve()
-      await merging
+      const mergeError = await mergeOutcome
+      if (mergeError instanceof Error) throw mergeError
+      if (mergeError !== undefined) throw new Error('Topic merge failed', { cause: mergeError })
       await expect(creationOutcome).resolves.toMatchObject({
         status: 422,
         message: 'Topic not found',
@@ -221,7 +235,7 @@ describe('create.generated', () => {
       releaseDestinationRow.resolve()
       attachmentSpy.mockRestore()
       await destinationHolder
-      await merging.catch(() => undefined)
+      await mergeOutcome
       await creationOutcome
     }
 

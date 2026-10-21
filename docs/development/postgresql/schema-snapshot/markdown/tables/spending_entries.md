@@ -47,4 +47,5 @@ _none_
 
 **Triggers:**
 
+- `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.spending_entries FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('spending_category_topic_id')`
 - `trigger_spending_entries_fn_update_updated_at`: `CREATE TRIGGER trigger_spending_entries_fn_update_updated_at BEFORE UPDATE ON public.spending_entries FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

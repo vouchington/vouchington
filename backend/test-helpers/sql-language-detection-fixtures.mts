@@ -103,7 +103,7 @@ export async function insertLanguageDetectionTopicForTest(params: {
   const { rows } = await write<{ id: string }>(sql`/* insertLanguageDetectionTopicForTest */
     INSERT INTO topics (created_via,
       name, slug, created_by_id, topic_type, is_noindexed, should_allow_reviews,
-      bedrock_nova_multimodal_v1_content_sha256, lingua_rs_input_sha256, deleted_at
+      bedrock_nova_multimodal_v1_content_sha256, lingua_rs_input_sha256
     )
     VALUES ('system',
       ${params.name},
@@ -113,8 +113,7 @@ export async function insertLanguageDetectionTopicForTest(params: {
       false,
       true,
       ${`\\x${'0'.repeat(64)}`},
-      ${params.inputSha256 ?? null},
-      ${params.deleted ? new Date() : null}
+      ${params.inputSha256 ?? null}
     )
     RETURNING id
   `)
@@ -122,6 +121,11 @@ export async function insertLanguageDetectionTopicForTest(params: {
   await write(sql`/* insertLanguageDetectionTopicMetricsForTest */
     INSERT INTO topic_metrics (topic_id) VALUES (${topicId}) ON CONFLICT DO NOTHING
   `)
+  if (params.deleted) {
+    await write(sql`/* deleteLanguageDetectionTopicForTest */
+      UPDATE topics SET deleted_at = CURRENT_TIMESTAMP WHERE id = ${topicId}
+    `)
+  }
   return topicId
 }
 

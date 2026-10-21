@@ -40,6 +40,7 @@ export async function resolveHashtagTopicSearch(
     `/* resolveHashtagTopicSearch */
     WITH candidates AS (
       SELECT
+        -- no-mistakes-disable-next-line postgres-required-predicates: merge repoints this topic reference to destination; deleted_at remains checked
         topic_aliases.id,
         topic_aliases.alias,
         CASE
@@ -50,7 +51,6 @@ export async function resolveHashtagTopicSearch(
       LEFT JOIN topics
         ON topics.id = topic_aliases.topic_id
         AND topics.deleted_at IS NULL
-        AND topics.merged_into_topic_id IS NULL
       WHERE topic_aliases.alias = ANY($1::text[])
 
       UNION ALL

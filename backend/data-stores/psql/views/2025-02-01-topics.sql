@@ -42,7 +42,6 @@ CREATE OR REPLACE VIEW view_embedded_topics AS
       FROM topics t2
       WHERE t2.id = topics.referral_program_topic_id
         AND t2.deleted_at IS NULL
-        AND t2.merged_into_topic_id IS NULL
       LIMIT 1
     ) AS referral_program_slug,
     topics.lingua_rs_detected_language

@@ -17,3 +17,15 @@ The taxonomy has two explicit axes:
 
 The frontend topic picker's type filter is a UX affordance, not a validation contract. Backend
 validation is the enforcement.
+
+## Merge lifecycle
+
+A merge consolidates current references into one topic so follows, content, feeds and program
+links continue to describe the same destination. The source remains as a redirect and as the
+identity of its historical audit records. Publication capture connects the reference changes to
+the asynchronous refresh of published content.
+
+Merging across primary kinds would discard a different structured identity, so both topics must
+have the same primary kind. The destination owns the surviving extension data. When a unique
+subtype relationship has no defined consolidation policy, the merge refuses the conflict instead
+of silently losing either relationship. Conflicting live feed ownership follows the same rule.

@@ -24,12 +24,12 @@ export async function listApprovedFediverseInstanceHostnames(): Promise<
   const { rows } = await read<ApprovedFediverseInstanceHostname>(sql`
     /* listApprovedFediverseInstanceHostnames */
     SELECT uh.hostname
+    -- no-mistakes-disable-next-line postgres-required-predicates: merge repoints this topic reference to destination; deleted_at remains checked
     FROM fediverse_instance_topics tfi
     JOIN topics t ON t.id = tfi.topic_id
     JOIN url_hostnames uh ON uh.id = t.hostname_id
     WHERE tfi.integration_status = 'approved'
       AND t.deleted_at IS NULL
-      AND t.merged_into_topic_id IS NULL
     ORDER BY uh.hostname
   `)
   return rows

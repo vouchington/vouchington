@@ -33,4 +33,5 @@ _none_
 
 **Triggers:**
 
+- `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.post_explicit_topic_categories FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')`
 - `trigger_post_explicit_topic_categories_updated_at`: `CREATE TRIGGER trigger_post_explicit_topic_categories_updated_at BEFORE UPDATE ON public.post_explicit_topic_categories FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

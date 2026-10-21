@@ -128,7 +128,6 @@ export const getTopicByAnyWithRedirect = async (
       JOIN topics t ON t.id = ta.topic_id
       WHERE ta.alias = $1
         AND t.deleted_at IS NULL
-        AND t.merged_into_topic_id IS NULL
     `
   } else {
     throw createError(422, `Invalid topic identifier: ${idOrSlug}`)

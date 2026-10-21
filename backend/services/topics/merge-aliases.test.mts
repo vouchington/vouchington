@@ -7,6 +7,7 @@ import {
   getTopicRevisionsForTest,
   insertTestRssFeedDirect,
 } from '@voucha/test-helpers'
+
 import { describe, expect, it, vi } from 'vitest'
 import { createTopicAliases } from './aliases.mts'
 import { getTopicAliasesForTest } from '@voucha/test-helpers/topic-aliases'
@@ -173,14 +174,15 @@ describe('mergeTopicAliases', () => {
     const holder = holdDestinationTopicRow()
     await topicRowLocked.promise
     const lockAttachment = publicationLock.lockTopicRssFeedAttachmentLifecycle
+    const lockAttachments = publicationLock.lockTopicRssFeedAttachmentLifecycles
     const lockFeeds = rssFeedPublication.lockPostPublicationRssFeedScopes
     const attachmentHeld = Promise.withResolvers<void>()
     const feedsHeld = Promise.withResolvers<void>()
     const attachmentSpy = vi
-      .spyOn(publicationLock, 'lockTopicRssFeedAttachmentLifecycle')
-      .mockImplementation(async (query, topicId) => {
-        await lockAttachment(query, topicId)
-        if (topicId === source.id) attachmentHeld.resolve()
+      .spyOn(publicationLock, 'lockTopicRssFeedAttachmentLifecycles')
+      .mockImplementation(async (query, topicIds) => {
+        await lockAttachments(query, topicIds)
+        if (topicIds.includes(source.id)) attachmentHeld.resolve()
       })
     const feedSpy = vi
       .spyOn(rssFeedPublication, 'lockPostPublicationRssFeedScopes')
@@ -193,6 +195,8 @@ describe('mergeTopicAliases', () => {
     try {
       await attachmentHeld.promise
       await feedsHeld.promise
+      expect(attachmentSpy).toHaveBeenCalledTimes(1)
+      expect(attachmentSpy.mock.calls[0]?.[1]).toEqual([source.id, destination.id])
       await expect(contendForAttachmentLifecycleLock()).rejects.toMatchObject({ code: '55P03' })
       await expect(contendForFeedPublicationLock()).rejects.toMatchObject({ code: '55P03' })
     } finally {

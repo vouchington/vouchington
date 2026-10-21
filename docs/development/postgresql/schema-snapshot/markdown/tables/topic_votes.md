@@ -46,4 +46,5 @@ _none_
 - `topic_votes_pkey`: `CREATE UNIQUE INDEX topic_votes_pkey ON ONLY public.topic_votes USING btree (topic_id, id)`
 
 **Triggers:**
-_none_
+
+- `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.topic_votes FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')`

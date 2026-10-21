@@ -32,4 +32,5 @@ _none_
 - `rss_feed_item_autotagger_result_topics_pkey`: `CREATE UNIQUE INDEX rss_feed_item_autotagger_result_topics_pkey ON public.rss_feed_item_autotagger_result_topics USING btree (rss_feed_item_autotagger_result_id, topic_id)`
 
 **Triggers:**
-_none_
+
+- `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.rss_feed_item_autotagger_result_topics FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('topic_id')`

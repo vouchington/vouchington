@@ -40,10 +40,10 @@ export async function getTrendingReferralPrograms(
         rp.topic_id AS id,
         COUNT(url.id)::DOUBLE PRECISION AS trending_score,
         COUNT(url.id)::INTEGER AS link_count
+      -- no-mistakes-disable-next-line postgres-required-predicates: merge repoints this topic reference to destination; deleted_at remains checked
       FROM referral_program_topics rp
       INNER JOIN topics t ON t.id = rp.topic_id
         AND t.deleted_at IS NULL
-        AND t.merged_into_topic_id IS NULL
       INNER JOIN user_referral_program_links url
         ON url.referral_program_topic_id = rp.topic_id
         AND url.id >= ${lowerBoundUuid}

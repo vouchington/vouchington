@@ -10,11 +10,16 @@ import {
 import type { Topic } from './types.mts'
 import { recordTopicAliasPublicationChanges } from './publication-change.mts'
 import { recordTopicMergePublicationChanges } from '@services/post-publication'
-import { lockTopicRssFeedAttachmentLifecycle } from '@services/post-publication/lock'
+import { lockTopicRssFeedAttachmentLifecycles } from '@services/post-publication/lock'
 import { lockTopicMergeAliasPublicationScopes } from './alias-publication-locks.mts'
 import { prepublishImageSurfaceDenials } from '@services/media-delivery-safety'
 import { finalizeTopicAliasMerge } from './merge-aliases-finalize.mts'
-type MergeRow = Pick<Topic, 'id' | 'slug'> & Record<'is_deleted' | 'is_merged', boolean>
+import { assertTopicMergeReferenceCompatibility } from './merge-preflight.mts'
+import { repointTopicReferences } from './merge-references.mts'
+import { mergeTopicSubtypeReferences } from './merge-subtypes.mts'
+import { deleteMergedTopicDerivedRows } from './merge-derived.mts'
+type MergeRow = Pick<Topic, 'id' | 'slug' | 'topic_type'> &
+  Record<'is_deleted' | 'is_merged', boolean>
 export async function mergeTopicAliases(
   merger: PrivateUser,
   sourceTopic: Topic,
@@ -29,8 +34,15 @@ export async function mergeTopicAliases(
     sourceTopic.id,
     sourceTopic.slug,
   )
-  await lockTopicRssFeedAttachmentLifecycle(query, sourceTopic.id)
-  await recordTopicMergePublicationChanges(query, sourceTopic.id, aliasScopes.lockedAliasIds)
+  await lockTopicRssFeedAttachmentLifecycles(query, [sourceTopic.id, destinationTopic.id])
+  // ast-grep-ignore: no-three-sequential-awaits -- reject conflicts before publication writes; capture and external denials precede topic row locks.
+  await assertTopicMergeReferenceCompatibility(query, sourceTopic.id, destinationTopic.id)
+  await recordTopicMergePublicationChanges(
+    query,
+    sourceTopic.id,
+    aliasScopes.lockedAliasIds,
+    destinationTopic.id,
+  )
   await prepublishImageSurfaceDenials(
     [
       { surfaceKind: 'topic-logo-image', topicId: sourceTopic.id },
@@ -38,15 +50,17 @@ export async function mergeTopicAliases(
     ],
     query,
   )
+
   const { rows: topicRows } = await query<MergeRow>(
     // no-mistakes-disable-next-line postgres-required-predicates: lifecycle output enables precise 404/409 assertions below
-    `/* mergeTopicAliases lockTopics */ SELECT id, slug, deleted_at IS NOT NULL AS is_deleted, merged_into_topic_id IS NOT NULL AS is_merged FROM topics WHERE id = ANY($1::uuid[]) ORDER BY id FOR UPDATE`,
+    `/* mergeTopicAliases lockTopics */ SELECT id, slug, topic_type, deleted_at IS NOT NULL AS is_deleted, merged_into_topic_id IS NOT NULL AS is_merged FROM topics WHERE id = ANY($1::uuid[]) ORDER BY id FOR UPDATE`,
     [[sourceTopic.id, destinationTopic.id]],
   )
   const sourceRow = topicRows.find(row => row.id === sourceTopic.id)
   const destinationRow = topicRows.find(row => row.id === destinationTopic.id)
   assert(sourceRow && !sourceRow.is_deleted, 404, 'Source topic not found')
   assert(destinationRow && !destinationRow.is_deleted, 404, 'Destination topic not found')
+  assert(sourceRow.topic_type === destinationRow.topic_type, 409, 'Topics must have the same type')
   assert(!sourceRow.is_merged, 409, 'Source topic has already been merged')
   assert(!destinationRow.is_merged, 409, 'Destination topic has already been merged')
   const { rows: inboundMergeRows } = await query<{ id: string }>(
@@ -142,6 +156,9 @@ export async function mergeTopicAliases(
     `,
     [destinationTopic.id, merger.id, sourceTopic.id],
   )
+  await mergeTopicSubtypeReferences(query, sourceTopic.id, destinationTopic.id)
+  const referenceChanges = await repointTopicReferences(query, sourceTopic.id, destinationTopic.id)
+  await deleteMergedTopicDerivedRows(query, sourceTopic.id)
   await createTopicAliasMergeRevisions({
     query,
     revisedById: merger.id,
@@ -159,6 +176,7 @@ export async function mergeTopicAliases(
     destinationTopic,
     movedAliases,
     movedAliasIds,
+    ...referenceChanges,
   })
   return {
     source_topic_id: sourceTopic.id,

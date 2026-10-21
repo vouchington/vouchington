@@ -133,6 +133,14 @@ CREATE OR REPLACE FUNCTION public.fn_current_copyright_form_screening(submission
  STABLE
 ```
 
+## `fn_ensure_active_topic_references`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_ensure_active_topic_references()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_ensure_retained_actor_identity`
 
 ```sql

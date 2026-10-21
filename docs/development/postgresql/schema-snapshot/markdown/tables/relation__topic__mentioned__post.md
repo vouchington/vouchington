@@ -37,4 +37,5 @@ _none_
 - `relation__topic__mentioned__post_pkey`: `CREATE UNIQUE INDEX relation__topic__mentioned__post_pkey ON public.relation__topic__mentioned__post USING btree (subject_id, object_id)`
 
 **Triggers:**
-_none_
+
+- `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.relation__topic__mentioned__post FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('subject_id')`

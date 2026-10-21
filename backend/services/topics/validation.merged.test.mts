@@ -15,11 +15,13 @@ describe('validation - merged topic filter', () => {
     sourceId: string,
   ) {
     if (!admin) throw new Error('Admin is null')
+    const fullSource = await getTopicByAny(sourceId)
+    if (!fullSource) throw new Error('Source topic not found')
     const destinationTopic = await createTestTopic({
       user: admin,
+      topic_type: fullSource.topic_type,
       name: `Validation Dest ${Math.random()}`,
     })
-    const fullSource = await getTopicByAny(sourceId)
     const fullDestination = await getTopicByAny(destinationTopic.id)
     if (!fullSource || !fullDestination) throw new Error('Test topics not found')
     await mergeTopicAliases(admin, fullSource, fullDestination)

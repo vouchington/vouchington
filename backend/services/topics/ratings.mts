@@ -1,6 +1,7 @@
 import { enqueueBulkRefreshTopicMetricsById } from '@queues/vote-aggregation/enqueues/entity-metrics-cache-refresh'
 import { beginTransaction, write, type TransactionQuery } from '@data-stores/psql'
 import type { TopicRatingStats } from './types.mts'
+import { lockActiveTopicForRatingStatsRefresh } from './ratings-lifecycle.mts'
 import { normalizeTopicRatingStats } from './normalize-rating-stats.mts'
 import sql from 'sql-template-strings'
 
@@ -19,9 +20,7 @@ const ratingStatsKeys = [
 
 export async function updateTopicRatingStats(topicId: string): Promise<void> {
   await using query = await beginTransaction()
-  await query(
-    sql`/* lockTopicRatingStatsRefresh */ SELECT pg_advisory_xact_lock(hashtextextended(${`topic-rating:${topicId}`}, 0))`,
-  )
+  if (!(await lockActiveTopicForRatingStatsRefresh(query, topicId))) return
   const [calculatedStats, currentStats] = await Promise.all([
     calculateTopicRatingStats(query, topicId),
     getCurrentTopicRatingStats(query, topicId),

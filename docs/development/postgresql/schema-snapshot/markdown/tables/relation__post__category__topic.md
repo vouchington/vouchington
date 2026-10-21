@@ -61,4 +61,5 @@ RANGE partitioned on `subject_id` (children: default, no retention owner, access
 - `relation__post__category__topic_subject_id_id_key`: `CREATE UNIQUE INDEX relation__post__category__topic_subject_id_id_key ON ONLY public.relation__post__category__topic USING btree (subject_id, id)`
 
 **Triggers:**
-_none_
+
+- `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.relation__post__category__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')`

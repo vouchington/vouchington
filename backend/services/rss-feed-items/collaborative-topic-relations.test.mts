@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { mergeReferencedTopicsForTest } from '@voucha/test-helpers/merge-topic-lifecycle'
 import {
   applyCollaborativeTopicRelations,
   type CollaborativeTopicLimits,
@@ -22,7 +23,6 @@ import {
   followTopicById,
   softDeleteTopic,
   endTestMembershipProjection,
-  mergeTopicForTest,
   updateTestMembershipExpiresAt,
 } from '@voucha/test-helpers'
 
@@ -200,7 +200,7 @@ describe('applyCollaborativeTopicRelations', () => {
     expect(topicIds).not.toContain(newTopic.id)
   })
 
-  it('excludes soft-deleted and merged-away topics', async () => {
+  it('excludes deleted topics and uses the destination of merged followed topics', async () => {
     const { feedId, itemId } = await setupItem()
     const activeTopic = await createTestTopic({})
     const deletedTopic = await createTestTopic({})
@@ -208,9 +208,6 @@ describe('applyCollaborativeTopicRelations', () => {
     const mergeTargetTopic = await createTestTopic({})
 
     const admin = await createTestUser({ administrator: true })
-    await softDeleteTopic(deletedTopic.id, admin.id)
-    await mergeTopicForTest(mergedTopic.id, mergeTargetTopic.id, admin.id)
-
     const follower = await createPaidFollower(feedId, 'plus')
     await Promise.all([
       followTopicById(follower.id, activeTopic.id),
@@ -218,10 +215,14 @@ describe('applyCollaborativeTopicRelations', () => {
       followTopicById(follower.id, mergedTopic.id),
     ])
 
+    await softDeleteTopic(deletedTopic.id, admin.id)
+    await mergeReferencedTopicsForTest(mergedTopic.id, mergeTargetTopic.id)
+
     await applyAndAwaitVoteStats(itemId, { plusLimit: 5, proLimit: 0 })
 
     const topicIds = await getItemCategoryTopicIds(itemId)
     expect(topicIds).toContain(activeTopic.id)
+    expect(topicIds).toContain(mergeTargetTopic.id)
     expect(topicIds).not.toContain(deletedTopic.id)
     expect(topicIds).not.toContain(mergedTopic.id)
   })

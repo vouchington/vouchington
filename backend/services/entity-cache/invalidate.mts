@@ -159,7 +159,12 @@ async function invalidateTopicCaches(keys: unknown[], includeMetrics: boolean): 
     { cache: caches.topics, keys: topicKeys },
     { cache: caches.topics_with_redirect, keys: topicKeys },
     { cache: caches.topics_lookup, keys: topicKeys },
-    ...(includeMetrics ? [{ cache: caches.topic_metrics, keys: topicKeys }] : []),
+    ...(includeMetrics
+      ? [
+          { cache: caches.topic_metrics, keys: topicKeys },
+          { cache: caches.topic_elections, keys: topicKeys },
+        ]
+      : []),
   ])
   void enqueueBulkPurgeCacheTags(topicKeys.map(topicTag))
 }

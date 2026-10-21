@@ -66,7 +66,6 @@ export async function captureAutotaggerAgentCandidateTopicIds(
     FROM paid_followed
     JOIN topics topic
       ON topic.id = paid_followed.topic_id AND topic.deleted_at IS NULL
-        AND topic.merged_into_topic_id IS NULL
     JOIN `
   statement.append(isPost ? 'posts' : 'rss_feed_items')
   statement.append(sql` subject ON subject.id = ${subjectId}::uuid

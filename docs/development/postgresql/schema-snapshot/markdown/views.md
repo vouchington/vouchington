@@ -241,7 +241,7 @@ Rolling 30-day top-hashtag recommendations from public posts and discoverable RS
                    FROM ((rss_feed_item_sources source
                      JOIN rss_feeds feed ON ((feed.id = source.rss_feed_id)))
                      JOIN topics feed_topic ON ((feed_topic.id = feed.topic_id)))
-                  WHERE ((source.rss_feed_item_id = item.id) AND (source.rss_feed_item_id >= fn_min_uuidv7((CURRENT_TIMESTAMP - '30 days'::interval))) AND (feed.deleted_at IS NULL) AND (feed.is_enabled = true) AND (feed.is_discoverable = true) AND (feed_topic.deleted_at IS NULL) AND (feed_topic.merged_into_topic_id IS NULL)))) AND (EXISTS ( SELECT 1
+                  WHERE ((source.rss_feed_item_id = item.id) AND (source.rss_feed_item_id >= fn_min_uuidv7((CURRENT_TIMESTAMP - '30 days'::interval))) AND (feed.deleted_at IS NULL) AND (feed.is_enabled = true) AND (feed.is_discoverable = true) AND (feed_topic.deleted_at IS NULL)))) AND (EXISTS ( SELECT 1
                    FROM relation__rss_feed_item__category__topic_alias relation
                   WHERE ((relation.subject_id = item.id) AND (relation.subject_id >= fn_min_uuidv7((CURRENT_TIMESTAMP - '30 days'::interval))) AND (relation.object_id = category.topic_alias_id) AND (relation.deleted_at IS NULL) AND (relation.votes_score_net > (0)::double precision)))))
         ), occurrences AS (
@@ -477,7 +477,7 @@ Compact topic references embedded in current entity responses.
     referral_program_topic_id AS referral_program_id,
     ( SELECT t2.slug
            FROM topics t2
-          WHERE ((t2.id = topics.referral_program_topic_id) AND (t2.deleted_at IS NULL) AND (t2.merged_into_topic_id IS NULL))
+          WHERE ((t2.id = topics.referral_program_topic_id) AND (t2.deleted_at IS NULL))
          LIMIT 1) AS referral_program_slug,
     lingua_rs_detected_language
    FROM topics
@@ -852,7 +852,7 @@ Current post response projection; callers enforce publication, deletion and audi
                         ELSE 'rejected'::text
                     END, 'reviewed_at', ptr.reviewed_at, 'reviewed_by_id', ptr.reviewed_by_id, 'rejection_reason', ptr.rejection_reason, 'created_topic_id', ptr.created_topic_id, 'created_topic_slug', ( SELECT t.slug
                        FROM topics t
-                      WHERE ((t.id = ptr.created_topic_id) AND (t.deleted_at IS NULL) AND (t.merged_into_topic_id IS NULL))
+                      WHERE ((t.id = ptr.created_topic_id) AND (t.deleted_at IS NULL))
                      LIMIT 1)) AS jsonb_build_object
                FROM post_topic_recommendations ptr
               WHERE (ptr.post_id = posts.id)
@@ -1101,7 +1101,7 @@ RSS feed response projection with current discoverability and topic references.
     COALESCE(( SELECT json_agg(json_build_object('category_text', category_identity.category_text, 'topic_id', c.topic_id, 'topic_slug', t.slug) ORDER BY category_identity.category_text) AS json_agg
            FROM ((rss_feed_categories c
              JOIN rss_category_identities category_identity ON ((category_identity.id = c.category_identity_id)))
-             LEFT JOIN topics t ON (((t.id = c.topic_id) AND (t.deleted_at IS NULL) AND (t.merged_into_topic_id IS NULL))))
+             LEFT JOIN topics t ON (((t.id = c.topic_id) AND (t.deleted_at IS NULL))))
           WHERE (c.rss_feed_id = rss_feeds.id)), '[]'::json) AS categories
    FROM (((((((rss_feeds
      JOIN urls feed_url ON ((feed_url.id = rss_feeds.rss_feed_url_id)))

@@ -61,4 +61,5 @@ Not partitioned — growth: unbounded.
 - `relation__topic__related__url_subject_id_id_key`: `CREATE UNIQUE INDEX relation__topic__related__url_subject_id_id_key ON public.relation__topic__related__url USING btree (subject_id, id)`
 
 **Triggers:**
-_none_
+
+- `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.relation__topic__related__url FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('subject_id')`

@@ -211,7 +211,6 @@ CREATE OR REPLACE VIEW view_posts AS
           FROM topics t
           WHERE t.id = ptr.created_topic_id
             AND t.deleted_at IS NULL
-            AND t.merged_into_topic_id IS NULL
           LIMIT 1
         )
       )

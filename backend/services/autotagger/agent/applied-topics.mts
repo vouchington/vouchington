@@ -37,7 +37,7 @@ export async function readAutotaggerAppliedTopicNames(
     JOIN topics topic ON topic.id = relation.object_id
     WHERE relation.subject_id = ${subjectId}::uuid
       AND relation.deleted_at IS NULL AND relation.votes_score_net > 0
-      AND topic.deleted_at IS NULL AND topic.merged_into_topic_id IS NULL
+      AND topic.deleted_at IS NULL
     ORDER BY topic.name, topic.id
     LIMIT ${MAX_APPLIED_TOPIC_NAMES}
   `)

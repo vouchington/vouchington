@@ -23,23 +23,15 @@ export async function issueDomainVerificationToken(
   claimId: string,
 ): Promise<VerificationTokenResult> {
   const { rows: claimRows } = await read(sql`/* issueDomainVerificationToken:getClaim */
-    -- no-mistakes-disable-next-line postgres-required-predicates: existing claim rows on merged source topics may still issue tokens when the destination is active
     SELECT tc.id, tc.claimant_user_id, tc.topic_id, tc.verified_at, tc.rejected_at,
-           COALESCE(t.hostname_id, destination_topic.hostname_id) AS hostname_id,
+           t.hostname_id AS hostname_id,
            uh.hostname AS verification_hostname
+    -- no-mistakes-disable-next-line postgres-required-predicates: topic merges transactionally repoint claim foreign keys; only deletion remains relevant
     FROM topic_claims tc
     LEFT JOIN topics t ON t.id = tc.topic_id
-    LEFT JOIN topics destination_topic ON destination_topic.id = t.merged_into_topic_id
-    LEFT JOIN url_hostnames uh ON uh.id = COALESCE(t.hostname_id, destination_topic.hostname_id)
+    LEFT JOIN url_hostnames uh ON uh.id = t.hostname_id
     WHERE tc.id = ${claimId}
       AND t.deleted_at IS NULL
-      AND (
-        t.merged_into_topic_id IS NULL
-        OR (
-          destination_topic.deleted_at IS NULL
-          AND destination_topic.merged_into_topic_id IS NULL
-        )
-      )
     LIMIT 1
   `)
   const claimRow = claimRows[0] as

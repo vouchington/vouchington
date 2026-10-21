@@ -77,7 +77,6 @@ CREATE OR REPLACE VIEW view_rss_feeds AS
         LEFT JOIN topics t
           ON t.id = c.topic_id
           AND t.deleted_at IS NULL
-          AND t.merged_into_topic_id IS NULL
         WHERE c.rss_feed_id = rss_feeds.id
       ), '[]'::json) AS categories
     FROM rss_feeds
