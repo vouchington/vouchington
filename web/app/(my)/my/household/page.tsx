@@ -54,15 +54,15 @@ function invitationPage(
 }
 
 /** Resolves invitation user ids to usernames so rows show people instead of opaque ids. */
-async function invitationUsernames(pages: HouseholdInvitationPage[]) {
-  const ids = new Set(
-    pages.flatMap(page =>
-      page.invitations.flatMap(invitation => [
-        invitation.invited_user_id,
-        invitation.invited_by_id,
-      ]),
-    ),
-  )
+async function invitationUsernames(
+  sent: HouseholdInvitationPage | null,
+  received: HouseholdInvitationPage,
+) {
+  // Only the id each row displays: the invitee when sent, the inviter when received.
+  const ids = new Set([
+    ...(sent?.invitations.map(invitation => invitation.invited_user_id) ?? []),
+    ...received.invitations.map(invitation => invitation.invited_by_id),
+  ])
   const profiles = await Promise.allSettled([...ids].map(id => getUserProfile(id)))
   const usernames: Record<string, string> = {}
   for (const [index, id] of [...ids].entries()) {
@@ -103,9 +103,7 @@ export default async function HouseholdPage() {
 
   const sentInvitations = sentResult ? invitationPage(sentResult) : null
   const receivedInvitations = invitationPage(receivedResult)
-  const usernames = await invitationUsernames(
-    sentInvitations ? [sentInvitations, receivedInvitations] : [receivedInvitations],
-  )
+  const usernames = await invitationUsernames(sentInvitations, receivedInvitations)
 
   return (
     <div className='space-y-6'>

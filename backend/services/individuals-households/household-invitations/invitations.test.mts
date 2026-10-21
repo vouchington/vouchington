@@ -135,6 +135,17 @@ describe('household invitations', () => {
     }
   })
 
+  it('applies the household owner block state to administrator invitations', async () => {
+    const owner = await createTestUserDirect()
+    const blocker = await createTestUserDirect()
+    const administrator = await createTestUserDirect({ administrator: true })
+    const household = await insertTestHousehold(owner.id)
+    await blockUser(blocker, owner)
+    await expect(
+      createHouseholdInvitation(administrator, household.id, { user: blocker.id }),
+    ).rejects.toMatchObject({ status: 404 })
+  })
+
   it('rejects an administrator inviting the household owner', async () => {
     const owner = await createTestUserDirect()
     const administrator = await createTestUserDirect({ administrator: true })

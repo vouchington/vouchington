@@ -119,6 +119,9 @@ export function HouseholdInvitationsView(props: HouseholdInvitationsViewProps) {
                   )}
                 </UserLink>
               </p>
+              <p className='break-all text-sm text-muted-foreground'>
+                Household: <span>{invitation.household_id}</span>
+              </p>
               {invitation.relationship && (
                 <p className='text-sm text-muted-foreground'>{invitation.relationship}</p>
               )}

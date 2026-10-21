@@ -80,7 +80,7 @@ describe('household invitation actions', () => {
     const rows = screen.getAllByRole('listitem')
     for (const [index, invitation] of [second, first].entries()) {
       const row = within(rows[index]!)
-      expect(row.queryByText(invitation.household_id)).toBeNull()
+      expect(row.getByText(invitation.household_id)).toBeTruthy()
       expect(
         row.getByRole('button', { name: kind === 'received' ? 'Accept' : 'Revoke invitation' }),
       ).toBeTruthy()

@@ -1,7 +1,7 @@
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { beginTransaction, read, write } from '@data-stores/psql'
-import { decodeUuidCursor, encodeCursor, isSimpleCursor } from '@modules/pagination'
+import { decodeUuidCursor, isSimpleCursor } from '@modules/pagination'
 import { validateUUID } from '@modules/utils/ids'
 import { assertNotSuspended } from '@services/users'
 import { getPublicUserByAny } from '@services/users/get'
@@ -10,6 +10,7 @@ import { enqueueCommunityLifecycleNotificationPush } from '@services/notificatio
 import { createHouseholdInvitationNotifications } from '@services/notifications/create-household-invitation-notification'
 import { areUsersBlockedOrMutedEitherWay } from '@services/entity-relations/check-block-mute'
 import { readHouseholdMemberManageAccess } from '../authorization.mts'
+import { page } from './page.mts'
 
 export type HouseholdInvitation = {
   id: string
@@ -63,6 +64,17 @@ export async function createHouseholdInvitation(
   assert(invitedUser, 404, 'User not found')
   assert(
     !(await areUsersBlockedOrMutedEitherWay(currentUser.id, invitedUser.id, options)),
+    404,
+    'User not found',
+  )
+  // An administrator managing another owner's household must not bypass that owner's blocks.
+  assert(
+    lockedHouseholds[0].owner_user_id === currentUser.id ||
+      !(await areUsersBlockedOrMutedEitherWay(
+        lockedHouseholds[0].owner_user_id,
+        invitedUser.id,
+        options,
+      )),
     404,
     'User not found',
   )
@@ -148,19 +160,6 @@ export async function listMyHouseholdInvitations(
   query.append(sql` ORDER BY id DESC LIMIT ${options.limit + 1}`)
   const { rows } = await read<HouseholdInvitation>(query)
   return page(rows, options.limit)
-}
-
-function page(rows: HouseholdInvitation[], limit: number) {
-  const results = rows.slice(0, limit)
-  const hasNextPage = rows.length > limit
-  return {
-    results,
-    page_info: {
-      has_next_page: hasNextPage,
-      start_cursor: results[0] ? encodeCursor({ id: results[0].id }) : null,
-      end_cursor: hasNextPage && results.at(-1) ? encodeCursor({ id: results.at(-1)!.id }) : null,
-    },
-  }
 }
 
 export async function revokeHouseholdInvitation(
