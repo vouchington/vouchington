@@ -4,8 +4,11 @@ import {
   type Browser,
   type BrowserContext,
   type Page,
-  type TestInfo,
 } from '@playwright/test'
+import {
+  runnablePlaywrightTest,
+  type RunnablePlaywrightTestInfo as TestInfo,
+} from '../config/public-test-contract.mts'
 import { BrowserIssueMonitor } from './browser-errors.mts'
 import {
   BLOCKED_EXTERNAL_REQUEST_FAILURE_ALLOWLIST,
@@ -53,14 +56,17 @@ export async function browserErrorsFixture(
   }
 }
 
-export const test = guardPlaywrightTestTimeouts(base).extend<BrowserErrorFixtures>({
-  browserErrors: [browserErrorsFixture, { auto: true }],
-})
+export const test = runnablePlaywrightTest(
+  guardPlaywrightTestTimeouts(base).extend<BrowserErrorFixtures>({
+    browserErrors: [browserErrorsFixture, { auto: true }],
+  }),
+)
 
 export { protectPlaywrightHookTimeouts } from '../config/test-timeout.mts'
 
 export { expect }
-export type { Browser, BrowserContext, Locator, Page, Request, TestInfo } from '@playwright/test'
+export type { RunnablePlaywrightTestInfo as TestInfo } from '../config/public-test-contract.mts'
+export type { Browser, BrowserContext, Locator, Page, Request } from '@playwright/test'
 
 export async function withMonitoredPage<T>(
   browserOrContext: Browser | BrowserContext,
