@@ -148,3 +148,17 @@ CREATE INDEX IF NOT EXISTS idx_images__staged_source_cleanup
       OR upload_completed_at IS NOT NULL
       OR (upload_started_at IS NOT NULL AND sha_256 IS NOT NULL
         AND s3_key = encode(sha_256, 'hex')));
+
+CREATE INDEX IF NOT EXISTS idx_images__recoverable_uploads
+  ON images (upload_staged_at, id)
+  WHERE upload_staged_at IS NOT NULL AND deleted_at IS NULL
+    AND upload_started_at IS NOT NULL AND upload_completed_at IS NULL
+    AND upload_failed_at IS NULL AND sha_256 IS NOT NULL
+    AND s3_key = encode(sha_256, 'hex');
+
+CREATE INDEX IF NOT EXISTS idx_images__abandoned_uploads
+  ON images (upload_staged_at, id)
+  WHERE upload_staged_at IS NOT NULL AND deleted_at IS NULL
+    AND upload_completed_at IS NULL AND upload_failed_at IS NULL
+    AND NOT (upload_started_at IS NOT NULL AND sha_256 IS NOT NULL
+      AND s3_key = encode(sha_256, 'hex'));

@@ -3735,6 +3735,9 @@ importers:
       '@services/identity-verification':
         specifier: workspace:^
         version: link:../services/identity-verification
+      '@services/images':
+        specifier: workspace:^
+        version: link:../services/images
       '@services/individuals-households':
         specifier: workspace:^
         version: link:../services/individuals-households
@@ -12412,6 +12415,9 @@ importers:
       '@data-stores/valkey-core':
         specifier: workspace:^
         version: link:../data-stores/valkey-core
+      '@data-stores/valkey-glide-mq':
+        specifier: workspace:^
+        version: link:../data-stores/valkey-glide-mq
       '@data-stores/valkey-rate-limiter':
         specifier: workspace:^
         version: link:../data-stores/valkey-rate-limiter
@@ -12448,9 +12454,18 @@ importers:
       '@queues/background':
         specifier: workspace:^
         version: link:../queues/background
+      '@queues/background-cpu':
+        specifier: workspace:^
+        version: link:../queues/background-cpu
+      '@queues/content-analysis':
+        specifier: workspace:^
+        version: link:../queues/content-analysis
       '@queues/entity-listeners':
         specifier: workspace:^
         version: link:../queues/entity-listeners
+      '@queues/image-uploads':
+        specifier: workspace:^
+        version: link:../queues/image-uploads
       '@queues/notifications':
         specifier: workspace:^
         version: link:../queues/notifications
@@ -13215,6 +13230,9 @@ importers:
       '@queues/crawler':
         specifier: workspace:^
         version: link:../../queues/crawler
+      '@queues/image-uploads':
+        specifier: workspace:^
+        version: link:../../queues/image-uploads
       '@services/language-detection':
         specifier: workspace:^
         version: link:../../services/language-detection

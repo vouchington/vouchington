@@ -1,3 +1,4 @@
+import { seedUploadCleanup } from './seed-data/upload-cleanup.mts'
 import { seedRelationVoteReads } from './seed-data/relation-vote-reads.mts'
 import { seedBloomReconciliation } from './seed-data/bloom-reconciliation.mts'
 import { seedCommunitySearchFixtures } from './seed-data/community-search-fixtures.mts'
@@ -175,6 +176,7 @@ async function main() {
   await seedViewDrivenIdentity()
   await seedClassifierHumanVoteComparison()
   await seedRelationVoteReads()
+  await seedUploadCleanup()
   await runAnalyze()
   await refreshExplainMaterializedViews(refreshMaterializedView, statement => write(statement))
   await printRowCounts()

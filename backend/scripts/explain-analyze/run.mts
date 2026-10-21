@@ -1,3 +1,4 @@
+import { runUploadCleanupScenarios } from './run-scenarios/upload-cleanup.mts'
 import { runPublicationNativePageScenarios } from './run-scenarios/publication-native-pages.mts'
 import { runPublicationSnapshotPageScenarios } from './run-scenarios/publication-snapshot-pages.mts'
 import { runRelationReadBatchScenarios } from './run-scenarios/relation-read-batches.mts'
@@ -89,6 +90,7 @@ const RUN_STEPS: readonly (() => Promise<unknown>)[] = [
   runCommunityRoundTripScenarios,
   runImageDeliveryFoldScenarios,
   runUserProfileRoundTripScenarios,
+  runUploadCleanupScenarios,
   runRelationReadBatchScenarios,
   runDispatchWorkPlanScenarios,
   runModerationReportContextScenarios,

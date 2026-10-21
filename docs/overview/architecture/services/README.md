@@ -105,6 +105,16 @@ deletion through the foreign key.
   already holds an ID token. AT Protocol OAuth is a server-side redirect, so linking is two
   functions and a stored authorization row whose callback re-checks the signed-in user; the
   authorization URL is portable, so possession of it must never decide who gets linked.
+- **Upload maintenance keeps a frozen work window.** A failed object deletion or an extraction
+  that remains pending must not monopolize the oldest page and starve later uploads. Each phase
+  therefore resumes through its own staged-time and identity interval, with cutoffs fixed for the
+  sweep. Progress follows committed state and attempted external effects; a later scheduled sweep
+  retries failed or temporarily locked rows. This is replayable maintenance, not an exactly-once
+  guarantee for provider calls. Capturing a new window is read-only; only processing it causes
+  deletion or extraction admissions. Recovery also checks the actual extraction backlog before
+  each page; otherwise continuation could exchange starvation for a downstream admission flood.
+  A blocked destination keeps recovery progress and yields, rather than treating capacity as a
+  failed attempt. The sampled capacity bounds a page, not concurrent producers as a whole.
 - **Hash uploads after upload.** The client cannot be trusted to report a hash, and the server has
   to read the bytes to validate format anyway.
 - **Referral card catalogs are curated seeds, not scraped,** because the provider's page cannot be

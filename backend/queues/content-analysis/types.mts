@@ -17,11 +17,17 @@ export type LanguageDetectionBackfillJobName =
 /** The snapshot fence and keyset position retained by one backfill job. */
 export type LanguageDetectionBackfillCursor = { sweepStartedAt: string; afterId?: string }
 
-export type StagedUploadCleanupKey = { stagedAt: string; id: string }
-export type StagedUploadCleanupSweep = {
-  cutoff: string
-  upper: StagedUploadCleanupKey | null
-  after?: StagedUploadCleanupKey
+/** A frozen maintenance interval, retained on the actual CPU queue job. */
+export type UploadCleanupKey = { stagedAt: string; id: string }
+export type UploadCleanupPhase = 'staged' | 'recovery' | 'abandonment'
+export type UploadCleanupWindow = {
+  upper: UploadCleanupKey | null
+  after?: UploadCleanupKey
   done: boolean
 }
-export type CleanupAbandonedUploadsData = { staged?: StagedUploadCleanupSweep }
+export type AbandonedUploadSweep = {
+  recoveryCutoff: string
+  abandonmentCutoff: string
+  windows: Record<UploadCleanupPhase, UploadCleanupWindow>
+}
+export type CleanupAbandonedUploadsData = { sweep?: AbandonedUploadSweep }

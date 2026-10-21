@@ -10,6 +10,7 @@ import {
   setImageHashAndProcessing,
   setTestImageHashWhileProcessing,
 } from '@voucha/test-helpers'
+import { cleanupOwnedTestUploads } from '@voucha/test-helpers/image-upload-cleanup'
 import { createOwnedStagedImage } from '@voucha/test-helpers/image-upload-cleanup-fixtures'
 import { installOwnedUploadCleanupStorage } from '@voucha/test-helpers/image-upload-cleanup-storage'
 import { cleanupAbandonedUploads } from './cleanup-abandoned-uploads.mts'
@@ -31,7 +32,7 @@ describe('abandoned upload cleanup', () => {
     const oldId = await createOwnedStagedImage(new Date(now.getTime() - 25 * HOUR))
     const recentId = await createOwnedStagedImage(now)
     const storage = installOwnedUploadCleanupStorage([oldId, recentId])
-    const result = await cleanupAbandonedUploads({ imageIds: [oldId, recentId], now })
+    const result = await cleanupOwnedTestUploads(cleanupAbandonedUploads, [oldId, recentId], now)
     expect(result.cleaned).toBe(1)
     expect(storage.calls).toEqual([{ Bucket: S3Buckets.imageUploads, Key: oldId }])
     expect(await getImageById(oldId)).toBeNull()
@@ -70,7 +71,7 @@ describe('abandoned upload cleanup', () => {
     const digest = randomBytes(32)
     await setTestImageHashWhileProcessing(id, digest)
     const storage = installOwnedUploadCleanupStorage([id, digest.toString('hex')])
-    const result = await cleanupAbandonedUploads({ imageIds: [id], now })
+    const result = await cleanupOwnedTestUploads(cleanupAbandonedUploads, [id], now)
     expect(result.cleaned).toBe(1)
     expect(storage.calls).toEqual([
       { Bucket: S3Buckets.imageUploads, Key: id },
@@ -87,7 +88,7 @@ describe('abandoned upload cleanup', () => {
     const digest = randomBytes(32)
     await setImageHashAndProcessing(id, digest)
     const storage = installOwnedUploadCleanupStorage([id])
-    const result = await cleanupAbandonedUploads({ imageIds: [id], now })
+    const result = await cleanupOwnedTestUploads(cleanupAbandonedUploads, [id], now)
     expect(await cleanupStagedUploadSource(id)).toBe(true)
     expect(result).toMatchObject({ cleaned: 0, recovered: 1 })
     expect(storage.calls).toEqual([{ Bucket: S3Buckets.imageUploads, Key: id }])
@@ -107,11 +108,11 @@ describe('abandoned upload cleanup', () => {
         throw new Error('owned storage failure')
       }
     })
-    const first = await cleanupAbandonedUploads({ imageIds: [id], now })
+    const first = await cleanupOwnedTestUploads(cleanupAbandonedUploads, [id], now)
     expect(first.cleaned).toBe(1)
     expect((await getImageById(id, true))?.sha_256).toEqual(digest)
     expect(await cleanupStagedUploadSource(id)).toBe(true)
-    await cleanupAbandonedUploads({ imageIds: [id], now })
+    await cleanupOwnedTestUploads(cleanupAbandonedUploads, [id], now)
     expect(storage.calls).toEqual(
       Array.from({ length: 2 }, () => [
         { Bucket: S3Buckets.imageUploads, Key: id },
@@ -147,7 +148,7 @@ describe('abandoned upload cleanup', () => {
         admissions.push(event)
     })
     try {
-      const result = await cleanupAbandonedUploads({ imageIds: ids, now })
+      const result = await cleanupOwnedTestUploads(cleanupAbandonedUploads, ids, now)
       expect(result.recovered).toBe(1)
       expect(admissions).toHaveLength(1)
       const admission = admissions[0]
@@ -172,7 +173,7 @@ describe('abandoned upload cleanup', () => {
       ),
     )
     const storage = installOwnedUploadCleanupStorage(ids)
-    const result = await cleanupAbandonedUploads({ imageIds: ids, now })
+    const result = await cleanupOwnedTestUploads(cleanupAbandonedUploads, ids, now)
     expect(result.cleaned).toBe(1)
     expect(storage.calls).toEqual([{ Bucket: S3Buckets.imageUploads, Key: ids[0] }])
     expect(await getImageById(ids[0]!)).toBeNull()
