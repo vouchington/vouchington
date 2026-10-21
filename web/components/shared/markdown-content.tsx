@@ -1,4 +1,7 @@
-import { sanitizeHtmlFragment, sanitizeHtmlFragmentDemotingHeadings } from '@vouchington/html-sanitizer'
+import {
+  sanitizeHtmlFragment,
+  sanitizeHtmlFragmentDemotingHeadings,
+} from '@vouchington/html-sanitizer'
 import { getContentLanguageDir } from '@ts-shared/languages/content-languages'
 import { renderHtmlFragment } from './html-fragment'
 import { MarkdownContentEnhancer } from './markdown-content-enhancer'
