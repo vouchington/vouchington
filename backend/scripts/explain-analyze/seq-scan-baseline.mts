@@ -31,6 +31,23 @@ export function getExplainResultIdentity(result: ExplainResult): string {
   ].join('|')
 }
 
+// The scan gate fails a fingerprint seen in both passes, or a baselined one absent from both, so
+// the repeated pass re-samples the relations the first pass scanned and the baselined relations it
+// skipped. Re-analyzing every other large relation a plan touched took most of the run (#3402).
+export function getResampleRelations(
+  results: readonly ExplainResult[],
+  baseline: SeqScanBaseline = SEQ_SCAN_BASELINE,
+): string[] {
+  return [
+    ...new Set(
+      results.flatMap(result => [
+        ...getLargeTableSeqScanRelations(result),
+        ...(baseline[getExplainResultIdentity(result)] ?? []),
+      ]),
+    ),
+  ].toSorted()
+}
+
 export function assertNoNewSeqScans(
   firstResults: readonly ExplainResult[],
   repeatedResults: readonly ExplainResult[],
