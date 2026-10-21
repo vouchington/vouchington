@@ -12,6 +12,7 @@ Enforced rules name their check; the check owns the detail. Judgment calls stay 
 - **Pinned actions** — a commit SHA stops a re-pointed tag from silently changing what runs. no-mistakes `github-actions-pinned-hash`.
 - **Script expressions** — free-form event text interpolated into a script is code injection, so it travels through `env:`. `workflow-script-expressions.test.mts`.
 - **Checkout credentials** — a write-capable token must not stay in `.git` for later steps. `checkout-credentials.test.mts`.
+- **Called-workflow secrets** — a caller passes only secrets the callee declares, never `secrets: inherit`. `secret-context.permissions.part-2.test.mts`.
 - **Docker host ports** — fixed host ports collide on shared hosts. `docker-port-policy.test.mts`.
 - **Docker workspace user** — a root-owned write into a bind-mounted workspace breaks later cleanup. The Docker workspace user check in `vouchington-tooling/gha-workspace-policy`, run by `static-code-analysis/repo-file-policy`.
 - **Downloads** — unverified binaries are a supply-chain hole. `workflow-download-integrity.test.mts`. Also put the tool version in the downloaded filename or directory so a generic `/tmp` path cannot serve a stale binary (unenforced).

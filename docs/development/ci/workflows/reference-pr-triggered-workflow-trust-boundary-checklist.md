@@ -3,7 +3,7 @@
 Apply this before the first push of any PR-triggered or unattended workflow change (commits are
 free, pushes are expensive; see [workflow instructions](../../../../.github/workflows/AGENTS.md)).
 Each item is a judgment a test cannot make. Mechanical rules (pinned action SHAs, runner allowlist,
-permission unions, checkout credentials, zizmor, actionlint) are enforced by tests and CI and are
+permission unions, checkout credentials, called-workflow secrets, zizmor, actionlint) are enforced by tests and CI and are
 not restated here. The pin guard checks only the 40-hex shape: when pinning from an annotated tag,
 resolve the commit with `<tag>^{commit}`, not the tag object's SHA, or Actions cannot load it.
 
@@ -25,7 +25,6 @@ resolve the commit with `<tag>^{commit}`, not the tag object's SHA, or Actions c
   PR execution without a threat model for cross-run workspace contamination.
 - **Skip and `continue-on-error`.** If a leaf job is `continue-on-error: true`, confirm its area
   gate still reports the intended result.
-- **`secrets: inherit`.** Confirm it passes only what the callee declares.
 - **Script consolidation.** When merging or deleting `ci/*` scripts, confirm tests still cover
   missing-`needs` producer detection, failed or cancelled producer gating, skipped producers, and
   single-artifact normalization.

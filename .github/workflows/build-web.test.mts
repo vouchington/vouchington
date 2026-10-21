@@ -79,7 +79,9 @@ describe('web image workflow', () => {
     expect(publishSource).toContain("github.ref == 'refs/heads/main'")
     expect(publishSource).toContain('trusted_secret_context')
     expect(mainWebSource).toContain('trusted_secret_context: true')
-    expect(mainWebSource).toContain('secrets: inherit')
+    expect(mainWebSource).toContain('AWS_TEST_ROLE_ARN: ${{ secrets.AWS_TEST_ROLE_ARN }}')
+    expect(mainWebSource).toContain('SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}')
+    expect(mainWebSource).not.toContain('secrets: inherit')
   })
 
   it('limits the Trivy gate to OS vulnerabilities and writes a complete findings report', () => {

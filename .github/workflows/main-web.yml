@@ -109,4 +109,6 @@ jobs:
       packages: write
     with:
       trusted_secret_context: true
-    secrets: inherit
+    secrets:
+      AWS_TEST_ROLE_ARN: ${{ secrets.AWS_TEST_ROLE_ARN }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
