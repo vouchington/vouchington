@@ -1,4 +1,4 @@
-import type { QueryOptions } from '@data-stores/psql/types'
+import type { TransactionQuery } from '@data-stores/psql/types'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 
@@ -16,9 +16,10 @@ type LockedTopicRecommendationApproval = {
 
 export async function getLockedTopicRecommendationApproval(
   recommendationId: string,
-  options: QueryOptions,
+  options: { query: TransactionQuery },
 ): Promise<LockedTopicRecommendationApproval> {
   assert(options.query, 500, 'Query options are required')
+  await lockTopicRecommendationForMutation(options.query, recommendationId)
 
   const lockedRecommendationQuery =
     await options.query(sql`/* getLockedTopicRecommendationApproval */
@@ -46,7 +47,6 @@ export async function getLockedTopicRecommendationApproval(
       ), '[]'::json) AS hostnames
     FROM post_topic_recommendations ptr
     WHERE ptr.post_id = ${recommendationId}
-    FOR UPDATE
   `)
   const lockedRecommendation = lockedRecommendationQuery.rows[0]
   assert(lockedRecommendation, 404, 'Recommendation not found')
@@ -64,4 +64,15 @@ export async function getLockedTopicRecommendationApproval(
     example_referral_link: (lockedRecommendation.example_referral_link as string | null) ?? null,
     landing_page_urls: (lockedRecommendation.landing_page_urls as string[] | null) ?? [],
   }
+}
+
+/** Lock only the row supplying hostname ids; the following statement gets a fresh snapshot. */
+export async function lockTopicRecommendationForMutation(
+  query: TransactionQuery,
+  recommendationId: string,
+): Promise<void> {
+  await query(sql`/* lockTopicRecommendationForMutation */
+    SELECT post_id FROM post_topic_recommendations
+    WHERE post_id = ${recommendationId} FOR UPDATE
+  `)
 }

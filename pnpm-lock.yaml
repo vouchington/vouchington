@@ -3559,6 +3559,9 @@ importers:
       '@services/crawler-referral-links':
         specifier: workspace:^
         version: link:../services/crawler-referral-links
+      '@services/crawlers':
+        specifier: workspace:^
+        version: link:../services/crawlers
       '@services/crawls':
         specifier: workspace:^
         version: link:../services/crawls
@@ -3709,6 +3712,9 @@ importers:
       '@services/user-financial-profiles':
         specifier: workspace:^
         version: link:../services/user-financial-profiles
+      '@services/user-referral-program-links':
+        specifier: workspace:^
+        version: link:../services/user-referral-program-links
       '@services/users':
         specifier: workspace:^
         version: link:../services/users
@@ -6683,6 +6689,9 @@ importers:
       '@services/post-publication':
         specifier: workspace:^
         version: link:../post-publication
+      '@services/urls-hostnames':
+        specifier: workspace:^
+        version: link:../urls-hostnames
       '@services/user-deletions':
         specifier: workspace:^
         version: link:../user-deletions
@@ -9266,6 +9275,9 @@ importers:
       '@services/urls':
         specifier: workspace:^
         version: link:../urls
+      '@services/urls-hostnames':
+        specifier: workspace:^
+        version: link:../urls-hostnames
       '@services/user-deletions':
         specifier: workspace:^
         version: link:../user-deletions
@@ -9315,6 +9327,9 @@ importers:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
+      undici:
+        specifier: ^8.11.2
+        version: 8.11.2
       vitest:
         specifier: ^5.0.5
         version: 5.0.5(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.5)(jsdom@30.1.3(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
@@ -9709,6 +9724,9 @@ importers:
       '@services/urls':
         specifier: workspace:^
         version: link:../urls
+      '@services/urls-hostnames':
+        specifier: workspace:^
+        version: link:../urls-hostnames
       '@services/user-referral-program-links':
         specifier: workspace:^
         version: link:../user-referral-program-links
@@ -10818,9 +10836,15 @@ importers:
       '@services/entity-fetch':
         specifier: workspace:^
         version: link:../entity-fetch
+      '@services/web-risk':
+        specifier: workspace:^
+        version: link:../web-risk
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
+      undici:
+        specifier: ^8.11.2
+        version: 8.11.2
 
   backend/services/topic-revisions:
     dependencies:

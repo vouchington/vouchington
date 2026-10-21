@@ -4,7 +4,7 @@ import type { PrivateUser } from '@services/users/types'
 import { isUUID } from '@modules/utils'
 import { beginTransaction, write } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
-import { getCrawlerById, getCrawlerForHostnameId } from './get.mts'
+import { getCrawlerById } from './get.mts'
 import assert from 'http-assert'
 import type { CreateCrawlerUpdates, Crawler } from './types.mts'
 import sql from 'sql-template-strings'
@@ -74,81 +74,6 @@ export const createCrawler = async (
     )
   }
   return crawler
-}
-
-const createCrawlerForHostname = async (
-  creator: PrivateUser | null,
-  hostnameId: string,
-  options: QueryOptions = {},
-): Promise<Crawler> => {
-  const { rows } = await write(
-    sql`/* createCrawlerForHostname */
-    INSERT INTO hostname_crawler_configurations (
-      hostname_id,
-      description,
-      crawler_type,
-      priority,
-      css_selectors_to_remove,
-      link_text_content_to_remove,
-      link_hrefs_to_remove,
-      content_selectors,
-      created_by_id
-    )
-    VALUES (
-      ${hostnameId},
-      '',
-      'fetch'::crawler_types,
-      0,
-      ARRAY[]::TEXT[],
-      ARRAY[]::TEXT[],
-      ARRAY[]::TEXT[],
-      ARRAY[]::TEXT[],
-      ${creator?.id || null}
-    )
-    RETURNING id
-  `,
-    options,
-  )
-
-  return (await getCrawlerById(rows[0].id, options))!
-}
-
-export const getOrCreateCrawlerForHostname = async (
-  creator: PrivateUser | null,
-  hostnameId: string,
-  options: QueryOptions = {},
-): Promise<Crawler> => {
-  // Advisory lock prevents duplicate crawlers for the same hostname. A UNIQUE
-  // constraint on hostname_id isn't possible since multiple crawlers per
-  // hostname are allowed (for custom rules), so we use a transaction-scoped
-  // lock instead of INSERT ... ON CONFLICT.
-  const queryOptions = options.query ? { query: options.query } : options.client ? options : null
-  if (queryOptions) {
-    return getOrCreateCrawlerForHostnameInTransaction(creator, hostnameId, queryOptions)
-  }
-
-  await using query = await beginTransaction()
-  const result = await getOrCreateCrawlerForHostnameInTransaction(creator, hostnameId, { query })
-  await query.commit()
-  return result
-}
-
-async function getOrCreateCrawlerForHostnameInTransaction(
-  creator: PrivateUser | null,
-  hostnameId: string,
-  options: QueryOptions,
-): Promise<Crawler> {
-  await write(
-    sql`/* getOrCreateCrawlerForHostnameInTransaction */ SELECT pg_advisory_xact_lock(hashtext(${hostnameId}))`,
-    options,
-  )
-
-  const existing = await getCrawlerForHostnameId(hostnameId, options)
-  if (existing) {
-    return existing
-  }
-
-  return createCrawlerForHostname(creator, hostnameId, options)
 }
 
 function resolveHostnameId(_creator: PrivateUser | null, updates: CreateCrawlerUpdates): string {

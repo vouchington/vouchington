@@ -86,7 +86,7 @@ describe('create-crawler.generated', () => {
       `https://crawler-get-or-create-${random}.example.com/test`,
     )
     const first = await getOrCreateCrawlerForHostname(null, url!.hostname.id)
-    const second = await getOrCreateCrawlerForHostname(null, url!.hostname.id)
+    const second = await getOrCreateCrawlerForHostname(null, url!.hostname.id.toUpperCase())
 
     expect(second.id).toBe(first.id)
 

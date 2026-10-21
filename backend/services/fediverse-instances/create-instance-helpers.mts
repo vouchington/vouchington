@@ -4,6 +4,10 @@ import type { ContentProvenance } from '@voucha/types/entities/content-provenanc
 import { createSlugFromTitle } from '@modules/utils'
 import { createTopicEmbeddingContent } from '@services/topics/content'
 import { linkHostnameToSourceTopic } from '@services/topics/hostname-link'
+import {
+  lockHostnameOwnership,
+  registerCreatedTopicsForHostnameOwnership,
+} from '@services/urls-hostnames/ownership-lock'
 import { createTopicRevision, computeTopicChanges } from '@services/topic-revisions'
 import { getTopicByAny } from '@services/topics/get'
 import { finalizeCreatedTopic } from '@services/topics/create'
@@ -66,6 +70,7 @@ export async function createInstanceInTransaction(
   try {
     await using query = await beginTransaction()
     const options = { query }
+    await lockHostnameOwnership(query, [hostnameId])
     const { content_sha256 } = createTopicEmbeddingContent({ name })
 
     const { rows: topicRows } = await write(
@@ -83,6 +88,7 @@ export async function createInstanceInTransaction(
       options,
     )
     const topicId = topicRows[0].id as string
+    registerCreatedTopicsForHostnameOwnership(query, [topicId])
     const [claimedAlias] = await Promise.all([
       claimTopicAlias(topicId, slug, options),
       linkHostnameToSourceTopic(topicId, hostnameId, options),

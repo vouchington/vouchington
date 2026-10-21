@@ -18,6 +18,15 @@ The taxonomy has two explicit axes:
 The frontend topic picker's type filter is a UX affordance, not a validation contract. Backend
 validation is the enforcement.
 
+## Hostname ownership
+
+Ownership changes serialize their conflict decisions while allowing a source topic and a
+landing-page claim to coexist. Releases participate too, so a decision cannot rely on a claim
+being removed concurrently. External risk assessment precedes this serialization because a
+provider verdict can commit an independent ancestor-domain block; fresh local policy after the
+lock wait connects that durable verdict to the ownership write. A redirected feed's source hide
+stays scoped to the discovered topic, so concurrent feed reassignment cannot hide its new owner.
+
 ## Merge lifecycle
 
 A merge consolidates current references into one topic so follows, content, feeds and program

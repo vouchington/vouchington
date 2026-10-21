@@ -6,7 +6,7 @@ import { getFediverseInstanceAttributes } from './get-attributes.mts'
 import { getTopicByAny } from '@services/topics/get'
 import { getTopicAliasesForTest } from '@voucha/test-helpers/topic-aliases'
 import { createTopicAliases } from '@services/topics/aliases'
-import { resolveHostname } from '@services/topics/hostname-link'
+import { resolveHostname } from '@services/topics/resolve-hostname'
 import { getUrlHostnameById } from '@services/urls-hostnames/get'
 import {
   createTestUserDirect,

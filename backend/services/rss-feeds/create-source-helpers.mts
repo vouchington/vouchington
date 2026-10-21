@@ -1,9 +1,12 @@
 import { beginTransaction, isUniqueViolation, write } from '@data-stores/psql'
 import type { BasicUser } from '@services/users/types'
 import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
-import { createSlugFromTitle } from '@modules/utils'
 import { createTopicEmbeddingContent } from '@services/topics/content'
 import { linkHostnameToSourceTopic } from '@services/topics/hostname-link'
+import {
+  lockHostnameOwnership,
+  registerCreatedTopicsForHostnameOwnership,
+} from '@services/urls-hostnames/ownership-lock'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
 import { createTopicRevision, computeTopicChanges } from '@services/topic-revisions'
 import { getTopicByAny } from '@services/topics/get'
@@ -16,7 +19,7 @@ import { enqueueEvaluateRssFeedDiscoverability } from '@queues/rss-feed-maintena
 import { findExistingFeedByUrlId } from './find-existing-feed.mts'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
-import { randomBytes } from 'node:crypto'
+import { generateSourceDetails } from './generate-source-details.mts'
 import { createInitialRssFeedStateChanges } from './discoverability.mts'
 
 export const followRssFeedRelation = getEntityRelationMetadataOrThrow({
@@ -43,27 +46,6 @@ type CreateSourceWithRetryArgs = {
   attempt: number
 }
 
-/** Slug = slugify(feedTitle + url-without-protocol), capped at 250 chars. Appends random hex suffix on retry. */
-export function generateSourceDetails(
-  topicName: string,
-  feedTitle: string,
-  feedUrl: string,
-  attempt: number,
-): { name: string; slug: string } {
-  const urlPart = feedUrl
-    .replace(/^https?:\/\//, '')
-    .replace(/^www\./, '')
-    .replace(/\/$/, '')
-    .replace(/[./=?&#]/g, ' ')
-  const baseSlug = createSlugFromTitle(`${feedTitle} ${urlPart}`, 250)
-    .slice(0, 250)
-    .replace(/-+$/, '')
-  if (attempt === 0) return { name: topicName, slug: baseSlug }
-  const suffix = randomBytes(2).toString('hex')
-  return { name: topicName, slug: `${baseSlug}-${suffix}` }
-}
-
-/** Creates a topic (type=rss_feed) and rss_feeds row in a transaction; returns null on unique violation. */
 export async function createSourceInTransaction(
   provenance: ContentProvenance,
   createdById: string | null,
@@ -77,6 +59,7 @@ export async function createSourceInTransaction(
   try {
     await using query = await beginTransaction()
     const options = { query }
+    await lockHostnameOwnership(query, [hostnameId])
     const { content_sha256 } = createTopicEmbeddingContent({ name: topicName })
     const { rows: topicRows } = await write(
       sql`/* createSourceInTransaction:topic */
@@ -93,6 +76,7 @@ export async function createSourceInTransaction(
       options,
     )
     const topicId = topicRows[0].id as string
+    registerCreatedTopicsForHostnameOwnership(query, [topicId])
     const [claimedAlias] = await Promise.all([
       claimTopicAlias(topicId, slug, options),
       linkHostnameToSourceTopic(topicId, hostnameId, options),
@@ -137,7 +121,6 @@ export type CreateRssFeedSourceArgs = {
   createdById: string | null
 }
 
-/** Shared wrapper: inserts topic+feed, updates bloom filter, enqueues crawl and discoverability eval. */
 export async function createRssFeedSource(
   args: CreateRssFeedSourceArgs,
 ): Promise<(CreateSourceTransactionResult & { slug: string; name: string }) | null> {
@@ -162,7 +145,6 @@ export async function createRssFeedSource(
   return { ...result, slug: args.slug, name: args.topicName }
 }
 
-/** Creates a source with slug-collision retry; returns null when a URL race condition is detected. */
 export async function createSourceWithRetry(
   args: CreateSourceWithRetryArgs,
 ): Promise<(CreateSourceTransactionResult & { slug: string; name: string }) | null> {

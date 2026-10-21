@@ -8,6 +8,7 @@ import {
 import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
 import { enqueueHostnameCacheInvalidation } from '@services/entity-cache/hostname-invalidation-work'
 import { drainHostnameCacheInvalidationWork } from '@services/entity-cache/hostname-invalidation-drain'
+import { lockHostnameOwnership } from './ownership-lock.mts'
 
 export type HostnameProvenance = 'public' | 'private_email'
 export function normalizeUrlHostname(value: string): string {
@@ -78,6 +79,9 @@ async function upsertUrlHostnamesWithQuery(
 
   let promotedRows: Array<{ id: string; hostname: string }> = []
   if (provenance === 'public' && existingMap.size > 0) {
+    await withTransactionOptions(options, query =>
+      lockHostnameOwnership(query, [...existingMap.values()]),
+    )
     const result = await write<{ id: string; hostname: string }>(
       `/* upsertUrlHostnames:promotePublic */
       UPDATE url_hostnames
@@ -92,10 +96,9 @@ async function upsertUrlHostnamesWithQuery(
 
   if (missingHostnames.length === 0) {
     if (enqueueOwnInvalidation) await enqueueChangedHostnames(promotedRows, options)
-    return existingMap // All exist, skip write
+    return existingMap
   }
 
-  // Write: insert only new hostnames (ON CONFLICT as safety net for replica lag/race conditions)
   const { rows: newRows } = await write<{
     id: string
     hostname: string
@@ -154,7 +157,6 @@ async function upsertUrlHostnamesWithQuery(
     options,
   )
 
-  // Only new rows can inherit parent blocks; record those blocks for trigger consistency.
   const inheritedBlockedIds: string[] = []
   for (const row of newRows) {
     if (row.inserted && row.is_blocked) inheritedBlockedIds.push(row.id)

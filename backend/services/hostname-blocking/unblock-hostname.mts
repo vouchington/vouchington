@@ -4,6 +4,7 @@ import { enqueueHostnameCacheInvalidation } from '@services/entity-cache/hostnam
 import { drainHostnameCacheInvalidationWork } from '@services/entity-cache/hostname-invalidation-drain'
 import onError from '@modules/on-error'
 import sql from 'sql-template-strings'
+import { lockHostnameOwnership } from '@services/urls-hostnames/ownership-lock'
 
 export async function unblockHostname(
   adminUserId: string,
@@ -30,9 +31,7 @@ export async function unblockHostname(
 }
 
 async function lockHostnameForUnblock(query: TransactionQuery, hostnameId: string): Promise<void> {
-  await query(sql`/* unblockHostname:lock */
-    SELECT pg_advisory_xact_lock(hashtextextended(${hostnameId}, 0))
-  `)
+  await lockHostnameOwnership(query, [hostnameId])
   // Match the block flow's hostname-before-block-row order.
   await query(sql`/* unblockHostname:lockHostname */
     SELECT id FROM url_hostnames WHERE id = ${hostnameId} FOR UPDATE

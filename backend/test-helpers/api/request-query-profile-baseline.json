@@ -216,6 +216,14 @@
     "code": "backend/services/posts/create/community-scope.mts:76"
   },
   {
+    "annotation": "getLocalHostnamePolicies",
+    "route": null,
+    "maxCount": null,
+    "reason": "Provider assessment runs before ownership locks; URL persistence must read local policy again after the lock wait to see blocks committed by the provider or previous holder.",
+    "permanent": true,
+    "code": "backend/services/urls/upsert-persist.mts:63"
+  },
+  {
     "annotation": "getLandingPageRowForUser",
     "route": null,
     "maxCount": null,
@@ -683,7 +691,7 @@
     "annotation": "updateTopicRecommendation",
     "route": null,
     "maxCount": null,
-    "reason": "The FOR UPDATE snapshot feeds materialization, so the locked read stays ahead of the folded write.",
+    "reason": "The read after the recommendation mutation fence sees the previous holder's hostname commit before materialization; the folded write remains a separate statement.",
     "permanent": true,
     "code": "backend/services/topic-recommendations/update-topic-recommendation.mts:37"
   },

@@ -58,6 +58,7 @@ export async function persistPostSourceUrlRelation(
     relation,
     creator,
     [{ subject: { id: postId }, object: { id: sourceUrlId } }],
-    { query },
+    // URL persistence assessed provider policy before locks and rechecked local policy under ownership.
+    { query, skipBlockedHostnameGuard: true },
   )
 }

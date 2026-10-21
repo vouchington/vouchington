@@ -1,7 +1,7 @@
 import * as postPublication from '@services/post-publication'
 import { beginTransaction, insertTestRssFeedDirect } from '@voucha/test-helpers'
 import { describe, expect, it, vi } from 'vitest'
-import { disableAndHideSource } from '../fetch-redirect.mts'
+import { disableAndHideSource } from '../disable-and-hide-source.mts'
 
 describe('permanent RSS redirect publication locking', () => {
   it('takes the feed publication scope before waiting on redirect state changes', async () => {

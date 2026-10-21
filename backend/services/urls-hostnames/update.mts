@@ -2,6 +2,7 @@ import { beginTransaction } from '@data-stores/psql'
 import { enqueueHostnameCacheInvalidation } from '@services/entity-cache/hostname-invalidation-work'
 import { drainHostnameCacheInvalidationWork } from '@services/entity-cache/hostname-invalidation-drain'
 import onError from '@modules/on-error'
+import { lockHostnameOwnership } from './ownership-lock.mts'
 
 type UpdateUrlHostnameOptions = {
   is_crawlable?: boolean
@@ -42,6 +43,7 @@ export const updateUrlHostname = async (
   if (sets.length === 0) return null
 
   await using transaction = await beginTransaction()
+  if (options.introducePublicly) await lockHostnameOwnership(transaction, [id])
   const { rows } = await transaction(
     `/* updateUrlHostname */
     UPDATE url_hostnames

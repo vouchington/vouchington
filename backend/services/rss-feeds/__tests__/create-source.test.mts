@@ -3,7 +3,7 @@ import type { PrivateUser } from '@services/users/types'
 import { createTestUser, getRssFeedTypeForTest, WEB_PROVENANCE } from '@voucha/test-helpers'
 import type { FeedClassification } from '../validate.mts'
 import { createSourceFromUrl } from '../create-source.mts'
-import { generateSourceDetails } from '../create-source-helpers.mts'
+import { generateSourceDetails } from '../generate-source-details.mts'
 
 let user: PrivateUser
 

@@ -16,6 +16,7 @@ import {
 } from './materialize-topic-recommendation.mts'
 import { replaceTopicRecommendationLandingPageUrls } from './replace-landing-page-urls.mts'
 import { lockPostPublication, recordPostPublicationChange } from '@services/post-publication'
+import { lockTopicRecommendationForMutation } from './get-locked-topic-recommendation-approval.mts'
 
 export async function updateTopicRecommendation(
   currentUser: PrivateUser,
@@ -33,7 +34,7 @@ export async function updateTopicRecommendation(
 
     await using query = await beginTransaction()
     const options = { query }
-    await lockPostPublication(query, recommendation.id)
+    await lockTopicRecommendationForMutation(query, recommendation.id)
     const lockedRecommendationQuery = await query(sql`/* updateTopicRecommendation */
         SELECT reviewed_at
           , topic_title
@@ -61,8 +62,6 @@ export async function updateTopicRecommendation(
         LEFT JOIN view_url_hostnames primary_hostname
           ON primary_hostname.id = post_topic_recommendations.hostname_id
         WHERE post_id = ${recommendation.id}
-        /* deadlock-safe: unique post_id lock is a single-row FOR UPDATE OF */
-        FOR UPDATE OF post_topic_recommendations, posts
       `)
     const lockedRecommendation = lockedRecommendationQuery.rows[0]
     assert(lockedRecommendation?.reviewed_at === null, 422, 'Recommendation is no longer editable')
@@ -105,6 +104,7 @@ export async function updateTopicRecommendation(
       options,
     )
 
+    await lockPostPublication(query, recommendation.id)
     const extensionResult = await writeTopicRecommendationUpdate(
       currentUser.id,
       recommendation.id,

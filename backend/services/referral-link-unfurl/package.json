@@ -32,6 +32,7 @@
     "@services/referral-program-link-validations": "workspace:^",
     "@services/topics": "workspace:^",
     "@services/urls": "workspace:^",
+    "@services/urls-hostnames": "workspace:^",
     "@services/user-referral-program-links": "workspace:^",
     "@services/users": "workspace:^",
     "@voucha/types": "workspace:^",

@@ -10,8 +10,9 @@ type TopicMergeAliasPublicationScopes = {
 export async function lockExistingTopicAliasPublicationScopes(
   query: TransactionQuery,
   aliases: readonly string[],
+  additionalAliasIds: readonly string[] = [],
 ): Promise<ReadonlyMap<string, string>> {
-  if (aliases.length === 0) return new Map()
+  if (aliases.length === 0 && additionalAliasIds.length === 0) return new Map()
   const { rows } = await query<{ id: string; alias: string }>(
     `/* lockExistingTopicAliasPublicationScopes */
     SELECT id, alias
@@ -20,10 +21,7 @@ export async function lockExistingTopicAliasPublicationScopes(
     ORDER BY id`,
     [aliases],
   )
-  await lockTopicAliasPublicationScopes(
-    query,
-    rows.map(row => row.id),
-  )
+  await lockTopicAliasPublicationScopes(query, [...additionalAliasIds, ...rows.map(row => row.id)])
   return new Map(rows.map(row => [row.alias, row.id]))
 }
 

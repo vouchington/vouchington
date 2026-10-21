@@ -7,12 +7,12 @@ import {
 } from '@data-stores/psql'
 import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
 import { isUUID } from '@modules/utils'
-import { normalizeHostname } from '@ts-shared/utils/urls'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
-import { upsertUrlHostnames } from '@services/urls-hostnames'
 import { enqueueHostnameCacheInvalidation } from '@services/entity-cache/hostname-invalidation-work'
 import { drainHostnameCacheInvalidationWork } from '@services/entity-cache/hostname-invalidation-drain'
+import { lockTopicHostnameOwnership } from './hostname-ownership-lock.mts'
+
 type TopicHostnameLinkValidation = {
   topic_exists: boolean
   hostname_exists: boolean
@@ -119,24 +119,6 @@ async function assertTopicHostnameLinkIsValid(
     'Hostname is already linked to another topic',
   )
 }
-/** Returns a UUID unchanged, upserts a hostname string, or preserves null. */
-export async function resolveHostname(
-  userId: string,
-  hostname: string | null,
-  options: QueryOptions = {},
-): Promise<string | null> {
-  assert(
-    hostname === null || typeof hostname === 'string',
-    422,
-    'hostname must be a string or null',
-  )
-  if (hostname === null) return null
-  if (isUUID(hostname)) return hostname
-  const normalized = normalizeHostname(hostname)
-  assert(normalized !== null, 422, 'Invalid hostname format')
-  const hostnameMap = await upsertUrlHostnames(userId, [normalized!], options)
-  return hostnameMap.values().next().value ?? null
-}
 /**
  * RSS feed links set topics.hostname_id, not domain ownership in url_hostnames.topic_id.
  * Clear only a legacy claim on the previous primary hostname when a feed URL moves.
@@ -147,6 +129,7 @@ export async function linkHostnameToSourceTopic(
   options: QueryOptions = {},
 ): Promise<void> {
   return withTopicHostnameTransaction(options, async query => {
+    await lockTopicHostnameOwnership(query, [topicId], [hostnameId])
     await clearOtherHostnameLinks(topicId, hostnameId, { query })
     await updateTopicHostnameId(topicId, hostnameId, query)
   })
@@ -179,6 +162,7 @@ export async function setTopicHostnameLink(
   options: QueryOptions = {},
 ): Promise<void> {
   return withTopicHostnameTransaction(options, async query => {
+    await lockTopicHostnameOwnership(query, [topicId], hostnameId ? [hostnameId] : [])
     const transaction = { query }
     if (hostnameId) await assertTopicHostnameLinkIsValid(topicId, hostnameId, transaction)
     await clearOtherHostnameLinks(topicId, hostnameId, transaction)

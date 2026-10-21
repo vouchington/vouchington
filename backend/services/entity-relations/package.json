@@ -35,6 +35,7 @@
     "@queues/notifications": "workspace:^",
     "@queues/rss-feed-maintenance": "workspace:^",
     "@services/post-publication": "workspace:^",
+    "@services/urls-hostnames": "workspace:^",
     "@services/user-deletions": "workspace:^",
     "@ts-shared/url-signing": "workspace:^",
     "@ts-shared/utils": "workspace:^",
