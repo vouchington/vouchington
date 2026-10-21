@@ -1,3 +1,4 @@
+import type { Topic } from './types.mts'
 import type { TransactionQuery } from '@data-stores/psql'
 import { buildTopicRelationAuditConflictsSql } from './merge-relations.mts'
 import { createCodedError } from '@modules/on-error/create-coded-error'
@@ -128,4 +129,20 @@ export function rethrowTopicMergeError(err: unknown): never {
       { cause: err },
     )
   throw err
+}
+
+/** updateTopic does not take the merge fence; validate the current locked rows as well. */
+export function assertLockedTopicMergeTypes(
+  source: Pick<Topic, 'id' | 'topic_type'>,
+  destination: Pick<Topic, 'id' | 'topic_type'>,
+): void {
+  if (source.topic_type === destination.topic_type) return
+  throw Object.assign(
+    createCodedError(
+      409,
+      'Cannot merge topics with conflicting topic types',
+      'topic_merge_type_conflict',
+    ),
+    { source_id: source.id, destination_id: destination.id },
+  )
 }

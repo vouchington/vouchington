@@ -1,3 +1,4 @@
+import { readInactiveClassifierTopicIds } from '@services/classifiers/inactive-topic-results'
 import type { OwnedTransaction } from '@data-stores/psql'
 import '@services/elections-votes/entity-relation/register-election-vote-handler'
 import type { ClassifierRunLease, ClassifierRunOutcomes } from '@services/classifier-runs'
@@ -24,7 +25,8 @@ export type PostClassifierEffects = {
  * The remote decision goes first: a positive result creates the relation when it is absent and votes
  * +1, while a neutral or negative result votes 0 or -1 only on an already live relation and never
  * creates one (a soft-deleted relation is never resurrected). The local detector's positive outcome
- * then tags the post with a +1 relation vote.
+ * then tags the post with a +1 relation vote if its label topic is still active. The label is
+ * locked through this transaction so merge/delete cannot invalidate an admitted local tag.
  */
 export async function applyPostClassifierEffects(
   query: OwnedTransaction,
@@ -34,6 +36,14 @@ export async function applyPostClassifierEffects(
   const postId = lease.subject.postId
   if (postId === null) throw new Error('post classifier run must have a post subject')
   const remoteQuestions = lease.resolved.configuration.remote?.questions
+  const localTopicId = getLocalTagTopicId(lease, outcomes)
+  // Lock the complete topic set in ID order before the remote path locks any subset.
+  const inactive = await readInactiveClassifierTopicIds(
+    query,
+    localTopicId
+      ? [...(remoteQuestions?.map(question => question.topicId) ?? []), localTopicId]
+      : [],
+  )
   const remoteAddedTopicIds =
     outcomes.remoteDecision && remoteQuestions
       ? (
@@ -51,10 +61,11 @@ export async function applyPostClassifierEffects(
           )
         ).addedTopicIds
       : []
-  const localTopicId = getLocalTagTopicId(lease, outcomes)
-  if (localTopicId) await tagPostWithLocalTopic(query, lease, postId, localTopicId)
   const addedTopicIds = new Set(remoteAddedTopicIds)
-  if (localTopicId) addedTopicIds.add(localTopicId)
+  if (localTopicId && !inactive.has(localTopicId)) {
+    await tagPostWithLocalTopic(query, lease, postId, localTopicId)
+    addedTopicIds.add(localTopicId)
+  }
   return { addedTopicIds: [...addedTopicIds].toSorted() }
 }
 

@@ -16,6 +16,7 @@ import { prepublishImageSurfaceDenials } from '@services/media-delivery-safety'
 import { finalizeTopicAliasMerge } from './merge-aliases-finalize.mts'
 import {
   assertTopicMergeReferenceCompatibility,
+  assertLockedTopicMergeTypes,
   lockTopicMergeLifecycles,
   rethrowTopicMergeError,
 } from './merge-preflight.mts'
@@ -71,6 +72,7 @@ async function executeTopicMerge(merger: PrivateUser, sourceTopic: Topic, destin
   assert(destinationRow && !destinationRow.is_deleted, 404, 'Destination topic not found')
   assert(!sourceRow.is_merged, 409, 'Source topic has already been merged')
   assert(!destinationRow.is_merged, 409, 'Destination topic has already been merged')
+  assertLockedTopicMergeTypes(sourceRow, destinationRow)
   const { rows: inboundMergeRows } = await query<{ id: string }>(
     // no-mistakes-disable-next-line postgres-required-predicates: inverse lookup for topics already merged into the source
     `/* mergeTopicAliases inboundMerges */ SELECT id FROM topics WHERE merged_into_topic_id = $1 AND deleted_at IS NULL ORDER BY id FOR UPDATE`,
