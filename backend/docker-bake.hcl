@@ -43,6 +43,11 @@ target "worker-io" {
   target   = "worker-io"
 }
 
+target "worker-io-cli-smoke" {
+  inherits = ["_common"]
+  target   = "worker-io-cli-smoke"
+}
+
 group "default" {
   targets = ["api", "worker-cpu"]
 }

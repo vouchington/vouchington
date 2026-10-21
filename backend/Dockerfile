@@ -292,6 +292,51 @@ ENV LOCALIZATION_SQLITE_PATH=/app/localization/catalog.sqlite
 
 CMD ["serve.mts"]
 
+# sort and comm for worker-io only. Copied from the upgraded trixie root (same glibc
+# as the distroless runtime) together with the shared libraries ldd reports, so the
+# image stays distroless: no shell and no apt. api and worker-cpu do not receive this tree.
+# Paths are canonicalized with readlink -f. Distroless /lib and /lib64 are symlinks
+# (usrmerge), and COPY refuses to put a directory on top of those symlinks.
+FROM base-node AS worker-io-cli
+RUN set -eu; \
+    root=/worker-io-cli; \
+    mkdir -p "$root"; \
+    copy_path() { \
+      path="$1"; \
+      [ -e "$path" ] || return 0; \
+      resolved="$(readlink -f "$path")"; \
+      mkdir -p "$root$(dirname "$resolved")"; \
+      cp -a "$resolved" "$root$resolved"; \
+      if [ "$resolved" != "$path" ] && [ -L "$path" ]; then \
+        case "$path" in \
+          /lib/*|/lib64/*) ;; \
+          *) \
+            mkdir -p "$root$(dirname "$path")"; \
+            cp -a "$path" "$root$path"; \
+            ;; \
+        esac; \
+      fi; \
+    }; \
+    copy_path /usr/bin/sort; \
+    copy_path /usr/bin/comm; \
+    ldd /usr/bin/sort /usr/bin/comm > /tmp/worker-io-cli-ldd.txt; \
+    awk '$2 == "=>" && $3 ~ /^\// { print $3 } $1 ~ /^\// { print $1 }' /tmp/worker-io-cli-ldd.txt > /tmp/worker-io-cli-libs-raw.txt; \
+    sort -u /tmp/worker-io-cli-libs-raw.txt > /tmp/worker-io-cli-libs.txt; \
+    while IFS= read -r lib; do \
+      copy_path "$lib"; \
+    done < /tmp/worker-io-cli-libs.txt; \
+    mkdir -p "$root/tmp"; \
+    chmod 1777 "$root/tmp"
+
+# Proves the copied binaries run as nonroot on the distroless glibc through the
+# typed wrapper. The bake plan builds this target with the backend images.
+FROM runtime-base AS worker-io-cli-smoke
+COPY --from=worker-io-cli /worker-io-cli/ /
+ENV TMPDIR=/tmp
+WORKDIR /app
+COPY --chown=65532:65532 backend/modules/child-process/index.mts backend/modules/child-process/command-failed-error.mts backend/modules/child-process/run-command.mts backend/modules/child-process/run-command-process.mts backend/modules/child-process/image-smoke.mts /app/
+RUN ["/nodejs/bin/node", "/app/image-smoke.mts"]
+
 # Stage 3f: Production runtime — IO worker (IO-only).
 # Sized for a 256 CPU / 512 MiB Fargate task (~75% → 384 MiB Node heap, 4 libuv threads).
 # Distroless: no shell, no apt, no package managers. ENTRYPOINT is /nodejs/bin/node.
@@ -305,6 +350,8 @@ ENV UV_THREADPOOL_SIZE=4
 ENV RUST_TOKIO_WORKER_THREADS=2
 ENV RUST_TOKIO_MAX_BLOCKING_THREADS=2
 ENV RAYON_NUM_THREADS=2
+# GNU sort spills to TMPDIR. On Fargate this is the task's writable ephemeral storage.
+ENV TMPDIR=/tmp
 
 WORKDIR /app/backend
 
@@ -312,6 +359,7 @@ WORKDIR /app/backend
 # re-upload the third-party node_modules blob (#9359). The exclude matches only
 # the source-root node_modules directory (Go filepath.Match), so
 # workspace-packages/**/node_modules backlinks from restore stay in the app layer.
+COPY --from=worker-io-cli /worker-io-cli/ /
 COPY --link --from=deploy-worker-io --chown=65532:65532 /prod/worker-io/node_modules ./node_modules
 COPY --link --from=deploy-worker-io --exclude=node_modules --chown=65532:65532 /prod/worker-io ./
 COPY --link --from=worker-io-prewarm --chown=65532:65532 /app/backend/.node_compile_cache /app/backend/.node_compile_cache
