@@ -1,12 +1,6 @@
 import { backgroundHandler } from '@queues/background-cpu/enqueues/define-handler'
 import { BACKGROUND_CPU_JOBS } from '@queues/background-cpu/enqueues/registry'
 import type { BackgroundCpuHandler } from '@queues/background-cpu/types'
-import { cleanupAbandonedUploads } from '@services/images/cleanup-abandoned-uploads'
-import {
-  initializeAbandonedUploadSweep,
-  getUploadCleanupResumeAt,
-} from '@services/images/cleanup-upload-sweep'
-import { parseCleanupAbandonedUploadsData } from '@queues/content-analysis/payload/upload-cleanup'
 import type { BatchJobType } from '@services/bedrock-embeddings/batch/types'
 import type {
   LanguageDetectionBackfillCursor,
@@ -15,6 +9,7 @@ import type {
 } from '@queues/content-analysis/types'
 import type { Job } from 'glide-mq'
 import { withBedrockRateLimit } from './bedrock-rate.mts'
+import { processUploadCleanupJob } from './upload-cleanup.mts'
 import { processRetainedSweep } from '@data-stores/valkey-glide-mq'
 
 const CRAWL_DISPATCH = new Set([
@@ -137,20 +132,7 @@ async function runCpuJob(job: Job): Promise<unknown> {
       await import('@workers/ai-agents/processors/spend-cap-recheck')
     return processSpendCapRecheckJob(job)
   }
-  if (route === 'upload-cleanup') {
-    const data = parseCleanupAbandonedUploadsData(job.data)
-    const sweep = data.sweep ?? (await initializeAbandonedUploadSweep())
-    if (!data.sweep) await job.updateData({ sweep })
-    const pass = await cleanupAbandonedUploads(sweep, next => job.updateData({ sweep: next }))
-    const result = await processRetainedSweep(job, async () => pass, {
-      resumeAt: getUploadCleanupResumeAt(pass.recoveryBackpressured),
-    })
-    return {
-      cleaned: result.cleaned,
-      recovered: result.recovered,
-      stagedSourcesDeleted: result.stagedSourcesDeleted,
-    }
-  }
+  if (route === 'upload-cleanup') return processUploadCleanupJob(job)
   if (route === 'staydown-hash') {
     const id = job.data?.id
     if (typeof id !== 'string') throw new Error('Staydown hash job requires id')
