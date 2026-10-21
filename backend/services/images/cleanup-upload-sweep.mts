@@ -21,13 +21,11 @@ export async function initializeAbandonedUploadSweep(): Promise<AbandonedUploadS
     recoveryCutoff: clock.recovery_cutoff,
     abandonmentCutoff: clock.abandonment_cutoff,
   }
-  const staged = await captureUploadCleanupUpper(transaction, 'staged', cutoffs.recoveryCutoff)
-  const recovery = await captureUploadCleanupUpper(transaction, 'recovery', cutoffs.recoveryCutoff)
-  const abandonment = await captureUploadCleanupUpper(
-    transaction,
-    'abandonment',
-    cutoffs.abandonmentCutoff,
-  )
+  const [staged, recovery, abandonment] = await Promise.all([
+    captureUploadCleanupUpper(transaction, 'staged', cutoffs.recoveryCutoff),
+    captureUploadCleanupUpper(transaction, 'recovery', cutoffs.recoveryCutoff),
+    captureUploadCleanupUpper(transaction, 'abandonment', cutoffs.abandonmentCutoff),
+  ])
   await transaction.commit()
   return {
     ...cutoffs,

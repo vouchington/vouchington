@@ -10,6 +10,7 @@ import {
   workerQueuePrefix,
 } from '@data-stores/valkey-glide-mq'
 import { waitForQueueDomainTestResult } from '@voucha/test-helpers/queue-domain-controls'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { IMAGE_UPLOADS_QUEUE_NAME } from '@queues/image-uploads/config'
 import { createTestUser, setImageHashAndProcessing } from '@voucha/test-helpers'
 import {
@@ -26,8 +27,6 @@ vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => i
 describe('abandoned upload recovery backpressure', () => {
   it('keeps blocked recovery progress, caps a released page, and resumes through the real retained job', async context => {
     await imagesWorkConfig.waitForInitialization()
-    const originalDepth = imagesWorkConfig.fields.get('recovery_max_depth')
-    const originalBackoff = imagesWorkConfig.fields.get('recovery_backoff_ms')
     const user = await createTestUser()
     const now = new Date()
     const ids = await insertOwnedUploadCleanupCluster(
@@ -69,6 +68,7 @@ describe('abandoned upload recovery backpressure', () => {
       { connection: workerQueueConnection, prefix, concurrency: 1, blockTimeout: 1000 },
     )
     let sourceWorker: Worker<CleanupAbandonedUploadsData> | undefined
+    let restoreConfig: (() => void) | undefined
     const mutations: Promise<unknown>[] = []
     function mutate<T>(start: () => Promise<T>): Promise<T> {
       context.signal.throwIfAborted()
@@ -82,12 +82,7 @@ describe('abandoned upload recovery backpressure', () => {
         releaseActive.resolve()
         await Promise.allSettled(mutations)
         await using resources = new AsyncDisposableStack()
-        resources.defer(() => {
-          if (originalDepth === undefined) imagesWorkConfig.fields.delete('recovery_max_depth')
-          else imagesWorkConfig.fields.set('recovery_max_depth', originalDepth)
-          if (originalBackoff === undefined) imagesWorkConfig.fields.delete('recovery_backoff_ms')
-          else imagesWorkConfig.fields.set('recovery_backoff_ms', originalBackoff)
-        })
+        resources.defer(() => restoreConfig?.())
         resources.defer(() => closeAndUnregisterGlideMQInstance(target))
         resources.defer(() => source.close())
         resources.defer(() => target.obliterate({ force: true }))
@@ -118,8 +113,10 @@ describe('abandoned upload recovery backpressure', () => {
       if (!waiting || !delayed) throw new Error('Missing queue-depth controls')
       expect(await target.getJobCounts()).toMatchObject({ waiting: 1, active: 1, delayed: 1 })
       context.signal.throwIfAborted()
-      imagesWorkConfig.fields.set('recovery_max_depth', 3)
-      imagesWorkConfig.fields.set('recovery_backoff_ms', 1000)
+      restoreConfig = overrideDynamicConfigFieldsForTest(imagesWorkConfig, {
+        recovery_max_depth: 3,
+        recovery_backoff_ms: 1000,
+      })
       sourceWorker = new Worker<CleanupAbandonedUploadsData>(
         sourceName,
         async (job: Job<CleanupAbandonedUploadsData>) => {
