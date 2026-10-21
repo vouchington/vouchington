@@ -18,7 +18,7 @@ import { exhaustCopyrightActionIntent } from '@voucha/test-helpers/copyright-rou
 import {
   sdkCatalogCases as cases,
   connectSdkCatalog,
-  callAndValidateSdkTool,
+  createSdkCatalogAssertions,
 } from '@voucha/test-helpers/mcp-sdk-catalog'
 
 async function connect(
@@ -33,8 +33,13 @@ async function connect(
 }
 
 const observedMergedNames = new Set<string>()
-const callAndValidate: typeof callAndValidateSdkTool = async (client, name, option, args) => {
-  const result = await callAndValidateSdkTool(client, name, option, args)
+const callAndValidate = async (
+  catalog: Awaited<ReturnType<typeof createSdkCatalogAssertions>>,
+  name: string,
+  option: string | null,
+  args: Record<string, unknown>,
+) => {
+  const result = await catalog.callAndValidate(name, option, args)
   if (option !== null) observedMergedNames.add(name)
   return result
 }
@@ -58,6 +63,7 @@ describe('copyright decisions through the registered legal SDK', () => {
   it('rejects a recommended email intake', async () => {
     const client = await connect(cases[6]!)
     try {
+      const catalog = await createSdkCatalogAssertions(client)
       const intake = await createParsedCopyrightEmailIntake()
       await appendCopyrightEmailIntakeRecommendation({
         intakeId: intake.id,
@@ -67,7 +73,7 @@ describe('copyright decisions through the registered legal SDK', () => {
         structuredOutput: { recommendation: 'reject' },
       })
       expect(
-        await callAndValidate(client, 'review_copyright_email_intake', 'reject', {
+        await callAndValidate(catalog, 'review_copyright_email_intake', 'reject', {
           intake_id: intake.id,
           rationale: 'Staff reviewed the synthetic email intake.',
         }),
@@ -80,9 +86,10 @@ describe('copyright decisions through the registered legal SDK', () => {
   it('admits recommended correspondence', async () => {
     const client = await connect(cases[6]!)
     try {
+      const catalog = await createSdkCatalogAssertions(client)
       const fixture = await createRecommendedMcpCopyrightCorrespondence(counterRecommendation)
       expect(
-        await callAndValidate(client, 'review_copyright_email_correspondence', 'admit', {
+        await callAndValidate(catalog, 'review_copyright_email_correspondence', 'admit', {
           intake_id: fixture.intake.id,
           kind: 'counter_notice',
           target_ids: [fixture.targetId],
@@ -97,9 +104,10 @@ describe('copyright decisions through the registered legal SDK', () => {
   it('rejects recommended correspondence', async () => {
     const client = await connect(cases[6]!)
     try {
+      const catalog = await createSdkCatalogAssertions(client)
       const fixture = await createRecommendedMcpCopyrightCorrespondence(counterRecommendation)
       expect(
-        await callAndValidate(client, 'review_copyright_email_correspondence', 'reject', {
+        await callAndValidate(catalog, 'review_copyright_email_correspondence', 'reject', {
           intake_id: fixture.intake.id,
           kind: 'counter_notice',
           rationale: 'Staff rejected the synthetic correspondence.',
@@ -115,8 +123,9 @@ describe('copyright decisions through the registered legal SDK', () => {
     await exhaustCopyrightActionIntent(fixture.intentId)
     const client = await connect(cases[6]!)
     try {
+      const catalog = await createSdkCatalogAssertions(client)
       expect(
-        await callAndValidate(client, 'replay_copyright_intent', 'action', {
+        await callAndValidate(catalog, 'replay_copyright_intent', 'action', {
           id: fixture.noticeId,
           intentId: fixture.intentId,
           rationale: 'Staff reviewed the failed synthetic action.',

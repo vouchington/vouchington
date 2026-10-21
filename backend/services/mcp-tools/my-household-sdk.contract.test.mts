@@ -7,7 +7,7 @@ import {
   expectSdkSuccessNames,
 } from '@voucha/test-helpers/mcp-sdk-success-names'
 import {
-  callAndValidateSdkTool,
+  createSdkCatalogAssertions,
   connectSdkCatalog,
   sdkCatalogCases,
 } from '@voucha/test-helpers/mcp-sdk-catalog'
@@ -22,15 +22,16 @@ describe('household tools through the MCP SDK — real DB', () => {
       return sdk
     })
     try {
-      const names = (await client.listTools()).tools.map(tool => tool.name)
+      const catalog = await createSdkCatalogAssertions(client)
+      const names = catalog.tools.map(tool => tool.name)
       expect(names).toContain('read_my_households')
       expect(names).toContain('manage_my_households')
-      const created = await callAndValidateSdkTool(client, 'manage_my_households', 'create', {})
+      const created = await catalog.callAndValidate('manage_my_households', 'create', {})
       observed.add('manage_my_households')
       const household_id = (created as { household: { id: string } }).household.id
       expect(created).toMatchObject({ household: { id: household_id, owner_user_id: owner.id } })
       expect(
-        await callAndValidateSdkTool(client, 'read_my_households', 'get', { household_id }),
+        await catalog.callAndValidate('read_my_households', 'get', { household_id }),
       ).toMatchObject({ household: { id: household_id } })
       observed.add('read_my_households')
       expectSdkSuccessNames(observed, sdkMergedSuccessNames.householdsFixture)

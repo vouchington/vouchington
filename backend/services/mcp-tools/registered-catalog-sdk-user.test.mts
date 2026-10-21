@@ -17,7 +17,7 @@ import { createReferralProgramFixture } from '@voucha/test-helpers/entities/refe
 import {
   sdkCatalogCases as cases,
   connectSdkCatalog,
-  callAndValidateSdkTool,
+  createSdkCatalogAssertions,
 } from '@voucha/test-helpers/mcp-sdk-catalog'
 
 async function connect(
@@ -32,8 +32,13 @@ async function connect(
 }
 
 const observedMergedNames = new Set<string>()
-const callAndValidate: typeof callAndValidateSdkTool = async (client, name, option, args) => {
-  const result = await callAndValidateSdkTool(client, name, option, args)
+const callAndValidate = async (
+  catalog: Awaited<ReturnType<typeof createSdkCatalogAssertions>>,
+  name: string,
+  option: string | null,
+  args: Record<string, unknown>,
+) => {
+  const result = await catalog.callAndValidate(name, option, args)
   if (option !== null) observedMergedNames.add(name)
   return result
 }
@@ -44,21 +49,22 @@ describe('registered catalog SDK', () => {
   it('reads owned community, topic, feed and user rows through four more merged tools', async () => {
     const client = await connect(cases[0]!)
     try {
+      const catalog = await createSdkCatalogAssertions(client)
       const owner = await createTestUser()
       const community = await insertTestCommunity({ createdById: owner.id })
       const topic = await createTestTopic({ user: owner })
       const feed = await insertTestRssFeedDirect({ topicId: topic.id })
       expect(
-        await callAndValidate(client, 'read_community', 'details', { community_id: community.id }),
+        await callAndValidate(catalog, 'read_community', 'details', { community_id: community.id }),
       ).toMatchObject({ success: true })
       expect(
-        await callAndValidate(client, 'read_topic', 'details', { topic_id: topic.id }),
+        await callAndValidate(catalog, 'read_topic', 'details', { topic_id: topic.id }),
       ).toMatchObject({ success: true })
       expect(
-        await callAndValidate(client, 'read_rss_feed', 'details', { rss_feed_id: feed.id }),
+        await callAndValidate(catalog, 'read_rss_feed', 'details', { rss_feed_id: feed.id }),
       ).toMatchObject({ success: true })
       expect(
-        await callAndValidate(client, 'read_users', 'details', { user_id: owner.id }),
+        await callAndValidate(catalog, 'read_users', 'details', { user_id: owner.id }),
       ).toMatchObject({ success: true })
     } finally {
       await client.close()
@@ -68,17 +74,18 @@ describe('registered catalog SDK', () => {
   it('writes profile, preferences, and notification state through three merged tools', async () => {
     const client = await connect(cases[0]!)
     try {
+      const catalog = await createSdkCatalogAssertions(client)
       expect(
-        await callAndValidate(client, 'edit_my_profile', 'bio', {
+        await callAndValidate(catalog, 'edit_my_profile', 'bio', {
           markdown: 'SDK catalog round trip',
         }),
       ).toMatchObject({ success: true })
       expect(
-        await callAndValidate(client, 'edit_my_preferences', 'email', {
+        await callAndValidate(catalog, 'edit_my_preferences', 'email', {
           news_digest_frequency: 'weekly',
         }),
       ).toMatchObject({ success: true })
-      expect(await callAndValidate(client, 'mark_notifications_read', 'all', {})).toMatchObject({
+      expect(await callAndValidate(catalog, 'mark_notifications_read', 'all', {})).toMatchObject({
         success: true,
       })
     } finally {
@@ -90,12 +97,13 @@ describe('registered catalog SDK', () => {
     const owner = await createTestUser()
     const client = await connect(cases[0]!, owner)
     try {
+      const catalog = await createSdkCatalogAssertions(client)
       const list = await insertTestList({
         ownerUserId: owner.id,
         name: `SDK ${createRandomString(8)}`,
       })
       expect(
-        await callAndValidate(client, 'remove_list_content', 'list', { list_id: list.id }),
+        await callAndValidate(catalog, 'remove_list_content', 'list', { list_id: list.id }),
       ).toMatchObject({ success: true })
 
       const program = await createReferralProgramFixture({ createdById: owner.id })
@@ -110,12 +118,12 @@ describe('registered catalog SDK', () => {
         throw new Error(`create_referral_link failed: ${JSON.stringify(created.content)}`)
       const link = (created.structuredContent as { referral_link: { id: string } }).referral_link
       expect(
-        await callAndValidate(client, 'remove_referral_link', 'link', { link_id: link.id }),
+        await callAndValidate(catalog, 'remove_referral_link', 'link', { link_id: link.id }),
       ).toMatchObject({ success: true })
 
       const topic = await createTestTopic({ user: owner })
       expect(
-        await callAndValidate(client, 'manage_bookmark', 'set', {
+        await callAndValidate(catalog, 'manage_bookmark', 'set', {
           predicate: 'follow',
           targets: [{ entity_type: 'topic', entity: topic.id }],
         }),

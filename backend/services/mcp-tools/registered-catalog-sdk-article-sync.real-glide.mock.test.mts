@@ -4,7 +4,7 @@ import { workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { articleSync } from '@queues/article-sync/queues'
 import { createTestUser } from '@voucha/test-helpers'
 import {
-  callAndValidateSdkTool,
+  createSdkCatalogAssertions,
   connectSdkCatalog,
   sdkCatalogCases,
 } from '@voucha/test-helpers/mcp-sdk-catalog'
@@ -31,12 +31,13 @@ describe('editorial sync through the registered admin SDK', () => {
       return sdk
     })
     try {
+      const catalog = await createSdkCatalogAssertions(client)
       const started = await client.callTool({ name: 'start_article_sync', arguments: {} })
       expect(started.isError).toBeUndefined()
       const jobId = (started.structuredContent as { jobId: string }).jobId
       expect((await articleSync.getJob(jobId))?.data).toEqual({ userId: admin.id })
       expect(
-        await callAndValidateSdkTool(client, 'read_editorial_job', 'article_sync', {
+        await catalog.callAndValidate('read_editorial_job', 'article_sync', {
           job_id: jobId,
         }),
       ).toBeDefined()

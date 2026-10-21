@@ -4,7 +4,7 @@ import { workerQueuePrefix } from '@data-stores/valkey-core/glide-mq-client'
 import { createTestUserDirect } from '@voucha/test-helpers'
 import { sdkMergedSuccessNames } from '@voucha/test-helpers/mcp-sdk-success-names'
 import {
-  callAndValidateSdkTool,
+  createSdkCatalogAssertions,
   connectSdkCatalog,
   sdkCatalogCases,
 } from '@voucha/test-helpers/mcp-sdk-catalog'
@@ -31,9 +31,10 @@ describe('operational job through the registered admin SDK', () => {
       return sdk
     })
     try {
+      const catalog = await createSdkCatalogAssertions(client)
       const name = 'run_operational_job'
       expect(
-        await callAndValidateSdkTool(client, name, 'scheduled', {
+        await catalog.callAndValidate(name, 'scheduled', {
           id: 'kagi-smallweb-sync',
         }),
       ).toBeDefined()

@@ -12,7 +12,7 @@ import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import {
   sdkCatalogCases,
   connectSdkCatalog,
-  callAndValidateSdkTool,
+  createSdkCatalogAssertions,
 } from '@voucha/test-helpers/mcp-sdk-catalog'
 import { sdkMergedSuccessNames } from '@voucha/test-helpers/mcp-sdk-success-names'
 
@@ -32,6 +32,7 @@ describe('registered participation write catalog SDK', () => {
     const post = await createTestPost({ user, privacy: 'public' })
     const names = new Set<string>()
     try {
+      const catalog = await createSdkCatalogAssertions(client)
       for (const [name, option, args] of [
         ['act_on_post', 'unread', { id: post.id }],
         ['participate_in_community', 'join', { community_id: community.id }],
@@ -45,7 +46,7 @@ describe('registered participation write catalog SDK', () => {
           { rss_feed_item_id: item.id, idempotency_key: crypto.randomUUID() },
         ],
       ] as const) {
-        await callAndValidateSdkTool(client, name, option, args)
+        await catalog.callAndValidate(name, option, args)
         names.add(name)
       }
       expect([...names].toSorted()).toEqual(
