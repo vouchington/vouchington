@@ -53,6 +53,7 @@ function routePickingCalls(schema: unknown): Record<string, unknown>[] {
       return routePickingCalls(resolved).map(args => ({ option, arguments: args }))
     })
   }
+  if (branches?.length) return branches.flatMap(branch => routePickingCalls(branch))
   const { properties } = root as { properties?: Record<string, unknown> }
   return [
     {},

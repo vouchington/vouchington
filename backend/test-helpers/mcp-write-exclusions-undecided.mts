@@ -10,8 +10,6 @@ export const undecidedExclusions = [
     'POST /topics/:idOrSlug/claims/:claimId/domain-verification',
     'POST /topics/:idOrSlug/claims/:claimId/manual-review-submission',
     'POST /topics/:idOrSlug/claims/:claimId/verification-token',
-    'POST /my/import/topics',
-    'POST /lists/:id/import',
   ]),
   ...pending([
     'POST /households',

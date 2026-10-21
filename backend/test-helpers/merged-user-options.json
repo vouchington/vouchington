@@ -478,9 +478,8 @@
       "target": "manage_bookmark",
       "option": "set",
       "args": {
-        "entity_type": "post",
-        "entity_id": "00000000-0000-4000-8000-000000000001",
-        "predicate": "save"
+        "predicate": "save",
+        "targets": [{ "entity_type": "post", "entity": "00000000-0000-4000-8000-000000000001" }]
       },
       "routes": ["PUT:/api/v1/bookmarks/:entityType/:entityId/:predicate"]
     },
@@ -750,7 +749,7 @@
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": true,
-        "idempotentHint": true
+        "idempotentHint": false
       }
     },
     {

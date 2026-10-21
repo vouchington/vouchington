@@ -9,8 +9,7 @@ import { requirePrivateToolUser } from './private-user.mts'
 
 const tool: MergedToolSource<BookmarkToolArgs, { success: true }> = {
   schema: {
-    description:
-      'Remove a saved, followed, muted, or blocked relation the current user set on an entity. Removing a relation that is not set changes nothing, and the entity does not have to be visible any more.',
+    description: 'Remove one bookmark. Missing relations stay unset.',
     parameters: BOOKMARK_TOOL_PARAMETERS,
   },
   meta: {
@@ -18,7 +17,7 @@ const tool: MergedToolSource<BookmarkToolArgs, { success: true }> = {
     title: 'Remove Bookmark',
     plan: 'plus',
     requiredScopes: ['bookmarks:read', 'bookmarks:write'],
-    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
+    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     api: [{ method: 'DELETE', path: '/api/v1/bookmarks/:entityType/:entityId/:predicate' }],
     outputSchema: successSchema({}),
   },

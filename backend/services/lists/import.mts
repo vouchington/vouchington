@@ -14,6 +14,7 @@ export function importCommunityListPostsSourceSql(
   targetListId: string,
   communityId: string,
   viewer: EntityRelationViewer,
+  delegated?: { grantedScopes: readonly string[]; credentialOwnerId: string },
 ): SQLStatement {
   const statement = sql`/* importCommunityListPostsSource */
     SELECT ${targetListId}::uuid, candidate_post.id
@@ -29,6 +30,18 @@ export function importCommunityListPostsSourceSql(
       AND `
   const eligibility = buildObjectPostAccessFilter('candidate_post', 'access_post', viewer, 'named')
   statement.append(eligibility ?? sql`TRUE`)
+  if (delegated) {
+    const ownsPrivate = delegated.grantedScopes.includes('post-relations.owned-private:write')
+    statement.append(sql`
+      AND NOT (
+        access_post.privacy = 'private'
+        AND (
+          ${!ownsPrivate}
+          OR candidate_post.created_by_id IS DISTINCT FROM ${delegated.credentialOwnerId}::uuid
+          OR access_post.created_by_id IS DISTINCT FROM ${delegated.credentialOwnerId}::uuid
+        )
+      )`)
+  }
   statement.append(sql`
     ORDER BY item.id DESC
     LIMIT ${IMPORT_POST_LIMIT}`)
@@ -56,14 +69,28 @@ export const importCommunityListFeedItemsSourceSql = `/* importCommunityListFeed
 /**
  * Copies a community's posts and feed items into a list the caller already loaded through
  * `getManageableList`, which has answered the 404 and 403 for it. Posts use the same named-scope
- * eligibility as adding one post, and only the newest `IMPORT_POST_LIMIT` qualify.
+ * eligibility as adding one post. A delegated copy also drops a private root the items path would
+ * refuse. Only the newest `IMPORT_POST_LIMIT` qualify.
  */
 export async function importCommunityList(
   targetList: ManageableList,
-  { communityId, viewer }: { communityId: string; viewer: EntityRelationViewer },
+  {
+    communityId,
+    viewer,
+    delegated,
+  }: {
+    communityId: string
+    viewer: EntityRelationViewer
+    delegated?: { grantedScopes: readonly string[]; credentialOwnerId: string }
+  },
 ): Promise<{ posts: number; items: number }> {
   const targetListId = targetList.id
-  const postsSource = importCommunityListPostsSourceSql(targetListId, communityId, viewer)
+  const postsSource = importCommunityListPostsSourceSql(
+    targetListId,
+    communityId,
+    viewer,
+    delegated,
+  )
   const insertPosts = sql`/* importCommunityList:posts */
     INSERT INTO user_list_posts (user_list_id, post_id)
     `.append(postsSource).append(sql`

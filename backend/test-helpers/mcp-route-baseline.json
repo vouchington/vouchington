@@ -360,7 +360,7 @@
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": true,
-        "idempotentHint": true
+        "idempotentHint": false
       }
     },
     "F35": {
@@ -1448,7 +1448,12 @@
       ["audience", "id"]
     ],
     "I180": [["follow", "rss_feed_urls"]],
-    "I181": [["after", "import_id", "limit"]]
+    "I181": [["after", "import_id", "limit"]],
+    "I182": [
+      ["items", "list_id"],
+      ["list_id", "source"]
+    ],
+    "I183": [["idempotency_key", "predicate", "recommend_unknown_topics", "targets"]]
   },
   "routes": {
     "DELETE:/api/v1/agent-moderations/:id/vote": [
@@ -4265,7 +4270,7 @@
       {
         "audience": "user",
         "facts": "F82",
-        "inputFields": "I061",
+        "inputFields": "I182",
         "requestBodyFields": null,
         "operation": {
           "tool": "add_list_item",
@@ -4278,7 +4283,7 @@
       {
         "audience": "user",
         "facts": "F82",
-        "inputFields": "I061",
+        "inputFields": "I182",
         "requestBodyFields": null,
         "operation": {
           "tool": "add_list_item",
@@ -4447,7 +4452,7 @@
       {
         "audience": "user",
         "facts": "F34",
-        "inputFields": "I058",
+        "inputFields": "I183",
         "requestBodyFields": null,
         "operation": {
           "tool": "manage_bookmark",
@@ -6109,6 +6114,38 @@
           },
           "decision": false,
           "inputFields": "I001",
+          "requestBodyFields": null
+        }
+      ]
+    },
+    "POST:/api/v1/my/import/topics": {
+      "pullRequest": 3393,
+      "contracts": [
+        {
+          "audience": "user",
+          "facts": "F34",
+          "operation": {
+            "tool": "manage_bookmark",
+            "option": "set"
+          },
+          "decision": false,
+          "inputFields": "I183",
+          "requestBodyFields": null
+        }
+      ]
+    },
+    "POST:/api/v1/lists/:id/import": {
+      "pullRequest": 3393,
+      "contracts": [
+        {
+          "audience": "user",
+          "facts": "F82",
+          "operation": {
+            "tool": "add_list_item",
+            "option": null
+          },
+          "decision": false,
+          "inputFields": "I182",
           "requestBodyFields": null
         }
       ]

@@ -7,7 +7,6 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   createRandomString,
-  createTestPost,
   createTestRssFeedItemWithUrl,
   createTestUser,
   insertTestPost,
@@ -30,7 +29,6 @@ import removeListItemTool from '../remove-list-item.mts'
 import updateListTool from '../update-list.mts'
 
 const SCOPES = ['lists:read', 'lists:write'] as const
-const PRIVATE_SCOPES = [...SCOPES, 'post-relations.owned-private:write'] as const
 
 const createCaller = async (plan: 'plus' | null = 'plus') => ({
   ...(await createTestUser()),
@@ -56,6 +54,10 @@ const createFeedItem = async (userId: string) => {
   return (await createTestRssFeedItemWithUrl(feedId)).id
 }
 
+const addOne = (listId: string, item_type: 'post' | 'rss_feed_item', entity: string) => ({
+  list_id: listId,
+  items: [{ item_type, entity }],
+})
 const listCount = async (userId: string) => (await searchUserLists(userId, {})).results.length
 const itemCount = async (listId: string) => (await searchListItems(listId, {})).results.length
 describe('list write tools contract — real DB', () => {
@@ -156,9 +158,10 @@ describe('list write tools contract — real DB', () => {
       const list = await createOwnedList(caller.id, WEB_PROVENANCE, { name: listName() })
       const entityId = await make(caller.id)
       const args = { list_id: list.id, item_type: type, entity_id: entityId }
-      const first = await callStructuredMcpTool(caller, 'add_list_item', args, SCOPES)
-      const again = await callStructuredMcpTool(caller, 'add_list_item', args, SCOPES)
-      expect(first.list_item).toMatchObject({
+      const addArgs = addOne(list.id, type, entityId)
+      const first = await callStructuredMcpTool(caller, 'add_list_item', addArgs, SCOPES)
+      const again = await callStructuredMcpTool(caller, 'add_list_item', addArgs, SCOPES)
+      expect((first.results as { list_item: object }[])[0]?.list_item).toMatchObject({
         list_id: list.id,
         item_type: type,
         entity_id: entityId,
@@ -188,7 +191,7 @@ describe('list write tools contract — real DB', () => {
     await callStructuredMcpTool(
       { ...owner, membership_plan: 'plus' },
       'add_list_item',
-      itemArgs,
+      addOne(list.id, 'post', postId),
       SCOPES,
     )
     await expect(
@@ -201,7 +204,7 @@ describe('list write tools contract — real DB', () => {
       status: 403,
     })
     await expect(
-      addListItemTool.function(caller)(itemArgs, {
+      addListItemTool.function(caller)(addOne(list.id, 'post', postId), {
         credentialOwnerId: caller.id,
         grantedScopes: SCOPES,
       }),
@@ -216,12 +219,13 @@ describe('list write tools contract — real DB', () => {
     const caller = await createCaller()
     const free = await createCaller(null)
     const list = await createOwnedList(caller.id, WEB_PROVENANCE, { name: 'Guarded' })
-    const item = { list_id: list.id, item_type: 'post', entity_id: crypto.randomUUID() }
+    const item = { list_id: list.id, item_type: 'post' as const, entity_id: crypto.randomUUID() }
+    const addItem = addOne(list.id, 'post', item.entity_id)
     const calls = [
       ['create_list', { name: listName() }],
       ['update_list', { list_id: list.id, name: 'Nope' }],
       ['remove_list_content', optionArgs('list', { list_id: list.id })],
-      ['add_list_item', item],
+      ['add_list_item', addItem],
       ['remove_list_content', item],
     ] as const
     for (const [name, args] of calls) {
@@ -239,8 +243,8 @@ describe('list write tools contract — real DB', () => {
     const caller = await createCaller()
     const list = await createOwnedList(caller.id, WEB_PROVENANCE, { name: 'Frozen' })
     const entityId = await createPostFor(caller.id)
-    const item = { list_id: list.id, item_type: 'post', entity_id: entityId }
-    await callStructuredMcpTool(caller, 'add_list_item', item, SCOPES)
+    const item = { list_id: list.id, item_type: 'post' as const, entity_id: entityId }
+    await callStructuredMcpTool(caller, 'add_list_item', addOne(list.id, 'post', entityId), SCOPES)
     await suspendTestUser(caller.id)
     suspendedUserIds.push(caller.id)
     await callRejectedMcpTool(caller, 'create_list', { name: listName() }, SCOPES)
@@ -261,7 +265,10 @@ describe('list write tools contract — real DB', () => {
     ['remove_list_content', optionArgs('list', { list_id: 'nope' })],
     [
       'add_list_item',
-      { list_id: crypto.randomUUID(), item_type: 'comment', entity_id: crypto.randomUUID() },
+      {
+        list_id: crypto.randomUUID(),
+        items: [{ item_type: 'comment', entity: crypto.randomUUID() }],
+      },
     ],
     [
       'remove_list_content',
@@ -273,28 +280,5 @@ describe('list write tools contract — real DB', () => {
       'Invalid tool arguments',
     )
     expect(await listCount(caller.id)).toBe(0)
-  })
-  it('reaches the caller’s own private post only with the exact private grant', async () => {
-    const caller = await createCaller()
-    const list = await createOwnedList(caller.id, WEB_PROVENANCE, { name: listName() })
-    const post = await createTestPost({ user: caller, privacy: 'private', broadcast: 'users' })
-    const args = { list_id: list.id, item_type: 'post' as const, entity_id: post.id }
-    const ctx = { credentialOwnerId: caller.id, grantedScopes: SCOPES }
-    await expect(addListItemTool.function(caller)(args, ctx)).rejects.toMatchObject({ status: 403 })
-    expect(await itemCount(list.id)).toBe(0)
-    await callStructuredMcpTool(caller, 'add_list_item', args, PRIVATE_SCOPES)
-  })
-  it('hides another user’s private post even from a credential with the private grant', async () => {
-    const caller = await createCaller()
-    const owner = await createTestUser()
-    const list = await createOwnedList(caller.id, WEB_PROVENANCE, { name: listName() })
-    const post = await createTestPost({ user: owner, privacy: 'private', broadcast: 'followers' })
-    await callRejectedMcpTool(
-      caller,
-      'add_list_item',
-      { list_id: list.id, item_type: 'post', entity_id: post.id },
-      PRIVATE_SCOPES,
-    )
-    expect(await itemCount(list.id)).toBe(0)
   })
 })

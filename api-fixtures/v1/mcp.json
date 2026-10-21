@@ -9321,7 +9321,7 @@
           "tool": {
             "name": "manage_bookmark",
             "title": "Manage Bookmark",
-            "description": "remove: Remove a saved, followed, muted, or blocked relation the current user set on an entity. Removing a relation that is not set changes nothing, and the entity does not have to be visible any more.\nset: Save, follow, mute or block an entity for the current user. Repeating a relation changes nothing. Muting or blocking a topic, user or feed removes the user's follow. Posts must be visible to the user; their own private posts also require the post-relations.owned-private:write consent scope.",
+            "description": "remove: Remove one bookmark. Missing relations stay unset.\nset: Follow, save, mute, or block up to 500 targets.",
             "inputSchema": {
               "type": "object",
               "oneOf": [
@@ -9332,7 +9332,20 @@
                       "enum": ["remove"]
                     },
                     "arguments": {
-                      "$ref": "#/$defs/S1"
+                      "type": "object",
+                      "properties": {
+                        "entity_type": {
+                          "$ref": "#/$defs/S1"
+                        },
+                        "entity_id": {
+                          "type": "string"
+                        },
+                        "predicate": {
+                          "$ref": "#/$defs/S2"
+                        }
+                      },
+                      "required": ["entity_type", "entity_id", "predicate"],
+                      "additionalProperties": false
                     }
                   },
                   "required": ["option", "arguments"],
@@ -9345,7 +9358,39 @@
                       "enum": ["set"]
                     },
                     "arguments": {
-                      "$ref": "#/$defs/S1"
+                      "type": "object",
+                      "properties": {
+                        "predicate": {
+                          "$ref": "#/$defs/S2"
+                        },
+                        "targets": {
+                          "type": "array",
+                          "minItems": 1,
+                          "maxItems": 500,
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "entity_type": {
+                                "$ref": "#/$defs/S1"
+                              },
+                              "entity": {
+                                "type": "string"
+                              }
+                            },
+                            "required": ["entity_type", "entity"],
+                            "additionalProperties": false
+                          }
+                        },
+                        "recommend_unknown_topics": {
+                          "type": "boolean"
+                        },
+                        "idempotency_key": {
+                          "type": "string",
+                          "format": "uuid"
+                        }
+                      },
+                      "required": ["predicate", "targets"],
+                      "additionalProperties": false
                     }
                   },
                   "required": ["option", "arguments"],
@@ -9354,33 +9399,22 @@
               ],
               "$defs": {
                 "S1": {
-                  "type": "object",
-                  "properties": {
-                    "entity_type": {
-                      "type": "string",
-                      "enum": [
-                        "post",
-                        "topic",
-                        "user",
-                        "rss_feed",
-                        "rss_feed_item",
-                        "url",
-                        "url_hostname",
-                        "community"
-                      ],
-                      "description": "The type of entity. Valid types per predicate: save: post, rss_feed_item, url, community; follow: post, topic, user, rss_feed; mute: topic, user, rss_feed, url_hostname; block: topic, user, url_hostname."
-                    },
-                    "entity_id": {
-                      "type": "string",
-                      "description": "Entity id, or its slug, exact topic name, feed URL, or username"
-                    },
-                    "predicate": {
-                      "type": "string",
-                      "enum": ["save", "follow", "mute", "block"]
-                    }
-                  },
-                  "required": ["entity_type", "entity_id", "predicate"],
-                  "additionalProperties": false
+                  "type": "string",
+                  "enum": [
+                    "post",
+                    "topic",
+                    "user",
+                    "rss_feed",
+                    "rss_feed_item",
+                    "url",
+                    "url_hostname",
+                    "community"
+                  ],
+                  "description": "Entity type."
+                },
+                "S2": {
+                  "type": "string",
+                  "enum": ["save", "follow", "mute", "block"]
                 }
               }
             },
@@ -9403,30 +9437,34 @@
                     "success": {
                       "const": true
                     },
-                    "bookmark": {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string"
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "entity_type": {
+                            "type": "string"
+                          },
+                          "entity": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "set",
+                              "error",
+                              "followed",
+                              "already_following",
+                              "recommendation_created"
+                            ]
+                          }
                         },
-                        "subject_id": {
-                          "type": "string"
-                        },
-                        "object_id": {
-                          "type": "string"
-                        },
-                        "created_at": {
-                          "type": "string"
-                        },
-                        "created_by_id": {
-                          "type": "string"
-                        }
-                      },
-                      "required": ["subject_id", "object_id", "created_at", "created_by_id"],
-                      "additionalProperties": false
+                        "required": ["entity_type", "entity", "status"],
+                        "additionalProperties": true
+                      }
                     }
                   },
-                  "required": ["success", "bookmark"],
+                  "required": ["success", "results"],
                   "additionalProperties": false
                 }
               ]
@@ -9434,7 +9472,7 @@
             "annotations": {
               "readOnlyHint": false,
               "destructiveHint": true,
-              "idempotentHint": true
+              "idempotentHint": false
             },
             "_meta": {
               "voucha/requiredScopes": ["bookmarks:read", "bookmarks:write"],
@@ -9454,6 +9492,10 @@
             {
               "method": "PUT",
               "path": "/api/v1/bookmarks/:entityType/:entityId/:predicate"
+            },
+            {
+              "method": "POST",
+              "path": "/api/v1/my/import/topics"
             }
           ]
         },
@@ -14400,83 +14442,114 @@
           "tool": {
             "name": "add_list_item",
             "title": "Add List Item",
-            "description": "Add a post or an RSS feed item to a list the current user owns. Adding an item that is already on the list returns the existing entry. A post is only available if the user can see it; the user's own private posts additionally need the private-post consent scope.",
+            "description": "Add up to 100 visible posts or RSS items, or copy one community list.",
             "inputSchema": {
               "type": "object",
-              "properties": {
-                "list_id": {
-                  "type": "string",
-                  "format": "uuid"
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "list_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "items": {
+                      "type": "array",
+                      "minItems": 1,
+                      "maxItems": 100,
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "item_type": {
+                            "type": "string",
+                            "enum": ["post", "rss_feed_item"]
+                          },
+                          "entity": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["item_type", "entity"],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": ["list_id", "items"],
+                  "additionalProperties": false
                 },
-                "item_type": {
-                  "type": "string",
-                  "enum": ["post", "rss_feed_item"]
-                },
-                "entity_id": {
-                  "type": "string",
-                  "description": "Post id or slug, or RSS feed item id"
+                {
+                  "type": "object",
+                  "properties": {
+                    "list_id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "source": {
+                      "type": "object",
+                      "properties": {
+                        "community": {
+                          "type": "string",
+                          "description": "Community id or slug"
+                        }
+                      },
+                      "required": ["community"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["list_id", "source"],
+                  "additionalProperties": false
                 }
-              },
-              "required": ["list_id", "item_type", "entity_id"],
-              "additionalProperties": false
+              ]
             },
             "outputSchema": {
               "type": "object",
-              "properties": {
-                "success": {
-                  "const": true
-                },
-                "list_item": {
-                  "additionalProperties": false,
+              "oneOf": [
+                {
+                  "type": "object",
                   "properties": {
-                    "__entity_type": {
-                      "const": "list_item"
+                    "success": {
+                      "const": true
                     },
-                    "created_at": {
-                      "type": "string"
-                    },
-                    "entity_id": {
-                      "type": "string"
-                    },
-                    "id": {
-                      "type": "string"
-                    },
-                    "item_type": {
-                      "enum": ["post", "rss_feed_item"],
-                      "type": "string"
-                    },
-                    "list_id": {
-                      "type": "string"
-                    },
-                    "media_type": {
-                      "anyOf": [
-                        {
-                          "type": "null"
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "item_type": {
+                            "type": "string"
+                          },
+                          "entity": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": ["added", "not_found", "forbidden"]
+                          }
                         },
-                        {
-                          "type": "string"
-                        }
-                      ]
-                    },
-                    "order_index": {
-                      "type": "number"
+                        "required": ["item_type", "entity", "status"],
+                        "additionalProperties": true
+                      }
                     }
                   },
-                  "required": [
-                    "__entity_type",
-                    "created_at",
-                    "entity_id",
-                    "id",
-                    "item_type",
-                    "list_id",
-                    "media_type",
-                    "order_index"
-                  ],
-                  "type": "object"
+                  "required": ["success", "results"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "const": true
+                    },
+                    "posts": {
+                      "type": "integer"
+                    },
+                    "items": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": ["success", "posts", "items"],
+                  "additionalProperties": false
                 }
-              },
-              "required": ["success", "list_item"],
-              "additionalProperties": false
+              ]
             },
             "annotations": {
               "readOnlyHint": false,
@@ -14497,6 +14570,10 @@
             {
               "method": "POST",
               "path": "/api/v1/lists/:id/items/rss-feed-items"
+            },
+            {
+              "method": "POST",
+              "path": "/api/v1/lists/:id/import"
             }
           ]
         },

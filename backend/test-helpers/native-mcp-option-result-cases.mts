@@ -109,16 +109,26 @@ export const optionMcpResultCases: readonly McpResultFixtureCase[] = [
     tool: 'manage_bookmark',
     arguments: {
       option: 'set',
-      arguments: { entity_type: 'topic', entity_id: entityId, predicate: 'follow' },
+      arguments: {
+        predicate: 'follow',
+        targets: [{ entity_type: 'topic', entity: entityId }],
+      },
     },
     structuredContent: {
       success: true,
-      bookmark: {
-        subject_id: userId,
-        object_id: entityId,
-        created_at: createdAt,
-        created_by_id: userId,
-      },
+      results: [
+        {
+          entity_type: 'topic',
+          entity: entityId,
+          status: 'set',
+          bookmark: {
+            subject_id: userId,
+            object_id: entityId,
+            created_at: createdAt,
+            created_by_id: userId,
+          },
+        },
+      ],
     },
   },
   {

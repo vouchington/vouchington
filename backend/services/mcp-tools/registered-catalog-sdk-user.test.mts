@@ -116,9 +116,8 @@ describe('registered catalog SDK', () => {
       const topic = await createTestTopic({ user: owner })
       expect(
         await callAndValidate(client, 'manage_bookmark', 'set', {
-          entity_type: 'topic',
-          entity_id: topic.id,
           predicate: 'follow',
+          targets: [{ entity_type: 'topic', entity: topic.id }],
         }),
       ).toMatchObject({ success: true })
     } finally {

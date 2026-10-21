@@ -519,6 +519,14 @@
     "code": "backend/services/copyright-notices/territorial-redress.mts:54"
   },
   {
+    "annotation": "recordTopicImportRequest",
+    "route": null,
+    "maxCount": null,
+    "reason": "Recommendation audits commit before topic follows, and follow audits commit only after those follows succeed, because the follow writes outside the import transaction (backend/services/user-import-export/import-topics.mts:finalizeTopicImportAttempt)",
+    "permanent": true,
+    "code": "backend/services/user-import-export/import-topics.mts:finalizeTopicImportAttempt"
+  },
+  {
     "annotation": "removeEmailAddress",
     "route": null,
     "maxCount": null,
