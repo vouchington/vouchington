@@ -8,8 +8,7 @@ import {
   type KagiFeedJobData,
 } from '@queues/background/enqueues/kagi-smallweb-jobs'
 import { kagiSmallWeb } from '@queues/kagi-smallweb/queues'
-import { readAllQueueJobs } from '@voucha/test-helpers'
-import { readPool, writePool } from '@data-stores/psql'
+import { observeTestPostgresClientQueries, readAllQueueJobs } from '@voucha/test-helpers'
 import { getTopicByAny } from '@services/topics/get'
 import { getRssFeedByTopicId } from '@services/rss-feeds/get'
 import type { ParsedFeedEntry } from './parse.mts'
@@ -166,62 +165,8 @@ describe('dispatchKagiSmallWebPage', () => {
   })
 
   it('copies current feed URLs from the reader', async () => {
-    const captured = captureConnectedSql()
-    try {
-      await dispatchKagiSmallWebPage([])
-    } finally {
-      captured.restore()
-    }
-    expect(captured.pools).toEqual(['read'])
+    const observed = await observeTestPostgresClientQueries(() => dispatchKagiSmallWebPage([]))
+    const membership = observed.queries.filter(query => query.text.includes('copyExistingFeedUrls'))
+    expect(membership.map(query => query.pool)).toEqual(['read'])
   })
 })
-
-function captureConnectedSql(): { pools: Array<'read' | 'write'>; restore: () => void } {
-  const pools: Array<'read' | 'write'> = []
-  const restoreRead = wrapPoolConnect(readPool, 'read', pools)
-  const restoreWrite = wrapPoolConnect(writePool, 'write', pools)
-  return {
-    pools,
-    restore() {
-      restoreRead()
-      restoreWrite()
-    },
-  }
-}
-
-function wrapPoolConnect(
-  pool: typeof readPool,
-  label: 'read' | 'write',
-  pools: Array<'read' | 'write'>,
-): () => void {
-  const descriptor = Object.getOwnPropertyDescriptor(pool, 'connect')
-  const original = pool.connect
-  Object.defineProperty(pool, 'connect', {
-    configurable: true,
-    enumerable: true,
-    writable: true,
-    value: ((...args: unknown[]) => {
-      if (args.some(arg => typeof arg === 'function')) return Reflect.apply(original, pool, args)
-      return Promise.resolve(Reflect.apply(original, pool, args)).then(client => {
-        if (!client) return client
-        const query = client.query
-        client.query = ((...queryArgs: unknown[]) => {
-          const text = sqlText(queryArgs[0])
-          if (text.includes('copyExistingFeedUrls')) pools.push(label)
-          return Reflect.apply(query, client, queryArgs)
-        }) as typeof client.query
-        return client
-      })
-    }) as typeof pool.connect,
-  })
-  return () => {
-    if (descriptor) Object.defineProperty(pool, 'connect', descriptor)
-    else Reflect.deleteProperty(pool, 'connect')
-  }
-}
-
-function sqlText(input: unknown): string {
-  if (typeof input === 'string') return input
-  if (typeof input === 'object' && input !== null && 'text' in input) return String(input.text)
-  return ''
-}

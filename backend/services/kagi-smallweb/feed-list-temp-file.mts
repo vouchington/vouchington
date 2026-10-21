@@ -1,18 +1,12 @@
-import { createReadStream, createWriteStream } from 'node:fs'
+import { createWriteStream } from 'node:fs'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Readable } from 'node:stream'
-import { finished, pipeline } from 'node:stream/promises'
-import { runCommand } from '@modules/child-process'
-import { readPool } from '@data-stores/psql'
-import { to as copyTo } from 'pg-copy-streams'
+import { pipeline } from 'node:stream/promises'
 import { iterateFeedListEntries, type FeedListSourceType, type ParsedFeedEntry } from './parse.mts'
-
-const FIELD_SEPARATOR = '\u001f'
-const SORT_BIN = '/usr/bin/sort'
-const COMM_BIN = '/usr/bin/comm'
-const DIFF_TIMEOUT_MS = 120_000
+import { entryFromLine, linesOf, numberedLine } from './feed-list-lines.mts'
+import { sortAndDiff } from './feed-list-sort.mts'
 
 const KAGI_FEED_LIST_DIRECTORY_PREFIX = `kagi-feed-list-${process.pid}-`
 
@@ -88,21 +82,6 @@ export async function readFeedListPage(
   return { page, newEntries, total }
 }
 
-async function sortAndDiff(numbered: string, directory: string): Promise<void> {
-  const ordered = join(directory, 'ordered')
-  const deduped = join(directory, 'deduped')
-  const desired = join(directory, 'desired')
-  const membership = join(directory, 'membership')
-  const added = join(directory, 'added')
-  await writeCommandOutput(SORT_BIN, ['-t', FIELD_SEPARATOR, '-k1,1', '-k2,2nr', numbered], ordered)
-  await writeCommandOutput(SORT_BIN, ['-s', '-t', FIELD_SEPARATOR, '-u', '-k1,1', ordered], deduped)
-  await pipeline(Readable.from(desiredLines(deduped)), createWriteStream(desired))
-  await copyExistingFeedUrls(membership)
-  // `comm -23` prints desired URLs the reader does not already have. Both files are C-ordered.
-  await writeCommandOutput(COMM_BIN, ['-23', desired, membership], added)
-  await Promise.all([numbered, ordered, desired, membership].map(path => rm(path, { force: true })))
-}
-
 async function* numberedLines(lists: readonly FeedListChunkSource[]): AsyncGenerator<string> {
   let lineNumber = 0
   for (const list of lists) {
@@ -111,90 +90,5 @@ async function* numberedLines(lists: readonly FeedListChunkSource[]): AsyncGener
       lineNumber += 1
       yield numberedLine(entry, lineNumber)
     }
-  }
-}
-
-function numberedLine(entry: ParsedFeedEntry, lineNumber: number): string {
-  const payload = JSON.stringify({
-    name: entry.name,
-    slug: entry.slug,
-    sourceType: entry.sourceType,
-  })
-  return `${entry.feedUrl}${FIELD_SEPARATOR}${lineNumber}${FIELD_SEPARATOR}${payload}\n`
-}
-
-async function* desiredLines(deduped: string): AsyncGenerator<string> {
-  for await (const line of linesOf(deduped)) {
-    const separator = line.indexOf(FIELD_SEPARATOR)
-    if (separator !== -1) yield `${line.slice(0, separator)}\n`
-  }
-}
-
-// Two readline interfaces in one process drop the second file's lines, so split chunks here.
-async function* linesOf(path: string): AsyncGenerator<string> {
-  const stream = createReadStream(path)
-  let pending = ''
-  try {
-    for await (const chunk of stream) {
-      pending += Buffer.from(chunk).toString('utf8')
-      let newline = pending.indexOf('\n')
-      while (newline !== -1) {
-        yield pending.slice(0, newline)
-        pending = pending.slice(newline + 1)
-        newline = pending.indexOf('\n')
-      }
-    }
-    if (pending.length > 0) yield pending
-  } finally {
-    stream.destroy()
-  }
-}
-
-function entryFromLine(line: string): ParsedFeedEntry | null {
-  const first = line.indexOf(FIELD_SEPARATOR)
-  const second = first === -1 ? -1 : line.indexOf(FIELD_SEPARATOR, first + 1)
-  if (second === -1) return null
-  const payload = JSON.parse(line.slice(second + 1)) as {
-    name: string
-    slug: string
-    sourceType: FeedListSourceType
-  }
-  return { feedUrl: line.slice(0, first), ...payload }
-}
-
-async function copyExistingFeedUrls(destination: string): Promise<void> {
-  const client = await readPool.connect()
-  try {
-    const copy = client.query(
-      copyTo(
-        `/* copyExistingFeedUrls */
-        COPY (
-          SELECT urls.url FROM urls
-          WHERE EXISTS (
-            SELECT 1 FROM rss_feeds
-            WHERE rss_feeds.rss_feed_url_id = urls.id AND rss_feeds.deleted_at IS NULL
-          )
-          ORDER BY urls.url COLLATE "C"
-        ) TO STDOUT`,
-      ),
-    )
-    await pipeline(copy, createWriteStream(destination))
-  } finally {
-    client.release()
-  }
-}
-
-async function writeCommandOutput(
-  command: string,
-  args: readonly string[],
-  destination: string,
-): Promise<void> {
-  const output = createWriteStream(destination)
-  try {
-    await runCommand({ command, args, stdout: output, timeoutMs: DIFF_TIMEOUT_MS })
-    await finished(output)
-  } catch (err) {
-    output.destroy()
-    throw err
   }
 }
