@@ -1,4 +1,4 @@
-import { write } from '@data-stores/psql'
+import { read } from '@data-stores/psql'
 import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
 import sql from 'sql-template-strings'
 import { assertClassifierUsageWindow, readClassifierRunUsage } from './usage-report-runs.mts'
@@ -41,7 +41,8 @@ export async function readClassifierUsageReport(
  * activated only after the window, is judged by its state during it and not by its state today.
  */
 async function readClassifiersActiveDuring(window: ClassifierUsageWindow): Promise<string[]> {
-  const { rows } = await write<{ slug: string }>(sql`/* readClassifiersActiveDuring */
+  // The report tolerates replica lag because it summarizes a closed time window.
+  const { rows } = await read<{ slug: string }>(sql`/* readClassifiersActiveDuring */
     SELECT slug FROM classifiers
     WHERE activated_at IS NOT NULL
       AND activated_at < ${window.to}
@@ -57,7 +58,8 @@ async function readClassifierRequestCounts(
   window: ClassifierUsageWindow,
 ): Promise<Record<string, number>> {
   assertClassifierUsageWindow(window)
-  const { rows } = await write<RequestCountRow>(sql`/* readClassifierRequestCounts */
+  // The report tolerates replica lag because it summarizes a closed time window.
+  const { rows } = await read<RequestCountRow>(sql`/* readClassifierRequestCounts */
     SELECT classifier.slug AS classifier, count(*)::int AS total
     FROM classifier_run_requests request
     JOIN classifiers classifier ON classifier.id = request.classifier_id

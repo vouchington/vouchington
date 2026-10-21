@@ -1,4 +1,4 @@
-import { write } from '@data-stores/psql'
+import { read } from '@data-stores/psql'
 import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
 import sql from 'sql-template-strings'
 import type { ClassifierRunUsage, ClassifierUsageWindow } from './usage-report-types.mts'
@@ -70,7 +70,8 @@ export async function readClassifierRunUsage(
   const lowerBound = timestampToUuidv7LowerBound(window.from.getTime())
   const upperBound = timestampToUuidv7LowerBound(window.to.getTime())
   const ledgerLowerBound = timestampToUuidv7LowerBound(window.from.getTime() - LEDGER_CLOCK_SKEW_MS)
-  const { rows } = await write<RunRow>(sql`/* readClassifierRunUsage */
+  // The report tolerates replica lag because it summarizes a closed time window.
+  const { rows } = await read<RunRow>(sql`/* readClassifierRunUsage */
     SELECT run.id AS run_id,
       classifier.slug AS classifier,
       classifier.primitive::text AS primitive,
