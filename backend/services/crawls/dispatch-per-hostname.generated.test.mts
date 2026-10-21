@@ -19,6 +19,7 @@ import { getTestHostnameCrawlSweep } from '@voucha/test-helpers/entities/hostnam
 import type { PrivateUser } from '@services/users/types'
 import { getUrlById } from '@services/urls/get'
 import { deactivateUserReferralLink } from '@services/user-referral-program-links/activate'
+import { getDateFromUUIDv7 } from '@modules/utils'
 
 describe('dispatch-per-hostname.generated', () => {
   let user: PrivateUser
@@ -67,7 +68,7 @@ describe('dispatch-per-hostname.generated', () => {
 
     const result = await dispatchCrawlUrlsPerHostname(
       url!.hostname.id,
-      undefined,
+      { sweepStartedAt: new Date(getDateFromUUIDv7(url!.id)!.getTime() + 1).toISOString() },
       async progress => {
         if (!progress.afterId) return
         sweepStartedAt = progress.sweepStartedAt
@@ -90,7 +91,7 @@ describe('dispatch-per-hostname.generated', () => {
 
     const result = await dispatchCrawlUrlsPerHostname(
       url!.hostname.id,
-      undefined,
+      { sweepStartedAt: new Date(getDateFromUUIDv7(url!.id)!.getTime() + 1).toISOString() },
       async progress => {
         if (!progress.afterId) return
         await updateUrlHostname(url!.hostname.id, { is_crawlable: false })
