@@ -1,6 +1,7 @@
 import { writeSync } from 'node:fs'
 
 import { configureTestPostgresSessions } from './vitest-postgres-session-settings.mts'
+import { withSetupPhaseDeadline } from './vitest-setup-phase-deadline.mts'
 import {
   collectDbBackedTestSetupInput,
   evaluateDbBackedTestSetup,
@@ -42,11 +43,17 @@ function emitSetupDiagnostic(message: string): void {
   }
 }
 
-async function timedSetupPhase<T>(phase: string, run: () => Promise<T>): Promise<T> {
+// Composite phases only settle their timed children, so they take no deadline of their own: a
+// stuck child must fail under its own name, not the parent's.
+async function timedSetupPhase<T>(
+  phase: string,
+  run: () => Promise<T>,
+  deadline = true,
+): Promise<T> {
   if (emitSetupTiming) emitSetupDiagnostic(`[vitest-setup] phase=${phase} start\n`)
   const start = performance.now()
   try {
-    const result = await run()
+    const result = await (deadline ? withSetupPhaseDeadline(phase, run) : run())
     if (emitSetupTiming)
       emitSetupDiagnostic(
         `[vitest-setup] phase=${phase} done ms=${Math.round(performance.now() - start)}\n`,
@@ -99,22 +106,28 @@ export async function setup() {
   Logger.setLoggerConfig('error')
 
   await timedSetupPhase('seed', seed)
-  await timedSetupPhase('dynamic-config', () =>
-    settleSetupOperations(
-      dynamicConfigRegistry.entries.map(({ config }) =>
-        timedSetupPhase(`dynamic-config:${config.key}`, async () => {
-          await config.waitForInitialization()
-          await persistDynamicConfigTestBaseline(config)
-        }),
+  await timedSetupPhase(
+    'dynamic-config',
+    () =>
+      settleSetupOperations(
+        dynamicConfigRegistry.entries.map(({ config }) =>
+          timedSetupPhase(`dynamic-config:${config.key}`, async () => {
+            await config.waitForInitialization()
+            await persistDynamicConfigTestBaseline(config)
+          }),
+        ),
       ),
-    ),
+    false,
   )
-  await timedSetupPhase('bloom-warmup', () =>
-    settleSetupOperations([
-      timedSetupPhase('bloom-embeddings', warmUpEmbeddingBloomFilter),
-      timedSetupPhase('bloom-url-blocklist', warmUpUrlBlocklistBloomFilter),
-      timedSetupPhase('bloom-email-blocklist', warmUpEmailBlocklistBloomFilter),
-    ]),
+  await timedSetupPhase(
+    'bloom-warmup',
+    () =>
+      settleSetupOperations([
+        timedSetupPhase('bloom-embeddings', warmUpEmbeddingBloomFilter),
+        timedSetupPhase('bloom-url-blocklist', warmUpUrlBlocklistBloomFilter),
+        timedSetupPhase('bloom-email-blocklist', warmUpEmailBlocklistBloomFilter),
+      ]),
+    false,
   )
 }
 
