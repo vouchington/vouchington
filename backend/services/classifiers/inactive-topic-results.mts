@@ -7,12 +7,13 @@ import type { PersistedClassifierDecision } from './types.mts'
 export async function readInactiveClassifierTopicIds(
   query: QueryExecutor,
   topicIds: readonly string[],
+  includeDeleted = true,
 ): Promise<ReadonlySet<string>> {
   if (topicIds.length === 0) return new Set()
   const { rows } = await query<{ id: string; inactive: boolean }>(
     // no-mistakes-disable-next-line postgres-required-predicates: lifecycle classification must include inactive identities
     sql`/* readInactiveClassifierTopicIds */ SELECT id,
-      deleted_at IS NOT NULL OR merged_into_topic_id IS NOT NULL AS inactive
+      (${includeDeleted} AND deleted_at IS NOT NULL) OR merged_into_topic_id IS NOT NULL AS inactive
       FROM topics WHERE id = ANY(${[...topicIds]}::uuid[]) ORDER BY id FOR SHARE`,
   )
   return new Set(rows.flatMap(row => (row.inactive ? [row.id] : [])))

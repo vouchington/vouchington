@@ -34,3 +34,10 @@ export async function seedTopicMergeClassifierCollision(
   )
   return rows[0]!.id
 }
+
+export async function restoreTopicAfterClassifierDecision(topicId: string) {
+  await write(
+    `/* restoreTopicAfterClassifierDecision */ UPDATE topics SET deleted_at = NULL, deleted_by_id = NULL WHERE id = $1::uuid`,
+    [topicId],
+  )
+}

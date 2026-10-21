@@ -1,11 +1,13 @@
+import { softDeleteTopic } from '@voucha/test-helpers/entities/topics/deletion'
+import { restoreTopicAfterClassifierDecision } from '@voucha/test-helpers/topic-merge-classifiers'
 import { runClassifierBorrowedTestTransaction } from '@voucha/test-helpers/data-stores/psql/classifier-borrowed-transactions'
 import { reserveClassifierDecisionBatch } from './write-decision-lineage.mts'
 import { describe, expect, it } from 'vitest'
 import { v7 as uuidv7 } from 'uuid'
 import { createClassifierFixture } from '@voucha/test-helpers/data-stores/psql/classifiers'
 import { createTestTopic, createTestUser } from '@voucha/test-helpers'
-import { getTopicByAny } from '@services/topics/get'
-import { mergeTopicAliases } from '@services/topics/merge-aliases'
+import { getTopicByAny } from '../topics/get.mts'
+import { mergeTopicAliases } from '../topics/merge-aliases.mts'
 import { persistClassifierDecision } from './persist-classifier-decision.mts'
 import type { PersistClassifierDecisionInput } from './types.mts'
 
@@ -117,6 +119,40 @@ describe('delayed topic classifier decisions', () => {
       calls: 1,
       snapshots: 1,
       topic_results: 0,
+    })
+  })
+  it('retains replay lineage for a deleted topic that can later be restored', async () => {
+    const fixture = await createClassifierFixture()
+    await fixture.activateClassifierConfigurations()
+    const admin = await createTestUser({ administrator: true })
+    await softDeleteTopic(fixture.topicId, admin.id)
+    const input: PersistClassifierDecisionInput = {
+      batchId: uuidv7(),
+      classifierId: fixture.classifierId,
+      promptVersionId: fixture.promptVersionId,
+      subject: { postId: fixture.postId, rssFeedItemId: null },
+      scope: { scopeCategory: 'global', scopeCommunityId: null },
+      calls: [
+        {
+          shardOrdinal: 0,
+          results: [
+            {
+              candidateKind: 'topic',
+              topicId: fixture.topicId,
+              storedCandidateId: null,
+              probability: 0.9,
+              rawResponse: { probability: 0.9 },
+            },
+          ],
+        },
+      ],
+    }
+    const first = await persistClassifierDecision(input)
+    expect(first.decision.results).toHaveLength(1)
+    await restoreTopicAfterClassifierDecision(fixture.topicId)
+    await expect(persistClassifierDecision(input)).resolves.toMatchObject({
+      replayed: true,
+      decision: first.decision,
     })
   })
 })

@@ -61,6 +61,8 @@ async function persistClassifierDecisionWithQuery(
     originalInput.calls.flatMap(call =>
       call.results.flatMap(result => (result.candidateKind === 'topic' ? [result.topicId] : [])),
     ),
+    // Soft-deleted identities may be restored: retain their decision lineage, skip only effects.
+    false,
   )
   const normalizedInput = omitInactiveTopicInput(originalInput, inactive)
   const inserted = await insertClassifierDecisionBatch(query, normalizedInput)
