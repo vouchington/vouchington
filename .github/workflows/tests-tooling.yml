@@ -126,5 +126,7 @@ jobs:
       - uses: ./.github/actions/setup-backend
         timeout-minutes: 10
       - name: Run i18n route bounds
+        env:
+          VITEST_CI_REPORTERS: run
         run: pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project i18n-route-bounds
         timeout-minutes: 8

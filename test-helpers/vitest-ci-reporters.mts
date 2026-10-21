@@ -5,6 +5,7 @@ import {
   createVitestFileProgressReporter,
 } from './vitest-file-progress-reporter.mts'
 import { createVitestTeardownOverrunReporter } from './vitest-teardown-overrun-reporter.mts'
+import { VitestNoSkipsReporter } from './vitest-no-skips-reporter.mts'
 import { createVitestStorybookProgressReporter } from './vitest-storybook-progress-reporter.mts'
 
 type VitestReporters = NonNullable<InlineConfig['reporters']>
@@ -73,6 +74,7 @@ export function ciReporters(): VitestReporters | undefined {
           : []),
         githubActionsReporter(),
         'junit',
+        new VitestNoSkipsReporter(),
         'hanging-process',
         createVitestTeardownOverrunReporter(),
         ...fileProgressReporters(),
