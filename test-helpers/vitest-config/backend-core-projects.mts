@@ -178,8 +178,8 @@ export const backendCoreProjects: TestProjectConfiguration[] = [
         './test-helpers/vitest.setup.glide-mq-workers.mts',
         './backend/test-helpers/vitest.setup.aws-mocks.mts',
       ],
-      testTimeout: 30_000,
-      hookTimeout: 30_000,
+      testTimeout: 5_000,
+      hookTimeout: 5_000,
     },
   },
 ]
