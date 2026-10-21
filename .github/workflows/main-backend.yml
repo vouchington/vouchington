@@ -94,4 +94,5 @@ jobs:
       packages: write
     with:
       trusted_secret_context: true
-    secrets: inherit
+    secrets:
+      AWS_TEST_ROLE_ARN: ${{ secrets.AWS_TEST_ROLE_ARN }}
