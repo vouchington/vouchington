@@ -28,7 +28,7 @@ export function unprovisionedSecretsWithoutReadinessStep(
       if (
         match?.[1] !== undefined &&
         match[2] !== undefined &&
-        optionalForwardClearsWorkflow(topology, match[1], match[2])
+        optionalForwardClearsWorkflow(topology, match[1], match[2], inventory)
       ) {
         return []
       }
@@ -45,6 +45,7 @@ function optionalForwardClearsWorkflow(
   topology: WorkflowTopology,
   workflowPath: string,
   secretName: string,
+  inventory: Record<string, SecretInventoryEntry>,
 ): boolean {
   const workflow = topology.workflows.find(candidate => candidate.path === workflowPath)
   if (!workflow || (workflow.secretReferences ?? []).includes(secretName)) return false
@@ -53,7 +54,11 @@ function optionalForwardClearsWorkflow(
   )
   return (
     consumingJobs.length > 0 &&
-    consumingJobs.every(job => forwardsOnlyToOptionalCallee(topology, job, secretName))
+    consumingJobs.every(
+      job =>
+        forwardsOnlyToOptionalCallee(topology, job, secretName) ||
+        publishedJobIsGuarded(topology, job, secretName, inventory),
+    )
   )
 }
 
@@ -81,18 +86,45 @@ function forwardsOnlyToOptionalCallee(
   let forwarded = false
   for (const edge of edges) {
     if (edge.bindings.secrets.mode === 'inherit') return false
-    const value = edge.bindings.secrets.values[secretName]
-    if (typeof value !== 'string' || !referencesSecretExpression(value, secretName)) continue
-    if (
-      !edge.local ||
-      edge.to === undefined ||
-      !calleeDeclaresOptional(topology, edge.to, secretName)
-    ) {
-      return false
+    for (const [destination, value] of Object.entries(edge.bindings.secrets.values)) {
+      if (typeof value !== 'string' || !referencesSecretExpression(value, secretName)) continue
+      if (
+        !edge.local ||
+        edge.to === undefined ||
+        !calleeDeclaresOptional(topology, edge.to, destination)
+      ) {
+        return false
+      }
+      forwarded = true
     }
-    forwarded = true
   }
   return forwarded
+}
+
+function publishedJobIsGuarded(
+  topology: WorkflowTopology,
+  job: WorkflowJobNode,
+  secretName: string,
+  inventory: Record<string, SecretInventoryEntry>,
+): boolean {
+  const workflow = topology.workflows.find(candidate => candidate.id === job.workflowId)
+  if (!workflow) return false
+  const isolated: WorkflowTopology = {
+    schemaVersion: topology.schemaVersion,
+    workflows: [
+      {
+        ...workflow,
+        jobIds: [job.id],
+        secretReferences: (workflow.secretReferences ?? []).filter(name => name !== secretName),
+      },
+    ],
+    jobs: [job],
+    edges: [],
+    diagnostics: [],
+  }
+  return !publishedUnprovisionedSecretsWithoutReadinessStep(isolated, inventory).some(violation =>
+    violation.includes(`"${secretName}"`),
+  )
 }
 
 function calleeDeclaresOptional(
