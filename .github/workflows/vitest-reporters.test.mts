@@ -88,9 +88,7 @@ describe('Vitest CI reporters', () => {
     expect(commands.length).toBeGreaterThan(0)
 
     for (const { command } of commands.filter(
-      ({ command: rawCommand }) =>
-        !rawCommand.includes('run-storybook-browser-tests.mts') &&
-        !rawCommand.includes('--project i18n-route-bounds'),
+      ({ command: rawCommand }) => !rawCommand.includes('run-storybook-browser-tests.mts'),
     )) {
       expect(command).toContain('--bail=3')
     }
@@ -99,7 +97,13 @@ describe('Vitest CI reporters', () => {
       command.includes('--project i18n-route-bounds'),
     )
     // Route bounds stays separate from the regular tooling coverage producer.
-    expect(isolatedRouteBounds.map(({ env }) => env)).toEqual([{}])
+    expect(isolatedRouteBounds).toEqual([
+      {
+        command:
+          '.github/workflows/tests-tooling.yml: pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project i18n-route-bounds',
+        env: { VITEST_CI_REPORTERS: 'run' },
+      },
+    ])
 
     for (const { command, env } of commands.filter(
       ({ command }) => !command.includes('--project i18n-route-bounds'),
@@ -145,7 +149,7 @@ describe('Vitest CI reporters', () => {
     expect(reporters).toEqual(
       expect.arrayContaining([expect.objectContaining({ onProcessTimeout: expect.any(Function) })]),
     )
-    expect(reporters).toHaveLength(5)
+    expect(reporters).toHaveLength(6)
   })
 
   it('adds browser progress diagnostics for Storybook runs', () => {
@@ -154,7 +158,7 @@ describe('Vitest CI reporters', () => {
     vi.stubEnv('VITEST_DIAGNOSTICS', undefined)
     vi.stubEnv('VITEST_FILE_PROGRESS_FILE', undefined)
 
-    expect(ciReporters()).toHaveLength(6)
+    expect(ciReporters()).toHaveLength(7)
   })
 
   it.each([undefined, ''])('leaves local reporter selection alone for %s', configured => {
