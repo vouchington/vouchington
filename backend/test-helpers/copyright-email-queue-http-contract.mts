@@ -1,11 +1,13 @@
 import { expect, onTestFinished } from 'vitest'
 import type { Response } from 'supertest'
 import {
+  decodeScopedPreciseTimestampCursor,
   decodeUuidCursor,
   encodeScopedPreciseTimestampCursor,
   isSimpleCursor,
 } from '@modules/pagination'
 import type { PrivateUser } from '../services/users/types.mts'
+import type { listCopyrightStaffEmailIntakePage } from '../services/copyright-notices/copyright-email-intake-page.mts'
 import { copyrightStaffEmailIntakeQueueCursorScope } from '../services/copyright-notices/read-models-staff-email-intakes.mts'
 import type { createRequest } from './api/server.mts'
 import { encodeUuidCursorBefore } from './modules/pagination/uuid-cursors.mts'
@@ -20,19 +22,33 @@ export async function readOwnedCopyrightEmailQueue(
   request: ReturnType<typeof createRequest>,
   moderator: PrivateUser,
   fixture: { id: string; receivedAt: Date },
-  includeUnknownQueryKey = false,
-): Promise<{ headers: Record<string, string>; body: unknown }> {
+  options: { includeUnknownQueryKey?: boolean; after?: string } = {},
+): Promise<{
+  headers: Record<string, string>
+  body: unknown
+  intakeIds: string[]
+  pageInfo: Awaited<ReturnType<typeof listCopyrightStaffEmailIntakePage>>['page_info']
+}> {
   const timestamp = fixture.receivedAt.toISOString().replace(/Z$/, '000Z')
   const { id: afterId } = decodeUuidCursor(
     encodeUuidCursorBefore(fixture.id),
     isSimpleCursor,
     'Invalid owned intake UUID predecessor',
   )
-  const after = encodeScopedPreciseTimestampCursor(
-    timestamp,
-    afterId,
-    copyrightStaffEmailIntakeQueueCursorScope,
-  )
+  const after =
+    options.after ??
+    encodeScopedPreciseTimestampCursor(
+      timestamp,
+      afterId,
+      copyrightStaffEmailIntakeQueueCursorScope,
+    )
+  expect(
+    decodeScopedPreciseTimestampCursor(
+      after,
+      copyrightStaffEmailIntakeQueueCursorScope,
+      'Invalid owned intake continuation',
+    ),
+  ).toEqual({ timestamp, id: afterId, scope: copyrightStaffEmailIntakeQueueCursorScope })
   const close = ownedKeysetReadPolicy.register(
     sharedDbScopeTestIdentity(),
     { actorId: moderator.id, id: fixture.id, timestamp, afterId },
@@ -47,7 +63,7 @@ export async function readOwnedCopyrightEmailQueue(
   onTestFinished(cleanup)
   try {
     const query = new URLSearchParams({ limit: '1', after })
-    if (includeUnknownQueryKey) query.set('injected', '1')
+    if (options.includeUnknownQueryKey) query.set('injected', '1')
     observed = request
       .get(`/api/v1/copyright-email-intakes/review-queue?${query}`)
       .expect(200)
@@ -58,10 +74,18 @@ export async function readOwnedCopyrightEmailQueue(
     const outcome = await observed
     if ('err' in outcome) throw outcome.err
     const { response } = outcome
-    expect(
-      response.body.copyright_email_intakes.map((intake: { id: string }) => intake.id),
-    ).toEqual([fixture.id])
-    return { headers: response.headers, body: response.body as unknown }
+    const intakeIds = (response.body.copyright_email_intakes as { id: string }[]).map(
+      intake => intake.id,
+    )
+    expect(intakeIds).toEqual([fixture.id])
+    return {
+      headers: response.headers,
+      body: response.body as unknown,
+      intakeIds,
+      pageInfo: response.body.page_info as Awaited<
+        ReturnType<typeof listCopyrightStaffEmailIntakePage>
+      >['page_info'],
+    }
   } finally {
     await cleanup()
   }
