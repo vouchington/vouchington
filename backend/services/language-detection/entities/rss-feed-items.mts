@@ -28,13 +28,13 @@ export async function detectRssFeedItemLanguage(
     FROM rss_feed_items rfi
     JOIN rss_feeds rf ON rf.id = (
       SELECT rfis.rss_feed_id
+      -- no-mistakes-disable-next-line postgres-required-predicates: merge repoints this topic reference to destination; deleted_at remains checked
       FROM rss_feed_item_sources rfis
       JOIN rss_feeds rf2 ON rf2.id = rfis.rss_feed_id
       JOIN topics t ON t.id = rf2.topic_id
       WHERE rfis.rss_feed_item_id = rfi.id
         AND rf2.deleted_at IS NULL
         AND t.deleted_at IS NULL
-        AND t.merged_into_topic_id IS NULL
       ORDER BY
         rf2.is_enabled DESC,
         rf2.is_discoverable DESC,

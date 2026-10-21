@@ -52,7 +52,7 @@ export async function readCategoryDataChunk(
         ON ta.alias = input.hashtag_alias
       LEFT JOIN topic_aliases text_alias
         ON text_alias.alias = LOWER(input.category_text)
-      LEFT JOIN topics t_alias ON t_alias.id = COALESCE(ta.topic_id, text_alias.topic_id) AND t_alias.deleted_at IS NULL AND t_alias.merged_into_topic_id IS NULL
+      LEFT JOIN topics t_alias ON t_alias.id = COALESCE(ta.topic_id, text_alias.topic_id) AND t_alias.deleted_at IS NULL
       LEFT JOIN topics t_name ON LOWER(t_name.name) = LOWER(input.category_text) AND t_name.deleted_at IS NULL AND t_name.merged_into_topic_id IS NULL
       LEFT JOIN topics t_slug ON t_slug.slug = LOWER(input.category_text) AND t_slug.deleted_at IS NULL AND t_slug.merged_into_topic_id IS NULL
       LEFT JOIN relation__rss_feed_item__category__topic topic_relation

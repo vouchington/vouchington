@@ -64,7 +64,6 @@ export async function searchTopHashtags(options: {
       LEFT JOIN topics active_topic
         ON active_topic.id = aliases.topic_id
         AND active_topic.deleted_at IS NULL
-        AND active_topic.merged_into_topic_id IS NULL
       ${filters.length ? `WHERE ${filters.join(' AND ')}` : ''}
       ORDER BY hashtags.item_count DESC, hashtags.latest_content_at DESC, hashtags.latest_content_id DESC, hashtags.topic_alias_id DESC
       LIMIT $${values.push(limit + 1)}`,

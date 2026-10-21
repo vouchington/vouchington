@@ -130,9 +130,10 @@ async function selectPaidFollowerTopics(
       SELECT unnest(${excludeTopicIds}::uuid[])
     )
     SELECT ft.object_id AS topic_id, COUNT(DISTINCT ft.subject_id) AS follower_count
+    -- no-mistakes-disable-next-line postgres-required-predicates: merge repoints this topic reference to destination; deleted_at remains checked
     FROM relation__user__follow__topic ft
     JOIN plan_followers pf ON pf.user_id = ft.subject_id
-    JOIN topics t ON t.id = ft.object_id AND t.deleted_at IS NULL AND t.merged_into_topic_id IS NULL
+    JOIN topics t ON t.id = ft.object_id AND t.deleted_at IS NULL
     WHERE ft.deleted_at IS NULL AND NOT EXISTS (SELECT 1 FROM already_tagged WHERE already_tagged.topic_id = ft.object_id)
     GROUP BY ft.object_id
     ORDER BY follower_count DESC, ft.object_id

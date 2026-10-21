@@ -12,10 +12,8 @@ type FeedLookupResult = {
 /**
  * Finds an existing RSS feed by URL ID; follows canonical_rss_feed_id one level.
  *
- * Intentionally spans ALL topic lifecycle states (active, merged, soft-deleted).
- * Dedup lookups must match feeds whose topic was later merged or soft-deleted —
- * adding `t.deleted_at IS NULL AND t.merged_into_topic_id IS NULL` here causes
- * false-negative dedup and downstream unique violations.
+ * Dedup includes feeds attached to soft-deleted topics so recreating a feed cannot
+ * bypass URL uniqueness. Topic merges repoint ownership to the active destination.
  */
 export async function findExistingFeedByUrlId(
   rssFeedUrlId: string,
@@ -32,8 +30,8 @@ export async function findExistingFeedByUrlId(
 /**
  * Finds an existing RSS feed by URL string without creating URL rows.
  *
- * Intentionally spans ALL topic lifecycle states (active, merged, soft-deleted).
- * Same dedup invariant as findExistingFeedByUrlId — see that function's JSDoc.
+ * Shares findExistingFeedByUrlId's dedup behavior for soft-deleted owners and
+ * canonical destination ownership after topic merges.
  */
 export async function findExistingFeedByUrl(
   url: string,

@@ -11,6 +11,7 @@ import { startConfiguredPoolStatsSampler } from './pool-stats-sampler.mts'
 import { maybeCaptureQuery, runWithSingleQueryCapture } from './query-capture.mts'
 import { recordQueryTiming } from './query-timing.mts'
 import { assertNotCrossWorktreeConnection } from './worktree-guard.mts'
+import { normalizeTopicReferenceQuery } from './topic-reference-errors.mts'
 
 const { Pool } = pg
 
@@ -49,9 +50,9 @@ export const jobSerializationPool = new Pool({
   max: poolConfiguration.advisoryLockMax,
 })
 jobSerializationPool.on('error', onError)
-const runtimeQuery = psql.query
-const runtimeRead = psql.read
-const runtimeWrite = psql.write
+const runtimeQuery = normalizeTopicReferenceQuery(psql.query)
+const runtimeRead = normalizeTopicReferenceQuery(psql.read)
+const runtimeWrite = normalizeTopicReferenceQuery(psql.write)
 const primaryReadScope = new AsyncLocalStorage<boolean>()
 /** Keep a staff reconciliation request on the writer through all nested service reads. */
 export function withPrimaryReads<T>(callback: () => Promise<T>): Promise<T> {
@@ -67,6 +68,7 @@ export const read: Psql['read'] = (input, valuesOrOptions, options) =>
   )
 export const write: Psql['write'] = (input, valuesOrOptions, options) =>
   runWithSingleQueryCapture(() => runtimeWrite(input, valuesOrOptions, options))
+
 export const { createAsyncGeneratorFromCursor, executeHandlerWithCursorInBatches } =
   createBoundedCursorApi(psql)
 export const close: Psql['close'] = async () => {

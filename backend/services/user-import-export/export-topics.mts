@@ -21,7 +21,6 @@ export function streamUserTopics(
       WHERE r.subject_id = ${currentUserId}
         AND r.deleted_at IS NULL
         AND t.deleted_at IS NULL
-        AND t.merged_into_topic_id IS NULL
       ORDER BY t.name ASC, t.id ASC
       LIMIT ${maxItems}
     `
@@ -47,12 +46,12 @@ export async function userTopicExportExceedsLimit(
 ): Promise<boolean> {
   const { rows } = await read<{ count: number }>(sql`/* userTopicExportExceedsLimit */
     SELECT COUNT(*)::int AS count
+    -- no-mistakes-disable-next-line postgres-required-predicates: merge repoints this topic reference to destination; deleted_at remains checked
     FROM relation__user__follow__topic r
     JOIN topics t ON t.id = r.object_id
     WHERE r.subject_id = ${currentUserId}
       AND r.deleted_at IS NULL
       AND t.deleted_at IS NULL
-      AND t.merged_into_topic_id IS NULL
   `)
   return rows[0]!.count > maxItems
 }

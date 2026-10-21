@@ -28,7 +28,6 @@ export function appendTopicDescendantsCte(
       ON topics.id = relation__topic__parent__topic.subject_id
     WHERE relation__topic__parent__topic.deleted_at IS NULL
       AND topics.deleted_at IS NULL
-      AND topics.merged_into_topic_id IS NULL
   )`)
 
   if (options.trailingComma !== false) {

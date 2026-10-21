@@ -74,7 +74,6 @@ CREATE MATERIALIZED VIEW mv_top_hashtags AS
           AND feed.is_enabled = TRUE
           AND feed.is_discoverable = TRUE
           AND feed_topic.deleted_at IS NULL
-          AND feed_topic.merged_into_topic_id IS NULL
       )
       AND EXISTS (
         SELECT 1 FROM relation__rss_feed_item__category__topic_alias relation

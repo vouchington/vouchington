@@ -91,7 +91,6 @@ async function upsertRssFeedCategoriesChunk(
       LEFT JOIN topics t_alias
         ON t_alias.id = ta.topic_id
         AND t_alias.deleted_at IS NULL
-        AND t_alias.merged_into_topic_id IS NULL
       LEFT JOIN topics t_name
         ON LOWER(t_name.name) = input.category_text
         AND t_name.deleted_at IS NULL

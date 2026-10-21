@@ -25,7 +25,6 @@ export function streamFollowedRssFeeds(userId: string) {
       AND r.deleted_at IS NULL
       AND rf.deleted_at IS NULL
       AND t.deleted_at IS NULL
-      AND t.merged_into_topic_id IS NULL
     ORDER BY rf.title ASC, rf.id ASC
   `)
 }

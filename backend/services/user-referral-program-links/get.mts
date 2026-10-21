@@ -67,7 +67,6 @@ export async function getUserReferralLinks(
     JOIN urls u ON u.id = urpl.url_id
     JOIN topics t ON t.id = urpl.referral_program_topic_id
       AND t.deleted_at IS NULL
-      AND t.merged_into_topic_id IS NULL
     WHERE urpl.user_id = ${userId}
       AND urpl.deleted_at IS NULL
       AND urpl.parent_link_id IS NULL

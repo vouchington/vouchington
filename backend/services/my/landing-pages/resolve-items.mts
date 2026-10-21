@@ -62,9 +62,10 @@ async function getReviewsByIds(
       prtr.order_index,
       t.name AS topic_name,
       t.slug AS topic_slug
+    -- no-mistakes-disable-next-line postgres-required-predicates: merge repoints this topic reference to destination; deleted_at remains checked
     FROM posts p
     LEFT JOIN post_review_topic_ratings prtr ON prtr.post_id = p.id
-    LEFT JOIN topics t ON t.id = prtr.topic_id AND t.deleted_at IS NULL AND t.merged_into_topic_id IS NULL
+    LEFT JOIN topics t ON t.id = prtr.topic_id AND t.deleted_at IS NULL
     WHERE p.created_by_id = ${userId}
       AND p.id = ANY(${ids}::uuid[])
       AND p.post_type = 'review'

@@ -73,8 +73,9 @@ export async function createFeedCategoryRelations(rssFeedId: string): Promise<vo
 async function getRssFeedTopicId(rssFeedId: string): Promise<string | null> {
   const { rows } = await read(
     `/* getRssFeedTopicId */
+     -- no-mistakes-disable-next-line postgres-required-predicates: merge repoints this topic reference to destination; deleted_at remains checked
      SELECT rf.topic_id FROM rss_feeds rf
-     JOIN topics t ON t.id = rf.topic_id AND t.deleted_at IS NULL AND t.merged_into_topic_id IS NULL
+     JOIN topics t ON t.id = rf.topic_id AND t.deleted_at IS NULL
      WHERE rf.id = $1 AND rf.deleted_at IS NULL`,
     [rssFeedId],
   )

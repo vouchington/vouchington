@@ -20,7 +20,7 @@ async function createFullTestTopic(options: Parameters<typeof createTestTopic>[0
 }
 
 describe('mergeTopicAliases - post queryability', () => {
-  it('posts tagged with a merged source topic remain queryable by source topic id', async () => {
+  it('posts tagged with a merged source topic become queryable by destination topic id', async () => {
     const admin = await createTestUser({ administrator: true })
     const contributor = await createTestUser()
     const source = await createFullTestTopic({ user: admin, name: `Post Source ${Date.now()}` })
@@ -37,11 +37,8 @@ describe('mergeTopicAliases - post queryability', () => {
 
     await mergeTopicAliases(admin, source, destination)
 
-    // Posts tagged with the source topic must still be queryable by source topic id.
-    // The post-search path uses the relation table (object_id = topicId) and does not
-    // filter topics by merged_into_topic_id, so merge must not break post discovery.
-    await waitForPostMatchingRelatedTopicIds(admin, post.id, [source.id], 25)
-    const result = await getPostIds(admin, { related_topic_ids: [source.id], limit: 25 })
+    await waitForPostMatchingRelatedTopicIds(admin, post.id, [destination.id], 25)
+    const result = await getPostIds(admin, { related_topic_ids: [destination.id], limit: 25 })
     const postIds = result.results.map(r => r.id)
     expect(postIds).toContain(post.id)
   })

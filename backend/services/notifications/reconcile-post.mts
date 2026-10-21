@@ -118,7 +118,6 @@ async function populatePostNotificationRecipients(
       JOIN topics topic
         ON topic.id = alias.topic_id
         AND topic.deleted_at IS NULL
-        AND topic.merged_into_topic_id IS NULL
       JOIN relation__user__subscribe_posts__topic rel
         ON rel.object_id = alias.topic_id
       WHERE post_alias.subject_id = $6

@@ -6,6 +6,7 @@ import type {
   Psql,
   Transaction,
 } from '@vouchington/postgres'
+import { normalizeTopicReferenceQuery } from './topic-reference-errors.mts'
 import { psql } from './runtime.mts'
 import { captureTransactionQuery as captureQuery } from './query-capture.mts'
 import type { QueryExecutor, QueryOptions, PoolClient, TransactionQuery } from './types.mts'
@@ -88,7 +89,9 @@ export async function withTransactionOptions<Result>(
     ? { owner, actions: [], parent: parentScope?.owner === owner ? parentScope : undefined }
     : undefined
   const result = await runWithTransactionOptions(options, async query => {
-    const captureAwareQuery = captureQuery(query)
+    const captureAwareQuery = postCommitActionOwners.has(query)
+      ? query
+      : captureQuery(normalizeTopicReferenceQuery(query))
     return scope
       ? postCommitActionScopes.run(scope, () => handler(captureAwareQuery))
       : handler(captureAwareQuery)
@@ -122,7 +125,7 @@ async function runPostRollbackActions(query: QueryExecutor): Promise<void> {
 }
 
 function ownTransaction(transaction: OwnedTransaction): OwnedTransaction {
-  const ownedTransaction = captureQuery(transaction)
+  const ownedTransaction = captureQuery(normalizeTopicReferenceQuery(transaction))
   postCommitActionOwners.set(ownedTransaction, ownedTransaction)
   postCommitActionOwnersByClient.set(ownedTransaction.client, ownedTransaction)
 

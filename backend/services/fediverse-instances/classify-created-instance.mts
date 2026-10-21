@@ -26,11 +26,12 @@ export async function classifyCreatedFediverseInstance(
     hostname: string
   }>(sql`/* classifyCreatedFediverseInstance:hostname */
     SELECT h.hostname
+    -- no-mistakes-disable-next-line postgres-required-predicates: merge repoints this topic reference to destination; deleted_at remains checked
     FROM fediverse_instance_topics fi
     JOIN topics t ON t.id = fi.topic_id
     JOIN url_hostnames h ON h.id = t.hostname_id
     WHERE fi.topic_id = ${topicId} AND h.id = ${hostnameId}
-      AND t.deleted_at IS NULL AND t.merged_into_topic_id IS NULL
+      AND t.deleted_at IS NULL
     LIMIT 1
   `)
   const hostname = rows[0]?.hostname
@@ -51,7 +52,7 @@ export async function classifyCreatedFediverseInstance(
         nodeinfo_raw = ${JSON.stringify(metadata.nodeinfo_raw)}::jsonb
     FROM topics t
     WHERE fi.topic_id = ${topicId} AND t.id = fi.topic_id
-      AND t.deleted_at IS NULL AND t.merged_into_topic_id IS NULL
+      AND t.deleted_at IS NULL
     RETURNING fi.topic_id
   `)
   if (updated.rows.length > 0) await invalidate.topics(topicId)

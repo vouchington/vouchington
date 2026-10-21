@@ -73,13 +73,13 @@ export async function detectRssFeedItemLanguageBatch(
            rfi.lingua_rs_input_sha256,
            (
              SELECT rf.declared_language
+             -- no-mistakes-disable-next-line postgres-required-predicates: merge repoints this topic reference to destination; deleted_at remains checked
              FROM rss_feed_item_sources rfis
              JOIN rss_feeds rf ON rf.id = rfis.rss_feed_id
              JOIN topics t ON t.id = rf.topic_id
              WHERE rfis.rss_feed_item_id = rfi.id
                AND rf.deleted_at IS NULL
                AND t.deleted_at IS NULL
-               AND t.merged_into_topic_id IS NULL
              ORDER BY
                rf.is_enabled DESC,
                rf.is_discoverable DESC,

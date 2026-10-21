@@ -56,10 +56,10 @@ export async function getTopicIdByAny(identifier: string): Promise<string | null
       AND destination_topic.merged_into_topic_id IS NULL
     UNION ALL
     SELECT ta.topic_id AS topic_id, 2 AS priority
+    -- no-mistakes-disable-next-line postgres-required-predicates: merge repoints this topic reference to destination; deleted_at remains checked
     FROM topic_aliases ta
     JOIN topics t ON t.id = ta.topic_id
     WHERE t.deleted_at IS NULL
-      AND t.merged_into_topic_id IS NULL
       AND ta.alias = $1
     ORDER BY priority, topic_id DESC -- priority 0 (slug) before priority 1 (merged source) before priority 2 (alias); within each priority, UUIDv7 DESC = most recently created
     LIMIT 1
@@ -132,7 +132,6 @@ export async function getTopicIdsByAnyBatch(identifiers: string[]): Promise<Arra
       JOIN topics t ON t.id = ta.topic_id
       JOIN slug_input_data ON ta.alias = slug_input_data.input_value
       WHERE t.deleted_at IS NULL
-        AND t.merged_into_topic_id IS NULL
     ),
     slug_lookups AS (
       SELECT DISTINCT ON (input_order) topic_id, input_order

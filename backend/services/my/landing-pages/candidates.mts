@@ -28,12 +28,12 @@ async function getOwnedPublicReviews(userId: string): Promise<LandingPageCandida
       prtr.order_index,
       t.name AS topic_name,
       t.slug AS topic_slug
+    -- no-mistakes-disable-next-line postgres-required-predicates: merge repoints this topic reference to destination; deleted_at remains checked
     FROM posts p
     JOIN view_public_post_eligibility eligibility ON eligibility.post_id = p.id
     LEFT JOIN post_review_topic_ratings prtr ON prtr.post_id = p.id
     LEFT JOIN topics t ON t.id = prtr.topic_id
       AND t.deleted_at IS NULL
-      AND t.merged_into_topic_id IS NULL
     WHERE p.created_by_id = ${userId}
       AND p.post_type = 'review'
     ORDER BY p.id DESC, prtr.order_index ASC

@@ -61,10 +61,10 @@ export async function linkTopicAlias(
           OR topic_id = $1
           OR NOT EXISTS (
             SELECT 1
+            -- no-mistakes-disable-next-line postgres-required-predicates: merge moves alias ownership to destination; deleted_at remains checked
             FROM topics active_owner
             WHERE active_owner.id = topic_aliases.topic_id
               AND active_owner.deleted_at IS NULL
-              AND active_owner.merged_into_topic_id IS NULL
           )
         )
       RETURNING id, topic_id, alias

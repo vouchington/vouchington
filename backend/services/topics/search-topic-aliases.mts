@@ -52,7 +52,6 @@ export const searchTopicAliases = async ({
     JOIN topics
       ON topics.id = topic_aliases.topic_id
       AND topics.deleted_at IS NULL
-      AND topics.merged_into_topic_id IS NULL
     ${filters.length > 0 ? `WHERE ${filters.join(' AND ')}` : ''}
     ORDER BY alias
     LIMIT $${values.push(limit + 1)}

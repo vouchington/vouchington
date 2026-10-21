@@ -97,7 +97,6 @@ export async function getPostModerationContextBatch(
   tagsQuery.append(sql`)
       AND rpct.deleted_at IS NULL
       AND t.deleted_at IS NULL
-      AND t.merged_into_topic_id IS NULL
   `)
 
   const [postsResult, agentResult, tagsResult] = await Promise.all([

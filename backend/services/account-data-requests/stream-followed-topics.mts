@@ -15,7 +15,6 @@ export function streamFollowedTopics(userId: string) {
     WHERE r.subject_id = ${userId}
       AND r.deleted_at IS NULL
       AND t.deleted_at IS NULL
-      AND t.merged_into_topic_id IS NULL
     ORDER BY t.name ASC, t.id ASC
   `)
 }

@@ -4,7 +4,7 @@ import type { EntityRelation } from './upsert-helpers-types.mts'
 
 export async function maintainBookmarkBloomForRelations(
   relation: EntityRelationMetadata,
-  relations: EntityRelation[],
+  relations: Pick<EntityRelation, 'subject_id' | 'object_id'>[],
 ): Promise<void> {
   if (!relation.is_bookmark || relation.subject_type !== 'user') return
   if (relations.length === 0) return

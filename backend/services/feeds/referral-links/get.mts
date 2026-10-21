@@ -86,6 +86,7 @@ export async function getReferralLinksFeed(
       vup.account_type,
       vup.display_account->>'name' AS display_name,
       vup.profile_image_id
+    -- no-mistakes-disable-next-line postgres-required-predicates: merge repoints this topic reference to destination; deleted_at remains checked
     FROM user_referral_program_links urpl
     JOIN urls u ON u.id = urpl.url_id
     JOIN topics t ON t.id = urpl.referral_program_topic_id
@@ -99,7 +100,6 @@ export async function getReferralLinksFeed(
       AND urpl.activated_at IS NOT NULL
       AND urpl.user_id <> ${currentUser.id}
       AND t.deleted_at IS NULL
-      AND t.merged_into_topic_id IS NULL
       AND NOT EXISTS (SELECT 1 FROM excluded_hostname_ids WHERE excluded_hostname_ids.hostname_id = u.hostname_id)
       AND NOT EXISTS (
         SELECT 1 FROM url_hostnames blocked_hostname

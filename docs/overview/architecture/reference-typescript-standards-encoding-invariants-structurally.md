@@ -28,14 +28,14 @@ the port accessible. The fix: accept only the `hostname` string. The port is now
 absent — the function _cannot_ inspect it, so the invariant is structurally guaranteed without
 any comment.
 
-**Regression test — `findExistingFeed*` spans all topic lifecycle states**
+**Regression test — feed dedup preserves soft-deleted ownership**
 
 `findExistingFeedByUrlId` and `findExistingFeedByUrl` deliberately omit the active-topic
 filter (`deleted_at IS NULL AND merged_into_topic_id IS NULL`) because dedup lookups must
-find feeds whose topic was later merged or soft-deleted. Bots pattern-match the bare JOIN and
+find feeds whose topic was soft-deleted. Merges repoint feeds to the active destination. Bots pattern-match the bare JOIN and
 add the filter — silently causing false-negative dedup and unique violations. The guardian is a
-regression test that creates a feed, soft-deletes / merges its topic, and asserts the lookup
-still returns the feed. That test fails the moment the "fix" is applied, turning silent
+regression test that creates a feed, soft-deletes its topic, and asserts the lookup
+still returns the feed. A merge regression also checks destination ownership. That test fails the moment the "fix" is applied, turning silent
 oscillation into a red CI.
 
 ## Related

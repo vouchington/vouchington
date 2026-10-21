@@ -153,7 +153,7 @@ export async function buildRecommendationQuery(
       INNER JOIN topics t
         ON t.id = ar.topic_id
         AND t.deleted_at IS NULL
-        AND t.merged_into_topic_id IS NULL`)
+        `)
 
   query.append(sql`
       -- Exclude already followed topics
