@@ -8,7 +8,7 @@ import { getPublicUserByAny } from '@services/users/get'
 import type { PrivateUser } from '@services/users/types'
 import { enqueueCommunityLifecycleNotificationPush } from '@services/notifications'
 import { createHouseholdInvitationNotifications } from '@services/notifications/create-household-invitation-notification'
-import { areUsersBlockedOrMutedEitherWay } from '@services/entity-relations/check-block-mute'
+import { getUserIdsBlockedOrMutedEitherWay } from '@services/entity-relations/check-block-mute'
 import { readHouseholdMemberManageAccess } from '../authorization.mts'
 import { page } from './page.mts'
 
@@ -62,22 +62,13 @@ export async function createHouseholdInvitation(
   assertManageAccess(await readHouseholdMemberManageAccess(currentUser, householdId, null, options))
   const invitedUser = await getPublicUserByAny(input.user, { ...options, readOnly: false })
   assert(invitedUser, 404, 'User not found')
-  assert(
-    !(await areUsersBlockedOrMutedEitherWay(currentUser.id, invitedUser.id, options)),
-    404,
-    'User not found',
+  // The inviter and, for an administrator managing another owner's household, that owner.
+  const blocked = await getUserIdsBlockedOrMutedEitherWay(
+    invitedUser.id,
+    [currentUser.id, lockedHouseholds[0].owner_user_id],
+    options,
   )
-  // An administrator managing another owner's household must not bypass that owner's blocks.
-  assert(
-    lockedHouseholds[0].owner_user_id === currentUser.id ||
-      !(await areUsersBlockedOrMutedEitherWay(
-        lockedHouseholds[0].owner_user_id,
-        invitedUser.id,
-        options,
-      )),
-    404,
-    'User not found',
-  )
+  assert(blocked.size === 0, 404, 'User not found')
   assert(invitedUser.id !== currentUser.id, 422, 'You cannot invite yourself')
   assert(
     lockedHouseholds[0].owner_user_id !== invitedUser.id,

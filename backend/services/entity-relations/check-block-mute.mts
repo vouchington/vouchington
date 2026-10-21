@@ -22,7 +22,6 @@ const muteTable = getEntityRelationTableNameOrThrow({
 export async function areUsersBlockedOrMutedEitherWay(
   userId1: string,
   userId2: string,
-  options: QueryOptions = {},
 ): Promise<boolean> {
   const query = sql`/* areUsersBlockedOrMutedEitherWay */ SELECT (EXISTS (SELECT 1 FROM `
   query.append(blockTable)
@@ -33,8 +32,7 @@ export async function areUsersBlockedOrMutedEitherWay(
   query.append(
     sql` WHERE ((subject_id = ${userId1} AND object_id = ${userId2}) OR (subject_id = ${userId2} AND object_id = ${userId1})) AND deleted_at IS NULL)) AS blocked`,
   )
-  // A caller inside a writer transaction must see its own snapshot, not a lagging replica.
-  const { rows } = await (options.query ? write : read)(query, options)
+  const { rows } = await read(query)
   return rows[0]?.blocked === true
 }
 
@@ -42,6 +40,7 @@ export async function areUsersBlockedOrMutedEitherWay(
 export async function getUserIdsBlockedOrMutedEitherWay(
   senderId: string,
   recipientIds: string[],
+  options: QueryOptions = {},
 ): Promise<Set<string>> {
   if (recipientIds.length === 0) return new Set()
   const query = sql`/* getUserIdsBlockedOrMutedEitherWay */ SELECT user_id FROM (
@@ -56,7 +55,8 @@ export async function getUserIdsBlockedOrMutedEitherWay(
     sql` WHERE ((subject_id = ${senderId} AND object_id = ANY(${recipientIds}::uuid[])) OR (object_id = ${senderId} AND subject_id = ANY(${recipientIds}::uuid[]))) AND deleted_at IS NULL
     ) blocked_or_muted`,
   )
-  const { rows } = await read<{ user_id: string }>(query)
+  // A caller inside a writer transaction must see its own snapshot, not a lagging replica.
+  const { rows } = await (options.query ? write : read)<{ user_id: string }>(query, options)
   return new Set(rows.map(row => row.user_id))
 }
 
