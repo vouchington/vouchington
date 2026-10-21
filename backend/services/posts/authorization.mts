@@ -25,7 +25,7 @@ import type { CommunityMemberRole } from '@services/communities/types'
 import { isPlatformAccount } from '@services/users'
 import { canViewPost } from './check-privacy-access.mts'
 import { getRouteAccessPost, getRoutePostByAnyCached } from './route-access.mts'
-import { getCommunityMember } from '@services/communities/members/get'
+import { getDelegatedDeleteCommunityMemberRole } from './delegated-delete-role.mts'
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000
 
@@ -125,12 +125,13 @@ export async function loadWritablePost(
     throw createHttpError(404, 'Post not found')
   const visible = await canViewDelegatedPostsBatch(user, posts, options)
   if (!posts.every(node => visible.get(node.id))) throw createHttpError(404, 'Post not found')
-  const communityMemberRole =
-    operation === 'delete' && post.community_id && post.post_type === 'comment'
-      ? knownCommunityMemberRole !== undefined
-        ? knownCommunityMemberRole
-        : ((await getCommunityMember(post.community_id, user.id, options))?.role ?? null)
-      : null
+  const communityMemberRole = await getDelegatedDeleteCommunityMemberRole(
+    user,
+    post,
+    operation,
+    knownCommunityMemberRole,
+    options,
+  )
   if (operation === 'edit' && !currentUserCanUpdatePost(user, post))
     throw createHttpError(403, 'Forbidden')
   if (operation === 'delete' && !currentUserCanDeletePost(user, post, { communityMemberRole }))
