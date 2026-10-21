@@ -17,4 +17,9 @@ excluded_rules = [
   # Enum declaration order is not a semantic contract in this repo; new values
   # are intentionally appended unless a migration needs an explicit position.
   "require-enum-value-ordering",
+  # Each flagged drop is followed by ADD CONSTRAINT of the same name in the
+  # same migration transaction (a check rewrite or a cross-file foreign key).
+  # The constraint is present again at commit. Excluding the rule leaves
+  # already-applied migration files and their ledger checksums unchanged.
+  "ban-drop-constraint",
 ]
