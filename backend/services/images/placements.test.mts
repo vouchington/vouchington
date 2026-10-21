@@ -15,6 +15,7 @@ import {
   getImagePlacementCopyrightOwner,
   restoreImagePlacementForCopyright,
   withholdImagePlacementForCopyright,
+  withholdImagePlacementsForCopyright,
 } from './placements.mts'
 
 describe('image placements', () => {
@@ -199,5 +200,67 @@ describe('image placements', () => {
     await expect(
       restoreImagePlacementForCopyright({ placementId, expectedRevision: 1 }),
     ).resolves.toMatchObject({ status: 'applied', placement: { revision: 2, withheld: false } })
+  })
+})
+
+describe('withholdImagePlacementsForCopyright', () => {
+  async function livePlacement(label: string) {
+    const creator = await createTestUser()
+    const suffix = randomUUID()
+    const postId = await insertTestPost({
+      title: `${label} ${suffix}`,
+      slug: `${label}-${suffix}`,
+      createdById: creator.id,
+      markdown: '',
+    })
+    await insertTestPostImage({ postId, imageId: await insertTestImage(creator.id) })
+    const placement = (await getPostImages(postId))[0]!
+    return { placementId: placement.placement_id, expectedRevision: placement.placement_revision }
+  }
+
+  it('applies two live placements in one call and keeps input order', async () => {
+    const [later, earlier] = await Promise.all([
+      livePlacement('batch-later'),
+      livePlacement('batch-earlier'),
+    ])
+    const results = await withholdImagePlacementsForCopyright([earlier, later])
+    expect(results).toMatchObject([
+      { status: 'applied', placement: { revision: earlier.expectedRevision + 1 } },
+      { status: 'applied', placement: { revision: later.expectedRevision + 1 } },
+    ])
+  })
+
+  it('reports applied, stale, and not_found in input order', async () => {
+    const [applied, stale] = await Promise.all([
+      livePlacement('batch-applied'),
+      livePlacement('batch-stale'),
+    ])
+    const results = await withholdImagePlacementsForCopyright([
+      applied,
+      { placementId: stale.placementId, expectedRevision: stale.expectedRevision + 5 },
+      { placementId: randomUUID(), expectedRevision: 0 },
+    ])
+    expect(results.map(result => result.status)).toEqual(['applied', 'stale', 'not_found'])
+  })
+
+  it('reports already_applied when the original revision is withheld twice', async () => {
+    const live = await livePlacement('batch-again')
+    await withholdImagePlacementsForCopyright([live])
+    const [again] = await withholdImagePlacementsForCopyright([live])
+    expect(again).toMatchObject({
+      status: 'already_applied',
+      placement: { revision: live.expectedRevision + 1 },
+    })
+  })
+
+  it('returns an empty result for no inputs', async () => {
+    await expect(withholdImagePlacementsForCopyright([])).resolves.toEqual([])
+  })
+
+  it('rejects a duplicate placement id', async () => {
+    const live = await livePlacement('batch-duplicate')
+    await expect(withholdImagePlacementsForCopyright([live, live])).rejects.toThrow(
+      'changeImagePlacementsCopyrightWithholding: duplicate placementId',
+    )
   })
 })

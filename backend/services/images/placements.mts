@@ -2,6 +2,7 @@ import { read, write } from '@data-stores/psql'
 import type { QueryExecutor, QueryOptions, TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import { copyrightPlacementHostIsLiveSql } from './placement-copyright-host-sql.mts'
+import { buildCopyrightPlacementsMutationSql } from './placement-copyright-mutation-sql.mts'
 import {
   toCopyrightImagePlacement,
   type CopyrightImagePlacement,
@@ -111,75 +112,81 @@ function buildCopyrightPlacementReadSql(placementIds: string[]): ReturnType<type
   return statement
 }
 
+export type CopyrightImagePlacementMutationInput = {
+  placementId: string
+  expectedRevision: number
+}
+
+/** Changes many placements in one statement; result order matches input order.
+ * Caller must hold `lockImageDeliveryMutation({ placementIds, placementOnly: true })` for every
+ * input placement in this transaction. */
+export async function changeImagePlacementsCopyrightWithholding(
+  inputs: readonly CopyrightImagePlacementMutationInput[],
+  withhold: boolean,
+  options: QueryOptions = {},
+): Promise<CopyrightImagePlacementMutation[]> {
+  if (inputs.length === 0) return []
+  if (new Set(inputs.map(input => input.placementId)).size !== inputs.length) {
+    throw new Error('changeImagePlacementsCopyrightWithholding: duplicate placementId')
+  }
+  const query = options.query ?? write
+  const { rows } = await query<CopyrightImagePlacementRow>(
+    buildCopyrightPlacementsMutationSql(
+      inputs.map(input => input.placementId),
+      inputs.map(input => input.expectedRevision),
+      withhold,
+    ),
+  )
+  const applied = new Map(
+    rows.map(row => [row.placement_id.toLowerCase(), toCopyrightImagePlacement(row)]),
+  )
+  const missingIds = inputs.flatMap(input =>
+    applied.has(input.placementId.toLowerCase()) ? [] : [input.placementId],
+  )
+  const current =
+    missingIds.length === 0
+      ? new Map<string, CopyrightImagePlacement>()
+      : await getImagePlacementsForCopyright(missingIds, options)
+  return inputs.map(input => copyrightPlacementMutationResult(input, withhold, applied, current))
+}
+
+function copyrightPlacementMutationResult(
+  input: CopyrightImagePlacementMutationInput,
+  withhold: boolean,
+  applied: ReadonlyMap<string, CopyrightImagePlacement>,
+  current: ReadonlyMap<string, CopyrightImagePlacement>,
+): CopyrightImagePlacementMutation {
+  const updated = applied.get(input.placementId.toLowerCase())
+  if (updated) return { status: 'applied', placement: updated }
+  const found = current.get(input.placementId)
+  if (!found) return { status: 'not_found' }
+  if (found.deleted) return { status: 'deleted', placement: found }
+  const desiredApplied = withhold ? found.withheld : !found.withheld
+  if (desiredApplied && found.revision === input.expectedRevision + 1) {
+    return { status: 'already_applied', placement: found }
+  }
+  return { status: 'stale', placement: found }
+}
+
+export async function withholdImagePlacementsForCopyright(
+  inputs: readonly CopyrightImagePlacementMutationInput[],
+  options: QueryOptions = {},
+): Promise<CopyrightImagePlacementMutation[]> {
+  return changeImagePlacementsCopyrightWithholding(inputs, true, options)
+}
+
 export async function withholdImagePlacementForCopyright(
-  input: { placementId: string; expectedRevision: number },
+  input: CopyrightImagePlacementMutationInput,
   options: QueryOptions = {},
 ): Promise<CopyrightImagePlacementMutation> {
-  return changeImagePlacementCopyrightWithholding(input, true, options)
+  const [result] = await withholdImagePlacementsForCopyright([input], options)
+  return result!
 }
 
 export async function restoreImagePlacementForCopyright(
-  input: { placementId: string; expectedRevision: number },
+  input: CopyrightImagePlacementMutationInput,
   options: QueryOptions = {},
 ): Promise<CopyrightImagePlacementMutation> {
-  return changeImagePlacementCopyrightWithholding(input, false, options)
-}
-
-async function changeImagePlacementCopyrightWithholding(
-  input: { placementId: string; expectedRevision: number },
-  withhold: boolean,
-  options: QueryOptions,
-): Promise<CopyrightImagePlacementMutation> {
-  const query = options.query ?? write
-  const { rows } = await query<CopyrightImagePlacementRow>(
-    buildCopyrightPlacementMutationSql(input, withhold),
-  )
-  const updated = rows[0]
-  if (updated) return { status: 'applied', placement: toCopyrightImagePlacement(updated) }
-
-  const current = await getImagePlacementForCopyright(input.placementId, options)
-  if (!current) return { status: 'not_found' }
-  if (current.deleted) return { status: 'deleted', placement: current }
-  const desiredApplied = withhold ? current.withheld : !current.withheld
-  if (desiredApplied && current.revision === input.expectedRevision + 1) {
-    return { status: 'already_applied', placement: current }
-  }
-  return { status: 'stale', placement: current }
-}
-
-function buildCopyrightPlacementMutationSql(
-  input: { placementId: string; expectedRevision: number },
-  withhold: boolean,
-): ReturnType<typeof sql> {
-  const statement = sql`/* changeImagePlacementCopyrightWithholding */
-    UPDATE media_placements placement
-    SET copyright_withheld_at = CASE WHEN ${withhold} THEN CURRENT_TIMESTAMP ELSE NULL END,
-        revision = placement.revision + 1
-    FROM retained_image_placement_bindings binding
-    JOIN images image ON image.id = binding.image_id
-    LEFT JOIN image_placements post_binding ON post_binding.placement_id = binding.placement_id
-    LEFT JOIN posts post ON post.id = post_binding.post_id
-    LEFT JOIN image_surface_placements surface ON surface.placement_id = binding.placement_id
-    WHERE placement.id = binding.placement_id
-      AND placement.id = ${input.placementId}
-      AND placement.revision = ${input.expectedRevision}
-      AND placement.retired_at IS NULL
-      AND (
-        (${withhold} AND placement.copyright_withheld_at IS NULL)
-        OR (NOT ${withhold} AND placement.copyright_withheld_at IS NOT NULL)
-      )
-      AND image.deleted_at IS NULL
-      AND `
-  statement.append(copyrightPlacementHostIsLiveSql())
-  statement.append(sql`
-      AND image.quarantine_pending_at IS NULL
-      AND image.is_flagged_by_openai_omni_moderation IS NOT TRUE
-    RETURNING placement.id AS placement_id, placement.revision, binding.image_id,
-      placement.retired_at, placement.copyright_withheld_at,
-      image.deleted_at AS image_deleted_at,
-      image.quarantine_pending_at AS image_quarantine_pending_at,
-      image.is_flagged_by_openai_omni_moderation AS image_moderation_flagged, `)
-  statement.append(copyrightPlacementHostIsLiveSql())
-  statement.append(sql` AS host_live`)
-  return statement
+  const [result] = await changeImagePlacementsCopyrightWithholding([input], false, options)
+  return result!
 }

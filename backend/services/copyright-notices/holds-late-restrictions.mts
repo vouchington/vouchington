@@ -1,11 +1,14 @@
-import { insertCopyrightActionIntent } from './action-intent-insertion.mts'
+import { insertCopyrightActionIntents } from './action-intent-insertion.mts'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import {
   getImagePlacementsForCopyright,
-  withholdImagePlacementForCopyright,
+  withholdImagePlacementsForCopyright,
 } from '@services/images/placements'
-import { prepublishImagePlacementDenial } from '@services/media-delivery-safety'
+import {
+  lockImageDeliveryMutation,
+  prepublishImagePlacementDenial,
+} from '@services/media-delivery-safety'
 import { assertMediaDeliveryLegalEnforcementEnabled } from '@modules/aws'
 
 /** A qualifying hold is governed by receipt time. Its later review cannot leave an already
@@ -66,38 +69,60 @@ export async function activateLateCopyrightLegalHoldRestrictions(
       dependencies.assertLegalEnforcementEnabled ?? assertMediaDeliveryLegalEnforcementEnabled
     assertEnabled()
   }
+  if (rows.length === 0) return []
   const publishPlacement = dependencies.publishPlacement ?? prepublishImagePlacementDenial
+  // One sorted acquisition for every placement, before any revision is read. The per-placement
+  // lock inside publishPlacement re-enters these locks (advisory xact locks and row locks are
+  // re-entrant), so it adds no new lock order.
+  await lockImageDeliveryMutation(transaction, {
+    placementIds: rows.map(restriction => restriction.placement_id),
+    placementOnly: true,
+  })
   const placements = await getImagePlacementsForCopyright(
     rows.map(restriction => restriction.placement_id),
     { query: transaction },
   )
-  const intentIds = await Promise.all(
-    rows.map(async restriction => {
+  const live = rows
+    .flatMap(restriction => {
       const placement = placements.get(restriction.placement_id)
-      if (!placement || placement.deleted) return null
-      if (!placement.withheld) {
-        // no-mistakes-disable-next-line query-reached-per-item: preserve existing per-item behavior pending batching review; see #3256
-        await publishPlacement(
-          {
-            placementId: placement.placementId,
-            revision: placement.revision,
-            imageId: placement.imageId,
-          },
-          { query: transaction },
-        )
-        await withholdImagePlacementForCopyright(
-          { placementId: restriction.placement_id, expectedRevision: placement.revision },
-          { query: transaction },
-        )
-      }
-      const intent = await insertCopyrightActionIntent(
-        transaction,
-        restriction.id,
-        placement.revision,
-        'withhold',
-      )
-      return intent.id
-    }),
+      return placement && !placement.deleted ? [{ restriction, placement }] : []
+    })
+    .toSorted((a, b) => a.placement.placementId.localeCompare(b.placement.placementId))
+  // Targets of one notice can share a placement at different revisions; fence each placement once.
+  const toWithhold = [
+    ...new Map(
+      live.flatMap(entry =>
+        entry.placement.withheld ? [] : [[entry.placement.placementId, entry] as const],
+      ),
+    ).values(),
+  ]
+  for (const { placement } of toWithhold) {
+    // oxlint-disable no-await-in-loop -- each edge denial is a conditional single-item DynamoDB write acknowledged under its own lease, in sorted placement order.
+    // no-mistakes-disable-next-line query-reached-per-item: each edge denial is a conditional single-item DynamoDB write acknowledged under its own projection lease before PostgreSQL withholds the placement; the edge has no conditional batch write.
+    await publishPlacement(
+      {
+        placementId: placement.placementId,
+        revision: placement.revision,
+        imageId: placement.imageId,
+      },
+      { query: transaction },
+    )
+    // oxlint-enable no-await-in-loop
+  }
+  await withholdImagePlacementsForCopyright(
+    toWithhold.map(({ restriction, placement }) => ({
+      placementId: restriction.placement_id,
+      expectedRevision: placement.revision,
+    })),
+    { query: transaction },
   )
-  return intentIds.filter((id): id is string => id !== null)
+  const intents = await insertCopyrightActionIntents(
+    transaction,
+    live.map(({ restriction, placement }) => ({
+      restrictionId: restriction.id,
+      placementRevision: placement.revision,
+      action: 'withhold' as const,
+    })),
+  )
+  return intents.map(intent => intent.id)
 }
