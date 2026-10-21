@@ -2,7 +2,11 @@ import { getRssFeedItemsWorkLimit } from '@services/rss-feed-items/work-limits'
 import { backfillCategoriesForTopicAliases } from '@services/rss-feed-items/backfill-categories-for-topic-aliases'
 import { backfillCategoriesForTopicAlias } from '@services/rss-feeds/categories'
 import { reconcileRssFeedItemCategorySnapshots } from '@services/rss-feed-items/category-snapshot-reconciliations'
-import { enqueueContinueRssFeedItemCategorySnapshotReconciliation } from '@queues/rss-feed-maintenance/enqueues/item-categories'
+import {
+  enqueueContinueRssFeedItemCategorySnapshotReconciliation,
+  enqueueBackfillCategoriesForTopicAliases,
+  enqueueBackfillRssFeedCategoriesForTopicAlias,
+} from '@queues/rss-feed-maintenance/enqueues/item-categories'
 
 type RssFeedItemCategoryDependencies = {
   backfillCategoriesForTopicAlias: typeof backfillCategoriesForTopicAlias
@@ -35,22 +39,26 @@ export const processReconcileRssFeedItemCategorySnapshots = async (
  * Backfill topic_id for categories when a topic's aliases are updated
  * This matches all categories with text matching the topic's aliases
  */
-export const processBackfillCategoriesForTopicAliases = (
+export const processBackfillCategoriesForTopicAliases = async (
   { topicId }: { topicId: string },
   dependencies?: Partial<RssFeedItemCategoryDependencies>,
 ) => {
   const backfill =
     dependencies?.backfillCategoriesForTopicAliases ?? backfillCategoriesForTopicAliases
-  return backfill(topicId)
+  const result = await backfill(topicId)
+  if (result.hasMore) await enqueueBackfillCategoriesForTopicAliases(topicId)
+  return result
 }
 
 /**
  * Backfill topic_id for feed-level categories when a topic's aliases/name/slug change.
  */
-export const processBackfillRssFeedCategoriesForTopicAlias = (
+export const processBackfillRssFeedCategoriesForTopicAlias = async (
   { topicId }: { topicId: string },
   dependencies?: Partial<RssFeedItemCategoryDependencies>,
 ) => {
   const backfill = dependencies?.backfillCategoriesForTopicAlias ?? backfillCategoriesForTopicAlias
-  return backfill(topicId)
+  const result = await backfill(topicId)
+  if (result.hasMore) await enqueueBackfillRssFeedCategoriesForTopicAlias(topicId)
+  return result
 }

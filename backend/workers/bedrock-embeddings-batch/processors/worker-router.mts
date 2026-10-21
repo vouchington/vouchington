@@ -1,3 +1,4 @@
+import type { BatchListingCursor } from '@services/bedrock-embeddings/batch/orchestrator/listing-page'
 import type { ReconciliationEntityType } from '@queues/bedrock-embeddings-batch/types'
 import {
   processBatchPolling,
@@ -35,13 +36,13 @@ export const processBedrockEmbeddingsBatchJob = async (
     case 'bedrock-embeddings:dispatcher': {
       switch (job.name) {
         case 'bedrock-embeddings.poll_dispatcher':
-          return processBatchPollingDispatcher()
+          return processBatchPollingDispatcher(job.data.cursor as BatchListingCursor | undefined)
         case 'bedrock-embeddings.creation_dispatcher':
           return processBatchCreationDispatcher()
         case 'bedrock-embeddings.backlog_dispatcher':
           return processBacklogDispatcher()
         case 'bedrock-embeddings.stale_cleanup_dispatcher':
-          return processStaleCleanupDispatcher()
+          return processStaleCleanupDispatcher(job.data.cursor as BatchListingCursor | undefined)
         default:
           throw new Error(`Unknown dispatcher job type: ${job.name}`)
       }

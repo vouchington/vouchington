@@ -68,7 +68,7 @@ describe('topic-aliases processors', () => {
   })
 
   it('enqueues an immediate serialized continuation after a full reconciliation batch', async () => {
-    mockReconcile.mockResolvedValue({ reconciled: 25, updated: 4 })
+    mockReconcile.mockResolvedValue({ reconciled: 25, updated: 4, hasMore: true })
     mockEnqueueContinuation.mockResolvedValue(undefined)
 
     await expect(
@@ -79,13 +79,13 @@ describe('topic-aliases processors', () => {
           processReconcileTopicAliasCategoryMappings: mockReconcile,
         },
       ),
-    ).resolves.toEqual({ reconciled: 25, updated: 4 })
+    ).resolves.toEqual({ reconciled: 25, updated: 4, hasMore: true })
 
     expect(mockEnqueueContinuation).toHaveBeenCalledOnce()
   })
 
   it('does not enqueue a continuation after a partial reconciliation batch', async () => {
-    mockReconcile.mockResolvedValue({ reconciled: 24, updated: 4 })
+    mockReconcile.mockResolvedValue({ reconciled: 24, updated: 4, hasMore: false })
 
     await expect(
       processReconcileTopicAliasCategoryMappings(
@@ -95,14 +95,14 @@ describe('topic-aliases processors', () => {
           processReconcileTopicAliasCategoryMappings: mockReconcile,
         },
       ),
-    ).resolves.toEqual({ reconciled: 24, updated: 4 })
+    ).resolves.toEqual({ reconciled: 24, updated: 4, hasMore: false })
 
     expect(mockEnqueueContinuation).not.toHaveBeenCalled()
   })
 
   it('rejects when a full-batch continuation cannot be dispatched', async () => {
     const enqueueError = new Error('continuation unavailable')
-    mockReconcile.mockResolvedValue({ reconciled: 25, updated: 4 })
+    mockReconcile.mockResolvedValue({ reconciled: 25, updated: 4, hasMore: true })
     mockEnqueueContinuation.mockRejectedValue(enqueueError)
 
     await expect(

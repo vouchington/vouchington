@@ -42,14 +42,19 @@ export const OPENAI_MODERATION_RECONCILE_IMAGE_QUARANTINES_JOB = defineBackgroun
     attempts: 1,
   },
 )
-export const OPENAI_MODERATION_RECONCILE_POST_MODERATION_JOB = defineBackgroundJob(
-  OPENAI_MODERATION_DOMAIN,
-  {
+export type PostModerationReconciliationData = {
+  cursor?: {
+    afterVersionId: string
+    afterSource: 'openai_omni' | 'spam_detection'
+    throughId: string
+  }
+}
+export const OPENAI_MODERATION_RECONCILE_POST_MODERATION_JOB =
+  defineBackgroundJob<PostModerationReconciliationData>(OPENAI_MODERATION_DOMAIN, {
     name: 'reconcile_post_moderation',
     priority: PRIORITY_DISPATCH,
     attempts: 1,
-  },
-)
+  })
 
 export const OPENAI_MODERATION_JOBS = [
   OPENAI_MODERATION_POST_JOB,

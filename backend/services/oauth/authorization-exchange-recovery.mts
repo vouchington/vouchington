@@ -11,13 +11,18 @@ import {
   STALE_EXCHANGE_CLAIM_SECONDS,
   X_MAX_QUEUE_DELAY_SECONDS,
 } from './authorization-exchange-state.mts'
+import { getOAuthAuthorizationExchangeWorkLimit } from './work-limits.mts'
 
 export async function getRecoverableOAuthAuthorizationIds(
-  limit = 500,
+  limit = getOAuthAuthorizationExchangeWorkLimit('authorization_exchange_recovery_batch_size'),
   authorizationIds?: readonly string[],
   retainedClaim?: RetainedOAuthExchangeClaim,
-): Promise<string[]> {
-  if (authorizationIds?.length === 0) return []
+): Promise<{ ids: string[]; hasMore: boolean }> {
+  if (authorizationIds?.length === 0) return { ids: [], hasMore: false }
+  const batchSize = Math.min(
+    limit,
+    getOAuthAuthorizationExchangeWorkLimit('authorization_exchange_recovery_batch_size'),
+  )
   observeSharedDbScope('getRecoverableOAuthAuthorizationIds', sharedDbIdsScope(authorizationIds))
   const idScope = authorizationIds ? [...authorizationIds] : null
   await using transaction = await beginTransaction()
@@ -25,7 +30,7 @@ export async function getRecoverableOAuthAuthorizationIds(
     '/* getRecoverableOAuthAuthorizationIds:isolation */ SET TRANSACTION ISOLATION LEVEL READ COMMITTED',
   )
   const parameters = [
-    limit,
+    batchSize,
     STALE_EXCHANGE_CLAIM_SECONDS,
     MAX_EXCHANGE_ATTEMPTS,
     X_MAX_QUEUE_DELAY_SECONDS,
@@ -38,7 +43,7 @@ export async function getRecoverableOAuthAuthorizationIds(
   const ownedIds = locked.rows.map(row => row.id)
   if (ownedIds.length === 0) {
     await transaction.commit()
-    return []
+    return { ids: [], hasMore: false }
   }
   const retainedIds = await getRetainedUnarmedOAuthExchangeIds(
     transaction,
@@ -128,7 +133,7 @@ export async function getRecoverableOAuthAuthorizationIds(
      ORDER BY current_flow.id ASC
      LIMIT $1`,
     [
-      limit,
+      batchSize,
       STALE_EXCHANGE_CLAIM_SECONDS,
       MAX_EXCHANGE_ATTEMPTS,
       X_MAX_QUEUE_DELAY_SECONDS,
@@ -137,7 +142,12 @@ export async function getRecoverableOAuthAuthorizationIds(
     ],
   )
   await transaction.commit()
-  return rows.map(row => String(row.id))
+  return {
+    ids: rows.map(row => String(row.id)),
+    // A full terminal bucket can produce no ids because it was terminalized. The next scheduled
+    // dispatcher run resumes from the durable recovery predicate in either case.
+    hasMore: ownedIds.length >= batchSize,
+  }
 }
 
 export async function deleteExpiredOAuthAuthorizationBatch(

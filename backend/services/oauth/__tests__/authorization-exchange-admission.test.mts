@@ -53,7 +53,10 @@ describe('OAuth native provider admission authority', () => {
   it('rejects stale terminalization and a released successor while preserving exact successor identity', async () => {
     const staleClaim = randomUUID()
     const staleId = await fixture(staleClaim)
-    await expect(getRecoverableOAuthAuthorizationIds(1, [staleId])).resolves.toEqual([])
+    await expect(getRecoverableOAuthAuthorizationIds(1, [staleId])).resolves.toEqual({
+      ids: [],
+      hasMore: true,
+    })
     await expect(validateOAuthAuthorizationExchangeClaim(staleId, staleClaim)).rejects.toThrow(
       'lost its current unexpired claim',
     )

@@ -9,6 +9,6 @@ export async function clearAllCategoriesForUnlinkedTopicAlias(
   topicAliasId: string,
   alias: string,
   options: QueryOptions = {},
-): Promise<{ updated: number }> {
+): Promise<{ updated: number; hasMore: boolean }> {
   return clearUnlinkedTopicAliasCategories(topicAliasId, alias, undefined, options)
 }

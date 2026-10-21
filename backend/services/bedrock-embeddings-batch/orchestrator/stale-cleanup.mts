@@ -1,3 +1,4 @@
+import type { BatchListingCursor } from '@services/bedrock-embeddings/batch/orchestrator/listing-page'
 import { processBatch, retrieveBedrockBatch } from './poll.mts'
 import { cleanupBatchLocks, stopBedrockBatch } from './cleanup.mts'
 import { getStaleBatches } from './find-stale.mts'
@@ -6,13 +7,19 @@ import { write } from '@data-stores/psql'
 import onError from '@modules/on-error'
 
 export type StaleCleanupResult = {
+  hasMore: boolean
+  nextCursor?: BatchListingCursor
   inspected: number
   reconciled: number
   forcedCancellations: Array<{ id: string; jobArn: string }>
 }
 
-export async function runStaleCleanup(ttlHours: number): Promise<StaleCleanupResult> {
-  const staleBatches = await getStaleBatches(ttlHours)
+export async function runStaleCleanup(
+  ttlHours: number,
+  cursor?: BatchListingCursor,
+): Promise<StaleCleanupResult> {
+  const page = await getStaleBatches(ttlHours, cursor)
+  const staleBatches = page.batches
   const forcedCancellations: Array<{ id: string; jobArn: string }> = []
   let reconciled = 0
 
@@ -70,6 +77,8 @@ export async function runStaleCleanup(ttlHours: number): Promise<StaleCleanupRes
   }
 
   return {
+    hasMore: page.hasMore,
+    ...(page.nextCursor && { nextCursor: page.nextCursor }),
     inspected: staleBatches.length,
     reconciled,
     forcedCancellations,

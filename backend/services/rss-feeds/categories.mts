@@ -110,14 +110,12 @@ async function upsertRssFeedCategoriesChunk(
  * Backfills topic_id for existing rss_feed_categories rows when a topic alias
  * is added or a topic name/slug changes.
  */
-export async function backfillCategoriesForTopicAlias(topicId: string): Promise<number> {
+export async function backfillCategoriesForTopicAlias(
+  topicId: string,
+): Promise<{ updated: number; hasMore: boolean }> {
   const RSS_FEED_CATEGORY_BACKFILL_BATCH_SIZE = getRssFeedsWorkLimit('category_backfill_batch_size')
-  let updated = 0
-
-  while (true) {
-    // oxlint-disable-next-line no-await-in-loop -- each write selects the next rows left by the preceding bounded backfill batch
-    const { rowCount } = await write(
-      sql`/* backfillCategoriesForTopicAlias */
+  const { rowCount } = await write(
+    sql`/* backfillCategoriesForTopicAlias */
         WITH candidates AS (
           SELECT category.rss_feed_id, category.category_identity_id
           FROM rss_feed_categories category
@@ -148,7 +146,7 @@ export async function backfillCategoriesForTopicAlias(topicId: string): Promise<
             )
           ORDER BY category.rss_feed_id, category.category_identity_id
           LIMIT ${RSS_FEED_CATEGORY_BACKFILL_BATCH_SIZE}
-          FOR UPDATE OF category SKIP LOCKED
+          FOR UPDATE OF category
         )
         UPDATE rss_feed_categories target
         SET topic_id = ${topicId}
@@ -156,12 +154,9 @@ export async function backfillCategoriesForTopicAlias(topicId: string): Promise<
         WHERE target.rss_feed_id = candidates.rss_feed_id
           AND target.category_identity_id = candidates.category_identity_id
       `,
-    )
-    const batchUpdated = rowCount ?? 0
-    updated += batchUpdated
-    if (batchUpdated === 0) break
-  }
-  return updated
+  )
+  const batchUpdated = rowCount ?? 0
+  return { updated: batchUpdated, hasMore: batchUpdated === RSS_FEED_CATEGORY_BACKFILL_BATCH_SIZE }
 }
 
 /**

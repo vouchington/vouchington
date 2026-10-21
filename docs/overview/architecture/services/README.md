@@ -48,6 +48,11 @@ flowchart LR
 
 ## Decisions worth knowing
 
+Moderation reconciliation admits expired and retryable work through the same bounded candidate
+page. Terminal dispositions are written only for that admitted page; lease and disposition updates
+commit together. Batch embedding listings use a fixed ID boundary and keyset continuation because
+polling does not necessarily remove active rows from the work predicate.
+
 Vote-weight maintenance separates indexed trigger selection from idempotent recalculation of current
 facts. Source writes enqueue after commit; overlapping windows and transactionally retained dirty
 markers provide recovery when publication or timestamp visibility loses a trigger. See

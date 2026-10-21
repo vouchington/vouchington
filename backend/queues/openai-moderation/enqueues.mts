@@ -1,5 +1,6 @@
 import { createBackgroundBulkEnqueue, createBackgroundEnqueue } from '@queues/background/enqueues'
 import {
+  type PostModerationReconciliationData,
   OPENAI_MODERATION_BACKFILL_IMAGES_JOB,
   OPENAI_MODERATION_BACKFILL_POSTS_JOB,
   OPENAI_MODERATION_IMAGE_JOB,
@@ -147,4 +148,16 @@ export function enqueueReconcilePostModeration() {
       ttl: ONE_MINUTE_MS,
     },
   } satisfies Partial<JobOptions>)
+}
+
+export function enqueueReconcilePostModerationContinuation(
+  cursor: NonNullable<PostModerationReconciliationData['cursor']>,
+) {
+  return enqueueReconcilePostModerationJob(
+    { cursor },
+    {
+      jobId: `post_moderation_reconciliation__${cursor.throughId}__${cursor.afterVersionId}__${cursor.afterSource}`,
+      ...CONTINUATION_OPTIONS,
+    },
+  )
 }

@@ -1,3 +1,4 @@
+import type { BatchListingCursor } from '@services/bedrock-embeddings/batch/orchestrator/listing-page'
 import { processBatch } from '@services/bedrock-embeddings-batch/orchestrator/poll'
 import {
   getBatchInfo,
@@ -16,6 +17,8 @@ import { applyRssFeedItemBatchUpdates } from '@services/bedrock-embeddings-batch
 import type { BatchJobType } from '@services/bedrock-embeddings/batch/types'
 import {
   enqueueBulkProcessEmbeddingBatchPolling,
+  enqueueEmbeddingsBatchPollDispatcher,
+  enqueueEmbeddingsBatchStaleCleanupDispatcher,
   enqueueCreateTopicEmbeddingsBatch,
   enqueueCreatePostEmbeddingsBatch,
   enqueueCreateRssFeedItemEmbeddingsBatch,
@@ -82,16 +85,12 @@ export const processBatchPolling = async (
   return { success: true, processed: true }
 }
 
-export const processBatchPollingDispatcher = async () => {
-  const pendingBatches = await getPendingBatches()
-
-  if (pendingBatches.length === 0) {
-    return { count: 0 }
-  }
-
-  await enqueueBulkProcessEmbeddingBatchPolling(pendingBatches.map(batch => batch.id))
-
-  return { count: pendingBatches.length }
+export const processBatchPollingDispatcher = async (cursor?: BatchListingCursor) => {
+  const page = await getPendingBatches(cursor)
+  if (page.batches.length > 0)
+    await enqueueBulkProcessEmbeddingBatchPolling(page.batches.map(batch => batch.id))
+  if (page.nextCursor) await enqueueEmbeddingsBatchPollDispatcher({ cursor: page.nextCursor })
+  return { count: page.batches.length, hasMore: page.hasMore }
 }
 
 export const processBatchCreationDispatcher = async () => {
@@ -123,4 +122,9 @@ export const processBacklogDispatcher = async (): Promise<{
   return { triggered: false, depth, threshold }
 }
 
-export const processStaleCleanupDispatcher = () => runStaleCleanup(getStaleTtlHours())
+export const processStaleCleanupDispatcher = async (cursor?: BatchListingCursor) => {
+  const result = await runStaleCleanup(getStaleTtlHours(), cursor)
+  if (result.nextCursor)
+    await enqueueEmbeddingsBatchStaleCleanupDispatcher({ cursor: result.nextCursor })
+  return result
+}

@@ -154,7 +154,10 @@ describe('DSA statement submission materialization', () => {
     }
     expect(await countTestDsaSubmissionsForRestriction(dayBefore.restrictionId)).toBe(0)
     expect(await countTestDsaSubmissionsForRestriction(foreign.restrictionId)).toBe(0)
-    expect(await materializeDsaStatementSubmissions(from, { restrictionIds: scope })).toBe(0)
+    expect(await materializeDsaStatementSubmissions(from, { restrictionIds: scope })).toEqual({
+      inserted: 0,
+      hasMore: false,
+    })
   })
 
   it('materializes an existing restriction after its receipt approval is withdrawn before the first sweep', async () => {
@@ -185,14 +188,20 @@ describe('DSA statement submission materialization', () => {
     expect(await countTestDsaSubmissionsForRestriction(restrictionId)).toBe(0)
     const from = new Date('2026-07-01T00:00:00.000Z')
     const scope = { restrictionIds: [restrictionId] }
-    expect(await materializeDsaStatementSubmissions(from, scope)).toBe(1)
+    expect(await materializeDsaStatementSubmissions(from, scope)).toEqual({
+      inserted: 1,
+      hasMore: false,
+    })
     expect(await countTestDsaSubmissionsForRestriction(restrictionId)).toBe(1)
     const submission = await readTestDsaSubmissionForRestriction(restrictionId)
     expect(submission.payload?.puid).toBe(restrictionId)
     expect(submission.failed_at).toBeNull()
     expect(submission.failure_code).toBeNull()
     expect(await countTestDsaSubmissionsForRestriction(foreign.restrictionId)).toBe(0)
-    expect(await materializeDsaStatementSubmissions(from, scope)).toBe(0)
+    expect(await materializeDsaStatementSubmissions(from, scope)).toEqual({
+      inserted: 0,
+      hasMore: false,
+    })
     expect(await readTestDsaSubmissionForRestriction(restrictionId)).toEqual(submission)
     expect(await countTestDsaSubmissionsForRestriction(foreign.restrictionId)).toBe(0)
   })

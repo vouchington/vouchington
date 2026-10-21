@@ -19,6 +19,7 @@ export const membershipAdditionalWorkDefaults = {
   stripe_subscription_invoice_max_pages: 10,
   stripe_invoice_line_max_pages: 10,
   stripe_dispute_max_pages: 10,
+  refund_reconciliation_batch_size: 100,
 }
 
 export const membershipAdditionalWorkMaxValues = {
@@ -39,6 +40,7 @@ export const membershipAdditionalWorkMaxValues = {
   stripe_subscription_invoice_max_pages: 100,
   stripe_invoice_line_max_pages: 100,
   stripe_dispute_max_pages: 100,
+  refund_reconciliation_batch_size: 1000,
 }
 
 export const membershipWorkConfig = new DynamicConfig({
@@ -63,6 +65,7 @@ export const membershipWorkConfig = new DynamicConfig({
     stripe_subscription_invoice_max_pages: 'number',
     stripe_invoice_line_max_pages: 'number',
     stripe_dispute_max_pages: 'number',
+    refund_reconciliation_batch_size: 'number',
   },
   defaultFields: { batch_size: 100, max_batches_per_run: 20, ...membershipAdditionalWorkDefaults },
 })

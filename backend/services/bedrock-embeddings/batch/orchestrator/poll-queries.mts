@@ -1,19 +1,28 @@
+import { getMinUUIDv7ForDate } from '@modules/utils/ids'
+import { getBatchListingPageSize } from '../config.mts'
+import {
+  toBatchListingPage,
+  type BatchListingCursor,
+  type BatchListingPage,
+} from './listing-page.mts'
 import { read } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 
-export const getPendingBatches = async (): Promise<Array<{ id: string }>> => {
-  const { rows } = await read(
+export const getPendingBatches = async (
+  cursor?: BatchListingCursor,
+): Promise<BatchListingPage<{ id: string }>> => {
+  const limit = getBatchListingPageSize()
+  const throughId = cursor?.throughId ?? getMinUUIDv7ForDate(new Date(Date.now() + 1))
+  const { rows } = await read<{ id: string }>(
     `/* getPendingBatches */
-    SELECT id
-    FROM bedrock_embedding_batches
-    WHERE submitted_at IS NOT NULL
-      AND completed_at IS NULL
-      AND failed_at IS NULL
-      AND cancelled_at IS NULL
-  `,
+    SELECT id FROM bedrock_embedding_batches
+    WHERE submitted_at IS NOT NULL AND completed_at IS NULL
+      AND failed_at IS NULL AND cancelled_at IS NULL
+      AND ($1::uuid IS NULL OR id > $1::uuid) AND id < $2::uuid
+    ORDER BY id LIMIT $3`,
+    [cursor?.afterId ?? null, throughId, limit + 1],
   )
-
-  return rows.map(row => ({ id: row.id }))
+  return toBatchListingPage(rows, limit, throughId)
 }
 
 export const getBatchRecordsCreatedInLastHour = async (

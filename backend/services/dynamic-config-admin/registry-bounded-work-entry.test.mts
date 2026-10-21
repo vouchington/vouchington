@@ -5,6 +5,7 @@ import * as moderation from '@services/moderation-analytics/work-limits'
 import * as clearance from '@services/post-clearance/work-limits'
 import * as users from '@services/users/work-limits'
 import * as votes from '@services/vote-weight/work-limits'
+import * as oauth from '@services/oauth/work-limits'
 import * as membership from '@services/memberships/work-limits'
 import { dynamicConfigRegistry } from './registry.mts'
 import { defineBoundedWorkNamespace } from './registry-bounded-work-entry.mts'
@@ -40,6 +41,14 @@ describe('bounded work namespace policy', () => {
 })
 
 const additionalOwners = [
+  {
+    config: oauth.oauthAuthorizationExchangeWorkConfig,
+    maxima: oauth.oauthAuthorizationExchangeWorkMaxValues,
+    read: (field: string) =>
+      oauth.getOAuthAuthorizationExchangeWorkLimit(
+        field as keyof typeof oauth.oauthAuthorizationExchangeWorkMaxValues,
+      ),
+  },
   {
     config: moderation.moderationAnalyticsWorkConfig,
     maxima: moderation.moderationAnalyticsWorkMaxValues,

@@ -26,7 +26,10 @@ describe('OAuth authorization exchange bounded recovery', () => {
         updatedAt: new Date(Date.now() - (id === liveId ? 0 : 61_000)),
       })
     }
-    expect(await getRecoverableOAuthAuthorizationIds(1, [staleId, liveId])).toEqual([])
+    expect(await getRecoverableOAuthAuthorizationIds(1, [staleId, liveId])).toEqual({
+      ids: [],
+      hasMore: true,
+    })
     expect(await getTestOAuthAuthorization(staleId)).toMatchObject({
       status: 'rejected',
       callback_error: 'provider_exchange_outcome_unknown',
@@ -62,7 +65,8 @@ describe('OAuth authorization exchange bounded recovery', () => {
       if (!firstId || !secondId) throw new Error('Expected two owned recovery candidates')
       await withTestOAuthAuthorizationRowLocked(firstId, async () => {
         const recovered = await getRecoverableOAuthAuthorizationIds(1, ids)
-        expect(recovered).toEqual(exchangeAttempts === 0 ? [secondId] : [])
+        expect(recovered.ids).toEqual(exchangeAttempts === 0 ? [secondId] : [])
+        expect(recovered.hasMore).toBe(true)
         expect(await getTestOAuthAuthorization(firstId)).toMatchObject({
           status: 'callback_received',
         })

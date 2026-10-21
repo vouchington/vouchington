@@ -13,6 +13,7 @@ import type { BedrockEmbeddingsBatchDispatcherJob } from './types.mts'
 
 type CreationJobName = 'topics' | 'posts' | 'rss_feed_items' | 'crawl_chunks' | 'images'
 type DispatcherOptions = {
+  cursor?: { afterId: string; throughId: string }
   deduplicationId?: string
 }
 const BACKFILL_DEDUPLICATION_TTL_MS = 60 * 60_000
@@ -66,7 +67,10 @@ const enqueueBulkProcessEmbeddingBatchPollingJobs = createBulkEnqueueFunction({
 
 function createDispatcherEnqueue(jobName: BedrockEmbeddingsBatchDispatcherJob) {
   const job = requireBackgroundCpuJob(`bedrock-embeddings.${jobName}`)
-  const enqueue = createEnqueueFunction<Record<string, never>, string>({
+  const enqueue = createEnqueueFunction<
+    { cursor?: { afterId: string; throughId: string } },
+    string
+  >({
     queue: backgroundCpu,
     queueName: BACKGROUND_CPU_QUEUE_NAME,
     jobName: job.name,
@@ -74,19 +78,21 @@ function createDispatcherEnqueue(jobName: BedrockEmbeddingsBatchDispatcherJob) {
   })
 
   return (options?: DispatcherOptions): EnqueueReturnType => {
-    return enqueue(
-      {},
-      {
-        priority: PRIORITY_DISPATCHER,
-        ...(options?.deduplicationId && {
-          deduplication: {
-            id: `bedrock-embeddings:${jobName}:${options.deduplicationId}`,
-            mode: 'throttle' as const,
-            ttl: BACKFILL_DEDUPLICATION_TTL_MS,
-          },
-        }),
-      },
-    )
+    return enqueue(options?.cursor ? { cursor: options.cursor } : {}, {
+      priority: PRIORITY_DISPATCHER,
+      ...(options?.cursor && {
+        jobId: `bedrock-embeddings__${jobName}__${options.cursor.throughId}__${options.cursor.afterId}`,
+        removeOnComplete: true,
+        removeOnFail: true,
+      }),
+      ...(options?.deduplicationId && {
+        deduplication: {
+          id: `bedrock-embeddings:${jobName}:${options.deduplicationId}`,
+          mode: 'throttle' as const,
+          ttl: BACKFILL_DEDUPLICATION_TTL_MS,
+        },
+      }),
+    })
   }
 }
 

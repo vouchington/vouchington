@@ -58,10 +58,10 @@ describe('OAuth authorization exchange recovery', () => {
 
     const recoverable = await getRecoverableOAuthAuthorizationIds(500, [retryableId, exhaustedId])
 
-    expect(recoverable).toContain(retryableId)
-    expect(recoverable).not.toContain(exhaustedId)
-    expect(recoverable).not.toContain(unrelatedRetryableId)
-    expect(recoverable).not.toContain(unrelatedExhaustedId)
+    expect(recoverable.ids).toContain(retryableId)
+    expect(recoverable.ids).not.toContain(exhaustedId)
+    expect(recoverable.ids).not.toContain(unrelatedRetryableId)
+    expect(recoverable.ids).not.toContain(unrelatedExhaustedId)
     expect(await getTestOAuthAuthorization(unrelatedRetryableId)).toMatchObject({
       status: 'callback_received',
     })
@@ -88,7 +88,7 @@ describe('OAuth authorization exchange recovery', () => {
 
     const recoverable = await getRecoverableOAuthAuthorizationIds(500, [expiredXId])
 
-    expect(recoverable).not.toContain(expiredXId)
+    expect(recoverable.ids).not.toContain(expiredXId)
     const expired = await getTestOAuthAuthorization(expiredXId)
     expect({
       status: expired?.status,
@@ -119,7 +119,10 @@ describe('OAuth authorization exchange recovery', () => {
       githubUserId,
       () => getRecoverableOAuthAuthorizationIds(500, [flowId]),
     )
-    expect(recovery).toEqual({ whileLocked: [], afterCompletion: [] })
+    expect(recovery).toEqual({
+      whileLocked: { ids: [], hasMore: false },
+      afterCompletion: { ids: [], hasMore: false },
+    })
 
     expect(await getTestOAuthAuthorization(flowId)).toMatchObject({
       status: 'completion_ready',

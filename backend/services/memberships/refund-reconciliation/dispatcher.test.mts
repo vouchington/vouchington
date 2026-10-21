@@ -47,13 +47,17 @@ describe('refund reconciliation dispatcher', () => {
     await prioritizeRefundReconciliationOperationsForTest([first.id, second.id, third.id])
 
     const batch = await dispatchDueRefundReconciliations(2)
-    expect(batch.map(item => item.id)).toEqual(expect.arrayContaining([first.id, second.id]))
-    expect(batch).toHaveLength(2)
-    expect(batch.every(item => /^[0-9a-f-]{36}$/.test(item.leaseToken))).toBe(true)
+    expect(batch.dispatches.map(item => item.id)).toEqual(
+      expect.arrayContaining([first.id, second.id]),
+    )
+    expect(batch.dispatches).toHaveLength(2)
+    expect(batch.hasMore).toBe(true)
+    expect(batch.dispatches.every(item => /^[0-9a-f-]{36}$/.test(item.leaseToken))).toBe(true)
 
-    await expect(dispatchDueRefundReconciliations(1)).resolves.toEqual([
-      expect.objectContaining({ id: third.id }),
-    ])
+    await expect(dispatchDueRefundReconciliations(1)).resolves.toEqual({
+      dispatches: [expect.objectContaining({ id: third.id })],
+      hasMore: false,
+    })
   })
 
   it('skips a due row locked by another dispatcher', async () => {
@@ -61,23 +65,29 @@ describe('refund reconciliation dispatcher', () => {
     const available = await createDueOperation()
     await prioritizeRefundReconciliationOperationsForTest([locked.id, available.id])
     await withLockedRefundOperationForTest(locked.id, async () => {
-      await expect(dispatchDueRefundReconciliations(1)).resolves.toEqual([
-        expect.objectContaining({ id: available.id }),
-      ])
+      await expect(dispatchDueRefundReconciliations(1)).resolves.toEqual({
+        dispatches: [expect.objectContaining({ id: available.id })],
+        hasMore: false,
+      })
     })
-    await expect(dispatchDueRefundReconciliations(1)).resolves.toEqual([
-      expect.objectContaining({ id: locked.id }),
-    ])
+    await expect(dispatchDueRefundReconciliations(1)).resolves.toEqual({
+      dispatches: [expect.objectContaining({ id: locked.id })],
+      hasMore: false,
+    })
   })
 
   it('rotates a stale lease so an orphaned child cannot retain ownership', async () => {
     const operation = await createDueOperation()
     await prioritizeRefundReconciliationOperationsForTest([operation.id])
-    const [firstLease] = await dispatchDueRefundReconciliations(1)
+    const {
+      dispatches: [firstLease],
+    } = await dispatchDueRefundReconciliations(1)
     expect(firstLease?.id).toBe(operation.id)
     await ageRefundReconciliationLeaseForTest(operation.id)
 
-    const [reclaimed] = await dispatchDueRefundReconciliations(1)
+    const {
+      dispatches: [reclaimed],
+    } = await dispatchDueRefundReconciliations(1)
     expect(reclaimed?.id).toBe(operation.id)
     expect(reclaimed?.leaseToken).not.toBe(firstLease?.leaseToken)
   })

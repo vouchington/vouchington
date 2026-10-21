@@ -6,7 +6,7 @@ import { registerTestRssCategoryIdentity } from './rss-category-identities.mts'
 export async function insertTestRssFeedCategory(
   rssFeedId: string,
   categoryText: string,
-  topicId: string,
+  topicId: string | null,
 ): Promise<void> {
   const categoryId = await registerTestRssCategoryIdentity(categoryText)
   await write(

@@ -130,6 +130,10 @@ export const coreDynamicConfigRegistryEntries = [
         'bloom_population_batch_size',
         'Embedding hashes per bloom population chunk.',
       ),
+      batch_listing_page_size: bedrockField(
+        'batch_listing_page_size',
+        'Maximum active or stale batches admitted per fixed-cutoff listing page.',
+      ),
       reconciliation_page_size: bedrockField(
         'reconciliation_page_size',
         'Completed embedding jobs per reconciliation page.',

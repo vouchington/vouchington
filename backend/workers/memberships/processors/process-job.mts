@@ -92,7 +92,7 @@ async function dispatchMembershipPauseCollection(): Promise<void> {
 }
 
 async function dispatchMembershipRefundReconciliation(): Promise<void> {
-  const leases = await dispatchDueRefundReconciliations()
+  const { dispatches: leases } = await dispatchDueRefundReconciliations()
   await Promise.all(
     leases.map(lease =>
       enqueueReconcileMembershipRefundOperation({

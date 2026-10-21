@@ -77,6 +77,8 @@ export const backgroundWorkRegistryEntries5 = {
     label: 'Notifications',
     maxValues: notificationsWorkMaxValues,
     descriptions: {
+      community_digest_window_batch_size:
+        'Maximum weekly catch-up windows created or dispatched per scheduler run.',
       community_digest_recipient_batch_size:
         'Community digest recipient batch size for notifications processing.',
       reconcile_batch_size: 'Reconcile batch size for notifications processing.',

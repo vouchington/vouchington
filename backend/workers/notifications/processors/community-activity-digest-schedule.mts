@@ -1,5 +1,6 @@
 import {
   enqueueCommunityActivityDigestDispatch,
+  enqueueCommunityActivityDigestScheduleTick,
   getCommunityActivityDigestDispatchData,
 } from '@queues/notifications/enqueues'
 import {
@@ -9,6 +10,7 @@ import {
 } from '@services/notifications/community-activity-digest-dispatch'
 
 type Dependencies = {
+  enqueueCommunityActivityDigestScheduleTick: typeof enqueueCommunityActivityDigestScheduleTick
   enqueueCommunityActivityDigestDispatch: typeof enqueueCommunityActivityDigestDispatch
   prepareCommunityActivityDigestWorkItems: typeof prepareCommunityActivityDigestWorkItems
   claimCommunityActivityDigestWorkItem: typeof claimCommunityActivityDigestWorkItem
@@ -16,14 +18,21 @@ type Dependencies = {
 }
 
 export async function processCommunityActivityDigestScheduleTick(
-  _data: Record<string, never>,
+  data: { targetWindowStart?: string },
   dependencies?: Partial<Dependencies>,
 ): Promise<void> {
   const prepare =
     dependencies?.prepareCommunityActivityDigestWorkItems ?? prepareCommunityActivityDigestWorkItems
   const target = getCommunityActivityDigestDispatchData()
-  const windows = await prepare(new Date(target.windowStart))
-  await enqueueWindowsInOrder(windows, dependencies)
+  const targetWindowStart = data.targetWindowStart ?? target.windowStart
+  const result = await prepare(new Date(targetWindowStart))
+  await enqueueWindowsInOrder(result.windows, dependencies)
+  if (result.hasMore) {
+    const enqueueContinuation =
+      dependencies?.enqueueCommunityActivityDigestScheduleTick ??
+      enqueueCommunityActivityDigestScheduleTick
+    await enqueueContinuation({ targetWindowStart })
+  }
 }
 
 async function enqueueWindowsInOrder(

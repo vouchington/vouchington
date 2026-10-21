@@ -1,3 +1,4 @@
+import { getNotificationsWorkLimit } from './work-limits.mts'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { randomUUID } from 'node:crypto'
@@ -6,23 +7,23 @@ import { COMMUNITY_ACTIVITY_DIGEST_INACTIVITY_TIMEOUT_MS } from '@voucha/types/c
 export async function prepareCommunityActivityDigestWorkItems(
   targetWindowStart: Date,
   windowStarts?: readonly Date[],
-): Promise<Array<{ windowStart: Date; windowEnd: Date }>> {
-  if (windowStarts?.length === 0) return []
-  await write(sql`
+): Promise<{ windows: Array<{ windowStart: Date; windowEnd: Date }>; hasMore: boolean }> {
+  if (windowStarts?.length === 0) return { windows: [], hasMore: false }
+  const windowLimit = getNotificationsWorkLimit('community_digest_window_batch_size')
+  const { rows: created } = await write<{ window_starts_at: Date }>(sql`
     /* prepareCommunityActivityDigestWorkItems */
     WITH latest AS (
       SELECT max(window_starts_at) AS window_starts_at
       FROM community_activity_digest_work_items
     ), missing AS (
-      SELECT generate_series(
-        COALESCE((SELECT window_starts_at + INTERVAL '7 days' FROM latest), ${targetWindowStart}),
-        ${targetWindowStart},
-        INTERVAL '7 days'
-      ) AS window_starts_at
+      SELECT COALESCE((SELECT window_starts_at + INTERVAL '7 days' FROM latest), ${targetWindowStart})
+        + step * INTERVAL '7 days' AS window_starts_at
+      FROM generate_series(0, ${windowLimit} - 1) AS step
     )
     INSERT INTO community_activity_digest_work_items (window_starts_at, window_ends_at)
     SELECT window_starts_at, window_starts_at + INTERVAL '7 days'
     FROM missing
+    WHERE window_starts_at <= ${targetWindowStart}
     ORDER BY window_starts_at
     ON CONFLICT (window_starts_at) DO NOTHING
     RETURNING window_starts_at, window_ends_at
@@ -41,8 +42,17 @@ export async function prepareCommunityActivityDigestWorkItems(
         OR window_starts_at = ANY(${ownedStarts}::timestamptz[])
       )
     ORDER BY window_starts_at
+    LIMIT ${windowLimit + 1}
   `)
-  return pending.map(row => ({ windowStart: row.window_starts_at, windowEnd: row.window_ends_at }))
+  const lastCreated = created.at(-1)?.window_starts_at
+  return {
+    windows: pending
+      .slice(0, windowLimit)
+      .map(row => ({ windowStart: row.window_starts_at, windowEnd: row.window_ends_at })),
+    hasMore:
+      pending.length > windowLimit ||
+      (created.length === windowLimit && !!lastCreated && lastCreated < targetWindowStart),
+  }
 }
 
 export async function claimCommunityActivityDigestWorkItem(

@@ -188,6 +188,7 @@ describe('categories', () => {
 
     await expect(clearCategoriesForUnlinkedTopicAlias(alias!.id, testTopicId)).resolves.toEqual({
       updated: 1,
+      hasMore: false,
     })
     await expect(getRssFeedItemCategories(testRssFeedItemId)).resolves.toEqual(
       expect.arrayContaining([
@@ -235,7 +236,7 @@ describe('categories', () => {
 
     release.resolve()
     await holder
-    await expect(cleanup).resolves.toEqual({ updated: 1 })
+    await expect(cleanup).resolves.toEqual({ updated: 1, hasMore: false })
     await expect(getRssFeedItemCategories(testRssFeedItemId)).resolves.toEqual(
       expect.arrayContaining([
         expect.objectContaining({ category_text: categoryText, topic_id: null }),
@@ -264,6 +265,7 @@ describe('categories', () => {
 
     await expect(clearCategoriesForUnlinkedTopicAlias(alias!.id, testTopicId)).resolves.toEqual({
       updated: 0,
+      hasMore: false,
     })
     await expect(getRssFeedItemCategories(testRssFeedItemId)).resolves.toEqual(
       expect.arrayContaining([
