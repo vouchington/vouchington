@@ -14,7 +14,7 @@ interface Props {
   sharedLoadError: boolean
   sentInvitations: HouseholdInvitationPage | null
   receivedInvitations: HouseholdInvitationPage
-  usernames: Readonly<Record<string, string>>
+  usernames?: Readonly<Record<string, string>>
 }
 
 const EMPTY_INVITATIONS: HouseholdInvitationPage = {

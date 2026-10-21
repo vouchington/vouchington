@@ -18,8 +18,8 @@ export interface HouseholdInvitationsViewProps {
   pageError: boolean
   selectedUserId: string | null
   relationship: string
-  formKey: number
-  usernames: Readonly<Record<string, string>>
+  formKey?: number
+  usernames?: Readonly<Record<string, string>>
   onSelectUser: (id: string, username: string) => void
   onRelationshipChange: (value: string) => void
   onInvite: () => void
@@ -167,6 +167,6 @@ export function HouseholdInvitationsView(props: HouseholdInvitationsViewProps) {
   )
 }
 
-function userFor(id: string, usernames: Readonly<Record<string, string>>) {
+function userFor(id: string, usernames: Readonly<Record<string, string>> = {}) {
   return { id, username: usernames[id] ?? null }
 }

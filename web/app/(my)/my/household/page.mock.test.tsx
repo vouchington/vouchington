@@ -103,7 +103,7 @@ describe('HouseholdPage', () => {
     mockGetHouseholds.mockResolvedValue({ results: [], page_info: pageInfo })
     mockReceivedInvitations.mockResolvedValue(makeHouseholdInvitationList([invitation]))
     mockGetUserProfile.mockImplementation(async (id: string) =>
-      id === invitation.invited_by_id ? { id, username: 'alex' } : null,
+      id === invitation.invited_by_id ? { user: { id, username: 'alex' } } : null,
     )
     render(await HouseholdPage())
     expect(managerProps().usernames).toEqual({ [invitation.invited_by_id]: 'alex' })

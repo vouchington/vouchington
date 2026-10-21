@@ -67,8 +67,8 @@ async function invitationUsernames(pages: HouseholdInvitationPage[]) {
   const usernames: Record<string, string> = {}
   for (const [index, id] of [...ids].entries()) {
     const profile = profiles[index]
-    if (profile?.status === 'fulfilled' && profile.value?.username) {
-      usernames[id] = profile.value.username
+    if (profile?.status === 'fulfilled' && profile.value?.user.username) {
+      usernames[id] = profile.value.user.username
     }
   }
   return usernames
