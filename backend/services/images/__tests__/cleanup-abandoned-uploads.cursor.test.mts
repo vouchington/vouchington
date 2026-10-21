@@ -9,6 +9,7 @@ import {
   makeOwnedUploadCleanupSweep,
 } from '@voucha/test-helpers/image-upload-cleanup'
 import { installOwnedUploadCleanupStorage } from '@voucha/test-helpers/image-upload-cleanup-storage'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import type { AbandonedUploadSweep } from '@queues/content-analysis/types'
 import { randomBytes } from 'node:crypto'
 import { cleanupAbandonedUploads } from '../cleanup-abandoned-uploads.mts'
@@ -81,7 +82,6 @@ describe('abandoned upload cursor windows', () => {
 
   it('persists applied progress after storage effects and leaves the B+1 witness for continuation', async () => {
     await imagesWorkConfig.waitForInitialization()
-    const original = imagesWorkConfig.fields.get('cleanup_batch_size')
     const user = await createTestUser()
     const now = new Date()
     const ids = await insertOwnedUploadCleanupCluster(
@@ -105,7 +105,9 @@ describe('abandoned upload cursor windows', () => {
         await release.promise
       }
     })
-    imagesWorkConfig.fields.set('cleanup_batch_size', 1)
+    const restoreConfig = overrideDynamicConfigFieldsForTest(imagesWorkConfig, {
+      cleanup_batch_size: 1,
+    })
     try {
       const pass = cleanupAbandonedUploads(sweep, async state => {
         saved.push(state)
@@ -135,8 +137,7 @@ describe('abandoned upload cursor windows', () => {
       expect(await getImageById(outside)).not.toBeNull()
     } finally {
       release.resolve()
-      if (original === undefined) imagesWorkConfig.fields.delete('cleanup_batch_size')
-      else imagesWorkConfig.fields.set('cleanup_batch_size', original)
+      restoreConfig()
     }
   })
 })
