@@ -7,11 +7,46 @@ import { listCopyrightStaffEmailIntakePage } from '@services/copyright-notices/c
 import { copyrightStaffEmailIntakeQueueCursorScope } from '@services/copyright-notices/read-models-staff-email-intakes'
 import { readOwnedCopyrightEmailQueue } from '@voucha/test-helpers/copyright-email-queue-http-contract'
 import { createParsedCopyrightEmailIntake } from '@voucha/test-helpers/copyright-email-intake-fixtures'
+import { createCopyrightEmailQueueWalkFixtures } from '@voucha/test-helpers/copyright-email-queue-walk-fixtures'
 
 const otherCursorScope = 'copyright-notices:staff-queue:received-at-asc-id-asc'
 const queuePath = '/api/v1/copyright-email-intakes/review-queue'
 
 describe('copyright email intake queue pagination', () => {
+  it('follows HTTP end cursors across three owned intake pages', async () => {
+    const moderator = await createModerator()
+    const request = createRequest()
+    await request.authenticateAs(moderator)
+    const { ids, receivedAt } = await createCopyrightEmailQueueWalkFixtures()
+    const walked: string[] = []
+    const continuationPages = []
+    let after: string | undefined
+    for (const id of ids) {
+      const page = await readOwnedCopyrightEmailQueue(
+        request,
+        moderator,
+        { id, receivedAt },
+        { after },
+      )
+      expect(page.headers['cache-control']).toBe('private, no-store')
+      expect(page.body).toMatchObject({
+        copyright_email_intakes: [{ id, review_path: 'initial' }],
+      })
+      walked.push(...page.intakeIds)
+      continuationPages.push(page.pageInfo)
+      after = page.pageInfo.end_cursor ?? undefined
+    }
+    expect(continuationPages.slice(0, 2)).toEqual(
+      [0, 1].map(() => ({
+        has_next_page: true,
+        start_cursor: expect.any(String),
+        end_cursor: expect.any(String),
+      })),
+    )
+    expect(walked).toEqual(ids)
+    expect(new Set(walked).size).toBe(3)
+  })
+
   it('ends on an exact-limit final page with no next cursor', async () => {
     const { ids, after, moderator } = await createOwnedIntakes(4)
     const first = await listCopyrightStaffEmailIntakePage(moderator, {
@@ -51,7 +86,9 @@ describe('copyright email intake queue pagination', () => {
     await request.authenticateAs(moderator)
     const fixture = { id: ids[0]!, receivedAt: firstReceivedAt }
     const normal = await readOwnedCopyrightEmailQueue(request, moderator, fixture)
-    const unknownKey = await readOwnedCopyrightEmailQueue(request, moderator, fixture, true)
+    const unknownKey = await readOwnedCopyrightEmailQueue(request, moderator, fixture, {
+      includeUnknownQueryKey: true,
+    })
     expect(unknownKey.body).toEqual(normal.body)
     const second = await listCopyrightStaffEmailIntakePage(moderator, {
       limit: 3,
