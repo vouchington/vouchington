@@ -16,6 +16,7 @@ import type { ListResponse, PageInfo } from '@/types/api-responses'
 import onError, { onSuccess } from '@/lib/on-error'
 
 interface Props {
+  onHouseholdCreated?: (household: Household) => void
   initialOwnedSection: HouseholdSection | null
   initialSharedPage: ListResponse<HouseholdSectionListItem>
   ownedProbeSucceeded: boolean
@@ -62,6 +63,7 @@ async function loadSharedSectionPage(
 }
 
 export function HouseholdManager({
+  onHouseholdCreated,
   initialOwnedSection,
   initialSharedPage,
   ownedProbeSucceeded,
@@ -100,6 +102,7 @@ export function HouseholdManager({
         membershipPageInfo: TERMINAL_PAGE_INFO,
         membershipLoadError: false,
       })
+      onHouseholdCreated?.(household)
       onSuccess('Household created')
     } catch (err) {
       onError(err, { fallback: 'Failed to create household' })

@@ -28,6 +28,7 @@ export function resolveNotificationTarget(
   },
   communities: Record<string, NotificationCommunity> = {},
 ): string | null {
+  if (notification.target_entity?.__entity_type === 'household') return '/my/household'
   if (notification.target_entity?.__entity_type === 'community') {
     const community = communities[notification.target_entity.id]
     if (community) return communityHref(community)

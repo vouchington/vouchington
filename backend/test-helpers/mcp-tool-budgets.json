@@ -4,12 +4,24 @@
   "servers": {
     "user": {
       "read_my_households": {
-        "measured": { "list": 3855, "core": 1746 },
-        "max": { "list": 4000, "core": 2000 }
+        "measured": {
+          "list": 5350,
+          "core": 2477
+        },
+        "max": {
+          "list": 6000,
+          "core": 3000
+        }
       },
       "manage_my_households": {
-        "measured": { "list": 3134, "core": 1672 },
-        "max": { "list": 4000, "core": 2000 }
+        "measured": {
+          "list": 5450,
+          "core": 3226
+        },
+        "max": {
+          "list": 6000,
+          "core": 4000
+        }
       },
       "read_my_messages": {
         "measured": {

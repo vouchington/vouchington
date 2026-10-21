@@ -1,4 +1,4 @@
-import { Bell, Scale, ShieldBan } from 'lucide-react'
+import { Bell, House, Scale, ShieldBan } from 'lucide-react'
 import { EntityActionIcons } from '@/components/shared/entity-action-icons'
 
 const FollowIcon = EntityActionIcons.follow
@@ -19,5 +19,6 @@ export function NotificationIcon({
   if (entityType === 'review_dispute') return <ReportIcon className={className} />
   if (entityType === 'moderation_appeal') return <Scale className={className} />
   if (entityType === 'community_ban') return <ShieldBan className={className} />
+  if (entityType === 'household_invitation') return <House className={className} />
   return <Bell className={className} />
 }

@@ -65,6 +65,7 @@ export interface WebFixtureServerEndpointContext {
     'getReferralLinksFeed' | 'getRssFeedItemsFeed'
   >
   readonly growthMetrics: Pick<typeof import('@/lib/api/server/growth-metrics'), 'getGrowthMetrics'>
+  readonly householdInvitations: typeof import('@/lib/api/server/household-invitations')
   readonly households: Pick<
     typeof import('@/lib/api/server/households'),
     'getHouseholdMemberships' | 'getHouseholds'

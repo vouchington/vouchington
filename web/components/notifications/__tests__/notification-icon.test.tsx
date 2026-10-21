@@ -11,6 +11,10 @@ const communityNotificationTypes = [
 ] satisfies Notification['entity_type'][]
 
 describe('NotificationIcon', () => {
+  it('uses a household icon for invitations', () => {
+    const { container } = render(<NotificationIcon entityType='household_invitation' />)
+    expect(container.querySelector('.lucide-house')).not.toBeNull()
+  })
   it.each(communityNotificationTypes)('renders a notification bell for %s', entityType => {
     const { container } = render(<NotificationIcon entityType={entityType} />)
 

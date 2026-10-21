@@ -120,7 +120,20 @@ ALTER TABLE notifications
         AND community_ban_id IS NULL
       )
       OR (
-        post_id IS NULL
+        entity_type = 'household_invitation'
+        AND household_id IS NOT NULL
+        AND post_id IS NULL
+        AND rss_feed_item_id IS NULL
+        AND actor_user_id IS NULL
+        AND moderation_report_id IS NULL
+        AND review_dispute_id IS NULL
+        AND user_warning_id IS NULL
+        AND moderation_appeal_id IS NULL
+        AND community_ban_id IS NULL
+      )
+      OR (
+        entity_type <> 'household_invitation'
+        AND post_id IS NULL
         AND rss_feed_item_id IS NULL
         AND actor_user_id IS NULL
         AND moderation_report_id IS NULL

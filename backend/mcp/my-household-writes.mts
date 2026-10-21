@@ -5,6 +5,7 @@ import {
   removeMyHouseholdMembership,
 } from '@services/individuals-households/households/household-commands'
 import { source, path, uuid, validated, type HouseholdArgs } from './my-household-tool.mts'
+import { manageHouseholdInvitationsGroup } from './my-household-invitations.mts'
 
 const root = '/api/v1/households'
 type MembershipArgs = HouseholdArgs & { individual_id: string; relationship?: string }
@@ -72,5 +73,6 @@ export const manageMyHouseholdsGroup = {
         true,
       ),
     },
+    ...manageHouseholdInvitationsGroup.options,
   ],
 } as const

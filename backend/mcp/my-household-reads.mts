@@ -4,6 +4,7 @@ import {
   listMyHouseholdMemberships,
   readMyIndividual,
 } from '@services/individuals-households/households/household-commands'
+import { readHouseholdInvitationsGroup } from './my-household-invitations.mts'
 import {
   source,
   pageProperties,
@@ -65,5 +66,6 @@ export const readMyHouseholdsGroup = {
         user => readMyIndividual(user, validated),
       ),
     },
+    ...readHouseholdInvitationsGroup.options,
   ],
 } as const

@@ -12,6 +12,10 @@
       "fixtureIds": ["native.moderation.ban-evasion.dismiss"],
       "hash": "4088de9fb3560826dcfb7fea014b55c235e18ed712559ee5ae3f7bd3862942f0"
     },
+    "DELETE:/api/v1/households/:id/invitations/:invitationId": {
+      "fixtureIds": ["web.household-invitations.revoke"],
+      "hash": "4088de9fb3560826dcfb7fea014b55c235e18ed712559ee5ae3f7bd3862942f0"
+    },
     "DELETE:/api/v1/households/:id/memberships/:membershipId": {
       "fixtureIds": ["native.household-memberships.delete.default"],
       "hash": "4088de9fb3560826dcfb7fea014b55c235e18ed712559ee5ae3f7bd3862942f0"
@@ -464,6 +468,10 @@
       ],
       "hash": "f014ae36043e3778675c65c494ce0cf47e39705d3cf33246fe5c7acb99f1d827"
     },
+    "GET:/api/v1/households/:id/invitations": {
+      "fixtureIds": ["web.household-invitations.sent"],
+      "hash": "6f4048c3c334dfffbc65ea02cef56941f1316aaab55c67357ea5ab32b25f50bc"
+    },
     "GET:/api/v1/households/:id/memberships": {
       "fixtureIds": [
         "native.household-memberships.empty",
@@ -582,6 +590,10 @@
         "native.friend-recommendations.second-page"
       ],
       "hash": "3d71ec3472d28d16f8cda72022546ae8362623737c995e8348d53394f000b111"
+    },
+    "GET:/api/v1/my/household-invitations": {
+      "fixtureIds": ["web.household-invitations.received"],
+      "hash": "6f4048c3c334dfffbc65ea02cef56941f1316aaab55c67357ea5ab32b25f50bc"
     },
     "GET:/api/v1/my/identity": {
       "fixtureIds": ["swift.my.identity.default"],
@@ -1251,6 +1263,10 @@
       "fixtureIds": ["native.households.create.default"],
       "hash": "6f122b0890b4130842f6abe0399277f32d37fc5219c7eedea8812c4222b5271f"
     },
+    "POST:/api/v1/households/:id/invitations": {
+      "fixtureIds": ["web.household-invitations.create"],
+      "hash": "2853b75f044ebbb272adb1355346cfafd2ebde3ea582cc5a43ca2dd023b6a016"
+    },
     "POST:/api/v1/lists/:id/import": {
       "fixtureIds": ["native.list-import.default"],
       "hash": "61903f7a3460db4344e72d92cd565ab42021b91dee99fd9e097d828b8a5c9d66"
@@ -1339,6 +1355,14 @@
     "POST:/api/v1/my/email-addresses/:email/verifications": {
       "fixtureIds": ["native.my.email-addresses.verify.default"],
       "hash": "96f3cd2d68fa7d115f3275747a122290649ba7ae8b57681b17aeedd2e8515c03"
+    },
+    "POST:/api/v1/my/household-invitations/:invitationId/acceptance": {
+      "fixtureIds": ["web.household-invitations.accept"],
+      "hash": "e7e5668e889039056a4720976597d604301c3d3368c470b91f78bfa95f56b7a7"
+    },
+    "POST:/api/v1/my/household-invitations/:invitationId/decline": {
+      "fixtureIds": ["web.household-invitations.decline"],
+      "hash": "4088de9fb3560826dcfb7fea014b55c235e18ed712559ee5ae3f7bd3862942f0"
     },
     "POST:/api/v1/my/import/rss-feeds": {
       "fixtureIds": ["native.import-export.rss-feeds.submit.default"],
@@ -3153,6 +3177,30 @@
     "web.growth-metrics.default": {
       "fixtureIds": ["web.growth-metrics.default"],
       "hash": "9f0de577377137f7d006bd52535c382875fa6343bea9b2e9f0037eeacb82ccfc"
+    },
+    "web.household-invitations.accept": {
+      "fixtureIds": ["web.household-invitations.accept"],
+      "hash": "6ad6995da8868d9763ef4b77794c926ed2fe215eb6359ea9cf0b540cc11abaaf"
+    },
+    "web.household-invitations.create": {
+      "fixtureIds": ["web.household-invitations.create"],
+      "hash": "decdd88dab0c35ee510560aa3dedb720b6805810ebfd6db50d4ab160095ef517"
+    },
+    "web.household-invitations.decline": {
+      "fixtureIds": ["web.household-invitations.decline"],
+      "hash": "bcde375ebd4cbacf651311181173836b169d5a360c6ac158c6a2cdaf49be3f61"
+    },
+    "web.household-invitations.received": {
+      "fixtureIds": ["web.household-invitations.received"],
+      "hash": "e5afe008540530d27af2ae3f711f839f531147c731121c2203b59e076abc6229"
+    },
+    "web.household-invitations.revoke": {
+      "fixtureIds": ["web.household-invitations.revoke"],
+      "hash": "bcde375ebd4cbacf651311181173836b169d5a360c6ac158c6a2cdaf49be3f61"
+    },
+    "web.household-invitations.sent": {
+      "fixtureIds": ["web.household-invitations.sent"],
+      "hash": "e5afe008540530d27af2ae3f711f839f531147c731121c2203b59e076abc6229"
     },
     "web.memberships.refund.completed": {
       "fixtureIds": ["web.memberships.refund.completed"],

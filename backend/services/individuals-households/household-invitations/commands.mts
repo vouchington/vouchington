@@ -56,7 +56,7 @@ export async function listHouseholdInvitationsCommand(
 export async function createHouseholdInvitationCommand(
   currentUser: PrivateUser,
   path: Path,
-  readBody: () => Promise<{ user_id?: string; username?: string; relationship?: string }>,
+  readBody: () => Promise<{ user: string; relationship?: string }>,
   validate: Validate,
 ) {
   validateUUID(path.id!)

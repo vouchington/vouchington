@@ -22,7 +22,6 @@ export async function decideHouseholdInvitation(
     SELECT id FROM household_invitations
     WHERE id = ${invitationId} AND invited_user_id = ${currentUser.id}`)
   assert(visible[0], 404, 'Invitation not found')
-  const individual = decision === 'accept' ? await getOrCreateIndividual(currentUser) : null
   await using transaction = await beginTransaction()
   const options = { query: transaction }
   const { rows: target } = await write<{ household_id: string }>(
@@ -58,23 +57,32 @@ export async function decideHouseholdInvitation(
     await transaction.commit()
     return
   }
-  const membershipQuery = sql`/* decideHouseholdInvitation:membership */
-    WITH inserted AS (
+  await write(
+    sql`/* decideHouseholdInvitation:lock-invitee */
+      SELECT id FROM users WHERE id = ${currentUser.id} FOR UPDATE`,
+    options,
+  )
+  const individual = await getOrCreateIndividual(currentUser, options)
+  await write(
+    sql`/* decideHouseholdInvitation:insert-membership */
       INSERT INTO household_members (household_id, individual_id, relationship)
-      VALUES (${changed[0].household_id}, ${individual!.id}, ${changed[0].relationship})
-      ON CONFLICT ON CONSTRAINT uniq_household_members__household_id_individual_id
-        DO UPDATE SET relationship = COALESCE(EXCLUDED.relationship, household_members.relationship)
-      RETURNING id, household_id, individual_id, relationship, updated_at
-    )
-    SELECT inserted.id, inserted.household_id, inserted.relationship, `
-  membershipQuery.append(membershipUpdatedAtSql('inserted'))
+      VALUES (${changed[0].household_id}, ${individual.id}, ${changed[0].relationship})
+      ON CONFLICT ON CONSTRAINT uniq_household_members__household_id_individual_id DO NOTHING`,
+    options,
+  )
+  const membershipQuery = sql`/* decideHouseholdInvitation:membership */
+    SELECT hm.id, hm.household_id, hm.relationship, `
+  membershipQuery.append(membershipUpdatedAtSql('hm'))
   membershipQuery.append(sql` AS updated_at, `)
   membershipQuery.append(membershipIndividualSql('i', 'u'))
   membershipQuery.append(sql` AS individual
-    FROM inserted
-    JOIN individuals i ON i.id = inserted.individual_id
-    LEFT JOIN users u ON u.individual_id = i.id`)
+    FROM household_members hm
+    JOIN individuals i ON i.id = hm.individual_id
+    LEFT JOIN users u ON u.individual_id = i.id
+    WHERE hm.household_id = ${changed[0].household_id}
+      AND hm.individual_id = ${individual.id}`)
   const { rows: memberships } = await write<HouseholdMembershipRow>(membershipQuery, options)
+  assert(memberships[0], 500, 'Household membership not found')
   await transaction.commit()
   return { membership: memberships[0] }
 }

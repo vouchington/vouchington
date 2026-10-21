@@ -34,6 +34,10 @@ CREATE INDEX IF NOT EXISTS idx_household_invitations__invited_user_id
 CREATE INDEX IF NOT EXISTS idx_household_invitations__household_id
   ON household_invitations (household_id, id DESC);
 
+CREATE INDEX IF NOT EXISTS idx_household_invitations__pending_household_id
+  ON household_invitations (household_id, id DESC)
+  WHERE accepted_at IS NULL AND declined_at IS NULL AND revoked_at IS NULL;
+
 CREATE INDEX IF NOT EXISTS idx_household_invitations__invited_by_id
   ON household_invitations (invited_by_id);
 

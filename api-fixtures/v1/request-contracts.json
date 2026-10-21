@@ -11786,9 +11786,9 @@
       "additionalProperties": false,
       "properties": {
         "relationship": { "maxLength": 64, "type": "string" },
-        "user_id": { "format": "uuid", "type": "string" },
-        "username": { "type": "string" }
+        "user": { "minLength": 1, "type": "string" }
       },
+      "required": ["user"],
       "type": "object"
     },
     "AddHouseholdMembershipBody": {

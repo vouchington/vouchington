@@ -31,8 +31,7 @@ app
       ctx.params,
       async () =>
         (await ctx.request.json('1mb')) as {
-          user_id?: string
-          username?: string
+          user: string
           relationship?: string
         },
       input => validateRequestContract(ctx, route, input),

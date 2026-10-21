@@ -7,6 +7,7 @@ import { assertNotSuspended } from '@services/users'
 import { getPublicUserByAny } from '@services/users/get'
 import type { PrivateUser } from '@services/users/types'
 import { enqueueCommunityLifecycleNotificationPush } from '@services/notifications'
+import { createHouseholdInvitationNotifications } from '@services/notifications/create-household-invitation-notification'
 import { readHouseholdMemberManageAccess } from '../authorization.mts'
 
 export type HouseholdInvitation = {
@@ -34,19 +35,22 @@ function assertManageAccess(access: Awaited<ReturnType<typeof readHouseholdMembe
 export async function createHouseholdInvitation(
   currentUser: PrivateUser,
   householdId: string,
-  input: { user_id?: string; username?: string; relationship?: string },
+  input: { user: string; relationship?: string },
 ): Promise<{ invitation: HouseholdInvitation; created: boolean }> {
   assertNotSuspended(currentUser)
   validateUUID(householdId)
-  assert(Boolean(input.user_id) !== Boolean(input.username), 422, 'Provide a user ID or username')
-  if (input.user_id) validateUUID(input.user_id)
+  assert(
+    typeof input.user === 'string' && input.user.length > 0,
+    422,
+    'Provide a user ID or username',
+  )
   assert(
     input.relationship === undefined || input.relationship.length <= 64,
     422,
     'Relationship is too long',
   )
   assertManageAccess(await readHouseholdMemberManageAccess(currentUser, householdId))
-  const invitedUser = await getPublicUserByAny(input.user_id ?? input.username!)
+  const invitedUser = await getPublicUserByAny(input.user)
   assert(invitedUser, 404, 'User not found')
   assert(invitedUser.id !== currentUser.id, 422, 'You cannot invite yourself')
 
@@ -89,23 +93,10 @@ export async function createHouseholdInvitation(
   }
   const invitation = rows[0]
   assert(invitation, 409, 'Invitation changed; try again')
-  const pushNotifications = created
-    ? (
-        await write<{ user_id: string; id: string }>(
-          sql`/* createHouseholdInvitation:notification */
-        INSERT INTO notifications (user_id, entity_type, household_id, event_key, title, body)
-        VALUES (
-          ${invitedUser.id}, 'household_invitation', ${householdId},
-          ${`household-invitation:${invitation.id}`},
-          'Household invitation',
-          'You have been invited to join a household.'
-        )
-        ON CONFLICT (user_id, event_key) WHERE event_key IS NOT NULL DO NOTHING
-        RETURNING user_id, id`,
-          options,
-        )
-      ).rows.map(row => ({ userId: row.user_id, notificationId: row.id }))
-    : []
+  const pushNotifications = await createHouseholdInvitationNotifications(
+    created ? [{ userId: invitedUser.id, householdId, invitationId: invitation.id }] : [],
+    options,
+  )
   await transaction.commit()
   await enqueueCommunityLifecycleNotificationPush(pushNotifications)
   return { invitation, created }

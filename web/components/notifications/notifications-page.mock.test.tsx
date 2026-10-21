@@ -128,6 +128,7 @@ describe('notifications-page', () => {
           copyright_notice_id: null,
           conversation_id: null,
           community_id: null,
+          household_id: null,
           event_key: null,
           title: 'New reply',
           body: 'Reply body',

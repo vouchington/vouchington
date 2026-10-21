@@ -2,6 +2,15 @@ import { describe, expect, it } from 'vitest'
 import { resolveNotificationTarget } from '../utils'
 
 describe('resolveNotificationTarget', () => {
+  it('routes a structured household invitation to membership actions', () => {
+    expect(
+      resolveNotificationTarget({
+        target_entity: { __entity_type: 'household', id: 'household-1' },
+        target_intent: null,
+        target_path: null,
+      }),
+    ).toBe('/my/household')
+  })
   it('prefers a hydrated community target over intent and legacy path', () => {
     expect(
       resolveNotificationTarget(

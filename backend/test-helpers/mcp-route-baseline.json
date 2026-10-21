@@ -1500,7 +1500,13 @@
     "I188": [["household_id"]],
     "I189": [["after", "household_id", "limit"]],
     "I190": [["household_id", "individual_id", "relationship"]],
-    "I191": [["household_id", "membership_id"]]
+    "I191": [["household_id", "membership_id"]],
+    "I192": [["after", "household_id", "limit"]],
+    "I193": [["after", "limit"]],
+    "I194": [["household_id", "relationship", "user"]],
+    "I195": [["household_id", "invitation_id"]],
+    "I196": [["invitation_id"]],
+    "I197": [["invitation_id"]]
   },
   "routes": {
     "DELETE:/api/v1/agent-moderations/:id/vote": [
@@ -6418,6 +6424,102 @@
           "decision": false,
           "inputFields": "I191",
           "requestBodyFields": null
+        }
+      ]
+    },
+    "GET:/api/v1/households/:id/invitations": {
+      "pullRequest": 3447,
+      "contracts": [
+        {
+          "audience": "user",
+          "facts": "F100",
+          "operation": {
+            "tool": "read_my_households",
+            "option": "invitations"
+          },
+          "decision": false,
+          "inputFields": "I192",
+          "requestBodyFields": null
+        }
+      ]
+    },
+    "GET:/api/v1/my/household-invitations": {
+      "pullRequest": 3447,
+      "contracts": [
+        {
+          "audience": "user",
+          "facts": "F100",
+          "operation": {
+            "tool": "read_my_households",
+            "option": "my_invitations"
+          },
+          "decision": false,
+          "inputFields": "I193",
+          "requestBodyFields": null
+        }
+      ]
+    },
+    "POST:/api/v1/households/:id/invitations": {
+      "pullRequest": 3447,
+      "contracts": [
+        {
+          "audience": "user",
+          "facts": "F101",
+          "operation": {
+            "tool": "manage_my_households",
+            "option": "invite"
+          },
+          "decision": false,
+          "inputFields": "I194",
+          "requestBodyFields": ["relationship", "user"]
+        }
+      ]
+    },
+    "DELETE:/api/v1/households/:id/invitations/:invitationId": {
+      "pullRequest": 3447,
+      "contracts": [
+        {
+          "audience": "user",
+          "facts": "F101",
+          "operation": {
+            "tool": "manage_my_households",
+            "option": "revoke_invitation"
+          },
+          "decision": false,
+          "inputFields": "I195",
+          "requestBodyFields": null
+        }
+      ]
+    },
+    "POST:/api/v1/my/household-invitations/:invitationId/acceptance": {
+      "pullRequest": 3447,
+      "contracts": [
+        {
+          "audience": "user",
+          "facts": "F101",
+          "operation": {
+            "tool": "manage_my_households",
+            "option": "accept_invitation"
+          },
+          "decision": false,
+          "inputFields": "I196",
+          "requestBodyFields": []
+        }
+      ]
+    },
+    "POST:/api/v1/my/household-invitations/:invitationId/decline": {
+      "pullRequest": 3447,
+      "contracts": [
+        {
+          "audience": "user",
+          "facts": "F101",
+          "operation": {
+            "tool": "manage_my_households",
+            "option": "decline_invitation"
+          },
+          "decision": false,
+          "inputFields": "I197",
+          "requestBodyFields": []
         }
       ]
     }

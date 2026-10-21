@@ -1484,16 +1484,22 @@
       "clients": {
         "web": {
           "status": "full",
-          "uiEvidence": ["web/components/my/household-manager.tsx"],
+          "uiEvidence": [
+            "web/components/my/household-manager.tsx",
+            "web/components/my/household-invitations.tsx",
+            "web/components/my/household-page-content.tsx"
+          ],
           "behaviorTests": [
             "web/app/(my)/my/household/page.mock.test.tsx",
             "web/components/my/__tests__/household-manager.mock.test.tsx",
             "web/components/my/__tests__/household-manager-rollback.mock.test.tsx",
-            "web/components/my/__tests__/household-manager-races.mock.test.tsx"
+            "web/components/my/__tests__/household-manager-races.mock.test.tsx",
+            "web/components/my/__tests__/household-invitations.mock.test.tsx",
+            "web/components/my/__tests__/household-page-content.mock.test.tsx"
           ]
         },
         "swift": {
-          "status": "full",
+          "status": "partial",
           "uiEvidence": [
             "swift-clients/ui/Sources/VouchaFeatures/Households/HouseholdSurface.swift"
           ],
@@ -1511,7 +1517,7 @@
           ]
         },
         "dotnet": {
-          "status": "full",
+          "status": "partial",
           "uiEvidence": ["dotnet-clients/src/Voucha.Client.App/Pages/HouseholdPage.xaml"],
           "behaviorTests": [
             "dotnet-clients/tests/Voucha.Client.Core.Tests/Households/HouseholdViewModelTests.cs",
@@ -1526,6 +1532,10 @@
             "dotnet-clients/tests/Voucha.Client.Core.Tests/Households/HouseholdApiTests.cs"
           ]
         }
+      },
+      "gap": {
+        "summary": "Web implements household invitations and invitation notifications. Swift and .NET implement household management but still need invitation actions and notification navigation. A vouchington-clients issue is needed; the producer lands first.",
+        "trackingIssue": "https://github.com/vouchington/vouchington/issues/3346"
       }
     },
     {
