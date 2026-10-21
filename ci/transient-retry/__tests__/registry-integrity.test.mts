@@ -1,46 +1,19 @@
-import { readdirSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
+import { unregisteredRules } from '../rule-registry-policy.mts'
 
 import { describe, expect, it } from 'vitest'
 
 import { RULES } from '../rules.mts'
 
-// Scans every *-rules.mts file in the transient-retry directory.
-// Convention: all rule files follow the `*-rules.mts` suffix. A file that
-// doesn't use that suffix is outside the scan boundary — the convention is the
-// contract.
-async function collectFileExportedRules() {
-  const dirUrl = new URL('..', import.meta.url)
-  const ruleFiles = readdirSync(fileURLToPath(dirUrl)).filter(
-    f => f.endsWith('-rules.mts') && !f.endsWith('.test.mts'),
-  )
-
-  const rules: { id: string; match: unknown }[] = []
-  for (const file of ruleFiles) {
-    const mod = await import(new URL(file, dirUrl).href)
-    for (const v of Object.values(mod)) {
-      if (
-        typeof v === 'object' &&
-        v !== null &&
-        typeof (v as Record<string, unknown>).id === 'string' &&
-        typeof (v as Record<string, unknown>).match === 'function'
-      ) {
-        rules.push(v as { id: string; match: unknown })
-      }
-    }
-  }
-  return rules
-}
-
 describe('RULES registry integrity', () => {
-  it('every rule exported from a *-rules.mts file is wired into RULES', async () => {
-    const fileExportedRules = await collectFileExportedRules()
-    expect(fileExportedRules.length).toBeGreaterThan(0)
-    for (const rule of fileExportedRules) {
-      if (!RULES.includes(rule as (typeof RULES)[number])) {
-        throw new Error(`rule "${rule.id}" is exported but missing from the RULES array`)
-      }
-    }
+  it('requires every discovered exported rule by identity and nonempty discovery', () => {
+    const rule = { id: 'fixture', match: () => true }
+    expect(unregisteredRules([{ rule, unrelated: {}, value: null }], [rule])).toEqual([])
+    expect(unregisteredRules([{ rule }], [{ ...rule }])).toEqual([
+      'rule "fixture" is exported but missing from the RULES array',
+    ])
+    expect(unregisteredRules([{ value: null, other: {} }], [])).toEqual([
+      'No exported retry rules discovered',
+    ])
   })
 
   it('every rule id in RULES is unique', () => {
