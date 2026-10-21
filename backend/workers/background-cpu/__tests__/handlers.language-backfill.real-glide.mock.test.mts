@@ -120,6 +120,9 @@ describe('real CPU language backfill retained progress', () => {
       handlers: BACKGROUND_CPU_HANDLERS,
       domains: ['content-analysis'],
       prefix,
+      // Keep idle reads and delayed promotion short on this isolated test queue.
+      blockTimeout: 1_000,
+      promotionInterval: 2_500,
     })
     const activeCursors: unknown[] = []
     const failures: unknown[] = []
