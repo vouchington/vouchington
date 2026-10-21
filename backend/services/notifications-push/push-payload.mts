@@ -17,9 +17,12 @@ export function buildNotificationPushPayload(
   subscription: Pick<PushSubscriptionRow, 'endpoint' | 'id'>,
 ): string {
   const structured = notification.target_entity !== null || notification.target_intent !== null
+  const isHousehold = isHouseholdEntity(notification.target_entity)
   const targetIntent =
     notification.target_intent ??
-    (notification.target_entity && !notification.community_slug ? 'notifications_inbox' : null)
+    (notification.target_entity && !notification.community_slug && !isHousehold
+      ? 'notifications_inbox'
+      : null)
   const targetEntity =
     notification.target_entity && notification.community_slug
       ? { ...(notification.target_entity as object), slug: notification.community_slug }
@@ -41,6 +44,7 @@ export function buildNotificationPushPayload(
 
 function getStructuredPushFallbackUrl(targetIntent: string | null, targetEntity: unknown) {
   if (targetIntent === 'notifications_inbox') return '/my/notifications'
+  if (isHouseholdEntity(targetEntity)) return '/my/household'
   if (
     typeof targetEntity === 'object' &&
     targetEntity !== null &&
@@ -51,4 +55,13 @@ function getStructuredPushFallbackUrl(targetIntent: string | null, targetEntity:
   )
     return `/communities/${encodeURIComponent(targetEntity.slug)}`
   return '/'
+}
+
+function isHouseholdEntity(entity: unknown) {
+  return (
+    typeof entity === 'object' &&
+    entity !== null &&
+    '__entity_type' in entity &&
+    entity.__entity_type === 'household'
+  )
 }

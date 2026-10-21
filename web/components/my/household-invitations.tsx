@@ -16,10 +16,10 @@ import type { HouseholdInvitation, HouseholdInvitationPage } from '@/types/house
 import type { ListResponse } from '@/types/api-responses'
 import { HouseholdInvitationsView } from './household-invitations-view'
 
-type Props = { initialPage: HouseholdInvitationPage } & (
-  | { kind: 'received' }
-  | { kind: 'sent'; householdId: string }
-)
+type Props = {
+  initialPage: HouseholdInvitationPage
+  usernames?: Readonly<Record<string, string>>
+} & ({ kind: 'received' } | { kind: 'sent'; householdId: string })
 const PAGE_LIMIT = 25
 
 export function HouseholdInvitations(props: Props) {
@@ -30,7 +30,14 @@ export function HouseholdInvitations(props: Props) {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
   const [relationship, setRelationship] = useState('')
   const [removedIds, setRemovedIds] = useState<ReadonlySet<string>>(new Set())
-  const [createdInvitations, setCreatedInvitations] = useState<HouseholdInvitation[]>([])
+  const [created, setCreated] = useState<{
+    source: HouseholdInvitationPage
+    invitations: HouseholdInvitation[]
+  }>({ source: props.initialPage, invitations: [] })
+  // A server refresh is authoritative, so optimistic rows apply only to the page they were added on.
+  const createdInvitations = created.source === props.initialPage ? created.invitations : []
+  const [formKey, setFormKey] = useState(0)
+  const [selectedUsernames, setSelectedUsernames] = useState<Record<string, string>>({})
   const [retried, setRetried] = useState<{
     source: HouseholdInvitationPage
     page: ListResponse<HouseholdInvitation>
@@ -78,11 +85,12 @@ export function HouseholdInvitations(props: Props) {
         user: selectedUserId,
         ...(relationship ? { relationship } : {}),
       })
-      setCreatedInvitations(current => [
-        invitation,
-        ...current.filter(item => item.id !== invitation.id),
-      ])
+      setCreated({
+        source: props.initialPage,
+        invitations: [invitation, ...createdInvitations.filter(item => item.id !== invitation.id)],
+      })
       setSelectedUserId(null)
+      setFormKey(key => key + 1)
       setRelationship('')
       onSuccess('Household invitation sent.')
       refresh()
@@ -142,7 +150,12 @@ export function HouseholdInvitations(props: Props) {
       pageError={pagination.fetchError !== null}
       selectedUserId={selectedUserId}
       relationship={relationship}
-      onSelectUser={id => setSelectedUserId(id || null)}
+      formKey={formKey}
+      usernames={{ ...props.usernames, ...selectedUsernames }}
+      onSelectUser={(id, username) => {
+        setSelectedUserId(id || null)
+        if (id && username) setSelectedUsernames(current => ({ ...current, [id]: username }))
+      }}
       onRelationshipChange={setRelationship}
       onInvite={() => {
         void invite()

@@ -130,6 +130,7 @@ ALTER TABLE notifications
         AND user_warning_id IS NULL
         AND moderation_appeal_id IS NULL
         AND community_ban_id IS NULL
+        AND conversation_id IS NULL
       )
       OR (
         entity_type <> 'household_invitation'

@@ -4,7 +4,7 @@ import type { Metadata } from 'next'
 import { createNoIndexMetadata } from '@/lib/seo/metadata'
 
 export const metadata: Metadata = createNoIndexMetadata('Household')
-import { getHouseholdMemberships, getHouseholds } from '@/lib/api/server'
+import { getHouseholdMemberships, getHouseholds, getUserProfile } from '@/lib/api/server'
 import { requireCurrentUser } from '@/lib/auth/require-current-user'
 import { HouseholdPageContent } from '@/components/my/household-page-content'
 import {
@@ -53,6 +53,27 @@ function invitationPage(
     : { invitations: [], pageInfo: TERMINAL_PAGE_INFO, loadError: true }
 }
 
+/** Resolves invitation user ids to usernames so rows show people instead of opaque ids. */
+async function invitationUsernames(pages: HouseholdInvitationPage[]) {
+  const ids = new Set(
+    pages.flatMap(page =>
+      page.invitations.flatMap(invitation => [
+        invitation.invited_user_id,
+        invitation.invited_by_id,
+      ]),
+    ),
+  )
+  const profiles = await Promise.allSettled([...ids].map(id => getUserProfile(id)))
+  const usernames: Record<string, string> = {}
+  for (const [index, id] of [...ids].entries()) {
+    const profile = profiles[index]
+    if (profile?.status === 'fulfilled' && profile.value?.username) {
+      usernames[id] = profile.value.username
+    }
+  }
+  return usernames
+}
+
 export default async function HouseholdPage() {
   const [t] = await Promise.all([getTranslations(), requireCurrentUser()])
   const [ownedResult, sharedResult, receivedResult] = await Promise.allSettled([
@@ -80,6 +101,12 @@ export default async function HouseholdPage() {
     }
   }
 
+  const sentInvitations = sentResult ? invitationPage(sentResult) : null
+  const receivedInvitations = invitationPage(receivedResult)
+  const usernames = await invitationUsernames(
+    sentInvitations ? [sentInvitations, receivedInvitations] : [receivedInvitations],
+  )
+
   return (
     <div className='space-y-6'>
       <SettingsPageHeader
@@ -92,8 +119,9 @@ export default async function HouseholdPage() {
         initialSharedPage={sharedPage}
         ownedProbeSucceeded={ownedResult.status === 'fulfilled'}
         sharedLoadError={sharedResult.status === 'rejected'}
-        sentInvitations={sentResult ? invitationPage(sentResult) : null}
-        receivedInvitations={invitationPage(receivedResult)}
+        sentInvitations={sentInvitations}
+        receivedInvitations={receivedInvitations}
+        usernames={usernames}
       />
     </div>
   )

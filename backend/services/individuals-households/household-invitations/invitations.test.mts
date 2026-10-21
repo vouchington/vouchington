@@ -1,4 +1,6 @@
 import {
+  blockUser,
+  muteUser,
   countHouseholdInvitationNotificationsForTest,
   createTestUserDirect,
   getTestPrivateUserById,
@@ -114,6 +116,23 @@ describe('household invitations', () => {
     await expect(
       revokeHouseholdInvitation(owner, household.id, revoked.invitation.id),
     ).rejects.toMatchObject({ status: 409 })
+  })
+
+  it('hides invitees who blocked or muted the inviter', async () => {
+    const owner = await createTestUserDirect()
+    const blocker = await createTestUserDirect()
+    const muter = await createTestUserDirect()
+    const household = await insertTestHousehold(owner.id)
+    await blockUser(blocker, owner)
+    await muteUser(muter, owner)
+    for (const invitee of [blocker, muter]) {
+      await expect(
+        createHouseholdInvitation(owner, household.id, { user: invitee.id }),
+      ).rejects.toMatchObject({ status: 404 })
+      expect(await listMyHouseholdInvitations(invitee, { limit: 25 })).toMatchObject({
+        results: [],
+      })
+    }
   })
 
   it('guards visibility, ownership, invitee identity, membership, and suspended callers', async () => {

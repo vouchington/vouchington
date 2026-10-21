@@ -11,11 +11,16 @@ import {
 } from '@/test-helpers/api-responses/household-invitations'
 import { deferred, makeMembership } from '@/test-helpers/components/my/household-manager'
 
+let mountedAutocompletes = 0
 vi.mock(import('next/navigation'), () => navMockModule)
 vi.mock(import('@/components/users/user-autocomplete'), () => ({
   UserAutocomplete: ({ onChange, disabled }) => (
     <button
       type='button'
+      data-pw='autocomplete-instance'
+      ref={element => {
+        if (element) element.dataset.mounted = String(++mountedAutocompletes)
+      }}
       disabled={disabled}
       onClick={() => onChange('user-alex', 'alex')}
     >
@@ -105,6 +110,45 @@ describe('household invitation actions', () => {
     await act(async () => request.resolve({ invitation }))
     expect(document.querySelectorAll('[data-pw="household-invitation-row"]')).toHaveLength(1)
     expect(nav.refresh).toHaveBeenCalledOnce()
+  })
+
+  it('shows resolved usernames, falls back to ids, and remounts the search after sending', async () => {
+    const invitation = makeHouseholdInvitation({ invited_user_id: 'user-alex' })
+    vi.mocked(api.createHouseholdInvitation).mockResolvedValueOnce({ invitation })
+    render(
+      <HouseholdInvitations
+        kind='sent'
+        householdId={invitation.household_id}
+        initialPage={makeHouseholdInvitationPage([])}
+      />,
+    )
+    const before = screen.getByRole('button', { name: 'Select alex' }).dataset.mounted
+    fireEvent.click(screen.getByRole('button', { name: 'Select alex' }))
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Send invitation' })))
+    expect(screen.getByRole('button', { name: 'Select alex' }).dataset.mounted).not.toBe(before)
+    expect(screen.getByRole('link', { name: '@alex' }).getAttribute('href')).toContain('alex')
+  })
+
+  it('drops optimistic rows once the server supplies a fresh page', async () => {
+    const invitation = makeHouseholdInvitation()
+    vi.mocked(api.createHouseholdInvitation).mockResolvedValueOnce({ invitation })
+    const props = { kind: 'sent', householdId: invitation.household_id } as const
+    const { rerender } = render(
+      <HouseholdInvitations
+        {...props}
+        initialPage={makeHouseholdInvitationPage([])}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Select alex' }))
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Send invitation' })))
+    expect(screen.getAllByRole('listitem')).toHaveLength(1)
+    rerender(
+      <HouseholdInvitations
+        {...props}
+        initialPage={makeHouseholdInvitationPage([])}
+      />,
+    )
+    expect(screen.queryAllByRole('listitem')).toHaveLength(0)
   })
 
   it.each(['accept', 'decline'] as const)(

@@ -118,6 +118,7 @@ async function showBoundPushNotification(data) {
 
 function getPushUrl(data) {
   if (data.target_intent === 'notifications_inbox') return '/my/notifications'
+  if (data.target_entity?.__entity_type === 'household') return '/my/household'
   if (
     data.target_entity?.__entity_type === 'community' &&
     typeof data.target_entity.slug === 'string'

@@ -18,7 +18,9 @@ export interface HouseholdInvitationsViewProps {
   pageError: boolean
   selectedUserId: string | null
   relationship: string
-  onSelectUser: (id: string) => void
+  formKey: number
+  usernames: Readonly<Record<string, string>>
+  onSelectUser: (id: string, username: string) => void
   onRelationshipChange: (value: string) => void
   onInvite: () => void
   onResolve: (invitation: HouseholdInvitation, action: 'accept' | 'decline' | 'revoke') => void
@@ -48,6 +50,7 @@ export function HouseholdInvitationsView(props: HouseholdInvitationsViewProps) {
         >
           <Label htmlFor={`${formId}-user`}>Username</Label>
           <UserAutocomplete
+            key={props.formKey}
             id={`${formId}-user`}
             value={props.selectedUserId}
             label=''
@@ -103,7 +106,10 @@ export function HouseholdInvitationsView(props: HouseholdInvitationsViewProps) {
               <p className='text-sm'>
                 {sent ? 'Invitation for ' : 'Invited by '}
                 <UserLink
-                  user={{ id: sent ? invitation.invited_user_id : invitation.invited_by_id }}
+                  user={userFor(
+                    sent ? invitation.invited_user_id : invitation.invited_by_id,
+                    props.usernames,
+                  )}
                   className='underline'
                 />
               </p>
@@ -159,4 +165,8 @@ export function HouseholdInvitationsView(props: HouseholdInvitationsViewProps) {
       )}
     </section>
   )
+}
+
+function userFor(id: string, usernames: Readonly<Record<string, string>>) {
+  return { id, username: usernames[id] ?? null }
 }

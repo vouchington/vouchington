@@ -1,6 +1,6 @@
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
-import { beginTransaction, read, write } from '@data-stores/psql'
+import { beginTransaction, write } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import { validateUUID } from '@modules/utils/ids'
 import { assertNotSuspended } from '@services/users'
@@ -28,10 +28,6 @@ export async function decideHouseholdInvitation(
 ): Promise<{ membership: HouseholdMembershipRow } | void> {
   assertNotSuspended(currentUser)
   validateUUID(invitationId)
-  const { rows: visible } = await read<{ id: string }>(sql`/* decideHouseholdInvitation:visible */
-    SELECT id FROM household_invitations
-    WHERE id = ${invitationId} AND invited_user_id = ${currentUser.id}`)
-  assert(visible[0], 404, 'Invitation not found')
   await using transaction = await beginTransaction()
   const options = { query: transaction }
   const { rows: target } = await write<{ household_id: string }>(

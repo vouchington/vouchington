@@ -14,6 +14,7 @@ interface Props {
   sharedLoadError: boolean
   sentInvitations: HouseholdInvitationPage | null
   receivedInvitations: HouseholdInvitationPage
+  usernames: Readonly<Record<string, string>>
 }
 
 const EMPTY_INVITATIONS: HouseholdInvitationPage = {
@@ -48,11 +49,13 @@ export function HouseholdPageContent(props: Props) {
           kind='sent'
           householdId={householdId}
           initialPage={props.sentInvitations ?? EMPTY_INVITATIONS}
+          usernames={props.usernames}
         />
       )}
       <HouseholdInvitations
         kind='received'
         initialPage={props.receivedInvitations}
+        usernames={props.usernames}
       />
     </>
   )

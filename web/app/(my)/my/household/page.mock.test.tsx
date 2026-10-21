@@ -1,7 +1,10 @@
 import '@/test-helpers/i18n/mock-json-messages'
 import { render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { makeHouseholdInvitationList } from '@/test-helpers/api-responses/household-invitations'
+import {
+  makeHouseholdInvitation,
+  makeHouseholdInvitationList,
+} from '@/test-helpers/api-responses/household-invitations'
 
 const { mockSentInvitations, mockReceivedInvitations } = vi.hoisted(() => ({
   mockSentInvitations:
@@ -14,13 +17,17 @@ vi.mock(import('@/lib/api/server/household-invitations'), () => ({
   getMyHouseholdInvitations: mockReceivedInvitations,
 }))
 
-const { mockRequireCurrentUser, mockGetHouseholdMemberships, mockGetHouseholds } = vi.hoisted(
-  () => ({
-    mockRequireCurrentUser: vi.fn<VitestLooseMock>(),
-    mockGetHouseholdMemberships: vi.fn<VitestLooseMock>(),
-    mockGetHouseholds: vi.fn<VitestLooseMock>(),
-  }),
-)
+const {
+  mockRequireCurrentUser,
+  mockGetHouseholdMemberships,
+  mockGetHouseholds,
+  mockGetUserProfile,
+} = vi.hoisted(() => ({
+  mockRequireCurrentUser: vi.fn<VitestLooseMock>(),
+  mockGetHouseholdMemberships: vi.fn<VitestLooseMock>(),
+  mockGetHouseholds: vi.fn<VitestLooseMock>(),
+  mockGetUserProfile: vi.fn<VitestLooseMock>(),
+}))
 
 vi.mock(import('@/lib/auth/require-current-user'), () => ({
   requireCurrentUser: mockRequireCurrentUser,
@@ -29,6 +36,7 @@ vi.mock(import('@/lib/auth/require-current-user'), () => ({
 vi.mock(import('@/lib/api/server'), () => ({
   getHouseholdMemberships: mockGetHouseholdMemberships,
   getHouseholds: mockGetHouseholds,
+  getUserProfile: mockGetUserProfile,
 }))
 
 vi.mock(import('@/components/my/household-page-content'), () => ({
@@ -88,6 +96,17 @@ describe('HouseholdPage', () => {
       ownedProbeSucceeded: true,
       sharedLoadError: false,
     })
+  })
+
+  it('resolves invitation user ids to usernames and omits unresolved users', async () => {
+    const invitation = makeHouseholdInvitation()
+    mockGetHouseholds.mockResolvedValue({ results: [], page_info: pageInfo })
+    mockReceivedInvitations.mockResolvedValue(makeHouseholdInvitationList([invitation]))
+    mockGetUserProfile.mockImplementation(async (id: string) =>
+      id === invitation.invited_by_id ? { id, username: 'alex' } : null,
+    )
+    render(await HouseholdPage())
+    expect(managerProps().usernames).toEqual({ [invitation.invited_by_id]: 'alex' })
   })
 
   it('projects a failed incoming invitation load separately from an empty page', async () => {

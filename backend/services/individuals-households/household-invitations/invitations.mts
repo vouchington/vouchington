@@ -8,6 +8,7 @@ import { getPublicUserByAny } from '@services/users/get'
 import type { PrivateUser } from '@services/users/types'
 import { enqueueCommunityLifecycleNotificationPush } from '@services/notifications'
 import { createHouseholdInvitationNotifications } from '@services/notifications/create-household-invitation-notification'
+import { areUsersBlockedOrMutedEitherWay } from '@services/entity-relations/check-block-mute'
 import { readHouseholdMemberManageAccess } from '../authorization.mts'
 
 export type HouseholdInvitation = {
@@ -57,9 +58,14 @@ export async function createHouseholdInvitation(
     options,
   )
   assert(lockedHouseholds[0], 404, 'Household not found')
-  assertManageAccess(await readHouseholdMemberManageAccess(currentUser, householdId))
-  const invitedUser = await getPublicUserByAny(input.user)
+  assertManageAccess(await readHouseholdMemberManageAccess(currentUser, householdId, null, options))
+  const invitedUser = await getPublicUserByAny(input.user, { ...options, readOnly: false })
   assert(invitedUser, 404, 'User not found')
+  assert(
+    !(await areUsersBlockedOrMutedEitherWay(currentUser.id, invitedUser.id)),
+    404,
+    'User not found',
+  )
   assert(invitedUser.id !== currentUser.id, 422, 'You cannot invite yourself')
   const { rows: existingMembers } = await write<{ exists: boolean }>(
     sql`/* createHouseholdInvitation:member */
