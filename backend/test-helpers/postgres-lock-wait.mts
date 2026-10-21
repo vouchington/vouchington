@@ -67,13 +67,17 @@ export async function waitForTestPostgresLockWaiter(
     phase: 'snapshot-clear-start' | 'snapshot-cleared' | 'waiter-query-start' | 'waiter-query'
     waiting: boolean
   }) => void,
+  signal?: AbortSignal,
 ): Promise<void> {
   await pollUntilNotNull(
     async () => {
+      signal?.throwIfAborted()
       if (typeof observerPool === 'function') {
         onDiagnostic?.({ phase: 'snapshot-clear-start', waiting: false })
+        signal?.throwIfAborted()
         await observerPool(sql`/* waitForTestPostgresLockWaiter.refresh */
           SELECT pg_stat_clear_snapshot()`)
+        signal?.throwIfAborted()
         onDiagnostic?.({ phase: 'snapshot-cleared', waiting: false })
       }
       const observation = sql`
@@ -89,19 +93,25 @@ export async function waitForTestPostgresLockWaiter(
         ) AS waiting
       `
       onDiagnostic?.({ phase: 'waiter-query-start', waiting: false })
+      signal?.throwIfAborted()
       const { rows } =
         typeof observerPool === 'function'
           ? await observerPool<{ waiting: boolean }>(observation)
           : observerPool === 'advisoryLock'
             ? await advisoryLockPool.query<{ waiting: boolean }>(observation)
             : await write<{ waiting: boolean }>(observation)
+      signal?.throwIfAborted()
       onDiagnostic?.({ phase: 'waiter-query', waiting: rows[0]?.waiting ?? false })
       return rows[0]?.waiting ? true : null
     },
     5_000,
     10,
   ).catch(err => {
-    throw new Error(`Operation did not wait for the test lock: ${queryMarker}`, { cause: err })
+    const cause =
+      signal?.aborted && err !== signal.reason
+        ? new SuppressedError(err, signal.reason, 'Lock observation failed during cancellation')
+        : err
+    throw new Error(`Operation did not wait for the test lock: ${queryMarker}`, { cause })
   })
 }
 

@@ -5,6 +5,7 @@ import { isQueueSelected, parseQueueSelection } from '@vouchington/worker-runtim
 
 const MAX_NUMBER_OF_MESSAGES = 10
 const WAIT_TIME_SECONDS = 20
+const POLL_ERROR_BACKOFF_MS = 5000
 
 export type SqsMessage = {
   readonly messageId: string
@@ -105,7 +106,7 @@ class SqsConsumerImpl extends EventEmitter implements SqsConsumer {
         this.emit('poll-error', err)
         // Prevent CPU starvation and log storms during persistent errors
         // oxlint-disable-next-line no-await-in-loop
-        await new Promise(resolve => globalThis.setTimeout(resolve, 5000))
+        await waitForPollErrorBackoff(this.#abortController.signal)
         continue
       }
 
@@ -137,6 +138,21 @@ class SqsConsumerImpl extends EventEmitter implements SqsConsumer {
     }
     this.emit('message-deleted', message)
   }
+}
+
+function waitForPollErrorBackoff(signal: AbortSignal): Promise<void> {
+  return new Promise(resolve => {
+    let timer: ReturnType<typeof globalThis.setTimeout> | undefined
+    const finish = () => {
+      if (timer !== undefined) globalThis.clearTimeout(timer)
+      signal.removeEventListener('abort', finish)
+      resolve()
+    }
+
+    signal.addEventListener('abort', finish, { once: true })
+    timer = globalThis.setTimeout(finish, POLL_ERROR_BACKOFF_MS)
+    if (signal.aborted) finish()
+  })
 }
 
 export function createSqsConsumer(options: CreateSqsConsumerOptions): SqsConsumer {
