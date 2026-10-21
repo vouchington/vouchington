@@ -183,7 +183,7 @@ export function buildStorySourceAccessClause(rootAlias: string): SQLStatement {
       JOIN stories publication_story
         ON publication_story.id = post_story.story_id
        AND publication_story.deleted_at IS NULL
-      -- no-mistakes-disable-next-line postgres-required-predicates: preserve existing cross-partition lookup pending query review; see #3253
+      -- no-mistakes-disable-next-line postgres-required-predicates: items are attached to a story after ingest and can predate it, so story_item.id has no bound; the story_id index serves each partition
       JOIN rss_feed_items story_item
         ON story_item.story_id = publication_story.id
        AND story_item.deleted_at IS NULL

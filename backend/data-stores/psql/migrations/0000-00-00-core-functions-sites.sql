@@ -186,6 +186,17 @@ $$;
 
 COMMENT ON FUNCTION fn_min_uuidv7(TIMESTAMPTZ) IS 'Smallest UUIDv7 at the timestamp millisecond, for indexed content-id bounds and partition pruning. STABLE permits inlining of timestamptz epoch extraction.';
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE OR REPLACE FUNCTION fn_min_child_uuidv7(p_parent_id UUID) RETURNS UUID
+LANGUAGE sql STABLE PARALLEL SAFE AS $$
+  SELECT CASE
+    WHEN uuid_extract_timestamp(p_parent_id) IS NULL THEN '00000000-0000-0000-0000-000000000000'::uuid
+    ELSE fn_min_uuidv7(GREATEST(uuid_extract_timestamp(p_parent_id) - interval '1 hour', 'epoch'::timestamptz))
+  END
+$$;
+
+COMMENT ON FUNCTION fn_min_child_uuidv7(UUID) IS 'Smallest UUIDv7 a child row of p_parent_id can have: one hour before the parent id timestamp, clamped at the epoch; the all-zero UUID when the parent id carries no timestamp. Same bound as getMinUUIDv7ForParentHistory in backend/modules/utils/ids.mts. Used as child.id >= fn_min_child_uuidv7(parent.id) for partition pruning.';
+
 -- Immutable function to convert text to timestamptz
 -- Used for generated columns that extract timestamps from JSONB
 -- RSS feeds typically include timezone info (RFC 822 or ISO 8601)

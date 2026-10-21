@@ -1342,6 +1342,9 @@
     "fn_membership_renewal_snapshot_changed(old_observation_id uuid, new_observation_id uuid)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_membership_renewal_snapshot_changed(old_observation_id uuid, new_observation_id uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE\nAS $function$\n  SELECT ROW(old_observation.renewal_membership_provider_product_id,\n             old_observation.renewal_price_minor_units,\n             old_observation.renewal_price_currency_code,\n             old_observation.renewal_effective_at)\n    IS DISTINCT FROM\n         ROW(new_observation.renewal_membership_provider_product_id,\n             new_observation.renewal_price_minor_units,\n             new_observation.renewal_price_currency_code,\n             new_observation.renewal_effective_at)\n  FROM membership_provider_observations old_observation\n  CROSS JOIN membership_provider_observations new_observation\n  WHERE old_observation.id = old_observation_id AND new_observation.id = new_observation_id\n$function$\n"
     },
+    "fn_min_child_uuidv7(p_parent_id uuid)": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_min_child_uuidv7(p_parent_id uuid)\n RETURNS uuid\n LANGUAGE sql\n STABLE PARALLEL SAFE\nAS $function$\n  SELECT CASE\n    WHEN uuid_extract_timestamp(p_parent_id) IS NULL THEN '00000000-0000-0000-0000-000000000000'::uuid\n    ELSE fn_min_uuidv7(GREATEST(uuid_extract_timestamp(p_parent_id) - interval '1 hour', 'epoch'::timestamptz))\n  END\n$function$\n"
+    },
     "fn_min_uuidv7(p_at timestamp with time zone)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_min_uuidv7(p_at timestamp with time zone)\n RETURNS uuid\n LANGUAGE sql\n STABLE PARALLEL SAFE\nAS $function$\n  SELECT (lpad(to_hex(floor(extract(epoch FROM p_at) * 1000)::bigint), 12, '0') || '70008000000000000000')::uuid\n$function$\n"
     },

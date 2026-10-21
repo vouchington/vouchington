@@ -233,6 +233,15 @@ CREATE OR REPLACE FUNCTION public.fn_membership_renewal_snapshot_changed(old_obs
  STABLE
 ```
 
+## `fn_min_child_uuidv7(p_parent_id uuid)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_min_child_uuidv7(p_parent_id uuid)
+ RETURNS uuid
+ LANGUAGE sql
+ STABLE PARALLEL SAFE
+```
+
 ## `fn_min_uuidv7(p_at timestamp with time zone)`
 
 ```sql
