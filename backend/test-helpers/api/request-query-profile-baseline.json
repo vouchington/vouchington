@@ -67,7 +67,7 @@
     "annotation": "canViewPostsBatch",
     "route": null,
     "maxCount": null,
-    "reason": "Anonymous federation visibility is checked once after the vote transaction commits, after the voter's earlier visibility pre-check",
+    "reason": "The voter visibility precheck admits the ballot; after the vote commits, one batched anonymous visibility check gates the conditional federated Like or UndoLike for the voted post and root. It cannot reuse the voter's access result or move before the commit",
     "permanent": true,
     "code": "backend/services/posts/vote-handler-options.mts:97"
   },
