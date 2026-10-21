@@ -1,3 +1,4 @@
+import type { Response } from 'supertest'
 import { randomUUID } from 'node:crypto'
 import { writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -5,72 +6,63 @@ import { join } from 'node:path'
 import { afterAll, describe, expect, it } from 'vitest'
 import { cacheValkeyClient } from '@data-stores/valkey/clients'
 import { valkeyEvents } from 'valkyries'
-import { invalidateSearchCache, stableSerialize } from '@services/entity-cache/search-cache'
+import { stableSerialize } from '@services/entity-cache/search-cache'
 import { createRequest } from '@voucha/test-helpers/api/server'
-import {
-  countCapturedQueriesByAnnotation,
-  createTestUser,
-  enableQueryCapture,
-  stopTestQueryCapture,
-} from '@voucha/test-helpers'
+import { countCapturedQueriesByAnnotation, createTestUser } from '@voucha/test-helpers'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import { getPlatformStatsCached } from '@services/entity-fetch/search-caches'
-import { acquirePlatformStatsRefreshReservation } from '@voucha/test-helpers/platform-stats-refresh-reservation'
+import { createPlatformStatsLifecycle } from '@voucha/test-helpers/platform-stats-lifecycle'
 
 describe('platform-stats', () => {
   afterAll(() => cacheValkeyClient.close())
 
   it('serializes the published platform snapshot as JSON', async () => {
-    const reservation = await acquirePlatformStatsRefreshReservation()
-    try {
-      await invalidateSearchCache('platform_stats_anon')
-      const expected = await getPlatformStatsCached({})
-      const response = await createRequest().get('/api/v1/platform-stats').expect(200)
+    const lifecycle = await createPlatformStatsLifecycle()
+    await lifecycle.withServer(async (address, _cache, serverLifecycle) => {
+      const expected = await serverLifecycle.trackWork(() => getPlatformStatsCached({}))
+      const response = await serverLifecycle.trackWork(() =>
+        createRequest(address)
+          .get('/api/v1/platform-stats')
+          .expect(200)
+          .then(result => result),
+      )
       expect(response.body).toEqual(expected)
-    } finally {
-      try {
-        await invalidateSearchCache('platform_stats_anon')
-      } finally {
-        await reservation.release()
-      }
-    }
+    })
   })
 
   it('shares one cold platform aggregate with two authenticated viewers and preserves HTTP headers', async () => {
-    const anonymous = createRequest()
-    const authenticated = [createRequest(), createRequest()]
-    for (const request of authenticated) await request.authenticateAs(await createTestUser())
-
-    const reservation = await acquirePlatformStatsRefreshReservation()
+    const lifecycle = await createPlatformStatsLifecycle()
     const key = stableSerialize({})
     const written = Promise.withResolvers<void>()
+    void written.promise.catch(() => undefined)
     const onWrite = ({ cacheName, keys }: { cacheName: string; keys: string[] }) => {
       if (cacheName === 'platform_stats_anon' && keys.includes(key)) written.resolve()
     }
-    const requestStats = async (request: ReturnType<typeof createRequest>) =>
-      request.get('/api/v1/platform-stats').expect(200)
-    let queries: ReturnType<typeof stopTestQueryCapture> = []
-    const responses = []
-    let listenerRegistered = false
-    let queryCaptureStarted = false
-    try {
-      await invalidateSearchCache('platform_stats_anon')
+    const responses: Response[] = []
+    await lifecycle.withServer(async (address, _cache, serverLifecycle) => {
+      const requestStats = (request: ReturnType<typeof createRequest>) =>
+        serverLifecycle.trackWork(() =>
+          request
+            .get('/api/v1/platform-stats')
+            .expect(200)
+            .then(result => result),
+        )
+      const anonymous = createRequest(address)
+      const authenticated = [createRequest(address), createRequest(address)]
+      await serverLifecycle.trackWork(async () => {
+        for (const request of authenticated) await request.authenticateAs(await createTestUser())
+      })
+      lifecycle.cleanupAfterDrain(() => {
+        valkeyEvents.off('cache:set', onWrite)
+        written.reject(new Error('Stats lifecycle closed before cache write event'))
+      })
       valkeyEvents.on('cache:set', onWrite)
-      listenerRegistered = true
-      enableQueryCapture()
-      queryCaptureStarted = true
+      lifecycle.captureQueries()
       const [cold] = await Promise.all([requestStats(anonymous), written.promise])
       responses.push(cold)
       for (const request of authenticated) responses.push(await requestStats(request))
-    } finally {
-      if (queryCaptureStarted) queries = stopTestQueryCapture()
-      if (listenerRegistered) valkeyEvents.off('cache:set', onWrite)
-      try {
-        await invalidateSearchCache('platform_stats_anon')
-      } finally {
-        await reservation.release()
-      }
-    }
+    })
+    const queries = lifecycle.stopQueries()
     const aggregateQueries = countCapturedQueriesByAnnotation(queries, 'getPlatformStats')
     await writeFile(
       join(tmpdir(), `platform-stats-cache-route-${randomUUID()}.json`),
@@ -110,5 +102,121 @@ describe('platform-stats', () => {
     )
     for (const response of responses.slice(1))
       expect(response.headers['cache-control'] ?? '').not.toContain('public')
+  })
+
+  it('drains a request admitted before identity dispatch when cleanup starts before its handler', async () => {
+    const lifecycle = await createPlatformStatsLifecycle()
+    await lifecycle.withServer(async (address, _cache, serverLifecycle) => {
+      const admitted = serverLifecycle.nextAdmission()
+      const requestId = randomUUID()
+      lifecycle.captureQueries()
+      const response = serverLifecycle.trackWork(() =>
+        createRequest(address)
+          .get('/api/v1/platform-stats')
+          .set('x-request-id', requestId)
+          .expect(200)
+          .then(result => result),
+      )
+      const receipt = await admitted
+      // This direct continuation runs before the anonymous identity await resumes.
+      const drained = serverLifecycle.closeAndDrain()
+      const completed = Promise.all([response, drained])
+      void completed.catch(() => undefined)
+      expect(receipt).toEqual({
+        method: 'GET',
+        path: '/api/v1/platform-stats',
+        requestId,
+        hasCookie: false,
+        handlers: 0,
+      })
+      await completed
+      expect(serverLifecycle.observations()).toEqual({
+        cleanupStarted: true,
+        handlerStartedAfterCleanup: [true],
+      })
+    })
+    expect(countCapturedQueriesByAnnotation(lifecycle.stopQueries(), 'getPlatformStats')).toBe(1)
+  })
+
+  it('runs the registered finalizer while the caller body is still pending', async () => {
+    const lifecycle = await createPlatformStatsLifecycle()
+    const entered = Promise.withResolvers<void>()
+    const release = Promise.withResolvers<void>()
+    let bodySettled = false
+    let finiteWorkStarted = false
+    let finiteWorkSettled = false
+    lifecycle.captureQueries()
+    const running = lifecycle.withServer(async (address, _cache, serverLifecycle) => {
+      await serverLifecycle.trackWork(() =>
+        createRequest(address)
+          .get('/api/v1/platform-stats')
+          .expect(200)
+          .then(result => result),
+      )
+      const finiteWork = serverLifecycle.trackWork(async () => {
+        finiteWorkStarted = true
+        await createTestUser()
+        finiteWorkSettled = true
+      })
+      entered.resolve()
+      await release.promise
+      await finiteWork
+      bodySettled = true
+    })
+    const settledRunning = running.then(
+      () => ({ status: 'fulfilled' as const }),
+      err => ({ status: 'rejected' as const, reason: err }),
+    )
+    try {
+      await Promise.race([entered.promise, running])
+      expect({ finiteWorkStarted, finiteWorkSettled }).toEqual({
+        finiteWorkStarted: true,
+        finiteWorkSettled: false,
+      })
+      await lifecycle.close()
+      expect(finiteWorkSettled).toBe(true)
+      expect(bodySettled).toBe(false)
+      expect(lifecycle.observations()).toEqual({
+        closing: true,
+        reservationReleased: true,
+        servers: 1,
+        serversDrained: 1,
+        queryCaptureActive: false,
+      })
+      expect(countCapturedQueriesByAnnotation(lifecycle.stopQueries(), 'getPlatformStats')).toBe(1)
+    } finally {
+      release.resolve()
+      await settledRunning
+    }
+    const outcome = await settledRunning
+    if (outcome.status === 'rejected') throw outcome.reason
+  })
+
+  it('fences a real detached cache write after HTTP completion and permits the next cold fill', async () => {
+    const lifecycle = await createPlatformStatsLifecycle()
+    lifecycle.captureQueries()
+    const observed = await lifecycle.withServer(async (address, cache, serverLifecycle) => {
+      await serverLifecycle.trackWork(() =>
+        createRequest(address)
+          .get('/api/v1/platform-stats')
+          .expect(200)
+          .then(result => result),
+      )
+      await cache.entered
+      // HTTP has completed while the actual conditional cache write is still held.
+      // Cleanup installs its exact-key marker before releasing that write.
+      return cache
+    }, true)
+    expect(observed.observations()).toEqual({ held: true, skipped: 1 })
+    await observed.assertMarkerRemoved()
+    await lifecycle.withServer(async (address, _cache, serverLifecycle) => {
+      await serverLifecycle.trackWork(() =>
+        createRequest(address)
+          .get('/api/v1/platform-stats')
+          .expect(200)
+          .then(result => result),
+      )
+    })
+    expect(countCapturedQueriesByAnnotation(lifecycle.stopQueries(), 'getPlatformStats')).toBe(2)
   })
 })

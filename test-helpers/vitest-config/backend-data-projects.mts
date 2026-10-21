@@ -122,6 +122,9 @@ export const backendDataProjects: TestProjectConfiguration[] = [
     test: {
       ...backendDataStoreTestDefaults,
       name: 'backend-platform-stats-cache',
+      testTimeout: 5_000,
+      hookTimeout: 5_000,
+      env: { ...backendDataStoreTestDefaults.env, PG_TEST_STATEMENT_TIMEOUT_MS: '2000' },
       isolate: true,
       runner: './test-helpers/vitest.runner.shared-db-scope-guard.mts',
       include: ['backend/api/v1/platform-stats/platform-stats.test.mts'],
