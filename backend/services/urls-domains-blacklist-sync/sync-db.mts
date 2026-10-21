@@ -66,6 +66,7 @@ export async function syncDomainsWithDatabase(
  * Stage only the diff. A lagging membership snapshot can omit a domain the writer
  * still has: that removal is absent from the diff and the domain stays blocked
  * until the next run. A repeated addition hits ON CONFLICT DO NOTHING.
+ * @internal Stale-membership tests apply a prepared diff without the reader copy.
  */
 export async function applyDomainDiffFiles(
   sourceId: DomainBlacklistSourceId,
