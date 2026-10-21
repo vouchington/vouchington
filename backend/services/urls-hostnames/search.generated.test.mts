@@ -24,15 +24,23 @@ describe('search.generated', () => {
   })
 
   it('treats LIKE wildcards in the hostname query as literal characters', async () => {
+    const literalPercent = `wild-${suffix}-percent-a%%%b.example.com`
+    const widenedPercent = `wild-${suffix}-percent-aXYZb.example.com`
+    const percentHostnames = await upsertUrlHostnames(null, [literalPercent, widenedPercent])
+    const ownedHostnameIds = new Set(percentHostnames.values())
+    const percentResults = await searchUrlHostnames({
+      query: `wild-${suffix}-percent-a%%%b`,
+    })
+    expect(
+      percentResults.results.filter(row => ownedHostnameIds.has(row.id)).map(row => row.hostname),
+    ).toEqual([literalPercent])
+
     const literal = `wild-${suffix}-a_b.example.com`
     const widened = `wild-${suffix}-axb.example.com`
     await upsertUrlHostnames(null, [literal, widened])
 
     const { results } = await searchUrlHostnames({ query: `wild-${suffix}-a_b` })
     expect(results.map(row => row.hostname)).toEqual([literal])
-
-    const wildcardOnly = await searchUrlHostnames({ query: '%%%', limit: 10 })
-    expect(wildcardOnly.results).toHaveLength(0)
   })
 
   it('searchUrlHostnames filters by is_blocked status', async () => {
