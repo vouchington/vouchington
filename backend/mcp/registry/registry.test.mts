@@ -19,7 +19,7 @@ const TOOLS_DIR = path.join(import.meta.dirname, '..')
 const NON_TOOL_FILES = new Set([
   'my-messages.mts',
   'my-households.mts',
-  ...['tool', 'reads', 'writes'].map(name => `my-household-${name}.mts`),
+  ...['tool', 'reads', 'writes', 'invitations'].map(name => `my-household-${name}.mts`),
   ...['output', 'tool', 'reads', 'writes'].map(name => `my-message-${name}.mts`),
   'bookmark-tool-support.mts',
   'community-moderation-contract.mts',

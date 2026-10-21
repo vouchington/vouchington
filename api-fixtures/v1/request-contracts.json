@@ -25416,6 +25416,7 @@
             "critical_moderation_alert",
             "direct_message",
             "follow",
+            "household_invitation",
             "moderation_report",
             "modmail",
             "post",
@@ -25439,6 +25440,16 @@
         },
         "id": {
           "type": "string"
+        },
+        "household_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
         },
         "moderation_report_id": {
           "anyOf": [
@@ -25516,6 +25527,19 @@
               "type": "object"
             },
             {
+              "additionalProperties": false,
+              "properties": {
+                "__entity_type": {
+                  "const": "household"
+                },
+                "id": {
+                  "type": "string"
+                }
+              },
+              "required": ["__entity_type", "id"],
+              "type": "object"
+            },
+            {
               "type": "null"
             }
           ]
@@ -25572,6 +25596,7 @@
         "entity_type",
         "event_key",
         "id",
+        "household_id",
         "moderation_report_id",
         "post_id",
         "pushed_at",
