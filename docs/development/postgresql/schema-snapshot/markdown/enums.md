@@ -144,6 +144,8 @@
 - `site-operations:read`
 - `spending:read`
 - `spending:write`
+- `topic-claims:read`
+- `topic-claims:write`
 - `topic-recommendations:read`
 - `topic-recommendations:write`
 - `topics:read`

@@ -5,12 +5,14 @@ export const mcpProtocolExclusions = [
   ...exclusions(
     'webhook-or-infra',
     'MCP JSON-RPC transport endpoint; requests dispatch through the protocol, not a REST tool operation',
-    ['POST /community-moderation/mcp', 'POST /legal/mcp', 'POST /admin/mcp'],
+    ['POST /brand/mcp', 'POST /community-moderation/mcp', 'POST /legal/mcp', 'POST /admin/mcp'],
   ),
   ...exclusions(
     'method-not-allowed',
     'MCP transport accepts POST only; this endpoint rejects the HTTP method',
     [
+      'GET /brand/mcp',
+      'DELETE /brand/mcp',
       'GET /community-moderation/mcp',
       'DELETE /community-moderation/mcp',
       'GET /legal/mcp',

@@ -68,7 +68,7 @@ function fixtureList(tools: readonly Tool[]) {
 }
 
 describe('MCP catalog contracts with a tiny registry', () => {
-  it('builds all five audience catalogs, including the unmounted empty brand audience', () => {
+  it('builds all five audience catalogs, leaving brand empty in this tiny registry', () => {
     const catalog = buildMcpCatalog(fixtureRegistry())
 
     expect(catalog.servers.map(server => [server.audience, server.name, server.path])).toEqual([

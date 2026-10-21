@@ -137,10 +137,10 @@
     "brand": {
       "all": {
         "on": {
-          "count": 0,
-          "list": 1000,
-          "core": 1000,
-          "output": 1000
+          "count": 2,
+          "list": 8000,
+          "core": 3000,
+          "output": 8000
         }
       },
       "Reader": {

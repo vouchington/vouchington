@@ -650,6 +650,24 @@
     },
     {
       "action": "read",
+      "audience": "brand",
+      "description_key": "topic_claims_read",
+      "requires": null,
+      "resource": "topic-claims",
+      "scope": "topic-claims:read",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "write",
+      "audience": "brand",
+      "description_key": "topic_claims_write",
+      "requires": "topic-claims:read",
+      "resource": "topic-claims",
+      "scope": "topic-claims:write",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "read",
       "audience": "user",
       "description_key": null,
       "requires": null,

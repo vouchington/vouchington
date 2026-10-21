@@ -66,6 +66,14 @@ adoption in [clients #218](https://github.com/vouchington/vouchington-clients/is
 producer lands first. The [MCP catalog](../overview/architecture/mcp/catalog.md) owns the tool
 contract; AI chat transcripts are outside this DM decision.
 
+## Brand topic-claim MCP
+
+Brand topic claims use exact `topic-claims:read` and `topic-claims:write` grants on the brand MCP
+audience. Web consent and credential selection show the localized descriptions. Umbrella user grants
+do not include them. The tools do not award ownership; domain proof or staff review does. Native
+consent and credential adoption is a vouchington-clients follow-up; the producer lands first. The
+[MCP catalog](../overview/architecture/mcp/catalog.md) owns the tool contract.
+
 ## AI review admission and results
 
 An accepted AI review request confirms that work was queued. Client and staff presentation paths

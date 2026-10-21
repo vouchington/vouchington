@@ -6,12 +6,6 @@ const pending = (routes: string[]) => exclusions('undecided', 'Tool decision pen
 
 export const undecidedExclusions = [
   ...pending([
-    'POST /topics/:idOrSlug/claims',
-    'POST /topics/:idOrSlug/claims/:claimId/domain-verification',
-    'POST /topics/:idOrSlug/claims/:claimId/manual-review-submission',
-    'POST /topics/:idOrSlug/claims/:claimId/verification-token',
-  ]),
-  ...pending([
     'POST /households',
     'DELETE /households/:id',
     'POST /households/:id/memberships',

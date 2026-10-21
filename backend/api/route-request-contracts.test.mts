@@ -54,6 +54,6 @@ describe('registered route request contracts', () => {
     ).toEqual([])
     expect(
       Object.keys(EXEMPTIONS).filter(key => key.split(':')[1]?.startsWith('/api/v1/')).length,
-    ).toBeLessThanOrEqual(60)
+    ).toBeLessThanOrEqual(62)
   })
 })

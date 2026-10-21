@@ -33328,6 +33328,12 @@
             },
             {
               "const": "messages_write"
+            },
+            {
+              "const": "topic_claims_read"
+            },
+            {
+              "const": "topic_claims_write"
             }
           ]
         },
@@ -46582,6 +46588,9 @@
       "body": {
         "$ref": "#/components/schemas/SourceSyncRequest"
       }
+    },
+    "POST:/api/v1/brand/mcp": {
+      "body": {}
     },
     "POST:/api/v1/communities": {
       "body": {

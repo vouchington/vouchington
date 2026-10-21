@@ -128,6 +128,16 @@ describe('validateScopeSet', () => {
     expect(hasScope(['community-moderation:read'], 'community-moderation:read')).toBe(true)
   })
 
+  it('assigns brand topic-claim scopes without umbrella coverage', () => {
+    expect(SCOPE_DEFINITIONS['topic-claims:read'].audience).toBe('brand')
+    expect(SCOPE_DEFINITIONS['topic-claims:write'].audience).toBe('brand')
+    expect(SCOPE_DEFINITIONS['topic-claims:write'].requires).toBe('topic-claims:read')
+    expect(hasScope(['mcp.user:read'], 'topic-claims:read')).toBe(false)
+    expect(hasScope(['mcp.user:read', 'mcp.user:write'], 'topic-claims:write')).toBe(false)
+    expect(hasScope(['topic-claims:read'], 'topic-claims:read')).toBe(true)
+    expect(hasScope(['topic-claims:read', 'topic-claims:write'], 'topic-claims:write')).toBe(true)
+  })
+
   it('allows OAuth grants to combine resource audiences', () => {
     expect(
       validateScopeSet(['mcp.user:read', 'mcp.admin:read'], {

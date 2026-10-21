@@ -970,6 +970,26 @@
         "destructiveHint": true,
         "idempotentHint": false
       }
+    },
+    "F98": {
+      "scopes": ["topic-claims:read"],
+      "roles": null,
+      "plan": null,
+      "annotations": {
+        "readOnlyHint": true,
+        "idempotentHint": true
+      }
+    },
+    "F99": {
+      "scopes": ["topic-claims:read", "topic-claims:write"],
+      "roles": null,
+      "plan": null,
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": true
+      }
     }
   },
   "inputs": {
@@ -1453,7 +1473,10 @@
       ["items", "list_id"],
       ["list_id", "source"]
     ],
-    "I183": [["idempotency_key", "predicate", "recommend_unknown_topics", "targets"]]
+    "I183": [["idempotency_key", "predicate", "recommend_unknown_topics", "targets"]],
+    "I184": [["claim_id", "topic"]],
+    "I185": [["claimed_role", "evidence", "topic"]],
+    "I186": [["claim_id", "evidence", "topic"]]
   },
   "routes": {
     "DELETE:/api/v1/agent-moderations/:id/vote": [
@@ -6147,6 +6170,102 @@
           "decision": false,
           "inputFields": "I182",
           "requestBodyFields": null
+        }
+      ]
+    },
+    "GET:/api/v1/my/topic-claims": {
+      "pullRequest": 3382,
+      "contracts": [
+        {
+          "audience": "brand",
+          "facts": "F98",
+          "operation": {
+            "tool": "read_my_topic_claims",
+            "option": "list"
+          },
+          "decision": false,
+          "inputFields": "I009",
+          "requestBodyFields": null
+        }
+      ]
+    },
+    "GET:/api/v1/topics/:idOrSlug/claims/:claimId": {
+      "pullRequest": 3382,
+      "contracts": [
+        {
+          "audience": "brand",
+          "facts": "F98",
+          "operation": {
+            "tool": "read_my_topic_claims",
+            "option": "get"
+          },
+          "decision": false,
+          "inputFields": "I184",
+          "requestBodyFields": null
+        }
+      ]
+    },
+    "POST:/api/v1/topics/:idOrSlug/claims": {
+      "pullRequest": 3382,
+      "contracts": [
+        {
+          "audience": "brand",
+          "facts": "F99",
+          "operation": {
+            "tool": "manage_topic_claim",
+            "option": "create"
+          },
+          "decision": false,
+          "inputFields": "I185",
+          "requestBodyFields": ["claimed_role", "evidence"]
+        }
+      ]
+    },
+    "POST:/api/v1/topics/:idOrSlug/claims/:claimId/verification-token": {
+      "pullRequest": 3382,
+      "contracts": [
+        {
+          "audience": "brand",
+          "facts": "F99",
+          "operation": {
+            "tool": "manage_topic_claim",
+            "option": "issue_verification_token"
+          },
+          "decision": false,
+          "inputFields": "I184",
+          "requestBodyFields": null
+        }
+      ]
+    },
+    "POST:/api/v1/topics/:idOrSlug/claims/:claimId/domain-verification": {
+      "pullRequest": 3382,
+      "contracts": [
+        {
+          "audience": "brand",
+          "facts": "F99",
+          "operation": {
+            "tool": "manage_topic_claim",
+            "option": "verify_domain"
+          },
+          "decision": false,
+          "inputFields": "I184",
+          "requestBodyFields": null
+        }
+      ]
+    },
+    "POST:/api/v1/topics/:idOrSlug/claims/:claimId/manual-review-submission": {
+      "pullRequest": 3382,
+      "contracts": [
+        {
+          "audience": "brand",
+          "facts": "F99",
+          "operation": {
+            "tool": "manage_topic_claim",
+            "option": "submit_manual_review"
+          },
+          "decision": false,
+          "inputFields": "I186",
+          "requestBodyFields": ["evidence"]
         }
       ]
     }

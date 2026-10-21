@@ -100,7 +100,7 @@ const tools: Tool[] = [
 ]
 
 describe('buildMcpCatalog', () => {
-  it('lists eligible scoped tools by audience and emits the unmounted brand row empty', () => {
+  it('lists eligible scoped tools by audience and leaves this fixture’s brand row empty', () => {
     const catalog = buildMcpCatalog(tools)
 
     expect(

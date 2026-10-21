@@ -30,9 +30,8 @@ that server's tools.
 | `admin`                | `voucha-admin-mcp`                | `/api/v1/admin/mcp`                | no       | yes            |
 | `legal`                | `voucha-legal-mcp`                | `/api/v1/legal/mcp`                | no       | yes            |
 
-The brand server stays unmounted until the brand topic-claim tools land. User, community
-moderation, and brand accept API keys. Admin and legal take OAuth only and require an
-administrator, which keeps staff authority on a staff session.
+User, community moderation, and brand accept API keys. Admin and legal take OAuth only and
+require an administrator, which keeps staff authority on a staff session.
 
 ## Suspended callers
 
@@ -118,6 +117,16 @@ plan, and conservative hints. Its strict option envelope makes the action explic
 `apply_to_community` separate for its different idempotency contract. Active members retain REST
 access in private or archived communities, and thread subjects retain reply access after membership
 removal. Moderator thread access and subject selection also follow REST.
+
+## Brand topic claims
+
+The brand server is a separate MCP audience at `/api/v1/brand/mcp`. It is free: there is no plan
+gate, and the plan field stays unset rather than defaulting to the user-surface `'free'` value.
+Exact `topic-claims:read` and `topic-claims:write` grants are required; umbrella user grants do
+not include them. `read_my_topic_claims` lists and reads the caller's own claims. `manage_topic_claim`
+files a claim, issues a verification token, checks published domain proof, or submits evidence for
+staff review. An agent never awards ownership. Ownership follows domain proof or staff review, the
+same as the topic-claim REST routes.
 
 ## Generated Artifacts
 

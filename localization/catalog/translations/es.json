@@ -6076,6 +6076,8 @@
 {"id":"copy.scopeDescription.messagesWrite","value":"Enviar y administrar conversaciones privadas, mensajes y participantes."},
 {"id":"copy.scopeDescription.spendingRead","value":"Leer tus categorías de gastos, importes, frecuencia y notas."},
 {"id":"copy.scopeDescription.spendingWrite","value":"Añadir, actualizar o eliminar tus categorías de gastos, importes, frecuencia y notas."},
+{"id":"copy.scopeDescription.topicClaimsRead","value":"Ve tus reclamaciones de temas de marca"},
+{"id":"copy.scopeDescription.topicClaimsWrite","value":"Crea y verifica las reclamaciones de temas de marca de tu cuenta"},
 {"id":"copy.settings.activeSessions.confirmCurrentDescription","value":"Esto finalizará tu sesión actual y te enviará de vuelta al inicio de sesión."},
 {"id":"copy.settings.activeSessions.confirmCurrentTitle","value":"¿Cerrar sesión en este dispositivo?"},
 {"id":"copy.settings.activeSessions.confirmSessionDescription","value":"Esto cerrará la sesión de ese navegador o dispositivo la próxima vez que haga una solicitud."},

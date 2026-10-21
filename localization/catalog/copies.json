@@ -6076,6 +6076,8 @@
 {"descriptor":null,"id":"copy.scopeDescription.messagesWrite"},
 {"descriptor":null,"id":"copy.scopeDescription.spendingRead"},
 {"descriptor":null,"id":"copy.scopeDescription.spendingWrite"},
+{"descriptor":null,"id":"copy.scopeDescription.topicClaimsRead"},
+{"descriptor":null,"id":"copy.scopeDescription.topicClaimsWrite"},
 {"descriptor":null,"id":"copy.settings.activeSessions.confirmCurrentDescription"},
 {"descriptor":null,"id":"copy.settings.activeSessions.confirmCurrentTitle"},
 {"descriptor":null,"id":"copy.settings.activeSessions.confirmSessionDescription"},

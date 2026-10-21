@@ -182,6 +182,7 @@ describe('request client information listener', () => {
     ['GET', '/api/v1/mcp', {}],
     ['GET', '/api/v1/admin/mcp/tools', {}],
     ['GET', '/api/v1/community-moderation/mcp', {}],
+    ['GET', '/api/v1/brand/mcp', {}],
     ['GET', '/api/v1/legal/mcp', {}],
     ['POST', '/api/v1/email-unsubscribe', {}],
     ['GET', '/api/v1/posts', { 'x-voucha-request-kind': 'bot' }],

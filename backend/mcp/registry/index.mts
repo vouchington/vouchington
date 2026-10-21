@@ -63,6 +63,7 @@ import { ownDataReadTools } from './own-data-read-tools.mts'
 import { searchReferenceReadTools } from './search-reference-read-tools.mts'
 import { rssReadTools } from './rss-read-tools.mts'
 import { communityModerationTools } from '../community-moderation-tools.mts'
+import { brandTopicClaimTools } from '../brand/topic-claims.mts'
 
 const adminSourceTools = [
   ...adminEditorialStoryTools,
@@ -106,6 +107,7 @@ export const ALL_TOOLS: readonly Tool[] = [
   ...searchReferenceReadTools,
   ...rssReadTools,
   ...communityModerationTools,
+  ...brandTopicClaimTools,
   activateReferralLinkTool,
   addListItemTool,
   addMyProfileLinkTool,

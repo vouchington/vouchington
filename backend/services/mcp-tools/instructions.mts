@@ -25,7 +25,8 @@ export const MCP_SERVER_INSTRUCTIONS: Record<McpServerConfig['audience'], string
     TOO_LARGE,
   ].join('\n'),
   brand: [
-    'Voucha brand and site tools. This server will open with its first tools.',
+    'Voucha brand tools let the caller read their topic claims and file or verify a claim. Ownership is granted only by domain proof or staff review, never by the agent.',
+    'A topic is identified by its id or slug. Domain verification publishes a DNS TXT record or well-known file, then checks it. Staff review uses submitted evidence.',
     'Member tools use the user server; community moderation uses the community moderation server; staff operations use the admin server; copyright casework uses the legal server.',
     EXTERNAL_CONTENT,
     TOO_LARGE,

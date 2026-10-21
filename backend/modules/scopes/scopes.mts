@@ -36,6 +36,23 @@ export const SCOPE_DEFINITIONS: Record<ApiScope, ScopeDefinition> = {
     resource: 'community-moderation',
     surfaces: ['api-key', 'oauth'],
   },
+  'topic-claims:read': {
+    action: 'read',
+    audience: 'brand',
+    descriptionKey: 'topic_claims_read',
+    requiresExactGrant: true,
+    resource: 'topic-claims',
+    surfaces: ['api-key', 'oauth'],
+  },
+  'topic-claims:write': {
+    action: 'write',
+    audience: 'brand',
+    descriptionKey: 'topic_claims_write',
+    requires: 'topic-claims:read',
+    requiresExactGrant: true,
+    resource: 'topic-claims',
+    surfaces: ['api-key', 'oauth'],
+  },
   'copyright-notices:read': {
     action: 'read',
     audience: 'legal',
@@ -101,6 +118,8 @@ export const SCOPE_DEFINITIONS: Record<ApiScope, ScopeDefinition> = {
       | keyof typeof ADMIN_RESOURCE_DEFINITIONS
       | 'community-moderation:read'
       | 'community-moderation:write'
+      | 'topic-claims:read'
+      | 'topic-claims:write'
       | 'copyright-notices:read'
       | 'copyright-notices:write'
       | 'mcp.admin:read'

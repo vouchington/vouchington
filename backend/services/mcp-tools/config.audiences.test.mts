@@ -12,11 +12,7 @@ import { validateOAuthAccessToken } from '@services/oauth-authorization-server/a
 import { getOAuthResourceMetadataUrl } from '@services/oauth-authorization-server/resources'
 import { useCopyrightMcpDecisionTools } from '@voucha/test-helpers/copyright-mcp-write-fixtures'
 import { readTestMcpCallAuditEvents } from '@voucha/test-helpers/entities/mcp-call-audit'
-import {
-  ALL_MCP_SERVER_CONFIGS,
-  MOUNTED_MCP_SERVER_CONFIGS,
-  type McpServerConfig,
-} from './config.mts'
+import { ALL_MCP_SERVER_CONFIGS, type McpServerConfig } from './config.mts'
 
 const list = { jsonrpc: '2.0', id: 1, method: 'tools/list' }
 function post(config: McpServerConfig, token: string, body: object = list) {
@@ -26,8 +22,8 @@ function post(config: McpServerConfig, token: string, body: object = list) {
     .set('Authorization', `Bearer ${token}`)
     .send(body)
 }
-const foreignPairs = MOUNTED_MCP_SERVER_CONFIGS.flatMap(source =>
-  MOUNTED_MCP_SERVER_CONFIGS.filter(target => target.audience !== source.audience).map(target => ({
+const foreignPairs = ALL_MCP_SERVER_CONFIGS.flatMap(source =>
+  ALL_MCP_SERVER_CONFIGS.filter(target => target.audience !== source.audience).map(target => ({
     source,
     target,
   })),
@@ -41,7 +37,7 @@ describe('MCP server audience isolation through HTTP', () => {
   beforeAll(async () => {
     user = await createTestUser({ administrator: true })
     await createTestMembership({ user_id: user.id, plan: 'plus' })
-    for (const config of MOUNTED_MCP_SERVER_CONFIGS) {
+    for (const config of ALL_MCP_SERVER_CONFIGS) {
       const scopes = listScopesForAudience(config.audience, 'oauth')
       const issued = await issueTestOAuthTokensForClient(user, {
         audience: config.audience,
@@ -55,7 +51,7 @@ describe('MCP server audience isolation through HTTP', () => {
     }
   })
 
-  it.each(MOUNTED_MCP_SERVER_CONFIGS)(
+  it.each(ALL_MCP_SERVER_CONFIGS)(
     '$audience lists exactly its own eligible tools and audits its audience',
     async config => {
       const response = await post(config, tokens.get(config.audience)!).expect(200)
@@ -89,8 +85,7 @@ describe('MCP server audience isolation through HTTP', () => {
       expect(response.headers['www-authenticate']).toContain(
         getOAuthResourceMetadataUrl(target.audience),
       )
-      // Brand has no mounted endpoint or grants yet; the token verifier still rejects its resource.
-      expect(await validateOAuthAccessToken(token, 'brand')).toBeNull()
+      expect(await validateOAuthAccessToken(token, target.audience)).toBeNull()
     },
   )
 
@@ -121,7 +116,7 @@ describe('MCP server audience isolation through HTTP', () => {
   )
 
   it.each(
-    MOUNTED_MCP_SERVER_CONFIGS.flatMap(source =>
+    ALL_MCP_SERVER_CONFIGS.flatMap(source =>
       ALL_MCP_SERVER_CONFIGS.filter(target => target.audience !== source.audience).map(target => ({
         source,
         target,
@@ -142,7 +137,7 @@ describe('MCP server audience isolation through HTTP', () => {
   it.each(['user', 'community_moderation'] as const)(
     '%s keys authenticate only on their own member server',
     async audience => {
-      for (const target of MOUNTED_MCP_SERVER_CONFIGS) {
+      for (const target of ALL_MCP_SERVER_CONFIGS) {
         const response = await post(target, keys.get(audience)!)
         expect(response.status).toBe(target.audience === audience ? 200 : 401)
       }
@@ -150,8 +145,8 @@ describe('MCP server audience isolation through HTTP', () => {
   )
 
   it.each(
-    MOUNTED_MCP_SERVER_CONFIGS.filter(config =>
-      ['community_moderation', 'legal'].includes(config.audience),
+    ALL_MCP_SERVER_CONFIGS.filter(config =>
+      ['brand', 'community_moderation', 'legal'].includes(config.audience),
     ),
   )('$audience preserves stateless notifications and method rejection', async config => {
     for (const method of ['get', 'delete'] as const) {
@@ -166,11 +161,11 @@ describe('MCP server audience isolation through HTTP', () => {
     expect(notification.headers['content-type']).toBeUndefined()
   })
 
-  it('keeps the brand server unmounted while publishing its empty resource metadata', async () => {
+  it('publishes brand topic-claim scopes and rejects an anonymous brand call', async () => {
     const brand = ALL_MCP_SERVER_CONFIGS.find(config => config.audience === 'brand')!
-    await createRequest().post(brand.routePath).send(list).expect(404)
+    await createRequest().post(brand.routePath).send(list).expect(401)
     const metadata = new URL(getOAuthResourceMetadataUrl('brand')).pathname
     const response = await createRequest().get(metadata).expect(200)
-    expect(response.body.scopes_supported).toEqual([])
+    expect(response.body.scopes_supported).toEqual(['topic-claims:read', 'topic-claims:write'])
   })
 })

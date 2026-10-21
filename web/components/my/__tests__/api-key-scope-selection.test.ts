@@ -146,6 +146,12 @@ describe('scopeDescriptionMessageKey', () => {
     expect(scopeDescriptionMessageKey('community_moderation_write')).toBe(
       'settings.apiKeys.scopeDescription.communityModerationWrite',
     )
+    expect(scopeDescriptionMessageKey('topic_claims_read')).toBe(
+      'settings.apiKeys.scopeDescription.topicClaimsRead',
+    )
+    expect(scopeDescriptionMessageKey('topic_claims_write')).toBe(
+      'settings.apiKeys.scopeDescription.topicClaimsWrite',
+    )
   })
 
   it('fails closed when an unrecognized description key reaches the client', () => {

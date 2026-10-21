@@ -806,7 +806,28 @@
         }
       }
     },
-    "brand": {},
+    "brand": {
+      "manage_topic_claim": {
+        "measured": {
+          "list": 4753,
+          "core": 2065
+        },
+        "max": {
+          "list": 5000,
+          "core": 3000
+        }
+      },
+      "read_my_topic_claims": {
+        "measured": {
+          "list": 2920,
+          "core": 859
+        },
+        "max": {
+          "list": 3000,
+          "core": 1000
+        }
+      }
+    },
     "admin": {
       "get_editorial_story": {
         "measured": {

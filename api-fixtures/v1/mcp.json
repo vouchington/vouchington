@@ -24432,7 +24432,708 @@
       "name": "voucha-brand-mcp",
       "path": "/api/v1/brand/mcp",
       "audience": "brand",
-      "tools": []
+      "tools": [
+        {
+          "tool": {
+            "name": "read_my_topic_claims",
+            "title": "Read My Topic Claims",
+            "description": "list: List the caller’s topic claims, including id, topic_id, and state.\nget: Read the caller’s topic claim by topic id or slug and claim_id. Another claimant’s claim is not found.",
+            "inputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["list"]
+                    },
+                    "arguments": {
+                      "type": "object",
+                      "properties": {},
+                      "required": [],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["get"]
+                    },
+                    "arguments": {
+                      "type": "object",
+                      "properties": {
+                        "topic": {
+                          "type": "string",
+                          "description": "Topic id or slug."
+                        },
+                        "claim_id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "description": "Topic claim id."
+                        }
+                      },
+                      "required": ["topic", "claim_id"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
+                }
+              ],
+              "$defs": {}
+            },
+            "outputSchema": {
+              "type": "object",
+              "anyOf": [
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "claims": {
+                      "items": {
+                        "$ref": "#/$defs/S1"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": ["claims"],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "claim": {
+                      "$ref": "#/$defs/S1"
+                    }
+                  },
+                  "required": ["claim"],
+                  "type": "object"
+                }
+              ],
+              "$defs": {
+                "S1": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "claimant_user_id": {
+                      "type": "string"
+                    },
+                    "claimed_role": {
+                      "type": "string"
+                    },
+                    "created_at": {
+                      "type": "string"
+                    },
+                    "domain_verified_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "evidence": {
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "rejected_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "rejected_by_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "rejection_reason": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "revocation_reason": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "revoked_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "revoked_by_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "submitted_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "state": {
+                      "enum": ["pending", "rejected", "revoked", "verified"],
+                      "type": "string"
+                    },
+                    "topic_id": {
+                      "type": "string"
+                    },
+                    "updated_at": {
+                      "type": "string"
+                    },
+                    "verification_hostname_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "verification_method": {
+                      "anyOf": [
+                        {
+                          "const": "dns_txt"
+                        },
+                        {
+                          "const": "manual_admin"
+                        },
+                        {
+                          "const": "well_known_file"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "verification_token_issued_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "verified_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "verified_by_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "claimant_user_id",
+                    "claimed_role",
+                    "created_at",
+                    "domain_verified_at",
+                    "evidence",
+                    "id",
+                    "rejected_at",
+                    "rejected_by_id",
+                    "rejection_reason",
+                    "revocation_reason",
+                    "revoked_at",
+                    "revoked_by_id",
+                    "submitted_at",
+                    "state",
+                    "topic_id",
+                    "updated_at",
+                    "verification_hostname_id",
+                    "verification_method",
+                    "verification_token_issued_at",
+                    "verified_at",
+                    "verified_by_id"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "idempotentHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["topic-claims:read"]
+            }
+          },
+          "roles": null,
+          "api": [
+            {
+              "method": "GET",
+              "path": "/api/v1/my/topic-claims"
+            },
+            {
+              "method": "GET",
+              "path": "/api/v1/topics/:idOrSlug/claims/:claimId"
+            }
+          ]
+        },
+        {
+          "tool": {
+            "name": "manage_topic_claim",
+            "title": "Manage Topic Claim",
+            "description": "create: File a topic claim for a topic id or slug with claimed_role and optional evidence. This does not grant ownership.\nissue_verification_token: Issue the domain-verification token for claim_id on a topic id or slug.\nverify_domain: Check the published DNS TXT record or well-known file for claim_id on a topic id or slug.\nsubmit_manual_review: Submit claim_id on a topic id or slug for staff review with evidence. This does not grant ownership.",
+            "inputSchema": {
+              "type": "object",
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["create"]
+                    },
+                    "arguments": {
+                      "type": "object",
+                      "properties": {
+                        "topic": {
+                          "$ref": "#/$defs/S3"
+                        },
+                        "claimed_role": {
+                          "type": "string",
+                          "description": "Role the caller claims, such as Issuer."
+                        },
+                        "evidence": {
+                          "$ref": "#/$defs/S2"
+                        }
+                      },
+                      "required": ["topic", "claimed_role"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["issue_verification_token"]
+                    },
+                    "arguments": {
+                      "$ref": "#/$defs/S1"
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["verify_domain"]
+                    },
+                    "arguments": {
+                      "$ref": "#/$defs/S1"
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "option": {
+                      "enum": ["submit_manual_review"]
+                    },
+                    "arguments": {
+                      "type": "object",
+                      "properties": {
+                        "topic": {
+                          "$ref": "#/$defs/S3"
+                        },
+                        "claim_id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "description": "Topic claim id."
+                        },
+                        "evidence": {
+                          "$ref": "#/$defs/S2"
+                        }
+                      },
+                      "required": ["topic", "claim_id", "evidence"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["option", "arguments"],
+                  "additionalProperties": false
+                }
+              ],
+              "$defs": {
+                "S1": {
+                  "type": "object",
+                  "properties": {
+                    "topic": {
+                      "type": "string",
+                      "description": "Topic id or slug."
+                    },
+                    "claim_id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "description": "Topic claim id."
+                    }
+                  },
+                  "required": ["topic", "claim_id"],
+                  "additionalProperties": false
+                },
+                "S2": {
+                  "type": "string",
+                  "maxLength": 10000,
+                  "description": "Evidence text, at most 10000 characters."
+                },
+                "S3": {
+                  "type": "string",
+                  "description": "Topic id or slug."
+                }
+              }
+            },
+            "outputSchema": {
+              "type": "object",
+              "anyOf": [
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "claim": {
+                      "$ref": "#/$defs/S1"
+                    },
+                    "isDuplicate": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["claim", "isDuplicate"],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "dnsInstructions": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "hostname": {
+                          "type": "string"
+                        },
+                        "recordType": {
+                          "const": "TXT"
+                        },
+                        "value": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["hostname", "recordType", "value"],
+                      "type": "object"
+                    },
+                    "rawToken": {
+                      "type": "string"
+                    },
+                    "wellKnownInstructions": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "fileContent": {
+                          "type": "string"
+                        },
+                        "url": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["fileContent", "url"],
+                      "type": "object"
+                    }
+                  },
+                  "required": ["dnsInstructions", "rawToken", "wellKnownInstructions"],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "claim": {
+                      "$ref": "#/$defs/S1"
+                    }
+                  },
+                  "required": ["claim"],
+                  "type": "object"
+                }
+              ],
+              "$defs": {
+                "S1": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "claimant_user_id": {
+                      "type": "string"
+                    },
+                    "claimed_role": {
+                      "type": "string"
+                    },
+                    "created_at": {
+                      "type": "string"
+                    },
+                    "domain_verified_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "evidence": {
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "rejected_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "rejected_by_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "rejection_reason": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "revocation_reason": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "revoked_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "revoked_by_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "submitted_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "state": {
+                      "enum": ["pending", "rejected", "revoked", "verified"],
+                      "type": "string"
+                    },
+                    "topic_id": {
+                      "type": "string"
+                    },
+                    "updated_at": {
+                      "type": "string"
+                    },
+                    "verification_hostname_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "verification_method": {
+                      "anyOf": [
+                        {
+                          "const": "dns_txt"
+                        },
+                        {
+                          "const": "manual_admin"
+                        },
+                        {
+                          "const": "well_known_file"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "verification_token_issued_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "verified_at": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "verified_by_id": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "claimant_user_id",
+                    "claimed_role",
+                    "created_at",
+                    "domain_verified_at",
+                    "evidence",
+                    "id",
+                    "rejected_at",
+                    "rejected_by_id",
+                    "rejection_reason",
+                    "revocation_reason",
+                    "revoked_at",
+                    "revoked_by_id",
+                    "submitted_at",
+                    "state",
+                    "topic_id",
+                    "updated_at",
+                    "verification_hostname_id",
+                    "verification_method",
+                    "verification_token_issued_at",
+                    "verified_at",
+                    "verified_by_id"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "annotations": {
+              "readOnlyHint": false,
+              "destructiveHint": false,
+              "idempotentHint": false,
+              "openWorldHint": true
+            },
+            "_meta": {
+              "voucha/requiredScopes": ["topic-claims:read", "topic-claims:write"]
+            }
+          },
+          "roles": null,
+          "api": [
+            {
+              "method": "POST",
+              "path": "/api/v1/topics/:idOrSlug/claims"
+            },
+            {
+              "method": "POST",
+              "path": "/api/v1/topics/:idOrSlug/claims/:claimId/verification-token"
+            },
+            {
+              "method": "POST",
+              "path": "/api/v1/topics/:idOrSlug/claims/:claimId/domain-verification"
+            },
+            {
+              "method": "POST",
+              "path": "/api/v1/topics/:idOrSlug/claims/:claimId/manual-review-submission"
+            }
+          ]
+        }
+      ]
     },
     {
       "name": "voucha-admin-mcp",

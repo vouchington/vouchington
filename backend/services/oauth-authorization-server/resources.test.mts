@@ -91,6 +91,9 @@ describe('OAuth protected resources', () => {
       'copyright-notices:read',
       'copyright-notices:write',
     ])
-    expect(buildOAuthProtectedResourceMetadata('brand').scopes_supported).toEqual([])
+    expect(buildOAuthProtectedResourceMetadata('brand').scopes_supported).toEqual([
+      'topic-claims:read',
+      'topic-claims:write',
+    ])
   })
 })

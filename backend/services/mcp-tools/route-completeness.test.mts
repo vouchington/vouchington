@@ -9,6 +9,7 @@ import { adminMergedGroups } from '@voucha/mcp/registry/admin-merged-tools'
 import { userMergedAccountGroups } from '@voucha/mcp/registry/user-merged-account-tools'
 import { userMergedParticipationGroups } from '@voucha/mcp/registry/user-merged-participation-tools'
 import { userMergedReadingGroups } from '@voucha/mcp/registry/user-merged-reading-tools'
+import { brandTopicClaimGroups } from '@voucha/mcp/brand/topic-claims'
 import { communityModerationGroups } from '@voucha/mcp/community-moderation-tools'
 import { SCOPE_DEFINITIONS, type ApiScope } from '@modules/scopes'
 import type { OAuthResourceAudience } from '@services/oauth-authorization-server/resources'
@@ -85,6 +86,7 @@ const mergedGroups = [
   ...userMergedAccountGroups,
   ...adminMergedGroups,
   ...communityModerationGroups,
+  ...brandTopicClaimGroups,
 ]
 const mergedNames = new Set(mergedGroups.map(group => group.name))
 const sourceEntries: SourceEntry[] = [

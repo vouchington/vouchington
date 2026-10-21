@@ -12,6 +12,8 @@ const MESSAGE_KEYS = {
   community_moderation_write: 'settings.apiKeys.scopeDescription.communityModerationWrite',
   messages_read: 'settings.apiKeys.scopeDescription.messagesRead',
   messages_write: 'settings.apiKeys.scopeDescription.messagesWrite',
+  topic_claims_read: 'settings.apiKeys.scopeDescription.topicClaimsRead',
+  topic_claims_write: 'settings.apiKeys.scopeDescription.topicClaimsWrite',
 } satisfies Record<ScopeDescriptionKey, MessageKey>
 
 /** Maps stable catalogue metadata to this client's localized copy without rendering server text. */

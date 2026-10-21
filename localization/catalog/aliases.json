@@ -9224,6 +9224,8 @@
 {"alias":"settings.apiKeys.scopeDescription.messagesWrite","consumer":"web","copyId":"copy.scopeDescription.messagesWrite"},
 {"alias":"settings.apiKeys.scopeDescription.spendingRead","consumer":"web","copyId":"copy.scopeDescription.spendingRead"},
 {"alias":"settings.apiKeys.scopeDescription.spendingWrite","consumer":"web","copyId":"copy.scopeDescription.spendingWrite"},
+{"alias":"settings.apiKeys.scopeDescription.topicClaimsRead","consumer":"web","copyId":"copy.scopeDescription.topicClaimsRead"},
+{"alias":"settings.apiKeys.scopeDescription.topicClaimsWrite","consumer":"web","copyId":"copy.scopeDescription.topicClaimsWrite"},
 {"alias":"settings.apiKeys.year1","consumer":"web","copyId":"copy.settings.apiKeys.year1"},
 {"alias":"settings.connectedApps.authorizedConsentedatNotUsedYet","consumer":"web","copyId":"copy.my.connectedAppsManager.connectedAppRow.authorizedConsentedatNotUsedYet"},
 {"alias":"settings.language.countryLabel","consumer":"web","copyId":"copy.settings.language.countryLabel"},
