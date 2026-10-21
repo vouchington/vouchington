@@ -1,104 +1,109 @@
-import { execFileSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { rm } from 'node:fs/promises'
+import { afterEach, describe, expect, it } from 'vitest'
+import { makeRepoFixture } from '../test-helpers/config-inventory/repo-fixture.mts'
+import { checkAgentBlackboardMcpConfig } from './agent-blackboard-mcp-config.mts'
 
-import { parse } from 'smol-toml'
-import { beforeEach, describe, expect, it } from 'vitest'
-import { createFixtureDeadline } from '../test-helpers/fixture-deadline.mts'
+const required = { '.claude/settings.json': '{}', '.codex/rules/default.rules': '' }
 
-// vouchington-machines registers the `vouchington-tooling` MCP server, plugins, and marketplaces
-// per machine in every harness and pre-approves its tools. No tracked repository file does.
-
-let remaining: ReturnType<typeof createFixtureDeadline>
-
-const ROOT = resolve(import.meta.dirname, '../..')
-
-const JSON_CONFIGS = [
-  '.claude/settings.json',
-  '.cursor/cli.json',
-  '.cursor/permissions.json',
-  'opencode.json',
-]
-// A project Grok config may exist for stricter project rules, so only its registration keys and
-// approvals are forbidden, not the file.
-const TOML_CONFIGS = ['.codex/config.toml', '.grok/config.toml']
-const APPROVAL_FILES = [...JSON_CONFIGS, ...TOML_CONFIGS, '.codex/rules/default.rules']
-const REGISTRATION_KEYS = ['enabledMcpjsonServers', 'mcp', 'mcpServers', 'mcp_servers']
-// Registrations and approvals written for the retired `agent-blackboard` MCP tools, in every
-// harness's spelling.
-const RETIRED_TOOL_APPROVALS =
-  /mcp__agent-blackboard__|Mcp\(agent-blackboard:|MCPTool\(agent-blackboard|agent-blackboard[_:](?:entry|session|snapshot)_?|agent-blackboard\.tools/u
-
-// Tracked Git state, so an ignored or untracked file neither fails nor satisfies this guard.
-function tracked(...paths: string[]): string[] {
-  return execFileSync('git', ['ls-files', '-z', '--', ...paths], {
-    cwd: ROOT,
-    encoding: 'utf8',
-    timeout: remaining(),
-    killSignal: 'SIGKILL',
+describe('machine-owned MCP configuration policy', () => {
+  const roots: string[] = []
+  afterEach(async () => {
+    await Promise.all(roots.splice(0).map(root => rm(root, { recursive: true, force: true })))
   })
-    .split('\0')
-    .filter(Boolean)
-}
+  async function fixture(files: Record<string, string> = {}) {
+    const result = await makeRepoFixture({ ...required, ...files })
+    roots.push(result.dir)
+    return result.ctx
+  }
 
-function present(paths: string[]): string[] {
-  return paths.filter(path => tracked(path).length > 0)
-}
-
-function readTracked(path: string): string {
-  expect(tracked(path)).toEqual([path])
-  return readFileSync(resolve(ROOT, path), 'utf8')
-}
-
-function registrationKeys(config: unknown): string[] {
-  if (typeof config !== 'object' || config === null || Array.isArray(config)) return []
-  return REGISTRATION_KEYS.filter(key => key in config)
-}
-
-describe('no repository registers an MCP server', () => {
-  beforeEach(() => {
-    remaining = createFixtureDeadline()
-  })
-  it('tracks no MCP server file', () => {
-    expect(tracked('.mcp.json', '.cursor/mcp.json')).toEqual([])
+  it('allows ordinary project policy, CLI approvals, and unrelated nested data', async () => {
+    const ctx = await fixture({
+      '.grok/config.toml': 'model = "fixture"\n',
+      '.cursor/cli.json': '{"permissions":{"mcp":"unrelated nested data"}}',
+      '.codex/rules/default.rules': 'Bash(pnpm exec agent-blackboard snapshot cleanup *)',
+      'other/config.json': '{"mcpServers":{}}',
+    })
+    expect(checkAgentBlackboardMcpConfig(ctx)).toEqual([])
   })
 
-  it('names no registration key in a harness config', () => {
-    const named = [
-      ...present(JSON_CONFIGS).map(path => [path, JSON.parse(readTracked(path))] as const),
-      ...present(TOML_CONFIGS).map(path => [path, parse(readTracked(path))] as const),
-    ].flatMap(([path, config]) => registrationKeys(config).map(key => `${path}: ${key}`))
-    expect(named).toEqual([])
+  it.each([
+    '.mcp.json',
+    '.cursor/mcp.json',
+    'dev/blackboard-mcp',
+    'dev/blackboard-journal.mts',
+    'dev/blackboard-journal',
+    'dev/blackboard-mcp/child.mts',
+  ])('rejects tracked registration or replaced wrapper %s', async path => {
+    const ctx = await fixture({ [path]: '{}' })
+    expect(checkAgentBlackboardMcpConfig(ctx)).toEqual([
+      `${path}: repository MCP registration and replaced journal wrappers are forbidden`,
+    ])
   })
 
-  it('keeps no approval for a retired agent-blackboard MCP tool', () => {
+  it.each([
+    ['.claude/settings.json', '{"enabledMcpjsonServers":[]}'],
+    ['.cursor/cli.json', '{"mcp":{}}'],
+    ['.cursor/permissions.json', '{"mcpServers":{}}'],
+    ['opencode.json', '{"mcp_servers":{}}'],
+    ['.codex/config.toml', '[mcp_servers.fixture]\ncommand="fixture"'],
+    ['.grok/config.toml', '[mcp.fixture]\ncommand="fixture"'],
+  ])('rejects registration in intended config %s', async (path, source) => {
+    expect(checkAgentBlackboardMcpConfig(await fixture({ [path]: source }))).toEqual([
+      expect.stringContaining(`${path}: repository MCP registration key`),
+    ])
+  })
+
+  it.each([
+    'mcp__agent-blackboard__entry_append',
+    'Mcp(agent-blackboard:entry_get)',
+    'MCPTool(agent-blackboard__session_ensure)',
+    'agent-blackboard_snapshot_export',
+    '[mcp_servers.agent-blackboard.tools.entry_append]',
+  ])('rejects retired approval spelling %s', async source => {
     expect(
-      present(APPROVAL_FILES).filter(path => RETIRED_TOOL_APPROVALS.test(readTracked(path))),
-    ).toEqual([])
+      checkAgentBlackboardMcpConfig(await fixture({ '.codex/rules/default.rules': source })),
+    ).toEqual(['.codex/rules/default.rules: retired agent-blackboard MCP approval is forbidden'])
   })
 
-  it('deletes the replaced journal CLI and MCP wrapper with their permission entries', () => {
-    expect(
-      tracked('dev/blackboard-mcp', 'dev/blackboard-journal.mts', 'dev/blackboard-journal'),
-    ).toEqual([])
-    const stale = ['.claude/settings.json', '.codex/rules/default.rules'].filter(path =>
-      /blackboard-journal|blackboard-mcp/u.test(readTracked(path)),
-    )
-    expect(stale).toEqual([])
+  it('rejects replaced wrapper approvals in each required permission file', async () => {
+    const ctx = await fixture({
+      '.claude/settings.json': '{"allow":["blackboard-journal"]}',
+      '.codex/rules/default.rules': 'Bash(dev/blackboard-mcp *)',
+    })
+    expect(checkAgentBlackboardMcpConfig(ctx)).toEqual([
+      '.claude/settings.json: replaced journal wrapper approval is forbidden',
+      '.codex/rules/default.rules: replaced journal wrapper approval is forbidden',
+    ])
   })
 
-  it('recognizes each retired approval spelling', () => {
-    for (const approval of [
-      'mcp__agent-blackboard__entry_append',
-      'Mcp(agent-blackboard:entry_get)',
-      'MCPTool(agent-blackboard__session_ensure)',
-      'agent-blackboard_snapshot_export',
-      '[mcp_servers.agent-blackboard.tools.entry_append]',
-    ]) {
-      expect(RETIRED_TOOL_APPROVALS.test(approval)).toBe(true)
-    }
-    expect(RETIRED_TOOL_APPROVALS.test('Bash(pnpm exec agent-blackboard snapshot cleanup *)')).toBe(
-      false,
-    )
+  it('ignores untracked registration files and does not accept untracked required permissions', async () => {
+    const ctx = await fixture({ '.mcp.json': '{}', '.grok/config.toml': '[mcp.fixture]' })
+    ctx.trackedFiles = Object.keys(required)
+    ctx.trackedFileSet = new Set(ctx.trackedFiles)
+    expect(checkAgentBlackboardMcpConfig(ctx)).toEqual([])
+    ctx.trackedFiles = ['.codex/rules/default.rules']
+    ctx.trackedFileSet = new Set(ctx.trackedFiles)
+    expect(checkAgentBlackboardMcpConfig(ctx)).toEqual([
+      '.claude/settings.json: required tracked configuration file is missing',
+    ])
+  })
+
+  it.each([
+    ['.claude/settings.json', '{'],
+    ['.grok/config.toml', '[invalid'],
+  ])('fails closed on invalid tracked config %s', async (path, source) => {
+    expect(checkAgentBlackboardMcpConfig(await fixture({ [path]: source }))).toEqual([
+      `${path}: tracked configuration is invalid`,
+    ])
+  })
+
+  it('fails closed on non-text shared reader results and config paths replaced by directories', async () => {
+    const ctx = await fixture({ '.cursor/cli.json/child': '{}' })
+    ctx.readTrackedFile = () => null
+    expect(checkAgentBlackboardMcpConfig(ctx)).toEqual([
+      '.claude/settings.json: tracked configuration is unreadable',
+      '.cursor/cli.json: required tracked configuration file is missing',
+      '.codex/rules/default.rules: tracked configuration is unreadable',
+    ])
   })
 })

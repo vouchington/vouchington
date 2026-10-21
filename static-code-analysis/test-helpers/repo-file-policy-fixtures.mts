@@ -47,6 +47,8 @@ export function setupRepoFilePolicyTest() {
     testDirs.push(dir)
     trackedFilesByRepo.set(dir, new Set())
     snapshotTablesByRepo.set(dir, {})
+    await track(dir, '.claude/settings.json', '{}')
+    await track(dir, '.codex/rules/default.rules', '')
     if (lifecycleScenarioContract === 'valid') {
       await writeValidLifecycleScenarioFixture((path, content) => track(dir, path, content))
     } else if (lifecycleScenarioContract === 'untracked') {
