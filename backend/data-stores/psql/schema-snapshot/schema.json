@@ -48034,6 +48034,33 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_images__abandoned_uploads": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_images__abandoned_uploads ON public.images USING btree (upload_staged_at, id) WHERE ((upload_staged_at IS NOT NULL) AND (deleted_at IS NULL) AND (upload_completed_at IS NULL) AND (upload_failed_at IS NULL) AND (NOT ((upload_started_at IS NOT NULL) AND (sha_256 IS NOT NULL) AND (s3_key = encode(sha_256, 'hex'::text)))))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "upload_staged_at",
+              "descending": false,
+              "expression": "upload_staged_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((upload_staged_at IS NOT NULL) AND (deleted_at IS NULL) AND (upload_completed_at IS NULL) AND (upload_failed_at IS NULL) AND (NOT ((upload_started_at IS NOT NULL) AND (sha_256 IS NOT NULL) AND (s3_key = encode(sha_256, 'hex'::text)))))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_images__bedrock_nova_multimodal_v1_embedding": {
           "accessMethod": "hnsw",
           "constraintBacked": false,
@@ -48101,10 +48128,10 @@
           "unique": false,
           "valid": true
         },
-        "idx_images__staged_source_cleanup": {
+        "idx_images__recoverable_uploads": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_images__staged_source_cleanup ON public.images USING btree (upload_staged_at, id) WHERE ((upload_staged_at IS NOT NULL) AND (upload_source_deleted_at IS NULL))",
+          "definition": "CREATE INDEX idx_images__recoverable_uploads ON public.images USING btree (upload_staged_at, id) WHERE ((upload_staged_at IS NOT NULL) AND (deleted_at IS NULL) AND (upload_started_at IS NOT NULL) AND (upload_completed_at IS NULL) AND (upload_failed_at IS NULL) AND (sha_256 IS NOT NULL) AND (s3_key = encode(sha_256, 'hex'::text)))",
           "includedColumns": [],
           "keys": [
             {
@@ -48122,7 +48149,34 @@
               "opclass": "uuid_ops"
             }
           ],
-          "predicate": "((upload_staged_at IS NOT NULL) AND (upload_source_deleted_at IS NULL))",
+          "predicate": "((upload_staged_at IS NOT NULL) AND (deleted_at IS NULL) AND (upload_started_at IS NOT NULL) AND (upload_completed_at IS NULL) AND (upload_failed_at IS NULL) AND (sha_256 IS NOT NULL) AND (s3_key = encode(sha_256, 'hex'::text)))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_images__staged_source_cleanup": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_images__staged_source_cleanup ON public.images USING btree (upload_staged_at, id) WHERE ((upload_staged_at IS NOT NULL) AND (upload_source_deleted_at IS NULL) AND ((deleted_at IS NOT NULL) OR (upload_failed_at IS NOT NULL) OR (upload_completed_at IS NOT NULL) OR ((upload_started_at IS NOT NULL) AND (sha_256 IS NOT NULL) AND (s3_key = encode(sha_256, 'hex'::text)))))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "upload_staged_at",
+              "descending": false,
+              "expression": "upload_staged_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((upload_staged_at IS NOT NULL) AND (upload_source_deleted_at IS NULL) AND ((deleted_at IS NOT NULL) OR (upload_failed_at IS NOT NULL) OR (upload_completed_at IS NOT NULL) OR ((upload_started_at IS NOT NULL) AND (sha_256 IS NOT NULL) AND (s3_key = encode(sha_256, 'hex'::text)))))",
           "primary": false,
           "ready": true,
           "unique": false,
