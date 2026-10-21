@@ -1,13 +1,20 @@
 import { Readable } from 'node:stream'
 import { randomUUID } from 'node:crypto'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { CreateModelInvocationJobCommand } from '@aws-sdk/client-bedrock'
 import { createTestUser, insertTestImage } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
-import { getTestBatchEntities } from '@voucha/test-helpers/entities/bedrock-embeddings-batches'
+import {
+  cleanupTestEmbeddingsBatches,
+  getTestBatchEntities,
+} from '@voucha/test-helpers/entities/bedrock-embeddings-batches'
 import { S3ImagesClient } from '@modules/aws'
 import { S3BedrockBatchClient } from '@modules/aws/s3-bedrock-batch'
 import { BedrockControlClient } from '@modules/aws/bedrock-control'
-import { bedrockEmbeddingsBatchConfig } from '@services/bedrock-embeddings/batch/config'
+import {
+  BEDROCK_BATCH_MAX_VALUES,
+  bedrockEmbeddingsBatchConfig,
+} from '@services/bedrock-embeddings/batch/config'
 import type { EmbeddingScanCursor } from '@queues/bedrock-embeddings-batch/types'
 import { dynamicConfigRegistry } from '../dynamic-config-admin/registry.mts'
 import { processImageBatchCreation } from './utils.mts'
@@ -36,12 +43,29 @@ vi.mock<typeof import('@modules/aws/bedrock-control')>(
   }),
 )
 
+const createdBatchIds: string[] = []
+
 const gif = Buffer.from('R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==', 'base64')
 
 describe('embedding scan caps', () => {
-  afterEach(() => {
-    vi.clearAllMocks()
-    vi.unstubAllEnvs()
+  beforeEach(() => {
+    // Scan/carry boundaries own this suite; real admission has separate boundary tests.
+    // Keep finite configured headroom while prior dirty-database batches remain present.
+    overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, {
+      max_inflight_jobs: BEDROCK_BATCH_MAX_VALUES.max_inflight_jobs,
+      max_requests_per_hour: BEDROCK_BATCH_MAX_VALUES.max_requests_per_hour,
+      max_job_size_gb: BEDROCK_BATCH_MAX_VALUES.max_job_size_gb,
+    })
+  })
+
+  afterEach(async () => {
+    try {
+      await cleanupTestEmbeddingsBatches(createdBatchIds)
+    } finally {
+      createdBatchIds.length = 0
+      vi.clearAllMocks()
+      vi.unstubAllEnvs()
+    }
   })
 
   it('continues past poison images and submits the healthy tail at the minimum boundary', async () => {
@@ -63,9 +87,18 @@ describe('embedding scan caps', () => {
       async () => ({ Body: Readable.from([Buffer.from('invalid-image')]) }) as never,
     )
     vi.mocked(S3BedrockBatchClient.send).mockResolvedValue(undefined as never)
-    vi.mocked(BedrockControlClient.send).mockResolvedValue({
-      jobArn: `arn:aws:bedrock:us-west-2:123456789012:model-invocation-job/${randomUUID()}`,
-    } as never)
+    vi.mocked(BedrockControlClient.send).mockImplementation(async command => {
+      if (!(command instanceof CreateModelInvocationJobCommand))
+        throw new Error('Expected a batch creation command')
+      const jobName = command.input.jobName
+      if (!jobName?.startsWith('voucha-staging-'))
+        throw new Error('Expected a staging batch job name')
+      createdBatchIds.push(jobName.slice('voucha-staging-'.length))
+      return {
+        jobArn: `arn:aws:bedrock:us-west-2:123456789012:model-invocation-job/${randomUUID()}`,
+        $metadata: {},
+      }
+    })
     let continuation: EmbeddingScanCursor | undefined
     const run = (cursor?: EmbeddingScanCursor) =>
       processImageBatchCreation({
@@ -117,12 +150,18 @@ describe('embedding scan caps', () => {
       async () => ({ Body: Readable.from([Buffer.from('invalid-image')]) }) as never,
     )
     vi.mocked(S3BedrockBatchClient.send).mockResolvedValue(undefined as never)
-    vi.mocked(BedrockControlClient.send).mockImplementation(
-      async () =>
-        ({
-          jobArn: `arn:aws:bedrock:us-west-2:123456789012:model-invocation-job/${randomUUID()}`,
-        }) as never,
-    )
+    vi.mocked(BedrockControlClient.send).mockImplementation(async command => {
+      if (!(command instanceof CreateModelInvocationJobCommand))
+        throw new Error('Expected a batch creation command')
+      const jobName = command.input.jobName
+      if (!jobName?.startsWith('voucha-staging-'))
+        throw new Error('Expected a staging batch job name')
+      createdBatchIds.push(jobName.slice('voucha-staging-'.length))
+      return {
+        jobArn: `arn:aws:bedrock:us-west-2:123456789012:model-invocation-job/${randomUUID()}`,
+        $metadata: {},
+      }
+    })
     let continuation: EmbeddingScanCursor | undefined
     const run = (cursor?: EmbeddingScanCursor) =>
       processImageBatchCreation({

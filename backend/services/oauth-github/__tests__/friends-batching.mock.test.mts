@@ -1,3 +1,4 @@
+import { randomInt } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   acquireTestFriendRowLock,
@@ -94,7 +95,7 @@ async function createGithubSyncAccount(): Promise<{
   providerUserId: string
   userId: string
 }> {
-  const providerUserId = String(randomGithubId(1_000_000))
+  const providerUserId = String(randomInt(1_000_000_000, 2 ** 47))
   const user = await createTestUserDirect()
   const account = await insertTestOAuthAccount('github', providerUserId, null)
   if (!account.account_id) throw new Error('GitHub account fixture is missing its UUID')

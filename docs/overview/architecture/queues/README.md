@@ -36,6 +36,9 @@ flowchart LR
   so they respect one external host limit. Provider limits use group rate windows; database-only
   work uses concurrency. Long network jobs keep their own lock settings. Operators can pause and
   inspect each domain without pausing unrelated CPU work.
+  Domain processors load at dispatch so unrelated domains can start without initializing every
+  processor dependency. Global upload maintenance retains startup initialization, and eager
+  registry validation rejects unroutable jobs before the worker starts.
 - Unfurl jobs run with the shared CPU worker selection and can use Lightpanda. Deployments that
   select the CPU worker need the browser capability and capacity for unfurl work as well as crawls.
 

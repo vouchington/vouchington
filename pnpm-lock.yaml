@@ -486,6 +486,9 @@ importers:
         specifier: workspace:^
         version: link:../../services/copyright-notices
     devDependencies:
+      '@voucha/config':
+        specifier: workspace:^
+        version: link:../../config
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers

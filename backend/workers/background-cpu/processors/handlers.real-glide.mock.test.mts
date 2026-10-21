@@ -130,6 +130,112 @@ describe('background-cpu production routing through real GlideMQ', () => {
     expect(await stored?.getState()).toBe('failed')
   })
 
+  it.each([
+    {
+      name: 'crawl.crawl_url',
+      domain: 'crawl',
+      data: {},
+      message: 'Crawl URL job .url_id is required',
+    },
+    {
+      name: 'crawl.boilerplate_removal',
+      domain: 'crawl',
+      data: {},
+      message: 'Boilerplate removal job requires .hostname_id and .parent_path',
+    },
+    {
+      name: 'crawl.crawl_referral_link',
+      domain: 'crawl',
+      data: {},
+      message: 'Crawl referral link job .linkId is required',
+    },
+    {
+      name: 'crawl.unfurl_referral_link',
+      domain: 'crawl',
+      data: {},
+      message: 'Unfurl referral link job .parentLinkId is required',
+    },
+    {
+      name: 'bedrock-embeddings.post',
+      domain: 'bedrock-embeddings',
+      data: {},
+      message: 'Post job requires id in job.data',
+    },
+    {
+      name: 'bedrock-embeddings.create_images',
+      domain: 'bedrock-embeddings',
+      data: { cursor: 'invalid' },
+      message: 'Invalid embedding scan cursor',
+    },
+    {
+      name: 'ai-spend-cap.recheck',
+      domain: 'ai-spend-cap',
+      data: { day: 'invalid', generation: randomUUID() },
+      message: 'Invalid UTC day: invalid',
+    },
+  ] as const)('rejects malformed $name payloads in their domain runner', async testCase => {
+    const { queue, events, worker } = await startWorker([testCase.domain])
+    const failed = once(events, 'failed')
+    const workerFailed = once(worker, 'failed')
+    const activeJobIds: string[] = []
+    worker.on('active', activeJob => activeJobIds.push(activeJob.id))
+    const definition = requireBackgroundCpuJob(testCase.name)
+    const job = await queue.add(definition.name, testCase.data, {
+      ...definition.options,
+      attempts: 1,
+    })
+    if (!job) throw new Error('Expected malformed CPU job')
+
+    const [[event], [failedJob, error]] = await Promise.all([failed, workerFailed])
+    expect(event).toMatchObject({ jobId: job.id, failedReason: testCase.message })
+    expect(failedJob).toMatchObject({ id: job.id, failedReason: testCase.message })
+    expect(activeJobIds.filter(id => id === job.id)).toEqual([job.id])
+    expect(error).toMatchObject({ message: testCase.message })
+    const stored = await queue.getJob(job.id)
+    const storedFailure = stored
+      ? {
+          state: await stored.getState(),
+          failedReason: stored.failedReason,
+          attemptsMade: stored.attemptsMade,
+        }
+      : null
+    expect(storedFailure).toEqual(
+      definition.options.removeOnFail === true
+        ? null
+        : { state: 'failed', failedReason: testCase.message, attemptsMade: 1 },
+    )
+  })
+
+  it('acknowledges a staydown job for an image that no longer exists', async () => {
+    const { queue, events } = await startWorker()
+    const completed = once(events, 'completed')
+    const definition = requireBackgroundCpuJob('content-analysis.staydown-hash')
+    const job = await queue.add(definition.name, { id: randomUUID() }, definition.options)
+    if (!job) throw new Error('Expected missing-image CPU job')
+
+    const [event] = await completed
+    expect(event).toMatchObject({ jobId: job.id })
+    const stored = await queue.getJob(job.id)
+    expect(await stored?.getState()).toBe('completed')
+    expect(stored?.returnvalue).toEqual({ success: true })
+  })
+
+  it('completes an exhausted language backfill without changing its retained cursor', async () => {
+    const { queue, events } = await startWorker()
+    const completed = once(events, 'completed')
+    const definition = requireBackgroundCpuJob('content-analysis.backfill_users')
+    const cursor = { sweepStartedAt: '1970-01-01T00:00:00.000Z' }
+    const job = await queue.add(definition.name, { cursor }, definition.options)
+    if (!job) throw new Error('Expected retained language backfill CPU job')
+
+    const [event] = await completed
+    expect(event).toMatchObject({ jobId: job.id })
+    const stored = await queue.getJob(job.id)
+    expect(await stored?.getState()).toBe('completed')
+    expect(stored?.data).toEqual({ cursor })
+    expect(stored?.returnvalue).toEqual({ updated: 0, hasMore: false })
+  })
+
   it('parks a registered job outside its selected domain without spending an attempt', async () => {
     const { queue, events } = await startWorker()
     const delayed = once(events, 'delay-changed')
