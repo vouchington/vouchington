@@ -1,11 +1,9 @@
-import { describe, it, expect, afterAll } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, insertTestTopic } from '@voucha/test-helpers'
 import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
 
 describe('topic.rewards-program-status', () => {
-  afterAll(async () => {}, 30000) // Increased timeout for cleanup when Playwright test data exists
-
   describe('Topic Rewards Program Status Routes', () => {
     describe('GET /api/v1/topics/:idOrSlug/rewards-program-status', () => {
       it('should return rewards program status attributes', async () => {

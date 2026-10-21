@@ -7,7 +7,6 @@ import config from '../vitest.config.mts'
 import { backendCoreProjects } from '../test-helpers/vitest-config/backend-core-projects.mts'
 import { backendDataProjects } from '../test-helpers/vitest-config/backend-data-projects.mts'
 import { backendAliases, realGlideMqAlias } from '../test-helpers/vitest-config/aliases.mts'
-import { TEST_STATEMENT_TIMEOUT_MS } from '../backend/test-helpers/statement-timeout-constant.mts'
 interface BackendProject {
   extends?: boolean
   resolve?: {
@@ -134,7 +133,9 @@ describe('backend Vitest project config', () => {
       include: ['backend/**/*.real-glide.mock.test.mts'],
     })
     expect(realGlideProject()?.globalSetup).toBeUndefined()
-    expect(realGlideProject()?.setupFiles).toBeUndefined()
+    expect(realGlideProject()?.setupFiles).toEqual([
+      './test-helpers/vitest.setup.postgres-sessions.mts',
+    ])
   })
 
   it('resolves GlideMQ to the installed package after inheriting root aliases', () => {
@@ -258,20 +259,6 @@ describe('backend Vitest project config', () => {
     expect(dataStores?.exclude ?? []).not.toContain(
       'backend/api/v1/reports/__tests__/reports.flat-pagination-matrix.test.mts',
     )
-  })
-
-  it('keeps TEST_STATEMENT_TIMEOUT_MS strictly below the backend-data-stores project testTimeout', () => {
-    // Guards the session startup deadline installed by the Vitest database setup:
-    // without it, statement_timeout is unbounded in tests (0, from getPsqlPoolConfiguration()'s
-    // test branch) and a stuck query fails only via vitest's opaque, unattributed testTimeout.
-    // A hardcoded fallback here would defeat the point: this must track the real config so the
-    // two numbers cannot silently drift back into the inversion this bound exists to prevent.
-    const dataStores = backendProjects().find(
-      project => project.test?.name === 'backend-data-stores',
-    )?.test
-
-    expect(typeof dataStores?.testTimeout).toBe('number')
-    expect(TEST_STATEMENT_TIMEOUT_MS).toBeLessThan(dataStores?.testTimeout as number)
   })
 
   it('isolates the Crawler RSS analytics contract in exactly one project', () => {

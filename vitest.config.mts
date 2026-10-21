@@ -99,6 +99,7 @@ export default defineConfig({
           pool: 'forks',
           isolate: true,
           name: 'backend-real-glide-mq',
+          setupFiles: ['./test-helpers/vitest.setup.postgres-sessions.mts'],
           include: ['backend/**/*.real-glide.mock.test.mts'],
           exclude: [
             '**/node_modules/**',

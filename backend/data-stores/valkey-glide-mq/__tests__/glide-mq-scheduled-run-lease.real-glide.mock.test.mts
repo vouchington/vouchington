@@ -152,11 +152,15 @@ describe('scheduled run lease recovery', () => {
       if (jobId === first.id && oldDelayCount === 3) oldDelayedAfterMetricFailure.resolve()
     })
     const firstMoved = Promise.withResolvers<void>()
-    const oldWorker = createWorker<typeof first.data>(name, async job => {
-      await job.updateData({ kind: 'old', page: 2 })
-      firstMoved.resolve()
-      await job.moveToDelayed(Date.now() + 500)
-    })
+    const oldWorker = createWorker<typeof first.data>(
+      name,
+      async job => {
+        await job.updateData({ kind: 'old', page: 2 })
+        firstMoved.resolve()
+        await job.moveToDelayed(Date.now() + 500)
+      },
+      { blockTimeout: 1_000 },
+    )
     let newWorker: ReturnType<typeof createWorker<typeof first.data>> | undefined
     const releaseNew = Promise.withResolvers<void>()
     const newStarted = Promise.withResolvers<void>()

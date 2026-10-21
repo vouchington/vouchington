@@ -55,6 +55,7 @@ describe('shared CPU worker paged dispatcher recovery', () => {
         domains: ['crawl'],
         prefix,
         concurrency: 1,
+        blockTimeout: 1_000,
       })
       worker.on('error', error => {
         ordinaryFailed.reject(error)

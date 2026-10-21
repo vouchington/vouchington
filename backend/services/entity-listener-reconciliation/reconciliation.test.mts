@@ -61,6 +61,11 @@ describe('entity-listener reconciliation', () => {
       actor.id,
       now.getTime() - 30000,
     )
+    const insideMargin = await insertTestReconciliationRevisionClocks(
+      post.id,
+      actor.id,
+      now.getTime() - 500,
+    )
     const restore = overrideDynamicConfigFieldsForTest(entityReconciliationConfig, {
       lookback_seconds: 60,
       replica_margin_seconds: 1,
@@ -71,7 +76,7 @@ describe('entity-listener reconciliation', () => {
         included.push(...batch.flatMap(row => (row.changeId ? [row.changeId] : [])))
       }
       expect(included).toEqual(expect.arrayContaining(recent.map(row => row.id)))
-      expect(included).not.toEqual(expect.arrayContaining(older.map(row => row.id)))
+      for (const row of [...older, ...insideMargin]) expect(included).not.toContain(row.id)
       const restoreExpanded = overrideDynamicConfigFieldsForTest(entityReconciliationConfig, {
         lookback_seconds: 180,
       })
@@ -81,9 +86,16 @@ describe('entity-listener reconciliation', () => {
           recovered.push(...batch.flatMap(row => (row.changeId ? [row.changeId] : [])))
         }
         expect(recovered).toEqual(expect.arrayContaining([...older, ...recent].map(row => row.id)))
+        for (const row of insideMargin) expect(recovered).not.toContain(row.id)
       } finally {
         restoreExpanded()
       }
+      const released: string[] = []
+      const laterWindow = getEntityReconciliationWindow(new Date(now.getTime() + 1000))
+      for await (const batch of streamCompleteWindow(laterWindow)) {
+        released.push(...batch.flatMap(row => (row.changeId ? [row.changeId] : [])))
+      }
+      expect(released).toEqual(expect.arrayContaining(insideMargin.map(row => row.id)))
     } finally {
       restore()
     }

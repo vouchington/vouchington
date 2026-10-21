@@ -1,5 +1,40 @@
 import { describe, expect, it } from 'vitest'
 import { configureTestPostgresSessions } from './vitest-postgres-session-settings.mts'
+import {
+  parseTestStatementTimeout,
+  TEST_STATEMENT_TIMEOUT_MS,
+} from '../backend/test-helpers/statement-timeout-constant.mts'
+
+describe('PostgreSQL test statement deadline', () => {
+  it('defaults to two seconds with room for test cleanup', () => {
+    expect(parseTestStatementTimeout(undefined)).toBe(2_000)
+  })
+
+  it.each(['1000', '1500', '2000'])('accepts the bounded positive override %s', raw => {
+    expect(parseTestStatementTimeout(raw)).toBe(Number(raw))
+  })
+
+  it.each([
+    '',
+    '0',
+    '1',
+    '750',
+    '999',
+    '-1',
+    '1.5',
+    ' 1500',
+    '1500 ',
+    '01500',
+    '1500ms',
+    'NaN',
+    'Infinity',
+    '2001',
+    '4999',
+    '5000',
+  ])('rejects an invalid or insufficient-headroom override %j', raw => {
+    expect(() => parseTestStatementTimeout(raw)).toThrow(RangeError)
+  })
+})
 
 describe('PostgreSQL test session configuration', () => {
   it('preserves connection identity and existing startup options for both pools', () => {
@@ -15,12 +50,17 @@ describe('PostgreSQL test session configuration', () => {
     expect(primary.password).toBe('secret')
     expect(primary.pathname).toBe('/owned')
     expect(primary.searchParams.get('options')).toContain('-c application_name=fixture')
-    expect(primary.searchParams.get('options')).toContain('-c statement_timeout=')
+    expect(primary.searchParams.get('options')).toContain(
+      `-c statement_timeout=${TEST_STATEMENT_TIMEOUT_MS}`,
+    )
     expect(env.DATABASE_URL).toContain('options=-c%20application_name%3Dfixture')
     expect(env.DATABASE_URL).not.toMatch(/[?&]options=[^&]*\+/u)
     expect(read.pathname).toBe('/owned_read')
     expect(read.searchParams.get('sslmode')).toBe('disable')
     expect(read.searchParams.get('options')).toContain('-c hnsw.ef_search=')
+    expect(read.searchParams.get('options')).toContain(
+      `-c statement_timeout=${TEST_STATEMENT_TIMEOUT_MS}`,
+    )
     expect(env.READ_DATABASE_URL).not.toMatch(/[?&]options=[^&]*\+/u)
   })
 

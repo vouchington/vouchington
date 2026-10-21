@@ -33,6 +33,7 @@ export const backendCredentialedTestProjects: TestProjectConfiguration[] = [
       name: 'backend-openrouter',
       include: ['backend/**/*.openrouter.test.mts'],
       exclude: ['**/node_modules/**', '**/.git/**'],
+      setupFiles: ['./test-helpers/vitest.setup.postgres-sessions.mts'],
       testTimeout: 30_000,
       hookTimeout: 30_000,
     },
