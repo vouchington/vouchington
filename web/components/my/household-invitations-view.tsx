@@ -46,10 +46,11 @@ export function HouseholdInvitationsView(props: HouseholdInvitationsViewProps) {
           }}
           data-pw='household-invitation-form'
         >
+          <Label htmlFor={`${formId}-user`}>Username</Label>
           <UserAutocomplete
             id={`${formId}-user`}
             value={props.selectedUserId}
-            label='Username'
+            label=''
             placeholder='Search by username'
             clearOnTextEdit
             onChange={props.onSelectUser}

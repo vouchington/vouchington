@@ -1,7 +1,8 @@
-import { read } from '@data-stores/psql'
-import sql from 'sql-template-strings'
 import {
+  countHouseholdInvitationNotificationsForTest,
   createTestUserDirect,
+  getTestPrivateUserById,
+  unlinkTestUserIndividualForInvitationFallback,
   insertTestHousehold,
   insertTestHouseholdMembership,
 } from '@voucha/test-helpers'
@@ -30,10 +31,9 @@ describe('household invitations', () => {
       relationship: 'changed',
     })
     expect(duplicate).toEqual({ invitation: created.invitation, created: false })
-    const { rows: notifications } = await read<{ id: string }>(sql`
-      SELECT id FROM notifications WHERE user_id = ${invitee.id}
-        AND event_key = ${`household-invitation:${created.invitation.id}`}`)
-    expect(notifications).toHaveLength(1)
+    expect(
+      await countHouseholdInvitationNotificationsForTest(invitee.id, created.invitation.id),
+    ).toBe(1)
     expect(
       (await listHouseholdInvitations(owner, household.id, { limit: 25 })).results,
     ).toHaveLength(1)
@@ -66,6 +66,30 @@ describe('household invitations', () => {
     })
     const accepted = await decideHouseholdInvitation(invitee, invitation.id, 'accept')
     expect(accepted?.membership).toMatchObject({ id: existing.id, relationship: 'existing' })
+  })
+
+  it('creates an individual only for a successful acceptance', async () => {
+    const owner = await createTestUserDirect()
+    const invitee = await createTestUserDirect()
+    await unlinkTestUserIndividualForInvitationFallback(invitee.id)
+    expect((await getTestPrivateUserById(invitee.id))?.individual_id).toBeNull()
+    const household = await insertTestHousehold(owner.id)
+    const declined = await createHouseholdInvitation(owner, household.id, {
+      user: invitee.id,
+    })
+    await decideHouseholdInvitation(invitee, declined.invitation.id, 'decline')
+    await expect(
+      decideHouseholdInvitation(invitee, declined.invitation.id, 'accept'),
+    ).rejects.toMatchObject({ status: 409 })
+    expect((await getTestPrivateUserById(invitee.id))?.individual_id).toBeNull()
+
+    const pending = await createHouseholdInvitation(owner, household.id, {
+      user: invitee.id,
+    })
+    const accepted = await decideHouseholdInvitation(invitee, pending.invitation.id, 'accept')
+    const individualId = (await getTestPrivateUserById(invitee.id))?.individual_id
+    expect(individualId).toBeTruthy()
+    expect(accepted?.membership.individual.id).toBe(individualId)
   })
 
   it('declines or revokes pending invitations and rejects later acceptance', async () => {

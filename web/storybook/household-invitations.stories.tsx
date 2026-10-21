@@ -36,7 +36,12 @@ export const Incoming: Story = {
     await expect(args.onResolve).toHaveBeenCalledWith(args.invitations[0], 'accept')
   },
 }
-export const Owner: Story = { args: { kind: 'sent' } }
+export const Owner: Story = {
+  args: { kind: 'sent' },
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByRole('combobox')).toHaveValue('')
+  },
+}
 export const Empty: Story = { args: { invitations: [] } }
 export const LoadFailure: Story = { args: { invitations: [], loadError: true } }
 export const Saving: Story = { args: { pending: true } }

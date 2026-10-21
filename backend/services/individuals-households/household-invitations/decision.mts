@@ -1,6 +1,7 @@
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { beginTransaction, read, write } from '@data-stores/psql'
+import type { QueryOptions } from '@data-stores/psql/types'
 import { validateUUID } from '@modules/utils/ids'
 import { assertNotSuspended } from '@services/users'
 import type { PrivateUser } from '@services/users/types'
@@ -10,6 +11,15 @@ import {
   membershipUpdatedAtSql,
 } from '../households/household-membership-page-row.mts'
 import { getOrCreateIndividual } from '../individuals/individuals.mts'
+
+async function getOrCreateLockedInviteeIndividual(currentUser: PrivateUser, options: QueryOptions) {
+  await write(
+    sql`/* decideHouseholdInvitation:lock-invitee */
+      SELECT id FROM users WHERE id = ${currentUser.id} FOR UPDATE`,
+    options,
+  )
+  return getOrCreateIndividual(currentUser, options)
+}
 
 export async function decideHouseholdInvitation(
   currentUser: PrivateUser,
@@ -57,12 +67,7 @@ export async function decideHouseholdInvitation(
     await transaction.commit()
     return
   }
-  await write(
-    sql`/* decideHouseholdInvitation:lock-invitee */
-      SELECT id FROM users WHERE id = ${currentUser.id} FOR UPDATE`,
-    options,
-  )
-  const individual = await getOrCreateIndividual(currentUser, options)
+  const individual = await getOrCreateLockedInviteeIndividual(currentUser, options)
   await write(
     sql`/* decideHouseholdInvitation:insert-membership */
       INSERT INTO household_members (household_id, individual_id, relationship)

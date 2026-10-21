@@ -49,11 +49,6 @@ export async function createHouseholdInvitation(
     422,
     'Relationship is too long',
   )
-  assertManageAccess(await readHouseholdMemberManageAccess(currentUser, householdId))
-  const invitedUser = await getPublicUserByAny(input.user)
-  assert(invitedUser, 404, 'User not found')
-  assert(invitedUser.id !== currentUser.id, 422, 'You cannot invite yourself')
-
   await using transaction = await beginTransaction()
   const options = { query: transaction }
   const { rows: lockedHouseholds } = await write<{ id: string }>(
@@ -63,6 +58,9 @@ export async function createHouseholdInvitation(
   )
   assert(lockedHouseholds[0], 404, 'Household not found')
   assertManageAccess(await readHouseholdMemberManageAccess(currentUser, householdId))
+  const invitedUser = await getPublicUserByAny(input.user)
+  assert(invitedUser, 404, 'User not found')
+  assert(invitedUser.id !== currentUser.id, 422, 'You cannot invite yourself')
   const { rows: existingMembers } = await write<{ exists: boolean }>(
     sql`/* createHouseholdInvitation:member */
       SELECT EXISTS (

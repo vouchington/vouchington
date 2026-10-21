@@ -126,7 +126,7 @@ describe('household invitation MCP REST twins — real DB', () => {
     ).toEqual({ success: true })
     expect(
       (await request.get(`/api/v1/households/${householdId}/invitations`).expect(200)).body.results,
-    ).toHaveLength(1)
+    ).toHaveLength(2)
     await request
       .delete(`/api/v1/households/${householdId}/invitations/${restRevoke.id}`)
       .expect(204)
@@ -173,7 +173,7 @@ describe('household invitation MCP REST twins — real DB', () => {
         optionArgs('my_invitations', {}),
         [],
       ),
-    ).toContain('Missing required scopes')
+    ).toContain('Tool requires scopes households:read')
     await expect(
       callRejectedMcpTool(
         noScopes,
@@ -181,6 +181,6 @@ describe('household invitation MCP REST twins — real DB', () => {
         optionArgs('decline_invitation', { invitation_id: crypto.randomUUID() }),
         WRITE,
       ),
-    ).resolves.toContain('Plus plan')
+    ).resolves.toContain('Tool requires a higher plan')
   })
 })
