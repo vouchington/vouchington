@@ -63,7 +63,9 @@ Mutation-capable prompts require the agent to re-fetch the trigger, authorizatio
 immediately before a write. A push to an existing branch re-fetches that branch's exact head, uses
 an exact lease, and stops on drift, so concurrent work is never overwritten. A new PR's base is not
 pinned: `main` advancing during a session is expected, and the agent rebases only when its branch no
-longer merges cleanly. No automation prompt authorizes merge or auto-merge.
+longer merges cleanly. Likewise, `/shepherd` starts from the PR's live head on the same ref, not the
+trigger-time SHA, because a queued session can wait up to the queue TTL and a push in that window
+is expected; the recorded trigger SHA is only the checkpoint's `start-sha`. No automation prompt authorizes merge or auto-merge.
 
 Checks immediately before dispatch are intentionally repeated inside prompts immediately before
 publication. The first prevents stale work from consuming a session; the second closes the race
