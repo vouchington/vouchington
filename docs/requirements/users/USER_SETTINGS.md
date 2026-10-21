@@ -56,7 +56,9 @@ Bluesky account linking is distinct from the ActivityPub federation opt-in.
 
 ## Data Display Rules
 
-- **No UUIDs**: Internal IDs (e.g. household ID) must not be shown to users
+- **No UUIDs**: Internal IDs (e.g. household ID) must not be shown to users. The one exception is a
+  pending household invitation, which has no household name to distinguish it, so it shows the
+  household identifier next to the inviter.
 - **Number formatting**: Strip trailing zeros from decimal displays (e.g. show `2¢` not `2.0000¢`)
 
 ## Financial Workflows
