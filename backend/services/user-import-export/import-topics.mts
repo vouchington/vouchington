@@ -144,8 +144,11 @@ export async function importTopics(
           { kind: 'first_party' },
           { entityType: 'topic', entityId: topicId, predicate: 'follow' },
         )
+        // Only the input marked `followed` caused this follow; repeats and aliases of the same
+        // topic are `already_following` and must not add a second follow audit.
         for (const input of existingInputs) {
           if (existingTopics.get(input.index) !== topicId) continue
+          if (results[input.index]?.status !== 'followed') continue
           audits.push({ index: input.index, inputValue: input.name, topicId })
         }
       } catch (err) {
