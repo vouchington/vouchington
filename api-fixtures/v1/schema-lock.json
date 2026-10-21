@@ -2772,7 +2772,7 @@
     },
     "swift.notifications.default": {
       "fixtureIds": ["swift.notifications.default"],
-      "hash": "cf930d413cfa290663c99177b9490473d3c97ac188de0599bd31ad5e680aa68e"
+      "hash": "2679b80ed6406e7170b80f3bd2ffaee5079bda66c9826982d3e04a1c333d3e73"
     },
     "swift.podcast-episode-chapters.default": {
       "fixtureIds": ["swift.podcast-episode-chapters.default"],

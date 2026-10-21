@@ -37649,6 +37649,10 @@
                     },
                     {
                       "type": "literal",
+                      "value": "household_invitation"
+                    },
+                    {
+                      "type": "literal",
                       "value": "moderation_report"
                     },
                     {
@@ -37683,6 +37687,20 @@
                 }
               },
               "event_key": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "household_id": {
                 "required": true,
                 "schema": {
                   "type": "union",
@@ -37799,6 +37817,25 @@
                           "schema": {
                             "type": "literal",
                             "value": "community"
+                          }
+                        },
+                        "id": {
+                          "required": true,
+                          "schema": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "__entity_type": {
+                          "required": true,
+                          "schema": {
+                            "type": "literal",
+                            "value": "household"
                           }
                         },
                         "id": {
@@ -97751,7 +97788,7 @@
         "limit": "20"
       },
       "responseSchema": {
-        "hash": "cf930d413cfa290663c99177b9490473d3c97ac188de0599bd31ad5e680aa68e",
+        "hash": "2679b80ed6406e7170b80f3bd2ffaee5079bda66c9826982d3e04a1c333d3e73",
         "key": "swift.notifications.default"
       },
       "route": {

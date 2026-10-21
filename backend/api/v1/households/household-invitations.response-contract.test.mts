@@ -42,6 +42,18 @@ describe('household invitation REST response contracts', () => {
     matches('GET:/api/v1/households/:id/invitations', sent.body)
     const inviteeRequest = createRequest()
     await inviteeRequest.authenticateAs(invitee)
+    const notifications = await inviteeRequest.get('/api/v1/my/notifications').expect(200)
+    matches('GET:/api/v1/my/notifications', notifications.body)
+    expect(Object.values(notifications.body.notifications)).toContainEqual(
+      expect.objectContaining({
+        entity_type: 'household_invitation',
+        household_id: householdId,
+        target_entity: { __entity_type: 'household', id: householdId },
+      }),
+    )
+    expect(
+      (await inviteeRequest.get('/api/v1/my/notifications/unread').expect(200)).body.unread_count,
+    ).toBeGreaterThan(0)
     const received = await inviteeRequest.get('/api/v1/my/household-invitations').expect(200)
     matches('GET:/api/v1/my/household-invitations', received.body)
     expect(received.body.results[0]).toMatchObject({
