@@ -20,6 +20,7 @@ export type Notification = {
     | 'community_role_change'
     | 'community_ownership_transfer'
     | 'community_activity_digest'
+    | 'household_invitation'
     | 'copyright_notice'
   post_id: string | null
   rss_feed_item_id: string | null
@@ -29,13 +30,14 @@ export type Notification = {
   user_warning_id: string | null
   conversation_id: string | null
   community_id: string | null
+  household_id: string | null
   copyright_notice_id: string | null
   event_key: string | null
   title: string
   body: string
   actor_label: string | null
   target_path: string | null
-  target_entity: { __entity_type: 'community'; id: string } | null
+  target_entity: { __entity_type: 'community' | 'household'; id: string } | null
   target_intent: 'notifications_inbox' | null
   read_at: Date | null
   pushed_at: Date | null

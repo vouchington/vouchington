@@ -7138,6 +7138,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@services/notifications':
+        specifier: workspace:^
+        version: link:../notifications
       '@services/pagination':
         specifier: workspace:^
         version: link:../pagination
