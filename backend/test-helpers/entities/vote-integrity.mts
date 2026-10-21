@@ -70,11 +70,21 @@ export async function insertTestPostVote(
   userId: string,
   ipAddress: string,
   score: number,
+  id?: string,
 ): Promise<void> {
   await write(sql`/* insertTestPostVote */
-    INSERT INTO post_votes (post_id, user_id, score, ip_address)
-    VALUES (${postId}, ${userId}, ${score}, ${ipAddress}::inet)
+    INSERT INTO post_votes (id, post_id, user_id, score, ip_address)
+    VALUES (COALESCE(${id}::uuid, uuidv7()), ${postId}, ${userId}, ${score}, ${ipAddress}::inet)
   `)
+}
+
+export async function getTestVoteIntegrityFlagTypesByPostId(postId: string): Promise<string[]> {
+  const { rows } = await write<{
+    flag_type: string
+  }>(sql`/* getTestVoteIntegrityFlagTypesByPostId */
+    SELECT flag_type FROM vote_integrity_flags WHERE post_id = ${postId}
+  `)
+  return rows.map(row => row.flag_type)
 }
 
 export async function insertTestVoteWeightPenalty(

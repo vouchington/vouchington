@@ -14034,6 +14034,9 @@ importers:
         specifier: ^0.18.0
         version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
+      '@modules/utils':
+        specifier: workspace:^
+        version: link:../../modules/utils
       '@services/entity-cache':
         specifier: workspace:^
         version: link:../../services/entity-cache
@@ -14043,6 +14046,9 @@ importers:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
+      uuid:
+        specifier: ^14.0.3
+        version: 14.0.3
 
   ci:
     dependencies:

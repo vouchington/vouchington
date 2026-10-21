@@ -39,7 +39,10 @@ export type MassReportCampaignResult = {
 export async function detectMassReportCampaign(
   entityType: string,
   entityId: string,
+  asOf: Date,
 ): Promise<MassReportCampaignResult> {
+  const asOfMs = asOf.getTime()
+  if (!Number.isFinite(asOfMs)) throw new RangeError('asOf must be a finite date')
   const empty: MassReportCampaignResult = {
     flagged: false,
     reporter_count: 0,
@@ -58,10 +61,10 @@ export async function detectMassReportCampaign(
   const fkColumn = ENTITY_TYPE_TO_FLAG_FK[entityType]
   if (!fkColumn) return empty
 
-  const windowStart = new Date(Date.now() - MASS_REPORT_WINDOW_MINUTES * 60 * 1000)
+  const windowStart = new Date(asOfMs - MASS_REPORT_WINDOW_MINUTES * 60 * 1000)
   const windowStartId = getMinUUIDv7ForDate(windowStart)
   // User IDs are UUIDv7 — use id comparison for account-age filtering.
-  const youngAccountCutoff = new Date(Date.now() - NEW_ACCOUNT_AGE_DAYS * 24 * 60 * 60 * 1000)
+  const youngAccountCutoff = new Date(asOfMs - NEW_ACCOUNT_AGE_DAYS * 24 * 60 * 60 * 1000)
   const youngAccountCutoffId = getMinUUIDv7ForDate(youngAccountCutoff)
 
   const query = sql`/* detectMassReportCampaign */
