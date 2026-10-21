@@ -32,4 +32,5 @@ _none_
 - `referral_program_topic_link_validation_rule_sets_pkey`: `CREATE UNIQUE INDEX referral_program_topic_link_validation_rule_sets_pkey ON public.referral_program_topic_link_validation_rule_sets USING btree (referral_program_topic_id, referral_program_link_validation_rule_set_id)`
 
 **Triggers:**
-_none_
+
+- `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.referral_program_topic_link_validation_rule_sets FOR EACH ROW EXECUTE FUNCTION fn_guard_active_topic_references('referral_program_topic_id')`

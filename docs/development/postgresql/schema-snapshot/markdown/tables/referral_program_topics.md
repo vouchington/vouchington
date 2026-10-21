@@ -36,4 +36,5 @@ _none_
 
 **Triggers:**
 
+- `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.referral_program_topics FOR EACH ROW EXECUTE FUNCTION fn_guard_active_topic_references('company_topic_id', 'topic_id')`
 - `trigger_referral_program_topics_updated_at`: `CREATE TRIGGER trigger_referral_program_topics_updated_at BEFORE UPDATE ON public.referral_program_topics FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

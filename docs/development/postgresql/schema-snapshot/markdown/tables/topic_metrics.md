@@ -45,4 +45,5 @@ _none_
 
 **Triggers:**
 
+- `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.topic_metrics FOR EACH ROW EXECUTE FUNCTION fn_guard_active_topic_references('topic_id')`
 - `trigger_topic_metrics_updated_at`: `CREATE TRIGGER trigger_topic_metrics_updated_at BEFORE UPDATE ON public.topic_metrics FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

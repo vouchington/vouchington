@@ -33,4 +33,5 @@ _none_
 - `post_autotagger_result_topics_pkey`: `CREATE UNIQUE INDEX post_autotagger_result_topics_pkey ON public.post_autotagger_result_topics USING btree (post_id, prompt_id, topic_id)`
 
 **Triggers:**
-_none_
+
+- `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.post_autotagger_result_topics FOR EACH ROW EXECUTE FUNCTION fn_guard_active_topic_references('topic_id')`

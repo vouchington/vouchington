@@ -30,4 +30,5 @@ _none_
 - `pk_autotagger_agent_run_topics`: `CREATE UNIQUE INDEX pk_autotagger_agent_run_topics ON public.autotagger_agent_run_topics USING btree (run_id, topic_id)`
 
 **Triggers:**
-_none_
+
+- `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.autotagger_agent_run_topics FOR EACH ROW EXECUTE FUNCTION fn_guard_active_topic_references('topic_id')`

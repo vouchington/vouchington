@@ -61,4 +61,5 @@ Not partitioned — growth: unbounded.
 - `relation__rss_feed_item__category__topic_subject_id_id_key`: `CREATE UNIQUE INDEX relation__rss_feed_item__category__topic_subject_id_id_key ON public.relation__rss_feed_item__category__topic USING btree (subject_id, id)`
 
 **Triggers:**
-_none_
+
+- `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.relation__rss_feed_item__category__topic FOR EACH ROW EXECUTE FUNCTION fn_guard_active_topic_references('object_id')`

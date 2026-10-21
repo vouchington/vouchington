@@ -93,5 +93,6 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
+- `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.url_hostnames FOR EACH ROW EXECUTE FUNCTION fn_guard_active_topic_references('topic_id')`
 - `trigger_url_hostnames_crawl_policy_changed_at`: `CREATE TRIGGER trigger_url_hostnames_crawl_policy_changed_at BEFORE UPDATE ON public.url_hostnames FOR EACH ROW EXECUTE FUNCTION fn_update_url_hostname_crawl_policy_changed_at()`
 - `trigger_url_hostnames_updated_at`: `CREATE TRIGGER trigger_url_hostnames_updated_at BEFORE UPDATE ON public.url_hostnames FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

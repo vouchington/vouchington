@@ -158,6 +158,14 @@ CREATE OR REPLACE FUNCTION public.fn_field_changes(before_fields jsonb, after_fi
  IMMUTABLE
 ```
 
+## `fn_guard_active_topic_references`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_guard_active_topic_references()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_immutable_array_to_string(p_array text[], p_delimiter text)`
 
 ```sql

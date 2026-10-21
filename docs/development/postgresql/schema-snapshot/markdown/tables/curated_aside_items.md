@@ -44,4 +44,5 @@ _none_
 - `idx_curated_aside_items__type_entity`: `CREATE UNIQUE INDEX idx_curated_aside_items__type_entity ON public.curated_aside_items USING btree (aside_type, entity_id) WHERE (deleted_at IS NULL)`
 
 **Triggers:**
-_none_
+
+- `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.curated_aside_items FOR EACH ROW EXECUTE FUNCTION fn_guard_active_topic_references('topic_id')`
