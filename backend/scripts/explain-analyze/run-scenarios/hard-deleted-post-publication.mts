@@ -8,13 +8,21 @@ import { upsertPostPublicationDirtyWork } from '@services/post-publication/upser
 import { beginTransaction } from '@data-stores/psql'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { SEED_PREFIX, runAndCapture, seedPostId } from '../run-support.mts'
+import { commentSeedTimestampMs, seedUuidAtTimestamp } from '../seed-data/common.mts'
 
 const absentUserId = `${SEED_PREFIX}-0100-7000-8000-0000000000ee`
+const midThreadCommentId = seedUuidAtTimestamp(commentSeedTimestampMs(0, 1), 0)
 
 export async function runHardDeletedPostPublicationScenarios(): Promise<void> {
   await runAndCapture(
     'hard-deleted-post-publication-keys',
     () => captureHardDeletedPost(seedPostId),
+    undefined,
+    'listHardDeletedPostPublicationKeys',
+  )
+  await runAndCapture(
+    'hard-deleted-mid-thread-publication-keys',
+    () => captureHardDeletedPost(midThreadCommentId),
     undefined,
     'listHardDeletedPostPublicationKeys',
   )
@@ -84,7 +92,20 @@ registerScenarioContract('hard-deleted-post-publication-keys', {
   crossPartition: {
     posts: 'Hard-delete capture reads one doomed subtree across id partitions.',
   },
-  expectations: [{ kind: 'maxProcessedRows', relation: 'posts', max: 51 }],
+  expectations: [
+    { kind: 'maxProcessedRows', relation: 'posts', max: 144 },
+    { kind: 'maxProcessedRows', relation: 'post_slugs', max: 309 },
+  ],
+})
+
+registerScenarioContract('hard-deleted-mid-thread-publication-keys', {
+  crossPartition: {
+    posts: 'Hard-delete capture follows parent_post_id across id partitions for a comment subtree.',
+  },
+  expectations: [
+    { kind: 'maxProcessedRows', relation: 'posts', max: 83 },
+    { kind: 'maxProcessedRows', relation: 'post_slugs', max: 0 },
+  ],
 })
 
 registerScenarioContract('hard-deleted-post-publication-key-write', {

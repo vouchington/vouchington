@@ -193,7 +193,7 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'media-delivery-replay-first',
   'media-delivery-replay-continuation',
   'media-delivery-replay-scoped',
-  'hard-deleted-post-publication-keys',
+  ...(['hard-deleted-post-publication-keys', 'hard-deleted-mid-thread-publication-keys'] as const),
   'hard-deleted-post-publication-key-write',
   'user-cascade-hard-deleted-post-ids',
   ...ROUND_TRIP_SHAPE_SCENARIO_IDS,
