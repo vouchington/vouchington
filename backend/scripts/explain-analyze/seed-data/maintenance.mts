@@ -67,19 +67,6 @@ export const SEEDED_ROW_COUNT_TARGETS: readonly TableInfo[] = [
   { table: 'facebook_friends', column: 'facebook_friend_id', pattern: 'seed-fb-user-%' },
 ]
 
-export const PLAN_STABILITY_VACUUM_TARGETS = [
-  'relation__post__category__topic',
-  'rss_feeds',
-  'rss_feed_item_categories',
-  'topics',
-  'post_review_topic_ratings',
-  'post_data_point_topics',
-  'communities',
-  'community_members',
-  'community_post_reviews',
-  'community_search_counts',
-] as const
-
 export const ANALYZE_TARGETS = [
   ...new Set([
     ...SEEDED_ROW_COUNT_TARGETS.map(({ table }) => table),
@@ -131,15 +118,10 @@ export async function printRowCounts(): Promise<void> {
   }
 }
 export async function runAnalyze(): Promise<void> {
-  console.log('\nRunning ANALYZE on seeded tables...')
-  for (const table of ANALYZE_TARGETS) {
-    await write(`/* seedExplainData */ ANALYZE "${table}"`).catch(err =>
-      console.error(`seedExplainData: ANALYZE "${table}" failed`, err),
-    )
-  }
-  // Vacuum seeded relations before the first capture so autovacuum timing cannot change
-  // visibility maps and statistics. PostgreSQL includes default children for partitions.
-  const vacuumTargets = PLAN_STABILITY_VACUUM_TARGETS.map(table => `"${table}"`).join(', ')
-  await write(`/* seedExplainData */ VACUUM (ANALYZE) ${vacuumTargets}`)
-  await printPlanDiagnostics(PLAN_STABILITY_VACUUM_TARGETS)
+  console.log('\nRunning VACUUM (ANALYZE) on seeded tables...')
+  // Settle first-capture statistics and visibility before autovacuum can choose the plan.
+  // PostgreSQL includes default children when vacuuming partitioned parents.
+  for (const table of ANALYZE_TARGETS)
+    await write(`/* seedExplainData */ VACUUM (ANALYZE) "${table}"`)
+  await printPlanDiagnostics(ANALYZE_TARGETS)
 }

@@ -41,8 +41,8 @@ regressions remain distinguishable from batching and cursor failures.
 - While each scenario builds its query, `Date` is pinned to the anchor noon so time-range
   cutoffs sit at a fixed offset from seeded rows. Under the wall clock a one-week window held a
   different number of posts per hour, which flipped a plan between a seq scan and a bitmap scan.
-- After bulk seeding, the seed runs `VACUUM`/`ANALYZE` on the relations whose plans varied across
-  fresh CI databases, instead of depending on autovacuum timing, and refreshes statistics after the
+- After bulk seeding, the seed runs `VACUUM (ANALYZE)` on declared seeded relations before the first
+  plan capture, instead of depending on autovacuum timing, and refreshes statistics after the
   first post batch because a fresh database plans the retained-identity trigger against empty-table
   statistics.
 - Materialized views are refreshed after that statistics pass. Refresh replaces the heap and leaves
