@@ -6,7 +6,3 @@ export const SITE_DESCRIPTION =
 export function buildAbsoluteUrl(path: string = '/'): string {
   return new URL(path, SITE_ORIGIN).toString()
 }
-
-export function getMetadataBase(): URL {
-  return new URL(SITE_ORIGIN)
-}

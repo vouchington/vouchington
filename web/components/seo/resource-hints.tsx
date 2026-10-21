@@ -1,7 +1,7 @@
 'use client'
 
 import { preconnect } from 'react-dom'
-import { getPreconnectOrigin } from '@/lib/seo/navigation-performance'
+import { getPreconnectOrigin } from '@vouchington/utils/speculation-rules'
 
 interface ResourceHintsProps {
   assetPrefix?: string

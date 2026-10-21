@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  getPreconnectOrigin,
-  NO_VARY_SEARCH_HEADER,
-  serializeSpeculationRules,
-} from './navigation-performance'
+import { NO_VARY_SEARCH_HEADER, serializeSpeculationRules } from './navigation-performance'
 
 describe('navigation performance helpers', () => {
   it('serializes conservative prefetch-only speculation rules', () => {
@@ -25,20 +21,5 @@ describe('navigation performance helpers', () => {
       not: { selector_matches: 'a[data-no-speculation]' },
     })
     expect(rules).not.toHaveProperty('prerender')
-  })
-
-  it('normalizes absolute preconnect origins', () => {
-    expect(getPreconnectOrigin('https://cdn.example.com/assets/app.js')).toBe(
-      'https://cdn.example.com',
-    )
-    expect(getPreconnectOrigin(' http://localhost:3000/_next/static ')).toBe(
-      'http://localhost:3000',
-    )
-  })
-
-  it('rejects empty, relative, and non-http origins', () => {
-    expect(getPreconnectOrigin(undefined)).toBeNull()
-    expect(getPreconnectOrigin('/_next/static')).toBeNull()
-    expect(getPreconnectOrigin('data:text/plain,hello')).toBeNull()
   })
 })

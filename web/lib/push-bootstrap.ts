@@ -1,11 +1,10 @@
 import { getMyWebPushSubscriptionsClient } from '@/lib/api/client/my'
+import type { WebPushBinding, WebPushWorkerState } from '@vouchington/utils/web-push-binding'
 import {
   beginPushBindingReconciliation,
   bindPushBinding,
   clearPushBinding,
   readOrInitializePushBinding,
-  type WebPushBinding,
-  type WebPushWorkerState,
 } from '@/lib/push-service-worker'
 import type { WebPushSubscription } from '@/types/api-responses'
 import { withWebPushOwnershipLock } from './push-ownership-lock'

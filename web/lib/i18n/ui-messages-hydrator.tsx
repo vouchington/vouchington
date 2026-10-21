@@ -1,6 +1,7 @@
 'use client'
 
 import type { ReactNode } from 'react'
+import { CatalogHydrator } from '@vouchington/localization/react'
 import type { EnCatalog } from '@ts-shared/ui-messages'
 import { mergeMessages } from './use-translations'
 
@@ -17,6 +18,13 @@ export function UiMessagesHydrator({
   catalog: EnCatalog
   children: ReactNode
 }) {
-  mergeMessages(locale, catalog)
-  return children
+  return (
+    <CatalogHydrator
+      cache={{ mergeMessages }}
+      locale={locale}
+      catalog={catalog}
+    >
+      {children}
+    </CatalogHydrator>
+  )
 }
