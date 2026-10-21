@@ -44,5 +44,5 @@ _none_
 
 **Triggers:**
 
-- `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.post_classifier_local_outcomes FOR EACH ROW EXECUTE FUNCTION fn_guard_active_topic_references('local_topic_id')`
+- `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.post_classifier_local_outcomes FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('local_topic_id')`
 - `trigger_post_classifier_local_outcomes_append_only`: `CREATE TRIGGER trigger_post_classifier_local_outcomes_append_only BEFORE UPDATE ON public.post_classifier_local_outcomes FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`

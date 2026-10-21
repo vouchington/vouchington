@@ -62,4 +62,4 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
-- `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.relation__topic__publisher_type__topic FOR EACH ROW EXECUTE FUNCTION fn_guard_active_topic_references('object_id', 'subject_id')`
+- `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON public.relation__topic__publisher_type__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id', 'subject_id')`

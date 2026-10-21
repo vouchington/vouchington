@@ -133,6 +133,14 @@ CREATE OR REPLACE FUNCTION public.fn_current_copyright_form_screening(submission
  STABLE
 ```
 
+## `fn_ensure_active_topic_references`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_ensure_active_topic_references()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_ensure_retained_actor_identity`
 
 ```sql
@@ -156,14 +164,6 @@ CREATE OR REPLACE FUNCTION public.fn_field_changes(before_fields jsonb, after_fi
  RETURNS jsonb
  LANGUAGE sql
  IMMUTABLE
-```
-
-## `fn_guard_active_topic_references`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_guard_active_topic_references()
- RETURNS trigger
- LANGUAGE plpgsql
 ```
 
 ## `fn_immutable_array_to_string(p_array text[], p_delimiter text)`
