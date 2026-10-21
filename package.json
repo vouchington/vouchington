@@ -121,8 +121,8 @@
   },
   "devDependencies": {
     "@ast-grep/cli": "^0.51.0",
-    "@commitlint/cli": "^21.2.3",
-    "@commitlint/config-conventional": "^21.2.3",
+    "@commitlint/cli": "^21.2.4",
+    "@commitlint/config-conventional": "^21.2.4",
     "@jongleberry/vurst-runtime": "^0.4.3",
     "@opentelemetry/api": "^1.9.1",
     "@opentelemetry/auto-instrumentations-node": "^0.81.1",
