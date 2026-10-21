@@ -41,6 +41,7 @@ _none_
 - `idx_household_invitations__household_id`: `CREATE INDEX idx_household_invitations__household_id ON public.household_invitations USING btree (household_id, id DESC)`
 - `idx_household_invitations__invited_by_id`: `CREATE INDEX idx_household_invitations__invited_by_id ON public.household_invitations USING btree (invited_by_id)`
 - `idx_household_invitations__invited_user_id`: `CREATE INDEX idx_household_invitations__invited_user_id ON public.household_invitations USING btree (invited_user_id)`
+- `idx_household_invitations__pending_household_id`: `CREATE INDEX idx_household_invitations__pending_household_id ON public.household_invitations USING btree (household_id, id DESC) WHERE ((accepted_at IS NULL) AND (declined_at IS NULL) AND (revoked_at IS NULL))`
 - `idx_household_invitations__pending_household_user`: `CREATE UNIQUE INDEX idx_household_invitations__pending_household_user ON public.household_invitations USING btree (household_id, invited_user_id) WHERE ((accepted_at IS NULL) AND (declined_at IS NULL) AND (revoked_at IS NULL))`
 - `idx_household_invitations__pending_invitee_id`: `CREATE INDEX idx_household_invitations__pending_invitee_id ON public.household_invitations USING btree (invited_user_id, id DESC) WHERE ((accepted_at IS NULL) AND (declined_at IS NULL) AND (revoked_at IS NULL))`
 

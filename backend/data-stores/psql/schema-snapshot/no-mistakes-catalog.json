@@ -48144,6 +48144,38 @@
           "unique": false,
           "valid": true
         },
+        "idx_household_invitations__pending_household_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_household_invitations__pending_household_id ON public.household_invitations USING btree (household_id, id DESC) WHERE ((accepted_at IS NULL) AND (declined_at IS NULL) AND (revoked_at IS NULL))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "household_id",
+              "descending": false,
+              "expression": "household_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "((accepted_at IS NULL) AND (declined_at IS NULL) AND (revoked_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_household_invitations__pending_household_user": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -71376,7 +71408,7 @@
           "validated": true
         },
         "chk_notifications__entity_columns": {
-          "definition": "CHECK ((((entity_type = 'post'::notification_entity_types) AND (post_id IS NOT NULL) AND (rss_feed_item_id IS NULL) AND (actor_user_id IS NULL) AND (moderation_report_id IS NULL) AND (review_dispute_id IS NULL) AND (user_warning_id IS NULL) AND (moderation_appeal_id IS NULL) AND (community_ban_id IS NULL)) OR ((entity_type = 'rss_feed_item'::notification_entity_types) AND (post_id IS NULL) AND (rss_feed_item_id IS NOT NULL) AND (actor_user_id IS NULL) AND (moderation_report_id IS NULL) AND (review_dispute_id IS NULL) AND (user_warning_id IS NULL) AND (moderation_appeal_id IS NULL) AND (community_ban_id IS NULL)) OR ((entity_type = ANY (ARRAY['follow'::notification_entity_types, 'referral_signup'::notification_entity_types])) AND (actor_user_id IS NOT NULL) AND (post_id IS NULL) AND (rss_feed_item_id IS NULL) AND (moderation_report_id IS NULL) AND (review_dispute_id IS NULL) AND (user_warning_id IS NULL) AND (moderation_appeal_id IS NULL) AND (community_ban_id IS NULL)) OR ((entity_type = 'moderation_report'::notification_entity_types) AND (moderation_report_id IS NOT NULL) AND (post_id IS NULL) AND (rss_feed_item_id IS NULL) AND (actor_user_id IS NULL) AND (review_dispute_id IS NULL) AND (user_warning_id IS NULL) AND (moderation_appeal_id IS NULL) AND (community_ban_id IS NULL)) OR ((entity_type = 'review_dispute'::notification_entity_types) AND (review_dispute_id IS NOT NULL) AND (post_id IS NULL) AND (rss_feed_item_id IS NULL) AND (actor_user_id IS NULL) AND (moderation_report_id IS NULL) AND (user_warning_id IS NULL) AND (moderation_appeal_id IS NULL) AND (community_ban_id IS NULL)) OR ((entity_type = 'user_warning'::notification_entity_types) AND (user_warning_id IS NOT NULL) AND (post_id IS NULL) AND (rss_feed_item_id IS NULL) AND (actor_user_id IS NULL) AND (moderation_report_id IS NULL) AND (review_dispute_id IS NULL) AND (moderation_appeal_id IS NULL) AND (community_ban_id IS NULL)) OR ((entity_type = 'moderation_appeal'::notification_entity_types) AND (moderation_appeal_id IS NOT NULL) AND (post_id IS NULL) AND (rss_feed_item_id IS NULL) AND (actor_user_id IS NULL) AND (moderation_report_id IS NULL) AND (review_dispute_id IS NULL) AND (user_warning_id IS NULL) AND (community_ban_id IS NULL)) OR ((entity_type = 'community_ban'::notification_entity_types) AND (community_ban_id IS NOT NULL) AND (post_id IS NULL) AND (rss_feed_item_id IS NULL) AND (actor_user_id IS NULL) AND (moderation_report_id IS NULL) AND (review_dispute_id IS NULL) AND (user_warning_id IS NULL) AND (moderation_appeal_id IS NULL)) OR ((entity_type = 'critical_moderation_alert'::notification_entity_types) AND (moderation_report_id IS NOT NULL) AND (post_id IS NULL) AND (rss_feed_item_id IS NULL) AND (actor_user_id IS NULL) AND (review_dispute_id IS NULL) AND (user_warning_id IS NULL) AND (moderation_appeal_id IS NULL) AND (community_ban_id IS NULL)) OR ((post_id IS NULL) AND (rss_feed_item_id IS NULL) AND (actor_user_id IS NULL) AND (moderation_report_id IS NULL) AND (review_dispute_id IS NULL) AND (user_warning_id IS NULL) AND (moderation_appeal_id IS NULL) AND (community_ban_id IS NULL))))",
+          "definition": "CHECK ((((entity_type = 'post'::notification_entity_types) AND (post_id IS NOT NULL) AND (rss_feed_item_id IS NULL) AND (actor_user_id IS NULL) AND (moderation_report_id IS NULL) AND (review_dispute_id IS NULL) AND (user_warning_id IS NULL) AND (moderation_appeal_id IS NULL) AND (community_ban_id IS NULL)) OR ((entity_type = 'rss_feed_item'::notification_entity_types) AND (post_id IS NULL) AND (rss_feed_item_id IS NOT NULL) AND (actor_user_id IS NULL) AND (moderation_report_id IS NULL) AND (review_dispute_id IS NULL) AND (user_warning_id IS NULL) AND (moderation_appeal_id IS NULL) AND (community_ban_id IS NULL)) OR ((entity_type = ANY (ARRAY['follow'::notification_entity_types, 'referral_signup'::notification_entity_types])) AND (actor_user_id IS NOT NULL) AND (post_id IS NULL) AND (rss_feed_item_id IS NULL) AND (moderation_report_id IS NULL) AND (review_dispute_id IS NULL) AND (user_warning_id IS NULL) AND (moderation_appeal_id IS NULL) AND (community_ban_id IS NULL)) OR ((entity_type = 'moderation_report'::notification_entity_types) AND (moderation_report_id IS NOT NULL) AND (post_id IS NULL) AND (rss_feed_item_id IS NULL) AND (actor_user_id IS NULL) AND (review_dispute_id IS NULL) AND (user_warning_id IS NULL) AND (moderation_appeal_id IS NULL) AND (community_ban_id IS NULL)) OR ((entity_type = 'review_dispute'::notification_entity_types) AND (review_dispute_id IS NOT NULL) AND (post_id IS NULL) AND (rss_feed_item_id IS NULL) AND (actor_user_id IS NULL) AND (moderation_report_id IS NULL) AND (user_warning_id IS NULL) AND (moderation_appeal_id IS NULL) AND (community_ban_id IS NULL)) OR ((entity_type = 'user_warning'::notification_entity_types) AND (user_warning_id IS NOT NULL) AND (post_id IS NULL) AND (rss_feed_item_id IS NULL) AND (actor_user_id IS NULL) AND (moderation_report_id IS NULL) AND (review_dispute_id IS NULL) AND (moderation_appeal_id IS NULL) AND (community_ban_id IS NULL)) OR ((entity_type = 'moderation_appeal'::notification_entity_types) AND (moderation_appeal_id IS NOT NULL) AND (post_id IS NULL) AND (rss_feed_item_id IS NULL) AND (actor_user_id IS NULL) AND (moderation_report_id IS NULL) AND (review_dispute_id IS NULL) AND (user_warning_id IS NULL) AND (community_ban_id IS NULL)) OR ((entity_type = 'community_ban'::notification_entity_types) AND (community_ban_id IS NOT NULL) AND (post_id IS NULL) AND (rss_feed_item_id IS NULL) AND (actor_user_id IS NULL) AND (moderation_report_id IS NULL) AND (review_dispute_id IS NULL) AND (user_warning_id IS NULL) AND (moderation_appeal_id IS NULL)) OR ((entity_type = 'critical_moderation_alert'::notification_entity_types) AND (moderation_report_id IS NOT NULL) AND (post_id IS NULL) AND (rss_feed_item_id IS NULL) AND (actor_user_id IS NULL) AND (review_dispute_id IS NULL) AND (user_warning_id IS NULL) AND (moderation_appeal_id IS NULL) AND (community_ban_id IS NULL)) OR ((entity_type = 'household_invitation'::notification_entity_types) AND (household_id IS NOT NULL) AND (post_id IS NULL) AND (rss_feed_item_id IS NULL) AND (actor_user_id IS NULL) AND (moderation_report_id IS NULL) AND (review_dispute_id IS NULL) AND (user_warning_id IS NULL) AND (moderation_appeal_id IS NULL) AND (community_ban_id IS NULL)) OR ((entity_type <> 'household_invitation'::notification_entity_types) AND (post_id IS NULL) AND (rss_feed_item_id IS NULL) AND (actor_user_id IS NULL) AND (moderation_report_id IS NULL) AND (review_dispute_id IS NULL) AND (user_warning_id IS NULL) AND (moderation_appeal_id IS NULL) AND (community_ban_id IS NULL))))",
           "validated": true
         },
         "chk_notifications__event_key": {
