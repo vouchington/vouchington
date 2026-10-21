@@ -71,7 +71,10 @@ export async function dispatchKagiSmallWeb(
   }
 }
 
-/** Enqueues the new entries of the next page. Callers that already hold entries share this diff. */
+/**
+ * Enqueues the new entries of the next page. Callers that already hold entries share this diff.
+ * @internal Tests pass an already-built list. Production streams the download.
+ */
 export async function dispatchKagiSmallWebPage(
   allEntries: readonly ParsedFeedEntry[],
   cursor?: string,

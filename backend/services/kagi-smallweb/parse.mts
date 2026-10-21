@@ -97,6 +97,7 @@ export function parseYouTubeFeedList(text: string): ParsedFeedEntry[] {
   return parseFeedListText(text, 'youtube')
 }
 
+/** @internal Tests dispatch one source type. Production parses each list with its own parser. */
 export function parseFeedList(text: string, sourceType: FeedListSourceType): ParsedFeedEntry[] {
   switch (sourceType) {
     case 'web':
