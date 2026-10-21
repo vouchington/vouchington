@@ -126,5 +126,16 @@ describe('api-usage', () => {
         JSON.stringify(row, (_key, value) => (typeof value === 'bigint' ? 0 : value)),
       ).not.toContain(BEARER_TOKEN)
     })
+
+    it('stores a caller-supplied event id so another table can join the request', async () => {
+      const request = usage({})
+      const eventId = crypto.randomUUID()
+      trackApiUsage(request, eventId)
+      await flush()
+
+      const [row] = await query(`SELECT * FROM api_usage WHERE user_id = '${request.user_id}'`)
+
+      expect(row!.event_id).toBe(eventId)
+    })
   })
 })

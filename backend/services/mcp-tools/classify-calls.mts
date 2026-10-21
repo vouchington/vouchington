@@ -7,6 +7,8 @@ import { resolveMcpToolCall } from './resolve-tool-call.mts'
 import { toolRouteKeys } from './tool-route-keys.mts'
 import { validateToolArguments } from './validate-tool-arguments.mts'
 
+export { mcpNotificationShapedToolCall, mcpToolCallIsDispatched } from './tool-call-shape.mts'
+
 // Only these methods are ever written to the audit log. Anything else, including text an arbitrary
 // caller chose, is recorded as an invalid request with no method.
 const AUDITED_METHODS: ReadonlySet<string> = new Set([

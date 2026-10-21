@@ -6,10 +6,10 @@ export type ApiUsage = Omit<ApiUsageRecord, keyof AnalyticsBaseRecord>
 // Every dimension is a validated identity id or a closed vocabulary. The stored fields are named one
 // by one rather than spread, so a caller that forwards anything else (such as a bearer credential)
 // still cannot widen the row that reaches the analytics pipeline.
-export function trackApiUsage(usage: ApiUsage): void {
+export function trackApiUsage(usage: ApiUsage, eventId: string = crypto.randomUUID()): void {
   const now = new Date()
   emit('api_usage', {
-    event_id: crypto.randomUUID(),
+    event_id: eventId,
     event_time: now,
     event_date: now.toISOString().slice(0, 10),
     env: process.env.NODE_ENV ?? 'development',

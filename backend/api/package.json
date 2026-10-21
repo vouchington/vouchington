@@ -103,6 +103,7 @@
     "@services/admin-imports": "workspace:^",
     "@services/agents": "workspace:^",
     "@services/ai-usage": "workspace:^",
+    "@services/analytics": "workspace:^",
     "@services/ap-actor-keys": "workspace:^",
     "@services/ap-inbox-activities": "workspace:^",
     "@services/api-keys": "workspace:^",

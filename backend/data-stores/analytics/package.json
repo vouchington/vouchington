@@ -27,6 +27,7 @@
     "@duckdb/node-api": "^1.4.5-r.1",
     "@modules/aws": "workspace:^",
     "@modules/on-error": "workspace:^",
-    "@ts-shared/deploy-environment": "workspace:^"
+    "@ts-shared/deploy-environment": "workspace:^",
+    "@voucha/types": "workspace:^"
   }
 }

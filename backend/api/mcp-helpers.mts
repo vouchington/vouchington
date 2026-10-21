@@ -10,6 +10,7 @@ import {
   handleMcpHttpRequest,
   planMcpCalls,
   MOUNTED_MCP_SERVER_CONFIGS,
+  type McpCallAuditOutcome,
   type McpServerConfig,
   type McpHttpResponse,
 } from '@services/mcp-tools'
@@ -19,7 +20,7 @@ import { isCopyrightMcpDecisionToolsEnabled } from '@services/copyright-notices/
 import { startMcpRequestAudit, unreadMcpCall } from './mcp-audit-helpers.mts'
 import { chargeMcpToolCalls } from './mcp-route-rate-limit-helpers.mts'
 import { validateRequestContract } from './response-helpers.mts'
-import { startMcpUsageMeter } from './mcp-usage-helpers.mts'
+import { startMcpUsageMeter, type McpUsageMeter } from './mcp-usage-helpers.mts'
 
 // Stateless MCP Streamable HTTP for every mounted MCP route. The bearer credential (an OAuth
 // access token or an MCP API key on a key-enabled route) is the identity, so cookies are never read.
@@ -64,11 +65,11 @@ export async function dispatchMcpRequest(
       const usage = startMcpUsageMeter(ctx, config, authentication)
       const staffAudience = config.audience === 'admin' || config.audience === 'legal'
       if (staffAudience && !isAdminUser(owner)) {
-        await audit?.record([unreadMcpCall('role_denied')])
+        await recordRejectedCall(usage.toolCalls, audit, 'role_denied')
         ctx.throw(403, 'Administrator role required')
       }
       if (staffAudience && !hasScopeAudience(scopes, config.audience)) {
-        await audit?.record([unreadMcpCall('insufficient_scope')])
+        await recordRejectedCall(usage.toolCalls, audit, 'insufficient_scope')
         ctx.set(
           'WWW-Authenticate',
           buildMcpBearerChallenge(config, {
@@ -88,19 +89,19 @@ export async function dispatchMcpRequest(
         owner,
       )
       if (rateLimitResult.limited) {
-        await audit?.record([unreadMcpCall('rate_limited')])
+        await recordRejectedCall(usage.toolCalls, audit, 'rate_limited')
         ctx.set('Retry-After', String(rateLimitResult.retryAfterSeconds))
         ctx.throw(429, 'Rate limit exceeded')
       }
       // The outcome-based usage quota: it counts the requests the API served, not every attempt.
       const quotaCheck = await usage.checkQuota()
       if (quotaCheck.limited) {
-        await audit?.record([unreadMcpCall('rate_limited')])
+        await recordRejectedCall(usage.toolCalls, audit, 'rate_limited')
         ctx.set('Retry-After', String(quotaCheck.retryAfterSeconds))
         ctx.throw(429, 'Usage quota exceeded')
       }
 
-      const parsedBody = await readBody(ctx, audit)
+      const parsedBody = await readBody(ctx, audit, usage.toolCalls)
       // The HTTP carrier is open; the MCP SDK still owns JSON-RPC and tool validation.
       validateRequestContract(ctx, `POST:${config.routePath}`, { body: parsedBody })
       const user = buildMcpContextUser(owner, authentication.suspended)
@@ -108,7 +109,7 @@ export async function dispatchMcpRequest(
         config.audience === 'legal' ? await isCopyrightMcpDecisionToolsEnabled() : false
       // Bounds the audit rows and the route charges one request can spend.
       if (exceedsMcpAuditBatchLimit(parsedBody)) {
-        await audit?.record([unreadMcpCall('invalid_request')])
+        await recordRejectedCall(usage.toolCalls, audit, 'invalid_request')
         ctx.throw(413, 'Too many JSON-RPC messages')
       }
       const plan = planMcpCalls(parsedBody, user, scopes, config, copyrightDecisionToolsEnabled)
@@ -123,6 +124,8 @@ export async function dispatchMcpRequest(
         { identities: rateLimitIdentities, owner },
       )
       usage.recordPlannedEvents(events)
+      const messages = Array.isArray(parsedBody) ? parsedBody : [parsedBody]
+      usage.toolCalls.recordCalls(events, messages, stepUpScopes === null)
       await audit?.record(events)
       if (stepUpScopes) {
         ctx.set(
@@ -149,6 +152,9 @@ export async function dispatchMcpRequest(
         clientIp: ctx.ip,
         rateLimitedCalls,
         ...(audit ? { onToolError: audit.recordToolError } : {}),
+        onToolCallSettled: (messageIndex, settlement) => {
+          usage.toolCalls.settleDispatchedCall(messageIndex, settlement)
+        },
         onToolRateLimited: async (toolName, messageIndex, option) => {
           usage.markRateLimited(messageIndex)
           await audit?.recordToolRateLimit(toolName, option)
@@ -163,13 +169,24 @@ export async function dispatchMcpRequest(
 async function readBody(
   ctx: Context,
   audit: ReturnType<typeof startMcpRequestAudit>,
+  toolCalls: McpUsageMeter['toolCalls'],
 ): Promise<unknown> {
   try {
     return await ctx.request.json('1mb')
   } catch (err) {
-    await audit?.record([unreadMcpCall('invalid_request')])
+    await recordRejectedCall(toolCalls, audit, 'invalid_request')
     throw err
   }
+}
+
+function recordRejectedCall(
+  toolCalls: McpUsageMeter['toolCalls'],
+  audit: ReturnType<typeof startMcpRequestAudit>,
+  outcome: McpCallAuditOutcome,
+): Promise<void> {
+  const events = [unreadMcpCall(outcome)]
+  toolCalls.recordCalls(events, [], false)
+  return audit?.record(events) ?? Promise.resolve()
 }
 
 export function rejectMcpMethod(ctx: Context): never {

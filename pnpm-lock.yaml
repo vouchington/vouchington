@@ -879,6 +879,9 @@ importers:
       '@services/ai-usage':
         specifier: workspace:^
         version: link:../services/ai-usage
+      '@services/analytics':
+        specifier: workspace:^
+        version: link:../services/analytics
       '@services/ap-actor-keys':
         specifier: workspace:^
         version: link:../services/ap-actor-keys
@@ -1411,6 +1414,9 @@ importers:
       '@ts-shared/deploy-environment':
         specifier: workspace:^
         version: link:../../../ts-shared/deploy-environment
+      '@voucha/types':
+        specifier: workspace:^
+        version: link:../../types
 
   backend/data-stores/graceful-shutdown:
     dependencies:

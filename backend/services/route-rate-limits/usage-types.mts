@@ -36,4 +36,6 @@ export type UsageSettlement = {
   durationMs: number
   // MCP can refuse every JSON-RPC message in a successful HTTP response.
   units?: 0 | 1
+  // Shared with that request's mcp_tool_call rows. Other surfaces leave this unset.
+  eventId?: string
 }
