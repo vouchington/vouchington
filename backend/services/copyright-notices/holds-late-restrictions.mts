@@ -88,7 +88,14 @@ export async function activateLateCopyrightLegalHoldRestrictions(
       return placement && !placement.deleted ? [{ restriction, placement }] : []
     })
     .toSorted((a, b) => a.placement.placementId.localeCompare(b.placement.placementId))
-  const toWithhold = live.filter(({ placement }) => !placement.withheld)
+  // Targets of one notice can share a placement at different revisions; fence each placement once.
+  const toWithhold = [
+    ...new Map(
+      live.flatMap(entry =>
+        entry.placement.withheld ? [] : [[entry.placement.placementId, entry] as const],
+      ),
+    ).values(),
+  ]
   for (const { placement } of toWithhold) {
     // oxlint-disable no-await-in-loop -- each edge denial is a conditional single-item DynamoDB write acknowledged under its own lease, in sorted placement order.
     // no-mistakes-disable-next-line query-reached-per-item: each edge denial is a conditional single-item DynamoDB write acknowledged under its own projection lease before PostgreSQL withholds the placement; the edge has no conditional batch write.
