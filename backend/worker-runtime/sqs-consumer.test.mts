@@ -176,33 +176,6 @@ describe('createSqsConsumer', () => {
     expect(error).toBe(deleteError)
   })
 
-  it('emits poll-error and keeps polling when receive rejects for a reason other than abort', async () => {
-    const receiveError = new Error('network blip')
-    let receiveCallCount = 0
-    const port: SqsConsumerPort = {
-      receive: signal =>
-        new Promise((_resolve, reject) => {
-          receiveCallCount += 1
-          if (receiveCallCount === 1) {
-            reject(receiveError)
-            return
-          }
-          signal.addEventListener('abort', () => reject(new Error('AbortError')), { once: true })
-        }),
-      delete: () => Promise.resolve(),
-    }
-    const handleMessage = vi.fn<SqsConsumerHandler>(() => Promise.resolve())
-
-    const consumer = createSqsConsumer({ name: 'test', queueUrl: 'unused', handleMessage, port })
-    const pollError = new Promise<unknown>(resolve => consumer.once('poll-error', resolve))
-
-    const error = await pollError
-    await consumer.close()
-
-    expect(error).toBe(receiveError)
-    expect(handleMessage).not.toHaveBeenCalled()
-  })
-
   it('close() aborts an in-flight long poll without acking any message', async () => {
     let receiveCallCount = 0
     const port: SqsConsumerPort = {

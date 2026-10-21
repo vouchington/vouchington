@@ -1,8 +1,9 @@
-import { beginTransaction, read, write, type TransactionQuery } from '@data-stores/psql'
+import { beginTransaction, read, write } from '@data-stores/psql'
+import { getTestPostgresBackendProcessId } from '../postgres-lock-wait.mts'
 import {
-  getTestPostgresBackendProcessId,
-  waitForTestPostgresLockWaiter,
-} from '../postgres-lock-wait.mts'
+  updateTestOAuthClientWhileWaiting,
+  type OperationWaitingOnClient,
+} from '../oauth-client-lock-race.mts'
 
 /** Returns the internal row id that management routes address a client by. */
 export async function getTestOAuthClientRowId(clientId: string): Promise<string> {
@@ -74,12 +75,6 @@ export async function assignTestOAuthClientOwner(
   return row.id
 }
 
-type OperationWaitingOnClient<T> = {
-  clientId: string
-  waiterQueryMarker: string
-  start: () => Promise<T>
-}
-
 /** Replaces a client's redirect URIs; `start`'s operation must decide against the new URIs. */
 export function replaceTestOAuthRedirectUrisWhileWaiting<T>(
   input: OperationWaitingOnClient<T> & { redirectUris: string[] },
@@ -106,28 +101,6 @@ export function rotateTestOAuthClientSecretWhileWaiting<T>(
       [input.clientId, input.clientSecretHash],
     ),
   )
-}
-
-/**
- * Applies `update` in a transaction that commits only once the operation started by `start` is
- * blocked on the client row, so that operation cannot act on the row as it was before the update.
- */
-async function updateTestOAuthClientWhileWaiting<T>(
-  input: OperationWaitingOnClient<T>,
-  update: (transaction: TransactionQuery) => Promise<unknown>,
-): Promise<T> {
-  let operationOutcome: Promise<[PromiseSettledResult<T>]>
-  {
-    await using transaction = await beginTransaction()
-    await update(transaction)
-    const holderProcessId = await getTestPostgresBackendProcessId(transaction)
-    operationOutcome = Promise.allSettled([input.start()] as const)
-    await waitForTestPostgresLockWaiter(holderProcessId, input.waiterQueryMarker, 'advisoryLock')
-    await transaction.commit()
-  }
-  const [outcome] = await operationOutcome
-  if (outcome.status === 'rejected') throw outcome.reason
-  return outcome.value
 }
 
 export async function revokeTestOAuthClient(id: string): Promise<void> {

@@ -7,13 +7,11 @@ import {
   createTestUserDirect,
   createTopHashtagAliasForTest,
   createTopHashtagPostSourceForTest,
+  insertScoredPostTopicCategoryRelation,
   insertTestPost,
   insertTestReview,
   createRandomString,
 } from '@voucha/test-helpers'
-import { upsertEntityRelation } from '@services/entity-relations/upsert'
-import { entityRelationMetadatum } from '@services/entity-relations/metadata'
-import { waitForPostMatchingRelatedTopicIds } from '@voucha/test-helpers/services/posts/search/test-support'
 
 describe('get-ids (filters)', () => {
   it('getPostIds sort=new returns user posts by UUIDv7 newest first', async () => {
@@ -96,24 +94,20 @@ describe('get-ids (filters)', () => {
     const user = await createTestUser()
     const topic1 = await createTestTopic()
     const topic2 = await createTestTopic()
-    const post = await createTestPost({ user })
+    const matchingPost = await createTestPost({ user })
+    const partialPost = await createTestPost({ user })
 
-    // Get metadata for post->topic relation
-    const metadata = entityRelationMetadatum.find(
-      m => m.subject_type === 'post' && m.object_type === 'topic' && m.predicate === 'category',
-    )!
+    await insertScoredPostTopicCategoryRelation(matchingPost.id, topic1.id, user!.id)
+    await insertScoredPostTopicCategoryRelation(matchingPost.id, topic2.id, user!.id)
+    await insertScoredPostTopicCategoryRelation(partialPost.id, topic1.id, user!.id)
 
-    // Relate post to both topics
-    await upsertEntityRelation(user!, metadata, post, [topic1, topic2])
-
-    await waitForPostMatchingRelatedTopicIds(undefined, post.id, [topic1.id, topic2.id], 100)
     const result = await getPostIds(undefined, {
       related_topic_ids: [topic1.id, topic2.id],
       limit: 100,
     })
-
-    const foundPost = result.results.find(r => r.id === post.id)
-    expect(foundPost).toBeDefined()
+    const resultIds = result.results.map(row => row.id)
+    expect(resultIds).toContain(matchingPost.id)
+    expect(resultIds).not.toContain(partialPost.id)
   })
 
   it('getPostIds finds hashtag-only posts by universal topic', async () => {
