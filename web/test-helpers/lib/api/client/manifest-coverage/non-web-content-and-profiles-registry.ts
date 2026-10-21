@@ -68,6 +68,7 @@ export const contentAndProfilesEndpointRegistry = {
     path: '/api/v1/my/landing-pages/landing-page-1',
     requestBody: { slug: 'updated-links', title: 'Updated Links' },
   },
+  'native.me.individual': { method: 'GET', path: '/api/v1/me/individual' },
   'native.users.profile.default': {
     method: 'GET',
     path: '/api/v1/users/alice',
