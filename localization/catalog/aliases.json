@@ -9218,6 +9218,8 @@
 {"alias":"settings.apiKeys.scopeDescription.communityModerationWrite","consumer":"web","copyId":"copy.scopeDescription.communityModerationWrite"},
 {"alias":"settings.apiKeys.scopeDescription.financialProfileRead","consumer":"web","copyId":"copy.scopeDescription.financialProfileRead"},
 {"alias":"settings.apiKeys.scopeDescription.financialProfileWrite","consumer":"web","copyId":"copy.scopeDescription.financialProfileWrite"},
+{"alias":"settings.apiKeys.scopeDescription.householdsRead","consumer":"web","copyId":"copy.scopeDescription.householdsRead"},
+{"alias":"settings.apiKeys.scopeDescription.householdsWrite","consumer":"web","copyId":"copy.scopeDescription.householdsWrite"},
 {"alias":"settings.apiKeys.scopeDescription.mcpAdminFullAccess","consumer":"web","copyId":"copy.scopeDescription.mcpAdminFullAccess"},
 {"alias":"settings.apiKeys.scopeDescription.mcpUserFullAccess","consumer":"web","copyId":"copy.scopeDescription.mcpUserFullAccess"},
 {"alias":"settings.apiKeys.scopeDescription.messagesRead","consumer":"web","copyId":"copy.scopeDescription.messagesRead"},

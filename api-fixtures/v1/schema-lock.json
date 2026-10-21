@@ -490,6 +490,10 @@
       "fixtureIds": ["native.lists-containing.default"],
       "hash": "9f584e531a45db95de1ef181a4dd7cabe8051109f36244c3299d339a77ef73fb"
     },
+    "GET:/api/v1/me/individual": {
+      "fixtureIds": ["native.me.individual"],
+      "hash": "e658f9f62efe6ac1beaa504ad79d3b9b3e64b3d04784328681a6a1a4843dbf4c"
+    },
     "GET:/api/v1/membership-verifications/:verificationId": {
       "fixtureIds": [
         "native.memberships.verification-status.conflict.default",
@@ -815,7 +819,7 @@
     },
     "GET:/api/v1/scopes": {
       "fixtureIds": ["shared.scopes.catalog"],
-      "hash": "aae2e48e686ee27ca7d7a82cb8283b8ea8446f1c56fe7f1655a6d149952596dc"
+      "hash": "d7d8ebe853d6cd46b14e57e14d652d80a26f4ef4acd0e2471a63c3bbcd78bc5b"
     },
     "GET:/api/v1/stories/:id": {
       "fixtureIds": ["native.stories.get.after", "native.stories.get.default"],
@@ -1981,6 +1985,10 @@
     "native.lists.default": {
       "fixtureIds": ["native.lists.default"],
       "hash": "49e6fc19e91a99e017b8fec1491c343c5a9288bba25078f6f9e11eddc93d9151"
+    },
+    "native.me.individual": {
+      "fixtureIds": ["native.me.individual"],
+      "hash": "852abcc5b9b32ffeb52292a0475764c8f63b18b2c46451720833a10a2dca7b57"
     },
     "native.memberships.grant.default": {
       "fixtureIds": ["native.memberships.grant.default"],

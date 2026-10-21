@@ -21782,6 +21782,16 @@
       "required": ["id", "updated_at"],
       "type": "object"
     },
+    "IndividualResponse": {
+      "additionalProperties": false,
+      "properties": {
+        "individual": {
+          "$ref": "#/components/schemas/Individual"
+        }
+      },
+      "required": ["individual"],
+      "type": "object"
+    },
     "IndividualCard": {
       "additionalProperties": false,
       "properties": {
@@ -33334,6 +33344,12 @@
             },
             {
               "const": "topic_claims_write"
+            },
+            {
+              "const": "households_read"
+            },
+            {
+              "const": "households_write"
             }
           ]
         },
@@ -42904,6 +42920,7 @@
         "type": "object"
       }
     },
+    "GET:/api/v1/me/individual": {},
     "GET:/api/v1/my/api-keys": {
       "query": {
         "properties": {
@@ -50062,6 +50079,9 @@
       },
       "required": ["results", "page_info"],
       "type": "object"
+    },
+    "GET:/api/v1/me/individual": {
+      "$ref": "#/components/schemas/IndividualResponse"
     },
     "GET:/api/v1/my/notifications/unread": {
       "$ref": "#/components/schemas/NotificationsUnreadSummaryResponseBody"

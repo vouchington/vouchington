@@ -11,7 +11,6 @@ export const EXCLUSION_CATEGORIES = [
   'copyright',
   'recorded-no-tool',
   'method-not-allowed',
-  'undecided',
 ] as const
 
 export type ExclusionCategory = (typeof EXCLUSION_CATEGORIES)[number]

@@ -14,6 +14,8 @@ export type ScopeDescriptionKey =
   | 'messages_write'
   | 'topic_claims_read'
   | 'topic_claims_write'
+  | 'households_read'
+  | 'households_write'
 
 export type ApiScope =
   | 'appeals:read'
@@ -54,6 +56,8 @@ export type ApiScope =
   | 'financial-profile:read'
   | 'financial-profile:write'
   | 'hostnames:read'
+  | 'households:read'
+  | 'households:write'
   | 'lists:read'
   | 'lists:write'
   | 'messages:read'

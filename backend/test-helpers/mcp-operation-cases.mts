@@ -1,4 +1,5 @@
 import { myMessageGroups } from '../mcp/my-messages.mts'
+import { myHouseholdGroups } from '../mcp/my-households.mts'
 import type { ApiScope } from '../modules/scopes/index.mts'
 import { brandTopicClaimGroups } from '../mcp/brand/topic-claims.mts'
 import { communityModerationGroups } from '../mcp/community-moderation-tools.mts'
@@ -37,6 +38,7 @@ const userMergedNames = new Set(
     ...communityModerationGroups,
     ...myMessageGroups,
     ...brandTopicClaimGroups,
+    ...myHouseholdGroups,
   ].map(group => group.name),
 )
 const adminMergedNames = new Set(adminMergedGroups.map(group => group.name))
@@ -141,6 +143,7 @@ export function currentOperationCases(): OperationCase[] {
     ...participationWriteGroups,
     ...myMessageGroups,
     ...brandTopicClaimGroups,
+    ...myHouseholdGroups,
   ].flatMap(group =>
     group.options.map(entry => {
       const args = sampleMcpToolArguments(entry.source as Tool)
@@ -167,8 +170,8 @@ export function currentOperationCases(): OperationCase[] {
     ...audiences.flatMap(audience => singleCases(audience, mergedNames)),
   ]
   if (
-    cases.length !== 328 ||
-    new Set(cases.map(row => `${row.name}.${row.option ?? ''}`)).size !== 323
+    cases.length !== 336 ||
+    new Set(cases.map(row => `${row.name}.${row.option ?? ''}`)).size !== 331
   )
     throw new Error('current operation inventory drift')
   for (const audience of audiences) {

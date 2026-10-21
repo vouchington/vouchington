@@ -85,6 +85,8 @@
         "financial-profile:read",
         "financial-profile:write",
         "hostnames:read",
+        "households:read",
+        "households:write",
         "lists:read",
         "lists:write",
         "mcp.admin:read",

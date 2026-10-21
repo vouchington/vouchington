@@ -1,4 +1,5 @@
 import { myMessageGroups } from '@voucha/mcp/my-messages'
+import { myHouseholdGroups } from '@voucha/mcp/my-households'
 import { participationWriteGroups } from '@voucha/mcp/registry/participation-write-groups'
 import { readFileSync } from 'node:fs'
 import { isDeepStrictEqual } from 'node:util'
@@ -80,6 +81,7 @@ type RouteSource = Pick<Tool, 'roles' | 'meta'> & { schema: Pick<Tool['schema'],
 type SourceEntry = { publicName: string; option: string | null; source: RouteSource }
 const mergedGroups = [
   ...myMessageGroups,
+  ...myHouseholdGroups,
   ...participationWriteGroups,
   ...userMergedReadingGroups,
   ...userMergedParticipationGroups,

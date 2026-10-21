@@ -37,3 +37,37 @@ describe('messages scopes', () => {
     }
   })
 })
+
+describe('households scopes', () => {
+  it('requires exact read and write grants, with write depending on read', () => {
+    const catalog = listScopeCatalog()
+    expect(catalog.find(entry => entry.scope === 'households:read')).toMatchObject({
+      description_key: 'households_read',
+      requires: null,
+      surfaces: ['api-key', 'oauth'],
+    })
+    expect(catalog.find(entry => entry.scope === 'households:write')).toMatchObject({
+      description_key: 'households_write',
+      requires: 'households:read',
+      surfaces: ['api-key', 'oauth'],
+    })
+    expect(hasScope(['mcp.user:read'], 'households:read')).toBe(false)
+    expect(hasScope(['mcp.user:write'], 'households:write')).toBe(false)
+    expect(hasScope(['households:read'], 'households:write')).toBe(false)
+    for (const surface of ['api-key', 'oauth'] as const) {
+      expect(
+        validateScopeSet(['households:write'], { surface, allowMixedAudiences: false }),
+      ).toMatchObject({
+        valid: false,
+        code: 'missing-prerequisite',
+        requiredScope: 'households:read',
+      })
+      expect(
+        validateScopeSet(['households:read', 'households:write'], {
+          surface,
+          allowMixedAudiences: false,
+        }).valid,
+      ).toBe(true)
+    }
+  })
+})

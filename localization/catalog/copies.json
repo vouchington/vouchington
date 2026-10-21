@@ -6070,6 +6070,8 @@
 {"descriptor":null,"id":"copy.scopeDescription.communityModerationWrite"},
 {"descriptor":null,"id":"copy.scopeDescription.financialProfileRead"},
 {"descriptor":null,"id":"copy.scopeDescription.financialProfileWrite"},
+{"descriptor":null,"id":"copy.scopeDescription.householdsRead"},
+{"descriptor":null,"id":"copy.scopeDescription.householdsWrite"},
 {"descriptor":null,"id":"copy.scopeDescription.mcpAdminFullAccess"},
 {"descriptor":null,"id":"copy.scopeDescription.mcpUserFullAccess"},
 {"descriptor":null,"id":"copy.scopeDescription.messagesRead"},

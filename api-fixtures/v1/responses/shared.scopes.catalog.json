@@ -273,6 +273,24 @@
     {
       "action": "read",
       "audience": "user",
+      "description_key": "households_read",
+      "requires": null,
+      "resource": "households",
+      "scope": "households:read",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "write",
+      "audience": "user",
+      "description_key": "households_write",
+      "requires": "households:read",
+      "resource": "households",
+      "scope": "households:write",
+      "surfaces": ["api-key", "oauth"]
+    },
+    {
+      "action": "read",
+      "audience": "user",
       "description_key": null,
       "requires": null,
       "resource": "lists",

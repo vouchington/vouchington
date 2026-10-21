@@ -7141,6 +7141,9 @@ importers:
       '@services/pagination':
         specifier: workspace:^
         version: link:../pagination
+      '@services/search-params':
+        specifier: workspace:^
+        version: link:../search-params
       '@services/users':
         specifier: workspace:^
         version: link:../users
@@ -7150,6 +7153,9 @@ importers:
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
+      '@vouchington/pagination':
+        specifier: ^0.0.3
+        version: 0.0.3
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0

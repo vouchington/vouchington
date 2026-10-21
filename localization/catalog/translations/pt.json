@@ -6070,6 +6070,8 @@
 {"id":"copy.scopeDescription.communityModerationWrite","value":"Gerenciar a moderação da comunidade: banir ou remover membros, emitir avisos, analisar solicitações e denúncias, alterar as configurações de moderação e arquivar a comunidade. Algumas ações podem remover publicações fixadas ou despublicar publicações."},
 {"id":"copy.scopeDescription.financialProfileRead","value":"Ler sua faixa de pontuação de crédito, faixa de renda declarada, limite total de crédito e anos de histórico de crédito."},
 {"id":"copy.scopeDescription.financialProfileWrite","value":"Atualizar sua faixa de pontuação de crédito, faixa de renda declarada, limite total de crédito e anos de histórico de crédito."},
+{"id":"copy.scopeDescription.householdsRead","value":"Ver seus grupos familiares e seus membros"},
+{"id":"copy.scopeDescription.householdsWrite","value":"Criar e excluir seus grupos familiares e alterar seus membros"},
 {"id":"copy.scopeDescription.mcpAdminFullAccess","value":"Acesso MCP completo de administrador"},
 {"id":"copy.scopeDescription.mcpUserFullAccess","value":"Acesso MCP de usuário, exceto perfil financeiro e gastos; solicite-os separadamente."},
 {"id":"copy.scopeDescription.messagesRead","value":"Ler suas conversas privadas, mensagens e participantes."},

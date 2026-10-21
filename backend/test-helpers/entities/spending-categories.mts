@@ -1,5 +1,5 @@
 import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
-import { write } from '@data-stores/psql'
+import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { insertTestTopic } from './topics.mts'
 import { createRandomString } from '../data.mts'
@@ -67,4 +67,11 @@ export async function insertTestHouseholdSpendingEntry(data: {
     )
   `),
   )
+}
+
+export async function countTestHouseholdSpendingEntries(householdId: string): Promise<number> {
+  const { rows } = await read<{ count: number }>(sql`/* countTestHouseholdSpendingEntries */
+    SELECT COUNT(*)::int AS count FROM spending_entries WHERE household_id = ${householdId}
+  `)
+  return rows[0]?.count ?? 0
 }

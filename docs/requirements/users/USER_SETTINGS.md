@@ -78,6 +78,9 @@ settings page does not satisfy the route.
 - `/my/household` is a dedicated management surface on web, Swift, and .NET. The clients consume the
   same household and membership API fixtures documented by the
   [client feature parity contract](../client-feature-parity.json).
+- Household MCP access uses separate exact read and write grants. Read options expose the member's
+  households, memberships, and individual ID; Plus write options create or delete a household and
+  change its memberships under the same authority as REST.
 - A user may intentionally own multiple households, such as while managing parents' or
   grandparents' accounts. Backend authorization remains scoped to each household. Clients request
   `access=owned&limit=1` and manage only the most recently updated owned household; additional owned

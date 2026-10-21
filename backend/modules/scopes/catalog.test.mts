@@ -53,6 +53,12 @@ describe('listScopeCatalog', () => {
     expect(catalog.find(entry => entry.scope === 'spending:write')?.description_key).toBe(
       'spending_write',
     )
+    expect(catalog.find(entry => entry.scope === 'households:read')?.description_key).toBe(
+      'households_read',
+    )
+    expect(catalog.find(entry => entry.scope === 'households:write')?.description_key).toBe(
+      'households_write',
+    )
     expect(
       catalog.find(entry => entry.scope === 'community-moderation:read')?.description_key,
     ).toBe('community_moderation_read')

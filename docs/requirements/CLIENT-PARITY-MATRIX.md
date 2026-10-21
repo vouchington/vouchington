@@ -74,6 +74,14 @@ do not include them. The tools do not award ownership; domain proof or staff rev
 consent and credential adoption is a vouchington-clients follow-up; the producer lands first. The
 [MCP catalog](../overview/architecture/mcp/catalog.md) owns the tool contract.
 
+## Household MCP consent
+
+Household tools require explicit `households:read` and `households:write` grants. Write requires
+read, and umbrella grants cover neither. Web consent and credential selection show localized copy
+for both. Native clients need the same descriptions before requesting household access; a dependent
+`vouchington-clients` issue is needed. The producer lands first. The
+[MCP catalog](../overview/architecture/mcp/catalog.md) owns option and result schemas.
+
 ## AI review admission and results
 
 An accepted AI review request confirms that work was queued. Client and staff presentation paths

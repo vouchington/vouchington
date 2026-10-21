@@ -6070,6 +6070,8 @@
 {"id":"copy.scopeDescription.communityModerationWrite","value":"Gérer la modération de la communauté : bannir ou retirer des membres, émettre des avertissements, examiner les demandes et les signalements, modifier les paramètres de modération et archiver la communauté. Certaines actions peuvent désépingler des publications ou dépublier des publications."},
 {"id":"copy.scopeDescription.financialProfileRead","value":"Lire votre fourchette de score de crédit, vos revenus déclarés, votre plafond total de crédit et vos années d’historique de crédit."},
 {"id":"copy.scopeDescription.financialProfileWrite","value":"Modifier votre fourchette de score de crédit, vos revenus déclarés, votre plafond total de crédit et vos années d’historique de crédit."},
+{"id":"copy.scopeDescription.householdsRead","value":"Voir vos foyers et leurs membres"},
+{"id":"copy.scopeDescription.householdsWrite","value":"Créer et supprimer vos foyers et modifier leurs membres"},
 {"id":"copy.scopeDescription.mcpAdminFullAccess","value":"Accès MCP complet pour les administrateurs"},
 {"id":"copy.scopeDescription.mcpUserFullAccess","value":"Accès MCP utilisateur, hors profil financier et dépenses ; demandez-les séparément."},
 {"id":"copy.scopeDescription.messagesRead","value":"Lire vos conversations privées, vos messages et les participants."},

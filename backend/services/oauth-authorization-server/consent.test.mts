@@ -89,6 +89,8 @@ describe('OAuth consent', () => {
       'financial-profile:write',
       'spending:read',
       'spending:write',
+      'households:read',
+      'households:write',
       'post-relations.owned-private:write',
     ]
     const pending = await createTestPendingOAuthAuthorization(owner, {

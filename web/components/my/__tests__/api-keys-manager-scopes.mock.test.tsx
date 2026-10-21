@@ -55,7 +55,11 @@ const scopeCatalog: ScopeCatalogEntry[] = (scopeCatalogFixture as ScopeCatalogRe
               ? entry.action === 'read'
                 ? 'spending_read'
                 : 'spending_write'
-              : null,
+              : entry.resource === 'households'
+                ? entry.action === 'read'
+                  ? 'households_read'
+                  : 'households_write'
+                : null,
   }),
 )
 
@@ -123,6 +127,14 @@ describe('ApiKeysManager scope selection', () => {
     expect(screen.getByText(/Update your credit score range/)).toBeInTheDocument()
     expect(screen.getByText(/Read your spending categories/)).toBeInTheDocument()
     expect(screen.getByText(/Add, update or remove your spending categories/)).toBeInTheDocument()
+  })
+
+  it('describes each household permission', async () => {
+    await openMcpForm()
+    expect(screen.getByText('See your households and their members')).toBeInTheDocument()
+    expect(
+      screen.getByText('Create and delete your households and change their members'),
+    ).toBeInTheDocument()
   })
 
   it('keeps the raw replacement and success state when the list refresh fails', async () => {

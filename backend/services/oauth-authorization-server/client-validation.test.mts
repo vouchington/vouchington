@@ -180,15 +180,19 @@ describe('OAuth client and authorization validation', () => {
     )
   })
 
-  it.each(['financial-profile:read', 'financial-profile:write', 'spending:read', 'spending:write'])(
-    'rejects umbrella-only registration requesting %s',
-    async scope => {
-      const read = scope.replace(':write', ':read')
-      await expect(
-        authorizeRegisteredScope(TEST_OAUTH_SCOPE, scope === read ? scope : `${read} ${scope}`),
-      ).rejects.toMatchObject({ code: 'invalid_scope' })
-    },
-  )
+  it.each([
+    'financial-profile:read',
+    'financial-profile:write',
+    'spending:read',
+    'spending:write',
+    'households:read',
+    'households:write',
+  ])('rejects umbrella-only registration requesting %s', async scope => {
+    const read = scope.replace(':write', ':read')
+    await expect(
+      authorizeRegisteredScope(TEST_OAUTH_SCOPE, scope === read ? scope : `${read} ${scope}`),
+    ).rejects.toMatchObject({ code: 'invalid_scope' })
+  })
 
   it('accepts resource scopes covered by the registered MCP audience scopes', async () => {
     await expect(

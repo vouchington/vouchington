@@ -21,20 +21,30 @@ const names = [
   'update_community_moderation',
   'remove_community_moderation',
 ]
-// Pin the exact-grant listing including #208's explicit message grants.
+// Pin the exact-grant listing including explicit message and household grants.
 const PLUS_WITHOUT_MODERATION_DIGEST =
-  'a7eb9a3b41f9733cbdacbd4a59ae64ce16d7f60dbb8b4f1f4ffeaf6a6f7b277f'
+  '6b9820c5102ec2e5d0f2906266c0860a222a8054f44b191a235fe8e325642c02'
 const PRE_MESSAGE_DIGEST = '41fcc78cf6883e684b403d257754b0558564866815860ee664ac90f2458d4303'
 const UMBRELLA_ONLY_DIGEST = '5c5532e428e06ed9af2be2fefb06cd49c32043f40f1583525f5b5dc78b1f2527'
 const digest = (tools: unknown) => createHash('sha256').update(JSON.stringify(tools)).digest('hex')
 
 describe('community moderation exact-grant catalog boundaries', () => {
-  it('adds only direct-message tools to the existing Plus listing without moderation grants', () => {
+  it('adds exact-grant tools to the existing Plus listing without moderation grants', () => {
     const tools = listMcpToolsForUser(plus, nonModerationScopes, USER_MCP_SERVER_CONFIG)
-    expect(tools).toHaveLength(76)
+    expect(tools).toHaveLength(78)
     expect(digest(tools)).toBe(PLUS_WITHOUT_MODERATION_DIGEST)
     expect(
-      digest(tools.filter(tool => !['read_my_messages', 'manage_my_messages'].includes(tool.name))),
+      digest(
+        tools.filter(
+          tool =>
+            ![
+              'read_my_messages',
+              'manage_my_messages',
+              'read_my_households',
+              'manage_my_households',
+            ].includes(tool.name),
+        ),
+      ),
     ).toBe(PRE_MESSAGE_DIGEST)
     expect(tools.some(tool => names.includes(tool.name))).toBe(false)
   })
@@ -56,7 +66,7 @@ describe('community moderation exact-grant catalog boundaries', () => {
       membership_plan: 'pro' as const,
       roles: [...new Set(ALL_TOOLS.flatMap(tool => Object.keys(tool.roles ?? {})))],
     }
-    expect(listMcpToolsForUser(caller, allScopes, USER_MCP_SERVER_CONFIG, true)).toHaveLength(76)
+    expect(listMcpToolsForUser(caller, allScopes, USER_MCP_SERVER_CONFIG, true)).toHaveLength(78)
   })
 
   it('keeps moderation scopes off the user listing and serves the free reader on its audience', () => {

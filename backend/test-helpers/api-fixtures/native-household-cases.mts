@@ -17,7 +17,6 @@ const migratedFrom = [
   'docs/requirements/users/USER_SETTINGS.md',
   'web/components/my/household-manager.tsx',
 ]
-
 const ownedHousehold: HouseholdFixture = {
   id: householdId,
   owner_user_id: '00000000-0000-7000-8000-000000000001',
@@ -40,8 +39,23 @@ const membership: MembershipFixture = {
     updated_at: '2026-07-02T00:00:00Z',
   },
 }
-
 export const nativeHouseholdApiFixtureCases: ApiFixtureCase[] = [
+  {
+    id: 'native.me.individual',
+    method: 'GET',
+    path: '/api/v1/me/individual',
+    route: { routeTemplate: '/api/v1/me/individual' },
+    auth: 'fixture-user',
+    status: 200,
+    body: {
+      individual: {
+        id: '00000000-0000-7000-8000-000000000301',
+        updated_at: '2026-07-02T00:00:00Z',
+      },
+    },
+    consumers: ['swift-core', 'swift-ui', 'dotnet-core'],
+    migratedFrom,
+  },
   {
     id: 'native.households.empty',
     method: 'GET',
