@@ -44,7 +44,6 @@ describe('background-cpu production routing through real GlideMQ', () => {
   let pauseCleanup: (() => Promise<void>) | undefined
   let cleanup: () => Promise<void>
   let mutations: Promise<unknown>[]
-
   beforeEach(context => {
     reservation = undefined
     pauseCleanup = undefined
@@ -108,6 +107,7 @@ describe('background-cpu production routing through real GlideMQ', () => {
       prefix,
       concurrency: 1,
       blockTimeout: 1_000,
+      promotionInterval: 2_500,
     })
     worker.on('error', () => undefined)
     await Promise.all([worker.waitUntilReady(), events.waitUntilReady()])

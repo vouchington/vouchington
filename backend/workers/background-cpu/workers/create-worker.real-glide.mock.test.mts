@@ -56,6 +56,7 @@ describe('shared CPU worker paged dispatcher recovery', () => {
         prefix,
         concurrency: 1,
         blockTimeout: 1_000,
+        promotionInterval: 2_500,
       })
       worker.on('error', error => {
         ordinaryFailed.reject(error)
