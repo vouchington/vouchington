@@ -35,18 +35,24 @@ function projectFileSet(worktreeRoot: string, project: InlineVitestProject): Set
   return matches
 }
 
-export function countJobSuiteFiles(worktreeRoot: string): Map<string, number> {
+export function countJobSuiteFiles(
+  worktreeRoot: string,
+  projects: readonly unknown[] = vitestConfig.test?.projects ?? [],
+): Map<string, number> {
   const mapping = projectToJob()
   const filesByJob = new Map<string, Set<string>>()
-  const projects = vitestConfig.test?.projects ?? []
   for (const project of projects) {
     if (!isInlineProject(project)) continue
     const name = project.test?.name
     if (name === undefined || name === '') continue
     const job = mapping[name]
     if (job === undefined) continue
+    const projectFiles = projectFileSet(worktreeRoot, project)
+    if (projectFiles.size === 0) {
+      throw new Error(`Vitest project ${name} owned by ${job} selects no test files`)
+    }
     const jobFiles = filesByJob.get(job) ?? new Set<string>()
-    for (const file of projectFileSet(worktreeRoot, project)) jobFiles.add(file)
+    for (const file of projectFiles) jobFiles.add(file)
     filesByJob.set(job, jobFiles)
   }
   return new Map([...filesByJob].map(([job, files]) => [job, files.size]))

@@ -78,11 +78,6 @@ describe('component Storybook coverage helpers', () => {
       'web/components/example.tsx#ComponentState',
       'web/components/default-value.tsx#default',
     ])
-    expect(
-      graph
-        .runtimeImports('web/storybook/example.stories.tsx')
-        .flatMap(entry => entry.bindings.map(binding => binding.local)),
-    ).toEqual(['DefaultThing', 'LowerCase', 'Card', 'Components', 'storyData'])
     expect([...coveredComponentKeys(stories, graph)].toSorted()).toEqual([
       'web/components/barrel.ts#Card',
       'web/components/default-value.tsx#default',

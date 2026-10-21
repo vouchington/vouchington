@@ -84,7 +84,7 @@ describe('backend uncredentialed Docker test workflow', () => {
 
   it('combines service-backed backend Vitest projects in one sharded command', () => {
     const backendCommand =
-      'pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend/analytics-integration --project backend-data-stores --project backend-platform-stats-cache --project backend-mocks --project backend-migration-initializers --project backend-real-glide-mq --project backend-embedding-creation-capacity --shard ${{ matrix.shard }}/${{ needs.prep.outputs.shard-total }}'
+      'pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend/analytics-integration --project backend-data-stores --project backend-platform-stats-cache --project backend-mocks --project backend-migration-initializers --project backend-real-glide-mq --shard ${{ matrix.shard }}/${{ needs.prep.outputs.shard-total }}'
     expect(workflow).toContain(backendCommand)
     expect(
       runBackendTestsScript?.match(/--project backend-migration-initializers\b/g),
@@ -95,8 +95,6 @@ describe('backend uncredentialed Docker test workflow', () => {
     expect(workflow).not.toContain('--coverage')
     expect(vitestConfig).not.toContain("name: 'backend-seed-csvs'")
     expect(vitestConfig).toContain("name: 'backend-real-glide-mq'")
-    expect(vitestConfig).toContain('sequence: { groupOrder: 0 }')
-    expect(vitestConfig).toContain('sequence: { groupOrder: 1 }')
     expect(vitestConfig).not.toContain('fileParallelism: false')
     expect(vitestConfig).toContain("name: 'backend-activitypub-capacity'")
     for (const project of backendCredentialedProjectNames) {

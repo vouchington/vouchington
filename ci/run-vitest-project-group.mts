@@ -13,7 +13,6 @@ const dockerFreeBackendProjects = [
 ] as const
 
 const dockerBackedBackendProjects = [
-  'backend-embedding-creation-capacity',
   'backend/analytics-integration',
   'backend-data-stores',
   'backend-platform-stats-cache',
@@ -46,7 +45,6 @@ export const VITEST_PROJECT_GROUPS = {
   'backend-core': backendCoreProjects,
   'backend-modules': dockerFreeBackendProjects,
   'backend-docker': dockerBackedBackendProjects,
-  'backend-embedding-creation-capacity': ['backend-embedding-creation-capacity'],
   ...credentialedProjectGroups,
   'backend-postgres-schema': ['backend-postgres-schema', 'backend-activitypub-capacity'],
   'email-templates': ['backend-email-templates'],

@@ -5,14 +5,12 @@ import { storybookBrowserProject, webAlias } from './storybook-browser-project.m
 import { storybookMockResolveAliases } from './storybook-browser-aliases.mts'
 import { cloudflareWorkerProjects } from './cloudflare-worker-projects.mts'
 
-// Default budget from #10762 (docs/development/reference-tests-vitest-projects.md); plain numbers, unlike toolingTestBudget.
-const defaultTestBudget = { hookTimeout: 30_000, testTimeout: 15_000 }
 const fiveSecondTestBudget = { testTimeout: 5_000, hookTimeout: 5_000 }
 const webApiProject: TestProjectConfiguration = {
   extends: true,
   resolve: { alias: webAlias },
   test: {
-    ...defaultTestBudget,
+    ...fiveSecondTestBudget,
     pool: 'forks',
     isolate: false,
     name: 'web-api',
@@ -105,7 +103,7 @@ export const webProjects: TestProjectConfiguration[] = [
       ],
     },
     test: {
-      ...defaultTestBudget,
+      ...fiveSecondTestBudget,
       isolate: true,
       name: 'web-storybook-component-coverage',
       include: ['web/storybook/__tests__/component-story-coverage.test.ts'],
