@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { configureTestPostgresSessions } from './vitest-postgres-session-settings.mts'
 import {
+  FAST_TEST_STATEMENT_TIMEOUT_MS,
   parseTestStatementTimeout,
-  TEST_STATEMENT_TIMEOUT_MS,
 } from '../backend/test-helpers/statement-timeout-constant.mts'
 
 describe('PostgreSQL test statement deadline', () => {
@@ -50,7 +50,7 @@ describe('PostgreSQL test session configuration', () => {
     expect(primary.pathname).toBe('/owned')
     expect(primary.searchParams.get('options')).toContain('-c application_name=fixture')
     expect(primary.searchParams.get('options')).toContain(
-      `-c statement_timeout=${TEST_STATEMENT_TIMEOUT_MS}`,
+      `-c statement_timeout=${FAST_TEST_STATEMENT_TIMEOUT_MS}`,
     )
     expect(env.DATABASE_URL).toContain('options=-c%20application_name%3Dfixture')
     expect(env.DATABASE_URL).not.toMatch(/[?&]options=[^&]*\+/u)
@@ -58,7 +58,7 @@ describe('PostgreSQL test session configuration', () => {
     expect(read.searchParams.get('sslmode')).toBe('disable')
     expect(read.searchParams.get('options')).toContain('-c hnsw.ef_search=')
     expect(read.searchParams.get('options')).toContain(
-      `-c statement_timeout=${TEST_STATEMENT_TIMEOUT_MS}`,
+      `-c statement_timeout=${FAST_TEST_STATEMENT_TIMEOUT_MS}`,
     )
     expect(env.READ_DATABASE_URL).not.toMatch(/[?&]options=[^&]*\+/u)
   })

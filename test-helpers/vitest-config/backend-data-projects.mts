@@ -39,6 +39,7 @@ const backendMocksProject = {
     pool: 'forks',
     isolate: true,
     name: 'backend-mocks',
+    env: { PG_TEST_STATEMENT_TIMEOUT_MS: '2000' },
     runner: './test-helpers/vitest.runner.shared-db-scope-guard.mts',
     include: [
       'backend/{agents,api,modules,data-stores,entrypoints,queues,scripts,services,sitemaps,mcp,worker-runtime,workers}/**/*.mock.test.mts',

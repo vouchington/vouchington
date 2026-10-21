@@ -16,6 +16,7 @@ const webApiProject: TestProjectConfiguration = {
     pool: 'forks',
     isolate: false,
     name: 'web-api',
+    env: { PG_TEST_STATEMENT_TIMEOUT_MS: '2000' },
     runner: './test-helpers/vitest.runner.shared-db-scope-guard.mts',
     include: ['integration-tests/web-api/**/*.test.mts'],
     exclude: ['**/node_modules/**', '**/.git/**'],

@@ -37,6 +37,8 @@ describe('backend Vitest project config', () => {
       expect.arrayContaining([
         'backend-data-stores',
         'backend-mocks',
+        'backend-migration-initializers',
+        'backend/analytics-integration',
         'web-api',
         'backend-aws',
         'backend-openrouter',
@@ -44,6 +46,18 @@ describe('backend Vitest project config', () => {
       ]),
     )
     expect(parseTestStatementTimeout(undefined)).toBe(FAST_TEST_STATEMENT_TIMEOUT_MS)
+    const shortConsumers = consumers.filter(
+      project =>
+        Math.min(
+          project.test?.testTimeout ?? Number.POSITIVE_INFINITY,
+          project.test?.hookTimeout ?? Number.POSITIVE_INFINITY,
+        ) <= 15_000,
+    )
+    for (const project of shortConsumers) {
+      expect(project.test?.env?.PG_TEST_STATEMENT_TIMEOUT_MS).toBe(
+        String(FAST_TEST_STATEMENT_TIMEOUT_MS),
+      )
+    }
     for (const project of consumers) {
       const statementTimeoutMs = parseTestStatementTimeout(
         project.test?.env?.PG_TEST_STATEMENT_TIMEOUT_MS ?? process.env.PG_TEST_STATEMENT_TIMEOUT_MS,
