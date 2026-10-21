@@ -1,10 +1,10 @@
 import type { Job } from 'glide-mq'
 import { describe, expect, it } from 'vitest'
-import { createTestBlacklistSource, deleteTestBlacklistSource } from '@voucha/test-helpers'
 import { bloomFilters as bloomQueue } from '@queues/bloom-filters/queues'
-import { bloomFilters as bloomWorker } from '@workers/bloom-filters/workers'
-import { checkBloomFilters } from '../urls-domains-blacklist/bloom-filter.mts'
-import { syncDomainsWithDatabase } from './sync-db.mts'
+import { checkBloomFilters } from '@services/urls-domains-blacklist/bloom-filter'
+import { syncDomainsWithDatabase } from '@services/urls-domains-blacklist-sync/sync-db'
+import { createTestBlacklistSource, deleteTestBlacklistSource } from '@voucha/test-helpers'
+import { bloomFilters as bloomWorker } from '../workers.mts'
 
 const URL_BLOCKLIST_REBUILD_JOB_ID = 'bloomFilterRebuild__url-blocklist'
 

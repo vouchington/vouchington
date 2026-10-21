@@ -12817,6 +12817,9 @@ importers:
       '@services/urls':
         specifier: workspace:^
         version: link:../../services/urls
+      '@services/urls-domains-blacklist-sync':
+        specifier: workspace:^
+        version: link:../../services/urls-domains-blacklist-sync
       '@services/users':
         specifier: workspace:^
         version: link:../../services/users
