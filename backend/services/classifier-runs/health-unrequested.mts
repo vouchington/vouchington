@@ -1,4 +1,4 @@
-import { write } from '@data-stores/psql'
+import { read } from '@data-stores/psql'
 import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
 import sql from 'sql-template-strings'
 import {
@@ -31,7 +31,9 @@ export async function readUnrequestedClassifierFeedItems<C, L, E>(
   const since = timestampToUuidv7LowerBound(now.getTime() - CLASSIFIER_UNREQUESTED_LOOKBACK_MS)
   const settledBefore = new Date(now.getTime() - CLASSIFIER_UNREQUESTED_GRACE_MS)
   const itemIds = scope.rssFeedItemIds ? [...scope.rssFeedItemIds] : null
-  const { rows } = await write<UnrequestedRow>(
+  // Replica lag delays this alarm by at most one reconcile tick and never hides a run that is
+  // already terminal on the writer.
+  const { rows } = await read<UnrequestedRow>(
     sql`/* readUnrequestedClassifierFeedItems */
     SELECT count(*)::int AS total, min(request.eligible_since) AS oldest_since
     FROM (

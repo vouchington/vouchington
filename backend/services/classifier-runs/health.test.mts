@@ -1,3 +1,4 @@
+import { observeTestPostgresQueryPools } from '@voucha/test-helpers'
 import {
   readClassifierHealthClockForTest,
   readClassifierFeedItemClockForTest,
@@ -245,5 +246,16 @@ describe('classifier run health: eligible feed items with no request (real PG)',
     const health = await readClassifierRunHealth(setup.adapter, clock.afterHours(2))
 
     expect(health.unrequestedFeedItems).toBeNull()
+  })
+
+  it('reads every health query from the replica', async () => {
+    const setup = await createSyntheticFixture()
+    const clock = await readClassifierHealthClockForTest(setup.slug)
+    const observed = await observeTestPostgresQueryPools('classifier', () =>
+      readClassifierRunHealth(setup.adapter, clock.afterHours(2)),
+    )
+
+    expect(observed.pools).toEqual(['read'])
+    expect(observed.result.classifier).toBe(setup.slug)
   })
 })

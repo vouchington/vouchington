@@ -1,4 +1,4 @@
-import { write } from '@data-stores/psql'
+import { read } from '@data-stores/psql'
 import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
 import sql from 'sql-template-strings'
 import { CLASSIFIER_TERMINAL_WINDOW_MS } from './health-thresholds.mts'
@@ -25,7 +25,9 @@ export async function readClassifierTerminalCounts(
   now: Date,
 ): Promise<ClassifierTerminalCounts> {
   const since = timestampToUuidv7LowerBound(now.getTime() - CLASSIFIER_TERMINAL_WINDOW_MS)
-  const { rows } = await write<OutcomeRow>(sql`/* readClassifierTerminalCounts */
+  // Replica lag delays this alarm by at most one reconcile tick and never hides a run that is
+  // already terminal on the writer.
+  const { rows } = await read<OutcomeRow>(sql`/* readClassifierTerminalCounts */
     SELECT CASE
         WHEN run.completed_at IS NOT NULL THEN 'completed'
         WHEN run.terminal_failure_kind IS NOT NULL THEN ${FAILED_PREFIX}::text || run.terminal_failure_kind
