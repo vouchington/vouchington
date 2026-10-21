@@ -20,15 +20,22 @@ export async function withSetupPhaseDeadline<T>(
   run: () => Promise<T>,
   deadlineMs: number = SETUP_PHASE_DEADLINE_MS,
 ): Promise<T> {
-  let timer: NodeJS.Timeout | undefined
+  // The runtime owns the unref'd timer behind AbortSignal.timeout, so the deadline is an abort
+  // event to await rather than a timer this helper schedules or must clear.
+  const signal = AbortSignal.timeout(deadlineMs)
+  const listener = new AbortController()
   const deadline = new Promise<never>((_resolve, reject) => {
-    timer = setTimeout(() => {
-      reject(new SetupPhaseDeadlineError(phase, deadlineMs))
-    }, deadlineMs)
+    signal.addEventListener(
+      'abort',
+      () => {
+        reject(new SetupPhaseDeadlineError(phase, deadlineMs))
+      },
+      { once: true, signal: listener.signal },
+    )
   })
   try {
     return await Promise.race([run(), deadline])
   } finally {
-    clearTimeout(timer)
+    listener.abort()
   }
 }
