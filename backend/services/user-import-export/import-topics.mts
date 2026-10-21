@@ -1,7 +1,7 @@
 import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
-import type { BasicUser } from '@services/users/types'
-import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
-import { upsertEntityRelation } from '@services/entity-relations/upsert'
+import type { PrivateUser } from '@services/users/types'
+import assert from 'http-assert'
+import { upsertBookmarkAction } from '@services/entity-relation-actions'
 import onError from '@modules/on-error'
 import {
   findTopicsBySlugOrName,
@@ -28,14 +28,15 @@ export class TopicImportInProgressError extends Error {
   }
 }
 
-const followTopicRelation = getEntityRelationMetadataOrThrow({
-  subjectType: 'user',
-  objectType: 'topic',
-  predicate: 'follow',
-})
+function clientErrorMessage(err: unknown): string | undefined {
+  if (typeof err !== 'object' || err === null || !('status' in err)) return undefined
+  const status = (err as { status: unknown }).status
+  if (typeof status !== 'number' || status < 400 || status >= 500) return undefined
+  return err instanceof Error ? err.message : 'Unknown error'
+}
 
 export async function importTopics(
-  currentUser: BasicUser,
+  currentUser: PrivateUser,
   provenance: ContentProvenance,
   names: string[],
   options: {
@@ -46,14 +47,10 @@ export async function importTopics(
     recordImportRequests?: typeof recordTopicImportRequests
   },
 ): Promise<ImportTopicResult[]> {
-  const effectiveNames = names.length > MAX_IMPORT_ITEMS ? names.slice(0, MAX_IMPORT_ITEMS) : names
-  const attempt = await claimTopicImportAttempt(
-    currentUser.id,
-    options.importAttemptId,
-    effectiveNames,
-  )
+  assert(names.length <= MAX_IMPORT_ITEMS, 400, 'At most 500 topics')
+  const attempt = await claimTopicImportAttempt(currentUser.id, options.importAttemptId, names)
   if (attempt.response) return attempt.response
-  const inputs = effectiveNames.map((rawName, index) => prepareTopicInput(rawName, index))
+  const inputs = names.map((rawName, index) => prepareTopicInput(rawName, index))
   const results: Array<ImportTopicResult | undefined> = []
   const validInputs = inputs.filter(input => {
     if (!input.error) return true
@@ -120,6 +117,7 @@ export async function importTopics(
   return finalizeTopicImportAttempt(attempt.id, async query => {
     const followedTopicIds = await getFollowedTopicIds(currentUser.id, existingTopicIds, query)
     const followedDuringImport = new Set<string>()
+    const topicIdsToFollow: string[] = []
     for (const input of existingInputs) {
       const topicId = existingTopics.get(input.index)!
       const alreadyFollowing = followedTopicIds.has(topicId) || followedDuringImport.has(topicId)
@@ -130,19 +128,43 @@ export async function importTopics(
       }
       if (!alreadyFollowing) {
         followedDuringImport.add(topicId)
-        audits.push({ index: input.index, inputValue: input.name, topicId })
+        topicIdsToFollow.push(topicId)
       }
     }
 
-    const topicIdsToFollow = existingTopicIds.filter(topicId => !followedTopicIds.has(topicId))
+    const auditsBeforeFollows = audits.length
     await (options.recordImportRequests ?? recordTopicImportRequests)(currentUser.id, audits, query)
-    if (topicIdsToFollow.length > 0) {
-      await upsertEntityRelation(
-        currentUser,
-        followTopicRelation,
-        { id: currentUser.id },
-        topicIdsToFollow.map(id => ({ id })),
-        { query },
+
+    // oxlint-disable no-await-in-loop -- bookmarkEntity applies the follow side effects per topic
+    for (const topicId of topicIdsToFollow) {
+      try {
+        // no-mistakes-disable-next-line query-reached-per-item: each topic applies the vouch rate limit and relation metrics
+        await upsertBookmarkAction(
+          currentUser,
+          { kind: 'first_party' },
+          { entityType: 'topic', entityId: topicId, predicate: 'follow' },
+        )
+        for (const input of existingInputs) {
+          if (existingTopics.get(input.index) !== topicId) continue
+          audits.push({ index: input.index, inputValue: input.name, topicId })
+        }
+      } catch (err) {
+        const message = clientErrorMessage(err)
+        if (message === undefined) throw err
+        for (const input of existingInputs) {
+          if (existingTopics.get(input.index) !== topicId) continue
+          results[input.index] = { input: input.rawName, status: 'error', error: message }
+        }
+      }
+    }
+    // oxlint-enable no-await-in-loop
+
+    const followAudits = audits.slice(auditsBeforeFollows)
+    if (followAudits.length > 0) {
+      await (options.recordImportRequests ?? recordTopicImportRequests)(
+        currentUser.id,
+        followAudits,
+        query,
       )
     }
 

@@ -1,39 +1,74 @@
-import {
-  addListItem,
-  assertListablePostId,
-  assertListableRssFeedItemId,
-  type ListItem,
-} from '@services/lists'
-import assert from 'http-assert'
+import { importCommunityList } from '@services/lists'
+import { loadCommunityForViewer } from '@services/communities'
 import { entityRelationViewerFor } from '@services/users'
 import type { BasicUser } from '@services/users/types'
+import { communityReferenceSchema } from './entity-reference-schema.mts'
 import { getDelegatedToolAuthority } from './delegated-authority.mts'
-import { canonicalEntityId } from './resolve-entity-reference.mts'
+import { getListWriteContext, LIST_ID_PARAMETER } from './list-tool-support.mts'
+import { oneOfSchema, successSchema } from './output-schema-shapes.mts'
+import { entityIdOrMissing } from './resolve-entity-reference.mts'
 import {
-  getListWriteContext,
-  LIST_ITEM_PARAMETERS,
-  LIST_ITEM_RESULT_SCHEMA,
-  type ListItemToolArgs,
-} from './list-tool-support.mts'
-import type {
-  Tool,
-  ToolApiEndpoint,
-  ToolInvocationContext,
-} from '@services/openai-agents/tool-types'
-import { selectApiByArgument } from './select-api-by-argument.mts'
+  ADD_LIST_ITEM_LIMIT,
+  addVisibleListItems,
+  type AddedListItem,
+  type ListItemRef,
+} from './add-list-items.mts'
+import type { Tool, ToolInvocationContext } from '@services/openai-agents/tool-types'
 
-const ENDPOINTS: Record<string, ToolApiEndpoint> = {
-  post: { method: 'POST', path: '/api/v1/lists/:id/items/posts' },
-  rss_feed_item: { method: 'POST', path: '/api/v1/lists/:id/items/rss-feed-items' },
+const IMPORT = { method: 'POST' as const, path: '/api/v1/lists/:id/import' }
+const POSTS = { method: 'POST' as const, path: '/api/v1/lists/:id/items/posts' }
+const FEEDS = { method: 'POST' as const, path: '/api/v1/lists/:id/items/rss-feed-items' }
+
+type AddArgs =
+  | { list_id: string; items: ListItemRef[] }
+  | { list_id: string; source: { community: string } }
+
+const ITEM = {
+  type: 'object',
+  properties: {
+    item_type: { type: 'string', enum: ['post', 'rss_feed_item'] },
+    entity: { type: 'string' },
+  },
+  required: ['item_type', 'entity'],
+  additionalProperties: false,
 }
 
-const tool: Tool<ListItemToolArgs, { success: true; list_item: ListItem }> = {
+const tool: Tool<
+  AddArgs,
+  { success: true; results: AddedListItem[] } | { success: true; posts: number; items: number }
+> = {
   schema: {
     name: 'add_list_item',
     type: 'function',
-    description:
-      "Add a post or an RSS feed item to a list the current user owns. Adding an item that is already on the list returns the existing entry. A post is only available if the user can see it; the user's own private posts additionally need the private-post consent scope.",
-    parameters: LIST_ITEM_PARAMETERS,
+    description: 'Add up to 100 visible posts or RSS items, or copy one community list.',
+    parameters: {
+      type: 'object',
+      oneOf: [
+        {
+          type: 'object',
+          properties: {
+            list_id: LIST_ID_PARAMETER,
+            items: { type: 'array', minItems: 1, maxItems: ADD_LIST_ITEM_LIMIT, items: ITEM },
+          },
+          required: ['list_id', 'items'],
+          additionalProperties: false,
+        },
+        {
+          type: 'object',
+          properties: {
+            list_id: LIST_ID_PARAMETER,
+            source: {
+              type: 'object',
+              properties: { community: communityReferenceSchema },
+              required: ['community'],
+              additionalProperties: false,
+            },
+          },
+          required: ['list_id', 'source'],
+          additionalProperties: false,
+        },
+      ],
+    },
     strict: null,
   },
   meta: {
@@ -42,26 +77,65 @@ const tool: Tool<ListItemToolArgs, { success: true; list_item: ListItem }> = {
     plan: 'plus',
     requiredScopes: ['lists:read', 'lists:write'],
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
-    api: Object.values(ENDPOINTS),
-    selectApi: selectApiByArgument('item_type', ENDPOINTS),
-    outputSchema: LIST_ITEM_RESULT_SCHEMA,
+    api: [POSTS, FEEDS, IMPORT],
+    selectApi: args => {
+      if (args['source']) return [IMPORT]
+      if (args['items'] === 'present') return [POSTS, FEEDS]
+      const items = Array.isArray(args['items']) ? args['items'] : []
+      const types = new Set(
+        items.map(item =>
+          typeof item === 'object' && item !== null
+            ? (item as { item_type?: unknown }).item_type
+            : undefined,
+        ),
+      )
+      return [...(types.has('post') ? [POSTS] : []), ...(types.has('rss_feed_item') ? [FEEDS] : [])]
+    },
+    outputSchema: oneOfSchema(
+      successSchema({
+        results: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              item_type: { type: 'string' },
+              entity: { type: 'string' },
+              status: { type: 'string', enum: ['added', 'not_found', 'forbidden'] },
+            },
+            required: ['item_type', 'entity', 'status'],
+            additionalProperties: true,
+          },
+        },
+      }),
+      successSchema({
+        posts: { type: 'integer' },
+        items: { type: 'integer' },
+      }),
+    ),
   },
   function:
     (currentUser: BasicUser) =>
-    async (args: ListItemToolArgs, invocationContext?: ToolInvocationContext) => {
+    async (args: AddArgs, invocationContext?: ToolInvocationContext) => {
       const { user, list } = await getListWriteContext(currentUser, args.list_id)
       const authority = getDelegatedToolAuthority(user, invocationContext)
-      const entityType = args.item_type === 'post' ? 'post' : 'rss_feed_item'
-      const entityId = await canonicalEntityId(entityType, args.entity_id)
-      assert(entityId, 404, 'Not found')
-      if (args.item_type === 'post') {
-        await assertListablePostId(entityRelationViewerFor(user), authority, entityId)
-      } else {
-        await assertListableRssFeedItemId(entityId)
+      if ('source' in args) {
+        const { community } = await loadCommunityForViewer(
+          user,
+          await entityIdOrMissing('community', args.source.community),
+        )
+        const copied = await importCommunityList(list, {
+          communityId: community.id,
+          viewer: entityRelationViewerFor(user),
+          delegated: {
+            grantedScopes: authority.grantedScopes,
+            credentialOwnerId: authority.credentialOwnerId,
+          },
+        })
+        return { success: true as const, posts: copied.posts, items: copied.items }
       }
       return {
-        success: true,
-        list_item: await addListItem(list.id, args.item_type, entityId),
+        success: true as const,
+        results: await addVisibleListItems(user, authority, list.id, args.items),
       }
     },
 }

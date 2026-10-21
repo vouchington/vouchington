@@ -11308,6 +11308,9 @@ importers:
       '@services/elections-votes':
         specifier: workspace:^
         version: link:../elections-votes
+      '@services/entity-relation-actions':
+        specifier: workspace:^
+        version: link:../entity-relation-actions
       '@services/entity-relations':
         specifier: workspace:^
         version: link:../entity-relations

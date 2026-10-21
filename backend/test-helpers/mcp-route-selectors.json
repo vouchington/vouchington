@@ -114,7 +114,7 @@
   {
     "tool": "add_list_item",
     "arguments": {
-      "item_type": "post"
+      "items": [{ "item_type": "post" }]
     },
     "routes": ["POST:/api/v1/lists/:id/items/posts"]
   },
@@ -131,7 +131,7 @@
   {
     "tool": "add_list_item",
     "arguments": {
-      "item_type": "rss_feed_item"
+      "items": [{ "item_type": "rss_feed_item" }]
     },
     "routes": ["POST:/api/v1/lists/:id/items/rss-feed-items"]
   },

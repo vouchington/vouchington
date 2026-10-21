@@ -143,6 +143,51 @@ describe('importCommunityList visibility', () => {
     expect(await listPostItemExists(inserted.id, hiddenPostId)).toBe(false)
   })
 
+  it('skips an owned private post when the delegated private-write grant is absent', async () => {
+    const owner = await createTestUser()
+    const community = await insertTestCommunity({ createdById: owner.id })
+    const publicPostId = await insertTestPost({
+      title: `Delegated public import ${createRandomString(8)}`,
+      slug: `delegated-public-import-${createRandomString(8)}`,
+      createdById: owner.id,
+      markdown: 'public',
+    })
+    const privatePostId = await insertTestPost({
+      title: `Delegated private import ${createRandomString(8)}`,
+      slug: `delegated-private-import-${createRandomString(8)}`,
+      createdById: owner.id,
+      markdown: 'private',
+      privacy: 'private',
+      broadcast: 'followers',
+    })
+    await insertTestCommunityListItem({
+      communityId: community.id,
+      itemType: 'post',
+      entityId: publicPostId,
+      addedById: owner.id,
+    })
+    await insertTestCommunityListItem({
+      communityId: community.id,
+      itemType: 'post',
+      entityId: privatePostId,
+      addedById: owner.id,
+    })
+    const inserted = await insertTestList({
+      ownerUserId: owner.id,
+      name: `Delegated import ${createRandomString(8)}`,
+    })
+    const list = await getManageableList(owner.id, inserted.id)
+    const result = await importCommunityList(list, {
+      communityId: community.id,
+      viewer: viewerFor(owner.id),
+      delegated: { grantedScopes: ['lists:write'], credentialOwnerId: owner.id },
+    })
+
+    expect(result.posts).toBe(1)
+    expect(await listPostItemExists(inserted.id, publicPostId)).toBe(true)
+    expect(await listPostItemExists(inserted.id, privatePostId)).toBe(false)
+  })
+
   it('imports at most the newest 500 community-list posts', async () => {
     const owner = await createTestUser()
     const community = await insertTestCommunity({ createdById: owner.id })

@@ -32,6 +32,7 @@
     "@services/bookmarks": "workspace:^",
     "@services/contribution-gating": "workspace:^",
     "@services/elections-votes": "workspace:^",
+    "@services/entity-relation-actions": "workspace:^",
     "@services/entity-relations": "workspace:^",
     "@services/memberships": "workspace:^",
     "@services/rss-feeds": "workspace:^",

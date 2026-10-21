@@ -23,9 +23,9 @@ const names = [
 ]
 // Pin the exact-grant listing including #208's explicit message grants.
 const PLUS_WITHOUT_MODERATION_DIGEST =
-  'c92efdeead3b0eacac5ec9a46eaa9ceb108513e1ff78d63696d41b4eb346bd30'
-const PRE_MESSAGE_DIGEST = '21aeea9627281d653974b0ea0c926f5ce150007c2749be49e2af0f26b0f986c4'
-const UMBRELLA_ONLY_DIGEST = '1b490aff3e4e34e07478ab6f6c2b5504a9c8c939b0c819b2c4cd5910a8319ab6'
+  'a3d607ca4582231aeb071f59cc1c882819992da03fac968edb90cda821517e67'
+const PRE_MESSAGE_DIGEST = 'e78ac887da0cb03d76831692bbe69eceda663d64c45f36e8cdf62128db09709a'
+const UMBRELLA_ONLY_DIGEST = 'f1c718a1acc65593d0c2d1114357a5baff926718faeb6086bbca1141a4c54fb9'
 const digest = (tools: unknown) => createHash('sha256').update(JSON.stringify(tools)).digest('hex')
 
 describe('community moderation exact-grant catalog boundaries', () => {

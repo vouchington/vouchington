@@ -245,8 +245,8 @@
       },
       "manage_bookmark": {
         "measured": {
-          "list": 2363,
-          "core": 1550
+          "list": 2180,
+          "core": 1350
         },
         "max": {
           "list": 3000,
@@ -505,8 +505,8 @@
       },
       "add_list_item": {
         "measured": {
-          "list": 1408,
-          "core": 615
+          "list": 1614,
+          "core": 836
         },
         "max": {
           "list": 2000,
