@@ -397,6 +397,10 @@ checks:
       command: [pnpm, run, ast-grep]
       fileArgs: none
       always: true
+    - name: knip-unused-files
+      command: [pnpm, exec, knip, --treat-config-hints-as-errors]
+      fileArgs: none
+      always: true
     - name: no-mistakes-rules
       command: [pnpm, run, no-mistakes]
       fileArgs: none

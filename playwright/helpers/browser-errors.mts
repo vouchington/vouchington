@@ -49,8 +49,8 @@ export class BrowserIssueMonitor {
   private readonly allowlist: BrowserIssueAllowlistEntry[]
   private readonly issues: BrowserIssue[] = []
   private readonly monitoredContexts: MonitoredContext[] = []
-  private readonly testInfo: TestInfo
-  constructor(testInfo: TestInfo, options: BrowserIssueMonitorOptions = {}) {
+  private readonly testInfo: Pick<TestInfo, 'attach'>
+  constructor(testInfo: Pick<TestInfo, 'attach'>, options: BrowserIssueMonitorOptions = {}) {
     this.allowlist = options.allowlist ?? []
     validateAllowlist(this.allowlist)
     this.testInfo = testInfo

@@ -110,6 +110,9 @@
         "tests/**/*.spec.mts",
         "credentialed/**/*.spec.mts",
         "helpers/**/*.test.mts",
+        // Compiler-only contracts are checked by playwright/tsconfig.json, never a runtime runner.
+        "test-helpers/public-test-type-contract.mts",
+        "test-helpers/public-test-negative-type-contract.mts",
         "../playwright.credentialed.config.mts",
         // Passed as a CLI path by dev/localization/local-smoke.mts, not imported.
         "localization-tmux.config.mts",

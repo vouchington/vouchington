@@ -38,9 +38,11 @@ function rejectSlow(): never {
   throw new RangeError('Playwright slow modifiers are forbidden by the 30,000 ms test cap')
 }
 
-const protectedInfo = new WeakSet<TestInfo>()
+type TimeoutInfo = Pick<TestInfo, 'timeout' | 'setTimeout' | 'slow'>
 
-export function protectPlaywrightHookTimeouts(info: TestInfo): void {
+const protectedInfo = new WeakSet<TimeoutInfo>()
+
+export function protectPlaywrightHookTimeouts(info: TimeoutInfo): void {
   if (protectedInfo.has(info)) return
   playwrightTestTimeout(info.timeout, 'Playwright effective test timeout')
   const setTimeout = Reflect.get(info, 'setTimeout') as TestInfo['setTimeout']
