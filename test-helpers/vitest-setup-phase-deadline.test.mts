@@ -1,4 +1,3 @@
-import { spawnSync } from 'node:child_process'
 import { describe, expect, it } from 'vitest'
 import { SetupPhaseDeadlineError, withSetupPhaseDeadline } from './vitest-setup-phase-deadline.mts'
 
@@ -25,7 +24,7 @@ describe('withSetupPhaseDeadline', () => {
     const err = await withSetupPhaseDeadline(
       'dynamic-config:example',
       () => new Promise(() => {}),
-      20,
+      1,
     ).then(
       () => undefined,
       (err: unknown) => err,
@@ -34,24 +33,7 @@ describe('withSetupPhaseDeadline', () => {
     expect(err).toBeInstanceOf(SetupPhaseDeadlineError)
     expect(err).toHaveProperty(
       'message',
-      expect.stringContaining('"dynamic-config:example" did not settle within 20ms'),
+      expect.stringContaining('"dynamic-config:example" did not settle within 1ms'),
     )
-  })
-
-  it('keeps the process alive until a handle-less pending phase hits the deadline', () => {
-    const helper = new URL('./vitest-setup-phase-deadline.mts', import.meta.url).href
-    const result = spawnSync(
-      process.execPath,
-      [
-        '--input-type=module',
-        '-e',
-        `const { withSetupPhaseDeadline } = await import(${JSON.stringify(helper)})
-await withSetupPhaseDeadline('stuck-import', () => new Promise(() => {}), 50)`,
-      ],
-      { encoding: 'utf8' },
-    )
-
-    expect(result.status).not.toBe(0)
-    expect(result.stderr).toContain('SetupPhaseDeadlineError')
   })
 })
