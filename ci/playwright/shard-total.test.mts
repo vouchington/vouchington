@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process'
-import { globSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -66,13 +66,22 @@ describe('playwrightShardTotal', () => {
 })
 
 describe('runnablePlaywrightSpecCount', () => {
-  it('counts the repository suite through the runnable Playwright spec predicate', () => {
-    const candidates = globSync('playwright/tests/**/*', { cwd: process.cwd() })
-
-    expect(runnablePlaywrightSpecCount(process.cwd())).toBe(
-      candidates.filter(isRunnablePlaywrightSpec).length,
-    )
-    expect(runnablePlaywrightSpecCount(process.cwd())).toBeGreaterThan(0)
+  it('counts only nested runnable specs inside its supplied worktree', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'playwright-spec-count-'))
+    try {
+      mkdirSync(join(directory, 'playwright/tests/nested'), { recursive: true })
+      mkdirSync(join(directory, 'playwright/fixtures'), { recursive: true })
+      for (const file of [
+        'playwright/tests/one.spec.mts',
+        'playwright/tests/nested/two.spec.mts',
+        'playwright/tests/helpers.mts',
+        'playwright/fixtures/ignored.spec.mts',
+      ])
+        writeFileSync(join(directory, file), '')
+      expect(runnablePlaywrightSpecCount(directory)).toBe(2)
+    } finally {
+      rmSync(directory, { force: true, recursive: true })
+    }
   })
 })
 
@@ -83,7 +92,12 @@ describe('shard-total CLI', () => {
     writeFileSync(outputPath, '')
     const result = spawnSync(process.execPath, ['ci/playwright/shard-total.mts'], {
       encoding: 'utf8',
-      env: { ...process.env, GITHUB_OUTPUT: outputPath, SHARD_TOTAL_OVERRIDE: '3' },
+      env: {
+        ...process.env,
+        GITHUB_OUTPUT: outputPath,
+        GITHUB_WORKSPACE: directory,
+        SHARD_TOTAL_OVERRIDE: '3',
+      },
     })
     const output = readFileSync(outputPath, 'utf8')
     rmSync(directory, { force: true, recursive: true })
@@ -98,7 +112,12 @@ describe('shard-total CLI', () => {
     writeFileSync(outputPath, '')
     const result = spawnSync(process.execPath, ['ci/playwright/shard-total.mts'], {
       encoding: 'utf8',
-      env: { ...process.env, GITHUB_OUTPUT: outputPath, SHARD_TOTAL_OVERRIDE: '257' },
+      env: {
+        ...process.env,
+        GITHUB_OUTPUT: outputPath,
+        GITHUB_WORKSPACE: directory,
+        SHARD_TOTAL_OVERRIDE: '257',
+      },
     })
     const output = readFileSync(outputPath, 'utf8')
     rmSync(directory, { force: true, recursive: true })

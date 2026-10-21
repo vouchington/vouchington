@@ -1,3 +1,4 @@
+import { checkImagePublisherTestRole } from './image-publisher-test-role-policy.mts'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
@@ -65,7 +66,10 @@ export async function checkConfigInventoryPolicy(
     errors.push(err instanceof Error ? err.message : String(err))
     return { errors }
   }
-  errors.push(...checkWorkflowEnvReferences(ctx, inventory))
+  errors.push(
+    ...checkWorkflowEnvReferences(ctx, inventory),
+    ...checkImagePublisherTestRole(inventory),
+  )
   if (inventory.envVars.length === 0) {
     errors.push('config inventory did not discover any environment variables')
   }

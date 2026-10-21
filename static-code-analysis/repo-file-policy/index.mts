@@ -1,3 +1,4 @@
+import { checkAgentBlackboardMcpConfig } from './agent-blackboard-mcp-config.mts'
 import { checkBoundedWorkTunables } from './bounded-work-tunables.mts'
 import {
   workTunableAllowlist,
@@ -69,6 +70,7 @@ export async function checkRepoFilePolicy(
 
   await checkMigrationSqlGuard(ctx.repoRoot, trackedFiles, errors)
   await checkMonetaryContracts(ctx.repoRoot, trackedFiles, errors, ctx.readTrackedFile)
+  errors.push(...checkAgentBlackboardMcpConfig(ctx))
   checkMonetarySnapshot(schema, errors)
   const injectedSnapshot = options.schemaSnapshot !== undefined
   errors.push(...checkRelationalStorage(schema, { enforceCatalogFreshness: !injectedSnapshot }))
