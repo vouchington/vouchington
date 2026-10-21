@@ -145,8 +145,7 @@ that outbox. A successful work outcome with blocked delivery is not fully report
 identity conflicts, saturation, and persistence failure come back as tool errors. Do not discard
 pending records or claim acknowledged delivery. If the server is unavailable, restore it per the
 [blackboard skill](../blackboard/SKILL.md#when-the-server-is-unavailable) or report the retrospective
-as blocked; the CLI fallback only reads and appends journal entries and cannot save a retrospective,
-so never store one through `journal_append`.
+as blocked; never store one through `journal_append`.
 
 `compose` accepts: `narrative` (concise, non-empty), `date`, `issues`, `prs`, `description`,
 `facts`, `transcript`, `tools`, `architecture`, and optional `knownSensitiveValues`. Unknown keys are
