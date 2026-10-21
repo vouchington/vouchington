@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
   ANALYZE_TARGETS,
-  PLAN_STABILITY_VACUUM_TARGETS,
   SEEDED_ROW_COUNT_TARGETS,
   buildSeededRowCountQuery,
 } from './maintenance.mts'
@@ -62,9 +61,13 @@ describe('EXPLAIN ANALYZE seed maintenance', () => {
   })
 
   it('settles community search statistics and visibility before the first capture', () => {
-    expect(ANALYZE_TARGETS).toContain('community_search_counts')
-    expect(PLAN_STABILITY_VACUUM_TARGETS).toEqual(
-      expect.arrayContaining(['communities', 'community_post_reviews', 'community_search_counts']),
+    expect(ANALYZE_TARGETS).toEqual(
+      expect.arrayContaining([
+        'communities',
+        'community_members',
+        'community_post_reviews',
+        'community_search_counts',
+      ]),
     )
   })
 
