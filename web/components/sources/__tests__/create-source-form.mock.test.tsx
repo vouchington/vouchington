@@ -182,9 +182,9 @@ describe('CreateSourceForm', () => {
     const form = textarea.closest('form')!
     fireEvent.submit(form)
 
-    // Progress bar renders processing text once the stream starts
     await waitFor(() => {
-      expect(screen.getByText(/Processing|Done/)).toBeDefined()
+      expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '0')
     })
+    expect(screen.getByText(/Processing|Done/)).toBeDefined()
   })
 })

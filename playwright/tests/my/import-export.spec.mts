@@ -24,6 +24,10 @@ test.describe('News Sources Import / Export — /my/news-sources/import-export',
 
     await expect(page.getByTestId('import-progress')).toBeVisible()
     await expect(page.getByTestId('import-progress')).toContainText('Done')
+    await expect(page.getByTestId('import-progress').getByTestId('progress')).toHaveAttribute(
+      'aria-valuenow',
+      '100',
+    )
   })
 
   test('shows progress bar when uploading OPML file', async ({ page }) => {
@@ -48,6 +52,10 @@ test.describe('News Sources Import / Export — /my/news-sources/import-export',
 
     await expect(page.getByTestId('import-progress')).toBeVisible()
     await expect(page.getByTestId('import-progress')).toContainText('Done')
+    await expect(page.getByTestId('import-progress').getByTestId('progress')).toHaveAttribute(
+      'aria-valuenow',
+      '100',
+    )
   })
 
   test('dropdown is visible and allows selecting source type', async ({ page }) => {
