@@ -41,9 +41,11 @@ regressions remain distinguishable from batching and cursor failures.
 - While each scenario builds its query, `Date` is pinned to the anchor noon so time-range
   cutoffs sit at a fixed offset from seeded rows. Under the wall clock a one-week window held a
   different number of posts per hour, which flipped a plan between a seq scan and a bitmap scan.
-- After bulk seeding, the seed runs `VACUUM`/`ANALYZE` on the relations whose plans varied across
-  fresh CI databases, instead of depending on autovacuum timing, and refreshes statistics after the
-  first post batch because a fresh database plans the retained-identity trigger against empty-table
+- After bulk seeding, the seed vacuum-analyzes its registered relations before the first capture. A
+  trigger-maintained community count table also needs statistics: without them, PostgreSQL can
+  estimate a one-row list page as thousands of candidates. Settling visibility and statistics at
+  this boundary avoids depending on autovacuum timing. Statistics are refreshed after the first
+  post batch because a fresh database plans the retained-identity trigger against empty-table
   statistics.
 - Materialized views are refreshed after that statistics pass. Refresh replaces the heap and leaves
   column statistics empty, so each view is analyzed again before capture. Without `window_name`

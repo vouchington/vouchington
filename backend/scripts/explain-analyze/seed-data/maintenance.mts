@@ -66,18 +66,6 @@ export const SEEDED_ROW_COUNT_TARGETS: readonly TableInfo[] = [
   { table: 'facebook_friends', column: 'facebook_friend_id', pattern: 'seed-fb-user-%' },
 ]
 
-export const PLAN_STABILITY_VACUUM_TARGETS = [
-  'relation__post__category__topic',
-  'rss_feeds',
-  'rss_feed_item_categories',
-  'topics',
-  'post_review_topic_ratings',
-  'post_data_point_topics',
-  'communities',
-  'community_post_reviews',
-  'community_search_counts',
-] as const
-
 export const ANALYZE_TARGETS = [
   ...new Set([
     ...SEEDED_ROW_COUNT_TARGETS.map(({ table }) => table),
@@ -99,6 +87,7 @@ export const ANALYZE_TARGETS = [
     'relation__topic__category__topic',
     'relation__post__category__topic_alias',
     'relation__rss_feed_item__category__topic_alias',
+    // Trigger-maintained by seeded community writes, not directly counted above.
     'community_search_counts',
   ]),
 ]
@@ -128,24 +117,25 @@ export async function printRowCounts(): Promise<void> {
   }
 }
 export async function runAnalyze(): Promise<void> {
-  console.log('\nRunning ANALYZE on seeded tables...')
-  for (const table of ANALYZE_TARGETS) {
-    await write(`/* seedExplainData */ ANALYZE "${table}"`).catch(err =>
-      console.error(`seedExplainData: ANALYZE "${table}" failed`, err),
-    )
-  }
-  // Vacuum these seeded relations before the first capture so fresh databases do not let
-  // autovacuum timing choose community search visibility maps and list-item statistics.
-  // PostgreSQL includes each partition's default child when vacuuming its parent.
-  const vacuumTargets = PLAN_STABILITY_VACUUM_TARGETS.map(table => `"${table}"`).join(', ')
-  await write(`/* seedExplainData */ VACUUM (ANALYZE) ${vacuumTargets}`)
+  console.log('\nRunning VACUUM (ANALYZE) on seeded tables...')
+  // Settle first-capture statistics and visibility before autovacuum can choose the plan.
+  for (const table of ANALYZE_TARGETS)
+    await write(`/* seedExplainData */ VACUUM (ANALYZE) "${table}"`)
   const relationNames = [
     // Heap size and `id` correlation decide the posts window-scan plans; CI logs never carried them.
     'posts__default',
-    ...PLAN_STABILITY_VACUUM_TARGETS,
+    'relation__post__category__topic',
+    'rss_feeds',
+    'rss_feed_item_categories',
+    'topics',
+    'post_review_topic_ratings',
+    'post_data_point_topics',
     'relation__post__category__topic__default',
     'post_review_topic_ratings__default',
     'post_data_point_topics__default',
+    'communities',
+    'community_post_reviews',
+    'community_search_counts',
   ]
   const relationStats = await write(
     `/* seedExplainData */ SELECT c.relname, c.relpages, c.reltuples,
@@ -164,7 +154,18 @@ export async function runAnalyze(): Promise<void> {
     WHERE schemaname = 'public' AND tablename = ANY($1::name[])
       AND attname = ANY($2::name[])
     ORDER BY tablename, attname`,
-    [relationNames, ['id', 'subject_id', 'object_id', 'topic_id', 'rss_feed_item_id', 'post_id']],
+    [
+      relationNames,
+      [
+        'id',
+        'subject_id',
+        'object_id',
+        'topic_id',
+        'rss_feed_item_id',
+        'post_id',
+        'list_item_count',
+      ],
+    ],
   )
   const seededKeys = await write(
     `/* seedExplainData */
