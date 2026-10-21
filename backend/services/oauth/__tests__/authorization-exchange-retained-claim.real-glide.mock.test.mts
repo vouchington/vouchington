@@ -43,7 +43,7 @@ describe('OAuth retained failed-job recovery authority', () => {
       expect(result.firstNativeError).toMatchObject({ code: '55P03' })
       expect(result.firstState).toBe('failed')
       const unarmed = marker === 'unarmed'
-      expect(result.recovered).toEqual(unarmed ? [id] : [])
+      expect(result.recovered).toEqual({ ids: unarmed ? [id] : [], hasMore: true })
       const expectedBefore = unarmed
         ? {
             status: 'exchanging',

@@ -125,7 +125,7 @@ describe('merged RSS feed maintenance worker with real GlideMQ', () => {
     const result = await runJob('processBackfillRssFeedCategoriesForTopicAlias', {
       topicId: topic.id,
     })
-    expect(result).toBeGreaterThan(0)
+    expect(result).toEqual({ updated: 1, hasMore: false })
     expect(
       (await getRssFeedCategories(feed.id)).find(row => row.category_text === slug)?.topic_id,
     ).toBe(topic.id)
