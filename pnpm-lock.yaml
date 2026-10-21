@@ -2354,6 +2354,8 @@ importers:
         specifier: workspace:^
         version: link:../utils
 
+  backend/modules/child-process: {}
+
   backend/modules/csv:
     dependencies:
       '@vouchington/csv':
@@ -11167,6 +11169,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@modules/child-process':
+        specifier: workspace:^
+        version: link:../../modules/child-process
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
