@@ -32,6 +32,7 @@ import { useUiLocale } from '@/lib/i18n/ui-locale-context'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { topicHref } from '@/lib/links/entity-href'
 import { getContentLanguageDir } from '@ts-shared/languages/content-languages'
+import { RssFeedItemTitle } from '@/components/rss-feed-items/rss-feed-item-title'
 import type { ReportMenuItem as ReportMenuItemComponent } from '@/components/shared/report-menu-item'
 
 // ast-grep-ignore: no-dynamic-server-components -- target component has 'use client'
@@ -101,7 +102,7 @@ function NewsItemCardContent({
     thumbnailUrl,
     sourceUrl: item.url.url,
   })
-  const title = decodeHtmlEntities(preview.title ?? 'Untitled')
+  const authoredTitle = preview.title ? decodeHtmlEntities(preview.title) : null
   const excerpt = preview.description
   const renderedThumbnailUrl = preview.thumbnailUrl
   const videoPlatform = preview.platform ?? embed?.video_platform ?? item.data.video_platform
@@ -142,7 +143,11 @@ function NewsItemCardContent({
             className='text-base font-semibold leading-tight hover:underline'
             data-pw='news-item-title-link'
           >
-            {title}{' '}
+            <RssFeedItemTitle
+              title={authoredTitle}
+              detectedLanguage={item.lingua_rs_detected_language}
+              fallback='Untitled'
+            />{' '}
             <ExternalLink className='inline-block h-3 w-3 shrink-0 align-baseline text-muted-foreground' />
           </Link>
         </div>

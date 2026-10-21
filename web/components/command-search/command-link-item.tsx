@@ -5,12 +5,19 @@ import { useRef } from 'react'
 import Link from 'next/link'
 import { CommandItem } from '@/components/ui/command'
 import { PostContentText, type PostContentTextValue } from '@/components/posts/post-content-text'
+import { RssFeedItemTitle } from '@/components/rss-feed-items/rss-feed-item-title'
 
 type InteractionKind = 'keyboard' | 'plain' | 'modified'
 
 export type CommandItemLabel =
   | { kind: 'ui-text'; text: string }
   | { kind: 'post-content'; content: PostContentTextValue; fallback: string }
+  | {
+      kind: 'rss-item-title'
+      title: string | null
+      detectedLanguage: string | null
+      fallback: string
+    }
 
 interface CommandLinkItemProps {
   href: string
@@ -76,6 +83,13 @@ export function CommandLinkItem({
         as='span'
         className='font-medium'
         content={label.content}
+        fallback={label.fallback}
+      />
+    ) : label.kind === 'rss-item-title' ? (
+      <RssFeedItemTitle
+        className='font-medium'
+        title={label.title}
+        detectedLanguage={label.detectedLanguage}
         fallback={label.fallback}
       />
     ) : (

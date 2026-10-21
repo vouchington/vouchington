@@ -235,6 +235,11 @@ Topic card excerpts use `TopicAboutCopy`. Topics have no declared language, so t
 The topic description aside passes that detected language to `MarkdownContent`. Blank about text is
 omitted. It is not a post-content boundary.
 
+RSS item titles use `RssFeedItemTitle`. The title sets `lang` and `dir` from the item's detected
+language on the news card, the item modal, command search, and the similarity panel. A missing
+title keeps its UI fallback unmarked. `web-rss-feed-item-title-requires-language` rejects a call
+that omits `detectedLanguage`. It is not a post-content boundary.
+
 Moderation report labels retain `target_label` for system-owned fallbacks. Post/comment authored
 fragments travel separately as `target_content`; comment prefixes and deleted/private fallbacks
 stay outside the authored boundary. Inputs, ARIA interpolation, metadata/routes, image alt text,

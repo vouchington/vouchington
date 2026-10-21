@@ -53,7 +53,13 @@ vi.mock(import('../command-search/command-link-item'), () => ({
         onOpenChange(false)
       }}
     >
-      {label.kind === 'ui-text' ? label.text : label.content.text}
+      {label.kind === 'ui-text'
+        ? label.text
+        : label.kind === 'rss-item-title'
+          ? label.title?.trim()
+            ? label.title
+            : label.fallback
+          : label.content.text}
     </button>
   ),
 }))

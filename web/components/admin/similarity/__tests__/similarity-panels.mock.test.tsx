@@ -87,7 +87,7 @@ function makeNewsResponse() {
         id: NEWS_ID,
         __entity_type: 'rss_feed_item' as const,
         published_at: '2024-01-01T00:00:00Z',
-        lingua_rs_detected_language: null,
+        lingua_rs_detected_language: 'fr',
         data: { link: 'https://example.com/article', title: 'Dev Tools News', guid: 'guid-1' },
         url: { id: 'url-1', url: 'https://example.com/article' },
         rss_feed: {
@@ -158,8 +158,10 @@ describe('SimilarityPanels', () => {
   it('renders news items with external URL after fetch', async () => {
     render(<SimilarityPanels query='developer tools' />)
     await advanceAndFlush()
-    expect(screen.getByText('Dev Tools News')).toBeInTheDocument()
-    const link = screen.getByText('Dev Tools News').closest('a')
+    const title = screen.getByText('Dev Tools News')
+    expect(title).toHaveAttribute('lang', 'fr')
+    expect(title).toHaveAttribute('dir', 'ltr')
+    const link = title.closest('a')
     expect(link?.getAttribute('href')).toBe('https://example.com/article')
   })
 

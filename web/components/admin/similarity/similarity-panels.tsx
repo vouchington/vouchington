@@ -99,11 +99,11 @@ function toNewsItems(
         id: result.id,
         href: item.url.url,
         label: {
-          kind: 'ui-text',
-          text:
-            item.data.title ||
-            item.rss_feed?.title ||
-            t('extracted.similarity.similarityPanels.untitled_f59ab8d1'),
+          kind: 'rss-item-title',
+          title: item.data.title?.trim() ? item.data.title : null,
+          detectedLanguage: item.lingua_rs_detected_language ?? null,
+          fallback:
+            item.rss_feed?.title || t('extracted.similarity.similarityPanels.untitled_f59ab8d1'),
         },
       },
     ]

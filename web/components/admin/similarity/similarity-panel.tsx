@@ -4,10 +4,17 @@ import Link from 'next/link'
 import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { PostContentText, type PostContentTextValue } from '@/components/posts/post-content-text'
+import { RssFeedItemTitle } from '@/components/rss-feed-items/rss-feed-item-title'
 
 type SimilarityPanelLabel =
   | { kind: 'ui-text'; text: string }
   | { kind: 'post-content'; content: PostContentTextValue | null; fallback: string }
+  | {
+      kind: 'rss-item-title'
+      title: string | null
+      detectedLanguage: string | null
+      fallback: string
+    }
 
 export interface SimilarityPanelItem {
   id: string
@@ -69,6 +76,30 @@ export function SimilarityPanel({
                   content={item.label.content}
                   fallback={item.label.fallback}
                 />
+              ) : item.label.kind === 'rss-item-title' ? (
+                item.href ? (
+                  <Link
+                    prefetch={false}
+                    href={item.href}
+                    target='_blank'
+                    rel='noopener noreferrer'
+                    className='block text-sm text-foreground hover:underline'
+                  >
+                    <RssFeedItemTitle
+                      className='block truncate'
+                      title={item.label.title}
+                      detectedLanguage={item.label.detectedLanguage}
+                      fallback={item.label.fallback}
+                    />
+                  </Link>
+                ) : (
+                  <RssFeedItemTitle
+                    className='block truncate text-sm text-foreground'
+                    title={item.label.title}
+                    detectedLanguage={item.label.detectedLanguage}
+                    fallback={item.label.fallback}
+                  />
+                )
               ) : item.href ? (
                 <Link
                   prefetch={false}

@@ -3,19 +3,31 @@
 import { ExternalLink } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { RssFeedItemTitle } from './rss-feed-item-title'
 
 interface RssFeedItemModalHeaderProps {
   headerDetails?: ReactNode
-  title: string
+  title: string | null
+  titleFallback?: ReactNode
+  detectedLanguage?: string | null
   titleUrl?: string
 }
 
 export function RssFeedItemModalHeader({
   headerDetails,
   title,
+  titleFallback,
+  detectedLanguage = null,
   titleUrl,
 }: RssFeedItemModalHeaderProps) {
   const isSafeUrl = (url: string) => url.startsWith('https://') || url.startsWith('http://')
+  const titleText = (
+    <RssFeedItemTitle
+      title={title}
+      detectedLanguage={detectedLanguage}
+      fallback={titleFallback}
+    />
+  )
   return (
     <DialogHeader className='min-w-0 pr-8 text-left'>
       <DialogTitle
@@ -30,12 +42,12 @@ export function RssFeedItemModalHeader({
             className='inline [overflow-wrap:anywhere] hover:underline'
             data-pw='rss-feed-item-modal-title-link'
           >
-            {title}
+            {titleText}
             {' '}
             <ExternalLink className='inline-block h-4 w-4 shrink-0 align-baseline text-muted-foreground' />
           </a>
         ) : (
-          title
+          titleText
         )}
       </DialogTitle>
       {headerDetails && <div className='mt-1'>{headerDetails}</div>}

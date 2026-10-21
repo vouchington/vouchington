@@ -92,6 +92,8 @@ export async function RssFeedItemModal({
     : null
   const viewerBookmarks = response.bookmarks?.[item.id]
   const contentLanguage = item.lingua_rs_detected_language ?? undefined
+  const rawTitle = preview.title ?? item.data.title ?? null
+  const authoredTitle = rawTitle ? decodeHtmlEntities(rawTitle) : null
   const audio = selectEmbedAudio(embed, item.data)
   return (
     <RssFeedItemModalShell
@@ -99,11 +101,9 @@ export async function RssFeedItemModal({
       previousUrl={null}
       nextUrl={null}
       currentItemId={item.id}
-      title={decodeHtmlEntities(
-        preview.title ??
-          item.data.title ??
-          t('extracted.rssFeedItems.rssFeedItemModal.untitledRssItem_c750dc33'),
-      )}
+      detectedLanguage={contentLanguage ?? null}
+      title={authoredTitle}
+      titleFallback={t('extracted.rssFeedItems.rssFeedItemModal.untitledRssItem_c750dc33')}
       titleUrl={item.url.url}
       actions={
         <NewsItemActions

@@ -1,0 +1,69 @@
+id: web-rss-feed-item-title-requires-language
+language: Tsx
+severity: error
+message: >-
+  RssFeedItemTitle renders an original RSS item title beside translated UI
+  chrome. Pass detectedLanguage from the item. Pass null when that language is
+  not known yet; the component then sets dir="auto" and omits lang. A UI
+  fallback stays unmarked.
+files:
+  - web/**/*.tsx
+rule:
+  any:
+    - all:
+        - kind: jsx_self_closing_element
+        - has:
+            field: name
+            kind: identifier
+            regex: ^RssFeedItemTitle$
+        - not:
+            has:
+              stopBy: end
+              kind: jsx_attribute
+              has:
+                stopBy: end
+                kind: property_identifier
+                regex: ^detectedLanguage$
+    - all:
+        - kind: jsx_opening_element
+        - has:
+            field: name
+            kind: identifier
+            regex: ^RssFeedItemTitle$
+        - not:
+            has:
+              stopBy: end
+              kind: jsx_attribute
+              has:
+                stopBy: end
+                kind: property_identifier
+                regex: ^detectedLanguage$
+examples:
+  - code: |
+      <RssFeedItemTitle title="Bonjour" />
+    isValid: false
+    file: web/components/feed/news-item-card.tsx
+  - code: |
+      <RssFeedItemTitle title="Bonjour" detectedLanguage="fr" />
+    isValid: true
+    file: web/components/feed/news-item-card.tsx
+  - code: |
+      <RssFeedItemTitle title="Bonjour" detectedLanguage={null} />
+    isValid: true
+    file: web/components/rss-feed-items/rss-feed-item-modal-header.tsx
+  - code: |
+      <Panel body={<RssFeedItemTitle title={title} detectedLanguage={language} />} />
+    isValid: true
+    file: web/components/feed/news-item-card.tsx
+  - code: |
+      <Panel body={<RssFeedItemTitle title={title} />} />
+    isValid: false
+    file: web/components/feed/news-item-card.tsx
+  - code: |
+      <RssFeedItemTitle title="Bonjour"></RssFeedItemTitle>
+    isValid: false
+    file: web/components/command-search/command-link-item.tsx
+  - code: |
+      <RssFeedItemTitle title="Bonjour" />
+    isValid: true
+    file: backend/services/markdown/preview.tsx

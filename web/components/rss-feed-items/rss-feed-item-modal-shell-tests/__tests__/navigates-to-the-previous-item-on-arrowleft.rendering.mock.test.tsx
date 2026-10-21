@@ -80,6 +80,24 @@ describe('RssFeedItemModalShell rendering', () => {
     expect(titleLink.getAttribute('rel')).toContain('noopener')
   })
 
+  it('marks an authored modal title with the detected item language', () => {
+    render(
+      <RssFeedItemModalShell
+        {...DEFAULT_PROPS}
+        title='عنوان'
+        detectedLanguage='ar'
+        titleUrl='https://example.com/article'
+      >
+        <div>content</div>
+      </RssFeedItemModalShell>,
+    )
+
+    const title = screen.getByText('عنوان')
+    expect(title).toHaveAttribute('lang', 'ar')
+    expect(title).toHaveAttribute('dir', 'rtl')
+    expect(title.closest('a')).toHaveAttribute('data-pw', 'rss-feed-item-modal-title-link')
+  })
+
   it('renders title as plain text when titleUrl is not provided', () => {
     render(
       <RssFeedItemModalShell

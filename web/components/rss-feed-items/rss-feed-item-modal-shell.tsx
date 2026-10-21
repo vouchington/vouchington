@@ -18,10 +18,12 @@ interface RssFeedItemModalShellProps {
   children: ReactNode
   closeUrl: string
   currentItemId: string
+  detectedLanguage?: string | null
   headerDetails?: ReactNode
   nextUrl?: string | null
   previousUrl?: string | null
-  title: string
+  title: string | null
+  titleFallback?: ReactNode
   titleUrl?: string
 }
 
@@ -38,10 +40,12 @@ function RssFeedItemModalShellContent({
   children,
   closeUrl,
   currentItemId,
+  detectedLanguage,
   headerDetails,
   nextUrl,
   previousUrl,
   title,
+  titleFallback,
   titleUrl,
 }: RssFeedItemModalShellProps) {
   const t = useTranslations()
@@ -156,8 +160,10 @@ function RssFeedItemModalShellContent({
           {t('extracted.rssFeedItems.rssFeedItemModalHeader.rssItemDetail_110656e4')}
         </DialogDescription>
         <RssFeedItemModalHeader
+          detectedLanguage={detectedLanguage}
           headerDetails={headerDetails}
           title={title}
+          titleFallback={titleFallback}
           titleUrl={titleUrl}
         />
         <ScrollArea className='min-h-0 min-w-0'>{children}</ScrollArea>
