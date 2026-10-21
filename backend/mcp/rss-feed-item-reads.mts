@@ -9,6 +9,9 @@ import {
   resolveRssFeedItemsSearchParams,
 } from '@services/search-params'
 import { isUUID } from '@modules/utils'
+import { rssFeedReferenceSchema, topicReferenceSchema } from './entity-reference-schema.mts'
+import { canonicalEntityIds } from './resolve-entity-reference.mts'
+import { resolvedTopicFilters } from './resolve-topic.mts'
 import {
   findPageOrNull,
   INVALID_CURSOR_RESULT,
@@ -56,7 +59,7 @@ export const listRssFeedItemsTool: MergedToolSource<ListArgs, ListResult> = {
           minimum: 1,
           description: 'Items per page; defaults to 10 and clamps at 100.',
         },
-        rss_feed_id: { type: 'string', format: 'uuid' },
+        rss_feed_id: rssFeedReferenceSchema,
         media_type: {
           anyOf: [
             { type: 'string', enum: ['article', 'audio', 'video'] },
@@ -64,19 +67,19 @@ export const listRssFeedItemsTool: MergedToolSource<ListArgs, ListResult> = {
           ],
         },
         read: { type: 'boolean', description: 'Filter by your own read state.' },
-        category_topic: { type: 'string' },
-        category_topics: { type: 'array', items: { type: 'string' } },
+        category_topic: topicReferenceSchema,
+        category_topics: { type: 'array', items: topicReferenceSchema },
         has_related_posts: { type: 'boolean' },
         media_types: {
           type: 'array',
           items: { type: 'string', enum: ['article', 'audio', 'video'] },
         },
-        rss_feed: { type: 'string', format: 'uuid' },
-        rss_feeds: { type: 'array', items: { type: 'string', format: 'uuid' } },
+        rss_feed: rssFeedReferenceSchema,
+        rss_feeds: { type: 'array', items: rssFeedReferenceSchema },
         similar_window_days: { type: 'integer', minimum: 0, maximum: 365 },
         story_id: { type: 'string', format: 'uuid' },
-        topic: { type: 'string' },
-        topics: { type: 'array', items: { type: 'string' } },
+        topic: topicReferenceSchema,
+        topics: { type: 'array', items: topicReferenceSchema },
       },
       required: [],
     },
@@ -97,21 +100,33 @@ export const listRssFeedItemsTool: MergedToolSource<ListArgs, ListResult> = {
     (currentUser: BasicUser) =>
     async (args: ListArgs): Promise<ListResult> => {
       const page = await findPageOrNull(args.after, async () => {
-        const query = {
-          ...pagedSearchQuery(args),
-          ...(args.rss_feed_id && { rss_feed: args.rss_feed_id }),
-          ...(args.media_type && { media_type: args.media_type }),
-          ...(args.read !== undefined && { read: String(args.read) }),
-          category_topic: args.category_topic,
-          category_topics: args.category_topics,
-          has_related_posts: args.has_related_posts,
-          media_types: args.media_types,
-          rss_feed: args.rss_feed ?? args.rss_feed_id,
-          rss_feeds: args.rss_feeds,
-          similar_window_days: args.similar_window_days,
-          story_id: args.story_id,
+        const topics = await resolvedTopicFilters({
           topic: args.topic,
           topics: args.topics,
+          category_topic: args.category_topic,
+          category_topics: args.category_topics,
+        })
+        const feedReference = args.rss_feed ?? args.rss_feed_id
+        const feedRefs = [...(feedReference ? [feedReference] : []), ...(args.rss_feeds ?? [])]
+        const resolvedFeeds = feedRefs.length ? await canonicalEntityIds('rss_feed', feedRefs) : []
+        if (!topics || resolvedFeeds.some(id => !id))
+          return { results: [], page_info: EMPTY_PAGE_INFO }
+        const feedId = feedReference ? resolvedFeeds[0]! : undefined
+        const feedIds = args.rss_feeds ? resolvedFeeds.slice(feedReference ? 1 : 0) : undefined
+        const query = {
+          ...pagedSearchQuery(args),
+          ...(args.media_type && { media_type: args.media_type }),
+          ...(args.read !== undefined && { read: String(args.read) }),
+          category_topic: topics.category_topic,
+          category_topics: topics.category_topics,
+          has_related_posts: args.has_related_posts,
+          media_types: args.media_types,
+          rss_feed: feedId,
+          rss_feeds: feedIds,
+          similar_window_days: args.similar_window_days,
+          story_id: args.story_id,
+          topic: topics.topic,
+          topics: topics.topics,
         }
         const prepared = prepareRssFeedItemsSearchParams(query)
         const { shouldReturnEmpty, searchOptions } = await resolveRssFeedItemsSearchParams(prepared)

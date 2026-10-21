@@ -3,7 +3,8 @@ import {
   unrejectRssFeedItemCategory,
   assignRssFeedItemCategoryToTopic,
 } from '@services/rss-feed-items'
-import { adminInput, createAdminTool, UUID_INPUT, TEXT_INPUT } from './create-admin-tool.mts'
+import { adminInput, createAdminTool, TEXT_INPUT } from './create-admin-tool.mts'
+import { topicReferenceSchema } from '../entity-reference-schema.mts'
 import { adminRouteOutputSchema } from './output-schema.mts'
 const root = '/api/v1/rss-feed-categories'
 const rejectApi = { method: 'POST', path: `${root}/rejections` } as const
@@ -50,7 +51,7 @@ const assign = createAdminTool<{ category_text: string; topic_id: string }>({
   description: 'Assign an RSS category to an existing topic using the staff audit path.',
   scope: 'editorial:write',
   api: assignApi,
-  parameters: adminInput({ category_text: TEXT_INPUT, topic_id: UUID_INPUT }, [
+  parameters: adminInput({ category_text: TEXT_INPUT, topic_id: topicReferenceSchema }, [
     'category_text',
     'topic_id',
   ]),

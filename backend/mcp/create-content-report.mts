@@ -8,7 +8,9 @@ import {
   type ModerationReport,
 } from '@services/moderation-reports'
 import type { Tool } from '@services/openai-agents/tool-types'
+import assert from 'http-assert'
 import { getDelegatedToolAuthority } from './delegated-authority.mts'
+import { canonicalEntityId } from './resolve-entity-reference.mts'
 import { objectSchema, successSchema } from './output-schema-shapes.mts'
 import { requireActiveToolUser } from './private-user.mts'
 
@@ -49,7 +51,8 @@ const tool: Tool<Args, Result> = {
         entity_type: { type: 'string', enum: [...MODERATION_REPORT_ENTITY_TYPES] },
         entity_id: {
           type: 'string',
-          format: 'uuid',
+          description:
+            'Post or comment id or slug, user id or username, or the id of an RSS item or hostname',
         },
         reason: { type: 'string', enum: [...MODERATION_REPORT_REASONS] },
         note: { type: 'string', description: 'Optional context for the moderators.' },
@@ -81,9 +84,12 @@ const tool: Tool<Args, Result> = {
   function: currentUser => async (args, invocationContext) => {
     const user = await requireActiveToolUser(currentUser)
     const authority = getDelegatedToolAuthority(user, invocationContext)
+    const entityType = args.entity_type === 'comment' ? 'post' : args.entity_type
+    const entityId = await canonicalEntityId(entityType, args.entity_id)
+    assert(entityId, 404, 'Reportable entity not found')
     const input = parseCreateModerationReportInput({
       entityType: args.entity_type,
-      entityId: args.entity_id,
+      entityId,
       reason: args.reason,
       note: args.note,
     })

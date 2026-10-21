@@ -2,7 +2,8 @@ import { searchModeratorActions, MODERATOR_ACTION_TYPES } from '@services/modera
 import { getUserPublicByAnyCachedBatch } from '@services/entity-fetch'
 import { getModerationAnalytics } from '@services/moderation-analytics'
 import type { ModerationAnalyticsRange } from '@services/moderation-analytics/types'
-import { createAdminTool, adminInput, UUID_INPUT, PAGE_INPUT } from './create-admin-tool.mts'
+import { createAdminTool, adminInput, PAGE_INPUT } from './create-admin-tool.mts'
+import { communityReferenceSchema, userReferenceSchema } from '../entity-reference-schema.mts'
 import { adminRouteOutputSchema } from './output-schema.mts'
 
 async function getActors(actorIds: string[]) {
@@ -26,8 +27,8 @@ export const adminModerationObservabilityTools = [
     api: { method: 'GET', path: '/api/v1/admin/modlog' },
     parameters: adminInput({
       ...PAGE_INPUT,
-      community_id: UUID_INPUT,
-      actor_user_id: UUID_INPUT,
+      community_id: communityReferenceSchema,
+      actor_user_id: userReferenceSchema,
       action_type: { type: 'string', enum: MODERATOR_ACTION_TYPES },
     }),
     outputSchema: adminRouteOutputSchema({ method: 'GET', path: '/api/v1/admin/modlog' }),

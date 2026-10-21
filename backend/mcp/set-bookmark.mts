@@ -1,5 +1,6 @@
 import type { MergedToolSource } from './create-merged-tool.mts'
 import type { BasicUser } from '@services/users/types'
+import assert from 'http-assert'
 import { upsertBookmarkAction } from '@services/entity-relation-actions'
 import {
   BOOKMARK_RESULT_SCHEMA,
@@ -7,6 +8,7 @@ import {
   type BookmarkToolArgs,
 } from './bookmark-tool-support.mts'
 import { getDelegatedToolAuthority } from './delegated-authority.mts'
+import { canonicalEntityId } from './resolve-entity-reference.mts'
 import { successSchema } from './output-schema-shapes.mts'
 import { requirePrivateToolUser } from './private-user.mts'
 import type { ToolInvocationContext } from '@services/openai-agents/tool-types'
@@ -45,9 +47,11 @@ const tool: MergedToolSource<BookmarkToolArgs, SetBookmarkResult> = {
     ): Promise<SetBookmarkResult> => {
       const currentPrivateUser = await requirePrivateToolUser(currentUser)
       const authority = getDelegatedToolAuthority(currentPrivateUser, invocationContext)
+      const entityId = await canonicalEntityId(args.entity_type, args.entity_id)
+      assert(entityId, 404, 'Entity not found')
       const relation = await upsertBookmarkAction(currentPrivateUser, authority, {
         entityType: args.entity_type,
-        entityId: args.entity_id,
+        entityId,
         predicate: args.predicate,
       })
       // A bookmark upsert writes exactly one relation row.

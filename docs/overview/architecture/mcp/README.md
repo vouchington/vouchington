@@ -208,3 +208,7 @@ not verify that IERS announced an insertion, predict future insertions, or autho
 unannounced leap-second timestamps. Other accepted syntax and calendar validation remain owned
 by Ajv's full date-time format. The shared generated fixture keeps this boundary explicit without
 introducing an announcement table or a network dependency.
+
+## Entity references
+
+A tool input names a topic, post, RSS feed, community, or user with one string. Resolution tries the id, then the slug, then the exact name. A slug includes a topic alias and the slug of a merged source, and it wins over another row's name. A name matches the stored name with case folded, not an alias and not a partial string. A reference the caller cannot see resolves the same way as a reference that names nothing. Resolving many references of one entity type reads the database once. An output carries the canonical id and the slug when the entity has one. Authorization stays on the primary guard that already answers the missing row.

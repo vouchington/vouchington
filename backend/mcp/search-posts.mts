@@ -17,6 +17,8 @@ import {
   type SearchPageInfo,
 } from './paged-search.mts'
 import { resolveReadableThread } from './mcp-post-access.mts'
+import { canonicalEntityId } from './resolve-entity-reference.mts'
+import { resolvedTopicFilters } from './resolve-topic.mts'
 import { objectSchema, outcomeSchema } from './output-schema-shapes.mts'
 import { componentSchema } from './route-response-schema.mts'
 import { POST_SORTS, postSearchFilterSchemaProperties } from './search-post-input.mts'
@@ -94,6 +96,15 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     (currentUser: BasicUser) =>
     async (args: ToolArgs): Promise<ToolResult> => {
       const page = await findPageOrNull(args.after, async () => {
+        const topics = await resolvedTopicFilters({
+          topic: args.topic,
+          topics: args.topics,
+          review_topic: args.review_topic,
+          data_point_topic: args.data_point_topic,
+        })
+        const creator = args.creator ? await canonicalEntityId('user', args.creator) : undefined
+        if (!topics || (args.creator && !creator))
+          return { results: [], page_info: EMPTY_PAGE_INFO }
         const prepared = preparePostsSearchParams(
           {
             ...pagedSearchQuery(args),
@@ -102,14 +113,14 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
             ...(!args.post_types && args.post_type && { post_types: args.post_type }),
             ...(args.categories && { categories: args.categories }),
             ...(args.category && { category: args.category }),
-            ...(args.creator && { creator: args.creator }),
-            ...(args.data_point_topic && { data_point_topic: args.data_point_topic }),
+            ...(creator && { creator }),
+            ...(topics.data_point_topic && { data_point_topic: topics.data_point_topic }),
             ...(args.data_point_vertical && { data_point_vertical: args.data_point_vertical }),
-            ...(args.review_topic && { review_topic: args.review_topic }),
+            ...(topics.review_topic && { review_topic: topics.review_topic }),
             ...(args.story_id && { story_id: args.story_id }),
             ...(args.time_range && { time_range: args.time_range }),
-            ...(args.topic && { topic: args.topic }),
-            ...(args.topics && { topics: args.topics }),
+            ...(topics.topic && { topic: topics.topic }),
+            ...(topics.topics && { topics: topics.topics }),
             ...(args.url && { url: args.url }),
           },
           getPaginationLimits(25),

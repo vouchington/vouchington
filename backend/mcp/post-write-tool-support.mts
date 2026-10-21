@@ -1,14 +1,12 @@
 import contracts from '@voucha/api-fixtures/v1/request-contracts.json' with { type: 'json' }
+import { postReferenceSchema } from './entity-reference-schema.mts'
 import { inlineSchemaReferences } from './route-response-schema.mts'
 import { mcpPostSchema } from './mcp-post-output.mts'
 import { successSchema } from './output-schema-shapes.mts'
 
 export const POST_WRITE_SCOPES = ['posts:read', 'posts:write'] as const
 export const POST_WRITE_RESULT_SCHEMA = successSchema({ post: mcpPostSchema() })
-export const POST_ID_SCHEMA = {
-  type: 'string',
-  description: 'The UUID or slug of your post or comment.',
-}
+export const POST_ID_SCHEMA = postReferenceSchema
 
 /** Reuse the current REST input contract without changing or regenerating REST contracts. */
 export function postWriteParameters(

@@ -424,8 +424,7 @@
                           "type": "object",
                           "properties": {
                             "user_id": {
-                              "type": "string",
-                              "format": "uuid"
+                              "$ref": "#/$defs/S2"
                             }
                           },
                           "required": ["user_id"],
@@ -437,8 +436,7 @@
                             "user_ids": {
                               "type": "array",
                               "items": {
-                                "type": "string",
-                                "format": "uuid"
+                                "$ref": "#/$defs/S2"
                               },
                               "minItems": 1,
                               "maxItems": 25
@@ -539,11 +537,15 @@
                     },
                     "user_id": {
                       "type": "string",
-                      "format": "uuid"
+                      "description": "User id or username"
                     }
                   },
                   "required": ["conversation_id", "user_id"],
                   "additionalProperties": false
+                },
+                "S2": {
+                  "type": "string",
+                  "description": "User id or username"
                 }
               }
             },
@@ -951,7 +953,7 @@
                   "properties": {
                     "community_id": {
                       "type": "string",
-                      "description": "Community UUID or slug"
+                      "description": "Community id or slug"
                     }
                   },
                   "required": ["community_id"],
@@ -959,7 +961,7 @@
                 },
                 "S2": {
                   "type": "string",
-                  "description": "Community UUID or slug"
+                  "description": "Community id or slug"
                 }
               }
             },
@@ -2206,7 +2208,7 @@
           "tool": {
             "name": "read_topic",
             "title": "Read Topic",
-            "description": "referral_program: Get a referral program's state by topic UUID or slug, including its company and enabled or disabled time. An unknown topic returns Topic not found; a topic that is not a referral program returns Topic is not a referral program. Use get_referral_links for its links.\ncompare: Compare data point statistics side-by-side for two topics (cards, bank accounts, etc.). Useful for answering questions like \"which card has a better approval rate?\"\ndetails: Get a topic's full description, aliases and type-specific details such as a card's annual fee, issuer and brand or a rewards program's parent company. Set hierarchy for parents or children; children are paged. Use children_page_info.end_cursor as children_after for the next page.\nmetrics: Get engagement metrics for a topic: post counts by type (discussions, reviews, data points, news), follower count, and star rating distribution. Useful for gauging how active and well-reviewed a card or product is.",
+            "description": "referral_program: Get a referral program's state by topic id, slug, or exact name, including its company and enabled or disabled time. An unknown topic returns Topic not found; a topic that is not a referral program returns Topic is not a referral program. Use get_referral_links for its links.\ncompare: Compare data point statistics side-by-side for two topics (cards, bank accounts, etc.). Useful for answering questions like \"which card has a better approval rate?\"\ndetails: Get a topic's full description, aliases and type-specific details such as a card's annual fee, issuer and brand or a rewards program's parent company. Set hierarchy for parents or children; children are paged. Use children_page_info.end_cursor as children_after for the next page.\nmetrics: Get engagement metrics for a topic: post counts by type (discussions, reviews, data points, news), follower count, and star rating distribution. Useful for gauging how active and well-reviewed a card or product is.",
             "inputSchema": {
               "type": "object",
               "oneOf": [
@@ -2217,15 +2219,7 @@
                       "enum": ["referral_program"]
                     },
                     "arguments": {
-                      "type": "object",
-                      "properties": {
-                        "topic_id": {
-                          "type": "string",
-                          "description": "Referral program topic UUID or slug"
-                        }
-                      },
-                      "required": ["topic_id"],
-                      "additionalProperties": false
+                      "$ref": "#/$defs/S1"
                     }
                   },
                   "required": ["option", "arguments"],
@@ -2241,12 +2235,10 @@
                       "type": "object",
                       "properties": {
                         "topic_id_a": {
-                          "type": "string",
-                          "description": "UUID or slug of the first topic to compare"
+                          "$ref": "#/$defs/S2"
                         },
                         "topic_id_b": {
-                          "type": "string",
-                          "description": "UUID or slug of the second topic to compare"
+                          "$ref": "#/$defs/S2"
                         },
                         "vertical": {
                           "type": "string",
@@ -2270,8 +2262,7 @@
                       "type": "object",
                       "properties": {
                         "topic_id": {
-                          "type": "string",
-                          "description": "The topic UUID or slug to retrieve details for"
+                          "$ref": "#/$defs/S2"
                         },
                         "hierarchy": {
                           "type": "string",
@@ -2302,22 +2293,30 @@
                       "enum": ["metrics"]
                     },
                     "arguments": {
-                      "type": "object",
-                      "properties": {
-                        "topic_id": {
-                          "type": "string",
-                          "description": "The topic UUID or slug to retrieve metrics for"
-                        }
-                      },
-                      "required": ["topic_id"],
-                      "additionalProperties": false
+                      "$ref": "#/$defs/S1"
                     }
                   },
                   "required": ["option", "arguments"],
                   "additionalProperties": false
                 }
               ],
-              "$defs": {}
+              "$defs": {
+                "S1": {
+                  "type": "object",
+                  "properties": {
+                    "topic_id": {
+                      "type": "string",
+                      "description": "Topic id, slug, or exact name"
+                    }
+                  },
+                  "required": ["topic_id"],
+                  "additionalProperties": false
+                },
+                "S2": {
+                  "type": "string",
+                  "description": "Topic id, slug, or exact name"
+                }
+              }
             },
             "outputSchema": {
               "type": "object",
@@ -2876,7 +2875,7 @@
                           "type": "array",
                           "items": {
                             "type": "string",
-                            "format": "uuid"
+                            "description": "Topic id, slug, or exact name"
                           }
                         }
                       },
@@ -3690,7 +3689,7 @@
                           }
                         },
                         "topic": {
-                          "type": "string"
+                          "$ref": "#/$defs/S2"
                         },
                         "topic_match": {
                           "type": "string",
@@ -3699,7 +3698,7 @@
                         "topics": {
                           "type": "array",
                           "items": {
-                            "type": "string"
+                            "$ref": "#/$defs/S2"
                           }
                         },
                         "limit": {
@@ -3782,6 +3781,10 @@
                   "type": "integer",
                   "minimum": 1,
                   "description": "Defaults to 20; clamped to 100."
+                },
+                "S2": {
+                  "type": "string",
+                  "description": "Topic id, slug, or exact name"
                 }
               }
             },
@@ -4086,8 +4089,7 @@
                       "type": "object",
                       "properties": {
                         "rss_feed_id": {
-                          "type": "string",
-                          "format": "uuid"
+                          "$ref": "#/$defs/S1"
                         }
                       },
                       "required": ["rss_feed_id"],
@@ -4107,8 +4109,7 @@
                       "type": "object",
                       "properties": {
                         "rss_feed_id": {
-                          "type": "string",
-                          "format": "uuid"
+                          "$ref": "#/$defs/S1"
                         },
                         "limit": {
                           "type": "integer",
@@ -4136,8 +4137,7 @@
                       "type": "object",
                       "properties": {
                         "rss_feed_id": {
-                          "type": "string",
-                          "format": "uuid"
+                          "$ref": "#/$defs/S1"
                         },
                         "crawl_id": {
                           "type": "string",
@@ -4152,7 +4152,12 @@
                   "additionalProperties": false
                 }
               ],
-              "$defs": {}
+              "$defs": {
+                "S1": {
+                  "type": "string",
+                  "description": "RSS feed id or URL"
+                }
+              }
             },
             "outputSchema": {
               "type": "object",
@@ -4492,18 +4497,17 @@
                           "description": "Items per page; defaults to 10 and clamps at 100."
                         },
                         "rss_feed_id": {
-                          "type": "string",
-                          "format": "uuid"
+                          "$ref": "#/$defs/S3"
                         },
                         "media_type": {
                           "anyOf": [
                             {
-                              "$ref": "#/$defs/S2"
+                              "$ref": "#/$defs/S4"
                             },
                             {
                               "type": "array",
                               "items": {
-                                "$ref": "#/$defs/S2"
+                                "$ref": "#/$defs/S4"
                               }
                             }
                           ]
@@ -4513,12 +4517,12 @@
                           "description": "Filter by your own read state."
                         },
                         "category_topic": {
-                          "type": "string"
+                          "$ref": "#/$defs/S2"
                         },
                         "category_topics": {
                           "type": "array",
                           "items": {
-                            "type": "string"
+                            "$ref": "#/$defs/S2"
                           }
                         },
                         "has_related_posts": {
@@ -4527,18 +4531,16 @@
                         "media_types": {
                           "type": "array",
                           "items": {
-                            "$ref": "#/$defs/S2"
+                            "$ref": "#/$defs/S4"
                           }
                         },
                         "rss_feed": {
-                          "type": "string",
-                          "format": "uuid"
+                          "$ref": "#/$defs/S3"
                         },
                         "rss_feeds": {
                           "type": "array",
                           "items": {
-                            "type": "string",
-                            "format": "uuid"
+                            "$ref": "#/$defs/S3"
                           }
                         },
                         "similar_window_days": {
@@ -4551,12 +4553,12 @@
                           "format": "uuid"
                         },
                         "topic": {
-                          "type": "string"
+                          "$ref": "#/$defs/S2"
                         },
                         "topics": {
                           "type": "array",
                           "items": {
-                            "type": "string"
+                            "$ref": "#/$defs/S2"
                           }
                         }
                       },
@@ -4636,6 +4638,14 @@
                   "additionalProperties": false
                 },
                 "S2": {
+                  "type": "string",
+                  "description": "Topic id, slug, or exact name"
+                },
+                "S3": {
+                  "type": "string",
+                  "description": "RSS feed id or URL"
+                },
+                "S4": {
                   "type": "string",
                   "enum": ["article", "audio", "video"]
                 }
@@ -5074,7 +5084,7 @@
                 },
                 "S2": {
                   "type": "string",
-                  "description": "Community UUID or slug, ignored for follow_users as on REST."
+                  "description": "Community id or slug, ignored for follow_users as on REST."
                 },
                 "S3": {
                   "type": "array",
@@ -5309,15 +5319,7 @@
                       "enum": ["ancestors"]
                     },
                     "arguments": {
-                      "type": "object",
-                      "properties": {
-                        "post_id": {
-                          "type": "string",
-                          "description": "Post UUID or slug of the comment"
-                        }
-                      },
-                      "required": ["post_id"],
-                      "additionalProperties": false
+                      "$ref": "#/$defs/S2"
                     }
                   },
                   "required": ["option", "arguments"],
@@ -5333,7 +5335,8 @@
                       "type": "object",
                       "properties": {
                         "post_id": {
-                          "$ref": "#/$defs/S2"
+                          "type": "string",
+                          "description": "Post id or slug"
                         },
                         "limit": {
                           "type": "integer",
@@ -5359,14 +5362,7 @@
                       "enum": ["details"]
                     },
                     "arguments": {
-                      "type": "object",
-                      "properties": {
-                        "post_id": {
-                          "$ref": "#/$defs/S2"
-                        }
-                      },
-                      "required": ["post_id"],
-                      "additionalProperties": false
+                      "$ref": "#/$defs/S2"
                     }
                   },
                   "required": ["option", "arguments"],
@@ -5391,8 +5387,7 @@
                           "enum": ["discussion", "review", "data_point", "story"]
                         },
                         "topic_id": {
-                          "type": "string",
-                          "description": "Optionally filter to posts tagged with a specific topic, by UUID or slug."
+                          "$ref": "#/$defs/S1"
                         },
                         "after": {
                           "type": "string"
@@ -5465,12 +5460,12 @@
                           "description": "Sort order: new (most recent), best (highest voted), hot, relevance (search relevance; the default when searching), following_new"
                         },
                         "post_type": {
-                          "$ref": "#/$defs/S1"
+                          "$ref": "#/$defs/S3"
                         },
                         "post_types": {
                           "type": "array",
                           "items": {
-                            "$ref": "#/$defs/S1"
+                            "$ref": "#/$defs/S3"
                           }
                         },
                         "categories": {
@@ -5483,16 +5478,17 @@
                           "type": "string"
                         },
                         "creator": {
-                          "type": "string"
+                          "type": "string",
+                          "description": "User id or username"
                         },
                         "data_point_topic": {
-                          "type": "string"
+                          "$ref": "#/$defs/S1"
                         },
                         "data_point_vertical": {
                           "type": "string"
                         },
                         "review_topic": {
-                          "type": "string"
+                          "$ref": "#/$defs/S1"
                         },
                         "story_id": {
                           "type": "string",
@@ -5503,12 +5499,12 @@
                           "enum": ["1d", "1w", "1m", "1y", "all"]
                         },
                         "topic": {
-                          "type": "string"
+                          "$ref": "#/$defs/S1"
                         },
                         "topics": {
                           "type": "array",
                           "items": {
-                            "type": "string"
+                            "$ref": "#/$defs/S1"
                           }
                         },
                         "url": {
@@ -5535,6 +5531,21 @@
               "$defs": {
                 "S1": {
                   "type": "string",
+                  "description": "Topic id, slug, or exact name"
+                },
+                "S2": {
+                  "type": "object",
+                  "properties": {
+                    "post_id": {
+                      "type": "string",
+                      "description": "Post id or slug"
+                    }
+                  },
+                  "required": ["post_id"],
+                  "additionalProperties": false
+                },
+                "S3": {
+                  "type": "string",
                   "enum": [
                     "discussion",
                     "review",
@@ -5545,10 +5556,6 @@
                     "blog_post",
                     "story"
                   ]
-                },
-                "S2": {
-                  "type": "string",
-                  "description": "Post UUID or slug"
                 }
               }
             },
@@ -5980,7 +5987,7 @@
           "tool": {
             "name": "read_hostnames",
             "title": "Read Hostnames",
-            "description": "top: List hostnames with at least one positive trust vote, highest net trust first, as a signed-out reader sees them. Administratively blocked hostnames never appear. Filter by topic UUID or slug; an unknown topic gives no results.\nsearch: Search known hostnames as a signed-out reader sees them; administratively blocked ones never appear. query and hostname match part of a hostname. Results include topic_id and trust votes. Filter by topic UUID or slug. Sort by hostname (default) or net trust votes (highest first).",
+            "description": "top: List hostnames with at least one positive trust vote, highest net trust first, as a signed-out reader sees them. Administratively blocked hostnames never appear. Filter by topic id, slug, or exact name; an unknown topic gives no results.\nsearch: Search known hostnames as a signed-out reader sees them; administratively blocked ones never appear. query and hostname match part of a hostname. Results include topic_id and trust votes. Filter by topic id, slug, or exact name. Sort by hostname (default) or net trust votes (highest first).",
             "inputSchema": {
               "type": "object",
               "oneOf": [
@@ -6049,7 +6056,7 @@
                         "topics": {
                           "type": "array",
                           "items": {
-                            "type": "string"
+                            "$ref": "#/$defs/S2"
                           }
                         }
                       },
@@ -6070,7 +6077,7 @@
                 },
                 "S2": {
                   "type": "string",
-                  "description": "Only hostnames of this topic UUID or slug"
+                  "description": "Topic id, slug, or exact name"
                 }
               }
             },
@@ -6219,11 +6226,10 @@
                       "type": "object",
                       "properties": {
                         "topic_id": {
-                          "type": "string",
-                          "description": "The topic UUID or slug to aggregate data points for"
+                          "$ref": "#/$defs/S1"
                         },
                         "vertical": {
-                          "$ref": "#/$defs/S1"
+                          "$ref": "#/$defs/S2"
                         }
                       },
                       "required": ["topic_id"],
@@ -6243,11 +6249,10 @@
                       "type": "object",
                       "properties": {
                         "topic_id": {
-                          "type": "string",
-                          "description": "Filter by topic UUID or slug (e.g. a specific credit card or bank account topic)"
+                          "$ref": "#/$defs/S1"
                         },
                         "vertical": {
-                          "$ref": "#/$defs/S1"
+                          "$ref": "#/$defs/S2"
                         },
                         "result": {
                           "type": "string",
@@ -6280,6 +6285,10 @@
               ],
               "$defs": {
                 "S1": {
+                  "type": "string",
+                  "description": "Topic id, slug, or exact name"
+                },
+                "S2": {
                   "type": "string",
                   "enum": ["credit_card", "bank_account"]
                 }
@@ -6473,7 +6482,7 @@
                       "properties": {
                         "user_id": {
                           "type": "string",
-                          "description": "User UUID or username"
+                          "description": "User id or username"
                         }
                       },
                       "required": ["user_id"],
@@ -7285,7 +7294,7 @@
           "tool": {
             "name": "read_my_lists",
             "title": "Read My Lists",
-            "description": "containing: Find which of the current user's lists contain a post or RSS item; read their ids with read_my_lists (option get). Public and unlisted lists are included. Private lists require post-relations.owned-private:write consent; mcp.user:write alone does not grant it. Without consent they are hidden. Removed lists are omitted; entity_id must be a UUID.\nitems: List a readable list's posts and RSS items, newest first. Read entity_id with read_posts (option details) or read_rss_feed_item (option details). Access follows read_my_lists (option get). Unreadable posts are omitted, so a short page can still have a next page. media_type filters RSS items only.\nget: Get a list by UUID, including name, owner and visibility. Anyone with the id can read public or unlisted lists. Private lists require ownership and post-relations.owned-private:write consent; mcp.user:write alone does not grant it. Unknown, removed and inaccessible lists return List not found. Use read_my_lists (option items) for contents.\nlist: List the current user's lists, newest first. Public and unlisted lists are included. Private lists require post-relations.owned-private:write consent; mcp.user:write alone does not grant it. Without consent they are hidden. Use read_my_lists (option items) for contents.",
+            "description": "containing: Find which of the current user's lists contain a post or RSS item; read their ids with read_my_lists (option get). Public and unlisted lists are included. Private lists require post-relations.owned-private:write consent; mcp.user:write alone does not grant it. Without consent they are hidden. Removed lists are omitted.\nitems: List a readable list's posts and RSS items, newest first. Read entity_id with read_posts (option details) or read_rss_feed_item (option details). Access follows read_my_lists (option get). Unreadable posts are omitted, so a short page can still have a next page. media_type filters RSS items only.\nget: Get a list by UUID, including name, owner and visibility. Anyone with the id can read public or unlisted lists. Private lists require ownership and post-relations.owned-private:write consent; mcp.user:write alone does not grant it. Unknown, removed and inaccessible lists return List not found. Use read_my_lists (option items) for contents.\nlist: List the current user's lists, newest first. Public and unlisted lists are included. Private lists require post-relations.owned-private:write consent; mcp.user:write alone does not grant it. Without consent they are hidden. Use read_my_lists (option items) for contents.",
             "inputSchema": {
               "type": "object",
               "oneOf": [
@@ -7304,7 +7313,7 @@
                         },
                         "entity_id": {
                           "type": "string",
-                          "format": "uuid"
+                          "description": "Post id or slug, or RSS feed item id"
                         }
                       },
                       "required": ["item_type", "entity_id"],
@@ -8957,7 +8966,7 @@
                         },
                         "entity_id": {
                           "type": "string",
-                          "format": "uuid"
+                          "description": "Post id or slug, or RSS feed item id"
                         }
                       },
                       "required": ["list_id", "item_type", "entity_id"],
@@ -9363,7 +9372,7 @@
                     },
                     "entity_id": {
                       "type": "string",
-                      "format": "uuid"
+                      "description": "Entity id, or its slug, exact topic name, feed URL, or username"
                     },
                     "predicate": {
                       "type": "string",
@@ -10154,7 +10163,7 @@
                         "additionalProperties": false,
                         "properties": {
                           "topic_id": {
-                            "type": "string"
+                            "$ref": "#/$defs/S1"
                           },
                           "type": {
                             "const": "topic"
@@ -10168,7 +10177,8 @@
                   "type": "array"
                 },
                 "community_id": {
-                  "type": "string"
+                  "type": "string",
+                  "description": "Community id or slug"
                 },
                 "data_point_vertical": {
                   "type": "string"
@@ -10209,7 +10219,8 @@
                   "type": "string"
                 },
                 "parent_post_id": {
-                  "type": "string"
+                  "type": "string",
+                  "description": "Post id or slug"
                 },
                 "post_type": {
                   "type": "string",
@@ -10235,7 +10246,7 @@
                         "type": "number"
                       },
                       "topic_id": {
-                        "type": "string"
+                        "$ref": "#/$defs/S1"
                       }
                     },
                     "required": ["rating", "topic_id"],
@@ -10262,7 +10273,13 @@
                 }
               },
               "type": "object",
-              "required": ["idempotency_key"]
+              "required": ["idempotency_key"],
+              "$defs": {
+                "S1": {
+                  "type": "string",
+                  "description": "Topic id, slug, or exact name"
+                }
+              }
             },
             "outputSchema": {
               "type": "object",
@@ -10522,8 +10539,7 @@
                           "type": "string"
                         },
                         "id": {
-                          "type": "string",
-                          "description": "The UUID or slug of your post or comment."
+                          "$ref": "#/$defs/S1"
                         }
                       },
                       "type": "object",
@@ -10543,11 +10559,10 @@
                       "type": "object",
                       "properties": {
                         "id": {
-                          "type": "string"
+                          "$ref": "#/$defs/S1"
                         },
                         "topic_id": {
-                          "type": "string",
-                          "format": "uuid"
+                          "$ref": "#/$defs/S3"
                         },
                         "rating": {
                           "type": "integer",
@@ -10576,11 +10591,10 @@
                       "type": "object",
                       "properties": {
                         "id": {
-                          "type": "string"
+                          "$ref": "#/$defs/S1"
                         },
                         "topic_id": {
-                          "type": "string",
-                          "format": "uuid"
+                          "$ref": "#/$defs/S3"
                         },
                         "rating": {
                           "type": "integer",
@@ -10609,11 +10623,10 @@
                       "type": "object",
                       "properties": {
                         "id": {
-                          "type": "string"
+                          "$ref": "#/$defs/S1"
                         },
                         "topic_id": {
-                          "type": "string",
-                          "format": "uuid"
+                          "$ref": "#/$defs/S3"
                         }
                       },
                       "required": ["id", "topic_id"],
@@ -10630,14 +10643,7 @@
                       "enum": ["share"]
                     },
                     "arguments": {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string"
-                        }
-                      },
-                      "required": ["id"],
-                      "additionalProperties": false
+                      "$ref": "#/$defs/S2"
                     }
                   },
                   "required": ["option", "arguments"],
@@ -10656,7 +10662,7 @@
                           "type": "object",
                           "properties": {
                             "id": {
-                              "type": "string"
+                              "$ref": "#/$defs/S1"
                             },
                             "audience": {
                               "const": "all_followers"
@@ -10669,7 +10675,7 @@
                           "type": "object",
                           "properties": {
                             "id": {
-                              "type": "string"
+                              "$ref": "#/$defs/S1"
                             },
                             "audience": {
                               "const": "selected_followers"
@@ -10678,7 +10684,7 @@
                               "type": "array",
                               "items": {
                                 "type": "string",
-                                "format": "uuid"
+                                "description": "User id or username"
                               },
                               "minItems": 1,
                               "maxItems": 100,
@@ -10701,7 +10707,7 @@
                       "enum": ["read"]
                     },
                     "arguments": {
-                      "$ref": "#/$defs/S1"
+                      "$ref": "#/$defs/S2"
                     }
                   },
                   "required": ["option", "arguments"],
@@ -10714,7 +10720,7 @@
                       "enum": ["unread"]
                     },
                     "arguments": {
-                      "$ref": "#/$defs/S1"
+                      "$ref": "#/$defs/S2"
                     }
                   },
                   "required": ["option", "arguments"],
@@ -10723,15 +10729,22 @@
               ],
               "$defs": {
                 "S1": {
+                  "type": "string",
+                  "description": "Post id or slug"
+                },
+                "S2": {
                   "type": "object",
                   "properties": {
                     "id": {
-                      "type": "string",
-                      "format": "uuid"
+                      "$ref": "#/$defs/S1"
                     }
                   },
                   "required": ["id"],
                   "additionalProperties": false
+                },
+                "S3": {
+                  "type": "string",
+                  "description": "Topic id, slug, or exact name"
                 }
               }
             },
@@ -10975,7 +10988,7 @@
               "properties": {
                 "id": {
                   "type": "string",
-                  "description": "The UUID or slug of your post or comment."
+                  "description": "Post id or slug"
                 }
               },
               "required": ["id"],
@@ -11358,7 +11371,7 @@
                       "type": "object",
                       "properties": {
                         "id": {
-                          "$ref": "#/$defs/S5"
+                          "$ref": "#/$defs/S6"
                         },
                         "choice": {
                           "type": "string",
@@ -11390,7 +11403,7 @@
                       "type": "object",
                       "properties": {
                         "id": {
-                          "$ref": "#/$defs/S5"
+                          "$ref": "#/$defs/S6"
                         }
                       },
                       "required": ["id"],
@@ -11539,7 +11552,7 @@
                       "type": "object",
                       "properties": {
                         "id": {
-                          "$ref": "#/$defs/S6"
+                          "$ref": "#/$defs/S5"
                         },
                         "choice": {
                           "$ref": "#/$defs/S1"
@@ -11562,7 +11575,7 @@
                       "type": "object",
                       "properties": {
                         "id": {
-                          "$ref": "#/$defs/S6"
+                          "$ref": "#/$defs/S5"
                         }
                       },
                       "required": ["id"],
@@ -11590,18 +11603,15 @@
                 },
                 "S4": {
                   "type": "string",
-                  "format": "uuid",
-                  "description": "The topic ID."
+                  "description": "Topic id, slug, or exact name"
                 },
                 "S5": {
                   "type": "string",
-                  "format": "uuid",
-                  "description": "The post ID."
+                  "description": "User id or username"
                 },
                 "S6": {
                   "type": "string",
-                  "format": "uuid",
-                  "description": "The user ID."
+                  "description": "Post id or slug"
                 }
               }
             },
@@ -11835,8 +11845,8 @@
                           "$ref": "#/$defs/S1"
                         },
                         "subject_user_id": {
-                          "format": "uuid",
-                          "type": "string"
+                          "type": "string",
+                          "description": "User id or username"
                         }
                       },
                       "required": ["community_id"],
@@ -11880,7 +11890,7 @@
               "$defs": {
                 "S1": {
                   "type": "string",
-                  "description": "Community UUID or slug"
+                  "description": "Community id or slug"
                 }
               }
             },
@@ -12079,7 +12089,7 @@
               "properties": {
                 "community_id": {
                   "type": "string",
-                  "description": "Community UUID or slug"
+                  "description": "Community id or slug"
                 }
               },
               "required": ["community_id"],
@@ -12131,7 +12141,7 @@
                 },
                 "community_id": {
                   "type": "string",
-                  "description": "Community UUID or slug"
+                  "description": "Community id or slug"
                 },
                 "answers": {
                   "type": "object",
@@ -12231,7 +12241,7 @@
                 },
                 "entity_id": {
                   "type": "string",
-                  "format": "uuid"
+                  "description": "Post or comment id or slug, user id or username, or the id of an RSS item or hostname"
                 },
                 "reason": {
                   "type": "string",
@@ -12332,7 +12342,7 @@
                 },
                 "post_id": {
                   "type": "string",
-                  "format": "uuid"
+                  "description": "Post id or slug"
                 },
                 "reason": {
                   "type": "string",
@@ -12350,7 +12360,7 @@
                 },
                 "topic_id": {
                   "type": "string",
-                  "format": "uuid"
+                  "description": "Topic id, slug, or exact name"
                 }
               },
               "required": ["idempotency_key", "post_id", "reason", "claim_text"],
@@ -12800,7 +12810,7 @@
                               "type": "array",
                               "items": {
                                 "type": "string",
-                                "format": "uuid"
+                                "description": "User id or username"
                               },
                               "minItems": 1,
                               "maxItems": 100,
@@ -13384,7 +13394,8 @@
                       "type": "string"
                     },
                     "entity_id": {
-                      "type": "string"
+                      "type": "string",
+                      "description": "Subject id, or its slug, exact topic name, feed URL, or username"
                     },
                     "predicate": {
                       "type": "string"
@@ -13393,7 +13404,8 @@
                       "type": "string"
                     },
                     "object_id": {
-                      "type": "string"
+                      "type": "string",
+                      "description": "Object id, or its slug, exact topic name, feed URL, or username"
                     }
                   },
                   "required": [
@@ -13413,7 +13425,8 @@
                       "const": "add_tag"
                     },
                     "post_id": {
-                      "type": "string"
+                      "type": "string",
+                      "description": "Post id or slug"
                     },
                     "tag": {
                       "type": "string"
@@ -13513,7 +13526,7 @@
                 },
                 "post_id": {
                   "type": "string",
-                  "description": "The ID or slug of the post."
+                  "description": "Post id or slug"
                 },
                 "tag": {
                   "type": "string",
@@ -13961,8 +13974,7 @@
               "properties": {
                 "referral_program_id": {
                   "type": "string",
-                  "format": "uuid",
-                  "description": "Only links under this referral program topic UUID"
+                  "description": "Only links under this referral program topic"
                 },
                 "limit": {
                   "type": "integer",
@@ -14402,7 +14414,7 @@
                 },
                 "entity_id": {
                   "type": "string",
-                  "format": "uuid"
+                  "description": "Post id or slug, or RSS feed item id"
                 }
               },
               "required": ["list_id", "item_type", "entity_id"],
@@ -14864,8 +14876,7 @@
               "properties": {
                 "referral_program_id": {
                   "type": "string",
-                  "format": "uuid",
-                  "description": "The ID of the referral program topic the link belongs to."
+                  "description": "The referral program topic the link belongs to."
                 },
                 "url": {
                   "type": "string",
@@ -16202,7 +16213,7 @@
               "properties": {
                 "topic_id": {
                   "type": "string",
-                  "description": "The topic identifier (UUID or slug) to look up referral links for. Can be a referral program topic or any topic with a linked referral program."
+                  "description": "Topic id, slug, or exact name"
                 },
                 "all": {
                   "type": "boolean"
@@ -16507,7 +16518,7 @@
                 },
                 "card_topic_id": {
                   "type": "string",
-                  "description": "The topic UUID of the card to add (required for action=add)"
+                  "description": "The card topic (required for action=add)"
                 },
                 "opened_on": {
                   "anyOf": [
@@ -16785,7 +16796,7 @@
                 },
                 "rewards_program_id": {
                   "type": "string",
-                  "description": "The topic UUID of the rewards program (required for action=add)"
+                  "description": "The rewards program topic (required for action=add)"
                 },
                 "value_per_point": {
                   "type": "object",
@@ -16947,7 +16958,7 @@
                 },
                 "rewards_program_status_topic_id": {
                   "type": "string",
-                  "description": "The topic UUID of the rewards program status to add (required for action=add)"
+                  "description": "The rewards program status topic (required for action=add)"
                 },
                 "started_on": {
                   "type": "string",
@@ -17084,7 +17095,7 @@
                 },
                 "spending_category_topic_id": {
                   "type": "string",
-                  "description": "The topic UUID of the spending category (required for action=add)"
+                  "description": "The spending category topic (required for action=add)"
                 },
                 "amount": {
                   "type": "object",
@@ -18100,7 +18111,7 @@
               "properties": {
                 "id": {
                   "type": "string",
-                  "description": "The ID of a topic recommendation you submitted (a post ID or slug)."
+                  "description": "Post id or slug"
                 },
                 "title": {
                   "type": "string"
@@ -18431,7 +18442,7 @@
               "properties": {
                 "id": {
                   "type": "string",
-                  "description": "The ID of a topic recommendation you submitted (a post ID or slug)."
+                  "description": "Post id or slug"
                 }
               },
               "required": ["id"],
@@ -18858,8 +18869,7 @@
                   "properties": {
                     "community": {
                       "type": "string",
-                      "minLength": 1,
-                      "description": "Community UUID or slug."
+                      "description": "Community id or slug"
                     },
                     "after": {
                       "type": "string"
@@ -18875,8 +18885,7 @@
                 },
                 "S2": {
                   "type": "string",
-                  "minLength": 1,
-                  "description": "Community UUID or slug."
+                  "description": "Community id or slug"
                 },
                 "S3": {
                   "enum": [
@@ -22187,8 +22196,7 @@
                           "type": "boolean"
                         },
                         "userId": {
-                          "format": "uuid",
-                          "type": "string"
+                          "$ref": "#/$defs/S4"
                         }
                       },
                       "required": ["community", "userId", "reason"],
@@ -22202,8 +22210,7 @@
               "$defs": {
                 "S1": {
                   "type": "string",
-                  "minLength": 1,
-                  "description": "Community UUID or slug."
+                  "description": "Community id or slug"
                 },
                 "S2": {
                   "type": "object",
@@ -22213,9 +22220,7 @@
                     },
                     "postId": {
                       "type": "string",
-                      "format": "uuid",
-                      "minLength": 36,
-                      "maxLength": 36
+                      "description": "Post id or slug"
                     }
                   },
                   "required": ["community", "postId"],
@@ -22239,9 +22244,7 @@
                 },
                 "S4": {
                   "type": "string",
-                  "format": "uuid",
-                  "minLength": 36,
-                  "maxLength": 36
+                  "description": "User id or username"
                 }
               }
             },
@@ -22861,8 +22864,8 @@
                           "type": "string"
                         },
                         "assigned_moderator_user_id": {
-                          "format": "uuid",
-                          "type": "string"
+                          "type": "string",
+                          "description": "User id or username"
                         },
                         "resolved": {
                           "type": "boolean"
@@ -22914,7 +22917,7 @@
                           "$ref": "#/$defs/S1"
                         },
                         "postId": {
-                          "type": "string"
+                          "$ref": "#/$defs/S2"
                         },
                         "private_note": {
                           "type": "string"
@@ -22949,7 +22952,7 @@
                           "$ref": "#/$defs/S1"
                         },
                         "reportId": {
-                          "$ref": "#/$defs/S2"
+                          "$ref": "#/$defs/S3"
                         },
                         "status": {
                           "enum": ["reviewed", "dismissed"]
@@ -23064,10 +23067,10 @@
                           "$ref": "#/$defs/S1"
                         },
                         "post_ids": {
+                          "type": "array",
                           "items": {
-                            "type": "string"
-                          },
-                          "type": "array"
+                            "$ref": "#/$defs/S2"
+                          }
                         }
                       },
                       "required": ["community", "post_ids"],
@@ -23113,7 +23116,7 @@
                           "$ref": "#/$defs/S1"
                         },
                         "reportId": {
-                          "$ref": "#/$defs/S2"
+                          "$ref": "#/$defs/S3"
                         }
                       },
                       "required": ["community", "reportId"],
@@ -23127,10 +23130,13 @@
               "$defs": {
                 "S1": {
                   "type": "string",
-                  "minLength": 1,
-                  "description": "Community UUID or slug."
+                  "description": "Community id or slug"
                 },
                 "S2": {
+                  "type": "string",
+                  "description": "Post id or slug"
+                },
+                "S3": {
                   "type": "string",
                   "format": "uuid",
                   "minLength": 36,
@@ -23884,10 +23890,14 @@
                       "type": "object",
                       "properties": {
                         "noteId": {
-                          "$ref": "#/$defs/S3"
+                          "type": "string",
+                          "format": "uuid",
+                          "minLength": 36,
+                          "maxLength": 36
                         },
                         "userId": {
-                          "$ref": "#/$defs/S3"
+                          "type": "string",
+                          "description": "User id or username"
                         }
                       },
                       "required": ["userId", "noteId"],
@@ -23904,7 +23914,7 @@
                       "enum": ["dismiss_ban_evasion"]
                     },
                     "arguments": {
-                      "$ref": "#/$defs/S5"
+                      "$ref": "#/$defs/S2"
                     }
                   },
                   "required": ["option", "arguments"],
@@ -23917,7 +23927,7 @@
                       "enum": ["lift_ban"]
                     },
                     "arguments": {
-                      "$ref": "#/$defs/S5"
+                      "$ref": "#/$defs/S2"
                     }
                   },
                   "required": ["option", "arguments"],
@@ -23933,7 +23943,7 @@
                       "type": "object",
                       "properties": {
                         "community": {
-                          "$ref": "#/$defs/S1"
+                          "$ref": "#/$defs/S6"
                         },
                         "id": {
                           "type": "string"
@@ -23953,7 +23963,7 @@
                       "enum": ["remove_domain_from_list"]
                     },
                     "arguments": {
-                      "$ref": "#/$defs/S2"
+                      "$ref": "#/$defs/S1"
                     }
                   },
                   "required": ["option", "arguments"],
@@ -23966,7 +23976,7 @@
                       "enum": ["remove_post_from_list"]
                     },
                     "arguments": {
-                      "$ref": "#/$defs/S2"
+                      "$ref": "#/$defs/S1"
                     }
                   },
                   "required": ["option", "arguments"],
@@ -23979,7 +23989,7 @@
                       "enum": ["remove_rss_feed_from_list"]
                     },
                     "arguments": {
-                      "$ref": "#/$defs/S2"
+                      "$ref": "#/$defs/S1"
                     }
                   },
                   "required": ["option", "arguments"],
@@ -23992,7 +24002,7 @@
                       "enum": ["remove_topic_from_list"]
                     },
                     "arguments": {
-                      "$ref": "#/$defs/S2"
+                      "$ref": "#/$defs/S1"
                     }
                   },
                   "required": ["option", "arguments"],
@@ -24005,7 +24015,7 @@
                       "enum": ["remove_url_from_list"]
                     },
                     "arguments": {
-                      "$ref": "#/$defs/S2"
+                      "$ref": "#/$defs/S1"
                     }
                   },
                   "required": ["option", "arguments"],
@@ -24018,17 +24028,7 @@
                       "enum": ["remove_member"]
                     },
                     "arguments": {
-                      "type": "object",
-                      "properties": {
-                        "community": {
-                          "$ref": "#/$defs/S1"
-                        },
-                        "userId": {
-                          "type": "string"
-                        }
-                      },
-                      "required": ["community", "userId"],
-                      "additionalProperties": false
+                      "$ref": "#/$defs/S2"
                     }
                   },
                   "required": ["option", "arguments"],
@@ -24044,7 +24044,7 @@
                       "type": "object",
                       "properties": {
                         "community": {
-                          "$ref": "#/$defs/S1"
+                          "$ref": "#/$defs/S6"
                         }
                       },
                       "required": ["community"],
@@ -24061,7 +24061,7 @@
                       "enum": ["release_post_claim"]
                     },
                     "arguments": {
-                      "$ref": "#/$defs/S6"
+                      "$ref": "#/$defs/S5"
                     }
                   },
                   "required": ["option", "arguments"],
@@ -24074,7 +24074,7 @@
                       "enum": ["deescalate_post"]
                     },
                     "arguments": {
-                      "$ref": "#/$defs/S6"
+                      "$ref": "#/$defs/S5"
                     }
                   },
                   "required": ["option", "arguments"],
@@ -24087,7 +24087,7 @@
                       "enum": ["release_report_claim"]
                     },
                     "arguments": {
-                      "$ref": "#/$defs/S4"
+                      "$ref": "#/$defs/S3"
                     }
                   },
                   "required": ["option", "arguments"],
@@ -24100,7 +24100,7 @@
                       "enum": ["deescalate_report"]
                     },
                     "arguments": {
-                      "$ref": "#/$defs/S4"
+                      "$ref": "#/$defs/S3"
                     }
                   },
                   "required": ["option", "arguments"],
@@ -24113,7 +24113,7 @@
                       "enum": ["lift_restriction"]
                     },
                     "arguments": {
-                      "$ref": "#/$defs/S7"
+                      "$ref": "#/$defs/S4"
                     }
                   },
                   "required": ["option", "arguments"],
@@ -24126,7 +24126,7 @@
                       "enum": ["delete_saved_reply"]
                     },
                     "arguments": {
-                      "$ref": "#/$defs/S7"
+                      "$ref": "#/$defs/S4"
                     }
                   },
                   "required": ["option", "arguments"],
@@ -24135,15 +24135,11 @@
               ],
               "$defs": {
                 "S1": {
-                  "type": "string",
-                  "minLength": 1,
-                  "description": "Community UUID or slug."
-                },
-                "S2": {
                   "type": "object",
                   "properties": {
                     "community": {
-                      "$ref": "#/$defs/S1"
+                      "type": "string",
+                      "description": "Community id or slug"
                     },
                     "itemId": {
                       "type": "string"
@@ -24152,63 +24148,73 @@
                   "required": ["community", "itemId"],
                   "additionalProperties": false
                 },
+                "S2": {
+                  "type": "object",
+                  "properties": {
+                    "community": {
+                      "type": "string",
+                      "description": "Community id or slug"
+                    },
+                    "userId": {
+                      "type": "string",
+                      "description": "User id or username"
+                    }
+                  },
+                  "required": ["community", "userId"],
+                  "additionalProperties": false
+                },
                 "S3": {
-                  "type": "string",
-                  "format": "uuid",
-                  "minLength": 36,
-                  "maxLength": 36
+                  "type": "object",
+                  "properties": {
+                    "community": {
+                      "type": "string",
+                      "description": "Community id or slug"
+                    },
+                    "reportId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "minLength": 36,
+                      "maxLength": 36
+                    }
+                  },
+                  "required": ["community", "reportId"],
+                  "additionalProperties": false
                 },
                 "S4": {
                   "type": "object",
                   "properties": {
                     "community": {
-                      "$ref": "#/$defs/S1"
+                      "type": "string",
+                      "description": "Community id or slug"
                     },
-                    "reportId": {
-                      "$ref": "#/$defs/S3"
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "minLength": 36,
+                      "maxLength": 36
                     }
                   },
-                  "required": ["community", "reportId"],
+                  "required": ["community", "id"],
                   "additionalProperties": false
                 },
                 "S5": {
                   "type": "object",
                   "properties": {
                     "community": {
-                      "$ref": "#/$defs/S1"
-                    },
-                    "userId": {
-                      "$ref": "#/$defs/S3"
-                    }
-                  },
-                  "required": ["community", "userId"],
-                  "additionalProperties": false
-                },
-                "S6": {
-                  "type": "object",
-                  "properties": {
-                    "community": {
-                      "$ref": "#/$defs/S1"
+                      "type": "string",
+                      "description": "Community id or slug"
                     },
                     "postId": {
-                      "$ref": "#/$defs/S3"
+                      "type": "string",
+                      "description": "Post id or slug"
                     }
                   },
                   "required": ["community", "postId"],
                   "additionalProperties": false
                 },
-                "S7": {
-                  "type": "object",
-                  "properties": {
-                    "community": {
-                      "$ref": "#/$defs/S1"
-                    },
-                    "id": {
-                      "$ref": "#/$defs/S3"
-                    }
-                  },
-                  "required": ["community", "id"],
-                  "additionalProperties": false
+                "S6": {
+                  "type": "string",
+                  "description": "Community id or slug"
                 }
               }
             },
@@ -24994,7 +25000,7 @@
                 },
                 "topic_id": {
                   "type": "string",
-                  "format": "uuid"
+                  "description": "Topic id, slug, or exact name"
                 }
               },
               "required": ["category_text", "topic_id"],
@@ -25074,7 +25080,7 @@
                       "anyOf": [
                         {
                           "type": "string",
-                          "format": "uuid"
+                          "description": "Topic id, slug, or exact name"
                         },
                         {
                           "type": "null"
@@ -25425,7 +25431,7 @@
                 },
                 "referral_program_id": {
                   "type": "string",
-                  "format": "uuid"
+                  "description": "Topic id, slug, or exact name"
                 },
                 "crawler_type": {
                   "type": "string",
@@ -25885,7 +25891,7 @@
                 },
                 "user_id": {
                   "type": "string",
-                  "format": "uuid"
+                  "description": "User id or username"
                 }
               },
               "required": ["user_id"],
@@ -29175,7 +29181,7 @@
               "properties": {
                 "id": {
                   "type": "string",
-                  "format": "uuid"
+                  "description": "Post id or slug"
                 },
                 "status": {
                   "type": "string",
@@ -29232,7 +29238,7 @@
               "properties": {
                 "id": {
                   "type": "string",
-                  "format": "uuid"
+                  "description": "Post id or slug"
                 },
                 "status": {
                   "type": "string",
@@ -29960,11 +29966,11 @@
                 },
                 "community_id": {
                   "type": "string",
-                  "format": "uuid"
+                  "description": "Community id or slug"
                 },
                 "actor_user_id": {
                   "type": "string",
-                  "format": "uuid"
+                  "description": "User id or username"
                 },
                 "action_type": {
                   "type": "string",
@@ -30928,7 +30934,7 @@
                         },
                         "referral_program_id": {
                           "type": "string",
-                          "format": "uuid"
+                          "description": "Topic id, slug, or exact name"
                         }
                       },
                       "required": [],
@@ -32014,8 +32020,7 @@
                           "maximum": 100
                         },
                         "userId": {
-                          "type": "string",
-                          "format": "uuid"
+                          "$ref": "#/$defs/S1"
                         }
                       },
                       "required": ["userId"],
@@ -32035,8 +32040,7 @@
                       "type": "object",
                       "properties": {
                         "userId": {
-                          "type": "string",
-                          "format": "uuid"
+                          "$ref": "#/$defs/S1"
                         }
                       },
                       "required": ["userId"],
@@ -32056,8 +32060,7 @@
                       "type": "object",
                       "properties": {
                         "userId": {
-                          "type": "string",
-                          "format": "uuid"
+                          "$ref": "#/$defs/S1"
                         },
                         "after": {
                           "type": "string",
@@ -32077,7 +32080,12 @@
                   "additionalProperties": false
                 }
               ],
-              "$defs": {}
+              "$defs": {
+                "S1": {
+                  "type": "string",
+                  "description": "User id or username"
+                }
+              }
             },
             "outputSchema": {
               "type": "object",
@@ -32415,8 +32423,7 @@
                       "type": "object",
                       "properties": {
                         "userId": {
-                          "type": "string",
-                          "format": "uuid"
+                          "$ref": "#/$defs/S3"
                         },
                         "reason": {
                           "$ref": "#/$defs/S1"
@@ -32425,8 +32432,7 @@
                           "$ref": "#/$defs/S1"
                         },
                         "communityId": {
-                          "type": "string",
-                          "format": "uuid"
+                          "$ref": "#/$defs/S2"
                         },
                         "reportId": {
                           "type": "string",
@@ -32453,15 +32459,13 @@
                       "type": "object",
                       "properties": {
                         "userId": {
-                          "type": "string",
-                          "format": "uuid"
+                          "$ref": "#/$defs/S3"
                         },
                         "body": {
                           "$ref": "#/$defs/S1"
                         },
                         "community_id": {
-                          "type": "string",
-                          "format": "uuid"
+                          "$ref": "#/$defs/S2"
                         }
                       },
                       "required": ["userId", "body"],
@@ -32477,6 +32481,14 @@
                   "type": "string",
                   "minLength": 1,
                   "maxLength": 2000
+                },
+                "S2": {
+                  "type": "string",
+                  "description": "Community id or slug"
+                },
+                "S3": {
+                  "type": "string",
+                  "description": "User id or username"
                 }
               }
             },
@@ -32616,8 +32628,7 @@
                       "type": "object",
                       "properties": {
                         "userId": {
-                          "type": "string",
-                          "format": "uuid"
+                          "$ref": "#/$defs/S1"
                         },
                         "reason": {
                           "type": "string",
@@ -32642,8 +32653,7 @@
                       "type": "object",
                       "properties": {
                         "userId": {
-                          "type": "string",
-                          "format": "uuid"
+                          "$ref": "#/$defs/S1"
                         }
                       },
                       "required": ["userId"],
@@ -32654,7 +32664,12 @@
                   "additionalProperties": false
                 }
               ],
-              "$defs": {}
+              "$defs": {
+                "S1": {
+                  "type": "string",
+                  "description": "User id or username"
+                }
+              }
             },
             "outputSchema": {
               "additionalProperties": false,
@@ -33122,8 +33137,7 @@
                       "type": "object",
                       "properties": {
                         "userId": {
-                          "type": "string",
-                          "format": "uuid"
+                          "$ref": "#/$defs/S1"
                         },
                         "weight": {
                           "type": "number",
@@ -33148,8 +33162,7 @@
                       "type": "object",
                       "properties": {
                         "userId": {
-                          "type": "string",
-                          "format": "uuid"
+                          "$ref": "#/$defs/S1"
                         }
                       },
                       "required": ["userId"],
@@ -33160,7 +33173,12 @@
                   "additionalProperties": false
                 }
               ],
-              "$defs": {}
+              "$defs": {
+                "S1": {
+                  "type": "string",
+                  "description": "User id or username"
+                }
+              }
             },
             "outputSchema": {
               "type": "object",
@@ -33257,7 +33275,7 @@
                         },
                         "user_id": {
                           "type": "string",
-                          "format": "uuid"
+                          "description": "User id or username"
                         },
                         "source_flag_id": {
                           "type": "string",
@@ -34298,7 +34316,7 @@
                         },
                         "user_id": {
                           "type": "string",
-                          "format": "uuid"
+                          "description": "User id or username"
                         },
                         "source_flag_id": {
                           "type": "string",
@@ -44281,7 +44299,7 @@
               "properties": {
                 "accountUserId": {
                   "type": "string",
-                  "format": "uuid"
+                  "description": "User id or username"
                 },
                 "rationale": {
                   "type": "string",
@@ -44499,7 +44517,7 @@
                                   },
                                   "post_id": {
                                     "type": "string",
-                                    "format": "uuid"
+                                    "description": "Post id or slug"
                                   },
                                   "image_id": {
                                     "type": "string",
@@ -44521,7 +44539,7 @@
                                   },
                                   "user_id": {
                                     "type": "string",
-                                    "format": "uuid"
+                                    "description": "User id or username"
                                   },
                                   "image_id": {
                                     "type": "string",
@@ -44569,8 +44587,7 @@
                                     "enum": ["topic-logo-image"]
                                   },
                                   "topic_id": {
-                                    "type": "string",
-                                    "format": "uuid"
+                                    "$ref": "#/$defs/S3"
                                   },
                                   "image_id": {
                                     "type": "string",
@@ -44591,8 +44608,7 @@
                                     "enum": ["topic-hero-image"]
                                   },
                                   "topic_id": {
-                                    "type": "string",
-                                    "format": "uuid"
+                                    "$ref": "#/$defs/S3"
                                   },
                                   "image_id": {
                                     "type": "string",
@@ -44613,8 +44629,7 @@
                                     "enum": ["community-profile-image"]
                                   },
                                   "community_id": {
-                                    "type": "string",
-                                    "format": "uuid"
+                                    "$ref": "#/$defs/S4"
                                   },
                                   "image_id": {
                                     "type": "string",
@@ -44635,8 +44650,7 @@
                                     "enum": ["community-banner-image"]
                                   },
                                   "community_id": {
-                                    "type": "string",
-                                    "format": "uuid"
+                                    "$ref": "#/$defs/S4"
                                   },
                                   "image_id": {
                                     "type": "string",
@@ -44700,6 +44714,14 @@
                   "minLength": 1,
                   "pattern": "\\S",
                   "maxLength": 10000
+                },
+                "S3": {
+                  "type": "string",
+                  "description": "Topic id, slug, or exact name"
+                },
+                "S4": {
+                  "type": "string",
+                  "description": "Community id or slug"
                 }
               }
             },

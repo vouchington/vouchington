@@ -1,15 +1,13 @@
 import createHttpError from 'http-errors'
 import { getPostByAnyCached } from '@services/entity-fetch'
+import { postReferenceSchema } from './entity-reference-schema.mts'
 import { asTopicRecommendationPost } from '@services/topic-recommendations'
 import { componentSchema } from './route-response-schema.mts'
 import { successSchema } from './output-schema-shapes.mts'
 
 export type TopicRecommendationIdArgs = { id: string }
 
-export const TOPIC_RECOMMENDATION_ID_SCHEMA = {
-  type: 'string',
-  description: 'The ID of a topic recommendation you submitted (a post ID or slug).',
-}
+export const TOPIC_RECOMMENDATION_ID_SCHEMA = postReferenceSchema
 
 /**
  * The recommendation the REST routes load for `:id`. A post that is missing or is not a topic

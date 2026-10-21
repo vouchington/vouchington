@@ -4,6 +4,8 @@ import {
   updateHouseholdSpendingCategoryById,
 } from '@services/individuals-households'
 import { createManageEntityTool } from './create-manage-entity-tool.mts'
+import { topicReferenceSchema } from './entity-reference-schema.mts'
+import { entityIdOrMissing } from './resolve-entity-reference.mts'
 import { moneySchema } from '@ts-shared/data-points/json-schemas'
 import type { Money } from '@ts-shared/money'
 
@@ -12,8 +14,8 @@ export default createManageEntityTool({
   description: "Manage the current user's spending by category.",
   addProperties: {
     spending_category_topic_id: {
-      type: 'string',
-      description: 'The topic UUID of the spending category (required for action=add)',
+      ...topicReferenceSchema,
+      description: 'The spending category topic (required for action=add)',
     },
     amount: {
       ...moneySchema,
@@ -33,12 +35,17 @@ export default createManageEntityTool({
       type: 'string',
     },
   },
-  addFn: (user, args) =>
-    createHouseholdSpendingCategory(user, user, args.spending_category_topic_id as string, {
-      amount: args.amount as Money,
-      spending_frequency: args.spending_frequency as 'monthly' | 'annually' | undefined,
-      note: args.note as string | undefined,
-    }),
+  addFn: async (user, args) =>
+    createHouseholdSpendingCategory(
+      user,
+      user,
+      await entityIdOrMissing('topic', args.spending_category_topic_id as string),
+      {
+        amount: args.amount as Money,
+        spending_frequency: args.spending_frequency as 'monthly' | 'annually' | undefined,
+        note: args.note as string | undefined,
+      },
+    ),
   updateFn: (user, args) =>
     updateHouseholdSpendingCategoryById(user, user, args.id, {
       amount: args.amount as Money | undefined,

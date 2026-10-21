@@ -8,6 +8,13 @@ import {
 } from '@services/copyright-notices/moderator-http-input'
 import { validateCopyrightMcpConstructedRequest } from '@services/copyright-notices/copyright-mcp-write-validation'
 import { UUID_INPUT } from './create-admin-tool.mts'
+import {
+  communityReferenceSchema,
+  postReferenceSchema,
+  topicReferenceSchema,
+  userReferenceSchema,
+} from '../entity-reference-schema.mts'
+import { canonicalEntityIds, MISSING_REFERENCE_ID } from '../resolve-entity-reference.mts'
 
 export const APPROVE_COPYRIGHT_EMAIL_INTAKE_PATH = '/api/v1/copyright-email-intakes/:id/approvals'
 
@@ -33,12 +40,20 @@ const TARGET_OWNER_FIELDS = {
   'community-banner-image': 'community_id',
 } as const
 
+const TARGET_OWNER_SCHEMA = {
+  post_id: postReferenceSchema,
+  user_id: userReferenceSchema,
+  user_profile_link_id: UUID_INPUT,
+  topic_id: topicReferenceSchema,
+  community_id: communityReferenceSchema,
+} as const
+
 const TARGET_INPUT = {
   anyOf: Object.entries(TARGET_OWNER_FIELDS).map(([surface, owner]) => ({
     type: 'object',
     properties: {
       surface: { type: 'string', enum: [surface] },
-      [owner]: UUID_INPUT,
+      [owner]: TARGET_OWNER_SCHEMA[owner],
       image_id: UUID_INPUT,
       target_url: text(2048),
     },
@@ -91,12 +106,43 @@ export type ApproveCopyrightEmailIntakeArgs = {
  * Runs the REST approval steps in the REST order (kill switch, field parsers, request contract) and
  * then the shared decision both surfaces call, so a caller's values win exactly as they do on REST.
  */
-export function approveCopyrightEmailIntakeFromToolArgs(
+export async function approveCopyrightEmailIntakeFromToolArgs(
   currentUser: PrivateUser,
   args: ApproveCopyrightEmailIntakeArgs,
 ) {
   assertCopyrightIntakeEnabled()
-  const { intake_id: intakeId, ...body } = args
+  const targets = args.targets.map(target => ({ ...target }))
+  const groups = new Map<string, Array<{ index: number; field: string }>>()
+  for (const [index, target] of targets.entries()) {
+    const field = TARGET_OWNER_FIELDS[target.surface as keyof typeof TARGET_OWNER_FIELDS]
+    const entityType =
+      field === 'post_id'
+        ? 'post'
+        : field === 'user_id'
+          ? 'user'
+          : field === 'topic_id'
+            ? 'topic'
+            : field === 'community_id'
+              ? 'community'
+              : null
+    if (!entityType) continue
+    const rows = groups.get(entityType) ?? []
+    rows.push({ index, field })
+    groups.set(entityType, rows)
+  }
+  await Promise.all(
+    [...groups].map(async ([entityType, rows]) => {
+      // no-mistakes-disable-next-line query-reached-per-item: one lookup statement per entity type
+      const ids = await canonicalEntityIds(
+        entityType,
+        rows.map(row => targets[row.index]![row.field]!),
+      )
+      for (const [offset, row] of rows.entries()) {
+        targets[row.index]![row.field] = ids[offset] ?? MISSING_REFERENCE_ID
+      }
+    }),
+  )
+  const { intake_id: intakeId, ...body } = { ...args, targets }
   const input = parseCopyrightNoticeForm(body)
   const recommendationId = parseCopyrightRecommendationId(body)
   const manualFallbackReason = parseCopyrightManualFallbackReason(body)

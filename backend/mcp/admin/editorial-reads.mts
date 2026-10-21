@@ -13,6 +13,7 @@ import { getLandingPageAnalyticsByPageId } from '@services/landing-page-analytic
 import { getSignupCountByReferrerId } from '@services/attribution'
 import { createPaginationParser } from '@modules/pagination'
 import { adminInput, createAdminTool, PAGE_INPUT, UUID_INPUT } from './create-admin-tool.mts'
+import { userReferenceSchema } from '../entity-reference-schema.mts'
 import { adminRouteOutputSchema } from './output-schema.mts'
 
 const categoriesApi = { method: 'GET', path: '/api/v1/rss-feed-categories' } as const
@@ -81,7 +82,7 @@ const pages = createAdminTool<{ user_id: string; after?: string; limit?: number 
   description: 'Read a bounded page of a user’s landing pages.',
   scope: 'editorial:read',
   api: pagesApi,
-  parameters: adminInput({ ...PAGE_INPUT, user_id: UUID_INPUT }, ['user_id']),
+  parameters: adminInput({ ...PAGE_INPUT, user_id: userReferenceSchema }, ['user_id']),
   outputSchema: adminRouteOutputSchema(pagesApi),
   annotations: { readOnlyHint: true, openWorldHint: false },
   run: async (_, args) => {

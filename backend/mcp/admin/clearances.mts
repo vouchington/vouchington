@@ -5,7 +5,9 @@ import {
   parseStaffClearanceDecision,
   type StaffClearanceDecision,
 } from '@services/post-clearance/parse-staff-decision'
-import { createAdminTool, adminInput, UUID_INPUT, PAGE_INPUT } from './create-admin-tool.mts'
+import { createAdminTool, adminInput, PAGE_INPUT } from './create-admin-tool.mts'
+import { postReferenceSchema } from '../entity-reference-schema.mts'
+import { entityIdOrMissing } from '../resolve-entity-reference.mts'
 import { adminRouteOutputSchema } from './output-schema.mts'
 
 const mutationEndpoint = { method: 'POST', path: '/api/v1/posts/:idOrSlug/clearances' } as const
@@ -21,7 +23,7 @@ function clearanceTool(
     api: mutationEndpoint,
     parameters: adminInput(
       {
-        id: UUID_INPUT,
+        id: postReferenceSchema,
         status: { type: 'string', enum: statuses },
         reason_code: { type: 'string', pattern: '^[a-z][a-z0-9_]{0,99}$' },
         private_note: { type: 'string', maxLength: 4000 },
@@ -36,8 +38,9 @@ function clearanceTool(
       openWorldHint: false,
     },
     run: async (user, args) => {
-      const body = parseStaffClearanceDecision(args)
-      const post = await getPostByAnyCached(args.id)
+      const id = await entityIdOrMissing('post', args.id)
+      const body = parseStaffClearanceDecision({ ...args, id })
+      const post = await getPostByAnyCached(id)
       assert(post && !post.deleted_at, 404, 'Post not found')
       await updateClearanceStatus(post.id, body.status, user.id, 'agent', {
         reasonCode: body.reason_code,

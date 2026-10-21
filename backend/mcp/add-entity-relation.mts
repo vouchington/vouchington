@@ -1,6 +1,11 @@
 import createHttpError from 'http-errors'
 import type { BasicUser } from '@services/users/types'
 import { createEntityRelationAction } from '@services/entity-relation-actions'
+import {
+  canonicalEntityIds,
+  entityIdOrMissing,
+  MISSING_REFERENCE_ID,
+} from './resolve-entity-reference.mts'
 import { addPostHashtag } from '@services/posts'
 import { getDelegatedToolAuthority } from './delegated-authority.mts'
 import { requirePrivateToolUser } from './private-user.mts'
@@ -74,10 +79,16 @@ const tool: Tool<AddEntityRelationArgs, AddEntityRelationResult> = {
           properties: {
             action: { const: 'add_relation' },
             entity_type: { type: 'string' },
-            entity_id: { type: 'string' },
+            entity_id: {
+              type: 'string',
+              description: 'Subject id, or its slug, exact topic name, feed URL, or username',
+            },
             predicate: { type: 'string' },
             object_type: { type: 'string' },
-            object_id: { type: 'string' },
+            object_id: {
+              type: 'string',
+              description: 'Object id, or its slug, exact topic name, feed URL, or username',
+            },
           },
           required: ['action', 'entity_type', 'entity_id', 'predicate', 'object_type', 'object_id'],
           additionalProperties: false,
@@ -86,7 +97,7 @@ const tool: Tool<AddEntityRelationArgs, AddEntityRelationResult> = {
           type: 'object',
           properties: {
             action: { const: 'add_tag' },
-            post_id: { type: 'string' },
+            post_id: { type: 'string', description: 'Post id or slug' },
             tag: { type: 'string' },
           },
           required: ['action', 'post_id', 'tag'],
@@ -115,17 +126,31 @@ const tool: Tool<AddEntityRelationArgs, AddEntityRelationResult> = {
       const currentPrivateUser = await requirePrivateToolUser(currentUser)
       const authority = getDelegatedToolAuthority(currentPrivateUser, invocationContext)
       if (args.action === 'add_tag') {
-        return addPostHashtag(currentPrivateUser, args.post_id, args.tag, authority)
+        return addPostHashtag(
+          currentPrivateUser,
+          await entityIdOrMissing('post', args.post_id),
+          args.tag,
+          authority,
+        )
       }
+      const [entityId, objectId] =
+        args.entity_type === args.object_type
+          ? (await canonicalEntityIds(args.entity_type, [args.entity_id, args.object_id])).map(
+              id => id ?? MISSING_REFERENCE_ID,
+            )
+          : await Promise.all([
+              entityIdOrMissing(args.entity_type, args.entity_id),
+              entityIdOrMissing(args.object_type, args.object_id),
+            ])
       const { relation, metadata } = await createEntityRelationAction(
         currentPrivateUser,
         authority,
         {
           entityType: args.entity_type,
-          entityId: args.entity_id,
+          entityId: entityId!,
           predicate: args.predicate,
           objectType: args.object_type,
-          objectId: args.object_id,
+          objectId: objectId!,
         },
       )
       if (!relation.subject_id)

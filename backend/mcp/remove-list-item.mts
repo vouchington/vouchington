@@ -1,5 +1,6 @@
 import type { MergedToolSource } from './create-merged-tool.mts'
 import { removeListItem } from '@services/lists'
+import assert from 'http-assert'
 import type { BasicUser } from '@services/users/types'
 import {
   getListWriteContext,
@@ -9,6 +10,7 @@ import {
 } from './list-tool-support.mts'
 import type { ToolApiEndpoint } from '@services/openai-agents/tool-types'
 import { selectApiByArgument } from './select-api-by-argument.mts'
+import { canonicalEntityId } from './resolve-entity-reference.mts'
 
 const ENDPOINTS: Record<string, ToolApiEndpoint> = {
   post: { method: 'DELETE', path: '/api/v1/lists/:id/items/posts/:entityId' },
@@ -33,7 +35,10 @@ const tool: MergedToolSource<ListItemToolArgs, { success: true }> = {
   },
   function: (currentUser: BasicUser) => async (args: ListItemToolArgs) => {
     const { list } = await getListWriteContext(currentUser, args.list_id)
-    await removeListItem(list.id, args.item_type, args.entity_id)
+    const entityType = args.item_type === 'post' ? 'post' : 'rss_feed_item'
+    const entityId = await canonicalEntityId(entityType, args.entity_id)
+    assert(entityId, 404, 'List item not found')
+    await removeListItem(list.id, args.item_type, entityId)
     return { success: true }
   },
 }

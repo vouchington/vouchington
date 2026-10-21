@@ -4,9 +4,11 @@ import {
   assertListableRssFeedItemId,
   type ListItem,
 } from '@services/lists'
+import assert from 'http-assert'
 import { entityRelationViewerFor } from '@services/users'
 import type { BasicUser } from '@services/users/types'
 import { getDelegatedToolAuthority } from './delegated-authority.mts'
+import { canonicalEntityId } from './resolve-entity-reference.mts'
 import {
   getListWriteContext,
   LIST_ITEM_PARAMETERS,
@@ -49,14 +51,17 @@ const tool: Tool<ListItemToolArgs, { success: true; list_item: ListItem }> = {
     async (args: ListItemToolArgs, invocationContext?: ToolInvocationContext) => {
       const { user, list } = await getListWriteContext(currentUser, args.list_id)
       const authority = getDelegatedToolAuthority(user, invocationContext)
+      const entityType = args.item_type === 'post' ? 'post' : 'rss_feed_item'
+      const entityId = await canonicalEntityId(entityType, args.entity_id)
+      assert(entityId, 404, 'Not found')
       if (args.item_type === 'post') {
-        await assertListablePostId(entityRelationViewerFor(user), authority, args.entity_id)
+        await assertListablePostId(entityRelationViewerFor(user), authority, entityId)
       } else {
-        await assertListableRssFeedItemId(args.entity_id)
+        await assertListableRssFeedItemId(entityId)
       }
       return {
         success: true,
-        list_item: await addListItem(list.id, args.item_type, args.entity_id),
+        list_item: await addListItem(list.id, args.item_type, entityId),
       }
     },
 }

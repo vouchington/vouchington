@@ -8,6 +8,7 @@ import {
   CREDIT_CARD_RESULTS,
 } from '@ts-shared/data-points'
 import { resolveTopic } from './resolve-topic.mts'
+import { topicReferenceSchema } from './entity-reference-schema.mts'
 import { nullable, objectSchema, outcomeSchema } from './output-schema-shapes.mts'
 
 const VERTICALS = DATA_POINT_VERTICALS.map(o => o.value)
@@ -44,11 +45,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     parameters: {
       type: 'object',
       properties: {
-        topic_id: {
-          type: 'string',
-          description:
-            'Filter by topic UUID or slug (e.g. a specific credit card or bank account topic)',
-        },
+        topic_id: topicReferenceSchema,
         vertical: {
           type: 'string',
           enum: VERTICALS,

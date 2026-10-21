@@ -13,6 +13,12 @@ import { rssFeedItemVoteOptions } from '@services/rss-feed-items/vote-handler-op
 import { hostnameVoteOptions } from '@services/elections-votes/hostname/vote-handler-options'
 import { userVouchVoteOptions } from '@services/elections-votes/user-vouch/vote-handler-options'
 import { createMergedTool, type MergedToolSource } from './create-merged-tool.mts'
+import {
+  topicReferenceSchema,
+  postReferenceSchema,
+  userReferenceSchema,
+} from './entity-reference-schema.mts'
+import { canonicalEntityId } from './resolve-entity-reference.mts'
 import { getDelegatedToolAuthority } from './delegated-authority.mts'
 import { successSchema } from './output-schema-shapes.mts'
 import { requirePrivateToolUser } from './private-user.mts'
@@ -52,11 +58,18 @@ function voteSource(
       parameters: {
         type: 'object',
         properties: {
-          id: {
-            type: 'string',
-            format: 'uuid',
-            description: entity === 'user_vouch' ? 'The user ID.' : `The ${label} ID.`,
-          },
+          id:
+            entity === 'post'
+              ? postReferenceSchema
+              : entity === 'topic'
+                ? topicReferenceSchema
+                : entity === 'user_vouch'
+                  ? userReferenceSchema
+                  : {
+                      type: 'string',
+                      format: 'uuid',
+                      description: `The ${label} ID.`,
+                    },
           ...(isClear ? {} : { choice: { type: 'string', enum: choices } }),
         },
         required: isClear ? ['id'] : ['id', 'choice'],
@@ -77,9 +90,12 @@ function voteSource(
       async (args: VoteArgs | ClearArgs, invocationContext?: ToolInvocationContext) => {
         const user = await requirePrivateToolUser(currentUser)
         getDelegatedToolAuthority(user, invocationContext)
+        const entityType = entity === 'user_vouch' ? 'user' : entity
+        const entityId = await canonicalEntityId(entityType, args.id)
+        assert(entityId, 404, 'Not found')
         await applyVoteMutation(options, {
           currentUser: user,
-          entityId: args.id,
+          entityId,
           isClear,
           accessContext,
           // The MCP dispatcher charges the selected REST route from meta.api before invocation.

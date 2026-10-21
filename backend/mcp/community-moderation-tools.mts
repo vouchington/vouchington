@@ -4,8 +4,14 @@ import { createMergedTool } from './create-merged-tool.mts'
 import { requireActiveToolUser, requirePrivateToolUser } from './private-user.mts'
 import { findSchemaViolation } from './schema-validator.mts'
 import {
+  resolveReferenceFields,
+  canonicalEntityIds,
+  MISSING_REFERENCE_ID,
+} from './resolve-entity-reference.mts'
+import {
   communityModerationInput,
   communityModerationOutput,
+  type CommunityModerationArgs,
   type CommunityModerationHandler,
 } from './community-moderation-contract.mts'
 import { communityModerationOutputSchema } from './community-moderation-output-schemas.mts'
@@ -17,6 +23,27 @@ import { communityModerationListWrites } from './community-moderation-list-write
 import { communityModerationQueueWrites } from './community-moderation-queue-writes.mts'
 import { communityModerationOtherWrites } from './community-moderation-other-writes.mts'
 import { communityModerationUpdates } from './community-moderation-updates.mts'
+
+const REFERENCE_FIELDS = {
+  community: 'community',
+  userId: 'user',
+  user_id: 'user',
+  assigned_moderator_user_id: 'user',
+  postId: 'post',
+} as const
+
+async function resolveModerationReferences(args: unknown): Promise<CommunityModerationArgs> {
+  const next = { ...(args as Record<string, unknown>) }
+  await resolveReferenceFields(next, REFERENCE_FIELDS)
+  if (Array.isArray(next.post_ids)) {
+    const ids = await canonicalEntityIds(
+      'post',
+      next.post_ids.filter((id): id is string => typeof id === 'string'),
+    )
+    next.post_ids = ids.map(id => id ?? MISSING_REFERENCE_ID)
+  }
+  return next as CommunityModerationArgs
+}
 
 const handlers: Record<string, CommunityModerationHandler> = {
   ...communityModerationReadLists,
@@ -72,7 +99,7 @@ export const communityModerationGroups = definitions.map(definition => ({
             const violation = findSchemaViolation(parameters, args)
             if (violation) throw new Error(`Invalid community moderation arguments: ${violation}`)
             return communityModerationOutput(
-              await handler(user, args as Parameters<CommunityModerationHandler>[1]),
+              await handler(user, await resolveModerationReferences(args)),
             )
           },
         },

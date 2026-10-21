@@ -4,6 +4,8 @@ import {
   updateIndividualRewardsProgramStatusById,
 } from '@services/individuals-households'
 import { createManageEntityTool } from './create-manage-entity-tool.mts'
+import { topicReferenceSchema } from './entity-reference-schema.mts'
+import { entityIdOrMissing } from './resolve-entity-reference.mts'
 
 export default createManageEntityTool<
   { rewards_program_status_topic_id: string },
@@ -14,8 +16,8 @@ export default createManageEntityTool<
     "Manage the current user's loyalty tier / rewards program statuses (e.g. Gold, Platinum).",
   addProperties: {
     rewards_program_status_topic_id: {
-      type: 'string',
-      description: 'The topic UUID of the rewards program status to add (required for action=add)',
+      ...topicReferenceSchema,
+      description: 'The rewards program status topic (required for action=add)',
     },
   },
   updateProperties: {
@@ -28,11 +30,11 @@ export default createManageEntityTool<
       description: 'Date the status ends in YYYY-MM-DD format',
     },
   },
-  addFn: (user, args) =>
+  addFn: async (user, args) =>
     createIndividualRewardsProgramStatus(
       user,
       user,
-      args.rewards_program_status_topic_id as string,
+      await entityIdOrMissing('topic', args.rewards_program_status_topic_id as string),
     ),
   updateFn: (user, args) =>
     updateIndividualRewardsProgramStatusById(user, user, args.id, {

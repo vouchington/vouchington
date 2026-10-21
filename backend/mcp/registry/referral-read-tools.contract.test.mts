@@ -195,10 +195,10 @@ describe('get_my_referral_links — real DB', () => {
     expect(String(page.results[0]!['label'])).not.toContain('previous instructions')
   })
 
-  it('refuses a referral_program_id that is not a UUID, before the database', async () => {
+  it('returns no links when the referral program reference names nothing', async () => {
     const result = await getMyReferralLinksTool.function(owner)({ referral_program_id: 'nope' })
 
-    expect(result).toEqual({ success: false, error: 'Invalid referral_program_id' })
+    expect(result).toMatchObject({ success: true, results: [] })
     expect(
       await callRejectedMcpTool(owner, 'get_my_referral_links', { limit: 0 }, [
         'referral-links:read',

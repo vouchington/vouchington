@@ -1,7 +1,8 @@
 import type { MergedToolSource } from './create-merged-tool.mts'
 import type { BasicUser } from '@services/users/types'
 import { attachTopicProvenance } from '@services/content-provenance'
-import { getTopicByAny } from '@services/topics/get'
+import { resolveTopic } from './resolve-topic.mts'
+import { topicReferenceSchema } from './entity-reference-schema.mts'
 import { getCardAttributes } from '@services/topics/cards'
 import { getRewardsProgramAttributes } from '@services/topics/rewards-programs'
 import { getTopicsByAnyBatch } from '@services/topics/get-batch'
@@ -80,10 +81,7 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     parameters: {
       type: 'object',
       properties: {
-        topic_id: {
-          type: 'string',
-          description: 'The topic UUID or slug to retrieve details for',
-        },
+        topic_id: topicReferenceSchema,
         ...HIERARCHY_ARGUMENT_PROPERTIES,
       },
       required: ['topic_id'],
@@ -100,7 +98,9 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
   function:
     (_currentUser: BasicUser) =>
     async (args: ToolArgs): Promise<ToolResult> => {
-      const [topic] = await attachTopicProvenance([await getTopicByAny(args.topic_id)], null)
+      const resolved = await resolveTopic(args.topic_id)
+      if (!resolved) return { success: false, error: 'Topic not found' }
+      const [topic] = await attachTopicProvenance([resolved], null)
 
       if (!topic) {
         return { success: false, error: 'Topic not found' }

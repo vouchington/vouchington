@@ -1,5 +1,6 @@
 import { getManageableList, type ListItemType, type ListVisibility } from '@services/lists'
 import type { BasicUser } from '@services/users/types'
+import { postReferenceSchema } from './entity-reference-schema.mts'
 import { successSchema } from './output-schema-shapes.mts'
 import { requireActiveToolUser } from './private-user.mts'
 import { closedObject, omitProperties } from './read-tool-output-schema.mts'
@@ -54,7 +55,10 @@ export const LIST_ITEM_PARAMETERS = {
       type: 'string',
       enum: ['post', 'rss_feed_item'],
     },
-    entity_id: { type: 'string', format: 'uuid' },
+    entity_id: {
+      ...postReferenceSchema,
+      description: 'Post id or slug, or RSS feed item id',
+    },
   },
   required: ['list_id', 'item_type', 'entity_id'],
   additionalProperties: false,

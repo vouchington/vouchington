@@ -1,7 +1,8 @@
 import { suspendUser, unsuspendUser } from '@services/users'
 import { adminSetVoteWeight, adminClearVoteWeight } from '@services/vote-weight/admin-set'
 import { enqueueRecalculateUserVoteWeight } from '@queues/vote-aggregation/enqueues/vote-weight'
-import { createAdminTool, adminInput, UUID_INPUT, TEXT_INPUT } from './create-admin-tool.mts'
+import { createAdminTool, adminInput, TEXT_INPUT } from './create-admin-tool.mts'
+import { userReferenceSchema } from '../entity-reference-schema.mts'
 import { adminRouteOutputSchema } from './output-schema.mts'
 
 const successSchema = {
@@ -17,7 +18,7 @@ export const adminAccountControlTools = [
       'Suspend an account. Self, staff (administrator or moderator) and platform account targets are refused; a platform account is any account whose account_type is not null (official, system or ai_agent).',
     scope: 'account-enforcement:suspend',
     api: { method: 'PUT', path: '/api/v1/users/:userId/suspension' },
-    parameters: adminInput({ userId: UUID_INPUT, reason: TEXT_INPUT }, ['userId']),
+    parameters: adminInput({ userId: userReferenceSchema, reason: TEXT_INPUT }, ['userId']),
     outputSchema: adminRouteOutputSchema({
       method: 'PUT',
       path: '/api/v1/users/:userId/suspension',
@@ -37,7 +38,7 @@ export const adminAccountControlTools = [
     description: 'Lift an active suspension unless a copyright termination remains in effect.',
     scope: 'account-enforcement:suspend',
     api: { method: 'DELETE', path: '/api/v1/users/:userId/suspension' },
-    parameters: adminInput({ userId: UUID_INPUT }, ['userId']),
+    parameters: adminInput({ userId: userReferenceSchema }, ['userId']),
     outputSchema: adminRouteOutputSchema({
       method: 'DELETE',
       path: '/api/v1/users/:userId/suspension',
@@ -56,7 +57,7 @@ export const adminAccountControlTools = [
     scope: 'account-enforcement:vote-weight',
     api: { method: 'PUT', path: '/api/v1/users/:userId/vote-weight' },
     parameters: adminInput(
-      { userId: UUID_INPUT, weight: { type: 'number', minimum: 0, maximum: 1000000 } },
+      { userId: userReferenceSchema, weight: { type: 'number', minimum: 0, maximum: 1000000 } },
       ['userId', 'weight'],
     ),
     outputSchema: successSchema,
@@ -76,7 +77,7 @@ export const adminAccountControlTools = [
     description: 'Clear an existing account override and recalculate its vote weight.',
     scope: 'account-enforcement:vote-weight',
     api: { method: 'DELETE', path: '/api/v1/users/:userId/vote-weight' },
-    parameters: adminInput({ userId: UUID_INPUT }, ['userId']),
+    parameters: adminInput({ userId: userReferenceSchema }, ['userId']),
     outputSchema: successSchema,
     annotations: {
       readOnlyHint: false,

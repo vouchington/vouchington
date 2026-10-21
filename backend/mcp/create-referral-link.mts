@@ -5,6 +5,8 @@ import {
   type UserReferralLink,
 } from '@services/user-referral-program-links'
 import { requireActiveToolUser } from './private-user.mts'
+import { entityIdOrMissing } from './resolve-entity-reference.mts'
+import { topicReferenceSchema } from './entity-reference-schema.mts'
 import { REFERRAL_LINK_RESULT_SCHEMA } from './referral-link-tool-support.mts'
 import type { Tool } from '@services/openai-agents/tool-types'
 
@@ -24,9 +26,8 @@ const tool: Tool<CreateReferralLinkArgs, { success: true; referral_link: UserRef
       type: 'object',
       properties: {
         referral_program_id: {
-          type: 'string',
-          format: 'uuid',
-          description: 'The ID of the referral program topic the link belongs to.',
+          ...topicReferenceSchema,
+          description: 'The referral program topic the link belongs to.',
         },
         url: { type: 'string', minLength: 1 },
         label: {
@@ -49,10 +50,13 @@ const tool: Tool<CreateReferralLinkArgs, { success: true; referral_link: UserRef
     outputSchema: REFERRAL_LINK_RESULT_SCHEMA,
   },
   function: (currentUser: BasicUser) => async (args: CreateReferralLinkArgs) => {
-    const user = await requireActiveToolUser(currentUser)
+    const [user, programId] = await Promise.all([
+      requireActiveToolUser(currentUser),
+      entityIdOrMissing('topic', args.referral_program_id),
+    ])
     const referral_link = await createUserReferralLink(user, getRequestContentProvenance(), {
       user_id: user.id,
-      referral_program_id: args.referral_program_id,
+      referral_program_id: programId,
       url: args.url,
       label: args.label,
     })

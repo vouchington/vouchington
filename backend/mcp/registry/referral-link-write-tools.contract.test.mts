@@ -260,7 +260,7 @@ describe('referral link write tools contract — real DB', () => {
   const validCreate = { referral_program_id: crypto.randomUUID(), url: 'https://e.com/' }
   it.each([
     ['create_referral_link', {}],
-    ['create_referral_link', { referral_program_id: 'nope', url: 'https://example.com/x' }],
+    ['create_referral_link', { referral_program_id: 1, url: 'https://example.com/x' }],
     ['create_referral_link', { referral_program_id: crypto.randomUUID(), url: '' }],
     ['create_referral_link', { ...validCreate, x: 1 }],
     ['create_referral_link', { ...validCreate, user_id: crypto.randomUUID() }],

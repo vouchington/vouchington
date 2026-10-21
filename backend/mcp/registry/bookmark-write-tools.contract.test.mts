@@ -170,7 +170,6 @@ describe('manage_bookmark.set and manage_bookmark.remove contract — real DB', 
   })
 
   it.each([
-    ['a malformed ID', { entity_type: 'topic', entity_id: 'nope', predicate: 'follow' }],
     [
       'a REST-only predicate',
       { entity_type: 'topic', entity_id: crypto.randomUUID(), predicate: 'hide' },
@@ -209,6 +208,9 @@ describe('manage_bookmark.set and manage_bookmark.remove contract — real DB', 
     await expect(
       setBookmarkTool.function(caller)({ ...missing, entity_id: crypto.randomUUID() }, context),
     ).rejects.toMatchObject({ status: 404 })
+    await expect(
+      setBookmarkTool.function(caller)({ ...missing, entity_id: 'nope' }, context),
+    ).rejects.toMatchObject({ status: 404, message: 'Entity not found' })
   })
 
   it('reaches the caller’s own private post only with the exact private grant', async () => {

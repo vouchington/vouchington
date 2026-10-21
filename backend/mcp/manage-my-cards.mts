@@ -4,6 +4,8 @@ import {
   updateIndividualCardById,
 } from '@services/individuals-households'
 import { createManageEntityTool } from './create-manage-entity-tool.mts'
+import { topicReferenceSchema } from './entity-reference-schema.mts'
+import { entityIdOrMissing } from './resolve-entity-reference.mts'
 import { moneySchema } from '@ts-shared/data-points/json-schemas'
 import type { Money } from '@ts-shared/money'
 
@@ -13,8 +15,8 @@ export default createManageEntityTool({
     "Manage the current user's wallet cards: add, update, or remove them. List them with get_my_cards.",
   addProperties: {
     card_topic_id: {
-      type: 'string',
-      description: 'The topic UUID of the card to add (required for action=add)',
+      ...topicReferenceSchema,
+      description: 'The card topic (required for action=add)',
     },
   },
   updateProperties: {
@@ -45,7 +47,12 @@ export default createManageEntityTool({
       description: 'Date the sign-up bonus was received in YYYY-MM-DD format',
     },
   },
-  addFn: (user, args) => createIndividualCard(user, user, args.card_topic_id as string),
+  addFn: async (user, args) =>
+    createIndividualCard(
+      user,
+      user,
+      await entityIdOrMissing('topic', args.card_topic_id as string),
+    ),
   updateFn: (user, args) =>
     updateIndividualCardById(user, user, args.id, {
       opened_on: args.opened_on as string | null | undefined,

@@ -23,6 +23,16 @@ import {
   getAuthorizedPostContributionMembershipPlan,
 } from '@services/posts/authorization'
 import type { Tool } from '@services/openai-agents/tool-types'
+import {
+  canonicalEntityId,
+  canonicalEntityIds,
+  MISSING_REFERENCE_ID,
+} from './resolve-entity-reference.mts'
+import {
+  communityReferenceSchema,
+  postReferenceSchema,
+  topicReferenceSchema,
+} from './entity-reference-schema.mts'
 import { getDelegatedToolAuthority } from './delegated-authority.mts'
 import { requireActiveToolUser } from './private-user.mts'
 import { toWrittenMcpPost, type McpPost } from './mcp-post-output.mts'
@@ -36,6 +46,26 @@ import {
 type AdmittedPost = Post | Awaited<ReturnType<typeof preparePostWithCommunityReviews>>['response']
 type Args = CreatePostInput & { idempotency_key: string }
 const parameters = postWriteParameters('POST:/api/v1/posts')
+const postProperties = parameters.properties as Record<string, Record<string, unknown>>
+if (postProperties.community_id) {
+  const { format: _communityFormat, ...community } = postProperties.community_id
+  postProperties.community_id = { ...community, description: communityReferenceSchema.description }
+}
+if (postProperties.parent_post_id) {
+  const { format: _parentFormat, ...parent } = postProperties.parent_post_id
+  postProperties.parent_post_id = { ...parent, description: postReferenceSchema.description }
+}
+for (const field of Object.values(postProperties)) loosenTopicIdentifiers(field)
+
+function loosenTopicIdentifiers(value: unknown): void {
+  if (!value || typeof value !== 'object') return
+  const record = value as Record<string, unknown>
+  if (record.topic_id && typeof record.topic_id === 'object' && !Array.isArray(record.topic_id)) {
+    const { format: _format, ...topic } = record.topic_id as Record<string, unknown>
+    record.topic_id = { ...topic, description: topicReferenceSchema.description }
+  }
+  for (const child of Object.values(record)) loosenTopicIdentifiers(child)
+}
 
 const tool: Tool<Args, { success: true; post: McpPost }> = {
   schema: {
@@ -82,8 +112,26 @@ const tool: Tool<Args, { success: true; post: McpPost }> = {
       throw createCodedError(403, 'An identity is required to create posts', IDENTITY_REQUIRED)
     const membershipPlan = await getAuthorizedPostContributionMembershipPlan(user)
     const { idempotency_key, ...body } = args
-    const communityId = body.community_id
-    if (communityId) validateUUID(communityId)
+    let communityId = body.community_id
+    if (communityId) {
+      communityId = (await canonicalEntityId('community', communityId)) ?? MISSING_REFERENCE_ID
+      body.community_id = communityId
+      validateUUID(communityId)
+    }
+    if (body.parent_post_id) {
+      body.parent_post_id =
+        (await canonicalEntityId('post', body.parent_post_id)) ?? MISSING_REFERENCE_ID
+    }
+    if (body.review_topic_ratings?.length) {
+      const topicIds = await canonicalEntityIds(
+        'topic',
+        body.review_topic_ratings.map(rating => rating.topic_id),
+      )
+      body.review_topic_ratings = body.review_topic_ratings.map((rating, index) => ({
+        ...rating,
+        topic_id: topicIds[index] ?? MISSING_REFERENCE_ID,
+      }))
+    }
     const postType = body.post_type ?? 'discussion'
     if (communityId) {
       assert(isCommunityRootPostType(postType), 422, 'Unsupported community post_type')

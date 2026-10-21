@@ -11,6 +11,11 @@ import { communityModerationRoutes } from './community-moderation-routes.mts'
 import { MODERATION_REPORT_RESOLUTION_STATUSES } from '@services/moderation-reports'
 import { COMMUNITY_RESTRICTION_TYPES } from '@services/communities'
 import { communityModerationUuidPaths } from './community-moderation-input-paths.mts'
+import {
+  communityReferenceSchema,
+  postReferenceSchema,
+  userReferenceSchema,
+} from './entity-reference-schema.mts'
 
 export const COMMUNITY_MODERATION_UNTRUSTED_FIELDS = [
   'name',
@@ -44,7 +49,7 @@ const bodyFieldOverrides: Record<
 > = {
   ban_user: {
     properties: {
-      user_id: { type: 'string', format: 'uuid', minLength: 36, maxLength: 36 },
+      user_id: userReferenceSchema,
       reason: { type: ['string', 'null'] },
       expires_at: { type: ['string', 'null'] },
     },
@@ -86,7 +91,7 @@ export function communityModerationInput(endpoint: ToolApiEndpoint): Record<stri
   if (!operation) throw new Error(`Missing REST operation ${key}`)
   const communityScoped = endpoint.path.startsWith('/api/v1/communities/:idOrSlug')
   const properties: Record<string, unknown> = communityScoped
-    ? { community: { type: 'string', minLength: 1, description: 'Community UUID or slug.' } }
+    ? { community: communityReferenceSchema }
     : {}
   const required = new Set(communityScoped ? ['community'] : [])
   const definitions: Record<string, unknown> = {}
@@ -130,6 +135,13 @@ export function communityModerationInput(endpoint: ToolApiEndpoint): Record<stri
       maxLength: 36,
     }
   }
+  if (properties.postId) properties.postId = postReferenceSchema
+  if (properties.userId) properties.userId = userReferenceSchema
+  if (properties.user_id) properties.user_id = userReferenceSchema
+  if (properties.assigned_moderator_user_id) {
+    properties.assigned_moderator_user_id = userReferenceSchema
+  }
+  if (properties.post_ids) properties.post_ids = { type: 'array', items: postReferenceSchema }
   if (option === 'list_saved_replies' || option === 'read_moderator_stats') {
     properties['after'] = { type: 'string' }
     properties['limit'] = { type: 'integer', minimum: 1 }

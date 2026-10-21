@@ -11326,6 +11326,9 @@ importers:
       '@services/topic-recommendations':
         specifier: workspace:^
         version: link:../topic-recommendations
+      '@services/topics':
+        specifier: workspace:^
+        version: link:../topics
       '@services/users':
         specifier: workspace:^
         version: link:../users
@@ -11348,9 +11351,6 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
     devDependencies:
-      '@services/topics':
-        specifier: workspace:^
-        version: link:../topics
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
