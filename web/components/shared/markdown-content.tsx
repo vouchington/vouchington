@@ -1,6 +1,6 @@
-import { sanitizeHtmlFragment } from '@/lib/html/safe-html-fragment'
+import { sanitizeHtmlFragment, sanitizeHtmlFragmentDemotingHeadings } from '@vouchington/html-sanitizer'
 import { getContentLanguageDir } from '@ts-shared/languages/content-languages'
-import { demotePreviewHeadings, renderHtmlFragment } from './html-fragment'
+import { renderHtmlFragment } from './html-fragment'
 import { MarkdownContentEnhancer } from './markdown-content-enhancer'
 import type { MarkdownContentFeatures } from './markdown-content-features'
 
@@ -33,7 +33,7 @@ export function MarkdownContent({
 }: MarkdownContentProps) {
   const htmlLang = lang ?? undefined
   const contentHtml = preview
-    ? demotePreviewHeadings(html)
+    ? sanitizeHtmlFragmentDemotingHeadings(html)
     : html
       ? sanitizeHtmlFragment(html)
       : undefined

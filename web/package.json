@@ -64,6 +64,7 @@
     "@ts-shared/user-profile-collections": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/types": "workspace:^",
+    "@vouchington/html-sanitizer": "^0.1.0",
     "@vouchington/localization": "^0.2.1",
     "@vouchington/utils": "^0.7.4",
     "class-variance-authority": "^0.7.1",

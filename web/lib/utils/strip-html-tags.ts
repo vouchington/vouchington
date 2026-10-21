@@ -1,4 +1,4 @@
-import { htmlFragmentToPlainText } from '@/lib/html/safe-html-fragment'
+import { htmlFragmentToPlainText } from '@vouchington/html-sanitizer'
 
 /** Strip HTML tags and decode HTML entities from a string, returning plain text. */
 export function stripHtmlTags(input: string): string {

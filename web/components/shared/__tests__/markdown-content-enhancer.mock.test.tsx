@@ -1,7 +1,7 @@
 import { beforeEach, describe, it, expect, vi, type Mock } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MarkdownContentEnhancer } from '../markdown-content-enhancer'
-import { sanitizeHtmlFragment, type SafeHtmlFragment } from '@/lib/html/safe-html-fragment'
+import { sanitizeHtmlFragment, type SafeHtmlFragment } from '@vouchington/html-sanitizer'
 
 const mockImage = vi.hoisted(() => vi.fn<VitestLooseMock>())
 

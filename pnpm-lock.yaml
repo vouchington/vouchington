@@ -14578,6 +14578,9 @@ importers:
       '@voucha/types':
         specifier: workspace:^
         version: link:../backend/types
+      '@vouchington/html-sanitizer':
+        specifier: ^0.1.0
+        version: 0.1.0
       '@vouchington/localization':
         specifier: ^0.2.1
         version: 0.2.1(react@19.3.1)
@@ -19620,6 +19623,10 @@ packages:
 
   '@vouchington/frontmatter@0.0.0':
     resolution: {integrity: sha512-Y09j2uV/RHbabGLw0smAY6I5p2gdYEd3wjdeLmAoFdNasXNzIwxsLQpzLhTBlXWGcKx1tWtLY1lpqPT6+IyNBg==}
+    engines: {node: '>=24.0.0'}
+
+  '@vouchington/html-sanitizer@0.1.0':
+    resolution: {integrity: sha512-+lerq/RvQITLdFgPr8C7O/xg9uyBDmhoM+s1hNiySr9PDSTLERzAmH17IibrUufLOvwltSUYbXGbiYPoM3Nqvg==}
     engines: {node: '>=24.0.0'}
 
   '@vouchington/html-utils@0.1.1':
@@ -28518,6 +28525,10 @@ snapshots:
   '@vouchington/frontmatter@0.0.0':
     dependencies:
       yaml: 2.9.1
+
+  '@vouchington/html-sanitizer@0.1.0':
+    dependencies:
+      parse5: 8.0.1
 
   '@vouchington/html-utils@0.1.1':
     dependencies:

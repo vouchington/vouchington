@@ -1,10 +1,6 @@
 import { createElement, Fragment, type ReactNode } from 'react'
 import { parseFragment, type DefaultTreeAdapterMap } from 'parse5'
-import {
-  HTML_FRAGMENT_VOID_TAGS,
-  sanitizePreviewHtmlFragment as demotePreviewHeadings,
-  type SafeHtmlFragment,
-} from '@/lib/html/safe-html-fragment'
+import { HTML_FRAGMENT_VOID_TAGS, type SafeHtmlFragment } from '@vouchington/html-sanitizer'
 
 type HtmlAttribute = DefaultTreeAdapterMap['element']['attrs'][number]
 type HtmlChildNode = DefaultTreeAdapterMap['childNode']
@@ -17,8 +13,6 @@ export function renderHtmlFragment(html: SafeHtmlFragment): ReactNode {
     fragment.childNodes.map((child, index) => renderHtmlNode(child, index)),
   )
 }
-
-export { demotePreviewHeadings }
 
 function renderHtmlNode(node: HtmlChildNode, key: number): ReactNode {
   if ('value' in node) return createElement(Fragment, { key }, node.value)

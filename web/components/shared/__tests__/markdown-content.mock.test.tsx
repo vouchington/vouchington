@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MarkdownContent } from '../markdown-content'
 import { renderHtmlFragment } from '../html-fragment'
-import type { SafeHtmlFragment } from '@/lib/html/safe-html-fragment'
+import type { SafeHtmlFragment } from '@vouchington/html-sanitizer'
 
 vi.mock(
   import('shiki'),
