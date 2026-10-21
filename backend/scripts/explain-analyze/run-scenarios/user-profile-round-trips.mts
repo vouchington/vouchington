@@ -8,6 +8,7 @@ import {
 } from '../run-services.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { read, write } from '@data-stores/psql'
+import { deletionRequestPriorUsernameQuery } from '@services/data-retention/cleanup-soft-deleted-user'
 import sql from 'sql-template-strings'
 import { runAndCapture, seedUser } from '../run-support.mts'
 
@@ -156,4 +157,37 @@ export async function runUserProfileRoundTripScenarios(): Promise<void> {
     undefined,
     'reorderProfileLinks',
   )
+
+  const { rows: insertedDeletionRequests } = await write<{ user_id: string }>(sql`
+    /* explainDeletedUserPriorUsername */
+    INSERT INTO user_deletion_requests (user_id, requested_by_id, prior_username)
+    VALUES (${seedUser.id}, ${seedUser.id}, ${seedUser.username})
+    ON CONFLICT (user_id) DO NOTHING
+    RETURNING user_id
+  `)
+  const insertedDeletionRequestUserId = insertedDeletionRequests[0]?.user_id
+  registerScenarioContract('deleted-user-prior-username', {
+    expectations: [
+      {
+        kind: 'usesIndexes',
+        indexes: ['user_deletion_requests_user_id_key'],
+        queryContains: 'prior_username',
+      },
+      // One unique-index lookup. Budget is the measured row plus 20%.
+      { kind: 'maxProcessedRows', relation: 'user_deletion_requests', max: 2 },
+    ],
+  })
+  try {
+    await runAndCapture(
+      'deleted-user-prior-username',
+      () => read(deletionRequestPriorUsernameQuery(seedUser.id)),
+      undefined,
+      'cleanupSoftDeletedUserBatch:priorUsername',
+    )
+  } finally {
+    if (insertedDeletionRequestUserId)
+      await write(sql`/* explain-cleanup-deletion-request */
+        DELETE FROM user_deletion_requests WHERE user_id = ${insertedDeletionRequestUserId}
+      `)
+  }
 }

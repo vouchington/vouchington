@@ -11,6 +11,11 @@ import { cleanupUserPreservedRows } from './cleanup-user-preserved-rows.mts'
 
 export const FINAL_USER_PURGE_LOCK_KEY = 'data-retention:final-user-purge'
 
+export function deletionRequestPriorUsernameQuery(userId: string) {
+  return sql`/* cleanupSoftDeletedUserBatch:priorUsername */
+    SELECT prior_username FROM user_deletion_requests WHERE user_id = ${userId}`
+}
+
 export async function cleanupSoftDeletedUser(
   targetId: string,
   cutoffDate: Date,
@@ -28,13 +33,13 @@ export async function cleanupSoftDeletedUser(
     await query.commit()
     return { deleted: 0, hasMore: false }
   }
-  const { rows: authors } = await query<{ username: string | null }>(
-    sql`/* cleanupSoftDeletedUserBatch:username */ SELECT username FROM users WHERE id = ${targetId}`,
+  const { rows: deletionRequests } = await query<{ prior_username: string | null }>(
+    deletionRequestPriorUsernameQuery(targetId),
   )
   const publication = await processAuthorDeletionPublicationBatch(
     query,
     targetId,
-    authors[0]?.username ?? null,
+    deletionRequests[0]?.prior_username ?? null,
     Math.min(publicationBatchSize, budget.remainingRows),
   )
   budget.remainingRows -= publication.processed

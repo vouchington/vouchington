@@ -69,6 +69,7 @@
   },
   "devDependencies": {
     "@modules/csv": "workspace:^",
+    "@queues/cache-purge": "workspace:^",
     "@services/agents": "workspace:^",
     "@services/bluesky-accounts": "workspace:^",
     "@services/lists": "workspace:^",

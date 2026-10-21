@@ -152,6 +152,7 @@ export const DOMAIN_FINITE_VALUES = {
     'moderation_appeal_resolved',
     'author_suspension_changed',
     'author_deleted',
+    'author_username_changed',
     'community_visibility_changed',
     'rss_feed_discoverability_changed',
     'rss_feed_enablement_changed',
