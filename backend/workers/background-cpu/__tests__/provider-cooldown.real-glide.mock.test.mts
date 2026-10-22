@@ -16,7 +16,7 @@ import {
   waitForQueueDomainTestResult,
 } from '@voucha/test-helpers/queue-domain-controls'
 import { createBackgroundCpuProcessor } from '../processors.mts'
-import { withBedrockRateLimit } from '../processors/bedrock-rate.mts'
+import { withBedrockRateLimit } from '@workers/bedrock-embeddings-batch/processors/bedrock-rate'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async original => original())
 const connection = { connection: workerQueueConnection, prefix: workerQueuePrefix }

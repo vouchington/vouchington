@@ -1,5 +1,11 @@
 {
-  "cpuOnlyQueues": ["background-cpu", "crawl_browser", "image-uploads", "ai_agents"],
+  "cpuOnlyQueues": [
+    "background-cpu",
+    "bedrock-embeddings-creation",
+    "crawl_browser",
+    "image-uploads",
+    "ai_agents"
+  ],
   "ioCapableQueues": [
     "background",
     "emails",

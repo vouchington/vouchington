@@ -1,5 +1,6 @@
 import { background } from '@queues/background/queues'
 import { backgroundCpu } from '@queues/background-cpu/queues'
+import { bedrockEmbeddingsCreation } from '@queues/bedrock-embeddings-batch/queues'
 import { crawlEmbedsQueue } from '@queues/crawl-embeds/queues'
 import { rssFeedMaintenance } from '@queues/rss-feed-maintenance/queues'
 import { emails } from '@queues/emails/queues'
@@ -15,6 +16,7 @@ import type { Queue } from 'glide-mq'
 const allQueues = [
   background,
   backgroundCpu,
+  bedrockEmbeddingsCreation,
   crawlEmbedsQueue,
   rssFeedMaintenance,
   emails,

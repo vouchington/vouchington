@@ -2,14 +2,13 @@ import { backgroundHandler } from '@queues/background-cpu/enqueues/define-handle
 import { BACKGROUND_CPU_JOBS } from '@queues/background-cpu/enqueues/registry'
 import type { BackgroundCpuHandler } from '@queues/background-cpu/types'
 import { cleanupAbandonedUploads } from '@services/images/cleanup-abandoned-uploads'
-import type { BatchJobType } from '@services/bedrock-embeddings/batch/types'
 import type {
   LanguageDetectionBackfillCursor,
   LanguageDetectionBackfillJobName,
   LanguageDetectionEntityType,
 } from '@queues/content-analysis/types'
 import type { Job } from 'glide-mq'
-import { withBedrockRateLimit } from './bedrock-rate.mts'
+import { withBedrockRateLimit } from '@workers/bedrock-embeddings-batch/processors/bedrock-rate'
 import { processRetainedSweep } from '@data-stores/valkey-glide-mq'
 
 const CRAWL_DISPATCH = new Set([
@@ -42,13 +41,6 @@ const BEDROCK_SINGLE = new Set([
   'bedrock-embeddings.post',
   'bedrock-embeddings.rss_feed_item',
 ])
-const BEDROCK_CREATION = new Map<string, BatchJobType>([
-  ['bedrock-embeddings.create_topics', 'topics'],
-  ['bedrock-embeddings.create_posts', 'posts'],
-  ['bedrock-embeddings.create_rss_feed_items', 'rss_feed_items'],
-  ['bedrock-embeddings.create_crawl_chunks', 'crawl_chunks'],
-  ['bedrock-embeddings.create_images', 'images'],
-])
 const BEDROCK_BATCH = new Set([
   'bedrock-embeddings.poll_batch',
   'bedrock-embeddings.poll_dispatcher',
@@ -75,7 +67,6 @@ function resolveCpuJobRoute(name: string): string | undefined {
   if (CRAWL_REFERRAL.has(name)) return 'crawl-referral'
   if (CRAWL_UNFURL.has(name)) return 'crawl-unfurl'
   if (BEDROCK_SINGLE.has(name)) return 'bedrock-single'
-  if (BEDROCK_CREATION.has(name)) return 'bedrock-creation'
   if (BEDROCK_BATCH.has(name)) return 'bedrock-batch'
   if (name === 'ai-spend-cap.recheck') return 'spend-cap'
   if (name === 'content-analysis.cleanup-abandoned-uploads') return 'upload-cleanup'
@@ -113,13 +104,6 @@ async function runCpuJob(job: Job): Promise<unknown> {
       const { processBedrockNovaMultimodalV1SingleJob } =
         await import('@workers/bedrock-embeddings/processors/nova-multimodal-v1-single')
       return processBedrockNovaMultimodalV1SingleJob(job)
-    })
-  const creationType = BEDROCK_CREATION.get(job.name)
-  if (route === 'bedrock-creation' && creationType)
-    return withBedrockRateLimit(async () => {
-      const { processEmbeddingCreationJob } =
-        await import('@workers/bedrock-embeddings-batch/processors/creation')
-      return processEmbeddingCreationJob(job, creationType)
     })
   if (route === 'bedrock-batch')
     return withBedrockRateLimit(async () => {

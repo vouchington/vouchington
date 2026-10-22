@@ -77,6 +77,17 @@ describe('background CPU registry contracts', () => {
     )
   })
 
+  it('keeps Bedrock batch creation off the shared CPU queue', () => {
+    for (const name of [
+      'bedrock-embeddings.create_topics',
+      'bedrock-embeddings.create_posts',
+      'bedrock-embeddings.create_rss_feed_items',
+      'bedrock-embeddings.create_crawl_chunks',
+      'bedrock-embeddings.create_images',
+    ])
+      expect(getBackgroundCpuJob(name)).toBeUndefined()
+  })
+
   it('routes registered jobs by domain and refuses unknown names', () => {
     expect(getBackgroundCpuJobNames('crawl')).toContain('crawl.crawl_url')
     expect(getBackgroundCpuJobNames('crawl')).not.toContain('bedrock-embeddings.post')

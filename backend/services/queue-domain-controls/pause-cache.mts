@@ -30,6 +30,15 @@ export function isQueueDomainPaused(domain: string): Promise<boolean> {
   return read
 }
 
+/** Runs work only while its durable queue domain is active; otherwise uses the caller's deferral. */
+export async function runUnlessQueueDomainPaused<T>(
+  domain: string,
+  run: () => Promise<T>,
+  defer: () => Promise<T>,
+): Promise<T> {
+  return (await isQueueDomainPaused(domain)) ? defer() : run()
+}
+
 async function readAndCache(domain: string): Promise<boolean> {
   const generation = generations.get(domain) ?? 0
   const { paused } = await getQueueDomainControl(domain)

@@ -41,6 +41,7 @@
     "@queues/unfurl-referral-links": "workspace:^",
     "@workers/ai-agents": "workspace:^",
     "@workers/background-cpu": "workspace:^",
+    "@workers/bedrock-embeddings-batch": "workspace:^",
     "@workers/crawl-browser": "workspace:^",
     "@workers/image-uploads": "workspace:^"
   },

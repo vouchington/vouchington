@@ -89,14 +89,6 @@ export const BACKGROUND_CPU_JOBS: readonly BackgroundCpuJobDefinition[] = [
       }),
     ),
   ),
-  ...['topics', 'posts', 'rss_feed_items', 'crawl_chunks', 'images'].map(name =>
-    bedrockJob(
-      task(`create_${name}`, {
-        lockDuration: 300_000,
-        ordering: { key: 'bedrock-embeddings:creation', concurrency: 1 },
-      }),
-    ),
-  ),
   bedrockJob(
     task('poll_batch', {
       lockDuration: 300_000,

@@ -5,11 +5,8 @@ import {
   getBackgroundCpuJob,
 } from '@queues/background-cpu/enqueues/registry'
 import type { BackgroundCpuHandler } from '@queues/background-cpu/types'
-import {
-  extendCpuProviderCooldownMs,
-  getCpuProviderCooldownRemainingMs,
-} from '@services/bedrock-embeddings/provider-cooldown'
-import { isQueueDomainPaused } from '@services/queue-domain-controls'
+import { runBedrockJobWithProviderCooldown } from '@workers/bedrock-embeddings/processors/provider-cooldown'
+import { runUnlessQueueDomainPaused } from '@services/queue-domain-controls'
 import { Worker, type Job } from 'glide-mq'
 
 /** A registered job this worker was not asked to serve waits here until a worker that serves it runs. */
@@ -26,8 +23,11 @@ export function createBackgroundCpuProcessor(handlers: ReadonlyMap<string, Backg
     const handler = handlers.get(job.name)
     if (!handler) return rejectUnservedJob(job)
     const { domain } = handler.job
-    if (await isQueueDomainPaused(domain)) return deferJob(job, domain, getPauseRecheckMs())
-    return runWithProviderCooldown(job, handler)
+    return runUnlessQueueDomainPaused(
+      domain,
+      () => runWithProviderCooldown(job, handler),
+      () => deferJob(job, domain, getPauseRecheckMs()),
+    )
   }
 }
 
@@ -35,17 +35,17 @@ async function runWithProviderCooldown(job: Job, handler: BackgroundCpuHandler):
   // Only Bedrock handlers use an external provider lane. Other CPU domains must remain
   // independent of the rate-limiter Valkey connection.
   const groupKey = handler.job.domain === 'bedrock-embeddings' ? job.groupKey : undefined
-  const remainingMs = groupKey ? await getCpuProviderCooldownRemainingMs(groupKey) : null
-  if (remainingMs) return job.moveToDelayed(Date.now() + remainingMs)
+  if (handler.job.domain === 'bedrock-embeddings') {
+    return runBedrockJobWithProviderCooldown(job, groupKey, async () => handler.handle(job))
+  }
   try {
     return await handler.handle(job)
   } catch (err) {
     if (!(err instanceof Worker.RateLimitError)) throw err
-    return deferProviderRateLimitedJob(
+    return deferJob(
       job,
-      clampRateLimitDelayMs((err as { delayMs?: number }).delayMs),
-      groupKey,
       handler.job.domain,
+      clampRateLimitDelayMs((err as { delayMs?: number }).delayMs),
     )
   }
 }
@@ -59,21 +59,6 @@ function deferJob(job: Job, domain: BackgroundCpuDomain, delayMs: number): Promi
   if (group?.kind === 'domain' && group.deferral !== 'job' && job.groupKey === domain) {
     return job.rateLimitGroup(delayMs)
   }
-  return job.moveToDelayed(Date.now() + delayMs)
-}
-
-/** A provider 429 persists the lane's cooldown without idling the shared worker. */
-async function deferProviderRateLimitedJob(
-  job: Job,
-  delayMs: number,
-  groupKey: string | undefined,
-  domain: BackgroundCpuDomain,
-): Promise<never> {
-  if (groupKey) {
-    const remainingMs = await extendCpuProviderCooldownMs(groupKey, delayMs)
-    return job.moveToDelayed(Date.now() + remainingMs)
-  }
-  if (domain !== 'bedrock-embeddings') return deferJob(job, domain, delayMs)
   return job.moveToDelayed(Date.now() + delayMs)
 }
 

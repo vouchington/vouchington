@@ -2,7 +2,7 @@ import { read } from '@data-stores/psql'
 import { expect } from 'vitest'
 
 /** Checks the exact committed active row, leaving other accounting untouched. */
-export async function assertOwnedSubmittedControl(id: string) {
+export async function assertOwnedSubmittedControl(id: string, expectedInputSizeMB = 1) {
   const { rows } = await read<{ id: string; input_size_mb: number }>(
     `/* embeddingQuotaFixture:submittedControl */
     SELECT id, (data->'metadata'->>'inputSizeMB')::DOUBLE PRECISION AS input_size_mb
@@ -11,5 +11,5 @@ export async function assertOwnedSubmittedControl(id: string) {
       AND completed_at IS NULL AND failed_at IS NULL AND cancelled_at IS NULL`,
     [id],
   )
-  expect(rows).toEqual([{ id, input_size_mb: 1 }])
+  expect(rows).toEqual([{ id, input_size_mb: expectedInputSizeMB }])
 }

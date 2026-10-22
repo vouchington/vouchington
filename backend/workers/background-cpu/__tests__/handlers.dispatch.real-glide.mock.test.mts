@@ -136,12 +136,6 @@ describe('background-cpu production routing through real GlideMQ', () => {
       message: 'Post job requires id in job.data',
     },
     {
-      name: 'bedrock-embeddings.create_images',
-      domain: 'bedrock-embeddings',
-      data: { cursor: 'invalid' },
-      message: 'Invalid embedding scan cursor',
-    },
-    {
       name: 'ai-spend-cap.recheck',
       domain: 'ai-spend-cap',
       data: { day: 'invalid', generation: randomUUID() },

@@ -24,6 +24,11 @@ describe('worker-cpu worker definitions', () => {
   it('each worker definition points at the expected lazy import export', () => {
     const expectedDefinitions = [
       ['background-cpu', '/backend/workers/background-cpu/workers.mts', 'backgroundCpu'],
+      [
+        'bedrock-embeddings-creation',
+        '/backend/workers/bedrock-embeddings-batch/workers.mts',
+        'bedrockEmbeddingsCreationWorker',
+      ],
       ['crawl_browser', '/backend/workers/crawl-browser/workers.mts', 'crawlBrowser'],
       ['image-uploads', '/backend/workers/image-uploads/workers.mts', 'imageUploads'],
       ['ai_agents', '/backend/workers/ai-agents/workers.mts', 'ai_agents'],

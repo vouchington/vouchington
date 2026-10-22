@@ -16,7 +16,6 @@ const url = requireBackgroundCpuJob('crawl.crawl_url')
 const referral = requireBackgroundCpuJob('crawl.crawl_referral_link')
 const single = requireBackgroundCpuJob('bedrock-embeddings.post')
 const singleTopic = requireBackgroundCpuJob('bedrock-embeddings.topic')
-const creation = requireBackgroundCpuJob('bedrock-embeddings.create_posts')
 
 describe('background-cpu groups through real GlideMQ', () => {
   let harness: BackgroundCpuHarness | undefined
@@ -100,38 +99,6 @@ describe('background-cpu groups through real GlideMQ', () => {
     const ordered = started.toSorted((a, b) => a - b)
     expect(ordered).toHaveLength(4)
     expect(ordered[2]! - ordered[0]!).toBeGreaterThanOrEqual(300)
-  })
-
-  it('keeps batch creation concurrency at one across two workers', async () => {
-    let active = 0
-    let maxActive = 0
-    const firstStarted = Promise.withResolvers<void>()
-    const release = Promise.withResolvers<void>()
-    harness = await startBackgroundCpuHarness({
-      connection,
-      workers: 2,
-      bodies: {
-        [creation.name]: async () => {
-          active += 1
-          maxActive = Math.max(maxActive, active)
-          firstStarted.resolve()
-          await release.promise
-          active -= 1
-        },
-      },
-    })
-    try {
-      const jobs = await Promise.all(
-        Array.from({ length: 3 }, () => harness!.add(creation, { id: randomUUID() })),
-      )
-      await firstStarted.promise
-      expect(active).toBe(1)
-      release.resolve()
-      await Promise.all(jobs.map(job => harness!.settled(job)))
-      expect(maxActive).toBe(1)
-    } finally {
-      release.resolve()
-    }
   })
 
   it('renews a long crawl lock while another queue job supplies the test clock', async () => {

@@ -3,9 +3,14 @@ import { closeEmbeddingCreationResources } from './embedding-creation-resource-c
 import { Queue, QueueEvents, type Worker, type Job, type QueueEventsOptions } from 'glide-mq'
 import type { acquireEmbeddingQuotaFixture } from './embedding-creation-quota.mts'
 import { registerEmbeddingCreationDiagnostics } from './embedding-creation-diagnostics.mts'
+import {
+  createOwnedQueueEventWaits,
+  type OwnedQueueEventName,
+} from './embedding-creation-event-waits.mts'
+import { createQueueLifetime } from './embedding-creation-lifetime.mts'
 
-type EventName = 'added' | 'delay-changed' | 'completed' | 'failed'
 type Fixture = Awaited<ReturnType<typeof acquireEmbeddingQuotaFixture>>
+type QueueLifetime = Pick<Fixture, 'assertOpen' | 'beforeRelease'>
 
 /** Observes committed stream transitions on an owned real queue, not worker emptiness. */
 export function createOwnedEmbeddingQueue(
@@ -17,13 +22,22 @@ export function createOwnedEmbeddingQueue(
   return createOwnedQueue(fixture, options, name)
 }
 
+/** Owns native queue resources for controls with no PostgreSQL accounting or config effects. */
+export function createOwnedEmbeddingQueueWithoutQuota(
+  label: string,
+  options: Pick<QueueEventsOptions, 'connection' | 'prefix'>,
+  name = `embedding_creation_${label}_${randomUUID()}`,
+) {
+  return createOwnedQueue(createQueueLifetime(), options, name)
+}
+
 function createOwnedQueue(
-  fixture: Pick<Fixture, 'assertOpen' | 'beforeRelease'>,
+  fixture: QueueLifetime,
   options: Pick<QueueEventsOptions, 'connection' | 'prefix'>,
   name: string,
 ) {
   fixture.assertOpen()
-  const queue = new Queue(name, options)
+  let queue: Queue | undefined
   const workers: Worker[] = []
   const writes: Promise<unknown>[] = []
   const creations: Promise<Worker>[] = []
@@ -34,52 +48,31 @@ function createOwnedQueue(
   let writersDrained = false
   const cleanup = () => {
     accepting = false
+    if (!queue) {
+      writersDrained = true
+      return Promise.resolve()
+    }
     return (closing ??= close())
   }
+  // Register the idempotent drain before any SDK object can acquire native resources.
   fixture.beforeRelease(cleanup, () => writersDrained)
-  const history = new Map<string, Map<EventName, number>>()
-  const waits = new Set<{
-    id: string
-    event: EventName
-    occurrence: number
-    resolve(): void
-    reject(error: unknown): void
-  }>()
-  let eventError: unknown
-  let hasEventError = false
+  const queueHandle = new Queue(name, options)
+  queue = queueHandle
+  const eventWaits = createOwnedQueueEventWaits()
   let pendingAtClose: Array<{ id: string; event: string; occurrence: number }> | undefined
-  const diagnostics = registerEmbeddingCreationDiagnostics(queue.name, () => ({
+  const diagnostics = registerEmbeddingCreationDiagnostics(queueHandle.name, () => ({
     prefix: options.prefix,
     closing: closing !== undefined,
     writersDrained,
-    pending:
-      pendingAtClose ?? [...waits].map(({ id, event, occurrence }) => ({ id, event, occurrence })),
-    history: [...history].map(([id, counts]) => ({ id, events: Object.fromEntries(counts) })),
+    pending: pendingAtClose ?? eventWaits.pending(),
+    history: eventWaits.history(),
   }))
-  const onError = (error: unknown) => {
-    eventError = error
-    hasEventError = true
-    for (const wait of waits) wait.reject(error)
-    waits.clear()
-  }
-  queue.on('error', onError)
+  const onError = eventWaits.onError
+  queueHandle.on('error', onError)
   fixture.assertOpen()
   events = new QueueEvents(name, { ...options, lastEventId: '0-0' })
   for (const event of ['added', 'delay-changed', 'completed', 'failed'] as const)
-    events.on(event, (payload: { jobId: string }) => {
-      const counts = history.get(payload.jobId) ?? new Map<EventName, number>()
-      counts.set(event, (counts.get(event) ?? 0) + 1)
-      history.set(payload.jobId, counts)
-      for (const wait of waits)
-        if (
-          wait.id === payload.jobId &&
-          wait.event === event &&
-          (counts.get(event) ?? 0) >= wait.occurrence
-        ) {
-          waits.delete(wait)
-          wait.resolve()
-        }
-    })
+    events.on(event, (payload: { jobId: string }) => eventWaits.record(payload.jobId, event))
   events.on('error', onError)
 
   function track<T>(write: Promise<T>): Promise<T> {
@@ -101,7 +94,7 @@ function createOwnedQueue(
     return worker
   }
   return {
-    queue,
+    queue: queueHandle,
     workers,
     diagnostics,
     /** Register ownership before factory effects; closing still retains a late returned worker. */
@@ -140,24 +133,14 @@ function createOwnedQueue(
           await completed
         }),
       ),
-    add: (...args: Parameters<Queue['add']>) => start(() => queue.add(...args)),
+    add: (...args: Parameters<Queue['add']>) => start(() => queueHandle.add(...args)),
     releaseOnCleanup: (action: () => void) => {
       assertOpen()
       release.push(action)
     },
-    waitFor: (id: string, event: EventName, occurrence = 1): Promise<void> => {
+    waitFor: (id: string, event: OwnedQueueEventName, occurrence = 1): Promise<void> => {
       assertOpen()
-      if (hasEventError)
-        return Promise.reject(
-          eventError instanceof Error
-            ? eventError
-            : new AggregateError([eventError], 'Owned queue SDK failed', { cause: eventError }),
-        )
-      if ((history.get(id)?.get(event) ?? 0) >= occurrence) return Promise.resolve()
-      const completion = Promise.withResolvers<void>()
-      void completion.promise.catch(() => {})
-      waits.add({ id, event, occurrence, ...completion })
-      return completion.promise
+      return eventWaits.waitFor(id, event, occurrence)
     },
   }
 
@@ -170,12 +153,11 @@ function createOwnedQueue(
         errors.push(err)
       }
     }
-    pendingAtClose = [...waits].map(({ id, event, occurrence }) => ({ id, event, occurrence }))
-    for (const wait of waits) wait.reject(new Error('Owned embedding queue closed'))
-    waits.clear()
+    pendingAtClose = eventWaits.pending()
+    eventWaits.close()
     for (const action of release) await attempt(action)
     const resources = await closeEmbeddingCreationResources({
-      queue,
+      queue: queueHandle,
       events,
       workers,
       creations,
@@ -186,7 +168,8 @@ function createOwnedQueue(
     errors.push(...resources.errors)
     writersDrained = resources.writersDrained
     // An SDK error can arrive after the last wait resolves, including during close.
-    if (hasEventError) errors.push(eventError)
+    const eventError = eventWaits.error()
+    if (eventError.present) errors.push(eventError.value)
     for (const worker of workers) worker.off('error', onError)
     if (errors.length)
       throw new AggregateError(

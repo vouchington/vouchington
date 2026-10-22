@@ -1,11 +1,15 @@
 import { mintUUIDv7 } from '@modules/utils/ids'
-import { expect, onTestFinished } from 'vitest'
-import { advisoryLockPool, read } from '@data-stores/psql'
+import { onTestFinished } from 'vitest'
+import { advisoryLockPool } from '@data-stores/psql'
 import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import type { PoolClient } from '@data-stores/psql/types'
 import { initializeEmbeddingCreationConfig } from './embedding-creation-config.mts'
 import { claimEmbeddingQuotaLease } from './embedding-creation-quota-lease.mts'
 import { assertOwnedSubmittedControl } from './embedding-creation-submitted-control.mts'
+import {
+  assertOwnedAccountingRemoved,
+  assertOwnedCompletedControl,
+} from './embedding-creation-quota-assertions.mts'
 import {
   cleanupTestEmbeddingsBatches,
   insertTestEmbeddingsBatch,
@@ -92,6 +96,27 @@ export async function acquireEmbeddingQuotaFixture() {
       void operation.catch(() => {})
       return operation
     },
+    insertSubmittedReservation: (inputSizeMB: number) => {
+      assertOpen()
+      if (!Number.isFinite(inputSizeMB) || inputSizeMB <= 0)
+        throw new Error('Embedding quota reservation must have a positive finite size')
+      const id = mintUUIDv7()
+      ids.push(id)
+      const operation = Promise.resolve().then(async () => {
+        assertOpen()
+        await insertTestEmbeddingsBatch({
+          id,
+          bedrockStatus: 'Submitted',
+          batchData: { metadata: { inputSizeMB } },
+        })
+        return { id, inputSizeMB }
+      })
+      writes.push(operation)
+      void operation.catch(() => {})
+      return operation
+    },
+    assertSubmittedReservation: (id: string, inputSizeMB: number) =>
+      assertOwnedSubmittedControl(id, inputSizeMB),
     insertCompletedControl: () => {
       assertOpen()
       const id = mintUUIDv7()
@@ -170,30 +195,4 @@ export async function acquireEmbeddingQuotaFixture() {
         { cause: errors[0] },
       )
   }
-}
-
-/** Teardown observes only owned identity; unrelated global accounting may keep changing. */
-async function assertOwnedAccountingRemoved(ids: string[]) {
-  if (ids.length === 0) return
-  const { rows } = await read<{ id: string }>(
-    `/* embeddingQuotaFixture:ownedRemoval */
-    SELECT id FROM bedrock_embedding_batches WHERE id = ANY($1)`,
-    [ids],
-  )
-  expect(rows).toEqual([])
-}
-
-/** Verify a real completed hourly contribution, with no active count or size contribution. */
-async function assertOwnedCompletedControl(id: string) {
-  const { rows } = await read<{ id: string; records: number; input_size_mb: number }>(
-    `/* embeddingQuotaFixture:completedControl */
-    SELECT id, records,
-      (data->'metadata'->>'inputSizeMB')::DOUBLE PRECISION AS input_size_mb
-    FROM bedrock_embedding_batches
-    WHERE id = $1 AND submitted_at IS NOT NULL AND completed_at IS NOT NULL
-      AND failed_at IS NULL AND cancelled_at IS NULL
-      AND created_at > NOW() - INTERVAL '1 hour'`,
-    [id],
-  )
-  expect(rows).toEqual([{ id, records: 1, input_size_mb: 0 }])
 }

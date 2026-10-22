@@ -2,16 +2,20 @@ import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/v
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
 import {
+  BEDROCK_EMBEDDINGS_CREATION_JOB_DEFAULTS,
+  BEDROCK_EMBEDDINGS_CREATION_JOB_NAMES,
+  BEDROCK_EMBEDDINGS_CREATION_QUEUE_NAME,
   BEDROCK_EMBEDDINGS_BATCH_DEFAULTS,
   PRIORITY_DEFAULT,
   PRIORITY_DISPATCHER,
 } from './config.mts'
+import { bedrockEmbeddingsCreation } from './queues.mts'
 import { BACKGROUND_CPU_QUEUE_NAME } from '@queues/background-cpu/config'
 import { requireBackgroundCpuJob } from '@queues/background-cpu/enqueues/registry'
 import { backgroundCpu } from '@queues/background-cpu/queues'
 import type { BedrockEmbeddingsBatchDispatcherJob } from './types.mts'
 
-type CreationJobName = 'topics' | 'posts' | 'rss_feed_items' | 'crawl_chunks' | 'images'
+type CreationJobName = keyof typeof BEDROCK_EMBEDDINGS_CREATION_JOB_NAMES
 type DispatcherOptions = {
   cursor?: { afterId: string; throughId: string }
   deduplicationId?: string
@@ -26,12 +30,11 @@ export {
 } from './enqueues/reconciliation.mts'
 
 function createCreationBatchEnqueue(jobName: CreationJobName, deduplicationId: string) {
-  const job = requireBackgroundCpuJob(`bedrock-embeddings.create_${jobName}`)
   const enqueue = createEnqueueFunction<Record<string, never>, string>({
-    queue: backgroundCpu,
-    queueName: BACKGROUND_CPU_QUEUE_NAME,
-    jobName: job.name,
-    defaults: job.options,
+    queue: bedrockEmbeddingsCreation,
+    queueName: BEDROCK_EMBEDDINGS_CREATION_QUEUE_NAME,
+    jobName: BEDROCK_EMBEDDINGS_CREATION_JOB_NAMES[jobName],
+    defaults: BEDROCK_EMBEDDINGS_CREATION_JOB_DEFAULTS,
   })
 
   return (priority?: number): EnqueueReturnType =>

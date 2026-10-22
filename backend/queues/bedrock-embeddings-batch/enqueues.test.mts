@@ -6,11 +6,48 @@ import {
   reconciliationJobOptions,
   enqueueEmbeddingsBatchPollDispatcher,
   enqueueEmbeddingsBatchStaleCleanupDispatcher,
+  enqueueCreateTopicEmbeddingsBatch,
+  enqueueCreatePostEmbeddingsBatch,
+  enqueueCreateRssFeedItemEmbeddingsBatch,
+  enqueueCreateCrawlChunkBatch,
+  enqueueCreateImageEmbeddingsBatch,
 } from './enqueues.mts'
 import { backgroundCpu as bedrock_embeddings_batch } from '@queues/background-cpu/queues'
+import { bedrockEmbeddingsCreation } from './queues.mts'
 import { PRIORITY_DISPATCHER } from './config.mts'
 import { requireBackgroundCpuJob } from '@queues/background-cpu/enqueues/registry'
 import { reconciliationScheduleEntries } from './enqueues/reconciliation-schedules.mts'
+
+describe('embedding creation enqueues', () => {
+  it.each([
+    ['topics', enqueueCreateTopicEmbeddingsBatch, 'topics_batch'],
+    ['posts', enqueueCreatePostEmbeddingsBatch, 'posts_batch'],
+    ['rss_feed_items', enqueueCreateRssFeedItemEmbeddingsBatch, 'rss_feed_items_batch'],
+    ['crawl_chunks', enqueueCreateCrawlChunkBatch, 'crawl_chunks_batch'],
+    ['images', enqueueCreateImageEmbeddingsBatch, 'images_batch'],
+  ] as const)(
+    'routes %s creation onto the dedicated queue with its stable identity',
+    async (type, enqueue, deduplicationId) => {
+      const enqueued = await enqueue()
+      const job = await readEnqueuedJob(bedrockEmbeddingsCreation, enqueued)
+      onTestFinished(() => job.remove())
+      expect(job).toMatchObject({
+        name: `bedrock-embeddings.create_${type}`,
+        data: {},
+        opts: {
+          priority: 10,
+          attempts: 3,
+          lockDuration: 300_000,
+          deduplication: {
+            id: `bedrock-embeddings:creation:${deduplicationId}`,
+            mode: 'simple',
+          },
+        },
+      })
+      expect(job.opts.ordering).toBeUndefined()
+    },
+  )
+})
 
 describe('embedding reconciliation enqueues', () => {
   it.each([

@@ -20,7 +20,6 @@
     "@data-stores/valkey-glide-mq": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/queue-config": "workspace:^",
-    "@modules/queue-errors": "workspace:^",
     "@queues/background-cpu": "workspace:^",
     "@queues/content-analysis": "workspace:^",
     "@services/bedrock-embeddings": "workspace:^",

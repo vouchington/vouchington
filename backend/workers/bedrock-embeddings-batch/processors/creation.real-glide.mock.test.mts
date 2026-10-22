@@ -1,30 +1,35 @@
 import { randomUUID } from 'node:crypto'
-import { Worker, type Job } from 'glide-mq'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { creationJobOptions } from '@queues/bedrock-embeddings-batch/enqueues'
-import { delayEmbeddingCreationJob } from '@queues/bedrock-embeddings-batch/payload/creation-deferral'
 import { parseEmbeddingScanCursor } from '@queues/bedrock-embeddings-batch/payload/job-payload'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
-import { bedrockEmbeddingsBatchConfig } from '@services/bedrock-embeddings/batch/config'
+import {
+  BEDROCK_EMBEDDINGS_CREATION_JOB_DEFAULTS,
+  BEDROCK_EMBEDDINGS_CREATION_QUEUE_NAME,
+} from '@queues/bedrock-embeddings-batch/config'
+import {
+  bedrockEmbeddingsBatchConfig,
+  getRateLimitConfig,
+} from '@services/bedrock-embeddings/batch/config'
 import {
   minimumImageBatchSizeMB,
   minimumTextBatchSizeMB,
 } from '@services/bedrock-embeddings/batch/input-size-limits'
 import { getBatchCreationLimits } from '@services/bedrock-embeddings-batch/rate-limits'
+import {
+  getActiveBatchStats,
+  getBatchRecordsCreatedInLastHour,
+} from '@services/bedrock-embeddings/batch/orchestrator/poll-queries'
 import { getCpuProviderCooldownRemainingMs } from '@services/bedrock-embeddings/provider-cooldown'
 import { getQueueDomainControl } from '../../../services/queue-domain-controls/index.mts'
 import type { BatchJobType } from '@services/bedrock-embeddings/batch/types'
-import { requireBackgroundCpuJob } from '../../../queues/background-cpu/enqueues/registry.mts'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { acquireEmbeddingQuotaFixture } from '@voucha/test-helpers/embedding-creation-quota'
 import { createOwnedEmbeddingQueue } from '@voucha/test-helpers/embedding-creation-events'
-import { createBackgroundCpuWorker } from '../../background-cpu/workers/create-worker.mts'
-import { BACKGROUND_CPU_HANDLERS } from '../../background-cpu/processors/handlers.mts'
-import { BACKGROUND_CPU_QUEUE_NAME } from '../../../queues/background-cpu/config.mts'
+import { createBedrockEmbeddingsCreationWorker } from './creation-worker.mts'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())
 
-const connection = { connection: workerQueueConnection, prefix: workerQueuePrefix }
 const creationTypes = ['topics', 'posts', 'rss_feed_items', 'crawl_chunks', 'images'] as const
 const exhaustedCursor = {
   sweepStartedAt: '2024-01-01T00:00:00.000Z',
@@ -38,72 +43,6 @@ describe('native embedding creation admission', () => {
     quota = await acquireEmbeddingQuotaFixture()
   }, 25_000)
 
-  it('retains one job and cursor through repeated capacity delays and a continuation', async () => {
-    const owned = createOwnedEmbeddingQueue(quota, 'continuation', connection)
-    const cursor = {
-      sweepStartedAt: '2024-01-01T00:00:00.000Z',
-      afterId: randomUUID(),
-      pendingImageIds: [randomUUID()],
-    }
-    const nextCursor = { ...cursor, afterId: randomUUID() }
-    const seen: Array<{ id: string; data: unknown }> = []
-    let capacityAvailable = false
-    let advanced = false
-
-    await owned.run(async () => {
-      await owned.ready()
-      const worker = await owned.createWorker(
-        () =>
-          new Worker(
-            owned.queue.name,
-            async (job: Job) => {
-              seen.push({ id: job.id, data: job.data })
-              if (!capacityAvailable) await delayEmbeddingCreationJob(job, cursor, 30_000)
-              else if (!advanced) {
-                advanced = true
-                await delayEmbeddingCreationJob(job, nextCursor)
-              }
-            },
-            { ...owned.options, concurrency: 1, blockTimeout: 1_000, promotionInterval: 2_500 },
-          ),
-      )
-      await worker.waitUntilReady()
-      const first = await owned.add(
-        'bedrock-embeddings.create_images',
-        {},
-        creationJobOptions('images_batch'),
-      )
-      if (!first) throw new Error('Expected initial creation job')
-
-      await owned.waitFor(first.id, 'delay-changed')
-      expect(await first.getState()).toBe('delayed')
-      expect((await owned.queue.getJob(first.id))?.data).toEqual({ cursor })
-      for (let index = 0; index < 3; index++)
-        expect(await owned.add(first.name, {}, creationJobOptions('images_batch'))).toBeNull()
-
-      await owned.promote(first)
-      await owned.waitFor(first.id, 'delay-changed', 2)
-      expect((await owned.queue.getJob(first.id))?.data).toEqual({ cursor })
-      expect(await owned.add(first.name, {}, creationJobOptions('images_batch'))).toBeNull()
-      expect((await owned.queue.getJob(first.id))?.attemptsMade).toBe(0)
-
-      capacityAvailable = true
-      await owned.promote(first)
-      await owned.waitFor(first.id, 'delay-changed', 3)
-      const completed = owned.waitFor(first.id, 'completed')
-      await owned.promoteContinuation(first, completed)
-      await completed
-      expect(seen).toEqual([
-        { id: first.id, data: {} },
-        { id: first.id, data: { cursor } },
-        { id: first.id, data: { cursor } },
-        { id: first.id, data: { cursor: nextCursor } },
-      ])
-      expect((await owned.queue.getJob(first.id))?.attemptsMade).toBe(0)
-      expect(await owned.add(first.name, {}, creationJobOptions('images_batch'))).not.toBeNull()
-    })
-  })
-
   it.each(creationTypes)(
     'delays actual CPU factory %s on its original job when committed capacity is full',
     async (type: BatchJobType) => {
@@ -114,7 +53,7 @@ describe('native embedding creation admission', () => {
           connection: workerQueueConnection,
           prefix: `${workerQueuePrefix}-embedding-creation-cpu-${type}-${randomUUID()}`,
         },
-        BACKGROUND_CPU_QUEUE_NAME,
+        BEDROCK_EMBEDDINGS_CREATION_QUEUE_NAME,
       )
       const restore = overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, {
         max_inflight_jobs: 1,
@@ -130,20 +69,15 @@ describe('native embedding creation admission', () => {
       expect(await getCpuProviderCooldownRemainingMs('bedrock-embeddings:creation')).toBeNull()
 
       const name = `bedrock-embeddings.create_${type}`
-      const definition = requireBackgroundCpuJob(name)
-      const options = { ...definition.options, ...creationJobOptions(`${type}_batch`) }
+      const options = {
+        ...BEDROCK_EMBEDDINGS_CREATION_JOB_DEFAULTS,
+        ...creationJobOptions(`${type}_batch`),
+      }
       const activated: string[] = []
       await owned.run(async () => {
         await owned.ready()
         const worker = await owned.createWorker(() =>
-          createBackgroundCpuWorker({
-            handlers: BACKGROUND_CPU_HANDLERS,
-            domains: ['bedrock-embeddings'],
-            prefix: owned.options.prefix,
-            concurrency: 1,
-            blockTimeout: 1_000,
-            promotionInterval: 2_500,
-          }),
+          createBedrockEmbeddingsCreationWorker({ prefix: owned.options.prefix }),
         )
         worker.on('active', job => activated.push(job.name))
         await worker.waitUntilReady()
@@ -179,6 +113,109 @@ describe('native embedding creation admission', () => {
     },
   )
 
+  it('lets ready creation work pass a real image capacity delay across two capped workers', async () => {
+    const owned = createOwnedEmbeddingQueue(
+      quota,
+      'fairness',
+      {
+        connection: workerQueueConnection,
+        prefix: `${workerQueuePrefix}-embedding-creation-fairness-${randomUUID()}`,
+      },
+      BEDROCK_EMBEDDINGS_CREATION_QUEUE_NAME,
+    )
+    const config = getRateLimitConfig()
+    const imageMinimum = minimumImageBatchSizeMB(config.MIN_RECORDS_PER_JOB)
+    const textMinimum = minimumTextBatchSizeMB(config.MIN_RECORDS_PER_JOB)
+    const remainingMB = (imageMinimum + textMinimum) / 2
+    const activeBefore = await getActiveBatchStats()
+    const localGiB = Math.ceil((activeBefore.inputSizeMB + remainingMB) / 1024)
+    const reservationMB = localGiB * 1024 - activeBefore.inputSizeMB - remainingMB
+    const reservationCount = reservationMB > 0 ? 1 : 0
+    const countLimit = activeBefore.count + reservationCount + 1
+    if (reservationMB <= 0 || reservationMB >= 1024)
+      throw new Error('Could not create a sub-GiB fairness reservation')
+    if (localGiB * 1024 > config.MAX_INFLIGHT_SIZE_MB || countLimit > config.MAX_INFLIGHT_JOBS)
+      throw new Error('Ambient embedding usage leaves no room for the fairness reservation')
+    const restore = overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, {
+      max_inflight_jobs: countLimit,
+      max_job_size_gb: localGiB,
+      creation_retry_delay_ms: 30_000,
+    })
+    quota.beforeRelease(async () => restore())
+    const reservation = await quota.insertSubmittedReservation(reservationMB)
+    await quota.assertSubmittedReservation(reservation.id, reservationMB)
+    const activeWithReservation = await getActiveBatchStats()
+    const hourlyRecordsBeforeCompletedControl = await getBatchRecordsCreatedInLastHour()
+    await quota.insertCompletedControl()
+    expect(await getBatchRecordsCreatedInLastHour()).toBe(hourlyRecordsBeforeCompletedControl + 1)
+    expect(await getActiveBatchStats()).toEqual(activeWithReservation)
+    const reservedLimits = await getBatchCreationLimits()
+    if (!reservedLimits.allowed)
+      throw new Error(`Owned reservation blocked admission: ${reservedLimits.reason}`)
+    expect(reservedLimits.maxRecords).toBeGreaterThanOrEqual(reservedLimits.minRecords)
+    expect(reservedLimits.maxSizeMB).toBeCloseTo(remainingMB, 6)
+    expect(reservedLimits.maxSizeMB).toBeGreaterThanOrEqual(textMinimum)
+    expect(reservedLimits.maxSizeMB).toBeLessThan(imageMinimum)
+
+    const fairnessCursor = {
+      sweepStartedAt: '2024-01-01T00:00:00.000Z',
+      afterId: 'ffffffff-ffff-7fff-bfff-ffffffffffff',
+    }
+    await owned.run(async () => {
+      await owned.ready()
+      const workers = await Promise.all(
+        Array.from({ length: 2 }, () =>
+          owned.createWorker(() =>
+            createBedrockEmbeddingsCreationWorker({ prefix: owned.options.prefix }),
+          ),
+        ),
+      )
+      for (const worker of workers) {
+        await worker.waitUntilReady()
+      }
+
+      const imageName = 'bedrock-embeddings.create_images'
+      const imageOptions = {
+        ...BEDROCK_EMBEDDINGS_CREATION_JOB_DEFAULTS,
+        ...creationJobOptions(`fairness_images_${randomUUID()}`),
+      }
+      const image = await owned.add(imageName, { cursor: fairnessCursor }, imageOptions)
+      if (!image) throw new Error('Expected production image creation job')
+      await owned.waitFor(image.id, 'delay-changed')
+      expect(await image.getState()).toBe('delayed')
+      const delayed = await owned.queue.getJob(image.id)
+      expect(delayed?.data).toEqual({ cursor: fairnessCursor })
+      expect(parseEmbeddingScanCursor(delayed?.data)).toEqual(fairnessCursor)
+      expect(delayed?.attemptsMade).toBe(0)
+      expect(await owned.add(imageName, { cursor: fairnessCursor }, imageOptions)).toBeNull()
+
+      const text = await owned.add(
+        'bedrock-embeddings.create_topics',
+        { cursor: fairnessCursor },
+        {
+          ...BEDROCK_EMBEDDINGS_CREATION_JOB_DEFAULTS,
+          ...creationJobOptions(`fairness_topics_${randomUUID()}`),
+        },
+      )
+      if (!text) throw new Error('Expected ready topics creation')
+      await owned.waitFor(text.id, 'completed')
+      expect(await text.getState()).toBe('completed')
+      expect((await owned.queue.getJob(text.id))?.returnvalue).toMatchObject({ empty: true })
+      await quota.assertSubmittedReservation(reservation.id, reservationMB)
+      expect(await image.getState()).toBe('delayed')
+      expect((await owned.queue.getJob(image.id))?.data).toEqual(delayed?.data)
+      expect((await owned.queue.getJob(image.id))?.attemptsMade).toBe(0)
+      expect(await owned.add(imageName, {}, imageOptions)).toBeNull()
+      expect(await getBatchCreationLimits()).toEqual(reservedLimits)
+    })
+    // owned.run drains both production workers before the reservation is removed.
+    expect(await quota.assertSubmittedReservation(reservation.id, reservationMB)).toBeUndefined()
+    expect(await quota.removeOwnedReservations()).toEqual({
+      verifiedAbsentCount: 2,
+      remainingCount: 0,
+    })
+  })
+
   it.each(creationTypes)(
     'completes actual CPU factory %s with an exhausted cursor and available capacity',
     async (type: BatchJobType) => {
@@ -189,7 +226,7 @@ describe('native embedding creation admission', () => {
           connection: workerQueueConnection,
           prefix: `${workerQueuePrefix}-embedding-creation-empty-${type}-${randomUUID()}`,
         },
-        BACKGROUND_CPU_QUEUE_NAME,
+        BEDROCK_EMBEDDINGS_CREATION_QUEUE_NAME,
       )
       const restore = overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, {
         max_inflight_jobs: 10_000,
@@ -214,20 +251,13 @@ describe('native embedding creation admission', () => {
 
       const name = `bedrock-embeddings.create_${type}`
       const options = {
-        ...requireBackgroundCpuJob(name).options,
+        ...BEDROCK_EMBEDDINGS_CREATION_JOB_DEFAULTS,
         ...creationJobOptions(`${type}_batch`),
       }
       await owned.run(async () => {
         await owned.ready()
         const worker = await owned.createWorker(() =>
-          createBackgroundCpuWorker({
-            handlers: BACKGROUND_CPU_HANDLERS,
-            domains: ['bedrock-embeddings'],
-            prefix: owned.options.prefix,
-            concurrency: 1,
-            blockTimeout: 1_000,
-            promotionInterval: 2_500,
-          }),
+          createBedrockEmbeddingsCreationWorker({ prefix: owned.options.prefix }),
         )
         await worker.waitUntilReady()
         const job = await owned.add(name, { cursor: exhaustedCursor }, options)
