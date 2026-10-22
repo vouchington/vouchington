@@ -443,6 +443,16 @@ checks:
       exclude:
         - '**/*.test.mts'
         - '**/test-helpers/**'
+    # CI lints the whole repository (#3505); appending only the changed files keeps the listed
+    # local command cheap. It cannot append their dependents, which before-pushing adds.
+    - name: oxlint-type-aware
+      command: [pnpm, exec, oxlint, --type-aware, --deny-warnings]
+      fileArgs: append
+      include:
+        - '**/*.ts'
+        - '**/*.tsx'
+        - '**/*.mts'
+        - '**/*.cts'
 
 tests:
   playwright:

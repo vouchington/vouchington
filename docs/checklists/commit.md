@@ -6,7 +6,7 @@ Use this checklist before every `git commit`. GitHub Actions is the full gate af
 
 - **Format first** — run `pnpm run oxfmt:check` (global scan) on all changed file types before staging: `.ts/.tsx/.mts/.cts/.js/.mjs/.cjs`, `.json/.jsonc`, `.md`, `.yml/.yaml`, `.toml`.
   - The pinned Oxfmt processes explicit tracked dot-directory paths such as `.agents/skills/**/*.md`; keep those files in targeted formatter commands. This checklist still requires the global scan before committing.
-- **Lint TypeScript** — `pnpm exec oxlint --deny-warnings --type-aware <changed TS/MTS files>` before committing. Catches import-order violations and missing `vi.fn` type parameters that appear on nearly every first push.
+- **Lint TypeScript** — `pnpm exec oxlint --deny-warnings --type-aware <changed TS/MTS files and their direct dependents>` before committing. Catches import-order violations and missing `vi.fn` type parameters that appear on nearly every first push. Direct dependents catch unchanged callers broken by a changed export, such as a function that now returns a Promise its callers ignore; TypeScript compilation accepts those. List them with `pnpm exec no-mistakes dependents --depth 1 --relationship import --relationship workspace --format paths <changed TS/MTS files>`, or reuse planning's `dependents.json`.
 - **File size cap** — no `.ts/.tsx/.mts/.cts/.js/.mjs/.cjs` source file may exceed the source line cap, and test files have their own cap. Oxlint `max-lines` in [.oxlintrc.json](../../.oxlintrc.json) enforces both caps.
 - **Doc size budget** — check current size (`wc -l <file>` / `wc -c <file>`) before editing `AGENTS.md`. Follow the enforced [size budgets](../../.no-mistakes.yml), including the tighter root-instruction limit.
 - **Commit message format** — use [conventional commit](https://www.conventionalcommits.org/) format: `type(scope): description`. Always add a `Co-Authored-By:` trailer when using an AI agent.
@@ -20,7 +20,7 @@ Use this checklist before every `git commit`. GitHub Actions is the full gate af
 
 Before the first push, run these cheap local steps (also covered in [agent-workflow skill § Before Pushing](../../.agents/skills/agent-workflow/before-pushing.md)). GitHub Actions is the full gate.
 
-1. `pnpm exec oxlint --deny-warnings --type-aware <changed TS/MTS files>`
+1. `pnpm exec oxlint --deny-warnings --type-aware <changed TS/MTS files and their direct dependents>`
 2. `pnpm exec vitest run <directly changed test files> --bail=3`
 3. `git diff --name-only origin/main...HEAD` — scope check before rebasing
 4. `pnpm exec oxfmt --check <changed supported files>`
