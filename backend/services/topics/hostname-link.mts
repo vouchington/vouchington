@@ -129,6 +129,7 @@ export async function linkHostnameToSourceTopic(
   options: QueryOptions = {},
 ): Promise<void> {
   return withTopicHostnameTransaction(options, async query => {
+    // ast-grep-ignore: no-three-sequential-awaits -- ownership locks precede clearing the old claim, which must precede assigning the new primary hostname.
     await lockTopicHostnameOwnership(query, [topicId], [hostnameId])
     await clearOtherHostnameLinks(topicId, hostnameId, { query })
     await updateTopicHostnameId(topicId, hostnameId, query)

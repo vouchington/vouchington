@@ -153,6 +153,7 @@ async function removeAdditionalHostnameInTransaction(
   hostnameId: string,
   options: { query: TransactionQuery },
 ): Promise<void> {
+  // ast-grep-ignore: no-three-sequential-awaits -- topic ownership must precede hostname ownership, and both must precede the release write.
   await lockTopicHostnameMutations(options.query, [topicId])
   await lockHostnameOwnership(options.query, [hostnameId])
 

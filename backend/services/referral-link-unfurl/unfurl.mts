@@ -117,6 +117,7 @@ export async function runReferralLinkUnfurl(
 
   const assessedUrls = await assessUrls(validCandidates.map(candidate => candidate.url))
   await using query = await beginTransaction()
+  // ast-grep-ignore: no-three-sequential-awaits -- hostname ids must resolve before their ownership locks, which must precede the referral parent row lock.
   const resolved = await upsertUrlHostnames(
     parent.user_id,
     assessedUrls.map(url => url.hostname),

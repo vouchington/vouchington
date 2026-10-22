@@ -53,6 +53,7 @@ async function persistInTransaction(
     preserveHttp: _preserveHttp,
     ...queryOptions
   } = options
+  // ast-grep-ignore: no-three-sequential-awaits -- resolve ids before ownership locks, then reread local policy to observe the previous lock holder's commit.
   const resolved = await upsertUrlHostnames(
     userId,
     uniqueUrls.map(url => url.hostname),
