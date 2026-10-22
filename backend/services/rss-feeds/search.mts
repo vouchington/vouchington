@@ -96,7 +96,6 @@ export const searchRssFeeds = async (options: SearchRssFeedsOptions = {}) => {
   }
 
   const hasTextSearch = text_search_query && typeof text_search_query === 'string'
-  const searchQuery = hasTextSearch ? text_search_query : null
   const shouldIncludeTopicDescendants = include_descendants && effectiveTopicIds.length > 0
 
   const query = sql`/* searchRssFeeds */
@@ -116,8 +115,8 @@ export const searchRssFeeds = async (options: SearchRssFeedsOptions = {}) => {
 
     query.append(sql`
       search_tsquery AS MATERIALIZED (
-        SELECT websearch_to_tsquery('voucha_english', ${searchQuery}) AS tsquery,
-          LOWER(${`%${escapeLikePattern(searchQuery ?? '')}%`}) AS title_pattern
+        SELECT websearch_to_tsquery('voucha_english', ${text_search_query}) AS tsquery,
+          LOWER(${`%${escapeLikePattern(text_search_query)}%`}) AS title_pattern
       ),
       rss_feed_ids AS MATERIALIZED (
         SELECT id
