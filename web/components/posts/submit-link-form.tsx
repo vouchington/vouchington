@@ -98,6 +98,7 @@ export function SubmitLinkForm({ onCreated }: { onCreated?: (href: string) => vo
       <TurnstileField turnstile={turnstile} />
       {error && (
         <p
+          role='alert'
           className='text-sm text-destructive'
           data-pw='submit-link-error'
         >
