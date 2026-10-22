@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   appliedThreshold,
   createThresholdManagementCase,
+  plantCandidateThresholdActivatedAhead,
   readBatchSnapshotThresholds,
   readCandidateThresholdRows,
   readPromptVersionDefaults,
@@ -138,6 +139,30 @@ describe('setClassifierCandidateThreshold', () => {
     const rows = await readCandidateThresholdRows(fixture.topicCandidateId)
     expect(rows).toHaveLength(3)
     expect(rows.filter(row => row.active)).toHaveLength(1)
+  })
+
+  it('deactivates a revision that was activated after this change started', async () => {
+    const { fixture, actor, scope } = await createThresholdManagementCase()
+    const plantedId = await plantCandidateThresholdActivatedAhead({
+      classifierId: fixture.classifierId,
+      candidateId: fixture.topicCandidateId,
+      promptVersionId: fixture.promptVersionId,
+      activeThresholdId: fixture.topicThresholdId,
+      actorId: actor.id,
+    })
+
+    const result = await setClassifierCandidateThreshold(actor.id, scope, {
+      lower: 0.1,
+      upper: null,
+    })
+
+    expect(result.outcome).toBe('changed')
+    const rows = await readCandidateThresholdRows(fixture.topicCandidateId)
+    expect(rows.filter(row => row.active)).toHaveLength(1)
+    expect(rows.find(row => row.id === plantedId)).toMatchObject({
+      active: false,
+      deactivatedById: actor.id,
+    })
   })
 
   it('is what the next decision batch snapshots, while an earlier batch keeps its values', async () => {
