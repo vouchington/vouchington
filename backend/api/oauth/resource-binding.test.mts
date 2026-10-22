@@ -78,32 +78,28 @@ describe('OAuth resource binding routes', () => {
       scope,
     })
 
-    expect(location.searchParams.get('error')).toBe('access_denied')
+    expect(location.searchParams.get('error')).toBe('unauthorized_client')
     expect(location.searchParams.get('iss')).toBe(getOAuthIssuer())
     expect(location.searchParams.get('state')).toBe(state)
   })
 
-  it('lets an administrator approve the admin resource with iss on the callback', async () => {
-    const request = createRequest()
-    await request.authenticateAs(await createTestUserDirect({ administrator: true }))
-
-    const { location, state } = await authorize(request, {
-      resource: getOAuthResourceUrl('admin'),
-      scope: 'mcp.admin:read',
-    })
-    expect(location.pathname).toBe('/oauth/consent')
-    const decision = await request
-      .post(
-        `/api/v1/oauth/authorization-requests/${location.searchParams.get('request_id')}/decisions`,
-      )
-      .send({ decision: 'approve' })
-      .expect(200)
-
-    const callback = new URL(decision.body.redirect_uri)
-    expect(callback.searchParams.get('code')).toMatch(/^voucha_code_/)
-    expect(callback.searchParams.get('iss')).toBe(getOAuthIssuer())
-    expect(callback.searchParams.get('state')).toBe(state)
-  })
+  it.each([
+    ['admin', 'mcp.admin:read'],
+    ['legal', 'copyright-notices:read'],
+  ] as const)(
+    'denies a registered client the %s resource even for an administrator',
+    async (audience, scope) => {
+      const request = createRequest()
+      await request.authenticateAs(await createTestUserDirect({ administrator: true }))
+      const { location, state } = await authorize(request, {
+        resource: getOAuthResourceUrl(audience),
+        scope,
+      })
+      expect(location.searchParams.get('error')).toBe('unauthorized_client')
+      expect(location.searchParams.get('iss')).toBe(getOAuthIssuer())
+      expect(location.searchParams.get('state')).toBe(state)
+    },
+  )
 
   it('accepts a token request resource only when it names the bound resource', async () => {
     const approved = await createTestApprovedOAuthAuthorization(await createTestUserDirect())

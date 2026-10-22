@@ -9298,6 +9298,7 @@
 {"alias":"shared.oauth.consent.resourceHeading","consumer":"web","copyId":"copy.oauth.consent.resourceHeading"},
 {"alias":"shared.oauth.consent.sensitivePermissionsHeading","consumer":"web","copyId":"copy.shared.oauth.consent.sensitivePermissionsHeading"},
 {"alias":"shared.oauth.consent.title","consumer":"web","copyId":"copy.oauth.consent.title"},
+{"alias":"shared.oauth.consent.unverifiedApp","consumer":"web","copyId":"copy.oauth.consent.unverifiedApp"},
 {"alias":"shared.provenance.channel","consumer":"web","copyId":"copy.shared.provenance.channel"},
 {"alias":"shared.provenance.client","consumer":"web","copyId":"copy.shared.provenance.client"},
 {"alias":"shared.provenance.unverified","consumer":"web","copyId":"copy.shared.provenance.unverified"},

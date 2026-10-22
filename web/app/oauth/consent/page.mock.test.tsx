@@ -61,7 +61,8 @@ const authorizationRequest: OAuthAuthorizationRequestResponse = {
   authorization_request: {
     id: 'request-1',
     client_name: 'Example app',
-    client_hostname: null,
+    client_hostname: 'app.example',
+    client_is_unverified: true,
     resource: 'https://api.voucha.ai/api/v1/mcp',
     scopes: ['topics:read'],
     sensitive_scopes: [],
@@ -115,6 +116,8 @@ describe('OAuthConsentPage', () => {
     render(ui)
 
     expect(screen.getByText('Example app wants access to Voucha')).toBeDefined()
+    expect(screen.getByText('app.example')).toBeInTheDocument()
+    expect(screen.getByText('Unverified app')).toBeInTheDocument()
     expect(screen.getByText('https://api.voucha.ai/api/v1/mcp')).toBeDefined()
     expect(screen.getByText('post-relations.owned-private:write')).toBeDefined()
     expect(
@@ -173,6 +176,7 @@ describe('OAuthConsentPage', () => {
         ...authorizationRequest.authorization_request,
         client_name: 'Reviewed app',
         client_hostname: 'client.example',
+        client_is_unverified: false,
       },
     })
     render(
@@ -183,5 +187,6 @@ describe('OAuthConsentPage', () => {
 
     expect(screen.getByText('Reviewed app wants access to Voucha')).toBeInTheDocument()
     expect(screen.getByText('client.example')).toBeInTheDocument()
+    expect(screen.queryByText('Unverified app')).not.toBeInTheDocument()
   })
 })

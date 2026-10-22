@@ -1,3 +1,4 @@
+import { validateOAuthAppName } from './client-names.mts'
 import { OAUTH_CLIENT_COLUMNS } from './client-columns.mts'
 import { timingSafeEqual } from 'node:crypto'
 import { write, type QueryExecutor, type TransactionQuery } from '@data-stores/psql'
@@ -46,6 +47,7 @@ export async function insertOAuthClient(
     registry: {
       findClient: createProtocolClientLookup(getOAuthClient, query),
       createClient: async (client: NewOAuthClient) => {
+        validateOAuthAppName(client.clientName)
         insertedClient = await persistRegisteredClient(client, ownerUserId, query)
       },
     },

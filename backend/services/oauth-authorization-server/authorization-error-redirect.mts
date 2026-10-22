@@ -1,12 +1,12 @@
 import { OAUTH_CLIENT_COLUMNS } from './client-columns.mts'
 import { write } from '@data-stores/psql'
-import { OAuthProtocolError, authorizationErrorRedirect } from '@vouchington/oauth-server'
+import {
+  type OAuthProtocolError,
+  authorizationErrorRedirect,
+  matchesRegisteredRedirectUri,
+} from '@vouchington/oauth-server'
 import { getOAuthIssuer } from './resources.mts'
 import type { OAuthClient } from './types.mts'
-import {
-  resolveClientIdMetadataDocument,
-  type ClientIdMetadataDependencies,
-} from './client-id-metadata-document.mts'
 import { createProtocolClientLookup } from './protocol-client.mts'
 
 export async function getOAuthAuthorizationErrorRedirect(
@@ -16,8 +16,19 @@ export async function getOAuthAuthorizationErrorRedirect(
     state: unknown
     error: OAuthProtocolError
   },
-  clientIdMetadataDependencies: Partial<ClientIdMetadataDependencies> = {},
+  eligibleClient: OAuthClient | null,
 ): Promise<string | null> {
+  if (
+    !eligibleClient ||
+    eligibleClient.client_id !== input.clientId ||
+    !matchesRegisteredRedirectUri(input.redirectUri, eligibleClient.redirect_uris)
+  )
+    return null
+  if (
+    eligibleClient.metadata_url &&
+    (eligibleClient.metadata_expires_at?.getTime() ?? 0) <= Date.now()
+  )
+    return null
   const result = await write<OAuthClient>(
     `/* getOAuthClientForAuthorizationErrorRedirect */ SELECT ${OAUTH_CLIENT_COLUMNS}
      FROM oauth_clients
@@ -31,19 +42,10 @@ export async function getOAuthAuthorizationErrorRedirect(
        )`,
     [input.clientId],
   )
-  let client: OAuthClient | undefined = result.rows[0]
-  if (client?.metadata_url && (client.metadata_expires_at?.getTime() ?? 0) <= Date.now()) {
-    client = undefined
-  }
-  if (!client) {
-    try {
-      client =
-        (await resolveClientIdMetadataDocument(input.clientId, clientIdMetadataDependencies)) ??
-        undefined
-    } catch (err) {
-      if (!(err instanceof OAuthProtocolError) || err.code !== 'unauthorized_client') throw err
-      return null
-    }
+  const client = result.rows[0]
+  if (!client) return null
+  if (client.metadata_url && (client.metadata_expires_at?.getTime() ?? 0) <= Date.now()) {
+    return null
   }
   return authorizationErrorRedirect(input, {
     issuer: getOAuthIssuer(),

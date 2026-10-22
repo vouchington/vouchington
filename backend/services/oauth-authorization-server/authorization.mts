@@ -12,7 +12,10 @@ import {
   validateAuthorizationRequest,
   type AuthorizationParameters,
 } from '@vouchington/oauth-server'
-import { mayUserAuthorizeOAuthResource } from './resource-authorization.mts'
+import {
+  assertOAuthClientMayAuthorizeResource,
+  mayUserAuthorizeOAuthResource,
+} from './resource-authorization.mts'
 import { OAUTH_SCOPE_POLICY } from './validation.mts'
 import type {
   OAuthAuthorizationRequestView,
@@ -70,6 +73,7 @@ export async function beginValidatedOAuthAuthorizationRequest(
     throw invalidRequest('redirect_uri is not registered for this client')
   }
   assertClientMayRequestScopes(OAUTH_SCOPE_POLICY, lockedClient.scopes, scopes)
+  assertOAuthClientMayAuthorizeResource(lockedClient, resource)
   if (!(await mayUserAuthorizeOAuthResource(input.userId, resource, query))) {
     throw new OAuthProtocolError('access_denied', 'administrator role required', 403)
   }
@@ -134,6 +138,7 @@ export async function validateOAuthAuthorizationRequest(
   if (!client || !validated.scopes.every(isApiScope)) {
     throw new OAuthProtocolError('server_error', 'authorization request validation failed', 503)
   }
+  assertOAuthClientMayAuthorizeResource(client, validated.resource)
   return {
     client,
     codeChallenge: validated.codeChallenge,
@@ -183,7 +188,8 @@ export async function getOAuthAuthorizationRequestForUser(
   return {
     id: row.id,
     client_name: row.metadata_url ? getOAuthClientDisplayName(row.metadata_url) : row.client_name,
-    client_hostname: row.metadata_url ? new URL(row.metadata_url).hostname : null,
+    client_hostname: new URL(row.metadata_url ?? row.redirect_uri).hostname,
+    client_is_unverified: row.metadata_url === null,
     resource: row.resource,
     scopes: row.scopes,
     sensitive_scopes: row.scopes.filter(scope => SCOPE_DEFINITIONS[scope].requiresExactGrant),

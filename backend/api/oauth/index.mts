@@ -17,6 +17,7 @@ import {
   createOAuthBrowserBindingHash,
   decideOAuthAuthorizationRequest,
   getOAuthAuthorizationErrorRedirect,
+  getOAuthClient,
   getOAuthAuthorizationRequestForUser,
   registerOAuthClient,
   revokeOAuthToken,
@@ -30,6 +31,7 @@ import {
   queryString,
   redirect,
   sendOAuthError,
+  sendOAuthAuthorizationErrorPage,
   setOAuthResponseHeaders,
 } from './protocol-helpers.mts'
 import { exchangeOAuthTokenGrant } from './token-grant.mts'
@@ -39,6 +41,7 @@ const FORM_MEDIA_TYPES = ['application/x-www-form-urlencoded'] as const
 
 app.route('/authorize').get(async (ctx: Context) => {
   setOAuthResponseHeaders(ctx)
+  let errorRedirectClient: Awaited<ReturnType<typeof getOAuthClient>> = null
   try {
     const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/authorize')
     const parameters = {
@@ -51,6 +54,7 @@ app.route('/authorize').get(async (ctx: Context) => {
       scope: ctx.query.scope,
       state: ctx.query.state,
     }
+    errorRedirectClient = await getOAuthClient(parameters.clientId)
     const validated = await validateOAuthAuthorizationRequest(parameters)
     if (!currentUser) {
       redirect(ctx, `/login?next=${encodeURIComponent(ctx.req.url ?? '/authorize')}`)
@@ -65,17 +69,20 @@ app.route('/authorize').get(async (ctx: Context) => {
     redirect(ctx, `/oauth/consent?request_id=${encodeURIComponent(result.request_id)}`)
   } catch (err) {
     if (!(err instanceof OAuthProtocolError)) throw err
-    const location = await getOAuthAuthorizationErrorRedirect({
-      clientId: queryString(ctx, 'client_id'),
-      redirectUri: queryString(ctx, 'redirect_uri'),
-      state: ctx.query.state,
-      error: err,
-    })
+    const location = await getOAuthAuthorizationErrorRedirect(
+      {
+        clientId: queryString(ctx, 'client_id'),
+        redirectUri: queryString(ctx, 'redirect_uri'),
+        state: ctx.query.state,
+        error: err,
+      },
+      errorRedirectClient,
+    )
     if (location) {
       redirect(ctx, location)
       return
     }
-    sendOAuthError(ctx, err)
+    sendOAuthAuthorizationErrorPage(ctx, err)
   }
 })
 

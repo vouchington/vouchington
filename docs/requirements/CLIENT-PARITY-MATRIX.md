@@ -142,3 +142,12 @@ alongside their IDs. Web uses those response facts for every page of invitation 
 loaded pages, so it never needs to display a household UUID or fetch profiles for each row. Native
 adoption should use the same identities and safe fallback when a username is absent.
 [Native adoption is tracked in vouchington-clients#470](https://github.com/vouchington/vouchington-clients/issues/470). The producer lands first.
+
+## OAuth consent identity
+
+Authorization runs in the browser for web and native callers. Consent identifies a registered app
+with its selected callback host and an unverified label, alongside localized permission descriptions.
+The authorization-request response includes `client_is_unverified`; `client_hostname` is the
+metadata host for CIMD/native clients and the selected callback host for registered clients.
+The web owns rendering this browser flow; native clients continue to open the authorization URL.
+Dynamic registration cannot reserve first-party names or authorize staff resources.

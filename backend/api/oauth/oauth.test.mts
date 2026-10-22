@@ -134,11 +134,9 @@ describe('OAuth authorization routes', () => {
         state: 'opaque-state',
       })
       .expect(400)
-    expect(response.body).toEqual({
-      error: 'unauthorized_client',
-      error_description: 'client is not registered',
-    })
+    expect(response.headers['content-type']).toContain('text/html')
     expect(response.headers.location).toBeUndefined()
+    expect(response.text).toContain('Authorization unavailable')
   })
 
   it('routes a valid unauthenticated request through login with a local next path', async () => {
@@ -247,7 +245,8 @@ describe('OAuth authorization routes', () => {
       })
       .expect(400)
     expect(response.headers.location).toBeUndefined()
-    expect(response.body).toMatchObject({ error: 'unsupported_response_type' })
+    expect(response.headers['content-type']).toContain('text/html')
+    expect(response.text).toContain('Authorization unavailable')
   })
 
   it('redirects a protocol error only to the registered callback', async () => {
