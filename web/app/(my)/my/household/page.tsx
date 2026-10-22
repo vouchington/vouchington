@@ -1,9 +1,13 @@
 export const dynamic = 'force-dynamic'
 
 import type { Metadata } from 'next'
+import { getTranslations } from '@/lib/i18n/get-translations'
 import { createNoIndexMetadata } from '@/lib/seo/metadata'
 
-export const metadata: Metadata = createNoIndexMetadata('Household')
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations()
+  return createNoIndexMetadata(t('extracted.household.page.household_a1c6c97f'))
+}
 import { getHouseholdMemberships, getHouseholds } from '@/lib/api/server'
 import { requireCurrentUser } from '@/lib/auth/require-current-user'
 import { HouseholdPageContent } from '@/components/my/household-page-content'
@@ -15,8 +19,6 @@ import { SettingsPageHeader } from '@/components/my/settings-page-header'
 import type { Household, HouseholdSection, HouseholdSectionListItem } from '@/types/my'
 import type { ListResponse, PageInfo } from '@/types/api-responses'
 import type { HouseholdInvitation, HouseholdInvitationPage } from '@/types/household-invitations'
-import { getTranslations } from '@/lib/i18n/get-translations'
-
 const PAGE_LIMIT = 25
 const TERMINAL_PAGE_INFO: PageInfo = {
   has_next_page: false,

@@ -40,7 +40,7 @@ vi.mock(import('@/components/my/household-page-content'), () => ({
   ),
 }))
 
-import HouseholdPage from './page'
+import HouseholdPage, { generateMetadata } from './page'
 
 const pageInfo = {
   has_next_page: false,
@@ -61,6 +61,10 @@ describe('HouseholdPage', () => {
     mockGetHouseholdMemberships.mockResolvedValue({ results: [], page_info: pageInfo })
     mockSentInvitations.mockResolvedValue(makeHouseholdInvitationList([]))
     mockReceivedInvitations.mockResolvedValue(makeHouseholdInvitationList([]))
+  })
+
+  it('localizes the document title through the household page message', async () => {
+    expect(await generateMetadata()).toMatchObject({ title: 'Household' })
   })
 
   it('requests owned and member-only households independently with bounded first pages', async () => {

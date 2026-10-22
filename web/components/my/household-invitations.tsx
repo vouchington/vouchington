@@ -12,6 +12,7 @@ import {
   revokeHouseholdInvitation,
 } from '@/lib/api/client/household-invitations'
 import onError, { onSuccess } from '@/lib/on-error'
+import { useTranslations } from '@/lib/i18n/use-translations'
 import type { HouseholdInvitation, HouseholdInvitationPage } from '@/types/household-invitations'
 import type { ListResponse } from '@/types/api-responses'
 import { HouseholdInvitationsView } from './household-invitations-view'
@@ -22,6 +23,7 @@ type Props = {
 const PAGE_LIMIT = 25
 
 export function HouseholdInvitations(props: Props) {
+  const t = useTranslations()
   const router = useRouter()
   const [refreshing, startTransition] = useTransition()
   const [saving, setSaving] = useState(false)
@@ -90,10 +92,10 @@ export function HouseholdInvitations(props: Props) {
       setSelectedUserId(null)
       setFormKey(key => key + 1)
       setRelationship('')
-      onSuccess('Household invitation sent.')
+      onSuccess(t('settings.householdInvitations.invitationSent'))
       refresh()
     } catch (err) {
-      onError(err, { fallback: 'The invitation could not be sent.' })
+      onError(err, { fallback: t('settings.householdInvitations.invitationSendFailed') })
     } finally {
       inFlight.current = false
       setSaving(false)
@@ -109,14 +111,14 @@ export function HouseholdInvitations(props: Props) {
       setRemovedIds(current => new Set([...current, invitation.id]))
       onSuccess(
         action === 'accept'
-          ? 'Household invitation accepted.'
+          ? t('settings.householdInvitations.invitationAccepted')
           : action === 'decline'
-            ? 'Household invitation declined.'
-            : 'Household invitation revoked.',
+            ? t('settings.householdInvitations.invitationDeclined')
+            : t('settings.householdInvitations.invitationRevoked'),
       )
       refresh()
     } catch (err) {
-      onError(err, { fallback: 'The invitation could not be updated.' })
+      onError(err, { fallback: t('settings.householdInvitations.invitationUpdateFailed') })
     } finally {
       inFlight.current = false
       setSaving(false)
@@ -130,7 +132,7 @@ export function HouseholdInvitations(props: Props) {
     try {
       setRetried({ source: props.initialPage, page: await loadPage() })
     } catch (err) {
-      onError(err, { fallback: 'Invitations could not be loaded.' })
+      onError(err, { fallback: t('settings.householdInvitations.loadFailed') })
     } finally {
       inFlight.current = false
       setSaving(false)

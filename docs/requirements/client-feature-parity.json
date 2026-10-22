@@ -1536,8 +1536,8 @@
         }
       },
       "gap": {
-        "summary": "Web implements household invitations and invitation notifications. Swift and .NET implement household management but still need invitation actions and notification navigation. A vouchington-clients issue is needed; the producer lands first.",
-        "trackingIssue": "https://github.com/vouchington/vouchington/issues/3346"
+        "summary": "Web implements household invitations and invitation notifications. Swift and .NET implement household management but still need invitation actions and notification navigation. The producer lands first.",
+        "trackingIssue": "https://github.com/vouchington/vouchington-clients/issues/470"
       }
     },
     {
