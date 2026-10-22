@@ -1,8 +1,8 @@
 import { existsSync, readFileSync, statSync } from 'node:fs'
 
 import { parse } from 'yaml'
+import { join } from 'node:path'
 
-import { trackedFiles } from '../../ci/test-helpers/tracked-files.mts'
 import {
   assertUnfilteredComponentSbom,
   assertVulnerabilityGate,
@@ -27,10 +27,6 @@ type WorkflowStep = { run?: unknown; uses?: unknown }
 
 const OS_PURL =
   /^pkg:(deb|apk|rpm)\/(?:[A-Za-z0-9._~+-]|%[0-9A-Fa-f]{2})+\/(?:[A-Za-z0-9._~+-]|%[0-9A-Fa-f]{2})+@(?:[A-Za-z0-9._~+:-]|%[0-9A-Fa-f]{2})+(?:\?(?:[A-Za-z0-9._~+-]|%[0-9A-Fa-f]{2})+=(?:[A-Za-z0-9._~+:-]|%[0-9A-Fa-f]{2})+(?:&(?:[A-Za-z0-9._~+-]|%[0-9A-Fa-f]{2})+=(?:[A-Za-z0-9._~+:-]|%[0-9A-Fa-f]{2})+)*)?$/
-
-function trackedRepositoryFiles(): string[] {
-  return trackedFiles(process.cwd())
-}
 
 export function isShellPolicySource(path: string): boolean {
   if (/\.(bash|sh|zsh)$/.test(path)) return true
@@ -94,19 +90,24 @@ export function assertNoUnsupportedTrivyShellSource(source: string, path = 'fixt
   }
 }
 
-export function trivyPackageScanCommands(repositoryFiles = trackedRepositoryFiles()): string[] {
+export function trivyPackageScanCommands(
+  repositoryFiles: readonly string[],
+  root: string,
+): string[] {
   const workflowPaths = repositoryFiles.filter(
-    path => /^\.github\/workflows\/[^/]+\.ya?ml$/.test(path) && existsSync(path),
+    path => /^\.github\/workflows\/[^/]+\.ya?ml$/.test(path) && existsSync(join(root, path)),
   )
   const actionPaths = repositoryFiles.filter(
-    path => /^\.github\/actions\/.+\.ya?ml$/.test(path) && existsSync(path),
+    path => /^\.github\/actions\/.+\.ya?ml$/.test(path) && existsSync(join(root, path)),
   )
   for (const path of repositoryFiles.filter(
-    path => existsSync(path) && isShellPolicySource(path),
+    path => existsSync(join(root, path)) && isShellPolicySource(join(root, path)),
   )) {
-    assertNoUnsupportedTrivyShellSource(readFileSync(path, 'utf8'), path)
+    assertNoUnsupportedTrivyShellSource(readFileSync(join(root, path), 'utf8'), path)
   }
-  return assertSupportedWorkflowSteps([...workflowPaths, ...actionPaths])
+  return assertSupportedWorkflowSteps(
+    [...workflowPaths, ...actionPaths].map(path => join(root, path)),
+  )
 }
 
 export function validateIgnoreRegistry(registry: IgnoreRegistry, now = new Date()): void {

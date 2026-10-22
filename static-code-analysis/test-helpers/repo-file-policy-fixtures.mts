@@ -1,3 +1,4 @@
+import { writeValidToolingPolicyFixture } from './tooling-policy-fixtures.mts'
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
@@ -49,6 +50,7 @@ export function setupRepoFilePolicyTest() {
     snapshotTablesByRepo.set(dir, {})
     await track(dir, '.claude/settings.json', '{}')
     await track(dir, '.codex/rules/default.rules', '')
+    await writeValidToolingPolicyFixture((path, content) => track(dir, path, content))
     if (lifecycleScenarioContract === 'valid') {
       await writeValidLifecycleScenarioFixture((path, content) => track(dir, path, content))
     } else if (lifecycleScenarioContract === 'untracked') {
@@ -72,6 +74,10 @@ export function setupRepoFilePolicyTest() {
         snapshotTablesByRepo.get(repoRoot)![match[1]] = partitionedSnapshotTable()
       }
     }
+  }
+
+  function untrackPath(repoRoot: string, path: string) {
+    trackedFilesByRepo.get(repoRoot)?.delete(path)
   }
 
   function trackPath(repoRoot: string, path: string) {
@@ -166,6 +172,7 @@ export function setupRepoFilePolicyTest() {
     topicRouteConfigSource,
     track,
     trackPath,
+    untrackPath,
     trackPostEnumSurfaces,
     trackTopicEnumSurfaces,
   }

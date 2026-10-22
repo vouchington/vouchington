@@ -1,3 +1,6 @@
+import { checkWorkspaceRootCoverage } from './workspace-root-coverage.mts'
+import { checkTrivyPolicy } from './trivy-policy.mts'
+import { checkDockerImageMirrors } from './docker-image-mirror.mts'
 import { checkAgentBlackboardMcpConfig } from './agent-blackboard-mcp-config.mts'
 import { checkBoundedWorkTunables } from './bounded-work-tunables.mts'
 import {
@@ -59,6 +62,9 @@ export async function checkRepoFilePolicy(
 
   const trackedFiles = ctx.trackedFiles.filter(file => existsSync(join(ctx.repoRoot, file)))
   const trackedFileSet = ctx.trackedFileSet
+  errors.push(...checkDockerImageMirrors(ctx.repoRoot, ctx.trackedFiles))
+  checkTrivyPolicy(ctx.repoRoot, trackedFiles)
+  errors.push(...checkWorkspaceRootCoverage(ctx.repoRoot, ctx.trackedFiles))
   errors.push(
     ...checkBoundedWorkTunables(
       ctx.repoRoot,

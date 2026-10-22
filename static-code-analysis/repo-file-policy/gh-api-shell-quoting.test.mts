@@ -1,27 +1,14 @@
-// Regression guard for issue #10956: an unquoted `?`/`&` in a `gh api` argument silently
-// backgrounds the command (rc=0, truncated query) or fails only under zsh glob-nomatch. This is
-// the Vitest-run counterpart to gh-api-shell-quoting-guard.mts, which is the one wired into
-// `pnpm run repo-file-policy` and Static Code Analysis — see gh-api-shell-quoting.mts for the
-// shared file predicates both consumers use and `vouchington-tooling/gh-api-shell-quoting`
-// for the detection algorithm and its rationale.
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
-
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { checkGhApiShellQuoting } from './gh-api-shell-quoting-guard.mts'
 import { describe, expect, it } from 'vitest'
 
-import { trackedFiles } from '../../ci/test-helpers/tracked-files.mts'
 import {
   isGhApiShellScriptFile,
-  isGhApiWorkflowFile,
   shellScriptViolations,
   workflowYamlViolations,
 } from './gh-api-shell-quoting.mts'
-
-const root = resolve(import.meta.dirname, '../..')
-
-function allTrackedFiles(): string[] {
-  return trackedFiles(root)
-}
 
 describe('gh api shell-quoting guard', () => {
   it('flags an unquoted `?` right after the gh api argument starts', () => {
@@ -271,28 +258,25 @@ describe('gh api shell-quoting guard', () => {
   it('does not recognize an arbitrary extensionless path under ci/', () => {
     expect(isGhApiShellScriptFile('ci/not-a-real-script')).toBe(false)
   })
+})
 
-  it('has no unquoted `?`/`&` in a gh api argument across tracked workflows and scripts', () => {
-    const files = allTrackedFiles()
-    const workflowFiles = files.filter(isGhApiWorkflowFile)
-    const shellFiles = files.filter(isGhApiShellScriptFile)
-    expect(workflowFiles.length).toBeGreaterThan(0)
-    expect(shellFiles.length).toBeGreaterThan(0)
-
-    const violations = [
-      ...workflowFiles.flatMap(path =>
-        workflowYamlViolations(readFileSync(resolve(root, path), 'utf8')).map(v => ({
-          ...v,
-          file: path,
-        })),
-      ),
-      ...shellFiles.flatMap(path =>
-        shellScriptViolations(readFileSync(resolve(root, path), 'utf8')).map(v => ({
-          ...v,
-          file: path,
-        })),
-      ),
-    ]
-    expect(violations).toEqual([])
+describe('static guard routing', () => {
+  it('routes only supplied tracked workflow and script fixtures through the static guard', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'gh-quoting-static-'))
+    try {
+      await mkdir(join(root, '.github/workflows'), { recursive: true })
+      await writeFile(
+        join(root, '.github/workflows/check.yml'),
+        'jobs:\n  check:\n    steps:\n      - run: gh api repos/x/y?per_page=1&state=open\n',
+      )
+      const errors: string[] = []
+      checkGhApiShellQuoting(root, ['.github/workflows/check.yml'], errors)
+      expect(errors).toHaveLength(1)
+      const ignored: string[] = []
+      checkGhApiShellQuoting(root, [], ignored)
+      expect(ignored).toEqual([])
+    } finally {
+      await rm(root, { recursive: true, force: true })
+    }
   })
 })

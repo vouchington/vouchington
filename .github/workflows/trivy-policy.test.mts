@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 
 import { describe, expect, it } from 'vitest'
 
@@ -7,7 +7,6 @@ import {
   assertNoUnsupportedTrivyShellSource,
   assertUnfilteredComponentSbom,
   assertVulnerabilityGate,
-  isComponentSbomGeneration,
   isTrivyPackageScanCommand,
   isShellPolicySource,
   parseIgnoreRegistry,
@@ -15,7 +14,7 @@ import {
   trivyPackageScanCommands,
   validateIgnoreRegistry,
   type Ignore,
-} from './trivy-policy-helpers.mts'
+} from '../../static-code-analysis/repo-file-policy/trivy-policy-helpers.mts'
 
 const clock = new Date(process.env.VOUCH_PROOF_NOW ?? '2026-10-31T12:00:00.000Z')
 function futureDate(days = 14): string {
@@ -24,18 +23,6 @@ function futureDate(days = 14): string {
 }
 
 describe('Trivy policy', () => {
-  it('requires OS gates, unfiltered component SBOMs, and an on-disk exception registry', () => {
-    const commands = trivyPackageScanCommands()
-    const sboms = commands.filter(isComponentSbomGeneration)
-    const gates = commands.filter(command => !isComponentSbomGeneration(command))
-    expect(gates.length).toBeGreaterThanOrEqual(2)
-    expect(sboms.length).toBeGreaterThanOrEqual(2)
-    for (const command of gates) expect(() => assertVulnerabilityGate(command)).not.toThrow()
-    for (const command of sboms) expect(() => assertUnfilteredComponentSbom(command)).not.toThrow()
-    expect(existsSync('.trivyignore.yaml')).toBe(true)
-    validateIgnoreRegistry(parseIgnoreRegistry(readFileSync('.trivyignore.yaml', 'utf8')))
-  })
-
   it('routes ignore-only changes to tooling', () => {
     const workflow = readFileSync('.github/ci-path-filters.yml', 'utf8')
     const tooling = workflow.slice(
@@ -43,11 +30,13 @@ describe('Trivy policy', () => {
       workflow.indexOf('cloudflare-worker:'),
     )
     expect(tooling).toContain("- '.trivyignore.yaml'")
-    expect(trivyPackageScanCommands([])).toEqual([])
+    expect(trivyPackageScanCommands([], import.meta.dirname)).toEqual([])
   })
 
   it('ignores deleted shell sources still present in index metadata', () =>
-    expect(trivyPackageScanCommands(['deleted-but-still-indexed.sh'])).toEqual([]))
+    expect(trivyPackageScanCommands(['deleted-but-still-indexed.sh'], import.meta.dirname)).toEqual(
+      [],
+    ))
 
   it('recognizes extensionless executable shell entrypoints', () => {
     expect(isShellPolicySource('dev/initialize')).toBe(true)

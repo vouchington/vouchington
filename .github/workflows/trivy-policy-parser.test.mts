@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   assertVulnerabilityGate,
   trivyPackageScanCommandSegments,
-} from './trivy-policy-helpers.mts'
+} from '../../static-code-analysis/repo-file-policy/trivy-policy-helpers.mts'
 
 const completeGate =
   'trivy image --scanners vuln --quiet --skip-db-update --pkg-types os --exit-code "$TRIVY_FINDINGS_EXIT_CODE" --severity CRITICAL,HIGH --ignore-unfixed --ignorefile .trivyignore.yaml --format table --table-mode detailed --output report.txt target'
