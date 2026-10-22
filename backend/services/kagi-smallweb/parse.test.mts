@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
+  iterateFeedListEntries,
   parseWebFeedList,
   parseComicFeedList,
   parseYouTubeFeedList,
@@ -128,5 +129,23 @@ describe('parseFeedList', () => {
       'youtube',
     )
     expect(ytEntries[0].sourceType).toBe('youtube')
+  })
+})
+
+describe('iterateFeedListEntries', () => {
+  it('keeps a multibyte character split across download chunks', async () => {
+    const text = 'https://example.com/foo你bar\n'
+    const bytes = Buffer.from(text)
+    const character = Buffer.from('你')
+    expect(character).toHaveLength(3)
+    const splitAt = bytes.indexOf(character) + 1
+    const chunks = (async function* () {
+      yield bytes.subarray(0, splitAt)
+      yield bytes.subarray(splitAt)
+    })()
+
+    const entries = await Array.fromAsync(iterateFeedListEntries(chunks, 'web'))
+
+    expect(entries.map(entry => entry.feedUrl)).toEqual(['https://example.com/foo你bar'])
   })
 })

@@ -1,4 +1,4 @@
-import { Readable, Transform } from 'node:stream'
+import { Readable, Transform, compose } from 'node:stream'
 import { ValkeyCache } from '@data-stores/valkey/cache'
 import { fetch } from 'undici'
 import { HttpResponseSizeError } from '@modules/on-error/errors'
@@ -85,7 +85,9 @@ function cappedFeedListStream(response: globalThis.Response, url: string): Reada
       callback(null, chunk)
     },
   })
-  return Readable.fromWeb(
-    response.body as import('node:stream/web').ReadableStream<Uint8Array>,
-  ).pipe(cap)
+  // compose forwards source errors and destroys the download if the cap fails.
+  return compose(
+    Readable.fromWeb(response.body as import('node:stream/web').ReadableStream<Uint8Array>),
+    cap,
+  )
 }

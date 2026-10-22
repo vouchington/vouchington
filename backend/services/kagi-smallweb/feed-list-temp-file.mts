@@ -1,7 +1,7 @@
 import { createWriteStream } from 'node:fs'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { isAbsolute, join, relative, resolve } from 'node:path'
 import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
 import { iterateFeedListEntries, type FeedListSourceType, type ParsedFeedEntry } from './parse.mts'
@@ -25,8 +25,19 @@ export function createFeedListDirectory(): Promise<string> {
   return mkdtemp(join(tmpdir(), KAGI_FEED_LIST_DIRECTORY_PREFIX))
 }
 
-export function removeFeedListDirectory(directory: string): Promise<void> {
-  return rm(directory, { recursive: true, force: true })
+export async function removeFeedListDirectory(directory: string): Promise<void> {
+  const resolved = resolve(directory)
+  const fromRoot = relative(resolve(tmpdir()), resolved)
+  const name = fromRoot.split(/[/\\]/)[0] ?? ''
+  if (
+    fromRoot.length === 0 ||
+    fromRoot.startsWith('..') ||
+    isAbsolute(fromRoot) ||
+    !name.startsWith(KAGI_FEED_LIST_DIRECTORY_PREFIX)
+  ) {
+    throw new Error('feed list directory is outside the temporary run prefix')
+  }
+  await rm(resolved, { recursive: true, force: true })
 }
 
 /** Stream every changed list once, keep the last entry per URL, and diff it against the reader. */

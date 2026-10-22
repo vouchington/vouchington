@@ -49,11 +49,13 @@ describe('dispatchKagiSmallWeb with the import enabled', () => {
     const first = await dispatchKagiSmallWeb()
     expect(first).toMatchObject({ enqueued: 1, hasMore: true, total: 4 })
     expect(fetchSpy).toHaveBeenCalledTimes(3)
+    if (!first.feedListDir)
+      throw new Error('expected the first page to keep the feed list directory')
 
     let cursor = first.nextCursor
     let pages = 0
     while (cursor !== undefined && pages < 5) {
-      const resumed = await dispatchKagiSmallWeb(cursor)
+      const resumed = await dispatchKagiSmallWeb(cursor, undefined, first.feedListDir)
       expect(fetchSpy).toHaveBeenCalledTimes(3)
       cursor = resumed.nextCursor
       pages += 1
@@ -182,9 +184,11 @@ describe('dispatchKagiSmallWeb page retries', () => {
       expect(call[1].headers).toHaveProperty('If-None-Match')
     }
     await forgetFeedListValidators(names)
+    let directory = retried.feedListDir
     let cursor = retried.nextCursor
     while (cursor !== undefined) {
-      const page = await dispatchKagiSmallWeb(cursor)
+      const page = await dispatchKagiSmallWeb(cursor, undefined, directory)
+      directory = page.feedListDir ?? directory
       cursor = page.nextCursor
     }
   })

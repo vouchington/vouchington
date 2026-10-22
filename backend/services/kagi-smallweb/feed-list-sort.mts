@@ -19,7 +19,7 @@ export async function sortAndDiff(numbered: string, directory: string): Promise<
   const desired = join(directory, 'desired')
   const membership = join(directory, 'membership')
   const added = join(directory, 'added')
-  await orderLastWins(numbered, ordered, deduped, desired, membership)
+  await orderLastWins(numbered, ordered, deduped, desired, membership, directory)
   await keepNewUrls(desired, membership, added, [numbered, ordered, desired, membership])
 }
 
@@ -29,15 +29,30 @@ async function orderLastWins(
   deduped: string,
   desired: string,
   membership: string,
+  directory: string,
 ): Promise<void> {
-  await sortDeduped(numbered, ordered, deduped)
+  await sortDeduped(numbered, ordered, deduped, directory)
   await writeReaderFiles(deduped, desired, membership)
 }
 
-async function sortDeduped(numbered: string, ordered: string, deduped: string): Promise<void> {
-  await writeCommandOutput(SORT_BIN, ['-t', FIELD_SEPARATOR, '-k1,1', '-k2,2nr', numbered], ordered)
+async function sortDeduped(
+  numbered: string,
+  ordered: string,
+  deduped: string,
+  directory: string,
+): Promise<void> {
+  const spill = ['-S', '32M', '-T', directory] as const
+  await writeCommandOutput(
+    SORT_BIN,
+    [...spill, '-t', FIELD_SEPARATOR, '-k1,1', '-k2,2nr', numbered],
+    ordered,
+  )
   // Stable `-s` keeps the later line. Without it, a full-line tie keeps the earlier line number.
-  await writeCommandOutput(SORT_BIN, ['-s', '-t', FIELD_SEPARATOR, '-u', '-k1,1', ordered], deduped)
+  await writeCommandOutput(
+    SORT_BIN,
+    ['-s', ...spill, '-t', FIELD_SEPARATOR, '-u', '-k1,1', ordered],
+    deduped,
+  )
 }
 
 async function writeReaderFiles(

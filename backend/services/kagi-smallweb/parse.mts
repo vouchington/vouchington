@@ -1,3 +1,4 @@
+import { StringDecoder } from 'node:string_decoder'
 import { createSlugFromTitle } from '@modules/utils/slugs'
 
 export type ParsedFeedEntry = {
@@ -56,9 +57,10 @@ export async function* iterateFeedListEntries(
   chunks: AsyncIterable<Uint8Array | string>,
   sourceType: FeedListSourceType,
 ): AsyncGenerator<ParsedFeedEntry> {
+  const decoder = new StringDecoder('utf8')
   let pending = ''
   for await (const chunk of chunks) {
-    pending += typeof chunk === 'string' ? chunk : Buffer.from(chunk).toString('utf8')
+    pending += typeof chunk === 'string' ? chunk : decoder.write(chunk)
     let newline = pending.indexOf('\n')
     while (newline !== -1) {
       const entry = parseFeedListLine(pending.slice(0, newline), sourceType)
@@ -67,6 +69,7 @@ export async function* iterateFeedListEntries(
       newline = pending.indexOf('\n')
     }
   }
+  pending += decoder.end()
   if (pending.length > 0) {
     const entry = parseFeedListLine(pending, sourceType)
     if (entry) yield entry

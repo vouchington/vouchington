@@ -28,8 +28,6 @@ export type DispatchKagiSmallWebResult = {
   commitValidators?: () => Promise<void>
 }
 
-let activeFeedListDirectory: string | undefined
-
 /**
  * One bounded page of the Small Web lists. The root downloads each changed list once. A
  * continuation resumes from that run's file and does not download or sort the lists again.
@@ -51,16 +49,15 @@ export async function dispatchKagiSmallWeb(
     const directory = await createFeedListDirectory()
     try {
       await prepareFeedListDiff(fetched.lists, directory)
-      activeFeedListDirectory = directory
       const result = await enqueueFeedListPage(directory, cursor, pageSize, fetched.incomplete)
       if (result.hasMore) {
         return { ...result, feedListDir: directory, commitValidators: fetched.commitValidators }
       }
       await fetched.commitValidators()
-      await finishFeedListDirectory(directory)
+      await removeFeedListDirectory(directory)
       return result
     } catch (err) {
-      await finishFeedListDirectory(directory)
+      await removeFeedListDirectory(directory)
       throw err
     }
   } catch (err) {
@@ -94,9 +91,8 @@ function recordedDirectory(
   cursor: string | undefined,
   feedListDir: string | undefined,
 ): string | undefined {
-  if (cursor === undefined) return undefined
-  const directory = feedListDir ?? activeFeedListDirectory
-  return directory && existsSync(directory) ? directory : undefined
+  if (cursor === undefined || feedListDir === undefined) return undefined
+  return existsSync(feedListDir) ? feedListDir : undefined
 }
 
 async function pageRecordedDirectory(
@@ -107,7 +103,7 @@ async function pageRecordedDirectory(
   try {
     const result = await enqueueFeedListPage(directory, cursor, pageSize, false)
     if (result.hasMore) return { ...result, feedListDir: directory }
-    await finishFeedListDirectory(directory)
+    await removeFeedListDirectory(directory)
     return result
   } catch (err) {
     if (cursor !== undefined)
@@ -133,11 +129,6 @@ async function enqueueFeedListPage(
     total: page.total,
     ...(hasMore && { hasMore, nextCursor: page.page.at(-1)!.feedUrl }),
   }
-}
-
-async function finishFeedListDirectory(directory: string): Promise<void> {
-  if (activeFeedListDirectory === directory) activeFeedListDirectory = undefined
-  await removeFeedListDirectory(directory)
 }
 
 type FetchedLists =

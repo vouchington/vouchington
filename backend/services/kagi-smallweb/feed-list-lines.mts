@@ -21,11 +21,12 @@ export async function* desiredLines(deduped: string): AsyncGenerator<string> {
 
 // Two readline interfaces in one process drop the second file's lines, so split chunks here.
 export async function* linesOf(path: string): AsyncGenerator<string> {
-  const stream = createReadStream(path)
+  const stream = createReadStream(path, { encoding: 'utf8', highWaterMark: 64 * 1024 })
   let pending = ''
   try {
     for await (const chunk of stream) {
-      pending += Buffer.from(chunk).toString('utf8')
+      if (typeof chunk !== 'string') throw new Error('feed list reader expected utf8 text')
+      pending += chunk
       let newline = pending.indexOf('\n')
       while (newline !== -1) {
         yield pending.slice(0, newline)

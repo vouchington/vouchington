@@ -116,6 +116,22 @@ describe('fetchFeedList caching behavior', () => {
     expect(fetchSpy.mock.calls[2]![1].headers).toHaveProperty('If-None-Match', 'W/"root"')
   })
 
+  it('rejects when the body errors after the response headers', async () => {
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode('https://a.example/feed\n'))
+      },
+      pull(controller) {
+        controller.error(new Error('connection reset'))
+      },
+    })
+    fetchSpy.mockResolvedValueOnce(new Response(body, { status: 200 }))
+
+    const result = await fetchFeedList('test-reset', LIST_URL)
+
+    await expect(readStream(result!.stream)).rejects.toThrow('connection reset')
+  })
+
   it('returns an empty string for successful responses without a body', async () => {
     fetchSpy.mockResolvedValueOnce(new Response(null, { status: 200 }))
 

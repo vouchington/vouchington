@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { existsSync, rmSync } from 'node:fs'
 import { describe, expect, it, vi } from 'vitest'
 import type { Job } from 'glide-mq'
 import { background } from '@queues/background/queues'
@@ -103,4 +104,109 @@ describe('Kagi paged dispatcher through the background handler', () => {
       }
     }
   })
+
+  it('uses the job feedListDir and downloads again when that directory is gone', async () => {
+    const suffix = randomUUID()
+    const urls = [
+      `https://kagi-dir-${suffix}-a.example.com/feed.xml`,
+      `https://kagi-dir-${suffix}-b.example.com/feed.xml`,
+      `https://kagi-dir-${suffix}-c.example.com/feed.xml`,
+    ].toSorted()
+    const [web, comic, youtube] = FEED_LIST_SOURCES.map(source => source.url)
+    const lists = new Map([
+      [web!, urls.join('\n')],
+      [comic!, ''],
+      [youtube!, ''],
+    ])
+    fetchSpy.mockReset()
+    fetchSpy.mockImplementation(
+      async input =>
+        new Response(
+          lists.get(
+            typeof input === 'string' ? input : input instanceof URL ? input.href : input.url,
+          ),
+        ),
+    )
+    const restoreImport = overrideDynamicConfigFieldsForTest(kagiSmallWebImportConfig, {
+      enabled: true,
+      candidate_batch_size: 1,
+    })
+    const restorePaged = overrideDynamicConfigFieldsForTest(pagedDispatchConfig, {
+      kagi_page_size: 1,
+      background_max_depth: 1_000_000,
+    })
+    await forgetFeedListValidators(FEED_LIST_SOURCES.map(source => source.name))
+    const handler = kagiSmallWebHandlers.find(
+      candidate => candidate.job.name === KAGI_SMALLWEB_SYNC_JOB.name,
+    )
+    if (!handler) throw new Error('Kagi sync handler is not registered')
+    const root = await background.add(KAGI_SMALLWEB_SYNC_JOB.name, {})
+    if (!root) throw new Error('Expected Kagi sync job admission')
+    const continuations: Array<Awaited<ReturnType<typeof background.getJob>>> = []
+    try {
+      await handler.handle(root as Job<never>)
+      expect(fetchSpy).toHaveBeenCalledTimes(3)
+      const first = await continuationFor(urls)
+      const directory = feedListDirectory(first)
+      expect(existsSync(directory)).toBe(true)
+
+      await handler.handle(first as Job<never>)
+      expect(fetchSpy).toHaveBeenCalledTimes(3)
+      const second = await continuationFor(urls, first.id)
+      expect(feedListDirectory(second)).toBe(directory)
+
+      rmSync(directory, { recursive: true, force: true })
+      await handler.handle(second as Job<never>)
+      expect(fetchSpy).toHaveBeenCalledTimes(6)
+      const finalJobs = await Promise.all(
+        urls.map(feedUrl =>
+          background.searchJobs({
+            name: KAGI_SMALLWEB_PROCESS_FEED_JOB.name,
+            data: { feedUrl },
+          }),
+        ),
+      )
+      expect(finalJobs.flat()).toHaveLength(3)
+      continuations.push(first, second)
+    } finally {
+      restorePaged()
+      restoreImport()
+      fetchSpy.mockReset()
+      await forgetFeedListValidators(FEED_LIST_SOURCES.map(source => source.name))
+      await Promise.all([root.remove(), ...continuations.map(job => job?.remove())])
+      for (const feedUrl of urls) {
+        const jobs = await background.searchJobs({
+          name: KAGI_SMALLWEB_PROCESS_FEED_JOB.name,
+          data: { feedUrl },
+        })
+        await Promise.all(jobs.map(job => job.remove()))
+      }
+    }
+  })
 })
+
+async function continuationFor(urls: readonly string[], exceptId?: string) {
+  const jobs = (
+    await Promise.all(
+      urls.map(cursor =>
+        background.searchJobs({
+          name: KAGI_SMALLWEB_SYNC_JOB.name,
+          data: { cursor },
+        }),
+      ),
+    )
+  )
+    .flat()
+    .filter(job => job.id !== exceptId)
+  const newest = jobs.at(-1)
+  if (!newest) throw new Error('Expected a Kagi continuation')
+  const persisted = await background.getJob(newest.id)
+  if (!persisted) throw new Error('Expected persisted Kagi continuation')
+  return persisted
+}
+
+function feedListDirectory(job: { data: unknown }): string {
+  const directory = (job.data as { feedListDir?: string }).feedListDir
+  if (!directory) throw new Error('continuation is missing feedListDir')
+  return directory
+}
