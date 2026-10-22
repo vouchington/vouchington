@@ -1,8 +1,9 @@
 import { decryptSecret, encryptSecret } from '@modules/token-secrets'
 import { isUUID } from '@modules/utils'
-import { read, write } from '@data-stores/psql'
+import { beginTransaction, read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { copyrightSubmissionPurpose } from './submissions.mts'
+import { COPYRIGHT_ERASED_CIPHERTEXT } from './erased-ciphertext.mts'
 
 export type CopyrightAppealRecommendationInput = {
   appeal: {
@@ -87,11 +88,25 @@ async function appendCopyrightAppealRecommendation(input: {
   recommendation: 'confirm' | 'modify' | 'reverse' | 'uncertain'
   rationale: string
 }): Promise<void> {
-  await write(sql`/* appendCopyrightAppealRecommendation */
+  await using transaction = await beginTransaction()
+  await transaction(sql`/* appendCopyrightAppealRecommendation:lockNotice */
+    SELECT notice.id FROM copyright_notice_submissions submission
+    JOIN copyright_notices notice ON notice.id = submission.copyright_notice_id
+    WHERE submission.id = ${input.submissionId}
+    FOR KEY SHARE OF notice`)
+  await transaction(sql`/* appendCopyrightAppealRecommendation */
     INSERT INTO copyright_notice_appeal_recommendations (copyright_notice_submission_id, input_sha256, prompt_version, model, recommendation, rationale_ciphertext)
-    VALUES (${input.submissionId}, ${input.inputSha256}, ${input.promptVersion}, ${input.model}, ${input.recommendation}, ${encryptSecret(input.rationale, `copyright-appeal:${input.submissionId}`)})
+    SELECT submission.id, ${input.inputSha256}, ${input.promptVersion}, ${input.model}, ${input.recommendation}, ${encryptSecret(input.rationale, `copyright-appeal:${input.submissionId}`)}
+    FROM copyright_notice_submissions submission
+    WHERE submission.id = ${input.submissionId}
+      AND submission.body_ciphertext <> ${COPYRIGHT_ERASED_CIPHERTEXT}
+      AND NOT EXISTS (
+        SELECT 1 FROM copyright_notice_retention_erasures erased
+        WHERE erased.copyright_notice_id = submission.copyright_notice_id
+      )
     ON CONFLICT (copyright_notice_submission_id, input_sha256, prompt_version) DO NOTHING
   `)
+  await transaction.commit()
 }
 
 export const copyrightAppealRecommendations = {

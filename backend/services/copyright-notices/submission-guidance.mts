@@ -1,11 +1,11 @@
 import { decryptSecret, encryptSecret } from '@modules/token-secrets'
-import { read, write } from '@data-stores/psql'
+import { beginTransaction, read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type {
   CopyrightCounterNoticeGuidance,
   CopyrightLegalHoldGuidance,
 } from '@ts-shared/utils/copyright-submission-guidance'
-import { liveCopyrightCiphertext } from './erased-ciphertext.mts'
+import { COPYRIGHT_ERASED_CIPHERTEXT, liveCopyrightCiphertext } from './erased-ciphertext.mts'
 import { copyrightSubmissionPurpose } from './submissions.mts'
 import { stripPersonalDetails } from './contact-redaction.mts'
 
@@ -142,14 +142,26 @@ export async function appendCopyrightSubmissionGuidance(input: {
   model: string
   guidance: CopyrightCounterNoticeGuidance | CopyrightLegalHoldGuidance
 }): Promise<void> {
-  await write(sql`/* appendCopyrightSubmissionGuidance */
+  await using transaction = await beginTransaction()
+  await transaction(sql`/* appendCopyrightSubmissionGuidance:lockNotice */
+    SELECT notice.id FROM copyright_notice_submissions submission
+    JOIN copyright_notices notice ON notice.id = submission.copyright_notice_id
+    WHERE submission.id = ${input.submissionId}
+    FOR KEY SHARE OF notice`)
+  await transaction(sql`/* appendCopyrightSubmissionGuidance */
     INSERT INTO copyright_notice_submission_guidance (
       copyright_notice_submission_id, input_sha256, prompt_version, model,
       guidance_ciphertext
-    ) VALUES (
-      ${input.submissionId}, ${input.inputSha256}, ${input.promptVersion}, ${input.model},
+    ) SELECT submission.id, ${input.inputSha256}, ${input.promptVersion}, ${input.model},
       ${encryptSecret(JSON.stringify(input.guidance), `copyright-submission-guidance:${input.submissionId}`)}
-    )
+    FROM copyright_notice_submissions submission
+    WHERE submission.id = ${input.submissionId}
+      AND submission.body_ciphertext <> ${COPYRIGHT_ERASED_CIPHERTEXT}
+      AND NOT EXISTS (
+        SELECT 1 FROM copyright_notice_retention_erasures erased
+        WHERE erased.copyright_notice_id = submission.copyright_notice_id
+      )
     ON CONFLICT (copyright_notice_submission_id, input_sha256, prompt_version) DO NOTHING
   `)
+  await transaction.commit()
 }

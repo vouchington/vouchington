@@ -6,6 +6,7 @@ import {
   type CopyrightFormGuidance,
   parseCopyrightFormGuidance,
 } from './form-screening-guidance.mts'
+import { COPYRIGHT_ERASED_CIPHERTEXT } from './erased-ciphertext.mts'
 
 type Transaction = Awaited<ReturnType<typeof beginTransaction>>
 export type CopyrightFormScreeningAttempt = {
@@ -120,6 +121,11 @@ export async function completeCopyrightFormScreening(
   const guidance = parseCopyrightFormGuidance(input.guidance)
   await using transaction = await beginTransaction()
   await lockCopyrightFormReview(attempt.intakeId, transaction)
+  await transaction(sql`/* completeCopyrightFormScreening:lockNotice */
+    SELECT notice.id FROM copyright_notice_form_intakes intake
+    JOIN copyright_notices notice ON notice.id = intake.copyright_notice_id
+    WHERE intake.id = ${attempt.intakeId}
+    FOR KEY SHARE OF notice`)
   const { rows: executions } = await transaction<{
     state: string
     copyright_notice_form_screening_id: string | null
@@ -143,12 +149,25 @@ export async function completeCopyrightFormScreening(
     INSERT INTO copyright_notice_form_screenings (
       copyright_notice_form_intake_id, input_sha256, prompt_version, model, recommendation,
       rationale_ciphertext, guidance_ciphertext
-    ) VALUES (${input.intakeId}, ${input.inputSha256}, ${input.promptVersion}, ${input.model},
+    ) SELECT intake.id, ${input.inputSha256}, ${input.promptVersion}, ${input.model},
       ${input.recommendation}, ${encryptSecret(input.rationale, purpose)},
-      ${encryptSecret(JSON.stringify(guidance), purpose)})
+      ${encryptSecret(JSON.stringify(guidance), purpose)}
+    FROM copyright_notice_form_intakes intake
+    JOIN copyright_notice_submissions submission
+      ON submission.id = intake.copyright_notice_submission_id
+    WHERE intake.id = ${attempt.intakeId}
+      AND submission.body_ciphertext <> ${COPYRIGHT_ERASED_CIPHERTEXT}
+      AND NOT EXISTS (
+        SELECT 1 FROM copyright_notice_retention_erasures erased
+        WHERE erased.copyright_notice_id = intake.copyright_notice_id
+      )
     RETURNING id
   `)
-  const id = rows[0]!.id
+  const id = rows[0]?.id
+  if (!id) {
+    await transaction.commit()
+    return null
+  }
   const { rowCount } = await transaction(sql`/* completeCopyrightFormScreening */
     UPDATE copyright_notice_form_screening_attempts
     SET copyright_notice_form_screening_id = ${id}, completed_at = clock_timestamp()
