@@ -1383,11 +1383,11 @@
     "legal": {
       "list_copyright_review_queue": {
         "measured": {
-          "list": 14766,
+          "list": 14841,
           "core": 300
         },
         "max": {
-          "list": 15000,
+          "list": 16000,
           "core": 1000
         }
       },
