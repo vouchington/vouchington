@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { ChoiceRadioGroup } from './choice-radio-group'
 import { ScopePicker } from './scope-picker'
+import { scopeAudienceLabelKey } from './scope-audience-label'
 import type { ApiKeyScopeSelection } from './use-api-key-scope-selection'
 
 interface CreateApiKeyFormProps {
@@ -63,12 +64,37 @@ export function CreateApiKeyForm({
         onChange={selection.handleKeyTypeChange}
       />
       {selection.keyType === 'mcp' && (
-        <ScopePicker
-          idPrefix='api-key'
-          rows={selection.rows}
-          selected={selection.mcpScopes}
-          onToggle={selection.handleScopeToggle}
-        />
+        <div className='space-y-3'>
+          <div className='space-y-1'>
+            <Label htmlFor='api-key-audience'>{t('settings.apiKeys.audience.server')}</Label>
+            <select
+              id='api-key-audience'
+              className='flex h-10 w-full rounded-md border bg-background px-3 text-sm'
+              value={selection.audience ?? ''}
+              onChange={event =>
+                selection.handleAudienceChange(
+                  event.target.value as typeof selection.audience & string,
+                )
+              }
+              data-pw='api-keys-create-audience-select'
+            >
+              {selection.audiences.map(audience => (
+                <option
+                  key={audience}
+                  value={audience}
+                >
+                  {t(scopeAudienceLabelKey(audience))}
+                </option>
+              ))}
+            </select>
+          </div>
+          <ScopePicker
+            idPrefix='api-key'
+            groups={selection.groups}
+            selected={selection.mcpScopes}
+            onToggle={selection.handleScopeToggle}
+          />
+        </div>
       )}
       <div className='space-y-1'>
         <Label htmlFor='api-key-label'>

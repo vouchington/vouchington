@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import type { ScopeCatalogEntry, ScopeCatalogResponse } from '@/types/scopes'
 import {
-  oauthScopeAudiences,
+  availableScopeAudiences,
+  scopeResourceGroups,
   scopeResourceRows,
   toggleScope,
 } from '../api-keys-manager/scope-selection'
@@ -125,10 +126,34 @@ describe('toggleScope', () => {
   })
 })
 
-describe('oauthScopeAudiences', () => {
-  it('offers admin scopes only to administrators', () => {
-    expect(oauthScopeAudiences(false)).toEqual(['user'])
-    expect(oauthScopeAudiences(true)).toEqual(['user', 'admin'])
+describe('audience policy', () => {
+  const policies = (scopeCatalogFixture as ScopeCatalogResponse).audiences
+  it('offers the three API-key servers without staff resources', () => {
+    expect(availableScopeAudiences(policies, 'api-key', false)).toEqual([
+      'user',
+      'community_moderation',
+      'brand',
+    ])
+  })
+  it('offers all five OAuth audiences only to an administrator', () => {
+    expect(availableScopeAudiences(policies, 'oauth', false)).toEqual([
+      'user',
+      'community_moderation',
+      'brand',
+    ])
+    expect(availableScopeAudiences(policies, 'oauth', true)).toEqual([
+      'user',
+      'community_moderation',
+      'brand',
+      'admin',
+      'legal',
+    ])
+  })
+  it('starts each audience with its own umbrella scope when present', () => {
+    const groups = scopeResourceGroups(catalog, 'oauth', ['user', 'admin'])
+    expect(groups.map(group => group.audience)).toEqual(['user', 'admin'])
+    expect(groups[0]?.rows[0]?.resource).toBe('mcp.user')
+    expect(groups[1]?.rows[0]?.resource).toBe('mcp.admin')
   })
 })
 

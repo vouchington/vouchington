@@ -1,4 +1,5 @@
 export type ScopeAudience = 'admin' | 'api' | 'brand' | 'community_moderation' | 'legal' | 'user'
+export type McpScopeAudience = Exclude<ScopeAudience, 'api'>
 export type ScopeCredentialSurface = 'api-key' | 'oauth'
 export type ScopeAction = 'read' | 'write'
 export type ScopeDescriptionKey =
@@ -30,4 +31,11 @@ export interface ScopeCatalogEntry {
 
 export interface ScopeCatalogResponse {
   scopes: ScopeCatalogEntry[]
+  audiences: ScopeAudiencePolicy[]
+}
+
+export interface ScopeAudiencePolicy {
+  audience: McpScopeAudience
+  accepts_api_keys: boolean
+  requires_administrator: boolean
 }

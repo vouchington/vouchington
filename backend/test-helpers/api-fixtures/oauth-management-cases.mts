@@ -1,4 +1,5 @@
 import { listScopeCatalog } from '@modules/scopes'
+import { listScopeAudiencePolicies } from '../../services/mcp-tools/scope-audience-policies.mts'
 import type { ApiFixtureCase } from './types.mts'
 
 const timestamp = '2026-09-01T12:00:00.000Z'
@@ -35,7 +36,10 @@ export const oauthManagementApiFixtureCases: ApiFixtureCase[] = [
     route: { routeTemplate: '/api/v1/scopes' },
     auth: 'none',
     status: 200,
-    body: { scopes: listScopeCatalog() },
+    body: {
+      scopes: listScopeCatalog(),
+      audiences: listScopeAudiencePolicies(),
+    },
     consumers: [...clientConsumers],
     migratedFrom: ['backend/api/v1/scopes/scopes.test.mts'],
   },

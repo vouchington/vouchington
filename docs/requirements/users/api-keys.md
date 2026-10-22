@@ -1,7 +1,10 @@
 # API Keys
 
 API keys give programmatic access to features that need authentication: RSS feeds (read-only, key in
-the query string) and the user MCP server (bearer token).
+the query string) and eligible MCP servers (bearer token). An MCP API key belongs to one server
+audience; changing the audience while creating a key clears previously selected permissions.
+OAuth apps may offer permissions from several server audiences, while each authorization request
+and access token remains bound to one protected resource.
 
 ## Decisions
 

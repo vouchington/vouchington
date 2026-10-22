@@ -1,5 +1,5 @@
 import { write, type QueryExecutor } from '@data-stores/psql'
-import { findOAuthProtectedResource } from './resources.mts'
+import { findOAuthProtectedResource, OAUTH_AUDIENCE_REQUIRES_ADMINISTRATOR } from './resources.mts'
 
 // Only administrators may grant a client access to the staff MCP resources. Their routes
 // still checks the role on every call; this keeps a non-admin from approving an unusable grant.
@@ -9,9 +9,8 @@ export async function mayUserAuthorizeOAuthResource(
   query: QueryExecutor = write,
 ): Promise<boolean> {
   const audience = findOAuthProtectedResource(resource)?.audience
-  if (audience === 'user' || audience === 'community_moderation' || audience === 'brand')
-    return true
-  if (audience !== 'admin' && audience !== 'legal') return false
+  if (!audience) return false
+  if (!OAUTH_AUDIENCE_REQUIRES_ADMINISTRATOR[audience]) return true
   const result = await query<{ is_administrator: boolean }>(
     `/* mayUserAuthorizeOAuthResource */ SELECT EXISTS (
        SELECT 1

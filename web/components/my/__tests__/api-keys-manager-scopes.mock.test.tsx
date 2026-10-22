@@ -4,7 +4,7 @@ import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
 import type { ReactNode } from 'react'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AuthProvider } from '@/lib/auth/auth-provider'
-import type { ScopeCatalogEntry, ScopeCatalogResponse } from '@/types/scopes'
+import type { ScopeCatalogResponse } from '@/types/scopes'
 import { toast } from 'sonner'
 import issuedApiKey from '../../../../api-fixtures/v1/responses/native.my.api-keys.create.json'
 import rotatedApiKey from '../../../../api-fixtures/v1/responses/native.my.api-keys.rotate.json'
@@ -39,8 +39,9 @@ import { createApiKey, getApiKeys, rotateApiKey } from '@/lib/api/client/api-key
 
 const mockCreate = vi.mocked(createApiKey)
 const mockGet = vi.mocked(getApiKeys)
-const scopeCatalog: ScopeCatalogEntry[] = (scopeCatalogFixture as ScopeCatalogResponse).scopes.map(
-  entry => ({
+const scopeCatalog: ScopeCatalogResponse = {
+  ...(scopeCatalogFixture as ScopeCatalogResponse),
+  scopes: (scopeCatalogFixture as ScopeCatalogResponse).scopes.map(entry => ({
     ...entry,
     description_key:
       entry.resource === 'mcp.admin'
@@ -60,8 +61,8 @@ const scopeCatalog: ScopeCatalogEntry[] = (scopeCatalogFixture as ScopeCatalogRe
                   ? 'households_read'
                   : 'households_write'
                 : null,
-  }),
-)
+  })),
+}
 
 function asAdmin(children: ReactNode) {
   return (
@@ -250,13 +251,33 @@ describe('ApiKeysManager scope selection', () => {
   it.each([
     ['non-admin users', undefined],
     ['administrators', asAdmin(<ApiKeysManager scopeCatalog={scopeCatalog} />)],
-  ])('offers no audience choice or admin scopes to %s', async (_label, ui) => {
+  ])('offers only the three API-key audiences to %s', async (_label, ui) => {
     await openMcpForm(ui)
 
-    expect(screen.queryByRole('radio', { name: 'Administrator' })).not.toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: 'MCP server' })).toHaveValue('user')
+    expect(screen.getAllByRole('option').map(option => option.textContent)).toEqual([
+      'Your account',
+      'Community moderation',
+      'Brand tools',
+    ])
     expect(screen.queryByRole('checkbox', { name: 'mcp.admin Read' })).not.toBeInTheDocument()
     expect(screen.queryByRole('checkbox', { name: 'mcp.admin Write' })).not.toBeInTheDocument()
     expect(screen.getByRole('checkbox', { name: 'mcp.user Read' })).toBeInTheDocument()
+  })
+
+  it('drops old scopes when the server changes and submits only the selected audience', async () => {
+    await openMcpForm()
+    fireEvent.click(checkbox('mcp.user Read'))
+    fireEvent.change(screen.getByRole('combobox', { name: 'MCP server' }), {
+      target: { value: 'brand' },
+    })
+    expect(screen.queryByRole('checkbox', { name: 'mcp.user Read' })).not.toBeInTheDocument()
+    expect(checkbox('topic-claims Read')).not.toBeChecked()
+    fireEvent.click(checkbox('topic-claims Read'))
+    await createWithLabel('Brand agent')
+    await waitFor(() =>
+      expect(mockCreate).toHaveBeenCalledWith('Brand agent', 'mcp', ['topic-claims:read'], 90),
+    )
   })
 
   it('renders the user catalogue description through localized copy', async () => {

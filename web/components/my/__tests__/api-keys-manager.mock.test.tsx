@@ -126,7 +126,7 @@ describe('ApiKeysManager Integration Flow', () => {
   })
 
   it('renders loading state initially then loads and displays API keys', async () => {
-    render(<ApiKeysManager scopeCatalog={[]} />)
+    render(<ApiKeysManager scopeCatalog={{ scopes: [], audiences: [] }} />)
 
     expect(screen.getByText('Loading...')).toBeInTheDocument()
 
@@ -141,7 +141,7 @@ describe('ApiKeysManager Integration Flow', () => {
 
   it('handles load error notification and displays message', async () => {
     mockGet.mockRejectedValueOnce(new Error('Network error'))
-    render(<ApiKeysManager scopeCatalog={[]} />)
+    render(<ApiKeysManager scopeCatalog={{ scopes: [], audiences: [] }} />)
 
     await waitFor(() => {
       expect(mockToastError).toHaveBeenCalledWith('Failed to load API keys')
@@ -150,7 +150,7 @@ describe('ApiKeysManager Integration Flow', () => {
   })
 
   it('toggles creation form, validates input, and cancels', async () => {
-    render(<ApiKeysManager scopeCatalog={[]} />)
+    render(<ApiKeysManager scopeCatalog={{ scopes: [], audiences: [] }} />)
     await waitFor(() => expect(mockGet).toHaveBeenCalled())
 
     const createButton = await findCreateApiKeyButton()
@@ -169,7 +169,7 @@ describe('ApiKeysManager Integration Flow', () => {
   })
 
   it('successfully creates an API key and allows copying the raw key', async () => {
-    render(<ApiKeysManager scopeCatalog={[]} />)
+    render(<ApiKeysManager scopeCatalog={{ scopes: [], audiences: [] }} />)
     await waitFor(() => expect(mockGet).toHaveBeenCalled())
 
     fireEvent.click(await findCreateApiKeyButton())
@@ -209,7 +209,7 @@ describe('ApiKeysManager Integration Flow', () => {
   })
 
   it('supports revoking an API key with confirmation', async () => {
-    render(<ApiKeysManager scopeCatalog={[]} />)
+    render(<ApiKeysManager scopeCatalog={{ scopes: [], audiences: [] }} />)
     await waitFor(() => expect(mockGet).toHaveBeenCalled())
 
     const revokeButton = await screen.findByRole('button', { name: /Revoke/i })

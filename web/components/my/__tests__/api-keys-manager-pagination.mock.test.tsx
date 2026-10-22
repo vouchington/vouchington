@@ -84,7 +84,7 @@ describe('ApiKeysManager pagination revocation', () => {
     const { rerender } = render(
       <ApiKeysManager
         initialData={makeFirstPage([firstPageKey])}
-        scopeCatalog={[]}
+        scopeCatalog={{ scopes: [], audiences: [] }}
       />,
     )
 
@@ -106,7 +106,7 @@ describe('ApiKeysManager pagination revocation', () => {
     rerender(
       <ApiKeysManager
         initialData={makeFirstPage([firstPageKey, { ...continuationKey, revoked_at: null }])}
-        scopeCatalog={[]}
+        scopeCatalog={{ scopes: [], audiences: [] }}
       />,
     )
 

@@ -2504,10 +2504,14 @@
             "web/app/(my)/my/api-keys/page.tsx",
             "web/app/(my)/my/connected-apps/page.tsx",
             "web/components/my/api-keys-manager.tsx",
+            "web/components/my/oauth-apps-manager.tsx",
+            "web/app/oauth/consent/consent-scope-sections.tsx",
             "web/components/my/connected-apps-manager.tsx"
           ],
           "behaviorTests": [
             "web/components/my/__tests__/api-keys-manager-scopes.mock.test.tsx",
+            "web/components/my/__tests__/oauth-apps-manager.mock.test.tsx",
+            "web/app/oauth/consent/page.mock.test.tsx",
             "web/components/my/__tests__/connected-apps-manager.mock.test.tsx"
           ]
         },
@@ -2527,7 +2531,7 @@
         }
       },
       "gap": {
-        "summary": "Native main can create and revoke API keys only from fixed legacy permissions and has no connected OAuth-grant settings surface. Vouchington stages the catalogue, nullable-use and grant fixtures before the linked native consumer.",
+        "summary": "Native main can create and revoke API keys only from fixed legacy permissions and has no connected OAuth-grant settings surface or server-audience scope picker. The web picker follows the backend audience policy; native credential selection remains dependent work.",
         "trackingIssue": "https://github.com/vouchington/vouchington-clients/issues/177"
       }
     },

@@ -8,7 +8,7 @@ import { useApiKeysManager } from './api-keys-manager/use-api-keys-manager'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import type { ListResponse } from '@/types/api-responses'
 import type { ApiKey } from '@/types/api-keys'
-import type { ScopeCatalogEntry } from '@/types/scopes'
+import type { ScopeCatalogResponse } from '@/types/scopes'
 import { InfiniteScroll } from '@/components/shared/infinite-scroll'
 
 export function ApiKeysManager({
@@ -16,7 +16,7 @@ export function ApiKeysManager({
   scopeCatalog,
 }: {
   initialData?: ListResponse<ApiKey>
-  scopeCatalog: readonly ScopeCatalogEntry[]
+  scopeCatalog: ScopeCatalogResponse
 }) {
   const t = useTranslations()
   const {

@@ -42,7 +42,7 @@ import { toast } from 'sonner'
 
 const mockCreate = vi.mocked(createOAuthApp)
 const mockGet = vi.mocked(getOAuthApps)
-const scopeCatalog = (scopeCatalogFixture as ScopeCatalogResponse).scopes
+const scopeCatalog = scopeCatalogFixture as ScopeCatalogResponse
 const fixturePage = listFixture as ListResponse<OAuthApp>
 const issued = createdFixture as IssuedOAuthApp
 const emptyPage: ListResponse<OAuthApp> = {
@@ -257,11 +257,17 @@ describe('OAuthAppsManager', () => {
     expect(screen.getByText('You have not registered any OAuth apps.')).toBeInTheDocument()
   })
 
-  it('offers admin scopes only to administrators', () => {
+  it('groups public audiences and offers admin and legal only to administrators', () => {
     const { unmount } = renderManager()
+    expect(screen.getByRole('heading', { name: 'Community moderation' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Brand tools' })).toBeInTheDocument()
+    expect(screen.getByRole('checkbox', { name: 'community-moderation Read' })).toBeInTheDocument()
+    expect(screen.getByRole('checkbox', { name: 'topic-claims Read' })).toBeInTheDocument()
     expect(screen.queryByRole('checkbox', { name: 'mcp.admin Read' })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('checkbox', { name: 'copyright-notices Read' }),
+    ).not.toBeInTheDocument()
     unmount()
-
     render(
       <AuthProvider
         initialUser={{ id: 'admin-user', roles: ['administrator'], account_type: 'official' }}
@@ -273,6 +279,7 @@ describe('OAuthAppsManager', () => {
       </AuthProvider>,
     )
     expect(screen.getByRole('checkbox', { name: 'mcp.admin Read' })).toBeInTheDocument()
+    expect(screen.getByRole('checkbox', { name: 'copyright-notices Read' })).toBeInTheDocument()
   })
 
   it('loads the next page of apps', async () => {

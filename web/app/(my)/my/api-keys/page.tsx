@@ -24,11 +24,11 @@ export default async function ApiKeysPage() {
       />
       <ApiKeysManager
         initialData={apiKeys}
-        scopeCatalog={scopeCatalog.scopes}
+        scopeCatalog={scopeCatalog}
       />
       <OAuthAppsManager
         initialData={oauthApps}
-        scopeCatalog={scopeCatalog.scopes}
+        scopeCatalog={scopeCatalog}
       />
     </div>
   )

@@ -1,4 +1,4 @@
-import type { ScopeCatalogEntry } from '@/types/scopes'
+import type { ScopeCatalogEntry, ScopeCatalogResponse } from '@/types/scopes'
 
 function scope(
   name: string,
@@ -18,8 +18,7 @@ function scope(
           ? 'mcp_user_full_access'
           : null,
     requires,
-    // Administrator MCP scopes are OAuth-only; API keys never carry them.
-    surfaces: audience === 'admin' ? ['oauth'] : ['api-key', 'oauth'],
+    surfaces: audience === 'admin' || audience === 'legal' ? ['oauth'] : ['api-key', 'oauth'],
   }
 }
 
@@ -30,6 +29,20 @@ export const storybookScopeCatalog: readonly ScopeCatalogEntry[] = [
   scope('cards:read', 'user'),
   scope('cards:write', 'user', 'cards:read'),
   scope('posts:read', 'user'),
+  scope('community-moderation:read', 'community_moderation'),
+  scope('topic-claims:read', 'brand'),
   scope('mcp.admin:read', 'admin'),
   scope('mcp.admin:write', 'admin', 'mcp.admin:read'),
+  scope('copyright-notices:read', 'legal'),
 ]
+
+export const storybookScopeCatalogResponse: ScopeCatalogResponse = {
+  scopes: [...storybookScopeCatalog],
+  audiences: [
+    { audience: 'user', accepts_api_keys: true, requires_administrator: false },
+    { audience: 'community_moderation', accepts_api_keys: true, requires_administrator: false },
+    { audience: 'brand', accepts_api_keys: true, requires_administrator: false },
+    { audience: 'admin', accepts_api_keys: false, requires_administrator: true },
+    { audience: 'legal', accepts_api_keys: false, requires_administrator: true },
+  ],
+}

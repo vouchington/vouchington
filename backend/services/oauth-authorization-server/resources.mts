@@ -8,6 +8,16 @@ import { getSiteOrigin } from '@modules/utils'
 
 export type OAuthResourceAudience = 'admin' | 'brand' | 'community_moderation' | 'legal' | 'user'
 
+export const OAUTH_AUDIENCE_REQUIRES_ADMINISTRATOR: Readonly<
+  Record<OAuthResourceAudience, boolean>
+> = {
+  user: false,
+  community_moderation: false,
+  brand: false,
+  admin: true,
+  legal: true,
+}
+
 export type OAuthProtectedResource = {
   audience: OAuthResourceAudience
   url: string
