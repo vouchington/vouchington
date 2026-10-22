@@ -15,15 +15,13 @@ run with the existing CI credential policy. Review the PR before placing it in t
 All configured release delays match: Dependabot's cooldown and pnpm's `minimumReleaseAge`.
 
 pnpm itself is not pinned. The root `package.json` has no `packageManager` field, so local installs
-run whatever pnpm is installed. CI (`pnpm/action-setup` `version: latest-12`) and the Docker builds
-(`PNPM_VERSION`) name only a pnpm major, so new releases in that major reach them without a PR.
-CI self-updates to the newest release that pnpm's default `minimumReleaseAge` admits: the
-action runs `pnpm self-update` outside this workspace, so the setting above does not apply
-to pnpm itself. Docker builds run `npm install -g pnpm@<major>`, which has no release delay. Moving to
-the next major is a manual edit that `.github/workflows/pnpm-activation.test.mts` keeps consistent.
-An enforced pin would make pnpm write `pnpm-lock.yaml` as two YAML documents, which
-single-document lockfile readers and GitHub's dependency graph (dependabot/dependabot-core#15904) do
-not fully read.
+run whichever pnpm is installed. CI uses the SHA-pinned `pnpm/setup` action with `version: latest-12`
+to download pnpm directly, avoiding a temporary npm project and its `npm ci` bootstrap. The action
+leaves Node provisioning and workspace installation with their existing owners. Docker builds
+continue to run `npm install -g pnpm@<major>` independently. Moving to the next major is a manual
+edit. An enforced package-manager pin would make pnpm write `pnpm-lock.yaml` as two YAML documents,
+which single-document lockfile readers and GitHub's dependency graph
+(dependabot/dependabot-core#15904) do not fully read.
 
 <a id="no-mistakes-releases"></a>A `no-mistakes` release can change more than rule behavior: the package also generates
 `backend/data-stores/psql/schema-snapshot/no-mistakes-catalog.json`, which `db:snapshot:check` compares
