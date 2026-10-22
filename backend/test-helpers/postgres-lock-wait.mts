@@ -58,6 +58,7 @@ export async function getTestPostgresAdvisoryLockHolderProcessId(input: {
  * advisory-pool users or an event-loop stall. Passing a previously acquired transaction
  * executor reserves the observer connection before the holder or blocked operation starts.
  * Its transaction-local activity snapshot is discarded before each observation.
+ * Supply waiterProcessId to distinguish this operation from other matching waiters.
  */
 export async function waitForTestPostgresLockWaiter(
   holderProcessId: number,
@@ -68,6 +69,7 @@ export async function waitForTestPostgresLockWaiter(
     waiting: boolean
   }) => void,
   signal?: AbortSignal,
+  waiterProcessId?: number,
 ): Promise<void> {
   await pollUntilNotNull(
     async () => {
@@ -86,6 +88,7 @@ export async function waitForTestPostgresLockWaiter(
           SELECT 1
           FROM pg_stat_activity activity
           WHERE activity.pid <> pg_backend_pid()
+            AND (${waiterProcessId ?? null}::integer IS NULL OR activity.pid = ${waiterProcessId ?? null}::integer)
             AND activity.state = 'active'
             AND activity.wait_event_type = 'Lock'
             AND activity.query LIKE ${`%${queryMarker}%`}

@@ -1,3 +1,8 @@
+import {
+  observeGlobalShadowAuditCancellation,
+  observeScopedShadowAuditSuccess,
+} from '@voucha/test-helpers/post-publication-shadow-audit-contention'
+import { getTestPostgresAdvisoryLockHolderProcessId } from '@voucha/test-helpers/postgres-lock-wait'
 import { readFileSync } from 'node:fs'
 import { randomUUID } from 'node:crypto'
 import type { QueryExecutor } from '@data-stores/psql'
@@ -7,7 +12,10 @@ import {
   withTestShadowAuditCheckpoint,
 } from '@voucha/test-helpers/post-publication-shadow-audit-fixtures'
 import { describe, expect, it } from 'vitest'
-import { runPostPublicationShadowAudit } from './shadow-audit.mts'
+import {
+  postPublicationShadowAuditLockKey,
+  runPostPublicationShadowAudit,
+} from './shadow-audit.mts'
 import { postPublicationWorkMaxValues } from './work-limits.mts'
 
 const shadowAuditSource = readFileSync(new URL('./shadow-audit.mts', import.meta.url), 'utf8')
@@ -103,6 +111,59 @@ describe('post publication shadow audit checkpoints', () => {
       })
       expect(eof.scannedByScope.post).toBe(0)
       await expect(context.getCheckpoint()).resolves.toBe(terminal.ids[1])
+    })
+  })
+
+  it('cancels a real global audit behind the reserved checkpoint and restores its session', async ({
+    signal,
+  }) => {
+    await withTestShadowAuditCheckpoint(async context => {
+      const before = await context.getCheckpoint()
+      const holderPid = await getTestPostgresAdvisoryLockHolderProcessId({
+        key: postPublicationShadowAuditLockKey,
+      })
+      const proof = await observeGlobalShadowAuditCancellation(holderPid, signal)
+      expect(proof.contenderPid).not.toBe(proof.holderPid)
+      expect(proof.timeoutMs).toBe(2000)
+      expect(proof.failure).toMatchObject({ code: '57014' })
+      expect(proof.restored).toBe(proof.baseline)
+      await expect(context.getCheckpoint()).resolves.toBe(before)
+    })
+  })
+
+  it('observes an actual owned repair wait and complete after its predecessor rolls back', async ({
+    signal,
+  }) => {
+    const { user, postIds, ids } = await createTestShadowAuditFixtures()
+    const postId = postIds[0]!
+    await insertAuditPost(
+      user.id,
+      postId,
+      `shadow-contended-${postId}`,
+      'Contended native repair',
+      'A real owned post awaiting its publication projection.',
+    )
+    await withTestShadowAuditCheckpoint(async context => {
+      const checkpoint = await context.getCheckpoint()
+      const foreignRepairBefore = await context.hasRepair(ids.foreignPostId)
+      const ownedRepairBefore = await context.hasRepair(postId)
+      const proof = await observeScopedShadowAuditSuccess(postId, signal)
+      expect(proof.contenderPid).not.toBe(proof.holderPid)
+      expect(proof.timeoutMs).toBe(2000)
+      expect(proof.first).toMatchObject({ dryRun: false, scannedByScope: { post: 1 } })
+      expect(proof.second).toMatchObject({
+        dryRun: false,
+        scannedByScope: { post: 1 },
+        discrepanciesByScope: { post: 1 },
+      })
+      expect(proof.repair).toEqual({
+        post_identity_id: postId,
+        reasons: expect.arrayContaining(['post_updated']),
+      })
+      expect(proof.restored).toBe(proof.baseline)
+      await expect(context.hasRepair(postId)).resolves.toBe(ownedRepairBefore)
+      await expect(context.hasRepair(ids.foreignPostId)).resolves.toBe(foreignRepairBefore)
+      await expect(context.getCheckpoint()).resolves.toBe(checkpoint)
     })
   })
 })
