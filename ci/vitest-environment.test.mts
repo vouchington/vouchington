@@ -69,7 +69,6 @@ describe('vitest environment coverage config', () => {
     expect(coverageConfig().include).toEqual([
       'web/storybook/entities/entity-fixtures.ts',
       'web/storybook/entities/topics-story-recommendations.ts',
-      'web/test-helpers/storybook/component-story-coverage/message.ts',
     ])
   })
 

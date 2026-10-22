@@ -53,7 +53,7 @@ export const VITEST_PROJECT_GROUPS = {
   'web-api': ['web-api'],
   'web-integration': ['web-integration'],
   web: ['web'],
-  'web-storybook': ['web-storybook', 'web-storybook-component-coverage'],
+  'web-storybook': ['web-storybook'],
   lambdas: ['lambdas', 'lambdas-mocks', 'lambdas-portability'],
   'cloudflare-worker': [
     'cloudflare-worker',

@@ -160,7 +160,19 @@ jobs:
         run: pnpm exec no-mistakes --timeout 0 --lock-timeout 0 check
         timeout-minutes: 6
       - name: Check Storybook component coverage
-        run: node web/storybook/check-component-story-coverage.mts
+        run: >-
+          pnpm exec vouchington story-coverage
+          --root .
+          --component-root web/components/
+          --story-root web/storybook/
+          --alias @/=web/
+          --source-extension .tsx
+          --source-extension .ts
+          --component-extension .tsx
+          --marker "['\"]data-pw['\"]|data-pw="
+          --story-pattern "[.]stories[.](ts|tsx)$"
+          --exclusions web/storybook/__tests__/component-story-exclusions.json
+          --exclusions-label web/storybook/__tests__/component-story-exclusions.json
         timeout-minutes: 2
       - name: Check schema generation guard fixtures
         run: node ci/check-schema-generation-guard-fixtures.mts

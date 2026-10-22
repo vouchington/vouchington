@@ -37,7 +37,6 @@ function refinedRuntimeFilterMatchesChangedFiles(filterName: string, paths: stri
 describe('Area CI triggers', () => {
   it('keeps Storybook-owned tests and runtime web source wired to Storybook', () => {
     expectRefinedRuntimeFilterMatches('storybook', [
-      'web/storybook/__tests__/component-story-coverage.test.ts',
       'web/storybook/design-system/button.stories.tsx',
       'web/storybook/entities/entity-fixtures.ts',
       'web/.storybook/main.ts',
