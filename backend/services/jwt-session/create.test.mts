@@ -83,6 +83,7 @@ describe('create', () => {
         sid,
         uid,
         eventType: 'refreshed_authenticated',
+        clientBinding: { client: 'native' },
       })
       await flush()
 
@@ -140,7 +141,12 @@ describe('create', () => {
       const cutoffSeconds = Math.floor(Date.now() / 1000) + 60
       await revokeUserSessionsBefore(uid, cutoffSeconds)
 
-      const { token } = await createSessionToken({ did, sid, uid })
+      const { token } = await createSessionToken({
+        did,
+        sid,
+        uid,
+        clientBinding: { client: 'native' },
+      })
 
       expect(jose.decodeJwt(token).iat).toBe(cutoffSeconds + 1)
     })

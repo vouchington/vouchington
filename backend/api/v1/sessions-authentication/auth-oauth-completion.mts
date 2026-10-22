@@ -1,3 +1,4 @@
+import { advertiseDbscRegistration } from './dbsc-registration-helpers.mts'
 import app from '../../app.mts'
 import {
   getOptionalProtocolAuthAndRateLimit,
@@ -104,6 +105,7 @@ app.route('/api/v1/auth/oauth/authorizations/:flowId/complete').post(async (ctx:
     st: result.sessionToken.token,
     deviceClass: result.deviceToken.payload.dc,
   })
+  await advertiseDbscRegistration(ctx, result.deviceToken)
   ctx.json(
     apiResponse('POST:/api/v1/auth/oauth/authorizations/:flowId/complete#authenticated', {
       user: {

@@ -19177,6 +19177,56 @@
       "required": ["status"],
       "type": "object"
     },
+    "DbscSessionInstructions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["session_identifier", "refresh_url", "scope", "credentials"],
+      "properties": {
+        "session_identifier": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "refresh_url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "scope": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["origin", "include_site"],
+          "properties": {
+            "origin": {
+              "type": "string",
+              "format": "uri"
+            },
+            "include_site": {
+              "const": false
+            }
+          }
+        },
+        "credentials": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["type", "name", "attributes"],
+            "properties": {
+              "type": {
+                "const": "cookie"
+              },
+              "name": {
+                "const": "st"
+              },
+              "attributes": {
+                "const": "Path=/; Secure; HttpOnly; SameSite=Lax"
+              }
+            }
+          }
+        }
+      }
+    },
     "DeviceTokenPayload": {
       "additionalProperties": {},
       "properties": {
@@ -19192,6 +19242,12 @@
               "type": "string"
             }
           ]
+        },
+        "client": {
+          "enum": ["web", "native"]
+        },
+        "dbsc": {
+          "const": true
         },
         "dc": {
           "const": "attested"
@@ -19214,8 +19270,20 @@
         "nbf": {
           "type": "number"
         },
+        "refresh_uid": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "refresh_sid": {
+          "type": "string",
+          "format": "uuid"
+        },
         "sub": {
           "type": "string"
+        },
+        "ua_hash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
         }
       },
       "required": ["did"],
@@ -33682,6 +33750,12 @@
             }
           ]
         },
+        "client": {
+          "enum": ["web", "native"]
+        },
+        "dbsc": {
+          "const": true
+        },
         "did": {
           "type": "string"
         },
@@ -33733,6 +33807,10 @@
         },
         "tt": {
           "type": "number"
+        },
+        "ua_hash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
         },
         "uid": {
           "anyOf": [
@@ -46588,6 +46666,8 @@
         "$ref": "#/components/schemas/CompleteNativeBlueskyLinkRequest"
       }
     },
+    "POST:/api/v1/auth/device-bound-sessions": {},
+    "POST:/api/v1/auth/device-bound-sessions/refreshes": {},
     "POST:/api/v1/auth/email-address/login": {
       "body": {
         "$ref": "#/components/schemas/EmailAddressLoginBody"
@@ -50422,6 +50502,12 @@
     },
     "POST:/api/v1/admin/classifiers/:classifierId/candidates/:candidateId/threshold/rollback": {
       "$ref": "#/components/schemas/AppliedThresholdChange"
+    },
+    "POST:/api/v1/auth/device-bound-sessions": {
+      "$ref": "#/components/schemas/DbscSessionInstructions"
+    },
+    "POST:/api/v1/auth/device-bound-sessions/refreshes": {
+      "$ref": "#/components/schemas/DbscSessionInstructions"
     },
     "POST:/api/v1/auth/mfa/passkeys/authentication/verification": {
       "$ref": "#/components/schemas/MfaVerificationResponseBody"
