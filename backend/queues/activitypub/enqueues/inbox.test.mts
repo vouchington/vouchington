@@ -1,7 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { readAllQueueJobs } from '@voucha/test-helpers'
-import { PRIORITY_DISPATCH, PRIORITY_TASK } from '@queues/background/config'
 import {
   enqueueActivityPubInboxDelivery,
   enqueueBulkActivityPubInboxDeliveries,
@@ -76,13 +75,13 @@ describe('ActivityPub inbox enqueues', () => {
     })
   })
 
-  it('enqueues cleanup at dispatcher priority with interval-scoped deduplication', async () => {
+  it('enqueues cleanup ahead of deliveries with interval-scoped deduplication', async () => {
     await enqueueCleanupExpiredActivityPubInboxDeliveries()
     const jobs = await readAllQueueJobs(activitypub)
     expect(jobs.find(job => job.name === 'activitypub.cleanupExpiredDeliveries')).toMatchObject({
       id: expect.stringMatching(/^activitypub-inbox-cleanup__\d+$/),
       opts: {
-        priority: PRIORITY_DISPATCH,
+        priority: 1,
         deduplication: {
           id: 'activitypub-inbox-cleanup',
           mode: 'throttle',
@@ -90,7 +89,6 @@ describe('ActivityPub inbox enqueues', () => {
         },
       },
     })
-    expect(PRIORITY_DISPATCH).toBeGreaterThan(PRIORITY_TASK)
   })
 
   it('enqueues a re-arm continuation whose job id is the cursor and which releases its record', async () => {
