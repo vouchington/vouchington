@@ -18,17 +18,30 @@ export async function lockAndAssertTopicMergeSelfRelationFlags(
   sourceTopicId: string,
   destinationTopicId: string,
 ): Promise<void> {
-  // The finite schema inventory supplies a stable table order; each query locks rows in id order.
-  for (const [table] of selfDeletingVotedTopicRelationTables) {
-    // oxlint-disable-next-line no-await-in-loop -- relation row locks must follow the stable schema order
-    await query(
-      `/* lockTopicMergeSelfRelations */
-      SELECT r.id FROM ${table} r
+  // The finite schema inventory supplies a stable table order. A one-row prior aggregate is the
+  // outer source for each later table, so an empty table cannot skip the preceding row locks.
+  const lockCtes = selfDeletingVotedTopicRelationTables.map(([table], index) => {
+    const lockRows = `SELECT r.id FROM ${table} r
       WHERE ${wouldBecomeSelfRelation('r')}
-      ORDER BY r.id FOR UPDATE`,
-      [sourceTopicId, destinationTopicId],
-    )
-  }
+        ${index === 0 ? '' : 'AND prior.prior_count >= 0'}
+      ORDER BY r.id FOR UPDATE`
+    return index === 0
+      ? `locks0 AS MATERIALIZED (${lockRows})`
+      : `locks${index} AS MATERIALIZED (
+          SELECT locked.id FROM (SELECT count(*) AS prior_count FROM locks${index - 1}) prior
+          CROSS JOIN LATERAL (${lockRows}) locked
+        )`
+  })
+  if (lockCtes.length === 0) return
+  const drainedLocks = lockCtes
+    .map((_, index) => `(SELECT count(*) FROM locks${index})`)
+    .join(' + ')
+  await query(
+    `/* lockTopicMergeSelfRelations */
+    WITH ${lockCtes.join(',\n')}
+    SELECT ${drainedLocks}`,
+    [sourceTopicId, destinationTopicId],
+  )
 
   const flagQueries = selfDeletingVotedTopicRelationTables.map(
     ([table]) => `SELECT '${table}'::text AS relation_table, r.id AS relation_id, flag.id AS flag_id
