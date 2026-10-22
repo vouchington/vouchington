@@ -6,11 +6,11 @@ import { renderHook, act, waitFor } from '@testing-library/react'
 vi.mock(import('@/hooks/use-turnstile-token'), async importActual => importActual())
 
 const turnstileReset = vi.hoisted(() => vi.fn<VitestLooseMock>())
-const useTurnstileMock = vi.hoisted(() =>
+const useTurnstileActionMock = vi.hoisted(() =>
   vi.fn<VitestLooseMock>(() => ({ ref: () => {}, reset: turnstileReset, isError: false })),
 )
-vi.mock(import('@vouchington/script-loader/turnstile'), () => ({
-  useTurnstile: useTurnstileMock,
+vi.mock(import('@/hooks/use-turnstile-action'), () => ({
+  useTurnstileAction: useTurnstileActionMock,
 }))
 
 const fetchCaptchaConfigMock = vi.hoisted(() =>
@@ -24,26 +24,37 @@ import { useTurnstileToken } from '@/hooks/use-turnstile-token'
 import { TURNSTILE_ALWAYS_APPROVE_TOKEN } from '@/hooks/use-turnstile-always-approve'
 
 function getOptions() {
-  return useTurnstileMock.mock.lastCall![0]
+  return useTurnstileActionMock.mock.lastCall![0]
 }
 
 describe('useTurnstileToken', () => {
   beforeEach(() => {
     fetchCaptchaConfigMock.mockResolvedValue({ always_approve: false })
-    useTurnstileMock.mockClear()
+    useTurnstileActionMock.mockClear()
     turnstileReset.mockClear()
   })
 
   it('starts with no token and captures it on success', () => {
-    const { result } = renderHook(() => useTurnstileToken())
+    const { result } = renderHook(() => useTurnstileToken('posts.create'))
     expect(result.current.token).toBeNull()
 
     void act(() => getOptions().onSuccess('token-123'))
     expect(result.current.token).toBe('token-123')
   })
 
+  it('clears a solved token when the form switches to a different protected operation', () => {
+    const view = renderHook(({ actionTag }) => useTurnstileToken(actionTag), {
+      initialProps: { actionTag: 'posts.create' },
+    })
+    void act(() => getOptions().onSuccess('posts-token'))
+    expect(view.result.current.token).toBe('posts-token')
+    view.rerender({ actionTag: 'communities.create-post' })
+    expect(view.result.current.token).toBeNull()
+    expect(getOptions().actionTag).toBe('communities.create-post')
+  })
+
   it('reset() clears the token and resets the widget', () => {
-    const { result } = renderHook(() => useTurnstileToken())
+    const { result } = renderHook(() => useTurnstileToken('posts.create'))
     void act(() => getOptions().onSuccess('token-123'))
     expect(result.current.token).toBe('token-123')
 
@@ -53,7 +64,7 @@ describe('useTurnstileToken', () => {
   })
 
   it('clears the token when the challenge expires or errors', () => {
-    const { result } = renderHook(() => useTurnstileToken())
+    const { result } = renderHook(() => useTurnstileToken('posts.create'))
 
     void act(() => getOptions().onSuccess('token-123'))
     void act(() => getOptions().onExpire())
@@ -66,16 +77,24 @@ describe('useTurnstileToken', () => {
   })
 
   it('surfaces isError from the Turnstile widget', () => {
-    useTurnstileMock.mockReturnValueOnce({ ref: () => {}, reset: turnstileReset, isError: true })
-    const { result } = renderHook(() => useTurnstileToken())
+    useTurnstileActionMock.mockReturnValueOnce({
+      ref: () => {},
+      reset: turnstileReset,
+      isError: true,
+    })
+    const { result } = renderHook(() => useTurnstileToken('posts.create'))
     expect(result.current.isError).toBe(true)
     expect(result.current.token).toBeNull()
   })
 
   it('disables the widget and supplies a dummy token when always-approve is on', async () => {
     fetchCaptchaConfigMock.mockResolvedValue({ always_approve: true })
-    useTurnstileMock.mockReturnValue({ ref: () => {}, reset: turnstileReset, isError: true })
-    const { result } = renderHook(() => useTurnstileToken())
+    useTurnstileActionMock.mockReturnValue({
+      ref: () => {},
+      reset: turnstileReset,
+      isError: true,
+    })
+    const { result } = renderHook(() => useTurnstileToken('posts.create'))
 
     await waitFor(() => {
       expect(result.current.alwaysApprove).toBe(true)

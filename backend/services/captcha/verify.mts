@@ -1,10 +1,15 @@
+import { toTurnstileAction } from '@ts-shared/utils/turnstile-action'
+import { getSiteOrigin } from '@modules/utils/site-origin'
+import { isDeployedEnvironment } from '@ts-shared/deploy-environment'
 import createHttpError from 'http-errors'
 import { fetch } from 'undici'
 import { getExternalRequestDispatcher } from '@modules/utils/http'
 import { isTurnstileAlwaysApprove, logTurnstileAlwaysApproveSkip } from './config.mts'
 
 interface TurnstileResponse {
-  success: boolean
+  success?: unknown
+  hostname?: string
+  action?: string
   'error-codes'?: string[]
 }
 
@@ -59,6 +64,7 @@ export async function fetchTurnstileVerify(
 export async function verifyCaptchaToken(
   token: string | undefined,
   ip: string | undefined,
+  actionTag: string,
 ): Promise<void> {
   // Route and integration tests exercise content-creation endpoints without a live
   // Cloudflare siteverify dependency by setting this flag (see the captcha test-skip
@@ -77,8 +83,19 @@ export async function verifyCaptchaToken(
     throw createHttpError(422, 'CAPTCHA token is required')
   }
 
+  // Cloudflare's public dummy-key protocol returns fixed context instead of the widget context.
+  const dummyProvider =
+    !isDeployedEnvironment() && CLOUDFLARE_TURNSTILE_TEST_SECRET_KEYS.includes(getSecretKey())
+  const expectedAction = dummyProvider ? 'test' : toTurnstileAction(actionTag)
+  const expectedHostname = dummyProvider
+    ? 'localhost'
+    : new URL(getSiteOrigin()).hostname.toLowerCase()
   const result = await fetchTurnstileVerify(token, ip)
-  if (!result.success) {
+  if (
+    result.success !== true ||
+    result.action !== expectedAction ||
+    result.hostname?.toLowerCase() !== expectedHostname
+  ) {
     const codes = result['error-codes']?.join(', ')
     throw createHttpError(400, 'CAPTCHA verification failed', {
       cause: codes ? new Error(codes) : undefined,

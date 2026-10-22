@@ -46,7 +46,7 @@ export function useNewsCommunityDiscussionAction({
   const [isLoadingCommunities, setIsLoadingCommunities] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [usernameDialogOpen, setUsernameDialogOpen] = useState(false)
-  const turnstile = useTurnstileToken()
+  const turnstile = useTurnstileToken('communities.create-post')
   const recaptcha = useRecaptchaToken()
   const emailRecovery = useEmailVerificationRecovery()
 

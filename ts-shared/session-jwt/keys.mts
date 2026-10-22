@@ -1,3 +1,4 @@
+import { isDeployedEnvironment } from '@vouchington/utils/deploy-environment'
 import {
   createJwtKeySet,
   parseBase64JwkSet,
@@ -19,18 +20,17 @@ type ProcessLike = {
 function getProcessEnv(): Record<string, string | undefined> | undefined {
   return (globalThis as typeof globalThis & { process?: ProcessLike }).process?.env
 }
-function getDefaultMode(): JwtRuntimeMode {
-  const env = getProcessEnv()
-  if (!env) {
-    return 'development'
+function getRuntimeEnvironment(environment?: SessionJwtEnvironment) {
+  const processEnv = getProcessEnv()
+  return {
+    ENVIRONMENT: environment?.ENVIRONMENT ?? processEnv?.ENVIRONMENT,
+    NODE_ENV: environment?.NODE_ENV ?? processEnv?.NODE_ENV,
   }
-  if (env.NODE_ENV === 'production') {
-    return 'production'
-  }
-  if (env.NODE_ENV === 'test') {
-    return 'test'
-  }
-  return 'development'
+}
+function getDefaultMode(environment?: SessionJwtEnvironment): JwtRuntimeMode {
+  const env = getRuntimeEnvironment(environment)
+  if (isDeployedEnvironment(env) || env.NODE_ENV === 'production') return 'production'
+  return env.NODE_ENV === 'test' ? 'test' : 'development'
 }
 function getConfiguredEnv(
   env?: SessionJwtEnvironment,
@@ -56,16 +56,17 @@ function getConfiguredEnv(
 // Product bindings are stable per isolate; mode separates production from development keys.
 const configuredKeys = new Map<string, Promise<JwtKeySet>>()
 export function getResolvedKeySet(options?: JwtRuntimeOptions): Promise<JwtKeySet> {
-  const mode = options?.mode ?? getDefaultMode()
+  const mode = options?.mode ?? getDefaultMode(options?.env)
   const env = getConfiguredEnv(options?.env)
   const privateValue = env.VOUCHA_SESSION_JWT_PRIVATE_KEYS_B64
   const publicValue = env.VOUCHA_SESSION_JWT_PUBLIC_KEYS_B64
-  const cacheKey = `${mode}\u0000${privateValue}\u0000${publicValue}`
+  const deployed = isDeployedEnvironment(getRuntimeEnvironment(options?.env))
+  const cacheKey = `${mode}\u0000${deployed}\u0000${privateValue}\u0000${publicValue}`
   const cached = configuredKeys.get(cacheKey)
   if (cached) return cached
-  if (!privateValue && !publicValue && mode === 'production') {
+  if (!privateValue && !publicValue && (mode === 'production' || deployed)) {
     throw new Error(
-      `${SESSION_JWT_PRIVATE_KEYS_ENV} or ${SESSION_JWT_PUBLIC_KEYS_ENV} must be configured in production`,
+      `${SESSION_JWT_PRIVATE_KEYS_ENV} or ${SESSION_JWT_PUBLIC_KEYS_ENV} must be configured in a deployed environment`,
     )
   }
   const configured = resolveConfiguredKeys(privateValue, publicValue)

@@ -1,3 +1,4 @@
+import { configuredSessionKeys } from '../../test-helpers/session-keys.mts'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mintUuidv7 as mintUUIDv7 } from '@vouchington/session-jwt'
 import { createSignedDeviceJwt, createSignedSessionJwt } from '../../test-helpers/jwt-fixtures.mts'
@@ -171,6 +172,7 @@ describe('rate limiting', () => {
     const env: Env = {
       BACKEND_ORIGIN: 'https://backend.example.com',
       WEB_ORIGIN: 'https://web.example.com',
+      ...configuredSessionKeys,
       PRODUCTION: 'true',
       SENTRY_WEB_DSN,
     }

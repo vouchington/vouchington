@@ -21,7 +21,7 @@ function ReadyForm({
   error: string | null
   interactive?: boolean
 }) {
-  const turnstile = useTurnstileToken()
+  const turnstile = useTurnstileToken('disputes.create')
   const [reason, setReason] = useState('factually_inaccurate')
   const [text, setText] = useState(claimText)
   const [submitted, setSubmitted] = useState(false)
@@ -68,7 +68,7 @@ export const SubmitError: Story = {
 }
 
 function SubmittedForm() {
-  const turnstile = useTurnstileToken()
+  const turnstile = useTurnstileToken('disputes.create')
   return (
     <DisputeForm
       submitted

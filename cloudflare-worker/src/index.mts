@@ -1,3 +1,4 @@
+import { assertWorkerSessionJwtConfiguration } from './auth/configuration.mts'
 import { withSentry } from '@sentry/cloudflare'
 import { getBotTier, isVerifiedBotRequest } from './bot-tier.mts'
 import { logCacheDiagnostic } from './cache-diagnostics.mts'
@@ -61,6 +62,8 @@ export function createWorker(
             production: true,
           })
         }
+        // Worker bindings are available only at fetch time; validate before origin dispatch.
+        await assertWorkerSessionJwtConfiguration(env)
         warnIfWorkerSecretMisconfigured(env)
         warnIfProductionValueInvalid(env)
         warnIfSentryConfigurationInvalid(env)

@@ -35,7 +35,7 @@ export function DiscussInCommunityAction({
   const [communitySlug, setCommunitySlug] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const turnstile = useTurnstileToken()
+  const turnstile = useTurnstileToken('communities.create-post')
   const recaptcha = useRecaptchaToken()
   const StartDiscussionIcon = EntityActionIcons.startDiscussion
 

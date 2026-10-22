@@ -18,7 +18,7 @@ export function CopyrightAppealForm({
   noticeId: string
   targetIds: string[]
 }) {
-  const turnstile = useTurnstileToken()
+  const turnstile = useTurnstileToken('copyright-notices.appeal')
   const [reason, setReason] = useState('')
   const [selectedTargetIds, setSelectedTargetIds] = useCopyrightTargetSelection(targetIds)
   const [pending, startTransition] = useTransition()

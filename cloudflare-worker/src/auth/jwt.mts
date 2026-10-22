@@ -5,7 +5,7 @@ import {
   type DeviceTokenPayload,
   type SessionTokenPayload,
 } from '@ts-shared/session-jwt'
-import { isProductionMode } from '../production-mode.mts'
+import { isDeployedWorkerEnvironment } from '../production-mode.mts'
 import type { Env } from '../types.mts'
 
 let sessionJwtVerificationErrorLogged = false
@@ -90,7 +90,7 @@ export const verifyBackendSessionTokens = async (
   try {
     const jwtOptions = {
       env,
-      mode: isProductionMode(env) ? 'production' : 'development',
+      mode: isDeployedWorkerEnvironment(env) ? 'production' : 'development',
     } as const
     const [devicePayload, sessionPayload] = await Promise.all([
       verifyDeviceJwt(deviceToken, jwtOptions),

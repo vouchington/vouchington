@@ -43,7 +43,7 @@ export function AppealForm({
   const [validationError, setValidationError] = useState<ValidationError | null>(null)
   const [isPending, startPending] = useTransition()
   const [isRefreshing, startRefreshing] = useTransition()
-  const turnstile = useTurnstileToken()
+  const turnstile = useTurnstileToken('appeals.create')
 
   async function handleSubmit() {
     if (isPending || isRefreshing) return

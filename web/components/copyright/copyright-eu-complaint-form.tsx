@@ -12,7 +12,7 @@ import onError, { onSuccess } from '@/lib/on-error'
 
 export function CopyrightEuComplaintForm({ noticeId }: { noticeId: string }) {
   const router = useRouter()
-  const turnstile = useTurnstileToken()
+  const turnstile = useTurnstileToken('copyright-eu-redress.create')
   const [explanation, setExplanation] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const [pending, startTransition] = useTransition()

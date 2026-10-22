@@ -52,7 +52,7 @@ export function ReportDialog({ entityType, entityId, open, onOpenChange }: Props
   const [submitting, setSubmitting] = useState(false)
   const [success, setSuccess] = useState(() => hasAlreadyReported(entityType, entityId))
   const [inlineError, setInlineError] = useState<string | null>(null)
-  const turnstile = useTurnstileToken()
+  const turnstile = useTurnstileToken('reports.create')
 
   useEffect(() => {
     const key = getReportStorageKey(entityType, entityId)

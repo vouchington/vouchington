@@ -94,7 +94,9 @@ export function PostForm({
   const reviews = useReviewTopicState({ post, initialReviewTopic })
   const discussions = useDiscussionCategoryState(initialDiscussionCategories)
   const imageState = usePostImageState(post)
-  const turnstile = useTurnstileToken()
+  const turnstile = useTurnstileToken(
+    effectiveCommunitySlug ? 'communities.create-post' : 'posts.create',
+  )
   const recaptcha = useRecaptchaToken()
   const recaptchaTokenRef = useRef<string | undefined>(undefined)
   const isSubmittingRef = useRef(false)

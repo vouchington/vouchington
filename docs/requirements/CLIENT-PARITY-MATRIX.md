@@ -178,3 +178,10 @@ The authorization-request response includes `client_is_unverified`; `client_host
 metadata host for CIMD/native clients and the selected callback host for registered clients.
 The web owns rendering this browser flow; native clients continue to open the authorization URL.
 Dynamic registration cannot reserve first-party names or authorize staff resources.
+
+## Browser challenge context
+
+Browser challenge producers identify the operation when rendering a Turnstile widget. Server
+verification binds that result to the configured site and the operation being requested. Native
+App Attest retains its existing operation tags; clients that embed a browser challenge need the
+same action mapping. That client adoption remains dependent work, with the producer landing first.

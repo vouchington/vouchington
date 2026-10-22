@@ -115,7 +115,7 @@ describe('@ts-shared/session-jwt', () => {
         },
       ),
     ).rejects.toThrow(
-      'VOUCHA_SESSION_JWT_PRIVATE_KEYS_B64 or VOUCHA_SESSION_JWT_PUBLIC_KEYS_B64 must be configured in production',
+      'VOUCHA_SESSION_JWT_PRIVATE_KEYS_B64 or VOUCHA_SESSION_JWT_PUBLIC_KEYS_B64 must be configured in a deployed environment',
     )
   })
 

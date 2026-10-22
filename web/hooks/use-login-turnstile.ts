@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useTurnstile } from '@vouchington/script-loader/turnstile'
+import { useTurnstileAction } from './use-turnstile-action'
 import {
   TURNSTILE_ALWAYS_APPROVE_TOKEN,
   useTurnstileAlwaysApprove,
@@ -12,7 +12,8 @@ import type { RuntimePublicConfig } from '@/lib/runtime-public-config'
 export function useLoginTurnstile(runtimePublicConfig: RuntimePublicConfig) {
   const alwaysApprove = useTurnstileAlwaysApprove()
   const [token, setToken] = useState<string | null>(null)
-  const turnstile = useTurnstile({
+  const turnstile = useTurnstileAction({
+    actionTag: 'auth.email-address-tokens',
     siteKey: getTurnstileSiteKey(runtimePublicConfig),
     enabled: !alwaysApprove,
     onSuccess: setToken,

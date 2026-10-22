@@ -4,8 +4,10 @@ import {
   CLOUDFLARE_TURNSTILE_TEST_SECRET_KEYS,
 } from '@services/captcha'
 import app from './index.mts'
+import { assertBackendSessionJwtConfiguration } from '@services/jwt-session/configuration'
 import {
   shouldRejectSkipCaptchaVerification,
+  shouldRejectPlaywrightTest,
   shouldRejectTurnstileTestSecret,
 } from './boot-guards.mts'
 import dashboardApp from './glidemq-dashboard.mts'
@@ -27,6 +29,9 @@ function exitWithFailure() {
 }
 
 validateRuntimeImageOrigin()
+await assertBackendSessionJwtConfiguration()
+if (shouldRejectPlaywrightTest())
+  throw new Error('PLAYWRIGHT_TEST must not be enabled in a deployed environment')
 // Enables the API egress guardrail (warn-mode) for this process only — never the worker, which
 // legitimately egresses to arbitrary IPv4-only hosts. See @modules/utils/http.mts.
 /* v8 ignore next -- production bootstrap side effect; this module runs only in the real API process (serve.test.mts reads it as source text rather than importing it). */

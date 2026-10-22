@@ -1,3 +1,4 @@
+import { configuredSessionKeys } from '../test-helpers/session-keys.mts'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import worker from './index.mts'
 import { getRuntimeSentryConfigResponse } from './runtime-sentry-config.mts'
@@ -54,6 +55,7 @@ describe('runtime Sentry config response', () => {
     )
     globalThis.fetch = fetchSpy as unknown as typeof fetch
     const env: Env = {
+      ...configuredSessionKeys,
       BACKEND_ORIGIN: 'https://backend.example.test',
       ENVIRONMENT: 'production',
       SENTRY_WEB_DSN: 'https://public@example.test/123',

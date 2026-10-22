@@ -1,3 +1,4 @@
+import { configuredSessionKeys } from '../../test-helpers/session-keys.mts'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import worker from '../index.mts'
 import { EDGE_CACHE_CANARY_PATH, EDGE_CACHE_CANARY_TAG } from '../staging-canary.mts'
@@ -13,6 +14,7 @@ const BASIC = `Basic ${btoa('staging:password')}`
 const SECRET = 'canary-secret'
 
 const stagingEnv = (overrides: Env = {}): Env => ({
+  ...configuredSessionKeys,
   BASIC_AUTH_CREDENTIALS: 'staging:password',
   CF_WORKER_SECRET: SECRET,
   PRODUCTION: 'false',
