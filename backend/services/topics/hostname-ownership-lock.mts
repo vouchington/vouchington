@@ -17,6 +17,13 @@ export async function lockTopicHostnameOwnership(
     hostname_id: string | null
   }>(sql`/* getTopicHostnameOwnershipIds */
     SELECT hostname_id FROM topics WHERE id = ANY(${[...new Set(topicIds)]}::uuid[])
+    UNION
+    SELECT id FROM url_hostnames WHERE topic_id = ANY(${[...new Set(topicIds)]}::uuid[])
+    UNION
+    SELECT urls.hostname_id FROM relation__topic__landing_page__url relation
+    JOIN urls ON urls.id = relation.object_id
+    WHERE relation.subject_id = ANY(${[...new Set(topicIds)]}::uuid[])
+      AND relation.deleted_at IS NULL
   `)
   await lockHostnameOwnership(query, [
     ...nextHostnameIds,

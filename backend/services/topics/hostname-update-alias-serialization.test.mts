@@ -10,10 +10,11 @@ import {
 } from '@voucha/test-helpers'
 import { lockTopicAliasPublicationScopes } from '@services/post-publication'
 import { lockTopicHostnameMutations } from '@services/urls-hostnames/ownership-lock'
-import { createTopicAliases } from './aliases.mts'
+import { createTopicAliases, linkTopicAlias } from './aliases.mts'
 import { createTopic } from './create.mts'
 import { getTopicByAny } from './get.mts'
 import { updateTopic } from './update.mts'
+import { getTopicAliasRecordByValue } from './get-topic-aliases.mts'
 
 describe('hostname mutations with topic aliases', () => {
   it('takes the alias scope before a hostname-and-slug update locks the topic row', async () => {
@@ -68,6 +69,51 @@ describe('hostname mutations with topic aliases', () => {
     }
     expect(await creating).toMatchObject({
       value: { id: topic.id, name },
+    })
+  })
+
+  it('does not revive an unlocked owner after the source alias is retargeted', async () => {
+    const admin = await createTestUser({ administrator: true })
+    const first = await createTestTopic({ user: admin })
+    const second = await createTestTopic({ user: admin })
+    const [alias] = await createTopicAliases(first.id, [first.slug], { skipSideEffects: true })
+    await using holder = await beginTransaction()
+    await lockTopicHostnameMutations(holder, [first.id])
+    const pid = await getTestPostgresBackendProcessId(holder)
+    const creating = createTopic(admin, WEB_PROVENANCE, {
+      name: `Retargeted revival ${crypto.randomUUID()}`,
+      slug: first.slug,
+      source_topic_alias_id: alias!.id,
+      hostname: `retargeted-${crypto.randomUUID()}.example.com`,
+    }).then(
+      () => null,
+      (err: unknown) => err,
+    )
+    try {
+      await waitForTestPostgresLockWaiter(pid, 'lockTopicHostnameMutations')
+      await updateTopic(
+        admin,
+        (await getTopicByAny(first.id))!,
+        { slug: `moved-${crypto.randomUUID()}` },
+        { skipSideEffects: true },
+      )
+      await softDeleteTopic(first.id, admin.id)
+      await linkTopicAlias(second.id, alias!.id, { skipSideEffects: true })
+      await updateTopic(
+        admin,
+        (await getTopicByAny(second.id))!,
+        { slug: first.slug },
+        { skipSideEffects: true },
+      )
+      await softDeleteTopic(second.id, admin.id)
+    } finally {
+      await holder.commit()
+    }
+    expect(await creating).toMatchObject({ code: '23505' })
+    expect(await getTopicByAny(first.id)).toBeNull()
+    expect(await getTopicByAny(second.id)).toBeNull()
+    expect(await getTopicAliasRecordByValue(second.id, first.slug)).toMatchObject({
+      id: alias!.id,
     })
   })
 })

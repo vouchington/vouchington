@@ -50,6 +50,7 @@ export const softDeleteEntityRelation = async (
     const deletedRelations = await runRelationPublicationMutation(
       options,
       relation.table_name,
+      'delete',
       [subject.id],
       objects.map(object => object.id),
       relation.subject_type === 'user' ? [subject.id] : [],
@@ -127,6 +128,7 @@ export const softDeleteEntityRelationsForSubjects = async (
     const deletedRelations = await runRelationPublicationMutation(
       options,
       relation.table_name,
+      'delete',
       subjects.map(subject => subject.id),
       [object.id],
       relation.subject_type === 'user' ? subjects.map(subject => subject.id) : [],

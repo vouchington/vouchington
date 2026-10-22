@@ -47,6 +47,8 @@ export async function approveTopicRecommendationInTransaction(
     options,
     'private_email',
   )
+  // normalizeUrlForUrlTable and URL.hostname agree on these hostnames, so later
+  // materialization reuses this held set instead of acquiring locks after publication.
   await lockHostnameOwnership(options.query, [
     ...lockedRecommendation.hostnames.map(hostname => hostname.id),
     ...typedHostnameIds.values(),

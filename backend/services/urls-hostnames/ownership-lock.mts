@@ -41,16 +41,22 @@ export async function lockHostnameOwnership(
 export async function lockHostnameOwnershipForUrls(
   query: TransactionQuery,
   urlIds: readonly string[],
-): Promise<void> {
+): Promise<string[]> {
   const ids = [...new Set(urlIds)]
-  if (ids.length === 0) return
-  const { rows } = await query<{ hostname_id: string }>(sql`/* getUrlHostnameOwnershipIds */
-    SELECT DISTINCT hostname_id FROM urls WHERE id = ANY(${ids}::uuid[])
+  if (ids.length === 0) return []
+  const { rows } = await query<{
+    hostname_id: string
+    hostname: string
+  }>(sql`/* getUrlHostnameOwnershipIds */
+    SELECT DISTINCT urls.hostname_id, hostname.hostname FROM urls
+    JOIN url_hostnames hostname ON hostname.id = urls.hostname_id
+    WHERE urls.id = ANY(${ids}::uuid[])
   `)
   await lockHostnameOwnership(
     query,
     rows.map(row => row.hostname_id),
   )
+  return rows.map(row => row.hostname)
 }
 
 const topicIdsLockedInQuery = new WeakMap<TransactionQuery, Set<string>>()

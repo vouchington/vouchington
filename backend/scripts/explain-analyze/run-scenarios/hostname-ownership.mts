@@ -4,7 +4,7 @@ import {
   lockHostnameOwnershipForUrls,
   lockTopicHostnameMutations,
 } from '@services/urls-hostnames/ownership-lock'
-import { lockTopicHostnameOwnership } from '@services/topics/hostname-ownership-lock'
+import { runHostnameOwnershipSnapshotScenario } from './hostname-relation-policy.mts'
 import { addAdditionalHostname } from '@services/topics/additional-hostnames'
 import { setTopicHostnameLink } from '@services/topics/hostname-link'
 import { getLockedTopicRecommendationApproval } from '@services/topic-recommendations/get-locked-topic-recommendation-approval'
@@ -42,20 +42,12 @@ export async function runHostnameOwnershipScenarios(): Promise<void> {
     undefined,
     'lockTopicHostnameMutations',
   )
-  registerScenarioContract('hostname-owner-topic-snapshot', {
-    expectations: [{ kind: 'maxProcessedRows', relation: 'topics', max: 2 }],
-  })
-  await runAndCapture(
-    'hostname-owner-topic-snapshot',
-    async () => {
-      await using query = await beginTransaction()
-      await lockTopicHostnameOwnership(query, [seedTopicId], [seedHostnameIds[0]!])
-    },
-    undefined,
-    'getTopicHostnameOwnershipIds',
-  )
+  await runHostnameOwnershipSnapshotScenario()
   registerScenarioContract('hostname-owner-url-ids', {
-    expectations: [{ kind: 'maxProcessedRows', relation: 'urls', max: 3 }],
+    expectations: [
+      { kind: 'maxProcessedRows', relation: 'urls', max: 3 },
+      { kind: 'maxProcessedRows', relation: 'url_hostnames', max: 3 },
+    ],
   })
   await runAndCapture(
     'hostname-owner-url-ids',

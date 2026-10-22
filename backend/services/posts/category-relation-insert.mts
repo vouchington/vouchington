@@ -97,6 +97,7 @@ export async function upsertPostCategoryRelationRows({
   await runRelationPublicationMutation(
     writeOptions,
     aliasRelation.table_name,
+    'activate',
     [postId],
     aliasIds,
     [],
