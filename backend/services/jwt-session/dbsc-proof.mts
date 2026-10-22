@@ -13,11 +13,8 @@ import {
   type DbscChallenge,
   type WebSessionAuthority,
 } from './dbsc-state.mts'
-import type { FetchUserForSession } from './types.mts'
+import type { FetchUserForSession, DbscAuthorization } from './types.mts'
 
-export interface DbscAuthorization {
-  readonly sid: string
-}
 const authorizations = new WeakSet<DbscAuthorization>()
 
 export async function getWebRefreshAuthority(deviceToken: string, userAgent?: string) {

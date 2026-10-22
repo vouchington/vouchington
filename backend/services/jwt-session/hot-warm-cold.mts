@@ -3,6 +3,7 @@ import { clearJwtStaleIfCurrent } from './invalidation.mts'
 import { getEnrichedSessionClaims } from './enrich.mts'
 import { createRefreshedAuthenticatedSession, issueAnonSession } from './refresh-token-rotation.mts'
 import type {
+  DbscAuthorization,
   FetchUserForSession,
   RefreshedSessionState,
   VerifyDeviceAndSessionTokenResult,

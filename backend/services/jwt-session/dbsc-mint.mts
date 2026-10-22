@@ -1,5 +1,6 @@
 import { getJwtRevokedKey, getJwtUserRevokedBeforeKey } from './constants.mts'
-import { hashSessionUserAgent, type SessionClientBinding } from './client-binding.mts'
+import { hashSessionUserAgent } from './client-binding.mts'
+import type { SessionClientBinding } from './types.mts'
 import { sessionValkeyClient } from '@data-stores/valkey/clients'
 import { loadScript, registerScript } from '@data-stores/valkey/scripts'
 import { DEVICE_EXPIRATION_SECONDS } from '@ts-shared/session-jwt'
