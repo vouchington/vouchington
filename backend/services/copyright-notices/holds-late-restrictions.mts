@@ -43,6 +43,7 @@ export async function activateLateCopyrightLegalHoldRestrictions(
       ) SELECT target.id, prior.authorizing_assessment_id, CURRENT_TIMESTAMP, NULL, NULL, NULL, NULL
       FROM copyright_notice_targets target JOIN prior ON prior.copyright_notice_target_id = target.id
       WHERE target.id = ANY(${targetIds}::uuid[])
+      ORDER BY target.id ASC NULLS LAST
       ON CONFLICT (copyright_notice_target_id) WHERE lifted_at IS NULL DO NOTHING
       RETURNING id, copyright_notice_target_id
     ), active_restrictions AS (
@@ -60,7 +61,9 @@ export async function activateLateCopyrightLegalHoldRestrictions(
     ), bound AS (
       INSERT INTO copyright_legal_hold_restrictions (
         copyright_restriction_id, copyright_notice_legal_hold_assessment_id
-      ) SELECT active.id, ${assessmentId} FROM active_restrictions active ON CONFLICT DO NOTHING
+      ) SELECT active.id, ${assessmentId} FROM active_restrictions active
+      ORDER BY active.id ASC NULLS LAST
+      ON CONFLICT (copyright_notice_legal_hold_assessment_id, copyright_restriction_id) DO NOTHING
     ) SELECT inserted.id, target.placement_id
       FROM inserted JOIN copyright_notice_targets target ON target.id = inserted.copyright_notice_target_id
   `)

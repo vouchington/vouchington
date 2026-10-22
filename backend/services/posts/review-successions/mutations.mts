@@ -109,6 +109,7 @@ async function archiveAutomaticPredecessors(
       )
       SELECT predecessor_post_id, successor_post_id, author_user_id, predecessor_archived_at
       FROM archive_epochs
+      ORDER BY predecessor_post_id ASC NULLS LAST, predecessor_archived_at ASC NULLS LAST
       ON CONFLICT (predecessor_post_id, predecessor_archived_at) DO NOTHING
       RETURNING id, predecessor_post_id, predecessor_archived_at
     ), inserted_topics AS (

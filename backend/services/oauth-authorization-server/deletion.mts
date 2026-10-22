@@ -66,6 +66,7 @@ async function revokeFamilies(
        SELECT 'refresh_family_revoked', updated.id, $1, oauth_grant.client_id, updated.grant_id,
          updated.resource, updated.scopes FROM updated
        JOIN oauth_grants oauth_grant ON oauth_grant.id = updated.grant_id
+       ORDER BY updated.id ASC NULLS LAST
        ON CONFLICT (refresh_token_family_id, event_type)
          WHERE refresh_token_family_id IS NOT NULL DO NOTHING
      ) SELECT EXISTS (SELECT 1 FROM updated) AS has_updates`,
