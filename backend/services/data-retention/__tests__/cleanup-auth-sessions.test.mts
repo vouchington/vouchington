@@ -12,6 +12,7 @@ import {
   insertTestRetentionToken,
   insertTestRetentionTombstone,
   resetTestRetentionCursor,
+  setTestRetentionTombstoneMicroseconds,
   testRetentionRowExists,
   testRetentionTombstoneExists,
 } from '@voucha/test-helpers'
@@ -154,12 +155,7 @@ describe('auth and session retention', () => {
     const preciseDeletedAt = window.firstEligibleDate
       .toISOString()
       .replace(/\.\d{3}Z$/, '.123456+00')
-    await query(
-      `/* setTestRetentionTombstoneMicroseconds */
-       UPDATE web_push_subscriptions SET deleted_at = $3::timestamptz
-       WHERE user_id = $1 AND id = $2`,
-      [user.id, protectedId, preciseDeletedAt],
-    )
+    await setTestRetentionTombstoneMicroseconds(query, user.id, protectedId, preciseDeletedAt)
     const removableId = await insertTestRetentionTombstone(
       query,
       user.id,

@@ -155,3 +155,17 @@ export async function testRetentionTombstoneExists(
   )
   return rows[0]!.exists
 }
+
+export async function setTestRetentionTombstoneMicroseconds(
+  query: TransactionQuery,
+  userId: string,
+  id: string,
+  deletedAt: string,
+): Promise<void> {
+  await query(
+    `/* setTestRetentionTombstoneMicroseconds */
+     UPDATE web_push_subscriptions SET deleted_at = $3::timestamptz
+     WHERE user_id = $1 AND id = $2`,
+    [userId, id, deletedAt],
+  )
+}
