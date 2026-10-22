@@ -55,8 +55,8 @@ profile, which has no read-only sandbox and may edit files. On Claude Code, disp
 example `inspect-p01`) rather than a proper-noun identity: this role is read-only classification
 plus light summarization, exploration-tier work, not implementation-tier. Grok, Cursor, and
 OpenCode dispatch conventions are unspecified here. Before reading any entry by hand, each subagent
-runs `node dev/retrospective-distill.mts <partition> --retro-cutoff <retroCutoff> --session-cutoff
-<sessionCutoff>` against its assigned partition — a read-only, pure-local classifier that needs no
+runs `pnpm exec vouchington agent-blackboard distill classify <partition> --retro-cutoff
+<retroCutoff> --session-cutoff <sessionCutoff>` against its assigned partition — a read-only, pure-local classifier that needs no
 MCP call — and hand-reads only the sessions it reports as `journal-only` or `retrospective`; every
 other shape is fully determined structurally and needs no entry content inspection. Each
 subagent then returns one compact disposition summary: partition index, deduplicated evidence
