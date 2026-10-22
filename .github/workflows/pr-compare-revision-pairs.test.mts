@@ -14,7 +14,6 @@ import {
 } from '../test-helpers/workflow-fixtures.mts'
 
 const PR_BASE_SHA = '${{ github.event.pull_request.base.sha }}'
-const PR_HEAD_SHA = '${{ github.event.pull_request.head.sha }}'
 const MERGE_SHA = '${{ github.sha }}'
 
 type WorkflowFile = {
