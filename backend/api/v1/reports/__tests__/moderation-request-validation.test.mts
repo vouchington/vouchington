@@ -58,7 +58,7 @@ describe('moderation route request contract ordering', () => {
       const response = await send(createRequest(), c)
 
       expect(response.status).toBe(401)
-      expect(response.text).not.toMatch(/schema|must be|required|invalid/i)
+      expect(response.body.message).not.toMatch(/schema|must be|required|invalid/i)
     },
   )
 

@@ -205,7 +205,7 @@ describe('server request context', () => {
 
 function createRequestContext(
   cookies: Readonly<Partial<Record<string, string>>> = {},
-  request: Context['req'] = {} as Context['req'],
+  request: Context['req'] = { headers: {} } as Context['req'],
 ): { context: Context; cookieWrites: CookieWrite[] } {
   const incomingCookies = Object.freeze({ ...cookies })
   const cookieWrites: CookieWrite[] = []

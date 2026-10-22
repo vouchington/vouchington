@@ -1,7 +1,7 @@
 import { expect } from 'vitest'
 import { createTestAuthCookies } from './auth.mts'
 import type { WebIntegrationClient } from './client.mts'
-import { TEST_USER_ID } from './constants.mts'
+import { TEST_USER_ID, PLAYWRIGHT_CHROME_UA } from './constants.mts'
 
 export async function getManualRedirectLocation(
   client: WebIntegrationClient,
@@ -36,7 +36,7 @@ export async function expectManualRedirectPath(
 export async function authenticateTestUserWithDirectSessionTokens(
   client: WebIntegrationClient,
 ): Promise<void> {
-  const authCookies = await createTestAuthCookies(TEST_USER_ID, 'node')
+  const authCookies = await createTestAuthCookies(TEST_USER_ID, PLAYWRIGHT_CHROME_UA)
   client.setCookie('dt', authCookies.dt!)
   client.setCookie('st', authCookies.st!)
 }

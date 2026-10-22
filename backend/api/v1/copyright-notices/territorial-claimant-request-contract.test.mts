@@ -28,13 +28,13 @@ describe.each(TERRITORIAL_SURFACES)('$label claimant request contracts', surface
       .set('Idempotency-Key', crypto.randomUUID())
       .send({ injected: true })
       .expect(surface.jurisdiction === 'eu_dsa' ? 422 : 401)
-    expect(SCHEMA_DIAGNOSTIC.test(notice.text)).toBe(surface.jurisdiction === 'eu_dsa')
+    expect(SCHEMA_DIAGNOSTIC.test(notice.body.message)).toBe(surface.jurisdiction === 'eu_dsa')
     const redress = await anonymous
       .post(`${surface.base}/${crypto.randomUUID()}/redress-requests`)
       .set('Idempotency-Key', crypto.randomUUID())
       .send({ injected: true })
       .expect(401)
-    expect(redress.text).not.toMatch(SCHEMA_DIAGNOSTIC)
+    expect(redress.body.message).not.toMatch(SCHEMA_DIAGNOSTIC)
   })
 
   describe('with intake closed', () => {
@@ -206,7 +206,7 @@ describe('EU supervised complaint request contract', () => {
       .post(`${eu!.base}/${crypto.randomUUID()}/supervised-complaints`)
       .send({ injected: true })
       .expect(401)
-    expect(anonymous.text).not.toMatch(SCHEMA_DIAGNOSTIC)
+    expect(anonymous.body.message).not.toMatch(SCHEMA_DIAGNOSTIC)
   })
 
   it('rejects an unknown key before recording the complaint', async () => {

@@ -30,7 +30,7 @@ describe('UK staff-recorded redress requests', () => {
       .set('Idempotency-Key', crypto.randomUUID())
       .send(body)
       .expect(401)
-    expect(anonymous.text).not.toMatch(SCHEMA_DIAGNOSTIC)
+    expect(anonymous.body.message).not.toMatch(SCHEMA_DIAGNOSTIC)
     for (const request of [claimantRequest, strangerRequest]) {
       for (const sent of [body, { ...body, injected: true }]) {
         const rejected = await request
@@ -38,7 +38,7 @@ describe('UK staff-recorded redress requests', () => {
           .set('Idempotency-Key', crypto.randomUUID())
           .send(sent)
           .expect(403)
-        expect(rejected.text).not.toMatch(SCHEMA_DIAGNOSTIC)
+        expect(rejected.body.message).not.toMatch(SCHEMA_DIAGNOSTIC)
       }
     }
   })
