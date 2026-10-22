@@ -63,7 +63,7 @@ export async function activateLateCopyrightLegalHoldRestrictions(
         copyright_restriction_id, copyright_notice_legal_hold_assessment_id
       ) SELECT active.id, ${assessmentId} FROM active_restrictions active
       ORDER BY active.id ASC NULLS LAST
-      ON CONFLICT (copyright_notice_legal_hold_assessment_id, copyright_restriction_id) DO NOTHING
+      ON CONFLICT ON CONSTRAINT copyright_legal_hold_restrictions_pkey DO NOTHING
     ) SELECT inserted.id, target.placement_id
       FROM inserted JOIN copyright_notice_targets target ON target.id = inserted.copyright_notice_target_id
   `)
