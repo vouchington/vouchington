@@ -32,7 +32,7 @@ export async function setCommunityLanguageDetectionFieldsForTest(
   `)
 }
 
-type LanguageDetectionEntityTable =
+export type LanguageDetectionEntityTable =
   | 'posts'
   | 'communities'
   | 'crawls'
@@ -85,4 +85,24 @@ function sqlTableForLanguageDetection(table: LanguageDetectionEntityTable): SQLS
     case 'rss_feed_items':
       return sql`rss_feed_items`
   }
+}
+
+export type LanguageDetectionResultForTest = LanguageDetectionStateForTest & {
+  lingua_rs_content_sha256: Buffer | null
+  lingua_rs_results: unknown
+}
+
+/** Full persisted output, without widening the existing three-field state contract. */
+export async function getLanguageDetectionResultForTest(
+  table: LanguageDetectionEntityTable,
+  id: string,
+): Promise<LanguageDetectionResultForTest> {
+  const query = sql`/* getLanguageDetectionResultForTest */
+    SELECT lingua_rs_detected_language, lingua_rs_content_sha256, lingua_rs_input_sha256,
+      lingua_rs_results, lingua_rs_detected_at FROM `
+  query.append(sqlTableForLanguageDetection(table))
+  query.append(sql` WHERE id = ${id}`)
+  const { rows } = await read<LanguageDetectionResultForTest>(query)
+  if (!rows[0]) throw new Error('Expected owned language detection fixture')
+  return rows[0]
 }
