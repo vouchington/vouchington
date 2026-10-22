@@ -116,8 +116,8 @@ describe('Auth sessions routes', () => {
       revoked_at: null,
     })
     const repairedSession = await getTestUserSessionById(currentSessionId)
-    const sessionJwt = decodeJwt(loginResponse.body.st.token as string)
-    expect(repairedSession!.expires_at.getTime()).toBe((sessionJwt.exp as number) * 1000)
+    const deviceJwt = decodeJwt(decodeURIComponent(dtCookie!.slice(3).split(';', 1)[0]!))
+    expect(repairedSession!.expires_at.getTime()).toBe((deviceJwt.exp as number) * 1000)
     await expect(getActiveTestUserSessions(userId)).resolves.toHaveLength(2)
   })
 

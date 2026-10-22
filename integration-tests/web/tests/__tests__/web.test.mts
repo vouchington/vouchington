@@ -112,21 +112,22 @@ describe('web', () => {
       const sessionBody = (await sessionResponse.json()) as {
         session: {
           did: string
-          dt: string
           session: {
             did: string
             sid: string
             uid: string | null
           }
           sid: string
-          st: string
           uid: string | null
         }
       }
       expect(sessionBody.session.uid).toBe(TEST_USER_ID)
       expect(sessionBody.session.session.uid).toBe(TEST_USER_ID)
-      expect(sessionBody.session.dt).toBeTruthy()
-      expect(sessionBody.session.st).toBeTruthy()
+      expect(sessionBody.session).not.toHaveProperty('dt')
+      expect(sessionBody.session).not.toHaveProperty('st')
+      expect(sessionResponse.headers.getSetCookie()).toEqual(
+        expect.arrayContaining([expect.stringMatching(/^dt=/), expect.stringMatching(/^st=/)]),
+      )
     })
 
     it('redirects unauthenticated users from /my/identity and clears access again after logout', async () => {
