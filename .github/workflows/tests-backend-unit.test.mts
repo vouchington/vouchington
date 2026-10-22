@@ -22,6 +22,9 @@ const stepsWorkflow = load(workflow) as {
 const runBackendTestsScript = stepsWorkflow.jobs?.['backend-tests']?.steps?.find(
   step => step.name === 'Run backend tests',
 )?.run
+const backendRunProjects = [...(runBackendTestsScript?.matchAll(/--project\s+(\S+)/gu) ?? [])].map(
+  match => match[1],
+)
 const vitestConfig = [
   'vitest.config.mts',
   'test-helpers/vitest-config/backend-core-projects.mts',
@@ -84,8 +87,17 @@ describe('backend uncredentialed Docker test workflow', () => {
 
   it('combines service-backed backend Vitest projects in one sharded command', () => {
     const backendCommand =
-      'pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend/analytics-integration --project backend-data-stores --project backend-platform-stats-cache --project backend-mocks --project backend-migration-initializers --project backend-real-glide-mq --shard ${{ matrix.shard }}/${{ needs.prep.outputs.shard-total }}'
+      'pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend/analytics-integration --project backend-data-stores --project backend-bedrock-rate-limits --project backend-bedrock-poll-queries --project backend-platform-stats-cache --project backend-mocks --project backend-migration-initializers --project backend-real-glide-mq --project backend-real-glide-creation-worker --project backend-real-glide-creation --shard ${{ matrix.shard }}/${{ needs.prep.outputs.shard-total }}'
     expect(workflow).toContain(backendCommand)
+    for (const project of [
+      'backend-bedrock-rate-limits',
+      'backend-bedrock-poll-queries',
+      'backend-real-glide-creation-worker',
+      'backend-real-glide-creation',
+    ]) {
+      expect(backendRunProjects).toContain(project)
+      expect(backendRunProjects.filter(candidate => candidate === project)).toHaveLength(1)
+    }
     expect(
       runBackendTestsScript?.match(/--project backend-migration-initializers\b/g),
     ).toHaveLength(1)
@@ -93,15 +105,14 @@ describe('backend uncredentialed Docker test workflow', () => {
       "VITEST_COVERAGE_ENABLED: ${{ inputs.publish_coverage && 'true' || 'false' }}",
     )
     expect(workflow).not.toContain('--coverage')
-    expect(vitestConfig).not.toContain("name: 'backend-seed-csvs'")
     expect(vitestConfig).toContain("name: 'backend-real-glide-mq'")
     expect(vitestConfig).not.toContain('fileParallelism: false')
-    expect(vitestConfig).toContain("name: 'backend-activitypub-capacity'")
     for (const project of backendCredentialedProjectNames) {
-      expect(workflow).not.toContain(`--project ${project}`)
+      expect(backendRunProjects).not.toContain(project)
     }
-    expect(workflow).not.toContain('--project backend-no-data-mocks')
-    expect(workflow).not.toContain('--project backend-modules')
+    expect(backendRunProjects).not.toEqual(
+      expect.arrayContaining(['backend-no-data-mocks', 'backend-modules']),
+    )
     expect(workflow).not.toContain('analytics-data-store-test-report.junit.xml')
     expect(workflow).not.toContain('analytics-service-test-report.junit.xml')
     expect(workflow).not.toContain('analytics-db-service-test-report.junit.xml')

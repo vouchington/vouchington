@@ -197,17 +197,43 @@ describe('getBatchInfo', () => {
 
 describe('getBatchRecordsCreatedInLastHour', () => {
   it('counts a current UUIDv7 batch but excludes a batch from two hours ago', async () => {
+    const referenceTime = new Date()
     const recentId = mintUUIDv7()
-    const oldId = getMinUUIDv7ForDate(new Date(Date.now() - 2 * 60 * 60 * 1000))
-    const baseline = await getBatchRecordsCreatedInLastHour()
+    const oldId = getMinUUIDv7ForDate(new Date(referenceTime.getTime() - 2 * 60 * 60 * 1000))
+    const baseline = await getBatchRecordsCreatedInLastHour(referenceTime)
 
     try {
       await insertTestEmbeddingsBatch({ id: recentId, records: 7 })
       await insertTestEmbeddingsBatch({ id: oldId, records: 11 })
 
-      await expect(getBatchRecordsCreatedInLastHour()).resolves.toBe(baseline + 7)
+      await expect(getBatchRecordsCreatedInLastHour(referenceTime)).resolves.toBe(baseline + 7)
     } finally {
       await cleanupTestEmbeddingsBatches([recentId, oldId])
+    }
+  })
+
+  it('uses an inclusive UUIDv7 cutoff at one millisecond after the one-hour boundary', async () => {
+    const referenceTime = new Date(
+      Date.now() + 86_400_000 + Math.floor(Math.random() * 1_000_000_000),
+    )
+    const strictOneHourBoundary = new Date(referenceTime.getTime() - 60 * 60 * 1000)
+    const ids = [
+      getMinUUIDv7ForDate(new Date(strictOneHourBoundary.getTime())),
+      getMinUUIDv7ForDate(new Date(strictOneHourBoundary.getTime() + 1)),
+      getMinUUIDv7ForDate(new Date(strictOneHourBoundary.getTime() + 2)),
+    ]
+    const baseline = await getBatchRecordsCreatedInLastHour(referenceTime)
+
+    try {
+      await Promise.all([
+        insertTestEmbeddingsBatch({ id: ids[0], records: 3 }),
+        insertTestEmbeddingsBatch({ id: ids[1], records: 5 }),
+        insertTestEmbeddingsBatch({ id: ids[2], records: 7 }),
+      ])
+
+      await expect(getBatchRecordsCreatedInLastHour(referenceTime)).resolves.toBe(baseline + 12)
+    } finally {
+      await cleanupTestEmbeddingsBatches(ids)
     }
   })
 })

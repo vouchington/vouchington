@@ -36,7 +36,11 @@ describe('no-mistakes config freshness', () => {
     expect(correspondence?.options?.stemSuffixesToStrip).toContain('.no-data.mock')
     expect(ciCoverage?.options?.projectFilters).toMatchObject({
       'backend-no-data-mocks': ['backend'],
+      'backend-bedrock-rate-limits': ['backend'],
+      'backend-bedrock-poll-queries': ['backend'],
       'backend-real-glide-mq': ['backend'],
+      'backend-real-glide-creation-worker': ['backend'],
+      'backend-real-glide-creation': ['backend'],
       'backend-migration-initializers': ['backend'],
     })
   })

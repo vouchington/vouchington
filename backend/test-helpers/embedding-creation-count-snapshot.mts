@@ -47,7 +47,8 @@ export async function createEmbeddingCountSnapshot(
       })
     throw err
   }
-  const limits = () => start(() => getBatchCreationLimits({ query: transaction! }))
+  const referenceTime = new Date()
+  const limits = () => start(() => getBatchCreationLimits(referenceTime, { query: transaction! }))
   const dependencies: BatchCreationDependencies = { getBatchCreationLimits: limits, createBatch }
   return {
     before,

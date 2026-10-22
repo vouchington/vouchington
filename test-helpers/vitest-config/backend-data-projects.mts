@@ -1,37 +1,6 @@
 import type { TestProjectConfiguration } from 'vitest/config'
+import { backendDataStoreTestDefaults } from '../backend-data-store-project-defaults.mts'
 import { backendNoDataUnitTestFiles } from './backend-core-projects.mts'
-
-const backendDataStoreTestDefaults = {
-  pool: 'forks' as const,
-  isolate: false,
-  // These existing 30s data suites include real plan and lock-boundary queries. The
-  // five-second projects retain the default 2s SQL budget.
-  env: { PG_TEST_STATEMENT_TIMEOUT_MS: process.env.PG_TEST_STATEMENT_TIMEOUT_MS ?? '20000' },
-  globalSetup: './test-helpers/vitest.setup.data-stores.mts',
-  setupFiles: [
-    // Must run before glide-mq-workers: that setup preloads workers that transitively
-    // import @modules/on-error → @sentry/node, so the Sentry mock has to be registered
-    // first or the real SDK singleton gets bound during preload and tests can't intercept it.
-    // Registering it here (rather than relying on individual test files to import it) also
-    // guarantees the mock's per-test beforeEach reset runs for every file in this project —
-    // under isolate:false, a file that only imports the module gets the reset registered
-    // solely if it's the first file in its worker to do so, since the module body doesn't
-    // re-run for later files sharing the cached module graph.
-    './backend/test-helpers/vitest.setup.sentry-mock.mts',
-    './test-helpers/vitest.setup.shared-db-scope-guard.mts',
-    './test-helpers/vitest.setup.dynamic-config-isolation.mts',
-    './test-helpers/vitest.setup.worker-query-profiles.mts',
-    './test-helpers/vitest.setup.glide-mq-workers.mts',
-    './backend/test-helpers/vitest.setup.aws-mocks.mts',
-    './backend/test-helpers/vitest.setup.s3-offline.mts',
-    './backend/test-helpers/vitest.setup.captcha-skip.mts',
-    './backend/test-helpers/vitest.setup.server-error-responses.mts',
-    './backend/test-helpers/vitest.setup.request-query-profile.mts',
-    './test-helpers/vitest.setup.fork-leak-detection.mts',
-  ],
-  testTimeout: 30_000,
-  hookTimeout: 30_000,
-}
 
 const backendMocksProject = {
   extends: true,
@@ -114,7 +83,34 @@ export const backendDataProjects: TestProjectConfiguration[] = [
         'backend/api/v1/platform-stats/platform-stats.test.mts',
         'backend/api/activitypub/inbox-capacity.test.mts',
         'backend/services/ap-inbox-activities/activitypub-inbox-capacity.test.mts',
+        'backend/services/bedrock-embeddings-batch/rate-limits.test.mts',
+        'backend/services/bedrock-embeddings/batch/orchestrator/__tests__/poll-queries.test.mts',
       ],
+    },
+  },
+  // Exact global readers run after ordinary writers in this invocation, not in parallel with them.
+  {
+    extends: true,
+    test: {
+      ...backendDataStoreTestDefaults,
+      name: 'backend-bedrock-rate-limits',
+      sequence: { groupOrder: 1 },
+      runner: './test-helpers/vitest.runner.backend-data-guards.mts',
+      include: ['backend/services/bedrock-embeddings-batch/rate-limits.test.mts'],
+      exclude: ['**/node_modules/**', '**/.git/**'],
+    },
+  },
+  {
+    extends: true,
+    test: {
+      ...backendDataStoreTestDefaults,
+      name: 'backend-bedrock-poll-queries',
+      sequence: { groupOrder: 2 },
+      runner: './test-helpers/vitest.runner.backend-data-guards.mts',
+      include: [
+        'backend/services/bedrock-embeddings/batch/orchestrator/__tests__/poll-queries.test.mts',
+      ],
+      exclude: ['**/node_modules/**', '**/.git/**'],
     },
   },
   {

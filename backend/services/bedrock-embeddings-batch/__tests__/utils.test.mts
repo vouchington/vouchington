@@ -65,6 +65,7 @@ describe('utils', () => {
       )
 
       expect(result).toEqual({ empty: true, hasMore: false })
+      expect(mocks.getBatchCreationLimits).toHaveBeenCalledExactlyOnceWith(expect.any(Date))
       expect(mocks.createBatch).not.toHaveBeenCalled()
       expect(captureException).not.toHaveBeenCalled()
     })
@@ -165,6 +166,7 @@ describe('utils', () => {
         reason: 'Failed to add 2/2 images to Bedrock batch input',
         attempted: 2,
       })
+      expect(mocks.getBatchCreationLimits).toHaveBeenCalledExactlyOnceWith(expect.any(Date))
       expect(mocks.createBatch).not.toHaveBeenCalled()
       expect(captureException).toHaveBeenCalledTimes(3)
     })

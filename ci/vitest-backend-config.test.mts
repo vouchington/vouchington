@@ -62,7 +62,11 @@ describe('backend Vitest project config', () => {
     const owners = projects?.filter(project => project.test?.runner === runner) ?? []
     const dataStores = backendProjectTest('backend-data-stores')
     const capacity = backendProjectTest('backend-activitypub-capacity')
-    expect(owners.map(project => project.test?.name)).toEqual(['backend-data-stores'])
+    expect(owners.map(project => project.test?.name)).toEqual([
+      'backend-data-stores',
+      'backend-bedrock-rate-limits',
+      'backend-bedrock-poll-queries',
+    ])
     expect(dataStores?.runner).toBe(runner)
     expect(capacity?.runner).toBe('./test-helpers/vitest.runner.shared-db-scope-guard.mts')
     expect(realGlideProject()?.runner).toBeUndefined()

@@ -52,7 +52,10 @@ export async function createEmbeddingFairnessSnapshot(
       throw new Error(
         'Fairness precondition: owned reservation and admission exceed normal count capacity',
       )
-    const hourlyBefore = await getBatchRecordsCreatedInLastHour({ query: transaction })
+    const referenceTime = new Date()
+    const hourlyBefore = await getBatchRecordsCreatedInLastHour(referenceTime, {
+      query: transaction,
+    })
     if (reservationCount)
       await insertTestEmbeddingsBatch(
         {
@@ -62,7 +65,7 @@ export async function createEmbeddingFairnessSnapshot(
         },
         { query: transaction },
       )
-    const limits = () => start(() => getBatchCreationLimits({ query: transaction! }))
+    const limits = () => start(() => getBatchCreationLimits(referenceTime, { query: transaction! }))
     const dependencies: BatchCreationDependencies = { getBatchCreationLimits: limits, createBatch }
     await assertPresent(reservationMB)
     quota.assertOpen()
@@ -74,7 +77,8 @@ export async function createEmbeddingFairnessSnapshot(
       localGiB,
       countLimit,
       hourlyBefore,
-      hourlyRecords: () => start(() => getBatchRecordsCreatedInLastHour({ query: transaction! })),
+      hourlyRecords: () =>
+        start(() => getBatchRecordsCreatedInLastHour(referenceTime, { query: transaction! })),
       limits,
       dependencies,
       assertPresent: () => start(() => assertPresent(reservationMB)),

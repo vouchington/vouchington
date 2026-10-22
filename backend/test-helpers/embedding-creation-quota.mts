@@ -4,7 +4,11 @@ import { advisoryLockPool } from '@data-stores/psql'
 import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import type { PoolClient } from '@data-stores/psql/types'
 import { initializeEmbeddingCreationConfig } from './embedding-creation-config.mts'
-import { claimEmbeddingQuotaLease } from './embedding-creation-quota-lease.mts'
+import {
+  assertEmbeddingQuotaLeaseHeld,
+  claimEmbeddingQuotaLease,
+} from './embedding-creation-quota-lease.mts'
+import { disposeEmbeddingQuotaFixture } from './embedding-creation-quota-disposal.mts'
 import { assertOwnedSubmittedControl } from './embedding-creation-submitted-control.mts'
 import {
   assertOwnedAccountingRemoved,
@@ -23,6 +27,8 @@ export async function acquireEmbeddingQuotaFixture() {
   const ids: string[] = []
   const writes: Promise<unknown>[] = []
   const drains: Array<{ run(): Promise<void>; safeAfterFailure?: () => boolean }> = []
+  const configRestorers: Array<() => Promise<void>> = []
+  const leaseReleaseCallbacks: Array<() => Promise<void>> = []
   let acquired = false
   let restoreConfig: (() => void) | undefined
   let lease: Awaited<ReturnType<typeof claimEmbeddingQuotaLease>> | undefined
@@ -34,6 +40,16 @@ export async function acquireEmbeddingQuotaFixture() {
   const close = () => {
     closing = true
     return (disposal ??= dispose())
+  }
+  const trackOperation = <T,>(run: () => Promise<T>): Promise<T> => {
+    assertOpen()
+    const operation = Promise.resolve().then(() => {
+      assertOpen()
+      return run()
+    })
+    writes.push(operation)
+    void operation.catch(() => {})
+    return operation
   }
   onTestFinished(close)
   try {
@@ -71,6 +87,16 @@ export async function acquireEmbeddingQuotaFixture() {
       assertOpen()
       drains.push({ run, safeAfterFailure })
     },
+    restoreAfterDrain: (run: () => Promise<void>) => {
+      assertOpen()
+      configRestorers.push(run)
+    },
+    beforeLeaseRelease: (run: () => Promise<void>) => {
+      assertOpen()
+      leaseReleaseCallbacks.push(run)
+    },
+    assertLeaseHeld: () => assertEmbeddingQuotaLeaseHeld(client!, key),
+    trackOperation,
     removeOwnedReservations: async () => {
       const ownedIds = [...ids]
       await cleanupTestEmbeddingsBatches(ownedIds)
@@ -82,8 +108,7 @@ export async function acquireEmbeddingQuotaFixture() {
       assertOpen()
       const id = mintUUIDv7()
       ids.push(id)
-      const operation = Promise.resolve().then(async () => {
-        assertOpen()
+      return trackOperation(async () => {
         await insertTestEmbeddingsBatch({
           id,
           bedrockStatus: 'Submitted',
@@ -92,9 +117,6 @@ export async function acquireEmbeddingQuotaFixture() {
         await assertOwnedSubmittedControl(id)
         return { id }
       })
-      writes.push(operation)
-      void operation.catch(() => {})
-      return operation
     },
     insertSubmittedReservation: (inputSizeMB: number) => {
       assertOpen()
@@ -102,8 +124,7 @@ export async function acquireEmbeddingQuotaFixture() {
         throw new Error('Embedding quota reservation must have a positive finite size')
       const id = mintUUIDv7()
       ids.push(id)
-      const operation = Promise.resolve().then(async () => {
-        assertOpen()
+      return trackOperation(async () => {
         await insertTestEmbeddingsBatch({
           id,
           bedrockStatus: 'Submitted',
@@ -111,9 +132,6 @@ export async function acquireEmbeddingQuotaFixture() {
         })
         return { id, inputSizeMB }
       })
-      writes.push(operation)
-      void operation.catch(() => {})
-      return operation
     },
     assertSubmittedReservation: (id: string, inputSizeMB: number) =>
       assertOwnedSubmittedControl(id, inputSizeMB),
@@ -121,8 +139,7 @@ export async function acquireEmbeddingQuotaFixture() {
       assertOpen()
       const id = mintUUIDv7()
       ids.push(id)
-      const write = Promise.resolve().then(async () => {
-        assertOpen()
+      return trackOperation(async () => {
         await insertTestEmbeddingsBatch({
           id,
           bedrockStatus: 'Completed',
@@ -132,67 +149,22 @@ export async function acquireEmbeddingQuotaFixture() {
         await assertOwnedCompletedControl(id)
         return { id, records: 1 }
       })
-      writes.push(write)
-      void write.catch(() => {})
-      return write
     },
   }
 
   async function dispose() {
-    await prepared.promise
-    const errors: unknown[] = []
-    const attempt = async (action: () => unknown) => {
-      try {
-        await action()
-      } catch (err) {
-        errors.push(err)
-      }
-    }
-    // Registered queue drain comes before restoring config used by active processors.
-    let safeToRestore = true
-    for (const drain of drains) {
-      if (!safeToRestore && !drain.safeAfterFailure) continue
-      const [result] = await Promise.allSettled([Promise.resolve().then(drain.run)])
-      if (result!.status === 'rejected') {
-        errors.push(result!.reason)
-        let safe = false
-        await attempt(() => {
-          safe = drain.safeAfterFailure?.() ?? false
-        })
-        safeToRestore = safeToRestore && safe
-      }
-    }
-    for (const write of writes) await attempt(() => write)
-    if (safeToRestore && restoreConfig) {
-      const beforeRestoration = errors.length
-      await attempt(() => restoreConfig?.())
-      await attempt(() => cleanupTestEmbeddingsBatches(ids))
-      await attempt(() => assertOwnedAccountingRemoved(ids))
-      if (errors.length === beforeRestoration) await attempt(() => lease?.removeAfterRestoration())
-    }
-    if (acquired)
-      await attempt(async () => {
-        const { rows } = await client!.query<{ unlocked: boolean }>(
-          allowUnannotatedQuery('SELECT pg_advisory_unlock(hashtextextended($1, 0)) AS unlocked'),
-          [key],
-        )
-        if (!rows[0]?.unlocked) throw new Error('Global quota fixture lock was not released')
-      })
-    await attempt(() => client?.query(allowUnannotatedQuery('RESET statement_timeout')))
-    await attempt(() =>
-      client?.release(
-        errors.length
-          ? new AggregateError(errors, 'Quota disposal failed', { cause: errors[0] })
-          : undefined,
-      ),
-    )
-    if (errors.length)
-      throw new AggregateError(
-        errors,
-        safeToRestore
-          ? 'Quota fixture teardown failed'
-          : 'Quota fixture teardown failed; config/accounting restoration withheld after unsafe drain',
-        { cause: errors[0] },
-      )
+    await disposeEmbeddingQuotaFixture({
+      prepared: prepared.promise,
+      drains,
+      writes,
+      configRestorers,
+      leaseReleaseCallbacks,
+      restoreConfig,
+      ids,
+      lease,
+      client,
+      key,
+      acquired,
+    })
   }
 }

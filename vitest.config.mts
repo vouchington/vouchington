@@ -89,6 +89,7 @@ export default defineConfig({
       ...backendCoreProjects,
       ...backendDataProjects,
       ...backendCredentialedTestProjects,
+      // Exact global admission readers run after other real-Glide files in this invocation.
       {
         extends: true,
         resolve: {
@@ -103,7 +104,56 @@ export default defineConfig({
           },
           setupFiles: ['./test-helpers/vitest.setup.postgres-sessions.mts'],
           include: ['backend/**/*.real-glide.mock.test.mts'],
+          exclude: [
+            '**/node_modules/**',
+            '**/.git/**',
+            'backend/workers/bedrock-embeddings-batch/processors/creation-worker.real-glide.mock.test.mts',
+            'backend/workers/bedrock-embeddings-batch/processors/creation.real-glide.mock.test.mts',
+          ],
+          testTimeout: 30_000,
+          hookTimeout: 30_000,
+        },
+      },
+      {
+        extends: true,
+        resolve: {
+          alias: [realGlideMqAlias(), ...backendAliases({ useWorkerRuntimeTestAdapter: false })],
+        },
+        test: {
+          pool: 'forks',
+          isolate: true,
+          name: 'backend-real-glide-creation-worker',
+          env: {
+            PG_TEST_STATEMENT_TIMEOUT_MS: process.env.PG_TEST_STATEMENT_TIMEOUT_MS ?? '20000',
+          },
+          setupFiles: ['./test-helpers/vitest.setup.postgres-sessions.mts'],
+          include: [
+            'backend/workers/bedrock-embeddings-batch/processors/creation-worker.real-glide.mock.test.mts',
+          ],
           exclude: ['**/node_modules/**', '**/.git/**'],
+          sequence: { groupOrder: 3 },
+          testTimeout: 30_000,
+          hookTimeout: 30_000,
+        },
+      },
+      {
+        extends: true,
+        resolve: {
+          alias: [realGlideMqAlias(), ...backendAliases({ useWorkerRuntimeTestAdapter: false })],
+        },
+        test: {
+          pool: 'forks',
+          isolate: true,
+          name: 'backend-real-glide-creation',
+          env: {
+            PG_TEST_STATEMENT_TIMEOUT_MS: process.env.PG_TEST_STATEMENT_TIMEOUT_MS ?? '20000',
+          },
+          setupFiles: ['./test-helpers/vitest.setup.postgres-sessions.mts'],
+          include: [
+            'backend/workers/bedrock-embeddings-batch/processors/creation.real-glide.mock.test.mts',
+          ],
+          exclude: ['**/node_modules/**', '**/.git/**'],
+          sequence: { groupOrder: 4 },
           testTimeout: 30_000,
           hookTimeout: 30_000,
         },

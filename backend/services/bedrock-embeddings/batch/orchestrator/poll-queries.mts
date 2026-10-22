@@ -26,17 +26,20 @@ export const getPendingBatches = async (
 }
 
 export const getBatchRecordsCreatedInLastHour = async (
+  referenceTime: Date,
   options: QueryOptions = {},
 ): Promise<number> => {
+  // Date#toISOString rejects invalid dates and gives PostgreSQL an explicit UTC instant.
+  const referenceTimeUtc = referenceTime.toISOString()
   const { rows } = await read(
     `/* getBatchRecordsCreatedInLastHour */
     SELECT COALESCE(SUM(records), 0) as records
     FROM bedrock_embedding_batches
     -- UUIDv7 timestamps have millisecond precision, so the next millisecond
     -- is the first one strictly after the one-hour cutoff.
-    WHERE id >= fn_min_uuidv7(NOW() - INTERVAL '1 hour' + INTERVAL '1 millisecond')
+    WHERE id >= fn_min_uuidv7($1::timestamptz - INTERVAL '1 hour' + INTERVAL '1 millisecond')
   `,
-    [],
+    [referenceTimeUtc],
     options,
   )
 

@@ -27,9 +27,13 @@ describe('runVitestProjectGroup', () => {
     expect(docker).toEqual([
       'backend/analytics-integration',
       'backend-data-stores',
+      'backend-bedrock-rate-limits',
+      'backend-bedrock-poll-queries',
       'backend-platform-stats-cache',
       'backend-mocks',
       'backend-real-glide-mq',
+      'backend-real-glide-creation-worker',
+      'backend-real-glide-creation',
     ])
     expect(modules.filter(project => docker.includes(project as never))).toEqual([])
     expect(projectsForVitestGroup('backend-default')).toEqual(['ts-shared', ...modules, ...docker])
@@ -87,11 +91,19 @@ describe('runVitestProjectGroup', () => {
           '--project',
           'backend-data-stores',
           '--project',
+          'backend-bedrock-rate-limits',
+          '--project',
+          'backend-bedrock-poll-queries',
+          '--project',
           'backend-platform-stats-cache',
           '--project',
           'backend-mocks',
           '--project',
           'backend-real-glide-mq',
+          '--project',
+          'backend-real-glide-creation-worker',
+          '--project',
+          'backend-real-glide-creation',
           'path1',
           'path2',
           'path3',

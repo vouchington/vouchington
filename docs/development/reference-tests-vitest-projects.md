@@ -6,7 +6,7 @@ Project definitions live in `test-helpers/vitest-config/*`; the root `vitest.con
 
 ## Concurrency
 
-Never set `fileParallelism: false` or a literal `maxWorkers` in a Vitest config (`dev/vitest-config.test.mts` enforces this). Vitest applies the repository-owned `VITEST_MAX_WORKERS` policy after merging project config and overwrites both knobs, so neither works per project. A test that cannot run in parallel is fixed, not quarantined behind a worker pin: assert properties scoped to owned rows (randomized ids, prefix matching) instead of a global snapshot of shared state. A `sequence.groupOrder` barrier remains available for the rare case that genuinely cannot be made parallel-safe.
+Never set `fileParallelism: false` or a literal `maxWorkers` in a Vitest config (`dev/vitest-config.test.mts` enforces this). Vitest applies the repository-owned `VITEST_MAX_WORKERS` policy after merging project config and overwrites both knobs, so neither works per project. A test that cannot run in parallel is fixed, not quarantined behind a worker pin: assert properties scoped to owned rows (randomized ids, prefix matching) instead of a global snapshot of shared state. A `sequence.groupOrder` barrier remains available for the rare case that genuinely cannot be made parallel-safe. Exact global-aggregate tests may use distinct project groups when their contract requires other files in the same invocation to finish first; this orders files within that invocation and does not isolate an external process using the same database.
 
 ## Timeouts
 
@@ -19,6 +19,8 @@ A first exec of a freshly written executable is expensive on macOS, especially u
 ## Project grouping
 
 Root scripts call `ci/run-vitest-project-group.mts`, whose typed catalog local coverage also uses. Keep durable scripts project-based. A helper test that inspects live database pools belongs to `backend-data-stores`, not `backend-test-helpers`, so that importing a helper never initializes PostgreSQL by accident.
+
+Keep project declarations and their `name`, `include`, and `exclude` arrays statically enumerable literals. The installed static project-coverage analyzer does not evaluate nonzero-argument project factories or identifier entries in those arrays; an omitted project can therefore evade its ownership check. Update the typed catalog, workflow ownership, and analyzer filters together.
 
 ## Queue shim and the real transport
 

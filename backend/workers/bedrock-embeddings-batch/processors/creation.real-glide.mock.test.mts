@@ -25,6 +25,11 @@ import { getQueueDomainControl } from '../../../services/queue-domain-controls/i
 import type { BatchJobType } from '@services/bedrock-embeddings/batch/types'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { acquireEmbeddingQuotaFixture } from '@voucha/test-helpers/embedding-creation-quota'
+import {
+  assertRetainedEmbeddingBatchStockRemains,
+  createRetainedEmbeddingBatchStock,
+  createUsableRetainedEmbeddingCapacity,
+} from '@voucha/test-helpers/embedding-creation-retained-stock'
 import { createOwnedEmbeddingQueue } from '@voucha/test-helpers/embedding-creation-events'
 import { createBedrockEmbeddingsCreationWorker } from './creation-worker.mts'
 
@@ -46,6 +51,7 @@ describe('native embedding creation admission', () => {
   it.each(creationTypes)(
     'delays actual CPU factory %s on its original job when committed capacity is full',
     async (type: BatchJobType) => {
+      const stock = await createUsableRetainedEmbeddingCapacity(quota, type)
       const owned = createOwnedEmbeddingQueue(
         quota,
         `admission_${type}`,
@@ -55,13 +61,8 @@ describe('native embedding creation admission', () => {
         },
         BEDROCK_EMBEDDINGS_CREATION_QUEUE_NAME,
       )
-      const restore = overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, {
-        max_inflight_jobs: 1,
-        creation_retry_delay_ms: 30_000,
-      })
-      quota.beforeRelease(async () => restore())
       await quota.insertSubmittedControl()
-      expect(await getBatchCreationLimits()).toEqual({
+      expect(await getBatchCreationLimits(stock.referenceTime)).toEqual({
         allowed: false,
         reason: 'inflight_job_limit_exceeded',
       })
@@ -110,10 +111,13 @@ describe('native embedding creation admission', () => {
         verifiedAbsentCount: 1,
         remainingCount: 0,
       })
+      await assertRetainedEmbeddingBatchStockRemains(stock)
     },
   )
 
   it('lets ready creation work pass a real image capacity delay across two capped workers', async () => {
+    const quotaReferenceTime = new Date()
+    const stock = await createRetainedEmbeddingBatchStock(quota, quotaReferenceTime)
     const owned = createOwnedEmbeddingQueue(
       quota,
       'fairness',
@@ -127,7 +131,7 @@ describe('native embedding creation admission', () => {
     const imageMinimum = minimumImageBatchSizeMB(config.MIN_RECORDS_PER_JOB)
     const textMinimum = minimumTextBatchSizeMB(config.MIN_RECORDS_PER_JOB)
     const remainingMB = (imageMinimum + textMinimum) / 2
-    const activeBefore = await getActiveBatchStats()
+    const activeBefore = stock.baseline
     const localGiB = Math.ceil((activeBefore.inputSizeMB + remainingMB) / 1024)
     const reservationMB = localGiB * 1024 - activeBefore.inputSizeMB - remainingMB
     const reservationCount = reservationMB > 0 ? 1 : 0
@@ -138,18 +142,23 @@ describe('native embedding creation admission', () => {
       throw new Error('Ambient embedding usage leaves no room for the fairness reservation')
     const restore = overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, {
       max_inflight_jobs: countLimit,
+      max_requests_per_hour: stock.hourlyRecords + getRateLimitConfig().MAX_REQUESTS_PER_BATCH,
       max_job_size_gb: localGiB,
       creation_retry_delay_ms: 30_000,
     })
-    quota.beforeRelease(async () => restore())
+    quota.restoreAfterDrain(async () => restore())
     const reservation = await quota.insertSubmittedReservation(reservationMB)
     await quota.assertSubmittedReservation(reservation.id, reservationMB)
     const activeWithReservation = await getActiveBatchStats()
-    const hourlyRecordsBeforeCompletedControl = await getBatchRecordsCreatedInLastHour()
+    const hourlyRecordsBeforeCompletedControl =
+      await getBatchRecordsCreatedInLastHour(quotaReferenceTime)
     await quota.insertCompletedControl()
-    expect(await getBatchRecordsCreatedInLastHour()).toBe(hourlyRecordsBeforeCompletedControl + 1)
+    expect(await getBatchRecordsCreatedInLastHour(quotaReferenceTime)).toBe(stock.hourlyRecords + 1)
+    expect(await getBatchRecordsCreatedInLastHour(quotaReferenceTime)).toBe(
+      hourlyRecordsBeforeCompletedControl + 1,
+    )
     expect(await getActiveBatchStats()).toEqual(activeWithReservation)
-    const reservedLimits = await getBatchCreationLimits()
+    const reservedLimits = await getBatchCreationLimits(quotaReferenceTime)
     if (!reservedLimits.allowed)
       throw new Error(`Owned reservation blocked admission: ${reservedLimits.reason}`)
     expect(reservedLimits.maxRecords).toBeGreaterThanOrEqual(reservedLimits.minRecords)
@@ -206,7 +215,7 @@ describe('native embedding creation admission', () => {
       expect((await owned.queue.getJob(image.id))?.data).toEqual(delayed?.data)
       expect((await owned.queue.getJob(image.id))?.attemptsMade).toBe(0)
       expect(await owned.add(imageName, {}, imageOptions)).toBeNull()
-      expect(await getBatchCreationLimits()).toEqual(reservedLimits)
+      expect(await getBatchCreationLimits(quotaReferenceTime)).toEqual(reservedLimits)
     })
     // owned.run drains both production workers before the reservation is removed.
     expect(await quota.assertSubmittedReservation(reservation.id, reservationMB)).toBeUndefined()
@@ -214,6 +223,7 @@ describe('native embedding creation admission', () => {
       verifiedAbsentCount: 2,
       remainingCount: 0,
     })
+    await assertRetainedEmbeddingBatchStockRemains(stock)
   })
 
   it.each(creationTypes)(
@@ -236,8 +246,8 @@ describe('native embedding creation admission', () => {
         max_job_size_gb: 1_000,
         min_records_per_job: 1,
       })
-      quota.beforeRelease(async () => restore())
-      const limits = await getBatchCreationLimits()
+      quota.restoreAfterDrain(async () => restore())
+      const limits = await getBatchCreationLimits(new Date())
       expect(limits.allowed).toBe(true)
       if (!limits.allowed) throw new Error(`Expected real creation capacity: ${limits.reason}`)
       expect(limits.maxRecords).toBeGreaterThanOrEqual(limits.minRecords)

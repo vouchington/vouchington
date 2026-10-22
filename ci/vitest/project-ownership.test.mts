@@ -26,6 +26,21 @@ describe('VITEST_OWNERSHIP', () => {
     expect(duplicates).toEqual([])
   })
 
+  it('keeps the four ordered batch-quota readers in the canonical backend-unit job', () => {
+    const backendUnit = VITEST_OWNERSHIP.find(job => job.orchestratorJob === 'test-backend-unit')
+    expect(backendUnit?.projects.map(({ project }) => project)).toEqual(
+      expect.arrayContaining([
+        'backend-bedrock-rate-limits',
+        'backend-bedrock-poll-queries',
+        'backend-real-glide-creation-worker',
+        'backend-real-glide-creation',
+      ]),
+    )
+    expect(
+      backendUnit?.projects.filter(({ project }) => project.startsWith('backend-bedrock-')),
+    ).toHaveLength(2)
+  })
+
   it('flags exactly one project as the storybook browser runner', () => {
     const flagged = VITEST_OWNERSHIP.flatMap(job =>
       job.projects.filter(project => project.browserRunner),

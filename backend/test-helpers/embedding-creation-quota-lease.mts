@@ -106,3 +106,50 @@ export async function claimEmbeddingQuotaLease(client: PoolClient, key: string) 
     },
   }
 }
+
+export async function assertEmbeddingQuotaLeaseHeld(client: PoolClient, key: string) {
+  const { rows } = await client.query<{ held: boolean }>(
+    allowUnannotatedQuery(`SELECT EXISTS (
+      SELECT 1 FROM pg_locks
+      WHERE pid = pg_backend_pid() AND locktype = 'advisory'
+        AND mode = 'ExclusiveLock' AND granted
+        AND classid::bigint = ((hashtextextended($1, 0) >> 32) & 4294967295)
+        AND objid::bigint = (hashtextextended($1, 0) & 4294967295)
+        AND objsubid = 1
+    ) AS held`),
+    [key],
+  )
+  if (!rows[0]?.held)
+    throw new Error('Embedding quota fixture lost its physical advisory lock before release')
+}
+
+export async function releaseEmbeddingQuotaSession(
+  client: PoolClient | undefined,
+  key: string,
+  acquired: boolean,
+  errors: unknown[],
+) {
+  const attempt = async (action: () => unknown) => {
+    try {
+      await action()
+    } catch (err) {
+      errors.push(err)
+    }
+  }
+  if (acquired)
+    await attempt(async () => {
+      const { rows } = await client!.query<{ unlocked: boolean }>(
+        allowUnannotatedQuery('SELECT pg_advisory_unlock(hashtextextended($1, 0)) AS unlocked'),
+        [key],
+      )
+      if (!rows[0]?.unlocked) throw new Error('Global quota fixture lock was not released')
+    })
+  await attempt(() => client?.query(allowUnannotatedQuery('RESET statement_timeout')))
+  await attempt(() =>
+    client?.release(
+      errors.length
+        ? new AggregateError(errors, 'Quota disposal failed', { cause: errors[0] })
+        : undefined,
+    ),
+  )
+}

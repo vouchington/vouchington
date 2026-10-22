@@ -6,13 +6,16 @@ import {
 } from '@queues/bedrock-embeddings-batch/config'
 import { creationJobOptions } from '@queues/bedrock-embeddings-batch/enqueues'
 import { getBatchCreationLimits } from '@services/bedrock-embeddings-batch/rate-limits'
-import { bedrockEmbeddingsBatchConfig } from '@services/bedrock-embeddings/batch/config'
+import { minimumImageBatchSizeMB } from '@services/bedrock-embeddings/batch/input-size-limits'
 import {
   createOwnedEmbeddingQueue,
   createOwnedEmbeddingQueueWithoutQuota,
 } from '@voucha/test-helpers/embedding-creation-events'
 import { acquireEmbeddingQuotaFixture } from '@voucha/test-helpers/embedding-creation-quota'
-import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import {
+  assertRetainedEmbeddingBatchStockRemains,
+  createUsableRetainedEmbeddingCapacity,
+} from '@voucha/test-helpers/embedding-creation-retained-stock'
 import { Queue, Worker, type Job } from 'glide-mq'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createBedrockEmbeddingsCreationWorker } from './creation-worker.mts'
@@ -176,6 +179,7 @@ describe('native embedding creation recovery after capacity release', () => {
   }, 25_000)
 
   it('completes the same delayed image job after its owned reservation is removed', async () => {
+    const stock = await createUsableRetainedEmbeddingCapacity(quota, 'images')
     const owned = createOwnedEmbeddingQueue(
       quota,
       'capacity_reentry',
@@ -185,11 +189,6 @@ describe('native embedding creation recovery after capacity release', () => {
       },
       BEDROCK_EMBEDDINGS_CREATION_QUEUE_NAME,
     )
-    const restore = overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, {
-      max_inflight_jobs: 1,
-      creation_retry_delay_ms: 30_000,
-    })
-    quota.beforeRelease(async () => restore())
     await quota.insertSubmittedControl()
     const exhaustedCursor = {
       sweepStartedAt: '2024-01-01T00:00:00.000Z',
@@ -221,7 +220,16 @@ describe('native embedding creation recovery after capacity release', () => {
         verifiedAbsentCount: 1,
         remainingCount: 0,
       })
-      expect((await getBatchCreationLimits()).allowed).toBe(true)
+      const restoredLimits = await getBatchCreationLimits(stock.referenceTime)
+      if (!restoredLimits.allowed)
+        throw new Error(
+          `Retained stock blocked recovery after owned removal: ${restoredLimits.reason}`,
+        )
+      expect(restoredLimits.maxRecords).toBeGreaterThanOrEqual(restoredLimits.minRecords)
+      expect(restoredLimits.maxSizeMB).toBeGreaterThanOrEqual(
+        minimumImageBatchSizeMB(restoredLimits.minRecords),
+      )
+      await assertRetainedEmbeddingBatchStockRemains(stock)
       await owned.promote(job)
       await owned.waitFor(job.id, 'completed')
       const completed = await owned.queue.getJob(job.id)
@@ -231,5 +239,6 @@ describe('native embedding creation recovery after capacity release', () => {
       expect(completed?.attemptsMade).toBe(0)
       expect(completed?.returnvalue).toEqual({ empty: true, hasMore: false })
     })
+    await assertRetainedEmbeddingBatchStockRemains(stock)
   })
 })

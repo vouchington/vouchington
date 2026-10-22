@@ -75,4 +75,6 @@ The `include` and `exclude` arrays in [`vitest.config.mts`](../../vitest.config.
 [`test-helpers/vitest-config/`](../../test-helpers/vitest-config/) are authoritative for which
 project owns a file.
 `backend-modules` does **not** use a DB `globalSetup`: a module that needs a database belongs in
-`backend/data-stores/` or `backend/services/`, with its tests in `backend-data-stores`.
+`backend/data-stores/` or `backend/services/`, and its test uses the DB-backed project declared by
+the current Vitest configuration. `backend-data-stores` is the usual owner; a test with an exact
+global-aggregate contract may have a dedicated ordered project.

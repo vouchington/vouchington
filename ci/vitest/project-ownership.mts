@@ -74,10 +74,14 @@ export const VITEST_OWNERSHIP: readonly VitestJobOwnership[] = [
     projects: noCredential([
       'backend/analytics-integration',
       'backend-data-stores',
+      'backend-bedrock-rate-limits',
+      'backend-bedrock-poll-queries',
       'backend-platform-stats-cache',
       'backend-mocks',
       'backend-migration-initializers',
       'backend-real-glide-mq',
+      'backend-real-glide-creation-worker',
+      'backend-real-glide-creation',
     ]),
   },
   {

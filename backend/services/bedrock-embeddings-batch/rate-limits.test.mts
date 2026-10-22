@@ -12,6 +12,10 @@ import {
   bedrockEmbeddingsBatchConfig,
   getRateLimitConfig,
 } from '@services/bedrock-embeddings/batch/config'
+import {
+  getActiveBatchStats,
+  getBatchRecordsCreatedInLastHour,
+} from '@services/bedrock-embeddings/batch/orchestrator/poll-queries'
 import { getBatchCreationLimits } from './rate-limits.mts'
 
 const createdBatchIds: string[] = []
@@ -40,7 +44,12 @@ describe('getBatchCreationLimits', () => {
     await closeScopedDynamicConfigContext([bedrockEmbeddingsBatchConfig])
   })
 
+  it('rejects an invalid quota reference time', async () => {
+    await expect(getBatchCreationLimits(new Date(Number.NaN))).rejects.toBeInstanceOf(RangeError)
+  })
+
   it('allows a batch within the configured request and size budgets', async () => {
+    const referenceTime = new Date()
     overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, {
       max_inflight_jobs: 1000000,
       max_requests_per_hour: 1000000000,
@@ -52,7 +61,7 @@ describe('getBatchCreationLimits', () => {
     await insertBatch({ bedrockStatus: 'Submitted', records: 850, inputSizeMB: 256 })
     await insertBatch({ bedrockStatus: 'Completed', records: 25, inputSizeMB: 512 })
 
-    await expect(getBatchCreationLimits()).resolves.toEqual({
+    await expect(getBatchCreationLimits(referenceTime)).resolves.toEqual({
       allowed: true,
       maxRecords: 200,
       maxSizeMB: 1024,
@@ -61,40 +70,57 @@ describe('getBatchCreationLimits', () => {
   })
 
   it('blocks when the in-flight job limit is reached', async () => {
-    overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, { max_inflight_jobs: 1 })
+    const referenceTime = new Date()
+    const activeBefore = await getActiveBatchStats()
+    const hourlyBefore = await getBatchRecordsCreatedInLastHour(referenceTime)
+    overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, {
+      max_inflight_jobs: activeBefore.count + 1,
+      max_requests_per_hour: hourlyBefore + 1,
+      max_job_size_gb: Math.floor(activeBefore.inputSizeMB / 1024) + 1,
+    })
     await insertBatch({ bedrockStatus: 'Submitted' })
 
-    await expect(getBatchCreationLimits()).resolves.toEqual({
+    await expect(getBatchCreationLimits(referenceTime)).resolves.toEqual({
       allowed: false,
       reason: 'inflight_job_limit_exceeded',
     })
   })
 
   it('blocks when the hourly request limit is exhausted', async () => {
+    const referenceTime = new Date()
+    const activeBefore = await getActiveBatchStats()
+    const hourlyBefore = await getBatchRecordsCreatedInLastHour(referenceTime)
     overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, {
-      max_inflight_jobs: 1000000,
-      max_requests_per_hour: 1,
+      max_inflight_jobs: activeBefore.count + 1,
+      max_requests_per_hour: hourlyBefore + 1,
+      max_job_size_gb: Math.floor(activeBefore.inputSizeMB / 1024) + 1,
     })
     await insertBatch({ bedrockStatus: 'Completed', records: 1 })
 
-    await expect(getBatchCreationLimits()).resolves.toEqual({
+    await expect(getBatchCreationLimits(referenceTime)).resolves.toEqual({
       allowed: false,
       reason: 'hourly_request_limit_exceeded',
     })
   })
 
   it('blocks when active batches have exhausted the input-size budget', async () => {
+    const referenceTime = new Date()
+    const activeBefore = await getActiveBatchStats()
+    const hourlyBefore = await getBatchRecordsCreatedInLastHour(referenceTime)
+    const maxJobSizeGB = Math.floor(activeBefore.inputSizeMB / 1024) + 1
+    const maxInflightSizeMB = maxJobSizeGB * 1024
+    const inputSizeMB = maxInflightSizeMB - activeBefore.inputSizeMB + 1
     overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, {
-      max_inflight_jobs: 1000000,
-      max_requests_per_hour: 1000000000,
-      max_job_size_gb: 1,
+      max_inflight_jobs: activeBefore.count + 2,
+      max_requests_per_hour: hourlyBefore + 1,
+      max_job_size_gb: maxJobSizeGB,
     })
     await insertBatch({
       bedrockStatus: 'Submitted',
-      inputSizeMB: 1024,
+      inputSizeMB,
     })
 
-    await expect(getBatchCreationLimits()).resolves.toEqual({
+    await expect(getBatchCreationLimits(referenceTime)).resolves.toEqual({
       allowed: false,
       reason: 'inflight_size_limit_exceeded',
     })

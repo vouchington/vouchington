@@ -15,9 +15,13 @@ const dockerFreeBackendProjects = [
 const dockerBackedBackendProjects = [
   'backend/analytics-integration',
   'backend-data-stores',
+  'backend-bedrock-rate-limits',
+  'backend-bedrock-poll-queries',
   'backend-platform-stats-cache',
   'backend-mocks',
   'backend-real-glide-mq',
+  'backend-real-glide-creation-worker',
+  'backend-real-glide-creation',
 ] as const
 
 const backendCoreProjects = [
