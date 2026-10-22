@@ -95,7 +95,7 @@ changes or add `--force`. The procedure lives in
 - **Missing dependencies after rebase:** `pnpm install`, then `pnpm run syncpack:lint && pnpm run no-mistakes`.
 - **Views can't be replaced with `CREATE OR REPLACE`:** `pnpm --dir backend db:migrate -- --forced`
   drops all managed views first and recreates them from `backend/data-stores/psql/views/`.
-- **`index.lock`, a stuck rebase, or `another ./dev/reset-worktree is running`:** see
+- **`index.lock`, a stuck rebase, or `another worktree reset is running`:** see
   [git-worktree-locks.md](git-worktree-locks.md).
 
 ## Dependency Updates

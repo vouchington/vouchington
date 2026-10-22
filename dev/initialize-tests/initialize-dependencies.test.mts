@@ -3,9 +3,9 @@ import { chmod, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises
 import { tmpdir } from 'node:os'
 import { delimiter, join } from 'node:path'
 import { promisify } from 'node:util'
+import { HOST_STORAGE_MINIMUM_FREE_BYTES } from 'vouchington-tooling/host-storage'
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { HOST_STORAGE_MINIMUM_FREE_BYTES } from '../host-storage-preflight.mts'
 import { initializeBashArgs } from '../test-helpers/initialize.mts'
 import { runProcess } from '../test-helpers/run-process.mts'
 
@@ -121,7 +121,7 @@ describe('initialize dependency install', () => {
       'retry_command 3 5 "pnpm install${CI:+ --frozen-lockfile} --config.confirmModulesPurge=false"',
       main,
     )
-    const loadHelper = source.indexOf('source "$REPO_ROOT/dev/lib/git-worktrees.sh"', main)
+    const loadHelper = source.indexOf('source "$tooling_scripts/worktree/git-worktrees.sh"', main)
     const registerResources = source.indexOf(
       'register_live_worktree_resource_paths "$REPO_ROOT"',
       main,
@@ -132,17 +132,21 @@ describe('initialize dependency install', () => {
     expect(registerResources).toBeGreaterThan(loadHelper)
   })
 
-  it('runs the bootstrap storage check before Node activation and the full preflight after it', async () => {
+  it('runs the bootstrap storage check before Node activation and the full preflight after dependencies install', async () => {
     const source = await readFile(new URL('../initialize', import.meta.url), 'utf8')
     const main = source.indexOf('main() {')
     const bootstrapPreflight = source.indexOf('check_bootstrap_host_storage', main)
     const activateNode = source.indexOf('    ensure_node_version', main)
-    const storagePreflight = source.indexOf('host-storage-preflight.mts', main)
+    const install = source.indexOf(
+      'retry_command 3 5 "pnpm install${CI:+ --frozen-lockfile} --config.confirmModulesPurge=false"',
+      main,
+    )
+    const storagePreflight = source.indexOf('vouchington.mjs" host-storage', main)
 
     expect(bootstrapPreflight).toBeGreaterThan(main)
     expect(activateNode).toBeGreaterThan(bootstrapPreflight)
     expect(activateNode).toBeGreaterThan(main)
-    expect(storagePreflight).toBeGreaterThan(activateNode)
+    expect(storagePreflight).toBeGreaterThan(install)
     expect(source).toContain(
       `HOST_STORAGE_MINIMUM_FREE_KIB=${HOST_STORAGE_MINIMUM_FREE_BYTES / 1024n}`,
     )

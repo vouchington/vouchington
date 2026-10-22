@@ -73,7 +73,7 @@ state self-heals the next time a worktree is initialized.
 
 ## `./dev/reset-worktree` concurrency guard
 
-`Error: another ./dev/reset-worktree is running for this worktree.` means two concurrent resets in
+`Error: another worktree reset is running for this worktree.` means two concurrent resets in
 one worktree would race (fetch, teardown, hard-reset, output removal). A kernel lock on
 `.local/reset-worktree.lock` is held through the entire reset and released automatically when the
 owner exits; the zero-byte file's existence alone does not mean a lock is held. Wait for the other

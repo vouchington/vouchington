@@ -34,8 +34,8 @@ refuse_on_main "./dev/teardown" "$REPO_ROOT"
 
 # shellcheck source=lib/db-target.sh
 source "$REPO_ROOT/dev/lib/db-target.sh"
-# shellcheck source=lib/git-worktrees.sh
-source "$REPO_ROOT/dev/lib/git-worktrees.sh"
+# shellcheck source=/dev/null
+source "$REPO_ROOT/node_modules/vouchington-tooling/scripts/worktree/git-worktrees.sh"
 # shellcheck source=lib/worktree-resource-env.sh
 source "$REPO_ROOT/dev/lib/worktree-resource-env.sh"
 

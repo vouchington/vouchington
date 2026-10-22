@@ -16,7 +16,7 @@ const testDirs: string[] = []
 export function initializeBashArgs(script: string, args: string[] = []): string[] {
   return sourceBashArgs(
     initializePath,
-    `if [ -r "$REPO_ROOT/dev/lib/git-worktrees.sh" ]; then source "$REPO_ROOT/dev/lib/git-worktrees.sh"; fi; ${script}`,
+    `helper="$REPO_ROOT/node_modules/vouchington-tooling/scripts/worktree/git-worktrees.sh"; if [ -r "$helper" ]; then source "$helper"; fi; ${script}`,
     args,
     true,
   )

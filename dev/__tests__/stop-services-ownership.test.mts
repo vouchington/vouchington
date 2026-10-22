@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 import { afterEach, describe, expect, it } from 'vitest'
+import { stageToolingWorktreeScripts } from '../test-helpers/tooling-worktree-scripts.mts'
 
 const execFileAsync = promisify(execFile)
 const stopServicesPath = fileURLToPath(new URL('../stop-services', import.meta.url))
@@ -12,12 +13,6 @@ const dbNameFromUrlPath = fileURLToPath(new URL('../lib/db-name-from-url.sh', im
 const refuseOnMainPath = fileURLToPath(new URL('../lib/refuse-on-main.sh', import.meta.url))
 const worktreeResourceEnvPath = fileURLToPath(
   new URL('../lib/worktree-resource-env.sh', import.meta.url),
-)
-const publishedGitWorktreesPath = fileURLToPath(
-  new URL(
-    '../../node_modules/vouchington-tooling/scripts/worktree/git-worktrees.sh',
-    import.meta.url,
-  ),
 )
 const testDirs: string[] = []
 
@@ -40,10 +35,7 @@ async function makeRepo() {
     join(dir, 'dev', 'lib', 'worktree-resource-env.sh'),
     await readFile(worktreeResourceEnvPath, 'utf8'),
   )
-  await writeFile(
-    join(dir, 'dev', 'lib', 'git-worktrees.sh'),
-    await readFile(publishedGitWorktreesPath, 'utf8'),
-  )
+  await stageToolingWorktreeScripts(dir)
   await writeFile(join(dir, '.git'), 'gitdir: /fake/.git/worktrees/test\n')
 
   return dir

@@ -20,7 +20,7 @@ async function makeInitializeFixtureRepo() {
 
   await mkdir(join(root, 'dev'), { recursive: true })
   await cp(initializePath, join(root, 'dev', 'initialize'))
-  await writeFile(join(root, 'dev', 'host-storage-preflight.mts'), '')
+  await writeFile(join(root, 'host-storage-stub.mjs'), '')
   await cp(join(devRoot, 'lib'), join(root, 'dev', 'lib'), { recursive: true })
   await execFileAsync('git', ['init'], { cwd: root })
 
@@ -79,8 +79,9 @@ async function runFixtureInitializeWeb({ path, root }: { path: string; root: str
   await writeFile(
     join(path, 'pnpm'),
     `#!/bin/bash
-/bin/mkdir -p "$PWD/node_modules/vouchington-tooling/scripts/worktree"
-/bin/cp "$WORKTREE_SCRIPT_SOURCE" "$PWD/node_modules/vouchington-tooling/scripts/worktree/git-worktrees.sh"
+/bin/mkdir -p "$PWD/node_modules/vouchington-tooling/scripts/worktree" "$PWD/node_modules/vouchington-tooling/bin"
+/bin/cp -R "$WORKTREE_SCRIPTS_DIR/." "$PWD/node_modules/vouchington-tooling/scripts/worktree/"
+/bin/cp "$PWD/host-storage-stub.mjs" "$PWD/node_modules/vouchington-tooling/bin/vouchington.mjs"
 printf 'ran\\n' > "$PWD/pnpm-ran"
 `,
   )
@@ -93,10 +94,7 @@ printf 'ran\\n' > "$PWD/pnpm-ran"
       HOME: root,
       PATH: path,
       SKIP_NVM_INSTALL: '1',
-      WORKTREE_SCRIPT_SOURCE: join(
-        devRoot,
-        '../node_modules/vouchington-tooling/scripts/worktree/git-worktrees.sh',
-      ),
+      WORKTREE_SCRIPTS_DIR: join(devRoot, '../node_modules/vouchington-tooling/scripts/worktree'),
       TEMP: isolatedTmp,
       TMP: isolatedTmp,
       TMPDIR: isolatedTmp,
@@ -161,7 +159,7 @@ describe('initialize main web cache cleanup ordering', () => {
     const dockerMarker = join(root, 'docker-was-called')
     const bin = await makePathBin(['awk', 'basename', 'df', 'dirname', 'git', 'node'])
     await writeFile(
-      join(root, 'dev', 'host-storage-preflight.mts'),
+      join(root, 'host-storage-stub.mjs'),
       `console.error('Error: synthetic host storage failure')
 process.exitCode = 1
 `,

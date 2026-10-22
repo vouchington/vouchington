@@ -43,8 +43,8 @@ if [ ! -f "$REPO_ROOT/.env" ] || [ ! -f "$REPO_ROOT/.initialized" ] || [ "$(tr -
     exit 1
 fi
 
-# shellcheck source=lib/git-worktrees.sh
-source "$REPO_ROOT/dev/lib/git-worktrees.sh"
+# shellcheck source=/dev/null
+source "$REPO_ROOT/node_modules/vouchington-tooling/scripts/worktree/git-worktrees.sh"
 
 set -a
 source "$REPO_ROOT/.env"
