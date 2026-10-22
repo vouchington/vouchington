@@ -11,7 +11,7 @@ import { getTestActiveCommunityBan } from '@voucha/test-helpers/entities/communi
 import {
   sdkCommunityModerationCase,
   connectSdkCatalog,
-  callAndValidateSdkTool,
+  createSdkCatalogAssertions,
 } from '@voucha/test-helpers/mcp-sdk-catalog'
 import { sdkMergedSuccessNames } from '@voucha/test-helpers/mcp-sdk-success-names'
 
@@ -31,16 +31,17 @@ describe('registered community moderation catalog SDK', () => {
       },
     )
     const observed = new Set<string>()
-    const call = async (name: string, option: string, args: Record<string, unknown>) => {
-      const result = await callAndValidateSdkTool(client, name, option, {
-        community: community.id,
-        ...args,
-      })
-      observed.add(name)
-      return result
-    }
     try {
-      const listing = await client.listTools()
+      const catalog = await createSdkCatalogAssertions(client)
+      const call = async (name: string, option: string, args: Record<string, unknown>) => {
+        const result = await catalog.callAndValidate(name, option, {
+          community: community.id,
+          ...args,
+        })
+        observed.add(name)
+        return result
+      }
+      const listing = { tools: catalog.tools }
       expect(listing.tools.map(tool => tool.name).toSorted()).toEqual(
         [...sdkMergedSuccessNames.communityModerationFixture].toSorted(),
       )

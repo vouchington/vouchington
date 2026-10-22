@@ -19,7 +19,7 @@ import { sdkMergedSuccessNames } from '@voucha/test-helpers/mcp-sdk-success-name
 import {
   sdkCatalogCases as cases,
   connectSdkCatalog,
-  callAndValidateSdkTool as callAndValidate,
+  createSdkCatalogAssertions,
 } from '@voucha/test-helpers/mcp-sdk-catalog'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { buildToolResult, McpToolOutputMismatchError } from './build-tool-result.mts'
@@ -259,7 +259,8 @@ describe('official SDK against the registered MCP catalogs', () => {
   it('validates a real referenced output schema over the user SDK', async () => {
     const client = await connect(cases[0]!)
     try {
-      expect(await callAndValidate(client, 'read_reference_data', 'countries', {})).toBeDefined()
+      const catalog = await createSdkCatalogAssertions(client)
+      expect(await catalog.callAndValidate('read_reference_data', 'countries', {})).toBeDefined()
     } finally {
       await client.close()
     }

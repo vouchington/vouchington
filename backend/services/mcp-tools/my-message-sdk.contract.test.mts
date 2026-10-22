@@ -7,7 +7,7 @@ import {
 } from '@voucha/test-helpers/mcp-sdk-success-names'
 import { createTestDirectConversation, createTestUser } from '@voucha/test-helpers'
 import {
-  callAndValidateSdkTool,
+  createSdkCatalogAssertions,
   connectSdkCatalog,
   sdkCatalogCases,
 } from '@voucha/test-helpers/mcp-sdk-catalog'
@@ -27,17 +27,18 @@ describe('direct-message tools through the MCP SDK — real DB', () => {
       return sdk
     })
     try {
-      const names = (await client.listTools()).tools.map(tool => tool.name)
+      const catalog = await createSdkCatalogAssertions(client)
+      const names = catalog.tools.map(tool => tool.name)
       expect(names).toContain('read_my_messages')
       expect(names).toContain('manage_my_messages')
 
-      const read = await callAndValidateSdkTool(client, 'read_my_messages', 'get', {
+      const read = await catalog.callAndValidate('read_my_messages', 'get', {
         conversation_id: conversation.id,
       })
       observed.add('read_my_messages')
       expect(read).toMatchObject({ conversation: { id: conversation.id } })
 
-      const write = await callAndValidateSdkTool(client, 'manage_my_messages', 'send', {
+      const write = await catalog.callAndValidate('manage_my_messages', 'send', {
         conversation_id: conversation.id,
         text: 'Message through SDK',
       })

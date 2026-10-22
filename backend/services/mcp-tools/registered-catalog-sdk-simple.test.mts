@@ -12,7 +12,7 @@ import { insertTestDataPoint } from '@voucha/test-helpers/entities/data-points'
 import {
   sdkCatalogCases as cases,
   connectSdkCatalog,
-  callAndValidateSdkTool,
+  createSdkCatalogAssertions,
 } from '@voucha/test-helpers/mcp-sdk-catalog'
 
 async function connect(
@@ -27,8 +27,13 @@ async function connect(
 }
 
 const observedMergedNames = new Set<string>()
-const callAndValidate: typeof callAndValidateSdkTool = async (client, name, option, args) => {
-  const result = await callAndValidateSdkTool(client, name, option, args)
+const callAndValidate = async (
+  catalog: Awaited<ReturnType<typeof createSdkCatalogAssertions>>,
+  name: string,
+  option: string | null,
+  args: Record<string, unknown>,
+) => {
+  const result = await catalog.callAndValidate(name, option, args)
   if (option !== null) observedMergedNames.add(name)
   return result
 }
@@ -57,7 +62,44 @@ describe('registered catalog SDK', () => {
     { testCase: cases[3]!, name: 'read_vote_integrity', option: 'flags', args: {} },
     { testCase: cases[3]!, name: 'read_vote_integrity', option: 'penalties', args: {} },
     { testCase: cases[3]!, name: 'read_moderation_appeal', option: 'list', args: {} },
-    { testCase: cases[3]!, name: 'read_review_dispute', option: 'list', args: {} },
+    {
+      testCase: cases[3]!,
+      name: 'read_review_dispute',
+      option: 'list',
+      args: {},
+      prepare: async () => {
+        const fixture = await createStaffResolutionFixture('dispute', false)
+        return async (
+          catalog: Awaited<ReturnType<typeof createSdkCatalogAssertions>>,
+          result: unknown,
+        ) => {
+          if (!fixture.postId || !fixture.postTitle)
+            throw new Error('Expected an owned dispute post')
+          expect(result).toMatchObject({
+            disputes: expect.arrayContaining([
+              expect.objectContaining({ id: fixture.id, status: 'pending' }),
+            ]),
+          })
+          const detail = await callAndValidate(catalog, 'read_review_dispute', 'get', {
+            id: fixture.id,
+          })
+          expect(detail).toMatchObject({
+            dispute: {
+              id: fixture.id,
+              post_id: fixture.postId,
+              status: 'pending',
+              claim_text: expect.stringContaining('Test review dispute fixture.'),
+              post_content: { text: expect.stringContaining(fixture.postTitle) },
+              staff_context: {
+                review: {
+                  post: { id: fixture.postId, title: expect.stringContaining(fixture.postTitle) },
+                },
+              },
+            },
+          })
+        }
+      },
+    },
     { testCase: cases[3]!, name: 'read_admin_metrics', option: 'growth', args: { range: 'today' } },
     { testCase: cases[3]!, name: 'read_queue_catalog', option: 'queues', args: {} },
     { testCase: cases[3]!, name: 'read_queue_catalog', option: 'scheduled_jobs', args: {} },
@@ -79,9 +121,13 @@ describe('registered catalog SDK', () => {
     { testCase: cases[3]!, name: 'list_post_review_queue', option: null, args: {} },
     { testCase: cases[3]!, name: 'list_pending_topic_claims', option: null, args: {} },
   ])('calls $name ($option) and validates its advertised structured result', async row => {
+    const assertOwned = await row.prepare?.()
     const client = await connect(row.testCase)
     try {
-      expect(await callAndValidate(client, row.name, row.option, row.args)).toBeDefined()
+      const catalog = await createSdkCatalogAssertions(client)
+      const result = await callAndValidate(catalog, row.name, row.option, row.args)
+      expect(result).toBeDefined()
+      await assertOwned?.(catalog, result)
     } finally {
       await client.close()
     }
@@ -91,7 +137,8 @@ describe('registered catalog SDK', () => {
     const fixture = await createStaffResolutionFixture('appeal', false)
     const client = await connect(cases[3]!)
     try {
-      const detail = await callAndValidate(client, 'read_moderation_appeal', 'get', {
+      const catalog = await createSdkCatalogAssertions(client)
+      const detail = await callAndValidate(catalog, 'read_moderation_appeal', 'get', {
         id: fixture.id,
       })
       expect(detail).toMatchObject({
@@ -101,7 +148,7 @@ describe('registered catalog SDK', () => {
           ai_draft_run_id: null,
         },
       })
-      const page = await callAndValidate(client, 'read_moderation_appeal', 'list', {})
+      const page = await callAndValidate(catalog, 'read_moderation_appeal', 'list', {})
       // Staff pages span the dirty database; only detail lookup is scoped to our owned row.
       expect(page).toMatchObject({ appeals: expect.any(Array) })
       expect((page as { appeals: unknown[] }).appeals.length).toBeGreaterThan(0)
@@ -127,7 +174,8 @@ describe('registered catalog SDK', () => {
     })
     const client = await connect(cases[0]!, owner)
     try {
-      const result = await callAndValidate(client, 'read_data_points', 'search', {
+      const catalog = await createSdkCatalogAssertions(client)
+      const result = await callAndValidate(catalog, 'read_data_points', 'search', {
         topic_id: topicId,
       })
       expect(result).toMatchObject({

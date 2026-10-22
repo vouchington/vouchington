@@ -148,35 +148,45 @@ export async function connectSdkCatalog<T>(
   )
 }
 
-export async function callAndValidateSdkTool(
-  client: unknown,
-  name: string,
-  option: string | null,
-  args: Record<string, unknown>,
-) {
-  const sdk = client as {
-    listTools: () => Promise<{
-      tools: Array<{ name: string; outputSchema?: Parameters<typeof findSchemaViolation>[0] }>
-    }>
-    callTool: (input: { name: string; arguments: Record<string, unknown> }) => Promise<{
-      isError?: boolean
-      structuredContent?: unknown
-      content: unknown
-    }>
+type CatalogSdk = {
+  listTools(): Promise<{
+    tools: Array<{ name: string; outputSchema?: Parameters<typeof findSchemaViolation>[0] }>
+  }>
+  callTool(input: { name: string; arguments: Record<string, unknown> }): Promise<
+    | {
+        content: Array<{ type: string; text?: string }>
+        isError?: boolean
+        structuredContent?: unknown
+      }
+    | { toolResult: unknown }
+  >
+}
+
+/** Snapshot this fixed caller's advertised schemas; every invocation still uses the real client. */
+export async function createSdkCatalogAssertions(client: CatalogSdk) {
+  const { tools } = await client.listTools()
+  return { tools, callAndValidate }
+
+  async function callAndValidate(
+    name: string,
+    option: string | null,
+    args: Record<string, unknown>,
+  ) {
+    const advertised = tools.find(tool => tool.name === name)
+    expect(advertised?.outputSchema).toBeDefined()
+    const result = await client.callTool({
+      name,
+      arguments: option === null ? args : { option, arguments: args },
+    })
+    if (!('content' in result)) throw new Error('Expected a normal SDK tool result')
+    expect(result.isError).toBeUndefined()
+    expect(result.structuredContent).toBeDefined()
+    expect(findSchemaViolation(advertised!.outputSchema!, result.structuredContent)).toBeNull()
+    const first = result.content[0]
+    expect(first).toMatchObject({ type: 'text' })
+    if (first?.type !== 'text' || first.text === undefined)
+      throw new Error('Expected the structured result text companion')
+    expect(JSON.parse(first.text)).toEqual(result.structuredContent)
+    return result.structuredContent
   }
-  const advertised = (await sdk.listTools()).tools.find(tool => tool.name === name)
-  expect(advertised?.outputSchema).toBeDefined()
-  const result = await sdk.callTool({
-    name,
-    arguments: option === null ? args : { option, arguments: args },
-  })
-  expect(result.isError).toBeUndefined()
-  expect(result.structuredContent).toBeDefined()
-  expect(findSchemaViolation(advertised!.outputSchema!, result.structuredContent)).toBeNull()
-  const first = (result.content as Array<{ type: string; text?: string }>)[0]
-  expect(first).toMatchObject({ type: 'text' })
-  if (first?.type !== 'text' || first.text === undefined)
-    throw new Error('Expected the structured result text companion')
-  expect(JSON.parse(first.text)).toEqual(result.structuredContent)
-  return result.structuredContent
 }

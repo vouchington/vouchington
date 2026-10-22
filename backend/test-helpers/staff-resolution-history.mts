@@ -30,17 +30,18 @@ export async function createStaffResolutionFixture(kind: 'appeal' | 'dispute', d
     name: `Audit ${suffix}`,
     slug: `audit-${suffix}`,
   })
+  const postTitle = `Audit ${suffix}`
   const postId = await insertTestPost({
     createdById: target.id,
     postType: 'review',
-    title: `Audit ${suffix}`,
+    title: postTitle,
     slug: `audit-${suffix}`,
     markdown: 'Synthetic audit review.',
   })
   await insertTestPostReview(postId, topicId, 3)
   const id = await insertTestReviewDispute({ postId, topicId, disputantUserId: target.id })
   if (delivered) await deliverReviewDisputeForTest(actor.id, id)
-  return { actorId: actor.id, id }
+  return { actorId: actor.id, id, postId, postTitle }
 }
 
 export async function readStaffResolutionState(kind: 'appeal' | 'dispute', id: string) {
