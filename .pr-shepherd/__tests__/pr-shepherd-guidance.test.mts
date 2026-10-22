@@ -3,7 +3,8 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
 // #7180: a global pr-shepherd shadowed the workspace install on PATH. This guards Vouchington's own
-// guidance: checked-in docs and skills invoke the workspace-pinned CLI and no retired subcommands.
+// guidance: checked-in docs and skills invoke the workspace-pinned CLI and no retired (pre-v1)
+// subcommands, flags, or action names.
 // pr-shepherd's command behavior, exit codes, and routing belong to its own tests and skill.
 
 const ROOT_URL = new URL('../../', import.meta.url)
@@ -24,12 +25,12 @@ const LOCAL_GUIDANCE = CHECKED_IN_GUIDANCE.filter(
 )
 
 const DEPRECATED_INVOCATIONS =
-  /\b(?:pnpm exec )?pr-shepherd\s+(?:poll|resolve|journal(?!\s+extract(?:\s|$))|commit-suggestion|mark-files-as-viewed|log-file|clean)\b/u
+  /\b(?:pnpm exec )?pr-shepherd\s+(?:poll|resolve|journal(?!\s+extract(?:\s|$))|commit-suggestion|build-suggestion-patch(?:es)?|mark-files-as-viewed|log-file|clean)\b|\bpr-shepherd(?:[ \t]+(?:iterate|<[^>\s]+>|\d+))?[ \t]+--(?:stack|poll-mode)\b|\b(?:FIX_CODE|fix_code|fix-thrash|fix-code-loop)\b/u
 const BARE_LOCAL_COMMAND =
-  /`pr-shepherd\s+(?:iterate|apply|journal|build-suggestion-patch(?:es)?|admin|<(?:pr|N|pr-number)>|\d+)(?:\s+[^`\n]+)?`|```(?:bash|sh|zsh|shell)?\n(?:(?!```)[^\n]*\n)*? {0,3}pr-shepherd\s+(?:iterate|apply|journal|build-suggestion-patch(?:es)?|admin|<(?:pr|N|pr-number)>|\d+)(?:\s+[^\n]+)?(?=\n|$)/u
+  /`pr-shepherd\s+(?:iterate|apply|journal|suggest|stack|admin|<(?:pr|N|pr-number)>|\d+)(?:\s+[^`\n]+)?`|```(?:bash|sh|zsh|shell)?\n(?:(?!```)[^\n]*\n)*? {0,3}pr-shepherd\s+(?:iterate|apply|journal|suggest|stack|admin|<(?:pr|N|pr-number)>|\d+)(?:\s+[^\n]+)?(?=\n|$)/u
 
 describe('pr-shepherd guidance', () => {
-  it('keeps local guidance workspace-pinned and on the current journal commands', () => {
+  it('keeps local guidance workspace-pinned and on the current v1 commands', () => {
     const divergentGuidance = LOCAL_GUIDANCE.filter(({ text }) =>
       BARE_LOCAL_COMMAND.test(text),
     ).map(({ path }) => path)
@@ -52,5 +53,14 @@ describe('pr-shepherd guidance', () => {
       true,
     )
     expect(DEPRECATED_INVOCATIONS.test("pnpm exec pr-shepherd journal 42 '- note'")).toBe(true)
+    expect(DEPRECATED_INVOCATIONS.test('pnpm exec pr-shepherd --stack 42 --until-terminal')).toBe(
+      true,
+    )
+    expect(DEPRECATED_INVOCATIONS.test('pnpm exec pr-shepherd stack 42 --until-terminal')).toBe(
+      false,
+    )
+    expect(DEPRECATED_INVOCATIONS.test('pnpm exec pr-shepherd build-suggestion-patches')).toBe(true)
+    expect(DEPRECATED_INVOCATIONS.test('On `FIX_CODE`, finish')).toBe(true)
+    expect(DEPRECATED_INVOCATIONS.test('./dev/rebase-onto-main --stack')).toBe(false)
   })
 })

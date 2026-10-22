@@ -177,7 +177,7 @@ describe('agent workflow documentation', () => {
     expect(stacked).toContain(
       'vouchington-tooling/skills/stacked-prs/SKILL.md#ownership-and-workers',
     )
-    expect(stacked).toContain('pnpm exec pr-shepherd --stack <pr> --until-terminal --quiet-status')
+    expect(stacked).toContain('pnpm exec pr-shepherd stack <pr> --until-terminal --quiet-status')
     expect(stacked).toContain('### Upper-only fast-forward')
     expect(stacked).not.toContain('the shepherd loop itself stays with this session')
     expect(beforePushing).toContain('upper-only fast-forward')

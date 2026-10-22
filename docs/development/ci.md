@@ -115,7 +115,7 @@ literal area prefix and cancels only superseded pull-request runs, and
 <a id="live-provider-smoke-checks"></a>The Backend area's `test-backend-credentialed` job and the Web
 area's `test-playwright-credentialed` job call live providers as informational smoke checks: their
 gates do not wait on them, they publish no LCOV, and `.pr-shepherdrc.yml` lists them under
-`ignoreChecks`. A provider failure is not by itself a regression in this repository, so it must not
+`checks.ignore`. A provider failure is not by itself a regression in this repository, so it must not
 eject a queue entry, and no [transient-failure rule](reference-ci-classifying-transient-infrastructure-failures.md)
 reruns them because a rerun of a non-gating job gains nothing. The failed job stays red so the
 check, the Nightly run, and the Nightly alert still report it. Recorded provider responses replayed

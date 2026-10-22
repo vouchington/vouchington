@@ -183,7 +183,7 @@ The `/shepherd` automation workflow stays a single-PR waiter. It does not spawn 
 
 ### B. Shepherd the owned PRs
 
-The stack worker runs one `pnpm exec pr-shepherd --stack <pr> --until-terminal --quiet-status` for the
+The stack worker runs one `pnpm exec pr-shepherd stack <pr> --until-terminal --quiet-status` for the
 assigned stack — the canonical command in [Git And PRs](../agent-workflow/git-and-prs.md) — and follows
 the pr-shepherd plugin skill and the CLI's printed `## Instructions`. pr-shepherd owns its actions, exit
 codes, stack routing, and merge-command output; this page adds only Vouchington's ownership, git, and
@@ -196,7 +196,7 @@ merge policy:
   stack commits, and `gh stack push` **once**, and rerun the shepherd.
 - **Shepherd starts with the first pull request.** Do not wait until the last layer is written.
   While the poll is inside a pure wait and the worktree is clean, commit the next layer once the
-  lower layer is in decent shape. On `FIX_CODE`, finish those instructions on the owning layer
+  lower layer is in decent shape. On `TRIAGE`, finish those instructions on the owning layer
   before more upper edits. A ready-delay schedules the rerun; continue work already owned on a
   later layer, and do not invent unrelated work.
 - **Merging is the human's decision.** Never run a merge command pr-shepherd prints unless the
@@ -251,7 +251,7 @@ inside the human's approval. Its top layer is the merge target. When every layer
 approved, the target is the top of the stack. This overrides the canonical skill's bottom-most
 merge target.
 
-`pnpm exec pr-shepherd --stack <pr> --merge` prints `gh stack merge <highest ready layer>`. If that
+`pnpm exec pr-shepherd stack <pr> --merge` prints `gh stack merge <highest ready layer>`. If that
 layer is above the approved range, target the highest approved layer of the prefix instead. That is
 still one command.
 

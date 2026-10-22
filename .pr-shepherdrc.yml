@@ -1,17 +1,21 @@
-# ignoreChecks entries must be the RAW name — either a Checks API check_run `name`
-# (e.g. 'Kilo Code Review') or a Statuses API commit status `context` (e.g. 'CodeRabbit')
-# — not the composite display name shown in the PR UI.
-# pr-shepherd matches against the raw name; composite-name entries silently never match.
-ignoreChecks:
-  - 'Kilo Code Review'
-  - 'CodeRabbit'
-  # Informational live-provider smoke checks. The `backend` gate does not wait on them, so shepherd
-  # must not either; the red check, its job summary, and the Nightly run still report a failure.
-  # See docs/development/tests.md#live-provider-smoke-checks.
-  - 'test-backend-credentialed / backend-credentialed-tests'
-  # Informational credentialed Playwright checks against real cloud resources; the `web` gate does
-  # not wait on them either. See docs/development/tests.md#live-provider-smoke-checks.
-  - 'test-playwright-credentialed / playwright-credentialed-tests'
+# yaml-language-server: $schema=./node_modules/pr-shepherd/pr-shepherd.schema.json
+version: 1
+
+checks:
+  # checks.ignore entries are case-insensitive globs over the RAW name — either a Checks API
+  # check_run `name` (e.g. 'Kilo Code Review') or a Statuses API commit status `context`
+  # (e.g. 'CodeRabbit') — not the composite display name shown in the PR UI.
+  # pr-shepherd matches against the raw name; composite-name entries silently never match.
+  ignore:
+    - 'Kilo Code Review'
+    - 'CodeRabbit'
+    # Informational live-provider smoke checks. The `backend` gate does not wait on them, so shepherd
+    # must not either; the red check, its job summary, and the Nightly run still report a failure.
+    # See docs/development/tests.md#live-provider-smoke-checks.
+    - 'test-backend-credentialed / backend-credentialed-tests'
+    # Informational credentialed Playwright checks against real cloud resources; the `web` gate does
+    # not wait on them either. See docs/development/tests.md#live-provider-smoke-checks.
+    - 'test-playwright-credentialed / playwright-credentialed-tests'
 
 # Use vendor-specific bundled rules instead of local author-wide suppression. Coverage reports
 # are informational comments; coverage checks still gate readiness.
@@ -19,18 +23,7 @@ classify:
   standard:
     all: true
 
-actions:
-  autoMinimizeSuppressed: true
-
 # Single source of the WAIT-tick cadence: checked-in guidance omits `--interval` so this applies.
 # GraphQL quota-warning bands scale from it (2x/5x/10x → 6/15/30 minutes).
 poll:
-  intervalSeconds: 180
-
-# The repo disallows merge commits and rebase merges (squash-only, see
-# allow_squash_merge/allow_merge_commit/allow_rebase_merge); without this,
-# Shepherd's `--merge` default fails with "Merge commits are not allowed on
-# this repository."
-merge:
-  commandArgs:
-    - '--squash'
+  interval-seconds: 180
