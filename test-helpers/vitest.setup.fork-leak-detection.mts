@@ -17,7 +17,6 @@ import {
 } from 'vouchington-tooling/vitest-diagnostics'
 import { settleSharedBackgroundJobs } from './shared-background-worker.mts'
 
-// Escape hatch for a run where the heuristic misfires — see docs/development/ci.md.
 // vouchington-tooling does not export countResourcesByType yet (upstream gap).
 function countResourcesByType(resources: readonly string[]): Map<string, number> {
   const counts = new Map<string, number>()
@@ -25,11 +24,9 @@ function countResourcesByType(resources: readonly string[]): Map<string, number>
   return counts
 }
 
+// Escape hatch for a run where the heuristic misfires — see docs/development/ci.md.
 const detectionDisabled = process.env.VITEST_FORK_LEAK_DETECTION === 'off'
 const detector = getForkLeakDetector()
-;(globalThis as typeof globalThis & Record<symbol, unknown>)[
-  Symbol.for('vitest-fork-leak-resource-close-callback-wait')
-] = waitForResourceCloseCallbacks
 
 function describePendingQueueJobs(
   queue: ReturnType<typeof getOrCreateQueue>,
