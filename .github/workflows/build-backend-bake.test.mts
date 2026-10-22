@@ -40,7 +40,7 @@ describe('build-backend Bake topology', () => {
       [
         'Build core backend images',
         'bake-core',
-        'api,worker-cpu,worker-io-cli-smoke',
+        'api,worker-cpu,worker-cpu-cli-smoke,worker-io-cli-smoke',
         '${{ steps.buildx.outputs.name }}',
         './backend/docker-bake.hcl\n${{ steps.meta-api.outputs.bake-file }}\n${{ steps.meta-worker-cpu.outputs.bake-file }}',
         "${{ steps.images.outputs.worker_io_automation_enabled != 'true' }}",
@@ -48,7 +48,7 @@ describe('build-backend Bake topology', () => {
       [
         'Build all backend images',
         'bake-all',
-        'api,worker-cpu,worker-io,worker-io-cli-smoke',
+        'api,worker-cpu,worker-cpu-cli-smoke,worker-io,worker-io-cli-smoke',
         '${{ steps.buildx.outputs.name }}',
         './backend/docker-bake.hcl\n${{ steps.meta-api.outputs.bake-file }}\n${{ steps.meta-worker-cpu.outputs.bake-file }}\n${{ steps.meta-worker-io.outputs.bake-file }}',
         "${{ steps.images.outputs.worker_io_automation_enabled == 'true' }}",

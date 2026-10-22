@@ -99,7 +99,7 @@ runs:
           ./backend/docker-bake.hcl
           ${{ steps.meta-api.outputs.bake-file }}
           ${{ steps.meta-worker-cpu.outputs.bake-file }}
-        targets: api,worker-cpu,worker-io-cli-smoke
+        targets: api,worker-cpu,worker-cpu-cli-smoke,worker-io-cli-smoke
       env:
         GIT_COMMIT: ${{ github.sha }}
         DOCKER_BUILD_RECORD_UPLOAD: 'false'
@@ -117,7 +117,7 @@ runs:
           ${{ steps.meta-api.outputs.bake-file }}
           ${{ steps.meta-worker-cpu.outputs.bake-file }}
           ${{ steps.meta-worker-io.outputs.bake-file }}
-        targets: api,worker-cpu,worker-io,worker-io-cli-smoke
+        targets: api,worker-cpu,worker-cpu-cli-smoke,worker-io,worker-io-cli-smoke
       env:
         GIT_COMMIT: ${{ github.sha }}
         DOCKER_BUILD_RECORD_UPLOAD: 'false'

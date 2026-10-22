@@ -33,10 +33,12 @@ describe('worker-io image cli smoke', () => {
     }
   })
 
-  it('copies sort and comm into worker-io only and points TMPDIR at writable storage', () => {
-    const workerIo = stageBody('worker-io')
-    expect(workerIo).toContain('COPY --from=worker-io-cli /worker-io-cli/ /')
-    expect(workerIo).toContain('ENV TMPDIR=/tmp')
+  it('copies sort and comm into both worker images and points TMPDIR at writable storage', () => {
+    for (const stageName of ['worker-cpu', 'worker-io']) {
+      const body = stageBody(stageName)
+      expect(body).toContain('COPY --from=worker-io-cli /worker-io-cli/ /')
+      expect(body).toContain('ENV TMPDIR=/tmp')
+    }
     expect(stageBody('worker-io-cli')).toContain('ldd /usr/bin/sort /usr/bin/comm')
     expect(stageBody('worker-io-cli')).toContain('readlink -f')
     expect(stageBody('worker-io-cli')).toContain('/lib/*|/lib64/*')
@@ -49,10 +51,12 @@ describe('worker-io image cli smoke', () => {
     expect(smoke).toContain('RUN ["/nodejs/bin/node", "/app/image-smoke.mts"]')
     expect(dockerBake).toContain('target "worker-io-cli-smoke"')
 
-    for (const stageName of ['api', 'worker-cpu']) {
-      const body = stageBody(stageName)
-      expect(body).not.toContain('worker-io-cli')
-      expect(body).not.toContain('TMPDIR')
-    }
+    const workerCpuSmoke = stageBody('worker-cpu-cli-smoke')
+    expect(workerCpuSmoke).toContain('RUN ["/nodejs/bin/node", "/app/image-smoke.mts"]')
+    expect(dockerBake).toContain('target "worker-cpu-cli-smoke"')
+
+    const api = stageBody('api')
+    expect(api).not.toContain('worker-io-cli')
+    expect(api).not.toContain('TMPDIR')
   })
 })
