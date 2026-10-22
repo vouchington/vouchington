@@ -81,7 +81,7 @@ importers:
         version: 0.7.5
       '@vouchington/worker-runtime':
         specifier: ^0.1.3
-        version: 0.1.3(glide-mq@0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
+        version: 0.1.3(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
       agent-blackboard:
         specifier: ^0.7.0
         version: 0.7.0(supports-color@10.2.2)(zod@4.6.5)
@@ -110,8 +110,8 @@ importers:
         specifier: ^0.2.0
         version: 0.2.0
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
       jose:
         specifier: ^6.2.12
         version: 6.2.12
@@ -225,7 +225,7 @@ importers:
         version: link:../../../ts-shared/utils
       '@vouchington/queue-errors':
         specifier: ^0.1.3
-        version: 0.1.3(glide-mq@0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
+        version: 0.1.3(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -1324,8 +1324,8 @@ importers:
         specifier: ^0.7.5
         version: 0.7.5
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -1544,8 +1544,8 @@ importers:
         specifier: workspace:^
         version: link:../../modules/on-error
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
       p-map:
         specifier: ^7.1.0
         version: 7.1.0
@@ -1596,7 +1596,7 @@ importers:
         version: link:../../data-stores/psql
       '@glidemq/dashboard':
         specifier: ^0.4.2
-        version: 0.4.2(express@5.3.0(supports-color@10.2.2))(glide-mq@0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
+        version: 0.4.2(express@5.3.0(supports-color@10.2.2))(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
       '@jongleberry/vurst-runtime':
         specifier: ^0.4.3
         version: 0.4.3
@@ -1673,8 +1673,8 @@ importers:
         specifier: ^5.3.0
         version: 5.3.0(supports-color@10.2.2)
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
       '@types/express':
         specifier: ^5.0.6
@@ -1762,8 +1762,8 @@ importers:
         specifier: workspace:^
         version: link:../../data-stores/valkey-glide-mq
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
   backend/entrypoints/worker-io:
     dependencies:
@@ -2456,10 +2456,10 @@ importers:
         version: link:../utils
       '@vouchington/queue-errors':
         specifier: ^0.1.3
-        version: 0.1.3(glide-mq@0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
+        version: 0.1.3(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
       openai:
         specifier: ^7.38.0
         version: 7.38.0(@aws-sdk/credential-provider-node@3.972.86)(@smithy/signature-v4@5.7.4)(undici@8.11.2)(ws@8.21.3)(zod@4.6.5)
@@ -2503,10 +2503,10 @@ importers:
         version: link:../utils
       '@vouchington/queue-errors':
         specifier: ^0.1.3
-        version: 0.1.3(glide-mq@0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
+        version: 0.1.3(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
@@ -2562,8 +2562,8 @@ importers:
         specifier: workspace:^
         version: link:../../../ts-shared/deploy-environment
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
   backend/modules/scopes:
     dependencies:
@@ -2697,8 +2697,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
   backend/queues/activitypub:
     dependencies:
@@ -2715,8 +2715,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
       uuid:
         specifier: ^14.0.3
         version: 14.0.3
@@ -2740,8 +2740,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
       valkyries:
         specifier: ^0.10.0
         version: 0.10.0
@@ -2764,8 +2764,8 @@ importers:
         specifier: workspace:^
         version: link:../../services/analytics
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -2777,8 +2777,8 @@ importers:
         specifier: workspace:^
         version: link:../background
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -2805,8 +2805,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
       valkyries:
         specifier: ^0.10.0
         version: 0.10.0
@@ -2823,8 +2823,8 @@ importers:
         specifier: workspace:^
         version: link:../../modules/scheduled-job-manifest
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
       valkyries:
         specifier: ^0.10.0
         version: 0.10.0
@@ -2847,8 +2847,8 @@ importers:
         specifier: workspace:^
         version: link:../../services/bedrock-embeddings
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
   backend/queues/bedrock-embeddings-batch:
     dependencies:
@@ -2865,8 +2865,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -2884,8 +2884,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
   backend/queues/bluesky-follow-propagation:
     dependencies:
@@ -2896,8 +2896,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
@@ -2933,8 +2933,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
   backend/queues/crawl-browser:
     dependencies:
@@ -2945,8 +2945,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
   backend/queues/crawl-dispatch:
     dependencies:
@@ -2966,8 +2966,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
       valkyries:
         specifier: ^0.10.0
         version: 0.10.0
@@ -2981,8 +2981,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
   backend/queues/crawl-referral-links:
     dependencies:
@@ -2999,8 +2999,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
   backend/queues/crawler:
     dependencies:
@@ -3030,8 +3030,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
   backend/queues/emails:
     dependencies:
@@ -3045,8 +3045,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -3082,8 +3082,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
       valkyries:
         specifier: ^0.10.0
         version: 0.10.0
@@ -3097,8 +3097,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -3113,8 +3113,8 @@ importers:
         specifier: workspace:^
         version: link:../../modules/scheduled-job-manifest
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
   backend/queues/image-uploads:
     dependencies:
@@ -3125,8 +3125,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
   backend/queues/kagi-smallweb:
     dependencies:
@@ -3140,8 +3140,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -3162,8 +3162,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
       '@types/node':
         specifier: ^26.6.5
@@ -3175,8 +3175,8 @@ importers:
         specifier: workspace:^
         version: link:../background
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -3197,8 +3197,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
   backend/queues/oauth-authorization-exchange:
     dependencies:
@@ -3212,8 +3212,8 @@ importers:
         specifier: workspace:^
         version: link:../background
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -3228,8 +3228,8 @@ importers:
         specifier: workspace:^
         version: link:../background
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
   backend/queues/post-mentions:
     dependencies:
@@ -3267,8 +3267,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
   backend/queues/rss-feed-maintenance:
     dependencies:
@@ -3282,8 +3282,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
   backend/queues/rss-feeds:
     dependencies:
@@ -3319,8 +3319,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
   backend/queues/sitemaps:
     dependencies:
@@ -3340,8 +3340,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
   backend/queues/story-post-related-url-projections:
     dependencies:
@@ -3376,8 +3376,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
   backend/queues/urls-domains-blacklist:
     dependencies:
@@ -3409,8 +3409,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
   backend/queues/vote-aggregation:
     dependencies:
@@ -3427,8 +3427,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
       '@services/entity-cache':
         specifier: workspace:^
@@ -3708,8 +3708,8 @@ importers:
         specifier: workspace:^
         version: link:../workers/rss-feeds
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
       pgvector:
         specifier: ^0.3.0
         version: 0.3.0
@@ -3911,7 +3911,7 @@ importers:
         version: link:../../types
       '@vouchington/queue-errors':
         specifier: ^0.1.3
-        version: 0.1.3(glide-mq@0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
+        version: 0.1.3(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -3990,8 +3990,8 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
   backend/services/analytics:
     dependencies:
@@ -4393,7 +4393,7 @@ importers:
         version: link:../../types
       '@vouchington/queue-errors':
         specifier: ^0.1.3
-        version: 0.1.3(glide-mq@0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
+        version: 0.1.3(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
       pg-copy-streams:
         specifier: ^7.0.0
         version: 7.0.0
@@ -4591,7 +4591,7 @@ importers:
         version: link:../users
       '@vouchington/queue-errors':
         specifier: ^0.1.3
-        version: 0.1.3(glide-mq@0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
+        version: 0.1.3(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -9436,8 +9436,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -11370,7 +11370,7 @@ importers:
         version: link:../../types
       '@vouchington/queue-errors':
         specifier: ^0.1.3
-        version: 0.1.3(glide-mq@0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
+        version: 0.1.3(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -11989,10 +11989,10 @@ importers:
         version: 0.2.0(@jongleberry/api-server@3.0.1)(valkyries@0.10.0)
       '@vouchington/worker-runtime':
         specifier: ^0.1.3
-        version: 0.1.3(glide-mq@0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
+        version: 0.1.3(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
       jose:
         specifier: ^6.2.12
         version: 6.2.12
@@ -12110,13 +12110,13 @@ importers:
         version: link:../../ts-shared/utils
       '@vouchington/worker-runtime':
         specifier: ^0.1.3
-        version: 0.1.3(glide-mq@0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
+        version: 0.1.3(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
       '@workers/heartbeat':
         specifier: workspace:^
         version: link:../workers/heartbeat
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
   backend/workers/account-lifecycle:
     dependencies:
@@ -12148,8 +12148,8 @@ importers:
         specifier: workspace:^
         version: link:../../services/users
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
       '@modules/aws':
         specifier: workspace:^
@@ -12192,10 +12192,10 @@ importers:
         version: link:../../services/users
       '@vouchington/queue-errors':
         specifier: ^0.1.3
-        version: 0.1.3(glide-mq@0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
+        version: 0.1.3(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
       '@modules/http-signatures':
         specifier: workspace:^
@@ -12241,7 +12241,7 @@ importers:
         version: link:../../services/users
       '@vouchington/queue-errors':
         specifier: ^0.1.3
-        version: 0.1.3(glide-mq@0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
+        version: 0.1.3(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -12392,10 +12392,10 @@ importers:
         version: link:../../types
       '@vouchington/queue-errors':
         specifier: ^0.1.3
-        version: 0.1.3(glide-mq@0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
+        version: 0.1.3(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
       openai:
         specifier: ^7.38.0
         version: 7.38.0(@aws-sdk/credential-provider-node@3.972.86)(@smithy/signature-v4@5.7.4)(undici@8.11.2)(ws@8.21.3)(zod@4.6.5)
@@ -12432,10 +12432,10 @@ importers:
         version: link:../../services/users
       '@vouchington/queue-errors':
         specifier: ^0.1.3
-        version: 0.1.3(glide-mq@0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
+        version: 0.1.3(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
   backend/workers/background:
     dependencies:
@@ -12471,7 +12471,7 @@ importers:
         version: link:../../services/queue-domain-controls
       '@vouchington/queue-errors':
         specifier: ^0.1.3
-        version: 0.1.3(glide-mq@0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
+        version: 0.1.3(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
       '@workers/account-lifecycle':
         specifier: workspace:^
         version: link:../account-lifecycle
@@ -12542,8 +12542,8 @@ importers:
         specifier: workspace:^
         version: link:../vote-aggregation
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
       '@modules/activitypub-uris':
         specifier: workspace:^
@@ -12646,7 +12646,7 @@ importers:
         version: link:../../services/queue-domain-controls
       '@vouchington/queue-errors':
         specifier: ^0.1.3
-        version: 0.1.3(glide-mq@0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
+        version: 0.1.3(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
       '@workers/ai-agents':
         specifier: workspace:^
         version: link:../ai-agents
@@ -12672,8 +12672,8 @@ importers:
         specifier: workspace:^
         version: link:../unfurl-referral-links
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
       '@queues/crawl-referral-links':
         specifier: workspace:^
@@ -12740,8 +12740,8 @@ importers:
         specifier: workspace:^
         version: link:../../services/topics
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -12772,10 +12772,10 @@ importers:
         version: link:../../services/communities
       '@vouchington/queue-errors':
         specifier: ^0.1.3
-        version: 0.1.3(glide-mq@0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
+        version: 0.1.3(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
       '@modules/aws':
         specifier: workspace:^
@@ -12814,8 +12814,8 @@ importers:
         specifier: workspace:^
         version: link:../../services/urls-domains-blacklist
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
       '@services/bloom-filter-config':
         specifier: workspace:^
@@ -12849,7 +12849,7 @@ importers:
         version: link:../../services/bluesky-follows
       '@vouchington/queue-errors':
         specifier: ^0.1.3
-        version: 0.1.3(glide-mq@0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
+        version: 0.1.3(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
 
   backend/workers/cache-purge:
     dependencies:
@@ -12863,8 +12863,8 @@ importers:
         specifier: workspace:^
         version: link:../../services/entity-cache
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
   backend/workers/content-analysis:
     dependencies:
@@ -12933,8 +12933,8 @@ importers:
         specifier: workspace:^
         version: link:../../config
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
       ssrf-guard:
         specifier: ^1.0.0
         version: 1.0.0
@@ -12979,8 +12979,8 @@ importers:
         specifier: workspace:^
         version: link:../../services/data-retention
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
       '@modules/aws':
         specifier: workspace:^
@@ -13028,8 +13028,8 @@ importers:
         specifier: workspace:^
         version: link:../../services/crawl-embeds
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
   backend/workers/crawl-referral-links:
     dependencies:
@@ -13055,8 +13055,8 @@ importers:
         specifier: workspace:^
         version: link:../../services/urls
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -13086,8 +13086,8 @@ importers:
         specifier: workspace:^
         version: link:../../services/urls
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -13184,8 +13184,8 @@ importers:
         specifier: workspace:^
         version: link:../../services/users
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -13302,8 +13302,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
       '@services/entity-fetch':
         specifier: workspace:^
@@ -13339,8 +13339,8 @@ importers:
         specifier: workspace:^
         version: link:../../services/oauth-x
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
       '@services/oauth':
         specifier: workspace:^
@@ -13373,8 +13373,8 @@ importers:
         specifier: workspace:^
         version: link:../../services/follower-distributions
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
   backend/workers/heartbeat:
     dependencies:
@@ -13391,8 +13391,8 @@ importers:
         specifier: workspace:^
         version: link:../../services/queue-monitoring
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
   backend/workers/image-uploads:
     dependencies:
@@ -13428,10 +13428,10 @@ importers:
         version: 0.2.0
       '@vouchington/queue-errors':
         specifier: ^0.1.3
-        version: 0.1.3(glide-mq@0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
+        version: 0.1.3(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -13511,10 +13511,10 @@ importers:
         version: link:../../services/users
       '@vouchington/queue-errors':
         specifier: ^0.1.3
-        version: 0.1.3(glide-mq@0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
+        version: 0.1.3(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
       '@apple/app-store-server-library':
         specifier: ^3.1.0
@@ -13591,7 +13591,7 @@ importers:
         version: link:../../services/users
       '@vouchington/queue-errors':
         specifier: ^0.1.3
-        version: 0.1.3(glide-mq@0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
+        version: 0.1.3(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
     devDependencies:
       '@services/bookmarks':
         specifier: workspace:^
@@ -13621,8 +13621,8 @@ importers:
         specifier: workspace:^
         version: link:../../services/oauth
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
   backend/workers/openai-moderation:
     dependencies:
@@ -13651,8 +13651,8 @@ importers:
         specifier: workspace:^
         version: link:../../services/posts
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -13706,8 +13706,8 @@ importers:
         specifier: workspace:^
         version: link:../../services/topics
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -13738,10 +13738,10 @@ importers:
         version: link:../../services/elections-votes
       '@vouchington/queue-errors':
         specifier: ^0.1.3
-        version: 0.1.3(glide-mq@0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
+        version: 0.1.3(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -13771,8 +13771,8 @@ importers:
         specifier: workspace:^
         version: link:../../services/topics
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
       '@queues/notifications':
         specifier: workspace:^
@@ -13861,7 +13861,7 @@ importers:
         version: link:../../../ts-shared/ses-inbound-contract
       '@vouchington/queue-errors':
         specifier: ^0.1.3
-        version: 0.1.3(glide-mq@0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
+        version: 0.1.3(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
       mailparser:
         specifier: ^3.9.41
         version: 3.9.41
@@ -13922,8 +13922,8 @@ importers:
         specifier: workspace:^
         version: link:../../config
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
       '@ts-shared/utils':
         specifier: workspace:^
@@ -13981,8 +13981,8 @@ importers:
         specifier: workspace:^
         version: link:../../services/user-referral-program-links
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -14055,8 +14055,8 @@ importers:
         specifier: workspace:^
         version: link:../../services/vote-weight
       glide-mq:
-        specifier: ^0.18.0
-        version: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+        specifier: ^0.19.0
+        version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
       '@modules/utils':
         specifier: workspace:^
@@ -20974,8 +20974,8 @@ packages:
     engines: {node: '>=20'}
     hasBin: true
 
-  glide-mq@0.18.0:
-    resolution: {integrity: sha512-hzXqId45Yk7NJID3K7EBymS+FoS6ZDmtGhOfWCih4BvVjH7IIWmdaw3Av6iThS3mz/5G6fstjKU6h98kh/h+Zg==}
+  glide-mq@0.19.0:
+    resolution: {integrity: sha512-Qp2NgHPP5SgsDcYkBl1LZ4Wfh3yRVzW0eEpBdDQViw32L34+u8kQFQQzi/E2hfNRbDduVyzg/Y1gQq9qQUBD4A==}
     engines: {node: '>=20'}
     peerDependencies:
       '@opentelemetry/api': ^1.0.0
@@ -24954,10 +24954,10 @@ snapshots:
     dependencies:
       tldts-experimental: 7.4.11
 
-  '@glidemq/dashboard@0.4.2(express@5.3.0(supports-color@10.2.2))(glide-mq@0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))':
+  '@glidemq/dashboard@0.4.2(express@5.3.0(supports-color@10.2.2))(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))':
     dependencies:
       express: 5.3.0(supports-color@10.2.2)
-      glide-mq: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+      glide-mq: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
   '@glidemq/speedkey-darwin-arm64@0.4.2':
     optional: true
@@ -28673,9 +28673,9 @@ snapshots:
     transitivePeerDependencies:
       - pg-native
 
-  '@vouchington/queue-errors@0.1.3(glide-mq@0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))':
+  '@vouchington/queue-errors@0.1.3(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))':
     dependencies:
-      glide-mq: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+      glide-mq: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
   '@vouchington/rate-limit@0.2.0(@jongleberry/api-server@3.0.1)(valkyries@0.10.0)':
     dependencies:
@@ -28721,9 +28721,9 @@ snapshots:
     dependencies:
       uuid: 14.0.3
 
-  '@vouchington/worker-runtime@0.1.3(glide-mq@0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)':
+  '@vouchington/worker-runtime@0.1.3(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)':
     dependencies:
-      glide-mq: 0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+      glide-mq: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     optionalDependencies:
       vitest: 5.0.5(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.5)(jsdom@30.1.3(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
 
@@ -29949,7 +29949,7 @@ snapshots:
 
   gh-pr-attach-screenshots@0.2.0: {}
 
-  glide-mq@0.18.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)):
+  glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)):
     dependencies:
       '@glidemq/speedkey': 0.4.2
     optionalDependencies:

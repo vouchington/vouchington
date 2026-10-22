@@ -23,7 +23,7 @@
     "@services/account-data-requests": "workspace:^",
     "@services/user-deletions": "workspace:^",
     "@services/users": "workspace:^",
-    "glide-mq": "^0.18.0"
+    "glide-mq": "^0.19.0"
   },
   "devDependencies": {
     "@modules/aws": "workspace:^",

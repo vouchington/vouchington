@@ -51,7 +51,7 @@
     "@workers/urls-domains-blacklist": "workspace:^",
     "@workers/user-rss-feed-imports": "workspace:^",
     "@workers/vote-aggregation": "workspace:^",
-    "glide-mq": "^0.18.0"
+    "glide-mq": "^0.19.0"
   },
   "devDependencies": {
     "@modules/activitypub-uris": "workspace:^",

@@ -80,12 +80,10 @@ const DEFAULT_DISPATCHER_DEDUPLICATION_ID = 'oauth-authorization-exchange-dispat
 
 /**
  * Repeated manual and backfill triggers collapse under one throttle window with no custom `jobId`.
- * A stable `jobId` is a hard uniqueness key that outlives the job: GlideMQ keeps the claim while
- * the terminal record is retained (100 newer completions), and a job that stalls past its limit
- * lands in the failed set without honoring `removeOnFail`. Every trigger after the throttle window
- * would then silently return `null`. The serialized `dispatcher` ordering key still keeps passes
- * from racing, and the durable rows re-derive all work, so a trigger accepted while a pass runs
- * just queues behind it.
+ * A stable `jobId` is a hard uniqueness key that outlives the job while the terminal record is
+ * retained (100 newer completions). Every trigger after the throttle window would then silently
+ * return `null`. The serialized `dispatcher` ordering key still keeps passes from racing, and the
+ * durable rows re-derive all work, so a trigger accepted while a pass runs just queues behind it.
  */
 export function getOAuthAuthorizationExchangeDispatcherJobOptions(
   deduplicationId: string = DEFAULT_DISPATCHER_DEDUPLICATION_ID,

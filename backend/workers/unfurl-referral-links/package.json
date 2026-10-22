@@ -21,7 +21,7 @@
     "@queues/background-cpu": "workspace:^",
     "@services/referral-link-unfurl": "workspace:^",
     "@services/user-referral-program-links": "workspace:^",
-    "glide-mq": "^0.18.0"
+    "glide-mq": "^0.19.0"
   },
   "devDependencies": {
     "@voucha/test-helpers": "workspace:^"

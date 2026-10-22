@@ -24,7 +24,7 @@
     "@services/rss-feed-items": "workspace:^",
     "@services/stories": "workspace:^",
     "@services/topics": "workspace:^",
-    "glide-mq": "^0.18.0"
+    "glide-mq": "^0.19.0"
   },
   "devDependencies": {
     "@voucha/test-helpers": "workspace:^"

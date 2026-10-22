@@ -44,8 +44,9 @@ const enqueueBulkDispatch = createBackgroundBulkEnqueue(
   }),
 )
 
-// A dispatcher that stalled past its limit stays in the failed set under its job id whatever
-// `removeOnFail` says, so a start or continuation id is released before it is added again.
+// A continuation reuses a stable id. removeOnComplete and removeOnFail release that id when the
+// page finishes, including a terminal stall. Reactivation clears a retained finished record
+// before the next add so the same id can run again.
 function enqueueDispatchesReactivating(inputs: DispatchInput[]) {
   return enqueueBulkReactivatingFinished({
     queue: background,
