@@ -13,7 +13,7 @@
     "@vouchington/postgres": "^0.0.16",
     "ajv": "^8.20.0",
     "no-mistakes": "^0.93.0",
-    "oxfmt": "^0.73.0",
+    "oxfmt": "^0.74.0",
     "smol-toml": "^1.9.1",
     "vouchington-tooling": "^0.53.0",
     "yaml": "^2.9.1"
