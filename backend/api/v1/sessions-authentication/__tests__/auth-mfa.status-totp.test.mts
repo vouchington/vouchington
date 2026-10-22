@@ -15,6 +15,9 @@ import {
   ATTESTED_SESSION_EXPIRATION_SECONDS,
   EDGE_ANON_SESSION_JWT_ISSUER,
   SESSION_EXPIRATION_SECONDS,
+  WEB_SESSION_EXPIRATION_SECONDS,
+  verifyDeviceJwt,
+  verifySessionJwt,
   signDeviceJwt,
   signSessionJwt,
 } from '@ts-shared/session-jwt'
@@ -178,9 +181,19 @@ describe('MFA API Routes', () => {
         .expect(200)
 
       expect(res.body.user.id).toBe(mfaUser.id)
-      expect(typeof res.body.dt.token).toBe('string')
-      expect(typeof res.body.st.token).toBe('string')
-      expect(res.body.session).toEqual(res.body.st.payload)
+      expect(res.body).not.toHaveProperty('dt')
+      expect(res.body).not.toHaveProperty('st')
+      const cookies = res.headers['set-cookie'] as unknown as string[]
+      const dtCookie = cookies.find(cookie => cookie.startsWith('dt='))
+      const stCookie = cookies.find(cookie => cookie.startsWith('st='))
+      expect(dtCookie).toBeDefined()
+      expect(stCookie).toBeDefined()
+      const [device, session] = await Promise.all([
+        verifyDeviceJwt(decodeURIComponent(dtCookie!.slice(3).split(';', 1)[0]!)),
+        verifySessionJwt(decodeURIComponent(stCookie!.slice(3).split(';', 1)[0]!)),
+      ])
+      expect(device).toMatchObject({ client: 'web' })
+      expect(session).toMatchObject({ ...res.body.session, did: device!.did, uid: mfaUser.id })
     }, 20_000)
 
     it('mints a 30-day (not 2-day) st cookie when the login attempt itself carries deviceClass', async () => {
@@ -196,6 +209,10 @@ describe('MFA API Routes', () => {
         .expect(200)
 
       const cookieHeader = res.headers['set-cookie'] as unknown as string[] | undefined
+      const stCookie = cookieHeader!.find(cookie => cookie.startsWith('st='))!
+      expect(
+        await verifySessionJwt(decodeURIComponent(stCookie.slice(3).split(';', 1)[0]!)),
+      ).toMatchObject({ client: 'native' })
       expect(maxAgeOf(cookieHeader, 'st')).toBe(ATTESTED_SESSION_EXPIRATION_SECONDS)
       expect(maxAgeOf(cookieHeader, 'st')).not.toBe(SESSION_EXPIRATION_SECONDS)
     }, 20_000)
@@ -226,7 +243,11 @@ describe('MFA API Routes', () => {
         .expect(200)
 
       const cookieHeader = res.headers['set-cookie'] as unknown as string[] | undefined
-      expect(maxAgeOf(cookieHeader, 'st')).toBe(SESSION_EXPIRATION_SECONDS)
+      const stCookie = cookieHeader!.find(cookie => cookie.startsWith('st='))!
+      expect(
+        await verifySessionJwt(decodeURIComponent(stCookie.slice(3).split(';', 1)[0]!)),
+      ).toMatchObject({ client: 'web' })
+      expect(maxAgeOf(cookieHeader, 'st')).toBe(WEB_SESSION_EXPIRATION_SECONDS)
       expect(maxAgeOf(cookieHeader, 'st')).not.toBe(ATTESTED_SESSION_EXPIRATION_SECONDS)
     }, 20_000)
   })
