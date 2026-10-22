@@ -4775,6 +4775,15 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
 
+  backend/services/classifier-run-revival:
+    dependencies:
+      '@data-stores/psql':
+        specifier: workspace:^
+        version: link:../../data-stores/psql
+      sql-template-strings:
+        specifier: ^2.2.2
+        version: 2.2.2
+
   backend/services/classifier-runs:
     dependencies:
       '@data-stores/psql':
@@ -8082,6 +8091,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@services/classifier-run-revival':
+        specifier: workspace:^
+        version: link:../classifier-run-revival
       '@services/entity-cache':
         specifier: workspace:^
         version: link:../entity-cache
@@ -8960,6 +8972,9 @@ importers:
       '@queues/psql':
         specifier: workspace:^
         version: link:../../queues/psql
+      '@services/classifier-run-revival':
+        specifier: workspace:^
+        version: link:../classifier-run-revival
       '@services/classifier-runs':
         specifier: workspace:^
         version: link:../classifier-runs

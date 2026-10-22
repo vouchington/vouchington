@@ -33,10 +33,9 @@ once is still metered once per request.
   spent their allowance can still refresh, sign out, and sign in.
 - **Anonymous requests**: nothing privacy-safe tells anonymous callers apart. A hashed IP is still
   a pseudonymous identifier and a device id names one device, so neither is persisted. Every
-  anonymous request is charged to one aggregate bucket,
-  `rate-limiter:usage-quota:{rest_anonymous:aggregate}`, and its event carries
-  `credential: 'anonymous'` with no user id, IP, device id, or session id. The aggregate is
-  reported and never enforced, because a shared cap would let a few clients lock every anonymous
+  anonymous request emits an analytics event with
+  `credential: 'anonymous'` and no user id, IP, device id, or session id. Its aggregate quota is
+  never enforced, because a shared cap would let a few clients lock every anonymous
   caller out; its `quota_limit` is a reference level only. Per-caller anonymous fairness stays with
   the attempt-based limit, which keys on `ip`, `did`, and `sid` and is unchanged.
 - **Kill switch**: `enabled: false` makes `applyRouteRateLimit` a no-op, so REST metering is off

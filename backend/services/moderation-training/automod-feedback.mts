@@ -2,6 +2,7 @@
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { beginTransaction } from '@data-stores/psql'
+import { reviveClassifierRunRequests } from '@services/classifier-run-revival'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { recordModeratorAction } from '@services/moderator-actions'
 import { lockPostPublication, recordPostPublicationChange } from '@services/post-publication'
@@ -139,8 +140,9 @@ export async function recordAutomodActionFeedback(input: RecordAutomodActionFeed
         })
       }
     } else {
-      const reinstateResult =
-        await query(sql`/* recordAutomodActionFeedback:reinstatePostClearance */
+      const reinstateResult = await query<{
+        input_sha256: Buffer | null
+      }>(sql`/* recordAutomodActionFeedback:reinstatePostClearance */
           WITH target_post AS (
             SELECT id
             FROM posts
@@ -165,10 +167,17 @@ export async function recordAutomodActionFeedback(input: RecordAutomodActionFeed
               updated_by_id = ${input.actorUserId}
           FROM inserted_change
           WHERE posts.id = inserted_change.post_id
+          RETURNING posts.llm_moderation_content_sha256 AS input_sha256
         `)
       if ((reinstateResult.rowCount ?? 0) === 0) {
         appliedAction = false
       } else {
+        const inputSha256 = reinstateResult.rows[0]?.input_sha256
+        if (inputSha256)
+          await reviveClassifierRunRequests(query, {
+            subject: { postId: context.post_id, rssFeedItemId: null },
+            inputSha256,
+          })
         await recordPostPublicationChange(query, {
           scope: { type: 'post', postId: context.post_id },
           reason: 'post_clearance_changed',

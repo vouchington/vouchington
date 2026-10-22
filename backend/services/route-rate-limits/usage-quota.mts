@@ -81,7 +81,9 @@ export async function settleUsage(
   { limiter, reportError }: UsageQuotaDependencies = defaultDependencies,
 ): Promise<void> {
   const units = settlement.units ?? usageUnitsForStatus(settlement.statusCode)
-  if (units > 0 && isRouteRateLimitEnabled()) {
+  // Anonymous REST has no aggregate enforcement reader; analytics already records its usage.
+  // Avoid growing a sorted set with one member per anonymous request.
+  if (units > 0 && settlement.surface !== 'rest_anonymous' && isRouteRateLimitEnabled()) {
     try {
       await limiter.add([usageBucketId(settlement.surface, settlement.identity)])
     } catch (err) {

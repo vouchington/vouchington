@@ -60,9 +60,7 @@ describe('REST usage metering for an anonymous caller', () => {
       expect(serialized).not.toContain(identifier)
       expect(keys.filter(key => key.includes(identifier))).toEqual([])
     }
-    expect(keys.filter(key => key.includes('rest_anonymous'))).toEqual([
-      expect.stringContaining('rest_anonymous:aggregate'),
-    ])
+    expect(keys.filter(key => key.includes('rest_anonymous'))).toEqual([])
   })
 
   it('is not a usage event when the attempt limit refuses first', async () => {
