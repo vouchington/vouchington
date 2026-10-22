@@ -30,8 +30,8 @@
     "valkyries": "^0.10.0"
   },
   "devDependencies": {
-    "@aws-sdk/client-cloudfront": "^3.1152.0",
-    "@aws-sdk/client-dynamodb": "^3.1152.0",
+    "@aws-sdk/client-cloudfront": "^3.1153.0",
+    "@aws-sdk/client-dynamodb": "^3.1153.0",
     "@voucha/test-helpers": "workspace:^"
   }
 }
