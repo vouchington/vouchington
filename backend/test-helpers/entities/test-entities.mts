@@ -49,7 +49,7 @@ export async function createTestRssFeedWithTiming(topicId: string) {
  */
 export async function createTestRssFeedItemWithUrl(
   rssFeedId: string,
-  options?: { createdAt?: Date },
+  options?: { createdAt?: Date; id?: string },
 ) {
   const random = Math.random().toString(36).slice(2, 15)
   const guid = `guid-${random}`
@@ -59,6 +59,7 @@ export async function createTestRssFeedItemWithUrl(
   })
   const contentSha256 = createHash('sha256').update(random).digest()
   const itemId = await insertTestRssFeedItem({
+    id: options?.id,
     rssFeedId,
     urlId: urlObj!.id,
     guid,

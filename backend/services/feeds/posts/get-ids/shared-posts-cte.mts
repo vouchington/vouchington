@@ -13,12 +13,14 @@ export function appendSharedPosts(
   query: SQLStatement,
   {
     currentUserId,
+    decisionInstant,
     cursor,
     eligibilityOptions,
     sort,
     timeRange,
   }: {
     currentUserId: string
+    decisionInstant: Date
     cursor: PostFeedCursor
     eligibilityOptions: PostFeedEligibilityOptions
     sort: string
@@ -27,7 +29,7 @@ export function appendSharedPosts(
 ): void {
   // Keep the anti-existence test a BooleanTest rather than a pulled-up anti join: on sparse
   // recipient pages the anti join estimates one delivery and rescans eligibility per delivery.
-  const sharedPostsCutoffDate = getTimeRangeLowerBoundDate(timeRange ?? '1w')
+  const sharedPostsCutoffDate = getTimeRangeLowerBoundDate(timeRange ?? '1w', decisionInstant)
   query.append(sql`
     ),
     shared_post_candidates AS MATERIALIZED (

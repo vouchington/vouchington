@@ -11,6 +11,7 @@ export function appendPostFeedDeliveryCTEs(
   query: SQLStatement,
   {
     currentUserId,
+    decisionInstant,
     eligibilityOptions,
     cursor,
     feedType,
@@ -21,6 +22,7 @@ export function appendPostFeedDeliveryCTEs(
     timeRange,
   }: {
     currentUserId: string
+    decisionInstant: Date
     eligibilityOptions: PostFeedEligibilityOptions
     cursor: PostFeedCursor
     feedType: PostFeedOptions['feed_type']
@@ -31,7 +33,13 @@ export function appendPostFeedDeliveryCTEs(
     timeRange: PostFeedOptions['time_range']
   },
 ): void {
-  appendDirectCandidatePosts(query, { minScoreFollowTopics, minScoreFollowUsers, sort, timeRange })
+  appendDirectCandidatePosts(query, {
+    decisionInstant,
+    minScoreFollowTopics,
+    minScoreFollowUsers,
+    sort,
+    timeRange,
+  })
   appendDirectPosts(query, {
     currentUserId,
     feedType,
@@ -40,7 +48,14 @@ export function appendPostFeedDeliveryCTEs(
     sort,
   })
   if (includeSharedPosts)
-    appendSharedPosts(query, { currentUserId, cursor, eligibilityOptions, sort, timeRange })
+    appendSharedPosts(query, {
+      currentUserId,
+      decisionInstant,
+      cursor,
+      eligibilityOptions,
+      sort,
+      timeRange,
+    })
   query.append(sql`
     ),
     combined_posts AS (
@@ -52,11 +67,13 @@ export function appendPostFeedDeliveryCTEs(
 function appendDirectCandidatePosts(
   query: SQLStatement,
   {
+    decisionInstant,
     minScoreFollowTopics,
     minScoreFollowUsers,
     sort,
     timeRange,
   }: {
+    decisionInstant: Date
     minScoreFollowTopics: number
     minScoreFollowUsers: number
     sort: string
@@ -95,7 +112,11 @@ function appendDirectCandidatePosts(
       FROM eligible_posts
       WHERE 1 = 1
     `)
-  const timeRangeFilter = buildTimeRangeFilter(timeRange ?? '1w', 'eligible_posts.id')
+  const timeRangeFilter = buildTimeRangeFilter(
+    timeRange ?? '1w',
+    'eligible_posts.id',
+    decisionInstant,
+  )
   if (timeRangeFilter) query.append(sql`\n        AND `).append(timeRangeFilter)
 }
 

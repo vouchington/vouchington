@@ -12,11 +12,13 @@ const eligibilityOptions = {
   hashtagAliasIds: undefined,
   hasUnknownHashtag: undefined,
 }
+const decisionInstant = new Date('2026-10-22T00:00:00.000Z')
 
 describe('appendPostFeedDeliveryCTEs', () => {
   it('omits the share CTEs and union arm when share delivery is disabled', () => {
     const query = createTestSqlStatement()
     appendPostFeedDeliveryCTEs(query, {
+      decisionInstant,
       eligibilityOptions,
       currentUserId: 'user-1',
       cursor: {},
@@ -34,6 +36,7 @@ describe('appendPostFeedDeliveryCTEs', () => {
   it('deduplicates target IDs before an indexed eligibility lookup', () => {
     const query = createTestSqlStatement()
     appendPostFeedDeliveryCTEs(query, {
+      decisionInstant,
       eligibilityOptions,
       currentUserId: 'user-1',
       cursor: {},
@@ -54,6 +57,7 @@ describe('appendPostFeedDeliveryCTEs', () => {
   it('keeps hot pagination out of timestamp candidate filtering', () => {
     const query = createTestSqlStatement()
     appendPostFeedDeliveryCTEs(query, {
+      decisionInstant,
       eligibilityOptions: { ...eligibilityOptions, sort: 'hot' },
       currentUserId: 'user-1',
       cursor: { hot_score_lt: 1, id_lt: 'share-id' },
@@ -71,6 +75,7 @@ describe('appendPostFeedDeliveryCTEs', () => {
     const query = createTestSqlStatement()
 
     appendPostFeedDeliveryCTEs(query, {
+      decisionInstant,
       eligibilityOptions,
       currentUserId: 'user-1',
       cursor: {},
@@ -98,6 +103,7 @@ describe('appendPostFeedDeliveryCTEs', () => {
     const query = createTestSqlStatement()
 
     appendPostFeedDeliveryCTEs(query, {
+      decisionInstant,
       eligibilityOptions,
       currentUserId: 'user-1',
       cursor: { created_at_lt: 1_700_000_000_000, id_lt: 'share-id' },

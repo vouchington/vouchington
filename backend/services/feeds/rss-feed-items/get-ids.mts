@@ -19,7 +19,11 @@ import { appendFinalSelectCTE, appendPaginationCTEs } from './get-ids/pagination
 export async function getRssFeedItemFeedIds(
   currentUser: PrivateUser | null,
   options: RssFeedItemFeedOptions = {},
+  asOf: Date = new Date(),
 ): Promise<RssFeedItemFeedResponse> {
+  const decisionInstant = new Date(asOf)
+  if (!Number.isFinite(decisionInstant.getTime()))
+    throw new RangeError('Invalid feed decision instant')
   const { feed_type = 'any', limit, time_range = '1w' } = options
   const communityId = options.community_id
   const currentUserId = currentUser?.id
@@ -52,7 +56,7 @@ export async function getRssFeedItemFeedIds(
   const includeDirectItems = feed_type !== 'follow_users'
   const includeSharedItems =
     !!currentUserId && !communityId && (feed_type === 'follow_users' || feed_type === 'any')
-  const { cutoffDate, itemCutoffId } = getCutoffDateForTimeRange(time_range)
+  const { cutoffDate, itemCutoffId } = getCutoffDateForTimeRange(time_range, decisionInstant)
 
   const query = appendRelationCTEs(sql``, { communityId, currentUserId })
 

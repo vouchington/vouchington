@@ -9,14 +9,18 @@ import { timestampToUuidv7LowerBound } from '@ts-shared/utils/uuidv7'
  * @param timeRange - The time range to filter by
  * @param idColumn - The column name to filter (must be a safe SQL identifier like 'posts.id')
  */
-export function buildTimeRangeFilter(timeRange: TimeRange, idColumn: string): SQLStatement | null {
+export function buildTimeRangeFilter(
+  timeRange: TimeRange,
+  idColumn: string,
+  now = new Date(),
+): SQLStatement | null {
   // Validate idColumn is a safe SQL identifier to prevent SQL injection
   // Format: [table.]column (e.g., 'posts.id' or 'id')
   if (!/^[a-z_][a-z0-9_]*(\.[a-z_][a-z0-9_]*)?$/i.test(idColumn)) {
     throw new Error(`Invalid idColumn format: ${idColumn}`)
   }
 
-  const lowerBoundTimestampMs = getTimeRangeLowerBoundTimestampMs(timeRange)
+  const lowerBoundTimestampMs = getTimeRangeLowerBoundTimestampMs(timeRange, now)
   if (lowerBoundTimestampMs === null) {
     return null
   }
