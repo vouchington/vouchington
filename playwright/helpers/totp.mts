@@ -8,7 +8,7 @@ export function generateTotpCode(page: Page, base32Secret: string): Promise<stri
   return page.evaluate(async (secret: string) => {
     const BASE32 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'
     const BASE32_MAP = new Map(Array.from(BASE32).map((ch, i) => [ch, i]))
-    const upper = secret.toUpperCase().replace(/=+$/, '').replace(/\s/g, '')
+    const upper = secret.toUpperCase().replace(/[=]+$/, '').replace(/\s/g, '')
 
     let bits = ''
     for (const c of upper) {
