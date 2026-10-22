@@ -1,10 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { beginTransaction } from '@data-stores/psql'
-import sql from 'sql-template-strings'
-import {
-  getTestPostgresBackendProcessId,
-  waitForTestPostgresLockWaiter,
-} from '@voucha/test-helpers/postgres-lock-wait'
+import { writeLateCopyrightEmailAfterRetentionMarker } from '@voucha/test-helpers/copyright-retention-late-email-lock'
 import { COPYRIGHT_LEGAL_HOLD_GUIDANCE_CRITERIA } from '@ts-shared/utils/copyright-submission-guidance'
 import {
   readCopyrightRetentionColumns,
@@ -178,32 +173,15 @@ describe('copyright retention and late agent writes', () => {
         linkKind: 'thread',
       }),
     ).toBe(true)
-    await using holder = await beginTransaction()
-    const holderPid = await getTestPostgresBackendProcessId(holder)
-    await holder(sql`/* testLateCopyrightEmail:holdNotice */
-      SELECT id FROM copyright_notices WHERE id = ${entry.noticeId} FOR UPDATE`)
-    let lateWrite: Promise<boolean> | undefined
-    try {
-      lateWrite = appendCopyrightEmailIntakeRecommendation({
+    await expect(
+      writeLateCopyrightEmailAfterRetentionMarker(entry.noticeId, {
         intakeId: intake.id,
         inputSha256: Buffer.alloc(32, 5),
         promptVersion: 'test-email-lock-v1',
         model: 'test-model',
         structuredOutput: { summary: 'Waiting output' },
-      })
-      await waitForTestPostgresLockWaiter(
-        holderPid,
-        'appendCopyrightEmailIntakeRecommendation:lockNotice',
-      )
-      await holder(sql`/* testLateCopyrightEmail:marker */
-        INSERT INTO copyright_notice_retention_erasures
-          (copyright_notice_id, retention_days, erased_object_count)
-        VALUES (${entry.noticeId}, 30, 0)`)
-    } finally {
-      await holder.commit()
-      await lateWrite?.catch(() => undefined)
-    }
-    await expect(lateWrite).resolves.toBe(false)
+      }),
+    ).resolves.toBe(false)
     const retained = await readCopyrightRetentionColumns(entry.noticeId)
     expect(retained.copyright_notice_email_intake_recommendations).toEqual([])
   })
