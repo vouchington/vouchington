@@ -33,7 +33,7 @@
     "@ts-shared/session-jwt": "workspace:^",
     "@valkey/valkey-glide": "^2.5.3",
     "@voucha/types": "workspace:^",
-    "jose": "^6.2.12",
+    "jose": "^6.2.13",
     "sql-template-strings": "^2.2.2",
     "uuid": "^14.0.3"
   },
