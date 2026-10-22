@@ -15,9 +15,4 @@ spec="$(
     "$repo/package.json"
 )"
 spec="${spec#^}"
-# vouchington-tooling imports its optional no-mistakes peer eagerly, so dlx must install it too.
-nm_spec="$(
-  node -e "const pkg=require(process.argv[1]); const spec=pkg.devDependencies?.['no-mistakes'] ?? pkg.dependencies?.['no-mistakes']; if (!spec) throw new Error('no-mistakes is not listed'); process.stdout.write(spec)" \
-    "$repo/package.json"
-)"
-exec pnpm dlx --package "vouchington-tooling@${spec}" --package "no-mistakes@${nm_spec}" vouchington prepare-trivy-db "$@"
+exec pnpm dlx --package "vouchington-tooling@${spec}" vouchington prepare-trivy-db "$@"
