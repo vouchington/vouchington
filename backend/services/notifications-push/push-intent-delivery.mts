@@ -129,6 +129,14 @@ async function getEligibleNotification(
       ),
     ).append(sql`))
         ))
+      AND (n.entity_type <> 'household_invitation' OR EXISTS (
+        SELECT 1 FROM household_invitations invitation
+        JOIN households household ON household.id = invitation.household_id
+        WHERE invitation.id = n.household_invitation_id
+          AND invitation.accepted_at IS NULL
+          AND invitation.declined_at IS NULL
+          AND invitation.revoked_at IS NULL
+      ))
       AND (n.entity_type <> 'rss_feed_item' OR (n.publication_rss_feed_item_id IS NOT NULL AND EXISTS (
         SELECT 1 FROM rss_feed_items item WHERE item.id = n.publication_rss_feed_item_id
           AND item.deleted_at IS NULL AND `)

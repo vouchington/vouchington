@@ -15,6 +15,16 @@ CREATE TABLE IF NOT EXISTS household_invitations (
   )
 );
 
+ALTER TABLE notifications
+  ADD CONSTRAINT fk_notifications__household_invitation_id
+  FOREIGN KEY (household_invitation_id) REFERENCES household_invitations (id)
+  ON DELETE CASCADE NOT VALID;
+ALTER TABLE notifications
+  VALIDATE CONSTRAINT fk_notifications__household_invitation_id;
+
+CREATE INDEX IF NOT EXISTS idx_notifications__household_invitation_id
+  ON notifications (household_invitation_id);
+
 CREATE OR REPLACE TRIGGER trigger_household_invitations_updated_at
   BEFORE UPDATE ON household_invitations
   FOR EACH ROW

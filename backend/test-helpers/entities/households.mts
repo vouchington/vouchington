@@ -19,10 +19,44 @@ export async function countHouseholdInvitationNotificationsForTest(
   userId: string,
   invitationId: string,
 ): Promise<number> {
-  const { rows } = await read<{ id: string }>(sql`/* countHouseholdInvitationNotificationsForTest */
+  return (await listHouseholdInvitationNotificationIdsForTest(userId, invitationId)).length
+}
+
+export async function listHouseholdInvitationNotificationIdsForTest(
+  userId: string,
+  invitationId: string,
+): Promise<string[]> {
+  const { rows } = await read<{
+    id: string
+  }>(sql`/* listHouseholdInvitationNotificationIdsForTest */
     SELECT id FROM notifications WHERE user_id = ${userId}
-      AND event_key = ${`household-invitation:${invitationId}`}`)
-  return rows.length
+      AND household_invitation_id = ${invitationId}`)
+  return rows.map(row => row.id)
+}
+
+export async function insertTestHouseholdInvitation(input: {
+  householdId: string
+  invitedUserId: string
+  invitedById: string
+}): Promise<string> {
+  const { rows } = await write<{ id: string }>(sql`/* insertTestHouseholdInvitation */
+    INSERT INTO household_invitations (household_id, invited_user_id, invited_by_id)
+    VALUES (${input.householdId}, ${input.invitedUserId}, ${input.invitedById})
+    RETURNING id`)
+  return rows[0]!.id
+}
+
+export async function setTestHouseholdInvitationTerminalState(
+  invitationId: string,
+  state: 'accepted' | 'declined' | 'revoked',
+): Promise<number> {
+  const { rowCount } = await write(sql`/* setTestHouseholdInvitationTerminalState */
+    UPDATE household_invitations
+    SET accepted_at = CASE WHEN ${state} = 'accepted' THEN CURRENT_TIMESTAMP ELSE NULL END,
+      declined_at = CASE WHEN ${state} = 'declined' THEN CURRENT_TIMESTAMP ELSE NULL END,
+      revoked_at = CASE WHEN ${state} = 'revoked' THEN CURRENT_TIMESTAMP ELSE NULL END
+    WHERE id = ${invitationId}`)
+  return rowCount ?? 0
 }
 
 export async function unlinkTestUserIndividualForInvitationFallback(userId: string): Promise<void> {

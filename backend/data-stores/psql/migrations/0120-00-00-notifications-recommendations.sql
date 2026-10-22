@@ -63,10 +63,13 @@ CREATE TABLE IF NOT EXISTS notifications (
   conversation_id UUID REFERENCES conversations ON DELETE CASCADE,
   community_id UUID,
   household_id UUID REFERENCES households(id) ON DELETE CASCADE,
+  household_invitation_id UUID,
   event_key TEXT,
   CONSTRAINT chk_notifications__household_invitation_shape CHECK (
-    (entity_type = 'household_invitation' AND household_id IS NOT NULL AND community_id IS NULL)
-    OR (entity_type <> 'household_invitation' AND household_id IS NULL)
+    (entity_type = 'household_invitation' AND household_id IS NOT NULL
+      AND household_invitation_id IS NOT NULL AND community_id IS NULL)
+    OR (entity_type <> 'household_invitation' AND household_id IS NULL
+      AND household_invitation_id IS NULL)
   ),
   CONSTRAINT chk_notifications__entity_columns
     CHECK (
@@ -498,6 +501,7 @@ COMMENT ON COLUMN notifications.actor_label IS 'Optional display label for the a
 COMMENT ON COLUMN notifications.target_path IS 'URL path the notification links to. Producers that navigate by path still write this column.';
 COMMENT ON COLUMN notifications.target_intent IS 'Structured application navigation intent. Community and household entity targets are derived from relational IDs instead of a stored document.';
 COMMENT ON COLUMN notifications.household_id IS 'Household associated with an invitation notification; deletion cascades its notifications.';
+COMMENT ON COLUMN notifications.household_invitation_id IS 'Invitation whose current pending state gates push delivery; deletion cascades its notification.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_notification_target_entity(
