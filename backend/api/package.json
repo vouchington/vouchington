@@ -252,7 +252,7 @@
     "@vouchington/utils": "^0.7.5",
     "glide-mq": "^0.19.0",
     "http-errors": "^2.0.1",
-    "jose": "^6.2.12",
+    "jose": "^6.2.13",
     "otpauth": "^9.5.2",
     "p-map": "^7.1.0",
     "undici": "^8.11.2",
