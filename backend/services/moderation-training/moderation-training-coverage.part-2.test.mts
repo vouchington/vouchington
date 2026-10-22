@@ -187,6 +187,11 @@ describe('moderation-training feedback coverage', () => {
       false_positive_count: expect.any(Number),
     })
     expect(afterReinstatedFalsePositive.stats.false_positive_count).toBeGreaterThanOrEqual(1)
+    const outsideWindow = await searchRecentAutomodActions(community.id, {
+      sourceType: 'openai_omni',
+      windowHours: 0,
+    })
+    expect(outsideWindow.stats.false_positive_count).toBe(0)
 
     const spamPostId = await insertTestPost({
       title: `Spam flagged ${random}`,
