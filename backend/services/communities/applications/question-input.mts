@@ -44,6 +44,11 @@ export function assertApplicationQuestionInputs(questions: ApplicationQuestionIn
         422,
         'select field types require options',
       )
+      assert(
+        question.options.length <= 32_768,
+        422,
+        'Select questions must have no more than 32768 options',
+      )
       for (const label of question.options) {
         assert(
           typeof label === 'string' &&
