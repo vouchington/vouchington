@@ -27,6 +27,13 @@ function isRequestedRssIdCollision(error: unknown): boolean {
 }
 
 describe('RSS feed decision instant', () => {
+  it('rejects a non-finite explicit decision instant', async () => {
+    const viewer = await createTestUser()
+    await expect(
+      getRssFeedItemFeedIds(viewer, { feed_type: 'any', time_range: '1d' }, new Date(Number.NaN)),
+    ).rejects.toThrow('Invalid feed decision instant')
+  })
+
   it('uses one inclusive cutoff for direct UUIDs and shared delivery timestamps', async () => {
     const viewer = await createTestUser()
     const sharer = await createTestUser()
