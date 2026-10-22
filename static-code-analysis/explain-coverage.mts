@@ -169,7 +169,7 @@ export async function reportCoverage(
         importSpecifier: '@data-stores/psql',
         executorNames: ['query', 'read', 'write', ...cursorNames],
         executorFactoryNames: ['beginTransaction', 'beginBoundedTransaction'],
-        executorTypeNames: ['TransactionQuery', 'QueryExecutor', 'OwnedTransaction'],
+        executorTypeNames: ['TransactionQuery', 'QueryExecutor', 'OwnedTransaction', 'PoolClient'],
       },
       { sources, importSpecifier: '@data-stores/psql/cursors', executorNames: cursorNames },
       {
