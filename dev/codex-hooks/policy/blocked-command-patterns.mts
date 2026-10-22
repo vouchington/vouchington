@@ -1,7 +1,7 @@
 import {
   readBacktickSubstitution,
   readParenthesizedSubstitution,
-} from './shell-command-substitutions.mts'
+} from 'vouchington-tooling/shell-parse'
 
 export const PLAIN_FORCE_PUSH_REASON = 'Force pushes are banned by repository policy.'
 

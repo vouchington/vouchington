@@ -1,10 +1,10 @@
 import { resolve } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
+import { tokenizeShellWords } from 'vouchington-tooling/shell-parse'
 
 import { commandCwd } from '../../codex-hooks/policy/github-command-cwd.mts'
 import { commandPrefixAt } from '../../codex-hooks/policy/github-command-position.mts'
-import { tokenizeShellWords } from '../../codex-hooks/policy-helpers.mts'
 
 const BASE_CWD = '/filaments-session'
 

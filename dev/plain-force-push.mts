@@ -4,7 +4,7 @@ import {
   findBlockedGitReason,
   PLAIN_FORCE_PUSH_REASON,
 } from './codex-hooks/policy/blocked-command-patterns.mts'
-import { stripGitGlobalOptionsForPolicy } from './codex-hooks/policy/shell-commands.mts'
+import { stripGitGlobalOptionsForPolicy } from 'vouchington-tooling/shell-parse'
 
 export type ProcessSnapshot = {
   args: (pid: number) => string | undefined

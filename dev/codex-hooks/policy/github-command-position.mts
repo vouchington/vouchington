@@ -1,6 +1,9 @@
 import { isGhCommandSeparator } from './github-options.mts'
-import { type CommandPrefix, parseCommandPrefix } from './shell-command-wrappers.mts'
-import { commandSegmentStart as shellSegmentStart } from './shell-token-utils.mts'
+import {
+  type CommandPrefix,
+  commandSegmentStart as shellSegmentStart,
+  parseCommandPrefix,
+} from 'vouchington-tooling/shell-parse'
 
 export function commandSegmentStart(tokens: string[], index: number): number {
   return shellSegmentStart(tokens, index, isGhCommandSeparator)

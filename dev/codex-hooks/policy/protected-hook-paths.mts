@@ -2,7 +2,7 @@ import { posix } from 'node:path'
 import type { HookPayload } from '../types.mts'
 import { keyLooksPathLike } from './claire-paths.mts'
 import { isRecord } from './core.mts'
-import { tokenizeShellWords } from './shell-tokenizer.mts'
+import { tokenizeShellWords } from 'vouchington-tooling/shell-parse'
 
 /**
  * Best-effort runtime policy for sessions that load the checked-out ref's Codex hooks. Direct

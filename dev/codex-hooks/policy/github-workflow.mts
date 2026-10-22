@@ -9,7 +9,7 @@ import { commandPrefixAt } from './github-command-position.mts'
 import { findAutomationMergeBlock } from './github-merge-authority.mts'
 import { parseGhOrGhStackInvocation } from './github-invocation.mts'
 import { findGitHubStackWorkflowBlock } from './github-stack-workflow.mts'
-import { tokenizeShellWordsDetailed } from './shell-tokenizer.mts'
+import { tokenizeShellWordsDetailed } from 'vouchington-tooling/shell-parse'
 
 export function findGitHubWorkflowBlock(
   command: string,

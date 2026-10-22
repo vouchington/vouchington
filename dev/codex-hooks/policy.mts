@@ -1,11 +1,14 @@
 import {
   commandsToInspectForGitPolicy,
+  isInteractiveRebaseContinue,
+} from 'vouchington-tooling/shell-parse'
+
+import {
   findGitHubWorkflowBlock,
   type GitHubWorkflowPolicyOptions,
   hookCwd,
   hookPayloadReferencesClairePath,
   hookPayloadReferencesProtectedHookPath,
-  isInteractiveRebaseContinue,
   type BlockDecision,
 } from './policy-helpers.mts'
 import {

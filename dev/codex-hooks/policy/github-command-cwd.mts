@@ -1,8 +1,11 @@
 import { isAbsolute, resolve } from 'node:path'
 
 import { commandPrefixAt, commandSegmentStart } from './github-command-position.mts'
-import type { CommandPrefix } from './shell-command-wrappers.mts'
-import { isShellCommandSeparator, nextShellCommandSeparatorIndex } from './shell-token-utils.mts'
+import {
+  type CommandPrefix,
+  isShellCommandSeparator,
+  nextShellCommandSeparatorIndex,
+} from 'vouchington-tooling/shell-parse'
 
 const CD_JOINERS = new Set(['&&', ';', '\n', '('])
 const CONDITIONAL_PREFIXES = new Set(['then', 'else', 'elif', 'do'])

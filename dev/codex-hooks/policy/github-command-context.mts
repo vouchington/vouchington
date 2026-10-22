@@ -1,6 +1,8 @@
-import { extractShellCommandArguments } from './shell-commands.mts'
-import { extractShellCommandSubstitutions } from './shell-command-substitutions.mts'
-import { stripNonShellHeredocBodies } from './shell-heredoc.mts'
+import {
+  extractShellCommandArguments,
+  extractShellCommandSubstitutions,
+  stripNonShellHeredocBodies,
+} from 'vouchington-tooling/shell-parse'
 
 /**
  * The command text and every script nested in it that the GitHub policies read. A heredoc body is
