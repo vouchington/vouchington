@@ -8,7 +8,7 @@ import { CRAWLER_USER_AGENT } from '@voucha/config'
 import onError from '@modules/on-error'
 import { HTML_CRAWL_EXCLUSIVITY_SQL } from './html-crawl-eligibility-sql.mts'
 
-import { getCrawlDispatchLimits } from './work-limits.mts'
+import { resolveCrawlDispatchPageLimits, type CrawlDispatchPageLimits } from './work-limits.mts'
 import type { CrawlDispatchCursor } from '@queues/crawl-dispatch/types'
 
 /**
@@ -19,8 +19,9 @@ export const dispatchCrawlUrlsPerHostname = async (
   hostnameId: string,
   cursor?: CrawlDispatchCursor,
   saveProgress?: (cursor: CrawlDispatchCursor) => Promise<void>,
+  limits?: CrawlDispatchPageLimits,
 ) => {
-  const limits = getCrawlDispatchLimits()
+  const resolved = resolveCrawlDispatchPageLimits(limits)
   const sweepStartedAt = cursor?.sweepStartedAt ?? new Date().toISOString()
   await saveProgress?.({ sweepStartedAt, ...(cursor?.afterId && { afterId: cursor.afterId }) })
   const upperId = getMinUUIDv7ForDate(new Date(sweepStartedAt))
@@ -75,8 +76,8 @@ export const dispatchCrawlUrlsPerHostname = async (
     queryStatement,
     undefined,
     {
-      batchSize: limits.batchSize,
-      maxRows: limits.maxRows,
+      batchSize: resolved.batchSize,
+      maxRows: resolved.maxRows,
       readOnly: false,
       handler: async rows => {
         total += rows.length
