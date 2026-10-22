@@ -111,6 +111,35 @@ describe('proxy.session', () => {
         )
       })
 
+      it('forwards a hot authenticated cookie without renewing it', async () => {
+        const now = Math.floor(Date.now() / 1000)
+        mockDecodeSessionJwt.mockReturnValue({ ...AUTH_ST_PAYLOAD, sca: now + 300, exp: now + 600 })
+        await proxy(makeRequest({ cookies: { dt: 'my-dt', st: 'my-st' } }) as any)
+
+        expect(fetchMock).not.toHaveBeenCalled()
+        const headers = (mockNextResponseNext.mock as any).calls[0][0].request.headers as Headers
+        expect(headers.get('cookie')).toBe('dt=my-dt; st=my-st')
+        expect(mockCookiesSet).not.toHaveBeenCalled()
+      })
+
+      it.each(['recheck due', 'access expired'])(
+        'renews an authenticated cookie when %s',
+        async reason => {
+          const now = Math.floor(Date.now() / 1000)
+          mockDecodeSessionJwt.mockReturnValue({
+            ...AUTH_ST_PAYLOAD,
+            sca: reason === 'recheck due' ? 0 : now + 300,
+            exp: reason === 'access expired' ? 0 : now + 600,
+          })
+          await proxy(makeRequest({ cookies: { dt: 'my-dt', st: 'my-st' } }) as any)
+
+          expect(fetchMock).toHaveBeenCalledTimes(1)
+          const headers = (mockNextResponseNext.mock as any).calls[0][0].request.headers as Headers
+          expect(headers.get('cookie')).toBe('dt=new-dt; st=new-st')
+          expect(mockCookiesSet).toHaveBeenCalledTimes(2)
+        },
+      )
+
       it('skips /api/v1/session when st is anonymous (uid null)', async () => {
         mockDecodeSessionJwt.mockReturnValue({ uid: null, did: 'did-1', sid: 'sid-1' })
         await proxy(makeRequest({ cookies: { dt: 'my-dt', st: 'my-st' } }) as any)
