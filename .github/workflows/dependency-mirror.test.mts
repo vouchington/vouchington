@@ -215,7 +215,7 @@ describe('reviewed CI dependency mirror', () => {
         call =>
           call[0] === 'image' &&
           call[1] === 'copy' &&
-          call.at(-1) === 'ghcr.io/vouchington/dependency-one:v1',
+          call.at(-1) === `ghcr.io/vouchington/${images[0]!.package}:${images[0]!.tag}`,
       ),
     ).toBe(false)
   })

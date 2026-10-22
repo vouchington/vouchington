@@ -4374,6 +4374,10 @@ rules:
       rejectStepExceedingJob: true
       rejectJobAtOrAboveStepSum: true
       allow:
+        # Eight reviewed multi-platform source indexes are staged and fetched back from GHCR;
+        # the first hosted bootstrap will establish measured runtime for this provisional cap.
+        - job: '.github/workflows/dependency-mirror.yml#mirror'
+          maxMinutes: 29
         # Steps sum to 15m; cap 14m is below it; healthy runtime ~1m (max 0.8m, n=5).
         - job: '.github/workflows/checks-static.yml#static-lambdas'
           maxMinutes: 14
@@ -4546,6 +4550,7 @@ rules:
           ]
         .github/workflows/cancel-dequeued-merge-group-runs.yml: [cancel]
         .github/workflows/cancel-replaced-merge-group-runs.yml: [cancel]
+        .github/workflows/dependency-mirror.yml: [mirror]
         .github/workflows/checks-backend-smoke.yml: [smoke]
         .github/workflows/checks-static.yml:
           [static-backend, static-cloudflare, static-lambdas, static-web]
@@ -4793,6 +4798,8 @@ rules:
           { pending: coalesce-latest, cancellation: conditional, scope: [pull-request, sha] }
         .github/workflows/backend.yml:
           { pending: coalesce-latest, cancellation: conditional, scope: [pull-request, sha, event] }
+        .github/workflows/dependency-mirror.yml:
+          { pending: coalesce-latest, cancellation: retain-running, scope: [fixed-resource] }
         .github/workflows/cloudflare-worker.yml:
           { pending: coalesce-latest, cancellation: conditional, scope: [pull-request, sha, event] }
         .github/workflows/dispatch-completed-deploy.yml:
