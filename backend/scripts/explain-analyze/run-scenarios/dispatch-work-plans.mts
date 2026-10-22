@@ -1,6 +1,6 @@
 import { dispatchCrawlUrlsPerHostname } from '@services/crawls/dispatch-per-hostname'
 import { dispatchTier1CrawlUrls, dispatchTier2CrawlUrls } from '@services/crawls/dispatch-tier-urls'
-import { crawlDispatchConfig } from '@services/crawls/work-limits'
+import type { CrawlDispatchPageLimits } from '@services/crawls/work-limits'
 import { dispatchReferralLinkCrawls } from '@services/crawler-referral-links/dispatch'
 import { referralCrawlDispatchConfig } from '@services/crawler-referral-links/work-limits'
 import { dispatchUnfurlReferralLinks } from '@services/referral-link-unfurl/dispatch'
@@ -31,41 +31,44 @@ export async function runDispatchWorkPlanScenarios(): Promise<void> {
     })
   }
   const cursor = { afterId: crawl.afterId, sweepStartedAt: crawl.sweepStartedAt }
-  const restoreCrawl = overrideDynamicConfigFieldsForTest(crawlDispatchConfig, {
-    batch_size: 1,
-    max_rows_per_run: 1,
-  })
-  try {
-    await runAndCapture(
-      'dispatch-hostname-url-selectivity',
-      async () => {
-        if ((await dispatchCrawlUrlsPerHostname(crawl.hostnameId, cursor)).count !== 1)
-          throw new Error('Missing hostname crawl candidate')
-      },
-      undefined,
-      'dispatchCrawlUrlsPerHostname',
-    )
-    await runAndCapture(
-      'dispatch-tier1-url-selectivity',
-      async () => {
-        if ((await dispatchTier1CrawlUrls(cursor)).count !== 1)
-          throw new Error('Missing positive-relation crawl candidate')
-      },
-      undefined,
-      'dispatchTierCrawlUrls',
-    )
-    await runAndCapture(
-      'dispatch-tier2-url-selectivity',
-      async () => {
-        if ((await dispatchTier2CrawlUrls(cursor)).count !== 1)
-          throw new Error('Missing non-positive-relation crawl candidate')
-      },
-      undefined,
-      'dispatchTierCrawlUrls',
-    )
-  } finally {
-    restoreCrawl()
-  }
+  // The shared DynamicConfig map is replaced by Valkey refresh. Pass the page
+  // directly so a refresh cannot widen this selectivity probe mid-run.
+  const pageLimits: CrawlDispatchPageLimits = { batchSize: 1, maxRows: 1 }
+  await runAndCapture(
+    'dispatch-hostname-url-selectivity',
+    async () => {
+      const dispatched = await dispatchCrawlUrlsPerHostname(
+        crawl.hostnameId,
+        cursor,
+        undefined,
+        pageLimits,
+      )
+      if (dispatched.count !== 1)
+        throw new Error(`Missing hostname crawl candidate (count ${dispatched.count})`)
+    },
+    undefined,
+    'dispatchCrawlUrlsPerHostname',
+  )
+  await runAndCapture(
+    'dispatch-tier1-url-selectivity',
+    async () => {
+      const dispatched = await dispatchTier1CrawlUrls(cursor, undefined, pageLimits)
+      if (dispatched.count !== 1)
+        throw new Error(`Missing positive-relation crawl candidate (count ${dispatched.count})`)
+    },
+    undefined,
+    'dispatchTierCrawlUrls',
+  )
+  await runAndCapture(
+    'dispatch-tier2-url-selectivity',
+    async () => {
+      const dispatched = await dispatchTier2CrawlUrls(cursor, undefined, pageLimits)
+      if (dispatched.count !== 1)
+        throw new Error(`Missing non-positive-relation crawl candidate (count ${dispatched.count})`)
+    },
+    undefined,
+    'dispatchTierCrawlUrls',
+  )
 
   const referral = await prepareReferralCrawlScale()
   const restoreReferral = overrideDynamicConfigFieldsForTest(referralCrawlDispatchConfig, {

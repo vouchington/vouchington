@@ -29,17 +29,42 @@ export const crawlDispatchConfig = new DynamicConfig({
   },
 })
 
-export function getCrawlDispatchLimits() {
+export type CrawlDispatchPageLimits = {
+  batchSize: number
+  maxRows: number
+}
+
+const crawlDispatchBatchMax = 5000
+const crawlDispatchRowsMax = 100000
+
+export function getCrawlDispatchLimits(): CrawlDispatchPageLimits {
   return {
     batchSize: getBoundedPositiveIntegerField(crawlDispatchConfig, 'batch_size', {
       defaultValue: 1000,
-      maxValue: 5000,
+      maxValue: crawlDispatchBatchMax,
     }),
     maxRows: getBoundedPositiveIntegerField(crawlDispatchConfig, 'max_rows_per_run', {
       defaultValue: 20000,
-      maxValue: 100000,
+      maxValue: crawlDispatchRowsMax,
     }),
   }
+}
+
+/** Explicit limits win over the shared config, which a Valkey refresh can replace mid-run. */
+export function resolveCrawlDispatchPageLimits(
+  limits?: CrawlDispatchPageLimits,
+): CrawlDispatchPageLimits {
+  const resolved = limits ?? getCrawlDispatchLimits()
+  if (
+    !Number.isSafeInteger(resolved.batchSize) ||
+    resolved.batchSize < 1 ||
+    resolved.batchSize > crawlDispatchBatchMax ||
+    !Number.isSafeInteger(resolved.maxRows) ||
+    resolved.maxRows < 1 ||
+    resolved.maxRows > crawlDispatchRowsMax
+  )
+    throw new RangeError('Crawl dispatch page limits must be positive safe integers')
+  return { batchSize: resolved.batchSize, maxRows: resolved.maxRows }
 }
 
 export function getCrawlHostnameBatchSize() {

@@ -96,4 +96,39 @@ describe('bounded crawl URL dispatch', () => {
       await backgroundCpu.searchJobs({ name: 'crawl.crawl_url', data: { url_id: later.id } }),
     ).toEqual([])
   })
+
+  it('keeps an explicit Tier 2 page when shared dispatch config is larger', async () => {
+    const owner = await createTestUser()
+    const hostname = `explicit-tier2-limit-${randomUUID()}.example.com`
+    const host = (await insertTestUrlDirect(owner.id, `https://${hostname}/base`))!.hostname
+    await updateUrlHostname(host.id, { is_crawlable: true })
+    await setTestRobotsTxtCache(hostname, 'User-agent: *\nAllow: /')
+    const post = await createTestPost({ user: owner })
+    const time = new Date(Date.UTC(2020, 0, 1) + Math.floor(Math.random() * 30_000_000_000))
+    const lowerId = getMinUUIDv7ForDate(time)
+    const ids = [1, 2, 3].map(index => lowerId.slice(0, -12) + String(index).padStart(12, '0'))
+    await insertTestPostRelatedUrlBatch({
+      postIds: ids.map(() => post.id),
+      urlIds: ids,
+      hostname,
+      hostnameId: host.id,
+      createdById: owner.id,
+      votesScoreUp: 0,
+    })
+    const restore = overrideDynamicConfigFieldsForTest(crawlDispatchConfig, {
+      batch_size: 1000,
+      max_rows_per_run: 20000,
+    })
+    try {
+      const cursor = {
+        sweepStartedAt: new Date(time.getTime() + 1).toISOString(),
+        afterId: lowerId,
+      }
+      expect(await dispatchTier2CrawlUrls(cursor, undefined, { batchSize: 1, maxRows: 1 })).toEqual(
+        { count: 1, hasMore: true },
+      )
+    } finally {
+      restore()
+    }
+  })
 })

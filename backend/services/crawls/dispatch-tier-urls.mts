@@ -8,7 +8,7 @@ import {
 } from '@services/entity-relations'
 import { HTML_CRAWL_EXCLUSIVITY_SQL } from './html-crawl-eligibility-sql.mts'
 
-import { getCrawlDispatchLimits } from './work-limits.mts'
+import { resolveCrawlDispatchPageLimits, type CrawlDispatchPageLimits } from './work-limits.mts'
 import { enqueueByHostname } from './dispatch-url-batches.mts'
 import type { CrawlDispatchCursor } from '@queues/crawl-dispatch/types'
 
@@ -24,20 +24,23 @@ const ATTEMPT_THRESHOLD_HOURS = 1
 export const dispatchTier1CrawlUrls = (
   cursor?: CrawlDispatchCursor,
   saveProgress?: (cursor: CrawlDispatchCursor) => Promise<void>,
-) => dispatchTierCrawlUrls(1, cursor, saveProgress)
+  limits?: CrawlDispatchPageLimits,
+) => dispatchTierCrawlUrls(1, cursor, saveProgress, limits)
 
 /** Dispatch non-positive relation URLs outside Tier 1, with the 30-day eligibility cutoff. */
 export const dispatchTier2CrawlUrls = (
   cursor?: CrawlDispatchCursor,
   saveProgress?: (cursor: CrawlDispatchCursor) => Promise<void>,
-) => dispatchTierCrawlUrls(2, cursor, saveProgress)
+  limits?: CrawlDispatchPageLimits,
+) => dispatchTierCrawlUrls(2, cursor, saveProgress, limits)
 
 async function dispatchTierCrawlUrls(
   tier: 1 | 2,
   cursor?: CrawlDispatchCursor,
   saveProgress?: (cursor: CrawlDispatchCursor) => Promise<void>,
+  limits?: CrawlDispatchPageLimits,
 ) {
-  const limits = getCrawlDispatchLimits()
+  const resolved = resolveCrawlDispatchPageLimits(limits)
   const sweepStartedAt = cursor?.sweepStartedAt ?? new Date().toISOString()
   await saveProgress?.({ sweepStartedAt, ...(cursor?.afterId && { afterId: cursor.afterId }) })
   const upperId = getMinUUIDv7ForDate(new Date(sweepStartedAt))
@@ -81,8 +84,8 @@ async function dispatchTierCrawlUrls(
     hostname: string
     requests_per_second_limit: number | null
   }>(queryStatement, undefined, {
-    batchSize: limits.batchSize,
-    maxRows: limits.maxRows,
+    batchSize: resolved.batchSize,
+    maxRows: resolved.maxRows,
     readOnly: true,
     handler: async rows => {
       total += rows.length
