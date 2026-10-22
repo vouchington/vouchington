@@ -34,7 +34,9 @@ describe('POST /api/v1/reports CAPTCHA', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.stubEnv('SKIP_CAPTCHA_VERIFICATION', 'false')
-    mockFetch.mockResolvedValue(new UndiciResponse(JSON.stringify({ success: true })))
+    mockFetch.mockResolvedValue(
+      new UndiciResponse(JSON.stringify({ success: true, hostname: 'localhost', action: 'test' })),
+    )
   })
 
   afterEach(() => {
@@ -94,7 +96,9 @@ describe('POST /api/v1/reports CAPTCHA', () => {
       mockFetch.mockImplementationOnce(async () => {
         if (state === 'deleted') await softDeleteUser(administrator.id)
         else await removeTestUserRole(administrator.id, 'administrator')
-        return new UndiciResponse(JSON.stringify({ success: true }))
+        return new UndiciResponse(
+          JSON.stringify({ success: true, hostname: 'localhost', action: 'test' }),
+        )
       })
       const response = await request
         .post('/api/v1/reports')

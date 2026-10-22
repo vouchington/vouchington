@@ -56,7 +56,9 @@ describe('POST /api/v1/disputes CAPTCHA', () => {
     vi.clearAllMocks()
     vi.stubEnv('SKIP_CAPTCHA_VERIFICATION', 'false')
     mockFetch.mockImplementation(async () => {
-      return new UndiciResponse(JSON.stringify({ success: true }))
+      return new UndiciResponse(
+        JSON.stringify({ success: true, hostname: 'localhost', action: 'test' }),
+      )
     })
   })
 
