@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { Queue, Worker, type Job } from 'glide-mq'
 import { describe, expect, it, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
+import { waitForRealGlideEvent } from '@voucha/test-helpers/real-glide-terminal-deadline'
 const SPEND_CAP_RECHECK_JOB_NAME = 'ai-spend-cap.recheck'
 import type { SpendCapRecheckJobData } from '../types.mts'
 import { enqueueSpendCapRecheck } from './spend-cap-recheck.mts'
@@ -57,7 +58,7 @@ describe('spend-cap recheck priority-ten scheduling with real GlideMQ', () => {
         { jobId: randomUUID(), priority: 10 },
       )
       if (!readinessJob) throw new Error('Expected spend-cap readiness job')
-      await drained.promise
+      await waitForRealGlideEvent(drained.promise, 'GlideMQ spend-cap readiness drain')
       expect(processedIds).toContain(readinessJob.id)
 
       const job = await queue.add(
@@ -74,7 +75,7 @@ describe('spend-cap recheck priority-ten scheduling with real GlideMQ', () => {
       worker.on('completed', onDelayedCompleted)
       await expect(job.getState()).resolves.toBe('delayed')
 
-      await delayedCompleted.promise
+      await waitForRealGlideEvent(delayedCompleted.promise, `GlideMQ job ${job.id}`)
       expect(processedIds).toContain(job.id)
     } finally {
       if (onDelayedCompleted) worker.off('completed', onDelayedCompleted)

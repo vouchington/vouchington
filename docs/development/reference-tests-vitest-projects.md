@@ -22,7 +22,7 @@ Root scripts call `ci/run-vitest-project-group.mts`, whose typed catalog local c
 
 ## Queue shim and the real transport
 
-Backend projects alias `glide-mq` to an inline test shim whose drain is event-driven with a bounded watchdog below the test budget. Its in-memory state and deduplication do not establish production transport ordering or retry-backoff timing: assert production queue options directly and use integration tests for transport behavior. `backend-real-glide-mq` is the narrow exception for a transport contract the shim cannot establish. It runs only `*.real-glide.mock.test.mts` against the worktree Valkey under an isolated key prefix and random queue names, so it cannot consume jobs from the worker fleet or a concurrent run.
+Backend projects alias `glide-mq` to an inline test shim whose drain is event-driven with a bounded watchdog below the test budget. Its in-memory state and deduplication do not establish production transport ordering or retry-backoff timing: assert production queue options directly and use integration tests for transport behavior. `backend-real-glide-mq` is the narrow exception for a transport contract the shim cannot establish. It runs only `*.real-glide.mock.test.mts` against the worktree Valkey under an isolated key prefix and random queue names, so it cannot consume jobs from the worker fleet or a concurrent run. The shim's watchdog does not cover that real transport. Shared harness waits for a terminal worker event therefore carry their own named deadline, so a stalled worker fails the owning wait instead of leaving the shard to the runner.
 
 ## Pools, Isolation, and Vitest 5
 

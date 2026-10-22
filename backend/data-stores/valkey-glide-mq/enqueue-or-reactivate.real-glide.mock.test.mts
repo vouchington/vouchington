@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { Queue, Worker, type Job, type JobOptions } from 'glide-mq'
 import { describe, expect, it, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
+import { waitForRealGlideEvent } from '@voucha/test-helpers/real-glide-terminal-deadline'
 import { enqueueBulkReactivatingFinished } from './enqueue-or-reactivate.mts'
 
 // The dedicated backend-real-glide-mq project routes only .real-glide.mock.test.mts files, and
@@ -233,7 +234,7 @@ function openHarness(processor: (job: Job<Payload>) => Promise<void>) {
     settled: (id: string) => {
       const next = Promise.withResolvers<void>()
       waiting.set(id, next)
-      return next.promise
+      return waitForRealGlideEvent(next.promise, `GlideMQ job ${id}`)
     },
     close: async () => {
       try {

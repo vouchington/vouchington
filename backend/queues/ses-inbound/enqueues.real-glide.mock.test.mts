@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { Queue, Worker } from 'glide-mq'
 import { describe, expect, it, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
+import { waitForRealGlideEvent } from '@voucha/test-helpers/real-glide-terminal-deadline'
 import {
   getSesInboundProcessJobOptions,
   type SesInboundProcessJobData,
@@ -41,7 +42,7 @@ describe('SES inbound reconciliation through real GlideMQ', () => {
       const options = { ...getSesInboundProcessJobOptions(data), attempts: 1 }
       const job = await queue.add(SES_INBOUND_PROCESS_JOB.name, data, options)
       if (!job) throw new Error('Expected the failed test job to be created')
-      await failedSettled.promise
+      await waitForRealGlideEvent(failedSettled.promise, 'GlideMQ SES inbound failure')
       expect(await job.getState()).toBe('failed')
       await failedWorker.close()
 
@@ -66,7 +67,7 @@ describe('SES inbound reconciliation through real GlideMQ', () => {
         workerOptions,
       )
       recoveryWorker.once('completed', () => recovered.resolve())
-      await recovered.promise
+      await waitForRealGlideEvent(recovered.promise, 'GlideMQ SES inbound recovery')
       expect(await job.getState()).toBe('completed')
     } finally {
       await Promise.allSettled([failedWorker.close(), recoveryWorker?.close()])

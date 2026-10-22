@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { Queue, Worker, type Job, type JobOptions, type WorkerOptions } from 'glide-mq'
+import { waitForRealGlideEvent } from './real-glide-terminal-deadline.mts'
 
 export type RealGlideConnection = Pick<WorkerOptions, 'connection' | 'prefix'>
 export type RealGlideProcessor = (job: Job) => Promise<unknown>
@@ -74,12 +75,12 @@ export async function startRealGlideBackgroundLifecycle<TJob extends JobDefiniti
       if (!added) throw new Error(`Expected ${job.name} to be added`)
       return added
     },
-    settled: job => deferredFor(job.id).promise,
+    settled: job => waitForRealGlideEvent(deferredFor(job.id).promise, `GlideMQ job ${job.id}`),
     activated: (job, times) => {
       if ((activations.get(job.id) ?? 0) >= times) return Promise.resolve()
       const waiting = Promise.withResolvers<void>()
       activationWaiters.push({ id: job.id, times, resolve: waiting.resolve })
-      return waiting.promise
+      return waitForRealGlideEvent(waiting.promise, `GlideMQ job ${job.id} activation ${times}`)
     },
     close: async () => {
       try {
