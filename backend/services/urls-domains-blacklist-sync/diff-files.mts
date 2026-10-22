@@ -1,4 +1,5 @@
 import { createWriteStream } from 'node:fs'
+import { dirname } from 'node:path'
 import { Readable } from 'node:stream'
 import { finished } from 'node:stream/promises'
 import { runCommand } from '@modules/child-process'
@@ -15,7 +16,7 @@ export async function writeSortedDesiredDomains(
 ): Promise<void> {
   await writeCommandOutput(
     SORT_BIN,
-    ['-u'],
+    ['-S', '32M', '-T', dirname(destination), '-u'],
     destination,
     Readable.from(normalizedDomainLines(response)),
   )

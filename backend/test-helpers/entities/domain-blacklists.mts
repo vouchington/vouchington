@@ -122,7 +122,7 @@ export async function listBlacklistDomainsBySource(
   return result.rows.map(row => row.domain)
 }
 
-/** Plan for the C-ordered membership read. The planner settings roll back with the transaction. */
+/** Plan for the C-collation source-cache keyset. The planner settings roll back with the transaction. */
 export async function explainBlocklistedDomainOrderPlan(
   sourceId: DomainBlacklistSourceId,
 ): Promise<string> {
@@ -131,9 +131,10 @@ export async function explainBlocklistedDomainOrderPlan(
   await transaction(`/* explainMembership */ SET LOCAL enable_bitmapscan = off`)
   const explained = await transaction<{ 'QUERY PLAN': string }>(
     `/* explainMembership */ EXPLAIN SELECT domain FROM blocklisted_domains
-     WHERE source_id = $1::bigint
-     ORDER BY domain COLLATE "C"`,
-    [sourceId],
+     WHERE source_id = $1::bigint AND domain COLLATE "C" > $2::text COLLATE "C"
+     ORDER BY domain COLLATE "C"
+     LIMIT 64`,
+    [sourceId, ''],
   )
   return explained.rows.map(row => row['QUERY PLAN']).join('\n')
 }

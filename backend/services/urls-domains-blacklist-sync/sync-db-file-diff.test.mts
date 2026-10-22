@@ -114,7 +114,7 @@ describe('blocklist file diff', () => {
     }
   })
 
-  it('plans the ordered membership read with the C-collation index', async () => {
+  it('plans the source-cache keyset with the C-collation index', async () => {
     const suffix = sourceNameSuffix()
     const name = `explain-${suffix}`
     const sourceId = await createTestBlacklistSource({

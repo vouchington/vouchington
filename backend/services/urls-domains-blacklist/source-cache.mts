@@ -16,8 +16,8 @@ export async function invalidateSourceHostnameCaches(
       const { rows } = await read<{ domain: string }>( // no-mistakes-disable-line query-reached-per-item: one bounded keyset page, evicted before the cursor advances
         `/* invalidateSourceHostnameCaches */
         SELECT domain FROM blocklisted_domains
-        WHERE source_id = $1::bigint AND domain > $2::text
-        ORDER BY domain LIMIT $3::int`,
+        WHERE source_id = $1::bigint AND domain COLLATE "C" > $2::text COLLATE "C"
+        ORDER BY domain COLLATE "C" LIMIT $3::int`,
         [sourceId, after, batchSize],
       )
       if (rows.length === 0) break
