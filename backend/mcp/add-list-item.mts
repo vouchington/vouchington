@@ -79,17 +79,23 @@ const tool: Tool<
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     api: [POSTS, FEEDS, IMPORT],
     selectApi: args => {
-      if (args['source']) return [IMPORT]
-      if (args['items'] === 'present') return [POSTS, FEEDS]
+      if (args['source']) return [{ ...IMPORT, weight: 1 }]
+      if (args['items'] === 'present')
+        return [
+          { ...POSTS, weight: 1 },
+          { ...FEEDS, weight: 1 },
+        ]
       const items = Array.isArray(args['items']) ? args['items'] : []
-      const types = new Set(
-        items.map(item =>
-          typeof item === 'object' && item !== null
-            ? (item as { item_type?: unknown }).item_type
-            : undefined,
-        ),
-      )
-      return [...(types.has('post') ? [POSTS] : []), ...(types.has('rss_feed_item') ? [FEEDS] : [])]
+      const postCount = items.filter(
+        item => typeof item === 'object' && item !== null && item.item_type === 'post',
+      ).length
+      const feedCount = items.filter(
+        item => typeof item === 'object' && item !== null && item.item_type === 'rss_feed_item',
+      ).length
+      return [
+        ...(postCount > 0 ? [{ ...POSTS, weight: postCount }] : []),
+        ...(feedCount > 0 ? [{ ...FEEDS, weight: feedCount }] : []),
+      ]
     },
     outputSchema: oneOfSchema(
       successSchema({
@@ -116,13 +122,13 @@ const tool: Tool<
   function:
     (currentUser: BasicUser) =>
     async (args: AddArgs, invocationContext?: ToolInvocationContext) => {
-      const { user, list } = await getListWriteContext(currentUser, args.list_id)
-      const authority = getDelegatedToolAuthority(user, invocationContext)
       if ('source' in args) {
-        const { community } = await loadCommunityForViewer(
-          user,
-          await entityIdOrMissing('community', args.source.community),
-        )
+        const [{ user, list }, communityId] = await Promise.all([
+          getListWriteContext(currentUser, args.list_id),
+          entityIdOrMissing('community', args.source.community),
+        ])
+        const authority = getDelegatedToolAuthority(user, invocationContext)
+        const { community } = await loadCommunityForViewer(user, communityId)
         const copied = await importCommunityList(list, {
           communityId: community.id,
           viewer: entityRelationViewerFor(user),
@@ -133,6 +139,8 @@ const tool: Tool<
         })
         return { success: true as const, posts: copied.posts, items: copied.items }
       }
+      const { user, list } = await getListWriteContext(currentUser, args.list_id)
+      const authority = getDelegatedToolAuthority(user, invocationContext)
       return {
         success: true as const,
         results: await addVisibleListItems(user, authority, list.id, args.items),

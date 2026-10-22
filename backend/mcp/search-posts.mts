@@ -96,13 +96,15 @@ const tool: MergedToolSource<ToolArgs, ToolResult> = {
     (currentUser: BasicUser) =>
     async (args: ToolArgs): Promise<ToolResult> => {
       const page = await findPageOrNull(args.after, async () => {
-        const topics = await resolvedTopicFilters({
-          topic: args.topic,
-          topics: args.topics,
-          review_topic: args.review_topic,
-          data_point_topic: args.data_point_topic,
-        })
-        const creator = args.creator ? await canonicalEntityId('user', args.creator) : undefined
+        const [topics, creator] = await Promise.all([
+          resolvedTopicFilters({
+            topic: args.topic,
+            topics: args.topics,
+            review_topic: args.review_topic,
+            data_point_topic: args.data_point_topic,
+          }),
+          args.creator ? canonicalEntityId('user', args.creator) : Promise.resolve(undefined),
+        ])
         if (!topics || (args.creator && !creator))
           return { results: [], page_info: EMPTY_PAGE_INFO }
         const prepared = preparePostsSearchParams(

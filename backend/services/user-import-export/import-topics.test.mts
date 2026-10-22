@@ -4,6 +4,7 @@ import {
   createTestTopic,
   createTestUser,
   getTopicFollowExistsForTest,
+  insertTestTopic,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { importTopics } from './import-topics.mts'
@@ -26,6 +27,28 @@ describe('topic import follow audits', () => {
     expect(audits.filter(audit => audit.topicId === topic.id).map(audit => audit.index)).toEqual([
       0,
     ])
+  })
+
+  it('follows a renamed topic by its derived slug instead of recommending a duplicate', async () => {
+    const caller = await createTestUser()
+    const suffix = randomUUID().slice(0, 8)
+    const existingId = await insertTestTopic({
+      createdById: caller.id,
+      name: `Chase Sapphire Preferred ${suffix}`,
+      slug: `chase-sapphire-${suffix}`,
+    })
+    let recommendationGateCalls = 0
+
+    const [result] = await importTopics(caller, WEB_PROVENANCE, [`Chase Sapphire ${suffix}`], {
+      assertCanCreateTopicRecommendations: async () => {
+        recommendationGateCalls += 1
+      },
+      importAttemptId: randomUUID(),
+    })
+
+    expect(result).toMatchObject({ status: 'followed', entity_id: existingId })
+    expect(recommendationGateCalls).toBe(0)
+    await expect(getTopicFollowExistsForTest(caller.id, existingId)).resolves.toBe(true)
   })
 })
 

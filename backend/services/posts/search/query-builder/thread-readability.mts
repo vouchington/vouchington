@@ -1,5 +1,5 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
-import { BLOCKED_POST_TYPES } from '../../blocked-post-types.mts'
+import { BLOCKED_POST_TYPES } from '@voucha/types/entities/post'
 
 /**
  * Keeps a comment out of the results when an ancestor of its thread is not publicly readable.

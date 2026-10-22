@@ -2148,6 +2148,9 @@ importers:
       '@voucha/api-fixtures':
         specifier: workspace:^
         version: link:../../api-fixtures
+      '@voucha/types':
+        specifier: workspace:^
+        version: link:../types
       ajv:
         specifier: ^8.20.0
         version: 8.20.0
@@ -6617,6 +6620,9 @@ importers:
       '@services/users':
         specifier: workspace:^
         version: link:../users
+      '@voucha/types':
+        specifier: workspace:^
+        version: link:../../types
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0

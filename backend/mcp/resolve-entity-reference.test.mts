@@ -30,6 +30,35 @@ describe('entity reference resolvers', () => {
     expect(resolved?.id).toBe(bySlug)
   })
 
+  it('matches a renamed topic through the slug derived from its former display name', async () => {
+    const user = await createTestUser()
+    const suffix = crypto.randomUUID().slice(0, 8)
+    const renamed = await insertTestTopic({
+      createdById: user.id,
+      name: `Chase Sapphire Preferred ${suffix}`,
+      slug: `chase-sapphire-${suffix}`,
+    })
+
+    const [resolved] = await resolveTopics([`Chase Sapphire ${suffix}`])
+
+    expect(resolved?.id).toBe(renamed)
+  })
+
+  it('matches an alias through the slug derived from its display name', async () => {
+    const user = await createTestUser()
+    const suffix = crypto.randomUUID().slice(0, 8)
+    const topic = await insertTestTopic({
+      createdById: user.id,
+      name: `Canonical ${suffix}`,
+      slug: `canonical-${suffix}`,
+    })
+    await insertTopicAliasForTest(topic, `chase-sapphire-${suffix}`)
+
+    const [resolved] = await resolveTopics([`Chase Sapphire ${suffix}`])
+
+    expect(resolved?.id).toBe(topic)
+  })
+
   it('follows a merged source slug and an alias to the live topic', async () => {
     const user = await createTestUser()
     const suffix = crypto.randomUUID().slice(0, 8)

@@ -4,7 +4,7 @@ import type { ApiScope } from '@modules/scopes'
 import type { McpCallAuditEvent } from './audit.mts'
 import type { McpServerConfig } from './config.mts'
 import { resolveMcpToolCall } from './resolve-tool-call.mts'
-import { toolRouteKeys } from './tool-route-keys.mts'
+import { toolRouteCharges } from './tool-route-keys.mts'
 import { validateToolArguments } from './validate-tool-arguments.mts'
 
 export { mcpNotificationShapedToolCall, mcpToolCallIsDispatched } from './tool-call-shape.mts'
@@ -42,7 +42,7 @@ const INVALID_REQUEST: McpCallAuditEvent = {
 type McpToolCallCharge = {
   eventIndex: number
   requestId: string | number
-  routeKeys: readonly string[]
+  routeCharges: ReturnType<typeof toolRouteCharges>
 }
 
 export type McpCallPlan = {
@@ -52,7 +52,7 @@ export type McpCallPlan = {
 
 type ClassifiedMessage = {
   event: McpCallAuditEvent
-  charge: Pick<McpToolCallCharge, 'requestId' | 'routeKeys'> | null
+  charge: Pick<McpToolCallCharge, 'requestId' | 'routeCharges'> | null
 }
 
 export function exceedsMcpAuditBatchLimit(parsedBody: unknown): boolean {
@@ -137,7 +137,8 @@ function classifyMessage(
     : readCopyrightRationale(resolution.tool.meta, callArguments)
   // Without an id the request is a notification, which the server never answers or runs.
   const requestId = invalidArguments ? null : readRequestId(message)
-  const routeKeys = requestId === null ? [] : toolRouteKeys(resolution.tool.meta, callArguments)
+  const routeCharges =
+    requestId === null ? [] : toolRouteCharges(resolution.tool.meta, callArguments)
   return {
     event: {
       jsonrpcMethod: method,
@@ -146,7 +147,7 @@ function classifyMessage(
       ...(selectedOption === null ? {} : { option: selectedOption }),
       ...(copyrightRationale === undefined ? {} : { copyrightRationale }),
     },
-    charge: requestId !== null && routeKeys.length > 0 ? { requestId, routeKeys } : null,
+    charge: requestId !== null && routeCharges.length > 0 ? { requestId, routeCharges } : null,
   }
 }
 

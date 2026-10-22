@@ -193,7 +193,9 @@ describe('community moderator MCP routes', () => {
     ] as const) {
       const plan = call(name, { option, arguments: args })
       expect(plan.events[0]).toMatchObject({ option })
-      expect(plan.charges).toEqual([{ eventIndex: 0, requestId: 1, routeKeys: [route] }])
+      expect(plan.charges).toEqual([
+        { eventIndex: 0, requestId: 1, routeCharges: [{ routeKeys: [route], weight: 1 }] },
+      ])
     }
     const readPlan = call('read_community_moderation', {
       option: 'list_saved_replies',
@@ -204,7 +206,9 @@ describe('community moderator MCP routes', () => {
       {
         eventIndex: 0,
         requestId: 1,
-        routeKeys: ['GET:/api/v1/communities/:idOrSlug/saved-replies'],
+        routeCharges: [
+          { routeKeys: ['GET:/api/v1/communities/:idOrSlug/saved-replies'], weight: 1 },
+        ],
       },
     ])
     const banInput = { community: 'owned-community', user_id: crypto.randomUUID() }
@@ -214,7 +218,11 @@ describe('community moderator MCP routes', () => {
     })
     expect(banPlan.events[0]).toMatchObject({ option: 'ban_user' })
     expect(banPlan.charges).toEqual([
-      { eventIndex: 0, requestId: 1, routeKeys: ['POST:/api/v1/communities/:idOrSlug/bans'] },
+      {
+        eventIndex: 0,
+        requestId: 1,
+        routeCharges: [{ routeKeys: ['POST:/api/v1/communities/:idOrSlug/bans'], weight: 1 }],
+      },
     ])
     expect(
       call('add_community_moderation', {

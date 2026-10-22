@@ -43,7 +43,7 @@ export const updateCrawler = async (
     )
     const previous = await getCrawlerById(crawlerId, { query: transaction })
     if (!previous) throw createError(404, `Crawler not found: ${crawlerId}`)
-    validateCrawlerUpdates(updates)
+    await validateCrawlerUpdates(updates, transaction)
     const query = sql`/* updateCrawler */ UPDATE hostname_crawler_configurations SET updated_by_id = ${updater.id}`
     if (hostnameId !== undefined) query.append(sql`, hostname_id = ${hostnameId}`)
     if (updates.description !== undefined) query.append(sql`, description = ${updates.description}`)
@@ -130,7 +130,10 @@ export const updateCrawlerCssSelectorsByHostname = async (
   return (rowCount ?? 0) > 0
 }
 
-function validateCrawlerUpdates(updates: UpdateCrawlerUpdates): void {
+async function validateCrawlerUpdates(
+  updates: UpdateCrawlerUpdates,
+  query: TransactionQuery,
+): Promise<void> {
   if (updates.hostname_id && !isUUID(updates.hostname_id)) {
     throw createError(422, `Invalid hostname ID: ${updates.hostname_id}`)
   }
@@ -143,6 +146,14 @@ function validateCrawlerUpdates(updates: UpdateCrawlerUpdates): void {
   }
   if (updates.referral_program_id && !isUUID(updates.referral_program_id)) {
     throw createError(422, `Invalid referral program ID: ${updates.referral_program_id}`)
+  }
+  if (updates.referral_program_id) {
+    const { rows } = await query<{ id: string }>(sql`
+      /* validateCrawlerUpdateTopicReference */ SELECT id
+      -- no-mistakes-disable-next-line postgres-required-predicates: keep merged rows so the existing update trigger preserves REST's 409; deleted topics still fail this lookup
+      FROM topics WHERE id = ${updates.referral_program_id}::uuid AND deleted_at IS NULL
+    `)
+    if (rows.length === 0) throw createError(404, 'Topic not found')
   }
 }
 

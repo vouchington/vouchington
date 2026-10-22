@@ -24,10 +24,27 @@ export async function chargeMcpToolCalls(
   { identities, owner }: RouteRateLimitSubject,
 ): Promise<ChargedMcpCalls> {
   const events = [...plan.events]
-  const rateLimitedCalls = await chargeRoutes(
-    plan.charges.map(({ eventIndex, routeKeys }) => ({ index: eventIndex, routeKeys })),
-    routeKey => checkRouteRateLimit(routeKey, identities, owner),
+  const unitEventIndexes: number[] = []
+  const units = plan.charges.flatMap(({ eventIndex, routeCharges }) =>
+    routeCharges.flatMap(({ routeKeys, weight }) =>
+      Array.from({ length: weight }, () => {
+        const index = unitEventIndexes.push(eventIndex) - 1
+        return { index, routeKeys }
+      }),
+    ),
   )
+  const refusedUnits = await chargeRoutes(units, routeKey =>
+    checkRouteRateLimit(routeKey, identities, owner),
+  )
+  const rateLimitedCalls = new Map<number, number>()
+  for (const [unitIndex, retryAfterSeconds] of refusedUnits) {
+    const eventIndex = unitEventIndexes[unitIndex]
+    if (eventIndex === undefined) continue
+    rateLimitedCalls.set(
+      eventIndex,
+      Math.max(rateLimitedCalls.get(eventIndex) ?? 0, retryAfterSeconds),
+    )
+  }
   for (const [eventIndex] of rateLimitedCalls) {
     // The refusal is the whole outcome, so a copyright rationale (stored only for an accepted
     // call) is not carried onto the row.

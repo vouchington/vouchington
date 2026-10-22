@@ -73,7 +73,9 @@ describe('all merged user MCP options', () => {
       { jsonrpcMethod: 'tools/call', toolName: target, option, outcome: 'accepted' },
     ])
     expect(plan.charges).toEqual(
-      routes.length ? [{ eventIndex: 0, requestId: 1, routeKeys: routes }] : [],
+      routes.length
+        ? [{ eventIndex: 0, requestId: 1, routeCharges: [{ routeKeys: routes, weight: 1 }] }]
+        : [],
     )
   })
 

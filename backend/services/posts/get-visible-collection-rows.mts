@@ -2,12 +2,12 @@ import { assertWhitelistedSqlIdentifier, read } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import type { PrivateUser } from '@services/users/types'
 import { isModerationStaff } from '@services/users/authorization'
+import { BLOCKED_POST_TYPES } from '@voucha/types/entities/post'
 import {
   POST_LIST_TABLES,
   type PostRelationTableName,
 } from '@services/users/profile-collection-tables'
 import sql from 'sql-template-strings'
-import { BLOCKED_POST_TYPES } from './blocked-post-types.mts'
 import { buildDirectPostAccessFilter } from './direct-access-filter.mts'
 import {
   appendPrivatePostCollectionCursorBoundary,

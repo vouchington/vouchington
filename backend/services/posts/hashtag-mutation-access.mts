@@ -1,12 +1,13 @@
 import assert from 'http-assert'
 import { normalizeHashtag } from '@ts-shared/utils'
+import { BLOCKED_POST_TYPES } from '@voucha/types/entities/post'
 import { assertNotSuspended, entityRelationViewerFor } from '@services/users'
 import type { PrivateUser } from '@services/users/types'
 import {
   assertPostMutationAccess,
   type PostMutationAuthority,
 } from '@services/entity-relations/post-access'
-import { BLOCKED_POST_TYPES, canViewPost } from './check-privacy-access.mts'
+import { canViewPost } from './check-privacy-access.mts'
 import { currentUserCanUpdatePost } from './authorization.mts'
 import { getPostByAny } from './get.mts'
 import { assertPostUpdatePreflight } from './update/validation.mts'

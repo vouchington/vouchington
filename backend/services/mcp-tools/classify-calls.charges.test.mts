@@ -48,6 +48,11 @@ const FIXTURES = [
     api: [{ method: 'POST', path: '/api/v1/things' }, REMOVE],
     selectApi: (args: Record<string, unknown>) => (args.note === 'remove' ? [REMOVE] : []),
   }),
+  fixtureTool('charge_weighted_route', {
+    api: [REMOVE],
+    selectApi: (args: Record<string, unknown>) =>
+      args.note === 'batch' ? [{ ...REMOVE, weight: 3 }] : [],
+  }),
   fixtureTool('charge_write_only', {
     requiredScopes: ['mcp.admin:write'],
     api: [{ method: 'POST', path: '/api/v1/things' }],
@@ -79,21 +84,44 @@ describe('planMcpCalls charges', () => {
     ]
 
     expect(plan(batch).charges).toEqual([
-      { eventIndex: 1, requestId: 'call-1', routeKeys: ['POST:/api/v1/things'] },
+      {
+        eventIndex: 1,
+        requestId: 'call-1',
+        routeCharges: [{ routeKeys: ['POST:/api/v1/things'], weight: 1 }],
+      },
     ])
   })
 
   it('charges each listed route once, under one key for both parameter spellings', () => {
     expect(plan(call('charge_each_route', { note: 'x' })).charges).toEqual([
-      { eventIndex: 0, requestId: 1, routeKeys: ['PATCH:/api/v1/things/:id', 'GET:/api/v1/other'] },
+      {
+        eventIndex: 0,
+        requestId: 1,
+        routeCharges: [{ routeKeys: ['PATCH:/api/v1/things/:id', 'GET:/api/v1/other'], weight: 1 }],
+      },
     ])
   })
 
   it('charges only the routes the arguments of a tool with a selector exercise', () => {
     expect(plan(call('charge_selected_route', { note: 'remove' })).charges).toEqual([
-      { eventIndex: 0, requestId: 1, routeKeys: ['DELETE:/api/v1/things/:id'] },
+      {
+        eventIndex: 0,
+        requestId: 1,
+        routeCharges: [{ routeKeys: ['DELETE:/api/v1/things/:id'], weight: 1 }],
+      },
     ])
     expect(plan(call('charge_selected_route', { note: 'keep' })).charges).toEqual([])
+  })
+
+  it('preserves a selected per-target route weight in the call plan', () => {
+    expect(plan(call('charge_weighted_route', { note: 'batch' })).charges).toEqual([
+      {
+        eventIndex: 0,
+        requestId: 1,
+        routeCharges: [{ routeKeys: ['DELETE:/api/v1/things/:id'], weight: 3 }],
+      },
+    ])
+    expect(plan(call('charge_weighted_route', { note: 'other' })).charges).toEqual([])
   })
 
   it('charges one entry per call of a batch', () => {

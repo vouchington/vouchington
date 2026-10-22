@@ -15,6 +15,8 @@ export type PostType =
   | 'link'
   | 'article'
   | 'blog_post'
+/** Post types excluded from generic/public post surfaces and delegated relation writes. */
+export const BLOCKED_POST_TYPES: ReadonlySet<PostType> = new Set(['topic_recommendation'])
 export type PostBroadcast = 'everyone' | 'users' | 'followers' | 'mutual_followers'
 export type PostPrivacy = 'public' | 'private'
 
