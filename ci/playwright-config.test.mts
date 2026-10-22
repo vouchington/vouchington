@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import TestLifecycleReporter from '../playwright/test-lifecycle-reporter.mts'
+import { TestLifecycleReporter } from 'vouchington-tooling/playwright'
 import { createReporter } from '../playwright/config/web-server-command.mts'
 
 const ORIGINAL_PORT = process.env.PORT
@@ -277,7 +277,7 @@ describe('Playwright shared config', () => {
         expect.arrayContaining([
           ['github'],
           ['junit', { outputFile: expect.any(String) }],
-          [TestLifecycleReporter.modulePath],
+          [TestLifecycleReporter.modulePath, { failOnSkippedTests: true }],
         ]),
       )
       expect(config.projects?.map(project => project.name)).toEqual(projectNames)

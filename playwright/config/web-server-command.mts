@@ -1,7 +1,7 @@
 import type { ReporterDescription } from '@playwright/test'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import TestLifecycleReporter from '../test-lifecycle-reporter.mts'
+import { TestLifecycleReporter } from 'vouchington-tooling/playwright'
 import { withNodeOption } from './config-helpers.mts'
 
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url))
@@ -31,7 +31,7 @@ export function createReporter(junitOutputFile: string, ci: boolean): ReporterDe
     ? [
         ['github'],
         ['junit', { outputFile: process.env.PLAYWRIGHT_JUNIT_OUTPUT_FILE || junitOutputFile }],
-        [TestLifecycleReporter.modulePath],
+        [TestLifecycleReporter.modulePath, { failOnSkippedTests: ci }],
       ]
     : [['html', { open: 'never' }]]
 }

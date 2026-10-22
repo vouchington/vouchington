@@ -8,6 +8,7 @@ import {
   TestQueueFlushTimeoutError,
 } from '@vouchington/worker-runtime/testing'
 import {
+  countResourcesByType,
   formatForkLeakDiagnostics,
   getForkLeakDetector,
   getRegisteredPoolMetrics,
@@ -16,13 +17,6 @@ import {
   waitForResourceCloseCallbacks,
 } from 'vouchington-tooling/vitest-diagnostics'
 import { settleSharedBackgroundJobs } from './shared-background-worker.mts'
-
-// vouchington-tooling does not export countResourcesByType yet (upstream gap).
-function countResourcesByType(resources: readonly string[]): Map<string, number> {
-  const counts = new Map<string, number>()
-  for (const resource of resources) counts.set(resource, (counts.get(resource) ?? 0) + 1)
-  return counts
-}
 
 // Escape hatch for a run where the heuristic misfires — see docs/development/ci.md.
 const detectionDisabled = process.env.VITEST_FORK_LEAK_DETECTION === 'off'
@@ -96,7 +90,9 @@ afterEach(async context => {
       findings
         .map(
           ({ verdict, counts, poolMetrics, observations }) =>
-            `${formatForkLeakDiagnostics(verdict, counts, poolMetrics)}\nTCP handshake observations: ${observations
+            `${formatForkLeakDiagnostics(verdict, counts, poolMetrics, {
+              poolMetricsLabel: 'PostgreSQL pool metrics:',
+            })}\nTCP handshake observations: ${observations
               .map(
                 ({ connectWraps, tcpSockets }) =>
                   `ConnectWrap=${connectWraps}/TCPSocketWrap=${tcpSockets}`,

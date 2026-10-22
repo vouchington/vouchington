@@ -4,7 +4,6 @@ import {
   type Browser,
   type BrowserContext,
   type Page,
-  type TestInfo as PlaywrightTestInfo,
 } from '@playwright/test'
 import {
   runnablePlaywrightTest,
@@ -35,7 +34,7 @@ const monitorBrowserErrors = createBrowserErrorsFixture({
 export async function browserErrorsFixture(
   { context, vouchaTestTimeout: _timeoutGuard }: BrowserErrorFixtureArgs,
   run: (monitor: BrowserIssueMonitor) => Promise<void>,
-  testInfo: PlaywrightTestInfo,
+  testInfo: TestInfo,
 ) {
   await monitorBrowserErrors({ context }, run, testInfo)
 }
@@ -57,12 +56,5 @@ export function withMonitoredPage<T>(
   testInfo: TestInfo,
   callback: (page: Page) => Promise<T>,
 ) {
-  // The public contract narrows TestInfo without skip/fixme; the runtime object is the full
-  // Playwright TestInfo. Upstream gap: vouchington-tooling should accept the narrowed shape.
-  return withBrowserIssueMonitoring(
-    browserOrContext,
-    testInfo as PlaywrightTestInfo,
-    callback,
-    browserTestOptions,
-  )
+  return withBrowserIssueMonitoring(browserOrContext, testInfo, callback, browserTestOptions)
 }
