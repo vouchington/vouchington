@@ -76,6 +76,7 @@ describe.each([
       expect(delivery).toEqual({
         leaseToken: expect.any(String),
         correspondenceId: null,
+        deliveryKind: `email_intake_${kind}`,
         recipientEmail: replyEmail,
         subject:
           kind === 'rejected'
