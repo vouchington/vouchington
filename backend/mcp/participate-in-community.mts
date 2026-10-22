@@ -25,6 +25,15 @@ type Args = {
   text?: string
 }
 
+async function admitModmailReply(
+  user: Parameters<typeof loadModmailReplyAccess>[0],
+  args: Args,
+): Promise<void> {
+  await readMessageBody({ text: args.text })
+  const access = await loadModmailReplyAccess(user, args.community_id, args.conversationId!)
+  return admitModmailReplyParticipant(user, access)
+}
+
 const endpoints: Record<Option, ToolApiEndpoint> = {
   join: { method: 'POST', path: '/api/v1/communities/:idOrSlug/members' },
   open_modmail: { method: 'POST', path: '/api/v1/communities/:idOrSlug/modmail' },
@@ -100,9 +109,7 @@ function source(option: Option): MergedToolSource<Args> {
           thread: await openAuthorizedModmailThread(user, access, subjectUserId),
         })
       }
-      await readMessageBody({ text: args.text })
-      const access = await loadModmailReplyAccess(user, args.community_id, args.conversationId!)
-      await admitModmailReplyParticipant(user, access)
+      await admitModmailReply(user, args)
       return wrapAdminOutput({
         message: await createConversationMessage(
           user.id,

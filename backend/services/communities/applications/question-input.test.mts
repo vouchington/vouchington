@@ -3,7 +3,11 @@ import { assertApplicationQuestionInputs } from './question-input.mts'
 
 describe('application question input bounds', () => {
   it('rejects a select question with more than 32,768 options', () => {
-    const options = Array.from({ length: 32_769 }, (_, index) => `Option ${index}`)
+    const options = new Proxy(['Choice'], {
+      get(target, property, receiver) {
+        return property === 'length' ? 32_769 : Reflect.get(target, property, receiver)
+      },
+    })
 
     expect(() =>
       assertApplicationQuestionInputs([{ question: 'Pick', field_type: 'multi_select', options }]),
