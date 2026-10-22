@@ -400,7 +400,8 @@ assign_worktree_ports() {
 }
 
 ensure_valkey_container() {
-    local existing_container_port recreate_reason port_owner
+    local existing_container_port existing_container_image recreate_reason port_owner
+    local image_ref=ghcr.io/vouchington/dependency-valkey:9.1.0@sha256:16004aceeb7a1246e2d1bb85d353e38120eb440951cb7d0c971b6d63fda5b3d7
 
     echo -e "${BLUE}Ensuring Valkey container: $VALKEY_CONTAINER (port $VALKEY_PORT)...${NC}"
     recreate_reason=""
@@ -411,7 +412,10 @@ ensure_valkey_container() {
         )
 
         if [ "$existing_container_port" = "$VALKEY_PORT" ]; then
-            if docker ps --format '{{.Names}}' | grep -qx "$VALKEY_CONTAINER"; then
+            existing_container_image=$(docker inspect -f '{{.Config.Image}}' "$VALKEY_CONTAINER" 2>/dev/null || true)
+            if [ "$existing_container_image" != "$image_ref" ]; then
+                recreate_reason="approved image pin changed"
+            elif docker ps --format '{{.Names}}' | grep -qx "$VALKEY_CONTAINER"; then
                 echo -e "${GREEN}✓ Reusing existing Valkey container${NC}"
             else
                 docker start "$VALKEY_CONTAINER" >/dev/null
@@ -449,7 +453,7 @@ ensure_valkey_container() {
             --name "$VALKEY_CONTAINER" \
             -p "$VALKEY_PORT:6379" \
             --restart unless-stopped \
-            valkey/valkey-bundle:9.1.0 \
+            "$image_ref" \
             >/dev/null; then
             echo -e "${RED}Error: Failed to start Valkey container.${NC}"
             echo "Check if port $VALKEY_PORT is already in use or if Docker has sufficient resources."

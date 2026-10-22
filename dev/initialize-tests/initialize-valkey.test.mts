@@ -59,7 +59,7 @@ describe('initialize Valkey container helpers', () => {
       touch .legacy-valkey-removed
       return 0
       ;;
-    "run -d --name voucha-valkey-d0123456789ab -p 51088:6379 --restart unless-stopped valkey/valkey-bundle:"*)
+    "run -d --name voucha-valkey-d0123456789ab -p 51088:6379 --restart unless-stopped ghcr.io/vouchington/dependency-valkey:"*)
       return 0
       ;;
     "exec voucha-valkey-d0123456789ab valkey-cli ping")
@@ -114,6 +114,43 @@ describe('initialize Valkey container helpers', () => {
     expect(result.stderr).toContain('FORCE_MAIN_VALKEY_RECREATE=1')
   })
 
+  it('guards a main Valkey container from an automatic image-pin replacement', async () => {
+    const cwd = await makeWorktreeDir('main-valkey-image-mismatch')
+
+    const result = await runInitializeHelperStatus({
+      cwd,
+      script: `
+    IS_MAIN=true
+    VALKEY_CONTAINER=voucha-valkey
+    VALKEY_PORT=50559
+
+    docker() {
+  case "$*" in
+    "ps -a --format {{.Names}}")
+      printf 'voucha-valkey\\n'
+      ;;
+    "inspect -f {{with (index .NetworkSettings.Ports \\"6379/tcp\\")}}{{with index . 0}}{{.HostPort}}{{end}}{{end}} voucha-valkey")
+      printf '50559'
+      ;;
+    "inspect -f {{.Config.Image}} voucha-valkey")
+      printf 'outdated-image'
+      ;;
+    *)
+      printf 'unexpected:%s\\n' "$*" >&2
+      return 1
+      ;;
+  esac
+    }
+
+    ensure_valkey_container >/dev/null
+    `,
+    })
+
+    expect(result.code).toBe(1)
+    expect(result.stderr).toContain('approved image pin changed')
+    expect(result.stderr).toContain('FORCE_MAIN_VALKEY_RECREATE=1')
+  })
+
   it('recreates the main Valkey container on port mismatch when explicitly forced', async () => {
     const cwd = await makeWorktreeDir('main-valkey-mismatch-force')
 
@@ -139,7 +176,7 @@ describe('initialize Valkey container helpers', () => {
     "rm -f voucha-valkey")
       printf 'rm:%s\\n' "$3" >> "$record"
       ;;
-    "run -d --name voucha-valkey -p 50559:6379 --restart unless-stopped valkey/valkey-bundle:"*)
+    "run -d --name voucha-valkey -p 50559:6379 --restart unless-stopped ghcr.io/vouchington/dependency-valkey:"*)
       printf 'run:%s\\n' "$4" >> "$record"
       ;;
     "exec voucha-valkey valkey-cli ping")

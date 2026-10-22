@@ -138,7 +138,7 @@ describe('dependency update configuration', () => {
     )
     expect(readRepoFile('backend/Dockerfile')).toMatch(
       new RegExp(
-        `^FROM mirror\\.gcr\\.io/library/node:${toolchainMajor}-[\\w.-]+ AS base-node$`,
+        `^FROM ghcr\\.io/vouchington/dependency-node:${toolchainMajor}-[\\w.-]+@sha256:[0-9a-f]{64} AS base-node$`,
         'mu',
       ),
     )

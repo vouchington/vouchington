@@ -73,7 +73,7 @@ jobs:
 
     services:
       postgres:
-        image: mirror.gcr.io/pgvector/pgvector:pg18@sha256:691673308c99d2161ba298736f3147f1f22d79de2fb7ec93ae9b4afcab870b62
+        image: ghcr.io/vouchington/dependency-pgvector:pg18@sha256:691673308c99d2161ba298736f3147f1f22d79de2fb7ec93ae9b4afcab870b62
         env:
           POSTGRES_USER: postgres
           POSTGRES_DB: postgres
@@ -138,7 +138,7 @@ jobs:
             -p "127.0.0.1:$OTEL_GRPC_PORT:4317" \
             -v "$PWD/dev/otel/collector-config-ci.yaml:/etc/otelcol-contrib/config.yaml:ro" \
             -v "$RUNNER_TEMP/otel-output:/otel-output" \
-            mirror.gcr.io/otel/opentelemetry-collector-contrib:0.153.0
+            ghcr.io/vouchington/dependency-otel:0.153.0@sha256:93aad750175cbf1a973ae1c5886c3371f4d800f61be25cdd26870b8441ffe9fa
           sleep 2
           if [ "$(docker inspect -f '{{.State.Running}}' "$COLLECTOR_NAME")" != "true" ]; then
             docker logs "$COLLECTOR_NAME" || true
