@@ -5,8 +5,7 @@ import { insertTestPostImage } from '../../backend/test-helpers/entities/images.
 import { createCopyrightFormIntake } from '../../backend/services/copyright-notices/form-intakes.mts'
 import { appendCopyrightSubmissionAssessment } from '../../backend/services/copyright-notices/compliance.mts'
 import { acceptCopyrightNoticeAndImposeRestriction } from '../../backend/services/copyright-notices/restrictions.mts'
-import { requireTestValue } from './assertions.mts'
-import { randomSuffix } from './random-id.mts'
+import { randomSuffix, requireTestValue } from 'vouchington-tooling/playwright'
 import { getCopyrightNoticePrivateAggregate } from '../../backend/test-helpers/services/copyright-notices/private-aggregate.mts'
 
 export async function createCopyrightCaseFixture() {

@@ -5,8 +5,7 @@ import {
   suspendTestUser,
 } from '../../../backend/test-helpers/index.mts'
 import { loginAsUser } from '../../helpers/auth.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
-import { randomSuffix } from '../../helpers/random-id.mts'
+import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 
 // ---------------------------------------------------------------------------
 // Suspension banner

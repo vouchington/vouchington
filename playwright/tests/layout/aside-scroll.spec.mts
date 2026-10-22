@@ -3,7 +3,7 @@
  * exceeds viewport height. Uses a short viewport to force overflow.
  */
 import { expect, test } from '../../helpers/test.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo } from 'vouchington-tooling/playwright'
 
 // Short enough that the aside (about + dynamic discovery sections) overflows.
 const SHORT_VIEWPORT = { width: 1280, height: 320 }

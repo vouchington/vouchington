@@ -2,7 +2,7 @@ import { expect, test } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { withCleanUser } from '../../helpers/auth.mts'
 import { insertPersonalizedPostFixture } from '../../helpers/insert-personalized-fixtures.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo } from 'vouchington-tooling/playwright'
 
 test.describe('Post Detail Pages', () => {
   test.use({ storageState: AUTH_STATE })

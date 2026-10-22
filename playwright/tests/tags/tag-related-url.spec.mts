@@ -1,7 +1,6 @@
 import { expect, test } from '../../helpers/test.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
-import { randomSuffix } from '../../helpers/random-id.mts'
 import { insertTestPost } from '../../../backend/test-helpers/index.mts'
 
 // Uses seed data:

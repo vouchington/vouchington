@@ -1,6 +1,5 @@
 import { test, expect } from '../../helpers/test.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
-import { waitForBelowFoldHydration } from '../../helpers/wait-for-hydration.mts'
+import { navigateTo, waitForBelowFoldHydration } from 'vouchington-tooling/playwright'
 
 test.describe('Post sort filters', () => {
   test('shows Hot and New sort options by default', async ({ page }) => {

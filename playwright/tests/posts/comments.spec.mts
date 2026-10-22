@@ -1,11 +1,13 @@
 import { expect, test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { loginAsUser } from '../../helpers/auth.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
-import { randomSuffix } from '../../helpers/random-id.mts'
-import { requireTestValue } from '../../helpers/assertions.mts'
+import {
+  navigateTo,
+  randomSuffix,
+  requireTestValue,
+  waitForBelowFoldHydration,
+} from 'vouchington-tooling/playwright'
 import { voteTrigger } from '../../helpers/semantic-vote.mts'
-import { waitForBelowFoldHydration } from '../../helpers/wait-for-hydration.mts'
 import {
   CONTRIBUTING_USER_AGE_MS,
   insertTestPost,

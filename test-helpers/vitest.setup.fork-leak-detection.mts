@@ -7,21 +7,24 @@ import {
   settleRunnableQueueJobs,
   TestQueueFlushTimeoutError,
 } from '@vouchington/worker-runtime/testing'
-import { waitForResourceCloseCallbacks } from 'vouchington-tooling/vitest-diagnostics'
 import {
   formatForkLeakDiagnostics,
-  getRegisteredPsqlPoolMetrics,
-  getRegisteredPsqlPoolSocketHandles,
-} from './vitest-fork-leak-diagnostics.mts'
-import { getForkLeakDetector } from './vitest-fork-leak-detection.mts'
-import {
-  recordForkLeakCheckpoint,
+  getForkLeakDetector,
+  getRegisteredPoolMetrics,
+  getRegisteredPoolSocketHandles,
   waitForForkLeakHandshakeSettle,
-} from './vitest-fork-leak-handshake.mts'
-import { countResourcesByType } from './vitest-process-resources.mts'
+  waitForResourceCloseCallbacks,
+} from 'vouchington-tooling/vitest-diagnostics'
 import { settleSharedBackgroundJobs } from './shared-background-worker.mts'
 
 // Escape hatch for a run where the heuristic misfires — see docs/development/ci.md.
+// vouchington-tooling does not export countResourcesByType yet (upstream gap).
+function countResourcesByType(resources: readonly string[]): Map<string, number> {
+  const counts = new Map<string, number>()
+  for (const resource of resources) counts.set(resource, (counts.get(resource) ?? 0) + 1)
+  return counts
+}
+
 const detectionDisabled = process.env.VITEST_FORK_LEAK_DETECTION === 'off'
 const detector = getForkLeakDetector()
 ;(globalThis as typeof globalThis & Record<symbol, unknown>)[
@@ -76,33 +79,27 @@ afterEach(async context => {
   // that observes them. Unmatched socket growth remains visible to the detector.
   const settlement = await waitForForkLeakHandshakeSettle({
     readResources: () => process.getActiveResourcesInfo(),
-    readPsqlPoolMetrics: getRegisteredPsqlPoolMetrics,
-    readPsqlPoolSocketHandles: getRegisteredPsqlPoolSocketHandles,
+    readPoolMetrics: getRegisteredPoolMetrics,
+    readPoolSocketHandles: getRegisteredPoolSocketHandles,
     waitForTurn: waitForResourceCloseCallbacks,
   })
 
   // The detector's evidence windows are test checkpoints. Handshake turns are
   // diagnostic history within this test and must not advance those windows.
-  const counts = countResourcesByType(
-    (settlement.coalesced ? settlement.snapshot : settlement.detectorSnapshot).resources,
-  )
-  const findings = recordForkLeakCheckpoint(
-    (counts, testFile) => detector.record(counts, testFile),
-    settlement,
-    context.task.file.filepath,
-  ).map(verdict => ({
+  const checkpoint = settlement.coalesced ? settlement.snapshot : settlement.detectorSnapshot
+  const counts = countResourcesByType(checkpoint.resources)
+  const findings = detector.record(counts, context.task.file.filepath).map(verdict => ({
     verdict,
     counts,
-    psqlPoolMetrics: (settlement.coalesced ? settlement.snapshot : settlement.detectorSnapshot)
-      .psqlPoolMetrics,
+    poolMetrics: checkpoint.poolMetrics,
     observations: settlement.observations,
   }))
   if (findings.length > 0) {
     throw new Error(
       findings
         .map(
-          ({ verdict, counts, psqlPoolMetrics, observations }) =>
-            `${formatForkLeakDiagnostics(verdict, counts, psqlPoolMetrics)}\nTCP handshake observations: ${observations
+          ({ verdict, counts, poolMetrics, observations }) =>
+            `${formatForkLeakDiagnostics(verdict, counts, poolMetrics)}\nTCP handshake observations: ${observations
               .map(
                 ({ connectWraps, tcpSockets }) =>
                   `ConnectWrap=${connectWraps}/TCPSocketWrap=${tcpSockets}`,

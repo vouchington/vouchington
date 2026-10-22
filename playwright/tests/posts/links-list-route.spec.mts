@@ -1,8 +1,7 @@
 import { expect, test } from '../../helpers/test.mts'
 import { withCleanUser } from '../../helpers/auth.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 import { createTestPost } from '../../../backend/test-helpers/entities/create-test-entities.mts'
-import { randomSuffix } from '../../helpers/random-id.mts'
 
 test('link collection searches a genuine link and opens its detail', async ({ page }) => {
   const user = await withCleanUser(page)

@@ -1,14 +1,12 @@
 import { test, expect } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { TEST_PNG, navigateTo, requireTestValue } from 'vouchington-tooling/playwright'
 import { setFeatureFlags } from '../../helpers/feature-flags.mts'
 import { loginAsUser } from '../../helpers/auth.mts'
-import { TEST_PNG } from '../../helpers/test-fixtures.mts'
 import { TEST_USER_ID } from '../../../integration-tests/web/helpers/constants.mts'
 import { insertTestUserSession } from '../../../backend/test-helpers/entities/user-sessions.mts'
 import { createTestUserDirect } from '../../../backend/test-helpers/entities/users-direct.mts'
 import { insertTestBlueskyLinkedAccount } from '../../../backend/test-helpers/entities/bluesky-linked-accounts.mts'
-import { requireTestValue } from '../../helpers/assertions.mts'
 
 test.describe('My Identity Page', () => {
   test.use({ storageState: AUTH_STATE })

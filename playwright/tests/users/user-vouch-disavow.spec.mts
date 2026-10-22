@@ -2,7 +2,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { expect, test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { loginAsUser } from '../../helpers/auth.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo } from 'vouchington-tooling/playwright'
 import { resetAnonymousBrowserStateBeforeNavigation } from '../../helpers/browser-state.mts'
 import { userSignalChoice, voteBinaryChoice, voteClear } from '../../helpers/semantic-vote.mts'
 import {

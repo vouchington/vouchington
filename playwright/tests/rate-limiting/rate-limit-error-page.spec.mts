@@ -1,6 +1,5 @@
 import { expect, test } from '../../helpers/test.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
-import { storybookBundleHasStory } from '../../helpers/storybook.mts'
+import { navigateTo, storybookBundleHasStory } from 'vouchington-tooling/playwright'
 
 // Status page data-pw attributes are accessible in the actual web app routes (e.g. 404)
 // and in Storybook stories. The global-error/error boundaries are triggered by SSR-side

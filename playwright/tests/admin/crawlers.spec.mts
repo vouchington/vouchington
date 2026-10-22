@@ -1,6 +1,6 @@
 import { test, expect, type Page, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { insertTestCrawler } from '../../helpers/insert-test-crawler.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo } from 'vouchington-tooling/playwright'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 
 // Seeded crawler for read-only tests

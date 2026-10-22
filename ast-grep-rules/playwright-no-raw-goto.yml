@@ -25,4 +25,4 @@ examples:
     file: 'playwright/tests/home.ts'
   - code: "await page.goto('https://example.com');"
     isValid: true
-    file: 'playwright/helpers/navigate-to.mts'
+    file: 'playwright/helpers/auth.mts'

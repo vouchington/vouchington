@@ -1,7 +1,6 @@
 import { test, expect, type Page } from '../../helpers/test.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 import { insertTestTopic } from '../../helpers/insert-test-topic.mts'
-import { randomSuffix } from '../../helpers/random-id.mts'
 import { insertTestEmptyReferralProgram } from '../../helpers/insert-test-referral-program.mts'
 
 test.describe('Typed topic list route families', () => {

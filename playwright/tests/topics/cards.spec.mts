@@ -1,6 +1,5 @@
 import { test, expect } from '../../helpers/test.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
-import { waitForBelowFoldHydration } from '../../helpers/wait-for-hydration.mts'
+import { navigateTo, waitForBelowFoldHydration } from 'vouchington-tooling/playwright'
 
 test.describe('Cards Page', () => {
   test('should display cards list page', async ({ page }) => {

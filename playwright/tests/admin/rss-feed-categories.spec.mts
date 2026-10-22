@@ -1,6 +1,6 @@
 import { test, expect } from '../../helpers/test.mts'
 import { loginAsAdmin } from '../../helpers/auth.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo } from 'vouchington-tooling/playwright'
 
 // Seeded by backend/scripts/seeds/playwright-test-data/rss-feed-categories.mts
 const PENDING_CATEGORY = 'credit-cards-pw-test'

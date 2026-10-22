@@ -1,6 +1,6 @@
 import { test, expect } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo } from 'vouchington-tooling/playwright'
 import { mockCompletedRssFeedImport } from '../../helpers/rss-feed-import-route-mocks.mts'
 
 test.describe('News Sources Import / Export — /my/news-sources/import-export', () => {

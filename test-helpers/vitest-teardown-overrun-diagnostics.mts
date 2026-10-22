@@ -1,5 +1,8 @@
 import { EOL } from 'node:os'
-import { formatActiveResources, formatProcessResources } from './vitest-process-resources.mts'
+import {
+  formatActiveResources,
+  formatProcessResources,
+} from 'vouchington-tooling/vitest-diagnostics'
 
 // Composed from onProcessTimeout (vitest-teardown-overrun-reporter.mts), which Vitest's
 // exit() watchdog fires at the teardownTimeout deadline, in the main process, right before it

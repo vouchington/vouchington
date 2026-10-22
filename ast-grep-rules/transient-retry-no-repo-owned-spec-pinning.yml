@@ -19,7 +19,7 @@ examples:
   - code: 'log.includes(`playwright/tests/posts/search-pagination.spec.mts`)'
     isValid: false
     file: 'ci/transient-retry/playwright-search-pagination-response-timeout-rules.mts'
-  - code: "log.includes('playwright/helpers/navigate-to.mts')"
+  - code: "log.includes('playwright/helpers/auth.mts')"
     isValid: true
     file: 'ci/transient-retry/playwright-rules.mts'
   - code: "expect(log).toContain('playwright/tests/posts/search-pagination.spec.mts')"

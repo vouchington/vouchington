@@ -1,8 +1,7 @@
 import { test, expect } from '../../helpers/test.mts'
 import { withCleanUser } from '../../helpers/auth.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo, requireTestValue } from 'vouchington-tooling/playwright'
 import { readFileSync } from 'node:fs'
-import { requireTestValue } from '../../helpers/assertions.mts'
 
 test.describe('Personal source collections', () => {
   test('empty collections open the matching add-source dialog', async ({ page }) => {

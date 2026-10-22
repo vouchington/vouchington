@@ -1,7 +1,5 @@
 import { test, expect } from '../../helpers/test.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
-import { DESKTOP_VIEWPORT } from '../../helpers/viewport-constants.mts'
-import { randomSuffix } from '../../helpers/random-id.mts'
+import { DESKTOP_VIEWPORT, navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 import { insertTestPost } from '../../../backend/test-helpers/entities/posts.mts'
 
 const TEST_USER_ID = '019f0000-0000-7000-8000-000000000000'

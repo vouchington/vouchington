@@ -10,7 +10,7 @@ import { upsertPostElectionVotes } from '../../backend/services/elections-votes/
 import { upsertTopicElectionVotes } from '../../backend/services/elections-votes/topic/index.mts'
 import type { PrivateUser } from '../../backend/services/users/types.mts'
 import { getTopicByAny } from '../../backend/services/topics/get.mts'
-import { randomSuffix } from './random-id.mts'
+import { randomSuffix } from 'vouchington-tooling/playwright'
 
 // Accepts the viewer explicitly so each spec provides its own isolated user
 // (via withCleanUser) rather than mutating the shared seeded test user.

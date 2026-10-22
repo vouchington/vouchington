@@ -1,7 +1,6 @@
 import { expect, test, type Locator } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
-import { assertNoHorizontalScroll } from '../../helpers/mobile-assertions.mts'
+import { assertNoHorizontalScroll, navigateTo } from 'vouchington-tooling/playwright'
 
 const mobileViewport = { width: 375, height: 812 } as const
 async function assertLocatorTouchTarget(locator: Locator) {

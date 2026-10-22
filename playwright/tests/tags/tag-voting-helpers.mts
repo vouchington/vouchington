@@ -9,9 +9,7 @@ import {
   CONTRIBUTING_USER_AGE_MS,
   createTestUserWithAge,
 } from '../../../backend/test-helpers/index.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
-import { randomSuffix } from '../../helpers/random-id.mts'
-import { waitForBelowFoldHydration } from '../../helpers/wait-for-hydration.mts'
+import { navigateTo, randomSuffix, waitForBelowFoldHydration } from 'vouchington-tooling/playwright'
 import { voteBinaryChoice, voteClear } from '../../helpers/semantic-vote.mts'
 
 const TEST_USER_ID = '019f0000-0000-7000-8000-000000000000'

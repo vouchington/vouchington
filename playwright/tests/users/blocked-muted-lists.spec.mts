@@ -1,9 +1,7 @@
 import { expect, test } from '../../helpers/test.mts'
 import { withCleanUser } from '../../helpers/auth.mts'
 import { blockUser, createTestUser, muteUser } from '../../../backend/test-helpers/index.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
-import { randomSuffix } from '../../helpers/random-id.mts'
-import { requireTestValue } from '../../helpers/assertions.mts'
+import { navigateTo, randomSuffix, requireTestValue } from 'vouchington-tooling/playwright'
 
 function randomUsernameSuffix(): string {
   return randomSuffix().replaceAll(/[0-9]/g, digit =>

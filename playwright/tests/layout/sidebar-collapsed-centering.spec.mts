@@ -7,8 +7,7 @@
  * without any extra padding needed.
  */
 import { expect, test } from '../../helpers/test.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
-import { DESKTOP_VIEWPORT } from '../../helpers/viewport-constants.mts'
+import { DESKTOP_VIEWPORT, navigateTo } from 'vouchington-tooling/playwright'
 
 const TOLERANCE_PX = 4
 

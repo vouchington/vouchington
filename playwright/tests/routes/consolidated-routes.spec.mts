@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '../../helpers/test.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo } from 'vouchington-tooling/playwright'
 
 const CARD_ID = '019c64e6-f710-74cb-b36d-130af8ff1067'
 const DISCUSSION_ID = '019c64e6-f720-7001-a001-000000000001'

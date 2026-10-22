@@ -3,15 +3,16 @@
    additively into each project's own setupFiles under `extends: true`), so it cannot be wrapped
    in a describe block. */
 import { afterEach, vi } from 'vitest'
-import { checkAndRestoreFakeTimers } from './vitest-fake-timer-guard.ts'
 import {
+  checkAndRestoreFakeTimers,
   consumeTestNetworkAllowlistViolation,
   installTestNetworkAllowlist,
-} from './vitest-network-allowlist.ts'
+} from 'vouchington-tooling/vitest-diagnostics'
+import { isLiveProviderProject } from './vitest-live-provider-projects.ts'
 
 // Node and jsdom have the builtin hook. The Storybook browser bundle does not.
 if (typeof process !== 'undefined' && typeof process.getBuiltinModule === 'function') {
-  installTestNetworkAllowlist()
+  installTestNetworkAllowlist({ isExempt: isLiveProviderProject })
 }
 
 // Escape hatch for a run where the heuristic misfires — see docs/development/tests.md.

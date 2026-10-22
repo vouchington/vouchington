@@ -1,8 +1,7 @@
 import { expect, test } from '../../helpers/test.mts'
 import { withCleanUser } from '../../helpers/auth.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 import { createTestPost } from '../../../backend/test-helpers/entities/create-test-entities.mts'
-import { randomSuffix } from '../../helpers/random-id.mts'
 
 test.describe('Owned typed post edit routes', () => {
   test('data-point cancel discards the hydrated edit without changing the real post', async ({

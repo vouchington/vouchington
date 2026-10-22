@@ -1,9 +1,7 @@
 import { test, expect, type Page } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo, randomSuffix, waitForBelowFoldHydration } from 'vouchington-tooling/playwright'
 import { insertTestTopic } from '../../helpers/insert-test-topic.mts'
-import { randomSuffix } from '../../helpers/random-id.mts'
-import { waitForBelowFoldHydration } from '../../helpers/wait-for-hydration.mts'
 
 test.describe('Typed topic settings route families', () => {
   test.use({ storageState: AUTH_STATE })

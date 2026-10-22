@@ -3,7 +3,7 @@ import { expect, test } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { TEST_USER_USERNAME } from '../../helpers/auth.mts'
 import { setFeatureFlags } from '../../helpers/feature-flags.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo } from 'vouchington-tooling/playwright'
 
 const TOPIC_RECOMMENDATION_ID = randomUUID()
 const NON_EXISTENT_ID = randomUUID()

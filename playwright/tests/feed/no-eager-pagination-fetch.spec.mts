@@ -11,9 +11,12 @@
 import { createHash } from 'node:crypto'
 import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { loginAsUser } from '../../helpers/auth.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
-import { waitForBelowFoldHydration } from '../../helpers/wait-for-hydration.mts'
-import { forceMainScrollableBeforeHydration } from '../../helpers/scroll-to-load-more.mts'
+import {
+  forceMainScrollableBeforeHydration,
+  navigateTo,
+  randomSuffix,
+  waitForBelowFoldHydration,
+} from 'vouchington-tooling/playwright'
 import { insertTestRssFeed } from '../../helpers/insert-test-rss-feed.mts'
 import { insertTestRssFeedItem } from '../../../backend/test-helpers/entities/rss-feed-items.mts'
 import { getRssFeedItemFeedIds } from '../../../backend/services/feeds/rss-feed-items/get-ids.mts'
@@ -23,7 +26,6 @@ import {
   createTestUser,
   insertTestUrl,
 } from '../../../backend/test-helpers/index.mts'
-import { randomSuffix } from '../../helpers/random-id.mts'
 
 // Must exceed FEED_PAGE_LIMIT (25) to ensure has_next_page is true
 const ITEM_COUNT = 30

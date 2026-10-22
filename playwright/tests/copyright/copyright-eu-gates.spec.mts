@@ -1,6 +1,6 @@
 import { expect, test } from '../../helpers/test.mts'
 import { resetAnonymousBrowserStateBeforeNavigation } from '../../helpers/browser-state.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo } from 'vouchington-tooling/playwright'
 
 test.describe('EU copyright navigation with unapproved intake', () => {
   test('blocked EU filing leaves browser history usable and keeps the US form available', async ({

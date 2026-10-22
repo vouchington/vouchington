@@ -1,7 +1,6 @@
 import { test, expect } from '../../helpers/test.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo, randomSuffix as rand } from 'vouchington-tooling/playwright'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
-import { randomSuffix as rand } from '../../helpers/random-id.mts'
 import { insertTestUrlHostname } from '../../../backend/test-helpers/index.mts'
 
 test.describe('Admin Hostname Blocking', () => {

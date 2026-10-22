@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '../../helpers/test.mts'
 import { withCleanUser } from '../../helpers/auth.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo } from 'vouchington-tooling/playwright'
 
 test.describe('Media feed filter route families', () => {
   test('podcast filters expose relationship-specific empty states and selected controls', async ({

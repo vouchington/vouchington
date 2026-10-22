@@ -1,7 +1,7 @@
 import { test, expect, type Page } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { withCleanUser } from '../../helpers/auth.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo } from 'vouchington-tooling/playwright'
 import { updateUserFields } from '../../../backend/services/users/update-fields.mts'
 
 async function choosePrivacyOption(page: Page, field: string, option: string) {

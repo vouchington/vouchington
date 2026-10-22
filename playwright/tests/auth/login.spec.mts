@@ -3,9 +3,11 @@ import { randomUUID } from 'node:crypto'
 import { insertEmailAddressLoginToken } from '../../../backend/test-helpers/entities/email-addresses.mts'
 import { createLoginToken } from '../../../backend/services/users/login-token.mts'
 import { loginAsTestUser } from '../../helpers/auth.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
-import { installTurnstileStub } from '../../helpers/turnstile-stub.mts'
-import { waitForBelowFoldHydration } from '../../helpers/wait-for-hydration.mts'
+import {
+  installTurnstileStub,
+  navigateTo,
+  waitForBelowFoldHydration,
+} from 'vouchington-tooling/playwright'
 import type { getConfiguredOAuthProviders } from '../../../backend/services/oauth/config.mts'
 import type { getOAuthAuthorizationBrokerCapabilities } from '../../../backend/services/oauth/broker-config.mts'
 

@@ -6,7 +6,7 @@ import {
   type FeatureFlagCookieCodec,
   type FeatureFlags,
 } from '../../ts-shared/feature-flags/index.mts'
-import { retryOnConnectionLost } from './retry-on-connection-lost.mts'
+import { retryOnConnectionLost } from 'vouchington-tooling/playwright'
 
 const featureFlagCookieCodec: FeatureFlagCookieCodec = {
   encodeBase64: value => Buffer.from(value, 'utf8').toString('base64'),

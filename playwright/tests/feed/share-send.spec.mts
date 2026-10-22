@@ -8,10 +8,10 @@ import {
 import { createTestUser, followUser, insertTestPost } from '../../../backend/test-helpers/index.mts'
 import { createDeviceAndSessionTokens } from '../../../backend/services/jwt-session/index.mts'
 import { processFollowerDistributionChunk } from '../../../backend/services/follower-distributions/index.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
-import { randomSuffix } from '../../helpers/random-id.mts'
+import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 import { read } from '../../../backend/data-stores/psql/clients.mts'
 import { mintUUIDv7 } from '../../../ts-shared/session-jwt/index.mts'
+
 let sharerId = ''
 let followerId = ''
 let sharerUsername = ''

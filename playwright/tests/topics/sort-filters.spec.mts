@@ -1,9 +1,7 @@
 import { test, expect } from '../../helpers/test.mts'
 import { insertTestTopic } from '../../helpers/insert-test-topic.mts'
 import { setTopicBestSortInputs } from '../../../backend/test-helpers/entities/topic-metrics.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
-import { waitForBelowFoldHydration } from '../../helpers/wait-for-hydration.mts'
-import { randomSuffix } from '../../helpers/random-id.mts'
+import { navigateTo, randomSuffix, waitForBelowFoldHydration } from 'vouchington-tooling/playwright'
 
 test.describe('Topic sort filters', () => {
   test('shows New and Best sort options by default', async ({ page }) => {

@@ -1,8 +1,6 @@
 import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo, randomSuffix, waitForBelowFoldHydration } from 'vouchington-tooling/playwright'
 import { loginAsUser } from '../../helpers/auth.mts'
-import { waitForBelowFoldHydration } from '../../helpers/wait-for-hydration.mts'
-import { randomSuffix } from '../../helpers/random-id.mts'
 import { insertTestReferralProgram } from '../../helpers/insert-test-referral-program.mts'
 import {
   CONTRIBUTING_USER_AGE_MS,

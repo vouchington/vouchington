@@ -1,7 +1,6 @@
 import { expect, test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
-import { randomSuffix } from '../../helpers/random-id.mts'
 import { insertTestReferralProgram } from '../../helpers/insert-test-referral-program.mts'
 
 // Discussion 4 is the seeded "safe for mutation" discussion used by the other

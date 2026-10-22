@@ -5,7 +5,7 @@
  * clipping the content, producing a slide effect identical to AsideColumn.
  */
 import { expect, test, type Locator } from '../../helpers/test.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo } from 'vouchington-tooling/playwright'
 
 const VIEWPORT = { width: 1440, height: 900 }
 

@@ -2,8 +2,7 @@ import { createTestUser, insertEntityRelation } from '../../../backend/test-help
 import { updateUserFields } from '../../../backend/services/users/update-fields.mts'
 import { expect, test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { loginAsTestUser, TEST_USER_USERNAME } from '../../helpers/auth.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
-import { randomSuffix } from '../../helpers/random-id.mts'
+import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 import { userSignalChoice } from '../../helpers/semantic-vote.mts'
 
 // Anonymous by default — most tests assert the logged-out public profile view

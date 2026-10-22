@@ -1,7 +1,6 @@
 import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { loginAsUser } from '../../helpers/auth.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
-import { waitForBelowFoldHydration } from '../../helpers/wait-for-hydration.mts'
+import { navigateTo, waitForBelowFoldHydration } from 'vouchington-tooling/playwright'
 import {
   CONTRIBUTING_USER_AGE_MS,
   createTestUserWithAge,

@@ -1,9 +1,8 @@
 import { test, expect } from '../../helpers/test.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 import { withCleanUser } from '../../helpers/auth.mts'
 import { insertTestTopic } from '../../helpers/insert-test-topic.mts'
 import { insertTestRssFeed } from '../../helpers/insert-test-rss-feed.mts'
-import { randomSuffix } from '../../helpers/random-id.mts'
 
 test.describe('Recently Viewed Sources', () => {
   test('visiting a source detail page records the view and it appears on /my/news-sources/viewed', async ({

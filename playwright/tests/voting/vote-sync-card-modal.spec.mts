@@ -1,5 +1,5 @@
 import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo } from 'vouchington-tooling/playwright'
 import { loginAsUser } from '../../helpers/auth.mts'
 import { voteChoice, voteTrigger } from '../../helpers/semantic-vote.mts'
 import {

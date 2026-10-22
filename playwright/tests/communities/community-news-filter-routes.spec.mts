@@ -1,6 +1,6 @@
 import { expect, test } from '../../helpers/test.mts'
 import { withCleanUser } from '../../helpers/auth.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo } from 'vouchington-tooling/playwright'
 import { insertTestCommunity } from '../../../backend/test-helpers/entities/communities.mts'
 
 test('community news filters retain the genuine community and expose matching selection', async ({

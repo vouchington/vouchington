@@ -2,8 +2,7 @@ import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.
 import { withCleanUser } from '../../helpers/auth.mts'
 import { insertTestTopic } from '../../helpers/insert-test-topic.mts'
 import { insertTestRssFeed } from '../../helpers/insert-test-rss-feed.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
-import { randomSuffix } from '../../helpers/random-id.mts'
+import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 
 test.describe('Source follow toggle', () => {
   let topicId: string

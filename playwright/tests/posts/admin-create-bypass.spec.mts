@@ -1,7 +1,7 @@
 import { expect, test } from '../../helpers/test.mts'
 import { loginAsAdmin } from '../../helpers/auth.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
-import { randomSuffix } from '../../helpers/random-id.mts'
+import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
+
 async function logout(page: import('../../helpers/test.mts').Page) {
   await page.evaluate(async () => {
     await fetch('/api/v1/auth/logout', { method: 'POST', credentials: 'same-origin' })

@@ -4,7 +4,7 @@
  * viewports. Prevents toggles from floating far away from the content they control.
  */
 import { expect, test } from '../../helpers/test.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo } from 'vouchington-tooling/playwright'
 
 // Wide enough that the 1200px max-width column is active and gaps become visible
 const WIDE_VIEWPORT = { width: 1920, height: 1080 }

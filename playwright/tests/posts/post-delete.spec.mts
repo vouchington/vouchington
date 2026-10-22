@@ -1,7 +1,6 @@
 import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { loginAsTestUser, loginAsUser } from '../../helpers/auth.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
-import { randomSuffix } from '../../helpers/random-id.mts'
+import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 import { insertTestPost, createTestUser } from '../../../backend/test-helpers/index.mts'
 
 const TEST_USER_ID = '019f0000-0000-7000-8000-000000000000'

@@ -11,7 +11,7 @@ import {
   collapseSidebar,
   getNavbarBox,
 } from '../../helpers/layout-collapse.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo } from 'vouchington-tooling/playwright'
 
 test.describe('List page content width matches header when columns collapsed', () => {
   const TOLERANCE_PX = 16

@@ -1,6 +1,7 @@
 import { expect, test } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo } from 'vouchington-tooling/playwright'
+
 // Rate limiting is disabled by default (enabled=false in DynamicConfig).
 // These tests verify the frontend rate limit error handling by intercepting
 // API responses with 429 status codes.

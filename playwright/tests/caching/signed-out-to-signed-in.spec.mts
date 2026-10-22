@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { SEEDED_IDS } from '../../../integration-tests/web/helpers/constants.mts'
 import { withCleanUser } from '../../helpers/auth.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo } from 'vouchington-tooling/playwright'
 import { expect, test, type Page } from '../../helpers/test.mts'
 
 interface BrowserFetchResult {

@@ -1,7 +1,6 @@
 import { test, expect } from '../../helpers/test.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { DESKTOP_VIEWPORT, navigateTo } from 'vouchington-tooling/playwright'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
-import { DESKTOP_VIEWPORT } from '../../helpers/viewport-constants.mts'
 
 test.describe('Topbar - intent navigation', () => {
   test.beforeEach(async ({ page }) => {

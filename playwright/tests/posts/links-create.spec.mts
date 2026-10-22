@@ -1,6 +1,6 @@
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { test, expect } from '../../helpers/test.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo } from 'vouchington-tooling/playwright'
 
 test.describe('Submit a Link page', () => {
   test.use({ storageState: AUTH_STATE })

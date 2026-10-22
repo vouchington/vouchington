@@ -9,9 +9,8 @@ import { insertTestTopic } from '../../helpers/insert-test-topic.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { insertTestRssFeed } from '../../helpers/insert-test-rss-feed.mts'
 import { linkTopicHostname } from '../../helpers/link-topic-hostname.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
-import { randomSuffix } from '../../helpers/random-id.mts'
-import { waitForBelowFoldHydration } from '../../helpers/wait-for-hydration.mts'
+import { navigateTo, randomSuffix, waitForBelowFoldHydration } from 'vouchington-tooling/playwright'
+
 // Seeded topic with an RSS feed (topic_type = 'card'). Read-only — never mutate.
 const SEEDED_TOPIC_ID = '019c64e6-f8a0-7000-a000-000000000001'
 const SEEDED_TOPIC_TYPE = 'card'

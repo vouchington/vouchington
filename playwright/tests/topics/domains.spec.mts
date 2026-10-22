@@ -1,6 +1,5 @@
 import { test, expect } from '../../helpers/test.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
-import { requireTestValue } from '../../helpers/assertions.mts'
+import { navigateTo, requireTestValue } from 'vouchington-tooling/playwright'
 
 test.describe('Domains Page', () => {
   test('displays domains listing with heading and description', async ({ page }) => {

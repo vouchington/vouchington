@@ -1,7 +1,7 @@
 import { test, expect } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { TEST_USER_USERNAME, withCleanUser } from '../../helpers/auth.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo } from 'vouchington-tooling/playwright'
 import {
   createTestLandingPage,
   createTestLandingPageProfileLinkItem,

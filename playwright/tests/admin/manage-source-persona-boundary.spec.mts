@@ -1,8 +1,7 @@
 import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { insertTestTopic } from '../../helpers/insert-test-topic.mts'
 import { insertTestRssFeed } from '../../helpers/insert-test-rss-feed.mts'
-import { randomSuffix } from '../../helpers/random-id.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 import { createSiteModeratorUser, loginAsUser } from '../../helpers/auth.mts'
 
 // Verify that site moderators have no admin controls on source (rss_feed) topic pages.

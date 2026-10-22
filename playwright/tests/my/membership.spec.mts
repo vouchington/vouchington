@@ -1,7 +1,8 @@
 import { test, expect, type Page } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { setFeatureFlags } from '../../helpers/feature-flags.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo } from 'vouchington-tooling/playwright'
+
 async function getMembershipPageHeading(page: Page): Promise<ReturnType<Page['locator']>> {
   await navigateTo(page, '/my/membership')
   return page.getByRole('heading', { level: 1 })

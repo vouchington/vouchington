@@ -1,6 +1,6 @@
 import { defineConfig } from 'vitest/config'
 import { ciOutputFile, ciReporters } from './test-helpers/vitest-ci-reporters.mts'
-import { effectiveTimeoutCap } from './test-helpers/vitest-effective-timeout-cap.mts'
+import { effectiveTimeoutCap } from 'vouchington-tooling/vitest-effective-timeout'
 import {
   backendAliases,
   realGlideMqAlias,

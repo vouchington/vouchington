@@ -1,7 +1,6 @@
 import { expect, test, type Locator, type Page } from '../../helpers/test.mts'
-import { scrollToLoadMore } from '../../helpers/scroll-to-load-more.mts'
+import { navigateTo, scrollToLoadMore } from 'vouchington-tooling/playwright'
 import { loginAsUser } from '../../helpers/auth.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
 import { createCopyrightCaseFixture } from '../../helpers/create-copyright-case-fixture.mts'
 import { createParsedCopyrightEmailIntake } from '../../../backend/test-helpers/copyright-email-intake-fixtures.mts'
 

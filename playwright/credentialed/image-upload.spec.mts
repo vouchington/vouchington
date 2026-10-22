@@ -3,11 +3,9 @@
 // S3_BUCKET_IMAGE_UPLOADS. A missing credential fails the test.
 
 import { test, expect } from '../../playwright/helpers/test.mts'
-import { navigateTo } from '../../playwright/helpers/navigate-to.mts'
+import { TEST_PNG, navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 import { loginAsAdmin } from '../../playwright/helpers/auth.mts'
 import { insertTestTopic } from '../../playwright/helpers/insert-test-topic.mts'
-import { TEST_PNG } from '../../playwright/helpers/test-fixtures.mts'
-import { randomSuffix } from '../../playwright/helpers/random-id.mts'
 
 const hasAwsCredentials = Boolean(process.env.S3_AWS_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID)
 const imageUploadsBucket = process.env.S3_BUCKET_IMAGE_UPLOADS?.trim()

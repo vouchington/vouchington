@@ -1,7 +1,6 @@
 import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
-import { TEST_PNG } from '../../helpers/test-fixtures.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { TEST_PNG, navigateTo } from 'vouchington-tooling/playwright'
 import { insertTestImage } from '../../../backend/test-helpers/entities/images.mts'
 import { allowTestUserProfileImageDelivery } from '../../../backend/test-helpers/entities/image-surface-placements.mts'
 import { setTestUserProfileImage } from '../../../backend/test-helpers/entities/media-surface-writes.mts'

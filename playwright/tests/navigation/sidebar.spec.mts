@@ -1,8 +1,7 @@
 import { test, expect } from '../../helpers/test.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo, requireTestValue } from 'vouchington-tooling/playwright'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { loginAsTestUser } from '../../helpers/auth.mts'
-import { requireTestValue } from '../../helpers/assertions.mts'
 
 const DESKTOP_VIEWPORT = { width: 1280, height: 720 }
 

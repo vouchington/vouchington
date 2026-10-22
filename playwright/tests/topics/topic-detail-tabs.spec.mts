@@ -1,5 +1,5 @@
 import { expect, test } from '../../helpers/test.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo } from 'vouchington-tooling/playwright'
 
 // Seed data IDs — topics are displayed as "cards" in the UI (URL: /card/:id)
 const CHASE_TOPIC_ID = '019c64e6-f710-74cb-b36d-130af8ff1067'

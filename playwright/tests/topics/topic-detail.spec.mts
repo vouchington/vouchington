@@ -4,8 +4,7 @@ import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { insertTestTopic } from '../../helpers/insert-test-topic.mts'
 import { insertTestRssFeed } from '../../helpers/insert-test-rss-feed.mts'
 import { insertPersonalizedTopicFixture } from '../../helpers/insert-personalized-fixtures.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
-import { randomSuffix } from '../../helpers/random-id.mts'
+import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 import { chooseVote, voteTrigger } from '../../helpers/semantic-vote.mts'
 import {
   CONTRIBUTING_USER_AGE_MS,

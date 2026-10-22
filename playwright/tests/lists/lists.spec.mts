@@ -1,9 +1,7 @@
 import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
-import { randomSuffix } from '../../helpers/random-id.mts'
+import { MOBILE_VIEWPORTS, navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 import { withCleanUser } from '../../helpers/auth.mts'
-import { MOBILE_VIEWPORTS } from '../../helpers/viewport-constants.mts'
 import {
   insertTestTopic,
   insertTestRssFeed,

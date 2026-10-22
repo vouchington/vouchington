@@ -1,6 +1,5 @@
 import { expect, test } from '../../helpers/test.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
-import { MOBILE_VIEWPORTS } from '../../helpers/viewport-constants.mts'
+import { MOBILE_VIEWPORTS, navigateTo } from 'vouchington-tooling/playwright'
 
 const LG_VIEWPORT = { width: 1024, height: 768 }
 

@@ -1,6 +1,6 @@
 import { type Browser, type TestInfo, withMonitoredPage } from './test.mts'
 import { loginAsTestUser } from './auth.mts'
-import { randomSuffix } from './random-id.mts'
+import { randomSuffix } from 'vouchington-tooling/playwright'
 
 export async function seedTopicRecommendations(browser: Browser, testInfo: TestInfo) {
   let topicSlug = ''
