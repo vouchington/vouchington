@@ -27,7 +27,9 @@ CREATE TABLE oauth_authorizations (
   pkce_verifier_ciphertext TEXT NOT NULL,
   completion_proof_challenge TEXT,
   callback_code_ciphertext TEXT,
+  callback_code_hash TEXT CHECK (callback_code_hash IS NULL OR char_length(callback_code_hash) = 64),
   callback_error TEXT,
+  callback_error_hash TEXT CHECK (callback_error_hash IS NULL OR char_length(callback_error_hash) = 64),
   completion_token_hash TEXT,
   completion_token_ciphertext TEXT,
   facebook_account_id UUID REFERENCES facebook_accounts(id) ON DELETE CASCADE,
@@ -210,7 +212,9 @@ COMMENT ON COLUMN oauth_authorizations.state_hash IS 'Purpose-bound HMAC-SHA256 
 COMMENT ON COLUMN oauth_authorizations.pkce_verifier_ciphertext IS 'Authenticated ciphertext of the server-generated provider PKCE verifier.';
 COMMENT ON COLUMN oauth_authorizations.completion_proof_challenge IS 'Native-only base64url SHA-256 challenge for the app-held completion verifier.';
 COMMENT ON COLUMN oauth_authorizations.callback_code_ciphertext IS 'Authenticated ciphertext of the one-time provider code; cleared only after durable provider-account persistence.';
+COMMENT ON COLUMN oauth_authorizations.callback_code_hash IS 'Purpose-bound HMAC-SHA256 of the original provider code; retained for exact callback replay after code ciphertext is cleared.';
 COMMENT ON COLUMN oauth_authorizations.callback_error IS 'Bounded provider callback or terminal exchange error code; never contains provider credentials.';
+COMMENT ON COLUMN oauth_authorizations.callback_error_hash IS 'Purpose-bound HMAC-SHA256 of the original unnormalized provider callback error for exact replay.';
 COMMENT ON COLUMN oauth_authorizations.completion_token_hash IS 'Purpose-bound HMAC-SHA256 of the web cookie or native callback bearer token.';
 COMMENT ON COLUMN oauth_authorizations.completion_token_ciphertext IS 'Authenticated ciphertext of the completion token retained only so a repeated provider callback converges on the same handoff.';
 COMMENT ON COLUMN oauth_authorizations.facebook_account_id IS 'Facebook account produced by a successful exchange; parent deletion cascades the authorization.';

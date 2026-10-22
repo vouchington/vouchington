@@ -50,6 +50,8 @@ SELECT
     WHERE attempt.oauth_authorization_id = flow.id), 0)::smallint AS exchange_attempts,
   flow.linkedin_account_id,
   flow.microsoft_account_id,
-  flow.google_account_id
+  flow.google_account_id,
+  flow.callback_code_hash,
+  flow.callback_error_hash
 FROM oauth_authorizations flow;
 COMMENT ON VIEW view_oauth_authorization_current_records IS 'Current OAuth lifecycle and active exchange projected from timestamp facts and immutable exchange history; outer row restrictions reach the authorization directly.';
