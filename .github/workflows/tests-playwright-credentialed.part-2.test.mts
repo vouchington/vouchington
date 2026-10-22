@@ -18,7 +18,13 @@ import { describe, expect, it } from 'vitest'
 // upload's condition (issue #51 follow-up), mirroring tests-playwright.part-2.test.mts.
 const workflow = readFileSync('.github/workflows/tests-playwright-credentialed.yml', 'utf8')
 const parsedWorkflow = load(workflow) as {
-  jobs?: Record<string, { steps?: Array<{ id?: string; name?: string; run?: string }> }>
+  jobs?: Record<
+    string,
+    {
+      'timeout-minutes'?: number
+      steps?: Array<{ id?: string; if?: string; name?: string; run?: string; uses?: string }>
+    }
+  >
 }
 const jobName = Object.keys(parsedWorkflow.jobs ?? {}).find(name =>
   parsedWorkflow.jobs?.[name]?.steps?.some(
@@ -133,148 +139,65 @@ describe('tests-playwright-credentialed.yml JUnit report retention', () => {
 })
 
 const fixtureNow = 1_000_000
+const failureAfterCheckout = "${{ failure() && steps.checkout.outcome == 'success' }}"
 
-function captureJobDeadline(payload: unknown): {
-  status: number | null
-  output: string
-  calls: string
-} {
+function captureRun(): string {
+  const capture = jobName
+    ? parsedWorkflow.jobs?.[jobName]?.steps?.find(
+        step => step.name === 'Capture current job deadline',
+      )
+    : undefined
+  expect(capture?.run).toBeTypeOf('string')
+  return capture?.run ?? ''
+}
+
+function runCapture(): { status: number | null; output: string } {
   const directory = mkdtempSync(join(tmpdir(), 'credentialed-job-clock-'))
   try {
-    writeFileSync(
-      join(directory, 'gh'),
-      '#!/usr/bin/env bash\nprintf "%s\\n" "$*" >> "$API_CALLS"\nprintf "%s" "$API_RESPONSE"\n',
-    )
-    chmodSync(join(directory, 'gh'), 0o755)
     writeFileSync(join(directory, 'date'), '#!/usr/bin/env bash\nprintf "1000000\\n"\n')
     chmodSync(join(directory, 'date'), 0o755)
     writeFileSync(join(directory, 'env'), '')
-    const capture = jobName
-      ? parsedWorkflow.jobs?.[jobName]?.steps?.find(
-          step => step.name === 'Capture current job deadline',
-        )
-      : undefined
-    expect(capture?.run).toBeTypeOf('string')
-    const result = spawnSync('bash', ['-c', capture!.run!], {
+    const result = spawnSync('bash', ['-c', captureRun()], {
       cwd: directory,
       encoding: 'utf8',
       timeout: 5000,
       env: {
         ...process.env,
         PATH: `${directory}:${process.env.PATH ?? ''}`,
-        GITHUB_REPOSITORY: 'fixture/fixture',
-        GITHUB_RUN_ID: '42',
-        GITHUB_RUN_ATTEMPT: '2',
-        GITHUB_JOB: 'playwright-credentialed-tests',
-        RUNNER_NAME: 'owned-runner',
-        RUNNER_TEMP: directory,
         GITHUB_ENV: join(directory, 'env'),
-        API_RESPONSE: JSON.stringify(Array.isArray(payload) ? payload : [payload]),
-        API_CALLS: join(directory, 'calls'),
       },
     })
     expect(result.error).toBeUndefined()
     return {
       status: result.status,
       output: readFileSync(join(directory, 'env'), 'utf8'),
-      calls: readFileSync(join(directory, 'calls'), 'utf8'),
     }
   } finally {
     rmSync(directory, { recursive: true, force: true })
   }
 }
 
-function ownedJob(startedAt: string) {
-  return {
-    id: 12,
-    runner_id: 8,
-    run_id: 42,
-    run_attempt: 2,
-    name: 'test-playwright-credentialed / playwright-credentialed-tests',
-    runner_name: 'owned-runner',
-    status: 'in_progress',
-    started_at: startedAt,
-  }
-}
-
-describe('credentialed job deadline uses a single current-attempt timing read', () => {
-  it('includes provisioning elapsed time and reads the exact attempt once', () => {
-    const startEpoch = fixtureNow - 480
-    const result = captureJobDeadline({
-      total_count: 1,
-      jobs: [ownedJob(new Date(startEpoch * 1000).toISOString())],
-    })
+describe('credentialed job deadline uses the runner clock', () => {
+  it('adds the job timeout to the local clock and does not read the jobs list', () => {
+    const job = jobName ? parsedWorkflow.jobs?.[jobName] : undefined
+    const timeoutMinutes = job?.['timeout-minutes']
+    expect(timeoutMinutes).toBeTypeOf('number')
+    const run = captureRun()
+    expect(run).not.toContain('gh ')
+    expect(run).toContain(`deadline=$((now + ${timeoutMinutes} * 60))`)
+    const result = runCapture()
     expect(result.status).toBe(0)
-    expect(result.output).toBe(`CREDENTIALED_JOB_DEADLINE_EPOCH=${startEpoch + 780}\n`)
-    expect(result.calls.trim().split('\n')).toEqual([
-      'api --method GET --paginate --slurp /repos/fixture/fixture/actions/runs/42/attempts/2/jobs?per_page=100',
-    ])
+    expect(result.output).toBe(
+      `CREDENTIALED_JOB_DEADLINE_EPOCH=${fixtureNow + (timeoutMinutes ?? 0) * 60}\n`,
+    )
   })
 
-  it('rejects ambiguous matching job identities without exporting a deadline', () => {
-    const job = ownedJob(new Date(fixtureNow * 1000).toISOString())
-    const result = captureJobDeadline({ total_count: 2, jobs: [job, job] })
-    expect(result.status).not.toBe(0)
-    expect(result.output).toBe('')
-  })
-
-  it('uses the only named job when the jobs API has not published runner_name', () => {
-    const job = {
-      ...ownedJob(new Date(fixtureNow * 1000).toISOString()),
-      runner_name: null,
-      runner_id: null,
-    }
-    const result = captureJobDeadline({ total_count: 1, jobs: [job] })
-    expect(result.status).toBe(0)
-    expect(result.output).toBe(`CREDENTIALED_JOB_DEADLINE_EPOCH=${fixtureNow + 780}\n`)
-  })
-
-  it('rejects the only named job when a different runner is already published', () => {
-    const job = {
-      ...ownedJob(new Date(fixtureNow * 1000).toISOString()),
-      runner_name: 'other-runner',
-    }
-    const result = captureJobDeadline({ total_count: 1, jobs: [job] })
-    expect(result.status).not.toBe(0)
-    expect(result.output).toBe('')
-  })
-
-  it('rejects a wrong attempt and incomplete timing response without a deadline', () => {
-    const job = { ...ownedJob(new Date(fixtureNow * 1000).toISOString()), run_attempt: 1 }
-    expect(captureJobDeadline({ total_count: 1, jobs: [job] }).status).not.toBe(0)
-    expect(captureJobDeadline({ total_count: 101, jobs: [] }).status).not.toBe(0)
-  })
-
-  it('finds the current runner on page two after 100 unrelated jobs', () => {
-    const job = ownedJob(new Date(fixtureNow * 1000).toISOString())
-    const jobs = Array.from({ length: 100 }, (_, id) => ({
-      ...job,
-      id: id + 100,
-      runner_name: 'other',
-    }))
-    const result = captureJobDeadline([
-      { total_count: 101, jobs },
-      { total_count: 101, jobs: [job] },
-    ])
-    expect(result.status).toBe(0)
-    expect(result.output).toBe(`CREDENTIALED_JOB_DEADLINE_EPOCH=${fixtureNow + 780}\n`)
-  })
-
-  it.each(['incomplete', 'ambiguous'])('rejects %s cross-page timing without a deadline', kind => {
-    const job = ownedJob(new Date(fixtureNow * 1000).toISOString())
-    const result = captureJobDeadline([
-      { total_count: kind === 'incomplete' ? 3 : 2, jobs: [job] },
-      { total_count: kind === 'incomplete' ? 3 : 2, jobs: [job] },
-    ])
-    expect(result.status).not.toBe(0)
-    expect(result.output).toBe('')
-  })
-
-  it('fails before exporting a deadline when cleanup margin is already exhausted', () => {
-    const job = ownedJob(new Date((fixtureNow - 780) * 1000).toISOString())
-    const result = captureJobDeadline({ total_count: 1, jobs: [job] })
-    expect(result.status).not.toBe(0)
-    expect(result.output).toBe('')
+  it('prints Valkey logs only after checkout has succeeded', () => {
+    const steps = jobName ? parsedWorkflow.jobs?.[jobName]?.steps : undefined
+    const checkout = steps?.find(step => step.uses?.startsWith('actions/checkout@'))
+    const logs = steps?.find(step => step.uses === './.github/actions/valkey-logs')
+    expect(checkout?.id).toBe('checkout')
+    expect(logs?.if).toBe(failureAfterCheckout)
   })
 
   it('retains real command failure status with reduced remaining headroom', () => {
