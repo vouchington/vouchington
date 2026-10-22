@@ -38,6 +38,7 @@ export function NavbarSearchButton({ onOpenSearch }: NavbarSearchButtonProps) {
         <span className='truncate'>{searchText}</span>
         <KbdGroup className='ml-auto hidden shrink-0 sm:inline-flex'>
           <Kbd>{modifier}</Kbd>
+          {/* Flex layout drops this space visually. Axe still reads it, so Ctrl and K stay separate words. */}{' '}
           <Kbd>K</Kbd>
         </KbdGroup>
       </span>

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { accessibleNameWithVisibleText } from '@/lib/a11y/accessible-name-with-visible-text'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import type { ElectionVoteChoice } from '@/lib/api/client/elections'
 import type { ScoreVoteState } from './score-vote-types'
@@ -82,6 +83,10 @@ export function CompactVote({
   vote,
 }: CompactVoteProps) {
   const t = useTranslations()
+  const visibleLabel =
+    typeof vote.currentVote === 'string'
+      ? t(CHOICE_MESSAGE_KEYS[vote.currentVote])
+      : t('extracted.votes.semanticVote.vote')
   return (
     <div
       className={`flex items-center gap-2 ${className ?? ''}`}
@@ -94,13 +99,14 @@ export function CompactVote({
             variant='outline'
             size='touch'
             className='disabled:opacity-100!'
-            aria-label={t('extracted.votes.semanticVote.choose')}
+            aria-label={accessibleNameWithVisibleText(
+              visibleLabel,
+              t('extracted.votes.semanticVote.choose'),
+            )}
             disabled={disabled || vote.isLoading}
             data-pw='semantic-vote-trigger'
           >
-            {typeof vote.currentVote === 'string'
-              ? t(CHOICE_MESSAGE_KEYS[vote.currentVote])
-              : t('extracted.votes.semanticVote.vote')}
+            {visibleLabel}
             <ChevronDown />
           </Button>
         </PopoverTrigger>

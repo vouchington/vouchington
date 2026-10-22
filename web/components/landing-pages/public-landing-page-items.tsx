@@ -5,6 +5,7 @@ import { getEffectiveContentLanguage } from '@ts-shared/languages/content-langua
 import { getProfileLinkHref, getProfileLinkLabel } from '@/lib/users/profile-link-href'
 import type { PublicLandingPage } from '@/types/landing-pages'
 import { appendUtm, isExternalHref, OUTBOUND_UTM } from '@/lib/url/utm'
+import { accessibleNameWithVisibleText } from '@/lib/a11y/accessible-name-with-visible-text'
 import { getReviewHref } from './public-landing-page-routes'
 import { PublicLandingPageTopicGroup } from './public-landing-page-topic-group'
 import type { getTranslations } from '@/lib/i18n/get-translations'
@@ -136,29 +137,33 @@ function ReferralLinkItem({
   t: Translate
 }) {
   if (item.type !== 'referral_link') return null
+  const programName = item.referral_link.referral_program_name
+  const visibleLabel =
+    item.referral_link.label ||
+    t('extracted.landingPages.publicLandingPageItems.referralLink_441c6d0e')
+  const describedName = item.referral_link.label
+    ? programName
+      ? `${programName}: ${item.referral_link.label}`
+      : item.referral_link.label
+    : programName || t('extracted.landingPages.publicLandingPageItems.openReferralLink_5c87be41')
   return (
     <a
       href={item.referral_link.url}
       target='_blank'
       rel='nofollow noopener noreferrer'
-      aria-label={
-        item.referral_link.label
-          ? `${item.referral_link.referral_program_name}: ${item.referral_link.label}`
-          : item.referral_link.referral_program_name ||
-            t('extracted.landingPages.publicLandingPageItems.openReferralLink_5c87be41')
-      }
+      aria-label={accessibleNameWithVisibleText(
+        [programName, visibleLabel].filter(Boolean).join(' '),
+        describedName,
+      )}
       data-item-id={item.id}
       data-pw='landing-page-referral-link'
       className='block rounded-2xl border border-border bg-background p-4 shadow-sm transition-colors hover:bg-accent'
     >
       <div className='space-y-2 text-center'>
         <p className='text-xs font-medium uppercase tracking-wide text-muted-foreground'>
-          {item.referral_link.referral_program_name}
-        </p>
-        <h2 className='text-lg font-semibold'>
-          {item.referral_link.label ||
-            t('extracted.landingPages.publicLandingPageItems.referralLink_441c6d0e')}
-        </h2>
+          {programName}
+        </p>{' '}
+        <h2 className='text-lg font-semibold'>{visibleLabel}</h2>
       </div>
     </a>
   )

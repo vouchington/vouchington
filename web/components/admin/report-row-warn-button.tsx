@@ -4,6 +4,7 @@ import { AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { IssueWarningDialog } from '@/components/shared/issue-warning-dialog'
 import type { IssueUserWarningResponse } from '@/lib/api/client/warnings'
+import { accessibleNameWithVisibleText } from '@/lib/a11y/accessible-name-with-visible-text'
 import { useTranslations } from '@/lib/i18n/use-translations'
 
 interface ReportRowWarnButtonProps {
@@ -21,6 +22,7 @@ export function ReportRowWarnButton({
   onIssued,
 }: ReportRowWarnButtonProps) {
   const t = useTranslations()
+  const visibleLabel = t('extracted.admin.reportRowWarnButton.warn_8448814d')
   return (
     <IssueWarningDialog
       userId={userId}
@@ -32,10 +34,13 @@ export function ReportRowWarnButton({
         variant='outline'
         disabled={disabled}
         data-pw='report-row-warn-button'
-        aria-label={t('extracted.admin.reportRowWarnButton.issueWarningToUserFromThis_56acc226')}
+        aria-label={accessibleNameWithVisibleText(
+          visibleLabel,
+          t('extracted.admin.reportRowWarnButton.issueWarningToUserFromThis_56acc226'),
+        )}
       >
         <AlertTriangle className='size-4' />
-        {t('extracted.admin.reportRowWarnButton.warn_8448814d')}
+        {visibleLabel}
       </Button>
     </IssueWarningDialog>
   )

@@ -19,6 +19,7 @@ import {
 import { ReportRowWarnButton } from './report-row-warn-button'
 import { communityHref, createUserPathname } from '@/lib/links/entity-href'
 import type { AdminModerationReport } from './reports-client-types'
+import { accessibleNameWithVisibleText } from '@/lib/a11y/accessible-name-with-visible-text'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { isOrdinaryPendingReport } from './report-action-eligibility'
 import { ReportBanEvasionActions } from './report-ban-evasion-actions'
@@ -52,6 +53,22 @@ export function AdminReportRow({
 }: AdminReportRowProps) {
   const t = useTranslations()
   const targetLabel = report.target_label ?? report.entity_id
+  const judgementAction = report.judgement
+    ? judgementLabel(report.judgement.recommended_action)
+    : null
+  const judgementOutdated = report.judgement?.is_stale
+    ? t('extracted.admin.adminReportRow.outdated_c759f42e')
+    : null
+  const judgementName =
+    judgementAction === null
+      ? null
+      : accessibleNameWithVisibleText(
+          judgementOutdated ? `${judgementAction} ${judgementOutdated}` : judgementAction,
+          t('extracted.admin.adminReportRow.viewAiJudgementDetailsAction_9a18f800', {
+            action: judgementAction,
+          }),
+        )
+  const rerunLabel = t('extracted.admin.adminReportRow.reRunJudgement_8b575390')
   const ordinaryPending = isOrdinaryPendingReport(report)
 
   return (
@@ -217,26 +234,24 @@ export function AdminReportRow({
           <Popover>
             <PopoverTrigger
               className='cursor-pointer rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
-              aria-label={t(
-                'extracted.admin.adminReportRow.viewAiJudgementDetailsAction_9a18f800',
-                {
-                  action: judgementLabel(report.judgement.recommended_action),
-                },
-              )}
+              aria-label={judgementName ?? undefined}
             >
               <Badge
                 asChild
                 variant={judgementVariant(report.judgement.recommended_action)}
               >
-                <span>{judgementLabel(report.judgement.recommended_action)}</span>
+                <span>{judgementAction}</span>
               </Badge>
-              {report.judgement.is_stale ? (
-                <Badge
-                  asChild
-                  variant='outline'
-                >
-                  <span>{t('extracted.admin.adminReportRow.outdated_c759f42e')}</span>
-                </Badge>
+              {judgementOutdated ? (
+                <>
+                  {' '}
+                  <Badge
+                    asChild
+                    variant='outline'
+                  >
+                    <span>{judgementOutdated}</span>
+                  </Badge>
+                </>
               ) : null}
             </PopoverTrigger>
             <PopoverContent className='w-80 space-y-3 text-sm'>
@@ -325,16 +340,16 @@ export function AdminReportRow({
             size='touchSm'
             variant='outline'
             disabled={disabled}
-            aria-label={t(
-              'extracted.admin.adminReportRow.reRunAiJudgementForTargetlabel_793a29ff',
-              {
+            aria-label={accessibleNameWithVisibleText(
+              rerunLabel,
+              t('extracted.admin.adminReportRow.reRunAiJudgementForTargetlabel_793a29ff', {
                 targetLabel,
-              },
+              }),
             )}
             onClick={() => onRerun(report.id)}
           >
             <RefreshCw className='size-4' />
-            {t('extracted.admin.adminReportRow.reRunJudgement_8b575390')}
+            {rerunLabel}
           </Button>
         </div>
       </td>
