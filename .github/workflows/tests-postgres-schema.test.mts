@@ -6,7 +6,7 @@ const workflow = readFileSync('.github/workflows/tests-postgres-schema.yml', 'ut
 describe('PostgreSQL Schema Tests workflow', () => {
   it('provisions both durable stores required by the ActivityPub capacity project', () => {
     expect(workflow).toMatch(
-      /image: mirror\.gcr\.io\/pgvector\/pgvector:[\w.-]+@sha256:[0-9a-f]{64}/u,
+      /image: ghcr\.io\/vouchington\/dependency-pgvector:[\w.-]+@sha256:[0-9a-f]{64}/u,
     )
     expect(workflow).toContain('uses: ./.github/actions/start-valkey')
     expect(workflow).not.toContain('services.valkey')

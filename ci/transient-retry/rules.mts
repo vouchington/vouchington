@@ -1,5 +1,4 @@
 import { backendImageAttestationEmptyPersistErrorRule } from './attestation-rules.mts'
-import { mainBackendImageRegistryLayerBlobNotFoundRule } from './backend-image-rules.mts'
 import {
   cloudflareWorkerCancelledBeforeJobSignalRule,
   workflowCancelledWithoutFailureSignalRule,
@@ -36,7 +35,6 @@ export const rules: TransientRetryRule[] = [
   detectChangesPathsFilterGithubConnectTimeoutRule,
   gitleaksInstallReleasesDownloadFlakeRule,
   planCompletionSetupNodeToolCacheTimeoutRule,
-  mainBackendImageRegistryLayerBlobNotFoundRule,
   backendImageAttestationEmptyPersistErrorRule,
   mainWebPlaywrightSetupAptLockRule,
   webIntegrationWranglerSocketClosedRule,

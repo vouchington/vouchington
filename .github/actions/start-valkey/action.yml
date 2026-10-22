@@ -17,14 +17,14 @@ runs:
       id: start
       shell: bash
       env:
-        VALKEY_IMAGE: mirror.gcr.io/valkey/valkey-bundle:9.1.0@sha256:16004aceeb7a1246e2d1bb85d353e38120eb440951cb7d0c971b6d63fda5b3d7
+        VALKEY_IMAGE: ghcr.io/vouchington/dependency-valkey:9.1.0@sha256:16004aceeb7a1246e2d1bb85d353e38120eb440951cb7d0c971b6d63fda5b3d7
         VALKEY_CONTAINER: voucha-valkey
       run: |
         set -euo pipefail
-        # One acquisition deadline covers both registries; reserve 60s readiness and 8s headroom.
-        pulled_image="$(timeout --kill-after=2s 50s bash "$GITHUB_WORKSPACE/.github/actions/start-valkey/pull-image.sh" "$VALKEY_IMAGE")"
+        # Reserve 60s readiness and 8s headroom after the pinned GHCR pull.
+        timeout --kill-after=2s 50s docker pull "$VALKEY_IMAGE"
         docker run --pull=never -d --name "$VALKEY_CONTAINER" -p 127.0.0.1::6379 --tmpfs /data:rw,size=64m \
-          "$pulled_image" >/dev/null
+          "$VALKEY_IMAGE" >/dev/null
         # Valkey has no readiness event to wait on, so poll `valkey-cli ping` under a hard deadline.
         if ! timeout 60 sh -c 'until docker exec "$0" valkey-cli ping >/dev/null 2>&1; do sleep 0.5; done' "$VALKEY_CONTAINER"; then
           echo "::error::Valkey did not answer PING within 60s"

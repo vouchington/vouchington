@@ -9,8 +9,9 @@
 The SOCI index-builder pin and its OpenTofu validation now belong to
 [`vouchington-infra`](https://github.com/vouchington/vouchington-infra).
 
-For `pgvector/pgvector:pg18`, resolve the current multi-architecture OCI digest, update every
-`mirror.gcr.io/pgvector/pgvector` workflow reference together, then push the PR and request `pnpm run db:snapshot:update`. The
+For `pgvector/pgvector:pg18`, review the upstream multi-architecture OCI digest in the
+[mirror inventory](../../ci/dependency-mirror/images.json), wait for a successful GHCR copy, then update every
+`ghcr.io/vouchington/dependency-pgvector` workflow reference together. Push the PR and request `pnpm run db:snapshot:update`. The
 workflow uses the candidate PR's image digest, runs migrations in a fresh database, and commits the
 schema snapshot and generated Markdown to that PR. Fetch the commit before continuing; ordinary PR
 CI checks it against the same image.

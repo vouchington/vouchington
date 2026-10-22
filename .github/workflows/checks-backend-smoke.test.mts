@@ -28,7 +28,7 @@ describe('checks-backend-smoke workflow', () => {
     expect(workflow.env).toEqual({ NODE_ENV: 'test' })
     expect(smoke?.['runs-on']).toEqual('ubuntu-latest')
     expect(smoke?.services?.postgres?.image).toMatch(
-      /^mirror\.gcr\.io\/pgvector\/pgvector:[\w.-]+@sha256:[0-9a-f]{64}$/u,
+      /^ghcr\.io\/vouchington\/dependency-pgvector:[\w.-]+@sha256:[0-9a-f]{64}$/u,
     )
     expect(smoke?.services?.valkey).toBeUndefined()
     expect(smoke?.steps?.some(step => step.uses === './.github/actions/start-valkey')).toBe(true)
