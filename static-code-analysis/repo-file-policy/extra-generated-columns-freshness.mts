@@ -37,6 +37,13 @@ export function checkExtraGeneratedColumnsFreshness(
   migrationCreateTableNames: ReadonlySet<string>,
 ): string[] {
   const errors: string[] = []
+  if (!trackedFiles.includes(NO_MISTAKES_PATH)) {
+    if (trackedFiles.includes(PLACEHOLDER_PATH)) {
+      errors.push(`::error file=${PLACEHOLDER_PATH}::schema placeholder must not be tracked`)
+    }
+    return errors
+  }
+
   const config = parseYaml(
     readFileSync(join(repoRoot, NO_MISTAKES_PATH), 'utf8'),
   ) as NoMistakesConfig
@@ -53,7 +60,6 @@ export function checkExtraGeneratedColumnsFreshness(
       `::error file=${NO_MISTAKES_PATH}::generated-column sqlInclude must target ${MIGRATIONS_SQL_INCLUDE}`,
     )
   }
-
   if (trackedFiles.includes(PLACEHOLDER_PATH)) {
     errors.push(`::error file=${PLACEHOLDER_PATH}::schema placeholder must not be tracked`)
   }

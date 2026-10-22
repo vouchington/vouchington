@@ -99,7 +99,12 @@ if (import.meta.main) {
   const analysisRules = config.rules.filter(rule => rule.name === liveAnalysisGuardName)
   if (analysisRules.length !== 1)
     throw new Error('Expected exactly one configured live analysis guard')
-  await checkSchemaGenerationGuardFixtures(schemaRules[0]!)
-  await checkLiveAnalysisGuardFixtures(analysisRules[0]!)
-  await checkLiveAnalysisTransitiveCapabilityFixtures(analysisRules[0]!)
+  // no-mistakes calls share a machine-wide lock, so keep these checks serial.
+  for (const check of [
+    () => checkSchemaGenerationGuardFixtures(schemaRules[0]!),
+    () => checkLiveAnalysisGuardFixtures(analysisRules[0]!),
+    () => checkLiveAnalysisTransitiveCapabilityFixtures(analysisRules[0]!),
+  ]) {
+    await check()
+  }
 }

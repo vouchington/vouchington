@@ -79,7 +79,7 @@ export async function checkRepoFilePolicy(
   errors.push(
     ...checkExtraGeneratedColumnsFreshness(
       ctx.repoRoot,
-      trackedFiles,
+      ctx.trackedFiles,
       schema,
       migrationCreateTableNames,
     ),
