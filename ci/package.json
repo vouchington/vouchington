@@ -21,7 +21,7 @@
     "remark-parse": "^11.0.0",
     "remark-rehype": "^11.1.2",
     "unified": "^11.0.5",
-    "vouchington-tooling": "^0.54.0"
+    "vouchington-tooling": "^0.55.0"
   },
   "devDependencies": {
     "@types/picomatch": "^4.0.3",
