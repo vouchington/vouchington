@@ -24,6 +24,7 @@ const sharedCase = {
   action_intents: [],
   delivery_intents: [],
   staydown_matches: [],
+  staydown_matches_has_more: false,
   email_correspondence: [],
   waiting_since: '2026-10-04T10:01:00.000Z',
   next_deadline: null,
