@@ -1,6 +1,13 @@
 import { describe, it, expect } from 'vitest'
-import { upsertRecentlyViewed, searchRecentlyViewed, countRecentlyViewed } from './store.mts'
 import { cacheValkeyClient } from '@data-stores/valkey'
+import { loadScript, registerScript } from '@data-stores/valkey/scripts'
+import {
+  upsertRecentlyViewed,
+  searchRecentlyViewed,
+  searchRecentlyViewedPage,
+  countRecentlyViewed,
+  type RecentlyViewedPageRow,
+} from './store.mts'
 
 // Use randomized prefixes so tests are idempotent on a shared Redis.
 function randomEntityType(): string {
@@ -99,3 +106,149 @@ describe('upsertRecentlyViewed — user-only mode', () => {
     expect(ttl).toBeGreaterThan(0)
   })
 })
+
+describe('searchRecentlyViewedPage', () => {
+  it('pages a user history without skipping or repeating entries', async () => {
+    const entityType = randomEntityType() as never
+    const userId = crypto.randomUUID()
+    const ids = Array.from({ length: 5 }, () => crypto.randomUUID())
+    const key = `recently-viewed:user:${entityType}:${userId}`
+
+    try {
+      for (const id of ids) {
+        await upsertRecentlyViewed(entityType, id, null, userId)
+      }
+
+      const pages: string[][] = []
+      let after: RecentlyViewedPageRow | undefined
+      while (pages.length < 4) {
+        const rows = await searchRecentlyViewedPage(entityType, userId, 2, after)
+        pages.push(rows.map(row => row.id))
+        after = rows.at(-1)
+        if (after === undefined) break
+      }
+
+      expect(pages).toEqual([[ids[4], ids[3]], [ids[2], ids[1]], [ids[0]], []])
+    } finally {
+      await cacheValkeyClient.unlink([key])
+    }
+  })
+
+  it('continues a tied score in reverse member order before older scores', async () => {
+    const entityType = randomEntityType() as never
+    const userId = crypto.randomUUID()
+    const key = `recently-viewed:user:${entityType}:${userId}`
+    const older = '00000000-0000-4000-8000-000000000001'
+    const tieLow = '00000000-0000-4000-8000-000000000002'
+    const tieHigh = '00000000-0000-4000-8000-000000000003'
+
+    try {
+      await cacheValkeyClient.zadd(key, {
+        [older]: 1,
+        [tieLow]: 3,
+        [tieHigh]: 3,
+      })
+
+      const first = await searchRecentlyViewedPage(entityType, userId, 1)
+      expect(first).toEqual([{ id: tieHigh, score: 3 }])
+      const second = await searchRecentlyViewedPage(entityType, userId, 1, first[0])
+      expect(second).toEqual([{ id: tieLow, score: 3 }])
+      const third = await searchRecentlyViewedPage(entityType, userId, 1, second[0])
+      expect(third).toEqual([{ id: older, score: 1 }])
+      await expect(searchRecentlyViewedPage(entityType, userId, 1, third[0])).resolves.toEqual([])
+    } finally {
+      await cacheValkeyClient.unlink([key])
+    }
+  })
+
+  it('follows the original cursor score when that member is viewed again', async () => {
+    const entityType = randomEntityType() as never
+    const userId = crypto.randomUUID()
+    const key = `recently-viewed:user:${entityType}:${userId}`
+    const older = '00000000-0000-4000-8000-000000000001'
+    const cursor = '00000000-0000-4000-8000-000000000002'
+    const newer = '00000000-0000-4000-8000-000000000003'
+
+    try {
+      await cacheValkeyClient.zadd(key, {
+        [older]: 1,
+        [cursor]: 2,
+        [newer]: 3,
+      })
+      await cacheValkeyClient.zadd(key, { [cursor]: 4 })
+
+      await expect(
+        searchRecentlyViewedPage(entityType, userId, 10, { id: cursor, score: 2 }),
+      ).resolves.toEqual([{ id: older, score: 1 }])
+    } finally {
+      await cacheValkeyClient.unlink([key])
+    }
+  })
+
+  it('continues past a cursor member that is no longer stored', async () => {
+    const entityType = randomEntityType() as never
+    const userId = crypto.randomUUID()
+    const key = `recently-viewed:user:${entityType}:${userId}`
+    const older = '00000000-0000-4000-8000-000000000001'
+    const cursor = '00000000-0000-4000-8000-000000000002'
+    const newer = '00000000-0000-4000-8000-000000000003'
+
+    try {
+      await cacheValkeyClient.zadd(key, {
+        [older]: 1,
+        [cursor]: 2,
+        [newer]: 3,
+      })
+      await cacheValkeyClient.zrem(key, [cursor])
+
+      await expect(
+        searchRecentlyViewedPage(entityType, userId, 10, { id: cursor, score: 2 }),
+      ).resolves.toEqual([{ id: older, score: 1 }])
+    } finally {
+      await cacheValkeyClient.unlink([key])
+    }
+  })
+
+  it('does not page past the configured inspection window', async () => {
+    const key = `recently-viewed:user:window-${crypto.randomUUID()}`
+    const script = registerScript(loadScript('search-page.lua', import.meta.url))
+    const oldest = '00000000-0000-4000-8000-000000000001'
+    const middle = '00000000-0000-4000-8000-000000000002'
+    const newest = '00000000-0000-4000-8000-000000000003'
+
+    try {
+      await cacheValkeyClient.zadd(key, {
+        [oldest]: 1,
+        [middle]: 2,
+        [newest]: 3,
+      })
+
+      await expect(readPage(script, key, ['1', '2', '', ''])).resolves.toEqual([
+        { id: newest, score: 3 },
+      ])
+      await expect(readPage(script, key, ['1', '2', '3', newest])).resolves.toEqual([
+        { id: middle, score: 2 },
+      ])
+      await expect(readPage(script, key, ['1', '2', '2', middle])).resolves.toEqual([])
+    } finally {
+      await cacheValkeyClient.unlink([key])
+    }
+  })
+})
+
+function readPage(
+  script: ReturnType<typeof registerScript>,
+  key: string,
+  args: string[],
+): Promise<RecentlyViewedPageRow[]> {
+  return cacheValkeyClient.invokeScript(script, { keys: [key], args }).then(pageRows)
+}
+
+function pageRows(result: unknown): RecentlyViewedPageRow[] {
+  if (!Array.isArray(result)) return []
+  const rows: RecentlyViewedPageRow[] = []
+  for (let index = 0; index < result.length; index += 2) {
+    rows.push({ id: String(result[index]), score: Number(result[index + 1]) })
+  }
+  return rows
+}
