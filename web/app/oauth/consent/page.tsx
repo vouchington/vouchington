@@ -46,8 +46,21 @@ export default async function OAuthConsentPage({
             {t('shared.oauth.consent.title', { clientName: request.client_name })}
           </CardTitle>
           <CardDescription>{t('shared.oauth.consent.description')}</CardDescription>
+          {request.client_is_unverified && (
+            <p
+              className='text-sm font-medium'
+              data-pw='oauth-consent-unverified'
+            >
+              {t('shared.oauth.consent.unverifiedApp')}
+            </p>
+          )}
           {request.client_hostname && (
-            <p className='break-all text-sm text-muted-foreground'>{request.client_hostname}</p>
+            <p
+              className='break-all text-sm text-muted-foreground'
+              data-pw='oauth-consent-client-hostname'
+            >
+              {request.client_hostname}
+            </p>
           )}
         </CardHeader>
         <CardContent className='space-y-5'>

@@ -2,6 +2,7 @@ import type { ApiScope } from '@modules/scopes'
 
 export type AuthorizationRequestRow = {
   id: string
+  metadata_url: string | null
   client_id: string
   user_id: string
   redirect_uri: string

@@ -56,7 +56,8 @@ export type OAuthAccessPrincipal = {
 export type OAuthAuthorizationRequestView = {
   id: string
   client_name: string
-  client_hostname: string | null
+  client_hostname: string
+  client_is_unverified: boolean
   resource: string
   scopes: ApiScope[]
   sensitive_scopes: ApiScope[]

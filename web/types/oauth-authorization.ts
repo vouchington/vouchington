@@ -1,7 +1,8 @@
 export interface OAuthAuthorizationRequest {
   id: string
   client_name: string
-  client_hostname: string | null
+  client_hostname: string
+  client_is_unverified: boolean
   resource: string
   scopes: string[]
   sensitive_scopes: string[]
