@@ -31,6 +31,9 @@ describe('NavbarSearchButton shortcut chips', () => {
     )
     render(<NavbarSearchButton onOpenSearch={() => undefined} />)
     expect(screen.getAllByTestId('kbd').map(chip => chip.textContent)).toEqual(['Ctrl', 'K'])
+    expect(screen.getByTestId('navbar-search-button').textContent?.replace(/\s+/g, ' ')).toContain(
+      'Ctrl K',
+    )
     expect(screen.getByTestId('navbar-search-button')).toHaveAttribute(
       'aria-label',
       'Search... Ctrl K, Open search',
@@ -43,6 +46,9 @@ describe('NavbarSearchButton shortcut chips', () => {
     )
     render(<NavbarSearchButton onOpenSearch={() => undefined} />)
     expect(screen.getAllByTestId('kbd').map(chip => chip.textContent)).toEqual(['⌘', 'K'])
+    expect(screen.getByTestId('navbar-search-button').textContent?.replace(/\s+/g, ' ')).toContain(
+      '⌘ K',
+    )
     expect(screen.getByTestId('navbar-search-button')).toHaveAttribute(
       'aria-label',
       'Search... ⌘ K, Open search',
