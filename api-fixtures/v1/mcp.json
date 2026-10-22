@@ -958,7 +958,7 @@
                     },
                     "results": {
                       "items": {
-                        "$ref": "#/$defs/S2"
+                        "$ref": "#/$defs/S3"
                       },
                       "type": "array"
                     }
@@ -970,7 +970,7 @@
                   "additionalProperties": false,
                   "properties": {
                     "household": {
-                      "$ref": "#/$defs/S2"
+                      "$ref": "#/$defs/S3"
                     }
                   },
                   "required": ["household"],
@@ -1002,17 +1002,17 @@
                                 "type": "string"
                               },
                               "user_id": {
-                                "$ref": "#/$defs/S3"
+                                "$ref": "#/$defs/S4"
                               },
                               "username": {
-                                "$ref": "#/$defs/S3"
+                                "$ref": "#/$defs/S4"
                               }
                             },
                             "required": ["id", "updated_at", "user_id", "username"],
                             "type": "object"
                           },
                           "relationship": {
-                            "$ref": "#/$defs/S3"
+                            "$ref": "#/$defs/S4"
                           },
                           "updated_at": {
                             "type": "string"
@@ -1064,31 +1064,40 @@
                         "additionalProperties": false,
                         "properties": {
                           "accepted_at": {
-                            "$ref": "#/$defs/S3"
+                            "$ref": "#/$defs/S4"
                           },
                           "created_at": {
                             "type": "string"
                           },
                           "declined_at": {
-                            "$ref": "#/$defs/S3"
+                            "$ref": "#/$defs/S4"
                           },
                           "household_id": {
                             "type": "string"
                           },
+                          "household_owner": {
+                            "$ref": "#/$defs/S2"
+                          },
                           "id": {
                             "type": "string"
                           },
+                          "invited_by": {
+                            "$ref": "#/$defs/S2"
+                          },
                           "invited_by_id": {
                             "type": "string"
+                          },
+                          "invited_user": {
+                            "$ref": "#/$defs/S2"
                           },
                           "invited_user_id": {
                             "type": "string"
                           },
                           "relationship": {
-                            "$ref": "#/$defs/S3"
+                            "$ref": "#/$defs/S4"
                           },
                           "revoked_at": {
-                            "$ref": "#/$defs/S3"
+                            "$ref": "#/$defs/S4"
                           },
                           "updated_at": {
                             "type": "string"
@@ -1099,8 +1108,11 @@
                           "created_at",
                           "declined_at",
                           "household_id",
+                          "household_owner",
                           "id",
+                          "invited_by",
                           "invited_by_id",
+                          "invited_user",
                           "invited_user_id",
                           "relationship",
                           "revoked_at",
@@ -1149,6 +1161,26 @@
                 "S2": {
                   "additionalProperties": false,
                   "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "username": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "required": ["id", "username"],
+                  "type": "object"
+                },
+                "S3": {
+                  "additionalProperties": false,
+                  "properties": {
                     "created_at": {
                       "type": "string"
                     },
@@ -1165,7 +1197,7 @@
                   "required": ["id", "owner_user_id", "updated_at"],
                   "type": "object"
                 },
-                "S3": {
+                "S4": {
                   "anyOf": [
                     {
                       "type": "null"
@@ -1477,17 +1509,17 @@
                               "type": "string"
                             },
                             "user_id": {
-                              "$ref": "#/$defs/S1"
+                              "$ref": "#/$defs/S2"
                             },
                             "username": {
-                              "$ref": "#/$defs/S1"
+                              "$ref": "#/$defs/S2"
                             }
                           },
                           "required": ["id", "updated_at", "user_id", "username"],
                           "type": "object"
                         },
                         "relationship": {
-                          "$ref": "#/$defs/S1"
+                          "$ref": "#/$defs/S2"
                         },
                         "updated_at": {
                           "type": "string"
@@ -1513,31 +1545,40 @@
                       "additionalProperties": false,
                       "properties": {
                         "accepted_at": {
-                          "$ref": "#/$defs/S1"
+                          "$ref": "#/$defs/S2"
                         },
                         "created_at": {
                           "type": "string"
                         },
                         "declined_at": {
-                          "$ref": "#/$defs/S1"
+                          "$ref": "#/$defs/S2"
                         },
                         "household_id": {
                           "type": "string"
                         },
+                        "household_owner": {
+                          "$ref": "#/$defs/S1"
+                        },
                         "id": {
                           "type": "string"
                         },
+                        "invited_by": {
+                          "$ref": "#/$defs/S1"
+                        },
                         "invited_by_id": {
                           "type": "string"
+                        },
+                        "invited_user": {
+                          "$ref": "#/$defs/S1"
                         },
                         "invited_user_id": {
                           "type": "string"
                         },
                         "relationship": {
-                          "$ref": "#/$defs/S1"
+                          "$ref": "#/$defs/S2"
                         },
                         "revoked_at": {
-                          "$ref": "#/$defs/S1"
+                          "$ref": "#/$defs/S2"
                         },
                         "updated_at": {
                           "type": "string"
@@ -1548,8 +1589,11 @@
                         "created_at",
                         "declined_at",
                         "household_id",
+                        "household_owner",
                         "id",
+                        "invited_by",
                         "invited_by_id",
+                        "invited_user",
                         "invited_user_id",
                         "relationship",
                         "revoked_at",
@@ -1564,6 +1608,26 @@
               ],
               "$defs": {
                 "S1": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "username": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  },
+                  "required": ["id", "username"],
+                  "type": "object"
+                },
+                "S2": {
                   "anyOf": [
                     {
                       "type": "null"

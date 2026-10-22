@@ -21288,8 +21288,35 @@
         "created_at": { "type": "string" },
         "declined_at": { "anyOf": [{ "type": "null" }, { "type": "string" }] },
         "household_id": { "type": "string" },
+        "household_owner": {
+          "additionalProperties": false,
+          "properties": {
+            "id": { "type": "string" },
+            "username": { "anyOf": [{ "type": "null" }, { "type": "string" }] }
+          },
+          "required": ["id", "username"],
+          "type": "object"
+        },
         "id": { "type": "string" },
+        "invited_by": {
+          "additionalProperties": false,
+          "properties": {
+            "id": { "type": "string" },
+            "username": { "anyOf": [{ "type": "null" }, { "type": "string" }] }
+          },
+          "required": ["id", "username"],
+          "type": "object"
+        },
         "invited_by_id": { "type": "string" },
+        "invited_user": {
+          "additionalProperties": false,
+          "properties": {
+            "id": { "type": "string" },
+            "username": { "anyOf": [{ "type": "null" }, { "type": "string" }] }
+          },
+          "required": ["id", "username"],
+          "type": "object"
+        },
         "invited_user_id": { "type": "string" },
         "relationship": { "anyOf": [{ "type": "null" }, { "type": "string" }] },
         "revoked_at": { "anyOf": [{ "type": "null" }, { "type": "string" }] },
@@ -21300,8 +21327,11 @@
         "created_at",
         "declined_at",
         "household_id",
+        "household_owner",
         "id",
+        "invited_by",
         "invited_by_id",
+        "invited_user",
         "invited_user_id",
         "relationship",
         "revoked_at",

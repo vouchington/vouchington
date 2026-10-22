@@ -5,6 +5,9 @@ export interface HouseholdInvitation {
   household_id: string
   invited_user_id: string
   invited_by_id: string
+  invited_user: { id: string; username: string | null }
+  invited_by: { id: string; username: string | null }
+  household_owner: { id: string; username: string | null }
   relationship: string | null
   accepted_at: string | null
   declined_at: string | null

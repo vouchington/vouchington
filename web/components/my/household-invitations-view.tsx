@@ -19,7 +19,6 @@ export interface HouseholdInvitationsViewProps {
   selectedUserId: string | null
   relationship: string
   formKey?: number
-  usernames?: Readonly<Record<string, string>>
   onSelectUser: (id: string, username: string) => void
   onRelationshipChange: (value: string) => void
   onInvite: () => void
@@ -66,8 +65,9 @@ export function HouseholdInvitationsView(props: HouseholdInvitationsViewProps) {
             <Input
               id={`${formId}-relationship`}
               value={props.relationship}
-              onChange={event => props.onRelationshipChange(event.target.value)}
-              maxLength={64}
+              onChange={event =>
+                props.onRelationshipChange(Array.from(event.target.value).slice(0, 64).join(''))
+              }
               disabled={props.pending}
               data-pw='household-invitation-relationship'
             />
@@ -106,24 +106,17 @@ export function HouseholdInvitationsView(props: HouseholdInvitationsViewProps) {
             >
               <p className='text-sm'>
                 {sent ? 'Invitation for ' : 'Invited by '}
-                <UserLink
-                  user={userFor(
-                    sent ? invitation.invited_user_id : invitation.invited_by_id,
-                    props.usernames,
-                  )}
-                  className='underline'
-                >
-                  {usernameLabel(
-                    sent ? invitation.invited_user_id : invitation.invited_by_id,
-                    props.usernames,
-                  )}
-                </UserLink>
+                <InvitationUser user={sent ? invitation.invited_user : invitation.invited_by} />
+                {!sent && invitation.invited_by.id !== invitation.household_owner.id && (
+                  <>
+                    {' to '}
+                    <InvitationUser user={invitation.household_owner} />
+                    &apos;s household
+                  </>
+                )}
               </p>
-              <p className='break-all text-sm text-muted-foreground'>
-                Household: <span>{invitation.household_id}</span>
-              </p>
-              {invitation.relationship && (
-                <p className='text-sm text-muted-foreground'>{invitation.relationship}</p>
+              {invitation.relationship?.trim() && (
+                <p className='text-sm text-muted-foreground'>{invitation.relationship.trim()}</p>
               )}
               <div className='flex gap-2'>
                 {sent ? (
@@ -173,11 +166,15 @@ export function HouseholdInvitationsView(props: HouseholdInvitationsViewProps) {
   )
 }
 
-function userFor(id: string, usernames: Readonly<Record<string, string>> = {}) {
-  return { id, username: usernames[id] ?? null }
-}
-
-/** Never expose an opaque id as link text when no username has been resolved. */
-function usernameLabel(id: string, usernames: Readonly<Record<string, string>> = {}) {
-  return usernames[id] ? `@${usernames[id]}` : 'A Voucha member'
+function InvitationUser({ user }: { user: { id: string; username: string | null } }) {
+  return user.username ? (
+    <UserLink
+      user={user}
+      className='underline'
+    >
+      @{user.username}
+    </UserLink>
+  ) : (
+    <>A Voucha member</>
+  )
 }

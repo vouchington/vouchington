@@ -32,6 +32,7 @@ export const Incoming: Story = {
   args: { onResolve: fn() },
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement)
+    await expect(canvas.getByText('Invited by @owner')).toBeVisible()
     await userEvent.click(canvas.getByRole('button', { name: 'Accept' }))
     await expect(args.onResolve).toHaveBeenCalledWith(args.invitations[0], 'accept')
   },
@@ -55,6 +56,8 @@ export const MultipleReceived: Story = {
         id: '00000000-0000-7000-8000-000000000302',
         household_id: '00000000-0000-7000-8000-000000000102',
         invited_by_id: '00000000-0000-7000-8000-000000000203',
+        invited_by: { id: '00000000-0000-7000-8000-000000000203', username: 'helper' },
+        household_owner: { id: '00000000-0000-7000-8000-000000000205', username: 'parent' },
       }),
     ],
   },
@@ -67,6 +70,7 @@ export const MultipleSent: Story = {
       makeHouseholdInvitation({
         id: '00000000-0000-7000-8000-000000000302',
         invited_user_id: '00000000-0000-7000-8000-000000000204',
+        invited_user: { id: '00000000-0000-7000-8000-000000000204', username: null },
       }),
     ],
   },

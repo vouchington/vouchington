@@ -17,17 +17,13 @@ vi.mock(import('@/lib/api/server/household-invitations'), () => ({
   getMyHouseholdInvitations: mockReceivedInvitations,
 }))
 
-const {
-  mockRequireCurrentUser,
-  mockGetHouseholdMemberships,
-  mockGetHouseholds,
-  mockGetUserProfile,
-} = vi.hoisted(() => ({
-  mockRequireCurrentUser: vi.fn<VitestLooseMock>(),
-  mockGetHouseholdMemberships: vi.fn<VitestLooseMock>(),
-  mockGetHouseholds: vi.fn<VitestLooseMock>(),
-  mockGetUserProfile: vi.fn<VitestLooseMock>(),
-}))
+const { mockRequireCurrentUser, mockGetHouseholdMemberships, mockGetHouseholds } = vi.hoisted(
+  () => ({
+    mockRequireCurrentUser: vi.fn<VitestLooseMock>(),
+    mockGetHouseholdMemberships: vi.fn<VitestLooseMock>(),
+    mockGetHouseholds: vi.fn<VitestLooseMock>(),
+  }),
+)
 
 vi.mock(import('@/lib/auth/require-current-user'), () => ({
   requireCurrentUser: mockRequireCurrentUser,
@@ -36,7 +32,6 @@ vi.mock(import('@/lib/auth/require-current-user'), () => ({
 vi.mock(import('@/lib/api/server'), () => ({
   getHouseholdMemberships: mockGetHouseholdMemberships,
   getHouseholds: mockGetHouseholds,
-  getUserProfile: mockGetUserProfile,
 }))
 
 vi.mock(import('@/components/my/household-page-content'), () => ({
@@ -98,15 +93,12 @@ describe('HouseholdPage', () => {
     })
   })
 
-  it('resolves invitation user ids to usernames and omits unresolved users', async () => {
+  it('passes embedded invitation identities to the household page', async () => {
     const invitation = makeHouseholdInvitation()
     mockGetHouseholds.mockResolvedValue({ results: [], page_info: pageInfo })
     mockReceivedInvitations.mockResolvedValue(makeHouseholdInvitationList([invitation]))
-    mockGetUserProfile.mockImplementation(async (id: string) =>
-      id === invitation.invited_by_id ? { user: { id, username: 'alex' } } : null,
-    )
     render(await HouseholdPage())
-    expect(managerProps().usernames).toEqual({ [invitation.invited_by_id]: 'alex' })
+    expect(managerProps().receivedInvitations.invitations).toEqual([invitation])
   })
 
   it('projects a failed incoming invitation load separately from an empty page', async () => {

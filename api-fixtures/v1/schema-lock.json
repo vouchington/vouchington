@@ -470,7 +470,7 @@
     },
     "GET:/api/v1/households/:id/invitations": {
       "fixtureIds": ["web.household-invitations.sent"],
-      "hash": "6f4048c3c334dfffbc65ea02cef56941f1316aaab55c67357ea5ab32b25f50bc"
+      "hash": "5c1b38d71852dd42c5c7aabfc131c26a069854e414e6f067b42b697cd70f5618"
     },
     "GET:/api/v1/households/:id/memberships": {
       "fixtureIds": [
@@ -593,7 +593,7 @@
     },
     "GET:/api/v1/my/household-invitations": {
       "fixtureIds": ["web.household-invitations.received"],
-      "hash": "6f4048c3c334dfffbc65ea02cef56941f1316aaab55c67357ea5ab32b25f50bc"
+      "hash": "5c1b38d71852dd42c5c7aabfc131c26a069854e414e6f067b42b697cd70f5618"
     },
     "GET:/api/v1/my/identity": {
       "fixtureIds": ["swift.my.identity.default"],
@@ -1265,7 +1265,7 @@
     },
     "POST:/api/v1/households/:id/invitations": {
       "fixtureIds": ["web.household-invitations.create"],
-      "hash": "2853b75f044ebbb272adb1355346cfafd2ebde3ea582cc5a43ca2dd023b6a016"
+      "hash": "9df4ab0d21fdb1b31affba6c6cc5d9869cda33b84dfe2a2d2b275af0f0ab7d38"
     },
     "POST:/api/v1/lists/:id/import": {
       "fixtureIds": ["native.list-import.default"],
@@ -3184,7 +3184,7 @@
     },
     "web.household-invitations.create": {
       "fixtureIds": ["web.household-invitations.create"],
-      "hash": "decdd88dab0c35ee510560aa3dedb720b6805810ebfd6db50d4ab160095ef517"
+      "hash": "6808dab83b9f493ddcf50ae39abffc517eebce27fb4d1ecf1279342881d7982c"
     },
     "web.household-invitations.decline": {
       "fixtureIds": ["web.household-invitations.decline"],
@@ -3192,7 +3192,7 @@
     },
     "web.household-invitations.received": {
       "fixtureIds": ["web.household-invitations.received"],
-      "hash": "e5afe008540530d27af2ae3f711f839f531147c731121c2203b59e076abc6229"
+      "hash": "d2e3e1df97773ebaf14ed3a28cbc1e7c6834ea1164b699908b0fd4bd45f0077e"
     },
     "web.household-invitations.revoke": {
       "fixtureIds": ["web.household-invitations.revoke"],
@@ -3200,7 +3200,7 @@
     },
     "web.household-invitations.sent": {
       "fixtureIds": ["web.household-invitations.sent"],
-      "hash": "e5afe008540530d27af2ae3f711f839f531147c731121c2203b59e076abc6229"
+      "hash": "d2e3e1df97773ebaf14ed3a28cbc1e7c6834ea1164b699908b0fd4bd45f0077e"
     },
     "web.memberships.refund.completed": {
       "fixtureIds": ["web.memberships.refund.completed"],

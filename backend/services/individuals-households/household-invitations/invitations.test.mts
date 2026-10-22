@@ -8,7 +8,10 @@ import {
   insertTestHousehold,
   insertTestHouseholdMembership,
 } from '@voucha/test-helpers'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+import * as notifications from '@services/notifications'
+import { listNotifications } from '@services/notifications/list'
+import { withPostgresQueryFailureForTest } from '@voucha/test-helpers/postgres-query-failure'
 import { decideHouseholdInvitation } from './decision.mts'
 import {
   createHouseholdInvitation,
@@ -27,7 +30,13 @@ describe('household invitations', () => {
       relationship: 'partner',
     })
     expect(created.created).toBe(true)
-    expect(created.invitation.invited_user_id).toBe(invitee.id)
+    expect(created.invitation).toMatchObject({
+      invited_user_id: invitee.id,
+      invited_by_id: owner.id,
+      invited_user: { id: invitee.id, username: invitee.username },
+      invited_by: { id: owner.id, username: owner.username },
+      household_owner: { id: owner.id, username: owner.username },
+    })
     const duplicate = await createHouseholdInvitation(owner, household.id, {
       user: invitee.id,
       relationship: 'changed',
@@ -36,10 +45,12 @@ describe('household invitations', () => {
     expect(
       await countHouseholdInvitationNotificationsForTest(invitee.id, created.invitation.id),
     ).toBe(1)
-    expect(
-      (await listHouseholdInvitations(owner, household.id, { limit: 25 })).results,
-    ).toHaveLength(1)
-    expect((await listMyHouseholdInvitations(invitee, { limit: 25 })).results).toHaveLength(1)
+    expect((await listHouseholdInvitations(owner, household.id, { limit: 25 })).results).toEqual([
+      created.invitation,
+    ])
+    expect((await listMyHouseholdInvitations(invitee, { limit: 25 })).results).toEqual([
+      created.invitation,
+    ])
 
     const accepted = await decideHouseholdInvitation(invitee, created.invitation.id, 'accept')
     expect(accepted?.membership).toMatchObject({
@@ -51,6 +62,106 @@ describe('household invitations', () => {
     await expect(
       decideHouseholdInvitation(invitee, created.invitation.id, 'accept'),
     ).rejects.toMatchObject({ status: 409 })
+  })
+
+  it('embeds distinct owner and inviter usernames and preserves a null invitee username', async () => {
+    const owner = await createTestUserDirect()
+    const administrator = await createTestUserDirect({ administrator: true })
+    const invitee = await createTestUserDirect({ noUsername: true })
+    const household = await insertTestHousehold(owner.id)
+    const { invitation } = await createHouseholdInvitation(administrator, household.id, {
+      user: invitee.id,
+    })
+    expect(invitation).toMatchObject({
+      invited_user: { id: invitee.id, username: null },
+      invited_by: { id: administrator.id, username: administrator.username },
+      household_owner: { id: owner.id, username: owner.username },
+    })
+    expect((await listHouseholdInvitations(owner, household.id, { limit: 25 })).results).toEqual([
+      invitation,
+    ])
+    expect((await listMyHouseholdInvitations(invitee, { limit: 25 })).results).toEqual([invitation])
+  })
+
+  it('accepts a relationship of 33 supplementary Unicode code points', async () => {
+    const owner = await createTestUserDirect()
+    const invitee = await createTestUserDirect()
+    const secondInvitee = await createTestUserDirect()
+    const household = await insertTestHousehold(owner.id)
+    const relationship = '😀'.repeat(33)
+    const { invitation } = await createHouseholdInvitation(owner, household.id, {
+      user: invitee.id,
+      relationship,
+    })
+    expect(invitation.relationship).toBe(relationship)
+    const maxRelationship = '😀'.repeat(64)
+    expect(
+      (
+        await createHouseholdInvitation(owner, household.id, {
+          user: secondInvitee.id,
+          relationship: maxRelationship,
+        })
+      ).invitation.relationship,
+    ).toBe(maxRelationship)
+    await expect(
+      createHouseholdInvitation(owner, household.id, {
+        user: secondInvitee.id,
+        relationship: '😀'.repeat(65),
+      }),
+    ).rejects.toMatchObject({ status: 422 })
+  })
+
+  it('stores an empty or whitespace-only invitation relationship as null', async () => {
+    const owner = await createTestUserDirect()
+    const invitee = await createTestUserDirect()
+    const secondInvitee = await createTestUserDirect()
+    const household = await insertTestHousehold(owner.id)
+    const { invitation } = await createHouseholdInvitation(owner, household.id, {
+      user: invitee.id,
+      relationship: '',
+    })
+    expect(invitation.relationship).toBeNull()
+    const whitespace = await createHouseholdInvitation(owner, household.id, {
+      user: secondInvitee.id,
+      relationship: '   ',
+    })
+    expect(whitespace.invitation.relationship).toBeNull()
+  })
+
+  it('enqueues push only after commit and never for a rolled-back invitation', async () => {
+    const owner = await createTestUserDirect()
+    const invitee = await createTestUserDirect()
+    const rolledBackInvitee = await createTestUserDirect()
+    const household = await insertTestHousehold(owner.id)
+    const durableAtEnqueue: boolean[] = []
+    const push = vi.spyOn(notifications, 'enqueueCommunityLifecycleNotificationPush')
+    push.mockImplementation(async rows => {
+      for (const row of rows) {
+        const stored = await listNotifications(row.userId)
+        durableAtEnqueue.push(Boolean(stored.notifications[row.notificationId]))
+      }
+    })
+    try {
+      const created = await createHouseholdInvitation(owner, household.id, { user: invitee.id })
+      expect(created.created).toBe(true)
+      expect(durableAtEnqueue).toEqual([true])
+
+      const { error } = await withPostgresQueryFailureForTest(
+        '/* createHouseholdInvitationNotifications */',
+        () =>
+          expect(
+            createHouseholdInvitation(owner, household.id, { user: rolledBackInvitee.id }),
+          ).rejects.toMatchObject({ code: '25P02' }),
+        { command: 'INSERT' },
+      )
+      expect(error).toMatchObject({ code: '25P02' })
+      expect(durableAtEnqueue).toEqual([true])
+      expect((await listMyHouseholdInvitations(rolledBackInvitee, { limit: 25 })).results).toEqual(
+        [],
+      )
+    } finally {
+      push.mockRestore()
+    }
   })
 
   it('preserves an existing membership when accepting a pending invitation', async () => {
@@ -129,9 +240,6 @@ describe('household invitations', () => {
       await expect(
         createHouseholdInvitation(owner, household.id, { user: invitee.id }),
       ).rejects.toMatchObject({ status: 404 })
-      expect(await listMyHouseholdInvitations(invitee, { limit: 25 })).toMatchObject({
-        results: [],
-      })
     }
   })
 

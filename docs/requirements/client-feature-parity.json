@@ -1487,6 +1487,7 @@
           "uiEvidence": [
             "web/components/my/household-manager.tsx",
             "web/components/my/household-invitations.tsx",
+            "web/components/my/household-invitations-view.tsx",
             "web/components/my/household-page-content.tsx"
           ],
           "behaviorTests": [
@@ -1495,6 +1496,7 @@
             "web/components/my/__tests__/household-manager-rollback.mock.test.tsx",
             "web/components/my/__tests__/household-manager-races.mock.test.tsx",
             "web/components/my/__tests__/household-invitations.mock.test.tsx",
+            "playwright/tests/my/household-invitations.spec.mts",
             "web/components/my/__tests__/household-page-content.mock.test.tsx"
           ]
         },

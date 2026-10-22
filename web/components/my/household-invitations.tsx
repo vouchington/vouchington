@@ -18,7 +18,6 @@ import { HouseholdInvitationsView } from './household-invitations-view'
 
 type Props = {
   initialPage: HouseholdInvitationPage
-  usernames?: Readonly<Record<string, string>>
 } & ({ kind: 'received' } | { kind: 'sent'; householdId: string })
 const PAGE_LIMIT = 25
 
@@ -37,7 +36,6 @@ export function HouseholdInvitations(props: Props) {
   // A server refresh is authoritative, so optimistic rows apply only to the page they were added on.
   const createdInvitations = created.source === props.initialPage ? created.invitations : []
   const [formKey, setFormKey] = useState(0)
-  const [selectedUsernames, setSelectedUsernames] = useState<Record<string, string>>({})
   const [retried, setRetried] = useState<{
     source: HouseholdInvitationPage
     page: ListResponse<HouseholdInvitation>
@@ -151,10 +149,8 @@ export function HouseholdInvitations(props: Props) {
       selectedUserId={selectedUserId}
       relationship={relationship}
       formKey={formKey}
-      usernames={{ ...props.usernames, ...selectedUsernames }}
-      onSelectUser={(id, username) => {
+      onSelectUser={id => {
         setSelectedUserId(id || null)
-        if (id && username) setSelectedUsernames(current => ({ ...current, [id]: username }))
       }}
       onRelationshipChange={setRelationship}
       onInvite={() => {

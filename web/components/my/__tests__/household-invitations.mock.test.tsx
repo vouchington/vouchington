@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { navMockModule, createNavMock } from '@/test-helpers/next-navigation-mock'
 import { HouseholdInvitations } from '../household-invitations'
 import * as api from '@/lib/api/client/household-invitations'
@@ -57,34 +57,48 @@ describe('household invitation actions', () => {
   })
   afterEach(cleanup)
 
-  it.each(['received', 'sent'] as const)('identifies each %s invitation before an action', kind => {
+  it('identifies received invitations by inviter and a distinct household owner', () => {
     const first = makeHouseholdInvitation()
     const second = makeHouseholdInvitation({
       id: '00000000-0000-7000-8000-000000000302',
-      household_id:
-        kind === 'received' ? '00000000-0000-7000-8000-000000000102' : first.household_id,
+      household_id: '00000000-0000-7000-8000-000000000102',
       invited_by_id: '00000000-0000-7000-8000-000000000203',
-      invited_user_id: '00000000-0000-7000-8000-000000000204',
+      invited_by: { id: '00000000-0000-7000-8000-000000000203', username: 'helper' },
+      household_owner: { id: '00000000-0000-7000-8000-000000000205', username: 'parent' },
+      relationship: '   ',
     })
     render(
       <HouseholdInvitations
-        {...(kind === 'sent' ? { kind, householdId: first.household_id } : { kind })}
+        kind='received'
         initialPage={makeHouseholdInvitationPage([first, second])}
-        usernames={{
-          [kind === 'received' ? first.invited_by_id : first.invited_user_id]: 'first',
-        }}
       />,
     )
-    expect(screen.getAllByRole('listitem')).toHaveLength(2)
-    expect(screen.getAllByText('A Voucha member')).toHaveLength(1)
     const rows = screen.getAllByRole('listitem')
-    for (const [index, invitation] of [second, first].entries()) {
-      const row = within(rows[index]!)
-      expect(row.getByText(invitation.household_id)).toBeTruthy()
-      expect(
-        row.getByRole('button', { name: kind === 'received' ? 'Accept' : 'Revoke invitation' }),
-      ).toBeTruthy()
-    }
+    expect(rows).toHaveLength(2)
+    expect(rows[0]!.textContent).toContain("Invited by @helper to @parent's household")
+    expect(rows[0]!.textContent).not.toContain('   ')
+    expect(rows[1]!.textContent).toContain('Invited by @owner')
+    expect(rows[1]!.textContent).not.toContain("'s household")
+    expect(document.body.textContent).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-/)
+  })
+
+  it('identifies sent invitations by invitee with a null-username fallback', () => {
+    const first = makeHouseholdInvitation()
+    const second = makeHouseholdInvitation({
+      id: '00000000-0000-7000-8000-000000000302',
+      invited_user_id: '00000000-0000-7000-8000-000000000204',
+      invited_user: { id: '00000000-0000-7000-8000-000000000204', username: null },
+    })
+    render(
+      <HouseholdInvitations
+        kind='sent'
+        householdId={first.household_id}
+        initialPage={makeHouseholdInvitationPage([first, second])}
+      />,
+    )
+    expect(screen.getAllByRole('listitem')[0]!.textContent).toContain('A Voucha member')
+    expect(screen.getByRole('link', { name: '@alex' })).toBeTruthy()
+    expect(document.body.textContent).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-/)
   })
 
   it('sends a selected user once while pending, and keeps duplicate responses as one row', async () => {
@@ -115,8 +129,11 @@ describe('household invitation actions', () => {
     expect(nav.refresh).toHaveBeenCalledOnce()
   })
 
-  it('shows resolved usernames, falls back to ids, and remounts the search after sending', async () => {
-    const invitation = makeHouseholdInvitation({ invited_user_id: 'user-alex' })
+  it('uses the embedded invitee username and remounts the search after sending', async () => {
+    const invitation = makeHouseholdInvitation({
+      invited_user_id: 'user-alex',
+      invited_user: { id: 'user-alex', username: 'alex' },
+    })
     vi.mocked(api.createHouseholdInvitation).mockResolvedValueOnce({ invitation })
     render(
       <HouseholdInvitations
@@ -130,6 +147,27 @@ describe('household invitation actions', () => {
     await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Send invitation' })))
     expect(screen.getByRole('button', { name: 'Select alex' }).dataset.mounted).not.toBe(before)
     expect(screen.getByRole('link', { name: '@alex' }).getAttribute('href')).toContain('alex')
+  })
+
+  it('caps relationship input at 64 Unicode code points before sending', async () => {
+    const invitation = makeHouseholdInvitation()
+    vi.mocked(api.createHouseholdInvitation).mockResolvedValueOnce({ invitation })
+    render(
+      <HouseholdInvitations
+        kind='sent'
+        householdId={invitation.household_id}
+        initialPage={makeHouseholdInvitationPage([])}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Select alex' }))
+    const relationship = screen.getByLabelText('Relationship (optional)')
+    fireEvent.change(relationship, { target: { value: '😀'.repeat(65) } })
+    expect(relationship).toHaveValue('😀'.repeat(64))
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Send invitation' })))
+    expect(api.createHouseholdInvitation).toHaveBeenCalledExactlyOnceWith(invitation.household_id, {
+      user: 'user-alex',
+      relationship: '😀'.repeat(64),
+    })
   })
 
   it('drops optimistic rows once the server supplies a fresh page', async () => {
@@ -206,7 +244,10 @@ describe('household invitation actions', () => {
 
   it('continues from the cursor and removes a successfully revoked row', async () => {
     const first = makeHouseholdInvitation()
-    const second = makeHouseholdInvitation({ id: '00000000-0000-7000-8000-000000000300' })
+    const second = makeHouseholdInvitation({
+      id: '00000000-0000-7000-8000-000000000300',
+      invited_user: { id: first.invited_user_id, username: 'later' },
+    })
     const initial = makeHouseholdInvitationPage([first])
     initial.pageInfo = { has_next_page: true, start_cursor: 'start', end_cursor: 'next' }
     vi.mocked(api.getHouseholdInvitationsClient).mockResolvedValueOnce(
@@ -228,12 +269,12 @@ describe('household invitation actions', () => {
       limit: 25,
     })
     expect(document.querySelectorAll('[data-pw="household-invitation-row"]')).toHaveLength(2)
+    expect(screen.getByRole('link', { name: '@later' })).toBeTruthy()
     await act(async () =>
       fireEvent.click(screen.getAllByRole('button', { name: 'Revoke invitation' })[0]!),
     )
     expect(document.querySelectorAll('[data-pw="household-invitation-row"]')).toHaveLength(1)
   })
-
   it('retries a failed first page and accepts a later server refresh', async () => {
     const failed = { ...makeHouseholdInvitationPage([]), loadError: true }
     vi.mocked(api.getMyHouseholdInvitationsClient).mockResolvedValueOnce(

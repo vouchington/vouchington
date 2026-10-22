@@ -11,12 +11,16 @@ import { createHouseholdInvitationNotifications } from '@services/notifications/
 import { getUserIdsBlockedOrMutedEitherWay } from '@services/entity-relations/check-block-mute'
 import { readHouseholdMemberManageAccess } from '../authorization.mts'
 import { page } from './page.mts'
+import { invitationColumns, invitationJoins } from './projection.mts'
 
 export type HouseholdInvitation = {
   id: string
   household_id: string
   invited_user_id: string
   invited_by_id: string
+  invited_user: { id: string; username: string | null }
+  invited_by: { id: string; username: string | null }
+  household_owner: { id: string; username: string | null }
   relationship: string | null
   accepted_at: Date | null
   declined_at: Date | null
@@ -24,10 +28,6 @@ export type HouseholdInvitation = {
   created_at: Date
   updated_at: Date
 }
-
-const invitationColumns = sql`
-  id, household_id, invited_user_id, invited_by_id, relationship,
-  accepted_at, declined_at, revoked_at, created_at, updated_at`
 
 function assertManageAccess(access: Awaited<ReturnType<typeof readHouseholdMemberManageAccess>>) {
   assert(access.access !== 'hidden', 404, 'Household not found')
@@ -47,7 +47,7 @@ export async function createHouseholdInvitation(
     'Provide a user ID or username',
   )
   assert(
-    input.relationship === undefined || input.relationship.length <= 64,
+    input.relationship === undefined || Array.from(input.relationship).length <= 64,
     422,
     'Relationship is too long',
   )
@@ -86,21 +86,25 @@ export async function createHouseholdInvitation(
   )
   assert(!existingMembers[0]?.exists, 409, 'User is already a household member')
   const insert = sql`/* createHouseholdInvitation */
-    INSERT INTO household_invitations (household_id, invited_user_id, invited_by_id, relationship)
-    VALUES (${householdId}, ${invitedUser.id}, ${currentUser.id}, ${input.relationship ?? null})
-    ON CONFLICT (household_id, invited_user_id)
-      WHERE accepted_at IS NULL AND declined_at IS NULL AND revoked_at IS NULL
-      DO NOTHING
-    RETURNING `
+    WITH inserted AS (
+      INSERT INTO household_invitations (household_id, invited_user_id, invited_by_id, relationship)
+      VALUES (${householdId}, ${invitedUser.id}, ${currentUser.id}, ${input.relationship?.trim() ? input.relationship : null})
+      ON CONFLICT (household_id, invited_user_id)
+        WHERE accepted_at IS NULL AND declined_at IS NULL AND revoked_at IS NULL
+        DO NOTHING
+      RETURNING *
+    )
+    SELECT `
   insert.append(invitationColumns)
+  insert.append(sql` FROM inserted hi `).append(invitationJoins)
   let { rows } = await write<HouseholdInvitation>(insert, options)
   const created = rows.length > 0
   if (rows.length === 0) {
     const existing = sql`/* createHouseholdInvitation:existing */ SELECT `
     existing.append(invitationColumns)
-    existing.append(sql` FROM household_invitations
-      WHERE household_id = ${householdId} AND invited_user_id = ${invitedUser.id}
-        AND accepted_at IS NULL AND declined_at IS NULL AND revoked_at IS NULL`)
+    existing.append(sql` FROM household_invitations hi `).append(invitationJoins).append(sql`
+      WHERE hi.household_id = ${householdId} AND hi.invited_user_id = ${invitedUser.id}
+        AND hi.accepted_at IS NULL AND hi.declined_at IS NULL AND hi.revoked_at IS NULL`)
     rows = (await write<HouseholdInvitation>(existing, options)).rows
   }
   const invitation = rows[0]
@@ -126,11 +130,11 @@ export async function listHouseholdInvitations(
     : undefined
   const query = sql`/* listHouseholdInvitations */ SELECT `
   query.append(invitationColumns)
-  query.append(sql` FROM household_invitations
-    WHERE household_id = ${householdId}
-      AND accepted_at IS NULL AND declined_at IS NULL AND revoked_at IS NULL`)
-  if (after) query.append(sql` AND id < ${after}`)
-  query.append(sql` ORDER BY id DESC LIMIT ${options.limit + 1}`)
+  query.append(sql` FROM household_invitations hi `).append(invitationJoins).append(sql`
+    WHERE hi.household_id = ${householdId}
+      AND hi.accepted_at IS NULL AND hi.declined_at IS NULL AND hi.revoked_at IS NULL`)
+  if (after) query.append(sql` AND hi.id < ${after}`)
+  query.append(sql` ORDER BY hi.id DESC LIMIT ${options.limit + 1}`)
   const { rows } = await read<HouseholdInvitation>(query)
   return page(rows, options.limit)
 }
@@ -144,11 +148,11 @@ export async function listMyHouseholdInvitations(
     : undefined
   const query = sql`/* listMyHouseholdInvitations */ SELECT `
   query.append(invitationColumns)
-  query.append(sql` FROM household_invitations
-    WHERE invited_user_id = ${currentUser.id}
-      AND accepted_at IS NULL AND declined_at IS NULL AND revoked_at IS NULL`)
-  if (after) query.append(sql` AND id < ${after}`)
-  query.append(sql` ORDER BY id DESC LIMIT ${options.limit + 1}`)
+  query.append(sql` FROM household_invitations hi `).append(invitationJoins).append(sql`
+    WHERE hi.invited_user_id = ${currentUser.id}
+      AND hi.accepted_at IS NULL AND hi.declined_at IS NULL AND hi.revoked_at IS NULL`)
+  if (after) query.append(sql` AND hi.id < ${after}`)
+  query.append(sql` ORDER BY hi.id DESC LIMIT ${options.limit + 1}`)
   const { rows } = await read<HouseholdInvitation>(query)
   return page(rows, options.limit)
 }

@@ -5,6 +5,7 @@ import type { QueryOptions } from '@data-stores/psql/types'
 import { validateUUID } from '@modules/utils/ids'
 import { assertNotSuspended } from '@services/users'
 import type { PrivateUser } from '@services/users/types'
+import { getUserIdsBlockedOrMutedEitherWay } from '@services/entity-relations/check-block-mute'
 import type { HouseholdMembershipRow } from '../types.mts'
 import {
   membershipIndividualSql,
@@ -30,18 +31,29 @@ export async function decideHouseholdInvitation(
   validateUUID(invitationId)
   await using transaction = await beginTransaction()
   const options = { query: transaction }
-  const { rows: target } = await write<{ household_id: string }>(
-    sql`/* decideHouseholdInvitation:household */
-      SELECT household_id FROM household_invitations
-      WHERE id = ${invitationId} AND invited_user_id = ${currentUser.id}`,
-    options,
-  )
-  assert(target[0], 404, 'Invitation not found')
-  await write(
+  const { rows: households } = await write<{
+    id: string
+    owner_user_id: string
+    invited_by_id: string
+  }>(
     sql`/* decideHouseholdInvitation:lock-household */
-    SELECT id FROM households WHERE id = ${target[0].household_id} FOR UPDATE`,
+      SELECT h.id, h.owner_user_id, hi.invited_by_id
+      FROM households h
+      JOIN household_invitations hi ON hi.household_id = h.id
+      WHERE hi.id = ${invitationId} AND hi.invited_user_id = ${currentUser.id}
+      FOR UPDATE OF h`,
     options,
   )
+  const household = households[0]
+  assert(household, 404, 'Invitation not found')
+  if (decision === 'accept') {
+    const blocked = await getUserIdsBlockedOrMutedEitherWay(
+      currentUser.id,
+      [household.invited_by_id, household.owner_user_id],
+      options,
+    )
+    assert(blocked.size === 0, 404, 'Invitation not found')
+  }
   const update =
     decision === 'accept'
       ? sql`/* decideHouseholdInvitation:accept */
