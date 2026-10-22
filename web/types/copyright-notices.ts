@@ -168,6 +168,7 @@ export type CopyrightStaffQueueItem = {
     delivery_attempt_count: number
   }>
   staydown_matches: CopyrightStaydownMatch[]
+  staydown_matches_has_more: boolean
   email_correspondence: Array<{
     submission_id: string | null
     kind:

@@ -80,6 +80,7 @@
       "received_at": "2026-07-01T12:00:00.000Z",
       "restrictions": [],
       "staydown_matches": [],
+      "staydown_matches_has_more": false,
       "targets": [],
       "waiting_since": "2026-07-01T12:00:00.000Z",
       "work_description": "Original photograph."
@@ -163,6 +164,7 @@
       "received_at": "2026-07-01T11:00:00.000Z",
       "restrictions": [],
       "staydown_matches": [],
+      "staydown_matches_has_more": false,
       "targets": [],
       "waiting_since": "2026-07-01T12:00:00.000Z",
       "work_description": "Original photograph."

@@ -21,6 +21,7 @@ export function makeCopyrightStaffQueueItem(
     action_intents: [],
     delivery_intents: [],
     staydown_matches: [],
+    staydown_matches_has_more: false,
     email_correspondence: [],
     reasons: ['legal_hold_review'],
     waiting_since: '2026-01-02T00:00:00Z',

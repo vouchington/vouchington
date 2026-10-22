@@ -12,8 +12,9 @@ export type SesInboundRawDigest = {
 
 /**
  * A pass-through stream that records the SHA-256, byte size, and SES verdicts of the original
- * message while it is read once. A header block that is oversized or unreadable yields `unknown`
- * verdicts rather than an error: `parseSesInboundMime` already owns the terminal MIME rejection.
+ * message while it is read once. SES prepends verdicts and its receipt marker above sender headers;
+ * the bounded prefix preserves that trusted section when sender headers overflow. If the marker
+ * itself falls outside the cap, verdicts stay unknown. `parseSesInboundMime` owns MIME rejection.
  */
 export function createRawMimeDigest(): {
   stream: Transform
@@ -51,18 +52,18 @@ function createHeaderBlockCapture() {
       if (state !== 'open') return
       buffered = Buffer.concat([buffered, chunk])
       const end = indexOfBlankLine(buffered, scanFrom)
-      if (end !== -1) {
+      if (end !== -1 && end <= MAX_MIME_HEADER_BYTES) {
         buffered = buffered.subarray(0, end)
         state = 'complete'
       } else if (buffered.byteLength > MAX_MIME_HEADER_BYTES) {
-        buffered = Buffer.alloc(0)
+        buffered = buffered.subarray(0, MAX_MIME_HEADER_BYTES)
         state = 'overflow'
       }
       // A blank line needs up to two bytes of lookahead, so rescan the tail once more data arrives.
       scanFrom = Math.max(0, buffered.byteLength - 2)
     },
     text(): string {
-      return state === 'overflow' ? '' : buffered.toString('latin1')
+      return buffered.toString('latin1')
     },
   }
 }

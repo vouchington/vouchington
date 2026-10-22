@@ -98,6 +98,7 @@ app.route('/api/v1/copyright-eu-notices/:id/supervised-complaints').post(async (
   ctx.assert(ctx.request.is('json'), 415, 'Invalid Content-Type')
   const body = await parseJsonBody<CopyrightTerritorialSupervisedComplaintRequest>(ctx)
   const noticeId = validateUUIDParam(ctx, 'id')
+  const idempotencyKey = requireIdempotencyKey(ctx)
   const authorityReference = parseTerritorialText(body, 'authority_reference')
   const explanation = parseTerritorialText(body, 'explanation')
   validateRequestContract(ctx, 'POST:/api/v1/copyright-eu-notices/:id/supervised-complaints', {
@@ -105,11 +106,14 @@ app.route('/api/v1/copyright-eu-notices/:id/supervised-complaints').post(async (
     body,
   })
   const complaint = await recordEuCopyrightSupervisedComplaint(currentUser, noticeId, {
+    idempotencyKey,
     authorityReference,
     explanation,
   })
-  ctx.setStatus(201)
-  ctx.json({ copyright_eu_supervised_complaint: complaint })
+  ctx.setStatus(complaint.is_duplicate ? 200 : 201)
+  ctx.json({
+    copyright_eu_supervised_complaint: { id: complaint.id, escalation_id: complaint.escalation_id },
+  })
 })
 
 function requireIdempotencyKey(ctx: Context): string {

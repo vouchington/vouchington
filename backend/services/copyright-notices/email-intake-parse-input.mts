@@ -12,6 +12,10 @@ export type CopyrightEmailParseInput =
       messageId: string | null
       inReplyTo?: string[]
       replyReferences: string[]
+      autoSubmitted?: string
+      precedence?: string
+      listId?: string
+      listUnsubscribe?: string
       attachments: CopyrightEmailAttachmentInput[]
     }
   | { status: 'failed'; error: string }
@@ -26,6 +30,13 @@ export function validateCopyrightEmailParseInput(input: CopyrightEmailParseInput
   assert(input.subject.length > 0 && input.subject.length <= 10_000, 422, 'Invalid subject')
   assert(input.bodyText.length > 0 && input.bodyText.length <= 2_000_000, 422, 'Invalid body')
   assert(!input.messageId || input.messageId.length <= 10_000, 422, 'Invalid Message-ID')
+  assert(
+    [input.autoSubmitted, input.precedence, input.listId, input.listUnsubscribe].every(
+      value => value === undefined || value.length <= 10_000,
+    ),
+    422,
+    'Invalid automatic-mail headers',
+  )
   const replyHeaders = [
     ...copyrightEmailReplyHeaders(input).inReplyTo,
     ...copyrightEmailReplyHeaders(input).references,
@@ -51,4 +62,13 @@ export function validateCopyrightEmailParseInput(input: CopyrightEmailParseInput
     422,
     'Invalid attachment metadata',
   )
+}
+
+export function isHumanCopyrightEmail(
+  input: Extract<CopyrightEmailParseInput, { status: 'succeeded' }>,
+): boolean {
+  const autoSubmitted = input.autoSubmitted?.toLowerCase().trim()
+  if (autoSubmitted !== undefined && autoSubmitted !== '' && autoSubmitted !== 'no') return false
+  if (/^(bulk|list|junk|auto_reply)(?:\s|;|$)/i.test(input.precedence?.trim() ?? '')) return false
+  return !input.listId?.trim() && !input.listUnsubscribe?.trim()
 }

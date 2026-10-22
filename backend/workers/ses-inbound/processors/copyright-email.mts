@@ -40,6 +40,10 @@ export async function processCopyrightInboundEmail(
       messageId: email.emailMessageId,
       inReplyTo: email.inReplyTo,
       replyReferences: email.references,
+      autoSubmitted: email.autoSubmitted,
+      precedence: email.precedence,
+      listId: email.listId,
+      listUnsubscribe: email.listUnsubscribe,
       attachments: (email.attachments ?? []).map(attachment => ({
         filename: attachment.filename,
         contentId: attachment.contentId,

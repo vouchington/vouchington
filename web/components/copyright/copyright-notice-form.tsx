@@ -43,17 +43,20 @@ export function CopyrightNoticeForm() {
     if (!turnstile.token || pending) return
     startTransition(async () => {
       try {
-        const result = await createCopyrightNotice({
-          claimant_display_name: values.name.trim(),
-          claimant_contact: values.contact.trim(),
-          claimant_email: values.email.trim(),
-          work_description: values.work.trim(),
-          electronic_signature: values.signature.trim(),
-          has_good_faith_belief: values.goodFaithBelief,
-          has_accuracy_authority_under_penalty_of_perjury: values.authorityDeclaration,
-          targets: targets.map(copyrightNoticeTargetInput),
-          cf_turnstile_response: turnstile.token ?? undefined,
-        })
+        const result = await createCopyrightNotice(
+          {
+            claimant_display_name: values.name.trim(),
+            claimant_contact: values.contact.trim(),
+            claimant_email: values.email.trim(),
+            work_description: values.work.trim(),
+            electronic_signature: values.signature.trim(),
+            has_good_faith_belief: values.goodFaithBelief,
+            has_accuracy_authority_under_penalty_of_perjury: values.authorityDeclaration,
+            targets: targets.map(copyrightNoticeTargetInput),
+            cf_turnstile_response: turnstile.token ?? undefined,
+          },
+          currentUser ? `user:${currentUser.id}` : 'guest',
+        )
         if (!currentUser) {
           // The case list requires sign-in, so a guest gets the receipt here instead.
           setGuestReceipt({ id: result.copyright_notice.id, duplicate: result.is_duplicate })

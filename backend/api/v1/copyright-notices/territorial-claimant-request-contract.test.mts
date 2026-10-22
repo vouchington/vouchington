@@ -218,10 +218,15 @@ describe('EU supervised complaint request contract', () => {
 
     await claimantRequest
       .post(url)
+      .set('Idempotency-Key', crypto.randomUUID())
       .send({ ...body, injected: true })
       .expect(422)
     // A recorded complaint would make the same reference a 409 instead of a 201.
-    const created = await claimantRequest.post(url).send(body).expect(201)
+    const created = await claimantRequest
+      .post(url)
+      .set('Idempotency-Key', crypto.randomUUID())
+      .send(body)
+      .expect(201)
     expect(created.body.copyright_eu_supervised_complaint.escalation_id).toEqual(expect.any(String))
   })
 
@@ -234,6 +239,7 @@ describe('EU supervised complaint request contract', () => {
 
     const rejected = await claimantRequest
       .post(url)
+      .set('Idempotency-Key', crypto.randomUUID())
       .send({ ...body, [field]: 7 })
       .expect(422)
     expect(rejected.body.message).toBe(message)
@@ -244,9 +250,14 @@ describe('EU supervised complaint request contract', () => {
     const url = `${eu!.base}/${crypto.randomUUID()}/supervised-complaints`
     const body = { authority_reference: `dsc-${crypto.randomUUID()}`, explanation: 'Complaint' }
 
-    await claimantRequest.post(url).send(body).expect(404)
     await claimantRequest
       .post(url)
+      .set('Idempotency-Key', crypto.randomUUID())
+      .send(body)
+      .expect(404)
+    await claimantRequest
+      .post(url)
+      .set('Idempotency-Key', crypto.randomUUID())
       .send({ ...body, injected: true })
       .expect(422)
   })
@@ -257,11 +268,17 @@ describe('EU supervised complaint request contract', () => {
 
     await claimantRequest
       .post(`${eu!.base}/not-a-uuid/supervised-complaints`)
+      .set('Idempotency-Key', crypto.randomUUID())
       .send(body)
       .expect(422)
-    await strangerRequest.post(url).send(body).expect(403)
     await strangerRequest
       .post(url)
+      .set('Idempotency-Key', crypto.randomUUID())
+      .send(body)
+      .expect(403)
+    await strangerRequest
+      .post(url)
+      .set('Idempotency-Key', crypto.randomUUID())
       .send({ ...body, injected: true })
       .expect(422)
   })

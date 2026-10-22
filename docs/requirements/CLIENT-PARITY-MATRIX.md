@@ -24,6 +24,16 @@ See also: [Native Client Strategy](../overview/architecture/native-clients.md),
 [Client Intent Parity](./navigation/CLIENT-INTENT-PARITY.md), and
 [Native Parity Interactions](../checklists/native-parity-interactions.md).
 
+## Copyright filing and staff matches
+
+The web notice form discloses whether a filing will be attributed to a signed-in user or a guest.
+It sends that expected filer with the submission so the API can reject a changed sign-in state
+before creating a notice. Callers without that pre-submit disclosure do not need the expectation
+header. Staff copyright queues expose a bounded first page of possible staydown matches and a
+`staydown_matches_has_more` signal; reviewing visible matches reveals the next pending matches on
+refresh. Native copyright filing and staff review remain tracked by the existing parity rows in
+`client-feature-parity.json`; this change does not claim new native UI evidence.
+
 ## RSS feed submission
 
 REST `POST /api/v1/rss-feeds` and MCP `submit_rss_feed` option `submit` return the same pending

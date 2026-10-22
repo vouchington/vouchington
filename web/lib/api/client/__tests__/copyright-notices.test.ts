@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest'
-
 import {
   fetchTransport,
   jsonResponse,
@@ -105,11 +104,15 @@ describe('copyright notices client', () => {
         jsonResponse({ copyright_notice: { id: 'notice-1' }, is_duplicate: true }),
       )
 
-    await expect(createCopyrightNotice(input)).rejects.toThrow('response lost')
-    await createCopyrightNotice({ ...input, cf_turnstile_response: 'replacement-turnstile-token' })
+    await expect(createCopyrightNotice(input, 'guest')).rejects.toThrow('response lost')
+    await createCopyrightNotice(
+      { ...input, cf_turnstile_response: 'replacement-turnstile-token' },
+      'guest',
+    )
 
     const firstKey = mockPost.mock.calls[0]?.[2]?.headers?.['Idempotency-Key']
     expect(mockPost.mock.calls[1]?.[2]?.headers?.['Idempotency-Key']).toBe(firstKey)
+    expect(mockPost.mock.calls[0]?.[2]?.headers?.['X-Voucha-Expected-Filer']).toBe('guest')
   })
 
   it('reuses idempotency keys for appeal and counter-notice retries', async () => {

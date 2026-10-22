@@ -29,6 +29,7 @@ type QueueCase = {
     match_kind: string
     hamming_distance: number
   }>
+  staydown_matches_has_more: boolean
 }
 
 /**
@@ -98,6 +99,21 @@ describe('copyright staydown staff review', () => {
       ],
     })
     expect(Date.parse(queued!.waiting_since)).toBeLessThanOrEqual(Date.now())
+  })
+
+  it('shows a bounded first page of pending matches and signals more work', async () => {
+    const matched = await createMatchedCase()
+    for (let index = 0; index < 25; index++) {
+      const uploader = await createTestUser()
+      await recordCopyrightStaydownExactMatch({
+        imageId: matched.imageId,
+        uploadedById: uploader.id,
+      })
+    }
+
+    const queued = await readQueuedCase(matched.staff, matched.noticeId)
+    expect(queued?.staydown_matches).toHaveLength(25)
+    expect(queued?.staydown_matches_has_more).toBe(true)
   })
 
   it('drops the match from the case once staff mark it reviewed, and only once', async () => {

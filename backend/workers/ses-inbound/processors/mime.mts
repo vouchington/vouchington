@@ -13,6 +13,10 @@ export type ParsedSesInboundEmail = {
   emailMessageId: string | null
   inReplyTo: string[]
   references: string[]
+  autoSubmitted?: string
+  precedence?: string
+  listId?: string
+  listUnsubscribe?: string
   attachments?: ParsedMimeAttachment[]
   recipientEmails?: string[]
 }
@@ -34,6 +38,10 @@ export async function parseSesInboundMime(rawMime: Readable): Promise<ParsedSesI
   let references: string[] = []
   let inReplyTo: string[] = []
   let recipientEmails: string[] = []
+  let autoSubmitted = ''
+  let precedence = ''
+  let listId = ''
+  let listUnsubscribe = ''
   const parts = streamMailParts(parser)
   const headerLimiter = createMimeHeaderLimitStream()
   let sourceStreamError: unknown
@@ -42,6 +50,10 @@ export async function parseSesInboundMime(rawMime: Readable): Promise<ParsedSesI
       sender = asAddress(headers.get('from'))
       subject = String(headers.get('subject') ?? '')
       messageId = String(headers.get('message-id') ?? '').trim() || null
+      autoSubmitted = String(headers.get('auto-submitted') ?? '').trim()
+      precedence = String(headers.get('precedence') ?? '').trim()
+      listId = String(headers.get('list-id') ?? '').trim()
+      listUnsubscribe = String(headers.get('list-unsubscribe') ?? '').trim()
       recipientEmails = [
         ...new Set(
           ['to', 'delivered-to', 'x-original-to'].flatMap(header =>
@@ -56,6 +68,10 @@ export async function parseSesInboundMime(rawMime: Readable): Promise<ParsedSesI
           references.push(...parseMessageIds(header.line.slice(header.line.indexOf(':') + 1)))
         } else if (header.key === 'in-reply-to') {
           inReplyTo.push(...parseMessageIds(header.line.slice(header.line.indexOf(':') + 1)))
+        } else if (header.key === 'list-id') {
+          listId = header.line.slice(header.line.indexOf(':') + 1).trim()
+        } else if (header.key === 'list-unsubscribe') {
+          listUnsubscribe = header.line.slice(header.line.indexOf(':') + 1).trim()
         }
       }
     })
@@ -90,6 +106,10 @@ export async function parseSesInboundMime(rawMime: Readable): Promise<ParsedSesI
     emailMessageId: messageId,
     inReplyTo: [...new Set(inReplyTo)],
     references: [...new Set(references)],
+    ...(autoSubmitted ? { autoSubmitted } : {}),
+    ...(precedence ? { precedence } : {}),
+    ...(listId ? { listId } : {}),
+    ...(listUnsubscribe ? { listUnsubscribe } : {}),
     attachments: parts.getAttachments(),
     recipientEmails,
   }

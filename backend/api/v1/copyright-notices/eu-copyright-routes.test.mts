@@ -139,16 +139,32 @@ describe('EU copyright notice routes', () => {
       .send({ staff_disposition: 'revoke', rationale: 'Staff redress rationale' })
       .expect(201)
     expect(decision.body.copyright_eu_redress_decision.staff_disposition).toBe('revoke')
+    const complaintUrl = `/api/v1/copyright-eu-notices/${noticeId}/supervised-complaints`
+    const complaintBody = {
+      authority_reference: `dsc-${crypto.randomUUID()}`,
+      explanation: 'Complaint filed with the authority',
+    }
+    await claimantRequest.post(complaintUrl).send(complaintBody).expect(400)
+    const complaintKey = crypto.randomUUID()
     const complaint = await claimantRequest
-      .post(`/api/v1/copyright-eu-notices/${noticeId}/supervised-complaints`)
-      .send({
-        authority_reference: `dsc-${crypto.randomUUID()}`,
-        explanation: 'Complaint filed with the authority',
-      })
+      .post(complaintUrl)
+      .set('Idempotency-Key', complaintKey)
+      .send(complaintBody)
       .expect(201)
     expect(complaint.body.copyright_eu_supervised_complaint.escalation_id).toEqual(
       expect.any(String),
     )
+    const complaintReplay = await claimantRequest
+      .post(complaintUrl)
+      .set('Idempotency-Key', complaintKey)
+      .send(complaintBody)
+      .expect(200)
+    expect(complaintReplay.body).toEqual(complaint.body)
+    await claimantRequest
+      .post(complaintUrl)
+      .set('Idempotency-Key', complaintKey)
+      .send({ ...complaintBody, explanation: 'A different complaint' })
+      .expect(409)
     const report = await staffRequest
       .post('/api/v1/copyright-eu-reports')
       .send({

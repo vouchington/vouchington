@@ -20,6 +20,9 @@ export async function processSendCopyrightNoticeEmail(data: {
       source: process.env.SES_COPYRIGHT_SOURCE_EMAIL || undefined,
       replyToAddress: process.env.SES_COPYRIGHT_REPLY_TO || undefined,
       allowGlobalBcc: false,
+      ...(prepared.deliveryKind === 'email_intake_received'
+        ? { headers: { 'Auto-Submitted': 'auto-replied' } }
+        : {}),
     })) as { MessageId?: unknown }
     if (typeof result.MessageId !== 'string' || result.MessageId.length === 0) {
       throw new Error('SES accepted copyright email without a MessageId')

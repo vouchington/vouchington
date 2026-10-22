@@ -74,6 +74,17 @@ describe('createRawMimeDigest', () => {
     expect(result.byteSize).toBe(raw.byteLength)
   })
 
+  it('preserves SES FAIL verdicts before sender headers overflow the cap', async () => {
+    const trusted = Buffer.from(`${HEADERS.slice(0, 4).join('\r\n')}\r\n`)
+    const sender = Buffer.from(
+      `From: sender@example.org\r\nX-Filler: ${'a'.repeat(MAX_MIME_HEADER_BYTES)}`,
+    )
+
+    const result = await digestOf([trusted, sender, Buffer.from('\r\n\r\nBody')])
+
+    expect(result.sesVerdicts).toEqual(EXPECTED)
+  })
+
   it('rejects the digest when the source stream fails', async () => {
     const { stream, digest } = createRawMimeDigest()
     const failure = new Error('socket reset')
