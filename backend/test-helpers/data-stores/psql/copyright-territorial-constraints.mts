@@ -111,8 +111,8 @@ async function insertDecision(
 async function insertComplaint(transaction: TransactionQuery, noticeId: string): Promise<string> {
   const { rows } = await transaction<{ id: string }>(sql`/* insertEuSupervisedComplaint */
     INSERT INTO copyright_eu_supervised_complaints (
-      copyright_notice_id, jurisdiction, authority_reference, explanation_ciphertext
-    ) VALUES (${noticeId}, 'eu_dsa', 'authority-1', 'explanation')
+      copyright_notice_id, jurisdiction, idempotency_key, authority_reference, explanation_ciphertext
+    ) VALUES (${noticeId}, 'eu_dsa', ${randomUUID()}, 'authority-1', 'explanation')
     RETURNING id
   `)
   const complaint = rows[0]
