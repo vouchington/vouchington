@@ -180,13 +180,19 @@ describe('runCommand', () => {
     expect(source.destroyed).toBe(true)
   })
 
-  it('forces LC_ALL=C and passes argv literally', async () => {
+  it('passes only PATH, TMPDIR, and LC_ALL=C, and keeps argv literal', async () => {
     const text = await collectStdout(node, [
       '-e',
-      'process.stdout.write(`${process.env.LC_ALL}\\n${process.argv[1]}`)',
+      'const keys = Object.keys(process.env).toSorted().join(","); process.stdout.write(`${process.env.LC_ALL}\\n${keys}\\n${process.argv[1]}`)',
       'a; rm -rf /',
     ])
-    expect(text).toBe('C\na; rm -rf /')
+    const [locale, keys, arg] = text.split('\n')
+    expect(locale).toBe('C')
+    expect(arg).toBe('a; rm -rf /')
+    const expected = ['LC_ALL']
+    if (process.env.PATH !== undefined) expected.push('PATH')
+    if (process.env.TMPDIR !== undefined) expected.push('TMPDIR')
+    expect(keys?.split(',')).toEqual(expected.toSorted())
   })
 })
 
@@ -208,7 +214,6 @@ async function collectStdout(
     stdin,
     stdout,
     timeoutMs: 2_000,
-    env: { LC_ALL: 'en_US.UTF-8' },
   })
   return Buffer.concat(chunks).toString('utf8')
 }

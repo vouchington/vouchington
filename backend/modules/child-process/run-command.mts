@@ -24,14 +24,14 @@ export type RunCommandOptions = {
   signal?: AbortSignal
   timeoutMs: number
   stderrCapBytes?: number
-  env?: NodeJS.ProcessEnv
 }
 
 type ReadableStreamInput = import('node:stream').Readable | Uint8Array | string
 
 // Spawns `command` with an explicit argv and no shell. Stdin and stdout stay
-// streams. Stderr is retained only up to a byte cap. `LC_ALL=C` is forced.
-// Abort and the timeout both SIGKILL the child; a non-zero exit or a signal rejects.
+// streams. Stderr is retained only up to a byte cap. The child receives PATH,
+// TMPDIR, and `LC_ALL=C` only. Abort and the timeout both SIGKILL the child;
+// a non-zero exit or a signal rejects.
 export async function runCommand(options: RunCommandOptions): Promise<{ stderr: Buffer }> {
   if (options.command.length === 0) throw new Error('command must not be empty')
   if (!Number.isFinite(options.timeoutMs) || options.timeoutMs <= 0) {
@@ -49,11 +49,7 @@ export async function runCommand(options: RunCommandOptions): Promise<{ stderr: 
   const child = spawn(options.command, [...(options.args ?? [])], {
     shell: false,
     stdio: ['pipe', 'pipe', 'pipe'],
-    env: {
-      ...process.env,
-      ...options.env,
-      LC_ALL: 'C',
-    },
+    env: childEnvironment(),
   })
 
   let aborted = false
@@ -105,6 +101,15 @@ export async function runCommand(options: RunCommandOptions): Promise<{ stderr: 
     clearTimeout(timer)
     options.signal?.removeEventListener('abort', onAbort)
   }
+}
+
+function childEnvironment(): NodeJS.ProcessEnv {
+  const env: NodeJS.ProcessEnv = { LC_ALL: 'C' }
+  const path = process.env.PATH
+  const tempDir = process.env.TMPDIR
+  if (path !== undefined) env.PATH = path
+  if (tempDir !== undefined) env.TMPDIR = tempDir
+  return env
 }
 
 async function settleStdout(
