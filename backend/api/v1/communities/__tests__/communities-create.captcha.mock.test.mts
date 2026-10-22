@@ -19,7 +19,9 @@ describe('POST /api/v1/communities CAPTCHA', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.stubEnv('SKIP_CAPTCHA_VERIFICATION', 'false')
-    mockFetch.mockResolvedValue(new UndiciResponse(JSON.stringify({ success: true })))
+    mockFetch.mockResolvedValue(
+      new UndiciResponse(JSON.stringify({ success: true, hostname: 'localhost', action: 'test' })),
+    )
   })
 
   afterEach(() => {
