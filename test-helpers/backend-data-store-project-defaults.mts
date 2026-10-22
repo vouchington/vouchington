@@ -1,4 +1,4 @@
-import type { TestProjectConfiguration } from 'vitest/config'
+import type { TestProjectInlineConfiguration } from 'vitest/config'
 
 export const backendDataStoreTestDefaults = {
   pool: 'forks' as const,
@@ -25,4 +25,4 @@ export const backendDataStoreTestDefaults = {
   ],
   testTimeout: 30_000,
   hookTimeout: 30_000,
-} satisfies TestProjectConfiguration['test']
+} satisfies TestProjectInlineConfiguration['test']

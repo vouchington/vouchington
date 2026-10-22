@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import picomatch from 'picomatch'
 import config from '../vitest.config.mts'
+import type { TestProjectConfiguration, TestProjectInlineConfiguration } from 'vitest/config'
 import { backendDataProjects } from '../test-helpers/vitest-config/backend-data-projects.mts'
 
 interface BackendProject {
@@ -21,7 +22,12 @@ interface BackendProject {
   }
 }
 
-const projects = (config.test?.projects ?? []) as BackendProject[]
+const isInlineProject = (
+  project: TestProjectConfiguration,
+): project is TestProjectInlineConfiguration =>
+  typeof project === 'object' && project !== null && !('then' in project)
+
+const projects = (config.test?.projects ?? []).filter(isInlineProject) as BackendProject[]
 const projectOwnsPath = (project: BackendProject, path: string) =>
   (project.test?.include ?? []).some(pattern => picomatch.isMatch(path, pattern)) &&
   !(project.test?.exclude ?? []).some(pattern => picomatch.isMatch(path, pattern))
@@ -73,8 +79,9 @@ describe('backend batch-quota Vitest projects', () => {
         process.env.PG_TEST_STATEMENT_TIMEOUT_MS ?? '20000',
       )
       expect(project?.test?.setupFiles).toEqual(
-        backendDataProjects.find(item => item.test?.name === 'backend-data-stores')?.test
-          ?.setupFiles,
+        backendDataProjects
+          .filter(isInlineProject)
+          .find(item => item.test?.name === 'backend-data-stores')?.test?.setupFiles,
       )
     }
 
