@@ -159,17 +159,6 @@ describe('CI cache policy', () => {
     )
   })
 
-  it('keeps binary download paths versioned', () => {
-    const setupLychee = readFileSync('.github/actions/setup-lychee/action.yml', 'utf8')
-    const gitleaks = readFileSync('.github/workflows/gitleaks.yml', 'utf8')
-
-    expect(setupLychee).toContain('--bin-dir "$LYCHEE_BIN_DIR"')
-    expect(setupLychee).toContain('LYCHEE_BIN_DIR="${RUNNER_TEMP:-$HOME/.local}/bin"')
-    expect(gitleaks).toContain(': "${RUNNER_TEMP:?RUNNER_TEMP must be set by GitHub Actions}"')
-    expect(gitleaks).toContain('--bin-dir "$RUNNER_TEMP/bin"')
-    expect(gitleaks).not.toContain('${RUNNER_TEMP:-/tmp}')
-  })
-
   it('keys the pnpm-store and Playwright browser caches safely', () => {
     // pnpm-store/Playwright cache steps must scope by OS/arch (both paths
     // are platform-specific) and key on a lockfile content hash computed by

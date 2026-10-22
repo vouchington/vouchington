@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { decide } from './decide.mts'
 import { RULES, type WorkflowRunContext } from './rules.mts'
 
-const lintLinksJobName = 'lint-links'
+const lintLinksJobName = 'lint-links / lint-links'
 const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContext => ({
   workflowName: 'Lint Links',
   conclusion: 'failure',
@@ -17,12 +17,12 @@ const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContex
 const failedJobLogs = (log: string) => () => Promise.resolve(new Map([[lintLinksJobName, log]]))
 
 const setupLycheeCurl6DnsLog = [
-  'lint-links\tRun ./.github/actions/setup-lychee\t##[group]Run ./.github/actions/setup-lychee',
-  'lint-links\tRun ./.github/actions/setup-lychee\t##[group]Run set -euo pipefail',
-  'lint-links\tRun ./.github/actions/setup-lychee\tbash "$GITHUB_WORKSPACE/ci/install-github-release.sh" \\',
-  'lint-links\tRun ./.github/actions/setup-lychee\t  --repo lycheeverse/lychee \\',
-  'lint-links\tRun ./.github/actions/setup-lychee\tcurl: (6) Could not resolve host: github.com',
-  'lint-links\tRun ./.github/actions/setup-lychee\t##[error]Process completed with exit code 6.',
+  'lint-links\tInstall lychee\t##[group]Run set -euo pipefail',
+  'lint-links\tInstall lychee\t##[group]Run set -euo pipefail',
+  'lint-links\tInstall lychee\tbash "$GITHUB_WORKSPACE/.vouchington-tooling-checkout/packages/vouchington-tooling/scripts/gha/install-github-release.sh" \\',
+  'lint-links\tInstall lychee\t  --repo lycheeverse/lychee \\',
+  'lint-links\tInstall lychee\tcurl: (6) Could not resolve host: github.com',
+  'lint-links\tInstall lychee\t##[error]Process completed with exit code 6.',
 ].join('\n')
 
 describe('lint-links-setup-lychee-download-flake github.com DNS', () => {
@@ -63,9 +63,9 @@ describe('lint-links-setup-lychee-download-flake github.com DNS', () => {
   it('does not match an earlier github.com DNS failure once a later setup-lychee error is terminal', async () => {
     const log = [
       setupLycheeCurl6DnsLog,
-      'lint-links\tRun ./.github/actions/setup-lychee\t##[group]Run echo unsupported',
-      'lint-links\tRun ./.github/actions/setup-lychee\tUnsupported platform: Linux-riscv64',
-      'lint-links\tRun ./.github/actions/setup-lychee\t##[error]Process completed with exit code 1.',
+      'lint-links\tInstall lychee\t##[group]Run echo unsupported',
+      'lint-links\tInstall lychee\tUnsupported platform: Linux-riscv64',
+      'lint-links\tInstall lychee\t##[error]Process completed with exit code 1.',
     ].join('\n')
 
     const result = await decide(makeCtx({ failedJobLogs: failedJobLogs(log) }), RULES)

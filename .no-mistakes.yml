@@ -3057,8 +3057,6 @@ rules:
     options:
       excludePaths:
         - .github/workflows/runner-policy.test.mts
-      conditionallyAllowedWorkflows:
-        - .github/workflows/pnpm-dedupe.yml
 
   - name: shell scripts pass shellcheck
     rule: shellcheck-runner
@@ -4387,10 +4385,6 @@ rules:
         # Steps sum to 21m; cap 16m is below it; healthy runtime ~4m (web build cap 9m).
         - job: '.github/workflows/tests-web-integration.yml#prep'
           maxMinutes: 16
-        # Steps sum to 26m; cap 25m is below it; the strictly serial sweep engine (20m) is the
-        # largest step. See #11280.
-        - job: '.github/workflows/cleanup-artifacts.yml#cleanup-sweep'
-          maxMinutes: 25
         # Steps sum to 14m including tooling install; cap 11m is below it (and under the 15m
         # ubuntu-slim platform cap), so a slow step cannot consume all other step allowances.
         - job: '.github/workflows/ghcr-cleanup.yml#cleanup'
@@ -4494,8 +4488,8 @@ rules:
       sourceFile: .mise.toml
       sourceKey: tools.aqua:lycheeverse/lychee
       anchors:
-        - file: .github/actions/setup-lychee/action.yml
-          pattern: 'LYCHEE_VERSION:\s*(\d+\.\d+\.\d+)'
+        - file: .github/workflows/lint-links.yml
+          pattern: 'lychee-version:\s*.?(\d+\.\d+\.\d+)'
           label: lychee
 
   - name: gitleaks version pin matches mise
@@ -4506,7 +4500,7 @@ rules:
       sourceKey: tools.aqua:gitleaks/gitleaks
       anchors:
         - file: .github/workflows/gitleaks.yml
-          pattern: 'GITLEAKS_VERSION:\s*(\d+\.\d+\.\d+)'
+          pattern: 'version:\s*(\d+\.\d+\.\d+)'
           label: gitleaks
 
   - name: workflow tests do not restate timeout-minutes literals
@@ -4523,7 +4517,7 @@ rules:
     scope: repository
     options:
       uses:
-        - ./.github/actions/setup-aws
+        - vouchington/vouchington-tooling/.github/actions/setup-aws@
         - aws-actions/configure-aws-credentials@
       stepTimeoutMinutes: 2
       nestedInput: action-timeout-s
@@ -4595,7 +4589,7 @@ rules:
             triage-and-rerun,
           ]
         .github/workflows/ghcr-cleanup.yml: [cleanup]
-        .github/workflows/gitleaks.yml: [gitleaks]
+        .github/workflows/gitleaks.yml: [gitleaks, gitleaks-scan]
         .github/workflows/initialize-smoke-test.yml: [initialize-smoke-test]
         .github/workflows/label-pr.yml: [label]
         .github/workflows/lambdas.yml:
@@ -4771,6 +4765,10 @@ rules:
         .github/workflows/ci-area-coverage.yml: 'short-lived read-only area coverage check'
         .github/workflows/ci-detect-changes.yml: 'short-lived read-only CI classification'
         .github/workflows/ci-upload-codecov.yml: 'independent informational coverage upload'
+        .github/workflows/cancel-dequeued-merge-group-runs.yml: 'the reusable callee owns the concurrency group'
+        .github/workflows/cancel-replaced-merge-group-runs.yml: 'the reusable callee owns the concurrency group'
+        .github/workflows/cleanup-artifacts.yml: 'the reusable callee owns the concurrency group'
+        .github/workflows/pnpm-dedupe.yml: 'the reusable callee owns the concurrency group'
         .github/workflows/explain-analyze.yml: 'parallel-safe idempotent manual tests'
         .github/workflows/initialize-smoke-test.yml: 'parallel-safe idempotent manual tests'
         .github/workflows/label-pr.yml: 'idempotent PR labeling'
@@ -4797,12 +4795,6 @@ rules:
           { pending: coalesce-latest, cancellation: conditional, scope: [pull-request, sha] }
         .github/workflows/backend.yml:
           { pending: coalesce-latest, cancellation: conditional, scope: [pull-request, sha, event] }
-        .github/workflows/cancel-dequeued-merge-group-runs.yml:
-          { pending: coalesce-latest, cancellation: retain-running, scope: [pull-request] }
-        .github/workflows/cancel-replaced-merge-group-runs.yml:
-          { pending: coalesce-latest, cancellation: retain-running, scope: [sha] }
-        .github/workflows/cleanup-artifacts.yml:
-          { pending: coalesce-latest, cancellation: retain-running, scope: [fixed-resource] }
         .github/workflows/cloudflare-worker.yml:
           { pending: coalesce-latest, cancellation: conditional, scope: [pull-request, sha, event] }
         .github/workflows/dispatch-completed-deploy.yml:
@@ -4843,8 +4835,6 @@ rules:
           { pending: coalesce-latest, cancellation: retain-running, scope: [fixed-resource] }
         .github/workflows/plan.yml:
           { pending: coalesce-latest, cancellation: retain-running, scope: [event] }
-        .github/workflows/pnpm-dedupe.yml:
-          { pending: coalesce-latest, cancellation: retain-running, scope: [fixed-resource] }
         .github/workflows/postgresql-snapshot-update.yml:
           {
             pending: coalesce-latest,

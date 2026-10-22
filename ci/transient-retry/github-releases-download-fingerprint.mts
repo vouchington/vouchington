@@ -1,7 +1,7 @@
 /**
  * Shared GitHub Releases download classifiers.
  *
- * Gitleaks and Lychee download pinned assets through `ci/install-github-release.sh`.
+ * Gitleaks and Lychee download pinned assets through vouchington-tooling's `install-github-release.sh`.
  * Callers keep their own job, installer, and terminal-exit anchors, then call these helpers
  * on that anchored slice. The helpers do not decide which job or terminal marker is in scope.
  *
@@ -14,7 +14,7 @@ const curlOperationTimeout = 'curl: (28)'
 const curlRecvFailure = 'curl: (56)'
 const curlHttpStatusFailure = /curl: \(22\).* (?:000|5\d\d)/
 
-/** Curl transport failure printed by `ci/install-github-release.sh` before its own exit. */
+/** Curl transport failure printed by vouchington-tooling's `install-github-release.sh` before its own exit. */
 export function hasCurlGithubReleaseTransportFailure(log: string): boolean {
   return (
     log.includes(curlOperationTimeout) ||

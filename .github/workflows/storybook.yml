@@ -139,7 +139,7 @@ jobs:
           RETRY_OUTCOME: ${{ steps.full-lcov-1-retry.outcome }}
         run: node ci/artifact-upload-outcome.mts "$FAMILY" "$SUITE" "$FIRST_OUTCOME" "$RETRY_OUTCOME"
       - name: Install Playwright Chromium
-        uses: ./.github/actions/setup-playwright
+        uses: vouchington/vouchington-tooling/.github/actions/setup-playwright@6ffe465bf7013a854fe9e64a8184b4c7cd2f3cc0 # v0.54.0
         timeout-minutes: 5
       - name: Clear stale coverage before browser run
         timeout-minutes: 1

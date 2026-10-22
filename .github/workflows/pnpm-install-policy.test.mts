@@ -74,7 +74,7 @@ function hasExplicitCredential(step: Step) {
   const serialized = JSON.stringify({ env: step.env, with: step.with })
   return (
     serialized.includes('secrets.') ||
-    step.uses === './.github/actions/setup-aws' ||
+    step.uses?.startsWith('vouchington/vouchington-tooling/.github/actions/setup-aws@') === true ||
     step.uses?.startsWith('aws-actions/configure-aws-credentials@') === true
   )
 }

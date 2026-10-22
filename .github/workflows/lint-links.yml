@@ -14,44 +14,17 @@ concurrency:
 
 jobs:
   lint-links:
-    runs-on: ubuntu-slim
-    timeout-minutes: 9
-
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
-      - uses: ./.github/actions/setup-lychee
-        timeout-minutes: 3
-
-      - name: Verify link exclusions
-        timeout-minutes: 1
-        shell: bash
-        run: |
-          actual="$(
-            printf '%s\n' \
-              'https://github.com/vouchington/vouchington-machines' \
-              'https://github.com/vouchington/vouchington-machines/tree/main' \
-              'https://github.com/vouchington/vouchington-machines?tab=readme' \
-              'https://github.com/vouchington/vouchington-machines#readme' \
-              'https://host' \
-              'https://host/ap/users/:userId#main-key' \
-              'https://github.com/vouchington/vouchington-machines-evil/pull/5' \
-              'https://hostname/ap/users/1' \
-              'https://github.com/openai/openai-node' \
-              | lychee --dump --cache=false --config lychee.toml - \
-              | sort
-          )"
-          expected="$(
-            printf '%s\n' \
-              'https://github.com/openai/openai-node' \
-              'https://github.com/vouchington/vouchington-machines-evil/pull/5' \
-              'https://hostname/ap/users/1' \
-              | sort
-          )"
-          test "$actual" = "$expected"
-
-      - name: Check links
-        timeout-minutes: 5
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: ./ci/lint-links.sh
+    uses: vouchington/vouchington-tooling/.github/workflows/lint-links.yml@6ffe465bf7013a854fe9e64a8184b4c7cd2f3cc0 # v0.54.0
+    with:
+      lychee-version: '0.24.2'
+      excluded-urls: |
+        https://github.com/vouchington/vouchington-machines
+        https://github.com/vouchington/vouchington-machines/tree/main
+        https://github.com/vouchington/vouchington-machines?tab=readme
+        https://github.com/vouchington/vouchington-machines#readme
+        https://host
+        https://host/ap/users/:userId#main-key
+      checked-urls: |
+        https://github.com/openai/openai-node
+        https://github.com/vouchington/vouchington-machines-evil/pull/5
+        https://hostname/ap/users/1

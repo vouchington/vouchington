@@ -199,7 +199,7 @@ jobs:
       needs.triage-and-rerun.outputs.should_dispatch == 'true' &&
       needs.render-prompt.result == 'success' &&
       needs.render-prompt.outputs.source-current == 'true'
-    uses: vouchington/vouchington-tooling/.github/workflows/harness-dispatch.yml@65310ad7da87fd8d3619ca7868107d46c9c607d9 # v0.53.0
+    uses: vouchington/vouchington-tooling/.github/workflows/harness-dispatch.yml@6ffe465bf7013a854fe9e64a8184b4c7cd2f3cc0 # v0.54.0
     permissions:
       contents: read
     secrets:

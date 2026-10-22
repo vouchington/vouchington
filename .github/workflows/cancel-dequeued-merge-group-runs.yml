@@ -25,115 +25,13 @@ on:
     types: [dequeued]
     branches: [main]
 
-concurrency:
-  group: cancel-dequeued-merge-group-runs-${{ github.event.pull_request.number }}
-  cancel-in-progress: false
-
 permissions: {}
 
 jobs:
   cancel:
-    name: Cancel dequeued entry runs
-    if: >-
-      contains(fromJSON('["MANUAL","CI_FAILURE","MERGE_CONFLICT","QUEUE_CLEARED","ROLL_BACK","BRANCH_PROTECTIONS","GIT_TREE_INVALID","INVALID_MERGE_COMMIT"]'), github.event.reason)
-    runs-on: ubuntu-slim
-    timeout-minutes: 5
     permissions:
       actions: write
       pull-requests: read
-    steps:
-      - name: Cancel active runs of the dequeued pull request
-        timeout-minutes: 3
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          REASON: ${{ github.event.reason }}
-        run: |
-          set -euo pipefail
-          summary() {
-            {
-              echo "### Dequeued merge-group runs for PR #$PR_NUMBER ($REASON)"
-              echo
-              printf '%s\n' "$1"
-            } >> "$GITHUB_STEP_SUMMARY"
-          }
-
-          # Keep this list equal to the job condition; the job skips every other reason.
-          case "$REASON" in
-            MANUAL | CI_FAILURE | MERGE_CONFLICT | QUEUE_CLEARED | ROLL_BACK | BRANCH_PROTECTIONS | GIT_TREE_INVALID | INVALID_MERGE_COMMIT) ;;
-            *)
-              echo "Reason $REASON leaves no dead merge-group runs to cancel."
-              exit 0
-              ;;
-          esac
-          if [[ ! "$PR_NUMBER" =~ ^[0-9]+$ ]]; then
-            echo "::error::Unexpected pull request number: $PR_NUMBER"
-            exit 1
-          fi
-
-          # Merge-group-only jobs such as image publishing must finish for a merged group.
-          merged=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq .merged)
-          if [[ "$merged" == "true" ]]; then
-            echo "PR #$PR_NUMBER is merged; cancelling nothing."
-            summary "Cancelled runs: none. The pull request is merged."
-            exit 0
-          fi
-
-          # The runs API filters on one status at a time, and gh follows every page of each list.
-          queue_prefix="gh-readonly-queue/main/pr-$PR_NUMBER-"
-          candidates="$RUNNER_TEMP/dequeued-runs.tsv"
-          : > "$candidates"
-          for status in queued in_progress waiting requested pending; do
-            gh api --paginate \
-              "repos/$GITHUB_REPOSITORY/actions/runs?event=merge_group&status=$status&per_page=100" |
-              jq -r --arg prefix "$queue_prefix" --argjson run_id "$GITHUB_RUN_ID" '
-                .workflow_runs[]
-                | select((.head_branch // "") | startswith($prefix))
-                | select(.id < $run_id)
-                | [.id, .name, .head_branch] | @tsv' >> "$candidates"
-          done
-
-          failed=0
-          rows=
-          # A run can change status between two lists, so the same id may appear twice.
-          while IFS=$'\t' read -r id name branch; do
-            # A cancelled run no longer reads as failed, which hides it from the ejection triage.
-            if ! holds_failure=$(gh api --paginate \
-              "repos/$GITHUB_REPOSITORY/actions/runs/$id/jobs?filter=latest&per_page=100" |
-              jq -s 'any(.[].jobs[]; .conclusion == "failure" or .conclusion == "timed_out")'); then
-              result='failed'
-              failed=1
-              echo "::warning::Could not read the jobs of run $id"
-            elif [[ "$holds_failure" == "true" ]]; then
-              result='kept: holds a failed job'
-            else
-              # HTTP 502, 503, and 504 from the cancel API are retried up to three attempts,
-              # one second apart. A persistent gateway error still fails this run and the job.
-              for attempt in 1 2 3; do
-                if error=$(gh api --method POST "repos/$GITHUB_REPOSITORY/actions/runs/$id/cancel" 2>&1 >/dev/null); then
-                  result=cancelled
-                  break
-                elif [[ "$error" == *"HTTP 409"* ]]; then
-                  result='already completed'
-                  break
-                elif [[ "$attempt" -lt 3 && ( "$error" == *"HTTP 502"* || "$error" == *"HTTP 503"* || "$error" == *"HTTP 504"* ) ]]; then
-                  sleep 1
-                else
-                  result='failed'
-                  failed=1
-                  echo "::warning::Could not cancel run $id: $error"
-                  break
-                fi
-              done
-            fi
-            echo "$result: $name run $id on $branch"
-            rows="$rows| $name | [$id]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$id) | \`$branch\` | $result |"$'\n'
-          done < <(sort -t$'\t' -k1,1n -u "$candidates")
-
-          if [[ -z "$rows" ]]; then
-            summary "Cancelled runs: none active."
-          else
-            summary "$(printf '%s\n' '| Workflow | Run | Queue branch | Result |' '| --- | --- | --- | --- |')"$'\n'"${rows%$'\n'}"
-          fi
-
-          exit "$failed"
+    uses: vouchington/vouchington-tooling/.github/workflows/cancel-dequeued-merge-group-runs.yml@6ffe465bf7013a854fe9e64a8184b4c7cd2f3cc0 # v0.54.0
+    with:
+      queue-base: main

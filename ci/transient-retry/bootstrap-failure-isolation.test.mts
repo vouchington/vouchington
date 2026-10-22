@@ -8,7 +8,7 @@ describe('bootstrap failure isolation', () => {
   it('does not apply Web Playwright consumers to Backend', async () => {
     const jobName = 'test-playwright / playwright-tests (1)'
     const log = [
-      '##[group]Run ./.github/actions/setup-playwright',
+      '##[group]Run vouchington/vouchington-tooling/.github/actions/setup-playwright@fixture',
       '::error::Timed out waiting for apt/dpkg locks after 120s: /var/lib/dpkg/lock-frontend',
       '##[error]Process completed with exit code 1.',
     ].join('\n')

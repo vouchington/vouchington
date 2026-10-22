@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { decide } from './decide.mts'
 import { RULES, type WorkflowRunContext } from './rules.mts'
 
-const lintLinksJobName = 'lint-links'
+const lintLinksJobName = 'lint-links / lint-links'
 const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContext => ({
   workflowName: 'Lint Links',
   conclusion: 'failure',
@@ -141,18 +141,18 @@ describe('lint-links-github-5xx', () => {
 
 describe('lint-links-setup-lychee-download-flake', () => {
   const setupLycheeCurl28Log = [
-    'lint-links\tRun ./.github/actions/setup-lychee\t##[group]Run ./.github/actions/setup-lychee',
-    'lint-links\tRun ./.github/actions/setup-lychee\tci_download_to "${BASE_URL}/lychee-${LYCHEE_PLATFORM}.tar.gz" "$LYCHEE_ARCHIVE"',
-    'lint-links\tRun ./.github/actions/setup-lychee\tcurl: (28) SSL connection timeout',
-    'lint-links\tRun ./.github/actions/setup-lychee\tDOWNLOAD FAILED: https://github.com/lycheeverse/lychee/releases/download/test-tag/lychee-x86_64-unknown-linux-gnu.tar.gz -> HTTP 302',
-    'lint-links\tRun ./.github/actions/setup-lychee\t##[error]Process completed with exit code 1.',
+    'lint-links\tInstall lychee\t##[group]Run set -euo pipefail',
+    'lint-links\tInstall lychee\tci_download_to "${BASE_URL}/lychee-${LYCHEE_PLATFORM}.tar.gz" "$LYCHEE_ARCHIVE"',
+    'lint-links\tInstall lychee\tcurl: (28) SSL connection timeout',
+    'lint-links\tInstall lychee\tDOWNLOAD FAILED: https://github.com/lycheeverse/lychee/releases/download/test-tag/lychee-x86_64-unknown-linux-gnu.tar.gz -> HTTP 302',
+    'lint-links\tInstall lychee\t##[error]Process completed with exit code 1.',
   ].join('\n')
 
   it('matches a composite inner-group setup-lychee GitHub Releases curl 28 timeout', async () => {
     const log = [
-      'lint-links\tRun ./.github/actions/setup-lychee\t##[group]Run ./.github/actions/setup-lychee',
       'lint-links\tInstall lychee\t##[group]Run set -euo pipefail',
-      'lint-links\tInstall lychee\tbash "$GITHUB_WORKSPACE/ci/install-github-release.sh" --repo lycheeverse/lychee',
+      'lint-links\tInstall lychee\t##[group]Run set -euo pipefail',
+      'lint-links\tInstall lychee\tbash "$GITHUB_WORKSPACE/.vouchington-tooling-checkout/packages/vouchington-tooling/scripts/gha/install-github-release.sh" --repo lycheeverse/lychee',
       'lint-links\tInstall lychee\tcurl: (28) SSL connection timeout',
       'lint-links\tInstall lychee\tDOWNLOAD FAILED: https://github.com/lycheeverse/lychee/releases/download/test-tag/lychee-x86_64-unknown-linux-gnu.tar.gz -> HTTP 302',
       'lint-links\tInstall lychee\t##[error]Process completed with exit code 1.',
@@ -176,9 +176,9 @@ describe('lint-links-setup-lychee-download-flake', () => {
 
   it.each([500, 502, 503, 504])('matches setup-lychee release download HTTP %s', async status => {
     const log = [
-      'lint-links\tRun ./.github/actions/setup-lychee\t##[group]Run ./.github/actions/setup-lychee',
-      `lint-links\tRun ./.github/actions/setup-lychee\tDOWNLOAD FAILED: https://github.com/lycheeverse/lychee/releases/download/test-tag/lychee-x86_64-unknown-linux-gnu.tar.gz -> HTTP ${status}`,
-      'lint-links\tRun ./.github/actions/setup-lychee\t##[error]Process completed with exit code 1.',
+      'lint-links\tInstall lychee\t##[group]Run set -euo pipefail',
+      `lint-links\tInstall lychee\tDOWNLOAD FAILED: https://github.com/lycheeverse/lychee/releases/download/test-tag/lychee-x86_64-unknown-linux-gnu.tar.gz -> HTTP ${status}`,
+      'lint-links\tInstall lychee\t##[error]Process completed with exit code 1.',
     ].join('\n')
 
     const result = await decide(makeCtx({ failedJobLogs: failedJobLogs(log) }), RULES)
@@ -189,10 +189,10 @@ describe('lint-links-setup-lychee-download-flake', () => {
 
   it('matches setup-lychee curl 56 release download failures before an HTTP 302 redirect', async () => {
     const log = [
-      'lint-links\tRun ./.github/actions/setup-lychee\t##[group]Run ./.github/actions/setup-lychee',
-      'lint-links\tRun ./.github/actions/setup-lychee\tcurl: (56) Recv failure: Connection reset by peer',
-      'lint-links\tRun ./.github/actions/setup-lychee\tDOWNLOAD FAILED: https://github.com/lycheeverse/lychee/releases/download/test-tag/lychee-x86_64-unknown-linux-gnu.tar.gz -> HTTP 302',
-      'lint-links\tRun ./.github/actions/setup-lychee\t##[error]Process completed with exit code 1.',
+      'lint-links\tInstall lychee\t##[group]Run set -euo pipefail',
+      'lint-links\tInstall lychee\tcurl: (56) Recv failure: Connection reset by peer',
+      'lint-links\tInstall lychee\tDOWNLOAD FAILED: https://github.com/lycheeverse/lychee/releases/download/test-tag/lychee-x86_64-unknown-linux-gnu.tar.gz -> HTTP 302',
+      'lint-links\tInstall lychee\t##[error]Process completed with exit code 1.',
     ].join('\n')
 
     const result = await decide(makeCtx({ failedJobLogs: failedJobLogs(log) }), RULES)
@@ -203,9 +203,9 @@ describe('lint-links-setup-lychee-download-flake', () => {
 
   it('does not match a recovered setup-lychee curl flake followed by Check links exit 1', async () => {
     const log = [
-      'lint-links\tRun ./.github/actions/setup-lychee\t##[group]Run ./.github/actions/setup-lychee',
-      'lint-links\tRun ./.github/actions/setup-lychee\tcurl: (28) SSL connection timeout',
-      'lint-links\tRun ./.github/actions/setup-lychee\tlychee 0.0.0-test',
+      'lint-links\tInstall lychee\t##[group]Run set -euo pipefail',
+      'lint-links\tInstall lychee\tcurl: (28) SSL connection timeout',
+      'lint-links\tInstall lychee\tlychee 0.0.0-test',
       'lint-links\tCheck links\t##[group]Run ./ci/lint-links.sh',
       'lint-links\tCheck links\t##[error]Process completed with exit code 1.',
     ].join('\n')
@@ -218,9 +218,9 @@ describe('lint-links-setup-lychee-download-flake', () => {
 
   it('does not match a non-transient setup-lychee 404', async () => {
     const log = [
-      'lint-links\tRun ./.github/actions/setup-lychee\t##[group]Run ./.github/actions/setup-lychee',
-      'lint-links\tRun ./.github/actions/setup-lychee\tDOWNLOAD FAILED: https://github.com/lycheeverse/lychee/releases/download/test-tag/lychee-x86_64-unknown-linux-gnu.tar.gz -> HTTP 404',
-      'lint-links\tRun ./.github/actions/setup-lychee\t##[error]Process completed with exit code 1.',
+      'lint-links\tInstall lychee\t##[group]Run set -euo pipefail',
+      'lint-links\tInstall lychee\tDOWNLOAD FAILED: https://github.com/lycheeverse/lychee/releases/download/test-tag/lychee-x86_64-unknown-linux-gnu.tar.gz -> HTTP 404',
+      'lint-links\tInstall lychee\t##[error]Process completed with exit code 1.',
     ].join('\n')
 
     const result = await decide(makeCtx({ failedJobLogs: failedJobLogs(log) }), RULES)
@@ -232,9 +232,9 @@ describe('lint-links-setup-lychee-download-flake', () => {
   it('does not match a release download failure before setup-lychee starts', async () => {
     const log = [
       'lint-links\tRun unrelated setup\tDOWNLOAD FAILED: https://github.com/lycheeverse/lychee/releases/download/test-tag/lychee-x86_64-unknown-linux-gnu.tar.gz -> HTTP 500',
-      'lint-links\tRun ./.github/actions/setup-lychee\t##[group]Run ./.github/actions/setup-lychee',
-      'lint-links\tRun ./.github/actions/setup-lychee\tUnsupported platform: Linux-riscv64',
-      'lint-links\tRun ./.github/actions/setup-lychee\t##[error]Process completed with exit code 1.',
+      'lint-links\tInstall lychee\t##[group]Run set -euo pipefail',
+      'lint-links\tInstall lychee\tUnsupported platform: Linux-riscv64',
+      'lint-links\tInstall lychee\t##[error]Process completed with exit code 1.',
     ].join('\n')
 
     const result = await decide(makeCtx({ failedJobLogs: failedJobLogs(log) }), RULES)
@@ -245,9 +245,9 @@ describe('lint-links-setup-lychee-download-flake', () => {
 
   it('does not match a different setup-lychee failure without a release-download fingerprint', async () => {
     const log = [
-      'lint-links\tRun ./.github/actions/setup-lychee\t##[group]Run ./.github/actions/setup-lychee',
-      'lint-links\tRun ./.github/actions/setup-lychee\tUnsupported platform: Linux-riscv64',
-      'lint-links\tRun ./.github/actions/setup-lychee\t##[error]Process completed with exit code 1.',
+      'lint-links\tInstall lychee\t##[group]Run set -euo pipefail',
+      'lint-links\tInstall lychee\tUnsupported platform: Linux-riscv64',
+      'lint-links\tInstall lychee\t##[error]Process completed with exit code 1.',
     ].join('\n')
 
     const result = await decide(makeCtx({ failedJobLogs: failedJobLogs(log) }), RULES)

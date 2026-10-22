@@ -154,7 +154,7 @@ describe('tests-playwright.yml', () => {
   })
 
   it('delegates browser and web runtime caching to their shared actions', () => {
-    expect(workflow).toContain('uses: ./.github/actions/setup-playwright')
+    expect(workflow).toContain('vouchington/vouchington-tooling/.github/actions/setup-playwright@')
     expect(workflow).not.toContain('name: Cache Playwright browsers')
     expect(workflow).not.toMatch(/path:\s*\n\s+~\/.cache\/ms-playwright/)
     // The setup and build composites own their respective caches.

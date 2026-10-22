@@ -30,7 +30,7 @@ export const mainWebPlaywrightSetupAptLockRule: TransientRetryRule = {
   consumerKey: 'setup-playwright',
   rootCauseKey: 'host-package-manager-lock',
   description:
-    'Retry Playwright/Storybook jobs that fail in `Run ./.github/actions/setup-playwright` because of apt/dpkg lock contention or host package-manager lock timeout.',
+    'Retry Playwright/Storybook jobs that fail in the vouchington-tooling `setup-playwright` action because of apt/dpkg lock contention or host package-manager lock timeout.',
   rationale:
     "A fresh GitHub-hosted runner's boot-time unattended-upgrades/apt-daily timer can still hold the dpkg lock when a job starts. Only when headless Chromium cannot launch does `setup-playwright` wait for the apt/dpkg locks and run `playwright install-deps`; healthy runners never reach that fallback. APT contention or a lock-wait timeout can fail it; both are transient.",
   exampleRunIds: ['27805129632'],

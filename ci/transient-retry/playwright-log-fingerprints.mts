@@ -13,7 +13,9 @@ export function hasEmittedLogLine(log: string, text: string): boolean {
 const aptLockWaitTimeoutMarker = 'Timed out waiting for apt/dpkg locks after '
 
 export function hasPlaywrightSetupAptLockFailure(log: string): boolean {
-  const isPlaywrightSetup = log.includes('Run ./.github/actions/setup-playwright')
+  const isPlaywrightSetup = log.includes(
+    'Run vouchington/vouchington-tooling/.github/actions/setup-playwright@',
+  )
   const isProcessExit1 = log.includes('##[error]Process completed with exit code 1.')
   // The legacy browser-install prefix was captured in run 27805129632. The
   // dependency-repair prefix comes from the pinned Playwright's install-deps handler and is

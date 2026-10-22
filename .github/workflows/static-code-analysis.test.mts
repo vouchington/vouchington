@@ -111,7 +111,6 @@ describe('static-code-analysis workflow', () => {
   })
 
   it('delegates link validation to the standalone Lint Links workflow', () => {
-    expect(workflow).not.toContain('./.github/actions/setup-lychee')
     expect(workflow).not.toContain('./ci/lint-links.sh --offline')
   })
 
