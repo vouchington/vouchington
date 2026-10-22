@@ -25,7 +25,7 @@ describe('cursor encoding', () => {
   })
 
   it.each(['¾', '¿'])('rejects standard Base64 alphabet for valid cursor JSON %s', id => {
-    const encoded = Buffer.from(JSON.stringify({ id })).toString('base64').replace(/=+$/, '')
+    const encoded = Buffer.from(JSON.stringify({ id })).toString('base64').replace(/[=]+$/, '')
     expect(encoded).toMatch(/[+/]/)
 
     expect(() => decodeCursor(encoded)).toThrow(expect.objectContaining({ status: 400 }))
