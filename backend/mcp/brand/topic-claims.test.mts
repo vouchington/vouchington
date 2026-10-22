@@ -9,6 +9,7 @@ import {
   type McpContractCaller,
 } from '@voucha/test-helpers/mcp-tool-contract'
 import type { PrivateUser } from '@services/users/types'
+import type { TopicClaimPage } from '@services/topic-claims/get'
 
 const READ = ['topic-claims:read'] as const
 const WRITE = ['topic-claims:read', 'topic-claims:write'] as const
@@ -76,6 +77,38 @@ describe('brand topic-claim MCP tools', () => {
       optionArgs('get', { topic: topic.slug, claim_id: claimId }),
       { status: 404, message: 'Claim not found' },
     )
+  })
+
+  it('paginates filtered claims with REST parity and a scoped cursor', async () => {
+    const owner = await createTestUser()
+    const request = await authed(owner)
+    const topics = await Promise.all([topicFor(owner), topicFor(owner)])
+    for (const topic of topics) {
+      await request
+        .post(`/api/v1/topics/${topic.id}/claims`)
+        .set('Content-Type', 'application/json')
+        .send({ claimed_role: 'Issuer', evidence: '' })
+        .expect(201)
+    }
+    const args = { limit: 1, topic_ids: topics.map(topic => topic.id) }
+    const first = await readTool(owner, 'list', args)
+    const rest = await request
+      .get('/api/v1/my/topic-claims')
+      .query({ limit: 1, topic_ids: args.topic_ids.join(',') })
+      .expect(200)
+    expect(first).toEqual(rest.body)
+    const firstPage = first as {
+      results: Array<{ id: string }>
+      page_info: TopicClaimPage['page_info']
+    }
+    expect(firstPage.page_info).toMatchObject({ has_next_page: true })
+    const second = await readTool(owner, 'list', {
+      ...args,
+      after: firstPage.page_info.end_cursor,
+    })
+    const secondPage = second as { results: Array<{ id: string }> }
+    expect(secondPage.results).toHaveLength(1)
+    expect(secondPage.results[0]!.id).not.toBe(firstPage.results[0]!.id)
   })
 
   it('files, verifies, and refuses to overwrite a verified claim', async () => {

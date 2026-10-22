@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   createRandomString,
+  archiveTestCommunity,
   createTestUser,
   insertTestCommunity,
   insertTestCommunityPostReview,
@@ -9,6 +10,8 @@ import {
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { registerUserListItemRouteTests } from '@voucha/test-helpers/user-list-item-routes'
 import type { PrivateUser } from '@voucha/types/entities/user'
+import { archivePost } from '@services/posts/archive'
+import { searchListItems } from '@services/lists'
 
 describe('POST /api/v1/lists/:id/items/posts', () => {
   const routes = registerUserListItemRouteTests({
@@ -41,6 +44,7 @@ async function addPost(user: PrivateUser, postId: string) {
     .set('Content-Type', 'application/json')
     .send({ name: `Vis ${createRandomString(8)}` })
   return {
+    listId: created.body.list.id as string,
     sent: request
       .post(`/api/v1/lists/${created.body.list.id}/items/posts`)
       .set('Content-Type', 'application/json')
@@ -49,6 +53,42 @@ async function addPost(user: PrivateUser, postId: string) {
 }
 
 describe('POST /api/v1/lists/:id/items/posts visibility', () => {
+  it('returns 422 for a post in an archived community and creates no row', async () => {
+    const caller = await createTestUser()
+    const community = await insertTestCommunity({ createdById: caller.id })
+    const postId = await insertTestPost({
+      title: `Archived community ${createRandomString(8)}`,
+      slug: `archived-community-${createRandomString(8)}`,
+      createdById: caller.id,
+      communityId: community.id,
+      markdown: 'archived community',
+    })
+    await insertTestCommunityPostReview({
+      communityId: community.id,
+      postId,
+      submittedById: caller.id,
+    })
+    await archiveTestCommunity({ communityId: community.id, archivedById: caller.id })
+    const { sent, listId } = await addPost(caller, postId)
+    const response = await sent.expect(422)
+    expect(response.body.message).toBe("Post can't be added to a list")
+    expect((await searchListItems(listId, { currentUserId: caller.id })).results).toEqual([])
+  })
+
+  it('returns 422 for an archived post the caller can still name', async () => {
+    const caller = await createTestUser()
+    const postId = await insertTestPost({
+      title: `Archived ${createRandomString(8)}`,
+      slug: `archived-${createRandomString(8)}`,
+      createdById: caller.id,
+      markdown: 'archived',
+    })
+    await archivePost(postId, caller.id)
+    const { sent } = await addPost(caller, postId)
+    const response = await sent.expect(422)
+    expect(response.body.message).toBe("Post can't be added to a list")
+  })
+
   it('returns 404 for a private post the caller does not own', async () => {
     const caller = await createTestUser()
     const owner = await createTestUser()

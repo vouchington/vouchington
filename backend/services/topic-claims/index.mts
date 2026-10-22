@@ -1,11 +1,6 @@
 export { getTopicClaimState } from './config.mts'
 export { createTopicClaim } from './create.mts'
-export {
-  getUnresolvedTopicClaimForClaimant,
-  listTopicClaimsForTopic,
-  listTopicClaimsForUser,
-  listPendingTopicClaims,
-} from './get.mts'
+export { listTopicClaimsForTopic, listTopicClaimsForUser, listPendingTopicClaims } from './get.mts'
 export { issueDomainVerificationToken } from './generate-verification-token.mts'
 export { verifyTopicClaimDomain } from './verify-domain.mts'
 export { adminVerifyTopicClaim, rejectTopicClaim } from './admin-verify.mts'

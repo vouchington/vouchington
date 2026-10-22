@@ -22,16 +22,10 @@ server-side agents can call it, and no external MCP server lists it. The registr
 tool on exactly one audience" keeps each exposed tool on a single server, and a grant reaches only
 that server's tools.
 
-| Audience               | `serverName`                      | Route                              | API keys | Per-call audit |
-| ---------------------- | --------------------------------- | ---------------------------------- | -------- | -------------- |
-| `user`                 | `voucha-user-mcp`                 | `/api/v1/mcp`                      | yes      | yes            |
-| `community_moderation` | `voucha-community-moderation-mcp` | `/api/v1/community-moderation/mcp` | yes      | yes            |
-| `brand`                | `voucha-brand-mcp`                | `/api/v1/brand/mcp`                | yes      | yes            |
-| `admin`                | `voucha-admin-mcp`                | `/api/v1/admin/mcp`                | no       | yes            |
-| `legal`                | `voucha-legal-mcp`                | `/api/v1/legal/mcp`                | no       | yes            |
-
-User, community moderation, and brand accept API keys. Admin and legal take OAuth only and
-require an administrator, which keeps staff authority on a staff session.
+Each audience has its own server so a grant to one audience cannot expose tools from another.
+Member actions, community moderation, brand claims, and staff operations cross different trust
+boundaries. Authentication and audit policy follow that boundary; the authoritative server fields
+and credential rules live in [`config.mts`](../../../../backend/services/mcp-tools/config.mts).
 
 ## Suspended callers
 
@@ -49,8 +43,8 @@ request returns 503 and the call never runs.
 
 ## JSON-RPC batches
 
-A request may carry up to 25 JSON-RPC messages (`MAX_AUDITED_MCP_MESSAGES`). A larger batch returns
-413, which bounds the audit rows and route charges one request can spend.
+A batch has a bounded number of JSON-RPC messages so one request cannot consume unbounded audit
+rows or route charges. The limit lives with the route configuration.
 
 ---
 

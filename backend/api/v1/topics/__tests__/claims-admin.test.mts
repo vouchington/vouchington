@@ -21,7 +21,7 @@ describe('GET /api/v1/my/topic-claims', () => {
     const request = createRequest()
     await request.authenticateAs(regularUser)
     const response = await request.get('/api/v1/my/topic-claims').expect(200)
-    expect(Array.isArray(response.body.claims)).toBe(true)
+    expect(Array.isArray(response.body.results)).toBe(true)
   })
 
   it('returns claims for user who has made claims', async () => {
@@ -37,9 +37,9 @@ describe('GET /api/v1/my/topic-claims', () => {
     const request = createRequest()
     await request.authenticateAs(claimUser)
     const response = await request.get('/api/v1/my/topic-claims').expect(200)
-    expect(response.body.claims.length).toBeGreaterThan(0)
+    expect(response.body.results.length).toBeGreaterThan(0)
     expect(
-      response.body.claims.every(
+      response.body.results.every(
         (c: { claimant_user_id: string; state: string }) =>
           c.claimant_user_id === claimUser.id && c.state === 'pending',
       ),

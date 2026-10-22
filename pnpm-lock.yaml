@@ -5990,6 +5990,9 @@ importers:
       '@services/language-detection':
         specifier: workspace:^
         version: link:../language-detection
+      '@services/lists':
+        specifier: workspace:^
+        version: link:../lists
       '@services/media-delivery-safety':
         specifier: workspace:^
         version: link:../media-delivery-safety
@@ -7365,6 +7368,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@modules/feed-query-builders':
         specifier: workspace:^
         version: link:../../modules/feed-query-builders
@@ -7392,6 +7398,9 @@ importers:
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
+      valkyries:
+        specifier: ^0.10.0
+        version: 0.10.0
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -10637,6 +10646,9 @@ importers:
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
+      '@modules/pagination':
+        specifier: workspace:^
+        version: link:../../modules/pagination
       '@modules/token-secrets':
         specifier: workspace:^
         version: link:../../modules/token-secrets
@@ -10646,15 +10658,24 @@ importers:
       '@services/moderator-actions':
         specifier: workspace:^
         version: link:../moderator-actions
+      '@services/pagination':
+        specifier: workspace:^
+        version: link:../pagination
       '@services/topics':
         specifier: workspace:^
         version: link:../topics
       '@services/users':
         specifier: workspace:^
         version: link:../users
+      '@voucha/types':
+        specifier: workspace:^
+        version: link:../../types
       '@vouchington/domain-verification':
         specifier: ^0.0.0
         version: 0.0.0
+      '@vouchington/pagination':
+        specifier: ^0.0.3
+        version: 0.0.3
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0

@@ -12,7 +12,6 @@ import {
   verifyTopicClaimDomain,
   submitTopicClaimForManualReview,
   listTopicClaimsForTopic,
-  getUnresolvedTopicClaimForClaimant,
   getReadableTopicClaim,
   requireTopicClaimOnTopic,
   currentUserCanClaimTopic,
@@ -22,6 +21,10 @@ import { parseCreateTopicClaimInput } from '@services/topic-claims/parse'
 import { getTopicByAny } from '@services/topics'
 import { isModerationStaff } from '@services/users'
 import type { TopicClaim } from '@services/topic-claims/config'
+import { topicClaimFilters, topicClaimPageParser } from '@services/topic-claims/page-query'
+import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
+import { apiQuery } from '../../api-query-contract.mts'
+import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 
 type CreateTopicClaimBody = {
   claimed_role: string
@@ -75,9 +78,8 @@ app
       },
     )
     const claimId = validateUUIDParam(ctx, 'claimId')
-    await requireTopicClaimOnTopic(ctx.params.idOrSlug ?? '', claimId)
-
-    const result = await issueDomainVerificationToken(currentUser.id, claimId)
+    const claimContext = await requireTopicClaimOnTopic(ctx.params.idOrSlug ?? '', claimId)
+    const result = await issueDomainVerificationToken(currentUser.id, claimContext)
 
     ctx.setStatus(200)
     ctx.json(result)
@@ -100,9 +102,8 @@ app
       },
     )
     const claimId = validateUUIDParam(ctx, 'claimId')
-    await requireTopicClaimOnTopic(ctx.params.idOrSlug ?? '', claimId)
-
-    const claim = await verifyTopicClaimDomain(currentUser.id, claimId)
+    const claimContext = await requireTopicClaimOnTopic(ctx.params.idOrSlug ?? '', claimId)
+    const claim = await verifyTopicClaimDomain(currentUser.id, claimContext)
 
     ctx.setStatus(200)
     ctx.json({ claim: claimBody(claim) })
@@ -122,9 +123,13 @@ app
       { path: ctx.params },
     )
     const claimId = validateUUIDParam(ctx, 'claimId')
-    await requireTopicClaimOnTopic(ctx.params.idOrSlug ?? '', claimId)
-    const existingClaim = await getUnresolvedTopicClaimForClaimant(claimId, currentUser.id)
-    ctx.assert(existingClaim, 404, 'Claim not found or already resolved')
+    const claimContext = await requireTopicClaimOnTopic(ctx.params.idOrSlug ?? '', claimId)
+    ctx.assert(claimContext.claim.claimant_user_id === currentUser.id, 404, 'Claim not found')
+    ctx.assert(
+      !claimContext.claim.verified_at && !claimContext.claim.rejected_at,
+      404,
+      'Claim not found or already resolved',
+    )
 
     const body = (await ctx.request.json('1mb')) as SubmitTopicClaimManualReviewBody
     validateRequestContract(
@@ -135,7 +140,7 @@ app
       },
     )
 
-    const claim = await submitTopicClaimForManualReview(currentUser.id, claimId, body.evidence)
+    const claim = await submitTopicClaimForManualReview(currentUser.id, claimContext, body.evidence)
 
     ctx.setStatus(200)
     ctx.json({ claim: claimBody(claim) })
@@ -143,8 +148,18 @@ app
 
 // GET /api/v1/topics/:idOrSlug/claims — list claims for a topic (staff or claimant)
 app.route('/api/v1/topics/:idOrSlug/claims').get(async (ctx: Context) => {
+  apiQuery('GET:/api/v1/topics/:idOrSlug/claims', topicClaimPageParser, topicClaimFilters)
   const currentUser = await requireAuth(ctx, 'GET:/api/v1/topics/:idOrSlug/claims')
-  validateRequestContract(ctx, 'GET:/api/v1/topics/:idOrSlug/claims', { path: ctx.params })
+  const options = parseRuntimePagination(topicClaimPageParser, ctx.query)
+  const query = prepareQueryForValidation(ctx.query, {
+    ...topicClaimPageParser.queryContract,
+    ...topicClaimFilters.queryContract,
+  })
+  if (ctx.query.limit !== undefined) query.limit = options.limit
+  validateRequestContract(ctx, 'GET:/api/v1/topics/:idOrSlug/claims', {
+    path: ctx.params,
+    query,
+  })
 
   const idOrSlug = ctx.params.idOrSlug ?? ''
   ctx.assert(idOrSlug.length > 0, 422, 'idOrSlug is required')
@@ -152,15 +167,14 @@ app.route('/api/v1/topics/:idOrSlug/claims').get(async (ctx: Context) => {
   const topic = await getTopicByAny(idOrSlug)
   ctx.assert(topic, 404, 'Topic not found')
 
-  const claims = await listTopicClaimsForTopic(topic.id)
-
-  // Filter to only the current user's claims for non-staff
   const isStaff = isModerationStaff(currentUser)
-  const responseClaims = isStaff
-    ? claims
-    : claims.filter(c => c.claimant_user_id === currentUser.id)
-
-  ctx.json({ claims: responseClaims.map(claimBody) })
+  const mineOnly = ctx.query.mine_only === 'true'
+  const page = await listTopicClaimsForTopic(topic.id, {
+    ...options,
+    claimantUserId: isStaff && !mineOnly ? undefined : currentUser.id,
+    activeOnly: ctx.query.active_only === 'true',
+  })
+  ctx.json({ results: page.results.map(claimBody), page_info: page.page_info })
 })
 
 // GET /api/v1/topics/:idOrSlug/claims/:claimId — get a single claim

@@ -26,33 +26,6 @@ export function currentUserCanEditUsersSpendingCategories(
   return currentUser?.id === targetUserId
 }
 
-export async function currentUserCanViewHousehold(
-  currentUser: PrivateUser | null,
-  householdId: string,
-): Promise<boolean> {
-  if (!currentUser) return false
-  if (currentUser.roles.includes('administrator')) return true
-
-  const { rows } = await read(sql`/* currentUserCanViewHousehold */
-    SELECT
-      h.owner_user_id = ${currentUser.id} AS is_owner,
-      (
-        ${currentUser.individual_id}::uuid IS NOT NULL
-        AND EXISTS (
-          SELECT 1
-          FROM household_members hm
-          WHERE hm.household_id = h.id
-            AND hm.individual_id = ${currentUser.individual_id}::uuid
-        )
-      ) AS is_member
-    FROM households h
-    WHERE h.id = ${householdId}
-  `)
-
-  if (rows.length === 0) return false
-  return rows[0].is_owner || rows[0].is_member
-}
-
 export async function currentUserCanUpdateHousehold(
   currentUser: PrivateUser | null,
   householdId: string,
@@ -61,21 +34,6 @@ export async function currentUserCanUpdateHousehold(
   if (currentUser.roles.includes('administrator')) return true
 
   const { rows } = await read(sql`/* currentUserCanUpdateHousehold */
-    SELECT owner_user_id FROM households WHERE id = ${householdId}
-  `)
-
-  if (rows.length === 0) return false
-  return rows[0].owner_user_id === currentUser.id
-}
-
-export async function currentUserCanDeleteHousehold(
-  currentUser: PrivateUser | null,
-  householdId: string,
-): Promise<boolean> {
-  if (!currentUser) return false
-  if (currentUser.roles.includes('administrator')) return true
-
-  const { rows } = await read(sql`/* currentUserCanDeleteHousehold */
     SELECT owner_user_id FROM households WHERE id = ${householdId}
   `)
 

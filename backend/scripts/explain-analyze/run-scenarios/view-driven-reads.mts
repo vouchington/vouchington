@@ -94,13 +94,18 @@ export async function runViewDrivenReadScenarios(): Promise<void> {
   await runAndCapture('import-community-list', async () => {
     const params = [seedUuid(2, '34'), seedUuid(0, '14')]
     await read(
-      importCommunityListPostsSourceSql(seedUuid(2, '34'), seedUuid(0, '14'), {
-        kind: 'user',
-        userId: seedUser.id,
-        staffRole: null,
-      }),
+      importCommunityListPostsSourceSql(
+        seedUuid(2, '34'),
+        seedUuid(0, '14'),
+        {
+          kind: 'user',
+          userId: seedUser.id,
+          staffRole: null,
+        },
+        50,
+      ),
     )
-    await read(importCommunityListFeedItemsSourceSql, [...params, 20])
+    await read(importCommunityListFeedItemsSourceSql, [...params, 20, 50])
   })
 
   registerScenarioContract('active-community-agent-prompts', {

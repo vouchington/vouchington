@@ -3,18 +3,76 @@ import { describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   createRandomString,
+  archiveTestCommunity,
   createTestPost,
   createTestUser,
   insertTestCommunity,
+  insertTestCommunityPostReview,
   insertTestCommunityListItem,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { createOwnedList, searchListItems } from '@services/lists'
+import { archivePost } from '@services/posts/archive'
 
 const SCOPES = ['lists:read', 'lists:write'] as const
 const PRIVATE_SCOPES = [...SCOPES, 'post-relations.owned-private:write'] as const
 
 describe('add_list_item batch — real DB', () => {
+  it('reports an archived-community post as ineligible without writing it', async () => {
+    const caller = { ...(await createTestUser()), membership_plan: 'plus' as const }
+    const community = await insertTestCommunity({ createdById: caller.id })
+    const post = await createTestPost({ user: caller, community_id: community.id })
+    await insertTestCommunityPostReview({
+      communityId: community.id,
+      postId: post.id,
+      submittedById: caller.id,
+    })
+    await archiveTestCommunity({ communityId: community.id, archivedById: caller.id })
+    const list = await createOwnedList(caller.id, WEB_PROVENANCE, { name: 'Archived community' })
+    const result = await callStructuredMcpTool(
+      caller,
+      'add_list_item',
+      {
+        list_id: list.id,
+        items: [{ item_type: 'post', entity: post.id }],
+      },
+      SCOPES,
+    )
+    expect(result.results).toMatchObject([
+      { status: 'ineligible', error: "Post can't be added to a list" },
+    ])
+    expect((await searchListItems(list.id, { currentUserId: caller.id })).results).toEqual([])
+  })
+
+  it('reports a named archived post as ineligible and adds an eligible sibling', async () => {
+    const caller = { ...(await createTestUser()), membership_plan: 'plus' as const }
+    const list = await createOwnedList(caller.id, WEB_PROVENANCE, { name: 'Archived batch' })
+    const archived = await createTestPost({ user: caller })
+    const eligible = await createTestPost({ user: caller })
+    await archivePost(archived.id, caller.id)
+    const result = await callStructuredMcpTool(
+      caller,
+      'add_list_item',
+      {
+        list_id: list.id,
+        items: [
+          { item_type: 'post', entity: archived.id },
+          { item_type: 'post', entity: eligible.id },
+        ],
+      },
+      SCOPES,
+    )
+    expect(result.results).toMatchObject([
+      { status: 'ineligible', error: "Post can't be added to a list" },
+      { status: 'added', list_item: { entity_id: eligible.id } },
+    ])
+    expect(
+      (await searchListItems(list.id, { currentUserId: caller.id })).results.map(
+        item => item.entity_id,
+      ),
+    ).toEqual([eligible.id])
+  })
+
   it('adds the visible item and reports the missing one', async () => {
     const caller = { ...(await createTestUser()), membership_plan: 'plus' as const }
     const list = await createOwnedList(caller.id, WEB_PROVENANCE, { name: 'Batch' })

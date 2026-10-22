@@ -16,6 +16,7 @@ import { nativePointValuationApiFixtureCases } from './native-point-valuation-ca
 import { nativeSpendingCategoryApiFixtureCases } from './native-spending-category-cases.mts'
 import { nativeRewardsStatusApiFixtureCases } from './native-rewards-status-cases.mts'
 import { nativeHouseholdPaginationApiFixtureCases } from './native-household-pagination-cases.mts'
+import { topicClaimPaginationApiFixtureCases } from './topic-claim-pagination-cases.mts'
 import { nativeAccountPaginationApiFixtureCases } from './native-account-pagination-cases.mts'
 import { nativeCommentThreadApiFixtureCases } from './native-comment-thread-cases.mts'
 import { nativeCommentAncestorPaginationApiFixtureCases } from './native-comment-ancestor-pagination-cases.mts'
@@ -52,23 +53,19 @@ function fromCaseFile(caseFile: string, cases: ApiFixtureCase[]): ResolvedApiFix
     }
   })
 }
+const caseRoot = 'backend/test-helpers/api-fixtures/'
 export const apiFixtureCases: ResolvedApiFixtureCase[] = [
   ...fromCaseFile(
-    'backend/test-helpers/api-fixtures/copyright-dsa-cases.mts',
-    copyrightDsaApiFixtureCases,
+    `${caseRoot}topic-claim-pagination-cases.mts`,
+    topicClaimPaginationApiFixtureCases,
   ),
+  ...fromCaseFile(`${caseRoot}copyright-dsa-cases.mts`, copyrightDsaApiFixtureCases),
   ...fromCaseFile(
-    'backend/test-helpers/api-fixtures/copyright-trusted-flagger-cases.mts',
+    `${caseRoot}copyright-trusted-flagger-cases.mts`,
     copyrightTrustedFlaggerApiFixtureCases,
   ),
-  ...fromCaseFile(
-    'backend/test-helpers/api-fixtures/web-copyright-eu-cases.mts',
-    webCopyrightEuApiFixtureCases,
-  ),
-  ...fromCaseFile(
-    'backend/test-helpers/api-fixtures/native-chat-cases.mts',
-    nativeChatApiFixtureCases,
-  ),
+  ...fromCaseFile(`${caseRoot}web-copyright-eu-cases.mts`, webCopyrightEuApiFixtureCases),
+  ...fromCaseFile(`${caseRoot}native-chat-cases.mts`, nativeChatApiFixtureCases),
   ...fromCaseFile(
     'backend/test-helpers/api-fixtures/native-ai-cost-cases.mts',
     nativeAiCostApiFixtureCases,

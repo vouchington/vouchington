@@ -138,9 +138,9 @@
       "all": {
         "on": {
           "count": 2,
-          "list": 8000,
-          "core": 3000,
-          "output": 8000
+          "list": 9000,
+          "core": 4000,
+          "output": 9000
         }
       },
       "Reader": {

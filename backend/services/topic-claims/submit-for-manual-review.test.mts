@@ -3,13 +3,23 @@ import { createTestUser, insertTestTopic } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import { createTopicClaim } from './create.mts'
 import { adminVerifyTopicClaim } from './admin-verify.mts'
-import { submitTopicClaimForManualReview } from './submit-for-manual-review.mts'
+import { submitTopicClaimForManualReview as submitLoadedClaimForManualReview } from './submit-for-manual-review.mts'
+import { requireTopicClaimOnTopic } from './require-on-topic.mts'
 import { TOPIC_CLAIM_EVIDENCE_MAX_LENGTH } from './parse.mts'
 
 describe('submitTopicClaimForManualReview', () => {
   let claimant: PrivateUser
   let staff: PrivateUser
   let topicId: string
+
+  async function submitTopicClaimForManualReview(
+    userId: string,
+    claimId: string,
+    evidence: string,
+  ) {
+    const context = await requireTopicClaimOnTopic(topicId, claimId)
+    return submitLoadedClaimForManualReview(userId, context, evidence)
+  }
 
   beforeAll(async () => {
     claimant = await createTestUser()
@@ -109,8 +119,9 @@ describe('submitTopicClaimForManualReview', () => {
     })
     await adminVerifyTopicClaim(staff.id, claim.id)
 
+    const context = await requireTopicClaimOnTopic(tid, claim.id)
     await expect(
-      submitTopicClaimForManualReview(claimant.id, claim.id, 'Post-verification evidence.'),
+      submitLoadedClaimForManualReview(claimant.id, context, 'Post-verification evidence.'),
     ).rejects.toMatchObject({ status: 404 })
   })
 })

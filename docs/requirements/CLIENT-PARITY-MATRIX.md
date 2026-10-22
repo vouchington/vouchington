@@ -77,6 +77,11 @@ do not include them. The tools do not award ownership; domain proof or staff rev
 consent and credential adoption is a vouchington-clients follow-up; the producer lands first. The
 [MCP catalog](../overview/architecture/mcp/catalog.md) owns the tool contract.
 
+Topic-claim list reads expose cursor pagination in REST and MCP. Web claim and dispute flows use
+server-side claimant, state, and reviewed-topic filters so an unrelated first page cannot hide a
+relevant claim. Native clients consuming these reads must follow `page_info` cursors and preserve
+the same filters when adopting the current contract.
+
 ## Household MCP consent
 
 Household tools require explicit `households:read` and `households:write` grants. Write requires

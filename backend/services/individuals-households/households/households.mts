@@ -4,27 +4,12 @@ import assert from 'http-assert'
 import { validateUUID } from '@modules/utils/ids'
 import type { PrivateUser } from '@services/users/types'
 import type { HouseholdMembershipRow, HouseholdRow } from '../types.mts'
-import {
-  currentUserCanViewHousehold,
-  currentUserCanDeleteHousehold,
-  readHouseholdMemberManageAccess,
-} from '../authorization.mts'
+import { readHouseholdMemberManageAccess } from '../authorization.mts'
 import {
   membershipIndividualSql,
   membershipUpdatedAtSql,
 } from './household-membership-page-row.mts'
 
-async function getHouseholdById(householdId: string) {
-  const { rows } = await read<HouseholdRow>(sql`/* getHouseholdById */
-    SELECT
-      id,
-      owner_user_id,
-      updated_at
-    FROM households
-    WHERE id = ${householdId}
-  `)
-  return rows[0] || null
-}
 export async function getOrCreateHousehold(currentUser: PrivateUser | null) {
   assert(currentUser, 401, 'User not logged in')
   const { rows: households } = await read<HouseholdRow>(sql`/* getOrCreateHousehold */
@@ -60,22 +45,40 @@ export async function createHousehold(currentUser: PrivateUser | null) {
 export async function getHousehold(currentUser: PrivateUser | null, householdId: string) {
   assert(currentUser, 401, 'User not logged in')
   validateUUID(householdId)
-  const household = await getHouseholdById(householdId)
+  const isAdministrator = currentUser.roles.includes('administrator')
+  const { rows } = await read<HouseholdRow>(sql`/* getHousehold */
+    SELECT h.id, h.owner_user_id, h.updated_at
+    FROM households h
+    WHERE h.id = ${householdId}
+      AND (
+        ${isAdministrator}
+        OR h.owner_user_id = ${currentUser.id}
+        OR (
+          ${currentUser.individual_id}::uuid IS NOT NULL
+          AND EXISTS (
+            SELECT 1 FROM household_members hm
+            WHERE hm.household_id = h.id
+              AND hm.individual_id = ${currentUser.individual_id}::uuid
+          )
+        )
+      )
+    LIMIT 1
+  `)
+  const household = rows[0]
   assert(household, 404, 'Household not found')
-  const canView = await currentUserCanViewHousehold(currentUser, householdId)
-  assert(canView, 404, 'Household not found')
   return household
 }
 export async function deleteHousehold(currentUser: PrivateUser | null, householdId: string) {
   assert(currentUser, 401, 'User not logged in')
   validateUUID(householdId)
-  const household = await getHouseholdById(householdId)
-  assert(household, 404, 'Household not found')
-  const canDelete = await currentUserCanDeleteHousehold(currentUser, householdId)
-  assert(canDelete, 404, 'Household not found')
-  await write(sql`/* deleteHousehold */
-    DELETE FROM households WHERE id = ${householdId}
+  const isAdministrator = currentUser.roles.includes('administrator')
+  const { rows } = await write(sql`/* deleteHousehold */
+    DELETE FROM households
+    WHERE id = ${householdId}
+      AND (${isAdministrator} OR owner_user_id = ${currentUser.id})
+    RETURNING id
   `)
+  assert(rows.length > 0, 404, 'Household not found')
 }
 export async function addHouseholdMembership(
   currentUser: PrivateUser | null,

@@ -100,7 +100,7 @@ const tool: Tool<
             properties: {
               item_type: { type: 'string' },
               entity: { type: 'string' },
-              status: { type: 'string', enum: ['added', 'not_found', 'forbidden'] },
+              status: { type: 'string', enum: ['added', 'not_found', 'forbidden', 'ineligible'] },
             },
             required: ['item_type', 'entity', 'status'],
             additionalProperties: true,

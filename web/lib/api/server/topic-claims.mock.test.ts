@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getMyTopicClaims, getPendingTopicClaims, getTopicClaims } from './topic-claims'
+import { expectApiWrapperCall } from '@/test-helpers/api-wrapper'
+import type { PageInfo } from '@voucha/types/pagination'
 
 const { mockGet } = vi.hoisted(() => ({
   mockGet: vi.fn<VitestLooseMock>(),
@@ -16,14 +18,39 @@ vi.mock(
 )
 
 describe('topic-claims server api helpers', () => {
+  const emptyPage = {
+    results: [],
+    page_info: { has_next_page: false, start_cursor: null, end_cursor: null } satisfies PageInfo,
+  }
   beforeEach(() => {
     mockGet.mockReset()
-    mockGet.mockResolvedValue({ claims: [] })
+    mockGet.mockResolvedValue(emptyPage)
   })
 
   it('calls /api/v1/my/topic-claims', async () => {
-    await getMyTopicClaims()
-    expect(mockGet).toHaveBeenCalledWith('/api/v1/my/topic-claims')
+    await expectApiWrapperCall({
+      mock: mockGet,
+      response: emptyPage,
+      call: () => getMyTopicClaims() as Promise<typeof emptyPage>,
+      expectedArgs: ['/api/v1/my/topic-claims'],
+    })
+  })
+
+  it('passes bounded topic and verified filters to the claim page', async () => {
+    await expectApiWrapperCall({
+      mock: mockGet,
+      response: emptyPage,
+      call: () =>
+        getMyTopicClaims({
+          topicIds: ['topic-1', 'topic-2'],
+          verifiedOnly: true,
+          limit: 2,
+          after: 'cursor',
+        }) as Promise<typeof emptyPage>,
+      expectedArgs: [
+        '/api/v1/my/topic-claims?topic_ids=topic-1%2Ctopic-2&verified_only=true&after=cursor&limit=2',
+      ],
+    })
   })
 
   it('calls /api/v1/admin/topic-claims', async () => {
@@ -32,7 +59,20 @@ describe('topic-claims server api helpers', () => {
   })
 
   it('calls /api/v1/topics/:id/claims', async () => {
-    await getTopicClaims('my-topic')
-    expect(mockGet).toHaveBeenCalledWith('/api/v1/topics/my-topic/claims')
+    await expectApiWrapperCall({
+      mock: mockGet,
+      response: emptyPage,
+      call: () => getTopicClaims('my-topic'),
+      expectedArgs: ['/api/v1/topics/my-topic/claims'],
+    })
+  })
+
+  it('requests active caller-only claims by topic', async () => {
+    await expectApiWrapperCall({
+      mock: mockGet,
+      response: emptyPage,
+      call: () => getTopicClaims('my-topic', { activeOnly: true, mineOnly: true }),
+      expectedArgs: ['/api/v1/topics/my-topic/claims?active_only=true&mine_only=true'],
+    })
   })
 })

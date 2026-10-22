@@ -20,6 +20,7 @@ export const REGISTRY_ORDER = [
   'rss-feed-crawl-config',
   'user-import-export-config',
   'data-retention-config',
+  'list-import-config',
   'articles-work-config',
   'pagination-config',
   'moderation-analytics-work-config',

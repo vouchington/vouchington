@@ -143,6 +143,23 @@ describe('POST /api/v1/topics/:idOrSlug/claims', () => {
       .send({ evidence: 42 })
       .expect(404)
   })
+
+  it('masks an already resolved own claim before malformed body details', async () => {
+    const claimant = await createTestUser()
+    const staff = await createTestUser({ administrator: true })
+    const { claim } = await createTopicClaim(claimant.id, {
+      topicId,
+      claimedRole: 'Issuer',
+      evidence: '',
+    })
+    await adminVerifyTopicClaim(staff.id, claim.id)
+    const request = createRequest()
+    await request.authenticateAs(claimant)
+    await request
+      .post(`/api/v1/topics/${topicSlug}/claims/${claim.id}/manual-review-submission`)
+      .send({ evidence: 42 })
+      .expect(404)
+  })
 })
 
 describe('GET /api/v1/topics/:idOrSlug/claims', () => {
@@ -185,10 +202,10 @@ describe('GET /api/v1/topics/:idOrSlug/claims', () => {
     const request = createRequest()
     await request.authenticateAs(staffUser)
     const response = await request.get(`/api/v1/topics/${topicSlug}/claims`).expect(200)
-    expect(Array.isArray(response.body.claims)).toBe(true)
-    expect(response.body.claims.length).toBeGreaterThan(0)
+    expect(Array.isArray(response.body.results)).toBe(true)
+    expect(response.body.results.length).toBeGreaterThan(0)
     // Each claim has a state field
-    expect(response.body.claims[0].state).toBeDefined()
+    expect(response.body.results[0].state).toBeDefined()
   })
 
   it('non-staff sees only own claims', async () => {
@@ -197,14 +214,36 @@ describe('GET /api/v1/topics/:idOrSlug/claims', () => {
     await request.authenticateAs(otherUser)
     const response = await request.get(`/api/v1/topics/${topicSlug}/claims`).expect(200)
     // Other user has no claims on this topic
-    expect(response.body.claims).toEqual([])
+    expect(response.body.results).toEqual([])
   })
 
   it('claimant sees their own claim', async () => {
     const request = createRequest()
     await request.authenticateAs(claimant)
     const response = await request.get(`/api/v1/topics/${topicSlug}/claims`).expect(200)
-    expect(response.body.claims.length).toBe(1)
-    expect(response.body.claims[0].claimant_user_id).toBe(claimant.id)
+    expect(response.body.results.length).toBe(1)
+    expect(response.body.results[0].claimant_user_id).toBe(claimant.id)
+  })
+
+  it('staff mine_only scopes before the limit and keeps the default staff view', async () => {
+    const { claim: own } = await createTopicClaim(staffUser.id, {
+      topicId,
+      claimedRole: 'Issuer',
+      evidence: '',
+    })
+    const another = await createTestUser()
+    await createTopicClaim(another.id, { topicId, claimedRole: 'Operator', evidence: '' })
+    const request = createRequest()
+    await request.authenticateAs(staffUser)
+    const mine = await request
+      .get(`/api/v1/topics/${topicSlug}/claims`)
+      .query({ limit: 1, mine_only: true, active_only: true })
+      .expect(200)
+    expect(mine.body.results.map((claim: { id: string }) => claim.id)).toEqual([own.id])
+    const all = await request
+      .get(`/api/v1/topics/${topicSlug}/claims`)
+      .query({ limit: 1 })
+      .expect(200)
+    expect(all.body.page_info.has_next_page).toBe(true)
   })
 })

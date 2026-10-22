@@ -103,6 +103,41 @@ describe('getVerifiedTopicClaim', () => {
 })
 
 describe('listTopicClaimsForTopic', () => {
+  it('paginates and scopes a cursor to the claimant filter', async () => {
+    const owner = await createTestUser()
+    const topicId = await insertTestTopic({
+      name: `Claim page ${crypto.randomUUID().slice(0, 8)}`,
+      slug: `claim-page-${crypto.randomUUID().slice(0, 8)}`,
+      createdById: owner.id,
+    })
+    const claimants = await Promise.all([createTestUser(), createTestUser(), createTestUser()])
+    for (const claimant of claimants) {
+      await createTopicClaim(claimant.id, { topicId, claimedRole: 'Issuer', evidence: '' })
+    }
+    const first = await listTopicClaimsForTopic(topicId, { limit: 1 })
+    expect(first.results).toHaveLength(1)
+    expect(first.page_info.has_next_page).toBe(true)
+    const second = await listTopicClaimsForTopic(topicId, {
+      limit: 1,
+      after: first.page_info.end_cursor!,
+    })
+    expect(second.results).toHaveLength(1)
+    expect(second.results[0]!.id).not.toBe(first.results[0]!.id)
+    await expect(
+      listTopicClaimsForTopic(topicId, {
+        limit: 1,
+        claimantUserId: claimants[0]!.id,
+        after: first.page_info.end_cursor!,
+      }),
+    ).rejects.toThrow('Invalid claim cursor')
+    const own = await listTopicClaimsForTopic(topicId, {
+      limit: 1,
+      claimantUserId: claimants[0]!.id,
+    })
+    expect(own.results.map(claim => claim.claimant_user_id)).toEqual([claimants[0]!.id])
+    expect(own.page_info.has_next_page).toBe(false)
+  })
+
   it('returns all claims for a topic including different users', async () => {
     const creator = await createTestUser()
     const topicId = await insertTestTopic({
@@ -115,9 +150,9 @@ describe('listTopicClaimsForTopic', () => {
     await createTopicClaim(u1.id, { topicId, claimedRole: 'Issuer', evidence: '' })
     await createTopicClaim(u2.id, { topicId, claimedRole: 'Operator', evidence: '' })
 
-    const claims = await listTopicClaimsForTopic(topicId)
-    expect(claims.length).toBeGreaterThanOrEqual(2)
-    const userIds = claims.map(c => c.claimant_user_id)
+    const { results } = await listTopicClaimsForTopic(topicId)
+    expect(results.length).toBeGreaterThanOrEqual(2)
+    const userIds = results.map(c => c.claimant_user_id)
     expect(userIds).toContain(u1.id)
     expect(userIds).toContain(u2.id)
   })
@@ -129,12 +164,43 @@ describe('listTopicClaimsForTopic', () => {
       slug: `empty-claims-topic-${crypto.randomUUID().slice(0, 8)}`,
       createdById: creator.id,
     })
-    const claims = await listTopicClaimsForTopic(topicId)
-    expect(claims).toEqual([])
+    const page = await listTopicClaimsForTopic(topicId)
+    expect(page.results).toEqual([])
   })
 })
 
 describe('listTopicClaimsForUser', () => {
+  it('binds topic filters to the cursor', async () => {
+    const user = await createTestUser()
+    const creator = await createTestUser()
+    const topicIds = await Promise.all(
+      [0, 1].map(index =>
+        insertTestTopic({
+          name: `User claim filter ${index} ${crypto.randomUUID().slice(0, 8)}`,
+          slug: `user-claim-filter-${index}-${crypto.randomUUID().slice(0, 8)}`,
+          createdById: creator.id,
+        }),
+      ),
+    )
+    for (const topicId of topicIds)
+      await createTopicClaim(user.id, { topicId, claimedRole: 'Issuer', evidence: '' })
+    const first = await listTopicClaimsForUser(user.id, { limit: 1, topicIds })
+    expect(first.page_info.has_next_page).toBe(true)
+    const second = await listTopicClaimsForUser(user.id, {
+      limit: 1,
+      topicIds,
+      after: first.page_info.end_cursor!,
+    })
+    expect(second.results[0]!.id).not.toBe(first.results[0]!.id)
+    await expect(
+      listTopicClaimsForUser(user.id, {
+        limit: 1,
+        topicIds: [topicIds[0]!],
+        after: first.page_info.end_cursor!,
+      }),
+    ).rejects.toThrow('Invalid claim cursor')
+  })
+
   it('returns claims for a user across multiple topics', async () => {
     const user = await createTestUser()
     const creator = await createTestUser()
@@ -151,17 +217,17 @@ describe('listTopicClaimsForUser', () => {
     await createTopicClaim(user.id, { topicId: t1, claimedRole: 'Issuer', evidence: '' })
     await createTopicClaim(user.id, { topicId: t2, claimedRole: 'Operator', evidence: '' })
 
-    const claims = await listTopicClaimsForUser(user.id)
-    expect(claims.length).toBeGreaterThanOrEqual(2)
-    for (const c of claims) {
+    const { results } = await listTopicClaimsForUser(user.id)
+    expect(results.length).toBeGreaterThanOrEqual(2)
+    for (const c of results) {
       expect(c.claimant_user_id).toBe(user.id)
     }
   })
 
   it('returns empty list for user with no claims', async () => {
     const user = await createTestUser()
-    const claims = await listTopicClaimsForUser(user.id)
-    expect(claims).toEqual([])
+    const page = await listTopicClaimsForUser(user.id)
+    expect(page.results).toEqual([])
   })
 })
 
