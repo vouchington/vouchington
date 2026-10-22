@@ -46,16 +46,20 @@ describe('CrawlersListPage', () => {
 
   it('renders empty state when no crawlers', async () => {
     mockGetCrawlers.mockResolvedValue({ results: [] })
-    render(await CrawlersListPage())
+    const { container } = render(await CrawlersListPage())
     expect(screen.getByText('No crawlers configured')).toBeInTheDocument()
+    expect(container.querySelector('[data-pw="page-content-wrapper"]')).toBeTruthy()
+    expect(screen.getByRole('region', { name: 'Crawlers' })).toBeInTheDocument()
   })
 
   it('renders crawler table when crawlers exist', async () => {
     mockGetCrawlers.mockResolvedValue({ results: [baseCrawler] })
-    render(await CrawlersListPage())
+    const { container } = render(await CrawlersListPage())
     expect(screen.getByText('Crawlers')).toBeInTheDocument()
     expect(screen.getByText('fetch')).toBeInTheDocument()
     expect(screen.getByText('5')).toBeInTheDocument()
+    expect(container.querySelector('[data-pw="page-content-wrapper"]')).toBeTruthy()
+    expect(screen.getByRole('region', { name: 'Crawlers' })).toBeInTheDocument()
   })
 
   it('propagates error when getCrawlers throws', async () => {
