@@ -2,10 +2,7 @@ import { PRIVATE_INFRA_ENV_REVIEW_REASONS } from './review-reasons-private-infra
 
 export const ENV_REVIEW_REASONS = new Map<string, string>([
   ...PRIVATE_INFRA_ENV_REVIEW_REASONS,
-  [
-    'ADBLOCKER_CACHE_PATH',
-    'Filesystem cache path; keep environment-scoped for local/runtime placement.',
-  ],
+  ['ADBLOCKER_CACHE_PATH', 'Filesystem cache path; environment-scoped placement.'],
   [
     'ANALYTICS_BACKEND',
     'Analytics backend selector; keep environment-scoped with deployment IAM/resources wiring.',
@@ -129,6 +126,7 @@ export const ENV_REVIEW_REASONS = new Map<string, string>([
     'Runtime cache tuning; keep environment-scoped for operator override.',
   ],
   ['STORYBOOK_BASE_PATH', "Private infrastructure owns Storybook's deployment build path."],
+  ['ADMIN_EMAIL_ADDRESS', 'Explicit deployment identity for optional administrator bootstrap.'],
   [
     'SUPPORT_EMAIL_ADDRESS',
     'Public contact address; keep environment-scoped for deployment override.',

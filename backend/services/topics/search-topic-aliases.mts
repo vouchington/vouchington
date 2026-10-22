@@ -1,3 +1,4 @@
+import { escapeLikePattern } from '@modules/search-utils'
 import { read } from '@data-stores/psql'
 
 export type SearchedTopicAlias = {
@@ -24,7 +25,9 @@ export const searchTopicAliases = async ({
   const filters: string[] = []
 
   if (prefixQuery) {
-    filters.push(`LOWER(alias) ILIKE $${values.push(`${prefixQuery.trim().toLowerCase()}%`)}`)
+    filters.push(
+      `LOWER(alias) ILIKE $${values.push(`${escapeLikePattern(prefixQuery.trim().toLowerCase())}%`)} ESCAPE '\\'`,
+    )
   }
   if (textQuery) {
     filters.push(

@@ -79,7 +79,9 @@ function validateImageUpload(options: CreateUploadUrlOptions) {
       acceptsContentType(contentType) {
         const format = contentType.split('/')[1]
         if (format && !SUPPORTED_IMAGE_FORMATS.includes(format)) rejectedFormat = format
-        return format !== undefined && SUPPORTED_IMAGE_FORMATS.includes(format)
+        return SUPPORTED_IMAGE_FORMATS.some(
+          supportedFormat => contentType === `image/${supportedFormat}`,
+        )
       },
     })
   } catch (err) {

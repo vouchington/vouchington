@@ -30,6 +30,7 @@
     "@modules/on-error": "workspace:^",
     "@modules/pagination": "workspace:^",
     "@modules/rss-feed-cover-art": "workspace:^",
+    "@modules/search-utils": "workspace:^",
     "@modules/utils": "workspace:^",
     "@queues/background-cpu": "workspace:^",
     "@queues/content-analysis": "workspace:^",

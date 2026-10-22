@@ -31,6 +31,18 @@ describe('searchTopicAliases - merged topic filter', () => {
     expect(found?.topic_id).not.toBe(source.id)
   })
 
+  it.each(['%', '_', '\\'])('treats %s as a literal prefix character', async symbol => {
+    const topic = await createTestTopic()
+    const key = `literal-${crypto.randomUUID()}`
+    const literal = `${key}${symbol}match`
+    await createTopicAliases(topic.id, [literal, `${key}xmatch`])
+    const { results } = await searchTopicAliases({
+      topicId: topic.id,
+      prefixQuery: `${key}${symbol}`,
+    })
+    expect(results.map(result => result.alias)).toEqual([literal])
+  })
+
   it('returns aliases for active topics', async () => {
     const user = await createTestUser()
     const r = Math.random().toString(36).slice(2, 10)

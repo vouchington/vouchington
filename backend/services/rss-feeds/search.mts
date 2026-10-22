@@ -1,3 +1,4 @@
+import { escapeLikePattern } from '@modules/search-utils'
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { appendTopicDescendantsCte } from '@services/topics/descendants-sql'
@@ -109,14 +110,14 @@ export const searchRssFeeds = async (options: SearchRssFeedsOptions = {}) => {
     // Use CTE to compute tsquery once and reuse it
     filters.push(sql`(
       rss_feeds.search_vector @@ search_tsquery.tsquery
-      OR LOWER(rss_feeds.title) LIKE search_tsquery.title_pattern
+      OR LOWER(rss_feeds.title) LIKE search_tsquery.title_pattern ESCAPE '\\'
     )`)
     sortBy = sql`ts_rank(rss_feeds.search_vector, search_tsquery.tsquery) DESC, rss_feeds.id DESC`
 
     query.append(sql`
       search_tsquery AS MATERIALIZED (
         SELECT websearch_to_tsquery('voucha_english', ${searchQuery}) AS tsquery,
-          LOWER(${`%${searchQuery}%`}) AS title_pattern
+          LOWER(${`%${escapeLikePattern(searchQuery ?? '')}%`}) AS title_pattern
       ),
       rss_feed_ids AS MATERIALIZED (
         SELECT id

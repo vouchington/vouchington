@@ -175,6 +175,7 @@ export const ENV_VAR_CONTRACT_GROUPS = [
     'internal',
     ['ecs-backend-environment', 'ecs-worker-environment'],
     [
+      'ADMIN_EMAIL_ADDRESS',
       'SES_CONFIGURATION_SET_TRANSACTIONAL',
       'SES_CONFIGURATION_SET_MARKETING',
       'S3_BUCKET_COPYRIGHT_EVIDENCE',
