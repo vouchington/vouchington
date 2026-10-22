@@ -70,18 +70,18 @@ describe('SubmitLinkForm', () => {
     })
   })
 
-  it('shows error message when createLinkPost rejects', async () => {
+  it('announces a submission error to assistive technology', async () => {
     mockCreateLinkPost.mockRejectedValue(new Error('Server error'))
     render(<SubmitLinkForm />)
+    expect(screen.queryByRole('alert')).toBeNull()
     fireEvent.change(screen.getByRole('textbox', { name: /url/i }), {
       target: { value: 'https://example.com/article' },
     })
     fireEvent.submit(document.querySelector('[data-pw="submit-link-form"]')!)
     await waitFor(() => {
-      expect(document.querySelector('[data-pw="submit-link-error"]')).not.toBeNull()
-      expect(document.querySelector('[data-pw="submit-link-error"]')?.textContent).toContain(
-        'Server error',
-      )
+      const alert = screen.getByRole('alert')
+      expect(alert).toHaveAttribute('data-pw', 'submit-link-error')
+      expect(alert).toHaveTextContent('Server error')
     })
     expect(mockTurnstileReset).toHaveBeenCalled()
   })
