@@ -11,7 +11,8 @@ Not partitioned — growth: unbounded.
 | `id`                     | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                      |
 | `copyright_notice_id`    | `uuid`                     | no       |                              |          |           |           | EU notice this supervised complaint concerns.                                        |
 | `jurisdiction`           | `copyright_jurisdictions`  | no       |                              |          |           |           | Always eu_dsa. The composite foreign key requires the notice to be an eu_dsa notice. |
-| `recorded_by_id`         | `uuid`                     | yes      |                              |          |           |           | Staff user who recorded the complaint. Null after that account is deleted.           |
+| `recorded_by_id`         | `uuid`                     | yes      |                              |          |           |           | User who recorded the complaint. Null after that account is deleted.                 |
+| `idempotency_key`        | `text`                     | no       |                              |          |           |           | Caller-supplied UUID replay key, scoped to the recording user and jurisdiction.      |
 | `authority_reference`    | `text`                     | no       |                              |          |           |           | Authority reference for this complaint. Unique per notice.                           |
 | `explanation_ciphertext` | `text`                     | no       |                              |          |           |           | Encrypted explanation of the supervised complaint.                                   |
 | `received_at`            | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           | When Voucha stored this supervised complaint.                                        |
@@ -21,11 +22,13 @@ Not partitioned — growth: unbounded.
 
 **Unique constraints:**
 
+- `uq_copyright_eu_supervised_complaints__idempotency`: `UNIQUE (recorded_by_id, jurisdiction, idempotency_key)`
 - `uq_copyright_eu_supervised_complaints__reference`: `UNIQUE (copyright_notice_id, jurisdiction, authority_reference)`
 
 **Check constraints:**
 
 - `chk_copyright_eu_supervised_complaints__explanation`: `CHECK (((char_length(explanation_ciphertext) >= 1) AND (char_length(explanation_ciphertext) <= 1048576)))`
+- `chk_copyright_eu_supervised_complaints__idempotency`: `CHECK ((char_length(idempotency_key) = 36))`
 - `chk_copyright_eu_supervised_complaints__jurisdiction`: `CHECK ((jurisdiction = 'eu_dsa'::copyright_jurisdictions))`
 - `chk_copyright_eu_supervised_complaints__reference`: `CHECK (((char_length(authority_reference) >= 1) AND (char_length(authority_reference) <= 200)))`
 
@@ -38,6 +41,7 @@ Not partitioned — growth: unbounded.
 
 - `copyright_eu_supervised_complaints_pkey`: `CREATE UNIQUE INDEX copyright_eu_supervised_complaints_pkey ON public.copyright_eu_supervised_complaints USING btree (id)`
 - `idx_copyright_eu_supervised_complaints__recorded_by`: `CREATE INDEX idx_copyright_eu_supervised_complaints__recorded_by ON public.copyright_eu_supervised_complaints USING btree (recorded_by_id) WHERE (recorded_by_id IS NOT NULL)`
+- `uq_copyright_eu_supervised_complaints__idempotency`: `CREATE UNIQUE INDEX uq_copyright_eu_supervised_complaints__idempotency ON public.copyright_eu_supervised_complaints USING btree (recorded_by_id, jurisdiction, idempotency_key)`
 - `uq_copyright_eu_supervised_complaints__reference`: `CREATE UNIQUE INDEX uq_copyright_eu_supervised_complaints__reference ON public.copyright_eu_supervised_complaints USING btree (copyright_notice_id, jurisdiction, authority_reference)`
 
 **Triggers:**
