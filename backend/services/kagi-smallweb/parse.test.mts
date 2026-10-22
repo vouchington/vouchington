@@ -144,8 +144,9 @@ describe('iterateFeedListEntries', () => {
       yield bytes.subarray(splitAt)
     })()
 
-    const entries = await Array.fromAsync(iterateFeedListEntries(chunks, 'web'))
+    const feedUrls: string[] = []
+    for await (const entry of iterateFeedListEntries(chunks, 'web')) feedUrls.push(entry.feedUrl)
 
-    expect(entries.map(entry => entry.feedUrl)).toEqual(['https://example.com/foo你bar'])
+    expect(feedUrls).toEqual(['https://example.com/foo你bar'])
   })
 })

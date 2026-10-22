@@ -15,7 +15,8 @@ describe('linesOf', () => {
         path,
         Buffer.concat([Buffer.alloc(64 * 1024 - 1, 0x61), character, Buffer.from('\n')]),
       )
-      const lines = await Array.fromAsync(linesOf(path))
+      const lines: string[] = []
+      for await (const line of linesOf(path)) lines.push(line)
       expect(lines).toEqual([`${'a'.repeat(64 * 1024 - 1)}😀`])
     } finally {
       rmSync(directory, { recursive: true, force: true })
