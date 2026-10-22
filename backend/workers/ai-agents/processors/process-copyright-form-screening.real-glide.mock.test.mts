@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { Queue, Worker } from 'glide-mq'
 import { describe, expect, it, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
+import { waitForRealGlideEvent } from '@voucha/test-helpers/real-glide-terminal-deadline'
 import type { CopyrightFormScreeningJobData } from '@queues/ai-agents/types'
 import * as modelProviders from '@modules/model-providers/generate'
 import { createClearScreenedForm } from '@voucha/test-helpers/services/copyright-notices/screened-form'
@@ -40,13 +41,16 @@ describe('copyright screening worker with real GlideMQ and PostgreSQL', () => {
       const data = { submission_id: notice.intake.copyright_notice_submission_id }
       const first = await queue.add('copyright-form-screening', data, { jobId: randomUUID() })
       if (!first) throw new Error('Expected first owned wakeup')
-      await firstCompleted.promise
+      await waitForRealGlideEvent(firstCompleted.promise, 'GlideMQ copyright screening')
       expect(await first.getState()).toBe('completed')
       const duplicateCompleted = Promise.withResolvers<void>()
       worker.once('completed', () => duplicateCompleted.resolve())
       const duplicate = await queue.add('copyright-form-screening', data, { jobId: randomUUID() })
       if (!duplicate) throw new Error('Expected duplicate owned wakeup')
-      await duplicateCompleted.promise
+      await waitForRealGlideEvent(
+        duplicateCompleted.promise,
+        'GlideMQ copyright screening duplicate',
+      )
       expect(await duplicate.getState()).toBe('completed')
       expect(modelProviders.generateJson).not.toHaveBeenCalled()
       expect(errors).toEqual([])

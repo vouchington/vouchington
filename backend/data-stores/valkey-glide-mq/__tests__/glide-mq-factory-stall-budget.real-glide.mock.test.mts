@@ -7,6 +7,7 @@ import {
   workerQueueConnection,
   workerQueuePrefix,
 } from '@data-stores/valkey-glide-mq'
+import { waitForRealGlideEvent } from '@voucha/test-helpers/real-glide-terminal-deadline'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
@@ -69,8 +70,10 @@ describe.each([{ dedicatedCommandClient: false }, { dedicatedCommandClient: true
         await first.worker.close(true)
 
         const second = abandon()
-        const secondStalled = once(second.worker, 'stalled')
-        const [firstStalledId] = await secondStalled
+        const [firstStalledId] = await waitForRealGlideEvent(
+          once(second.worker, 'stalled'),
+          `GlideMQ stall ${job.id}`,
+        )
         expect(firstStalledId).toBe(job.id)
         await second.started
         await second.worker.close(true)
@@ -84,9 +87,19 @@ describe.each([{ dedicatedCommandClient: false }, { dedicatedCommandClient: true
           { ...RECOVERY, dedicatedCommandClient },
         )
         finisher.once('completed', completedJob => completed.resolve(completedJob))
-        const [secondStalledId] = await Promise.race([once(finisher, 'stalled'), failure.promise])
+        const [secondStalledId] = await waitForRealGlideEvent(
+          Promise.race([once(finisher, 'stalled'), failure.promise]),
+          `GlideMQ second stall ${job.id}`,
+        )
         expect(secondStalledId).toBe(job.id)
-        expect((await Promise.race([completed.promise, failure.promise])).id).toBe(job.id)
+        expect(
+          (
+            await waitForRealGlideEvent(
+              Promise.race([completed.promise, failure.promise]),
+              `GlideMQ stall recovery ${job.id}`,
+            )
+          ).id,
+        ).toBe(job.id)
 
         expect(runs).toEqual([job.id, job.id, job.id])
         expect(await (await queue.getJob(job.id))?.getState()).toBe('completed')
@@ -141,7 +154,7 @@ describe('createWorker maxStalledCount override', () => {
         },
         budgetOne,
       )
-      const failure = await failed.promise
+      const failure = await waitForRealGlideEvent(failed.promise, `GlideMQ stall budget ${job.id}`)
 
       expect(failure).toMatchObject({ jobId: job.id, failedReason: STALL_FAILURE_REASON })
       expect(runs).toEqual([job.id, job.id])

@@ -3,6 +3,7 @@ import type { Job } from 'glide-mq'
 import { SES_INBOUND_PROCESS_JOB } from '@queues/background/enqueues/ses-inbound-jobs'
 import type { BackgroundHandler, BackgroundJobDefinition } from '@queues/background/types'
 import { startBackgroundHarness, type BackgroundHarnessOptions } from './real-glide-background.mts'
+import { waitForRealGlideEvent } from './real-glide-terminal-deadline.mts'
 
 const SPARE_SLOTS = 3
 
@@ -10,8 +11,8 @@ const SPARE_SLOTS = 3
  * Fills one capped domain on a real shared queue whose workers have more slots than the cap, then
  * queues more of its jobs and a job of another domain, and reports the most jobs of the capped
  * domain that ran at once. The fill adds one job at a time and waits for each to start, because
- * GlideMQ parks a group job whose ordering sequence a parallel claim reaches first. Every wait is
- * on a worker event, never a timer.
+ * GlideMQ parks a group job whose ordering sequence a parallel claim reaches first. Each wait
+ * resolves on that worker event and rejects with a named deadline when the event never arrives.
  *
  * @param options.jobs - the capped domain's jobs; they take turns across the flood
  * @param options.cap - the group concurrency the domain is expected to hold
@@ -63,7 +64,7 @@ export async function measureDomainCap(options: {
       objectKey: `copyright-incoming/${sesMessageId}`,
     })
     // The spare slots are free, and only the other domain's job can take one.
-    await otherRan.promise
+    await waitForRealGlideEvent(otherRan.promise, 'GlideMQ other-domain job')
     const maxWhileSaturated = maxActive
     release.resolve()
     await Promise.all([...flood, other].map(job => harness.settled(job)))

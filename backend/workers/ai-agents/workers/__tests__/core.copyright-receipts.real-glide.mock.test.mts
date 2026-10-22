@@ -15,6 +15,7 @@ import {
 } from '@services/ai-usage/agent-call-receipts'
 import { createCopyrightAppeal, createCopyrightCounterNotice } from '@services/copyright-notices'
 import { createTestUser } from '@voucha/test-helpers'
+import { waitForRealGlideEvent } from '@voucha/test-helpers/real-glide-terminal-deadline'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { createSignedInCopyrightForm } from '@voucha/test-helpers/services/copyright-notices/screened-form'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
@@ -89,7 +90,10 @@ describe('copyright receipt recovery during a spend-cap breach', () => {
         const failed = once(worker, 'failed')
         const added = await queue.add(agentSlug, { submission_id: submissionId }, { attempts: 3 })
         if (!added) throw new Error('Expected copyright worker job')
-        const [job, error] = await failed
+        const [job, error] = await waitForRealGlideEvent(
+          failed,
+          `GlideMQ copyright receipt ${submissionId}`,
+        )
         expect(job.id).toBe(added.id)
         expect(error).toBeInstanceOf(UnrecoverableError)
         const stored = await queue.getJob(added.id)

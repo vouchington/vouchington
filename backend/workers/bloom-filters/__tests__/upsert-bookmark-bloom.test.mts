@@ -9,6 +9,7 @@ import {
 import { bloomFilterConfig } from '@services/bloom-filter-config'
 import { bloomFilters as bloomFiltersWorker } from '../workers.mts'
 import { overrideDynamicConfigFieldsForTest, createTestUser } from '@voucha/test-helpers'
+import { waitForRealGlideEvent } from '@voucha/test-helpers/real-glide-terminal-deadline'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { followRssFeedRelation } from '@services/rss-feeds/create-source-helpers'
 
@@ -24,7 +25,12 @@ describe('upsert-bookmark-bloom', () => {
       once(event: string, cb: () => void): void
     }
     if (worker.getActiveCount() > 0) {
-      await new Promise<void>(resolve => worker.once('drained', resolve))
+      await waitForRealGlideEvent(
+        new Promise<void>(resolve => {
+          worker.once('drained', resolve)
+        }),
+        'Bookmark bloom worker drain',
+      )
     }
   })
 

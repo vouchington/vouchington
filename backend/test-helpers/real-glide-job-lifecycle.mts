@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { Queue, Worker, type QueueOptions } from 'glide-mq'
+import { waitForRealGlideEvent } from './real-glide-terminal-deadline.mts'
 
 export type RealGlideTerminalState = 'completed' | 'failed'
 
@@ -8,7 +9,8 @@ export type RealGlideConnection = Pick<QueueOptions, 'connection' | 'prefix'>
 
 /**
  * An isolated real GlideMQ queue plus one worker whose outcome the test chooses. Replays a queue
- * package's production job options and waits on the worker's own terminal event, never a timer.
+ * package's production job options and waits on the worker's own terminal event. A stall
+ * rejects with a named deadline instead of hanging until the runner kills the test.
  * The queue name is unique per call, so it cannot consume jobs from the shared worker fleet.
  */
 export type RealGlideJobLifecycle<TData> = {
@@ -54,7 +56,7 @@ export async function startRealGlideJobLifecycle<TData>(
     setOutcome: next => {
       outcome = next
     },
-    settled: job => deferredFor(job.id).promise,
+    settled: job => waitForRealGlideEvent(deferredFor(job.id).promise, `GlideMQ job ${job.id}`),
     close: async () => {
       try {
         await worker.close()

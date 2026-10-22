@@ -7,6 +7,7 @@ import {
 import { bloomFilterConfig } from '../services/bloom-filter-config/index.mts'
 import { bloomFilters as bloomFiltersWorker } from '../workers/bloom-filters/workers.mts'
 import { overrideDynamicConfigFieldsForTest, createTestUser } from './index.mts'
+import { waitForRealGlideEvent } from './real-glide-terminal-deadline.mts'
 
 export function registerBookmarkBloomFixture() {
   let user: PrivateUser
@@ -53,7 +54,12 @@ export function registerBookmarkBloomFixture() {
       once(event: string, cb: () => void): void
     }
     if (worker.getActiveCount() > 0) {
-      await new Promise<void>(resolve => worker.once('drained', resolve))
+      await waitForRealGlideEvent(
+        new Promise<void>(resolve => {
+          worker.once('drained', resolve)
+        }),
+        'Bookmark bloom worker drain',
+      )
     }
     await deleteUserBookmarkBloomFilter(createdUserId).catch(() => {})
   })
