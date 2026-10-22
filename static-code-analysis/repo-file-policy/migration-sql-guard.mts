@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
+import { extractCreateTableMetadata, lineOfUtf8ByteOffset } from 'vouchington-tooling/sql-ast'
 import { stripSqlComments } from './sql-scanner.mts'
-import { lineOfUtf8ByteOffset } from 'vouchington-tooling/sql-ast'
 import { extractPolymorphicTargetTables } from './sql-constraint-ast.mts'
 import {
   ALLOWED_POLYMORPHIC_TARGET_TABLES,
@@ -52,9 +52,5 @@ export async function checkMigrationSqlGuard(
 }
 
 export function addMigrationCreateTableNames(content: string, names: Set<string>): void {
-  const createTableName =
-    /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:"([^"]+)"|([A-Za-z_][A-Za-z0-9_]*))/gi
-  for (const match of content.matchAll(createTableName)) {
-    names.add((match[1] ?? match[2] ?? '').toLowerCase())
-  }
+  for (const { tableName } of extractCreateTableMetadata(content)) names.add(tableName)
 }

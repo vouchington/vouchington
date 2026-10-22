@@ -3,7 +3,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import type { SchemaSnapshot } from '@vouchington/postgres/pg-schema-snapshot'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeAll, describe, expect, it } from 'vitest'
+import { initSqlAst } from 'vouchington-tooling/sql-ast'
 
 import {
   checkExtraGeneratedColumnsFreshness,
@@ -72,17 +73,24 @@ async function createConfigRoot(config: ReturnType<typeof configFixture>): Promi
 }
 
 describe('extraGeneratedColumns freshness policy', () => {
+  beforeAll(() => initSqlAst())
+
   afterEach(async () => {
     await Promise.all(roots.splice(0).map(root => rm(root, { force: true, recursive: true })))
   })
 
-  it('extracts created tables from migration SQL using the existing narrow name pattern', () => {
+  it('extracts only actual migration table names from structured SQL facts', () => {
     const names = new Set<string>()
     addMigrationCreateTableNames(
-      `CREATE TABLE IF NOT EXISTS migrated_generated (id uuid);\nCREATE TABLE "QuotedName" (id uuid);`,
+      [
+        '-- CREATE TABLE comment_only (id uuid);',
+        'CREATE TABLE IF NOT EXISTS migrated_generated (id uuid);',
+        'CREATE TABLE public."QuotedName" (id uuid);',
+        "SELECT 'CREATE TABLE string_only (id uuid);';",
+      ].join('\n'),
       names,
     )
-    expect(names).toEqual(new Set(['migrated_generated', 'quotedname']))
+    expect(names).toEqual(new Set(['migrated_generated', 'QuotedName']))
   })
 
   it('accepts matching tracked migration and generated-column config fixtures', async () => {
