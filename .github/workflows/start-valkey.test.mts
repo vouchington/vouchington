@@ -3,7 +3,18 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
 
-type Step = { if?: string; uses?: string; run?: string; 'timeout-minutes'?: number }
+type Step = {
+  id?: string
+  if?: string
+  uses?: string
+  run?: string
+  'timeout-minutes'?: number
+}
+
+const failureOnlyValkeyLogs = new Set([
+  'failure()',
+  "${{ failure() && steps.checkout.outcome == 'success' }}",
+])
 type Workflow = { jobs?: Record<string, { services?: Record<string, unknown>; steps?: Step[] }> }
 
 const WORKFLOW_DIR = '.github/workflows'
@@ -40,6 +51,7 @@ describe('Valkey test container', () => {
 
   it('pairs every start with a failure-only log step in the same job', () => {
     let starts = 0
+    const checkoutGated: Array<{ logs: number; steps: Step[] }> = []
     for (const { parsed } of workflows) {
       for (const job of Object.values(parsed.jobs ?? {})) {
         const steps = job.steps ?? []
@@ -48,9 +60,19 @@ describe('Valkey test container', () => {
         starts += 1
         const logs = steps.findIndex(step => step.uses === './.github/actions/valkey-logs')
         expect(logs).toBeGreaterThan(start)
-        expect(steps[logs]?.if).toBe('failure()')
+        expect(failureOnlyValkeyLogs.has(steps[logs]?.if ?? '')).toBe(true)
+        if (steps[logs]?.if?.includes('steps.checkout.outcome')) {
+          checkoutGated.push({ logs, steps })
+        }
       }
     }
     expect(starts).toBeGreaterThan(0)
+    for (const { logs, steps } of checkoutGated) {
+      const checkout = steps.findIndex(
+        step => step.id === 'checkout' && step.uses?.startsWith('actions/checkout@'),
+      )
+      expect(checkout).toBeGreaterThanOrEqual(0)
+      expect(checkout).toBeLessThan(logs)
+    }
   })
 })
