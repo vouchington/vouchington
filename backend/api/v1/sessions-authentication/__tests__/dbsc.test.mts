@@ -128,6 +128,15 @@ describe('browser device-bound session protocol', () => {
     expect(web.response.body).not.toHaveProperty('dt')
   })
 
+  it('keeps login working without DBSC advertisement when the configured site origin is malformed', async () => {
+    vi.stubEnv('SITE_ORIGIN', 'not a URL')
+    const { response } = await login()
+    expect(response.headers['secure-session-registration']).toBeUndefined()
+    expect(response.body).not.toHaveProperty('dt')
+    expect(response.body).not.toHaveProperty('st')
+    expect(response.headers['set-cookie']).toHaveLength(2)
+  })
+
   it('rejects a registration request at an origin different from the configured HTTPS site', async () => {
     const { response } = await login()
     const nonce = /challenge="([A-Za-z0-9_-]+)"/u.exec(
