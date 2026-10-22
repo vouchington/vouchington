@@ -40,7 +40,7 @@ Use `interactive` mode in a human-attended session and `autonomous` mode in an a
 
 ## When the server is unavailable
 
-Follow the canonical "When the server is unavailable" and "CLI fallback" sections. Vouchington
+Follow the canonical "When the server is unavailable" section. Vouchington
 remediation, told to an interactive user first: if the server is not registered, run
 vouchington-machines' `./configure-agents.sh`, check with `./diagnose-agents.sh --repo <checkout>`,
 then reconnect (`/mcp` in Claude Code, or restart Codex). If it is registered but disconnected,
