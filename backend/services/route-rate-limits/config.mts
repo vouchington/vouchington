@@ -1,3 +1,4 @@
+import { isDeployedEnvironment } from '@ts-shared/deploy-environment'
 import { DynamicConfig } from '@data-stores/valkey'
 import type { RouteRateLimitCategory, RouteRateLimitEntry } from './types.mts'
 import { ROUTE_REGISTRY } from './registry.mts'
@@ -112,7 +113,7 @@ export function getAttestedMultiplier(): number {
 export function isRouteRateLimitEnabled(): boolean {
   // Playwright tests set PLAYWRIGHT_TEST=true on the backend process — skip rate limiting
   // to avoid 429s from parallel workers before pub/sub propagation completes.
-  if (process.env.PLAYWRIGHT_TEST === 'true') return false
+  if (process.env.PLAYWRIGHT_TEST === 'true' && !isDeployedEnvironment()) return false
   const value = routeRateLimitConfig.getFields().enabled
   return typeof value === 'boolean' ? value : ROUTE_RATE_LIMIT_ENABLED_DEFAULT
 }

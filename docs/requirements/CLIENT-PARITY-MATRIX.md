@@ -142,3 +142,10 @@ alongside their IDs. Web uses those response facts for every page of invitation 
 loaded pages, so it never needs to display a household UUID or fetch profiles for each row. Native
 adoption should use the same identities and safe fallback when a username is absent.
 [Native adoption is tracked in vouchington-clients#470](https://github.com/vouchington/vouchington-clients/issues/470). The producer lands first.
+
+## Browser challenge context
+
+Browser challenge producers identify the operation when rendering a Turnstile widget. Server
+verification binds that result to the configured site and the operation being requested. Native
+App Attest retains its existing operation tags; clients that embed a browser challenge need the
+same action mapping. That client adoption remains dependent work, with the producer landing first.

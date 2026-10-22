@@ -22,7 +22,7 @@ export function SubmitLinkForm({ onCreated }: { onCreated?: (href: string) => vo
   const [title, setTitle] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const turnstile = useTurnstileToken()
+  const turnstile = useTurnstileToken('posts.create')
   const emailRecovery = useEmailVerificationRecovery()
 
   async function handleSubmit(event: React.SyntheticEvent<HTMLFormElement>) {

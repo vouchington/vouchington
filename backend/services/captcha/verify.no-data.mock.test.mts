@@ -27,6 +27,7 @@ describe('verifyCaptchaToken', () => {
     vi.unstubAllGlobals()
     originalKey = process.env.CLOUDFLARE_TURNSTILE_SECRET_KEY
     process.env.CLOUDFLARE_TURNSTILE_SECRET_KEY = 'test-secret'
+    vi.stubEnv('SITE_ORIGIN', 'https://voucha.ai')
     delete process.env.SKIP_CAPTCHA_VERIFICATION
   })
 
@@ -43,9 +44,11 @@ describe('verifyCaptchaToken', () => {
   it('returns void on success', async () => {
     fetchSpy.mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({ success: true }),
+      json: () => Promise.resolve({ success: true, hostname: 'voucha.ai', action: 'posts-create' }),
     })
-    await expect(verifyCaptchaToken('valid-token', '1.2.3.4')).resolves.toBeUndefined()
+    await expect(
+      verifyCaptchaToken('valid-token', '1.2.3.4', 'posts.create'),
+    ).resolves.toBeUndefined()
     expect(fetchSpy).toHaveBeenCalledWith(
       'https://challenges.cloudflare.com/turnstile/v0/siteverify',
       expect.objectContaining({
@@ -54,12 +57,55 @@ describe('verifyCaptchaToken', () => {
     )
   })
 
+  it.each([
+    { hostname: 'other.example.com', action: 'posts-create' },
+    { hostname: 'voucha.ai', action: 'reports-create' },
+    { hostname: 'voucha.ai' },
+    { action: 'posts-create' },
+  ])('rejects success without the trusted action and hostname (%j)', async metadata => {
+    fetchSpy.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ success: true, ...metadata }),
+    })
+    await expect(
+      verifyCaptchaToken('valid-token', '1.2.3.4', 'posts.create'),
+    ).rejects.toMatchObject({ status: 400 })
+  })
+
+  it('accepts the documented dummy-key context only outside deployed environments', async () => {
+    vi.stubEnv('CLOUDFLARE_TURNSTILE_SECRET_KEY', CLOUDFLARE_TURNSTILE_TEST_SECRET_KEY)
+    vi.stubEnv('ENVIRONMENT', 'development')
+    fetchSpy.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ success: true, hostname: 'localhost', action: 'test' }),
+    })
+    await expect(
+      verifyCaptchaToken('dummy-token', undefined, 'posts.create'),
+    ).resolves.toBeUndefined()
+    vi.stubEnv('ENVIRONMENT', 'staging')
+    await expect(
+      verifyCaptchaToken('dummy-token', undefined, 'posts.create'),
+    ).rejects.toMatchObject({ status: 400 })
+  })
+
+  it('rejects dummy-key responses with unexpected context', async () => {
+    vi.stubEnv('CLOUDFLARE_TURNSTILE_SECRET_KEY', CLOUDFLARE_TURNSTILE_TEST_SECRET_KEY)
+    vi.stubEnv('ENVIRONMENT', 'development')
+    fetchSpy.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ success: true, hostname: 'other.example.com', action: 'test' }),
+    })
+    await expect(
+      verifyCaptchaToken('dummy-token', undefined, 'posts.create'),
+    ).rejects.toMatchObject({ status: 400 })
+  })
+
   it('throws 400 on verification failure', async () => {
     fetchSpy.mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ success: false, 'error-codes': ['invalid-input-response'] }),
     })
-    await expect(verifyCaptchaToken('bad-token', '1.2.3.4')).rejects.toMatchObject({
+    await expect(verifyCaptchaToken('bad-token', '1.2.3.4', 'posts.create')).rejects.toMatchObject({
       status: 400,
       message: 'CAPTCHA verification failed',
     })
@@ -67,7 +113,7 @@ describe('verifyCaptchaToken', () => {
 
   it('throws 502 with HTTP status cause when Turnstile returns non-2xx', async () => {
     fetchSpy.mockResolvedValue({ ok: false, status: 500 })
-    await expect(verifyCaptchaToken('any-token', '1.2.3.4')).rejects.toMatchObject({
+    await expect(verifyCaptchaToken('any-token', '1.2.3.4', 'posts.create')).rejects.toMatchObject({
       status: 502,
       message: 'CAPTCHA service unavailable',
       cause: expect.objectContaining({ message: 'Turnstile HTTP 500' }),
@@ -77,7 +123,7 @@ describe('verifyCaptchaToken', () => {
   it('throws 502 with cause on network error', async () => {
     const networkError = new Error('Network error')
     fetchSpy.mockRejectedValue(networkError)
-    await expect(verifyCaptchaToken('any-token', '1.2.3.4')).rejects.toMatchObject({
+    await expect(verifyCaptchaToken('any-token', '1.2.3.4', 'posts.create')).rejects.toMatchObject({
       status: 502,
       message: 'CAPTCHA service unavailable',
       cause: networkError,
@@ -87,7 +133,7 @@ describe('verifyCaptchaToken', () => {
   it('throws 502 with cause on timeout', async () => {
     const abortError = new DOMException('The operation was aborted.', 'AbortError')
     fetchSpy.mockRejectedValue(abortError)
-    await expect(verifyCaptchaToken('any-token', '1.2.3.4')).rejects.toMatchObject({
+    await expect(verifyCaptchaToken('any-token', '1.2.3.4', 'posts.create')).rejects.toMatchObject({
       status: 502,
       message: 'CAPTCHA service unavailable',
       cause: abortError,
@@ -100,7 +146,7 @@ describe('verifyCaptchaToken', () => {
       ok: true,
       json: () => Promise.reject(parseError),
     })
-    await expect(verifyCaptchaToken('any-token', '1.2.3.4')).rejects.toMatchObject({
+    await expect(verifyCaptchaToken('any-token', '1.2.3.4', 'posts.create')).rejects.toMatchObject({
       status: 502,
       message: 'CAPTCHA service unavailable',
       cause: parseError,
@@ -108,7 +154,7 @@ describe('verifyCaptchaToken', () => {
   })
 
   it('throws 422 when token is missing', async () => {
-    await expect(verifyCaptchaToken(undefined, '1.2.3.4')).rejects.toMatchObject({
+    await expect(verifyCaptchaToken(undefined, '1.2.3.4', 'posts.create')).rejects.toMatchObject({
       status: 422,
       message: 'CAPTCHA token is required',
     })
@@ -117,27 +163,29 @@ describe('verifyCaptchaToken', () => {
 
   it('skips verification without calling siteverify when SKIP_CAPTCHA_VERIFICATION is set', async () => {
     process.env.SKIP_CAPTCHA_VERIFICATION = 'true'
-    await expect(verifyCaptchaToken('valid-token', '1.2.3.4')).resolves.toBeUndefined()
+    await expect(
+      verifyCaptchaToken('valid-token', '1.2.3.4', 'posts.create'),
+    ).resolves.toBeUndefined()
     expect(fetchSpy).not.toHaveBeenCalled()
   })
 
   it('skips the missing-token check when SKIP_CAPTCHA_VERIFICATION is set', async () => {
     process.env.SKIP_CAPTCHA_VERIFICATION = 'true'
-    await expect(verifyCaptchaToken(undefined, undefined)).resolves.toBeUndefined()
+    await expect(verifyCaptchaToken(undefined, undefined, 'posts.create')).resolves.toBeUndefined()
     expect(fetchSpy).not.toHaveBeenCalled()
   })
 
   it('skips verification on staging when turnstile-config always_approve is true', async () => {
     vi.stubEnv('ENVIRONMENT', 'staging')
     overrideDynamicConfigFieldsForTest(turnstileConfig, { always_approve: true })
-    await expect(verifyCaptchaToken(undefined, '1.2.3.4')).resolves.toBeUndefined()
+    await expect(verifyCaptchaToken(undefined, '1.2.3.4', 'posts.create')).resolves.toBeUndefined()
     expect(fetchSpy).not.toHaveBeenCalled()
   })
 
   it('still verifies on staging when always_approve is false', async () => {
     vi.stubEnv('ENVIRONMENT', 'staging')
     overrideDynamicConfigFieldsForTest(turnstileConfig, { always_approve: false })
-    await expect(verifyCaptchaToken(undefined, '1.2.3.4')).rejects.toMatchObject({
+    await expect(verifyCaptchaToken(undefined, '1.2.3.4', 'posts.create')).rejects.toMatchObject({
       status: 422,
       message: 'CAPTCHA token is required',
     })
@@ -147,7 +195,7 @@ describe('verifyCaptchaToken', () => {
   it('never honors always_approve on production', async () => {
     vi.stubEnv('ENVIRONMENT', 'production')
     overrideDynamicConfigFieldsForTest(turnstileConfig, { always_approve: true })
-    await expect(verifyCaptchaToken(undefined, '1.2.3.4')).rejects.toMatchObject({
+    await expect(verifyCaptchaToken(undefined, '1.2.3.4', 'posts.create')).rejects.toMatchObject({
       status: 422,
       message: 'CAPTCHA token is required',
     })
@@ -158,9 +206,9 @@ describe('verifyCaptchaToken', () => {
     delete process.env.CLOUDFLARE_TURNSTILE_SECRET_KEY
     fetchSpy.mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({ success: true }),
+      json: () => Promise.resolve({ success: true, hostname: 'localhost', action: 'test' }),
     })
-    await verifyCaptchaToken('valid-token', '1.2.3.4')
+    await verifyCaptchaToken('valid-token', '1.2.3.4', 'posts.create')
     const body = fetchSpy.mock.calls[0]?.[1]?.body as string
     const params = new URLSearchParams(body)
     expect(params.get('secret')).toBe(CLOUDFLARE_TURNSTILE_TEST_SECRET_KEY)
@@ -170,9 +218,9 @@ describe('verifyCaptchaToken', () => {
     process.env.CLOUDFLARE_TURNSTILE_SECRET_KEY = '   '
     fetchSpy.mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({ success: true }),
+      json: () => Promise.resolve({ success: true, hostname: 'localhost', action: 'test' }),
     })
-    await verifyCaptchaToken('valid-token', '1.2.3.4')
+    await verifyCaptchaToken('valid-token', '1.2.3.4', 'posts.create')
     const body = fetchSpy.mock.calls[0]?.[1]?.body as string
     const params = new URLSearchParams(body)
     expect(params.get('secret')).toBe(CLOUDFLARE_TURNSTILE_TEST_SECRET_KEY)

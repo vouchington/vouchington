@@ -29,14 +29,24 @@ describe('app error handler', () => {
 
   it('sanitizes 5xx bodies in production', async () => {
     vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('ENVIRONMENT', 'production')
     const request = createRequest()
     const res = await request.get('/api/v1/__tests__/error-handler-boom').expect(500)
     expect(res.body).toEqual({ message: 'Internal Server Error', code: 'INTERNAL_ERROR' })
     expect(res.body.stack).toBeUndefined()
   })
 
+  it('sanitizes internal error details on staging independent of NODE_ENV', async () => {
+    vi.stubEnv('ENVIRONMENT', 'staging')
+    vi.stubEnv('NODE_ENV', 'test')
+    const response = await createRequest().get('/api/v1/__tests__/error-handler-boom').expect(500)
+    expect(response.body).toEqual({ message: 'Internal Server Error', code: 'INTERNAL_ERROR' })
+    expect(response.body.stack).toBeUndefined()
+  })
+
   it('includes details for 5xx bodies outside production', async () => {
     vi.stubEnv('NODE_ENV', 'test')
+    vi.stubEnv('ENVIRONMENT', 'development')
     const request = createRequest()
     const res = await request.get('/api/v1/__tests__/error-handler-boom').expect(500)
     expect(res.body.message).toBe('sensitive internal detail')
@@ -46,6 +56,7 @@ describe('app error handler', () => {
 
   it('sanitizes 5xx bodies for status-less errors in production', async () => {
     vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('ENVIRONMENT', 'production')
     const request = createRequest()
     const res = await request.get('/api/v1/__tests__/error-handler-statusless').expect(500)
     expect(res.body).toEqual({ message: 'Internal Server Error', code: 'INTERNAL_ERROR' })
@@ -54,6 +65,7 @@ describe('app error handler', () => {
 
   it('returns 500 for non-Error thrown strings in production without throwing', async () => {
     vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('ENVIRONMENT', 'production')
     const request = createRequest()
     const res = await request.get('/api/v1/__tests__/error-handler-string').expect(500)
     expect(res.body).toEqual({ message: 'Internal Server Error', code: 'INTERNAL_ERROR' })
@@ -62,6 +74,7 @@ describe('app error handler', () => {
 
   it('returns 500 for null throws in production without throwing', async () => {
     vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('ENVIRONMENT', 'production')
     const request = createRequest()
     const res = await request.get('/api/v1/__tests__/error-handler-null').expect(500)
     expect(res.body).toEqual({ message: 'Internal Server Error', code: 'INTERNAL_ERROR' })

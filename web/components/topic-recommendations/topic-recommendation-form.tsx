@@ -35,7 +35,7 @@ export function TopicRecommendationForm({ recommendation, initialType }: Props) 
   const [duplicateTitle, setDuplicateTitle] = useState('')
   const [duplicateSlug, setDuplicateSlug] = useState('')
   const pendingPayloadRef = useRef<TopicRecommendationMutationInput | null>(null)
-  const turnstile = useTurnstileToken()
+  const turnstile = useTurnstileToken('topic-recommendations.create')
 
   const isEdit = !!recommendation
   const defaults = getRecommendationFormDefaults(recommendation)

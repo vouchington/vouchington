@@ -1,3 +1,4 @@
+import { configuredSessionKeys } from '../../test-helpers/session-keys.mts'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import worker from '../index.mts'
 import {
@@ -23,6 +24,7 @@ describe('WebSocket upgrade rejections', () => {
       BACKEND_ORIGIN: 'https://backend.example.com',
       WEB_ORIGIN: 'http://localhost:3000',
       DEV_WEBSOCKET_PROXY: 'true',
+      ...configuredSessionKeys,
       PRODUCTION: 'true',
     }
 

@@ -38,7 +38,7 @@ export function CreateCommunityForm() {
   const [markdown, setMarkdown] = useState('')
   const [visibility, setVisibility] = useState<'public' | 'private'>('public')
   const [allowMemberInvites, setAllowMemberInvites] = useState(true)
-  const turnstile = useTurnstileToken()
+  const turnstile = useTurnstileToken('communities.create')
 
   const nameWordCount = countWords(name)
   const nameTooShort = name.length > 0 && nameWordCount < 3
