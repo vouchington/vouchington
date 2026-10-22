@@ -70772,6 +70772,8 @@
     },
     "oauth_authorizations": {
       "checkConstraints": {
+        "oauth_authorizations_callback_code_hash_check": "CHECK (((callback_code_hash IS NULL) OR (char_length(callback_code_hash) = 64)))",
+        "oauth_authorizations_callback_error_hash_check": "CHECK (((callback_error_hash IS NULL) OR (char_length(callback_error_hash) = 64)))",
         "oauth_authorizations_callback_mode_check": "CHECK ((callback_mode = ANY (ARRAY['web'::oauth_callback_modes, 'native'::oauth_callback_modes])))",
         "oauth_authorizations_check": "CHECK ((num_nonnulls(completed_at, rejected_at, expired_at) <= 1))",
         "oauth_authorizations_check1": "CHECK ((((purpose = 'authenticate'::oauth_authorization_purposes) AND (initiating_user_id IS NULL)) OR ((purpose = 'connect'::oauth_authorization_purposes) AND (initiating_user_id IS NOT NULL))))",
@@ -70799,6 +70801,17 @@
           "ordinalPosition": 13,
           "type": "text"
         },
+        "callback_code_hash": {
+          "collation": null,
+          "comment": "Purpose-bound HMAC-SHA256 of the original provider code; retained for exact callback replay after code ciphertext is cleared.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 14,
+          "type": "text"
+        },
         "callback_error": {
           "collation": null,
           "comment": "Bounded provider callback or terminal exchange error code; never contains provider credentials.",
@@ -70807,7 +70820,18 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 15,
+          "type": "text"
+        },
+        "callback_error_hash": {
+          "collation": null,
+          "comment": "Purpose-bound HMAC-SHA256 of the original unnormalized provider callback error for exact replay.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 16,
           "type": "text"
         },
         "callback_mode": {
@@ -70829,7 +70853,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 30,
+          "ordinalPosition": 32,
           "type": "timestamp with time zone"
         },
         "completed_at": {
@@ -70840,7 +70864,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 33,
+          "ordinalPosition": 35,
           "type": "timestamp with time zone"
         },
         "completion_proof_challenge": {
@@ -70862,7 +70886,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 32,
+          "ordinalPosition": 34,
           "type": "timestamp with time zone"
         },
         "completion_token_ciphertext": {
@@ -70873,7 +70897,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16,
+          "ordinalPosition": 18,
           "type": "text"
         },
         "completion_token_hash": {
@@ -70884,7 +70908,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15,
+          "ordinalPosition": 17,
           "type": "text"
         },
         "created_at": {
@@ -70895,7 +70919,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 36,
+          "ordinalPosition": 38,
           "type": "timestamp with time zone"
         },
         "exchange_claim_id": {
@@ -70906,7 +70930,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 28,
+          "ordinalPosition": 30,
           "type": "uuid"
         },
         "exchange_started_at": {
@@ -70917,7 +70941,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 31,
+          "ordinalPosition": 33,
           "type": "timestamp with time zone"
         },
         "expired_at": {
@@ -70928,7 +70952,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 35,
+          "ordinalPosition": 37,
           "type": "timestamp with time zone"
         },
         "expires_at": {
@@ -70939,7 +70963,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 29,
+          "ordinalPosition": 31,
           "type": "timestamp with time zone"
         },
         "facebook_account_id": {
@@ -70950,7 +70974,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17,
+          "ordinalPosition": 19,
           "type": "uuid"
         },
         "github_account_id": {
@@ -70961,7 +70985,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19,
+          "ordinalPosition": 21,
           "type": "uuid"
         },
         "google_account_id": {
@@ -70972,7 +70996,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22,
+          "ordinalPosition": 24,
           "type": "uuid"
         },
         "id": {
@@ -71027,7 +71051,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20,
+          "ordinalPosition": 22,
           "type": "uuid"
         },
         "login_attempt_id": {
@@ -71038,7 +71062,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 27,
+          "ordinalPosition": 29,
           "type": "uuid"
         },
         "microsoft_account_id": {
@@ -71049,7 +71073,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21,
+          "ordinalPosition": 23,
           "type": "uuid"
         },
         "pkce_verifier_ciphertext": {
@@ -71104,7 +71128,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 34,
+          "ordinalPosition": 36,
           "type": "timestamp with time zone"
         },
         "result_device_id": {
@@ -71115,7 +71139,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 25,
+          "ordinalPosition": 27,
           "type": "uuid"
         },
         "result_kind": {
@@ -71126,7 +71150,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23,
+          "ordinalPosition": 25,
           "type": "oauth_authorization_result_kinds"
         },
         "result_session_id": {
@@ -71137,7 +71161,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 26,
+          "ordinalPosition": 28,
           "type": "uuid"
         },
         "result_user_id": {
@@ -71148,7 +71172,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 24,
+          "ordinalPosition": 26,
           "type": "uuid"
         },
         "state_hash": {
@@ -71181,7 +71205,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 37,
+          "ordinalPosition": 39,
           "type": "timestamp with time zone"
         },
         "x_account_id": {
@@ -71192,7 +71216,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18,
+          "ordinalPosition": 20,
           "type": "uuid"
         }
       },
@@ -138501,7 +138525,7 @@
     },
     "view_oauth_authorization_current_records": {
       "comment": "Current OAuth lifecycle and active exchange projected from timestamp facts and immutable exchange history; outer row restrictions reach the authorization directly.",
-      "definition": " SELECT id,\n    provider,\n    purpose,\n    callback_mode,\n        CASE\n            WHEN ((status = 'callback_received'::oauth_authorization_statuses) AND (exchange_claim_id IS NOT NULL) AND (EXISTS ( SELECT 1\n               FROM oauth_authorization_exchange_attempts attempt\n              WHERE ((attempt.oauth_authorization_id = flow.id) AND (attempt.exchange_claim_id = flow.exchange_claim_id) AND (NOT (EXISTS ( SELECT 1\n                       FROM oauth_authorization_exchange_attempt_results result\n                      WHERE (result.oauth_authorization_exchange_attempt_id = attempt.id)))))))) THEN 'exchanging'::oauth_authorization_statuses\n            ELSE status\n        END AS status,\n    initiating_user_id,\n    initiating_device_id,\n    initiating_session_id,\n    redirect_uri,\n    state_hash,\n    pkce_verifier_ciphertext,\n    completion_proof_challenge,\n    callback_code_ciphertext,\n    callback_error,\n    completion_token_hash,\n    completion_token_ciphertext,\n    facebook_account_id,\n    x_account_id,\n    github_account_id,\n    result_kind,\n    result_user_id,\n    result_device_id,\n    result_session_id,\n    login_attempt_id,\n    exchange_claim_id,\n    expires_at,\n    callback_received_at,\n    ( SELECT attempt.started_at\n           FROM oauth_authorization_exchange_attempts attempt\n          WHERE (attempt.oauth_authorization_id = flow.id)\n          ORDER BY attempt.attempt_number DESC\n         LIMIT 1) AS exchange_started_at,\n    completion_ready_at,\n    completed_at,\n    created_at,\n    updated_at,\n    rejected_at,\n    expired_at,\n    (COALESCE((( SELECT max(attempt.attempt_number) AS max\n           FROM oauth_authorization_exchange_attempts attempt\n          WHERE (attempt.oauth_authorization_id = flow.id)))::integer, 0))::smallint AS exchange_attempts,\n    linkedin_account_id,\n    microsoft_account_id,\n    google_account_id\n   FROM oauth_authorizations flow;",
+      "definition": " SELECT id,\n    provider,\n    purpose,\n    callback_mode,\n        CASE\n            WHEN ((status = 'callback_received'::oauth_authorization_statuses) AND (exchange_claim_id IS NOT NULL) AND (EXISTS ( SELECT 1\n               FROM oauth_authorization_exchange_attempts attempt\n              WHERE ((attempt.oauth_authorization_id = flow.id) AND (attempt.exchange_claim_id = flow.exchange_claim_id) AND (NOT (EXISTS ( SELECT 1\n                       FROM oauth_authorization_exchange_attempt_results result\n                      WHERE (result.oauth_authorization_exchange_attempt_id = attempt.id)))))))) THEN 'exchanging'::oauth_authorization_statuses\n            ELSE status\n        END AS status,\n    initiating_user_id,\n    initiating_device_id,\n    initiating_session_id,\n    redirect_uri,\n    state_hash,\n    pkce_verifier_ciphertext,\n    completion_proof_challenge,\n    callback_code_ciphertext,\n    callback_error,\n    completion_token_hash,\n    completion_token_ciphertext,\n    facebook_account_id,\n    x_account_id,\n    github_account_id,\n    result_kind,\n    result_user_id,\n    result_device_id,\n    result_session_id,\n    login_attempt_id,\n    exchange_claim_id,\n    expires_at,\n    callback_received_at,\n    ( SELECT attempt.started_at\n           FROM oauth_authorization_exchange_attempts attempt\n          WHERE (attempt.oauth_authorization_id = flow.id)\n          ORDER BY attempt.attempt_number DESC\n         LIMIT 1) AS exchange_started_at,\n    completion_ready_at,\n    completed_at,\n    created_at,\n    updated_at,\n    rejected_at,\n    expired_at,\n    (COALESCE((( SELECT max(attempt.attempt_number) AS max\n           FROM oauth_authorization_exchange_attempts attempt\n          WHERE (attempt.oauth_authorization_id = flow.id)))::integer, 0))::smallint AS exchange_attempts,\n    linkedin_account_id,\n    microsoft_account_id,\n    google_account_id,\n    callback_code_hash,\n    callback_error_hash\n   FROM oauth_authorizations flow;",
       "materialized": false
     },
     "view_post_clearance_status": {
