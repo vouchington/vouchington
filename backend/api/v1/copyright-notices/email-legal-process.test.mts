@@ -76,6 +76,19 @@ describe('POST /api/v1/copyright-email-intakes/:id/legal-process', () => {
     },
   )
 
+  it.each([null, [], 'reason'])('answers a non-object JSON body with 400: %#', async body => {
+    const staff = await createStaffRequest()
+    const intake = await createParsedCopyrightEmailIntake()
+
+    await staff
+      .post(path(intake.id))
+      .set('Content-Type', 'application/json')
+      .send(JSON.stringify(body))
+      .expect(400)
+
+    await expect(readCopyrightEmailIntakeReviewRecord(intake.id)).resolves.toEqual([])
+  })
+
   it('answers a second decision with 409 and keeps the first record', async () => {
     const staff = await createStaffRequest()
     const intake = await createParsedCopyrightEmailIntake()
