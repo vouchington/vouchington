@@ -23,6 +23,9 @@ export async function beforeRetireMonthlyPartition(
     await query(`/* retireMonthlyPartition:clearReferralCrawls */
       UPDATE user_referral_program_links SET last_crawl_id = NULL
       WHERE last_crawl_id IN (SELECT id FROM ${partitionName})`)
+    await query(`/* retireMonthlyPartition:clearImportDiscoveryCrawls */
+      UPDATE user_rss_feed_import_row_discoveries SET crawl_id = NULL
+      WHERE crawl_id IN (SELECT id FROM ${partitionName})`)
     // Also handles chunks whose partition was retained after an earlier retirement failure.
     // Row deletion cascades to embedding batch entities before the crawls parent is detached.
     await query(`/* retireMonthlyPartition:deleteCrawlChunks */

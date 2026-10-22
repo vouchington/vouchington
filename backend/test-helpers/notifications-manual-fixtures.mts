@@ -2,16 +2,17 @@ import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 export async function createTestManualPostNotification(input: {
+  id?: string
   userId: string
   sentByUserId: string
   postId: string
 }): Promise<string> {
   const { rows } = await write<{ id: string }>(sql`/* createTestManualPostNotification */
     INSERT INTO notifications (
-      user_id, entity_type, delivery_type, sent_by_id, post_id, title, body, target_path
+      id, user_id, entity_type, delivery_type, sent_by_id, post_id, title, body, target_path
     )
     VALUES (
-      ${input.userId}, 'post', 'manual_send', ${input.sentByUserId}, ${input.postId},
+      COALESCE(${input.id ?? null}::uuid, uuidv7()), ${input.userId}, 'post', 'manual_send', ${input.sentByUserId}, ${input.postId},
       'Someone sent you a post', 'Test content notification', ${`/discussion/${input.postId}`}
     )
     RETURNING id

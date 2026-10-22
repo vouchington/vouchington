@@ -31,7 +31,16 @@ export async function upsertScheduledJobManifest(
     options.nodeEnv === undefined
       ? isProductionEnvironment(options.env)
       : options.nodeEnv === 'production'
-  const jobs = manifest.jobs.filter(job => job.environment !== 'production' || isProduction)
+  const isDeployed =
+    options.nodeEnv === undefined
+      ? ['production', 'staging'].includes(getDeployEnvironment(options.env))
+      : ['production', 'staging'].includes(options.nodeEnv)
+  const jobs = manifest.jobs.filter(
+    job =>
+      (job.environment !== 'production' && job.environment !== 'deployed') ||
+      (job.environment === 'production' && isProduction) ||
+      (job.environment === 'deployed' && isDeployed),
+  )
   const applyHourlyFloor =
     options.applyHourlyFloor ?? getDeployEnvironment(options.env) === 'staging'
   await registerJobs(queue, jobs, applyHourlyFloor)
@@ -94,7 +103,7 @@ function register(
   // real interval on every call, and only the interval actually about to be registered matters.
   // glide-mq keeps a stored next run only when the upserted schedule is identical, so moving an
   // existing scheduler to :00 needs no remove-and-re-add (see the manifest docs).
-  // `environment: 'production'` jobs (e.g. psql's dataRetentionCleanup) are excluded here too,
+  // `environment: 'production'` jobs are excluded here too,
   // even though the upstream filter above already excludes them whenever applyHourlyFloor would
   // correctly be true (on staging): this is intentional defense-in-depth. It decouples "a
   // production-flagged job is never clamped" from correct derivation of applyHourlyFloor by the

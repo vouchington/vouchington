@@ -51,6 +51,10 @@ retains its age cutoff while committed deletions advance the remaining-work pred
 index excludes successful historical crawls from each page. A continuation keeps work eligible
 without holding a worker through the entire backlog.
 
+The data-retention schedule runs in deployed environments so staging exposes retention failures
+before production. Staging assigns the job lower queue priority to keep interactive and recovery
+work ahead of housekeeping.
+
 - **PostgreSQL is the source of truth; the queue is a delivery hint.** Deduplication reduces
   duplicate enqueues but is never the correctness boundary, so every processor is idempotent against
   durable state. There is no dead-letter queue: each queue needs a backfill, a self-healing

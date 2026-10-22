@@ -16,6 +16,7 @@
   "dependencies": {
     "@data-stores/valkey-glide-mq": "workspace:^",
     "@modules/scheduled-job-manifest": "workspace:^",
+    "@ts-shared/deploy-environment": "workspace:^",
     "@voucha/types": "workspace:^",
     "glide-mq": "^0.19.0"
   }

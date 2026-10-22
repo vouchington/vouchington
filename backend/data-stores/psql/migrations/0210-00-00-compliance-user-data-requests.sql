@@ -67,6 +67,9 @@ ON user_data_requests (requested_by_id);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_user_data_requests__processing_attempt_id
 ON user_data_requests (processing_attempt_id);
 
+CREATE INDEX IF NOT EXISTS idx_user_data_requests__download_expiry
+ON user_data_requests (expires_at, id) WHERE s3_key IS NOT NULL;
+
 -- Enforce at most one active (pending or processing) request per subject and requester. The
 -- requester is part of the key so an administrator-run export never blocks, or is revealed by a
 -- conflict on, the account holder's own request.

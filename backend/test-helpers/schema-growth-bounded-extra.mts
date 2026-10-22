@@ -26,6 +26,18 @@ export const EXTRA_BOUNDED_TABLES = new Map<string, string>([
     'Bounded cleanup deletes aged subscription tombstones after push receipts expire.',
   ],
   [
+    'notification_push_intents',
+    'Pending intents older than 30 days and terminal intents older than 90 days are deleted by capped daily retention sweeps.',
+  ],
+  [
+    'notification_push_intent_subscription_receipts',
+    'Endpoint receipts cascade when their bounded-lifetime push intent is deleted.',
+  ],
+  [
+    'notification_push_intent_retention_cursors',
+    'A checked singleton tracks the bounded pending-intent sweep.',
+  ],
+  [
     'url_hostname_cache_invalidation_work_items',
     'At most one current generation per live hostname; successful eviction deletes it, hostname deletion cascades it, and bounded cache-TTL pruning removes abandoned work.',
   ],

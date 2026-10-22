@@ -71,6 +71,12 @@ facts. Source writes enqueue after commit; overlapping windows and transactional
 markers provide recovery when publication or timestamp visibility loses a trigger. See
 [vote-weight recovery](../queues/README.md#vote-weight-recovery) for continuation and replay semantics.
 
+Data retention bounds pending push work by the intent's creation time, because push work can be
+created after its notification. Its cursor orders that timestamp with the notification identity
+and keeps a fixed cutoff for each sweep, so a large backlog resumes on the next scheduled run.
+An active delivery lease is preserved until a later sweep. Endpoint receipts follow their intent's
+deletion through the foreign key.
+
 - **Authorization lives in `authorization.mts` as `currentUserCan*`.** One file per service means
   the REST route, the MCP tool and the worker ask the same question. SQL visibility filters belong
   there too. Branch on `error.name`, `code` or `status`, never `error.message`.
