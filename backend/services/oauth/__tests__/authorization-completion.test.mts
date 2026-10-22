@@ -68,7 +68,7 @@ describe('OAuth authorization completion', () => {
     })
   })
 
-  it('persists an authentication result and safely replays a lost response', async () => {
+  it('replays a durable completion interrupted before first mint and then a lost token response', async () => {
     const cleanup = registerCleanup()
     const deviceId = randomUUID()
     const sessionId = randomUUID()

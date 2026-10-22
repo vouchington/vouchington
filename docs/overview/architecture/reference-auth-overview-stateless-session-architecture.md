@@ -79,3 +79,9 @@ single owned session, `POST /api/v1/auth/sessions/revocations`
 revokes all of the current user's active sessions, and logout marks the current row revoked
 alongside the Valkey revocation flag. `last_seen_at` advances on login, logout, revoke, and
 warm/cold refreshes, but not on listing or the hot JWT verification path.
+
+Browser refresh authority also has a session record, independent of the signed access claims.
+That record preserves browser-key binding across every renewal path, including access-cookie
+rotation and credential-completion replay. Losing the record requires sign-in instead of restoring
+an unbound session from a device cookie. Access verification remains separate from key-possession
+proof: DBSC controls renewal, not each ordinary request.
