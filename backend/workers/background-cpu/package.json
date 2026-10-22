@@ -35,7 +35,7 @@
     "@workers/crawl-referral-links": "workspace:^",
     "@workers/crawler": "workspace:^",
     "@workers/unfurl-referral-links": "workspace:^",
-    "glide-mq": "^0.18.0"
+    "glide-mq": "^0.19.0"
   },
   "devDependencies": {
     "@queues/crawl-referral-links": "workspace:^",

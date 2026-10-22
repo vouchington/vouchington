@@ -105,7 +105,7 @@
     "@vouchington/postgres": "^0.0.16",
     "@vouchington/rss-parser": "^0.1.0",
     "@workers/rss-feeds": "workspace:^",
-    "glide-mq": "^0.18.0",
+    "glide-mq": "^0.19.0",
     "pgvector": "^0.3.0",
     "sql-template-strings": "^2.2.2",
     "uuid": "^14.0.3",

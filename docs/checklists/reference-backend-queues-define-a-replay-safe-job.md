@@ -8,8 +8,8 @@
   redeems, such as a login token whose store holds only its hash or a presigned download URL, set
   `removeOnComplete: true` and `removeOnFail: true` on those job names only. Terminal failures still
   reach `onError` from the worker's `failed` event, and `scrubJobData` redacts the value. The
-  payload stays in Valkey while the job is waiting, active, or retrying, and a job that stalls past
-  its limit is not removed.
+  payload stays in Valkey while the job is waiting, active, or retrying. A terminal stall removes
+  it when `removeOnFail` is `true`.
 - Make every processor safe to repeat. Encode correctness with an upsert, uniqueness constraint,
   content/version guard, durable sent marker, or explicit skip-if-complete check, and test that
   mechanism at the service boundary.
@@ -23,7 +23,7 @@
   arriving mid-run is lost if the running job already read the old state. Before pairing a stable
   `jobId` with numeric retention, pick one: drop the custom `jobId` when `simple` or `throttle`
   deduplication already collapses the duplicates; release the claim at completion with
-  `removeOnComplete`/`removeOnFail: true` (a job that stalls past its limit still keeps its id);
+  `removeOnComplete`/`removeOnFail: true`, which also releases the id after a terminal stall;
   time-bucket the id for periodic self-healing work with `throttle` deduplication; add an explicit
   reactivation helper (`enqueueBulkReactivatingFinished`, which removes only the finished record
   behind each skipped id) when replay must succeed on demand; or key the id by entity and triggering

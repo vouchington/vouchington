@@ -23,7 +23,7 @@
     "@modules/scheduled-job-manifest": "workspace:^",
     "@ts-shared/ses-inbound-contract": "workspace:^",
     "@voucha/types": "workspace:^",
-    "glide-mq": "^0.18.0",
+    "glide-mq": "^0.19.0",
     "valkyries": "^0.10.0"
   }
 }

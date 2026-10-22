@@ -12,11 +12,10 @@ const enqueueExtractImageMetadataJob = createEnqueueFunction<{ id: string }, 'ex
 
 /**
  * One in-flight extraction per image, with no custom `jobId`. A stable `jobId` is a hard uniqueness
- * key that outlives the job: GlideMQ keeps the claim while the terminal record is retained, and a
- * job that stalls past its limit lands in the failed set without honoring `removeOnFail` at all.
- * Either way the hourly `cleanupAbandonedUploads` recovery would get `null` back and silently skip
- * the image. `simple` deduplication alone collapses duplicates while a job is waiting, active, or
- * retrying, and releases the moment that job is completed or failed, however it got there.
+ * key that outlives the job while a completed or failed record is retained, so the hourly
+ * `cleanupAbandonedUploads` recovery would get `null` back and silently skip the image. `simple`
+ * deduplication collapses duplicates while a job is waiting, active, or retrying, and releases
+ * when that job finishes, including a terminal stall.
  */
 export function getExtractImageMetadataJobOptions(imageId: string) {
   return {

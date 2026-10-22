@@ -19,10 +19,9 @@ ranked jobs run before priority-0 FIFO jobs, so a mixed queue can starve its 0 j
 
 Job payloads pass identifiers and load the required state in the processor. Mark a job
 `sensitive: true` when its payload contains secrets or personal data; this enforces immediate
-removal after completion and ordinary processor failure. GlideMQ's terminal stalled-job path
-currently retains the payload despite `removeOnFail: true`; track the upstream fix in
-[#3306](https://github.com/vouchington/vouchington/issues/3306), and do not rely on queue retention
-as protection for sensitive data after a worker repeatedly stalls.
+removal after completion, ordinary processor failure, and a terminal stall. Do not rely on queue
+retention as protection for sensitive data: a waiting or active job still holds its payload, and
+numeric `removeOnFail` keeps failed records.
 
 Prefer fewer, shared queues: each queue costs a blocking connection, timers, and metrics.
 
@@ -101,7 +100,7 @@ For sweeps and cleanup jobs, apply the [bounded-iteration adapter](../../.agents
 - **A sweep never writes the rows it selects by `updated_at`, unless the write is a lease.** Otherwise the write bumps its own trigger and the sweep never ends. A bounded stale-row recovery sweep with a fixed staleness cutoff may touch the rows it enqueues, because the touch makes them ineligible until they stall again.
 - **Every state-driven sweep and reconciler has a convergence test:** a second run writes and enqueues nothing. Recurring jobs that do unconditional periodic work (such as a scheduled materialized-view refresh) are exempt.
 - **Make a paid or external call idempotent.** A stall retries the job and pays twice. Pass a provider idempotency key, or persist a claim/state row and reconcile it after a lost response; a bare receipt row does not prevent a repeat charge. See the [durable-transition matrix](reference-backend-queues-durable-transition-matrix.md).
-- **No secrets or PII in payloads.** `removeOnComplete`/`removeOnFail` retention keeps payloads in Valkey, readable by anyone with queue access, and `scrubJobData` scrubs only failure logs, not stored data. Pass ids and load the data in the processor; login tokens, invite codes, and presigned URLs stay in the processor. Terminal removal does not protect a payload: a job that stalls past its limit stays in the failed set until the upstream GlideMQ fix tracked in [#3306](https://github.com/vouchington/vouchington/issues/3306); see the [replay-safe job reference](reference-backend-queues-define-a-replay-safe-job.md) for the narrow exception.
+- **No secrets or PII in payloads.** Numeric `removeOnComplete`/`removeOnFail` retention keeps payloads in Valkey, readable by anyone with queue access, and `scrubJobData` scrubs only failure logs, not stored data. Pass ids and load the data in the processor; login tokens, invite codes, and presigned URLs stay in the processor. `removeOnFail: true` removes the payload on terminal failure, including a stall past the limit, while a waiting or active job still holds it. See the [replay-safe job reference](reference-backend-queues-define-a-replay-safe-job.md).
 
 ## Placement and validation
 

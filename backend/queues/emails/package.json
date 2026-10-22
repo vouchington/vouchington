@@ -25,7 +25,7 @@
     "@data-stores/valkey-glide-mq": "workspace:^",
     "@email-templates/core": "workspace:^",
     "@voucha/types": "workspace:^",
-    "glide-mq": "^0.18.0"
+    "glide-mq": "^0.19.0"
   },
   "devDependencies": {
     "@voucha/test-helpers": "workspace:^"

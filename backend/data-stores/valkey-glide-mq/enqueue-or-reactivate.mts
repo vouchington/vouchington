@@ -12,8 +12,8 @@ type JobLookupQueue = Pick<Queue, 'name'>
  *
  * A custom `jobId` is a hard uniqueness key: GlideMQ skips the entry, returning no job for it,
  * while any record with that id exists. That includes a retained completed or failed record
- * (`removeOnComplete`/`removeOnFail: 100`) and a job that stalled past its limit, which lands in
- * the failed set whatever `removeOnFail` says. A durable dispatcher that re-adds an attempt whose
+ * (`removeOnComplete`/`removeOnFail` count or age). `removeOnFail: true` deletes the record on
+ * terminal failure, including a stall past the limit. A durable dispatcher that re-adds an attempt whose
  * token did not change would then be skipped on every pass.
  *
  * A skipped id is released only when its record is completed or failed, or already gone. WATCH on
