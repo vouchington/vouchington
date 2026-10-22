@@ -1,8 +1,11 @@
 import Link from 'next/link'
+import { AdminPageHeader } from '@/components/admin/admin-page-header'
+import { AdminTableShell } from '@/components/admin/admin-table-shell'
+import { PageWithAside } from '@/components/page-with-aside'
 import { getCrawlers } from '@/lib/api/server'
 import { requireAdmin } from '@/lib/auth/require-admin'
-import { createCrawlerPathname } from '@/lib/links/entity-href'
 import { getTranslations } from '@/lib/i18n/get-translations'
+import { createCrawlerPathname } from '@/lib/links/entity-href'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,87 +21,76 @@ type Crawler = {
 export default async function CrawlersListPage() {
   const t = await getTranslations()
   await requireAdmin()
+  const title = t('extracted.crawlers.page.crawlers_9bb7d6d4')
 
   const data = await getCrawlers<Crawler>({ limit: 100 })
   const { results: crawlers } = data
+  const columns = [
+    t('extracted.crawlers.page.id_3843971d'),
+    t('extracted.crawlers.page.type_baaddf70'),
+    t('extracted.crawlers.page.priority_d60dbba0'),
+    t('extracted.crawlers.page.description_526e0087'),
+  ]
 
   return (
-    <div>
-      <div className='mb-6'>
-        <h1
-          className='text-xl font-semibold text-foreground'
-          data-pw='crawlers-list-heading'
+    <PageWithAside showFooter={false}>
+      <div className='space-y-4'>
+        <AdminPageHeader
+          dataPw='crawlers-list-heading'
+          description={t('extracted.crawlers.page.perHostnameCrawlConfigurations_6e0e4c28')}
+          title={title}
+        />
+        <AdminTableShell
+          aria-label={title}
+          emptyMessage={t('extracted.crawlers.page.noCrawlersConfigured_a9cd3593')}
+          isEmpty={crawlers.length === 0}
         >
-          {t('extracted.crawlers.page.crawlers_9bb7d6d4')}
-        </h1>
-        <p className='mt-2 text-sm text-muted-foreground'>
-          {t('extracted.crawlers.page.perHostnameCrawlConfigurations_6e0e4c28')}
-        </p>
-      </div>
-
-      {crawlers.length === 0 ? (
-        <p className='text-sm text-muted-foreground'>
-          {t('extracted.crawlers.page.noCrawlersConfigured_a9cd3593')}
-        </p>
-      ) : (
-        <div className='overflow-hidden bg-card shadow-sm dark:shadow-none sm:rounded-lg'>
-          <table
-            className='w-full text-sm'
-            data-pw='crawlers-table'
-          >
-            <thead>
-              <tr className='border-b text-left text-muted-foreground'>
-                <th
-                  scope='col'
-                  className='px-6 py-3 font-medium'
-                >
-                  {t('extracted.crawlers.page.id_3843971d')}
-                </th>
-                <th
-                  scope='col'
-                  className='px-6 py-3 font-medium'
-                >
-                  {t('extracted.crawlers.page.type_baaddf70')}
-                </th>
-                <th
-                  scope='col'
-                  className='px-6 py-3 font-medium'
-                >
-                  {t('extracted.crawlers.page.priority_d60dbba0')}
-                </th>
-                <th
-                  scope='col'
-                  className='px-6 py-3 font-medium'
-                >
-                  {t('extracted.crawlers.page.description_526e0087')}
-                </th>
-              </tr>
-            </thead>
-            <tbody className='divide-y divide-border'>
-              {crawlers.map(crawler => (
-                <tr
-                  key={crawler.id}
-                  className='relative hover:bg-muted/50'
-                >
-                  <td className='px-6 py-4 font-mono text-xs text-muted-foreground'>
-                    <Link
-                      href={createCrawlerPathname(crawler)}
-                      prefetch={false}
-                      className="after:absolute after:inset-0 after:content-[''] text-primary hover:underline"
-                      data-pw='crawler-row'
+          {crawlers.length === 0 ? null : (
+            <table
+              className='min-w-full divide-y divide-border'
+              data-pw='crawlers-table'
+            >
+              <thead className='bg-muted/50'>
+                <tr>
+                  {columns.map(column => (
+                    <th
+                      key={column}
+                      scope='col'
+                      className='px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground'
                     >
-                      {t('extracted.crawlers.page.id_4542e4bb', { id: crawler.id.slice(0, 8) })}
-                    </Link>
-                  </td>
-                  <td className='px-6 py-4 text-foreground'>{crawler.crawler_type}</td>
-                  <td className='px-6 py-4 text-foreground'>{crawler.priority}</td>
-                  <td className='px-6 py-4 text-muted-foreground'>{crawler.description ?? '—'}</td>
+                      {column}
+                    </th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
+              </thead>
+              <tbody className='divide-y divide-border bg-card'>
+                {crawlers.map(crawler => (
+                  <tr
+                    key={crawler.id}
+                    className='relative hover:bg-muted/50'
+                  >
+                    <td className='whitespace-nowrap px-4 py-3 font-mono text-xs text-muted-foreground'>
+                      <Link
+                        href={createCrawlerPathname(crawler)}
+                        prefetch={false}
+                        className="after:absolute after:inset-0 after:content-[''] text-primary hover:underline"
+                        data-pw='crawler-row'
+                      >
+                        {t('extracted.crawlers.page.id_4542e4bb', { id: crawler.id.slice(0, 8) })}
+                      </Link>
+                    </td>
+                    <td className='px-4 py-3 text-sm text-foreground'>{crawler.crawler_type}</td>
+                    <td className='px-4 py-3 text-sm text-foreground'>{crawler.priority}</td>
+                    <td className='px-4 py-3 text-sm text-muted-foreground'>
+                      {crawler.description ?? '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </AdminTableShell>
+      </div>
+    </PageWithAside>
   )
 }

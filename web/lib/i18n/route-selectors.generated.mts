@@ -108,7 +108,7 @@ export const ROUTE_SELECTORS = [
   { pattern: "/copyright/review-queue", selectorId: "web.route.cfd5a705607388d2.cbf29ce484222325", hasMembership: false },
   { pattern: "/crawler/[id]", selectorId: "web.route.20e3048ba7a9ea74.cdab5c90d08717a5", hasMembership: true },
   { pattern: "/crawler/[id]/edit", selectorId: "web.route.06af515f7fd523d5.11ca4600f004aa26", hasMembership: true },
-  { pattern: "/crawlers", selectorId: "web.route.a3665d6ba740f0fb.d458c72dd431adf0", hasMembership: true },
+  { pattern: "/crawlers", selectorId: "web.route.a3665d6ba740f0fb.dbf18f8bff3379c7", hasMembership: true },
   { pattern: "/curated-asides", selectorId: "web.route.4bb10a534f861e76.cbf29ce484222325", hasMembership: false },
   { pattern: "/curated-asides/communities", selectorId: "web.route.1688445d0671ac88.70aecd026b9abdee", hasMembership: true },
   { pattern: "/curated-asides/sources", selectorId: "web.route.0497800205539c17.70aecd026b9abdee", hasMembership: true },
