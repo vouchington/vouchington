@@ -27,7 +27,7 @@ export const relationReferences = {
   relation__user__subscribe_rss_feed_items__topic: ['object_id'],
 } as const
 
-const relationElectionTables = new Set(
+export const relationElectionTables = new Set(
   entityRelationMetadatum.flatMap(metadata => (metadata.election ? [metadata.table_name] : [])),
 )
 
@@ -83,6 +83,16 @@ export function buildTopicRelationAuditConflictsSql(): string {
         AND destination_flag.${table}_id = other.id AND destination_flag.resolved_at IS NULL
         AND destination_flag.flag_type = source_flag.flag_type
       WHERE ${columns.map(column => `r.${column} = $1::uuid`).join(' OR ')}`,
+        ...(columns.length === 2
+          ? [
+              `SELECT 'self_relation_audit_flag' AS kind, r.id AS source_id, flag.id AS destination_id
+      FROM ${table} r
+      JOIN vote_integrity_flags flag ON flag.${table}_subject_id = r.subject_id
+        AND flag.${table}_id = r.id AND flag.resolved_at IS NULL
+      WHERE (${columns.map(column => `r.${column} = $1::uuid`).join(' OR ')})
+        AND ${subject} = ${object}`,
+            ]
+          : []),
       ]
     })
     .join(' UNION ALL ')

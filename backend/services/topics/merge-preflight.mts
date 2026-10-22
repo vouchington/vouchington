@@ -15,6 +15,7 @@ export async function assertTopicMergeReferenceCompatibility(
       | 'lifetime_version'
       | 'subtype_reference'
       | 'audit_flag'
+      | 'self_relation_audit_flag'
       | 'parent_cycle'
       | 'topic_type'
     source_id: string
@@ -95,7 +96,9 @@ export async function assertTopicMergeReferenceCompatibility(
   throw Object.assign(
     createCodedError(
       409,
-      `Cannot merge topics with conflicting ${conflict.kind} rows ${conflict.source_id} and ${conflict.destination_id}`,
+      conflict.kind === 'self_relation_audit_flag'
+        ? `Cannot merge topics: relation ${conflict.source_id} has unresolved vote integrity flag ${conflict.destination_id}`
+        : `Cannot merge topics with conflicting ${conflict.kind} rows ${conflict.source_id} and ${conflict.destination_id}`,
       code,
     ),
     {

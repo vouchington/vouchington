@@ -23,6 +23,7 @@ import {
 import { repointTopicReferences } from './merge-references.mts'
 import { mergeTopicSubtypeReferences } from './merge-subtypes.mts'
 import { deleteMergedTopicDerivedRows } from './merge-derived.mts'
+import { lockAndAssertTopicMergeSelfRelationFlags } from './merge-self-relation-flags.mts'
 type MergeRow = Pick<Topic, 'id' | 'slug' | 'topic_type'> &
   Record<'is_deleted' | 'is_merged', boolean>
 export async function mergeTopicAliases(
@@ -83,6 +84,7 @@ async function executeTopicMerge(merger: PrivateUser, sourceTopic: Topic, destin
     409,
     'Source topic already has merged aliases and cannot be merged again',
   )
+  await lockAndAssertTopicMergeSelfRelationFlags(query, sourceTopic.id, destinationTopic.id)
   const { rows: sourceAliasRows } = await query<{
     id: string
     alias: string

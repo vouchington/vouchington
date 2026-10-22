@@ -32,7 +32,9 @@ of silently losing either relationship. Conflicting live feed ownership follows 
 
 Live relations survive collisions with removed relations; among live claims, verification takes
 precedence. Merging directly related topics removes the resulting self-relation, while a merge
-that would create an indirect parent cycle is refused. Image placements retain their source identity as history. Delayed classification applies no
+that would create an indirect parent cycle is refused. An unresolved vote-integrity flag prevents
+self-relation removal so the merge cannot erase an outstanding audit finding.
+Image placements retain their source identity as history. Delayed classification applies no
 effects to inactive topics. A dedicated merge fence protects new current references without refusing
 ordinary reference writes during feed or vote-stat updates. Derived batch rows remain unfenced.
 
@@ -40,6 +42,8 @@ Classifier candidates are administrative configuration: source-only candidates k
 and dependent thresholds, overrides, and reserved snapshots when moved. A destination candidate
 wins a uniqueness collision. Classifier results remain derived; obsolete topic results are skipped
 without retargeting the provider's answer to the destination.
+Decision replay retains the full submitted input identity independently of derived results, so
+removing an obsolete result cannot make conflicting batch reuse appear identical.
 
 Local detector outcomes are immutable run receipts needed for completion and replay, so a merge
 retains them. An inactive label topic cannot produce a current relation or vote.

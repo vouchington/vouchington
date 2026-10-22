@@ -15,11 +15,12 @@ export async function lockClassifierDecisionBatch(
     rss_feed_item_id: string | null
     scope_category: 'global' | 'community_ai'
     scope_community_id: string | null
+    input_sha256: Buffer | null
     completed_at: Date | null
   }>(sql`
     /* lockClassifierDecisionBatch */
     SELECT classifier_id, prompt_version_id, post_id, rss_feed_item_id, scope_category,
-      scope_community_id, completed_at
+      scope_community_id, input_sha256, completed_at
     FROM classifier_decision_batches
     WHERE id = ${batchId}
     FOR UPDATE
@@ -33,6 +34,7 @@ export async function lockClassifierDecisionBatch(
     rssFeedItemId: row.rss_feed_item_id,
     scopeCategory: row.scope_category,
     scopeCommunityId: row.scope_community_id,
+    inputSha256: row.input_sha256,
     completedAt: row.completed_at,
   }
 }
@@ -56,11 +58,12 @@ export async function readClassifierDecisionStoredCandidateSnapshots(
 export async function completeClassifierDecisionBatch(
   query: OwnedTransaction,
   batchId: string,
+  inputSha256: Buffer,
 ): Promise<void> {
   const { rowCount } = await query(sql`
     /* completeClassifierDecisionBatch */
     UPDATE classifier_decision_batches
-    SET completed_at = clock_timestamp()
+    SET input_sha256 = ${inputSha256}, completed_at = clock_timestamp()
     WHERE id = ${batchId} AND completed_at IS NULL
   `)
   if (rowCount !== 1) throw new Error('Classifier decision batch was not pending completion')

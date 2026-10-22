@@ -1,4 +1,6 @@
 import { write } from '@data-stores/psql'
+import { classifierDecisionInputFingerprint } from '../../../services/classifiers/decision-input.mts'
+import type { PersistClassifierDecisionInput } from '../../../services/classifiers/types.mts'
 import { seedUuid, seedUuidAtTimestamp } from './common.mts'
 
 /** Inside CLASSIFIER_COMPARISON_MAX_WINDOW_DAYS and stable across the seed and run processes. */
@@ -142,13 +144,26 @@ async function insertBatches(input: {
   scopeCategory: 'global' | 'community_ai'
   scopeCommunityId: string | null
 }): Promise<void> {
+  const subject = classifierBatchSubject(input.postId, input.rssFeedItemId)
+  const scope = classifierBatchScope(input.scopeCategory, input.scopeCommunityId)
+  const inputSha256s = input.ids.map(batchId =>
+    classifierDecisionInputFingerprint({
+      batchId,
+      classifierId: input.classifierId,
+      promptVersionId: input.promptVersionId,
+      subject,
+      scope,
+      calls: [],
+    }).toString('hex'),
+  )
   await write(
     `/* seedExplainData */ INSERT INTO classifier_decision_batches (
        id, classifier_id, prompt_version_id, post_id, rss_feed_item_id,
-       scope_category, scope_community_id, completed_at
+       scope_category, scope_community_id, input_sha256, completed_at
      )
-     SELECT batch_id, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP
-     FROM unnest($1::uuid[]) AS batch_id
+     SELECT batch_id, $2, $3, $4, $5, $6, $7,
+       decode(batch_fingerprint, 'hex'), CURRENT_TIMESTAMP
+     FROM unnest($1::uuid[], $8::text[]) AS batches(batch_id, batch_fingerprint)
      ON CONFLICT (id) DO NOTHING`,
     [
       input.ids,
@@ -158,6 +173,27 @@ async function insertBatches(input: {
       input.rssFeedItemId,
       input.scopeCategory,
       input.scopeCommunityId,
+      inputSha256s,
     ],
   )
+}
+
+function classifierBatchSubject(
+  postId: string | null,
+  rssFeedItemId: string | null,
+): PersistClassifierDecisionInput['subject'] {
+  if (postId !== null && rssFeedItemId === null) return { postId, rssFeedItemId: null }
+  if (postId === null && rssFeedItemId !== null) return { postId: null, rssFeedItemId }
+  throw new Error('Classifier batch seed requires exactly one subject')
+}
+
+function classifierBatchScope(
+  scopeCategory: 'global' | 'community_ai',
+  scopeCommunityId: string | null,
+): PersistClassifierDecisionInput['scope'] {
+  if (scopeCategory === 'global' && scopeCommunityId === null)
+    return { scopeCategory, scopeCommunityId }
+  if (scopeCategory === 'community_ai' && scopeCommunityId !== null)
+    return { scopeCategory, scopeCommunityId }
+  throw new Error('Classifier batch seed has an invalid scope')
 }

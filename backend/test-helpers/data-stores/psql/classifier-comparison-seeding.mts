@@ -14,6 +14,8 @@ import {
   persistSubjectTopicDecision,
   type TopicRelationSubject,
 } from './classifier-runs/subject-topic-relations.mts'
+import { classifierDecisionInputFingerprint } from '../../../services/classifiers/decision-input.mts'
+import type { PersistClassifierDecisionInput } from '../../../services/classifiers/types.mts'
 import type { createClassifierFixture } from './classifiers.mts'
 
 type ComparisonFixture = Awaited<ReturnType<typeof createClassifierFixture>>
@@ -155,20 +157,34 @@ export async function insertCompletedEmptyBatches(
   const ids = Array.from({ length: count }, (_, index) =>
     uuidv7({ msecs: startAt.getTime() + index }),
   )
+  const scope: PersistClassifierDecisionInput['scope'] = options.communityId
+    ? { scopeCategory: 'community_ai', scopeCommunityId: options.communityId }
+    : { scopeCategory: 'global', scopeCommunityId: null }
+  const subject = options.subject ?? postSubject(fixture)
+  const inputSha256s = ids.map(batchId =>
+    classifierDecisionInputFingerprint({
+      batchId,
+      classifierId: fixture.classifierId,
+      promptVersionId: fixture.promptVersionId,
+      subject,
+      scope,
+      calls: [],
+    }).toString('hex'),
+  )
   await write(sql`/* insertClassifierFixtureEmptyBatches */
     INSERT INTO classifier_decision_batches (
       id, classifier_id, prompt_version_id, post_id, rss_feed_item_id,
       scope_category, scope_community_id
     )
     SELECT batch_id, ${fixture.classifierId}, ${fixture.promptVersionId},
-      ${(options.subject ?? postSubject(fixture)).postId},
-      ${(options.subject ?? postSubject(fixture)).rssFeedItemId},
-      ${options.communityId ? 'community_ai' : 'global'}, ${options.communityId ?? null}
+      ${subject.postId}, ${subject.rssFeedItemId}, ${scope.scopeCategory}, ${scope.scopeCommunityId}
     FROM unnest(${ids}::uuid[]) AS batch_id
   `)
   await write(sql`/* completeClassifierFixtureEmptyBatches */
-    UPDATE classifier_decision_batches SET completed_at = CURRENT_TIMESTAMP
-    WHERE id = ANY(${ids}::uuid[])
+    UPDATE classifier_decision_batches batch
+    SET input_sha256 = decode(pending.input_sha256, 'hex'), completed_at = CURRENT_TIMESTAMP
+    FROM unnest(${ids}::uuid[], ${inputSha256s}::text[]) AS pending(batch_id, input_sha256)
+    WHERE batch.id = pending.batch_id
   `)
   return ids
 }

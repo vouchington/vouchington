@@ -9,7 +9,7 @@ import { createTestTopic, createTestUser } from '@voucha/test-helpers'
 import { getTopicByAny } from '../topics/get.mts'
 import { mergeTopicAliases } from '../topics/merge-aliases.mts'
 import { persistClassifierDecision } from './persist-classifier-decision.mts'
-import type { PersistClassifierDecisionInput } from './types.mts'
+import { ClassifierDecisionReuseError, type PersistClassifierDecisionInput } from './types.mts'
 
 describe('delayed topic classifier decisions', () => {
   it.each([false, true])(
@@ -55,6 +55,21 @@ describe('delayed topic classifier decisions', () => {
         replayed: true,
         decision: first.decision,
       })
+      await expect(
+        persistClassifierDecision({
+          ...input,
+          calls: [
+            {
+              ...input.calls[0]!,
+              results: input.calls[0]!.results.map(result =>
+                result.candidateKind === 'topic' && result.topicId === fixture.topicId
+                  ? { ...result, rawResponse: { probability: 0.9, changed: true } }
+                  : result,
+              ),
+            },
+          ],
+        }),
+      ).rejects.toBeInstanceOf(ClassifierDecisionReuseError)
       await expect(fixture.getDecisionPersistenceFacts(batchId)).resolves.toMatchObject({
         batches: 1,
         calls: 1,
@@ -62,6 +77,126 @@ describe('delayed topic classifier decisions', () => {
       })
     },
   )
+  it.each(['probability', 'raw response'] as const)(
+    'rejects a changed merged-topic %s when reusing a completed batch ID',
+    async mutation => {
+      const fixture = await createClassifierFixture()
+      await fixture.activateClassifierConfigurations()
+      const admin = await createTestUser({ administrator: true })
+      const destination = await createTestTopic({ user: admin })
+      const batchId = uuidv7()
+      const input: PersistClassifierDecisionInput = {
+        batchId,
+        classifierId: fixture.classifierId,
+        promptVersionId: fixture.promptVersionId,
+        subject: { postId: fixture.postId, rssFeedItemId: null },
+        scope: { scopeCategory: 'global', scopeCommunityId: null },
+        calls: [
+          {
+            shardOrdinal: 0,
+            results: [
+              {
+                candidateKind: 'topic',
+                topicId: fixture.topicId,
+                storedCandidateId: null,
+                probability: 0.9,
+                rawResponse: { probability: 0.9 },
+              },
+            ],
+          },
+        ],
+      }
+      await persistClassifierDecision(input)
+      await mergeTopicAliases(
+        admin,
+        (await getTopicByAny(fixture.topicId))!,
+        (await getTopicByAny(destination.id))!,
+      )
+
+      await expect(persistClassifierDecision(input)).resolves.toMatchObject({ replayed: true })
+      const changedResult = {
+        ...input.calls[0]!.results[0]!,
+        ...(mutation === 'probability' ? { probability: 0.1 } : {}),
+        ...(mutation === 'raw response'
+          ? { rawResponse: { probability: 0.9, changed: true } }
+          : {}),
+      }
+      await expect(
+        persistClassifierDecision({
+          ...input,
+          calls: [
+            {
+              ...input.calls[0]!,
+              results: [changedResult],
+            },
+          ],
+        }),
+      ).rejects.toBeInstanceOf(ClassifierDecisionReuseError)
+    },
+  )
+  it('rejects changed shard placement for merged-topic results', async () => {
+    const fixture = await createClassifierFixture()
+    await fixture.activateClassifierConfigurations()
+    const admin = await createTestUser({ administrator: true })
+    const destination = await createTestTopic({ user: admin })
+    const otherSource = await createTestTopic({ user: admin })
+    const batchId = uuidv7()
+    const input: PersistClassifierDecisionInput = {
+      batchId,
+      classifierId: fixture.classifierId,
+      promptVersionId: fixture.promptVersionId,
+      subject: { postId: fixture.postId, rssFeedItemId: null },
+      scope: { scopeCategory: 'global', scopeCommunityId: null },
+      calls: [
+        {
+          shardOrdinal: 0,
+          results: [
+            {
+              candidateKind: 'topic',
+              topicId: fixture.topicId,
+              storedCandidateId: null,
+              probability: 0.9,
+              rawResponse: { probability: 0.9 },
+            },
+          ],
+        },
+        {
+          shardOrdinal: 1,
+          results: [
+            {
+              candidateKind: 'topic',
+              topicId: otherSource.id,
+              storedCandidateId: null,
+              probability: 0.8,
+              rawResponse: { probability: 0.8 },
+            },
+          ],
+        },
+      ],
+    }
+    await persistClassifierDecision(input)
+    await mergeTopicAliases(
+      admin,
+      (await getTopicByAny(fixture.topicId))!,
+      (await getTopicByAny(destination.id))!,
+    )
+    await mergeTopicAliases(
+      admin,
+      (await getTopicByAny(otherSource.id))!,
+      (await getTopicByAny(destination.id))!,
+    )
+
+    await expect(persistClassifierDecision(input)).resolves.toMatchObject({ replayed: true })
+    await expect(
+      persistClassifierDecision({
+        ...input,
+        calls: [
+          { ...input.calls[0]!, results: input.calls[1]!.results },
+          { ...input.calls[1]!, results: input.calls[0]!.results },
+        ],
+      }),
+    ).rejects.toBeInstanceOf(ClassifierDecisionReuseError)
+  })
   it('completes a reserved stored-candidate answer after that candidate moves to the destination', async () => {
     const fixture = await createClassifierFixture()
     await fixture.activateClassifierConfigurations()

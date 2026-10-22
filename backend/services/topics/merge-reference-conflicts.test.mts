@@ -9,8 +9,19 @@ import {
   getTopicMergeFeedOwner,
   softDeleteTopicMergeFeed,
 } from '@voucha/test-helpers/topic-merge-references'
-import { seedTopicMergeAuditCollision } from '@voucha/test-helpers/topic-merge-relations'
+import {
+  seedTopicMergeAuditCollision,
+  seedTopicMergeParentEdges,
+} from '@voucha/test-helpers/topic-merge-relations'
+import {
+  getTopicMergeFlaggedVotedRelatedTopics,
+  seedTopicMergeFlaggedVotedRelatedTopics,
+  seedTopicMergeVotedRelatedTopics,
+  withHeldTopicMergeTopicRow,
+} from '@voucha/test-helpers/topic-merge-self-relations'
+import { waitForTestPostgresLockWaiter } from '@voucha/test-helpers/postgres-lock-wait'
 import { seedTopicMergeRetailerCollision } from '@voucha/test-helpers/topic-merge-subtypes'
+import { createVoteIntegrityFlag } from '../vote-integrity/create-flag.mts'
 import { getTopicByAny } from './get.mts'
 import { mergeTopicAliases } from './merge-aliases.mts'
 
@@ -60,5 +71,85 @@ describe('topic merge reference collision preflight', () => {
       destination_id: flags.destinationFlagId,
     })
     await expect(getTopicByAny(source.id)).resolves.toMatchObject({ id: source.id })
+  })
+
+  it('rejects a voted child-to-parent self-relation with an unresolved flag', async () => {
+    const { admin, source: child, destination: parent } = await createTopics()
+    await seedTopicMergeParentEdges([[child.id, parent.id]])
+    const { relationId, voteId, flagId } = await seedTopicMergeFlaggedVotedRelatedTopics(
+      child.id,
+      parent.id,
+      admin.id,
+    )
+
+    await expect(mergeTopicAliases(admin, child, parent)).rejects.toMatchObject({
+      status: 409,
+      code: 'topic_merge_reference_conflict',
+      source_id: relationId,
+      destination_id: flagId,
+      message: expect.stringContaining(`relation ${relationId}`),
+    })
+    await expect(getTopicByAny(child.id)).resolves.toMatchObject({ id: child.id })
+    await expect(getTopicMergeFlaggedVotedRelatedTopics(child.id, relationId)).resolves.toEqual([
+      {
+        relation_id: relationId,
+        subject_id: child.id,
+        object_id: parent.id,
+        vote_id: voteId,
+        flag_id: flagId,
+        resolved_at: null,
+      },
+    ])
+  })
+
+  it('rejects a flag committed after preflight while the merge waits for a topic row', async () => {
+    const { admin, source: child, destination: parent } = await createTopics()
+    await seedTopicMergeParentEdges([[child.id, parent.id]])
+    const { relationId, voteId } = await seedTopicMergeVotedRelatedTopics(
+      child.id,
+      parent.id,
+      admin.id,
+    )
+    let outcome: Promise<{ value: unknown } | { error: unknown }> | undefined
+    let flagId: string | undefined
+    try {
+      await withHeldTopicMergeTopicRow(parent.id, async holderProcessId => {
+        outcome = mergeTopicAliases(admin, child, parent).then(
+          value => ({ value }),
+          err => ({ error: err }),
+        )
+        await waitForTestPostgresLockWaiter(holderProcessId, 'mergeTopicAliases lockTopics')
+        const flag = await createVoteIntegrityFlag(
+          'entity_relation',
+          relationId,
+          'velocity_spike',
+          {},
+        )
+        if (!flag) throw new Error('Expected a vote integrity flag for the related topics')
+        flagId = flag.id
+      })
+    } finally {
+      if (outcome) await outcome
+    }
+    if (!outcome || !flagId) throw new Error('Expected both a merge outcome and a committed flag')
+    expect(await outcome).toMatchObject({
+      error: {
+        status: 409,
+        code: 'topic_merge_reference_conflict',
+        source_id: relationId,
+        destination_id: flagId,
+      },
+    })
+    await expect(getTopicByAny(child.id)).resolves.toMatchObject({ id: child.id })
+    await expect(getTopicMergeFlaggedVotedRelatedTopics(child.id, relationId)).resolves.toEqual([
+      {
+        relation_id: relationId,
+        subject_id: child.id,
+        object_id: parent.id,
+        vote_id: voteId,
+        flag_id: flagId,
+        resolved_at: null,
+      },
+    ])
   })
 })
