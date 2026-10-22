@@ -55,7 +55,17 @@ export class ClientRequest {
     }
 
     try {
-      const response = await fetch(url, fetchOptions)
+      let response = await fetch(url, fetchOptions)
+      if (response.status === 401 && endpoint !== '/api/v1/session') {
+        const originalError = (await response
+          .clone()
+          .json()
+          .catch(() => null)) as unknown
+        if (isErrorCode(originalError, 'AUTH_REQUIRED')) {
+          const refreshed = await refreshBrowserSession()
+          if (refreshed) response = await fetch(url, fetchOptions)
+        }
+      }
 
       if (!response.ok) {
         const errorData = await parseErrorResponseBody(response)
@@ -154,4 +164,29 @@ function isErrorCode(errorData: unknown, code: string): boolean {
     !Array.isArray(errorData) &&
     (errorData as { code?: unknown }).code === code
   )
+}
+
+let refreshInFlight: Promise<boolean> | undefined
+
+function refreshBrowserSession(): Promise<boolean> {
+  refreshInFlight ??= fetch('/api/v1/session', {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: '{}',
+  })
+    .then(async response => {
+      if (!response.ok)
+        throw new ApiError(
+          'Session refresh failed',
+          response.status,
+          await parseErrorResponseBody(response),
+        )
+      const body = (await response.json()) as { session?: { uid?: unknown } }
+      return typeof body.session?.uid === 'string'
+    })
+    .finally(() => {
+      refreshInFlight = undefined
+    })
+  return refreshInFlight
 }

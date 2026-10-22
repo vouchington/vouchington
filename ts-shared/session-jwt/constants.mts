@@ -1,4 +1,4 @@
-import type { DeviceClass } from './types.mts'
+import type { DeviceClass, SessionClient } from './types.mts'
 
 // Session and device token expiration — shared across backend and Cloudflare Worker.
 // Tokens have this maximum lifetime (time from issuance).
@@ -10,11 +10,16 @@ export const DEVICE_EXPIRATION_SECONDS = 30 * 24 * 60 * 60 // 30 days
 export const ATTESTED_SESSION_EXPIRATION_STRING = '30 days'
 export const ATTESTED_SESSION_EXPIRATION_SECONDS = 30 * 24 * 60 * 60 // 30 days
 
-export function sessionExpiryFor(dc?: DeviceClass): string {
+export const WEB_SESSION_EXPIRATION_STRING = '10 minutes'
+export const WEB_SESSION_EXPIRATION_SECONDS = 10 * 60
+
+export function sessionExpiryFor(dc?: DeviceClass, client?: SessionClient): string {
+  if (client === 'web') return WEB_SESSION_EXPIRATION_STRING
   return dc === 'attested' ? ATTESTED_SESSION_EXPIRATION_STRING : SESSION_EXPIRATION_STRING
 }
 
-export function sessionExpirySecondsFor(dc?: DeviceClass): number {
+export function sessionExpirySecondsFor(dc?: DeviceClass, client?: SessionClient): number {
+  if (client === 'web') return WEB_SESSION_EXPIRATION_SECONDS
   return dc === 'attested' ? ATTESTED_SESSION_EXPIRATION_SECONDS : SESSION_EXPIRATION_SECONDS
 }
 

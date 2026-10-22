@@ -6,6 +6,7 @@ import {
 import type { Application, Context } from '@jongleberry/api-server'
 import {
   createDeviceAndSessionTokens,
+  assertSessionUserAgent,
   isSessionRevoked,
   refreshSessionState,
   verifyDeviceAndSessionTokens,
@@ -100,23 +101,33 @@ const extensions = {
 
       const result = await verifyDeviceAndSessionTokens({ deviceToken, sessionToken })
       if (result) {
+        assertSessionUserAgent(result, this.req.headers['user-agent'])
         if (result.uid && result.mpe !== undefined && Math.floor(Date.now() / 1000) >= result.mpe) {
           const refreshed = await refreshSessionState({
             deviceToken,
             sessionToken,
             fetchUser: getPrivateUserByAny,
+            userAgent: this.req.headers['user-agent'],
           })
           setAuthenticationCookies(this, {
             dt: refreshed.dt,
             st: refreshed.st,
             deviceClass: refreshed.deviceClass,
           })
-          this.sessionTokenData = { ...refreshed.session, dc: refreshed.deviceClass }
+          this.sessionTokenData = {
+            ...refreshed.session,
+            dc: refreshed.deviceClass,
+            device_exp: result.device_exp,
+            device_iat: result.device_iat,
+          }
           return this.sessionTokenData
         }
         if (
           result.uid &&
-          (await isSessionRevoked(result.sid, { userId: result.uid, issuedAt: result.iat }))
+          (await isSessionRevoked(result.sid, {
+            userId: result.uid,
+            issuedAt: result.client === 'web' ? result.device_iat : result.iat,
+          }))
         ) {
           const tokens = await createDeviceAndSessionTokens({
             did: result.did,

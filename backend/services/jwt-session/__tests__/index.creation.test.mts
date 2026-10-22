@@ -10,7 +10,7 @@ import { legacyUuidV4 } from '../../../test-helpers/services/jwt-session/index.m
 
 describe('index.creation', () => {
   const DEVICE_TOKEN_EXPIRATION_SECONDS = 2_592_000 // matches jose's "30 days" duration
-  const SESSION_TOKEN_EXPIRATION_SECONDS = 2 * 24 * 60 * 60 // matches SESSION_EXPIRATION_STRING
+  const SESSION_TOKEN_EXPIRATION_SECONDS = 10 * 60 // web access lifetime
   const ATTESTED_SESSION_TOKEN_EXPIRATION_SECONDS = 30 * 24 * 60 * 60 // matches ATTESTED_SESSION_EXPIRATION_STRING
 
   it('createDeviceAndSessionTokens creates a valid device token', async () => {

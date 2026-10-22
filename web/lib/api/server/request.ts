@@ -166,9 +166,11 @@ async function buildRequestIdHeader(): Promise<Record<string, string>> {
 async function buildForwardedIpHeaders(): Promise<Record<string, string>> {
   try {
     const headers = await getHeaders()
+    const userAgent = headers.get('user-agent')
     const forwardedFor = headers.get('x-forwarded-for')
     const connectingIp = headers.get('cf-connecting-ip')
     return {
+      ...(userAgent ? { 'user-agent': userAgent } : {}),
       ...(forwardedFor ? { 'x-forwarded-for': forwardedFor } : {}),
       ...(connectingIp ? { 'cf-connecting-ip': connectingIp } : {}),
     }

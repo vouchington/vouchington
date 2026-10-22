@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { createRequest, nextTestRequestIp } from '@voucha/test-helpers/api/server'
+import {
+  createNativeRequest as createRequest,
+  nextTestRequestIp,
+} from '@voucha/test-helpers/api/server'
 
 import {
   createDeviceAndSessionTokens,
@@ -27,6 +30,7 @@ describe('Session Routes', () => {
         did,
         sid,
         uid: v7(),
+        deviceContext: { isNativeClient: true },
       })
       await revokeSession(sid)
 
@@ -202,6 +206,7 @@ describe('Session Routes', () => {
         did: v7(),
         sid: authenticatedSid,
         uid: v7(),
+        deviceContext: { isNativeClient: true },
       })
 
       await request

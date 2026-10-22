@@ -11,6 +11,48 @@ describe('ClientRequest', () => {
     vi.unstubAllGlobals()
   })
 
+  it.each(['/api/v1/posts', '/api/v1/auth/sessions'])(
+    'refreshes cookies and retries %s once after authentication expires',
+    async endpoint => {
+      const fetchMock = vi
+        .fn<typeof fetch>()
+        .mockResolvedValueOnce(
+          errorResponse(401, { code: 'AUTH_REQUIRED', message: 'Unauthorized' }),
+        )
+        .mockResolvedValueOnce(new Response(JSON.stringify({ session: { uid: 'user' } })))
+        .mockResolvedValueOnce(new Response(JSON.stringify({ saved: true })))
+      vi.stubGlobal('fetch', fetchMock)
+      await expect(new ClientRequest().post(endpoint, { value: 'owned' })).resolves.toEqual({
+        saved: true,
+      })
+      expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
+        endpoint,
+        '/api/v1/session',
+        endpoint,
+      ])
+      expect(fetchMock.mock.calls[1]?.[1]).toMatchObject({
+        method: 'PATCH',
+        body: '{}',
+        credentials: 'include',
+      })
+      expect(fetchMock.mock.calls[2]?.[1]).toEqual(fetchMock.mock.calls[0]?.[1])
+    },
+  )
+
+  it('does not retry a user-agent mismatch', async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
+      errorResponse(401, {
+        code: 'SESSION_USER_AGENT_MISMATCH',
+        message: 'Session user agent changed',
+      }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    await expect(new ClientRequest().post('/api/v1/posts', {})).rejects.toMatchObject({
+      code: 'SESSION_USER_AGENT_MISMATCH',
+    })
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
   it('preserves cancellation identity and forwards the caller signal', async () => {
     const cancellation = new DOMException('The caller canceled the request', 'AbortError')
     const controller = new AbortController()

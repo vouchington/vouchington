@@ -53,6 +53,7 @@ describe('proxy response cookies', () => {
     mockDecodeSessionJwt.mockReturnValue(AUTH_ST_PAYLOAD)
     fetchMock.mockResolvedValue({
       ok: true,
+      headers: { getSetCookie: () => ['dt=new-dt; HttpOnly', 'st=new-st; HttpOnly'] },
       json: () =>
         Promise.resolve({
           session: {

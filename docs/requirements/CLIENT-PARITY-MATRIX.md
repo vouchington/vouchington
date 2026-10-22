@@ -150,3 +150,13 @@ matching a registered email requires the user to sign in with their existing met
 the provider from settings. Web, Swift, and .NET clients should compose that guidance from the
 factual conflict code and preserve the existing sign-in and connect flows. The producer lands first;
 client copy adoption remains dependent client work.
+
+## Browser session refresh
+
+Web login and credential completion use httpOnly cookies and omit raw tokens from browser JSON.
+Web session refresh accepts the cookies and returns session metadata, while native callers retain
+native token JSON transport and lifetimes. Signed web session identity retains its user-agent
+binding when clients change their declared headers. Browser page and API clients refresh silently
+through the device credential. A changed user agent returns `SESSION_USER_AGENT_MISMATCH` and
+requires sign-in; native clients should surface this factual code if handling a web-issued token.
+The producer lands first. Device-bound session proof is a separate browser capability.

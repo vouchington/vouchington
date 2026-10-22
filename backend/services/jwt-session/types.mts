@@ -19,6 +19,7 @@ export type RefreshedSessionState = {
 export interface DeviceContext {
   ip_address?: string
   user_agent?: string
+  isNativeClient?: boolean
 }
 
 export type { DeviceClass, DeviceTokenPayload, SessionTokenPayload }
@@ -42,7 +43,11 @@ export interface VerifyDeviceAndSessionTokenResult {
   did: string
   sid: string
   uid: string | null
+  client?: 'web' | 'native'
+  ua_hash?: string
   exp?: number
+  device_exp?: number
+  device_iat?: number
   iat?: number
   rol?: readonly string[]
   mpl?: string | null

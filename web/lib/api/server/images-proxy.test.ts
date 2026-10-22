@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { recordProxyReferralAttribution, refreshProxySession } from './proxy'
+import { recordProxyReferralAttribution, refreshProxySession, getProxyClientHeaders } from './proxy'
 
 describe('server proxy api helpers', () => {
   afterEach(() => {
@@ -16,6 +16,28 @@ describe('server proxy api helpers', () => {
         {},
       ),
     ).rejects.toThrow('Unsupported backend URL protocol: ftp:')
+  })
+
+  it('uses the original browser user-agent and httpOnly response cookies for SSR refresh', async () => {
+    const headers = new Headers()
+    headers.append('Set-Cookie', 'dt=refreshed-device; HttpOnly; Path=/')
+    headers.append('Set-Cookie', 'st=refreshed-session; HttpOnly; Path=/')
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(
+        new Response(
+          JSON.stringify({ session: { uid: 'user', dte: 2592000, ste: 600, secure: true } }),
+          { headers },
+        ),
+      )
+    vi.stubGlobal('fetch', fetchMock)
+    const forwarded = getProxyClientHeaders({
+      headers: new Headers({ 'user-agent': 'Browser/1.0' }),
+    })
+    await expect(
+      refreshProxySession('https://backend.example.com', { dt: 'device' }, forwarded),
+    ).resolves.toMatchObject({ dt: 'refreshed-device', st: 'refreshed-session' })
+    expect(fetchMock.mock.calls[0]?.[1]?.headers).toMatchObject({ 'user-agent': 'Browser/1.0' })
   })
 
   it('adds web client metadata to session refresh requests', async () => {

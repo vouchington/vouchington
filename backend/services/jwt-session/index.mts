@@ -23,3 +23,6 @@ export {
   revokeAllAuthenticatedSessions,
   revokeAuthenticatedSession,
 } from './user-session-revocation.mts'
+
+export { assertSessionUserAgent } from './client-binding.mts'
+export { getSessionForLogout } from './web-refresh.mts'

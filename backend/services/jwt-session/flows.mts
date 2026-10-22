@@ -1,3 +1,5 @@
+import { assertSessionUserAgent } from './client-binding.mts'
+import { refreshWebSessionFromDeviceToken } from './web-refresh.mts'
 import { ensureAnonymousSession } from '@ts-shared/session-jwt'
 import { verifyDeviceAndSessionTokens } from './verify.mts'
 import { trackAuthSessionEvent } from '@services/analytics'
@@ -10,6 +12,7 @@ export async function refreshSessionState(options: {
   deviceToken?: string
   sessionToken?: string
   fetchUser: FetchUserForSession
+  userAgent?: string
   verifyRevocationOnHotPath?: boolean
 }): Promise<RefreshedSessionState> {
   if (options.deviceToken && options.sessionToken) {
@@ -18,6 +21,7 @@ export async function refreshSessionState(options: {
       sessionToken: options.sessionToken,
     })
 
+    if (verified) assertSessionUserAgent(verified, options.userAgent)
     if (verified && !verified.uid) {
       trackAuthSessionEvent({
         did: verified.did,
@@ -46,6 +50,15 @@ export async function refreshSessionState(options: {
         { verifyRevocationOnHotPath: options.verifyRevocationOnHotPath },
       )
     }
+  }
+
+  if (options.deviceToken) {
+    const refreshed = await refreshWebSessionFromDeviceToken(
+      options.deviceToken,
+      options.userAgent,
+      options.fetchUser,
+    )
+    if (refreshed) return refreshed
   }
 
   const result = await ensureAnonymousSession({

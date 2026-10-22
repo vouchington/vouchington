@@ -20,7 +20,11 @@ describe('authenticated session recheck deadline', () => {
     vi.useFakeTimers({ toFake: ['Date'] })
     vi.setSystemTime(startedAt)
 
-    const initial = await createDeviceAndSessionTokens({ did: v7(), uid: user.id })
+    const initial = await createDeviceAndSessionTokens({
+      did: v7(),
+      uid: user.id,
+      deviceContext: { isNativeClient: true },
+    })
     const originalRca = initial.sessionToken.payload.rca!
 
     vi.setSystemTime(new Date(startedAt.getTime() + 29 * 60 * 1000))
@@ -43,16 +47,22 @@ describe('authenticated session recheck deadline', () => {
     expect(cold.session.rca).toBe(originalRca + 30 * 60)
   })
 
-  it('cold-refreshes a legacy authenticated token that has no recheck deadline', async () => {
+  it('cold-refreshes an authenticated native token that has no recheck deadline', async () => {
     const user = await createTestUser()
     const startedAt = new Date('2026-01-01T00:00:00.000Z')
     vi.useFakeTimers({ toFake: ['Date'] })
     vi.setSystemTime(startedAt)
 
     const did = v7()
-    const deviceToken = await signDeviceJwt({ did }, { expiresIn: '30 days' })
+    const deviceToken = await signDeviceJwt({ did, client: 'native' }, { expiresIn: '30 days' })
     const sessionToken = await signSessionJwt(
-      { did, sid: v7(), uid: user.id, sca: Math.floor(startedAt.getTime() / 1000) + 60 * 60 },
+      {
+        did,
+        sid: v7(),
+        uid: user.id,
+        client: 'native',
+        sca: Math.floor(startedAt.getTime() / 1000) + 60 * 60,
+      },
       { expiresIn: '2 days' },
     )
 
@@ -99,8 +109,16 @@ describe('authenticated session recheck deadline', () => {
     vi.setSystemTime(startedAt)
 
     const [first, second] = await Promise.all([
-      createDeviceAndSessionTokens({ did: v7(), uid: user.id }),
-      createDeviceAndSessionTokens({ did: v7(), uid: user.id }),
+      createDeviceAndSessionTokens({
+        did: v7(),
+        uid: user.id,
+        deviceContext: { isNativeClient: true },
+      }),
+      createDeviceAndSessionTokens({
+        did: v7(),
+        uid: user.id,
+        deviceContext: { isNativeClient: true },
+      }),
     ])
     const originalRca = first.sessionToken.payload.rca!
     expect(second.sessionToken.payload.rca).toBe(originalRca)

@@ -3,6 +3,7 @@
  * @public Documented contract; production use is unconfirmed and this export may be
  * removed after intended-use review. Evidence: `docs/overview/architecture/reference-error-handling-error-response-contract.md`.
  */
+export const SESSION_USER_AGENT_MISMATCH = 'SESSION_USER_AGENT_MISMATCH'
 export const AUTH_REQUIRED = 'AUTH_REQUIRED'
 export const FORBIDDEN = 'FORBIDDEN'
 export const ACCOUNT_SUSPENDED = 'ACCOUNT_SUSPENDED'

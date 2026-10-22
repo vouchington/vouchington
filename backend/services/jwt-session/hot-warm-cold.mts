@@ -53,7 +53,7 @@ export async function applyHotWarmCold(
   // Warm path: check Valkey for revocation and staleness (single Lua roundtrip)
   const warmResult = await sessionValkeyClient.invokeScript(checkRevokedAndStaleScript, {
     keys: [getJwtRevokedKey(verified.sid), getJwtStaleKey(uid), getJwtUserRevokedBeforeKey(uid)],
-    args: [verified.iat === undefined ? '0' : String(verified.iat)],
+    args: [String((verified.client === 'web' ? verified.device_iat : verified.iat) ?? 0)],
   })
   const [revokedRaw, staleRaw] = Array.isArray(warmResult) ? warmResult : [0, null]
   const revoked = Number(revokedRaw) !== 0
@@ -82,6 +82,11 @@ export async function applyHotWarmCold(
       trustTier: verified.tt,
       uiLocale: verified.uil,
       deviceClass: verified.dc,
+      deviceExpiresAt: verified.device_exp,
+      clientBinding:
+        verified.client === 'web'
+          ? { client: 'web', ua_hash: verified.ua_hash! }
+          : { client: 'native' },
       freshness: { type: 'preserve', recheckAfter: verified.rca },
     })
     return {
@@ -115,6 +120,11 @@ export async function applyHotWarmCold(
     trustTier: claims.trustTier,
     uiLocale: claims.uiLocale,
     deviceClass: verified.dc,
+    deviceExpiresAt: verified.device_exp,
+    clientBinding:
+      verified.client === 'web'
+        ? { client: 'web', ua_hash: verified.ua_hash! }
+        : { client: 'native' },
     freshness: { type: 'reset' },
   })
   if (staleMarker) await clearJwtStaleIfCurrent(uid, staleMarker)

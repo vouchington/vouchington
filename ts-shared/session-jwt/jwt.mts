@@ -1,12 +1,6 @@
-import {
-  decodeJwt,
-  signJwt,
-  verifyJwt,
-  type JwtKeySet,
-  isUuidv7 as isUUIDv7,
-  validateUuidv7 as validateUUIDv7,
-} from '@vouchington/session-jwt'
-import { decodeProtectedHeader, type JWTPayload } from 'jose'
+import { decodeJwt, signJwt, verifyJwt, type JwtKeySet, validateUuidv7 as validateUUIDv7 } from '@vouchington/session-jwt'
+import { isValidDevicePayload, isValidSessionPayload } from './payload-validation.mts'
+import { decodeProtectedHeader } from 'jose'
 import { validate as isUUID } from 'uuid'
 import { getResolvedKeySet } from './keys.mts'
 import {
@@ -14,7 +8,6 @@ import {
   SESSION_JWT_PRIVATE_KEYS_ENV,
   DEVICE_TOKEN_AUDIENCE,
   SESSION_TOKEN_AUDIENCE,
-  isOptionalDeviceClass,
   type JwtSignOptions,
   type JwtRuntimeOptions,
   type DeviceTokenPayload,
@@ -44,33 +37,11 @@ export function decodeSessionJwt(token: string): SessionTokenPayload | null {
   const payload = decodeJwt(token)
   return payload && isValidSessionPayload(payload) ? payload : null
 }
-function isNonEmptyString(value: unknown): value is string {
-  return typeof value === 'string' && value.length > 0
-}
-function isOptionalFiniteNumber(value: unknown): value is number | undefined {
-  return value === undefined || (typeof value === 'number' && Number.isFinite(value))
-}
-function isValidDevicePayload(payload: JWTPayload): payload is DeviceTokenPayload {
-  return isNonEmptyString(payload.did) && isUUIDv7(payload.did) && isOptionalDeviceClass(payload.dc)
+export function decodeDeviceJwt(token: string): DeviceTokenPayload | null {
+  const payload = decodeJwt(token)
+  return payload && isValidDevicePayload(payload) ? payload : null
 }
 
-function isValidSessionPayload(payload: JWTPayload): payload is SessionTokenPayload {
-  return (
-    isNonEmptyString(payload.did) &&
-    isUUIDv7(payload.did) &&
-    isNonEmptyString(payload.sid) &&
-    isUUIDv7(payload.sid) &&
-    (payload.uid === null || (isNonEmptyString(payload.uid) && isUUID(payload.uid))) &&
-    (payload.rol === undefined ||
-      (Array.isArray(payload.rol) && payload.rol.every(role => typeof role === 'string'))) &&
-    (payload.mpl === undefined || payload.mpl === null || typeof payload.mpl === 'string') &&
-    isOptionalFiniteNumber(payload.mpe) &&
-    isOptionalFiniteNumber(payload.tt) &&
-    isOptionalFiniteNumber(payload.rca) &&
-    isOptionalFiniteNumber(payload.sca) &&
-    (payload.uil === undefined || payload.uil === null || typeof payload.uil === 'string')
-  )
-}
 export async function signDeviceJwt(
   payload: DeviceTokenPayload,
   options: JwtSignOptions,

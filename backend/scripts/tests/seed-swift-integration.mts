@@ -26,6 +26,7 @@ async function main() {
   const { deviceToken, sessionToken } = await createDeviceAndSessionTokens({
     did,
     uid: user.id,
+    deviceContext: { isNativeClient: true },
   })
   // Print shell export lines — caller sources them via eval "$(node ...)"
   process.stdout.write(`export VOUCHA_TEST_DT=${deviceToken.token}\n`)

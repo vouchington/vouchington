@@ -14,7 +14,11 @@ export async function createWebApiTestCookieHeader(
   userId: string,
 ): Promise<Record<string, string>> {
   const did = mintUUIDv7()
-  const { deviceToken, sessionToken } = await createDeviceAndSessionTokens({ did, uid: userId })
+  const { deviceToken, sessionToken } = await createDeviceAndSessionTokens({
+    did,
+    uid: userId,
+    deviceContext: { user_agent: 'node' },
+  })
 
   return {
     Cookie: `dt=${deviceToken.token}; st=${sessionToken.token}`,

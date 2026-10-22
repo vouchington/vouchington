@@ -10,8 +10,8 @@ import { getDeviceContext } from '../device-context.mts'
 
 interface MfaVerificationResponseBody {
   user: { id: string }
-  dt: CompletedMfaLogin['deviceToken']
-  st: CompletedMfaLogin['sessionToken']
+  dt?: CompletedMfaLogin['deviceToken']
+  st?: CompletedMfaLogin['sessionToken']
   session: CompletedMfaLogin['sessionToken']['payload']
 }
 
@@ -37,8 +37,10 @@ export async function completeMfaVerification(
   })
   return {
     user: { id: login.userId },
-    dt: login.deviceToken,
-    st: login.sessionToken,
+    ...(login.sessionToken.payload.client === 'native' && {
+      dt: login.deviceToken,
+      st: login.sessionToken,
+    }),
     session: login.sessionToken.payload,
   }
 }

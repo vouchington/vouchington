@@ -77,7 +77,14 @@ export async function refreshProxySession(
     typeof session.ste === 'number' &&
     typeof session.secure === 'boolean'
   ) {
-    return session
+    const cookieValues = new Map(
+      response.headers.getSetCookie().map(cookie => {
+        const first = cookie.split(';', 1)[0] ?? ''
+        const separator = first.indexOf('=')
+        return [first.slice(0, separator), first.slice(separator + 1)]
+      }),
+    )
+    return { ...session, dt: cookieValues.get('dt'), st: cookieValues.get('st') }
   }
   return null
 }
@@ -133,4 +140,15 @@ function buildBackendApiUrl(backendUrl: string, pathname: string): string {
   url.search = ''
   url.hash = ''
   return url.toString()
+}
+
+export function getProxyClientHeaders(request: { headers: Headers }): Record<string, string> {
+  const headers: Record<string, string> = {}
+  const userAgent = request.headers.get('user-agent')
+  if (userAgent) headers['user-agent'] = userAgent
+  const forwardedFor = request.headers.get('x-forwarded-for')
+  const cfConnectingIp = request.headers.get('cf-connecting-ip')
+  if (forwardedFor) headers['x-forwarded-for'] = forwardedFor
+  if (cfConnectingIp) headers['cf-connecting-ip'] = cfConnectingIp
+  return headers
 }

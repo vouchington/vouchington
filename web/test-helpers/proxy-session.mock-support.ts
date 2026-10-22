@@ -46,6 +46,7 @@ vi.mock(import('isbot'), () => ({
 
 vi.mock(import('@ts-shared/session-jwt'), () => ({
   decodeSessionJwt: mockDecodeSessionJwt,
+  decodeDeviceJwt: () => null,
 }))
 
 // Suppress expected console errors that are tested and handled gracefully
@@ -102,6 +103,7 @@ function installProxyTestDoubles() {
   vi.stubEnv('CF_WORKER_SECRET', 'test-worker-secret')
   const fetchMock = vi.fn<() => unknown>().mockResolvedValue({
     ok: true,
+    headers: { getSetCookie: () => ['dt=new-dt; HttpOnly', 'st=new-st; HttpOnly'] },
     json: () => Promise.resolve({ session: proxySessionData }),
   })
   vi.stubGlobal('fetch', fetchMock)

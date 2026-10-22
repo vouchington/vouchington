@@ -71,6 +71,7 @@ test('authenticate as test user via real /login flow', async ({ page }) => {
   const { deviceToken, sessionToken } = await createDeviceAndSessionTokens({
     did,
     uid: TEST_USER_ID,
+    deviceContext: { user_agent: await page.evaluate(() => navigator.userAgent) },
   })
   const origin = new URL(page.url()).origin
   await page.context().addCookies([

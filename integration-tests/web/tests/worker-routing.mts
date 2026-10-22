@@ -138,7 +138,7 @@ describe('web worker routing tests', () => {
     })
 
     it('bot API requests strip session cookies and dispatch through CachedOrigin on repeated requests', async () => {
-      const authCookies = await createTestAuthCookies(TEST_USER_ID)
+      const authCookies = await createTestAuthCookies(TEST_USER_ID, GOOGLEBOT_UA)
       client.setCookie('dt', authCookies.dt)
       client.setCookie('st', authCookies.st)
 
@@ -163,7 +163,7 @@ describe('web worker routing tests', () => {
     })
 
     it('Playwright user agent is treated as human and preserves session cookies', async () => {
-      const authCookies = await createTestAuthCookies(TEST_USER_ID)
+      const authCookies = await createTestAuthCookies(TEST_USER_ID, PLAYWRIGHT_CHROME_UA)
       client.setCookie('dt', authCookies.dt)
       client.setCookie('st', authCookies.st)
 
