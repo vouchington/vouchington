@@ -1,6 +1,9 @@
 import excludedComponentReasonsJson from './__tests__/component-story-exclusions.json' with { type: 'json' }
 import { analyzeStorybookSources } from '../test-helpers/storybook/component-story-coverage/analysis.ts'
-import { componentExports } from '../test-helpers/storybook/component-story-coverage/source.ts'
+import {
+  componentExports,
+  repoRoot,
+} from '../test-helpers/storybook/component-story-coverage/source.ts'
 import { workspaceFiles } from '../test-helpers/storybook/component-story-coverage/workspace.ts'
 import {
   coveredComponentKeys,
@@ -13,7 +16,7 @@ import {
 } from '../test-helpers/storybook/component-story-coverage/message.ts'
 
 const files = workspaceFiles()
-const { graph, modules } = await analyzeStorybookSources(files)
+const { graph, modules } = await analyzeStorybookSources(files, repoRoot)
 const components = componentExports(files, modules)
 const storyFiles = reachableStorybookFiles(files, graph)
 const coveredKeys = coveredComponentKeys(storyFiles, graph)

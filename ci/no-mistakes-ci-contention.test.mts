@@ -1,4 +1,4 @@
-import { rmSync, writeFileSync } from 'node:fs'
+import { readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { afterEach, describe, expect, it } from 'vitest'
@@ -7,7 +7,7 @@ import {
   checkNoMistakesTestPolicy,
   relevantWorkflowCommands,
   spawnsNoMistakesCli,
-} from './check-no-mistakes-test-policy.mts'
+} from './test-helpers/no-mistakes-test-policy.mts'
 import {
   acceptedTestSources,
   cliSpawnSources,
@@ -92,6 +92,34 @@ describe('no-mistakes CI contention policy', () => {
   it('rejects direct, resolved-bin, and pnpm no-mistakes CLI spawns', () => {
     expect(cliSpawnSources.map(spawnsNoMistakesCli)).toEqual([true, true, true, true])
     expect(spawnsNoMistakesCli(nonNoMistakesCliSource)).toBe(false)
+  })
+
+  it('keeps the exact mock exception and bounded Storybook fixture inputs pinned', () => {
+    const broadExclusion = fixture({ mockExclusions: ['**/*.mock.test.*'] })
+    expect(checkNoMistakesTestPolicy(broadExclusion)).toEqual([
+      '.no-mistakes.yml must list only the reviewed mocked test exception for Vitest tests do not run live no-mistakes analysis',
+    ])
+
+    const staleMock = fixture({
+      mockedAnalysisTest: "import { analyzeProject } from 'no-mistakes'; analyzeProject()",
+    })
+    expect(checkNoMistakesTestPolicy(staleMock)).toEqual([
+      'static-code-analysis/i18n-extract/route-selector-map.mock.test.mts no longer proves that the analyzer call is mocked',
+    ])
+
+    const widenedStorybookFixture = fixture()
+    const storybookPath = 'web/storybook/__tests__/component-story-coverage.test.ts'
+    const storybookSource = readFileSync(join(widenedStorybookFixture.root, storybookPath), 'utf8')
+    writeFileSync(
+      join(widenedStorybookFixture.root, storybookPath),
+      storybookSource.replace(
+        'analyzeStorybookSources(files, root)',
+        'analyzeStorybookSources(files, repoRoot)',
+      ),
+    )
+    expect(checkNoMistakesTestPolicy(widenedStorybookFixture)).toEqual([
+      `${storybookPath} must analyze its bounded files under the explicit temporary root`,
+    ])
   })
 
   it('fails when the live command moves to another workflow', () => {

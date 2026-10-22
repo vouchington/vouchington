@@ -17,15 +17,17 @@ export async function checkMigrationSqlGuard(
   repoRoot: string,
   trackedFiles: string[],
   errors: string[],
-): Promise<void> {
+): Promise<Set<string>> {
   const observedPolymorphicTargets = new Set<string>()
   const observedLegacyMarkerMigrations = new Set<string>()
+  const observedCreateTableNames = new Set<string>()
   for (const file of trackedFiles) {
     if (!file.startsWith('backend/data-stores/psql/migrations/')) continue
     if (!file.endsWith('.sql')) continue
 
     const filePath = join(repoRoot, file)
     const content = readFileSync(filePath, 'utf8')
+    addMigrationCreateTableNames(content, observedCreateTableNames)
     checkEditedInPlaceMarkerWording(file, content, observedLegacyMarkerMigrations, errors)
     const stripped = stripSqlComments(content)
     for (const target of await extractPolymorphicTargetTables(stripped)) {
@@ -45,5 +47,14 @@ export async function checkMigrationSqlGuard(
       )
     }
     checkStaleLegacyEditedInPlaceMarkerEntries(observedLegacyMarkerMigrations, errors)
+  }
+  return observedCreateTableNames
+}
+
+export function addMigrationCreateTableNames(content: string, names: Set<string>): void {
+  const createTableName =
+    /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:"([^"]+)"|([A-Za-z_][A-Za-z0-9_]*))/gi
+  for (const match of content.matchAll(createTableName)) {
+    names.add((match[1] ?? match[2] ?? '').toLowerCase())
   }
 }
