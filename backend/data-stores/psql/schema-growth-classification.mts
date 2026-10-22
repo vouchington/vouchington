@@ -139,7 +139,7 @@ export function buildUnboundedUnpartitionedTables(
       ],
       [
         'notification_push_intent_subscription_receipts',
-        'Generation receipts retained with pending push intents; terminal intents expire after 90 days.',
+        'Generation receipts retained with pending push intents; terminal intents expire after 90 days. Tombstone cleanup preserves subscriptions while any receipt survives.',
       ],
       ['web_push_endpoint_owners', 'Global claim key preserves cross-user endpoint uniqueness.'],
     ],

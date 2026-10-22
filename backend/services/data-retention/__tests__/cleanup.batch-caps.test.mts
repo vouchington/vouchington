@@ -59,6 +59,10 @@ function emptyScopedOptions(now: Date) {
     terminalNotificationPushIntents: emptyWindow,
     terminalStripeEventWork: emptyWindow,
     abandonedMembershipPurchaseIntents: emptyWindow,
+    emailAddressLoginTokens: emptyWindow,
+    phoneNumberLoginTokens: emptyWindow,
+    expiredUserSessions: emptyWindow,
+    webPushSubscriptionTombstones: emptyWindow,
   }
 }
 

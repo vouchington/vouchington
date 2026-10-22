@@ -1,6 +1,7 @@
 /**
  * Creates the default RANGE partition for user_sessions.
  *
+ * Expired rows in this default child are removed by the bounded data-retention job.
  * Explicit range partitions are added manually when operational size warrants it.
  */
 

@@ -469,12 +469,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_email_address_login_tokens__user_email_ver
 ON email_address_login_tokens (user_id, email_address)
 WHERE user_id IS NOT NULL;
 
--- looking up valid email addresses
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_email_address_login_tokens__logged_in
-  ON email_address_login_tokens (email_address)
-  WHERE logged_in_at IS NOT NULL;
-
 -- index for user lookup by email
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_email_addresses__email
@@ -563,6 +557,38 @@ COMMENT ON TABLE phone_number_login_tokens IS 'Short-lived tokens for phone-numb
 COMMENT ON COLUMN phone_number_login_tokens.phone_number IS 'The phone number this token was sent to.';
 COMMENT ON COLUMN phone_number_login_tokens.token IS 'Purpose-bound HMAC-SHA256 hash (uppercase hex) of the verification token sent to the user.';
 COMMENT ON COLUMN phone_number_login_tokens.logged_in_at IS 'When the token was used to log in. NULL means the token is still pending.';
+
+-- One durable keyset position per auth and session retention sweep.
+CREATE TABLE IF NOT EXISTS auth_session_retention_cleanup_cursors (
+  cleanup_name TEXT PRIMARY KEY CHECK (cleanup_name IN (
+    'email_address_login_tokens', 'phone_number_login_tokens',
+    'user_sessions', 'web_push_subscriptions'
+  )),
+  cursor_at TIMESTAMPTZ,
+  cursor_id UUID,
+  cursor_user_id UUID,
+  sweep_cutoff_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CHECK (cursor_at IS NULL OR cursor_id IS NOT NULL),
+  CHECK ((cursor_id IS NULL) = (sweep_cutoff_at IS NULL)),
+  CHECK (
+    (cleanup_name = 'web_push_subscriptions'
+      AND (cursor_id IS NULL) = (cursor_user_id IS NULL))
+    OR (cleanup_name <> 'web_push_subscriptions' AND cursor_user_id IS NULL)
+  )
+);
+
+CREATE OR REPLACE TRIGGER trigger_auth_session_retention_cleanup_cursors_updated_at
+BEFORE UPDATE ON auth_session_retention_cleanup_cursors
+FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+
+COMMENT ON TABLE auth_session_retention_cleanup_cursors IS 'Durable bounded cleanup progress for short-lived authentication and session rows.';
+COMMENT ON COLUMN auth_session_retention_cleanup_cursors.cleanup_name IS 'Finite cleanup family with an independent keyset position.';
+COMMENT ON COLUMN auth_session_retention_cleanup_cursors.cursor_at IS 'Last scanned expiry or tombstone timestamp, where that family orders by a timestamp.';
+COMMENT ON COLUMN auth_session_retention_cleanup_cursors.cursor_id IS 'Last scanned UUIDv7 id; no foreign key preserves progress after deletion.';
+COMMENT ON COLUMN auth_session_retention_cleanup_cursors.cursor_user_id IS 'Partition-key tie-breaker, not a user relationship; no foreign key preserves sweep progress after user deletion.';
+COMMENT ON COLUMN auth_session_retention_cleanup_cursors.sweep_cutoff_at IS 'Fixed retention cutoff for an unfinished sweep.';
+COMMENT ON COLUMN auth_session_retention_cleanup_cursors.updated_at IS 'Most recent committed checkpoint.';
 
 -- ============================================================================
 -- authorization (roles & permissions)

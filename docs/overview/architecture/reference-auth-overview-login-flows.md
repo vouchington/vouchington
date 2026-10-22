@@ -100,6 +100,12 @@ are rejected with HTTP 422 and the message:
 
 > Please use a permanent email address. Disposable email providers are not supported.
 
+An address already associated with a user may continue through login when its domain later stops
+passing validation. The associated address is the durable evidence for that exception; a consumed
+login code is temporary and is removed by retention. Expired login codes, expired session records,
+and deleted push subscriptions are reclaimed in bounded daily pages. A push subscription remains
+while a surviving delivery receipt still refers to its exact generation.
+
 The bloom filter accelerates this check — domains clearly absent from the blacklist skip the DB
 query entirely. The filter is rebuilt weekly; domains added between rebuilds are caught on the
 next rebuild cycle.

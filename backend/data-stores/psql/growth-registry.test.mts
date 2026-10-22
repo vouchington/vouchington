@@ -48,6 +48,16 @@ describe('schema growth classification', () => {
   it('publishes the bounded and non-default identity exceptions', () => {
     expect(STATIC_IDENTITY_EXCEPTIONS.get('countries')).toContain('ISO country')
     expect(EXPLICIT_BOUNDED_TABLES.get('migrations')).toContain('checked-in migration')
+    for (const table of [
+      'email_address_login_tokens',
+      'phone_number_login_tokens',
+      'user_sessions',
+      'web_push_subscriptions',
+      'auth_session_retention_cleanup_cursors',
+    ]) {
+      expect(EXPLICIT_BOUNDED_TABLES.has(table)).toBe(true)
+      expect(UNBOUNDED_UNPARTITIONED_TABLES.has(table)).toBe(false)
+    }
     expect(EXPLICIT_BOUNDED_TABLES.has('notification_push_intents')).toBe(false)
     expect(EXPLICIT_BOUNDED_TABLES.has('notification_push_intent_subscription_receipts')).toBe(
       false,
@@ -174,6 +184,14 @@ describe('schema growth registry', () => {
       children: 'monthly',
       retentionOwner: 'cleanupPartitions',
       accessClass: 'retention-window',
+    })
+    expect(PARTITION_POLICIES.get('user_sessions')).toMatchObject({
+      accessClass: 'retention-window',
+      retentionOwner: 'runDataRetentionCleanup',
+    })
+    expect(PARTITION_POLICIES.get('web_push_subscriptions')).toMatchObject({
+      accessClass: 'retention-window',
+      retentionOwner: 'runDataRetentionCleanup',
     })
     expect(PARTITION_POLICIES.get('relation__post__category__topic__votes')).toMatchObject({
       strategy: 'RANGE',

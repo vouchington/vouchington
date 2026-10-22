@@ -68,6 +68,7 @@ export const NON_DEFAULT_ID_EXCEPTIONS = new Map<string, NonDefaultIdException>(
   ['community_agent_prompts', sharedParentUuidv7('agent_prompts')],
   ['rss_feed_items', sharedParentUuidv7('rss_feed_item_guids')],
   ['migrations', naturalOrProviderId('The checked-in migration filename is the key.')],
+  ['auth_session_retention_cleanup_cursors', naturalOrProviderId('Finite cleanup-name key.')],
   ['user_metrics', sharedParentUuidv7('users')],
   [
     'user_sessions',

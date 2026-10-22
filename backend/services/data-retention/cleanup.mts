@@ -28,6 +28,13 @@ import {
   type PaymentOperationCleanupResult,
 } from './cleanup-payment-operations.mts'
 import {
+  cleanupEmailAddressLoginTokens,
+  cleanupPhoneNumberLoginTokens,
+  cleanupExpiredUserSessions,
+  cleanupWebPushSubscriptionTombstones,
+  type AuthSessionCleanupResult,
+} from './cleanup-auth-sessions.mts'
+import {
   applyRetentionLimits,
   getRetentionCutoffDate,
   normalizeRetentionDays,
@@ -104,6 +111,10 @@ type DataRetentionCleanupOptions = {
   terminalNotificationPushIntents?: OptionalRetentionLimits<CleanupOptions>
   terminalStripeEventWork?: OptionalRetentionLimits<PaymentOperationCleanupOptions>
   abandonedMembershipPurchaseIntents?: OptionalRetentionLimits<PaymentOperationCleanupOptions>
+  emailAddressLoginTokens?: OptionalRetentionLimits<ExpiryCleanupOptions>
+  phoneNumberLoginTokens?: OptionalRetentionLimits<ExpiryCleanupOptions>
+  expiredUserSessions?: OptionalRetentionLimits<ExpiryCleanupOptions>
+  webPushSubscriptionTombstones?: OptionalRetentionLimits<ExpiryCleanupOptions>
 }
 
 type DataRetentionCleanupResult = {
@@ -123,6 +134,10 @@ type DataRetentionCleanupResult = {
   terminalNotificationPushIntents: CleanupResult
   terminalStripeEventWork: PaymentOperationCleanupResult
   abandonedMembershipPurchaseIntents: PaymentOperationCleanupResult
+  emailAddressLoginTokens: AuthSessionCleanupResult
+  phoneNumberLoginTokens: AuthSessionCleanupResult
+  expiredUserSessions: AuthSessionCleanupResult
+  webPushSubscriptionTombstones: AuthSessionCleanupResult
 }
 
 export async function runDataRetentionCleanup(
@@ -179,6 +194,20 @@ export async function runDataRetentionCleanup(
   const abandonedMembershipPurchaseIntents = await cleanupAbandonedMembershipPurchaseIntents(
     withLimits(options.abandonedMembershipPurchaseIntents),
   )
+  const emailAddressLoginTokens = await cleanupEmailAddressLoginTokens(
+    withLimits(options.emailAddressLoginTokens),
+  )
+  const phoneNumberLoginTokens = await cleanupPhoneNumberLoginTokens(
+    withLimits(options.phoneNumberLoginTokens),
+  )
+  const expiredUserSessions = await cleanupExpiredUserSessions(
+    withLimits(options.expiredUserSessions),
+  )
+  // Receipts for surviving intents retain their subscription generation. Each page checks them
+  // again under the subscription row lock, even after the push-intent cleanup above has run.
+  const webPushSubscriptionTombstones = await cleanupWebPushSubscriptionTombstones(
+    withLimits(options.webPushSubscriptionTombstones),
+  )
   const retainedRelationIdentities = await cleanupRetainedRelationIdentities(
     retainedPageSize,
     options.retainedRelationIdentityKeys,
@@ -210,6 +239,10 @@ export async function runDataRetentionCleanup(
     terminalNotificationPushIntents,
     terminalStripeEventWork,
     abandonedMembershipPurchaseIntents,
+    emailAddressLoginTokens,
+    phoneNumberLoginTokens,
+    expiredUserSessions,
+    webPushSubscriptionTombstones,
   }
 }
 

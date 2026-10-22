@@ -116,7 +116,6 @@ export const EXTRA_UNBOUNDED_TABLES = [
   'hostname_crawler_configurations',
   'curated_aside_items',
   'blocklisted_domains',
-  'email_address_login_tokens',
   'facebook_accounts',
   'follower_distribution_selected_recipients',
   'fediverse_instance_integration_changes',

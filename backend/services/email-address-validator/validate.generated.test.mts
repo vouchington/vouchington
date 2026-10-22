@@ -1,7 +1,14 @@
 import { describe, it, expect } from 'vitest'
 import { validateEmailAddress } from './validate.mts'
 import { EmailFormatInvalidError, EmailDomainInvalidError } from './errors.mts'
-import { insertEmailAddressLoginToken, insertUrlHostname } from '@voucha/test-helpers'
+import {
+  addVerifiedEmailForUser,
+  createTestUser,
+  deleteTestConsumedEmailToken,
+  insertTestConsumedEmailTokenAt,
+  insertEmailAddressLoginToken,
+  insertUrlHostname,
+} from '@voucha/test-helpers'
 
 // Tests for format validation - no DNS, no cache needed
 describe('format validation', () => {
@@ -122,13 +129,22 @@ describe('domain validation', () => {
 
 // Tests requiring database setup - isolated with fresh cache
 describe('database integration', () => {
-  it('skips domain validation for previously logged-in email', async () => {
-    const email = `test-logged-in-${Date.now()}@invalid-but-logged-in.test`
-    const token = `TEST123-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`
-    await insertEmailAddressLoginToken(email, token, true)
+  it('skips domain validation for an address associated with a user', async () => {
+    const email = `test-verified-${Date.now()}@invalid-but-verified.test`
+    const user = await createTestUser()
+    await addVerifiedEmailForUser(user.id, email)
 
     const result = await validateEmailAddress(email)
     expect(result).toBe(email)
+  })
+
+  it('keeps an associated address usable after its consumed token is reclaimed', async () => {
+    const email = `test-retained-${Date.now()}@invalid-associated.test`
+    const user = await createTestUser()
+    await addVerifiedEmailForUser(user.id, email)
+    const tokenId = await insertTestConsumedEmailTokenAt(email, new Date())
+    await deleteTestConsumedEmailToken(tokenId)
+    await expect(validateEmailAddress(email)).resolves.toBe(email)
   })
 
   it('does NOT skip validation for email with token but not logged in', async () => {
@@ -139,11 +155,17 @@ describe('database integration', () => {
     await expect(validateEmailAddress(email)).rejects.toThrow(EmailDomainInvalidError)
   }, 15_000)
 
+  it('does not let a consumed token substitute for an associated address', async () => {
+    const email = `test-consumed-${Date.now()}@invalid-but-consumed.test`
+    await insertEmailAddressLoginToken(email, `TEST-${Date.now()}`, true)
+    await expect(validateEmailAddress(email)).rejects.toThrow(EmailDomainInvalidError)
+  }, 15_000)
+
   it('handles uppercase email with early return', async () => {
     const email = `TEST-LOGGED-${Date.now()}@INVALID.TEST`
     const normalized = email.toLowerCase()
-    const token = `TEST789-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`
-    await insertEmailAddressLoginToken(normalized, token, true)
+    const user = await createTestUser()
+    await addVerifiedEmailForUser(user.id, normalized)
 
     const result = await validateEmailAddress(email)
     expect(result).toBe(normalized)

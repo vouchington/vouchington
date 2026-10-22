@@ -47,6 +47,10 @@ describe('runDataRetentionCleanup', () => {
       terminalNotificationPushIntents: emptyWindow,
       terminalStripeEventWork: emptyWindow,
       abandonedMembershipPurchaseIntents: emptyWindow,
+      emailAddressLoginTokens: emptyWindow,
+      phoneNumberLoginTokens: emptyWindow,
+      expiredUserSessions: emptyWindow,
+      webPushSubscriptionTombstones: emptyWindow,
     })
 
     expect(result.retainedIdentityRoots).toEqual([])
@@ -66,6 +70,10 @@ describe('runDataRetentionCleanup', () => {
       terminalNotificationPushIntents: { deleted: 0, hasMore: false },
       terminalStripeEventWork: { deleted: 0, hasMore: false },
       abandonedMembershipPurchaseIntents: { deleted: 0, hasMore: false },
+      emailAddressLoginTokens: { deleted: 0, hasMore: false, continuation: null },
+      phoneNumberLoginTokens: { deleted: 0, hasMore: false, continuation: null },
+      expiredUserSessions: { deleted: 0, hasMore: false, continuation: null },
+      webPushSubscriptionTombstones: { deleted: 0, hasMore: false, continuation: null },
     })
   }, 30_000)
 })

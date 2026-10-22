@@ -29,9 +29,8 @@ CREATE INDEX IF NOT EXISTS idx_user_sessions__user_id_active_last_seen
   WHERE revoked_at IS NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_user_sessions__expires_at_active
-  ON user_sessions (expires_at)
-  WHERE revoked_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_user_sessions__expires_at_id
+  ON user_sessions (expires_at, id);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_user_sessions__user_agent_id
@@ -43,7 +42,7 @@ CREATE INDEX IF NOT EXISTS idx_user_sessions__user_id__foreign_key
   ON user_sessions (user_id)
   WHERE user_id IS NOT NULL;
 
-COMMENT ON TABLE user_sessions IS 'Active user session registry keyed by UUIDv7 JWT sid. RANGE-partitioned by id with a default partition only; split later by adding explicit range partitions. Rows are inserted on login and refreshed on session updates so the API can list, revoke, and audit active sessions without touching the hot auth-request path.';
+COMMENT ON TABLE user_sessions IS 'User session registry keyed by UUIDv7 JWT sid. RANGE-partitioned by id with a default partition; bounded retention removes expired rows after the audit window.';
 COMMENT ON COLUMN user_sessions.user_id IS 'Owning user for this session row.';
 COMMENT ON COLUMN user_sessions.device_id IS 'JWT device ID (dt.did) associated with this session.';
 COMMENT ON COLUMN user_sessions.device_name IS 'Human-readable device label derived from the request user-agent when available.';
