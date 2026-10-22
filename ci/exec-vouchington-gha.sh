@@ -62,13 +62,7 @@ esac
 
 if command -v pnpm >/dev/null 2>&1 && command -v node >/dev/null 2>&1 &&
   pnpm --version >/dev/null 2>&1; then
-  # vouchington-tooling imports its optional no-mistakes peer when the CLI loads.
-  nm_spec="$(
-    node -e "const pkg=require(process.argv[1]); const spec=pkg.devDependencies?.['no-mistakes'] ?? pkg.dependencies?.['no-mistakes']; if (spec) process.stdout.write(spec.replace(/^\\^/, ''))" \
-      "$repo/package.json"
-  )"
-  [ -n "$nm_spec" ] || fail 'no-mistakes is not listed in package.json'
-  exec pnpm dlx --package "vouchington-tooling@${locked_version}" --package "no-mistakes@${nm_spec}" vouchington "$cmd" "$@"
+  exec pnpm dlx --package "vouchington-tooling@${locked_version}" vouchington "$cmd" "$@"
 fi
 
 # shellcheck disable=SC1091
