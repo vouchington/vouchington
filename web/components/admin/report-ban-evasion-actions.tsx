@@ -7,6 +7,7 @@ import {
   confirmCommunityBanEvasion,
   dismissCommunityBanEvasion,
 } from '@/lib/api/client/community-ban-evasion'
+import { accessibleNameWithVisibleText } from '@/lib/a11y/accessible-name-with-visible-text'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import onError from '@/lib/on-error'
 import type { AdminModerationReport } from './reports-client-types'
@@ -77,9 +78,11 @@ export function ReportBanEvasionActions({
         variant='outline'
         data-pw='ban-evasion-dismiss'
         disabled={actionDisabled}
-        aria-label={t(
-          'extracted.admin.adminReportRow.dismissBanEvasionFlagForTargetlabel_bb278398',
-          { targetLabel },
+        aria-label={accessibleNameWithVisibleText(
+          t('extracted.admin.adminReportRow.dismissFlag_cffb8297'),
+          t('extracted.admin.adminReportRow.dismissBanEvasionFlagForTargetlabel_bb278398', {
+            targetLabel,
+          }),
         )}
         onClick={() => {
           void runAction('dismiss')
