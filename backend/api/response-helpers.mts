@@ -1,3 +1,5 @@
+import { createCodedError } from '@modules/on-error/create-coded-error'
+import { AUTH_REQUIRED } from '@modules/on-error/error-codes'
 import type { Context } from '@jongleberry/api-server'
 import type { PrivateUser } from '@services/users/types'
 import type { PageInfo } from '@voucha/types/pagination'
@@ -41,7 +43,7 @@ export async function requireAuth(ctx: Context, routeId: string): Promise<Privat
   const { value: currentUser, settleRateLimit } = await withOverlappedRateLimit(ctx, routeId, () =>
     ctx.getCurrentUser(),
   )
-  if (!currentUser) return rejectAnonymous(ctx, settleRateLimit)
+  if (!currentUser) return rejectAnonymous(settleRateLimit)
   const signatureError = captureSignatureVerificationError(ctx)
   await settleBeforeSignatureError(settleRateLimit, signatureError)
   assertActiveForRoute(currentUser, routeId)
@@ -57,7 +59,7 @@ export async function requireAuthForSuspendedException(
   const { value: currentUser, settleRateLimit } = await withOverlappedRateLimit(ctx, routeId, () =>
     ctx.getCurrentUser(),
   )
-  if (!currentUser) return rejectAnonymous(ctx, settleRateLimit)
+  if (!currentUser) return rejectAnonymous(settleRateLimit)
   const signatureError = captureSignatureVerificationError(ctx)
   await settleSignatureAndBotChallenge(ctx, settleRateLimit, signatureError)
   return currentUser
@@ -152,15 +154,13 @@ async function requireUserAfterAnonRateLimit(ctx: Context, routeId: string): Pro
   const currentUser = await ctx.getCurrentUser()
   if (currentUser) return currentUser
   await ctx.applyRouteRateLimit(routeId)
-  ctx.assert(false, 401, 'Unauthorized')
-  throw new Error('Unauthorized')
+  throw createCodedError(401, 'Unauthorized', AUTH_REQUIRED)
 }
 // The anonymous outcome (including a session uid with no user row): the limiter was charged once
 // alongside the user fetch, so surface its 429 first, then the 401.
-async function rejectAnonymous(ctx: Context, settleRateLimit: () => Promise<void>): Promise<never> {
+async function rejectAnonymous(settleRateLimit: () => Promise<void>): Promise<never> {
   await settleRateLimit()
-  ctx.assert(false, 401, 'Unauthorized')
-  throw new Error('Unauthorized')
+  throw createCodedError(401, 'Unauthorized', AUTH_REQUIRED)
 }
 async function settleBeforeSignatureError(
   settleRateLimit: () => Promise<void>,

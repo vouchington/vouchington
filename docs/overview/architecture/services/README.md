@@ -61,6 +61,11 @@ removed; verification-linked purchase intents remain because their accounting ev
 a valid reference. Failed Stripe processing work remains recoverable until it reaches a completed
 or ignored outcome.
 
+Browser device credentials carry refresh authority separately from access authority. The session
+service may renew an access credential only after checking device binding, revocation and the
+current user; that refresh authority alone never authorizes a mutation. Ordinary authenticated
+requests still require a paired device and access credential. See the [browser auth boundary](../reference-auth-overview-web-client-auth-boundary.md).
+
 Moderation reconciliation admits expired and retryable work through the same bounded candidate
 page. Terminal dispositions are written only for that admitted page; lease and disposition updates
 commit together. Batch embedding listings use a fixed ID boundary and keyset continuation because

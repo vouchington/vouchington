@@ -145,8 +145,10 @@ async function loginWithEmailToken(ctx: Context, routeKey: string, native: boole
     did: result.deviceToken.payload.did,
     sid: result.sessionToken.payload.sid,
     uid: result.user.id,
-    dt: result.deviceToken,
-    st: result.sessionToken,
+    ...(result.sessionToken.payload.client === 'native' && {
+      dt: result.deviceToken,
+      st: result.sessionToken,
+    }),
     session: result.sessionToken.payload,
   })
 }

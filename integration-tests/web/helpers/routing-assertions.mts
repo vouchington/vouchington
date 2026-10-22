@@ -36,7 +36,7 @@ export async function expectManualRedirectPath(
 export async function authenticateTestUserWithDirectSessionTokens(
   client: WebIntegrationClient,
 ): Promise<void> {
-  const authCookies = await createTestAuthCookies(TEST_USER_ID)
+  const authCookies = await createTestAuthCookies(TEST_USER_ID, 'node')
   client.setCookie('dt', authCookies.dt!)
   client.setCookie('st', authCookies.st!)
 }

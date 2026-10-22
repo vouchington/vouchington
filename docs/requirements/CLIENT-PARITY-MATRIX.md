@@ -216,3 +216,13 @@ route proof after generating the generic proof so its monotonic device counter r
 browser-challenge follow-up remains
 [vouchington-clients#486](https://github.com/vouchington/vouchington-clients/issues/486), with the
 producer landing first.
+
+## Browser session refresh
+
+Web login and credential completion use httpOnly cookies and omit raw tokens from browser JSON.
+Web session refresh accepts the cookies and returns session metadata, while native callers retain
+native token JSON transport and lifetimes. Signed web session identity retains its user-agent
+binding when clients change their declared headers. Browser page and API clients refresh silently
+through the device credential. A changed user agent returns `SESSION_USER_AGENT_MISMATCH` and
+requires sign-in; native clients should surface this factual code if handling a web-issued token.
+The producer lands first. Device-bound session proof is a separate browser capability.

@@ -8,23 +8,9 @@ import {
 import type { LoginAttempt } from './login-attempt.mts'
 import type { PrivateUser } from '@voucha/types/entities/user'
 
-export type CompletedMfaLogin = {
+export type CompletedMfaLogin = Awaited<ReturnType<typeof createDeviceAndSessionTokens>> & {
   userId: string
   deviceClass?: DeviceClass
-  deviceToken: { token: string; payload: { did: string; dc?: DeviceClass } }
-  sessionToken: {
-    token: string
-    payload: {
-      did: string
-      sid: string
-      uid: string | null
-      rol?: readonly string[]
-      mpl?: string | null
-      tt?: number
-      rca?: number
-      sca?: number
-    }
-  }
 }
 
 // `deviceClass` comes from the login attempt itself, captured when it was created for that

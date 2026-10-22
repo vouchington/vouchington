@@ -186,7 +186,7 @@ describe('web', () => {
     })
 
     it('Playwright UA preserves session cookies (not stripped like bots)', async () => {
-      const authCookies = await createTestAuthCookies(TEST_USER_ID)
+      const authCookies = await createTestAuthCookies(TEST_USER_ID, PLAYWRIGHT_CHROME_UA)
       client.setCookie('dt', authCookies.dt)
       client.setCookie('st', authCookies.st)
 

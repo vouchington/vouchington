@@ -16,56 +16,30 @@ form-specific initial fields to client forms. Server components should continue 
 
 ## Tokens
 
-Every visitor (anonymous or authenticated) holds two HTTP-only cookies:
+Browser authentication separates request authority from refresh authority. The short-lived `st`
+credential authenticates API requests; the longer-lived `dt` can refresh the same web session after
+its access cookie expires. The refresh credential carries identity and binding, never role or
+membership authority. Refresh checks revocation and reloads the current user before issuing access.
 
-| Cookie | Expiry                                                | Contains                                                            |
-| ------ | ----------------------------------------------------- | ------------------------------------------------------------------- |
-| `dt`   | long                                                  | Device JWT — identifies the device                                  |
-| `st`   | default (extended for an attested device — see below) | Session JWT — identifies the session; includes `uid` when logged in |
+Authenticated tokens carry a signed client classification. Web tokens also bind to the original
+user-agent string. Refresh and request authentication enforce that binding independently of the
+client headers a caller declares. A changed user agent requires sign-in again. This is a consistency
+check, not cryptographic proof of a browser or protection against a caller copying the same user
+agent. Device-bound proof is a separate capability.
 
-Cookies are `httpOnly`, `sameSite=lax`, and `secure` in production only. The `maxAge` for each cookie is returned by the backend's `PATCH /api/v1/session` response (`dte` for the device token, `ste` for the session token), making expiry backend-controlled. `sameSite=lax` is one layer of CSRF defense — see [CSRF Protection](../../requirements/security/CSRF.md) for the full threat model.
+Web login and refresh deliver credentials through HTTP-only cookies. Browser JSON contains session
+metadata without raw tokens. The Next.js proxy forwards the original browser user agent and uses
+the backend's `Set-Cookie` response to renew cookies. Browser API calls may refresh once after an
+`AUTH_REQUIRED` rejection; user-agent mismatch errors are not retried. Native clients retain their
+native token transport and lifetime. Declared native client metadata alone is not attestation.
 
-Session expiry is computed by `sessionExpiryFor(dc)` / `sessionExpirySecondsFor(dc)`
-(`ts-shared/session-jwt/constants.mts`) from the device token's `dc` claim: the extended lifetime when
-`dc === 'attested'`, the default otherwise. The device token's own expiry never changes. See
-[App Attest](app-attestation.md) for how a device becomes attested.
+Cookie attributes and token audiences remain centralized in the shared session package. Device and
+session token audiences differ, and API authentication requires matching device/session identity.
+Logout revokes web refresh authority even after its access cookie has expired, then removes or
+rotates both credentials. See [CSRF Protection](../../requirements/security/CSRF.md) for the browser
+request boundary and [App Attest](app-attestation.md) for attested devices.
 
 JWT cryptography and key validation come from `@vouchington/session-jwt` in both backend and
 Worker runtimes. The shared app adapter owns Voucha issuers, audiences, payload policy and
 environment bindings; session storage, pairing and refresh remain application concerns. Rotation
 keeps usable public keys available even when an unrelated configured candidate cannot be imported.
-
-### JWT Payload
-
-**Device token (`dt`):** `{ did: string, aud: 'voucha:device', dc?: 'attested' }`
-
-`dc` (DeviceClass) is set only once a device completes Apple App Attest key registration (see
-[App Attest](app-attestation.md)); it is never present on the session token payload below — only
-the session token's _expiry_ depends on it.
-
-**Session token (`st`):**
-
-```
-{
-  did: string       // device ID (must match dt)
-  sid: string       // session ID (UUIDv7)
-  uid: string|null  // user ID (valid UUID; null for anonymous)
-  aud: 'voucha:session'
-  // Authenticated-only enrichment fields:
-  rol?: string[]    // user roles (e.g. ['administrator'])
-  mpl?: string|null // membership plan slug ('plus' | 'pro')
-  tt?: number       // pre-computed trust tier (0–5)
-  uil?: string|null // UI locale used by the web session
-  rca?: number      // recheck-after: Unix epoch seconds — re-read user from DB after this time
-  sca?: number      // session-check-after: Unix epoch seconds — check Valkey after this time
-}
-```
-
-Audience (`aud`) scoping prevents a device token from being accepted as a session token and vice
-versa.
-
-Verification also rejects signed tokens whose required payload claims are absent or malformed:
-device tokens must include a UUIDv7 `did`, and session tokens must include UUIDv7 `did` and `sid`
-claims plus `uid` as either a valid UUID string or `null`. Optional enrichment claims are
-type-checked before downstream auth code receives the payload. Signed pre-UUIDv7 device or session
-IDs are rejected; the auth service mints fresh UUIDv7 IDs for unauthenticated requests.

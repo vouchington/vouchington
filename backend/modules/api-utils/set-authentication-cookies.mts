@@ -1,6 +1,7 @@
 import type { Context } from '@jongleberry/api-server'
 import {
   DEVICE_EXPIRATION_SECONDS,
+  decodeSessionJwt,
   assertSafeSessionCookieValue,
   sessionExpirySecondsFor,
   type DeviceClass,
@@ -29,6 +30,6 @@ export function setAuthenticationCookies(
   })
   ctx.cookies.set('st', st, {
     ...COOKIE_OPTIONS,
-    maxAge: sessionExpirySecondsFor(deviceClass),
+    maxAge: sessionExpirySecondsFor(deviceClass, decodeSessionJwt(st)?.client),
   })
 }

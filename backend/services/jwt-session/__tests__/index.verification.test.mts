@@ -226,8 +226,11 @@ describe('index.verification', () => {
     const did = v7()
     const sid = v7()
     const uid = v7()
-    const deviceToken = await signDeviceJwt({ did }, { expiresIn: '30 days' })
-    const sessionToken = await signSessionJwt({ did, sid, uid, uil: null }, { expiresIn: '2 days' })
+    const deviceToken = await signDeviceJwt({ did, client: 'native' }, { expiresIn: '30 days' })
+    const sessionToken = await signSessionJwt(
+      { did, sid, uid, client: 'native', uil: null },
+      { expiresIn: '2 days' },
+    )
 
     const verified = await verifyDeviceAndSessionTokens({ deviceToken, sessionToken })
 

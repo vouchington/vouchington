@@ -3,7 +3,7 @@ import {
   isSessionRevoked,
   revokeSession,
   runLogoutPushCleanupAndRevoke,
-  verifyDeviceAndSessionTokens,
+  getSessionForLogout,
 } from '@services/jwt-session'
 import { COOKIE_OPTIONS } from '@modules/api-utils'
 import onError from '@modules/on-error'
@@ -31,12 +31,13 @@ app.route('/api/v1/auth/logout').post(async ctx => {
   // Keep the optional-pair preconditions and their existing errors in the parser.
   if (!binding) validateRequestContract(ctx, 'POST:/api/v1/auth/logout', {})
 
-  if (dt && st) {
-    const verified = await verifyDeviceAndSessionTokens({
+  if (dt) {
+    const verified = await getSessionForLogout({
       deviceToken: dt,
       sessionToken: st,
+      userAgent: ctx.req.headers['user-agent'],
     })
-    if (verified !== false && verified.uid) {
+    if (verified) {
       const { iat: issuedAt, sid, uid: userId } = verified
       const revoked = await isSessionRevoked(sid, {
         userId,

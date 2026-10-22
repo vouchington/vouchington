@@ -1,3 +1,5 @@
+import { verifyDeviceJwt, signDeviceJwt, DEVICE_EXPIRATION_STRING } from '@ts-shared/session-jwt'
+import type { SessionClientBinding } from './client-binding.mts'
 import { createSessionToken } from './create.mts'
 import type { DeviceClass, RefreshedSessionState, SessionTokenPayload } from './types.mts'
 
@@ -8,10 +10,17 @@ export async function issueAnonSession(
   dt: string,
   deviceClass?: DeviceClass,
 ): Promise<RefreshedSessionState> {
+  const device = await verifyDeviceJwt(dt)
+  const anonymousDt = device?.refresh_uid
+    ? await signDeviceJwt(
+        { did, ...(deviceClass && { dc: deviceClass }) },
+        { expiresIn: DEVICE_EXPIRATION_STRING },
+      )
+    : dt
   const token = await createSessionToken({ did, eventType: 'refreshed_anonymous', deviceClass })
   return {
     did,
-    dt,
+    dt: anonymousDt,
     st: token.token,
     sid: token.payload.sid,
     uid: null,
@@ -32,6 +41,8 @@ export async function createRefreshedAuthenticatedSession(options: {
   uiLocale?: string | null
   deviceClass?: DeviceClass
   freshness: RefreshFreshness
+  clientBinding: SessionClientBinding
+  deviceExpiresAt?: number
 }): Promise<{
   did: string
   dt: string
@@ -50,6 +61,11 @@ export async function createRefreshedAuthenticatedSession(options: {
     uiLocale: options.uiLocale,
     eventType: 'refreshed_authenticated',
     deviceClass: options.deviceClass,
+    clientBinding: options.clientBinding,
+    sessionExpiresAt:
+      options.clientBinding.client === 'web' && options.deviceExpiresAt !== undefined
+        ? new Date(options.deviceExpiresAt * 1000)
+        : undefined,
     ...(options.freshness.type === 'preserve' && {
       recheckAfter: options.freshness.recheckAfter,
     }),

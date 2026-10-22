@@ -1,13 +1,12 @@
 import { isHttpError } from 'http-errors'
 import app from '../../app.mts'
 import { DEVICE_EXPIRATION_SECONDS, sessionExpirySecondsFor } from '@ts-shared/session-jwt'
+import { isNativeClientTransportRequest } from '@modules/request-client-info'
 import { refreshSessionState, resetSessionState } from '@services/jwt-session'
 import { setAuthenticationCookies, COOKIE_OPTIONS } from '@modules/api-utils'
 import { getPrivateUserByAny } from '@services/users/get'
 import { parseJsonBody, validateRequestContract } from '../../response-helpers.mts'
 import type { Context } from '@jongleberry/api-server'
-
-const isTest = process.env.NODE_ENV === 'test'
 
 interface SessionBody {
   dte: number
@@ -30,7 +29,7 @@ interface SessionTokenBody {
   st?: string
 }
 
-// NOTE: this route should only ever be called from Next.js or from the app, never from the web
+// Web callers refresh via httpOnly cookies; native callers retain explicit token transport.
 app
   .route('/api/v1/session')
   .patch(async (ctx: Context) => {
@@ -48,39 +47,43 @@ app
       if (isHttpError(err) && err.status === 422) throw err
       ctx.throw(422, 'Invalid body')
     }
-    const { dt, st } = await rateLimitAndValidateSessionBody(ctx, routeKey, rawBody)
+    const tokens = await rateLimitAndValidateSessionBody(ctx, routeKey, rawBody)
+    const dt = tokens.dt ?? ctx.cookies.get('dt')
+    const st = tokens.st ?? ctx.cookies.get('st')
 
     const sessionState = await refreshSessionState({
       deviceToken: dt,
       sessionToken: st,
       fetchUser: getPrivateUserByAny,
+      userAgent: ctx.req.headers['user-agent'],
       verifyRevocationOnHotPath: true,
     })
 
     const body: SessionBody = {
       dte: DEVICE_EXPIRATION_SECONDS,
-      ste: sessionExpirySecondsFor(sessionState.deviceClass),
+      ste: sessionExpirySecondsFor(sessionState.deviceClass, sessionState.session.client),
       secure: COOKIE_OPTIONS.secure,
       did: sessionState.did,
-      dt: sessionState.dt,
-      st: sessionState.st,
+      ...((sessionState.session.client === 'native' ||
+        (!sessionState.uid && isNativeClientTransportRequest(ctx.req))) && {
+        dt: sessionState.dt,
+        st: sessionState.st,
+      }),
       sid: sessionState.sid,
       uid: sessionState.uid,
       session: sessionState.session,
     }
 
-    // only set cookies via this API in test because otherwise tests would be annoying to write
-    if (isTest) {
-      setAuthenticationCookies(ctx, { dt: body.dt!, st: body.st! })
-    }
+    setAuthenticationCookies(ctx, {
+      dt: sessionState.dt,
+      st: sessionState.st,
+      deviceClass: sessionState.deviceClass,
+    })
 
     ctx.json({ session: body })
   })
   .delete(async (ctx: Context) => {
-    // Invalidate the old session and issue a new one. The device token is preserved if valid;
-    // createDeviceAndSessionTokens always creates both tokens but the new device token is
-    // discarded when the client already has one (no createSessionToken-only path exists —
-    // the Lua script updates both records atomically).
+    // Revoke the old session and remove any device refresh authority.
     let dt, st
     if (ctx.request.is('json')) {
       const routeKey = 'DELETE:/api/v1/session'
@@ -105,24 +108,29 @@ app
     const sessionState = await resetSessionState({
       deviceToken: dt,
       sessionToken: st,
+      userAgent: ctx.req.headers['user-agent'],
     })
 
     const body: SessionBody = {
       dte: DEVICE_EXPIRATION_SECONDS,
-      ste: sessionExpirySecondsFor(sessionState.deviceClass),
+      ste: sessionExpirySecondsFor(sessionState.deviceClass, sessionState.session.client),
       secure: COOKIE_OPTIONS.secure,
       did: sessionState.did,
-      dt: sessionState.dt,
-      st: sessionState.st,
+      ...((sessionState.session.client === 'native' ||
+        (!sessionState.uid && isNativeClientTransportRequest(ctx.req))) && {
+        dt: sessionState.dt,
+        st: sessionState.st,
+      }),
       sid: sessionState.sid,
       uid: sessionState.uid,
       session: sessionState.session,
     }
 
-    // only set cookies via this API in test because otherwise tests would be annoying to write
-    if (isTest) {
-      setAuthenticationCookies(ctx, { dt: body.dt!, st: body.st! })
-    }
+    setAuthenticationCookies(ctx, {
+      dt: sessionState.dt,
+      st: sessionState.st,
+      deviceClass: sessionState.deviceClass,
+    })
 
     ctx.json({ session: body })
   })

@@ -55,11 +55,10 @@ describe('flows warm and cold paths', () => {
     deviceClass?: DeviceClass,
     issuedAtSeconds = Math.floor(Date.now() / 1000),
   ) {
-    const did = v7()
-    const sid = v7()
+    const [did, sid] = [v7(), v7()]
     const now = Math.floor(Date.now() / 1000)
     const deviceToken = await signDeviceJwt(
-      { did, ...(deviceClass !== undefined ? { dc: deviceClass } : {}) },
+      { did, client: 'native', ...(deviceClass !== undefined ? { dc: deviceClass } : {}) },
       { expiresIn: '30 days' },
     )
     const sessionToken = await signSessionJwt(
@@ -67,6 +66,7 @@ describe('flows warm and cold paths', () => {
         did,
         sid,
         uid,
+        client: 'native',
         ...(uil !== undefined ? { uil } : {}),
         sca: now - 10,
         rca: now + rcaOffsetSeconds,

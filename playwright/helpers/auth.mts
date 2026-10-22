@@ -37,7 +37,12 @@ export async function loginAsUser(
   const createUUIDv7 = dependencies?.mintUUIDv7 ?? mintUUIDv7
   const retry = dependencies?.retryOnConnectionLost ?? retryOnConnectionLost
   const did = createUUIDv7()
-  const { deviceToken, sessionToken } = await createTokens({ did, uid: userId })
+  const userAgent = await page.evaluate(() => navigator.userAgent)
+  const { deviceToken, sessionToken } = await createTokens({
+    did,
+    uid: userId,
+    deviceContext: { user_agent: userAgent },
+  })
 
   await retry(async () => {
     await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 15_000 })

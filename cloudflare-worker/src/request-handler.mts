@@ -1,4 +1,4 @@
-import { isAuthShapedSessionToken, verifyBackendSessionTokens } from './auth/jwt.mts'
+import { hasAuthCookies, verifyBackendSessionTokens } from './auth/jwt.mts'
 import { ensureSession } from './auth/session-mint.mts'
 import type { BotTier } from './bot-tier.mts'
 import { getCachePolicy } from './cache-policy.mts'
@@ -100,9 +100,7 @@ export async function fetchInner(
   const sessionToken = cookies.get('st') ?? null
   const tokenPayloads = await verifyBackendSessionTokens(deviceToken, sessionToken, env)
   const { devicePayload, sessionPayload, sessionCachePayload } = tokenPayloads
-  // Signed `st` with `uid: null` is normal for anon visitors. Only a formerly authenticated
-  // session that fails edge verification is stale auth (see isAuthShapedSessionToken).
-  const hasUnverifiedSessionCookies = !sessionCachePayload && isAuthShapedSessionToken(sessionToken)
+  // Access or refresh claims conservatively bypass cached HTML; the backend verifies authority.
 
   const cachePolicy = getCachePolicy({
     pathname,
@@ -110,7 +108,7 @@ export async function fetchInner(
     isAuthenticated: Boolean(sessionCachePayload),
     hasReferralAttributionSignal: hasReferralAttributionSignal(url),
     hasFeatureFlagOverrideCookie: cookies.has('ff'),
-    hasUnverifiedSessionCookies,
+    hasUnverifiedSessionCookies: !sessionCachePayload && hasAuthCookies(sessionToken, deviceToken),
     ...getWorkerRequestConfig(env),
   })
 

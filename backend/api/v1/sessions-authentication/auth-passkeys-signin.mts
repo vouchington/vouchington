@@ -71,8 +71,10 @@ app.route('/api/v1/auth/passkeys/authentication/verify').post(async (ctx: Contex
 
   ctx.json({
     user: { id: login.userId },
-    dt: login.deviceToken,
-    st: login.sessionToken,
+    ...(login.sessionToken.payload.client === 'native' && {
+      dt: login.deviceToken,
+      st: login.sessionToken,
+    }),
     session: login.sessionToken.payload,
   })
   /* v8 ignore stop */

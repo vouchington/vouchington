@@ -59,6 +59,7 @@ app.route('/api/v1/app-attestation/attest').post(async (ctx: Context) => {
     deviceToken: ctx.cookies.get('dt'),
     sessionToken: ctx.cookies.get('st'),
     fetchUser: getPrivateUserByAny,
+    userAgent: ctx.req.headers['user-agent'],
     verifyRevocationOnHotPath: true,
   })
 

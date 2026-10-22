@@ -1,26 +1,22 @@
 import { NextResponse, type NextRequest, after } from 'next/server'
 import { isbot } from 'isbot'
-import { decodeSessionJwt } from '@ts-shared/session-jwt'
+import { decodeSessionJwt, decodeDeviceJwt } from '@ts-shared/session-jwt'
 import { isBackendPath, shouldBypassProxyPath } from '@/lib/utils/routes'
 import { safeFeatureFlagCookiePart } from '@/lib/feature-flags/shared'
-import { recordProxyReferralAttribution, refreshProxySession } from '@/lib/api/server/proxy'
+import {
+  recordProxyReferralAttribution,
+  refreshProxySession,
+  getProxyClientHeaders,
+} from '@/lib/api/server/proxy'
 import { tagPostDetailCacheFill } from '@/lib/api/server/post-detail-cache-tags'
 import { LANDING_PAGE_HANDLE_RE } from '@/lib/utils/path'
 import { hasGlobalPrivacyControlHeader } from '@/lib/privacy/global-privacy-control'
 import { VOUCHA_BOT_SCORE_HEADER } from '@ts-shared/utils/bot-challenge'
 
-function getForwardedIpHeaders(request: NextRequest): Record<string, string> {
-  const headers: Record<string, string> = {}
-  const forwardedFor = request.headers.get('x-forwarded-for')
-  const cfConnectingIp = request.headers.get('cf-connecting-ip')
-  if (forwardedFor) headers['x-forwarded-for'] = forwardedFor
-  if (cfConnectingIp) headers['cf-connecting-ip'] = cfConnectingIp
-  return headers
-}
-
 function shouldRefreshSession(stPayload: ReturnType<typeof decodeSessionJwt>): boolean {
   if (!stPayload || typeof stPayload.sca !== 'number') return true
-  return Math.floor(Date.now() / 1000) >= stPayload.sca
+  const now = Math.floor(Date.now() / 1000)
+  return now >= stPayload.sca || (typeof stPayload.exp === 'number' && now >= stPayload.exp)
 }
 
 async function proxy(request: NextRequest) {
@@ -44,11 +40,13 @@ async function proxy(request: NextRequest) {
 
   const isPageRequest = !isBackendPath(request.nextUrl.pathname)
 
-  // Decode st (without re-verification — the Cloudflare Worker already verified it)
-  // to determine whether this is an authenticated or anonymous session.
+  // Decode only to decide whether to request backend refresh; this does not authorize a user.
   const stPayload = st ? decodeSessionJwt(st) : null
+  const refreshIdentity = dt ? decodeDeviceJwt(dt) : null
   const isAuthenticated =
-    !isBotRequest && typeof stPayload?.uid === 'string' && stPayload.uid.length > 0
+    !isBotRequest &&
+    ((typeof stPayload?.uid === 'string' && stPayload.uid.length > 0) ||
+      (refreshIdentity?.client === 'web' && typeof refreshIdentity.refresh_uid === 'string'))
   const shouldRefreshAuthenticatedSession = isAuthenticated && shouldRefreshSession(stPayload)
 
   let sessionData: {
@@ -69,7 +67,7 @@ async function proxy(request: NextRequest) {
       sessionData = await refreshProxySession(
         backendUrl,
         { dt, st },
-        getForwardedIpHeaders(request),
+        getProxyClientHeaders(request),
       )
     } catch (err) {
       // Session validation error - continue without session
@@ -124,7 +122,7 @@ async function proxy(request: NextRequest) {
         backendUrl,
         { referrer, landing_url: landingUrl, ...(utm ? { utm } : {}) },
         { dt: sessionDt, st: sessionSt },
-        getForwardedIpHeaders(request),
+        getProxyClientHeaders(request),
       ).catch(err => {
         /* c8 ignore next -- attribution error handler; injecting network failure requires mocking */
         console.error('Attribution request failed:', err)
@@ -170,7 +168,7 @@ async function proxy(request: NextRequest) {
     ? NextResponse.rewrite(rewriteUrl, { request: { headers: requestHeaders } })
     : NextResponse.next({ request: { headers: requestHeaders } })
 
-  await tagPostDetailCacheFill(response, request, backendUrl, getForwardedIpHeaders(request))
+  await tagPostDetailCacheFill(response, request, backendUrl, getProxyClientHeaders(request))
 
   // Set validated session cookies for authenticated sessions refreshed by the backend.
   // Anonymous sessions are handled by the Cloudflare Worker (Set-Cookie already sent).

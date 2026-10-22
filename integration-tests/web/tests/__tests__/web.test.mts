@@ -98,7 +98,7 @@ describe('web', () => {
       expect(loginBody.user.email_address).toBe(TEST_USER_EMAIL)
       expect(loginResponse.headers.get('set-cookie')).toBeTruthy()
 
-      const authCookies = await createTestAuthCookies(TEST_USER_ID)
+      const authCookies = await createTestAuthCookies(TEST_USER_ID, 'node')
       const sessionResponse = await client.request('/api/v1/session', {
         method: 'PATCH',
         headers: {

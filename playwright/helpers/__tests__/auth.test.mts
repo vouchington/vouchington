@@ -33,6 +33,7 @@ function createMockPage() {
   const context = vi.fn<() => unknown>().mockReturnValue({ addCookies: mockAddCookies })
   const url = vi.fn<() => unknown>().mockReturnValue('https://example.test/dashboard')
   return {
+    evaluate: vi.fn<() => Promise<string>>().mockResolvedValue('Synthetic browser'),
     goto,
     reload,
     waitForURL,
@@ -63,6 +64,7 @@ describe('loginAsUser helpers', () => {
     expect(mockCreateDeviceAndSessionTokens).toHaveBeenCalledWith({
       did: TEST_DID,
       uid: TEST_UID,
+      deviceContext: { user_agent: 'Synthetic browser' },
     })
     expect(mockRetryOnConnectionLost).toHaveBeenCalledTimes(1)
     expect(page.goto).toHaveBeenNthCalledWith(1, '/', {
@@ -110,6 +112,7 @@ describe('loginAsUser helpers', () => {
     expect(mockCreateDeviceAndSessionTokens).toHaveBeenLastCalledWith({
       did: TEST_DID,
       uid: TEST_USER_ID,
+      deviceContext: { user_agent: 'Synthetic browser' },
     })
   })
 })
