@@ -25,6 +25,7 @@ describe('background registry', () => {
   it('gives each job of a domain-wide group the domain as its ordering key and limits', () => {
     for (const job of BACKGROUND_JOBS) {
       const { group } = getBackgroundDomainDefinition(job.domain)
+      if (group?.kind === 'lanes' && job.domain === 'activitypub') continue
       const expected =
         group?.kind === 'domain'
           ? {
@@ -37,9 +38,25 @@ describe('background registry', () => {
     }
   })
 
+  it('reserves independent ActivityPub capacity and schedules cleanup ahead of deliveries', () => {
+    const job = (name: string) => getBackgroundJob(`activitypub.${name}`)
+    for (const name of ['distributeActivity', 'deliverActivity']) {
+      expect(job(name)!.options.ordering).toEqual({ key: 'activitypub:outbound', concurrency: 5 })
+    }
+    for (const name of [
+      'processDelivery',
+      'recoverDeliveries',
+      'rearmFailedDeliveries',
+      'cleanupExpiredDeliveries',
+    ]) {
+      expect(job(name)!.options.ordering).toEqual({ key: 'activitypub:inbound', concurrency: 5 })
+    }
+    expect(job('cleanupExpiredDeliveries')!.options.priority).toBe(1)
+  })
+
   it('ranks tasks at the default tier and dispatchers at 100', () => {
     for (const job of BACKGROUND_JOBS) {
-      expect([10, 100]).toContain(job.options.priority)
+      expect([1, 10, 100]).toContain(job.options.priority)
     }
   })
 

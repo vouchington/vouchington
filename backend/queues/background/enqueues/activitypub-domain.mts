@@ -1,12 +1,10 @@
 import { defineBackgroundDomain } from './define-job.mts'
 
-// The old queue's cap was its worker concurrency of 10. Its only ordering key was one lane per
-// activity at concurrency 1, but a distribute page already runs under a durable lease (a second
-// holder gets `busy` and retries later), so the lane was redundant. One domain-wide group of 10
-// keeps the cap and replaces the lanes.
+// Reserve five worker slots for each delivery direction so inbound traffic cannot occupy all
+// outbound capacity. The worker baseline remains ten slots across the two lanes.
 export const ACTIVITYPUB_DOMAIN = defineBackgroundDomain({
   domain: 'activitypub',
-  group: { kind: 'domain', concurrency: 10, deferral: 'job' },
+  group: { kind: 'lanes', cap: 10 },
   workerConcurrency: 10,
 })
 

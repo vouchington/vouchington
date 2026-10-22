@@ -64,6 +64,7 @@ export function defineBackgroundJob<TData = Record<string, never>>(
       ...jobOptions,
       ...(sensitive ? { removeOnComplete: true, removeOnFail: true } : {}),
       ...(domainOrdering(domain) ?? {}),
+      ...(spec.ordering ? { ordering: spec.ordering } : {}),
     },
   }
 }

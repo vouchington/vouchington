@@ -36,6 +36,8 @@ export type BackgroundJobSpec = {
   /** Local name, unique inside the domain; the queue-wide name is `<domain>.<name>`. */
   readonly name: string
   readonly priority: number
+  /** Fixed lane for a domain that partitions its concurrency by job family. */
+  readonly ordering?: JobOptions['ordering']
   readonly attempts?: number
   readonly backoff?: NonNullable<JobOptions['backoff']>
   /** Lock and heartbeat window for this job alone, for domains whose work outlasts the default. */

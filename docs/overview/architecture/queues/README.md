@@ -29,7 +29,10 @@ flowchart LR
   which run in a process. Infrastructure decides the deployed split; local development runs one
   process for everything.
 - The shared `background` queue serves many small domains. A job is `<domain>.<name>`, a registry
-  maps each to a handler, and ordering keys, concurrency and pause are per domain. A domain that
+  maps each to a handler, and ordering keys and concurrency are per domain or per job-family lane;
+  pause remains per domain. ActivityPub reserves capacity for inbound and outbound delivery so
+  hostile inbound traffic cannot occupy outbound delivery slots, while retention cleanup outranks
+  delivery work to keep inbox capacity reclaimable under sustained traffic. A domain that
   needs both a domain-wide cap and per-entity ordering keeps its own queue.
 - The shared `background-cpu` queue applies the same domain model to crawling, embedding, spend-cap
   coordination, and content analysis. URL and referral crawls use the same hostname ordering key,

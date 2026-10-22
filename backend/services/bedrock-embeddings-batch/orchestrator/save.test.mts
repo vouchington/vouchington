@@ -158,7 +158,7 @@ describe('post embedding batch ban-evasion follow-up', () => {
     await expect(getBanEvasionJobsFor(community.id, member.id)).resolves.toHaveLength(1)
   })
 
-  it('advances past a non-first embedded post and retries it after the earlier post is deleted', async () => {
+  it('skips a non-first embedded post and retries it after the earlier post is deleted', async () => {
     const owner = await createTestUser()
     const member = await createTestUser()
     const otherMember = await createTestUser()
@@ -190,21 +190,24 @@ describe('post embedding batch ban-evasion follow-up', () => {
     }
 
     const recoveryScope = 'ban-evasion:post-embedding:pending:id-asc'
-    for (const [id, expectedEnqueuedCount] of [
-      [first, 1],
-      [nonFirst, 0],
-      [nextFirst, 1],
-    ] as const) {
-      const result = await enqueueBanEvasionDetectionForCurrentEmbeddedFirstCommunityPosts({
-        after: scopedCursorBefore(id, recoveryScope),
-        limit: 1,
-      })
-      expect(result.scannedCount).toBe(1)
-      expect(decodeScopedUuidCursor(result.nextCursor!, recoveryScope, 'Invalid cursor').id).toBe(
-        id,
-      )
-      expect(result.enqueuedCount).toBe(expectedEnqueuedCount)
-    }
+    const firstRecovery = await enqueueBanEvasionDetectionForCurrentEmbeddedFirstCommunityPosts({
+      after: scopedCursorBefore(first, recoveryScope),
+      limit: 1,
+    })
+    expect(firstRecovery.scannedCount).toBe(1)
+    expect(
+      decodeScopedUuidCursor(firstRecovery.nextCursor!, recoveryScope, 'Invalid cursor').id,
+    ).toBe(first)
+    expect(firstRecovery.enqueuedCount).toBe(1)
+    const skipped = await enqueueBanEvasionDetectionForCurrentEmbeddedFirstCommunityPosts({
+      after: scopedCursorBefore(nonFirst, recoveryScope),
+      limit: 1,
+    })
+    expect(skipped.scannedCount).toBe(1)
+    expect(skipped.enqueuedCount).toBe(1)
+    expect(decodeScopedUuidCursor(skipped.nextCursor!, recoveryScope, 'Invalid cursor').id).toBe(
+      nextFirst,
+    )
     await expect(getBanEvasionJobsFor(community.id, member.id)).resolves.toHaveLength(1)
     await expect(getBanEvasionJobsFor(community.id, otherMember.id)).resolves.toHaveLength(1)
 
