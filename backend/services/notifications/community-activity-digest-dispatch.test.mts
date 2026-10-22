@@ -2,19 +2,19 @@ import { overrideDynamicConfigFieldsForTest } from '../../test-helpers/dynamic-c
 import { notificationsWorkConfig } from './work-limits.mts'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import {
-  addTestCommunityActivityDigestWeeks,
-  expireTestCommunityActivityDigestWorkItemLease,
-  getTestCommunityActivityDigestWorkItems,
-  insertTestCommunityActivityDigestWorkItem,
-  readNextTestCommunityActivityDigestWindowStart,
+  addTestCommunityActivityDigestWeeks as unownedAddTestCommunityActivityDigestWeeks,
+  expireTestCommunityActivityDigestWorkItemLease as unownedExpireTestCommunityActivityDigestWorkItemLease,
+  getTestCommunityActivityDigestWorkItems as unownedGetTestCommunityActivityDigestWorkItems,
+  insertTestCommunityActivityDigestWorkItem as unownedInsertTestCommunityActivityDigestWorkItem,
+  readNextTestCommunityActivityDigestWindowStart as unownedReadNextTestCommunityActivityDigestWindowStart,
   withTestCommunityActivityDigestLock,
 } from '@voucha/test-helpers'
 import {
-  completeCommunityActivityDigestWorkItem,
-  claimCommunityActivityDigestWorkItem,
-  prepareCommunityActivityDigestWorkItems,
-  renewCommunityActivityDigestWorkItem,
-  releaseCommunityActivityDigestWorkItem,
+  completeCommunityActivityDigestWorkItem as unownedCompleteCommunityActivityDigestWorkItem,
+  claimCommunityActivityDigestWorkItem as unownedClaimCommunityActivityDigestWorkItem,
+  prepareCommunityActivityDigestWorkItems as unownedPrepareCommunityActivityDigestWorkItems,
+  renewCommunityActivityDigestWorkItem as unownedRenewCommunityActivityDigestWorkItem,
+  releaseCommunityActivityDigestWorkItem as unownedReleaseCommunityActivityDigestWorkItem,
 } from './community-activity-digest-dispatch.mts'
 
 function iso(start: Date): string {
@@ -23,7 +23,28 @@ function iso(start: Date): string {
 
 describe('community activity digest work items', () => {
   it('initializes and fills ordered gaps while retaining the completed high-water mark', async () => {
-    await withTestCommunityActivityDigestLock(async () => {
+    await withTestCommunityActivityDigestLock(async owner => {
+      const addTestCommunityActivityDigestWeeks = owner.operation(
+        unownedAddTestCommunityActivityDigestWeeks,
+      )
+      const getTestCommunityActivityDigestWorkItems = owner.operation(
+        unownedGetTestCommunityActivityDigestWorkItems,
+      )
+      const insertTestCommunityActivityDigestWorkItem = owner.operation(
+        unownedInsertTestCommunityActivityDigestWorkItem,
+      )
+      const readNextTestCommunityActivityDigestWindowStart = owner.operation(
+        unownedReadNextTestCommunityActivityDigestWindowStart,
+      )
+      const completeCommunityActivityDigestWorkItem = owner.operation(
+        unownedCompleteCommunityActivityDigestWorkItem,
+      )
+      const claimCommunityActivityDigestWorkItem = owner.operation(
+        unownedClaimCommunityActivityDigestWorkItem,
+      )
+      const prepareCommunityActivityDigestWorkItems = owner.operation(
+        unownedPrepareCommunityActivityDigestWorkItems,
+      )
       const firstStart = await readNextTestCommunityActivityDigestWindowStart()
       const foreignStart = new Date(firstStart.getTime() - 3 * 24 * 60 * 60 * 1000)
       const firstEnd = await addTestCommunityActivityDigestWeeks(firstStart, 1)
@@ -80,7 +101,25 @@ describe('community activity digest work items', () => {
       community_digest_window_batch_size: 2,
     })
     onTestFinished(restore)
-    await withTestCommunityActivityDigestLock(async () => {
+    await withTestCommunityActivityDigestLock(async owner => {
+      const addTestCommunityActivityDigestWeeks = owner.operation(
+        unownedAddTestCommunityActivityDigestWeeks,
+      )
+      const insertTestCommunityActivityDigestWorkItem = owner.operation(
+        unownedInsertTestCommunityActivityDigestWorkItem,
+      )
+      const readNextTestCommunityActivityDigestWindowStart = owner.operation(
+        unownedReadNextTestCommunityActivityDigestWindowStart,
+      )
+      const completeCommunityActivityDigestWorkItem = owner.operation(
+        unownedCompleteCommunityActivityDigestWorkItem,
+      )
+      const claimCommunityActivityDigestWorkItem = owner.operation(
+        unownedClaimCommunityActivityDigestWorkItem,
+      )
+      const prepareCommunityActivityDigestWorkItems = owner.operation(
+        unownedPrepareCommunityActivityDigestWorkItems,
+      )
       const first = await readNextTestCommunityActivityDigestWindowStart()
       await insertTestCommunityActivityDigestWorkItem(first)
       const starts = await Promise.all(
@@ -113,7 +152,34 @@ describe('community activity digest work items', () => {
   })
 
   it('fences stale batch chains after expiry and successor takeover', async () => {
-    await withTestCommunityActivityDigestLock(async () => {
+    await withTestCommunityActivityDigestLock(async owner => {
+      const addTestCommunityActivityDigestWeeks = owner.operation(
+        unownedAddTestCommunityActivityDigestWeeks,
+      )
+      const expireTestCommunityActivityDigestWorkItemLease = owner.operation(
+        unownedExpireTestCommunityActivityDigestWorkItemLease,
+      )
+      const insertTestCommunityActivityDigestWorkItem = owner.operation(
+        unownedInsertTestCommunityActivityDigestWorkItem,
+      )
+      const readNextTestCommunityActivityDigestWindowStart = owner.operation(
+        unownedReadNextTestCommunityActivityDigestWindowStart,
+      )
+      const completeCommunityActivityDigestWorkItem = owner.operation(
+        unownedCompleteCommunityActivityDigestWorkItem,
+      )
+      const claimCommunityActivityDigestWorkItem = owner.operation(
+        unownedClaimCommunityActivityDigestWorkItem,
+      )
+      const prepareCommunityActivityDigestWorkItems = owner.operation(
+        unownedPrepareCommunityActivityDigestWorkItems,
+      )
+      const renewCommunityActivityDigestWorkItem = owner.operation(
+        unownedRenewCommunityActivityDigestWorkItem,
+      )
+      const releaseCommunityActivityDigestWorkItem = owner.operation(
+        unownedReleaseCommunityActivityDigestWorkItem,
+      )
       const windowStart = await readNextTestCommunityActivityDigestWindowStart()
       const foreignStart = new Date(windowStart.getTime() - 3 * 24 * 60 * 60 * 1000)
       await prepareCommunityActivityDigestWorkItems(windowStart, [windowStart])

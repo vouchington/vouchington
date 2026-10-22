@@ -1,3 +1,4 @@
+import { createOwnedSqlFixtureLifetime } from './owned-sql-fixture-lifetime.mts'
 import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { advisoryLockPool, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
@@ -15,17 +16,23 @@ export type TestCommunityActivityDigestWorkItem = {
 const DIGEST_LOCK_NAMESPACE = 2_135_042
 const DIGEST_LOCK_KEY = 1
 
-export async function withTestCommunityActivityDigestLock<T>(run: () => Promise<T>): Promise<T> {
-  const lock = await acquireTestPostgresAdvisoryLock({
-    namespace: DIGEST_LOCK_NAMESPACE,
-    key: DIGEST_LOCK_KEY,
-    timeout: '20s',
+export async function withTestCommunityActivityDigestLock<T>(
+  run: (owner: ReturnType<typeof createOwnedSqlFixtureLifetime>) => Promise<T>,
+): Promise<T> {
+  let lock: Awaited<ReturnType<typeof acquireTestPostgresAdvisoryLock>> | undefined
+  const owner = createOwnedSqlFixtureLifetime(async () => {
+    await lock?.release()
   })
-  try {
-    return await run()
-  } finally {
-    await lock.release()
-  }
+  return owner.withBody(async () => {
+    await owner.prepare(async () => {
+      lock = await acquireTestPostgresAdvisoryLock({
+        namespace: DIGEST_LOCK_NAMESPACE,
+        key: DIGEST_LOCK_KEY,
+        timeout: '20s',
+      })
+    })
+    return run(owner)
+  })
 }
 
 export async function addTestCommunityActivityDigestWeeks(

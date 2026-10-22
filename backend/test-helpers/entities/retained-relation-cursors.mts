@@ -1,3 +1,4 @@
+import { createOwnedSqlFixtureLifetime } from '../owned-sql-fixture-lifetime.mts'
 import { registerRetainedRelationCleanupReservation } from '../../../test-helpers/vitest-shared-db-scope-violations.mts'
 import { beginTransaction, read, write } from '@data-stores/psql'
 import { electedRelationMetadata } from '../../services/users/relation-impact-targets.mts'
@@ -69,55 +70,63 @@ export async function withTestRetainedRelationCleanupReservation<Result>(
     cursorRows: () => Promise<RetainedRelationCleanupCursor[]>
   }) => Promise<Result>,
 ): Promise<Result> {
-  const query = await beginTransaction()
+  let query: Awaited<ReturnType<typeof beginTransaction>> | undefined
   let closeReservation: (() => void) | undefined
-  let outcome: { ok: true; value: Result } | { ok: false; error: unknown }
-  try {
-    for (const metadata of electedRelationMetadata) {
-      await query(
-        '/* reserveTestRetainedRelationCleanupFamily */ SELECT pg_advisory_xact_lock(hashtextextended($1, 0))',
-        [`retained-relation-cleanup:${metadata.table_name}`],
-      )
+  const owner = createOwnedSqlFixtureLifetime(async () => {
+    const failures: unknown[] = []
+    try {
+      closeReservation?.()
+    } catch (err) {
+      failures.push(err)
     }
-    closeReservation = registerRetainedRelationCleanupReservation(query)
-    outcome = {
-      ok: true,
-      value: await handler({
-        insertRoot: (family, id) => insertTestRetainedIdentityRoot(family, id, { query }),
-        insertRelation: (table, subject, relation) =>
-          insertTestRetainedRelationIdentity(table, subject, relation, { query }),
-        hasRelation: (table, subject, relation) =>
-          hasTestRetainedRelationIdentity(table, subject, relation, { query }),
-        cleanup: (pageSize, keys, options) =>
-          cleanupRetainedRelationIdentities(pageSize, keys, { ...options, query }),
-        cursorNames: async () =>
-          (await readRetainedRelationCleanupCursors({ query })).map(row => row.entity_relation),
-        cursorRows: () => readRetainedRelationCleanupCursors({ query }),
-      }),
+    try {
+      await query?.rollback()
+    } catch (err) {
+      failures.push(err)
     }
-  } catch (err) {
-    outcome = { ok: false, error: err }
-  }
-  const cleanupErrors: unknown[] = []
-  try {
-    closeReservation?.()
-  } catch (err) {
-    cleanupErrors.push(err)
-  }
-  try {
-    await query.rollback()
-  } catch (err) {
-    cleanupErrors.push(err)
-  }
-  if (!outcome.ok) {
-    if (cleanupErrors.length > 0)
-      throw new AggregateError(
-        [outcome.error, ...cleanupErrors],
-        'Relation fixture and rollback failed',
-      )
-    throw outcome.error
-  }
-  if (cleanupErrors.length > 0)
-    throw new AggregateError(cleanupErrors, 'Relation fixture rollback failed')
-  return outcome.value
+    try {
+      await query?.[Symbol.asyncDispose]()
+    } catch (err) {
+      failures.push(err)
+    }
+    if (failures.length) throw new AggregateError(failures, 'Relation fixture rollback failed')
+  })
+  return owner.withBody(async () => {
+    await owner.prepare(async () => {
+      query = await beginTransaction()
+      owner.assertOpen()
+      for (const metadata of electedRelationMetadata) {
+        await query(
+          '/* reserveTestRetainedRelationCleanupFamily */ SELECT pg_advisory_xact_lock(hashtextextended($1, 0))',
+          [`retained-relation-cleanup:${metadata.table_name}`],
+        )
+        owner.assertOpen()
+      }
+      closeReservation = registerRetainedRelationCleanupReservation(query)
+    })
+    const transaction = query!
+    return handler({
+      insertRoot: (family, id) =>
+        owner.run(() => insertTestRetainedIdentityRoot(family, id, { query: transaction })),
+      insertRelation: (table, subject, relation) =>
+        owner.run(() =>
+          insertTestRetainedRelationIdentity(table, subject, relation, { query: transaction }),
+        ),
+      hasRelation: (table, subject, relation) =>
+        owner.run(() =>
+          hasTestRetainedRelationIdentity(table, subject, relation, { query: transaction }),
+        ),
+      cleanup: (pageSize, keys, options) =>
+        owner.run(() =>
+          cleanupRetainedRelationIdentities(pageSize, keys, { ...options, query: transaction }),
+        ),
+      cursorNames: () =>
+        owner.run(async () =>
+          (await readRetainedRelationCleanupCursors({ query: transaction })).map(
+            row => row.entity_relation,
+          ),
+        ),
+      cursorRows: () => owner.run(() => readRetainedRelationCleanupCursors({ query: transaction })),
+    })
+  })
 }

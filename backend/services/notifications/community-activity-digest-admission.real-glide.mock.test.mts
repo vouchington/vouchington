@@ -7,15 +7,15 @@ import { enqueueCommunityActivityDigestDispatch } from '../../queues/notificatio
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { processCommunityActivityDigestScheduleTick } from '../../workers/notifications/processors/community-activity-digest-schedule.mts'
 import {
-  getTestCommunityActivityDigestWorkItems,
+  getTestCommunityActivityDigestWorkItems as unownedGetTestCommunityActivityDigestWorkItems,
   insertTestCommunityActivityDigestWorkItem,
-  readNextTestCommunityActivityDigestWindowStart,
-  readTestCommunityActivityDigestWorkItem,
+  readNextTestCommunityActivityDigestWindowStart as unownedReadNextTestCommunityActivityDigestWindowStart,
+  readTestCommunityActivityDigestWorkItem as unownedReadTestCommunityActivityDigestWorkItem,
   withTestCommunityActivityDigestLock,
 } from '@voucha/test-helpers'
 import {
-  claimCommunityActivityDigestWorkItem,
-  completeCommunityActivityDigestWorkItem,
+  claimCommunityActivityDigestWorkItem as unownedClaimCommunityActivityDigestWorkItem,
+  completeCommunityActivityDigestWorkItem as unownedCompleteCommunityActivityDigestWorkItem,
   prepareCommunityActivityDigestWorkItems,
 } from './community-activity-digest-dispatch.mts'
 
@@ -23,7 +23,22 @@ vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => i
 
 describe('community activity digest work items', () => {
   it('releases the durable lease when queue admission fails', async () => {
-    await withTestCommunityActivityDigestLock(async () => {
+    await withTestCommunityActivityDigestLock(async owner => {
+      const getTestCommunityActivityDigestWorkItems = owner.operation(
+        unownedGetTestCommunityActivityDigestWorkItems,
+      )
+      const readNextTestCommunityActivityDigestWindowStart = owner.operation(
+        unownedReadNextTestCommunityActivityDigestWindowStart,
+      )
+      const readTestCommunityActivityDigestWorkItem = owner.operation(
+        unownedReadTestCommunityActivityDigestWorkItem,
+      )
+      const claimCommunityActivityDigestWorkItem = owner.operation(
+        unownedClaimCommunityActivityDigestWorkItem,
+      )
+      const completeCommunityActivityDigestWorkItem = owner.operation(
+        unownedCompleteCommunityActivityDigestWorkItem,
+      )
       const queue = createQueue(`digest-admission-${randomUUID()}`, { priorityKind: 'ranked' })
       const admission = vi.spyOn(queue, 'add')
       let started: ReturnType<typeof processCommunityActivityDigestScheduleTick> | undefined
@@ -37,25 +52,28 @@ describe('community activity digest work items', () => {
             admission.mockRestore()
           }
         })())
+      owner.beforeRelease(cleanup)
       onTestFinished(cleanup, 5000)
       try {
         await queue.close()
         const windowStart = await readNextTestCommunityActivityDigestWindowStart()
         const foreignStart = new Date(windowStart.getTime() - 3 * 24 * 60 * 60 * 1000)
         await expect(
-          (started = processCommunityActivityDigestScheduleTick(
-            {},
-            {
-              prepareCommunityActivityDigestWorkItems: async () => {
-                const windows = await prepareCommunityActivityDigestWorkItems(windowStart, [
-                  windowStart,
-                ])
-                await insertTestCommunityActivityDigestWorkItem(foreignStart)
-                return windows
+          (started = owner.run(() =>
+            processCommunityActivityDigestScheduleTick(
+              {},
+              {
+                prepareCommunityActivityDigestWorkItems: async () => {
+                  const windows = await prepareCommunityActivityDigestWorkItems(windowStart, [
+                    windowStart,
+                  ])
+                  await insertTestCommunityActivityDigestWorkItem(foreignStart)
+                  return windows
+                },
+                enqueueCommunityActivityDigestDispatch: data =>
+                  enqueueCommunityActivityDigestDispatch(data, { queue }),
               },
-              enqueueCommunityActivityDigestDispatch: data =>
-                enqueueCommunityActivityDigestDispatch(data, { queue }),
-            },
+            ),
           )),
         ).rejects.toThrow(/clos/i)
         expect(admission).toHaveBeenCalledTimes(1)
