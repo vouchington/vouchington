@@ -6,6 +6,7 @@ const LEGACY_MONEY_NAME = /(?:^|_)(?:cents|dollars)(?:_|$)|^(?:cents_per_point|c
 const MONEY_NAME_TOKEN =
   /(?:^|_)(?:amount|balance|bonus|cost|credit_limit|fee|income|mrr|price|refund|revenue|valuation)(?:_|$)/
 const DECIMAL_OR_FLOAT_SQL_TYPES = new Set([
+  'float',
   'decimal',
   'double precision',
   'float4',
