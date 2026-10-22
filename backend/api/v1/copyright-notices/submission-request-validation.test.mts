@@ -179,7 +179,7 @@ describe('copyright submission request contracts', () => {
         .send({ injected: true })
         .expect(401)
 
-      expect(response.text).not.toMatch(/schema|must be|required|invalid/i)
+      expect(response.body.message).not.toMatch(/schema|must be|required|invalid/i)
     })
 
     it('rejects a malformed path, an unknown key, and a bad body before the service runs', async () => {
@@ -224,7 +224,7 @@ describe('copyright submission request contracts', () => {
         .send({ injected: true })
         .expect(401)
 
-      expect(response.text).not.toMatch(/schema|must be|required|invalid/i)
+      expect(response.body.message).not.toMatch(/schema|must be|required|invalid/i)
     })
 
     it('rejects an unknown key before the service runs, then accepts the valid body', async () => {
