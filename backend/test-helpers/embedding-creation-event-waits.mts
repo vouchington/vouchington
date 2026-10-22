@@ -1,7 +1,15 @@
+import {
+  REAL_GLIDE_EVENT_DEADLINE_MS,
+  waitForRealGlideEvent,
+} from './real-glide-terminal-deadline.mts'
+
 export type OwnedQueueEventName = 'added' | 'delay-changed' | 'completed' | 'failed'
 
 /** Tracks real queue stream events and gives each pending event waiter a terminal error path. */
-export function createOwnedQueueEventWaits() {
+export function createOwnedQueueEventWaits(
+  queueName: string,
+  terminalDeadlineMs = REAL_GLIDE_EVENT_DEADLINE_MS,
+) {
   const history = new Map<string, Map<OwnedQueueEventName, number>>()
   const waits = new Set<{
     id: string
@@ -46,9 +54,19 @@ export function createOwnedQueueEventWaits() {
         )
       if ((history.get(id)?.get(event) ?? 0) >= occurrence) return Promise.resolve()
       const completion = Promise.withResolvers<void>()
-      void completion.promise.catch(() => {})
-      waits.add({ id, event, occurrence, ...completion })
-      return completion.promise
+      const wait = { id, event, occurrence, ...completion }
+      waits.add(wait)
+      const result =
+        event === 'completed' || event === 'failed'
+          ? waitForRealGlideEvent(
+              completion.promise,
+              `GlideMQ queue ${queueName} job ${id} ${event} event`,
+              terminalDeadlineMs,
+            )
+          : completion.promise
+      const pending = result.finally(() => waits.delete(wait))
+      void pending.catch(() => {})
+      return pending
     },
   }
 }

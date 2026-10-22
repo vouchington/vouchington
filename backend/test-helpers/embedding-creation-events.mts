@@ -58,7 +58,7 @@ function createOwnedQueue(
   fixture.beforeRelease(cleanup, () => writersDrained)
   const queueHandle = new Queue(name, options)
   queue = queueHandle
-  const eventWaits = createOwnedQueueEventWaits()
+  const eventWaits = createOwnedQueueEventWaits(name)
   let pendingAtClose: Array<{ id: string; event: string; occurrence: number }> | undefined
   const diagnostics = registerEmbeddingCreationDiagnostics(queueHandle.name, () => ({
     prefix: options.prefix,
