@@ -16,7 +16,9 @@ import {
 
 describe('route rate-limit config values', () => {
   it('ignores the Playwright bypass in deployed environments', () => {
-    onTestFinished(vi.unstubAllEnvs)
+    onTestFinished(() => {
+      vi.unstubAllEnvs()
+    })
     onTestFinished(
       overrideUncheckedDynamicConfigFieldsForTest(routeRateLimitConfig, { enabled: true }),
     )
