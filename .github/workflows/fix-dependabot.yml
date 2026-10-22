@@ -337,7 +337,7 @@ jobs:
       needs.render-prompt.outputs.source-current == 'true' &&
       needs.revalidate-dispatch.outputs.current == 'true' &&
       needs.check-duplicates.outputs.skip != 'true'
-    uses: vouchington/vouchington-tooling/.github/workflows/harness-dispatch.yml@65310ad7da87fd8d3619ca7868107d46c9c607d9 # v0.53.0
+    uses: vouchington/vouchington-tooling/.github/workflows/harness-dispatch.yml@4f206c4ea9fc28003c896b1cf1b77ab6f7130242 # v0.55.0
     permissions:
       contents: read
     secrets:
@@ -377,7 +377,7 @@ jobs:
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
-      - uses: vouchington/vouchington-tooling/.github/actions/comment-harness-session@65310ad7da87fd8d3619ca7868107d46c9c607d9 # v0.53.0
+      - uses: vouchington/vouchington-tooling/.github/actions/comment-harness-session@4f206c4ea9fc28003c896b1cf1b77ab6f7130242 # v0.55.0
         timeout-minutes: 1
         with:
           target: ${{ needs.triage-and-rerun.outputs.pr_number }}
