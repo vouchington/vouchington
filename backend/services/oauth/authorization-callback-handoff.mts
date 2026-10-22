@@ -1,15 +1,40 @@
 import { decryptSecret } from '@modules/token-secrets'
 import createHttpError from 'http-errors'
 import { safeEqual } from './authorization-completion-proof.mts'
+import type { BrokerCallbackMode, BrokerOAuthProvider, BrokerPurpose } from './broker-config.mts'
 import {
   getCompletionTokenPurpose,
   hashOAuthCallbackCode,
   hashOAuthCallbackError,
 } from './authorization-secrets.mts'
-import type {
-  OAuthAuthorizationRow,
-  ReceiveOAuthAuthorizationCallbackResult,
-} from './authorization-callback.mts'
+
+export type OAuthAuthorizationRow = {
+  id: string
+  provider: BrokerOAuthProvider
+  purpose: BrokerPurpose
+  callback_mode: BrokerCallbackMode
+  status:
+    | 'pending'
+    | 'callback_received'
+    | 'exchanging'
+    | 'completion_ready'
+    | 'completed'
+    | 'rejected'
+    | 'expired'
+  completion_token_ciphertext: string | null
+  callback_code_hash: string | null
+  callback_error: string | null
+  callback_error_hash: string | null
+  expires_at: Date
+}
+
+export type ReceiveOAuthAuthorizationCallbackResult = {
+  flowId: string
+  callbackMode: BrokerCallbackMode
+  completionToken: string
+  exchangeRequired: boolean
+  expiresAt: Date
+}
 
 export function handoff(
   authorization: OAuthAuthorizationRow,

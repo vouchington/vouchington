@@ -2,11 +2,13 @@ import { randomBytes } from 'node:crypto'
 import { beginTransaction } from '@data-stores/psql'
 import { decryptSecret, encryptSecret } from '@modules/token-secrets'
 import createHttpError from 'http-errors'
-import type { BrokerCallbackMode, BrokerOAuthProvider, BrokerPurpose } from './broker-config.mts'
+import type { BrokerOAuthProvider } from './broker-config.mts'
 import {
   getExistingCallbackHandoff,
   handoff,
   normalizeCallbackError,
+  type OAuthAuthorizationRow,
+  type ReceiveOAuthAuthorizationCallbackResult,
 } from './authorization-callback-handoff.mts'
 import {
   getCallbackCodePurpose,
@@ -18,33 +20,7 @@ import {
   hashOAuthCompletionToken,
 } from './authorization-secrets.mts'
 
-export type OAuthAuthorizationRow = {
-  id: string
-  provider: BrokerOAuthProvider
-  purpose: BrokerPurpose
-  callback_mode: BrokerCallbackMode
-  status:
-    | 'pending'
-    | 'callback_received'
-    | 'exchanging'
-    | 'completion_ready'
-    | 'completed'
-    | 'rejected'
-    | 'expired'
-  completion_token_ciphertext: string | null
-  callback_code_hash: string | null
-  callback_error: string | null
-  callback_error_hash: string | null
-  expires_at: Date
-}
-
-export type ReceiveOAuthAuthorizationCallbackResult = {
-  flowId: string
-  callbackMode: BrokerCallbackMode
-  completionToken: string
-  exchangeRequired: boolean
-  expiresAt: Date
-}
+export type { ReceiveOAuthAuthorizationCallbackResult } from './authorization-callback-handoff.mts'
 
 type ReceiveOAuthAuthorizationCallbackTransactionResult =
   | ReceiveOAuthAuthorizationCallbackResult
