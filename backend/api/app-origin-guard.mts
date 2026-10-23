@@ -2,6 +2,7 @@ import { createHash, timingSafeEqual } from 'node:crypto'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { isDeployedEnvironment } from '@ts-shared/deploy-environment'
 import { markAuthenticatedOriginRequest } from '@modules/request-client-info/authenticated-origin'
+import { isDbscCeremonyRequest } from '@modules/request-client-info/browser-session-protocol'
 import { getRequestPath } from './app-guard-helpers.mts'
 import { BACKEND_BASELINE_RAW_SECURITY_HEADERS } from './security-header-helpers.mts'
 
@@ -90,6 +91,7 @@ function logGuardRejectedRequest(
 
 function isCrossSiteMutation(req: IncomingMessage, method: string): boolean {
   if (!MUTATING_METHODS.has(method)) return false
+  if (isDbscCeremonyRequest(method, getRequestPath(req.url ?? '/'))) return false
   if (method === 'POST' && CROSS_SITE_OAUTH_PROTOCOL_PATHS.has(getRequestPath(req.url ?? '/'))) {
     return false
   }

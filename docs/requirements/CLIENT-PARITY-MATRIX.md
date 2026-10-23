@@ -160,3 +160,11 @@ lifetimes. Swift and .NET retain JSON transport and must coordinate refresh acro
 recover through login when renewal fails. Native adoption is tracked in
 [vouchington-clients#487](https://github.com/vouchington/vouchington-clients/issues/487).
 The producer lands first. Device-bound session proof is a separate browser capability.
+
+## Device-bound browser sessions
+
+Web credential completion can advertise browser-managed DBSC registration on the configured HTTPS
+site. Capable browsers prove possession of their registered key when renewing the access cookie;
+bound sessions cannot use ordinary device-cookie renewal. Unsupported browsers retain unbound web
+sessions. Swift and .NET do not implement this browser protocol and keep their native token and
+attestation flows. Registration and renewal responses follow the external DBSC wire format.

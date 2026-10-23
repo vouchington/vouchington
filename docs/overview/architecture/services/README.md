@@ -64,7 +64,17 @@ or ignored outcome.
 Browser device credentials carry refresh authority separately from access authority. The session
 service may renew an access credential only after checking device binding, revocation and the
 current user; that refresh authority alone never authorizes a mutation. Ordinary authenticated
-requests still require a paired device and access credential. See the [browser auth boundary](../reference-auth-overview-web-client-auth-boundary.md).
+requests still require a paired device and access credential. Browser-key binding is authoritative
+on the PostgreSQL session row; Valkey holds only single-use proof challenges. Renewal checks the
+binding under the same row lock as credential rotation, and cache eviction cannot restore an
+unbound credential. Credential mint authority also preserves native identity during secure completion
+replay; verified native attestation can renew device lifetime without converting a web session. See the [browser auth boundary](../reference-auth-overview-web-client-auth-boundary.md).
+
+The primary session registry also acts as the credential-mint receipt for durable OAuth completion.
+A completion interrupted before its first mint can initialize authority only when its SID has no
+registry row. Existing rows, including revoked or expired sessions, prevent lost authority from
+being recreated. Session rows must therefore remain until user deletion; active-SID pruning would
+break this invariant. A registry read failure cannot authorize initialization.
 
 Moderation reconciliation admits expired and retryable work through the same bounded candidate
 page. Terminal dispositions are written only for that admitted page; lease and disposition updates

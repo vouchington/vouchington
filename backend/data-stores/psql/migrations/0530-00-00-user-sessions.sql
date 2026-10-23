@@ -16,11 +16,13 @@ CREATE TABLE IF NOT EXISTS user_sessions (
   device_token_encrypted TEXT,
   device_token_issued_at TIMESTAMPTZ,
   device_token_binding JSONB,
+  device_bound_session_binding JSONB,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CHECK (num_nonnulls(device_token_digest, device_token_encrypted, device_token_issued_at, device_token_binding) IN (0, 4)),
   CHECK (device_token_digest IS NULL OR device_token_digest ~ '^[a-f0-9]{64}$'),
   CHECK (device_token_binding IS NULL OR jsonb_typeof(device_token_binding) = 'object'),
+  CHECK (device_bound_session_binding IS NULL OR (device_token_digest IS NOT NULL AND device_token_binding @> '{"client":"web"}'::jsonb AND jsonb_typeof(device_bound_session_binding) = 'object')),
   CHECK (device_token_issued_at IS NULL OR device_token_issued_at < expires_at),
   CHECK (TRIM(device_name) = device_name),
   CHECK (char_length(device_name) <= 255)
@@ -64,3 +66,4 @@ COMMENT ON COLUMN user_sessions.device_token_digest IS 'SHA-256 digest of the cu
 COMMENT ON COLUMN user_sessions.device_token_encrypted IS 'Current device credential encrypted with token-secrets and a session-specific purpose, retained for exact credential-completion replay and signing-key rotation.';
 COMMENT ON COLUMN user_sessions.device_token_issued_at IS 'Original authenticated device credential issuance time. Ordinary rotation preserves this revocation epoch.';
 COMMENT ON COLUMN user_sessions.device_token_binding IS 'Original signed client binding document (client family and optional browser User-Agent/JA4 hashes), never joined to other rows. Verified credential replay preserves this document.';
+COMMENT ON COLUMN user_sessions.device_bound_session_binding IS 'Chrome device-bound session public key, canonical origin and binding time; durable structured proof state, never joined to another row. Valkey retains only single-use challenges.';

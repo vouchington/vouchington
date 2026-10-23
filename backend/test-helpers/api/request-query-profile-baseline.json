@@ -440,12 +440,44 @@
     "code": "backend/services/jwt-session/native-upgrade.mts:20"
   },
   {
+    "annotation": "lockSessionDeviceAuthority:sessionFence",
+    "route": "POST /api/v1/auth/device-bound-sessions",
+    "maxCount": 2,
+    "reason": "Challenge consumption and canonical device rotation are distinct transactions: each must reacquire the same canonical user/SID fences and recheck authority after any interleaving revocation or competing rotation.",
+    "permanent": true,
+    "code": "backend/services/jwt-session/dbsc-state.mts:75"
+  },
+  {
+    "annotation": "lockSessionDeviceAuthority:sessionFence",
+    "route": "POST /api/v1/auth/device-bound-sessions/refreshes",
+    "maxCount": 2,
+    "reason": "Challenge consumption and canonical device rotation are distinct transactions: each must reacquire the same canonical user/SID fences and recheck authority after any interleaving revocation or competing rotation.",
+    "permanent": true,
+    "code": "backend/services/jwt-session/dbsc-state.mts:75"
+  },
+  {
     "annotation": "lockSessionDeviceAuthority:userFence",
     "route": "POST /api/v1/app-attestation/attest",
     "maxCount": 2,
     "reason": "Atomic first-native upgrade admits the old browser authority and the replacement native SID in one transaction. Each canonical mint guard takes the same user fence; the second acquisition is reentrant and bounded to these two admissions.",
     "permanent": true,
     "code": "backend/services/jwt-session/native-upgrade.mts:20"
+  },
+  {
+    "annotation": "lockSessionDeviceAuthority:userFence",
+    "route": "POST /api/v1/auth/device-bound-sessions",
+    "maxCount": 2,
+    "reason": "Challenge consumption and canonical device rotation are distinct transactions: each must reacquire the same canonical user/SID fences and recheck authority after any interleaving revocation or competing rotation.",
+    "permanent": true,
+    "code": "backend/services/jwt-session/dbsc-state.mts:75"
+  },
+  {
+    "annotation": "lockSessionDeviceAuthority:userFence",
+    "route": "POST /api/v1/auth/device-bound-sessions/refreshes",
+    "maxCount": 2,
+    "reason": "Challenge consumption and canonical device rotation are distinct transactions: each must reacquire the same canonical user/SID fences and recheck authority after any interleaving revocation or competing rotation.",
+    "permanent": true,
+    "code": "backend/services/jwt-session/dbsc-state.mts:75"
   },
   {
     "annotation": "lockSurfaceOwnerDomains",
@@ -534,6 +566,30 @@
     "reason": "Atomic first-native upgrade reads and locks the current old browser authority, then the replacement SID row created by the joined native mint. These are two distinct rows required by the revocation-safe handoff.",
     "permanent": true,
     "code": "backend/services/jwt-session/native-upgrade.mts:20"
+  },
+  {
+    "annotation": "readSessionDeviceAuthority",
+    "route": "POST /api/v1/auth/device-bound-sessions",
+    "maxCount": 3,
+    "reason": "Browser proof verification first reads current authority without holding a database lock during signature verification. Challenge consumption locks and rechecks the binding, then canonical credential rotation takes its own lock and rechecks the current digest before spending its unforgeable one-use proof. All three reads are bounded to the same SID.",
+    "permanent": true,
+    "code": "backend/services/jwt-session/dbsc-proof.mts:81"
+  },
+  {
+    "annotation": "readSessionDeviceAuthority",
+    "route": "POST /api/v1/auth/device-bound-sessions/refreshes",
+    "maxCount": 3,
+    "reason": "Browser proof verification first reads current authority without holding a database lock during signature verification. Challenge consumption locks and rechecks the binding, then canonical credential rotation takes its own lock and rechecks the current digest before spending its unforgeable one-use proof. All three reads are bounded to the same SID.",
+    "permanent": true,
+    "code": "backend/services/jwt-session/dbsc-proof.mts:81"
+  },
+  {
+    "annotation": "readSessionDeviceAuthority",
+    "route": "POST /api/v1/auth/email-address/login",
+    "maxCount": 2,
+    "reason": "Credential mint locks and writes the durable authority; HTTPS browser registration advertising subsequently rechecks the committed fresh credential before issuing its single-use registration nonce.",
+    "permanent": true,
+    "code": "backend/services/jwt-session/dbsc-registration.mts:12"
   },
   {
     "annotation": "receiveOAuthAuthorizationCallback",
