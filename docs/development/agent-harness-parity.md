@@ -76,7 +76,7 @@ flowchart LR
 | CI            | Local agent only                                             | Scheduled / dispatch / shepherd                               | Out of scope while CI is being redone                             |
 
 Ambient Blackboard identity is owned by
-`dev/agent-session-id/`; transcript discovery
+`agent-blackboard`; transcript discovery
 uses `resolveTranscriptFile` from `vouchington-tooling/retrospective-transcript`.
 
 ## How Grok reuses Claude rules

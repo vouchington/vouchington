@@ -12,7 +12,6 @@ import { tokenizeShellWords } from './shell-tokenizer.mts'
  */
 export const PROTECTED_HOOK_DIR_PREFIXES = [
   'dev/codex-hooks/',
-  'dev/agent-session-id/',
   'dev/agent-policy/',
   // The policy module imports these validators, so they need the same protection.
   'dev/pr-description/',

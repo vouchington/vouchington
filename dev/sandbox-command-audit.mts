@@ -4,7 +4,7 @@ import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { parseArgs as nodeParseArgs } from 'node:util'
 
-import { isValidSessionId } from './agent-session-id/valid-id.mts'
+import { isValidSessionId } from 'agent-blackboard'
 import { resolveRepoRoots } from './sandbox-command-audit/repo-scope.mts'
 import { classifyAudit } from './sandbox-command-audit/classify.mts'
 import { formatReport, HEADER } from './sandbox-command-audit/report.mts'
