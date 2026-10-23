@@ -239,7 +239,7 @@ CREATE TABLE IF NOT EXISTS membership_purchase_intents (
   membership_provider_context_id UUID NOT NULL,
   provider_checkout_id TEXT, provider_checkout_url TEXT,
   expires_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP + INTERVAL '30 minutes',
-  launched_at TIMESTAMPTZ, failed_at TIMESTAMPTZ, failure_code TEXT,
+  launched_at TIMESTAMPTZ, failed_at TIMESTAMPTZ, expired_at TIMESTAMPTZ, failure_code TEXT,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CHECK ((provider_checkout_id IS NULL) = (provider_checkout_url IS NULL)),
@@ -247,6 +247,7 @@ CREATE TABLE IF NOT EXISTS membership_purchase_intents (
   CHECK (provider_checkout_id IS NULL OR (char_length(provider_checkout_id) BETWEEN 1 AND 255 AND provider_checkout_id = TRIM(provider_checkout_id))),
   CHECK (provider_checkout_url IS NULL OR char_length(provider_checkout_url) BETWEEN 1 AND 2048),
   CHECK (num_nonnulls(launched_at, failed_at) <= 1),
+  CHECK (expired_at IS NULL OR (launched_at IS NOT NULL AND failed_at IS NULL AND provider_checkout_id IS NOT NULL AND expired_at >= launched_at)),
   CHECK ((failed_at IS NULL) = (failure_code IS NULL)),
   CHECK (failure_code IS NULL OR (char_length(failure_code) BETWEEN 1 AND 255 AND failure_code = TRIM(failure_code))),
   CONSTRAINT fk_membership_purchase_intents__provider_product_context FOREIGN KEY (membership_provider_product_id, membership_product_id, membership_provider_context_id) REFERENCES membership_provider_products(id, membership_product_id, membership_provider_context_id) ON DELETE RESTRICT
@@ -278,9 +279,11 @@ CREATE INDEX IF NOT EXISTS idx_membership_purchase_intents__user_id ON membershi
 CREATE INDEX IF NOT EXISTS idx_membership_purchase_intents__active_user ON membership_purchase_intents (user_id, expires_at DESC) WHERE failed_at IS NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_purchase_intents__provider_product_id ON membership_purchase_intents (membership_provider_product_id, id DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_membership_purchase_intents__checkout_context ON membership_purchase_intents (provider_checkout_id, membership_provider_context_id)
+  WHERE provider_checkout_id IS NOT NULL;
 -- The cleanup cursor advances by the UUIDv7 key, while expiry remains an indexed candidate fact.
 CREATE INDEX IF NOT EXISTS idx_membership_purchase_intents__retention ON membership_purchase_intents (id) INCLUDE (expires_at)
-  WHERE launched_at IS NULL OR failed_at IS NOT NULL;
+  WHERE launched_at IS NULL OR failed_at IS NOT NULL OR user_id IS NULL OR expired_at IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_verifications (
@@ -1061,6 +1064,7 @@ CREATE INDEX IF NOT EXISTS idx_stripe_event_processing_work_items__claim ON stri
 CREATE INDEX IF NOT EXISTS idx_stripe_event_processing_work_items__retention ON stripe_event_processing_work_items (stripe_event_id)
   WHERE processed_at IS NOT NULL OR ignored_at IS NOT NULL;
 CREATE TYPE payment_operational_cleanup_kinds AS ENUM ('stripe_event_work', 'purchase_intent');
+COMMENT ON TYPE payment_operational_cleanup_kinds IS 'Independent persisted keyset streams for terminal Stripe work and abandoned purchase intent cleanup.';
 CREATE TABLE IF NOT EXISTS payment_operational_cleanup_cursors (
   kind payment_operational_cleanup_kinds PRIMARY KEY,
   cursor_id UUID,
@@ -1158,6 +1162,7 @@ COMMENT ON COLUMN membership_purchase_intents.provider_checkout_url IS 'Provider
 COMMENT ON COLUMN membership_purchase_intents.expires_at IS 'End of the bounded launch-admission window that prevents concurrent provider purchase starts.';
 COMMENT ON COLUMN membership_purchase_intents.launched_at IS 'When the launch payload was durably produced.';
 COMMENT ON COLUMN membership_purchase_intents.failed_at IS 'When launch creation reached a terminal failure.';
+COMMENT ON COLUMN membership_purchase_intents.expired_at IS 'When Stripe reported that a launched Checkout session expired without becoming a live subscription.';
 COMMENT ON COLUMN membership_purchase_intents.failure_code IS 'Stable provider launch failure code.';
 
 COMMENT ON TABLE membership_verifications IS 'Owner-scoped asynchronous provider-evidence verification requests and their durable recovery state.';

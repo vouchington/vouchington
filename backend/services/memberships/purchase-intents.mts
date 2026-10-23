@@ -32,6 +32,26 @@ export class MembershipPurchaseIneligibleError extends Error {
   }
 }
 
+export async function expireStripeMembershipPurchaseIntentForCheckout(options: {
+  checkoutId: string
+  environment: 'test' | 'production'
+  applicationId: string
+}): Promise<void> {
+  await write(sql`/* expireStripeMembershipPurchaseIntentForCheckout */
+    UPDATE membership_purchase_intents intent
+    SET expired_at = CURRENT_TIMESTAMP
+    FROM membership_provider_contexts context
+    WHERE intent.provider_checkout_id = ${options.checkoutId}
+      AND intent.membership_provider_context_id = context.id
+      AND context.provider = 'stripe'
+      AND context.environment = ${options.environment}
+      AND context.application_id = ${options.applicationId}
+      AND intent.launched_at IS NOT NULL
+      AND intent.failed_at IS NULL
+      AND intent.expired_at IS NULL
+  `)
+}
+
 export async function getStripePurchaseIntentOwner(options: {
   purchaseIntentId: string
   environment: 'test' | 'production'
@@ -51,6 +71,7 @@ export async function getStripePurchaseIntentOwner(options: {
       AND mapping.provider_product_id = ${options.providerProductId}
       AND intent.launched_at IS NOT NULL
       AND intent.failed_at IS NULL
+      AND intent.expired_at IS NULL
     LIMIT 1`)
   return rows[0]?.user_id ?? null
 }

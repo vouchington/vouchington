@@ -3,6 +3,7 @@ import {
   type StripeMembershipApplicationContext,
 } from '@services/memberships/create-types'
 import type { ingestStripeEvent } from '@services/stripe/events'
+import { expireStripeMembershipPurchaseIntentForCheckout } from '@services/memberships/purchase-intents'
 import {
   handleCheckoutSessionCompleted,
   handleCheckoutSessionPaymentFailed,
@@ -85,6 +86,13 @@ export async function handleStripeEvent(
       await handleCheckoutPaymentFailed(event.id, eventData, undefined, applicationContext)
       return 'processed'
     case 'checkout.session.expired':
+      if (eventData.mode === 'subscription' && typeof eventData.id === 'string') {
+        await expireStripeMembershipPurchaseIntentForCheckout({
+          checkoutId: eventData.id,
+          environment: event.livemode ? 'production' : 'test',
+          applicationId: applicationContext.applicationId,
+        })
+      }
       await onCheckoutAborted(event.id, eventData)
       return 'processed'
     case 'invoice.paid':

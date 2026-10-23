@@ -5,7 +5,7 @@ export const EXTRA_BOUNDED_TABLES = new Map<string, string>([
   ],
   [
     'membership_purchase_intents',
-    'Live launch replays remain; failed or unlaunched intents with expiry over 30 days ago and no verification reference are deleted by bounded UUIDv7 keyset cleanup.',
+    'Live subscription and native launch replays remain; unlaunched, failed, ownerless, or provider-expired intents with expiry over 30 days ago and no verification reference are deleted by bounded UUIDv7 keyset cleanup.',
   ],
   [
     'payment_operational_cleanup_cursors',
