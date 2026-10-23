@@ -164,6 +164,7 @@ describe('charge.refunded reconciliation receipt', () => {
       const enqueueSpy = vi
         .spyOn(refundEnqueues, 'enqueueReconcileMembershipRefundOperationBestEffort')
         .mockImplementation(data => {
+          // oxlint-disable-next-line no-mistakes/async-call-disposition -- the spy returns this promise to the awaiting caller (no-mistakes#2544)
           const enqueued = enqueueRefund(data)
           if (data.operationId === operation.id) ownedEnqueues.push(enqueued)
           return enqueued

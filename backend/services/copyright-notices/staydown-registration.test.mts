@@ -28,6 +28,7 @@ async function settledRegistration<T>(run: () => Promise<T>): Promise<T> {
   const spy = vi
     .spyOn(imageEnqueues, 'enqueueStaydownHash')
     .mockImplementation((imageId, source) => {
+      // oxlint-disable-next-line no-mistakes/async-call-disposition -- the spy returns this promise to the awaiting caller (no-mistakes#2544)
       const job = enqueue(imageId, source)
       pending.push(job)
       return job

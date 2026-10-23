@@ -182,6 +182,7 @@ async function awaitReportJudgementSideEffect<T>(run: () => Promise<T>): Promise
   const enqueueSpy = vi
     .spyOn(reportJudgementEnqueue, 'enqueueReportJudgement')
     .mockImplementation((...args) => {
+      // oxlint-disable-next-line no-mistakes/async-call-disposition -- the spy returns this promise to the awaiting caller (no-mistakes#2544)
       const result = Promise.resolve(enqueue(...args)).finally(() => {
         settled.resolve()
       })

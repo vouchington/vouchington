@@ -98,6 +98,7 @@ describe('updateCommunityAndSetArchiveState', () => {
     const purgeSpy = vi
       .spyOn(cachePurgeEnqueues, 'enqueueBulkPurgeCacheTags')
       .mockImplementation((tags, priority) => {
+        // oxlint-disable-next-line no-mistakes/async-call-disposition -- the spy returns this promise to the awaiting caller (no-mistakes#2544)
         const job = enqueuePurge(tags, priority)
         pendingPurges.push(job)
         return job

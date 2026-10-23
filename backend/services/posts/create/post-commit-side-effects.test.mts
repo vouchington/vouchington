@@ -180,6 +180,7 @@ describe('applyPostCommitSideEffects', () => {
     try {
       spy = vi.spyOn(purgeEnqueues, 'enqueueBulkPurgeCacheTags')
       spy.mockImplementation((tags, priority) => {
+        // oxlint-disable-next-line no-mistakes/async-call-disposition -- the spy returns this promise to the awaiting caller (no-mistakes#2544)
         if (!tags.includes(postTag(input.post.id))) return original(tags, priority)
         admitted.resolve()
         return release.promise
