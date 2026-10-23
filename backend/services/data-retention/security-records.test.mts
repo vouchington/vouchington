@@ -20,6 +20,7 @@ import {
   prepareTestOAuthRetentionRows,
 } from '@voucha/test-helpers/entities/oauth-retention'
 import {
+  createConcurrentTestFirstOAuthGrants,
   deleteTestNativeMintAudit,
   deleteTestNativeMintAuditForRetention,
   insertTestNativeMintAudit,
@@ -39,6 +40,18 @@ import { cleanupSecuritySourcePageInTransaction } from './security-record-page.m
 import { SOURCES, sourcePlan } from './security-record-plans.mts'
 
 describe('security record cleanup', () => {
+  it('records concurrent first grants without upgrading shared client locks', async () => {
+    const firstUser = await createTestUser()
+    const secondUser = await createTestUser()
+    const pending = await createTestPendingOAuthAuthorization(firstUser)
+    expect(
+      await createConcurrentTestFirstOAuthGrants(pending.client.client_id, [
+        firstUser.id,
+        secondUser.id,
+      ]),
+    ).toEqual({ grantCount: 2, markerCount: 1 })
+  })
+
   it('advances beyond a retained microsecond-keyed grant to the next eligible row', async () => {
     const user = await createTestUser()
     const pending = await createTestPendingOAuthAuthorization(user)
@@ -77,18 +90,19 @@ describe('security record cleanup', () => {
     })
     await using query = await beginTransaction()
     const plan = sourcePlan('oauth_clients', new Date())
-    const client = await query<{ id: string; first_granted_at: Date | null; aged: boolean }>(
-      `/* testNeverGrantedClientWithRequests:lock */ SELECT id, first_granted_at,
-         id < $2::uuid AS aged
-       FROM oauth_clients WHERE client_id = $1::text FOR UPDATE`,
+    const client = await query<{ id: string; never_granted: boolean; aged: boolean }>(
+      `/* testNeverGrantedClientWithRequests:lock */ SELECT client.id,
+         NOT EXISTS (SELECT 1 FROM oauth_client_grant_markers marker
+           WHERE marker.client_id = client.id) AS never_granted,
+         client.id < $2::uuid AS aged
+       FROM oauth_clients client WHERE client.client_id = $1::text FOR UPDATE`,
       [pending.client.client_id, getMinUUIDv7ForDate(plan.cutoffAt)],
     )
-    expect(client.rows[0]?.first_granted_at).toBeNull()
+    expect(client.rows[0]?.never_granted).toBe(true)
     expect(client.rows[0]?.aged).toBe(true)
     const deletion = await query(
       `/* testNeverGrantedClientWithRequests:delete */ DELETE FROM oauth_clients target
        WHERE target.id = $1::uuid AND target.id < $2::uuid
-         AND target.first_granted_at IS NULL
          AND ${plan.deletePredicate}`,
       [client.rows[0]!.id, getMinUUIDv7ForDate(plan.cutoffAt)],
     )
@@ -105,7 +119,6 @@ describe('security record cleanup', () => {
     const retired = await query(
       `/* testNeverGrantedClientWithRequests:retire */ DELETE FROM oauth_clients target
        WHERE target.id = $1::uuid AND target.id < $2::uuid
-         AND target.first_granted_at IS NULL
          AND ${plan.deletePredicate}`,
       [client.rows[0]!.id, getMinUUIDv7ForDate(plan.cutoffAt)],
     )

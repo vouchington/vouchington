@@ -28,6 +28,59 @@ export async function createTestOldOAuthConsent(input: {
   return { eventId, grantId }
 }
 
+/** Both transactions hold the same client SHARE lock before their first distinct grant inserts. */
+export async function createConcurrentTestFirstOAuthGrants(
+  publicClientId: string,
+  userIds: readonly [string, string],
+): Promise<{ grantCount: number; markerCount: number }> {
+  const { rows: clients } = await read<{ id: string }>(
+    `/* createConcurrentTestFirstOAuthGrants:client */ SELECT id FROM oauth_clients
+     WHERE client_id = $1::text`,
+    [publicClientId],
+  )
+  const clientId = clients[0]?.id
+  if (!clientId) throw new Error('OAuth client for concurrent first grants is missing')
+  await using first = await beginTransaction()
+  await using second = await beginTransaction()
+  await Promise.all(
+    [first, second].map(async query => {
+      await query(
+        `/* createConcurrentTestFirstOAuthGrants:share */ SELECT id FROM oauth_clients
+         WHERE id = $1::uuid FOR SHARE`,
+        [clientId],
+      )
+    }),
+  )
+  const results = await Promise.allSettled(
+    [first, second].map(async (query, index) => {
+      try {
+        await query(
+          `/* createConcurrentTestFirstOAuthGrants:insert */ INSERT INTO oauth_grants
+             (user_id, client_id, resource, scopes)
+           VALUES ($1::uuid, $2::uuid, 'https://test.voucha.ai/mcp',
+             ARRAY['mcp.user:read']::api_scopes[])`,
+          [userIds[index], clientId],
+        )
+        await query.commit()
+      } catch (err) {
+        await query.rollback()
+        throw err
+      }
+    }),
+  )
+  const failure = results.find(result => result.status === 'rejected')
+  if (failure?.status === 'rejected') throw failure.reason
+  const { rows } = await read<{ grant_count: number; marker_count: number }>(
+    `/* createConcurrentTestFirstOAuthGrants:counts */ SELECT
+       (SELECT count(*)::integer FROM oauth_grants WHERE client_id = $1::uuid
+         AND user_id = ANY($2::uuid[])) AS grant_count,
+       (SELECT count(*)::integer FROM oauth_client_grant_markers
+         WHERE client_id = $1::uuid) AS marker_count`,
+    [clientId, userIds],
+  )
+  return { grantCount: rows[0]!.grant_count, markerCount: rows[0]!.marker_count }
+}
+
 export async function deleteTestOldOAuthConsent(eventId: string, cutoff: Date): Promise<void> {
   await using query = await beginTransaction()
   await query(

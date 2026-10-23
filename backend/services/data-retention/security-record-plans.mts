@@ -106,11 +106,15 @@ export function sourcePlan(source: Source, now: Date): SourcePlan {
         table: 'oauth_clients',
         keyAt: 'target.created_at',
         cutoffAt: ninetyDaysAgo,
-        predicate: 'target.id < $1::uuid AND target.first_granted_at IS NULL',
+        // Scan aged clients by the primary-key cursor before checking the marker. Filtering by
+        // marker in this page could read an unbounded run of used clients to fill one LIMIT.
+        predicate: 'target.id < $1::uuid',
         // The locked parent is checked again by DELETE. Requests and grants otherwise cascade;
         // moderator actions otherwise receive an unbounded ON DELETE SET NULL update. OAuth
         // artifact retention drains requests in capped expiry pages before this client is eligible.
         deletePredicate: `NOT EXISTS (
+            SELECT 1 FROM oauth_client_grant_markers marker WHERE marker.client_id = target.id
+          ) AND NOT EXISTS (
             SELECT 1 FROM oauth_authorization_requests request
             WHERE request.client_id = target.id
           )
