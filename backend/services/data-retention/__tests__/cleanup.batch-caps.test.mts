@@ -56,6 +56,8 @@ function emptyScopedOptions(now: Date) {
     expiredContributionQuotaConsumptions: emptyWindow,
     expiredTopicImportAttempts: emptyWindow,
     terminalNotificationPushIntents: emptyWindow,
+    terminalStripeEventWork: emptyWindow,
+    abandonedMembershipPurchaseIntents: emptyWindow,
   }
 }
 

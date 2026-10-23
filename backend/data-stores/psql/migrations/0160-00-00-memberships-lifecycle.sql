@@ -278,6 +278,9 @@ CREATE INDEX IF NOT EXISTS idx_membership_purchase_intents__user_id ON membershi
 CREATE INDEX IF NOT EXISTS idx_membership_purchase_intents__active_user ON membership_purchase_intents (user_id, expires_at DESC) WHERE failed_at IS NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_purchase_intents__provider_product_id ON membership_purchase_intents (membership_provider_product_id, id DESC);
+-- The cleanup cursor advances by the UUIDv7 key, while expiry remains an indexed candidate fact.
+CREATE INDEX IF NOT EXISTS idx_membership_purchase_intents__retention ON membership_purchase_intents (id) INCLUDE (expires_at)
+  WHERE launched_at IS NULL OR failed_at IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_verifications (
@@ -1040,7 +1043,7 @@ CREATE TABLE IF NOT EXISTS stripe_event_processing_work_items (
   CHECK ((leased_at IS NULL) = (lease_expires_at IS NULL)),
   CHECK (lease_expires_at IS NULL OR lease_expires_at > leased_at)
 );
-COMMENT ON TABLE stripe_event_processing_work_items IS 'Processing and recovery state separate from immutable Stripe protocol events; retained with the event for exact replay.';
+COMMENT ON TABLE stripe_event_processing_work_items IS 'Processing and recovery state separate from immutable Stripe protocol events; terminal work expires after 30 days while the event remains for deduplication.';
 COMMENT ON COLUMN stripe_event_processing_work_items.stripe_event_id IS 'Inbound event being processed; cascades with its protocol record.';
 COMMENT ON COLUMN stripe_event_processing_work_items.lease_token IS 'Fencing token for the current admitted processing generation.';
 COMMENT ON COLUMN stripe_event_processing_work_items.leased_at IS 'When this worker acquired its processing lease.';
@@ -1055,6 +1058,21 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_stripe_events__stripe_event_id ON stripe_ev
 CREATE UNIQUE INDEX IF NOT EXISTS uq_stripe_event_processing_work_items__lease_token ON stripe_event_processing_work_items (lease_token);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_stripe_event_processing_work_items__claim ON stripe_event_processing_work_items (available_at, stripe_event_id) WHERE processed_at IS NULL AND ignored_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_stripe_event_processing_work_items__retention ON stripe_event_processing_work_items (stripe_event_id)
+  WHERE processed_at IS NOT NULL OR ignored_at IS NOT NULL;
+CREATE TYPE payment_operational_cleanup_kinds AS ENUM ('stripe_event_work', 'purchase_intent');
+CREATE TABLE IF NOT EXISTS payment_operational_cleanup_cursors (
+  kind payment_operational_cleanup_kinds PRIMARY KEY,
+  cursor_id UUID,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TRIGGER trigger_payment_operational_cleanup_cursors_updated_at BEFORE UPDATE ON payment_operational_cleanup_cursors
+FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+INSERT INTO payment_operational_cleanup_cursors (kind) VALUES ('stripe_event_work'), ('purchase_intent') ON CONFLICT DO NOTHING;
+COMMENT ON TABLE payment_operational_cleanup_cursors IS 'One persisted UUIDv7 keyset position per daily payment operational cleanup.';
+COMMENT ON COLUMN payment_operational_cleanup_cursors.kind IS 'Cleanup stream whose position this row stores.';
+COMMENT ON COLUMN payment_operational_cleanup_cursors.cursor_id IS 'Last scanned UUIDv7 id; NULL starts the next full pass.';
+COMMENT ON COLUMN payment_operational_cleanup_cursors.updated_at IS 'When this cleanup stream last checkpointed.';
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_stripe_events__subscription_id ON stripe_events (subscription_id, id DESC) WHERE subscription_id IS NOT NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

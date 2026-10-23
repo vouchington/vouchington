@@ -42,6 +42,8 @@ describe('runDataRetentionCleanup', () => {
       expiredContributionQuotaConsumptions: emptyWindow,
       expiredTopicImportAttempts: emptyWindow,
       terminalNotificationPushIntents: emptyWindow,
+      terminalStripeEventWork: emptyWindow,
+      abandonedMembershipPurchaseIntents: emptyWindow,
     })
 
     expect(result.retainedIdentityRoots).toEqual([])
@@ -59,6 +61,8 @@ describe('runDataRetentionCleanup', () => {
       expiredContributionQuotaConsumptions: { deleted: 0, hasMore: false },
       expiredTopicImportAttempts: { deleted: 0, hasMore: false },
       terminalNotificationPushIntents: { deleted: 0, hasMore: false },
+      terminalStripeEventWork: { deleted: 0, hasMore: false },
+      abandonedMembershipPurchaseIntents: { deleted: 0, hasMore: false },
     })
   }, 30_000)
 })

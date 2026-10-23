@@ -74,6 +74,8 @@ describe('cleanupAnalyticsLocalFiles', () => {
         expiredContributionQuotaConsumptions: emptyWindow,
         expiredTopicImportAttempts: emptyWindow,
         terminalNotificationPushIntents: emptyWindow,
+        terminalStripeEventWork: emptyWindow,
+        abandonedMembershipPurchaseIntents: emptyWindow,
       }),
     ).resolves.toEqual({
       retainedIdentityRoots: [],
@@ -90,6 +92,8 @@ describe('cleanupAnalyticsLocalFiles', () => {
       expiredContributionQuotaConsumptions: { deleted: 0, hasMore: false },
       expiredTopicImportAttempts: { deleted: 0, hasMore: false },
       terminalNotificationPushIntents: { deleted: 0, hasMore: false },
+      terminalStripeEventWork: { deleted: 0, hasMore: false, cursorId: null },
+      abandonedMembershipPurchaseIntents: { deleted: 0, hasMore: false, cursorId: null },
     })
   })
 

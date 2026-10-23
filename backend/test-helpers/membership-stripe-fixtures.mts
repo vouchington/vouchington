@@ -46,10 +46,11 @@ export function createTestStripeSubscription({
 
 export function toJobData(storedEvent: {
   id: string
-  lease_token: string
+  lease_token: string | null
   subscription_id: string | null
   is_live_mode: boolean
 }) {
+  if (storedEvent.lease_token === null) throw new Error('Stripe event has no processing work')
   return {
     stripeEventRecordId: storedEvent.id,
     leaseToken: storedEvent.lease_token,
