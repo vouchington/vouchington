@@ -156,3 +156,14 @@ export async function getTestTopicContentProjection(topicId: string): Promise<{
     SELECT content_updated_at, content_updated_by_id FROM topics WHERE id = ${topicId}`)
   return rows[0]!
 }
+
+/** Probe the append-only revision contract with an owned row from a schema test. */
+export async function updateTestTopicRevisionForGuard(id: string): Promise<void> {
+  await write(sql`/* updateTestTopicRevisionForGuard */
+    UPDATE topic_revisions SET revision_type = 'delete' WHERE id = ${id}`)
+}
+
+export async function deleteTestTopicRevisionForGuard(id: string): Promise<void> {
+  await write(sql`/* deleteTestTopicRevisionForGuard */
+    DELETE FROM topic_revisions WHERE id = ${id}`)
+}

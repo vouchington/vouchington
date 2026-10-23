@@ -48,10 +48,10 @@ Align bounds across tables joined by the same UUIDv7 parent key. Monitor default
 partition-status API and `pg_total_relation_size()`.
 
 For a content-history range, record its parent table, child name, and both UUIDv7 bounds at split
-time. Run the owner command from a backend checkout with its normal database connection:
+time. Run the owner command from the repository root with its normal backend database connection:
 
 ```sh
-node backend/data-stores/psql/retire-history-range.mts <table> <partition> <from-uuidv7> <to-uuidv7>
+pnpm run db:retire-history-range -- <table> <partition> <from-uuidv7> <to-uuidv7>
 ```
 
 The command accepts only declared content-history parents. It requires the live catalog to match

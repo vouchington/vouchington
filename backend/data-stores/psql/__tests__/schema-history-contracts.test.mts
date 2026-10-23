@@ -1,4 +1,11 @@
 import { afterAll, describe, expect, it } from 'vitest'
+import { createTestUser, insertTestTopic } from '@voucha/test-helpers'
+import {
+  deleteTestTopicRevisionForGuard,
+  insertTestOldTopicContentRevision,
+  insertTestTopicNonContentRevision,
+  updateTestTopicRevisionForGuard,
+} from '@voucha/test-helpers/entities/content-history'
 import { onGracefulShutdown } from '../index.mts'
 import {
   getHistoryTablesWithoutMutationGuards,
@@ -12,6 +19,30 @@ describe('history storage contracts', () => {
   it('guards every current revision and change ledger against mutation', async () => {
     const rows = await getHistoryTablesWithoutMutationGuards()
     expect(rows).toEqual([])
+  })
+
+  it('rejects revision rewrites and deletion of current or aged latest topic revisions', async () => {
+    const administrator = await createTestUser({ administrator: true })
+    const topicId = await insertTestTopic({
+      name: `guarded-topic-${crypto.randomUUID()}`,
+      slug: `guarded-topic-${crypto.randomUUID()}`,
+      createdById: administrator.id,
+    })
+    const oldLatestId = await insertTestOldTopicContentRevision({
+      topicId,
+      revisedById: administrator.id,
+      occurredAt: new Date('2024-01-01T00:00:00.000Z'),
+    })
+    await expect(deleteTestTopicRevisionForGuard(oldLatestId)).rejects.toMatchObject({
+      code: '23514',
+    })
+    const revisionId = await insertTestTopicNonContentRevision(topicId, administrator.id)
+    await expect(updateTestTopicRevisionForGuard(revisionId)).rejects.toMatchObject({
+      code: '23514',
+    })
+    await expect(deleteTestTopicRevisionForGuard(revisionId)).rejects.toMatchObject({
+      code: '23514',
+    })
   })
 
   it('retains change actors and erases only revision author links', async () => {
