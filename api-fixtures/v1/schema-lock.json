@@ -54,7 +54,7 @@
     },
     "DELETE:/api/v1/report-integrity/penalties/:id": {
       "fixtureIds": ["native.moderation.report-integrity.penalties.revoke"],
-      "hash": "46134781a0c930db743424aba7713894ee9433692a0b7374e18cef966946dc1d"
+      "hash": "565b3ed06b57a1cbde7f53e993c3a2bd2a25a74bc2d0bf8cca96cb3b0bb9858a"
     },
     "DELETE:/api/v1/users/:idOrSlug": {
       "fixtureIds": ["native.users.delete.default"],
@@ -62,7 +62,7 @@
     },
     "DELETE:/api/v1/vote-integrity/penalties/:id": {
       "fixtureIds": ["native.moderation.vote-integrity.penalties.revoke"],
-      "hash": "506c822b0f01069314c3222349a95dfee6cf08e9f2581ddf60131cd6f8c32112"
+      "hash": "e07e964ea52659a001b9526814e7d97d09ac27466ae617f6bafc618478779877"
     },
     "GET:/api/v1/admin/ai-costs": {
       "fixtureIds": [
@@ -780,11 +780,15 @@
         "native.moderation.report-integrity.penalties.page-2",
         "native.moderation.report-integrity.penalties.revoked"
       ],
-      "hash": "9e32e0d3138dfd6c2769d4dc666d60e9176db250d1e08eabb4d055489499d4ff"
+      "hash": "f5e1e0467a69bb0bc1f3c26a1cbdf9465c9fd7ef508d41eb042ef0d4e823e7f1"
     },
     "GET:/api/v1/report-integrity/penalties/:id": {
       "fixtureIds": ["native.moderation.report-integrity.penalties.get"],
-      "hash": "8a3f8a50ce36add82d19f02af1fc17042e87f14b70593754083c47b21c3c0208"
+      "hash": "ca1cad77c4cee673add04f1153390e130352c64eb3deaff41d515124652a654c"
+    },
+    "GET:/api/v1/report-integrity/penalties/review-due": {
+      "fixtureIds": ["native.moderation.report-integrity.penalties.review-due"],
+      "hash": "ea987fe13783732a174a0455bc2d82d9a239c9d972c8297ff97ca5df3ff74cad"
     },
     "GET:/api/v1/reports#clustered": {
       "fixtureIds": [
@@ -1007,11 +1011,15 @@
         "native.moderation.vote-integrity.penalties.page-2",
         "native.moderation.vote-integrity.penalties.revoked"
       ],
-      "hash": "112a8af46fd50259846912ed723550c95817e9bae7cf9cf349a23108db0ef147"
+      "hash": "12633b4fab41bb2c1f965f44e00e7b8c8396a2c3651cd07eea8affb83196b376"
     },
     "GET:/api/v1/vote-integrity/penalties/:id": {
       "fixtureIds": ["native.moderation.vote-integrity.penalties.get"],
-      "hash": "506c822b0f01069314c3222349a95dfee6cf08e9f2581ddf60131cd6f8c32112"
+      "hash": "e07e964ea52659a001b9526814e7d97d09ac27466ae617f6bafc618478779877"
+    },
+    "GET:/api/v1/vote-integrity/penalties/review-due": {
+      "fixtureIds": ["native.moderation.vote-integrity.penalties.review-due"],
+      "hash": "c70e2debad80124d394e918a3b206ec5dc307a2ba33e52a0de80259b36b60c5f"
     },
     "PATCH:/api/v1/appeals/:id#staff": {
       "fixtureIds": ["native.moderation.appeals.update.default"],
@@ -1451,6 +1459,10 @@
       "fixtureIds": ["native.moderation.report-integrity.penalty"],
       "hash": "840544471687e948346e898e5b29d4d062332f3fe6d3d371970910dce1ed4170"
     },
+    "POST:/api/v1/report-integrity/penalties/:id/reviews": {
+      "fixtureIds": ["native.moderation.report-integrity.penalties.review"],
+      "hash": "ca1cad77c4cee673add04f1153390e130352c64eb3deaff41d515124652a654c"
+    },
     "POST:/api/v1/reports/:reportId/judgements": {
       "fixtureIds": ["native.moderation.report-judgement.default"],
       "hash": "e858196b2dbd42699e4e515febd51c36eae27df00c7a92ac542bf32cda25fcb4"
@@ -1490,6 +1502,10 @@
     "POST:/api/v1/vote-integrity/flags/:id/penalties": {
       "fixtureIds": ["native.moderation.vote-integrity.penalty"],
       "hash": "b15ae76c05e4434db016e89a4379b563a188d9b8bf2dd6b28108092c997a571e"
+    },
+    "POST:/api/v1/vote-integrity/penalties/:id/reviews": {
+      "fixtureIds": ["native.moderation.vote-integrity.penalties.review"],
+      "hash": "e07e964ea52659a001b9526814e7d97d09ac27466ae617f6bafc618478779877"
     },
     "PUT:/api/v1/admin/classifiers/:classifierId/candidates/:candidateId/threshold": {
       "fixtureIds": ["engineering.admin.classifiers.threshold.set"],
@@ -2323,31 +2339,39 @@
     },
     "native.moderation.report-integrity.penalties.active": {
       "fixtureIds": ["native.moderation.report-integrity.penalties.active"],
-      "hash": "7256479600ff86d0b8eaffbb3d747b6270ba3d63af7311c8e92d3156aacac0c4"
+      "hash": "2f23c9d147ee7ddae743a490b76a72a68927ffa309981e04b9fcfcc7e570214b"
     },
     "native.moderation.report-integrity.penalties.all": {
       "fixtureIds": ["native.moderation.report-integrity.penalties.all"],
-      "hash": "75f05015bcb01286136ad643e3efb51574e9434eaf368ac93bc4a1473bee2323"
+      "hash": "62766e1312e55e79c3cbcf08b0ca2c9da34a9b32d1edd5b57dc30f3f7387f257"
     },
     "native.moderation.report-integrity.penalties.default": {
       "fixtureIds": ["native.moderation.report-integrity.penalties.default"],
-      "hash": "75f05015bcb01286136ad643e3efb51574e9434eaf368ac93bc4a1473bee2323"
+      "hash": "62766e1312e55e79c3cbcf08b0ca2c9da34a9b32d1edd5b57dc30f3f7387f257"
     },
     "native.moderation.report-integrity.penalties.get": {
       "fixtureIds": ["native.moderation.report-integrity.penalties.get"],
-      "hash": "062adcde5b49c70f309edf7746aa06081b621cb4710afc6d73c515e9c3d8885a"
+      "hash": "2cded4f473da2d93ec56098bee6139afe2ca1490364d9334b99593d4260b3ea6"
     },
     "native.moderation.report-integrity.penalties.page-2": {
       "fixtureIds": ["native.moderation.report-integrity.penalties.page-2"],
-      "hash": "7256479600ff86d0b8eaffbb3d747b6270ba3d63af7311c8e92d3156aacac0c4"
+      "hash": "2f23c9d147ee7ddae743a490b76a72a68927ffa309981e04b9fcfcc7e570214b"
+    },
+    "native.moderation.report-integrity.penalties.review": {
+      "fixtureIds": ["native.moderation.report-integrity.penalties.review"],
+      "hash": "a5248e5b3f35449971a26c8675b97730ca2b111f5ecb4fe92318f9f5a17c2457"
+    },
+    "native.moderation.report-integrity.penalties.review-due": {
+      "fixtureIds": ["native.moderation.report-integrity.penalties.review-due"],
+      "hash": "375f4aba1cdd03fb9bcbae9bea6e6d6fd1742945312b32dfeae97e98721d7cf3"
     },
     "native.moderation.report-integrity.penalties.revoke": {
       "fixtureIds": ["native.moderation.report-integrity.penalties.revoke"],
-      "hash": "b8d90a050c681a4c100b1767915517efefa39d27b826ff3d6665c37226bf0c7c"
+      "hash": "2ee04e839b31b6a5ccbf2cbdfb76363ad029affb0ad36415d4174abc79c919ad"
     },
     "native.moderation.report-integrity.penalties.revoked": {
       "fixtureIds": ["native.moderation.report-integrity.penalties.revoked"],
-      "hash": "14c7765e72e783e4fca70e488b4b37761e78c80049c4603af41a02c091d04f4f"
+      "hash": "42e2a8088de8edd0913f3a1cf4ac48826af8a0ae6d4a4d6ae5a069df3df5b12a"
     },
     "native.moderation.report-integrity.penalty": {
       "fixtureIds": ["native.moderation.report-integrity.penalty"],
@@ -2415,31 +2439,39 @@
     },
     "native.moderation.vote-integrity.penalties.active": {
       "fixtureIds": ["native.moderation.vote-integrity.penalties.active"],
-      "hash": "b688c518ddb3d66a61c8767d27debfccaa35ab1079a18760005f3fce3437515b"
+      "hash": "ff8bf2c98e592557c00773bea857598c65c8d6c8bddb2e19cb2d82729fb1e1cb"
     },
     "native.moderation.vote-integrity.penalties.all": {
       "fixtureIds": ["native.moderation.vote-integrity.penalties.all"],
-      "hash": "05d94ba7af48bb581d1d2d4586e597304b4ff9d68eb7eabe351e9df3d526bf0a"
+      "hash": "4e7a4a2f842ce7c68de75ad73b6cf871113c49e507474c8b23e609854af2776e"
     },
     "native.moderation.vote-integrity.penalties.default": {
       "fixtureIds": ["native.moderation.vote-integrity.penalties.default"],
-      "hash": "05d94ba7af48bb581d1d2d4586e597304b4ff9d68eb7eabe351e9df3d526bf0a"
+      "hash": "4e7a4a2f842ce7c68de75ad73b6cf871113c49e507474c8b23e609854af2776e"
     },
     "native.moderation.vote-integrity.penalties.get": {
       "fixtureIds": ["native.moderation.vote-integrity.penalties.get"],
-      "hash": "efbe757d3b728a7292ed3503ddbd777843bb944117cffc7b86257a4606b2cff5"
+      "hash": "07f59bf3da9bd4143e26039fffce724a4fe66c62532f1ac8a51a8c1c106e1998"
     },
     "native.moderation.vote-integrity.penalties.page-2": {
       "fixtureIds": ["native.moderation.vote-integrity.penalties.page-2"],
-      "hash": "55dc6794f5ec550b5718b1eeb18fde2ebf3880a54f6f5beda4356df53a0af34e"
+      "hash": "78cc080b165ff2225062e327402743ecb28467f9b52bf4a8587d76e8e88d6b8d"
+    },
+    "native.moderation.vote-integrity.penalties.review": {
+      "fixtureIds": ["native.moderation.vote-integrity.penalties.review"],
+      "hash": "d8a57cf8d144460db73b5a352f268f9f16e02c9c1a2a7fb5fd23f068b07c7476"
+    },
+    "native.moderation.vote-integrity.penalties.review-due": {
+      "fixtureIds": ["native.moderation.vote-integrity.penalties.review-due"],
+      "hash": "8eb2e59d0e89572fa4b86c30a7f4b2c52848f2b2d8263b677eff93cee1a8e783"
     },
     "native.moderation.vote-integrity.penalties.revoke": {
       "fixtureIds": ["native.moderation.vote-integrity.penalties.revoke"],
-      "hash": "595fcb879c7353ed1885eb8498a74c47132fda4b308f2cc23e2318ed14d3e813"
+      "hash": "6e664e9ecb11055b7a4c928f9f8aa13bf522ddbc4209b2078b5e74d827a5ab38"
     },
     "native.moderation.vote-integrity.penalties.revoked": {
       "fixtureIds": ["native.moderation.vote-integrity.penalties.revoked"],
-      "hash": "e765665839d6974b205d2003c6f39abe5d8efce559d5b013a6989e061e16693e"
+      "hash": "6f1ba273e58bc057201df96d86b61bfab02f55874240aeedbe0fd9f4b9445494"
     },
     "native.moderation.vote-integrity.penalty": {
       "fixtureIds": ["native.moderation.vote-integrity.penalty"],

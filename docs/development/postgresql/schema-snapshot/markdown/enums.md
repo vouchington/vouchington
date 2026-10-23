@@ -985,24 +985,6 @@
 - `reports`
 - `post_page`
 
-## `moderation_record_cleanup_kinds`
-
-- `reports`
-- `cases`
-- `appeals`
-- `disputes`
-- `actions`
-- `training_feedbacks`
-- `judgements`
-- `integrity_flags`
-- `report_penalties`
-- `vote_penalties`
-- `warnings`
-- `suspensions`
-- `bans`
-- `notes`
-- `applications`
-
 ## `moderation_report_entity_types`
 
 - `rss_feed_item`
