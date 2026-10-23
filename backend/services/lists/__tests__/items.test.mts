@@ -13,6 +13,7 @@ import type { PrivateUser } from '@voucha/types/entities/user'
 import { createList } from '../lists.mts'
 import { addListItem, removeListItem, searchListItems } from '../items.mts'
 import { markRead } from '../../read-states/mutations.mts'
+import { updateRssFeedById } from '../../rss-feeds/update.mts'
 
 describe('items service', () => {
   let user: PrivateUser
@@ -92,6 +93,29 @@ describe('items service', () => {
   })
 
   describe('searchListItems', () => {
+    it('hides a feed item after its only source feed is disabled', async () => {
+      const list = await createList(user.id, WEB_PROVENANCE, {
+        name: `Disabled feed ${createRandomString(8)}`,
+      })
+      const topicId = await insertTestTopic({
+        name: `Disabled feed ${createRandomString(8)}`,
+        slug: `disabled-feed-${createRandomString(8)}`,
+        createdById: user.id,
+      })
+      const feedId = await insertTestRssFeed({
+        topicId,
+        title: `Disabled ${createRandomString(8)}`,
+      })
+      const item = await createTestRssFeedItemWithUrl(feedId)
+      await addListItem(list.id, 'rss_feed_item', item.id)
+      expect((await searchListItems(list.id)).results.map(row => row.entity_id)).toContain(item.id)
+
+      await updateRssFeedById(feedId, { is_enabled: false })
+      expect((await searchListItems(list.id)).results.map(row => row.entity_id)).not.toContain(
+        item.id,
+      )
+    })
+
     it('returns items for a list', async () => {
       const { results } = await searchListItems(listId)
       expect(results.length).toBeGreaterThanOrEqual(1)

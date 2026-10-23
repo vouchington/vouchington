@@ -678,6 +678,7 @@
 {"id":"copy.extracted.comments.deleteCommentButton.failedToDeleteComment_c65a5314","value":"Impossible de supprimer le commentaire"},
 {"id":"copy.extracted.communities.addCommunityListItemForm.addLabel_511a3a5d","value":"Ajouter {label}"},
 {"id":"copy.extracted.communities.addCommunityListItemForm.failedToAddLabel_22332393","value":"Impossible d'ajouter {label}"},
+{"id":"copy.extracted.communities.addCommunityListItemForm.feedLimitReached_f93c20b1","value":"Cette liste peut contenir jusqu’à {limit} flux. Supprimez des flux jusqu’à passer sous la limite, puis réessayez."},
 {"id":"copy.extracted.communities.addCommunityListItemForm.labelAddedToList_6fb6fe6e","value":"{label} ajouté à la liste"},
 {"id":"copy.extracted.communities.addCommunityListItemForm.searchAndSelectAnItemTo_70e3aeeb","value":"Recherchez et sélectionnez un élément pour l'ajouter à cette liste communautaire."},
 {"id":"copy.extracted.communities.applicationForm.anythingElseYouWouldLikeTo_b7565a0d","value":"Quelque chose d'autre que vous aimeriez partager..."},

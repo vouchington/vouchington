@@ -11,6 +11,7 @@ import type { PrivateUser } from '@services/users/types'
 import { createTopicClaim } from './create.mts'
 import { adminVerifyTopicClaim, rejectTopicClaim } from './admin-verify.mts'
 import { submitTopicClaimForManualReview } from './submit-for-manual-review.mts'
+import { requireTopicClaimOnTopic } from './require-on-topic.mts'
 
 describe('createTopicClaim', () => {
   let claimant: PrivateUser
@@ -172,7 +173,11 @@ describe('createTopicClaim', () => {
       claimedRole: 'Issuer',
       evidence: 'Original evidence',
     })
-    await submitTopicClaimForManualReview(user.id, created.id, 'Review evidence')
+    await submitTopicClaimForManualReview(
+      user.id,
+      await requireTopicClaimOnTopic(tid, created.id),
+      'Review evidence',
+    )
 
     const { claim, isDuplicate } = await createTopicClaim(user.id, {
       topicId: tid,

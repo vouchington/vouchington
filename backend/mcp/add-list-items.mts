@@ -21,7 +21,7 @@ export type ListItemRef = { item_type: ListItemType; entity: string }
 export type AddedListItem = {
   item_type: ListItemType
   entity: string
-  status: 'added' | 'not_found' | 'forbidden'
+  status: 'added' | 'not_found' | 'forbidden' | 'ineligible'
   list_item?: ListItem
   error?: string
 }
@@ -61,7 +61,7 @@ export async function addVisibleListItems(
   ])
   const postCandidates = postIds.filter((id): id is string => id !== null)
   const feedCandidates = feedIds.filter((id): id is string => id !== null)
-  const [{ allowedIds, forbiddenIds }, allowedFeeds] = await Promise.all([
+  const [{ allowedIds, forbiddenIds, ineligibleIds }, allowedFeeds] = await Promise.all([
     filterListablePostIds(entityRelationViewerFor(currentUser), authority, postCandidates),
     filterListableRssFeedItemIds(feedCandidates),
   ])
@@ -71,6 +71,10 @@ export async function addVisibleListItems(
     const id = item.item_type === 'post' ? postIds[index] : feedIds[index]
     if (item.item_type === 'post' && id && forbiddenIds.has(id)) {
       results.push({ ...item, status: 'forbidden', error: 'Forbidden' })
+      continue
+    }
+    if (item.item_type === 'post' && id && ineligibleIds.has(id)) {
+      results.push({ ...item, status: 'ineligible', error: "Post can't be added to a list" })
       continue
     }
     const allowed =

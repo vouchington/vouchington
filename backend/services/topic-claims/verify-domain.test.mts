@@ -4,6 +4,7 @@ import {
   insertTestTopic,
   insertTestUrlHostname,
   softDeleteTopic,
+  getTestTopicClaimVerificationState,
 } from '@voucha/test-helpers'
 import { mergeTopicAliases } from '../topics/merge-aliases.mts'
 import { getTopicByAny } from '../topics/get.mts'
@@ -13,7 +14,12 @@ import { revokeTopicClaim } from './revoke.mts'
 import { issueDomainVerificationToken } from './generate-verification-token.mts'
 import { verifyTopicClaimDomain } from './verify-domain.mts'
 import { TOPIC_CLAIM_DNS_TXT_PREFIX } from './config.mts'
-import { getTopicClaimById } from './get.mts'
+import { requireTopicClaimOnTopic } from './require-on-topic.mts'
+
+async function issueClaimToken(currentUserId: string, claimId: string, topicId: string) {
+  const context = await requireTopicClaimOnTopic(topicId, claimId)
+  return issueDomainVerificationToken(currentUserId, context)
+}
 
 async function mergeClaimTopic(
   sourceId: string,
@@ -47,7 +53,7 @@ async function makeClaimWithToken() {
     claimedRole: 'Issuer',
     evidence: '',
   })
-  const tokenResult = await issueDomainVerificationToken(claimant.id, claim.id)
+  const tokenResult = await issueClaimToken(claimant.id, claim.id, topicId)
   return { claim, claimant, creator, staff, tokenResult, hostname }
 }
 
@@ -55,8 +61,10 @@ describe('verifyTopicClaimDomain', () => {
   const resolveTxtRecords = vi.fn<() => Promise<string[]>>()
   const fetchWellKnownToken = vi.fn<() => Promise<string | null>>()
 
-  function verifyClaim(currentUserId: string, claimId: string) {
-    return verifyTopicClaimDomain(currentUserId, claimId, {
+  async function verifyClaim(currentUserId: string, claimId: string) {
+    const stored = await getTestTopicClaimVerificationState(claimId)
+    const context = await requireTopicClaimOnTopic(stored?.topic_id ?? '', claimId)
+    return verifyTopicClaimDomain(currentUserId, context, {
       resolveTxtRecords,
       fetchWellKnownToken,
     })
@@ -118,7 +126,7 @@ describe('verifyTopicClaimDomain', () => {
     })
     await mergeClaimTopic(sourceId, destinationId, creator)
 
-    const tokenResult = await issueDomainVerificationToken(claimant.id, claim.id)
+    const tokenResult = await issueClaimToken(claimant.id, claim.id, sourceId)
 
     expect(tokenResult.rawToken).toMatch(/^voucha-site-verification=/)
     expect(tokenResult.dnsInstructions.hostname).toBe(
@@ -172,7 +180,7 @@ describe('verifyTopicClaimDomain', () => {
     })
 
     await expect(verifyClaim(claimant.id, claim.id)).rejects.toMatchObject({ status: 409 })
-    const stored = await getTopicClaimById(claim.id)
+    const stored = await getTestTopicClaimVerificationState(claim.id)
     expect(stored?.rejected_at).not.toBeNull()
     expect(stored?.verified_at).toBeNull()
   })
@@ -182,7 +190,7 @@ describe('verifyTopicClaimDomain', () => {
     const other = await createTestUser()
 
     await expect(verifyClaim(other.id, claim.id)).rejects.toMatchObject({ status: 404 })
-    await expect(issueDomainVerificationToken(other.id, claim.id)).rejects.toMatchObject({
+    await expect(issueClaimToken(other.id, claim.id, claim.topic_id)).rejects.toMatchObject({
       status: 404,
     })
   })

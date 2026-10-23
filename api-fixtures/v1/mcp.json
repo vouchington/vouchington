@@ -15447,7 +15447,7 @@
                           },
                           "status": {
                             "type": "string",
-                            "enum": ["added", "not_found", "forbidden"]
+                            "enum": ["added", "not_found", "forbidden", "ineligible"]
                           }
                         },
                         "required": ["item_type", "entity", "status"],
@@ -25362,7 +25362,7 @@
           "tool": {
             "name": "read_my_topic_claims",
             "title": "Read My Topic Claims",
-            "description": "list: List the caller’s topic claims, including id, topic_id, and state.\nget: Read the caller’s topic claim by topic id or slug and claim_id. Another claimant’s claim is not found.",
+            "description": "list: List a page of the caller’s topic claims with state. Continue with page_info.end_cursor; optionally filter to topic_ids and live verified claims.\nget: Read a topic claim by topic id or slug and claim_id. Another claimant’s claim is not found unless the caller is moderation staff.",
             "inputSchema": {
               "type": "object",
               "oneOf": [
@@ -25374,7 +25374,28 @@
                     },
                     "arguments": {
                       "type": "object",
-                      "properties": {},
+                      "properties": {
+                        "limit": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "description": "Page size; the server clamps it."
+                        },
+                        "after": {
+                          "type": "string",
+                          "description": "Opaque cursor from the previous page."
+                        },
+                        "topic_ids": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "maxItems": 100
+                        },
+                        "verified_only": {
+                          "type": "boolean"
+                        }
+                      },
                       "required": [],
                       "additionalProperties": false
                     }
@@ -25417,14 +25438,44 @@
                 {
                   "additionalProperties": false,
                   "properties": {
-                    "claims": {
+                    "page_info": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "end_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "has_next_page": {
+                          "type": "boolean"
+                        },
+                        "start_cursor": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        }
+                      },
+                      "required": ["end_cursor", "has_next_page", "start_cursor"],
+                      "type": "object"
+                    },
+                    "results": {
                       "items": {
                         "$ref": "#/$defs/S1"
                       },
                       "type": "array"
                     }
                   },
-                  "required": ["claims"],
+                  "required": ["results", "page_info"],
                   "type": "object"
                 },
                 {

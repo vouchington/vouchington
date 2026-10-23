@@ -4,16 +4,15 @@ import type { EntityRelationViewer } from '@services/entity-relations/viewer'
 import { invalidate } from '@services/entity-cache/invalidate'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import type { ManageableList } from './manage.mts'
+import { getCommunityListFeedLimit, getListImportLimit } from './import-config.mts'
 
 const IMPORT_FEED_ITEM_LIMIT = 20
-
-/** Newest community-list posts copied in one import. `order_index` is a manual position, not recency. */
-export const IMPORT_POST_LIMIT = 500
 
 export function importCommunityListPostsSourceSql(
   targetListId: string,
   communityId: string,
   viewer: EntityRelationViewer,
+  limit: number,
   delegated?: { grantedScopes: readonly string[]; credentialOwnerId: string },
 ): SQLStatement {
   const statement = sql`/* importCommunityListPostsSource */
@@ -28,7 +27,7 @@ export function importCommunityListPostsSourceSql(
     WHERE item.community_id = ${communityId}::uuid
       AND item.removed_at IS NULL
       AND `
-  const eligibility = buildObjectPostAccessFilter('candidate_post', 'access_post', viewer, 'named')
+  const eligibility = buildObjectPostAccessFilter('candidate_post', 'access_post', viewer, 'listed')
   statement.append(eligibility ?? sql`TRUE`)
   if (delegated) {
     const ownsPrivate = delegated.grantedScopes.includes('post-relations.owned-private:write')
@@ -44,33 +43,39 @@ export function importCommunityListPostsSourceSql(
   }
   statement.append(sql`
     ORDER BY item.id DESC
-    LIMIT ${IMPORT_POST_LIMIT}`)
+    LIMIT ${limit}`)
   return statement
 }
 
 export const importCommunityListFeedItemsSourceSql = `/* importCommunityListFeedItemsSource */
   SELECT $1::uuid, rfi.id
-  FROM community_list_rss_feeds item
+  FROM (
+    SELECT rss_feed_id
+    FROM community_list_rss_feeds
+    WHERE community_id = $2 AND removed_at IS NULL
+    ORDER BY rss_feed_id
+    LIMIT $5
+  ) item
   JOIN rss_feeds rf ON rf.id = item.rss_feed_id
     AND rf.deleted_at IS NULL
     AND rf.is_enabled = true
   JOIN LATERAL (
-    SELECT rfi2.id
+    SELECT rfis.rss_feed_item_id, rfis.published_at
     FROM rss_feed_item_sources rfis
-    JOIN rss_feed_items rfi2 ON rfi2.id = rfis.rss_feed_item_id AND rfi2.deleted_at IS NULL
     WHERE rfis.rss_feed_id = item.rss_feed_id
-    ORDER BY rfi2.published_at DESC
+      AND rfis.published_at IS NOT NULL
+    ORDER BY rfis.published_at DESC, rfis.rss_feed_item_id DESC
     LIMIT $3
-  ) rfi ON true
-  WHERE item.community_id = $2
-    AND item.removed_at IS NULL
-  ORDER BY $1::uuid, rfi.id`
+  ) source ON true
+  JOIN rss_feed_items rfi ON rfi.id = source.rss_feed_item_id AND rfi.deleted_at IS NULL
+  ORDER BY source.published_at DESC, rfi.id DESC
+  LIMIT $4`
 
 /**
  * Copies a community's posts and feed items into a list the caller already loaded through
- * `getManageableList`, which has answered the 404 and 403 for it. Posts use the same named-scope
- * eligibility as adding one post. A delegated copy also drops a private root the items path would
- * refuse. Only the newest `IMPORT_POST_LIMIT` qualify.
+ * `getManageableList`, which has answered the 404 and 403 for it. Posts use list-read discovery
+ * eligibility. A delegated copy also drops a private root the items path would refuse. Each
+ * source is bounded by the same runtime limit.
  */
 export async function importCommunityList(
   targetList: ManageableList,
@@ -85,10 +90,12 @@ export async function importCommunityList(
   },
 ): Promise<{ posts: number; items: number }> {
   const targetListId = targetList.id
+  const limit = getListImportLimit()
   const postsSource = importCommunityListPostsSourceSql(
     targetListId,
     communityId,
     viewer,
+    limit,
     delegated,
   )
   const insertPosts = sql`/* importCommunityList:posts */
@@ -105,7 +112,7 @@ export async function importCommunityList(
     ${importCommunityListFeedItemsSourceSql}
     ON CONFLICT (user_list_id, rss_feed_item_id) WHERE removed_at IS NULL
     DO NOTHING`,
-    [targetListId, communityId, IMPORT_FEED_ITEM_LIMIT],
+    [targetListId, communityId, IMPORT_FEED_ITEM_LIMIT, limit, getCommunityListFeedLimit()],
   )
 
   const imported = { posts: postsCount ?? 0, items: itemsCount ?? 0 }

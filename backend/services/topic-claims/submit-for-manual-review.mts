@@ -3,12 +3,15 @@ import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { TopicClaim } from './config.mts'
 import { assertTopicClaimEvidenceWithinLimit } from './parse.mts'
+import type { TopicClaimWriteContext } from './require-on-topic.mts'
 
 export async function submitTopicClaimForManualReview(
   currentUserId: string,
-  claimId: string,
+  { claim }: TopicClaimWriteContext,
   evidence: string,
 ): Promise<TopicClaim> {
+  assert(claim.claimant_user_id === currentUserId, 404, 'Claim not found')
+  assert(!claim.verified_at && !claim.rejected_at, 404, 'Claim not found or already resolved')
   const trimmedEvidence = evidence.trim()
   assert(trimmedEvidence.length > 0, 422, 'evidence is required for manual review')
   assertTopicClaimEvidenceWithinLimit(trimmedEvidence)
@@ -16,7 +19,7 @@ export async function submitTopicClaimForManualReview(
     UPDATE topic_claims
     SET submitted_at = NOW(),
         evidence = ${trimmedEvidence}
-    WHERE id = ${claimId}
+    WHERE id = ${claim.id}
       AND claimant_user_id = ${currentUserId}
       AND verified_at IS NULL
       AND rejected_at IS NULL

@@ -525,7 +525,7 @@
       },
       "add_list_item": {
         "measured": {
-          "list": 1614,
+          "list": 1627,
           "core": 836
         },
         "max": {
@@ -839,12 +839,12 @@
       },
       "read_my_topic_claims": {
         "measured": {
-          "list": 2920,
-          "core": 859
+          "list": 3614,
+          "core": 1253
         },
         "max": {
-          "list": 3000,
-          "core": 1000
+          "list": 4000,
+          "core": 2000
         }
       }
     },

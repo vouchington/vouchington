@@ -40132,6 +40132,346 @@
       "source": "backend/api/v1/my/spending-categories.mts",
       "statusKnowledge": "default"
     },
+    "GET:/api/v1/my/topic-claims": {
+      "bodyKind": "content",
+      "hash": "a3831aceea90825f1e82a57d999c8e68ab42f45ef008a6cff23fe8ca674809bb",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "GET",
+      "routeTemplate": "/api/v1/my/topic-claims",
+      "schema": {
+        "definitions": {
+          "PageInfo": {
+            "additionalProperties": false,
+            "properties": {
+              "end_cursor": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "has_next_page": {
+                "required": true,
+                "schema": {
+                  "type": "boolean"
+                }
+              },
+              "start_cursor": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          },
+          "TopicClaimWithState": {
+            "additionalProperties": false,
+            "properties": {
+              "claimant_user_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "claimed_role": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "created_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "domain_verified_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "evidence": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "rejected_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "rejected_by_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "rejection_reason": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "revocation_reason": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "revoked_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "revoked_by_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "state": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "pending"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "verified"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "rejected"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "revoked"
+                    }
+                  ]
+                }
+              },
+              "submitted_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "topic_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "updated_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "verification_hostname_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "verification_method": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "dns_txt"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "well_known_file"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "manual_admin"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "verification_token_issued_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "verified_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "verified_by_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          }
+        },
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "page_info": {
+              "required": true,
+              "schema": {
+                "name": "PageInfo",
+                "type": "ref"
+              }
+            },
+            "results": {
+              "required": true,
+              "schema": {
+                "items": {
+                  "name": "TopicClaimWithState",
+                  "type": "ref"
+                },
+                "type": "array"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/my/topic-claims.mts",
+      "statusKnowledge": "default"
+    },
     "GET:/api/v1/podcast-episodes/:id/chapters": {
       "bodyKind": "content",
       "hash": "5c47d5611210457574486ed7cece63619357312c8a8ace34d517576d5d688f8f",
@@ -55064,6 +55404,346 @@
         }
       },
       "source": "backend/api/v1/topics/topic-routes/topic-detail-route.mts",
+      "statusKnowledge": "default"
+    },
+    "GET:/api/v1/topics/:idOrSlug/claims": {
+      "bodyKind": "content",
+      "hash": "a3831aceea90825f1e82a57d999c8e68ab42f45ef008a6cff23fe8ca674809bb",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "GET",
+      "routeTemplate": "/api/v1/topics/:idOrSlug/claims",
+      "schema": {
+        "definitions": {
+          "PageInfo": {
+            "additionalProperties": false,
+            "properties": {
+              "end_cursor": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "has_next_page": {
+                "required": true,
+                "schema": {
+                  "type": "boolean"
+                }
+              },
+              "start_cursor": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          },
+          "TopicClaimWithState": {
+            "additionalProperties": false,
+            "properties": {
+              "claimant_user_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "claimed_role": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "created_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "domain_verified_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "evidence": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "rejected_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "rejected_by_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "rejection_reason": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "revocation_reason": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "revoked_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "revoked_by_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "state": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "pending"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "verified"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "rejected"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "revoked"
+                    }
+                  ]
+                }
+              },
+              "submitted_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "topic_id": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "updated_at": {
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "verification_hostname_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "verification_method": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "dns_txt"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "well_known_file"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "manual_admin"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "verification_token_issued_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "verified_at": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "verified_by_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              }
+            },
+            "type": "object"
+          }
+        },
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "page_info": {
+              "required": true,
+              "schema": {
+                "name": "PageInfo",
+                "type": "ref"
+              }
+            },
+            "results": {
+              "required": true,
+              "schema": {
+                "items": {
+                  "name": "TopicClaimWithState",
+                  "type": "ref"
+                },
+                "type": "array"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/topics/claims.mts",
       "statusKnowledge": "default"
     },
     "GET:/api/v1/topics/:topicId/prioritized-referral-links": {
@@ -91906,6 +92586,59 @@
     }
   },
   "fixtures": [
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/my/topic-claims",
+      "bodyFile": "responses/native.my-topic-claims.page.json",
+      "consumers": ["web", "swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.my-topic-claims.page",
+      "method": "GET",
+      "migratedFrom": ["web/lib/api/server/topic-claims.ts"],
+      "path": "/api/v1/my/topic-claims",
+      "query": {
+        "limit": "1"
+      },
+      "responseSchema": {
+        "hash": "1acd489ffbdae47a01e00d025f25c79a0b90ff4076d7c8d839227a96f22c17e4",
+        "key": "native.my-topic-claims.page"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/my/topic-claims"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/topic-claim-pagination-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "GET:/api/v1/topics/:idOrSlug/claims",
+      "bodyFile": "responses/native.topic-claims.page.json",
+      "consumers": ["web", "swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.topic-claims.page",
+      "method": "GET",
+      "migratedFrom": ["web/lib/api/server/topic-claims.ts"],
+      "path": "/api/v1/topics/00000000-0000-7000-8000-000000000301/claims",
+      "query": {
+        "active_only": "true",
+        "limit": "1",
+        "mine_only": "true"
+      },
+      "responseSchema": {
+        "hash": "1acd489ffbdae47a01e00d025f25c79a0b90ff4076d7c8d839227a96f22c17e4",
+        "key": "native.topic-claims.page"
+      },
+      "route": {
+        "pathParams": {
+          "idOrSlug": "00000000-0000-7000-8000-000000000301"
+        },
+        "routeTemplate": "/api/v1/topics/:idOrSlug/claims"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/topic-claim-pagination-cases.mts"
+      },
+      "status": 200
+    },
     {
       "auth": "fixture-admin",
       "backendResponseContractKey": "GET:/api/v1/copyright-eu-reports#implicit-2",

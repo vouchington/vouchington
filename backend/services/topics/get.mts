@@ -48,10 +48,11 @@ export async function getTopicBySlug(slug: string): Promise<Topic | null> {
   return rows[0] ?? null
 }
 
-export const getTopicByAnyWithRedirect = async (
-  idOrSlug: string,
-  options: QueryOptions = {},
-): Promise<TopicWithRedirect | null> => {
+/** Candidate lookup shared with claim reads that must resolve topic and claim in one statement. */
+export function buildTopicByAnyCandidates(idOrSlug: string): {
+  candidatesSql: string
+  values: string[]
+} {
   const trimmedInput = idOrSlug.trim()
   const normalizedInput = trimmedInput.toLowerCase()
 
@@ -133,6 +134,14 @@ export const getTopicByAnyWithRedirect = async (
     throw createError(422, `Invalid topic identifier: ${idOrSlug}`)
   }
 
+  return { candidatesSql, values }
+}
+
+export const getTopicByAnyWithRedirect = async (
+  idOrSlug: string,
+  options: QueryOptions = {},
+): Promise<TopicWithRedirect | null> => {
+  const { candidatesSql, values } = buildTopicByAnyCandidates(idOrSlug)
   const { rows } = await read(
     `/* getTopicByAny */
     WITH candidates AS (

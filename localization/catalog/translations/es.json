@@ -678,6 +678,7 @@
 {"id":"copy.extracted.comments.deleteCommentButton.failedToDeleteComment_c65a5314","value":"Error al eliminar comentario"},
 {"id":"copy.extracted.communities.addCommunityListItemForm.addLabel_511a3a5d","value":"Agregar {label}"},
 {"id":"copy.extracted.communities.addCommunityListItemForm.failedToAddLabel_22332393","value":"Error al agregar {label}"},
+{"id":"copy.extracted.communities.addCommunityListItemForm.feedLimitReached_f93c20b1","value":"Esta lista permite hasta {limit} fuentes. Elimina fuentes hasta que quede por debajo del límite y vuelve a intentarlo."},
 {"id":"copy.extracted.communities.addCommunityListItemForm.labelAddedToList_6fb6fe6e","value":"{label} agregado a la lista"},
 {"id":"copy.extracted.communities.addCommunityListItemForm.searchAndSelectAnItemTo_70e3aeeb","value":"Busca y selecciona un elemento para agregarlo a esta lista de comunidad."},
 {"id":"copy.extracted.communities.applicationForm.anythingElseYouWouldLikeTo_b7565a0d","value":"¿Algo más que quieras compartir..."},

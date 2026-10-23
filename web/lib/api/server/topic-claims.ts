@@ -2,21 +2,49 @@ import { cache } from 'react'
 import { serverApi } from './instance'
 import { returnNullForMissingEntity } from '../return-null-for-missing-entity'
 import type { TopicClaim } from '@/types/topic-claims'
+import type { PageInfo } from '@voucha/types/pagination'
 
 interface TopicClaimsResponse {
-  claims: TopicClaim[]
+  results: TopicClaim[]
+  page_info: PageInfo
 }
 
-export const getMyTopicClaims = cache(async (): Promise<TopicClaimsResponse | null> =>
-  returnNullForMissingEntity(serverApi.get<TopicClaimsResponse>('/api/v1/my/topic-claims'), {
-    nullStatusCodes: [401, 403, 404],
-  }),
+export const getMyTopicClaims = cache(
+  async (
+    topicIds?: string,
+    verifiedOnly?: boolean,
+    after?: string,
+    limit?: number,
+  ): Promise<TopicClaimsResponse | null> => {
+    const query = new URLSearchParams()
+    if (topicIds) query.set('topic_ids', topicIds)
+    if (verifiedOnly) query.set('verified_only', 'true')
+    if (after) query.set('after', after)
+    if (limit) query.set('limit', String(limit))
+    const url = `/api/v1/my/topic-claims${query.size ? `?${query}` : ''}`
+    return returnNullForMissingEntity(serverApi.get<TopicClaimsResponse>(url), {
+      nullStatusCodes: [401, 403, 404],
+    })
+  },
 )
 
-export const getPendingTopicClaims = cache(async (): Promise<TopicClaimsResponse> => {
-  return serverApi.get<TopicClaimsResponse>('/api/v1/admin/topic-claims')
+export const getPendingTopicClaims = cache(async (): Promise<{ claims: TopicClaim[] }> => {
+  return serverApi.get<{ claims: TopicClaim[] }>('/api/v1/admin/topic-claims')
 })
 
-export const getTopicClaims = cache(async (topicIdOrSlug: string): Promise<TopicClaimsResponse> => {
-  return serverApi.get<TopicClaimsResponse>(`/api/v1/topics/${topicIdOrSlug}/claims`)
-})
+export const getTopicClaims = cache(
+  async (
+    topicIdOrSlug: string,
+    activeOnly?: boolean,
+    mineOnly?: boolean,
+    limit?: number,
+  ): Promise<TopicClaimsResponse> => {
+    const query = new URLSearchParams()
+    if (activeOnly) query.set('active_only', 'true')
+    if (mineOnly) query.set('mine_only', 'true')
+    if (limit) query.set('limit', String(limit))
+    return serverApi.get<TopicClaimsResponse>(
+      `/api/v1/topics/${encodeURIComponent(topicIdOrSlug)}/claims${query.size ? `?${query}` : ''}`,
+    )
+  },
+)

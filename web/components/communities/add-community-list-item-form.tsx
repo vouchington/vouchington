@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { addCommunityListItemByType } from '@/lib/api/client'
+import { ApiError } from '@/lib/api/error'
 import onError, { onSuccess } from '@/lib/on-error'
 import { CommunityListAutocomplete } from './community-list-autocomplete'
 import { communityListItemTypeCatalog } from '@voucha/types/entities/community-list-item-type'
@@ -36,10 +37,30 @@ export function AddCommunityListItemForm({
         t('extracted.communities.addCommunityListItemForm.labelAddedToList_6fb6fe6e', { label }),
       )
     } catch (err) {
+      const limit =
+        err instanceof ApiError &&
+        itemType === 'rss_feed' &&
+        err.status === 422 &&
+        err.code === 'community_list_feed_limit_reached' &&
+        err.data &&
+        typeof err.data === 'object' &&
+        'limit' in err.data &&
+        typeof err.data.limit === 'number'
+          ? err.data.limit
+          : undefined
       onError(err, {
         fallback: t('extracted.communities.addCommunityListItemForm.failedToAddLabel_22332393', {
           label,
         }),
+        displayMessageByCode:
+          limit === undefined
+            ? undefined
+            : {
+                community_list_feed_limit_reached: t(
+                  'extracted.communities.addCommunityListItemForm.feedLimitReached_f93c20b1',
+                  { limit },
+                ),
+              },
       })
     } finally {
       setIsSubmitting(false)

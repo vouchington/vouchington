@@ -129,6 +129,12 @@ export async function searchListItems(
       FROM user_list_rss_feed_items li
       JOIN rss_feed_items rfi ON rfi.id = li.rss_feed_item_id AND rfi.deleted_at IS NULL
       WHERE li.user_list_id = ${listId}::uuid AND li.removed_at IS NULL
+        AND EXISTS (
+          SELECT 1 FROM rss_feed_item_sources source
+          JOIN rss_feeds feed ON feed.id = source.rss_feed_id
+            AND feed.deleted_at IS NULL AND feed.is_enabled = true
+          WHERE source.rss_feed_item_id = rfi.id
+        )
       UNION ALL
       SELECT li.id, li.user_list_id AS list_id,
         'post'::user_list_item_types AS item_type,

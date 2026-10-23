@@ -1,4 +1,4 @@
-import { write, read } from '@data-stores/psql'
+import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import { hashToken } from '@modules/token-secrets'
@@ -9,6 +9,7 @@ import {
   type TopicClaim,
   type TopicClaimVerificationMethod,
 } from './config.mts'
+import type { TopicClaimWriteContext } from './require-on-topic.mts'
 
 type VerifyTopicClaimDomainDeps = {
   resolveTxtRecords: typeof resolveTxtRecords
@@ -17,44 +18,22 @@ type VerifyTopicClaimDomainDeps = {
 
 export async function verifyTopicClaimDomain(
   currentUserId: string,
-  claimId: string,
+  context: TopicClaimWriteContext,
   deps?: VerifyTopicClaimDomainDeps,
 ): Promise<TopicClaim> {
   // Read the resolver at call time so a test can replace the DNS module binding.
   const lookup = deps ?? { resolveTxtRecords, fetchWellKnownToken }
-  const { rows } = await read(sql`/* verifyTopicClaimDomain:getClaim */
-    SELECT tc.id, tc.claimant_user_id, tc.verification_token_hash,
-           tc.verified_at, tc.rejected_at, tc.revoked_at,
-           uh.hostname
-    -- no-mistakes-disable-next-line postgres-required-predicates: topic merges transactionally repoint claim foreign keys; verification preserves its recorded hostname
-    FROM topic_claims tc
-    LEFT JOIN url_hostnames uh ON uh.id = tc.verification_hostname_id
-    LEFT JOIN topics t ON t.id = tc.topic_id
-    WHERE tc.id = ${claimId}
-      AND t.deleted_at IS NULL
-    LIMIT 1
-  `)
-  const claim = rows[0] as
-    | {
-        id: string
-        claimant_user_id: string
-        verification_token_hash: string | null
-        verified_at: Date | null
-        rejected_at: Date | null
-        revoked_at: Date | null
-        hostname: string | null
-      }
-    | undefined
-
-  assert(claim, 404, 'Claim not found')
+  const {
+    claim,
+    verificationHostname: hostname,
+    verificationTokenHash: verification_token_hash,
+  } = context
   assert(claim.claimant_user_id === currentUserId, 404, 'Claim not found')
   assert(!claim.rejected_at, 409, 'Claim has been rejected')
   assert(!claim.revoked_at, 409, 'Claim has been revoked')
   assert(!claim.verified_at, 409, 'Claim is already verified')
-  assert(claim.hostname, 422, 'Topic has no hostname for domain verification')
-  assert(claim.verification_token_hash, 422, 'Verification token not issued yet')
-
-  const { hostname, verification_token_hash } = claim
+  assert(hostname, 422, 'Topic has no hostname for domain verification')
+  assert(verification_token_hash, 422, 'Verification token not issued yet')
 
   let matchedMethod: TopicClaimVerificationMethod | null = null
 
@@ -92,7 +71,7 @@ export async function verifyTopicClaimDomain(
     SET verification_method = ${matchedMethod},
         domain_verified_at = NOW(),
         verified_at = NOW()
-    WHERE id = ${claimId}
+    WHERE id = ${claim.id}
       AND claimant_user_id = ${currentUserId}
       AND verified_at IS NULL
       AND rejected_at IS NULL

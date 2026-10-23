@@ -43525,6 +43525,17 @@
         "type": "object"
       }
     },
+    "GET:/api/v1/my/topic-claims": {
+      "query": {
+        "properties": {
+          "after": { "type": "string" },
+          "limit": { "default": 25, "maximum": 100, "minimum": 1, "type": "integer" },
+          "topic_ids": { "items": { "type": "string" }, "type": "array" },
+          "verified_only": { "type": "boolean" }
+        },
+        "type": "object"
+      }
+    },
     "GET:/api/v1/my/warnings": {
       "query": {
         "properties": {
@@ -44712,6 +44723,15 @@
           }
         },
         "required": ["idOrSlug"],
+        "type": "object"
+      },
+      "query": {
+        "properties": {
+          "active_only": { "type": "boolean" },
+          "after": { "type": "string" },
+          "limit": { "default": 25, "maximum": 100, "minimum": 1, "type": "integer" },
+          "mine_only": { "type": "boolean" }
+        },
         "type": "object"
       }
     },
@@ -50264,14 +50284,15 @@
     "GET:/api/v1/my/topic-claims": {
       "additionalProperties": false,
       "properties": {
-        "claims": {
+        "page_info": { "$ref": "#/components/schemas/PageInfo" },
+        "results": {
           "items": {
             "$ref": "#/components/schemas/TopicClaimWithState"
           },
           "type": "array"
         }
       },
-      "required": ["claims"],
+      "required": ["results", "page_info"],
       "type": "object"
     },
     "GET:/api/v1/platform-stats": {
@@ -50337,14 +50358,15 @@
     "GET:/api/v1/topics/:idOrSlug/claims": {
       "additionalProperties": false,
       "properties": {
-        "claims": {
+        "page_info": { "$ref": "#/components/schemas/PageInfo" },
+        "results": {
           "items": {
             "$ref": "#/components/schemas/TopicClaimWithState"
           },
           "type": "array"
         }
       },
-      "required": ["claims"],
+      "required": ["results", "page_info"],
       "type": "object"
     },
     "GET:/api/v1/topics/:idOrSlug/claims/:claimId": {

@@ -90,7 +90,7 @@ describe('ClaimTopicPage', () => {
 
   it('renders ClaimTopicForm when no existing claim', async () => {
     mockGetCurrentUser.mockResolvedValueOnce(signedInUser)
-    mockGetTopicClaims.mockResolvedValueOnce({ claims: [] })
+    mockGetTopicClaims.mockResolvedValueOnce({ results: [] })
 
     render(await ClaimTopicPage({ params: Promise.resolve({ topicId: 'my-topic' }) }))
 
@@ -101,7 +101,7 @@ describe('ClaimTopicPage', () => {
 
   it('renders the page heading when signed in with no existing claim', async () => {
     mockGetCurrentUser.mockResolvedValueOnce(signedInUser)
-    mockGetTopicClaims.mockResolvedValueOnce({ claims: [] })
+    mockGetTopicClaims.mockResolvedValueOnce({ results: [] })
 
     const { container } = render(
       await ClaimTopicPage({ params: Promise.resolve({ topicId: 'topic-abc' }) }),
@@ -113,7 +113,7 @@ describe('ClaimTopicPage', () => {
   it('renders DomainVerificationPanel when active claim exists', async () => {
     mockGetCurrentUser.mockResolvedValueOnce(signedInUser)
     mockGetTopicClaims.mockResolvedValueOnce({
-      claims: [
+      results: [
         {
           id: 'claim-1',
           topic_id: 'topic-abc',
@@ -148,39 +148,15 @@ describe('ClaimTopicPage', () => {
     expect(mockNav.refresh).toHaveBeenCalledOnce()
   })
 
-  it('renders ClaimTopicForm when existing claim is rejected', async () => {
+  it('requests only the caller’s active claims', async () => {
     mockGetCurrentUser.mockResolvedValueOnce(signedInUser)
-    mockGetTopicClaims.mockResolvedValueOnce({
-      claims: [
-        {
-          id: 'claim-rejected',
-          topic_id: 'topic-abc',
-          claimant_user_id: 'user-1',
-          claimed_role: 'Card issuer',
-          evidence: '',
-          verification_method: null,
-          submitted_at: null,
-          verified_at: null,
-          verified_by_id: null,
-          rejected_at: '2026-01-02T00:00:00Z',
-          rejected_by_id: 'staff-1',
-          rejection_reason: 'Not valid',
-          revoked_at: null,
-          revoked_by_id: null,
-          revocation_reason: null,
-          verification_hostname_id: null,
-          verification_token_issued_at: null,
-          domain_verified_at: null,
-          created_at: '2026-01-01T00:00:00Z',
-          updated_at: '2026-01-02T00:00:00Z',
-        },
-      ],
-    })
+    mockGetTopicClaims.mockResolvedValueOnce({ results: [] })
 
     const { container } = render(
       await ClaimTopicPage({ params: Promise.resolve({ topicId: 'topic-abc' }) }),
     )
 
     expect(container.querySelector('[data-pw="claim-topic-form"]')).not.toBeNull()
+    expect(mockGetTopicClaims).toHaveBeenCalledWith('topic-abc', true, true)
   })
 })

@@ -50,8 +50,33 @@ const verifiedClaim = {
 }
 
 describe('ReviewDisputeEntry', () => {
+  it('continues to a later page and chooses the first reviewed topic with a verified claim', async () => {
+    const multiTopics = [
+      { id: 'topic-1', slug: 'first-topic' },
+      { id: 'topic-2', slug: 'second-topic' },
+    ]
+    mockGetMyTopicClaims
+      .mockResolvedValueOnce({
+        results: [{ ...verifiedClaim, id: 'claim-2', topic_id: 'topic-2' }],
+        page_info: { has_next_page: true, end_cursor: 'next', start_cursor: 'first' },
+      })
+      .mockResolvedValueOnce({
+        results: [verifiedClaim],
+        page_info: { has_next_page: false, end_cursor: 'last', start_cursor: 'last' },
+      })
+    render(await ReviewDisputeEntry({ postId: 'post-1', reviewedTopics: multiTopics }))
+    expect(
+      screen.getByRole('button', { name: /dispute this review/i }).getAttribute('data-topic-id'),
+    ).toBe('topic-1')
+    expect(mockGetMyTopicClaims).toHaveBeenNthCalledWith(1, 'topic-1,topic-2', true, undefined, 100)
+    expect(mockGetMyTopicClaims).toHaveBeenNthCalledWith(2, 'topic-1,topic-2', true, 'next', 100)
+  })
+
   it('renders the dispute button when the user has a verified claim for a reviewed topic', async () => {
-    mockGetMyTopicClaims.mockResolvedValue({ claims: [verifiedClaim] })
+    mockGetMyTopicClaims.mockResolvedValue({
+      results: [verifiedClaim],
+      page_info: { has_next_page: false },
+    })
 
     const result = await ReviewDisputeEntry({ postId: 'post-1', reviewedTopics: REVIEWED_TOPICS })
     render(result)
@@ -65,7 +90,10 @@ describe('ReviewDisputeEntry', () => {
 
   it('renders the dispute button for a non-first rated topic (multi-topic review)', async () => {
     const secondTopicClaim = { ...verifiedClaim, id: 'claim-2', topic_id: 'topic-2' }
-    mockGetMyTopicClaims.mockResolvedValue({ claims: [secondTopicClaim] })
+    mockGetMyTopicClaims.mockResolvedValue({
+      results: [secondTopicClaim],
+      page_info: { has_next_page: false },
+    })
 
     const multiTopics = [
       { id: 'topic-1', slug: 'first-topic' },
@@ -80,7 +108,7 @@ describe('ReviewDisputeEntry', () => {
   })
 
   it('returns null when the user has no verified claim for any reviewed topic', async () => {
-    mockGetMyTopicClaims.mockResolvedValue({ claims: [] })
+    mockGetMyTopicClaims.mockResolvedValue({ results: [], page_info: { has_next_page: false } })
 
     const result = await ReviewDisputeEntry({ postId: 'post-1', reviewedTopics: REVIEWED_TOPICS })
     expect(result).toBeNull()
@@ -88,7 +116,8 @@ describe('ReviewDisputeEntry', () => {
 
   it('returns null when the user has a claim but it is not verified', async () => {
     mockGetMyTopicClaims.mockResolvedValue({
-      claims: [{ ...verifiedClaim, verified_at: null }],
+      results: [{ ...verifiedClaim, verified_at: null }],
+      page_info: { has_next_page: false },
     })
 
     const result = await ReviewDisputeEntry({ postId: 'post-1', reviewedTopics: REVIEWED_TOPICS })
@@ -97,7 +126,8 @@ describe('ReviewDisputeEntry', () => {
 
   it('returns null when the user has a verified claim for a different topic', async () => {
     mockGetMyTopicClaims.mockResolvedValue({
-      claims: [{ ...verifiedClaim, topic_id: 'other-topic' }],
+      results: [{ ...verifiedClaim, topic_id: 'other-topic' }],
+      page_info: { has_next_page: false },
     })
 
     const result = await ReviewDisputeEntry({ postId: 'post-1', reviewedTopics: REVIEWED_TOPICS })
@@ -106,7 +136,8 @@ describe('ReviewDisputeEntry', () => {
 
   it('returns null when the user has a verified but revoked claim for the reviewed topic', async () => {
     mockGetMyTopicClaims.mockResolvedValue({
-      claims: [{ ...verifiedClaim, revoked_at: '2026-02-01T00:00:00.000Z' }],
+      results: [{ ...verifiedClaim, revoked_at: '2026-02-01T00:00:00.000Z' }],
+      page_info: { has_next_page: false },
     })
 
     const result = await ReviewDisputeEntry({ postId: 'post-1', reviewedTopics: REVIEWED_TOPICS })
@@ -114,7 +145,10 @@ describe('ReviewDisputeEntry', () => {
   })
 
   it('returns null when reviewedTopics is empty', async () => {
-    mockGetMyTopicClaims.mockResolvedValue({ claims: [verifiedClaim] })
+    mockGetMyTopicClaims.mockResolvedValue({
+      results: [verifiedClaim],
+      page_info: { has_next_page: false },
+    })
 
     const result = await ReviewDisputeEntry({ postId: 'post-1', reviewedTopics: [] })
     expect(result).toBeNull()

@@ -1,7 +1,5 @@
-import assert from 'http-assert'
 import {
   createTopicClaim,
-  getUnresolvedTopicClaimForClaimant,
   issueDomainVerificationToken,
   getReadableTopicClaim,
   listTopicClaimsForUser,
@@ -28,21 +26,37 @@ export const readMyTopicClaimsGroup = {
   options: [
     {
       option: 'list',
-      source: topicClaimSource<Record<string, never>>(
-        'List the caller’s topic claims, including id, topic_id, and state.',
+      source: topicClaimSource<{
+        limit?: number
+        after?: string
+        topic_ids?: string[]
+        verified_only?: boolean
+      }>(
+        'List a page of the caller’s topic claims with state. Continue with page_info.end_cursor; optionally filter to topic_ids and live verified claims.',
         { method: 'GET', path: '/api/v1/my/topic-claims' },
-        {},
+        {
+          limit: { type: 'integer', minimum: 1, description: 'Page size; the server clamps it.' },
+          after: { type: 'string', description: 'Opaque cursor from the previous page.' },
+          topic_ids: { type: 'array', items: { type: 'string', format: 'uuid' }, maxItems: 100 },
+          verified_only: { type: 'boolean' },
+        },
         [],
-        async user => ({
-          claims: (await listTopicClaimsForUser(user.id)).map(claimWithState),
-        }),
+        async (user, args) => {
+          const page = await listTopicClaimsForUser(user.id, {
+            limit: args.limit,
+            after: args.after,
+            topicIds: args.topic_ids,
+            verifiedOnly: args.verified_only,
+          })
+          return { results: page.results.map(claimWithState), page_info: page.page_info }
+        },
         false,
       ),
     },
     {
       option: 'get',
       source: topicClaimSource<{ topic: string; claim_id: string }>(
-        'Read the caller’s topic claim by topic id or slug and claim_id. Another claimant’s claim is not found.',
+        'Read a topic claim by topic id or slug and claim_id. Another claimant’s claim is not found unless the caller is moderation staff.',
         { method: 'GET', path: '/api/v1/topics/:idOrSlug/claims/:claimId' },
         claimRef,
         ['topic', 'claim_id'],
@@ -87,8 +101,8 @@ export const manageTopicClaimGroup = {
         claimRef,
         ['topic', 'claim_id'],
         async (user, args) => {
-          await requireTopicClaimOnTopic(args.topic, args.claim_id)
-          return issueDomainVerificationToken(user.id, args.claim_id)
+          const claimContext = await requireTopicClaimOnTopic(args.topic, args.claim_id)
+          return issueDomainVerificationToken(user.id, claimContext)
         },
         true,
       ),
@@ -101,8 +115,8 @@ export const manageTopicClaimGroup = {
         claimRef,
         ['topic', 'claim_id'],
         async (user, args) => {
-          await requireTopicClaimOnTopic(args.topic, args.claim_id)
-          return { claim: claimWithState(await verifyTopicClaimDomain(user.id, args.claim_id)) }
+          const claimContext = await requireTopicClaimOnTopic(args.topic, args.claim_id)
+          return { claim: claimWithState(await verifyTopicClaimDomain(user.id, claimContext)) }
         },
         true,
       ),
@@ -118,12 +132,10 @@ export const manageTopicClaimGroup = {
         { ...claimRef, evidence },
         ['topic', 'claim_id', 'evidence'],
         async (user, args) => {
-          await requireTopicClaimOnTopic(args.topic, args.claim_id)
-          const existing = await getUnresolvedTopicClaimForClaimant(args.claim_id, user.id)
-          assert(existing, 404, 'Claim not found or already resolved')
+          const claimContext = await requireTopicClaimOnTopic(args.topic, args.claim_id)
           return {
             claim: claimWithState(
-              await submitTopicClaimForManualReview(user.id, args.claim_id, args.evidence),
+              await submitTopicClaimForManualReview(user.id, claimContext, args.evidence),
             ),
           }
         },

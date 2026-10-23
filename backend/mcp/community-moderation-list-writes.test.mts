@@ -7,6 +7,7 @@ import {
   insertTestPost,
   insertTestRssFeed,
   insertTestTopic,
+  overrideDynamicConfigFieldsForTest,
   insertTestUrlDirect,
 } from '@voucha/test-helpers'
 import { createTestPlusMcpCaller } from '@voucha/test-helpers/mcp-plus-caller'
@@ -17,6 +18,7 @@ import {
 } from '@voucha/test-helpers/mcp-tool-contract'
 import { searchCommunityListItems } from '@services/communities/list-items/get'
 import { communityModerationListWrites } from './community-moderation-list-writes.mts'
+import { listImportConfig } from '@services/lists/import-config'
 
 const scopes = ['community-moderation:read', 'community-moderation:write'] as const
 const cases = [
@@ -138,5 +140,37 @@ describe('community moderation MCP list writes — real PostgreSQL and Valkey', 
     expect((await searchCommunityListItems(community.id, 'topic')).results).toEqual([
       expect.objectContaining({ id: (added.community_list_item as { id: string }).id }),
     ])
+  })
+
+  it('returns the feed cap status and code through the shared MCP handler', async () => {
+    const owner = await createTestPlusMcpCaller()
+    const community = await insertTestCommunity({ createdById: owner.id })
+    await insertTestCommunityMember({ communityId: community.id, userId: owner.id, role: 'owner' })
+    const feedIds = await Promise.all(
+      Array.from({ length: 3 }, () => entityFor('rss_feed', owner.id, community.id)),
+    )
+    const restore = overrideDynamicConfigFieldsForTest(listImportConfig, {
+      max_community_list_feeds: 2,
+    })
+    try {
+      for (const feedId of feedIds.slice(0, 2)) {
+        await communityModerationListWrites['add_rss_feed_to_list']!(owner, {
+          community: community.slug,
+          rss_feed_id: feedId,
+        })
+      }
+      await expect(
+        communityModerationListWrites['add_rss_feed_to_list']!(owner, {
+          community: community.slug,
+          rss_feed_id: feedIds[2],
+        }),
+      ).rejects.toMatchObject({
+        status: 422,
+        code: 'community_list_feed_limit_reached',
+        limit: 2,
+      })
+    } finally {
+      restore()
+    }
   })
 })

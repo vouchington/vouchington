@@ -3,6 +3,7 @@ import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, insertTestTopic, insertTestUrlHostname } from '@voucha/test-helpers'
 import { createTopicClaim } from '@services/topic-claims/create'
 import { issueDomainVerificationToken } from '@services/topic-claims/generate-verification-token'
+import { requireTopicClaimOnTopic } from '@services/topic-claims/require-on-topic'
 import { rejectTopicClaim } from '@services/topic-claims/admin-verify'
 import * as topicClaimsModule from '@services/topic-claims'
 import { verifyTopicClaimDomain as verifyTopicClaimDomainReal } from '@services/topic-claims/verify-domain'
@@ -83,7 +84,10 @@ describe('topic claim domain-verification API', () => {
   it('returns 409 when verifying a rejected claim', async () => {
     const { claimant, topicSlug, claimId } = await makeClaimOnTopicWithHostname()
     const staff = await createTestUser({ administrator: true })
-    await issueDomainVerificationToken(claimant.id, claimId)
+    await issueDomainVerificationToken(
+      claimant.id,
+      await requireTopicClaimOnTopic(topicSlug, claimId),
+    )
     await rejectTopicClaim(staff.id, claimId, 'Not the owner')
     const request = createRequest()
     await request.authenticateAs(claimant)

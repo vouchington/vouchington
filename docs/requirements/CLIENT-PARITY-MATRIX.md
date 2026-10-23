@@ -48,6 +48,12 @@ and member modmail, is tracked in
 first. The [scope module](../overview/architecture/backend/README.md) and
 [MCP catalog](../overview/architecture/mcp/catalog.md) own the current contract.
 
+Community-list RSS feed additions return HTTP 422 with
+`community_list_feed_limit_reached` and a numeric `limit` through REST. The community moderation
+MCP write shares the service's 422 error. Web shows localized guidance using that limit. Native
+presentation of this failure is unverified; clients should use the same code and fact when they
+adopt it.
+
 ## MCP audience selection
 
 MCP API keys choose one eligible server audience, and switching servers clears the prior scope
@@ -76,6 +82,11 @@ audience. Web consent and credential selection show the localized descriptions. 
 do not include them. The tools do not award ownership; domain proof or staff review does. Native
 consent and credential adoption is a vouchington-clients follow-up; the producer lands first. The
 [MCP catalog](../overview/architecture/mcp/catalog.md) owns the tool contract.
+
+Topic-claim list reads expose cursor pagination in REST and MCP. Web claim and dispute flows use
+server-side claimant, state, and reviewed-topic filters so an unrelated first page cannot hide a
+relevant claim. Native clients consuming these reads must follow `page_info` cursors and preserve
+the same filters when adopting the current contract.
 
 ## Household MCP consent
 
@@ -130,4 +141,4 @@ Invitation responses now include the invitee, inviter, and household owner's nul
 alongside their IDs. Web uses those response facts for every page of invitation rows, including
 loaded pages, so it never needs to display a household UUID or fetch profiles for each row. Native
 adoption should use the same identities and safe fallback when a username is absent.
-A vouchington-clients issue is needed for native adoption. The producer lands first.
+[Native adoption is tracked in vouchington-clients#470](https://github.com/vouchington/vouchington-clients/issues/470). The producer lands first.

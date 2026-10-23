@@ -48,6 +48,11 @@ flowchart LR
 
 ## Decisions worth knowing
 
+List import applies the same post discovery eligibility as list reads, preventing invisible rows
+from being copied into a personal list. A shared runtime bound caps post and feed-item import
+sources, including the combined feed-item result across source feeds; feed items stay readable only
+while a live enabled source feed still supplies them.
+
 Moderation reconciliation admits expired and retryable work through the same bounded candidate
 page. Terminal dispositions are written only for that admitted page; lease and disposition updates
 commit together. Batch embedding listings use a fixed ID boundary and keyset continuation because

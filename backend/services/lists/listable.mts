@@ -5,13 +5,10 @@ import {
 } from '@modules/feed-query-builders'
 import { isUUID } from '@modules/utils'
 import {
-  getRelatablePostIds,
+  buildObjectPostAccessFilter,
   type PostMutationAuthority,
 } from '@services/entity-relations/post-access'
-import {
-  isDelegatedPrivateRootDenied,
-  readPostMutationAccessSnapshots,
-} from '@services/entity-relations/post-mutation-snapshots'
+import { isDelegatedPrivateRootDenied } from '@services/entity-relations/post-mutation-snapshots'
 import type { EntityRelationViewer } from '@services/entity-relations/viewer'
 import assert from 'http-assert'
 import sql, { type SQLStatement } from 'sql-template-strings'
@@ -19,13 +16,13 @@ import sql, { type SQLStatement } from 'sql-template-strings'
 export type ListablePostIds = {
   allowedIds: ReadonlySet<string>
   forbiddenIds: ReadonlySet<string>
+  ineligibleIds: ReadonlySet<string>
 }
 
 /**
- * Posts the caller may place on a list. Named-scope eligibility matches relation writes.
- * A delegated credential then applies the private-root consent rule; REST passes no authority.
- * A post that is not allowed is indistinguishable from a missing post. Forbidden is only the
- * delegated private-root refusal, which is a different status.
+ * A named-inaccessible post stays missing. A named-accessible post that list discovery would
+ * hide is reported separately, so callers can refuse it before writing an invisible list row.
+ * Both predicates and the delegated private-root snapshot come from one batch statement.
  */
 export async function filterListablePostIds(
   viewer: EntityRelationViewer,
@@ -33,21 +30,46 @@ export async function filterListablePostIds(
   postIds: readonly string[],
 ): Promise<ListablePostIds> {
   const uuids = [...new Set(postIds.filter(id => isUUID(id)))]
-  if (uuids.length === 0) return { allowedIds: new Set(), forbiddenIds: new Set() }
-
-  const relatable = await getRelatablePostIds(viewer, { subjectIds: [], objectIds: uuids })
-  const visible = relatable.objectIds
-  if (visible.size === 0 || authority?.kind !== 'delegated') {
-    return { allowedIds: visible, forbiddenIds: new Set() }
-  }
-
-  const snapshots = await readPostMutationAccessSnapshots([...visible])
+  const allowedIds = new Set<string>()
   const forbiddenIds = new Set<string>()
-  for (const snapshot of snapshots) {
-    if (isDelegatedPrivateRootDenied(authority, snapshot)) forbiddenIds.add(snapshot.id)
+  const ineligibleIds = new Set<string>()
+  if (uuids.length === 0) return { allowedIds, forbiddenIds, ineligibleIds }
+
+  const named = buildObjectPostAccessFilter('candidate_post', 'access_post', viewer, 'named')
+  const discovery = buildObjectPostAccessFilter('candidate_post', 'access_post', viewer, 'listed')
+  const query = sql`/* filterListablePostIds */
+    SELECT candidate_post.id, access_post.id AS root_post_id,
+      candidate_post.created_by_id AS candidate_created_by_id,
+      access_post.created_by_id AS root_created_by_id,
+      access_post.privacy AS root_privacy,
+      `
+  query.append(named ?? sql`TRUE`).append(sql` AS named_eligible, `)
+  query.append(discovery ?? sql`TRUE`).append(sql` AS discovery_eligible
+    FROM posts candidate_post
+    JOIN posts access_post
+      ON access_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)
+    WHERE candidate_post.id = ANY(${uuids}::uuid[])
+  `)
+  const { rows } = await write<{
+    id: string
+    root_post_id: string
+    candidate_created_by_id: string | null
+    root_created_by_id: string | null
+    root_privacy: 'public' | 'private'
+    named_eligible: boolean
+    discovery_eligible: boolean
+  }>(query)
+  for (const row of rows) {
+    if (!row.named_eligible) continue
+    if (authority?.kind === 'delegated' && isDelegatedPrivateRootDenied(authority, row)) {
+      forbiddenIds.add(row.id)
+    } else if (!row.discovery_eligible) {
+      ineligibleIds.add(row.id)
+    } else {
+      allowedIds.add(row.id)
+    }
   }
-  const allowedIds = new Set([...visible].filter(id => !forbiddenIds.has(id)))
-  return { allowedIds, forbiddenIds }
+  return { allowedIds, forbiddenIds, ineligibleIds }
 }
 
 export async function assertListablePostId(
@@ -55,8 +77,13 @@ export async function assertListablePostId(
   authority: PostMutationAuthority | null,
   postId: string,
 ): Promise<void> {
-  const { allowedIds, forbiddenIds } = await filterListablePostIds(viewer, authority, [postId])
+  const { allowedIds, forbiddenIds, ineligibleIds } = await filterListablePostIds(
+    viewer,
+    authority,
+    [postId],
+  )
   assert(!forbiddenIds.has(postId), 403, 'Forbidden')
+  assert(!ineligibleIds.has(postId), 422, "Post can't be added to a list")
   assert(allowedIds.has(postId), 404, 'Not found')
 }
 

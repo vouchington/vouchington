@@ -21,7 +21,7 @@ describe('GET /api/v1/my/topic-claims', () => {
     const request = createRequest()
     await request.authenticateAs(regularUser)
     const response = await request.get('/api/v1/my/topic-claims').expect(200)
-    expect(Array.isArray(response.body.claims)).toBe(true)
+    expect(Array.isArray(response.body.results)).toBe(true)
   })
 
   it('returns claims for user who has made claims', async () => {
@@ -37,13 +37,55 @@ describe('GET /api/v1/my/topic-claims', () => {
     const request = createRequest()
     await request.authenticateAs(claimUser)
     const response = await request.get('/api/v1/my/topic-claims').expect(200)
-    expect(response.body.claims.length).toBeGreaterThan(0)
+    expect(response.body.results.length).toBeGreaterThan(0)
     expect(
-      response.body.claims.every(
+      response.body.results.every(
         (c: { claimant_user_id: string; state: string }) =>
           c.claimant_user_id === claimUser.id && c.state === 'pending',
       ),
     ).toBe(true)
+  })
+
+  it('filters verified claims for normalized boolean query values', async () => {
+    const claimUser = await createTestUser()
+    const staff = await createTestUser({ administrator: true })
+    const creator = await createTestUser()
+    const verifiedTopicId = await insertTestTopic({
+      name: `Verified Claims Topic ${crypto.randomUUID().slice(0, 8)}`,
+      slug: `verified-claims-topic-${crypto.randomUUID().slice(0, 8)}`,
+      createdById: creator.id,
+    })
+    const pendingTopicId = await insertTestTopic({
+      name: `Pending Claims Topic ${crypto.randomUUID().slice(0, 8)}`,
+      slug: `pending-claims-topic-${crypto.randomUUID().slice(0, 8)}`,
+      createdById: creator.id,
+    })
+    const { claim: verified } = await createTopicClaim(claimUser.id, {
+      topicId: verifiedTopicId,
+      claimedRole: 'Issuer',
+      evidence: '',
+    })
+    await adminVerifyTopicClaim(staff.id, verified.id)
+    const { claim: pending } = await createTopicClaim(claimUser.id, {
+      topicId: pendingTopicId,
+      claimedRole: 'Operator',
+      evidence: '',
+    })
+
+    const request = createRequest()
+    await request.authenticateAs(claimUser)
+    const all = await request.get('/api/v1/my/topic-claims').expect(200)
+    expect(all.body.results.map((claim: { id: string }) => claim.id)).toEqual(
+      expect.arrayContaining([verified.id, pending.id]),
+    )
+
+    for (const verifiedOnly of ['1', 'TRUE']) {
+      const filtered = await request
+        .get('/api/v1/my/topic-claims')
+        .query({ verified_only: verifiedOnly })
+        .expect(200)
+      expect(filtered.body.results.map((claim: { id: string }) => claim.id)).toEqual([verified.id])
+    }
   })
 })
 

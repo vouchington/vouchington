@@ -1,4 +1,9 @@
 import { activityPubInboxConfig } from '@services/ap-inbox-activities/config'
+import {
+  listImportConfig,
+  LIST_IMPORT_MAX_ITEMS,
+  COMMUNITY_LIST_MAX_FEEDS,
+} from '@services/lists/import-config'
 import { DATA_RETENTION_MAX_VALUES, dataRetentionConfig } from '@services/data-retention/config'
 import { moderationAiConfig, moderationAiDispatchConfig } from '@services/moderation-ai-config'
 import {
@@ -20,6 +25,28 @@ import {
 } from './product-config-validators.mts'
 
 export const operationalDynamicConfigRegistryEntries = [
+  defineDynamicConfigNamespace({
+    namespace: 'list-import-config',
+    label: 'List Import',
+    description:
+      'Bounds community list feeds and the number of posts and RSS items copied by one import.',
+    config: listImportConfig,
+    access: { update_roles: ['developer'] },
+    fields: {
+      max_items: {
+        description: 'Maximum number of posts and RSS items per import source.',
+        minValue: 1,
+        maxValue: LIST_IMPORT_MAX_ITEMS,
+        integer: true,
+      },
+      max_community_list_feeds: {
+        description: 'Maximum active RSS feeds in a community list.',
+        minValue: 1,
+        maxValue: COMMUNITY_LIST_MAX_FEEDS,
+        integer: true,
+      },
+    },
+  }),
   ...postRelatedUrlDisplayRegistryEntries,
   storyRelatedItemsRegistryEntry,
   membershipBillingRegistryEntry,
