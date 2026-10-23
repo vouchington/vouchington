@@ -125,7 +125,7 @@ describe('request query profile baseline', () => {
     const serve = (url: string, count: number) =>
       withRequestQueryProfileGuard(async () => {
         const res = new EventEmitter() as unknown as http.ServerResponse
-        const req = { method: 'GET', url } as http.IncomingMessage
+        const req = { method: 'GET', url, headers: {} } as http.IncomingMessage
         profileRequestQueries(req, res, () => {
           for (let i = 0; i < count; i++) {
             recordQueryTiming({
@@ -155,7 +155,7 @@ describe('request query profile baseline', () => {
       await import('../../test-helpers/api/request-query-profile-violations.mts')
     const serve = (annotation: string, method = 'GET', url = '/v1/x?y=1') => {
       const res = new EventEmitter() as unknown as http.ServerResponse
-      const req = { method, url } as http.IncomingMessage
+      const req = { method, url, headers: {} } as http.IncomingMessage
       profileRequestQueries(req, res, () => {
         recordQueryTiming({ pool: 'read', durationMs: 0, rowCount: 0, error: false, annotation })
         recordQueryTiming({ pool: 'read', durationMs: 0, rowCount: 0, error: false, annotation })
@@ -188,7 +188,7 @@ describe('request query profile baseline', () => {
     vi.stubEnv('VITEST_DIAGNOSTICS', '1')
     try {
       const res = new EventEmitter() as unknown as http.ServerResponse
-      const req = { method: 'GET', url: '/v1/quiet' } as http.IncomingMessage
+      const req = { method: 'GET', url: '/v1/quiet', headers: {} } as http.IncomingMessage
       profileRequestQueries(req, res, () => {
         recordQueryTiming({
           pool: 'read',
@@ -214,7 +214,7 @@ describe('request query profile baseline', () => {
     const { takeRequestQueryProfileViolations } =
       await import('../../test-helpers/api/request-query-profile-violations.mts')
     const res = new EventEmitter() as unknown as http.ServerResponse
-    const req = { method: 'GET', url: '/v1/aborted' } as http.IncomingMessage
+    const req = { method: 'GET', url: '/v1/aborted', headers: {} } as http.IncomingMessage
     profileRequestQueries(req, res, () => {
       for (let i = 0; i < 2; i++) {
         recordQueryTiming({

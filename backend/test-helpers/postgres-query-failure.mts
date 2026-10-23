@@ -2,6 +2,7 @@ import type pg from 'pg'
 import { AsyncLocalStorage } from 'node:async_hooks'
 import { readPool, writePool } from '@data-stores/psql'
 import { getOptionalRequestClientInfo } from '../modules/request-client-info/index.mts'
+import { getActivityPubInboxTestRequestId } from './api/request-query-profile.mts'
 import { runPoolObservationExclusively } from './postgres-pool-observation-queue.mts'
 
 const queryFailureContext = new AsyncLocalStorage<{ active: boolean }>()
@@ -26,7 +27,8 @@ export async function withPostgresQueryFailureForTest<Result>(
       context.active &&
       (queryFailureContext.getStore() === context ||
         (options.requestId !== undefined &&
-          getOptionalRequestClientInfo()?.requestId === options.requestId))
+          (getOptionalRequestClientInfo()?.requestId ?? getActivityPubInboxTestRequestId()) ===
+            options.requestId))
     let fired = false
     let targetError: Error | undefined
     const restorations = new Set<() => void>()

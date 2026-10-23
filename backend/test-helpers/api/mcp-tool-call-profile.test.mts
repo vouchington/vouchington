@@ -14,7 +14,7 @@ async function serve(handle: () => Promise<unknown>): Promise<string[]> {
   const res = new EventEmitter()
   let done: Promise<unknown> = Promise.resolve()
   profileRequestQueries(
-    { method: 'POST', url: '/api/v1/mcp' } as http.IncomingMessage,
+    { method: 'POST', url: '/api/v1/mcp', headers: {} } as http.IncomingMessage,
     res as unknown as http.ServerResponse,
     () => {
       done = handle()
