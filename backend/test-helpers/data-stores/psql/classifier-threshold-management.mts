@@ -15,6 +15,39 @@ export async function createThresholdManagementCase() {
 }
 
 /**
+ * Replaces the topic candidate's active revision with one whose `activated_at` is later than
+ * the current wall clock. A following change whose transaction started earlier then deactivates
+ * a revision it did not create.
+ */
+export async function plantCandidateThresholdActivatedAhead(input: {
+  classifierId: string
+  candidateId: string
+  promptVersionId: string
+  activeThresholdId: string
+  actorId: string
+}): Promise<string> {
+  await using transaction = await beginTransaction()
+  await transaction(sql`/* plantCandidateThresholdActivatedAhead.deactivate */
+    UPDATE classifier_candidate_thresholds
+    SET deactivated_at = GREATEST(clock_timestamp(), activated_at),
+      deactivated_by_id = ${input.actorId}
+    WHERE id = ${input.activeThresholdId}
+  `)
+  const { rows } = await transaction<{ id: string }>(sql`
+    /* plantCandidateThresholdActivatedAhead.insert */
+    INSERT INTO classifier_candidate_thresholds (
+      classifier_id, candidate_id, prompt_version_id, lower_threshold_override,
+      activated_at, created_by_id
+    ) VALUES (
+      ${input.classifierId}, ${input.candidateId}, ${input.promptVersionId}, 0.3000,
+      clock_timestamp() + INTERVAL '1 minute', ${input.actorId}
+    ) RETURNING id
+  `)
+  await transaction.commit()
+  return rows[0]!.id
+}
+
+/**
  * Adds `count` global topic candidates, each with its first threshold revision, to a classifier.
  * Call it before the classifier is activated. Returns the new candidate ids in listing order.
  */

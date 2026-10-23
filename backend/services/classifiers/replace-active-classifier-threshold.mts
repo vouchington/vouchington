@@ -83,10 +83,13 @@ export async function replaceActiveClassifierThreshold(
     return { outcome: 'unchanged', threshold: await readRevision(transaction, active.id) }
   }
   if (active) {
+    // CURRENT_TIMESTAMP is frozen at transaction start. A change that waits on the
+    // candidate lock can start before the revision it supersedes, and the lifecycle
+    // check rejects a deactivation earlier than activated_at.
     await transaction(
       `/* deactivateClassifierCandidateThreshold */
       UPDATE classifier_candidate_thresholds
-      SET deactivated_at = CURRENT_TIMESTAMP, deactivated_by_id = $2
+      SET deactivated_at = GREATEST(clock_timestamp(), activated_at), deactivated_by_id = $2
       WHERE id = $1`,
       [active.id, actorId],
     )
