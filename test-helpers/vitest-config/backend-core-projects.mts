@@ -51,7 +51,6 @@ export const backendCoreProjects: TestProjectConfiguration[] = [
         '**/*.openrouter.test.mts',
         '**/*.stripe.test.mts',
         'backend/modules/aws/s3.test.mts',
-        'backend/modules/aws/ses.generated.test.mts',
       ],
       testTimeout: 5_000,
       hookTimeout: 5_000,

@@ -18,8 +18,6 @@ on:
         required: false
       OPENROUTER_API_KEY:
         required: false
-      STRIPE_SECRET_KEY:
-        required: false
   workflow_dispatch:
 
 # A literal prefix: under workflow_call, github.workflow names the caller, which would collide the
@@ -79,7 +77,6 @@ jobs:
       AWS_TEST_ROLE_ARN: ${{ needs.changes.outputs.trusted-secret-context == 'true' && secrets.AWS_TEST_ROLE_ARN || '' }}
       OPENAI_API_KEY: ${{ needs.changes.outputs.trusted-secret-context == 'true' && secrets.OPENAI_API_KEY || '' }}
       OPENROUTER_API_KEY: ${{ needs.changes.outputs.trusted-secret-context == 'true' && secrets.OPENROUTER_API_KEY || '' }}
-      STRIPE_SECRET_KEY: ${{ needs.changes.outputs.trusted-secret-context == 'true' && secrets.STRIPE_SECRET_KEY || '' }}
       LIGHTPANDA_TOKEN: ${{ needs.changes.outputs.trusted-secret-context == 'true' && secrets.LIGHTPANDA_TOKEN || '' }}
     permissions:
       actions: read

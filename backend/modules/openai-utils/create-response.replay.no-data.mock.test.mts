@@ -9,8 +9,7 @@ import {
 
 // The recorded responses are served through the real OpenAI SDK's `fetch` option, so the SDK parses
 // actual status lines, headers and SSE bytes (delivered in 41-byte pieces that ignore event
-// boundaries). The live counterpart is the non-gating smoke check in
-// backend/agents/_shared/__tests__/create-response.openai.test.mts.
+// boundaries).
 const replay = await vi.hoisted(async () => {
   const { createProviderReplay } = await import('../../test-helpers/provider-replay.mts')
   return createProviderReplay({ chunkBytes: 41 })

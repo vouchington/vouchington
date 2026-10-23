@@ -4,7 +4,7 @@ import { STRIPE_REPLAY_SECRET_KEY, loadStripeFixture } from '../../test-helpers/
 
 // The recorded Stripe response is served through the `fetch` that `getStripeClient()` asks the
 // egress transport for, so the real Stripe SDK serializes the request and parses actual wire
-// bytes. The live counterpart is the non-gating smoke check in ./client.stripe.test.mts.
+// bytes.
 const replay = createProviderReplay()
 
 describe('getStripeClient against recorded Stripe responses', () => {

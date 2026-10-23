@@ -36,7 +36,7 @@ Gating coverage of the request we build and the response we handle comes from re
 
 - Record or hand-write the wire response as a `curl -si`-style file under `backend/test-helpers/provider-fixtures/<provider>/`, replay it through the provider SDK's own transport hook with `createProviderReplay()`, and assert our behavior: the request (model, parameters, headers we set), how we parse the result, and the usage and failure policy. Do not assert an upstream error message, the URL the SDK builds, or an SDK call count.
 - Name the fixture test so it does not match a live-provider glob (for example `create-response.replay.no-data.mock.test.mts`), or the credentialed project collects it and the unit projects drop it.
-- Keep the live file as a thin smoke check and say so in its header. Do not delete it: a live call is the only proof that the provider contract has not drifted.
+- Retain live checks that assert behavior this repository owns. Delete checks that assert only a provider or SDK primitive once the application contract is covered by recorded responses.
 - Model-quality golden and eval files (for example `*.golden.*.test.mts`) are smoke and eval checks, not fixture candidates.
 
 ## Contents

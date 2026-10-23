@@ -49,7 +49,6 @@ export const backendCredentialedTestProjects: TestProjectConfiguration[] = [
       include: [
         'backend/**/*.s3.test.mts',
         'backend/modules/aws/s3.test.mts',
-        'backend/modules/aws/ses.generated.test.mts',
         'backend/api/v1/images/__tests__/index.real-presigner.s3.mock.test.mts',
       ],
       runner: './test-helpers/vitest.runner.shared-db-scope-guard.mts',
@@ -119,18 +118,6 @@ export const backendCredentialedTestProjects: TestProjectConfiguration[] = [
       isolate: false,
       name: 'backend-bedrock',
       include: ['backend/**/*.bedrock.test.mts'],
-      exclude: ['**/node_modules/**', '**/.git/**'],
-      testTimeout: 30_000,
-      hookTimeout: 30_000,
-    },
-  },
-  {
-    extends: true,
-    test: {
-      pool: 'forks',
-      isolate: false,
-      name: 'backend-stripe',
-      include: ['backend/**/*.stripe.test.mts'],
       exclude: ['**/node_modules/**', '**/.git/**'],
       testTimeout: 30_000,
       hookTimeout: 30_000,
