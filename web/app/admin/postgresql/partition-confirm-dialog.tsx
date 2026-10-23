@@ -15,6 +15,7 @@ import {
 import {
   PARTITION_ACTION_DESCRIPTIONS,
   PARTITION_ACTION_LABELS,
+  type ClassifierPartitionRange,
   type PartitionAction,
 } from './postgresql-state'
 import { useTranslations } from '@/lib/i18n/use-translations'
@@ -32,10 +33,12 @@ const DROP_REASON_LABELS: Record<NonNullable<PartitionInfo['drop_refusal']>, str
 export function PartitionConfirmDialog({
   confirmPartitionAction,
   pendingAction,
+  pendingClassifierRange,
   setPendingAction,
 }: {
   confirmPartitionAction: () => void
   pendingAction: PartitionAction | null
+  pendingClassifierRange: ClassifierPartitionRange | null
   setPendingAction: (action: PartitionAction | null) => void
 }) {
   const t = useTranslations()
@@ -81,10 +84,20 @@ export function PartitionConfirmDialog({
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>
-            {pendingAction ? PARTITION_ACTION_LABELS[pendingAction] : ''}
+            {pendingClassifierRange
+              ? pendingAction === 'createPartitions'
+                ? 'Create Classifier Range'
+                : 'Retire Classifier Range'
+              : pendingAction
+                ? PARTITION_ACTION_LABELS[pendingAction]
+                : ''}
           </AlertDialogTitle>
           <AlertDialogDescription>
-            {pendingAction ? PARTITION_ACTION_DESCRIPTIONS[pendingAction] : ''}
+            {pendingClassifierRange
+              ? `${pendingAction === 'createPartitions' ? 'Seal' : 'Permanently retire'} the three classifier result partitions for ${pendingClassifierRange.fromDate} to ${pendingClassifierRange.toDate} (exclusive). The worker checks row bounds, foreign keys, pending work, and retention before committing.`
+              : pendingAction
+                ? PARTITION_ACTION_DESCRIPTIONS[pendingAction]
+                : ''}
           </AlertDialogDescription>
           {pendingAction === 'cleanupPartitions' && statusError && (
             <p role='alert'>Partition status unavailable: {statusError}</p>

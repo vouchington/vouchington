@@ -141,22 +141,22 @@ describe('usePostgreSQLAdminState', () => {
     expect(result.current.actionLoading.runMigrations).toBe(false)
   })
 
-  it('confirmPartitionAction runs the queued partition action', async () => {
+  it('confirms both monthly and classifier range partition actions', async () => {
     const { result } = renderHook(() => usePostgreSQLAdminState())
     await emitDefaultSnapshot()
     await waitFor(() => expect(result.current.loading).toBe(false))
 
-    act(() => {
-      result.current.setPendingAction('createPartitions')
-    })
+    act(() => result.current.choosePartitionAction('createPartitions'))
+    await act(async () => result.current.confirmPartitionAction())
 
-    await act(async () => {
-      await result.current.confirmPartitionAction()
-    })
-
-    expect(mockedEnqueue).toHaveBeenCalledWith('createPartitions')
+    expect(mockedEnqueue).toHaveBeenCalledWith('createPartitions', undefined)
     expect(toastMock.success).toHaveBeenCalledWith('createPartitions job queued')
     expect(result.current.pendingAction).toBeNull()
+    const range = { fromDate: '2026-09-01', toDate: '2026-10-01', maxDefaultRows: 100 }
+    act(() => result.current.chooseClassifierPartitionAction('createPartitions', range))
+    await act(async () => result.current.confirmPartitionAction())
+    expect(mockedEnqueue).toHaveBeenCalledWith('createPartitions', range)
+    expect(result.current.pendingClassifierRange).toBeNull()
   })
 
   it('SSE snapshot clears a stale REST fallback error', async () => {

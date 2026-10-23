@@ -52,6 +52,19 @@ header. Staff copyright queues expose a bounded first page of possible staydown 
 refresh. Native copyright filing and staff review remain tracked by the existing parity rows in
 `client-feature-parity.json`; this change does not claim new native UI evidence.
 
+## Classifier partition operations
+
+The staff engineering `POST /api/v1/psql/jobs` contract accepts an optional
+`classifierRange` with UTC `fromDate`, exclusive `toDate`, and `maxDefaultRows`
+for operator-created and operator-retired classifier result ranges. An omitted
+range keeps the crawl-only monthly action. Web exposes the range inputs and
+confirmation in the PostgreSQL operations page. The engineering operations
+surface is marked full for Swift and .NET in the feature matrix, so both native
+clients need dependent adoption of this request and confirmation flow before
+their engineering parity can include classifier ranges. No member-facing route
+or MCP tool changes. Native adoption is tracked in
+[vouchington-clients#497](https://github.com/vouchington/vouchington-clients/issues/497).
+
 ## RSS feed submission
 
 REST `POST /api/v1/rss-feeds` and MCP `submit_rss_feed` option `submit` return the same pending

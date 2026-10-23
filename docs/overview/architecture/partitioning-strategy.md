@@ -52,6 +52,16 @@ range out of the default, validate range and default-exclusion `CHECK` constrain
 Align bounds across tables joined by the same UUIDv7 parent key. Monitor defaults through the
 partition-status API and `pg_total_relation_size()`.
 
+Classifier results use a narrower operator path. An admin selects one UTC batch range; the worker
+checks that every row in each result DEFAULT fits it under a fixed row budget and seals the existing
+physical children as aligned explicit ranges in one transaction. A new DEFAULT receives later
+results. An oversized or mixed DEFAULT refuses the operation before DDL, so operators should seal
+small ranges as they grow. The candidate snapshots stay unpartitioned: the topic and story result
+foreign keys prevent detaching a populated candidate partition. Their bounded row cleanup waits
+for old results, calls, and run payloads to leave and never weakens the foreign keys. Classifier
+range retirement is operator initiated and checks the configured retention window and pending work
+under the partition locks; the scheduled monthly job still owns only crawl and RSS history.
+
 ## Related
 
 - [Partition Pruning Hints](partition-pruning-hints.md)

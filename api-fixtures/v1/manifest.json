@@ -104811,6 +104811,35 @@
     {
       "auth": "fixture-admin",
       "backendResponseContractKey": "POST:/api/v1/psql/jobs",
+      "bodyFile": "responses/web.admin.psql.jobs.classifier-range.json",
+      "consumers": ["web", "dotnet-core", "swift-core", "swift-ui"],
+      "id": "web.admin.psql.jobs.classifier-range",
+      "method": "POST",
+      "migratedFrom": ["backend/api/v1/psql/index.mts"],
+      "path": "/api/v1/psql/jobs",
+      "requestBody": {
+        "classifierRange": {
+          "fromDate": "2020-02-01",
+          "maxDefaultRows": 100,
+          "toDate": "2020-02-02"
+        },
+        "type": "createPartitions"
+      },
+      "responseSchema": {
+        "hash": "d15df28d4955f64ced34a38c04046c4a137462fb01556d20b6fb1e12b04d3e46",
+        "key": "web.admin.psql.jobs.default"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/psql/jobs"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/engineering-ops-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-admin",
+      "backendResponseContractKey": "POST:/api/v1/psql/jobs",
       "bodyFile": "responses/web.admin.psql.jobs.default.json",
       "consumers": ["web", "dotnet-core", "swift-core", "swift-ui"],
       "id": "web.admin.psql.jobs.default",

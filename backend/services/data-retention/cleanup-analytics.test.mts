@@ -147,6 +147,7 @@ describe('cleanupAnalyticsLocalFiles', () => {
         localOutcomes: { scanned: 0, deleted: 0, hasMore: false },
         runs: { scanned: 0, deleted: 0, hasMore: false },
         calls: { scanned: 0, deleted: 0, hasMore: false },
+        batchCandidates: { scanned: 0, deleted: 0, hasMore: false },
         batches: { scanned: 0, deleted: 0, hasMore: false },
       },
     })

@@ -4,6 +4,7 @@ import { MODERATION_BOUNDED_TABLES } from './schema-growth-bounded-moderation.mt
 export const EXTRA_BOUNDED_TABLES = new Map<string, string>([
   ...MODERATION_RETENTION_BOUNDED_TABLES,
   ...MODERATION_BOUNDED_TABLES,
+  ['classifier_decision_batch_candidates', 'Old unreferenced snapshots retire in bounded cleanup.'],
   [
     'image_deletion_post_updates',
     'At most one runtime-bounded pending post page per unfinished image deletion; acknowledged admissions delete receipts, so cardinality tracks active work rather than retained deletion history.',

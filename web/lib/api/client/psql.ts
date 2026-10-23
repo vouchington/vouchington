@@ -17,6 +17,10 @@ export function fetchPartitions(): Promise<PartitionStatusResponseBody> {
 
 export function enqueuePsqlJob(
   type: 'runMigrations' | 'runViews' | 'runConfigDriven' | 'createPartitions' | 'cleanupPartitions',
+  classifierRange?: { fromDate: string; toDate: string; maxDefaultRows?: number },
 ): Promise<PsqlJobEnqueueResponse> {
-  return clientApi.post<PsqlJobEnqueueResponse>('/api/v1/psql/jobs', { type })
+  return clientApi.post<PsqlJobEnqueueResponse>('/api/v1/psql/jobs', {
+    type,
+    ...(classifierRange ? { classifierRange } : {}),
+  })
 }

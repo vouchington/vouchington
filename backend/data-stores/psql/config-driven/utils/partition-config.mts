@@ -36,7 +36,6 @@ export const POST_PARTITION_TABLES: string[] = [
  * and retention share one time key. Topic and story lookups also have entity-leading indexes.
  */
 export const CLASSIFIER_RESULT_PARTITION_TABLES: string[] = [
-  'classifier_decision_batch_candidates',
   'topic_classifier_results',
   'story_classifier_results',
   'community_prompt_classifier_results',

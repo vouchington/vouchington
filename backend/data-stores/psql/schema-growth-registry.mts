@@ -82,6 +82,15 @@ export const CLASSIFIER_RETENTION_POLICIES = new Map<string, ClassifierRetention
       reason: 'Daily capped cleanup removes candidates of old runs before deleting their receipts.',
     },
   ],
+  [
+    'classifier_decision_batch_candidates',
+    {
+      minimumDays: 90,
+      owner: 'data-retention',
+      reason:
+        'Daily capped cleanup removes old batch candidate snapshots after their result references are retired.',
+    },
+  ],
   ...['autotagger_agent_run_topics', 'post_classifier_local_outcomes'].map(
     (table): [string, ClassifierRetentionPolicy] => [
       table,
@@ -93,7 +102,6 @@ export const CLASSIFIER_RETENTION_POLICIES = new Map<string, ClassifierRetention
     ],
   ),
   ...[
-    'classifier_decision_batch_candidates',
     'topic_classifier_results',
     'story_classifier_results',
     'community_prompt_classifier_results',
@@ -121,7 +129,6 @@ const PARTITION_POLICY_ENTRIES: [string, PartitionPolicy][] = [
   ['post_topic_recommendations', defaultRange('post_id')],
   ['post_autotagger_results', defaultRange('post_id')],
   ['agent_moderations', defaultRange('post_id')],
-  ['classifier_decision_batch_candidates', operatorRetentionRange('batch_id')],
   ['topic_classifier_results', operatorRetentionRange('batch_id')],
   ['story_classifier_results', operatorRetentionRange('batch_id')],
   ['community_prompt_classifier_results', operatorRetentionRange('batch_id')],

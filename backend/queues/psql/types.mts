@@ -43,3 +43,14 @@ export type ModerationRetentionJobData = {
     remainingKinds: ModerationRecordCleanupKind[]
   }
 }
+
+/** UTC calendar boundaries for one operator-managed, half-open UUIDv7 batch range. */
+export type ClassifierPartitionRange = {
+  fromDate: string
+  toDate: string
+  maxDefaultRows?: number
+}
+
+export type PsqlPartitionJobData = {
+  classifierRange?: ClassifierPartitionRange
+}

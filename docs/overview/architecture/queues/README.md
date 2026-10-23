@@ -25,6 +25,9 @@ flowchart LR
   for the API and workers to import and never imports a worker.
 - `backend/workers/<domain>/` owns processors. A processor parses the payload and calls a
   [service](../services/README.md); business logic never lives in the worker.
+- The PostgreSQL queue uses the same job names for scheduled crawl partition maintenance and
+  operator actions. Only an authenticated admin request carries explicit classifier batch bounds;
+  scheduled payloads remain empty, so classifier ranges are never created or retired on a schedule.
 - `backend/worker-runtime/` wires workers, and `backend/entrypoints/{worker-cpu,worker-io}/` choose
   which run in a process. Infrastructure decides the deployed split; local development runs one
   process for everything.
