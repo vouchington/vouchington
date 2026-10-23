@@ -3800,7 +3800,8 @@ rules:
     rule: postgres-require-query-annotation
     scope: repository
     options:
-      unanalyzableSql: ignore
+      effort: low
+      unanalyzableSql: advise
       importSpecifier: '@data-stores/psql'
       executorFactoryNames: [beginTransaction, beginBoundedTransaction]
       executorTypeNames: [TransactionQuery, QueryExecutor]
@@ -3817,7 +3818,8 @@ rules:
     rule: postgres-require-query-annotation
     scope: repository
     options:
-      unanalyzableSql: ignore
+      effort: low
+      unanalyzableSql: advise
       importSpecifier: '@data-stores/psql'
       executorFactoryNames: [beginTransaction, beginBoundedTransaction]
       executorTypeNames: [TransactionQuery, QueryExecutor]
