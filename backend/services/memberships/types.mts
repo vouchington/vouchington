@@ -75,11 +75,6 @@ export type RefundableCharge = {
   description: string | null
 }
 
-export type MembershipRefundRow = Omit<MembershipRefund, 'amount'> & {
-  amount_minor_units: string
-  currency_code: string
-}
-
 export type MembershipChange = {
   id: string
   membership_id: string

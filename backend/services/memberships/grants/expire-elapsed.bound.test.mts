@@ -2,10 +2,11 @@ import { describe, expect, it } from 'vitest'
 import { createTestUser, createTestSku, updateTestMembershipExpiresAt } from '@voucha/test-helpers'
 import { createTestHistoricalQueuedGrant } from '@voucha/test-helpers/entities/membership-historical-grants'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { withPostgresTransactionForTest } from '@voucha/test-helpers/postgres-transaction'
 import { membershipWorkConfig } from '../work-limits.mts'
 import { grantMembership } from '../create.mts'
 import { getMembershipByUserId, getMembershipHistory } from '../get.mts'
-import { expireElapsedMembershipsForUser } from './expire-elapsed.mts'
+import { expireElapsedMemberships } from './expire-elapsed.mts'
 import { expireElapsedMembershipsForUsers } from './expire-elapsed-batch.mts'
 
 describe('membership expiry run budget', () => {
@@ -22,7 +23,9 @@ describe('membership expiry run budget', () => {
       max_batches_per_run: 1,
     })
 
-    await expect(expireElapsedMembershipsForUser(member.id)).rejects.toMatchObject({ status: 409 })
+    await expect(
+      withPostgresTransactionForTest(query => expireElapsedMemberships(member.id, query)),
+    ).rejects.toMatchObject({ status: 409 })
     expect(
       (await getMembershipHistory(member.id)).filter(row => row.change_type === 'expiration'),
     ).toHaveLength(0)

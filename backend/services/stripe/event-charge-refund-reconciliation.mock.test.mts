@@ -8,9 +8,11 @@ import {
 } from '@services/memberships'
 import * as membershipServices from '@services/memberships'
 import * as refundEnqueues from '@queues/memberships/enqueues'
-import { getMembershipRefunds } from '@services/memberships/refunds/read'
 import { createTestMembership, createTestSku, createTestUser } from '@voucha/test-helpers'
-import { getMatchedChargeRefundedReceiptForTest } from '@voucha/test-helpers/entities/membership-refund-event-state'
+import {
+  getMatchedChargeRefundedReceiptForTest,
+  getTestMembershipRefunds,
+} from '@voucha/test-helpers/entities/membership-refund-event-state'
 import { cleanupRefundReconciliationOperationsForTest } from '@voucha/test-helpers/entities/membership-refund-reconciliation-state'
 import { readEnqueuedJob } from '@voucha/test-helpers/queue-jobs'
 import { memberships } from '@queues/memberships/queues'
@@ -84,7 +86,9 @@ describe('charge.refunded reconciliation receipt', () => {
     })
 
     expect(
-      (await getMembershipRefunds(user.id)).find(refund => refund.stripe_refund_id === refundId),
+      (await getTestMembershipRefunds(user.id)).find(
+        refund => refund.stripe_refund_id === refundId,
+      ),
     ).toMatchObject({ source: 'stripe_dashboard', has_revoked_access: false })
   })
 

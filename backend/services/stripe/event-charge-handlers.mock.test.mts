@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest'
 import { createTestSku, createTestUser, createTestMembership } from '@voucha/test-helpers'
-import { getMembershipRefunds } from '@services/memberships/refunds/read'
+import { getTestMembershipRefunds } from '@voucha/test-helpers/entities/membership-refund-event-state'
 import type { PrivateUser } from '@services/users/types'
 
 vi.mock<typeof import('@modules/stripe')>(import('@modules/stripe'), async importOriginal => ({
@@ -67,9 +67,9 @@ describe('handleChargeRefunded', () => {
       parent: { subscription_details: { subscription: 'sub_nonexistent_xyz' } },
     } as never)
 
-    const beforeRefunds = await getMembershipRefunds(user.id)
+    const beforeRefunds = await getTestMembershipRefunds(user.id)
     await handleTestChargeRefund('evt_1', { id: 'ch_1', invoice: 'in_1', created: 1_700_000_000 })
-    const afterRefunds = await getMembershipRefunds(user.id)
+    const afterRefunds = await getTestMembershipRefunds(user.id)
 
     expect(afterRefunds.length).toBe(beforeRefunds.length)
   })
@@ -100,7 +100,7 @@ describe('handleChargeRefunded', () => {
 
     await handleTestChargeRefund('evt_rec_1', eventData)
 
-    const refunds = await getMembershipRefunds(user.id)
+    const refunds = await getTestMembershipRefunds(user.id)
     const recorded = refunds.find(r => r.stripe_refund_id === refundId)
     expect(recorded).toBeDefined()
     expect(recorded!.amount).toEqual({ amount: 1000, currency: 'usd' })
@@ -125,7 +125,7 @@ describe('handleChargeRefunded', () => {
     await handleTestChargeRefund('evt_unsupported_currency_1', eventData)
     await handleTestChargeRefund('evt_unsupported_currency_2', eventData)
 
-    const refunds = await getMembershipRefunds(user.id)
+    const refunds = await getTestMembershipRefunds(user.id)
     const matching = refunds.filter(refund => refund.stripe_refund_id === refundId)
     expect(matching).toHaveLength(1)
     expect(matching[0]?.amount).toEqual({ amount: 1000, currency: 'brl' })
@@ -153,7 +153,7 @@ describe('handleChargeRefunded', () => {
     await handleTestChargeRefund('evt_rec_2', eventData)
 
     expect(mockListStripeRefundsForCharge).toHaveBeenCalledWith(chargeId)
-    const refunds = await getMembershipRefunds(user.id)
+    const refunds = await getTestMembershipRefunds(user.id)
     const r1 = refunds.find(r => r.stripe_refund_id === refundId1)
     const r2 = refunds.find(r => r.stripe_refund_id === refundId2)
     expect(r1).toBeDefined()
@@ -177,7 +177,7 @@ describe('handleChargeRefunded', () => {
     await handleTestChargeRefund('evt_idem_1', eventData)
     await handleTestChargeRefund('evt_idem_2', eventData)
 
-    const refunds = await getMembershipRefunds(user.id)
+    const refunds = await getTestMembershipRefunds(user.id)
     const matching = refunds.filter(r => r.stripe_refund_id === refundId)
     expect(matching.length).toBe(1)
   })

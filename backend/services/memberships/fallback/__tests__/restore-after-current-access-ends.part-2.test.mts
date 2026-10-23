@@ -10,7 +10,7 @@ import {
 } from '@voucha/test-helpers'
 import { createMembership, grantMembership } from '../../create.mts'
 import { getMembershipByUserId, getMembershipHistory } from '../../get.mts'
-import { expireElapsedMembershipsForUser } from '../../grants/expire-elapsed.mts'
+import { expireElapsedMembershipsForUsers } from '../../grants/expire-elapsed-batch.mts'
 import { updateMembershipFromEvent } from '../../update.mts'
 
 describe('fallback access after current direct or administrator-grant access ends', () => {
@@ -33,7 +33,10 @@ describe('fallback access after current direct or administrator-grant access end
     expect(grant.queued).toBe(false)
     await updateTestMembershipExpiresAt(grant.id, new Date('2020-01-01T00:00:00.000Z'))
 
-    await expect(expireElapsedMembershipsForUser(user.id)).resolves.toBe(1)
+    await expect(expireElapsedMembershipsForUsers([user.id])).resolves.toEqual({
+      expired: 1,
+      hasMore: false,
+    })
 
     const restored = await getMembershipByUserId(user.id)
     expect(restored).toMatchObject({ plan: 'plus', status: 'active' })
@@ -92,7 +95,10 @@ describe('fallback access after current direct or administrator-grant access end
     expect(activeGrant).toMatchObject({ granted_by_id: admin.id, status: 'active' })
     await updateTestMembershipExpiresAt(activeGrant!.id, new Date('2020-01-01T00:00:00.000Z'))
 
-    await expect(expireElapsedMembershipsForUser(user.id)).resolves.toBe(1)
+    await expect(expireElapsedMembershipsForUsers([user.id])).resolves.toEqual({
+      expired: 1,
+      hasMore: false,
+    })
 
     const restored = await getMembershipByUserId(user.id)
     expect(restored).toMatchObject({ plan: 'plus', status: 'active' })
@@ -174,7 +180,10 @@ describe('fallback access after current direct or administrator-grant access end
     })
     await updateTestMembershipExpiresAt(firstActiveGrant!.id, new Date('2020-01-01T00:00:00.000Z'))
 
-    await expect(expireElapsedMembershipsForUser(user.id)).resolves.toBe(1)
+    await expect(expireElapsedMembershipsForUsers([user.id])).resolves.toEqual({
+      expired: 1,
+      hasMore: false,
+    })
     const secondActiveGrant = await getMembershipByUserId(user.id)
     expect(secondActiveGrant).toMatchObject({
       plan: 'plus',
@@ -184,7 +193,10 @@ describe('fallback access after current direct or administrator-grant access end
     expect(secondActiveGrant?.id).not.toBe(firstActiveGrant?.id)
     await updateTestMembershipExpiresAt(secondActiveGrant!.id, new Date('2020-01-01T00:00:00.000Z'))
 
-    await expect(expireElapsedMembershipsForUser(user.id)).resolves.toBe(1)
+    await expect(expireElapsedMembershipsForUsers([user.id])).resolves.toEqual({
+      expired: 1,
+      hasMore: false,
+    })
 
     const restored = await getMembershipByUserId(user.id)
     expect(restored).toMatchObject({ plan: 'plus', status: 'active' })

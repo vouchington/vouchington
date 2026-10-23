@@ -1,5 +1,36 @@
 import { read } from '@data-stores/psql'
+import { parsePostgresMoneyAmount } from '@vouchington/utils/money'
 import sql from 'sql-template-strings'
+import type { MembershipRefund } from '../../services/memberships/types.mts'
+
+type MembershipRefundRow = Omit<MembershipRefund, 'amount'> & {
+  amount_minor_units: string
+  currency_code: string
+}
+
+export async function getTestMembershipRefunds(userId: string): Promise<MembershipRefund[]> {
+  const { rows } = await read(sql`/* getTestMembershipRefunds */
+    SELECT id, membership_id, user_id, stripe_refund_id, stripe_charge_id,
+      stripe_payment_intent_id, stripe_idempotency_key, admin_request_fingerprint,
+      amount_minor_units, currency_code, reason, has_revoked_access, issued_by_id,
+      source, stripe_event_id, note, created_at
+    FROM membership_refunds
+    WHERE user_id = ${userId}
+    ORDER BY id DESC
+  `)
+  return (rows as MembershipRefundRow[]).map(mapMembershipRefund)
+}
+
+function mapMembershipRefund(row: MembershipRefundRow): MembershipRefund {
+  const { amount_minor_units, currency_code, ...refund } = row
+  return {
+    ...refund,
+    amount: {
+      amount: parsePostgresMoneyAmount(amount_minor_units),
+      currency: currency_code,
+    },
+  }
+}
 
 export async function getRefundReceiptCountByProviderRefundIdForTest(
   refundId: string,

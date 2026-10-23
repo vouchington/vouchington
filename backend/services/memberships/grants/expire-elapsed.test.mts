@@ -17,12 +17,11 @@ import {
   expireElapsedMembershipsForUsers,
   getElapsedMembershipUserIdsBatch,
 } from './expire-elapsed-batch.mts'
-import { expireElapsedMembershipsForUser } from './expire-elapsed.mts'
 import { getMembershipByUserId, getMembershipHistory } from '../get.mts'
 import { membershipWorkConfig } from '../work-limits.mts'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 
-describe('expireElapsedMembershipsForUser', () => {
+describe('expireElapsedMembershipsForUsers', () => {
   it('shares one page budget across users and leaves the remainder for the next run', async () => {
     const admin = await createTestUser({ administrator: true })
     const members = await Promise.all([createTestUser(), createTestUser()])
@@ -76,7 +75,10 @@ describe('expireElapsedMembershipsForUser', () => {
     const grant = await grantMembership(admin.id, member.id, 'pro', grantSku.id, 30)
     await updateTestMembershipExpiresAt(grant.id, new Date('2020-01-01T00:00:00.000Z'))
 
-    await expect(expireElapsedMembershipsForUser(member.id)).resolves.toBe(1)
+    await expect(expireElapsedMembershipsForUsers([member.id])).resolves.toEqual({
+      expired: 1,
+      hasMore: false,
+    })
 
     await expect(getMembershipByUserId(member.id)).resolves.toMatchObject({
       plan: 'plus',
@@ -136,7 +138,10 @@ describe('expireElapsedMembershipsForUser', () => {
     await setTestMembershipGrantRemainingMilliseconds(secondGrantId!, 0.5)
     await updateTestMembershipExpiresAt(first.id, new Date('2020-01-01T00:00:00.000Z'))
 
-    await expect(expireElapsedMembershipsForUser(member.id)).resolves.toBe(1)
+    await expect(expireElapsedMembershipsForUsers([member.id])).resolves.toEqual({
+      expired: 1,
+      hasMore: false,
+    })
     await expect(getMembershipByUserId(member.id)).resolves.toBeNull()
   })
 

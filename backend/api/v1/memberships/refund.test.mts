@@ -5,7 +5,7 @@ import { createTestMembership, createTestUser } from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import * as stripeInvoices from '@modules/stripe/invoices'
 import * as stripeRefunds from '@modules/stripe/refunds'
-import { getMembershipRefunds } from '@services/memberships/refunds/read'
+import { getTestMembershipRefunds } from '@voucha/test-helpers/entities/membership-refund-event-state'
 import type { PrivateUser } from '@services/users/types'
 
 describe('POST /api/v1/memberships/refunds', () => {
@@ -41,7 +41,7 @@ describe('POST /api/v1/memberships/refunds', () => {
       refund: { id: expect.any(String) },
       cancellation_status: 'not_requested',
     })
-    expect(await getMembershipRefunds(fixture.target.id)).toEqual([
+    expect(await getTestMembershipRefunds(fixture.target.id)).toEqual([
       expect.objectContaining({
         amount: { amount: 1000, currency: 'usd' },
         source: 'admin',
@@ -78,7 +78,7 @@ describe('POST /api/v1/memberships/refunds', () => {
     }
     expect(createRefund).toHaveBeenCalledOnce()
     expect(listInvoices).toHaveBeenCalledOnce()
-    expect(await getMembershipRefunds(fixture.target.id)).toEqual([])
+    expect(await getTestMembershipRefunds(fixture.target.id)).toEqual([])
   })
 
   it('returns 409 when an idempotency key is replayed with a changed request', async () => {
@@ -126,7 +126,7 @@ describe('POST /api/v1/memberships/refunds', () => {
       expect(response.body.message).toBe('invoice_id must not be blank')
       expect(listInvoices).not.toHaveBeenCalled()
       expect(createRefund).not.toHaveBeenCalled()
-      expect(await getMembershipRefunds(fixture.target.id)).toEqual([])
+      expect(await getTestMembershipRefunds(fixture.target.id)).toEqual([])
     },
   )
 })

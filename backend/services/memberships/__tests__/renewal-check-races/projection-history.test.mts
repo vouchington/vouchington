@@ -9,7 +9,7 @@ import {
   updateTestMembershipExpiresAt,
 } from '@voucha/test-helpers'
 import { createMembership, grantMembership } from '../../create.mts'
-import { expireElapsedMembershipsForUser } from '../../grants/expire-elapsed.mts'
+import { expireElapsedMembershipsForUsers } from '../../grants/expire-elapsed-batch.mts'
 import { getMembershipByUserId } from '../../get.mts'
 
 import { claimTestRenewalPriceIncreaseNotification as claimRenewalPriceIncreaseNotification } from '@voucha/test-helpers/renewal-notification-claims'
@@ -68,7 +68,10 @@ async function createRetiredClaimOwner() {
   const firstGrant = await grantMembership(admin.id, user.id, 'pro', grantSku.id, 30)
   expect(firstGrant.queued).toBe(false)
   await updateTestMembershipExpiresAt(firstGrant.id, new Date('2020-01-01T00:00:00.000Z'))
-  await expect(expireElapsedMembershipsForUser(user.id)).resolves.toBe(1)
+  await expect(expireElapsedMembershipsForUsers([user.id])).resolves.toEqual({
+    expired: 1,
+    hasMore: false,
+  })
   const restored = await getMembershipByUserId(user.id)
   expect(restored).toMatchObject({ plan: 'plus', status: 'active' })
   await endTestMembershipProjection(restored!.id)
