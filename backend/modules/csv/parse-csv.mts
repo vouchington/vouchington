@@ -1,9 +1,6 @@
-import { parseCsvRows as parseCsvValues, stripCsvBom } from '@vouchington/csv'
+import { parseCsvRows as parseCsvValues } from '@vouchington/csv'
 
 const URL_COLUMN_NAMES = new Set(['url', 'xmlurl', 'rss_feed_url'])
-
-/** @public Documented CSV BOM helper. */
-export const stripBom = stripCsvBom
 
 export function parseCsvRows(csvText: string): Record<string, string>[] {
   const [headers, ...dataRows] = parseCsvValues(csvText, { trim: true })

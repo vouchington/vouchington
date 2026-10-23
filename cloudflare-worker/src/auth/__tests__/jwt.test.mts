@@ -7,7 +7,7 @@ import {
   createSignedDeviceJwt,
   createSignedSessionJwt,
   TEST_SESSION_JWT_PUBLIC_KEYS_B64,
-} from '../test-jwt-fixtures.mts'
+} from '../../../test-helpers/jwt-fixtures.mts'
 
 describe('jwt', () => {
   // vi.resetModules() resets the module-level once-flag between tests.

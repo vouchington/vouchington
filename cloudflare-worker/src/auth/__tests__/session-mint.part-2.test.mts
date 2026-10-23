@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { DeviceTokenPayload, SessionTokenPayload } from '@ts-shared/session-jwt'
 import { mintUuidv7 as mintUUIDv7 } from '@vouchington/session-jwt'
-import { createSignedDeviceJwt } from '../test-jwt-fixtures.mts'
+import { createSignedDeviceJwt } from '../../../test-helpers/jwt-fixtures.mts'
 import type { Env } from '../../types.mts'
 import { isBackendIssuedAnonSession } from '../session-mint.mts'
 

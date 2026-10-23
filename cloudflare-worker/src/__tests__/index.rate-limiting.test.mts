@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mintUuidv7 as mintUUIDv7 } from '@vouchington/session-jwt'
-import { createSignedDeviceJwt, createSignedSessionJwt } from '../auth/test-jwt-fixtures.mts'
+import { createSignedDeviceJwt, createSignedSessionJwt } from '../../test-helpers/jwt-fixtures.mts'
 import worker from '../index.mts'
 import { fetchInner } from '../request-handler.mts'
 import {
