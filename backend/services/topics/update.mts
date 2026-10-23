@@ -56,7 +56,15 @@ export const updateTopic = async (
       if (references.length) {
         const imageQuery = options.query ?? write
         assertImageDeliveryTransaction(imageQuery)
+        // Match topic merges: take the image owner domain before the topic row.
         await prepublishImageSurfaceDenials(references, imageQuery)
+        const { rows: activeTopics } = await imageQuery<{ id: string }>(sql`
+          /* updateTopic:lockActiveImageOwner */
+          SELECT id FROM topics
+          WHERE id = ${topic.id} AND deleted_at IS NULL AND merged_into_topic_id IS NULL
+          FOR UPDATE
+        `)
+        assert(activeTopics.length === 1, 409, 'Topic was merged or deleted')
         for (const reference of references) {
           // oxlint-disable-next-line no-await-in-loop -- one predeclared admission batch, then each exact owner binding.
           await syncImageSurfacePlacement(

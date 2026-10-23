@@ -24,6 +24,27 @@ export async function insertLockRowsWithQuery(
   )
   await pipeline(createReadStream(entityIdsFilePath), copyStream)
 
+  if (entityType === 'topics') {
+    // The provider input file already contains these ids. Reject the whole batch if even one
+    // topic is inactive, rather than submitting paid work for a row omitted from the lock table.
+    // Keep the row locks until this transaction commits so a concurrent merge cannot win the check.
+    const { rows } = await query<{ candidate_count: number; active_count: number }>(
+      `/* insertLockRows:activeTopics */
+       WITH candidates AS MATERIALIZED (
+         SELECT DISTINCT entity_id::uuid AS id FROM ${tempTable}
+       ), active_topics AS MATERIALIZED (
+         SELECT topic.id FROM topics topic
+         JOIN candidates candidate ON candidate.id = topic.id
+         WHERE topic.deleted_at IS NULL AND topic.merged_into_topic_id IS NULL
+         ORDER BY topic.id FOR SHARE OF topic
+       )
+       SELECT (SELECT count(*)::int FROM candidates) AS candidate_count,
+         (SELECT count(*)::int FROM active_topics) AS active_count`,
+    )
+    if (rows[0]?.candidate_count !== rows[0]?.active_count)
+      throw new Error('Cannot create a topic embedding batch with an inactive topic')
+  }
+
   await query(
     `/* insertLockRows */ INSERT INTO bedrock_embedding_batch_entities (
       batch_id,

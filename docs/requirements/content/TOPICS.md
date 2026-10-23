@@ -37,6 +37,8 @@ self-relation removal so the merge cannot erase an outstanding audit finding.
 Image placements retain their source identity as history. Delayed classification applies no
 effects to inactive topics. A dedicated merge fence protects new current references without refusing
 ordinary reference writes during feed or vote-stat updates. Derived batch rows remain unfenced.
+New embedding and classifier work admits only active topic identities; completed derived records
+retain the identity they describe rather than being redirected by a later merge.
 
 Classifier candidates are administrative configuration: source-only candidates keep their identity
 and dependent thresholds, overrides, and reserved snapshots when moved. A destination candidate

@@ -1,5 +1,6 @@
 import { read, write, type QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { insertClassifierRunCandidates } from '../../../../services/classifier-runs/run-candidates.mts'
 
 export type ClassifierRunFacts = {
   id: string
@@ -97,6 +98,11 @@ export async function getClassifierRunCandidateTopicIdsForTest(runId: string): P
     SELECT topic_id FROM classifier_run_candidates WHERE run_id = ${runId} ORDER BY ordinal
   `)
   return rows.map(row => row.topic_id)
+}
+
+/** Exercises production candidate capture with the shared test database query resource. */
+export function captureClassifierRunCandidatesForTest(runId: string, topicIds: readonly string[]) {
+  return insertClassifierRunCandidates(write, runId, topicIds)
 }
 
 export async function expireClassifierRunLeaseForTest(runId: string): Promise<void> {
