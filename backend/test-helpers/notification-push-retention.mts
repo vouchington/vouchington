@@ -42,7 +42,6 @@ export async function setTestPendingPushIntentRetentionState(
   const { rowCount } = await query(sql`/* setTestPendingPushIntentRetentionState */
     UPDATE notification_push_intents
     SET id = ${v7({ msecs: input.createdAt.getTime() })}::uuid,
-      created_at = ${input.createdAt}::timestamptz,
       lease_token = ${input.leaseExpiresAt ? randomUUID() : null}::uuid,
       leased_at = ${input.leaseExpiresAt ? input.createdAt : null}::timestamptz,
       lease_expires_at = ${input.leaseExpiresAt ?? null}::timestamptz
