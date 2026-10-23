@@ -45,4 +45,14 @@ describe('Voucha credential scrubbing policy', () => {
       },
     })
   })
+
+  it('redacts Grafana path credentials on spans and breadcrumbs', () => {
+    const url = 'https://grafana.example/oncall/integrations/v1/formatted_webhook/bearer/heartbeat/'
+    const filtered =
+      'https://grafana.example/oncall/integrations/v1/formatted_webhook/[REDACTED]/heartbeat/'
+    expect(scrubSpanAttributes({ 'url.full': url })).toEqual({ 'url.full': filtered })
+    expect(scrubSentryEvent({ breadcrumbs: [{ data: { url } }] })).toEqual({
+      breadcrumbs: [{ data: { url: filtered } }],
+    })
+  })
 })

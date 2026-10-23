@@ -19,8 +19,8 @@ cookies, query strings, every HTTP body, bound database values, stack-frame vari
 arguments, and gen-AI inputs and outputs. Request bodies carry legal identities and perjury
 statements from copyright forms, and gen-AI inputs carry user content and MCP tool arguments. So
 [`ts-shared/utils/sentry-data-collection.mts`](../../../ts-shared/utils/sentry-data-collection.mts)
-turns these off at the source and every SDK init site passes it as `dataCollection`. The scrubbers
-in `ts-shared/utils/observability-scrubbing.mts` are defense in depth behind that policy, not the
+turns these off at the source and every SDK init site passes it as `dataCollection`. The configured pipeline
+in `ts-shared/utils/sentry-event-scrubbing.mts` are defense in depth behind that policy, not the
 only control.
 
 ## Boundary
