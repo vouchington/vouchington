@@ -1,6 +1,8 @@
 'use client'
 
 import { useState } from 'react'
+import { useFreshAuthentication } from './use-fresh-authentication'
+import { MfaReauthDialog } from './mfa-reauth-dialog'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
@@ -37,18 +39,21 @@ export function OAuthConnection({
   brokerEnabled = false,
   separator,
 }: Props) {
+  const authentication = useFreshAuthentication()
   const [account, setAccount] = useState(initialAccount)
   const [loading, setLoading] = useState(false)
   const [providerAvailable, setProviderAvailable] = useState<boolean | null>(null)
   const label = providerLabels[provider]
 
   async function handleConnect(token: OAuthLoginToken) {
+    const reAuthToken = await authentication.requestAuthentication()
+    if (!reAuthToken) return
     try {
       const body = tokenToBody(token)
-      const response = await connectOAuthAccount<{ oauth_account: OAuthAccountInfo }>(
-        provider,
-        body,
-      )
+      const response = await connectOAuthAccount<{ oauth_account: OAuthAccountInfo }>(provider, {
+        ...body,
+        re_auth_token: reAuthToken,
+      })
       setAccount(response.oauth_account)
       toast.success(`${label} account connected`)
     } catch (err) {
@@ -59,9 +64,11 @@ export function OAuthConnection({
   }
 
   async function handleDisconnect() {
+    const reAuthToken = await authentication.requestAuthentication()
+    if (!reAuthToken) return
     setLoading(true)
     try {
-      await disconnectOAuthAccount(provider)
+      await disconnectOAuthAccount(provider, reAuthToken)
       setAccount(null)
       toast.success(`${label} account disconnected`)
     } catch (err) {
@@ -79,6 +86,7 @@ export function OAuthConnection({
       hidden={!account && (!providerConfigured || providerAvailable === false)}
       className='space-y-4'
     >
+      <MfaReauthDialog {...authentication.dialogProps} />
       {separator && <Separator />}
       <h2
         className='flex items-center gap-2 text-lg font-semibold'
@@ -113,7 +121,13 @@ export function OAuthConnection({
           onToken={handleConnect}
           onAvailabilityChange={setProviderAvailable}
           broker={
-            brokerEnabled ? { purpose: 'connect', returnTo: '/my/identity#social' } : undefined
+            brokerEnabled
+              ? {
+                  purpose: 'connect',
+                  returnTo: '/my/identity#social',
+                  requestReAuth: authentication.requestAuthentication,
+                }
+              : undefined
           }
         />
       ) : null}

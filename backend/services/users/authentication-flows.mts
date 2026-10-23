@@ -1,3 +1,6 @@
+import { beginTransaction } from '@data-stores/psql'
+import { lockLoginCredentialAdmission } from '@services/oauth-accounts/login-admission'
+import { getPrivateUserByAny } from './get.mts'
 import createHttpError from 'http-errors'
 import {
   EmailDomainInvalidError,
@@ -7,6 +10,7 @@ import {
 import {
   createDeviceAndSessionTokens,
   getEnrichedSessionClaims,
+  getSessionResponseUser,
   type DeviceClass,
   type DeviceContext,
 } from '@services/jwt-session'
@@ -62,7 +66,7 @@ export async function loginWithEmailAddressToken(options: {
     )
     if (!success) throw createHttpError(401, 'Invalid email address or one-time password')
 
-    const user = await upsertUser({
+    const existing = await upsertUser({
       deviceId: options.deviceId,
       sessionId: options.sessionId,
       emailAddress,
@@ -70,15 +74,23 @@ export async function loginWithEmailAddressToken(options: {
       userAgent: options.deviceContext?.user_agent,
     })
 
+    await using query = await beginTransaction()
+    const firstFactor = { type: 'email' as const, emailAddress }
+    await lockLoginCredentialAdmission(existing.id, firstFactor, query)
+    const loaded = await getPrivateUserByAny(existing.id, { query })
+    if (!loaded) throw createHttpError(401, 'Sign-in account no longer exists')
+    const user = loaded
     const claims = await getEnrichedSessionClaims(user)
 
-    if (await userHasMfa(user.id)) {
+    if (await userHasMfa(user.id, { query })) {
       const loginAttemptId = await createLoginAttempt({
+        firstFactor,
         userId: user.id,
         deviceId: options.deviceId,
         sessionId: options.sessionId,
         deviceClass: options.deviceClass,
       })
+      await query.commit()
       return { mfaRequired: true as const, loginAttemptId }
     }
 
@@ -92,11 +104,13 @@ export async function loginWithEmailAddressToken(options: {
       uiLocale: claims?.uiLocale,
       deviceClass: options.deviceClass,
       deviceContext: options.deviceContext,
+      query,
     })
+    await query.commit()
 
     return {
       mfaRequired: false as const,
-      user,
+      user: getSessionResponseUser(user, tokens.sessionToken.payload),
       deviceToken: tokens.deviceToken,
       sessionToken: tokens.sessionToken,
     }

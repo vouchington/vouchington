@@ -1,3 +1,4 @@
+import { isOptionalMfaVerifiedAt } from '@ts-shared/session-jwt'
 import { createHash } from 'node:crypto'
 import type { QueryExecutor } from '@data-stores/psql/types'
 import { write } from '@data-stores/psql'
@@ -85,14 +86,16 @@ function parseSessionClientBinding(value: unknown): SessionClientBinding {
   if (typeof value !== 'object' || value === null || Array.isArray(value))
     throw sessionReloginRequired()
   const binding = value as Record<string, unknown>
-  if (Object.keys(binding).some(key => !['client', 'ua_hash', 'ja4_hash'].includes(key)))
+  if (Object.keys(binding).some(key => !['client', 'ua_hash', 'ja4_hash', 'mfa_at'].includes(key)))
     throw sessionReloginRequired()
+  if (!isOptionalMfaVerifiedAt(binding.mfa_at)) throw sessionReloginRequired()
+  const assurance = binding.mfa_at === undefined ? {} : { mfa_at: binding.mfa_at }
   if (
     binding.client === 'native' &&
     binding.ua_hash === undefined &&
     binding.ja4_hash === undefined
   )
-    return { client: 'native' }
+    return { client: 'native', ...assurance }
   if (
     binding.client !== 'web' ||
     typeof binding.ua_hash !== 'string' ||
@@ -103,6 +106,7 @@ function parseSessionClientBinding(value: unknown): SessionClientBinding {
     throw sessionReloginRequired()
   return {
     client: 'web',
+    ...assurance,
     ua_hash: binding.ua_hash,
     ...(binding.ja4_hash !== undefined && { ja4_hash: binding.ja4_hash }),
   }

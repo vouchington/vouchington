@@ -1,3 +1,4 @@
+import { withReauthenticatedAccountChange } from '@services/mfa/account-change'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
@@ -25,11 +26,16 @@ app.route('/api/v1/auth/totp').post(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/auth/totp')
   assertNotSuspended(currentUser)
 
-  const body = (await ctx.request.json('100kb')) as { name?: string }
+  const body = (await ctx.request.json('100kb')) as { name?: string; re_auth_token?: string }
   validateRequestContract(ctx, 'POST:/api/v1/auth/totp', { body })
   const name = (body.name ?? 'My Authenticator').trim()
 
-  const setupData = await createTotpAuthenticator(currentUser.id, name)
+  const setupData = await withReauthenticatedAccountChange(
+    currentUser.id,
+    await ctx.getSessionTokenData(),
+    body.re_auth_token,
+    query => createTotpAuthenticator(currentUser.id, name, { query }),
+  )
   ctx.json({
     authenticator: setupData.authenticator,
     secret: setupData.secret,
@@ -44,12 +50,18 @@ app.route('/api/v1/auth/totp/setup/verification').post(async (ctx: Context) => {
   const body = (await ctx.request.json('100kb')) as {
     authenticator_id?: string
     code?: string
+    re_auth_token?: string
   }
   validateRequestContract(ctx, 'POST:/api/v1/auth/totp/setup/verification', { body })
   ctx.assert(body.authenticator_id, 422, 'authenticator_id is required')
   ctx.assert(body.code, 422, 'code is required')
 
-  const authenticator = await verifyTotpSetup(currentUser.id, body.authenticator_id, body.code)
+  const authenticator = await withReauthenticatedAccountChange(
+    currentUser.id,
+    await ctx.getSessionTokenData(),
+    body.re_auth_token,
+    query => verifyTotpSetup(currentUser.id, body.authenticator_id!, body.code!, { query }),
+  )
   ctx.json({ authenticator })
 })
 

@@ -68,6 +68,7 @@ export type EmailSendJobs =
   | 'processSendDataExportReadyEmail'
   | 'processSendEmailVerificationToken'
   | 'processSendReauthenticationToken'
+  | 'processSendAccountSecurityEmail'
   | 'processSendWelcomeEmail'
   | 'processSendCommunityApplicationDecisionEmail'
   | 'processSendCommunityRoleChangeEmail'
@@ -95,6 +96,7 @@ type EmailTemplateVariables = {
   processSendDataExportReadyEmail: ProcessSendDataExportReadyEmailVariables
   processSendEmailVerificationToken: ProcessSendEmailVerificationTokenVariables
   processSendReauthenticationToken: ProcessSendReauthenticationTokenVariables
+  processSendAccountSecurityEmail: Record<string, never>
   processSendWelcomeEmail: ProcessSendWelcomeEmailVariables
   processSendCommunityApplicationDecisionEmail: ProcessSendCommunityApplicationDecisionEmailVariables
   processSendCommunityRoleChangeEmail: ProcessSendCommunityRoleChangeEmailVariables

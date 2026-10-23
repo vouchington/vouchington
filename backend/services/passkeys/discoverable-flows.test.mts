@@ -1,3 +1,10 @@
+import { verifyDeviceAndSessionTokens } from '@services/jwt-session'
+import { observeTestPostgresQueryPools } from '@voucha/test-helpers/postgres-query-pool-observer'
+import { getActiveTestUserSessions } from '@voucha/test-helpers/entities/user-sessions'
+import { deletePasskey } from './delete.mts'
+import { v7 } from 'uuid'
+import { createTestPasskeyAuthenticator } from '@voucha/test-helpers/entities/passkey-authentication'
+import { RP_ID } from './config.mts'
 import { describe, it, expect } from 'vitest'
 import {
   createTestUser,
@@ -8,7 +15,6 @@ import {
 } from '@voucha/test-helpers'
 import {
   getDiscoverablePasskeyAuthenticationOptions,
-  issueDiscoverablePasskeyLogin,
   verifyDiscoverablePasskeyAuthentication,
 } from './discoverable-flows.mts'
 import { getAndDeleteChallenge } from './challenges.mts'
@@ -92,63 +98,80 @@ describe('discoverable passkey flows', () => {
     ).rejects.toMatchObject({ status: 400, message: 'Session ID is required' })
   })
 
-  it('refuses to mint a session when the passkey account no longer exists', async () => {
-    const passkeyUser = await createTestUser()
-    const device = await createTestUser()
+  it.each(['missing', 'different'] as const)(
+    'rejects a %s loaded principal after actual UV verification',
+    async loaded => {
+      const user = await createTestUser()
+      const other = loaded === 'different' ? await createTestUser() : null
+      const authenticator = await createTestPasskeyAuthenticator(user.id, RP_ID, `https://${RP_ID}`)
+      const deviceId = v7()
+      const options = await getDiscoverablePasskeyAuthenticationOptions(deviceId)
+      await expect(
+        verifyDiscoverablePasskeyAuthentication({
+          deviceId,
+          sessionId: v7(),
+          expectedOrigin: `https://${RP_ID}`,
+          response: authenticator.createAssertion(options.challenge, { userVerified: true }),
+          fetchUser: async () => other,
+        }),
+      ).rejects.toMatchObject({ status: 401, message: 'Passkey sign-in failed' })
+    },
+  )
 
-    await expect(
-      issueDiscoverablePasskeyLogin({
-        userId: passkeyUser.id,
-        user: null,
-        deviceId: device.id,
-      }),
-    ).rejects.toMatchObject({ status: 401, message: 'Passkey sign-in failed' })
-  }, 20_000)
+  it.each([false, true])(
+    'mints only after real UV verification (suspended=%s)',
+    async suspended => {
+      const user = await createTestUser()
+      if (suspended) await suspendTestUser(user.id)
+      const authenticator = await createTestPasskeyAuthenticator(user.id, RP_ID, `https://${RP_ID}`)
+      const deviceId = v7()
+      const options = await getDiscoverablePasskeyAuthenticationOptions(deviceId)
+      const result = await verifyDiscoverablePasskeyAuthentication({
+        deviceId,
+        sessionId: v7(),
+        expectedOrigin: `https://${RP_ID}`,
+        response: authenticator.createAssertion(options.challenge, { userVerified: true }),
+        deviceContext: { user_agent: 'Mozilla/5.0 (X11; Linux x86_64) Chrome/130.0 Safari/537.36' },
+        fetchUser: (userId, query) => getTestPrivateUserById(userId, { query }),
+      })
+      expect(result.userId).toBe(user.id)
+      expect(result.sessionToken.payload.uid).toBe(user.id)
+      expect(Number.isSafeInteger(result.sessionToken.payload.mfa_at)).toBe(true)
+      expect(result.sessionToken.payload.mfa_at).toBeGreaterThan(0)
+      expect(
+        await verifyDeviceAndSessionTokens({
+          deviceToken: result.deviceToken.token,
+          sessionToken: result.sessionToken.token,
+        }),
+      ).toMatchObject({ mfa_at: result.sessionToken.payload.mfa_at })
+      if (suspended) await unsuspendTestUser(user.id)
+    },
+  )
 
-  it('refuses to mint a session when the loaded account is not the passkey user', async () => {
-    const passkeyUser = await createTestUser()
-    const loadedUser = await createTestUser()
-    const device = await createTestUser()
-
-    await expect(
-      issueDiscoverablePasskeyLogin({
-        userId: passkeyUser.id,
-        user: loadedUser,
-        deviceId: device.id,
-      }),
-    ).rejects.toMatchObject({ status: 401, message: 'Passkey sign-in failed' })
-  }, 20_000)
-
-  it('mints a session for the loaded passkey account', async () => {
+  it('does not mint after its verified credential is removed before session admission', async () => {
     const user = await createTestUser()
-    const device = await createTestUser()
-
-    const result = await issueDiscoverablePasskeyLogin({
-      userId: user.id,
-      user,
-      deviceId: device.id,
-    })
-
-    expect(result.userId).toBe(user.id)
-    expect(result.sessionToken.payload.uid).toBe(user.id)
-  }, 20_000)
-
-  it('mints a session when the loaded passkey account is suspended', async () => {
-    const user = await createTestUser()
-    await suspendTestUser(user.id)
-    const suspendedUser = (await getTestPrivateUserById(user.id))!
-    const device = await createTestUser()
-
-    const result = await issueDiscoverablePasskeyLogin({
-      userId: user.id,
-      user: suspendedUser,
-      deviceId: device.id,
-    })
-    expect(result.userId).toBe(user.id)
-    expect(result.sessionToken.payload.uid).toBe(user.id)
-
-    await unsuspendTestUser(user.id)
-  }, 20_000)
+    const authenticator = await createTestPasskeyAuthenticator(user.id, RP_ID, `https://${RP_ID}`)
+    const deviceId = v7()
+    const options = await getDiscoverablePasskeyAuthenticationOptions(deviceId)
+    await expect(
+      observeTestPostgresQueryPools(
+        'updatePasskeyCounter',
+        () =>
+          verifyDiscoverablePasskeyAuthentication({
+            deviceId,
+            sessionId: v7(),
+            expectedOrigin: `https://${RP_ID}`,
+            response: authenticator.createAssertion(options.challenge, { userVerified: true }),
+            deviceContext: {
+              user_agent: 'Mozilla/5.0 (X11; Linux x86_64) Chrome/130.0 Safari/537.36',
+            },
+            fetchUser: (userId, query) => getTestPrivateUserById(userId, { query }),
+          }),
+        () => deletePasskey(user.id, authenticator.passkeyId),
+      ),
+    ).rejects.toMatchObject({ status: 401 })
+    await expect(getActiveTestUserSessions(user.id)).resolves.toHaveLength(0)
+  })
 
   it('returns 401 when verifyAuthenticationResponse throws (malformed assertion)', async () => {
     const user = await createTestUser()

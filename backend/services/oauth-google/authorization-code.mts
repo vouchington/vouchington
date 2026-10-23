@@ -1,3 +1,4 @@
+import type { OAuthAccountUpsertOptions } from '@services/oauth-accounts/reauthentication'
 import createHttpError from 'http-errors'
 import { readGoogleClientId, readGoogleClientSecret } from '@voucha/config'
 import { upsertOAuthAccount, type OAuthAccount } from '@services/oauth-accounts'
@@ -57,11 +58,7 @@ export async function upsertGoogleAuthorizationCodeAccount(
   code: string,
   redirectUri: string,
   codeVerifier: string,
-  options: {
-    authorizationId?: string
-    authorizationClaimId?: string
-    signal?: AbortSignal
-  } = {},
+  options: OAuthAccountUpsertOptions & { signal?: AbortSignal } = {},
 ): Promise<OAuthAccount> {
   const tokenPayload = await exchangeGoogleAuthorizationCode(
     code,
@@ -102,8 +99,10 @@ export async function upsertGoogleAuthorizationCodeAccount(
     providerUserData,
     undefined,
     {
+      query: options.query,
       authorizationId: options.authorizationId,
       authorizationClaimId: options.authorizationClaimId,
+      ...(options.reAuth && { reAuth: options.reAuth }),
     },
   )
 }

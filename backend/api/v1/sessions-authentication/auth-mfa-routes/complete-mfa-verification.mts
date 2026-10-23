@@ -7,6 +7,7 @@ import {
   completeMfaLoginWithContext,
   getAndDeleteLoginAttempt,
   type CompletedMfaLogin,
+  type VerifiedMfaFactor,
 } from '@services/mfa'
 import { getPrivateUserByAny } from '@services/users/get'
 import { getDeviceContext } from '../device-context.mts'
@@ -27,16 +28,18 @@ interface MfaVerificationResponseBody {
 export async function completeMfaVerification(
   ctx: Context,
   loginAttemptId: string,
+  factor: VerifiedMfaFactor,
 ): Promise<MfaVerificationResponseBody> {
   const consumedAttempt = await getAndDeleteLoginAttempt(loginAttemptId)
   ctx.assert(consumedAttempt, 401, 'Login attempt expired or invalid')
 
-  // The factor has succeeded. Clear its scoped budget while loading the user for session minting.
-  const [user] = await Promise.all([
-    getPrivateUserByAny(consumedAttempt.userId),
-    clearMfaLoginAttempts(loginAttemptId, consumedAttempt),
-  ])
-  const login = await completeMfaLoginWithContext(consumedAttempt, user, getDeviceContext(ctx))
+  await clearMfaLoginAttempts(loginAttemptId, consumedAttempt)
+  const login = await completeMfaLoginWithContext(
+    consumedAttempt,
+    (userId, query) => getPrivateUserByAny(userId, { query }),
+    factor,
+    getDeviceContext(ctx),
+  )
   setAuthenticationCookies(ctx, {
     dt: login.deviceToken.token,
     st: login.sessionToken.token,

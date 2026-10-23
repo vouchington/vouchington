@@ -1,6 +1,10 @@
+import type {
+  OAuthAccountUpsertOptions,
+  PreparedOAuthAccount,
+} from '@services/oauth-accounts/reauthentication'
 import createHttpError from 'http-errors'
 import { X_CLIENT_ID, X_CLIENT_SECRET } from '@voucha/config'
-import { upsertOAuthAccount, type OAuthAccount } from '@services/oauth-accounts'
+import { prepareOAuthAccountPersistence, type OAuthAccount } from '@services/oauth-accounts'
 import {
   createProviderOperationSignal,
   getProviderFetch,
@@ -67,16 +71,12 @@ async function fetchXUser(accessToken: string, signal?: AbortSignal): Promise<XU
   return data.data
 }
 
-export async function upsertXAccount(
+export async function prepareXAccount(
   code: string,
   redirectUri: string,
   codeVerifier: string,
-  options: {
-    authorizationId?: string
-    authorizationClaimId?: string
-    signal?: AbortSignal
-  } = {},
-): Promise<OAuthAccount> {
+  options: OAuthAccountUpsertOptions & { signal?: AbortSignal } = {},
+): Promise<PreparedOAuthAccount> {
   let tokenResponse: XTokenResponse
   try {
     tokenResponse = await exchangeXAuthorizationCode(
@@ -110,7 +110,7 @@ export async function upsertXAccount(
     ? new Date(Date.now() + tokenResponse.expires_in * 1000)
     : undefined
 
-  return upsertOAuthAccount(
+  return prepareOAuthAccountPersistence(
     'x',
     xUser.id,
     null,
@@ -122,4 +122,14 @@ export async function upsertXAccount(
     },
     options,
   )
+}
+
+export async function upsertXAccount(
+  code: string,
+  redirectUri: string,
+  codeVerifier: string,
+  options: OAuthAccountUpsertOptions & { signal?: AbortSignal } = {},
+): Promise<OAuthAccount> {
+  const prepared = await prepareXAccount(code, redirectUri, codeVerifier, options)
+  return prepared.persist()
 }

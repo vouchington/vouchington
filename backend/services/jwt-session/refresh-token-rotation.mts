@@ -1,3 +1,4 @@
+import { sessionReloginRequired } from './device-authority.mts'
 import { rotateAuthenticatedDeviceToken } from './device-authority-rotation.mts'
 import { verifyDeviceJwt, signDeviceJwt, DEVICE_EXPIRATION_STRING } from '@ts-shared/session-jwt'
 import type {
@@ -65,6 +66,8 @@ export async function createRefreshedAuthenticatedSession(options: {
     did: options.did,
     sid: options.sid,
   })
+  const original = await verifyDeviceJwt(dt)
+  if (!original || original.mfa_at !== options.clientBinding.mfa_at) throw sessionReloginRequired()
   const token = await createSessionToken({
     did: options.did,
     sid: options.sid,

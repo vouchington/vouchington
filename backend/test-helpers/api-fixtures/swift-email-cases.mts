@@ -34,7 +34,10 @@ export const swiftEmailApiFixtureCases: ApiFixtureCase[] = [
     route: { routeTemplate: '/api/v1/my/email-addresses' },
     auth: 'fixture-user',
     status: 200,
-    requestBody: { email_address: ' Tests+Native-User@Voucha.ai ' },
+    requestBody: {
+      email_address: ' Tests+Native-User@Voucha.ai ',
+      re_auth_token: 'fresh-auth-fixture',
+    },
     body: { email_address: 'tests+native-user@voucha.ai' },
     consumers: ['swift-core', 'swift-ui', 'dotnet-core'],
     migratedFrom: [],
@@ -49,7 +52,7 @@ export const swiftEmailApiFixtureCases: ApiFixtureCase[] = [
     },
     auth: 'fixture-user',
     status: 200,
-    requestBody: { token: 'ABCD1234' },
+    requestBody: { token: 'ABCD1234', re_auth_token: 'fresh-auth-fixture' },
     body: {
       results: [
         {

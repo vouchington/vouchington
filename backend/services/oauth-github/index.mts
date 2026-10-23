@@ -1,6 +1,10 @@
+import type {
+  OAuthAccountUpsertOptions,
+  PreparedOAuthAccount,
+} from '@services/oauth-accounts/reauthentication'
 import createHttpError from 'http-errors'
 import { GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET } from '@voucha/config'
-import { upsertOAuthAccount, type OAuthAccount } from '@services/oauth-accounts'
+import { prepareOAuthAccountPersistence, type OAuthAccount } from '@services/oauth-accounts'
 import {
   createProviderOperationSignal,
   getProviderFetch,
@@ -92,16 +96,11 @@ async function fetchGithubVerifiedPrimaryEmail(
   return emails.find(email => email.primary && email.verified)?.email ?? null
 }
 
-export async function upsertGithubAccount(
+export async function prepareGithubAccount(
   code: string,
   redirectUri: string,
-  options: {
-    codeVerifier?: string
-    authorizationId?: string
-    authorizationClaimId?: string
-    signal?: AbortSignal
-  } = {},
-): Promise<OAuthAccount> {
+  options: OAuthAccountUpsertOptions & { codeVerifier?: string; signal?: AbortSignal } = {},
+): Promise<PreparedOAuthAccount> {
   let tokenResponse: GithubTokenResponse
   try {
     tokenResponse = await exchangeGithubAuthorizationCode(
@@ -135,7 +134,7 @@ export async function upsertGithubAccount(
   }
   if (githubUser.avatar_url) providerUserData.avatar_url = githubUser.avatar_url
 
-  return upsertOAuthAccount(
+  return prepareOAuthAccountPersistence(
     'github',
     String(githubUser.id),
     verifiedPrimaryEmail,
@@ -145,4 +144,13 @@ export async function upsertGithubAccount(
     },
     options,
   )
+}
+
+export async function upsertGithubAccount(
+  code: string,
+  redirectUri: string,
+  options: OAuthAccountUpsertOptions & { codeVerifier?: string; signal?: AbortSignal } = {},
+): Promise<OAuthAccount> {
+  const prepared = await prepareGithubAccount(code, redirectUri, options)
+  return prepared.persist()
 }

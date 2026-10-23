@@ -9,6 +9,7 @@ export type MicrosoftClaims = {
   exp?: number
   nbf?: number
   email?: string
+  nonce?: unknown
   xms_edov?: boolean
 }
 

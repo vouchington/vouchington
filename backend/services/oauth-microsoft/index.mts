@@ -1,7 +1,12 @@
-import { getMicrosoftVerifiedEmail } from './verified-email.mts'
+import {
+  assertProviderReAuthNonce,
+  type OAuthAccountUpsertOptions,
+  type PreparedOAuthAccount,
+} from '@services/oauth-accounts/reauthentication'
 import createHttpError from 'http-errors'
+import { verifyMicrosoftIdentityToken } from './verified-email.mts'
 import { MICROSOFT_CLIENT_ID, MICROSOFT_CLIENT_SECRET, MICROSOFT_TENANT_ID } from '@voucha/config'
-import { upsertOAuthAccount, type OAuthAccount } from '@services/oauth-accounts'
+import { prepareOAuthAccountPersistence, type OAuthAccount } from '@services/oauth-accounts'
 import { fetch } from 'undici'
 import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
 
@@ -71,16 +76,12 @@ async function fetchMicrosoftUser(
   return response.json() as Promise<MicrosoftUserData>
 }
 
-export async function upsertMicrosoftAccount(
+export async function prepareMicrosoftAccount(
   code: string,
   redirectUri: string,
   codeVerifier: string,
-  options: {
-    authorizationId?: string
-    authorizationClaimId?: string
-    signal?: AbortSignal
-  } = {},
-): Promise<OAuthAccount> {
+  options: OAuthAccountUpsertOptions & { signal?: AbortSignal } = {},
+): Promise<PreparedOAuthAccount> {
   const tokenResponse = await exchangeMicrosoftAuthorizationCode(
     code,
     redirectUri,
@@ -94,7 +95,11 @@ export async function upsertMicrosoftAccount(
   }
 
   const msUser = await fetchMicrosoftUser(tokenResponse.access_token, options.signal)
-  const email = await getMicrosoftVerifiedEmail(tokenResponse.id_token, msUser.id, options.signal)
+  const identity = tokenResponse.id_token
+    ? await verifyMicrosoftIdentityToken(tokenResponse.id_token, msUser.id, options.signal)
+    : undefined
+  if (options.reAuth) assertProviderReAuthNonce(options.reAuth, identity?.nonce)
+  const email = identity?.email ?? null
   const providerUserData: Record<string, unknown> = {}
   if (msUser.displayName) providerUserData.name = msUser.displayName
   if (email) providerUserData.email = email
@@ -105,7 +110,7 @@ export async function upsertMicrosoftAccount(
     ? new Date(Date.now() + tokenResponse.expires_in * 1000)
     : undefined
 
-  return upsertOAuthAccount(
+  return prepareOAuthAccountPersistence(
     'microsoft',
     msUser.id,
     email,
@@ -117,4 +122,14 @@ export async function upsertMicrosoftAccount(
     },
     options,
   )
+}
+
+export async function upsertMicrosoftAccount(
+  code: string,
+  redirectUri: string,
+  codeVerifier: string,
+  options: OAuthAccountUpsertOptions & { signal?: AbortSignal } = {},
+): Promise<OAuthAccount> {
+  const prepared = await prepareMicrosoftAccount(code, redirectUri, codeVerifier, options)
+  return prepared.persist()
 }

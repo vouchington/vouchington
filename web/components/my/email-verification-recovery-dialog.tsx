@@ -12,6 +12,8 @@ import { AddEmailForm } from './email-manager/add-email-form'
 import { VerifyEmailForm } from './email-manager/verify-email-form'
 import { requestMyEmailAddressVerification, verifyMyEmailAddress } from '@/lib/api/client'
 import onError from '@/lib/on-error'
+import { MfaReauthDialog } from './mfa-reauth-dialog'
+import { useFreshAuthentication } from './use-fresh-authentication'
 
 export function EmailVerificationRecoveryDialog({
   open,
@@ -28,6 +30,7 @@ export function EmailVerificationRecoveryDialog({
   const [token, setToken] = useState('')
   const [loading, setLoading] = useState(false)
   const submitting = useRef(false)
+  const authentication = useFreshAuthentication()
 
   function reset() {
     setStep('add')
@@ -45,7 +48,9 @@ export function EmailVerificationRecoveryDialog({
     event.preventDefault()
     setLoading(true)
     try {
-      const result = await requestMyEmailAddressVerification(email)
+      const proof = await authentication.requestAuthentication()
+      if (!proof) return
+      const result = await requestMyEmailAddressVerification(email, proof)
       setPendingEmail(result.email_address)
       setStep('verify')
     } catch (err) {
@@ -63,7 +68,9 @@ export function EmailVerificationRecoveryDialog({
     submitting.current = true
     setLoading(true)
     try {
-      await verifyMyEmailAddress(pendingEmail, value)
+      const proof = await authentication.requestAuthentication()
+      if (!proof) return
+      await verifyMyEmailAddress(pendingEmail, value, proof)
       reset()
       onVerified()
     } catch (err) {
@@ -78,43 +85,46 @@ export function EmailVerificationRecoveryDialog({
   }
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={next => (next ? onOpenChange(true) : close())}
-    >
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Verify your email</DialogTitle>
-          <DialogDescription>
-            Add and verify an email address, then try your action again.
-          </DialogDescription>
-        </DialogHeader>
-        {step === 'add' ? (
-          <AddEmailForm
-            loading={loading}
-            newEmail={email}
-            onCancel={close}
-            onRequestVerification={requestVerification}
-            setNewEmail={setEmail}
-          />
-        ) : (
-          <VerifyEmailForm
-            loading={loading}
-            pendingEmail={pendingEmail}
-            submitting={submitting}
-            token={token}
-            onCancel={close}
-            onSubmit={event => {
-              event.preventDefault()
-              void verify(token)
-            }}
-            setToken={setToken}
-            submitVerify={value => {
-              void verify(value)
-            }}
-          />
-        )}
-      </DialogContent>
-    </Dialog>
+    <>
+      <Dialog
+        open={open}
+        onOpenChange={next => (next ? onOpenChange(true) : close())}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Verify your email</DialogTitle>
+            <DialogDescription>
+              Add and verify an email address, then try your action again.
+            </DialogDescription>
+          </DialogHeader>
+          {step === 'add' ? (
+            <AddEmailForm
+              loading={loading}
+              newEmail={email}
+              onCancel={close}
+              onRequestVerification={requestVerification}
+              setNewEmail={setEmail}
+            />
+          ) : (
+            <VerifyEmailForm
+              loading={loading}
+              pendingEmail={pendingEmail}
+              submitting={submitting}
+              token={token}
+              onCancel={close}
+              onSubmit={event => {
+                event.preventDefault()
+                void verify(token)
+              }}
+              setToken={setToken}
+              submitVerify={value => {
+                void verify(value)
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+      <MfaReauthDialog {...authentication.dialogProps} />
+    </>
   )
 }

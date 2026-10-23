@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS user_sessions (
   device_token_issued_at TIMESTAMPTZ,
   device_token_binding JSONB,
   device_bound_session_binding JSONB,
+  account_change_proof JSONB CHECK (account_change_proof IS NULL OR jsonb_typeof(account_change_proof) = 'object'),
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CHECK (num_nonnulls(device_token_digest, device_token_encrypted, device_token_issued_at, device_token_binding) IN (0, 4)),
@@ -65,7 +66,7 @@ COMMENT ON COLUMN user_sessions.revoked_at IS 'When the session was revoked. NUL
 COMMENT ON COLUMN user_sessions.device_token_digest IS 'SHA-256 digest of the current signed device credential. Row-locked compare-and-set rotation detects reuse without storing plaintext credentials.';
 COMMENT ON COLUMN user_sessions.device_token_encrypted IS 'Current device credential encrypted with token-secrets and a session-specific purpose, retained for exact credential-completion replay and signing-key rotation.';
 COMMENT ON COLUMN user_sessions.device_token_issued_at IS 'Original authenticated device credential issuance time. Ordinary rotation preserves this revocation epoch.';
-COMMENT ON COLUMN user_sessions.device_token_binding IS 'Original signed client binding document (client family and optional browser User-Agent/JA4 hashes), never joined to other rows. Verified credential replay preserves this document.';
+COMMENT ON COLUMN user_sessions.device_token_binding IS 'Original signed client binding document (client family, optional browser User-Agent/JA4 hashes and the original completed MFA timestamp), never joined to other rows. Verified credential replay preserves this document.';
 COMMENT ON COLUMN user_sessions.device_bound_session_binding IS 'Chrome device-bound session public key, canonical origin and binding time; durable structured proof state, never joined to another row. Valkey retains only single-use challenges.';
 
 -- The token creator precedes user_sessions; install the canonical cross-file relation here.
@@ -75,3 +76,5 @@ ALTER TABLE email_address_login_tokens
   NOT VALID;
 ALTER TABLE email_address_login_tokens
   VALIDATE CONSTRAINT email_address_login_tokens_reauthentication_session_id_fkey;
+
+COMMENT ON COLUMN user_sessions.account_change_proof IS 'One outstanding SID-owned account-change proof, storing only its purpose hash and expiry; cleared transactionally with the mutation.';

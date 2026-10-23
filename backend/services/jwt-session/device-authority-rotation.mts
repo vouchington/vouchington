@@ -41,6 +41,7 @@ export async function rotateAuthenticatedDeviceToken(options: {
   if (
     device.did !== row.device_id ||
     device.client !== row.device_token_binding.client ||
+    device.mfa_at !== row.device_token_binding.mfa_at ||
     (device.client === 'web' &&
       row.device_token_binding.client === 'web' &&
       (device.ua_hash !== row.device_token_binding.ua_hash ||

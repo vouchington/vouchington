@@ -1,13 +1,17 @@
 import { test, expect } from '../../helpers/test.mts'
-import { AUTH_STATE } from '../../helpers/auth-state.mts'
-import { TEST_USER_ID } from '../../../integration-tests/web/helpers/constants.mts'
+import { withCleanUser } from '../../helpers/auth.mts'
+import { confirmAccountChange } from '../../helpers/account-confirmation.mts'
+import { insertTestTotpAuthenticator } from '../../../backend/test-helpers/entities/totp.mts'
 import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 import { insertTestPasskey } from '../../../backend/test-helpers/entities/passkeys.mts'
 
 test.describe('Passkey management', () => {
-  test.use({ storageState: AUTH_STATE })
+  let userId: string
 
   test.beforeEach(async ({ page }) => {
+    const user = await withCleanUser(page)
+    userId = user.id
+    await insertTestTotpAuthenticator(userId, randomSuffix())
     await navigateTo(page, '/my/identity')
   })
 
@@ -17,7 +21,7 @@ test.describe('Passkey management', () => {
   })
 
   test('shows a newly added passkey', async ({ page }) => {
-    const passkey = await insertTestPasskey(TEST_USER_ID, randomSuffix())
+    const passkey = await insertTestPasskey(userId, randomSuffix())
 
     // Reload the passkeys list to show the newly inserted row.
     await navigateTo(page, '/my/identity')
@@ -33,7 +37,7 @@ test.describe('Passkey management', () => {
     // Insert passkey directly into the DB to avoid WebAuthn UI timing issues.
     // Same pattern as 'removes a passkey' — direct inserts narrow the window for
     // concurrent test interference to just the navigateTo + Rename + Save cycle.
-    const passkey = await insertTestPasskey(TEST_USER_ID, randomSuffix())
+    const passkey = await insertTestPasskey(userId, randomSuffix())
 
     // Reload the passkeys list to show the newly inserted row.
     await navigateTo(page, '/my/identity')
@@ -42,7 +46,8 @@ test.describe('Passkey management', () => {
     await passkeyItem.getByTestId('passkey-rename-button').click()
 
     const renameInput = passkeyItem.getByTestId('passkey-rename-input')
-    await renameInput.fill(renamedName)
+    await renameInput.clear()
+    await renameInput.pressSequentially(renamedName)
     await renameInput.evaluate(el => (el.closest('form') as HTMLFormElement).requestSubmit())
 
     await expect(page.locator('[data-sonner-toast][data-type="success"]')).toContainText(
@@ -57,8 +62,8 @@ test.describe('Passkey management', () => {
     // between creations (server excludeCredentials check), which creates a multi-second window
     // where concurrent tests can interfere. Direct inserts (~50ms) narrow this window to
     // just the navigateTo + Remove + Confirm cycle.
-    const extraPasskey = await insertTestPasskey(TEST_USER_ID, randomSuffix())
-    const targetPasskey = await insertTestPasskey(TEST_USER_ID, randomSuffix())
+    const extraPasskey = await insertTestPasskey(userId, randomSuffix())
+    const targetPasskey = await insertTestPasskey(userId, randomSuffix())
 
     // Reload the passkeys list to show the newly inserted rows.
     await navigateTo(page, '/my/identity')
@@ -66,6 +71,7 @@ test.describe('Passkey management', () => {
     const passkeyItem = page.getByTestId(`passkey-item-${targetPasskey.id}`)
     await passkeyItem.getByTestId('passkey-remove-button').click()
     await passkeyItem.getByTestId('passkey-remove-confirm-button').click()
+    await confirmAccountChange(page, userId)
 
     await expect(page.locator('[data-sonner-toast][data-type="success"]')).toContainText(
       'Passkey removed',
@@ -73,5 +79,25 @@ test.describe('Passkey management', () => {
     await expect(page.getByTestId(`passkey-item-${targetPasskey.id}`)).toBeHidden()
     // Extra passkey must still be present (only the target was removed)
     await expect(page.getByTestId(`passkey-item-${extraPasskey.id}`)).toBeVisible()
+  })
+
+  test('keeps the selected credential when named-passkey confirmation is cancelled', async ({
+    page,
+  }) => {
+    const target = await insertTestPasskey(userId, randomSuffix())
+    await navigateTo(page, '/my/identity')
+    const item = page.getByTestId(`passkey-item-${target.id}`)
+    await item.getByTestId('passkey-remove-button').click()
+    await item.getByTestId('passkey-remove-confirm-button').click()
+    const dialog = page.getByTestId('mfa-reauth-dialog')
+    await dialog.getByRole('button', { name: 'Passkeys', exact: true }).click()
+    const choices = page.getByTestId('reauth-passkey-choices')
+    const namedCredential = choices.getByRole('button', { name: target.name, exact: true })
+    await expect(namedCredential).toBeVisible()
+    await namedCredential.focus()
+    await expect(namedCredential).toBeFocused()
+    await page.keyboard.press('Escape')
+    await expect(dialog).toBeHidden()
+    await expect(item).toBeVisible()
   })
 })

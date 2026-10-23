@@ -2399,7 +2399,7 @@
 {"id":"copy.extracted.my.landingPagesManagerSections.createUsername_182e7a51","value":"Crear nombre de usuario"},
 {"id":"copy.extracted.my.landingPagesManagerSections.goToIdentitySettings_5a82930e","value":"Ir a configuración de Identidad"},
 {"id":"copy.extracted.my.mfaReauthDialog.reAuthenticate_3887afa4","value":"Volver a autenticarse"},
-{"id":"copy.extracted.my.mfaReauthDialog.verifyYourIdentityToRemoveYour_e7d1fbdb","value":"Verifica tu identidad para eliminar tu último método de seguridad."},
+{"id":"copy.extracted.my.mfaReauthDialog.verifyYourIdentityToRemoveYour_e7d1fbdb","value":"Verifica tu identidad para cambiar tus opciones de inicio de sesión."},
 {"id":"copy.extracted.my.mfaStatusBanner.addAPasskeyOrAuthenticatorApp_5d0aa9aa","value":"Agrega una contraseña o aplicación de autenticador abajo para habilitar autenticación multifactor."},
 {"id":"copy.extracted.my.mfaStatusBanner.multiFactorAuthentication_0ed4c5fa","value":"Autenticación multifactor"},
 {"id":"copy.extracted.my.mfaStatusBanner.off_ca7981b4","value":"Desactivada"},

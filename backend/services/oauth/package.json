@@ -39,6 +39,7 @@
     "@services/oauth-microsoft": "workspace:^",
     "@services/oauth-x": "workspace:^",
     "@services/users": "workspace:^",
+    "@valkey/valkey-glide": "^2.5.3",
     "@voucha/config": "workspace:^",
     "@vouchington/postgres": "^0.0.17",
     "http-errors": "^2.0.1",
@@ -47,6 +48,7 @@
   },
   "devDependencies": {
     "@types/http-errors": "^2.0.5",
-    "@voucha/test-helpers": "workspace:^"
+    "@voucha/test-helpers": "workspace:^",
+    "undici": "^8.11.2"
   }
 }

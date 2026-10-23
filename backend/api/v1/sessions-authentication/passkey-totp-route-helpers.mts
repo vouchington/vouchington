@@ -1,3 +1,4 @@
+import type { AccountChangeSession } from '@services/mfa/active-account-session'
 import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import type { Context } from '@jongleberry/api-server'
 import type { QueryContract } from '@vouchington/pagination'
@@ -60,14 +61,19 @@ export async function renameMfaFactor(
 export async function deleteMfaFactor(
   ctx: Context,
   operation: string,
-  deleteFactor: (userId: string, itemId: string, reAuthToken: string | undefined) => Promise<void>,
+  deleteFactor: (
+    userId: string,
+    itemId: string,
+    reAuthToken: string | undefined,
+    session: AccountChangeSession,
+  ) => Promise<void>,
 ): Promise<void> {
   const { currentUser, id } = await requireAuthAndItemId(ctx, operation)
   const body = ctx.request.is('json')
     ? ((await ctx.request.json('100kb').catch(() => ({}))) as { re_auth_token?: string })
     : {}
   validateRequestContract(ctx, operation, { body })
-  await deleteFactor(currentUser.id, id, body.re_auth_token)
+  await deleteFactor(currentUser.id, id, body.re_auth_token, await ctx.getSessionTokenData())
 }
 
 // Shared by the passkey and TOTP-authenticator list routes, which page through a user's own items

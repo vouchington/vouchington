@@ -56,6 +56,7 @@ export async function createTestApprovedOAuthAuthorization(
     pending.requestId,
     'approve',
     pending.bindingHash,
+    Math.floor(Date.now() / 1000) - 60,
   )
   const code = new URL(decision.redirect_uri).searchParams.get('code')
   if (!code) throw new Error('authorization code was not returned')

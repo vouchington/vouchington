@@ -47,3 +47,22 @@ export function createSignedJwt(
 function encodeJwtPart(value: Record<string, unknown>): string {
   return Buffer.from(JSON.stringify(value)).toString('base64url')
 }
+
+export function createAppleCredentialForSubject(
+  subject: string,
+  clientId: string,
+  kid = 'apple-kid',
+): string {
+  return createSignedJwt(
+    { kid, alg: 'RS256' },
+    {
+      iss: 'https://appleid.apple.com',
+      aud: clientId,
+      sub: subject,
+      email: `${subject}@voucha.ai`,
+      email_verified: 'true',
+      iat: Math.floor(Date.now() / 1000) - 60,
+      exp: Math.floor(Date.now() / 1000) + 300,
+    },
+  )
+}

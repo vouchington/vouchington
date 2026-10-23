@@ -6,7 +6,7 @@ import { createOAuthFlowResultForUser } from '../flows.mts'
 
 describe('createOAuthFlowResultForUser', () => {
   it('stores the requested login attempt for a user with MFA', async () => {
-    const user = await createTestUserDirect()
+    const user = await createTestUserDirect({ withEmail: true })
     if (!user) throw new Error('Failed to create test user')
     await insertTestTotpAuthenticator(user.id, `oauth-flow-${randomUUID()}`)
     const loginAttemptId = randomUUID()
@@ -16,6 +16,7 @@ describe('createOAuthFlowResultForUser', () => {
     await expect(
       createOAuthFlowResultForUser({
         user,
+        firstFactor: { type: 'email', emailAddress: user.email_address! },
         loginAttemptId,
         deviceId,
         sessionId,
@@ -25,6 +26,7 @@ describe('createOAuthFlowResultForUser', () => {
 
     await expect(getAndDeleteLoginAttempt(loginAttemptId)).resolves.toEqual({
       userId: user.id,
+      firstFactor: { type: 'email', emailAddress: user.email_address! },
       deviceId,
       sessionId,
       deviceClass: 'attested',

@@ -146,3 +146,9 @@ RSS alias category recovery resumes from mismatched category rows. An alias dirt
 acknowledged only after both item and feed mappings finish; capped pages chain through the existing
 maintenance queue. Community digest catch-up likewise chains bounded weekly-window pages while
 retaining the original closed-window target.
+
+Account security notifications use the existing event-triggered email queue. The producer captures
+the old primary before a settings mutation and enqueues that direct address after session
+revocation; workers never resolve the recipient from the changed profile. Payloads are sensitive
+and removed at their terminal outcome. Notification delivery is advisory: terminal delivery failure
+is accepted loss, since account state cannot reconstruct a prior delivery address. Post-commit admission failures are reported without changing the committed settings result.

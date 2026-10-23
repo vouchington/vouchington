@@ -64,8 +64,13 @@ export async function applyHotWarmCold(
       deviceExpiresAt: verified.device_exp,
       clientBinding:
         verified.client === 'web'
-          ? { client: 'web', ua_hash: verified.ua_hash!, ja4_hash: verified.ja4_hash }
-          : { client: 'native' },
+          ? {
+              client: 'web',
+              ua_hash: verified.ua_hash!,
+              ja4_hash: verified.ja4_hash,
+              ...(verified.mfa_at !== undefined && { mfa_at: verified.mfa_at }),
+            }
+          : { client: 'native', ...(verified.mfa_at !== undefined && { mfa_at: verified.mfa_at }) },
       freshness: { type: 'preserve', recheckAfter: verified.rca },
     })
     return {
@@ -81,7 +86,9 @@ export async function applyHotWarmCold(
 
   // Cold path: reload enriched claims from DB
   const user = await fetchUser(uid)
-  const claims = user ? await getEnrichedSessionClaims(user) : null
+  const claims = user
+    ? await getEnrichedSessionClaims(user, { mfaVerifiedAt: verified.mfa_at })
+    : null
 
   if (!claims) {
     await revokeSession(verified.sid)
@@ -104,8 +111,13 @@ export async function applyHotWarmCold(
     deviceExpiresAt: verified.device_exp,
     clientBinding:
       verified.client === 'web'
-        ? { client: 'web', ua_hash: verified.ua_hash!, ja4_hash: verified.ja4_hash }
-        : { client: 'native' },
+        ? {
+            client: 'web',
+            ua_hash: verified.ua_hash!,
+            ja4_hash: verified.ja4_hash,
+            ...(verified.mfa_at !== undefined && { mfa_at: verified.mfa_at }),
+          }
+        : { client: 'native', ...(verified.mfa_at !== undefined && { mfa_at: verified.mfa_at }) },
     freshness: { type: 'reset' },
   })
   if (staleMarker) await clearJwtStaleIfCurrent(uid, staleMarker)

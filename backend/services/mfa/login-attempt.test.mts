@@ -12,6 +12,7 @@ import {
 describe('login-attempt', () => {
   it('consumes login attempts exactly once', async () => {
     const attempt: LoginAttempt = {
+      firstFactor: { type: 'email', emailAddress: 'tests+login-attempt@voucha.ai' },
       userId: randomUUID(),
       deviceId: randomUUID(),
       sessionId: randomUUID(),
@@ -27,6 +28,7 @@ describe('login-attempt', () => {
 
   it('round-trips deviceClass captured at attempt creation', async () => {
     const attempt: LoginAttempt = {
+      firstFactor: { type: 'email', emailAddress: 'tests+login-attempt@voucha.ai' },
       userId: randomUUID(),
       deviceId: randomUUID(),
       sessionId: randomUUID(),
@@ -41,6 +43,7 @@ describe('login-attempt', () => {
 
   it('rejects non-UUID login attempt IDs before lookup', async () => {
     const attempt: LoginAttempt = {
+      firstFactor: { type: 'email', emailAddress: 'tests+login-attempt@voucha.ai' },
       userId: randomUUID(),
       deviceId: randomUUID(),
       sessionId: randomUUID(),
@@ -66,6 +69,7 @@ describe('login-attempt', () => {
 
   it('limits repeated failures by login attempt and user context', async () => {
     const attempt: LoginAttempt = {
+      firstFactor: { type: 'email', emailAddress: 'tests+login-attempt@voucha.ai' },
       userId: randomUUID(),
       deviceId: randomUUID(),
       sessionId: randomUUID(),
@@ -84,6 +88,7 @@ describe('login-attempt', () => {
   })
   it('charges concurrent verification attempts atomically', async () => {
     const attempt: LoginAttempt = {
+      firstFactor: { type: 'email', emailAddress: 'tests+login-attempt@voucha.ai' },
       userId: randomUUID(),
       deviceId: randomUUID(),
       sessionId: randomUUID(),

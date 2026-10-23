@@ -1,3 +1,4 @@
+import type { TransactionQuery } from '@data-stores/psql'
 import { createStringPasskeys } from '@vouchington/auth'
 import { RateLimiter } from '@data-stores/valkey-rate-limiter'
 import onError from '@modules/on-error'
@@ -13,46 +14,83 @@ const discoverablePasskeyVerifyFailedRateLimiter = new RateLimiter({
   ttlSeconds: 60,
 })
 
-export const passkeyProtocol = createStringPasskeys<string, PublicPasskey, string>({
-  rpId: RP_ID,
-  rpName: RP_NAME,
-  challengeTtlSeconds: 300,
-  timeoutMs: 60_000,
-  state: { put: storeChallenge, consume: getAndDeleteChallenge },
-  repository: {
-    listCredentialIds: getPasskeyCredentialIdsByUserId,
-    findByCredentialId: getPasskeyByCredentialId,
-    /* v8 ignore next -- successful registration requires a real authenticator ceremony */
-    create: ({ userId, registration, context }) => createPasskey(userId, registration, context),
-    updateCounter: updatePasskeyCounter,
-  },
-  attestationType: 'none',
-  authenticatorAttachment: null,
-  supportedAlgorithmIDs: [-8, -7, -257],
-  residentKey: 'preferred',
-  keys: {
-    registration: (userId, deviceId) => `passkey-reg:${userId}:${deviceId}`,
-    authentication: (userId, deviceId) => `passkey-auth:${userId}:${deviceId}`,
-    discoverableAuthentication: deviceId => `passkey-discoverable-auth:${deviceId}`,
-  },
-  failureLimiter: {
-    reserve: async failure => {
-      if (failure.mode !== 'discoverable') return true
-      try {
-        const result = await discoverablePasskeyVerifyFailedRateLimiter.addAndCheck(
-          [failure.deviceId],
-          7,
-        )
-        return !result.limited
-      } catch (err) /* v8 ignore next 2 -- Valkey outage path fails open */ {
-        onError(err instanceof Error ? err : new Error(String(err)))
-        return true
-      }
+type PasskeyReAuthScope = {
+  currentUserId: string
+  sessionId: string
+  flowId: string
+  passkeyId: string
+}
+
+export const passkeyProtocol = createPasskeyProtocol()
+
+export function createPasskeyProtocol(
+  options: {
+    query?: TransactionQuery
+    reAuth?: PasskeyReAuthScope
+  } = {},
+) {
+  const scope = options.reAuth
+  if (scope && !options.query)
+    throw new Error('Passkey reauthentication requires its actor transaction')
+  return createStringPasskeys<string, PublicPasskey, string>({
+    rpId: RP_ID,
+    rpName: RP_NAME,
+    challengeTtlSeconds: 300,
+    timeoutMs: 60_000,
+    state: { put: storeChallenge, consume: getAndDeleteChallenge },
+    repository: {
+      listCredentialIds: userId =>
+        getPasskeyCredentialIdsByUserId(userId, {
+          query: options.query,
+          ...(scope && { passkeyId: scope.passkeyId }),
+        }),
+      findByCredentialId: credentialId =>
+        getPasskeyByCredentialId(
+          credentialId,
+          scope
+            ? {
+                query: options.query!,
+                owner: { currentUserId: scope.currentUserId, passkeyId: scope.passkeyId },
+              }
+            : { query: options.query },
+        ),
+      /* v8 ignore next -- successful registration requires a real authenticator ceremony */
+      create: ({ userId, registration, context }) =>
+        createPasskey(userId, registration, context, { query: options.query }),
+      updateCounter: (passkeyId, counter) =>
+        updatePasskeyCounter(passkeyId, counter, { query: options.query }),
     },
-  },
-  userVerification: {
-    registration: 'preferred',
-    authentication: 'preferred',
-    discoverableAuthentication: 'required',
-  },
-})
+    attestationType: 'none',
+    authenticatorAttachment: null,
+    supportedAlgorithmIDs: [-8, -7, -257],
+    residentKey: 'preferred',
+    keys: {
+      registration: (userId, deviceId) => `passkey-reg:${userId}:${deviceId}`,
+      authentication: (userId, deviceId) =>
+        scope
+          ? `passkey-reauth:${userId}:${scope.sessionId}:${deviceId}:${scope.flowId}:${scope.passkeyId}`
+          : `passkey-auth:${userId}:${deviceId}`,
+      discoverableAuthentication: deviceId => `passkey-discoverable-auth:${deviceId}`,
+    },
+    failureLimiter: {
+      reserve: async failure => {
+        if (failure.mode !== 'discoverable') return true
+        try {
+          const result = await discoverablePasskeyVerifyFailedRateLimiter.addAndCheck(
+            [failure.deviceId],
+            7,
+          )
+          return !result.limited
+        } catch (err) /* v8 ignore next 2 -- Valkey outage path fails open */ {
+          onError(err instanceof Error ? err : new Error(String(err)))
+          return true
+        }
+      },
+    },
+    userVerification: {
+      registration: 'preferred',
+      authentication: 'preferred',
+      discoverableAuthentication: 'required',
+    },
+  })
+}

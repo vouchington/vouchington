@@ -8,7 +8,7 @@ import {
   navigateTo,
   waitForBelowFoldHydration,
 } from 'vouchington-tooling/playwright'
-import type { getConfiguredOAuthProviders } from '../../../backend/services/oauth/config.mts'
+import type { getConfiguredOAuthProviders } from '../../../backend/services/oauth-accounts/configuration.mts'
 import type { getOAuthAuthorizationBrokerCapabilities } from '../../../backend/services/oauth/broker-config.mts'
 
 type OAuthProvidersResponse = {

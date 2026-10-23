@@ -100,7 +100,11 @@ export const backendCoreProjects: TestProjectConfiguration[] = [
       pool: 'forks',
       isolate: true,
       name: 'backend-no-data-mocks',
-      include: ['backend/**/*.no-data.mock.test.mts', ...backendNoDataUnitTestFiles],
+      include: [
+        'backend/config/**/*.test.mts',
+        'backend/**/*.no-data.mock.test.mts',
+        ...backendNoDataUnitTestFiles,
+      ],
       exclude: ['**/node_modules/**', '**/.git/**'],
       setupFiles: [
         './backend/test-helpers/vitest.setup.sentry-mock.mts',

@@ -1,5 +1,6 @@
-import { randomBytes, randomUUID } from 'node:crypto'
+import { randomBytes } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
+import { createTestAccountChangeActor } from '@voucha/test-helpers/account-change'
 import { createRequestQueryProfile } from '../../../test-helpers/query-profiles.mts'
 import { createTestUser, getTestOAuthAccountRaw } from '@voucha/test-helpers'
 import { completeOAuthAuthorizationTransaction } from '../authorization-completion-transaction.mts'
@@ -15,8 +16,9 @@ describe('OAuth connection completion query profile', () => {
     const user = await createTestUser()
     cleanup.userIds.push(user.id)
     const account = await createOAuthAccount('github', cleanup)
-    const deviceId = randomUUID()
-    const sessionId = randomUUID()
+    const actor = await createTestAccountChangeActor(user.id)
+    const deviceId = actor.session.did
+    const sessionId = actor.session.sid
     const completionToken = randomBytes(32).toString('base64url')
     const flowId = await insertCompletionReadyAuthorization(
       {

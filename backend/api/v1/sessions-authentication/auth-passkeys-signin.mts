@@ -61,7 +61,7 @@ app.route('/api/v1/auth/passkeys/authentication/verify').post(async (ctx: Contex
     response: body.response,
     deviceClass,
     deviceContext: getDeviceContext(ctx),
-    fetchUser: getPrivateUserByAny,
+    fetchUser: (userId, query) => getPrivateUserByAny(userId, { query }),
   })
   await advertiseDbscRegistration(ctx, login.deviceToken)
 

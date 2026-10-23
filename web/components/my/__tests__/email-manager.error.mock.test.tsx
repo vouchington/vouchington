@@ -1,4 +1,9 @@
+import { useFreshAuthenticationMock } from '@/test-helpers/components/my/mfa-reauth-dialog.mock-support'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+
+vi.mock(import('@/components/my/use-fresh-authentication'), () => ({
+  useFreshAuthentication: useFreshAuthenticationMock,
+}))
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 
 vi.mock(import('@/lib/api/client'), () => ({

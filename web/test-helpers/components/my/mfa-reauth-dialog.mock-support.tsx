@@ -68,3 +68,16 @@ export const mfaReauthStatus = {
   has_password: false,
   recovery_codes_remaining: 0,
 }
+
+// oxlint-disable-next-line react/only-export-components -- hook stand-in for tests outside the fresh-auth flow
+export function useFreshAuthenticationMock() {
+  return {
+    requestAuthentication: async () => 'reauth-token',
+    dialogProps: {
+      open: false,
+      mfaStatus: mfaReauthStatus,
+      onClose: () => {},
+      onVerified: (_token: string) => {},
+    },
+  }
+}
