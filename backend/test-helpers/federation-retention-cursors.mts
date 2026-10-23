@@ -19,31 +19,31 @@ export async function resetFollowerDistributionRetentionCursorForTest(
   await query(
     `/* seedFollowerDistributionRetentionCursorForTest */
      UPDATE follower_distribution_retention_cursors
-     SET sweep_cutoff_at = $1, cursor_distribution_id = $2::uuid, sweep_upper_bound_distribution_id = $2::uuid
+     SET sweep_cutoff_at = $1, cursor_distribution_position = $2::uuid, sweep_upper_bound_distribution_position = $2::uuid
      WHERE is_singleton`,
     [now, SEED_CURSOR],
   )
-  const { rows } = await query<{ cursor_distribution_id: string | null }>(
+  const { rows } = await query<{ cursor_distribution_position: string | null }>(
     `/* readFollowerDistributionRetentionCursorForTest */
-     SELECT cursor_distribution_id FROM follower_distribution_retention_cursors WHERE is_singleton`,
+     SELECT cursor_distribution_position FROM follower_distribution_retention_cursors WHERE is_singleton`,
   )
   await query(
     `/* resetFollowerDistributionRetentionCursorForTest */
      UPDATE follower_distribution_retention_cursors
-     SET sweep_cutoff_at = NULL, cursor_distribution_id = NULL, sweep_upper_bound_distribution_id = NULL
+     SET sweep_cutoff_at = NULL, cursor_distribution_position = NULL, sweep_upper_bound_distribution_position = NULL
      WHERE is_singleton`,
   )
-  return rows[0]?.cursor_distribution_id ?? null
+  return rows[0]?.cursor_distribution_position ?? null
 }
 
 export async function readFollowerDistributionRetentionCursorForTest(query: TransactionQuery) {
   const { rows } = await query<{
     sweep_cutoff_at: Date | null
-    cursor_distribution_id: string | null
-    sweep_upper_bound_distribution_id: string | null
+    cursor_distribution_position: string | null
+    sweep_upper_bound_distribution_position: string | null
   }>(
     `/* readFollowerDistributionRetentionCursorStateForTest */
-     SELECT sweep_cutoff_at, cursor_distribution_id, sweep_upper_bound_distribution_id
+     SELECT sweep_cutoff_at, cursor_distribution_position, sweep_upper_bound_distribution_position
      FROM follower_distribution_retention_cursors WHERE is_singleton`,
   )
   return rows[0]
