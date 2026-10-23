@@ -21,7 +21,7 @@ import {
   getAuthorizedPostContributionMembershipPlan,
 } from '@services/posts/authorization'
 import { assertNotSuspended, isAdminUser } from '@services/users'
-import { mintUUIDv7 } from '@ts-shared/session-jwt'
+import { mintUuidv7 as mintUUIDv7 } from '@vouchington/session-jwt'
 import app from '../../../app.mts'
 import { requireAuth, validateRequestContract } from '../../../response-helpers.mts'
 import { apiHeaders, apiRequestContract } from '@vouchington/utils/api-response-contract'

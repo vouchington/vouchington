@@ -76,6 +76,9 @@ importers:
       '@vouchington/postgres':
         specifier: ^0.0.16
         version: 0.0.16
+      '@vouchington/session-jwt':
+        specifier: ^0.0.2
+        version: 0.0.2
       '@vouchington/utils':
         specifier: ^0.7.5
         version: 0.7.5
@@ -1320,6 +1323,9 @@ importers:
       '@vouchington/rate-limit':
         specifier: ^0.2.0
         version: 0.2.0(@jongleberry/api-server@3.0.1)(valkyries@0.10.0)
+      '@vouchington/session-jwt':
+        specifier: ^0.0.2
+        version: 0.0.2
       '@vouchington/utils':
         specifier: ^0.7.5
         version: 0.7.5
@@ -2523,6 +2529,9 @@ importers:
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
+      '@vouchington/session-jwt':
+        specifier: ^0.0.2
+        version: 0.0.2
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -7208,6 +7217,9 @@ importers:
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
+      '@vouchington/session-jwt':
+        specifier: ^0.0.2
+        version: 0.0.2
       jose:
         specifier: ^6.2.13
         version: 6.2.13
@@ -14170,6 +14182,9 @@ importers:
       '@vouchington/rate-limit':
         specifier: ^0.2.0
         version: 0.2.0(@jongleberry/api-server@3.0.1)(valkyries@0.8.2)
+      '@vouchington/session-jwt':
+        specifier: ^0.0.2
+        version: 0.0.2
       '@vouchington/utils':
         specifier: ^0.7.5
         version: 0.7.5
@@ -14323,6 +14338,10 @@ importers:
         version: 5.0.5(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.5)(jsdom@30.1.3(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
 
   playwright:
+    dependencies:
+      '@vouchington/session-jwt':
+        specifier: ^0.0.2
+        version: 0.0.2
     devDependencies:
       '@axe-core/playwright':
         specifier: ^4.14.0

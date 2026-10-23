@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import {
-  mintUUIDv7,
-  type DeviceTokenPayload,
-  type SessionTokenPayload,
-} from '@ts-shared/session-jwt'
+import type { DeviceTokenPayload, SessionTokenPayload } from '@ts-shared/session-jwt'
+import { mintUuidv7 as mintUUIDv7 } from '@vouchington/session-jwt'
 import { deriveSessionCachePayload, isAuthShapedSessionToken } from '../jwt.mts'
 import { createSignedSessionJwt } from '../test-jwt-fixtures.mts'
 

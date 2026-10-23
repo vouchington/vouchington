@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
-import { mintUUIDv7, type DeviceTokenPayload } from '@ts-shared/session-jwt'
+import type { DeviceTokenPayload } from '@ts-shared/session-jwt'
+import { mintUuidv7 as mintUUIDv7 } from '@vouchington/session-jwt'
 import { verifyRequestDeviceIdentity } from './app.mts'
 
 type VerificationDependencies = NonNullable<Parameters<typeof verifyRequestDeviceIdentity>[2]>

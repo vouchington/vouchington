@@ -7,7 +7,7 @@ import {
   revokeAllAuthenticatedSessions,
   revokeAuthenticatedSession,
 } from '@services/jwt-session'
-import { isUUIDv7 } from '@ts-shared/session-jwt'
+import { isUuidv7 as isUUIDv7 } from '@vouchington/session-jwt'
 import { assertNotSuspended } from '@services/users/suspension'
 import { getDeviceContext } from './device-context.mts'
 import type { Context } from '@jongleberry/api-server'

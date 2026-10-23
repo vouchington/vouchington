@@ -9,7 +9,7 @@ import {
 } from '@voucha/test-helpers'
 
 import { createDeviceAndSessionTokens } from '@services/jwt-session'
-import { isUUIDv7 } from '@ts-shared/session-jwt'
+import { isUuidv7 as isUUIDv7 } from '@vouchington/session-jwt'
 import {
   legacyUuidV4,
   signLegacyDeviceJwt,

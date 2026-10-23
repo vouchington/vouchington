@@ -1,5 +1,5 @@
 import type { Context } from '@jongleberry/api-server'
-import { mintUUIDv7 } from '@ts-shared/session-jwt'
+import { mintUuidv7 as mintUUIDv7 } from '@vouchington/session-jwt'
 import type { CreatePostInput } from '@services/posts'
 
 export function sendCommunityPostHoneypotResponse(

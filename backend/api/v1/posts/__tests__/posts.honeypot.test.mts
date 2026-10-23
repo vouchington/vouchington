@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { CONTRIBUTING_USER_AGE_MS, createTestUserWithAge } from '@voucha/test-helpers'
-import { isUUIDv7 } from '@ts-shared/session-jwt'
+import { isUuidv7 as isUUIDv7 } from '@vouchington/session-jwt'
 
 describe('POST /api/v1/posts honeypot', () => {
   it('returns a complete fake post when honeypot field is filled', async () => {

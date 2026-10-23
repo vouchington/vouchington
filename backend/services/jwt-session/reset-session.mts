@@ -1,4 +1,4 @@
-import { mintUUIDv7 } from '@ts-shared/session-jwt'
+import { mintUuidv7 as mintUUIDv7 } from '@vouchington/session-jwt'
 import { createDeviceAndSessionTokens, createSessionToken } from './create.mts'
 import { revokeSession } from './revocation.mts'
 import { verifyDeviceAndSessionTokens } from './verify.mts'

@@ -1,11 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import * as jose from 'jose'
-import {
-  EDGE_ANON_SESSION_JWT_ISSUER,
-  encodeJwkSetForEnv,
-  signDeviceJwt,
-  signSessionJwt,
-} from '@ts-shared/session-jwt'
+import { EDGE_ANON_SESSION_JWT_ISSUER, signDeviceJwt, signSessionJwt } from '@ts-shared/session-jwt'
+import { encodeJwkSet as encodeJwkSetForEnv } from '@vouchington/session-jwt'
 import { v7 } from 'uuid'
 import { verifyDeviceAndSessionTokens } from '../index.mts'
 

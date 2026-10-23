@@ -1,12 +1,8 @@
 import { afterEach, beforeEach, onTestFinished, describe, expect, it, vi } from 'vitest'
 import * as jose from 'jose'
 import { v4 as uuidv4, v7 as uuidv7, validate as uuidValidate, version as uuidVersion } from 'uuid'
-import {
-  encodeJwkSetForEnv,
-  verifySessionJwt,
-  verifyDeviceJwt,
-  ensureAnonymousSession,
-} from '../index.mts'
+import { verifySessionJwt, verifyDeviceJwt, ensureAnonymousSession } from '../index.mts'
+import { encodeJwkSet as encodeJwkSetForEnv } from '@vouchington/session-jwt'
 
 async function generatePrivateJwk(kid: string): Promise<jose.JWK> {
   const { privateKey } = await jose.generateKeyPair('RS512', { extractable: true })

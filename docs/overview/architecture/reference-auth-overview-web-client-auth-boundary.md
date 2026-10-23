@@ -30,6 +30,11 @@ Session expiry is computed by `sessionExpiryFor(dc)` / `sessionExpirySecondsFor(
 `dc === 'attested'`, the default otherwise. The device token's own expiry never changes. See
 [App Attest](app-attestation.md) for how a device becomes attested.
 
+JWT cryptography and key validation come from `@vouchington/session-jwt` in both backend and
+Worker runtimes. The shared app adapter owns Voucha issuers, audiences, payload policy and
+environment bindings; session storage, pairing and refresh remain application concerns. Rotation
+keeps usable public keys available even when an unrelated configured candidate cannot be imported.
+
 ### JWT Payload
 
 **Device token (`dt`):** `{ did: string, aud: 'voucha:device', dc?: 'attested' }`

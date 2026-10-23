@@ -5,9 +5,11 @@ import {
   DEVICE_EXPIRATION_STRING,
   RECHECK_AFTER_SECONDS,
   SESSION_CHECK_AFTER_SECONDS,
-  mintUUIDv7,
-  validateUUIDv7,
 } from '@ts-shared/session-jwt'
+import {
+  mintUuidv7 as mintUUIDv7,
+  validateUuidv7 as validateUUIDv7,
+} from '@vouchington/session-jwt'
 import { validate as isUUID } from 'uuid'
 import type { DeviceAndSessionTokenResult, DeviceClass, DeviceContext } from './types.mts'
 import { trackAuthSessionEvent } from '@services/analytics'

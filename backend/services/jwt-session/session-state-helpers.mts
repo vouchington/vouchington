@@ -1,4 +1,5 @@
-import { mintUUIDv7, verifyDeviceJwt, type DeviceClass } from '@ts-shared/session-jwt'
+import { verifyDeviceJwt, type DeviceClass } from '@ts-shared/session-jwt'
+import { mintUuidv7 as mintUUIDv7 } from '@vouchington/session-jwt'
 
 type DeviceState = {
   did: string

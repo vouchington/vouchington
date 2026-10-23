@@ -7,6 +7,9 @@
   "author": "",
   "type": "module",
   "scripts": {},
+  "dependencies": {
+    "@vouchington/session-jwt": "^0.0.2"
+  },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",
     "@playwright/test": "^1.64.1",

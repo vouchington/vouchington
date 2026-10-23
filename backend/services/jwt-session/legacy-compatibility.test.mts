@@ -1,5 +1,5 @@
 import { beforeAll, beforeEach, afterEach, describe, expect, it } from 'vitest'
-import { isUUIDv7 } from '@ts-shared/session-jwt'
+import { isUuidv7 as isUUIDv7 } from '@vouchington/session-jwt'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   createTestUser,

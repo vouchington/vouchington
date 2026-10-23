@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, afterEach } from 'vitest'
 import request, { type Test } from 'supertest'
-import { isUUIDv7, mintUUIDv7 } from '@ts-shared/session-jwt'
+import { isUuidv7 as isUUIDv7, mintUuidv7 as mintUUIDv7 } from '@vouchington/session-jwt'
 import { getFeatureFlags } from '@services/feature-flags'
 import { getOptionalRequestClientInfo } from '@modules/request-client-info'
 import app from './app.mts'

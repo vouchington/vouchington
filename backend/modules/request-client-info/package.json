@@ -24,6 +24,7 @@
     "@ts-shared/request-client-info": "workspace:^",
     "@ts-shared/session-jwt": "workspace:^",
     "@voucha/types": "workspace:^",
+    "@vouchington/session-jwt": "^0.0.2",
     "http-errors": "^2.0.1"
   },
   "devDependencies": {
