@@ -695,6 +695,25 @@
     "moderation_media_reveal_surfaces": {
       "values": ["mod_queue", "review_queue", "reports", "post_page"]
     },
+    "moderation_record_cleanup_kinds": {
+      "values": [
+        "reports",
+        "cases",
+        "appeals",
+        "disputes",
+        "actions",
+        "training_feedbacks",
+        "judgements",
+        "integrity_flags",
+        "report_penalties",
+        "vote_penalties",
+        "warnings",
+        "suspensions",
+        "bans",
+        "notes",
+        "applications"
+      ]
+    },
     "moderation_report_entity_types": {
       "values": ["rss_feed_item", "post", "comment", "user", "url_hostname"]
     },
@@ -16932,7 +16951,7 @@
           "ordinalPosition": 5
         }
       },
-      "comment": "Membership applications submitted by users to join a community.",
+      "comment": "Membership applications submitted by users to join a community. Decided applications and answers are deleted 12 months after the decision.",
       "foreignKeys": {
         "community_applications_community_id_fkey": {
           "columns": ["community_id"],
@@ -17441,7 +17460,7 @@
           "ordinalPosition": 3
         }
       },
-      "comment": "Tracks community-scoped bans. A ban prevents the user from joining, posting, or commenting in the community. NULL lifted_at means the ban is active; NULL expires_at means permanent.",
+      "comment": "Community-scoped bans. Active bans remain; lifted or expired bans are deleted after 12 months once linked appeals have expired.",
       "foreignKeys": {
         "community_bans_banned_by_id_fkey": {
           "columns": ["banned_by_id"],
@@ -66072,7 +66091,7 @@
           "ordinalPosition": 5
         }
       },
-      "comment": "Appeals filed by users against moderation actions (warnings, bans, post removals, platform suspensions). Goes through an AI-assisted draft + human-approval workflow before any response is delivered.",
+      "comment": "Appeals filed against moderation actions. Resolved appeals and lifecycle changes are deleted after 24 months; pending appeals remain visible to their members.",
       "foreignKeys": {
         "fk_moderation_appeals__user_suspension_id": {
           "columns": ["user_suspension_id"],
@@ -66774,7 +66793,7 @@
           "ordinalPosition": 7
         }
       },
-      "comment": "Unified moderation case ledger. One open case per entity at a time; all moderation stages (report → judgement → enforcement → notice → appeal) reference a case_id. Closed via resolved_at when all open reports and appeals for the entity are resolved.",
+      "comment": "Unified moderation case ledger. One open case per entity at a time; all moderation stages reference a case_id. Resolved cases are deleted after 24 months once every child record has expired.",
       "foreignKeys": {
         "moderation_cases_hostname_id_fkey": {
           "columns": ["hostname_id"],
@@ -67736,6 +67755,89 @@
       "triggers": {},
       "uniqueConstraints": {}
     },
+    "moderation_record_cleanup_cursors": {
+      "checkConstraints": {},
+      "columns": {
+        "cursor_id": {
+          "comment": "Last examined UUIDv7 id; NULL starts the next full pass, with no entity foreign key because examined rows may be deleted.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2
+        },
+        "kind": {
+          "comment": "Moderation record family scanned by this cursor.",
+          "dataType": "moderation_record_cleanup_kinds",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        },
+        "sweep_upper_bound_id": {
+          "comment": "Frozen exclusive UUIDv7 upper bound for the current pass; NULL when no pass is in progress.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3
+        },
+        "updated_at": {
+          "comment": "When this stream last checkpointed.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4
+        }
+      },
+      "comment": "Durable UUIDv7 keyset progress for bounded daily moderation record retention.",
+      "foreignKeys": {},
+      "indexes": {
+        "moderation_record_cleanup_cursors_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX moderation_record_cleanup_cursors_pkey ON public.moderation_record_cleanup_cursors USING btree (kind)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "kind",
+              "descending": false,
+              "expression": "kind",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.enum_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["kind"]
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_moderation_record_cleanup_cursors_updated_at": {
+          "definition": "CREATE TRIGGER trigger_moderation_record_cleanup_cursors_updated_at BEFORE UPDATE ON public.moderation_record_cleanup_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        }
+      },
+      "uniqueConstraints": {}
+    },
     "moderation_report_judgements": {
       "checkConstraints": {
         "moderation_report_judgements_check": {
@@ -67935,7 +68037,7 @@
           "ordinalPosition": 7
         }
       },
-      "comment": "AI-generated judgements on reported entities recommending a moderation action.",
+      "comment": "AI-generated judgements on reported entities. Superseded dispatched rows are deleted after 90 days; the latest judgement and undispatched work remain.",
       "foreignKeys": {
         "moderation_report_judgements_case_id_fkey": {
           "columns": ["case_id"],
@@ -68476,7 +68578,7 @@
           "ordinalPosition": 10
         }
       },
-      "comment": "User-submitted reports flagging content or accounts for moderator review. Exactly one entity FK is set per row.",
+      "comment": "User-submitted reports flagging content or accounts for moderator review. Exactly one entity FK is set per row. Resolved reports are deleted 24 months after review; pending reports remain.",
       "foreignKeys": {
         "moderation_reports_case_id_fkey": {
           "columns": ["case_id"],
@@ -69045,7 +69147,7 @@
     "moderation_training_feedbacks": {
       "checkConstraints": {
         "chk_moderation_training_feedbacks__targets": {
-          "definition": "CHECK ((((source_type <> 'prompt_test_run'::moderation_training_source_types) OR (post_id IS NULL)) AND ((source_type = ANY (ARRAY['prompt_test_run'::moderation_training_source_types, 'moderation_report'::moderation_training_source_types, 'moderation_appeal'::moderation_training_source_types])) OR (post_id IS NOT NULL)) AND ((agent_moderation_id IS NOT NULL) = (source_type = ANY (ARRAY['agent_moderation'::moderation_training_source_types, 'community_prompt'::moderation_training_source_types, 'agent_moderation_vote'::moderation_training_source_types]))) AND ((moderation_report_id IS NOT NULL) = (source_type = 'moderation_report'::moderation_training_source_types)) AND ((moderation_appeal_id IS NOT NULL) = (source_type = 'moderation_appeal'::moderation_training_source_types)) AND ((review_dispute_id IS NOT NULL) = (source_type = 'review_dispute'::moderation_training_source_types)) AND ((post_clearance_change_id IS NULL) OR (source_type = 'community_review'::moderation_training_source_types))))",
+          "definition": "CHECK ((((source_type <> 'prompt_test_run'::moderation_training_source_types) OR (post_id IS NULL)) AND ((source_type = ANY (ARRAY['prompt_test_run'::moderation_training_source_types, 'moderation_report'::moderation_training_source_types, 'moderation_appeal'::moderation_training_source_types])) OR (post_id IS NOT NULL)) AND ((agent_moderation_id IS NOT NULL) = (source_type = ANY (ARRAY['agent_moderation'::moderation_training_source_types, 'community_prompt'::moderation_training_source_types, 'agent_moderation_vote'::moderation_training_source_types]))) AND ((moderation_report_id IS NULL) OR (source_type = 'moderation_report'::moderation_training_source_types)) AND ((moderation_appeal_id IS NULL) OR (source_type = 'moderation_appeal'::moderation_training_source_types)) AND ((review_dispute_id IS NULL) OR (source_type = 'review_dispute'::moderation_training_source_types)) AND ((post_clearance_change_id IS NULL) OR (source_type = 'community_review'::moderation_training_source_types))))",
           "validated": true
         },
         "moderation_training_feedbacks_human_action_check": {
@@ -69275,11 +69377,11 @@
           "ordinalPosition": 20
         }
       },
-      "comment": "Human moderation feedback events used to build agent training and evaluation datasets.",
+      "comment": "Human moderation feedback events. Rows are deleted after 180 days except false-positive suppression still needed by a flagged post.",
       "foreignKeys": {
         "fk_moderation_training_feedbacks__moderation_appeal_id": {
           "columns": ["moderation_appeal_id"],
-          "onDelete": "CASCADE",
+          "onDelete": "SET NULL",
           "onUpdate": "NO ACTION",
           "referencedColumns": ["id"],
           "referencedTable": "moderation_appeals",
@@ -69303,7 +69405,7 @@
         },
         "moderation_training_feedbacks_moderation_report_id_fkey": {
           "columns": ["moderation_report_id"],
-          "onDelete": "CASCADE",
+          "onDelete": "SET NULL",
           "onUpdate": "NO ACTION",
           "referencedColumns": ["id"],
           "referencedTable": "moderation_reports",
@@ -70510,7 +70612,7 @@
           "ordinalPosition": 16
         }
       },
-      "comment": "Append-only unified log of moderator/admin actions.",
+      "comment": "Unified log of moderator/admin actions. Scheduled-job, backfill and queue actions are deleted after 90 days; other actions after 24 months.",
       "foreignKeys": {
         "fk_moderator_actions__agent_moderation_post__agent_moderation": {
           "columns": ["agent_moderation_post_id", "agent_moderation_id"],
@@ -80740,13 +80842,13 @@
           "ordinalPosition": 7
         },
         "review_dispute_id": {
-          "comment": "The resolved dispute that produced this annotation.",
+          "comment": "The resolved dispute that produced this annotation, when its retention window has not elapsed. A public annotation survives dispute deletion.",
           "dataType": "uuid",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
-          "nullable": false,
+          "nullable": true,
           "ordinalPosition": 3
         }
       },
@@ -80778,7 +80880,7 @@
         },
         "post_dispute_annotations_review_dispute_id_fkey": {
           "columns": ["review_dispute_id"],
-          "onDelete": "CASCADE",
+          "onDelete": "SET NULL",
           "onUpdate": "NO ACTION",
           "referencedColumns": ["id"],
           "referencedTable": "review_disputes",
@@ -113297,7 +113399,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8
+          "ordinalPosition": 11
         },
         "created_by_id": {
           "comment": null,
@@ -113328,6 +113430,36 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 3
+        },
+        "review_due_at": {
+          "comment": "Next annual review deadline while this penalty remains active.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": "(CURRENT_TIMESTAMP + '1 year'::interval)",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 10
+        },
+        "reviewed_at": {
+          "comment": "Most recent staff confirmation that an active penalty remains warranted.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8
+        },
+        "reviewed_by_id": {
+          "comment": "Staff member who last reviewed the active penalty.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 9
         },
         "revoked_at": {
           "comment": "When the penalty was revoked.",
@@ -113367,7 +113499,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 9
+          "ordinalPosition": 12
         },
         "user_id": {
           "comment": "The penalized reporter.",
@@ -113380,10 +113512,18 @@
           "ordinalPosition": 2
         }
       },
-      "comment": "Penalties applied to bad-faith reporters as a result of a confirmed mass-report campaign.",
+      "comment": "Penalties applied to bad-faith reporters. Revoked rows are deleted after 180 days; active rows remain subject to annual staff review.",
       "foreignKeys": {
         "report_abuse_penalties_created_by_id_fkey": {
           "columns": ["created_by_id"],
+          "onDelete": "SET NULL",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        },
+        "report_abuse_penalties_reviewed_by_id_fkey": {
+          "columns": ["reviewed_by_id"],
           "onDelete": "SET NULL",
           "onUpdate": "NO ACTION",
           "referencedColumns": ["id"],
@@ -113457,6 +113597,61 @@
           ],
           "live": true,
           "predicate": "(source_flag_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_report_abuse_penalties__review_due": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_report_abuse_penalties__review_due ON public.report_abuse_penalties USING btree (review_due_at, id) WHERE (revoked_at IS NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "review_due_at",
+              "descending": false,
+              "expression": "review_due_at",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(revoked_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_report_abuse_penalties__reviewed_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_report_abuse_penalties__reviewed_by_id ON public.report_abuse_penalties USING btree (reviewed_by_id) WHERE (reviewed_by_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "reviewed_by_id",
+              "descending": false,
+              "expression": "reviewed_by_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(reviewed_by_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -113818,7 +114013,7 @@
           "ordinalPosition": 14
         }
       },
-      "comment": "Moderation review queue for suspected mass-report campaigns. Exactly one entity FK is set per row.",
+      "comment": "Moderation review queue for suspected mass-report campaigns. Resolved flags and their reporter rows are deleted after 180 days.",
       "foreignKeys": {
         "report_integrity_flags_hostname_id_fkey": {
           "columns": ["hostname_id"],
@@ -116980,7 +117175,7 @@
           "ordinalPosition": 28
         }
       },
-      "comment": "Disputes filed by verified topic claimants against reviews of their topic. Goes through a public moderation queue with AI-assisted draft resolution; all messaging is human-approved before delivery.",
+      "comment": "Disputes filed by verified topic claimants against reviews of their topic. Resolved disputes and their lifecycle changes are deleted after 24 months; public annotations survive independently.",
       "foreignKeys": {
         "fk_review_disputes_latest_lifecycle_change_id": {
           "columns": ["latest_lifecycle_change_id"],
@@ -137028,7 +137223,7 @@
           "ordinalPosition": 2
         }
       },
-      "comment": "Private moderator notes on a user. community_id NULL = global/site-level note.",
+      "comment": "Private moderator notes on a user. community_id NULL is a global note. Soft-deleted notes are deleted after 30 days.",
       "foreignKeys": {
         "user_moderator_notes_author_user_id_fkey": {
           "columns": ["author_user_id"],
@@ -140475,7 +140670,7 @@
           "ordinalPosition": 2
         }
       },
-      "comment": "Append-only history of user suspensions. A user is suspended as long as any active row (lifted_at IS NULL) exists. NULL lifted_at means active. Canonical insert-then-cancel pattern; never UPDATE timestamps in place. See community_bans for reference.",
+      "comment": "History of user suspensions. Active rows remain; lifted rows are deleted after 12 months once linked appeals have expired.",
       "foreignKeys": {
         "user_suspensions_lifted_by_id_fkey": {
           "columns": ["lifted_by_id"],
@@ -141393,7 +141588,7 @@
           "ordinalPosition": 2
         }
       },
-      "comment": "Records of formal warnings issued to users by moderators or admins.",
+      "comment": "Formal warnings. Appeals may open for 12 months after issue. A warning is deleted after 12 months from issue or 90 days from revoke, once all linked appeals have expired.",
       "foreignKeys": {
         "user_warnings_case_id_fkey": {
           "columns": ["case_id"],
@@ -145156,7 +145351,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11
+          "ordinalPosition": 14
         },
         "created_by_id": {
           "comment": "User who created the penalty, or NULL after that account is purged.",
@@ -145197,6 +145392,36 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 4
+        },
+        "review_due_at": {
+          "comment": "Next annual review deadline while this penalty remains active.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": "(CURRENT_TIMESTAMP + '1 year'::interval)",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 13
+        },
+        "reviewed_at": {
+          "comment": "Most recent staff confirmation that an active penalty remains warranted.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 11
+        },
+        "reviewed_by_id": {
+          "comment": "Staff member who last reviewed the active penalty.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 12
         },
         "revoked_at": {
           "comment": "When the penalty was revoked.",
@@ -145256,7 +145481,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 12
+          "ordinalPosition": 15
         },
         "user_id": {
           "comment": "The penalized user.",
@@ -145269,10 +145494,18 @@
           "ordinalPosition": 2
         }
       },
-      "comment": "Penalties applied to users' vote weights as a result of detected voting rings or manual moderation.",
+      "comment": "Penalties applied to users' vote weights. Revoked rows are deleted after 180 days; active rows remain subject to annual staff review.",
       "foreignKeys": {
         "vote_weight_penalties_created_by_id_fkey": {
           "columns": ["created_by_id"],
+          "onDelete": "SET NULL",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        },
+        "vote_weight_penalties_reviewed_by_id_fkey": {
+          "columns": ["reviewed_by_id"],
           "onDelete": "SET NULL",
           "onUpdate": "NO ACTION",
           "referencedColumns": ["id"],
@@ -145431,6 +145664,61 @@
           ],
           "live": true,
           "predicate": "(source_post_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_vote_weight_penalties__review_due": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_vote_weight_penalties__review_due ON public.vote_weight_penalties USING btree (review_due_at, id) WHERE (revoked_at IS NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "review_due_at",
+              "descending": false,
+              "expression": "review_due_at",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(revoked_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_vote_weight_penalties__reviewed_by_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_vote_weight_penalties__reviewed_by_id ON public.vote_weight_penalties USING btree (reviewed_by_id) WHERE (reviewed_by_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "reviewed_by_id",
+              "descending": false,
+              "expression": "reviewed_by_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(reviewed_by_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
