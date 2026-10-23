@@ -32,6 +32,15 @@ export const accountExclusions = [
   ),
   ...exclusions(
     'auth-session',
+    'First-party native OTP and session-to-MCP credential bootstrap; these authenticate the caller rather than perform a delegated MCP write',
+    [
+      'POST /auth/native/email-address/tokens',
+      'POST /auth/native/email-address/login',
+      'POST /oauth/native-session-tokens',
+    ],
+  ),
+  ...exclusions(
+    'auth-session',
     'OAuth authorization-server protocol endpoint at the host root',
     ['POST /register', 'POST /revoke', 'POST /token'],
     '',
