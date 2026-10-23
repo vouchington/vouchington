@@ -26,5 +26,11 @@ app.route('/api/v1/auth/mfa/totp/verification').post(async (ctx: Context) => {
   const valid = await verifyTotpCode(attempt.userId, body.code)
   ctx.assert(valid, 401, 'Invalid verification code')
 
-  ctx.json(await completeMfaVerification(ctx, loginAttemptId))
+  ctx.json(
+    await completeMfaVerification(ctx, loginAttemptId, {
+      type: 'totp',
+      authenticatorId: valid.authenticatorId,
+      verifiedAt: Math.floor(Date.now() / 1000),
+    }),
+  )
 })

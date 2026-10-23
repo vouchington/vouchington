@@ -1,3 +1,4 @@
+import { isStrictSessionTokenPair } from './token-pair.mts'
 import {
   EDGE_ANON_SESSION_JWT_ISSUER,
   verifyDeviceJwt,
@@ -50,29 +51,7 @@ async function verifyDeviceAndSessionTokensWithOptions({
       return false
     }
 
-    // Device IDs from both tokens must match
-    if (devicePayload.did !== sessionPayload.did) {
-      return false
-    }
-
-    if (
-      sessionPayload.uid &&
-      (!devicePayload.jti ||
-        !sessionPayload.client ||
-        typeof sessionPayload.iat !== 'number' ||
-        typeof sessionPayload.exp !== 'number' ||
-        typeof devicePayload.iat !== 'number' ||
-        typeof devicePayload.exp !== 'number' ||
-        devicePayload.client !== sessionPayload.client ||
-        devicePayload.refresh_uid !== sessionPayload.uid ||
-        devicePayload.refresh_sid !== sessionPayload.sid ||
-        (sessionPayload.client === 'native' && devicePayload.dc !== 'attested') ||
-        (sessionPayload.client === 'web' &&
-          (!sessionPayload.ua_hash ||
-            devicePayload.ua_hash !== sessionPayload.ua_hash ||
-            devicePayload.ja4_hash !== sessionPayload.ja4_hash)))
-    )
-      return false
+    if (!isStrictSessionTokenPair(devicePayload, sessionPayload)) return false
 
     const membershipEntitlementExpired =
       sessionPayload.mpe !== undefined && Math.floor(Date.now() / 1000) >= sessionPayload.mpe
@@ -82,6 +61,7 @@ async function verifyDeviceAndSessionTokensWithOptions({
       sid: sessionPayload.sid,
       uid: sessionPayload.uid,
       client: sessionPayload.client,
+      mfa_at: devicePayload.mfa_at,
       ua_hash: sessionPayload.ua_hash,
       ja4_hash: sessionPayload.ja4_hash,
       exp: sessionPayload.exp,

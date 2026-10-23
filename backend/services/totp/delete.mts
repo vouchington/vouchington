@@ -15,7 +15,7 @@ export async function deleteTotpAuthenticator(
     return result.rowCount
   }
   let rowCount: number | null
-  // MFA protection already holds the active-user fence and all factor row locks.
+  // MFA protection already holds the active-user fence and owning user row lock.
   if (lockedUserTransaction) {
     rowCount = await run(lockedUserTransaction)
   } else {

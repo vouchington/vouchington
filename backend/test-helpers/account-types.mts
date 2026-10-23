@@ -1,11 +1,8 @@
+import { getTestPrivateUserById } from './entities/private-users.mts'
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { PrivateUser } from '@voucha/types/entities/user'
-import {
-  createTestUserDirect,
-  addTestUserRole,
-  getTestPrivateUserById,
-} from './entities/users-direct.mts'
+import { createTestUserDirect, addTestUserRole } from './entities/users-direct.mts'
 
 type PlatformKind = 'official' | 'system' | null
 export type PlatformAccountTestKind = 'official' | 'system' | 'ai_agent'

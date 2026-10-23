@@ -4744,6 +4744,15 @@ importers:
       '@queues/entity-listeners':
         specifier: workspace:^
         version: link:../../queues/entity-listeners
+      '@services/jwt-session':
+        specifier: workspace:^
+        version: link:../jwt-session
+      '@services/mfa':
+        specifier: workspace:^
+        version: link:../mfa
+      '@services/oauth-accounts':
+        specifier: workspace:^
+        version: link:../oauth-accounts
       '@valkey/valkey-glide':
         specifier: ^2.5.3
         version: 2.5.3
@@ -8058,12 +8067,21 @@ importers:
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
+      '@modules/token-secrets':
+        specifier: workspace:^
+        version: link:../../modules/token-secrets
+      '@queues/emails':
+        specifier: workspace:^
+        version: link:../../queues/emails
       '@queues/vote-aggregation':
         specifier: workspace:^
         version: link:../../queues/vote-aggregation
       '@services/jwt-session':
         specifier: workspace:^
         version: link:../jwt-session
+      '@services/oauth-accounts':
+        specifier: workspace:^
+        version: link:../oauth-accounts
       '@services/passkeys':
         specifier: workspace:^
         version: link:../passkeys
@@ -8565,6 +8583,9 @@ importers:
       '@services/oauth':
         specifier: workspace:^
         version: link:../oauth
+      '@services/oauth-accounts':
+        specifier: workspace:^
+        version: link:../oauth-accounts
       '@services/post-publication':
         specifier: workspace:^
         version: link:../post-publication
@@ -8730,6 +8751,9 @@ importers:
       '@services/users':
         specifier: workspace:^
         version: link:../users
+      '@valkey/valkey-glide':
+        specifier: ^2.5.3
+        version: 2.5.3
       '@voucha/config':
         specifier: workspace:^
         version: link:../../config
@@ -8752,6 +8776,9 @@ importers:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../../test-helpers
+      undici:
+        specifier: ^8.12.3
+        version: 8.12.3
 
   backend/services/oauth-accounts:
     dependencies:
@@ -8776,6 +8803,9 @@ importers:
       '@services/email-address-validator':
         specifier: workspace:^
         version: link:../email-address-validator
+      '@voucha/config':
+        specifier: workspace:^
+        version: link:../../config
       '@vouchington/sentry':
         specifier: ^0.4.0
         version: 0.4.0(@sentry/browser@11.9.0)(@sentry/core@11.9.0)(@sentry/node@11.9.0(rollup@4.63.4)(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.29)))
@@ -9242,6 +9272,9 @@ importers:
       '@services/jwt-session':
         specifier: workspace:^
         version: link:../jwt-session
+      '@services/oauth-accounts':
+        specifier: workspace:^
+        version: link:../oauth-accounts
       '@simplewebauthn/server':
         specifier: ^14.0.3
         version: 14.0.3
@@ -9273,6 +9306,9 @@ importers:
       '@vouchington/worker-runtime':
         specifier: ^0.2.1
         version: 0.2.1(@aws-sdk/client-sqs@3.1156.0)(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
+      uuid:
+        specifier: ^14.0.3
+        version: 14.0.3
 
   backend/services/platform-stats:
     dependencies:

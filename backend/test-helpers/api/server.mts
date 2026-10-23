@@ -9,9 +9,8 @@ import '../../api/index.mts'
 import http from 'node:http'
 import { Buffer } from 'node:buffer'
 import type { PrivateUser } from '../../services/users/types.mts'
-import { createDeviceAndSessionTokens } from '../../services/jwt-session/index.mts'
+import { createAuthenticatedTestSession } from '../authenticated-session.mts'
 import type { FeatureFlags } from '../../services/feature-flags/index.mts'
-import { v7 } from 'uuid'
 import {
   listenOnLoopbackEphemeralPort,
   type LoopbackHost,
@@ -97,10 +96,10 @@ export const createRequest = (
     }
   }
 
-  // Add authentication helper method
+  // Authenticated fixtures model a completed flow with its original factor proof.
   agent.authenticateAs = async function (user: PrivateUser) {
-    const did = v7()
-    const { deviceToken, sessionToken } = await createDeviceAndSessionTokens({ did, uid: user.id })
+    const { deviceToken, sessionToken } = await createAuthenticatedTestSession(user)
+    const did = deviceToken.payload.did
     const cookies = [`dt=${deviceToken.token}`, `st=${sessionToken.token}`]
 
     this.did = did

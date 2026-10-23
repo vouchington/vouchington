@@ -65,6 +65,7 @@ describe('loginAsUser helpers', () => {
       did: TEST_DID,
       uid: TEST_UID,
       deviceContext: { user_agent: 'Synthetic browser' },
+      mfaVerifiedAt: expect.any(Number),
     })
     expect(mockRetryOnConnectionLost).toHaveBeenCalledTimes(1)
     expect(page.goto).toHaveBeenNthCalledWith(1, '/', {
@@ -113,6 +114,7 @@ describe('loginAsUser helpers', () => {
       did: TEST_DID,
       uid: TEST_USER_ID,
       deviceContext: { user_agent: 'Synthetic browser' },
+      mfaVerifiedAt: expect.any(Number),
     })
   })
 })

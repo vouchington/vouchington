@@ -1,6 +1,8 @@
 'use client'
 
 import { useRef, useState } from 'react'
+import { useFreshAuthentication } from './use-fresh-authentication'
+import { MfaReauthDialog } from './mfa-reauth-dialog'
 import { toast } from 'sonner'
 import onError, { onSuccess } from '@/lib/on-error'
 import { Button } from '@/components/ui/button'
@@ -28,6 +30,7 @@ type Step = 'list' | 'add' | 'verify'
 
 export function EmailManager({ initialData, initialEmailAddresses }: Props) {
   const t = useTranslations()
+  const authentication = useFreshAuthentication()
   const { emails, pagination, resetToFirstPage, removeEmail, restoreEmail } =
     useEmailAddressPagination(initialData, initialEmailAddresses)
   const handleLoadMore = pagination.loadMore
@@ -40,9 +43,11 @@ export function EmailManager({ initialData, initialEmailAddresses }: Props) {
 
   async function handleRequestVerification(e: React.FormEvent) {
     e.preventDefault()
+    const reAuthToken = await authentication.requestAuthentication()
+    if (!reAuthToken) return
     setLoading(true)
     try {
-      const result = await requestMyEmailAddressVerification(newEmail)
+      const result = await requestMyEmailAddressVerification(newEmail, reAuthToken)
       setPendingEmail(result.email_address)
       setStep('verify')
       toast.info(t('extracted.my.emailManager.verificationCodeSentCheckYourEmail_b2532b31'))
@@ -57,10 +62,12 @@ export function EmailManager({ initialData, initialEmailAddresses }: Props) {
   }
 
   async function submitVerify(value: string) {
+    const reAuthToken = await authentication.requestAuthentication()
+    if (!reAuthToken) return
     submitting.current = true
     setLoading(true)
     try {
-      const data = await verifyMyEmailAddress(pendingEmail, value)
+      const data = await verifyMyEmailAddress(pendingEmail, value, reAuthToken)
       resetToFirstPage?.(data)
       restoreEmail(pendingEmail)
       setStep('list')
@@ -86,9 +93,11 @@ export function EmailManager({ initialData, initialEmailAddresses }: Props) {
   }
 
   async function handleSetPrimary(emailAddress: string) {
+    const reAuthToken = await authentication.requestAuthentication()
+    if (!reAuthToken) return
     setLoading(true)
     try {
-      const data = await setPrimaryMyEmailAddress(emailAddress)
+      const data = await setPrimaryMyEmailAddress(emailAddress, reAuthToken)
       resetToFirstPage?.(data)
       onSuccess(t('extracted.my.emailManager.primaryEmailUpdated_9a61888f'))
     } catch (err) {
@@ -102,9 +111,11 @@ export function EmailManager({ initialData, initialEmailAddresses }: Props) {
   }
 
   async function handleRemove(emailAddress: string) {
+    const reAuthToken = await authentication.requestAuthentication()
+    if (!reAuthToken) return
     setLoading(true)
     try {
-      await deleteMyEmailAddress(emailAddress)
+      await deleteMyEmailAddress(emailAddress, reAuthToken)
       removeEmail(emailAddress)
       onSuccess(t('extracted.my.emailManager.emailRemoved_89fcd2a8'))
     } catch (err) {
@@ -119,6 +130,7 @@ export function EmailManager({ initialData, initialEmailAddresses }: Props) {
 
   return (
     <div className='space-y-4'>
+      <MfaReauthDialog {...authentication.dialogProps} />
       <h2 className='text-lg font-semibold'>
         {t('extracted.my.emailManager.emailAddresses_33f2b751')}
       </h2>

@@ -254,3 +254,20 @@ requested it; replacing one session’s challenge does not interrupt another ses
 Web login links prefill the code and require deliberate submission.
 Swift and .NET OTP input, validation and deep-link presentation must adopt the producer contract;
 client implementation is dependent work and the producer lands first.
+
+## Fresh authentication for account settings
+
+Web prompts for fresh authentication before email-address changes, passkey or TOTP enrollment and
+removal, and provider connection changes, including Bluesky. The server consumes a separate proof for each mutation,
+revokes other sessions, and notifies the primary address captured before the change. Broker
+connections carry the proof at authorization initiation. An administrator must complete MFA in the
+current session before using staff authority; enrollment alone does not elevate that session.
+Fresh proof belongs to the requesting device and session. Users can prove control with their current
+primary email, authenticator, a selected owned passkey, or a fresh roundtrip through an already
+linked provider. Provider and passkey settings proofs do not add MFA assurance to that session.
+
+Swift and .NET must carry the fresh proof through the same settings actions and handle
+`MFA_REAUTH_REQUIRED` by prompting again. Native adoption requires the same provider and passkey proof options and recovery behavior.
+The producer lands first; existing native settings calls
+without a proof are rejected. Shared email request fixtures include the carrier, and native
+behavioral coverage must exercise successful changes, missing proofs, and revoked sessions.

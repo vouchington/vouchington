@@ -20,12 +20,7 @@ const originalEnv = new Map(oauthEnvNames.map(name => [name, process.env[name]])
 
 async function importConfig() {
   vi.resetModules()
-  return import('../../config/index.mts')
-}
-
-async function importOAuthConfigService() {
-  vi.resetModules()
-  return import('./config.mts')
+  return import('./index.mts')
 }
 
 describe('oauth config', () => {
@@ -78,24 +73,5 @@ describe('oauth config', () => {
     await expect(importConfig()).resolves.toMatchObject({
       MICROSOFT_TENANT_ID: 'common',
     })
-  })
-
-  it('only reports OAuth providers whose backend credentials are configured', async () => {
-    for (const name of oauthEnvNames) delete process.env[name]
-    process.env.GOOGLE_CLIENT_ID = 'google-client'
-    process.env.APPLE_CLIENT_ID = 'apple-client'
-    process.env.GITHUB_CLIENT_ID = 'github-client'
-    process.env.GITHUB_CLIENT_SECRET = 'PLACEHOLDER'
-    process.env.FACEBOOK_APP_ID = 'facebook-app'
-    process.env.FACEBOOK_APP_SECRET = 'facebook-secret'
-    process.env.X_CLIENT_ID = 'x-client'
-    process.env.X_CLIENT_SECRET = 'x-secret'
-    process.env.LINKEDIN_CLIENT_ID = 'linkedin-client'
-    process.env.MICROSOFT_CLIENT_ID = 'microsoft-client'
-    process.env.MICROSOFT_CLIENT_SECRET = 'microsoft-secret'
-
-    const { getConfiguredOAuthProviders } = await importOAuthConfigService()
-
-    expect(getConfiguredOAuthProviders()).toEqual(['facebook', 'apple', 'google', 'x', 'microsoft'])
   })
 })

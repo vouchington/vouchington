@@ -1,13 +1,14 @@
-import { beginTransaction, write } from '@data-stores/psql'
+import { runWithTransaction, write, type TransactionQuery } from '@data-stores/psql'
 import type { QueryExecutor } from '@data-stores/psql/types'
 import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
 import { v7 } from 'uuid'
-import { BLUESKY_OAUTH_STATE_TTL_MS } from './lifecycle-constants.mts'
+import { REAUTH_TTL_SECONDS } from '@services/mfa/re-auth'
 
 export type BlueskyLinkAuthorization = {
   id: string
   user_id: string
+  initiating_session_id: string | null
   handle: string
   callback_mode: 'web' | 'native'
   status: 'pending' | 'callback_claimed' | 'handoff_ready' | 'attached'
@@ -21,23 +22,24 @@ export async function createBlueskyLinkAuthorization(input: {
   handle: string
   callbackMode: 'web' | 'native'
   completionProofChallenge?: string
+  initiatingSessionId: string
+  query: TransactionQuery
 }): Promise<string> {
   const authorizationId = v7()
-  const expiresAt = new Date(Date.now() + BLUESKY_OAUTH_STATE_TTL_MS)
-  await using query = await beginTransaction()
-
-  await query(sql`/* createBlueskyLinkAuthorization:lockActiveUser */
+  const expiresAt = new Date(Date.now() + REAUTH_TTL_SECONDS * 1000)
+  return runWithTransaction(input.query, async query => {
+    await query(sql`/* createBlueskyLinkAuthorization:lockActiveUser */
       SELECT fn_lock_active_user_for_mutation(${input.userId})`)
-  await query(sql`/* createBlueskyLinkAuthorization */
+    await query(sql`/* createBlueskyLinkAuthorization */
       INSERT INTO bluesky_link_authorizations (
-        id, user_id, handle, callback_mode, completion_proof_challenge, expires_at
+        id, user_id, initiating_session_id, handle, callback_mode, completion_proof_challenge, expires_at
       ) VALUES (
-        ${authorizationId}, ${input.userId}, ${input.handle}, ${input.callbackMode},
+        ${authorizationId}, ${input.userId}, ${input.initiatingSessionId}, ${input.handle}, ${input.callbackMode},
         ${input.completionProofChallenge ?? null}, ${expiresAt}
       )`)
 
-  await query.commit()
-  return authorizationId
+    return authorizationId
+  })
 }
 
 export async function getBlueskyLinkAuthorizationForCallbackFromPrimary(
@@ -53,7 +55,7 @@ export async function getBlueskyLinkAuthorizationForCallbackFromPrimary(
 
 function readBlueskyLinkAuthorization(authorizationId: string, query: QueryExecutor) {
   return query<BlueskyLinkAuthorization>(sql`/* readBlueskyLinkAuthorization */
-    SELECT id, user_id, handle, callback_mode, status, completion_proof_challenge,
+    SELECT id, user_id, initiating_session_id, handle, callback_mode, status, completion_proof_challenge,
            claimed_did, expires_at
     FROM bluesky_link_authorizations
     WHERE id = ${authorizationId}

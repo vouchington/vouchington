@@ -17,7 +17,7 @@ export interface AppleOAuthConfig {
   callbackPath: string
 }
 
-export function useAppleOAuthAuth(config: AppleOAuthConfig): AuthState<AppleAuthResult> {
+export function useAppleOAuthAuth(config: AppleOAuthConfig) {
   const { clientId } = config
   const isAvailable = Boolean(clientId)
   const { isLoaded: scriptReady, isError: scriptError } = useLoadScript(
@@ -26,12 +26,12 @@ export function useAppleOAuthAuth(config: AppleOAuthConfig): AuthState<AppleAuth
   const loginInProgressRef = useRef(false)
   const isLoaded = scriptReady && !scriptError
 
-  async function login(): Promise<AppleAuthResult> {
+  async function login(options?: { nonce: string }): Promise<AppleAuthResult> {
     if (!window.AppleID?.auth) throw new Error('Apple Sign In not loaded')
     if (loginInProgressRef.current) throw new Error('login already in progress')
     loginInProgressRef.current = true
     try {
-      const rawNonce = generateRawNonce()
+      const rawNonce = options?.nonce ?? generateRawNonce()
       const hashedNonce = await sha256Hex(rawNonce)
       window.AppleID.auth.init({
         clientId,

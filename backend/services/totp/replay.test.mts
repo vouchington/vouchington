@@ -20,26 +20,26 @@ async function createAuthenticator() {
     totp.generate({ timestamp: now - 30_000 }),
     { now: now - 30_000 },
   )
-  return { user, totp }
+  return { user, totp, authenticator: setup.authenticator }
 }
 
 describe('TOTP step consumption', () => {
   it('allows exactly one concurrent use and rejects previous steps', async () => {
-    const { user, totp } = await createAuthenticator()
+    const { user, totp, authenticator } = await createAuthenticator()
     const code = totp.generate({ timestamp: now })
     const results = await Promise.all([
       verifyTotpCode(user.id, code, { now }),
       verifyTotpCode(user.id, code, { now }),
     ])
     expect(results.filter(Boolean)).toHaveLength(1)
-    expect(await verifyTotpCode(user.id, code, { now })).toBe(false)
+    expect(await verifyTotpCode(user.id, code, { now })).toBeNull()
     const oldCode = totp.generate({ timestamp: now - 30_000 })
-    expect(await verifyTotpCode(user.id, oldCode, { now })).toBe(false)
+    expect(await verifyTotpCode(user.id, oldCode, { now })).toBeNull()
     expect(
       await verifyTotpCode(user.id, totp.generate({ timestamp: now + 30_000 }), {
         now: now + 30_000,
       }),
-    ).toBe(true)
+    ).toMatchObject({ authenticatorId: authenticator.id })
   })
 
   it('does not reuse the step consumed during setup', async () => {
@@ -48,6 +48,6 @@ describe('TOTP step consumption', () => {
       await verifyTotpCode(user.id, totp.generate({ timestamp: now - 30_000 }), {
         now: now - 30_000,
       }),
-    ).toBe(false)
+    ).toBeNull()
   })
 })

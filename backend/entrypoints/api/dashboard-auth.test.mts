@@ -10,6 +10,7 @@ import { revokeUserSessionsBefore } from '@services/jwt-session/session-revocati
 import { addTestUserRole } from '@voucha/test-helpers'
 import { createTestSessionCookies } from '@voucha/test-helpers/services/jwt-session/index'
 import { verifyDeviceJwt } from '@ts-shared/session-jwt'
+import { createVerifiedMfaTestSession } from '@voucha/test-helpers/authenticated-session'
 
 function req(headers: IncomingHttpHeaders): IncomingMessage {
   return { headers } as IncomingMessage
@@ -33,16 +34,20 @@ describe('dashboard auth', () => {
     ).resolves.toBe(false)
   })
 
-  it('allows non-revoked users with queue stats permission', async () => {
+  it('requires completed MFA before a current administrator can access queue stats', async () => {
     const { dtCookie, stCookie, userId } = await createTestSessionCookies()
     await addTestUserRole(userId, 'administrator')
-    const cookie = `${dtCookie}; ${stCookie}`
+    await expect(isAdminDashboardRequest(req({ cookie: `${dtCookie}; ${stCookie}` }))).resolves.toBe(
+      false,
+    )
 
+    const assured = await createVerifiedMfaTestSession(userId)
+    const cookie = `dt=${assured.deviceToken.token}; st=${assured.sessionToken.token}`
     await expect(isAdminDashboardRequest(req({ cookie }))).resolves.toBe(true)
 
     const verified = await verifyDeviceAndSessionTokens({
-      deviceToken: dtCookie.slice(3),
-      sessionToken: stCookie.slice(3),
+      deviceToken: assured.deviceToken.token,
+      sessionToken: assured.sessionToken.token,
     })
     if (!verified || verified.iat === undefined) throw new Error('Expected an issued session')
     await revokeUserSessionsBefore(userId, verified.iat)

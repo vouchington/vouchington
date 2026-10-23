@@ -1,4 +1,5 @@
 import { markDbscRegistrationEligible } from './dbsc-eligibility.mts'
+import { createSessionAssuranceBinding, assertOriginalMfaVerifiedAt } from './assurance.mts'
 import { mintAuthenticatedDeviceAuthority } from './device-authority-mint.mts'
 import { createSessionClientBinding } from './client-binding.mts'
 import type {
@@ -11,24 +12,24 @@ import {
   signSessionJwt,
   sessionExpirySecondsFor,
   DEVICE_EXPIRATION_STRING,
-  DEVICE_EXPIRATION_SECONDS,
 } from '@ts-shared/session-jwt'
 import {
   mintUuidv7 as mintUUIDv7,
   validateUuidv7 as validateUUIDv7,
 } from '@vouchington/session-jwt'
 import { validate as isUUID } from 'uuid'
-import { registerAuthenticatedSession } from './user-sessions.mts'
 import {
   getSessionEnrichment,
   getSessionIssuedAt,
   recordSessionMintEvent,
+  registerSessionMintMetadata,
 } from './session-state-helpers.mts'
 export async function createDeviceAndSessionTokens({
   did,
   sid = mintUUIDv7(),
   uid = null,
   roles,
+  mfaVerifiedAt,
   membershipPlan,
   membershipExpiresAt,
   trustTier,
@@ -48,10 +49,14 @@ export async function createDeviceAndSessionTokens({
   validateUUIDv7(did)
   validateUUIDv7(sid)
   if (uid !== null) validateExistingUserId(uid)
-  let binding = uid
-    ? (clientBinding ?? createSessionClientBinding(deviceClass, deviceContext))
-    : undefined
   const now = await getSessionIssuedAt(uid, clock)
+  let binding = uid
+    ? createSessionAssuranceBinding(
+        clientBinding ?? createSessionClientBinding(deviceClass, deviceContext),
+        mfaVerifiedAt,
+        now,
+      )
+    : undefined
   const authority =
     uid && binding
       ? await mintAuthenticatedDeviceAuthority({
@@ -72,6 +77,7 @@ export async function createDeviceAndSessionTokens({
   const sessionPayloadExtra = getSessionEnrichment({
     uid,
     roles,
+    mfaVerifiedAt: binding?.mfa_at,
     membershipPlan,
     membershipExpiresAt,
     trustTier,
@@ -98,21 +104,9 @@ export async function createDeviceAndSessionTokens({
   ])
   recordSessionMintEvent({ did, sid, uid, eventType }, query)
   if (!authority)
-    await registerAuthenticatedSession(
-      {
-        did,
-        sid,
-        uid,
-        deviceClass,
-        deviceContext,
-        authOrigin,
-        expiresAt:
-          sessionExpiresAt ??
-          (binding?.client === 'web'
-            ? new Date(Date.now() + DEVICE_EXPIRATION_SECONDS * 1000)
-            : undefined),
-      },
-      { query },
+    await registerSessionMintMetadata(
+      { did, sid, uid, deviceClass, deviceContext, authOrigin, sessionExpiresAt, binding },
+      query,
     )
   const result: DeviceAndSessionTokenResult = {
     deviceToken: {
@@ -147,7 +141,10 @@ export async function createSessionToken({
   sessionExpiresAt,
   clock,
   query,
-}: Omit<SessionMintOptions, 'credentialReplay' | 'deviceRenewal'>): Promise<SessionTokenResult> {
+}: Omit<
+  SessionMintOptions,
+  'credentialReplay' | 'deviceRenewal' | 'mfaVerifiedAt'
+>): Promise<SessionTokenResult> {
   validateUUIDv7(did)
   validateUUIDv7(sid)
   if (uid !== null) validateExistingUserId(uid)
@@ -156,10 +153,12 @@ export async function createSessionToken({
     ? (clientBinding ?? createSessionClientBinding(deviceClass, deviceContext))
     : undefined
   const now = await getSessionIssuedAt(uid, clock)
+  assertOriginalMfaVerifiedAt(binding?.mfa_at, now)
 
   const sessionPayloadExtra = getSessionEnrichment({
     uid,
     roles,
+    mfaVerifiedAt: binding?.mfa_at,
     membershipPlan,
     membershipExpiresAt,
     trustTier,
@@ -175,21 +174,9 @@ export async function createSessionToken({
     issuedAt: now,
   })
   recordSessionMintEvent({ did, sid, uid, eventType }, query)
-  await registerAuthenticatedSession(
-    {
-      did,
-      sid,
-      uid,
-      deviceClass,
-      deviceContext,
-      authOrigin,
-      expiresAt:
-        sessionExpiresAt ??
-        (binding?.client === 'web'
-          ? new Date(Date.now() + DEVICE_EXPIRATION_SECONDS * 1000)
-          : undefined),
-    },
-    { query },
+  await registerSessionMintMetadata(
+    { did, sid, uid, deviceClass, deviceContext, authOrigin, sessionExpiresAt, binding },
+    query,
   )
   return { token, payload }
 }

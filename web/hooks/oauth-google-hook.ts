@@ -10,7 +10,7 @@ export interface GoogleOAuthConfig {
   scriptSrc: string
 }
 
-export function useGoogleOAuthAuth(config: GoogleOAuthConfig): AuthState<string> {
+export function useGoogleOAuthAuth(config: GoogleOAuthConfig) {
   const { clientId } = config
   const isAvailable = Boolean(clientId)
   const hasGoogleApi = useGoogleLibraryLoad(isAvailable)
@@ -25,7 +25,7 @@ export function useGoogleOAuthAuth(config: GoogleOAuthConfig): AuthState<string>
     }
   }, [])
 
-  function login(): Promise<string> {
+  function login(options?: { nonce: string }): Promise<string> {
     return new Promise((resolve, reject) => {
       if (!window.google?.accounts?.id) {
         reject(new Error('Google Identity Services not loaded'))
@@ -40,6 +40,7 @@ export function useGoogleOAuthAuth(config: GoogleOAuthConfig): AuthState<string>
       rejectRef.current = reject
       window.google.accounts.id.initialize({
         client_id: clientId,
+        ...(options && { nonce: options.nonce, auto_select: false }),
         callback: response => {
           if (response.credential) {
             callbackRef.current?.(response.credential)
@@ -115,6 +116,8 @@ declare global {
         id: {
           initialize: (config: {
             client_id: string
+            nonce?: string
+            auto_select?: boolean
             callback: (response: { credential?: string }) => void
           }) => void
           prompt: (

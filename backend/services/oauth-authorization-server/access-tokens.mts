@@ -55,10 +55,15 @@ export async function validateOAuthAccessToken(
          )
        )
        AND access.resource = $2
+       AND ($3::boolean = FALSE OR (
+         oauth_grant.mfa_verified_at IS NOT NULL
+         AND (EXISTS (SELECT 1 FROM user_passkeys WHERE user_id = oauth_grant.user_id)
+           OR EXISTS (SELECT 1 FROM user_totp_authenticators WHERE user_id = oauth_grant.user_id AND verified_at IS NOT NULL))
+       ))
      RETURNING client.id AS oauth_client_id, client.client_id, client.owner_user_id,
        oauth_grant.id AS grant_id, oauth_grant.user_id, oauth_grant.session_id,
        access.resource, access.scopes::text[] AS scopes, access.expires_at`,
-    [tokenHash, getOAuthResourceUrl(audience)],
+    [tokenHash, getOAuthResourceUrl(audience), audience === 'admin' || audience === 'legal'],
   )
   const principal = result.rows[0]
   if (

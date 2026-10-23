@@ -1,3 +1,9 @@
+import type { PreparedOAuthAccount } from '@services/oauth-accounts/reauthentication'
+import {
+  runWithTransaction,
+  registerPostCommitAction,
+  type TransactionQuery,
+} from '@data-stores/psql'
 import onError from '@modules/on-error'
 import type { DeviceClass, DeviceContext } from '@services/jwt-session'
 import { upsertUser } from '@services/users/create'
@@ -11,7 +17,7 @@ import { connectOAuthAccountToUser } from './connect.mts'
 import { runOAuthAccountConnectionPostCommitEffects } from '@services/oauth-accounts'
 import { upsertProviderAccount } from './upsert-provider-account.mts'
 import {
-  issuePreparedOAuthFlowResult,
+  createOAuthFlowResultForUser,
   prepareOAuthFlowResultForUser,
   type OAuthFlowResult,
 } from './oauth-flow-result.mts'
@@ -21,45 +27,54 @@ export { createOAuthFlowResultForUser, type OAuthFlowResult } from './oauth-flow
 export async function connectOAuthAccountFlow(options: {
   provider: OAuthProvider
   currentUserId: string
-  body: Record<string, unknown>
-  expectedOrigin?: string
+  prepared: PreparedOAuthAccount
+  query?: TransactionQuery
 }) {
-  const { account, name } = await upsertProviderAccount(
-    options.provider,
-    options.body,
-    options.expectedOrigin,
-    { requireAppleVerifiedEmail: false },
-  )
+  return runWithTransaction(options.query, async query => {
+    const account = await options.prepared.persist({ query })
+    const name =
+      typeof account.provider_user_data.name === 'string' ? account.provider_user_data.name : ''
 
-  await connectPersistedOAuthAccountFlow({
-    provider: options.provider,
-    currentUserId: options.currentUserId,
-    account,
+    await connectPersistedOAuthAccountFlow({
+      provider: options.provider,
+      currentUserId: options.currentUserId,
+      account,
+      query,
+    })
+
+    return { account, name }
   })
-
-  return { account, name }
 }
 
 export async function connectPersistedOAuthAccountFlow(options: {
   provider: OAuthProvider
   currentUserId: string
   account: OAuthAccount
+  query?: TransactionQuery
 }): Promise<void> {
-  await connectOAuthAccountAndRunPostCommitEffects(options)
-  await enqueueOAuthFriendSyncBestEffort(options.provider, options.account)
+  await runWithTransaction(options.query, async query => {
+    await connectOAuthAccountAndRunPostCommitEffects({ ...options, query })
+    registerPostCommitAction(query, () =>
+      enqueueOAuthFriendSyncBestEffort(options.provider, options.account),
+    )
+  })
 }
 
 async function connectOAuthAccountAndRunPostCommitEffects(options: {
   provider: OAuthProvider
   currentUserId: string
   account: OAuthAccount
+  query: TransactionQuery
 }): Promise<void> {
   await connectOAuthAccountToUser(
     options.provider,
     options.currentUserId,
     options.account.provider_user_id,
+    { query: options.query },
   )
-  await runOAuthAccountConnectionPostCommitEffects(options.currentUserId)
+  registerPostCommitAction(options.query, () =>
+    runOAuthAccountConnectionPostCommitEffects(options.currentUserId),
+  )
 }
 
 export async function continueOAuthFlow(options: {
@@ -90,11 +105,9 @@ export async function continuePersistedOAuthAccountFlow(options: {
   loginAttemptId?: string
   authOrigin?: 'web' | 'native'
 }): Promise<OAuthFlowResult> {
-  const result = await preparePersistedOAuthAccountFlow(options)
-  if (result.mfaRequired) {
-    return { mfaRequired: true, loginAttemptId: result.loginAttemptId }
-  }
-  return issuePreparedOAuthFlowResult({ ...options, ...result })
+  const result = await preparePersistedAuthenticationResult(options)
+  await enqueueOAuthFriendSyncBestEffort(options.provider, options.account)
+  return result
 }
 
 export async function preparePersistedOAuthAccountFlow(options: {
@@ -107,11 +120,20 @@ export async function preparePersistedOAuthAccountFlow(options: {
   loginAttemptId?: string
   authOrigin?: 'web' | 'native'
 }) {
-  await enqueueOAuthFriendSyncBestEffort(options.provider, options.account)
-  return prepareOAuthFlowResultWithPersistedOwner(options)
+  const user = await upsertPersistedOAuthAccountUser(options)
+  const result = await prepareOAuthFlowResultForUser({
+    ...options,
+    user,
+    firstFactor: {
+      type: 'provider',
+      provider: options.provider,
+      providerUserId: options.account.provider_user_id,
+    },
+  })
+  return result.mfaRequired ? { ...result, userId: user.id } : result
 }
 
-async function prepareOAuthFlowResultWithPersistedOwner(options: {
+async function upsertPersistedOAuthAccountUser(options: {
   provider: OAuthProvider
   account: OAuthAccount
   deviceId: string
@@ -129,8 +151,7 @@ async function prepareOAuthFlowResultWithPersistedOwner(options: {
     userAgent: options.deviceContext?.user_agent,
   })
 
-  const result = await prepareOAuthFlowResultForUser({ ...options, user })
-  return result.mfaRequired ? { ...result, userId: user.id } : result
+  return user
 }
 
 export async function enqueueOAuthFriendSyncBestEffort(
@@ -159,4 +180,19 @@ export async function enqueueOAuthFriendSyncBestEffort(
 function requireFriendSyncAccountId(account: OAuthAccount): string {
   if (!account.account_id) throw new Error('OAuth friend sync account has no internal id')
   return account.account_id
+}
+
+async function preparePersistedAuthenticationResult(
+  options: Parameters<typeof continuePersistedOAuthAccountFlow>[0],
+): Promise<OAuthFlowResult> {
+  const user = await upsertPersistedOAuthAccountUser(options)
+  return createOAuthFlowResultForUser({
+    ...options,
+    user,
+    firstFactor: {
+      type: 'provider',
+      provider: options.provider,
+      providerUserId: options.account.provider_user_id,
+    },
+  })
 }

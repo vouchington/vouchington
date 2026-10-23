@@ -41,6 +41,8 @@ export async function loginAsUser(
   const { deviceToken, sessionToken } = await createTokens({
     did,
     uid: userId,
+    // This helper intentionally creates an already authenticated fixture, including its proof.
+    mfaVerifiedAt: Math.floor(Date.now() / 1000),
     deviceContext: { user_agent: userAgent },
   })
 

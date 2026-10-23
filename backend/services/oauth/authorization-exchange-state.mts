@@ -4,7 +4,7 @@ import {
 } from './authorization-exchange-lifecycle.mts'
 import { beginTransaction, type OwnedTransaction } from '@data-stores/psql'
 import { v7 as uuidv7 } from 'uuid'
-import type { BrokerOAuthProvider } from './broker-config.mts'
+import type { BrokerOAuthProvider, BrokerPurpose } from './broker-config.mts'
 
 export const STALE_EXCHANGE_CLAIM_SECONDS = 60
 export const X_MAX_QUEUE_DELAY_SECONDS = 10
@@ -13,6 +13,10 @@ export const MAX_EXCHANGE_ATTEMPTS = 5
 export type ClaimedOAuthAuthorization = {
   id: string
   provider: BrokerOAuthProvider
+  purpose: BrokerPurpose
+  initiating_user_id: string | null
+  initiating_device_id: string
+  initiating_session_id: string
   redirect_uri: string
   callback_code_ciphertext: string
   pkce_verifier_ciphertext: string
@@ -46,7 +50,8 @@ export async function claimOAuthAuthorizationExchange(
      WHERE flow.id = candidate.id AND flow.status = 'callback_received'
        AND flow.updated_at = candidate.updated_at
        AND flow.exchange_claim_id IS NOT DISTINCT FROM candidate.exchange_claim_id
-     RETURNING flow.id, flow.provider, flow.redirect_uri,
+     RETURNING flow.id, flow.provider, flow.purpose, flow.initiating_user_id,
+       flow.initiating_device_id, flow.initiating_session_id, flow.redirect_uri,
        flow.callback_code_ciphertext, flow.pkce_verifier_ciphertext, flow.exchange_claim_id`,
       [flowId, claimId, MAX_EXCHANGE_ATTEMPTS, X_MAX_QUEUE_DELAY_SECONDS],
     )

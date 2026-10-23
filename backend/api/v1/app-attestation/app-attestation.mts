@@ -61,7 +61,11 @@ app.route('/api/v1/app-attestation/attest').post(async (ctx: Context) => {
   // current device credential usable. Only a verified proof admits the renewal below.
   const previous = await ctx.getSessionTokenData()
   const user = await ctx.getCurrentUser()
-  const claims = user ? await getEnrichedSessionClaims(user) : null
+  const claims = user
+    ? await getEnrichedSessionClaims(user, {
+        mfaVerifiedAt: 'mfa_at' in previous ? previous.mfa_at : undefined,
+      })
+    : null
   if (!user) {
     const principal = await getSessionForLogout({
       deviceToken: ctx.cookies.get('dt'),

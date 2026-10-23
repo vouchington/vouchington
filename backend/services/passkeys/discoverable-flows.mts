@@ -1,4 +1,6 @@
 import createHttpError from 'http-errors'
+import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
+import { getPasskeyByCredentialId } from './get.mts'
 import { AuthError } from '@vouchington/auth'
 import { passkeyProtocol } from './protocol.mts'
 import { toPasskeyAuthenticationOptions } from './options.mts'
@@ -7,7 +9,6 @@ import {
   getEnrichedSessionClaims,
   type DeviceClass,
   type DeviceContext,
-  type FetchUserForSession,
 } from '@services/jwt-session'
 import type { PrivateUser } from '@voucha/types/entities/user'
 
@@ -30,12 +31,12 @@ export async function verifyDiscoverablePasskeyAuthentication(opts: {
   response: unknown
   deviceClass?: DeviceClass
   deviceContext?: DeviceContext
-  fetchUser: FetchUserForSession
+  fetchUser: (userId: string, query: TransactionQuery) => Promise<PrivateUser | null>
 }): Promise<DiscoverablePasskeyLogin> {
   if (!opts.deviceId) throw createHttpError(400, 'Device ID is required')
   if (!opts.sessionId) throw createHttpError(400, 'Session ID is required')
 
-  let verification: { userId: string }
+  let verification: { userId: string; passkeyId: string }
   try {
     verification = await passkeyProtocol.authentication.verifyDiscoverable({
       deviceId: opts.deviceId,
@@ -46,43 +47,19 @@ export async function verifyDiscoverablePasskeyAuthentication(opts: {
     return throwDiscoverableAuthenticationError(err, opts)
   }
 
-  /* v8 ignore start — success path requires a real WebAuthn ceremony (not unit-testable) */
-  return issueDiscoverablePasskeyLogin({
-    userId: verification.userId,
-    user: await opts.fetchUser(verification.userId),
-    deviceId: opts.deviceId,
-    deviceClass: opts.deviceClass,
-    deviceContext: opts.deviceContext,
-  })
-  /* v8 ignore stop */
-}
-
-export async function issueDiscoverablePasskeyLogin(opts: {
-  userId: string
-  user: PrivateUser | null
-  deviceId: string
-  deviceClass?: DeviceClass
-  deviceContext?: DeviceContext
-}): Promise<DiscoverablePasskeyLogin> {
-  if (!opts.user || opts.user.id !== opts.userId) {
-    throw createHttpError(401, 'Passkey sign-in failed')
-  }
-  const claims = await getEnrichedSessionClaims(opts.user)
-
-  const tokens = await createDeviceAndSessionTokens({
-    did: opts.deviceId,
-    uid: opts.user.id,
-    roles: claims.roles,
-    membershipPlan: claims.membershipPlan,
-    membershipExpiresAt: claims.membershipExpiresAt,
-    trustTier: claims.trustTier,
-    uiLocale: claims.uiLocale,
-    deviceClass: opts.deviceClass,
-    deviceContext: opts.deviceContext,
-  })
+  const mfaVerifiedAt = Math.floor(Date.now() / 1000)
+  const credentialId = (opts.response as { id?: unknown })?.id
+  if (typeof credentialId !== 'string') throw createHttpError(401, 'Passkey sign-in failed')
+  await using query = await beginTransaction()
+  const credential = await readAdmittedPasskey(verification, credentialId, query)
+  if (!credential) throw createHttpError(401, 'Passkey sign-in failed')
+  const user = await opts.fetchUser(verification.userId, query)
+  if (!user || user.id !== verification.userId) throw createHttpError(401, 'Passkey sign-in failed')
+  const tokens = await mintDiscoverableSession(user, opts, mfaVerifiedAt, query)
+  await query.commit()
 
   return {
-    userId: opts.user.id,
+    userId: user.id,
     deviceToken: tokens.deviceToken,
     sessionToken: tokens.sessionToken,
   }
@@ -107,4 +84,46 @@ async function throwDiscoverableAuthenticationError(
     throw createHttpError(400, 'Invalid authentication response')
   }
   throw createHttpError(401, 'Passkey sign-in failed')
+}
+
+async function readAdmittedPasskey(
+  verification: { userId: string; passkeyId: string },
+  credentialId: string,
+  query: TransactionQuery,
+) {
+  await query(
+    '/* admitDiscoverablePasskeyLogin:userFence */ SELECT fn_lock_active_user_for_mutation($1)',
+    [verification.userId],
+  )
+  await query(
+    '/* admitDiscoverablePasskeyLogin:userRow */ SELECT id FROM users WHERE id = $1 FOR UPDATE',
+    [verification.userId],
+  )
+  return getPasskeyByCredentialId(credentialId, {
+    query,
+    owner: { currentUserId: verification.userId, passkeyId: verification.passkeyId },
+  })
+}
+
+async function mintDiscoverableSession(
+  user: PrivateUser,
+  opts: Parameters<typeof verifyDiscoverablePasskeyAuthentication>[0],
+  mfaVerifiedAt: number,
+  query: TransactionQuery,
+) {
+  const claims = await getEnrichedSessionClaims(user, { mfaVerifiedAt })
+
+  return createDeviceAndSessionTokens({
+    did: opts.deviceId,
+    uid: user.id,
+    roles: claims.roles,
+    mfaVerifiedAt,
+    membershipPlan: claims.membershipPlan,
+    membershipExpiresAt: claims.membershipExpiresAt,
+    trustTier: claims.trustTier,
+    uiLocale: claims.uiLocale,
+    deviceClass: opts.deviceClass,
+    deviceContext: opts.deviceContext,
+    query,
+  })
 }

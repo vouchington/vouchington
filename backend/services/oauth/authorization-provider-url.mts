@@ -1,4 +1,13 @@
-import { FACEBOOK_GRAPHQL_VERSION, MICROSOFT_TENANT_ID } from '@voucha/config'
+import {
+  FACEBOOK_APP_ID,
+  FACEBOOK_GRAPHQL_VERSION,
+  MICROSOFT_TENANT_ID,
+  GITHUB_CLIENT_ID,
+  GOOGLE_CLIENT_ID,
+  LINKEDIN_CLIENT_ID,
+  MICROSOFT_CLIENT_ID,
+  X_CLIENT_ID,
+} from '@voucha/config'
 import type { BrokerCallbackMode, BrokerOAuthProvider } from './broker-config.mts'
 
 export function buildProviderAuthorizationUrl(options: {
@@ -8,6 +17,7 @@ export function buildProviderAuthorizationUrl(options: {
   redirectUri: string
   state: string
   codeChallenge: string
+  reAuthNonce?: string
 }): string {
   const shared = {
     redirect_uri: options.redirectUri,
@@ -54,6 +64,10 @@ export function buildProviderAuthorizationUrl(options: {
           client_id: options.clientId,
           scope: 'openid profile email User.Read',
           response_mode: 'query',
+          ...(options.reAuthNonce && {
+            nonce: options.reAuthNonce,
+            prompt: 'login',
+          }),
           code_challenge: options.codeChallenge,
           code_challenge_method: 'S256',
         },
@@ -72,4 +86,18 @@ export function buildProviderAuthorizationUrl(options: {
 
 function withQuery(url: string, params: Record<string, string>): string {
   return `${url}?${new URLSearchParams(params).toString()}`
+}
+
+export function getProviderClientId(provider: BrokerOAuthProvider): string {
+  const clientIds = {
+    facebook: FACEBOOK_APP_ID,
+    x: X_CLIENT_ID,
+    github: GITHUB_CLIENT_ID,
+    linkedin: LINKEDIN_CLIENT_ID,
+    microsoft: MICROSOFT_CLIENT_ID,
+    google: GOOGLE_CLIENT_ID,
+  }
+  const clientId = clientIds[provider]
+  if (!clientId) throw new Error(`${provider} OAuth client ID is not configured`)
+  return clientId
 }

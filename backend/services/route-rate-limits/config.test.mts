@@ -38,7 +38,6 @@ describe('route rate-limit registry', () => {
       'POST:/api/v1/auth/mfa/re-auth/email/tokens',
       'POST:/api/v1/auth/mfa/re-auth/email/verification',
       'POST:/api/v1/auth/mfa/re-auth/totp/verification',
-      'POST:/api/v1/auth/mfa/re-auth/tokens/verification',
     ]
 
     for (const route of routes) {

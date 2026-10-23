@@ -3,7 +3,12 @@ import {
   googleProfileFromClaims,
 } from '@vouchington/utils/oidc-id-token'
 import { readGoogleClientId } from '@voucha/config'
-import { upsertOAuthAccount, verifyOidcIdToken, type OAuthAccount } from '@services/oauth-accounts'
+import {
+  prepareOAuthAccountPersistence,
+  verifyOidcIdToken,
+  type OAuthAccount,
+} from '@services/oauth-accounts'
+import type { OAuthAccountUpsertOptions, PreparedOAuthAccount } from '@services/oauth-accounts/reauthentication'
 import { getExternalFetch } from '@modules/utils/http'
 
 const googleIdTokenVerifier = createOidcIdTokenVerifier({
@@ -14,9 +19,19 @@ const googleIdTokenVerifier = createOidcIdTokenVerifier({
 })
 
 export async function upsertGoogleAccount(credential: string): Promise<OAuthAccount> {
-  const claims = await verifyOidcIdToken(googleIdTokenVerifier, credential, 'Google')
-  const profile = googleProfileFromClaims(claims)
-  return upsertOAuthAccount('google', profile.providerUserId, profile.verifiedEmail, profile.data)
+  return (await prepareGoogleAccount(credential)).persist()
 }
 
+export async function prepareGoogleAccount(
+  credential: string,
+  options: OAuthAccountUpsertOptions = {},
+): Promise<PreparedOAuthAccount> {
+  const claims = await verifyOidcIdToken(googleIdTokenVerifier, credential, 'Google')
+  const profile = googleProfileFromClaims(claims)
+  return prepareOAuthAccountPersistence(
+    'google', profile.providerUserId, profile.verifiedEmail, profile.data, undefined, options,
+  )
+}
+
+export { verifyGoogleCredential } from './identity-token.mts'
 export { upsertGoogleAuthorizationCodeAccount } from './authorization-code.mts'

@@ -1,9 +1,11 @@
+import { getTestPrivateUserById } from './private-users.mts'
+import { insertTestTotpAuthenticator } from './totp.mts'
 import { createRandomEmailAddress, createRandomPhoneNumber, safeUsername } from '../data.mts'
 import { verifyPhoneNumber } from '@modules/utils'
 import { v7 } from 'uuid'
 import assert from 'node:assert'
 import type { PrivateUser } from '@voucha/types/entities/user'
-import { read, write } from '@data-stores/psql'
+import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { upsertTestEmailDomainHostnameId } from './email-domain-hostname.mts'
 
@@ -38,7 +40,6 @@ export async function createTestUserDirect(
   `)
 
   const userId = rows[0].id as string
-
   if (options.withEmail) {
     const emailAddress = createRandomEmailAddress()
     const emailDomainHostnameId = await upsertTestEmailDomainHostnameId(emailAddress)
@@ -49,17 +50,16 @@ export async function createTestUserDirect(
   }
 
   if (options.administrator) {
+    await insertTestTotpAuthenticator(userId, 'administrator-fixture')
     await addTestUserRole(userId, 'administrator')
   }
   for (const roleSlug of options.extraRoles ?? []) {
     await addTestUserRole(userId, roleSlug)
   }
-
   const phoneNumber = getTestPhoneNumber(options.phone_number)
   if (phoneNumber) {
     await attachTestPhoneNumber(userId, phoneNumber)
   }
-
   const privateUser = await getTestPrivateUserById(userId)
   assert(privateUser, 'createTestUserDirect could not read the inserted user')
   return privateUser
@@ -76,6 +76,7 @@ export async function createUnonboardedTestUserDirect(
   `)
   const userId = rows[0].id as string
   if (options.administrator) {
+    await insertTestTotpAuthenticator(userId, 'administrator-fixture')
     await addTestUserRole(userId, 'administrator')
   }
   for (const roleSlug of options.extraRoles ?? []) {
@@ -136,14 +137,13 @@ export async function createTestUserWithAge(
   }
 
   if (options.administrator) {
+    await insertTestTotpAuthenticator(id, 'administrator-fixture')
     await addTestUserRole(id, 'administrator')
   }
-
   const phoneNumber = getTestPhoneNumber(options.phone_number)
   if (phoneNumber) {
     await attachTestPhoneNumber(id, phoneNumber)
   }
-
   const privateUser = await getTestPrivateUserById(id)
   assert(privateUser, 'createTestUserWithAge could not read the inserted user')
   return privateUser

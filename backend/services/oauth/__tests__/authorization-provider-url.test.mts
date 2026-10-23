@@ -46,3 +46,24 @@ describe('Google authorization URL', () => {
     })
   })
 })
+
+describe('nonce-bound OIDC provider confirmation', () => {
+  it('requests the Microsoft confirmation nonce without adding it to ordinary authorization', () => {
+    const provider = 'microsoft' as const
+    const request = {
+      provider,
+      callbackMode: 'web',
+      clientId: 'synthetic-client',
+      redirectUri: 'https://example.com/callback',
+      state: 'synthetic-state',
+      codeChallenge: 'synthetic-challenge',
+    } as const
+    const ordinary = new URL(buildProviderAuthorizationUrl(request))
+    const confirmation = new URL(
+      buildProviderAuthorizationUrl({ ...request, reAuthNonce: 'fresh-server-nonce' }),
+    )
+    expect(ordinary.searchParams.has('nonce')).toBe(false)
+    expect(confirmation.searchParams.get('nonce')).toBe('fresh-server-nonce')
+    expect(confirmation.searchParams.get('prompt')).toBe('login')
+  })
+})

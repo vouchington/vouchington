@@ -28,7 +28,12 @@ describe('MFA login verification - request contract validation', () => {
   }, 20_000)
 
   it('does not charge malformed passkey requests, while a valid-shaped failed factor still counts', async () => {
-    const attempt = { userId: v7(), deviceId: v7(), sessionId: v7() }
+    const attempt = {
+      userId: v7(),
+      deviceId: v7(),
+      sessionId: v7(),
+      firstFactor: { type: 'email' as const, emailAddress: 'tests+schema@voucha.ai' },
+    }
     const attemptId = await createLoginAttempt(attempt)
     const route = '/api/v1/auth/mfa/passkeys/authentication/verification'
 
