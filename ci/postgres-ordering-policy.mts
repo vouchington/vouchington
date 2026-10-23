@@ -56,6 +56,7 @@ export const expectedDirectiveInventory = [
   'backend/services/bluesky-accounts/native-completion-persistence.mts:1',
   'backend/services/communities/list-items/add.mts:1',
   'backend/services/crawl-chunks/create.mts:1',
+  'backend/services/data-retention/cleanup-oauth-friend-edges.mts:2',
   'backend/services/entity-cache/hostname-invalidation-drain.mts:2',
   'backend/services/identity-verification/attempts.mts:1',
   'backend/services/individuals-households/households/spending-categories.mts:1',
