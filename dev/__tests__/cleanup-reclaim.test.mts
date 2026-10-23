@@ -76,6 +76,56 @@ describe('dev/cleanup worktree reclaim', () => {
     expect(out.indexOf('reclaim-args')).toBeLessThan(out.indexOf('orphaned'))
   })
 
+  it('forwards bounded scan options and preserves cursor whitespace under the operation lock', async () => {
+    const { dir, bin } = await makeRepo({ withCli: true })
+    const cli = join(dir, 'node_modules', '.bin', 'vouchington')
+    await writeFile(
+      cli,
+      `#!/usr/bin/env bash
+printf 'arg=<%s>\\n' "$@"
+if [ -L "$HOME/.voucha/worktree-resource-operations/lock" ]; then echo reclaim-lock: held; fi
+printf "Scan incomplete; resume with --after '/tmp/next path'\\n"
+`,
+    )
+    const out = await runCleanup(dir, bin, [
+      '--yes',
+      '--max-worktrees',
+      '3',
+      '--timeout-ms',
+      '2000',
+      '--pr-limit',
+      '200',
+      '--after',
+      '/tmp/previous path',
+    ])
+    expect(out).toContain('arg=<--after>\narg=</tmp/previous path>\n')
+    expect(out).toContain('arg=<--max-worktrees>\narg=<3>\n')
+    expect(out).toContain('arg=<--timeout-ms>\narg=<2000>\n')
+    expect(out).toContain('arg=<--pr-limit>\narg=<200>\n')
+    expect(out).toContain('arg=<--yes>\n')
+    expect(out).toContain('reclaim-lock: held\n')
+    expect(out).toContain(
+      "resume with ./dev/cleanup --max-worktrees 3 --timeout-ms 2000 --pr-limit 200 --yes --after '/tmp/next path'",
+    )
+  })
+
+  it.each([
+    ['--after'],
+    ['--after', '--yes'],
+    ['--max-worktrees', '0'],
+    ['--timeout-ms', '1.5'],
+    ['--yes', '--pr-limit', '10001'],
+    ['--pr-limit', '9007199254740992'],
+    ['--after', '/a', '--after', '/b'],
+    ['--yes', '-y'],
+  ])('rejects invalid flags before invoking reclaim: %j', async (...flags) => {
+    const { dir, bin } = await makeRepo({ withCli: true })
+    await expect(runCleanup(dir, bin, flags)).rejects.toMatchObject({
+      code: 2,
+      stdout: expect.not.stringContaining('reclaim-args:'),
+    })
+  })
+
   it('skips reclaim with a warning when the tooling CLI is not installed', async () => {
     const { dir, bin } = await makeRepo({ withCli: false })
     const out = await runCleanup(dir, bin, ['--yes'])

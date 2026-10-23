@@ -7,5 +7,11 @@ if git diff --name-only ORIG_HEAD HEAD \
   | grep -Eq '(^|/)(pnpm-lock\.yaml|package\.json|pnpm-workspace\.yaml)$'; then
   echo "post-rewrite: dependency manifest changed during rebase — running pnpm install"
   command -v pnpm >/dev/null 2>&1 || { printf 'post-rewrite: pnpm not on PATH — skipping install\n' >&2; exit 0; }
-  pnpm install --silent || printf 'post-rewrite: WARNING — pnpm install failed (exit %s). Run it manually.\n' "$?" >&2
+  install_started=$(date +%s)
+  if pnpm install; then
+    printf 'post-rewrite: pnpm install completed in %ss\n' "$(( $(date +%s) - install_started ))"
+  else
+    install_status=$?
+    printf 'post-rewrite: WARNING — pnpm install failed (exit %s) after %ss. Run it manually.\n' "$install_status" "$(( $(date +%s) - install_started ))" >&2
+  fi
 fi

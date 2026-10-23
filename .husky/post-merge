@@ -6,12 +6,14 @@ if git rev-parse --verify -q ORIG_HEAD >/dev/null \
   | grep -Eq '(^|/)(pnpm-lock\.yaml|package\.json|pnpm-workspace\.yaml)$'; then
   echo "post-merge: dependency manifest changed during merge — running pnpm install"
   if command -v pnpm >/dev/null 2>&1; then
-    pnpm install --silent || printf 'post-merge: WARNING — pnpm install failed (exit %s). Run it manually.\n' "$?" >&2
+    install_started=$(date +%s)
+    if pnpm install; then
+      printf 'post-merge: pnpm install completed in %ss\n' "$(( $(date +%s) - install_started ))"
+    else
+      install_status=$?
+      printf 'post-merge: WARNING — pnpm install failed (exit %s) after %ss. Run it manually.\n' "$install_status" "$(( $(date +%s) - install_started ))" >&2
+    fi
   else
     printf 'post-merge: pnpm not on PATH — skipping install\n' >&2
   fi
 fi
-# A pull may land the merge of a PR whose worktree is now finished; ./dev/cleanup reclaims it.
-root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
-[ -x "$root/dev/cleanup" ] || exit 0
-"$root/dev/cleanup" --yes </dev/null >/dev/null 2>&1 || true

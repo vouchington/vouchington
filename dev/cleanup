@@ -9,18 +9,46 @@ NC='\033[0m'
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 
-usage() { echo "Usage: ./dev/cleanup [--yes|-y]"; }
+usage() { echo "Usage: ./dev/cleanup [--yes|-y] [--max-worktrees N] [--timeout-ms N] [--pr-limit N] [--after PATH]"; }
 if [ "$#" -eq 1 ] && { [ "$1" = "-h" ] || [ "$1" = "--help" ]; }; then usage; exit 0; fi
 AUTO_YES=false
-for arg in "$@"; do
+RECLAIM_ARGS=()
+RECLAIM_SEEN=" "
+RESUME_COMMAND='./dev/cleanup'
+while [ "$#" -gt 0 ]; do
+    arg=$1
     case "$arg" in
         --yes|-y)
             if $AUTO_YES; then echo "Error: duplicate option: $arg" >&2; usage >&2; exit 2; fi
             AUTO_YES=true
             ;;
+        --max-worktrees|--timeout-ms|--pr-limit|--after)
+            case "$RECLAIM_SEEN" in
+                *" $arg "*) echo "Error: duplicate option: $arg" >&2; usage >&2; exit 2 ;;
+            esac
+            RECLAIM_SEEN+="$arg "
+            if [ "$#" -lt 2 ] || [[ "$2" == -* ]]; then
+                echo "Error: missing value for $arg" >&2; usage >&2; exit 2
+            fi
+            value=$2
+            if [ "$arg" != --after ]; then
+                if [[ ! "$value" =~ ^[1-9][0-9]*$ ]] ||
+                    [[ ${#value} -gt 16 || ( ${#value} -eq 16 && "$value" -gt 9007199254740991 ) ]]; then
+                    echo "Error: $arg requires a positive safe integer" >&2; usage >&2; exit 2
+                fi
+                if [ "$arg" = --pr-limit ] && [ "$value" -gt 10000 ]; then
+                    echo "Error: --pr-limit must not exceed 10000" >&2; usage >&2; exit 2
+                fi
+                RESUME_COMMAND+=" $arg $value"
+            fi
+            RECLAIM_ARGS+=("$arg" "$value")
+            shift
+            ;;
         *) echo "Error: unknown option: $arg" >&2; usage >&2; exit 2 ;;
     esac
+    shift
 done
+if $AUTO_YES; then RESUME_COMMAND+=' --yes'; fi
 
 # shellcheck source=lib/db-target.sh
 source "$REPO_ROOT/dev/lib/db-target.sh"
@@ -56,7 +84,7 @@ echo -e "${BLUE}=== Voucha Worktree Cleanup ===${NC}\n"
 # container of any worktree it removed.
 reclaim_finished_worktrees() {
     local cli="$REPO_ROOT/node_modules/.bin/vouchington" locked=false
-    local args=(worktree reclaim)
+    local args=(worktree reclaim "${RECLAIM_ARGS[@]+"${RECLAIM_ARGS[@]}"}")
     echo -e "${BLUE}Reclaiming finished worktrees...${NC}"
     if [ ! -x "$cli" ]; then
         echo -e "${YELLOW}Skipping worktree reclaim: run pnpm install to get vouchington-tooling.${NC}\n"
@@ -72,7 +100,8 @@ reclaim_finished_worktrees() {
             return 0
         fi
     fi
-    (cd "$REPO_ROOT" && "$cli" "${args[@]}") ||
+    (cd "$REPO_ROOT" && "$cli" "${args[@]}") |
+        sed "s|^Scan incomplete; resume with |Scan incomplete; resume with $RESUME_COMMAND |" ||
         echo -e "${YELLOW}Worktree reclaim failed; continuing with orphan cleanup.${NC}"
     if $locked; then
         worktree_resource_release_operation_lock
