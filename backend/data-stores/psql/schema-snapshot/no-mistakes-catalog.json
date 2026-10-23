@@ -71416,7 +71416,7 @@
           "validated": true
         },
         "chk_notifications__household_invitation_shape": {
-          "definition": "CHECK ((((entity_type = 'household_invitation'::notification_entity_types) AND (household_id IS NOT NULL) AND (community_id IS NULL)) OR ((entity_type <> 'household_invitation'::notification_entity_types) AND (household_id IS NULL))))",
+          "definition": "CHECK ((((entity_type = 'household_invitation'::notification_entity_types) AND (household_id IS NOT NULL) AND (household_invitation_id IS NOT NULL) AND (community_id IS NULL)) OR ((entity_type <> 'household_invitation'::notification_entity_types) AND (household_id IS NULL) AND (household_invitation_id IS NULL))))",
           "validated": true
         },
         "chk_notifications__structured_target": {
@@ -71457,7 +71457,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23
+          "ordinalPosition": 24
         },
         "actor_user_id": {
           "comment": "The user who performed the action triggering this notification. For follow: the follower. For referral_signup: the newly signed-up user (not the referrer). Required for follow and referral_signup types.",
@@ -71477,7 +71477,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 22
+          "ordinalPosition": 23
         },
         "community_ban_id": {
           "comment": "The community ban this notification refers to; set when entity_type is community_ban.",
@@ -71527,7 +71527,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 30
+          "ordinalPosition": 31
         },
         "delete_reason": {
           "comment": "Why this notification was deleted: system_pruned or user_deleted.",
@@ -71537,7 +71537,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 29
+          "ordinalPosition": 30
         },
         "deleted_at": {
           "comment": null,
@@ -71547,7 +71547,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 28
+          "ordinalPosition": 29
         },
         "delivery_type": {
           "comment": "How the notification was triggered: subscription (automatic) or manual_send.",
@@ -71557,7 +71557,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 19
+          "ordinalPosition": 20
         },
         "entity_type": {
           "comment": "The type of entity this notification is about: post, rss_feed_item, follow, referral_signup, moderation_report, review_dispute, or user_warning.",
@@ -71577,7 +71577,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18
+          "ordinalPosition": 19
         },
         "household_id": {
           "comment": "Household associated with an invitation notification; deletion cascades its notifications.",
@@ -71588,6 +71588,16 @@
           "identity": null,
           "nullable": true,
           "ordinalPosition": 17
+        },
+        "household_invitation_id": {
+          "comment": "Invitation whose current pending state gates push delivery; deletion cascades its notification.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 18
         },
         "id": {
           "comment": null,
@@ -71657,7 +71667,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 27
+          "ordinalPosition": 28
         },
         "read_at": {
           "comment": "When the user read this notification.",
@@ -71667,7 +71677,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 26
+          "ordinalPosition": 27
         },
         "review_dispute_id": {
           "comment": "The review dispute this notification refers to; set when entity_type is review_dispute.",
@@ -71697,7 +71707,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20
+          "ordinalPosition": 21
         },
         "target_intent": {
           "comment": "Structured application navigation intent. Community and household entity targets are derived from relational IDs instead of a stored document.",
@@ -71707,7 +71717,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 25
+          "ordinalPosition": 26
         },
         "target_path": {
           "comment": "URL path the notification links to. Producers that navigate by path still write this column.",
@@ -71717,7 +71727,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 24
+          "ordinalPosition": 25
         },
         "title": {
           "comment": "Notification title text.",
@@ -71727,7 +71737,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 21
+          "ordinalPosition": 22
         },
         "updated_at": {
           "comment": null,
@@ -71737,7 +71747,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 31
+          "ordinalPosition": 32
         },
         "user_id": {
           "comment": "The user receiving this notification; also the partition key.",
@@ -71784,6 +71794,14 @@
           "onUpdate": "NO ACTION",
           "referencedColumns": ["id"],
           "referencedTable": "copyright_notices",
+          "validated": true
+        },
+        "fk_notifications__household_invitation_id": {
+          "columns": ["household_invitation_id"],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "household_invitations",
           "validated": true
         },
         "fk_notifications__moderation_appeal_id": {
@@ -72048,6 +72066,29 @@
           ],
           "live": true,
           "predicate": "(household_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_notifications__household_invitation_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_notifications__household_invitation_id ON ONLY public.notifications USING btree (household_invitation_id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "household_invitation_id",
+              "descending": false,
+              "expression": "household_invitation_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
           "primary": false,
           "ready": true,
           "unique": false,

@@ -67895,7 +67895,7 @@
         "chk_notifications__delivery_sender": "CHECK ((((delivery_type = 'subscription'::notification_delivery_types) AND (sent_by_id IS NULL)) OR ((delivery_type = 'manual_send'::notification_delivery_types) AND (sent_by_id IS NOT NULL))))",
         "chk_notifications__entity_columns": "CHECK ((((entity_type = 'post'::notification_entity_types) AND (post_id IS NOT NULL) AND (rss_feed_item_id IS NULL) AND (actor_user_id IS NULL) AND (moderation_report_id IS NULL) AND (review_dispute_id IS NULL) AND (user_warning_id IS NULL) AND (moderation_appeal_id IS NULL) AND (community_ban_id IS NULL)) OR ((entity_type = 'rss_feed_item'::notification_entity_types) AND (post_id IS NULL) AND (rss_feed_item_id IS NOT NULL) AND (actor_user_id IS NULL) AND (moderation_report_id IS NULL) AND (review_dispute_id IS NULL) AND (user_warning_id IS NULL) AND (moderation_appeal_id IS NULL) AND (community_ban_id IS NULL)) OR ((entity_type = ANY (ARRAY['follow'::notification_entity_types, 'referral_signup'::notification_entity_types])) AND (actor_user_id IS NOT NULL) AND (post_id IS NULL) AND (rss_feed_item_id IS NULL) AND (moderation_report_id IS NULL) AND (review_dispute_id IS NULL) AND (user_warning_id IS NULL) AND (moderation_appeal_id IS NULL) AND (community_ban_id IS NULL)) OR ((entity_type = 'moderation_report'::notification_entity_types) AND (moderation_report_id IS NOT NULL) AND (post_id IS NULL) AND (rss_feed_item_id IS NULL) AND (actor_user_id IS NULL) AND (review_dispute_id IS NULL) AND (user_warning_id IS NULL) AND (moderation_appeal_id IS NULL) AND (community_ban_id IS NULL)) OR ((entity_type = 'review_dispute'::notification_entity_types) AND (review_dispute_id IS NOT NULL) AND (post_id IS NULL) AND (rss_feed_item_id IS NULL) AND (actor_user_id IS NULL) AND (moderation_report_id IS NULL) AND (user_warning_id IS NULL) AND (moderation_appeal_id IS NULL) AND (community_ban_id IS NULL)) OR ((entity_type = 'user_warning'::notification_entity_types) AND (user_warning_id IS NOT NULL) AND (post_id IS NULL) AND (rss_feed_item_id IS NULL) AND (actor_user_id IS NULL) AND (moderation_report_id IS NULL) AND (review_dispute_id IS NULL) AND (moderation_appeal_id IS NULL) AND (community_ban_id IS NULL)) OR ((entity_type = 'moderation_appeal'::notification_entity_types) AND (moderation_appeal_id IS NOT NULL) AND (post_id IS NULL) AND (rss_feed_item_id IS NULL) AND (actor_user_id IS NULL) AND (moderation_report_id IS NULL) AND (review_dispute_id IS NULL) AND (user_warning_id IS NULL) AND (community_ban_id IS NULL)) OR ((entity_type = 'community_ban'::notification_entity_types) AND (community_ban_id IS NOT NULL) AND (post_id IS NULL) AND (rss_feed_item_id IS NULL) AND (actor_user_id IS NULL) AND (moderation_report_id IS NULL) AND (review_dispute_id IS NULL) AND (user_warning_id IS NULL) AND (moderation_appeal_id IS NULL)) OR ((entity_type = 'critical_moderation_alert'::notification_entity_types) AND (moderation_report_id IS NOT NULL) AND (post_id IS NULL) AND (rss_feed_item_id IS NULL) AND (actor_user_id IS NULL) AND (review_dispute_id IS NULL) AND (user_warning_id IS NULL) AND (moderation_appeal_id IS NULL) AND (community_ban_id IS NULL)) OR ((entity_type = 'household_invitation'::notification_entity_types) AND (household_id IS NOT NULL) AND (post_id IS NULL) AND (rss_feed_item_id IS NULL) AND (actor_user_id IS NULL) AND (moderation_report_id IS NULL) AND (review_dispute_id IS NULL) AND (user_warning_id IS NULL) AND (moderation_appeal_id IS NULL) AND (community_ban_id IS NULL) AND (conversation_id IS NULL)) OR ((entity_type <> 'household_invitation'::notification_entity_types) AND (post_id IS NULL) AND (rss_feed_item_id IS NULL) AND (actor_user_id IS NULL) AND (moderation_report_id IS NULL) AND (review_dispute_id IS NULL) AND (user_warning_id IS NULL) AND (moderation_appeal_id IS NULL) AND (community_ban_id IS NULL))))",
         "chk_notifications__event_key": "CHECK (((event_key IS NULL) OR ((length(event_key) >= 1) AND (length(event_key) <= 300))))",
-        "chk_notifications__household_invitation_shape": "CHECK ((((entity_type = 'household_invitation'::notification_entity_types) AND (household_id IS NOT NULL) AND (community_id IS NULL)) OR ((entity_type <> 'household_invitation'::notification_entity_types) AND (household_id IS NULL))))",
+        "chk_notifications__household_invitation_shape": "CHECK ((((entity_type = 'household_invitation'::notification_entity_types) AND (household_id IS NOT NULL) AND (household_invitation_id IS NOT NULL) AND (community_id IS NULL)) OR ((entity_type <> 'household_invitation'::notification_entity_types) AND (household_id IS NULL) AND (household_invitation_id IS NULL))))",
         "chk_notifications__structured_target": "CHECK (((target_intent IS NULL) OR (target_intent = 'notifications_inbox'::notification_target_intents)))",
         "chk_notifications__target": "CHECK ((((entity_type = ANY (ARRAY['community_application_decision'::notification_entity_types, 'community_role_change'::notification_entity_types, 'community_ownership_transfer'::notification_entity_types, 'household_invitation'::notification_entity_types])) AND (target_path IS NULL) AND (target_intent IS NULL)) OR ((entity_type <> ALL (ARRAY['community_application_decision'::notification_entity_types, 'community_role_change'::notification_entity_types, 'community_ownership_transfer'::notification_entity_types, 'household_invitation'::notification_entity_types])) AND (num_nonnulls(target_path, target_intent) = 1))))",
         "notifications_actor_label_check": "CHECK (((actor_label IS NULL) OR (length(actor_label) <= 100)))",
@@ -67913,7 +67913,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23,
+          "ordinalPosition": 24,
           "type": "text"
         },
         "actor_user_id": {
@@ -67935,7 +67935,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 22,
+          "ordinalPosition": 23,
           "type": "text"
         },
         "community_ban_id": {
@@ -67990,7 +67990,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 30,
+          "ordinalPosition": 31,
           "type": "timestamp with time zone"
         },
         "delete_reason": {
@@ -68001,7 +68001,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 29,
+          "ordinalPosition": 30,
           "type": "notification_delete_reasons"
         },
         "deleted_at": {
@@ -68012,7 +68012,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 28,
+          "ordinalPosition": 29,
           "type": "timestamp with time zone"
         },
         "delivery_type": {
@@ -68023,7 +68023,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 19,
+          "ordinalPosition": 20,
           "type": "notification_delivery_types"
         },
         "entity_type": {
@@ -68045,7 +68045,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18,
+          "ordinalPosition": 19,
           "type": "text"
         },
         "household_id": {
@@ -68057,6 +68057,17 @@
           "identity": null,
           "nullable": true,
           "ordinalPosition": 17,
+          "type": "uuid"
+        },
+        "household_invitation_id": {
+          "collation": null,
+          "comment": "Invitation whose current pending state gates push delivery; deletion cascades its notification.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 18,
           "type": "uuid"
         },
         "id": {
@@ -68133,7 +68144,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 27,
+          "ordinalPosition": 28,
           "type": "timestamp with time zone"
         },
         "read_at": {
@@ -68144,7 +68155,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 26,
+          "ordinalPosition": 27,
           "type": "timestamp with time zone"
         },
         "review_dispute_id": {
@@ -68177,7 +68188,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20,
+          "ordinalPosition": 21,
           "type": "uuid"
         },
         "target_intent": {
@@ -68188,7 +68199,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 25,
+          "ordinalPosition": 26,
           "type": "notification_target_intents"
         },
         "target_path": {
@@ -68199,7 +68210,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 24,
+          "ordinalPosition": 25,
           "type": "text"
         },
         "title": {
@@ -68210,7 +68221,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 21,
+          "ordinalPosition": 22,
           "type": "text"
         },
         "updated_at": {
@@ -68221,7 +68232,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 31,
+          "ordinalPosition": 32,
           "type": "timestamp with time zone"
         },
         "user_id": {
@@ -68274,6 +68285,15 @@
           "onUpdate": "no action",
           "referencedColumns": ["id"],
           "referencedTable": "copyright_notices",
+          "validated": true
+        },
+        "fk_notifications__household_invitation_id": {
+          "columns": ["household_invitation_id"],
+          "definition": "FOREIGN KEY (household_invitation_id) REFERENCES household_invitations(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "household_invitations",
           "validated": true
         },
         "fk_notifications__moderation_appeal_id": {
@@ -68531,6 +68551,26 @@
             }
           ],
           "predicate": "(household_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_notifications__household_invitation_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_notifications__household_invitation_id ON ONLY public.notifications USING btree (household_invitation_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "household_invitation_id",
+              "descending": false,
+              "expression": "household_invitation_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
           "primary": false,
           "ready": true,
           "unique": false,
