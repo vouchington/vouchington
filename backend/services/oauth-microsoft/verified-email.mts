@@ -53,12 +53,17 @@ export async function getMicrosoftVerifiedEmail(
   signal?: AbortSignal,
 ): Promise<string | null> {
   if (!idToken) return null
-  const [headerPart, payloadPart, signaturePart] = idToken.split('.')
-  if (!headerPart || !payloadPart || !signaturePart) {
+  const parts = idToken.split('.')
+  const [headerPart, payloadPart, signaturePart] = parts
+  if (parts.length !== 3 || !headerPart || !payloadPart || !signaturePart) {
     throw createHttpError(401, 'Invalid Microsoft identity token')
   }
-  const header = decodeJwtPart(headerPart) as { alg?: string; kid?: string }
-  if (header.alg !== 'RS256' || !header.kid) {
+  const decodedHeader = decodeJwtPart(headerPart)
+  if (typeof decodedHeader !== 'object' || decodedHeader === null || Array.isArray(decodedHeader)) {
+    throw createHttpError(401, 'Invalid Microsoft identity token algorithm')
+  }
+  const header = decodedHeader as { alg?: unknown; kid?: unknown }
+  if (header.alg !== 'RS256' || typeof header.kid !== 'string' || !header.kid) {
     throw createHttpError(401, 'Invalid Microsoft identity token algorithm')
   }
   let keys = await fetchMicrosoftKeys(signal)
@@ -86,12 +91,16 @@ export async function getMicrosoftVerifiedEmail(
   ) {
     throw createHttpError(401, 'Microsoft identity token signature is invalid')
   }
-  const claims = decodeJwtPart(payloadPart) as MicrosoftClaims
+  const decodedClaims = decodeJwtPart(payloadPart)
+  if (typeof decodedClaims !== 'object' || decodedClaims === null || Array.isArray(decodedClaims)) {
+    throw createHttpError(401, 'Microsoft identity token claims are invalid')
+  }
+  const claims = decodedClaims as MicrosoftClaims
   const now = Math.floor(Date.now() / 1000)
   const tenant = MICROSOFT_TENANT_ID || 'common'
   const tenantIsAlias = ['common', 'organizations', 'consumers'].includes(tenant)
   if (
-    !claims.tid ||
+    typeof claims.tid !== 'string' ||
     !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(claims.tid) ||
     (!tenantIsAlias && claims.tid !== tenant) ||
     claims.iss !== `https://login.microsoftonline.com/${claims.tid}/v2.0` ||
@@ -100,6 +109,7 @@ export async function getMicrosoftVerifiedEmail(
     claims.aud !== MICROSOFT_CLIENT_ID ||
     claims.oid !== providerUserId ||
     typeof claims.exp !== 'number' ||
+    !Number.isFinite(claims.exp) ||
     claims.exp <= now ||
     (claims.nbf !== undefined && (typeof claims.nbf !== 'number' || claims.nbf > now))
   ) {
