@@ -23,6 +23,7 @@ export type SoftDeleteEntityRelationOptions = QueryOptions & {
   // Remote-origin deletes must not re-trigger outbound-destined side effects.
   origin?: EntityRelationOrigin
   capturePublication?: boolean
+  expectedInboundFollowActivityRowId?: string
 }
 export const softDeleteEntityRelation = async (
   // Remote-origin deletes have no local deleter.
@@ -44,6 +45,14 @@ export const softDeleteEntityRelation = async (
   query.append(sql` AND `)
   appendManyEntitiesWhereClause(query, objects, 'object')
   query.append(sql` AND deleted_at IS NULL`)
+  if (options?.expectedInboundFollowActivityRowId) {
+    if (relation.table_name !== 'relation__remote_actor__follow__user') {
+      throw new Error('Inbound Follow cycle fencing is only supported for remote actor follows')
+    }
+    query.append(
+      sql` AND inbound_follow_activity_row_id = ${options.expectedInboundFollowActivityRowId}`,
+    )
+  }
   appendDeletedRelationReturning(query, relation)
 
   if (!relation.bidirectional || relation.subject_type !== relation.object_type) {

@@ -19,13 +19,9 @@ const INDEFINITE_ENTITY_AND_CONTENT_TABLES = [
 const UNBOUNDED_AUDIT_AND_WORKFLOW_TABLES = [
   'admin_import_batches',
   'admin_import_rows',
-  'activitypub_distribution_work_items',
-  'activitypub_inbox_activities',
   'community_activity_digest_work_items',
   'community_agent_prompt_revisions',
   'dynamic_configuration_revisions',
-  'follower_distribution_deliveries',
-  'follower_distributions',
   'membership_changes',
   'membership_entitlement_effects',
   'membership_ineligible_purchase_reversal_refund_scans',
@@ -62,6 +58,7 @@ const UNBOUNDED_MEMBERSHIP_WORK_ITEMS = [
 ] as const
 const INDEFINITE_EDGE_TABLES = [
   'activitypub_post_likes',
+  'activitypub_remote_follow_activities',
   'bluesky_follow_records',
   'community_list_posts',
   'community_list_rss_feeds',

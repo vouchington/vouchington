@@ -2,11 +2,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import createHttpError from 'http-errors'
 import { UnrecoverableError } from '@vouchington/queue-errors'
 import { generateRsaSha256KeyPair } from '@modules/http-signatures'
-import { deliverActivityToInbox, type buildActivityJson } from '@services/activitypub-delivery'
+import {
+  deliverActivityToInbox,
+  type buildActivityJson,
+  type prepareActivityDistributionPage,
+} from '@services/activitypub-delivery'
 import type { getActorPrivateKeyPem } from '@services/ap-actor-keys'
 import type { isFederationEnabledForUser } from '@services/users'
 import type { DeliverActivityData } from '@queues/activitypub/enqueues/delivery'
-import { deliverActivity } from './delivery.mts'
+import { deliverActivity, distributeActivity } from './delivery.mts'
+import { getMinUUIDv7ForDate, mintUUIDv7 } from '@modules/utils/ids'
+import { getMaximumActivityAgeDays } from '@services/ap-inbox-activities/config'
 
 const isFederationEnabledForUserMock = vi.fn<typeof isFederationEnabledForUser>()
 const buildActivityJsonMock = vi.fn<typeof buildActivityJson>()
@@ -14,7 +20,7 @@ const deliverActivityToInboxMock = vi.fn<typeof deliverActivityToInbox>()
 const getActorPrivateKeyPemMock = vi.fn<typeof getActorPrivateKeyPem>()
 
 const FOLLOW_DATA: DeliverActivityData = {
-  activityId: 'activity-1',
+  activityId: mintUUIDv7(),
   activityType: 'Follow',
   sourceUserId: 'user-1',
   targetUserId: 'user-2',
@@ -22,9 +28,9 @@ const FOLLOW_DATA: DeliverActivityData = {
 }
 
 const UNDO_FOLLOW_DATA: DeliverActivityData = {
-  activityId: 'activity-3',
+  activityId: mintUUIDv7(),
   activityType: 'UndoFollow',
-  originalActivityId: 'activity-1',
+  originalActivityId: FOLLOW_DATA.activityId,
   sourceUserId: 'user-1',
   targetUserId: 'user-2',
   inboxUrl: 'https://a.example/inbox',
@@ -186,5 +192,36 @@ describe('deliverActivity', () => {
     deliverActivityToInboxMock.mockRejectedValueOnce(limited)
 
     await expect(deliverActivity(FOLLOW_DATA, deliverDeps())).rejects.toBe(limited)
+  })
+})
+
+describe('old outbound activity jobs', () => {
+  it('cannot recreate a purged checkpoint or fan out an old UUIDv7 activity', async () => {
+    const oldId = getMinUUIDv7ForDate(
+      new Date(Date.now() - (getMaximumActivityAgeDays() + 1) * 86_400_000),
+    )
+    const prepare = vi.fn<typeof prepareActivityDistributionPage>()
+    expect(
+      await distributeActivity(
+        { ...FOLLOW_DATA, activityId: oldId },
+        {
+          prepareActivityDistributionPage: prepare,
+        },
+      ),
+    ).toEqual({ enqueued: 0, reason: 'expired-activity' })
+    expect(prepare).not.toHaveBeenCalled()
+  })
+
+  it('rejects an unsupported identity before checkpoint insertion', async () => {
+    const prepare = vi.fn<typeof prepareActivityDistributionPage>()
+    expect(
+      await distributeActivity(
+        { ...FOLLOW_DATA, activityId: 'not-uuid-v7' },
+        {
+          prepareActivityDistributionPage: prepare,
+        },
+      ),
+    ).toEqual({ enqueued: 0, reason: 'unsupported-activity-id' })
+    expect(prepare).not.toHaveBeenCalled()
   })
 })

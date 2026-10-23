@@ -8,6 +8,8 @@ import {
 import type { RemoteActorRow } from '@services/remote-actors'
 import type { InboundActivity } from './parse-activity.mts'
 import { activityPubInboxDeliveryTransitions } from './durable-delivery-transitions.mts'
+import { getMaximumActivityAgeDays } from './config.mts'
+import createHttpError from 'http-errors'
 
 export type InboxActivityResult =
   | {
@@ -29,9 +31,14 @@ class StaleDurableInboxCompletionError extends Error {}
 // neither hold database locks nor leave a committed marker for a rolled-back effect.
 export async function recordAndDispatchInboundActivity(
   remoteActor: RemoteActorRow,
-  activity: InboundActivity,
+  activity: InboundActivity & { signedAt: Date },
   completion?: DurableInboxCompletion,
 ): Promise<InboxActivityResult> {
+  // This check precedes the inbox identity lookup, including after its retention row expires.
+  const ageMs = Date.now() - activity.signedAt.getTime()
+  if (!Number.isFinite(ageMs) || ageMs > getMaximumActivityAgeDays() * 24 * 60 * 60 * 1_000) {
+    throw createHttpError(401, 'Activity signature date is too old')
+  }
   let result
   try {
     await using query = await beginTransaction()

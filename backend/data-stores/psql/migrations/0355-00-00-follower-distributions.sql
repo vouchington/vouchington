@@ -60,6 +60,13 @@ CREATE INDEX IF NOT EXISTS idx_follower_distributions__incomplete
 ON follower_distributions (id)
 WHERE completed_at IS NULL AND failed_at IS NULL;
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_follower_distributions__retention
+ON follower_distributions (id)
+WHERE completed_at IS NOT NULL OR failed_at IS NOT NULL;
+
+COMMENT ON INDEX idx_follower_distributions__retention IS 'Supports bounded UUIDv7 keyset retention of completed or failed distributions.';
+
 -- RI-usable indexes for FKs not led by any index above
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_follower_distributions__sender_user_id
@@ -135,6 +142,53 @@ ON follower_distribution_selected_recipients (recipient_user_id);
 COMMENT ON TABLE follower_distribution_selected_recipients IS 'Distribution-owned selected recipient snapshot. Delivery identity stays on follower_distribution_deliveries.';
 COMMENT ON COLUMN follower_distribution_selected_recipients.distribution_id IS 'Selected-followers distribution that owns this recipient.';
 COMMENT ON COLUMN follower_distribution_selected_recipients.recipient_user_id IS 'User selected at acceptance. Later unfollows do not remove the row; hard deletion does.';
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TABLE IF NOT EXISTS follower_distribution_retention_cursors (
+  is_singleton BOOLEAN PRIMARY KEY DEFAULT TRUE CHECK (is_singleton),
+  sweep_cutoff_at TIMESTAMPTZ,
+  cursor_distribution_id UUID,
+  sweep_upper_bound_distribution_id UUID,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CHECK (sweep_cutoff_at IS NOT NULL OR (cursor_distribution_id IS NULL AND sweep_upper_bound_distribution_id IS NULL)),
+  CHECK (sweep_cutoff_at IS NULL OR sweep_upper_bound_distribution_id IS NOT NULL),
+  CHECK (cursor_distribution_id IS NULL OR cursor_distribution_id <= sweep_upper_bound_distribution_id)
+);
+CREATE OR REPLACE TRIGGER trigger_follower_distribution_retention_cursors_updated_at
+BEFORE UPDATE ON follower_distribution_retention_cursors
+FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+
+COMMENT ON TABLE follower_distribution_retention_cursors IS 'One persisted keyset position and fixed cutoff for terminal follower-distribution retention.';
+COMMENT ON COLUMN follower_distribution_retention_cursors.is_singleton IS 'Checked true key permits one cleanup cursor.';
+COMMENT ON COLUMN follower_distribution_retention_cursors.sweep_cutoff_at IS 'Fixed UUIDv7 age cutoff captured when the cleanup pass starts; NULL means idle.';
+COMMENT ON COLUMN follower_distribution_retention_cursors.cursor_distribution_id IS 'Last terminal follower-distribution id processed in the current pass; a position, not a live entity reference.';
+COMMENT ON COLUMN follower_distribution_retention_cursors.sweep_upper_bound_distribution_id IS 'Highest eligible follower-distribution id captured when the pass starts; a position, not a live entity reference.';
+COMMENT ON COLUMN follower_distribution_retention_cursors.updated_at IS 'Last time the bounded sweep cursor advanced.';
+
+CREATE TABLE IF NOT EXISTS activitypub_replay_retention_cursors (
+  is_outbound BOOLEAN PRIMARY KEY,
+  sweep_cutoff_at TIMESTAMPTZ,
+  cursor_at TIMESTAMPTZ,
+  cursor_position UUID,
+  upper_bound_at TIMESTAMPTZ,
+  upper_bound_position UUID,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CHECK ((cursor_at IS NULL) = (cursor_position IS NULL)),
+  CHECK ((upper_bound_at IS NULL) = (upper_bound_position IS NULL)),
+  CHECK (sweep_cutoff_at IS NOT NULL OR (cursor_at IS NULL AND upper_bound_at IS NULL)),
+  CHECK (sweep_cutoff_at IS NULL OR upper_bound_at IS NOT NULL)
+);
+CREATE OR REPLACE TRIGGER trigger_activitypub_replay_retention_cursors_updated_at
+BEFORE UPDATE ON activitypub_replay_retention_cursors
+FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+COMMENT ON TABLE activitypub_replay_retention_cursors IS 'Persisted keyset and high-water positions for bounded inbox and completed outbound replay-ledger cleanup.';
+COMMENT ON COLUMN activitypub_replay_retention_cursors.is_outbound IS 'False for inbox, true for completed outbound replay ledger.';
+COMMENT ON COLUMN activitypub_replay_retention_cursors.sweep_cutoff_at IS 'Fixed maximum-activity-age cutoff for one cleanup pass.';
+COMMENT ON COLUMN activitypub_replay_retention_cursors.cursor_at IS 'Timestamp component of the last processed key.';
+COMMENT ON COLUMN activitypub_replay_retention_cursors.cursor_position IS 'UUID component of the last processed key.';
+COMMENT ON COLUMN activitypub_replay_retention_cursors.upper_bound_at IS 'Timestamp component of the captured pass high-water key.';
+COMMENT ON COLUMN activitypub_replay_retention_cursors.upper_bound_position IS 'UUID component of the captured pass high-water key.';
+COMMENT ON COLUMN activitypub_replay_retention_cursors.updated_at IS 'Last time this replay sweep cursor advanced.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_reject_follower_distribution_recipient_bounds()

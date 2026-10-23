@@ -110,6 +110,7 @@ describe('cleanupAnalyticsLocalFiles', () => {
         webPushSubscriptionTombstones: emptyWindow,
         oldModerationQueueClaims: emptyWindow,
         oldModerationMediaReveals: emptyWindow,
+        federationRetention: { now: new Date('1970-01-01T00:00:00.000Z') },
       }),
     ).resolves.toEqual({
       retainedIdentityRoots: [],
@@ -135,6 +136,9 @@ describe('cleanupAnalyticsLocalFiles', () => {
       webPushSubscriptionTombstones: { deleted: 0, hasMore: false, continuation: null },
       oldModerationQueueClaims: { deleted: 0, hasMore: false, cursorId: null },
       oldModerationMediaReveals: { deleted: 0, hasMore: false, cursorId: null },
+      federationRetention: {
+        followerDistributions: { deleted: 0, hasMore: false, continuationPosition: null },
+      },
     })
     await flushFirehose()
     expect(firehoseSender).toHaveBeenCalled()

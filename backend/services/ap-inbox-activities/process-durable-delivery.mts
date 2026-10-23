@@ -96,10 +96,11 @@ export async function processDurableActivityPubInboxDelivery(
     }
   }
 
-  const completed = await recordAndDispatchInboundActivity(remoteActor, activity, {
-    deliveryId,
-    leaseToken,
-  })
+  const completed = await recordAndDispatchInboundActivity(
+    remoteActor,
+    { ...activity, signedAt: new Date(delivery.dateHeader) },
+    { deliveryId, leaseToken },
+  )
   if (completed.outcome === 'stale') return { outcome: 'stale' }
   const { duplicate } = completed
   return { outcome: 'processed', duplicate }

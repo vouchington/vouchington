@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS activitypub_post_likes (
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE UNIQUE INDEX IF NOT EXISTS idx_activitypub_post_likes__like_activitypub_id ON activitypub_post_likes (like_activitypub_id) WHERE deleted_at IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_activitypub_post_likes__like_activitypub_id ON activitypub_post_likes (like_activitypub_id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_activitypub_post_likes__post_remote_actor ON activitypub_post_likes (post_id, remote_actor_id) WHERE deleted_at IS NULL;
 -- RI-usable leading indexes for the post_id/remote_actor_id FKs — the unique index above is
@@ -53,8 +53,8 @@ CREATE INDEX IF NOT EXISTS idx_activitypub_post_likes__remote_actor_id ON activi
 COMMENT ON TABLE activitypub_post_likes IS 'Append-only ledger of remote ActivityPub Like/Undo(Like) activity against local posts. FKs post_id directly (not post_activitypub_like_tallies) so writes never depend on post_activitypub_like_tallies row-creation order; the sync trigger below lazily creates it.';
 COMMENT ON COLUMN activitypub_post_likes.post_id IS 'The local post that was liked.';
 COMMENT ON COLUMN activitypub_post_likes.remote_actor_id IS 'The remote actor who sent the Like. One active row per (post_id, remote_actor_id) — see idx_activitypub_post_likes__post_remote_actor.';
-COMMENT ON COLUMN activitypub_post_likes.like_activitypub_id IS 'The inbound Like activity''s ActivityPub `id`. Unique while active — a second live Like from the same remote actor on the same post is rejected by idx_activitypub_post_likes__post_remote_actor before this could collide.';
-COMMENT ON COLUMN activitypub_post_likes.deleted_at IS 'Set by an inbound Undo(Like). NULL while the like is active. A later re-Like from the same (post_id, remote_actor_id) resurrects this same row rather than inserting a new one — see fn_project_activitypub_post_likes.';
+COMMENT ON COLUMN activitypub_post_likes.like_activitypub_id IS 'The inbound Like activity''s ActivityPub id; unique across active and undone cycles so an old Like cannot reactivate after inbox dedup expiry.';
+COMMENT ON COLUMN activitypub_post_likes.deleted_at IS 'Set by Undo(Like), including an Undo received before its Like. A fresh Like id inserts a new cycle; an undone id is never reactivated.';
 
 -- Keeps post_activitypub_like_tallies in sync with the count of active (deleted_at IS NULL) activitypub_post_likes rows for the
 -- affected post via an atomic delta-based upsert, not a read-then-write COUNT: two concurrent
@@ -63,15 +63,14 @@ COMMENT ON COLUMN activitypub_post_likes.deleted_at IS 'Set by an inbound Undo(L
 -- stale absolute value and one Like silently vanishes from the tally regardless of commit order.
 -- `SELECT ... FOR UPDATE` on the count can't fix this either — the row that would need locking (the
 -- concurrent INSERT) doesn't exist yet at lock time. A delta avoids the read entirely: an INSERT is
--- always +1 (a fresh row is never inserted already-deleted; deleted_at is only ever set later by an
--- UPDATE — see its column comment). An UPDATE compares OLD.deleted_at to NEW.deleted_at: no
--- transition (IS NOT DISTINCT FROM) skips the sync entirely; NOT NULL -> NULL (a resurrecting
--- re-Like) is +1; NULL -> NOT NULL (an Undo) is -1. `INSERT ... ON CONFLICT (post_id) DO UPDATE SET
+-- +1 for an active Like; a tombstone inserted by an out-of-order Undo has no delta.
+-- An UPDATE compares OLD.deleted_at to NEW.deleted_at: no transition skips the sync,
+-- and NULL -> NOT NULL (an Undo) is -1. `INSERT ... ON CONFLICT (post_id) DO UPDATE SET
 -- col = post_activitypub_like_tallies.col + v_delta` then applies that delta under Postgres's own row-level lock on the
 -- post_activitypub_like_tallies row, which serializes concurrent triggers for the same post: the second transaction
 -- blocks on the lock and applies its delta on top of the first's just-committed value once
--- unblocked, so no delta is ever lost. Lazily creates the post_activitypub_like_tallies row on first like (delta is
--- always +1 whenever the row doesn't exist yet); GREATEST(..., 0) floors both the initial insert
+-- unblocked, so no delta is ever lost. Lazily creates the post_activitypub_like_tallies row on first active like;
+-- GREATEST(..., 0) floors both the initial insert
 -- and the ON CONFLICT UPDATE path against a negative value in the defensive case (an out-of-order
 -- Undo replay or any other delta-accounting bug must not drive the tally negative). Same
 -- lazy-creation upsert shape as Phase B's fn_sync_fediverse_instance_integration_status trigger,
@@ -82,7 +81,9 @@ RETURNS TRIGGER AS $$
 DECLARE
   v_delta INT;
 BEGIN
-  IF TG_OP = 'INSERT' THEN
+  IF TG_OP = 'INSERT' AND NEW.deleted_at IS NOT NULL THEN
+    RETURN NEW;
+  ELSIF TG_OP = 'INSERT' THEN
     v_delta := 1;
   ELSIF OLD.deleted_at IS NOT DISTINCT FROM NEW.deleted_at THEN
     RETURN NEW;

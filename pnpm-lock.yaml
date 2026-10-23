@@ -6037,6 +6037,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@services/ap-inbox-activities':
+        specifier: workspace:^
+        version: link:../ap-inbox-activities
       '@services/contribution-gating':
         specifier: workspace:^
         version: link:../contribution-gating
@@ -12699,6 +12702,9 @@ importers:
       '@modules/queue-errors':
         specifier: workspace:^
         version: link:../../modules/queue-errors
+      '@modules/utils':
+        specifier: workspace:^
+        version: link:../../modules/utils
       '@queues/activitypub':
         specifier: workspace:^
         version: link:../../queues/activitypub

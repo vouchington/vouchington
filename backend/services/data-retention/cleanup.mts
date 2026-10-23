@@ -43,6 +43,10 @@ import {
   cleanupOldModerationMediaReveals,
 } from './cleanup-moderation-operations.mts'
 import {
+  cleanupFederationRetention,
+  type FederationRetentionResult,
+} from './cleanup-federation.mts'
+import {
   applyRetentionLimits,
   getRetentionCutoffDate,
   normalizeRetentionDays,
@@ -132,6 +136,7 @@ type DataRetentionCleanupOptions = {
   }>
   oldModerationQueueClaims?: OptionalRetentionLimits<CleanupOptions>
   oldModerationMediaReveals?: OptionalRetentionLimits<CleanupOptions>
+  federationRetention?: { now?: Date }
 }
 
 type DataRetentionCleanupResult = {
@@ -158,6 +163,7 @@ type DataRetentionCleanupResult = {
   oldPendingNotificationPushIntents: PendingNotificationPushIntentCleanupResult
   oldModerationQueueClaims: CleanupResult & { cursorId: string | null }
   oldModerationMediaReveals: CleanupResult & { cursorId: string | null }
+  federationRetention: FederationRetentionResult
 }
 
 export async function runDataRetentionCleanup(
@@ -238,6 +244,10 @@ export async function runDataRetentionCleanup(
   const oldModerationMediaReveals = await cleanupOldModerationMediaReveals(
     withLimits(options.oldModerationMediaReveals),
   )
+  const federationRetention = await cleanupFederationRetention({
+    ...limits,
+    ...options.federationRetention,
+  })
   const retainedRelationIdentities = await cleanupRetainedRelationIdentities(
     retainedPageSize,
     options.retainedRelationIdentityKeys,
@@ -276,6 +286,7 @@ export async function runDataRetentionCleanup(
     oldPendingNotificationPushIntents,
     oldModerationQueueClaims,
     oldModerationMediaReveals,
+    federationRetention,
   }
 }
 

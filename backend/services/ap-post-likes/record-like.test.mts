@@ -46,16 +46,13 @@ describe('recordLike', () => {
     })
   })
 
-  it('resurrects the soft-deleted row instead of inserting a duplicate after an Undo', async () => {
+  it('keeps the undone identity while a fresh Like starts a new cycle', async () => {
     const post = await createTestPost()
     const remoteActor = await createRemoteActorFixture()
 
-    await recordLike(
-      post.id,
-      remoteActor.id,
-      `https://remote.example/activities/${remoteActor.id}-first-like`,
-    )
-    await undoLike(post.id, remoteActor.id)
+    const firstId = `https://remote.example/activities/${remoteActor.id}-first-like`
+    await recordLike(post.id, remoteActor.id, firstId)
+    await undoLike(post.id, remoteActor.id, firstId)
     expect(await getTestApPostLikesTally(post.id)).toEqual({
       activitypub_likes_score: 0,
       activitypub_likes_count: 0,
@@ -71,6 +68,11 @@ describe('recordLike', () => {
       activitypub_likes_score: 1,
       activitypub_likes_count: 1,
     })
+    await recordLike(post.id, remoteActor.id, firstId)
+    expect(await getTestApPostLikesTally(post.id)).toEqual({
+      activitypub_likes_score: 1,
+      activitypub_likes_count: 1,
+    })
   })
 
   it('survives repeated Like/Undo cycles from the same actor without conflicting on stale soft-deleted rows', async () => {
@@ -78,12 +80,9 @@ describe('recordLike', () => {
     const remoteActor = await createRemoteActorFixture()
 
     for (const suffix of ['one', 'two', 'three']) {
-      await recordLike(
-        post.id,
-        remoteActor.id,
-        `https://remote.example/activities/${remoteActor.id}-${suffix}`,
-      )
-      await undoLike(post.id, remoteActor.id)
+      const likeId = `https://remote.example/activities/${remoteActor.id}-${suffix}`
+      await recordLike(post.id, remoteActor.id, likeId)
+      await undoLike(post.id, remoteActor.id, likeId)
     }
     await recordLike(
       post.id,
