@@ -6,11 +6,13 @@
       "partitions": [
         {
           "name": "posts_2026_06",
-          "size_bytes": 523776000
+          "size_bytes": 523776000,
+          "drop_refusal": "no-declared-retention"
         },
         {
           "name": "posts_2026_07",
-          "size_bytes": 463878321
+          "size_bytes": 463878321,
+          "drop_refusal": "no-declared-retention"
         }
       ],
       "total_size_bytes": 987654321
@@ -21,7 +23,8 @@
       "partitions": [
         {
           "name": "rss_feed_items_2026_07",
-          "size_bytes": 12345678
+          "size_bytes": 12345678,
+          "drop_refusal": "no-declared-retention"
         }
       ],
       "total_size_bytes": 12345678

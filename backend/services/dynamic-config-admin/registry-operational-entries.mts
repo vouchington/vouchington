@@ -139,6 +139,13 @@ export const operationalDynamicConfigRegistryEntries = [
         maxValue: DATA_RETENTION_MAX_VALUES.max_batches_per_run,
         integer: true,
       },
+      partition_status_probe_limit: {
+        description:
+          'Maximum eligible partition children checked for holds or in-flight rows in one admin status request. Remaining children are marked check-pending and rechecked during cleanup.',
+        minValue: 1,
+        maxValue: DATA_RETENTION_MAX_VALUES.partition_status_probe_limit,
+        integer: true,
+      },
     },
   }),
   defineDynamicConfigNamespace({

@@ -5,9 +5,23 @@ import {
   DEFAULT_DATA_RETENTION_CONFIG,
   dataRetentionConfig,
   getDataRetentionLimits,
+  getPartitionStatusProbeLimit,
 } from '../config.mts'
 
 describe('getDataRetentionLimits', () => {
+  it('bounds partition status probes from DynamicConfig', () => {
+    expect(getPartitionStatusProbeLimit()).toBe(
+      DEFAULT_DATA_RETENTION_CONFIG.partition_status_probe_limit,
+    )
+    overrideDynamicConfigFieldsForTest(dataRetentionConfig, { partition_status_probe_limit: 7 })
+    expect(getPartitionStatusProbeLimit()).toBe(7)
+    overrideDynamicConfigFieldsForTest(dataRetentionConfig, {
+      partition_status_probe_limit: DATA_RETENTION_MAX_VALUES.partition_status_probe_limit + 1,
+    })
+    expect(getPartitionStatusProbeLimit()).toBe(
+      DEFAULT_DATA_RETENTION_CONFIG.partition_status_probe_limit,
+    )
+  })
   it('returns the production defaults when no override is stored', () => {
     expect(getDataRetentionLimits()).toEqual({
       batchSize: DEFAULT_DATA_RETENTION_CONFIG.batch_size,

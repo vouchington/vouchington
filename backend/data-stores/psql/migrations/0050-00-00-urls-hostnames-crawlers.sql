@@ -601,6 +601,11 @@ CREATE INDEX IF NOT EXISTS idx_crawls__url_id__completed_at_desc
 ON crawls (url_id, completed_at DESC, id DESC)
 WHERE completed_at IS NOT NULL;
 
+-- Partition retirement must find unfinished crawls without scanning a whole child.
+CREATE INDEX IF NOT EXISTS idx_crawls__unfinished
+ON crawls (id)
+WHERE completed_at IS NULL;
+
 -- find crawls pending language detection
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_crawls__lingua_rs_pending
@@ -683,6 +688,11 @@ ON crawl_chunks USING GIN (search_vector);
 CREATE INDEX IF NOT EXISTS idx_crawl_chunks__bedrock_nova_multimodal_v1_input_sha256
 ON crawl_chunks (bedrock_nova_multimodal_v1_input_sha256)
 WHERE bedrock_nova_multimodal_v1_input_sha256 IS NOT NULL;
+
+-- Partition retirement must retain chunks until embedding finishes.
+CREATE INDEX IF NOT EXISTS idx_crawl_chunks__embedding_pending
+ON crawl_chunks (crawl_id)
+WHERE bedrock_nova_multimodal_v1_embedding_created_at IS NULL;
 
 -- index embeddings for similarity search (vector_cosine_ops matches <=> queries)
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

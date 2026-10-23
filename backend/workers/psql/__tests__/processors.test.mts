@@ -4,8 +4,9 @@ import {
   overrideDynamicConfigFieldsForTest,
 } from '@voucha/test-helpers/dynamic-config'
 import { dataRetentionConfig, type DataRetentionLimits } from '@services/data-retention/config'
+import type { PartitionDropOutcome } from '@data-stores/psql/migration-runner/monthly-partitions'
 
-const cleanupPartitions = vi.fn<() => Promise<void>>()
+const cleanupPartitions = vi.fn<() => Promise<PartitionDropOutcome[]>>()
 const createPartitions = vi.fn<() => Promise<void>>()
 const dataRetentionCleanup = vi.fn<(limits: DataRetentionLimits) => Promise<void>>()
 const reconcileVoteDrift = vi.fn<() => Promise<void>>()
@@ -26,7 +27,6 @@ describe('processPsql', () => {
     ['reconcileVoteDrift', reconcileVoteDrift],
   ] as const)('calls %s when selected', async (jobName, processor) => {
     processor.mockReset()
-    processor.mockResolvedValue()
 
     await processPsql(jobName, undefined, {
       cleanupPartitions,

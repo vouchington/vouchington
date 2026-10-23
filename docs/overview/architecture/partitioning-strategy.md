@@ -11,7 +11,13 @@ unbounded-table policies, with their rationale and reconsideration triggers, liv
 - Use `RANGE` on the UUIDv7 row or owning-parent key. HASH partitioning is forbidden.
 - Tables without retention start with one `DEFAULT` child. Add explicit aligned ranges once
   measured planner/write pressure or growth warrants it.
-- Monthly children are reserved for partition-drop retention owned by `cleanupPartitions`.
+- Monthly children are retired by `cleanupPartitions`. Explicit UUIDv7 ranges may also be
+  retired when their table owner declares a minimum retention window and the drop guard proves
+  that the whole range is old enough. A default child has no upper bound and cannot be dropped.
+- Every drop is checked in the backend against its declared window, open legal holds and
+  unfinished work. A refusal leaves other eligible partitions available for retirement. The
+  admin status preview caps row probes and marks unchecked children `check-pending`; cleanup
+  always performs its own locked check before detach.
 - An unpartitioned table classified as unbounded must record both its rationale and the condition
   that would trigger reconsideration.
 
@@ -29,12 +35,10 @@ serialization and uniqueness point across the user-partitioned `web_push_subscri
 `notification_push_intent_subscription_receipts` retains delivery outcomes by exact subscription
 generation, rather than an endpoint-only key.
 
-`session_referral_attributions` ages out anonymous (`user_id IS NULL`) rows by batch deletion; user-linked rows live with the account, and `deleteUser` nulls `user_id` so they join the sweep.
-
-A monthly-partition, partition-drop retention model is permanently off the table for this table:
-a `DROP` is unconditional and cannot honor the `user_id IS NULL` predicate, so it would delete
-live users' attribution history along with the anonymous rows it's meant to age out. Row-based
-batch deletion is the only retention mechanism this table will use.
+`session_referral_attributions` ages out anonymous (`user_id IS NULL`) rows by batch deletion;
+user-linked rows live with the account, and `deleteUser` nulls `user_id` so they join the sweep.
+Its current default partition has no declared drop window. A future range-drop policy must
+account for live user-linked rows before the owner can declare one.
 
 ## Operating Explicit Ranges
 

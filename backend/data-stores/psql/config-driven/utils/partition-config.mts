@@ -132,3 +132,39 @@ export const ALL_MONTHLY_PARTITION_TABLES: MonthlyPartitionTableConfig[] = [
 export const MONTHLY_PARTITION_RETENTION_TABLES = filterRetainedMonthlyPartitionTables(
   ALL_MONTHLY_PARTITION_TABLES,
 )
+
+export type PartitionDropPolicy = {
+  /** Null refuses every drop until the table owner specifies a minimum. */
+  minimumRetentionDays: number | null
+  legalBasis?: string
+  /** A partition-column FK to the held account's retained user identity. */
+  legalHoldAccountColumn?: string
+  /** Each predicate must have a matching partial index on the partition parent. */
+  inFlightPredicates?: readonly string[]
+}
+
+/** A null minimum makes retirement fail closed until the table owner chooses a window. */
+export const PARTITION_DROP_POLICIES: Record<string, PartitionDropPolicy> = Object.fromEntries(
+  [
+    ...POST_PARTITION_TABLES,
+    ...CLASSIFIER_RESULT_PARTITION_TABLES,
+    ...POST_PUBLICATION_PARTITION_TABLES,
+    ...USER_SESSION_PARTITION_TABLES,
+    ...USER_KEY_PARTITION_TABLES,
+    ...REVISION_PARTITION_TABLES,
+    ...DEFERRED_LEDGER_PARTITION_TABLES,
+  ].map(table => [table, { minimumRetentionDays: null }]),
+)
+
+for (const config of ALL_MONTHLY_PARTITION_TABLES) {
+  PARTITION_DROP_POLICIES[config.table] = {
+    minimumRetentionDays: config.retentionDays ?? null,
+    legalBasis: 'docs/overview/architecture/partitioning-strategy.md',
+    ...(config.table === 'crawls' && {
+      inFlightPredicates: ['completed_at IS NULL', 'has_pending_embeddings = TRUE'],
+    }),
+    ...(config.table === 'crawl_chunks' && {
+      inFlightPredicates: ['bedrock_nova_multimodal_v1_embedding_created_at IS NULL'],
+    }),
+  }
+}
