@@ -40,6 +40,12 @@ describe('staged upload cleanup sweep', () => {
     expect(() => retainedState({ ...valid, cutoff: new Date().toISOString() })).toThrow(
       'Invalid staged upload cleanup snapshot',
     )
+    expect(() => parseCleanupAbandonedUploadsData({ unexpected: true })).toThrow(
+      'Invalid upload cleanup payload',
+    )
+    expect(() => retainedState({ ...valid, upper: { stagedAt, id: 'invalid' } })).toThrow(
+      'Invalid staged upload cleanup key',
+    )
   })
 
   it('captures a retained physical upper key that includes owned eligible uploads', async () => {
