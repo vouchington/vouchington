@@ -16,9 +16,26 @@ import { SQSClient as LazySQSClient } from './sqs.mts'
 
 type EndpointProviderConfig = {
   requestHandler: Pick<NodeHttpHandler, 'handle' | 'httpHandlerConfigs'>
+  useDualstackEndpoint: () => Promise<boolean>
 }
 
 describe('AWS client configuration', () => {
+  it('selects dual-stack delivery clients and IPv4 Bedrock clients', async () => {
+    for (const [client, useDualstackEndpoint] of [
+      [CloudWatchMetricsClient, true],
+      [FirehoseDeliveryClient, true],
+      [S3ImagesClient, true],
+      [S3ImageUploadsClient, true],
+      [SESClient, true],
+      [LazySQSClient, true],
+      [BedrockControlClient, false],
+      [BedrockEmbeddingsClient, false],
+    ] as const) {
+      const config = client.config as EndpointProviderConfig
+      await expect(config.useDualstackEndpoint()).resolves.toBe(useDualstackEndpoint)
+    }
+  })
+
   it('configures production clients with the shared request bounds and long-poll policy', async () => {
     for (const [client, socketTimeout] of [
       [BedrockControlClient, AWS_SOCKET_TIMEOUT_MS],
