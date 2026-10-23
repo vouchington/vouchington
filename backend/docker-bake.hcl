@@ -1,6 +1,7 @@
 // Bake plan for the backend API and worker images. The build-backend-images
-// composite action selects one Bake invocation for either API + worker-cpu or
-// all three images, so the cache-busted shared builder stage executes once per run.
+// composite action selects one Bake invocation for either the core images or
+// every runtime image, including the CLI smoke targets, so the cache-busted
+// shared builder stage executes once per run.
 //
 // Tags and OCI labels are layered in from `docker/metadata-action@v6`
 // bake-files at workflow time, so this HCL file does not hard-code tags.
@@ -41,6 +42,16 @@ target "worker-cpu" {
 target "worker-io" {
   inherits = ["_common"]
   target   = "worker-io"
+}
+
+target "worker-io-cli-smoke" {
+  inherits = ["_common"]
+  target   = "worker-io-cli-smoke"
+}
+
+target "worker-cpu-cli-smoke" {
+  inherits = ["_common"]
+  target   = "worker-cpu-cli-smoke"
 }
 
 group "default" {

@@ -123,7 +123,6 @@ describe('backend Dockerfile dependency install', () => {
 
     expect(strictInstallIndex).toBeGreaterThan(-1)
     expect(strictInstallIndex).toBeLessThan(installIndex)
-    // `pnpm deploy` re-runs lifecycle scripts, so the deploy stages must inherit the variable.
     for (const stageName of ['deploy-api', 'deploy-worker-cpu', 'deploy-worker-io']) {
       expect(getStageHeader(stageName)).toBe(`FROM builder AS ${stageName}`)
     }
@@ -201,7 +200,6 @@ describe('backend Dockerfile dependency install', () => {
   it('omits the no-mistakes schema catalog from the backend image context', () => {
     const lines = dockerignore.split(/\r?\n/)
     const catalog = 'backend/data-stores/psql/schema-snapshot/no-mistakes-catalog.json'
-    // `!backend/**` re-includes the tree, so this exclusion has to come later.
     expect(lines.indexOf(catalog)).toBeGreaterThan(lines.indexOf('!backend/**'))
     expect(lines).not.toContain('backend/data-stores/psql/schema-snapshot/schema.json')
   })
@@ -255,15 +253,19 @@ describe('backend Dockerfile dependency install', () => {
   })
 
   it('does not copy the mixed deploy tree into a runtime stage', () => {
-    expect(dockerfile).not.toContain(
-      'COPY --link --from=deploy-api --chown=65532:65532 /prod/api ./',
-    )
-    expect(dockerfile).not.toContain(
-      'COPY --link --from=deploy-worker-cpu --chown=65532:65532 /prod/worker-cpu ./',
-    )
-    expect(dockerfile).not.toContain(
-      'COPY --link --from=deploy-worker-io --chown=65532:65532 /prod/worker-io ./',
-    )
+    for (const tree of ['api', 'worker-cpu', 'worker-io']) {
+      expect(dockerfile).not.toContain(
+        `COPY --link --from=deploy-${tree} --chown=65532:65532 /prod/${tree} ./`,
+      )
+    }
+  })
+
+  it('ships sort and comm with TMPDIR on worker images only', () => {
+    for (const stageName of ['worker-cpu', 'worker-io', 'api']) {
+      const text = getStageInstructions(stageName).join('\n')
+      expect(text.includes('COPY --from=worker-io-cli /worker-io-cli/ /')).toBe(stageName !== 'api')
+      expect(text.includes('ENV TMPDIR=/tmp')).toBe(stageName !== 'api')
+    }
   })
 
   it('uses --link for every deploy-tree copy used by prewarm and final runtime stages', () => {

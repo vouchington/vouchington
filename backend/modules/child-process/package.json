@@ -1,0 +1,22 @@
+{
+  "name": "@modules/child-process",
+  "version": "1.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "index.mts",
+  "exports": {
+    ".": {
+      "types": "./index.mts",
+      "import": "./index.mts",
+      "default": "./index.mts"
+    },
+    "./image-smoke": {
+      "types": "./image-smoke.mts",
+      "import": "./image-smoke.mts",
+      "default": "./image-smoke.mts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {}
+}

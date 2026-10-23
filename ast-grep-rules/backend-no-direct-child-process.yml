@@ -1,0 +1,93 @@
+id: backend-no-direct-child-process
+language: Tsx
+severity: error
+message: Backend runtime code runs child processes only through @modules/child-process.
+files:
+  - backend/services/**/*.mts
+  - backend/services/**/*.cts
+  - backend/services/**/*.ts
+  - backend/queues/**/*.mts
+  - backend/queues/**/*.cts
+  - backend/queues/**/*.ts
+  - backend/modules/**/*.mts
+  - backend/modules/**/*.cts
+  - backend/modules/**/*.ts
+  - backend/workers/**/*.mts
+  - backend/workers/**/*.cts
+  - backend/workers/**/*.ts
+  - backend/entrypoints/**/*.mts
+  - backend/entrypoints/**/*.cts
+  - backend/entrypoints/**/*.ts
+ignores:
+  - backend/modules/child-process/**/*
+  - '**/*.test.mts'
+  - '**/*.test.ts'
+  - '**/*.test.cts'
+  - '**/__tests__/**'
+rule:
+  any:
+    - kind: import_statement
+      regex: child_process
+    - kind: export_statement
+      regex: child_process
+    - all:
+        - kind: call_expression
+        - regex: child_process
+        - any:
+            - pattern: import($$$ARGS)
+            - pattern: require($$$ARGS)
+examples:
+  - code: |
+      import { spawn } from 'node:child_process'
+    isValid: false
+    file: 'backend/services/urls-domains-blacklist-sync/sync.mts'
+  - code: |
+      import type { ChildProcess } from 'node:child_process'
+    isValid: false
+    file: 'backend/queues/bloom-filters/config.mts'
+  - code: |
+      import childProcess from 'child_process'
+    isValid: false
+    file: 'backend/modules/utils/http.mts'
+  - code: |
+      export { spawn } from 'node:child_process'
+    isValid: false
+    file: 'backend/workers/example/index.mts'
+  - code: |
+      const childProcess = require('node:child_process')
+    isValid: false
+    file: 'backend/entrypoints/worker-io/serve.mts'
+  - code: |
+      const childProcess = require("child_process")
+    isValid: false
+    file: 'backend/services/kagi-smallweb/sync.mts'
+  - code: |
+      const loaded = await import('node:child_process')
+    isValid: false
+    file: 'backend/modules/utils/index.mts'
+  - code: |
+      const loaded = await import("child_process")
+    isValid: false
+    file: 'backend/queues/example/index.mts'
+  - code: |
+      import { spawn } from 'node:child_process'
+      export function run() {
+        return spawn
+      }
+    isValid: true
+    file: 'backend/modules/child-process/run-command.mts'
+  - code: |
+      import { spawn } from 'node:child_process'
+    isValid: true
+    file: 'backend/modules/child-process/run-command.test.mts'
+  - code: |
+      import { execFile } from 'node:child_process'
+    isValid: true
+    file: 'backend/scripts/explain-analyze/pruning/run.mts'
+  - code: |
+      import { readFileSync } from 'node:fs'
+      export function readConfig() {
+        return readFileSync('config')
+      }
+    isValid: true
+    file: 'backend/services/urls-domains-blacklist-sync/sync.mts'

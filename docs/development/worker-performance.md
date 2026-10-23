@@ -7,6 +7,8 @@ code and the Dockerfile; queue placement lives in
 - Every queue runs in exactly one worker process per deployed environment. `worker-cpu` runs the
   native and CPU-bound queues (Rust N-API, sharp, cloud-browser crawling); `worker-io` may run the
   DB, Valkey, and HTTP queues. Local development runs every queue in one process.
+- Queues that call `sort` or `comm` need a worker image that ships them. Both `worker-cpu` and
+  `worker-io` do. The api image does not.
 - `background-cpu` shares a worker across CPU domains while keeping hostname and provider ordering
   at the job group. Worker concurrency is based on the constituent domains; domain pause and
   per-job locks prevent one slow source from idling the whole queue. Its unfurl handler can use
