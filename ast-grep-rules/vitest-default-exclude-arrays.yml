@@ -1,0 +1,50 @@
+id: vitest-default-exclude-arrays
+language: Tsx
+severity: error
+message: Preserve both Vitest default dependency-directory exclusions in literal project exclude arrays.
+files:
+  - vitest.config.mts
+  - test-helpers/vitest-config/*projects.mts
+rule:
+  kind: pair
+  all:
+    - has:
+        field: key
+        kind: property_identifier
+        regex: '^exclude$'
+    - has:
+        field: value
+        kind: array
+        any:
+          - not:
+              has:
+                stopBy: end
+                kind: string
+                regex: '^[''" ]*\*\*/node_modules/\*\*[''" ]*$'
+          - not:
+              has:
+                stopBy: end
+                kind: string
+                regex: '^[''" ]*\*\*/\.git/\*\*[''" ]*$'
+examples:
+  - code: "const config = { exclude: ['**/node_modules/**'] }"
+    file: vitest.config.mts
+    isValid: false
+  - code: "const config = { exclude: ['**/.git/**'] }"
+    file: test-helpers/vitest-config/backend-data-projects.mts
+    isValid: false
+  - code: 'const config = { exclude: [] }'
+    file: vitest.config.mts
+    isValid: false
+  - code: "const config = { exclude: ['**/.git/**', '**/node_modules/**', '**/*.test.mts'] }"
+    file: vitest.config.mts
+    isValid: true
+  - code: 'const config = { exclude: ["**/node_modules/**", "**/.git/**"] }'
+    file: test-helpers/vitest-config/backend-data-projects.mts
+    isValid: true
+  - code: 'const config = { exclude: [] }'
+    file: backend/ordinary.mts
+    isValid: true
+  - code: 'const config = { include: [] }'
+    file: vitest.config.mts
+    isValid: true

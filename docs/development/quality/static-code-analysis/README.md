@@ -82,3 +82,11 @@ The root Vitest config installs a `configureVitest` plugin that rejects an effec
 ## Web route localization map
 
 `i18n-extract/route-selector-map.mts` makes one `no-mistakes` `analyzeProject` call with a dependency report per route and global-chrome file, writes the route selector map and the catalog's `routes.json`, and fails on unresolved local specifiers, computed `import()`/`require()`, unbounded `t()` assembly, and production `as MessageKey` casts. The `workspace` relationship is load-bearing: dropping it silently expands closures and changes membership for hundreds of routes. The generator scans quoted alias-shaped literals, not `t()` calls through an AST, so finite alias registries must live in a module the route graph can reach. Its `--check` form runs in static CI; regenerate and commit both artifacts when a route, its imports, shared chrome, or a web alias changes membership. See [localization requirements](../../../requirements/users/LOCALIZATION.md).
+
+## Live policy inputs and finite controls
+
+The repository-file policy aggregate owns Docker image mirror checks, Trivy scan and exception
+policy, and workspace root catalog correspondence. It consumes tracked inputs once in static CI;
+unit controls supply finite source trees instead of scanning the checkout. Shell quoting uses its
+existing aggregate guard with finite YAML and shell controls. Literal Vitest project exclude arrays
+are checked by the canonical ast-grep scan; resolved-project behavior remains a unit contract.

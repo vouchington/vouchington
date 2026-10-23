@@ -1,4 +1,3 @@
-import { execFileSync } from 'node:child_process'
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import picomatch from 'picomatch'
@@ -27,35 +26,10 @@ const configHelperDir = new URL('../test-helpers/vitest-config/', import.meta.ur
 const configHelperFiles = readdirSync(configHelperDir)
   .filter(f => f.endsWith('.mts'))
   .toSorted()
-const projectConfigPaths = configHelperFiles.reduce<string[]>((paths, file) => {
-  if (file.endsWith('projects.mts')) paths.push(`test-helpers/vitest-config/${file}`)
-  return paths
-}, [])
 const allConfigSources = [
   rootConfigSource,
   ...configHelperFiles.map(f => readFileSync(new URL(f, configHelperDir), 'utf8')),
 ].join('\n')
-const astGrepBin = join(process.cwd(), 'node_modules/@ast-grep/cli/ast-grep')
-const vitestExcludeArrayRule = [
-  'id: vitest-exclude-arrays',
-  'language: Tsx',
-  'rule:',
-  '  kind: pair',
-  '  all:',
-  '    - has:',
-  '        field: key',
-  '        kind: property_identifier',
-  '        regex: "^exclude$"',
-  '    - has:',
-  '        field: value',
-  '        kind: array',
-].join('\n')
-
-type AstGrepMatch = {
-  text: string
-  file: string
-}
-
 describe('dev-tools Vitest config', () => {
   it('collects dev test files directly', () => {
     const devTools = vitestProjects.find(project => project.test?.name === 'dev-tools')
@@ -134,29 +108,6 @@ describe('dev-tools Vitest config', () => {
 })
 
 describe('Vitest project exclude invariant', () => {
-  it('uses AST-selected literal exclude arrays that preserve Vitest defaults', () => {
-    const rawExcludeArrays = JSON.parse(
-      execFileSync(
-        astGrepBin,
-        [
-          'scan',
-          '--inline-rules',
-          vitestExcludeArrayRule,
-          '--json=compact',
-          'vitest.config.mts',
-          ...projectConfigPaths,
-        ],
-        { encoding: 'utf8' },
-      ),
-    ) as AstGrepMatch[]
-    expect(rawExcludeArrays).not.toHaveLength(0)
-
-    const missingDefaultExcludes = rawExcludeArrays.filter(
-      match => !match.text.includes("'**/node_modules/**'") || !match.text.includes("'**/.git/**'"),
-    )
-    expect(missingDefaultExcludes.map(match => `${match.file}: ${match.text}`)).toEqual([])
-  })
-
   it('preserves Vitest default dependency-tree excludes in every project', () => {
     expect(vitestProjects).not.toHaveLength(0)
 
