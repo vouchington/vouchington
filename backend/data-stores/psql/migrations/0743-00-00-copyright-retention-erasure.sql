@@ -67,6 +67,39 @@ COMMENT ON COLUMN copyright_notice_retention_erasures.created_at IS 'Time the ca
 COMMENT ON FUNCTION fn_copyright_retention_erasable_columns(text) IS 'Columns, per table, that a retention-erasure transaction may overwrite in place; NULL for any table that is never erased. The TypeScript erasure spec must list exactly these columns.';
 COMMENT ON FUNCTION fn_copyright_retention_erasure_permitted(text, jsonb, jsonb) IS 'True only inside a transaction that set app.copyright_retention_erasure to on and only when the update changes nothing outside the table''s erasable columns; legal-record guards call it before rejecting an update.';
 
+-- A decision attempt can be admitted just as the case erasure worker commits. Hold the same
+-- notice row lock that its FOR UPDATE conflicts with, then read the marker in a fresh statement.
+-- Return NULL for an erased case so its security audit still commits without new legal ciphertext.
+CREATE OR REPLACE FUNCTION fn_reject_erased_copyright_decision_rationale()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+DECLARE case_id UUID;
+BEGIN
+  FOR case_id IN
+    SELECT notice.id FROM copyright_notices notice
+    WHERE notice.id = NEW.copyright_notice_id
+      OR notice.id IN (
+        SELECT link.copyright_notice_id FROM copyright_notice_email_intake_notice_links link
+        WHERE link.copyright_notice_email_intake_id = NEW.copyright_notice_email_intake_id)
+    ORDER BY notice.id
+  LOOP
+    PERFORM 1 FROM copyright_notices WHERE id = case_id FOR KEY SHARE;
+  END LOOP;
+  IF EXISTS (SELECT 1 FROM copyright_notice_retention_erasures erased
+    WHERE erased.copyright_notice_id = NEW.copyright_notice_id
+      OR erased.copyright_notice_id IN (
+        SELECT link.copyright_notice_id FROM copyright_notice_email_intake_notice_links link
+        WHERE link.copyright_notice_email_intake_id = NEW.copyright_notice_email_intake_id)) THEN
+    RETURN NULL;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trigger_copyright_decision_rationales_skip_erased
+BEFORE INSERT ON copyright_decision_rationales
+FOR EACH ROW EXECUTE FUNCTION fn_reject_erased_copyright_decision_rationale();
+COMMENT ON FUNCTION fn_reject_erased_copyright_decision_rationale() IS 'Serializes with case erasure and suppresses fresh legal rationale ciphertext after an erasure marker exists, without suppressing the security attempt.';
+
 -- Copyright rationale rows are bounded. Case-scoped rows retire only after the existing case
 -- erasure has redacted them; noncase decisions retire after 1095 days of terminal inactivity.
 CREATE OR REPLACE FUNCTION fn_copyright_decision_rationale_retention_eligible(
@@ -121,7 +154,7 @@ RETURNS BOOLEAN LANGUAGE sql STABLE AS $$
   )
 $$;
 
-CREATE OR REPLACE FUNCTION fn_guard_copyright_decision_rationale()
+CREATE OR REPLACE FUNCTION fn_reject_copyright_decision_rationale_mutation()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 DECLARE retention_cutoff TIMESTAMPTZ;
 BEGIN
@@ -148,7 +181,7 @@ $$;
 
 CREATE OR REPLACE TRIGGER trigger_copyright_decision_rationales_immutable
 BEFORE UPDATE OR DELETE ON copyright_decision_rationales
-FOR EACH ROW EXECUTE FUNCTION fn_guard_copyright_decision_rationale();
+FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_decision_rationale_mutation();
 
 COMMENT ON FUNCTION fn_copyright_decision_rationale_retention_eligible(copyright_decision_rationales, timestamptz) IS 'True after case erasure or after the approved 1095-day noncase terminal window, with open reviews and preservation holds excluded.';
-COMMENT ON FUNCTION fn_guard_copyright_decision_rationale() IS 'Permits only controlled case redaction or bounded retention deletion of eligible legal rationale.';
+COMMENT ON FUNCTION fn_reject_copyright_decision_rationale_mutation() IS 'Permits only controlled case redaction or bounded retention deletion of eligible legal rationale.';

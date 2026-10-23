@@ -129,10 +129,16 @@ CREATE TABLE IF NOT EXISTS security_retention_cleanup_cursors (
   source security_retention_sources PRIMARY KEY,
   cursor_at TIMESTAMPTZ,
   cursor_id UUID,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CHECK ((cursor_at IS NULL) = (cursor_id IS NULL))
 );
+
+CREATE OR REPLACE TRIGGER trigger_security_retention_cleanup_cursors_updated_at
+BEFORE UPDATE ON security_retention_cleanup_cursors
+FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
 COMMENT ON TABLE security_retention_cleanup_cursors IS 'One durable keyset position per bounded security-record cleanup source.';
 COMMENT ON COLUMN security_retention_cleanup_cursors.source IS 'Security-record family whose cleanup scan owns this position.';
 COMMENT ON COLUMN security_retention_cleanup_cursors.cursor_at IS 'Last scanned eligibility timestamp; NULL starts a new complete pass.';
 COMMENT ON COLUMN security_retention_cleanup_cursors.cursor_id IS 'UUIDv7 tie-breaker of the last scanned record; NULL starts a new complete pass.';
+COMMENT ON COLUMN security_retention_cleanup_cursors.updated_at IS 'Last committed bounded security retention sweep for this source.';

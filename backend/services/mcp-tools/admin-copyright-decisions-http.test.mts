@@ -10,6 +10,8 @@ import { readTestMcpCallAuditRowText } from '@voucha/test-helpers/entities/mcp-c
 import { issueTestOAuthTokensForClient } from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
 import { copyrightConfig } from '@services/copyright-notices/config'
 import { createCopyrightReplayFixture } from '@voucha/test-helpers/copyright-route-replay-setup'
+import { markTestCopyrightNoticeErasedAndCommit } from '@voucha/test-helpers/copyright-email-manual-association'
+import { insertTestCopyrightDecisionRationaleForCase } from '@voucha/test-helpers/data-stores/psql/copyright-decision-rationale'
 import { exhaustCopyrightActionIntent } from '@voucha/test-helpers/copyright-route-replay-fixtures'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { useCopyrightMcpDecisionTools } from '@voucha/test-helpers/copyright-mcp-write-fixtures'
@@ -177,6 +179,31 @@ describe('copyright decision tools on POST /api/v1/legal/mcp', () => {
       ).expect(200)
       const rows = await readTestCopyrightMcpAuditRows(user.id)
       expect(rows.map(row => row.outcome)).toContain('accepted')
+      expect(await readTestCopyrightDecisionRationales(user.id)).toHaveLength(0)
+    } finally {
+      restoreEnabled()
+    }
+  })
+
+  it('keeps the security attempt but writes no new rationale ciphertext after case erasure', async () => {
+    const { user, token } = await issueAdmin('copyright-notices:read copyright-notices:write')
+    const fixture = await createCopyrightReplayFixture()
+    await markTestCopyrightNoticeErasedAndCommit(fixture.noticeId)
+    const restoreEnabled = overrideDynamicConfigFieldsForTest(copyrightConfig, {
+      mcpDecisionTools: true,
+    })
+    try {
+      await postAdminMcp(
+        token,
+        toolCall({ id: fixture.noticeId, intentId: fixture.intentId, rationale: RATIONALE_A }),
+      ).expect(200)
+      expect((await readTestCopyrightMcpAuditRows(user.id)).map(row => row.outcome)).toContain(
+        'accepted',
+      )
+      expect(await readTestCopyrightDecisionRationales(user.id)).toHaveLength(0)
+
+      // The database guard also covers writers that bypass the MCP admission path.
+      await insertTestCopyrightDecisionRationaleForCase(fixture.noticeId, user.id)
       expect(await readTestCopyrightDecisionRationales(user.id)).toHaveLength(0)
     } finally {
       restoreEnabled()
