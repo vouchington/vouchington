@@ -9,9 +9,16 @@ describe('plan completion advisory races', () => {
     const runGh = async (args: string[]): Promise<string> => {
       calls.push(args)
       if (args.some(arg => arg.endsWith('/issues')))
-        return JSON.stringify([[{ number: 726, state: 'open', title: 'Plan: test' }]])
+        return JSON.stringify([
+          [{ number: 726, state: 'open', author_association: 'MEMBER', title: 'Plan: test' }],
+        ])
       if (args.some(arg => arg.endsWith('/issues/726')))
-        return JSON.stringify({ number: 726, state: 'open', title: 'Plan: test' })
+        return JSON.stringify({
+          number: 726,
+          state: 'open',
+          author_association: 'MEMBER',
+          title: 'Plan: test',
+        })
       if (args.some(arg => arg.endsWith('/timeline'))) return JSON.stringify([[]])
       if (args.some(arg => arg.includes('/comments'))) {
         commentReads += 1
@@ -43,11 +50,14 @@ describe('plan completion advisory races', () => {
     const runGh = async (args: string[]): Promise<string> => {
       calls.push(args)
       if (args.some(arg => arg.endsWith('/issues')))
-        return JSON.stringify([[{ number: 726, state: 'open', title: 'Plan: test' }]])
+        return JSON.stringify([
+          [{ number: 726, state: 'open', author_association: 'MEMBER', title: 'Plan: test' }],
+        ])
       if (args.some(arg => arg.endsWith('/issues/726')))
         return JSON.stringify({
           number: 726,
           state: ++planReads === 1 ? 'open' : 'closed',
+          author_association: 'MEMBER',
           title: 'Plan: test',
         })
       if (args.some(arg => arg.endsWith('/timeline')))

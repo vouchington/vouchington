@@ -24,9 +24,16 @@ function basicSnapshot(calls: string[][], commentPages: unknown[][]) {
   return async (args: string[]): Promise<string> => {
     calls.push(args)
     if (args.some(arg => arg.endsWith('/issues')))
-      return JSON.stringify([[{ number: 726, state: 'open', title: 'Plan: test' }]])
+      return JSON.stringify([
+        [{ number: 726, state: 'open', author_association: 'MEMBER', title: 'Plan: test' }],
+      ])
     if (args.some(arg => arg.endsWith('/issues/726')))
-      return JSON.stringify({ number: 726, state: 'open', title: 'Plan: test' })
+      return JSON.stringify({
+        number: 726,
+        state: 'open',
+        author_association: 'MEMBER',
+        title: 'Plan: test',
+      })
     if (args.some(arg => arg.endsWith('/timeline')))
       return JSON.stringify([[timeline(1)], [timeline(2)]])
     if (args.some(arg => arg.endsWith('/pulls/1')))
@@ -81,8 +88,8 @@ describe('plan completion snapshot boundaries', () => {
       if (args.some(arg => arg.endsWith('/issues')))
         return JSON.stringify([
           [
-            { number: 726, state: 'open', title: 'Plan: first' },
-            { number: 727, state: 'open', title: 'Plan: second' },
+            { number: 726, state: 'open', author_association: 'MEMBER', title: 'Plan: first' },
+            { number: 727, state: 'open', author_association: 'MEMBER', title: 'Plan: second' },
           ],
         ])
       if (
@@ -92,6 +99,7 @@ describe('plan completion snapshot boundaries', () => {
         return JSON.stringify({
           number: args.some(arg => arg.endsWith('/issues/726')) ? 726 : 727,
           state: 'open',
+          author_association: 'MEMBER',
           title: 'Plan: current',
         })
       if (args.some(arg => arg.endsWith('/issues/726/timeline')))

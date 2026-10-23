@@ -32,7 +32,7 @@ describe('fix-main duplicate handling', () => {
     const relatedJob = parsedMain.jobs?.['related-candidates']
 
     expect(relatedJob?.outputs?.['related-candidates']).toBe(
-      '${{ steps.prompt-context.outputs.related-candidates }}',
+      '${{ steps.authorized-candidates.outputs.related-candidates }}',
     )
     expect(relatedJob?.outputs).not.toHaveProperty('skip')
     expect(relatedJob?.outputs).not.toHaveProperty('existing-kind')

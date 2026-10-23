@@ -69,7 +69,12 @@ function snapshotFixture() {
       })
     if (path.endsWith('/issues'))
       return JSON.stringify([
-        plans.map(number => ({ number, state: 'open', title: 'Plan: discovered' })),
+        plans.map(number => ({
+          number,
+          state: 'open',
+          author_association: 'MEMBER',
+          title: 'Plan: discovered',
+        })),
       ])
     if (path.endsWith('/timeline')) {
       await readPhase('timeline')
@@ -101,7 +106,12 @@ function snapshotFixture() {
       return JSON.stringify([[]])
     }
     if (counts.plan < PLAN_COUNT) await readPhase('plan')
-    return JSON.stringify({ number, state: 'open', title: 'Plan: current' })
+    return JSON.stringify({
+      number,
+      state: 'open',
+      author_association: 'MEMBER',
+      title: 'Plan: current',
+    })
   }
 
   return {
