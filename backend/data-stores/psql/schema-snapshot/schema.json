@@ -82964,6 +82964,69 @@
       },
       "uniqueConstraints": {}
     },
+    "post_vote_retained_daily_counts": {
+      "checkConstraints": {
+        "post_vote_retained_daily_counts_count_check": "CHECK ((count >= 0))"
+      },
+      "columns": {
+        "count": {
+          "collation": null,
+          "comment": "Number of qualifying removed post vote events on this day.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "bigint"
+        },
+        "day": {
+          "collation": null,
+          "comment": "UTC day of the removed ballot event.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "date"
+        }
+      },
+      "comment": "Anonymous daily count of post vote events removed by ballot retention, preserving historical engagement metrics.",
+      "foreignKeys": {},
+      "growth": "unbounded",
+      "indexes": {
+        "post_vote_retained_daily_counts_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX post_vote_retained_daily_counts_pkey ON public.post_vote_retained_daily_counts USING btree (day)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "day",
+              "descending": false,
+              "expression": "day",
+              "nullsFirst": false,
+              "opclass": "date_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["day"],
+        "definition": "PRIMARY KEY (day)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
     "post_votes": {
       "checkConstraints": {
         "chk_post_votes_score_domain": "CHECK (((score IS NULL) OR ((score >= '-2'::integer) AND (score <= 2))))",
