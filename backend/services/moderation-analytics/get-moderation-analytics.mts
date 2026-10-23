@@ -84,7 +84,13 @@ export function getRangeStart(range: ModerationAnalyticsRange, now: Date): Date 
       return d
     }
     case 'all': {
-      return new Date(0)
+      // Raw moderation rows have finite retention. Keep the dashboard's all range inside the
+      // longest raw moderation window; older transparency totals use their separate rollups.
+      const year = d.getUTCFullYear() - 2
+      const month = d.getUTCMonth()
+      const lastDay = new Date(Date.UTC(year, month + 1, 0)).getUTCDate()
+      d.setUTCFullYear(year, month, Math.min(d.getUTCDate(), lastDay))
+      return d
     }
   }
 }

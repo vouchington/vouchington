@@ -52,6 +52,7 @@ export async function seedCopyrightMedia(
       RETURNING id, post_id, created_at
     )
     UPDATE posts SET latest_clearance_change_id = inserted_change.id,
+      clearance_changed_at = inserted_change.created_at,
       approved_at = inserted_change.created_at, rejected_at = NULL, in_review_at = NULL
     FROM inserted_change WHERE posts.id = inserted_change.post_id
   `)

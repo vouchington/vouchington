@@ -9,11 +9,33 @@ export async function getHistoryTablesWithoutMutationGuards() {
       WHERE namespace.nspname = 'public' AND table_row.relkind IN ('r', 'p')
         AND table_row.relname ~ '_(changes|revisions)$'
         AND NOT table_row.relispartition
-        AND NOT EXISTS (
-          SELECT 1 FROM pg_trigger trigger_row JOIN pg_proc function_row ON function_row.oid = trigger_row.tgfoid
-          WHERE trigger_row.tgrelid = table_row.oid AND NOT trigger_row.tgisinternal
-            AND function_row.proname = 'fn_reject_mutation'
-            AND (trigger_row.tgtype::integer & 26) = 26
+        AND NOT (
+          (table_row.relname <> 'topic_revisions' AND EXISTS (
+            SELECT 1 FROM pg_trigger trigger_row
+            JOIN pg_proc function_row ON function_row.oid = trigger_row.tgfoid
+            WHERE trigger_row.tgrelid = table_row.oid AND NOT trigger_row.tgisinternal
+              AND trigger_row.tgenabled IN ('O', 'A')
+              AND function_row.oid = 'public.fn_reject_mutation()'::regprocedure
+              AND (trigger_row.tgtype::integer & 31) = 27
+          ))
+          OR (table_row.relname = 'topic_revisions' AND EXISTS (
+            SELECT 1 FROM pg_trigger trigger_row
+            JOIN pg_proc function_row ON function_row.oid = trigger_row.tgfoid
+            WHERE trigger_row.tgrelid = table_row.oid AND NOT trigger_row.tgisinternal
+              AND trigger_row.tgenabled IN ('O', 'A')
+              AND function_row.oid = 'public.fn_reject_mutation()'::regprocedure
+              AND (trigger_row.tgtype::integer & 31) = 19
+              AND trigger_row.tgnargs = 1
+              AND trigger_row.tgargs = convert_to('revised_by_id', 'UTF8') || decode('00', 'hex')
+          ) AND EXISTS (
+            SELECT 1 FROM pg_trigger trigger_row
+            JOIN pg_proc function_row ON function_row.oid = trigger_row.tgfoid
+            WHERE trigger_row.tgrelid = table_row.oid AND NOT trigger_row.tgisinternal
+              AND trigger_row.tgenabled IN ('O', 'A')
+              AND function_row.oid = 'public.fn_reject_topic_revision_retention_delete()'::regprocedure
+              AND (trigger_row.tgtype::integer & 31) = 11
+              AND trigger_row.tgnargs = 0
+          ))
         ) ORDER BY table_row.relname
     `),
   )

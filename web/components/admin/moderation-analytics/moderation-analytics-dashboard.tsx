@@ -71,6 +71,7 @@ export default function ModerationAnalyticsDashboard({
         <ModerationAnalyticsRangeFilter
           basePath={basePath}
           range={metrics.range}
+          allRangeLabelKey='extracted.moderationAnalytics.moderationAnalyticsDashboard.last24Months_7c3f8a2d'
         />
       </div>
 

@@ -2249,6 +2249,7 @@
 {"descriptor":null,"id":"copy.extracted.moderationAnalytics.moderationAnalyticsDashboard.countPending_bc608dfb"},
 {"descriptor":null,"id":"copy.extracted.moderationAnalytics.moderationAnalyticsDashboard.countRejectedFirstPosts_0e98bb37"},
 {"descriptor":null,"id":"copy.extracted.moderationAnalytics.moderationAnalyticsDashboard.falsePositiveRate_57505f91"},
+{"descriptor":null,"id":"copy.extracted.moderationAnalytics.moderationAnalyticsDashboard.last24Months_7c3f8a2d"},
 {"descriptor":null,"id":"copy.extracted.moderationAnalytics.moderationAnalyticsDashboard.moderatorWorkload_8d9381df"},
 {"descriptor":null,"id":"copy.extracted.moderationAnalytics.moderationAnalyticsDashboard.nA_a683c5c5"},
 {"descriptor":null,"id":"copy.extracted.moderationAnalytics.moderationAnalyticsDashboard.newUserRejections_05c50235"},

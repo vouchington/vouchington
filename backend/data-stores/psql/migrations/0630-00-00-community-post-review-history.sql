@@ -24,7 +24,7 @@ ON community_post_review_changes (community_id, id DESC);
 CREATE INDEX IF NOT EXISTS idx_community_post_review_changes__changed_by_id
 ON community_post_review_changes (changed_by_id);
 
-COMMENT ON TABLE community_post_review_changes IS 'Append-only audit history for community publication decisions and platform overrides.';
+COMMENT ON TABLE community_post_review_changes IS 'Append-only audit history for community publication decisions and platform overrides; proposed default retention is 12 months through guarded range retirement.';
 COMMENT ON COLUMN community_post_review_changes.community_id IS 'Community whose publication decision changed.';
 COMMENT ON COLUMN community_post_review_changes.post_id IS 'Community post whose publication decision changed.';
 COMMENT ON COLUMN community_post_review_changes.changed_by_id IS 'Moderator or platform staff member who performed the action; retained even after the live user is deleted.';

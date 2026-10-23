@@ -1133,6 +1133,14 @@ CREATE OR REPLACE FUNCTION public.fn_reject_platform_account_kind_change()
  LANGUAGE plpgsql
 ```
 
+## `fn_reject_post_moderation_disposition_mutation`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_post_moderation_disposition_mutation()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_reject_purchase_reversal_case_operation_context`
 
 ```sql
@@ -1193,6 +1201,14 @@ CREATE OR REPLACE FUNCTION public.fn_reject_role_user_is_not_system()
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_reject_terminal_lifecycle()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_topic_revision_retention_delete`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_topic_revision_retention_delete()
  RETURNS trigger
  LANGUAGE plpgsql
 ```

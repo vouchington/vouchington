@@ -53,6 +53,7 @@ export async function createTopicRevision(
     rows: [row],
   } = await write<TopicRevision>(
     sql`/* createTopicRevision */
+    WITH inserted_revision AS (
     INSERT INTO topic_revisions (
       topic_id,
       revision_type,
@@ -73,7 +74,17 @@ export async function createTopicRevision(
         ARRAY[]::TEXT[]
       ), 'changes', ${JSON.stringify(changes)}::jsonb)
     )
-    RETURNING id, topic_id, revision_type, revised_by_id, changes, created_at`,
+    RETURNING id, topic_id, revision_type, revised_by_id, changes, created_at
+    ), projected_topic AS (
+      UPDATE topics SET content_updated_at = inserted_revision.created_at,
+        content_updated_by_id = inserted_revision.revised_by_id
+      FROM inserted_revision
+      WHERE topics.id = inserted_revision.topic_id
+        AND ${changes.name !== undefined || changes.markdown !== undefined}
+        AND inserted_revision.changes->'revised_by_roles' ? 'administrator'
+      RETURNING topics.id
+    )
+    SELECT inserted_revision.* FROM inserted_revision`,
     options,
   )
   return row
@@ -86,15 +97,14 @@ export async function getLatestTopicContentUpdate(
   const { rows } = await read(
     sql`/* getLatestTopicContentUpdate */
     SELECT
-      tr.created_at AS updated_at,
+      topics.content_updated_at AS updated_at,
       TO_JSONB(eu.*) AS updated_by
-    FROM topic_revisions tr
-    JOIN view_embedded_users eu ON eu.id = tr.revised_by_id
-    WHERE tr.topic_id = ${topicId}
-      AND tr.revision_type IN ('create', 'update')
-      AND (tr.changes->'changes') ?| ARRAY['name', 'markdown']
-      AND (tr.changes->'revised_by_roles') @> '["administrator"]'::jsonb
-    ORDER BY tr.id DESC
+    FROM topics
+    JOIN view_embedded_users eu ON eu.id = topics.content_updated_by_id
+    WHERE topics.id = ${topicId}
+      AND topics.deleted_at IS NULL
+      AND topics.merged_into_topic_id IS NULL
+      AND topics.content_updated_at IS NOT NULL
     LIMIT 1`,
     options,
   )

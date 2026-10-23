@@ -85,7 +85,7 @@ CREATE TABLE IF NOT EXISTS post_moderation_dispositions (
     OR (source = 'openai_omni' AND reason_code = 'sexual_minors')),
   UNIQUE (attempt_id),
   FOREIGN KEY (attempt_id, version_id, source)
-    REFERENCES post_moderation_attempts (id, version_id, source) ON DELETE RESTRICT
+    REFERENCES post_moderation_attempts (id, version_id, source) ON DELETE CASCADE
 );
 
 CREATE INDEX IF NOT EXISTS idx_post_moderation_dispositions__version_source_id
@@ -94,10 +94,10 @@ CREATE INDEX IF NOT EXISTS idx_post_moderation_dispositions__actor_user_id
 ON post_moderation_dispositions (actor_user_id)
 WHERE actor_user_id IS NOT NULL;
 
-COMMENT ON TABLE post_moderation_versions IS 'Immutable moderation generations keyed by canonical post content and policy revision.';
+COMMENT ON TABLE post_moderation_versions IS 'Immutable moderation generations keyed by canonical post content and policy revision; superseded generations have a proposed default 90-day retention window.';
 COMMENT ON TABLE post_moderation_work_items IS 'Durable current work projection with generation and lease-token fencing for bounded moderation attempts.';
 COMMENT ON TABLE post_moderation_attempts IS 'Durable provider-attempt ledger. Each current-version source receives at most three attempts.';
-COMMENT ON TABLE post_moderation_dispositions IS 'Append-only typed moderation outcomes with bounded internal evidence.';
+COMMENT ON TABLE post_moderation_dispositions IS 'Append-only typed moderation outcomes; current pass evidence is cleared after a proposed default 90-day window.';
 COMMENT ON COLUMN post_moderation_versions.post_id IS 'Post whose canonical content version this moderation generation evaluates.';
 COMMENT ON COLUMN post_moderation_versions.content_sha256 IS 'SHA-256 digest of the exact post content evaluated by this version.';
 COMMENT ON COLUMN post_moderation_versions.policy_revision IS 'Stable moderation-policy revision applied to this content version.';
@@ -126,3 +126,21 @@ COMMENT ON COLUMN post_moderation_dispositions.reason_code IS 'Stable provider-n
 COMMENT ON COLUMN post_moderation_dispositions.evidence IS 'Bounded private evidence for moderation staff; never part of public post contracts.';
 COMMENT ON COLUMN post_moderation_dispositions.actor_user_id IS 'Immutable staff actor; references the retained user identity, which survives user deletion but never authorizes.';
 COMMENT ON COLUMN post_moderation_dispositions.decided_at IS 'UUIDv7-derived clock time at which this immutable disposition was created.';
+
+CREATE OR REPLACE FUNCTION fn_reject_post_moderation_disposition_mutation()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+  IF TG_OP = 'DELETE' AND pg_trigger_depth() > 1 THEN RETURN OLD; END IF;
+  IF TG_OP = 'UPDATE'
+    AND OLD.disposition = 'pass'
+    AND uuid_extract_timestamp(OLD.id) < CURRENT_TIMESTAMP - INTERVAL '90 days'
+    AND NEW.evidence = '{}'::jsonb
+    AND (to_jsonb(NEW) - 'evidence') IS NOT DISTINCT FROM (to_jsonb(OLD) - 'evidence')
+  THEN RETURN NEW; END IF;
+  RAISE EXCEPTION 'post_moderation_dispositions rows are append-only except old pass evidence clearance'
+    USING ERRCODE = 'check_violation';
+END;
+$$;
+CREATE TRIGGER trigger_post_moderation_dispositions_append_only
+BEFORE UPDATE OR DELETE ON post_moderation_dispositions
+FOR EACH ROW EXECUTE FUNCTION fn_reject_post_moderation_disposition_mutation();

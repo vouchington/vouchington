@@ -9,10 +9,11 @@ import {
 import {
   insertTestCommunityPostReview,
   insertTestPendingCommunityPostReview,
+  getTestCommunityPostReviewChanges,
 } from '@voucha/test-helpers/entities/community-post-reviews'
 import type { Community } from '../types.mts'
 import type { PrivateUser } from '@services/users/types'
-import { getPublicationReview, getPublicationReviewChanges } from './access.mts'
+import { getPublicationReview } from './access.mts'
 import { overridePublication } from './platform-override.mts'
 import { approvePublication, rejectPublication } from './moderate.mts'
 import { unpublishPost } from './unpublish.mts'
@@ -94,7 +95,7 @@ describe('platform publication overrides', () => {
       platform_override_action: 'restore',
       platform_override_by_id: siteModerator.id,
     })
-    await expect(getPublicationReviewChanges(community.id, postId)).resolves.toEqual(
+    await expect(getTestCommunityPostReviewChanges(community.id, postId)).resolves.toEqual(
       expect.arrayContaining([
         expect.objectContaining({ action: 'unpublish', is_platform_override: false }),
         expect.objectContaining({

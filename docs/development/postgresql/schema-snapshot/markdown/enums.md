@@ -309,6 +309,13 @@
 - `mcp`
 - `system`
 
+## `content_history_cleanup_families`
+
+- `topic_revisions`
+- `post_moderation_versions`
+- `post_moderation_dispositions`
+- `agent_moderations`
+
 ## `contribution_policy_sources`
 
 - `discussion`
@@ -1518,6 +1525,7 @@
 - `api_key`
 - `topic`
 - `post`
+- `post_clearance_change`
 - `rss_feed_item`
 - `image`
 - `membership`
@@ -1528,6 +1536,7 @@
 - `api_key`
 - `topic`
 - `post`
+- `post_clearance_change`
 - `rss_feed_item`
 - `membership`
 

@@ -23,3 +23,7 @@ projection rather than operational tables:
 
 Moderation actions counted on the dashboard are the established moderation action families; the
 broader staff audit covers other administrative operations that are not moderation workload.
+
+The staff analytics `all` range covers the latest 24 calendar months. The dashboard labels that
+period accordingly; source families with shorter retention contribute only available data. The
+member transparency `all` range remains the full history of released aggregate cohorts.

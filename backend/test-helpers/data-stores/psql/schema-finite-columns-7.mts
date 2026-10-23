@@ -1,5 +1,6 @@
 // Reviewed storage-column contracts for the prelaunch finite-value conversion.
 export const FINITE_COLUMN_CONTRACTS_7 = [
+  ['content_history_cleanup_cursors', 'family', 'content_history_cleanup_families', false],
   ['review_disputes', 'resolution_action', 'review_dispute_actions', false],
   ['story_classifier_results', 'candidate_kind', 'classifier_candidate_kinds', false],
   ['story_classifier_results', 'scope_category', 'classifier_scope_categories', false],

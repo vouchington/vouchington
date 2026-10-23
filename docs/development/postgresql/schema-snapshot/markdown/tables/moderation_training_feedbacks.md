@@ -50,7 +50,7 @@ _none_
 - `moderation_training_feedbacks_actor_user_id_fkey`: `FOREIGN KEY (actor_user_id) REFERENCES users(id) ON DELETE SET NULL`
 - `moderation_training_feedbacks_community_id_fkey`: `FOREIGN KEY (community_id) REFERENCES communities(id) ON DELETE CASCADE`
 - `moderation_training_feedbacks_moderation_report_id_fkey`: `FOREIGN KEY (moderation_report_id) REFERENCES moderation_reports(id) ON DELETE CASCADE`
-- `moderation_training_feedbacks_post_clearance_change_id_fkey`: `FOREIGN KEY (post_clearance_change_id) REFERENCES post_clearance_changes(id) ON DELETE SET NULL`
+- `moderation_training_feedbacks_post_clearance_change_id_fkey`: `FOREIGN KEY (post_clearance_change_id) REFERENCES retained_post_clearance_change_identities(id) ON DELETE RESTRICT`
 - `moderation_training_feedbacks_post_id_agent_moderation_id_fkey`: `FOREIGN KEY (post_id, agent_moderation_id) REFERENCES agent_moderations(post_id, id) ON DELETE CASCADE`
 - `moderation_training_feedbacks_post_id_fkey`: `FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE`
 - `moderation_training_feedbacks_review_dispute_id_fkey`: `FOREIGN KEY (review_dispute_id) REFERENCES review_disputes(id) ON DELETE SET NULL`

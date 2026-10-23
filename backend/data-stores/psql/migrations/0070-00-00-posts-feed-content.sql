@@ -78,8 +78,14 @@ CREATE TABLE IF NOT EXISTS posts (
     OR (votes_snapshot_xmax IS NOT NULL AND votes_snapshot_xip_count IS NOT NULL AND votes_snapshot_xip_count >= 0)
   ),
 
-  -- post clearance (FK to post_clearance_changes added in 0270)
-  latest_clearance_change_id UUID,
+  -- The retained decision identity survives retirement of its raw history partition.
+  latest_clearance_change_id UUID REFERENCES retained_post_clearance_change_identities(id) ON DELETE RESTRICT,
+  clearance_changed_at TIMESTAMPTZ,
+  clearance_changed_by_id UUID REFERENCES retained_user_identities(id) ON DELETE RESTRICT,
+  clearance_public_reason_code TEXT,
+  clearance_private_note TEXT,
+  clearance_is_platform_override BOOLEAN NOT NULL DEFAULT FALSE,
+  has_creation_moderation_bypass BOOLEAN NOT NULL DEFAULT FALSE,
   approved_at TIMESTAMPTZ,
   rejected_at TIMESTAMPTZ,
   in_review_at TIMESTAMPTZ,
@@ -259,6 +265,12 @@ BEFORE UPDATE OF
   is_anonymous,
   community_id,
   latest_clearance_change_id,
+  clearance_changed_at,
+  clearance_changed_by_id,
+  clearance_public_reason_code,
+  clearance_private_note,
+  clearance_is_platform_override,
+  has_creation_moderation_bypass,
   approved_at,
   rejected_at,
   in_review_at,
@@ -317,6 +329,10 @@ WHERE deleted_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_posts__updated_by_id
 ON posts (updated_by_id)
 WHERE updated_by_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_posts__clearance_changed_by_id
+ON posts (clearance_changed_by_id)
+WHERE clearance_changed_by_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_posts__deleted_by_id
@@ -459,7 +475,13 @@ COMMENT ON COLUMN posts.archived_at IS 'Timestamp when this post was archived; N
 COMMENT ON COLUMN posts.archived_by_id IS 'User who archived this post; NULL if not archived or user was deleted.';
 COMMENT ON COLUMN posts.data_point_vertical IS 'Discriminator for the structured data point schema (credit_card, bank_account). NULL for non-data-point posts.';
 COMMENT ON COLUMN posts.structured_data IS 'Structured JSONB payload for data point posts. Schema is determined by data_point_vertical.';
-COMMENT ON COLUMN posts.latest_clearance_change_id IS 'Most recent clearance transition for this post. FK added after post_clearance_changes because the tables reference each other.';
+COMMENT ON COLUMN posts.latest_clearance_change_id IS 'Most recent clearance decision identity, retained after its raw history partition retires; used as a rollback compare-and-set token.';
+COMMENT ON COLUMN posts.clearance_changed_at IS 'Time of the current clearance decision, retained after its audit partition retires.';
+COMMENT ON COLUMN posts.clearance_changed_by_id IS 'Retained actor identity for the current clearance decision, preserved after its audit partition retires.';
+COMMENT ON COLUMN posts.clearance_public_reason_code IS 'Current author-visible clearance reason, preserved after its audit partition retires.';
+COMMENT ON COLUMN posts.clearance_private_note IS 'Current private staff clearance note, preserved after its audit partition retires.';
+COMMENT ON COLUMN posts.clearance_is_platform_override IS 'Whether the current clearance decision was a platform staff override.';
+COMMENT ON COLUMN posts.has_creation_moderation_bypass IS 'Permanent fact that an administrator explicitly bypassed moderation at creation.';
 COMMENT ON COLUMN posts.approved_at IS 'Set when the current derived clearance status is approved.';
 COMMENT ON COLUMN posts.rejected_at IS 'Set when the current derived clearance status is rejected.';
 COMMENT ON COLUMN posts.in_review_at IS 'Set when the current derived clearance status is in_review.';
@@ -798,6 +820,11 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_agent_moderations__post_id__id ON agent_mo
 CREATE INDEX IF NOT EXISTS idx_agent_moderations__id ON agent_moderations (id)
 WHERE deleted_at IS NULL;
 
+-- Proposed default: superseded non-transparency results expire after 90 days.
+CREATE INDEX IF NOT EXISTS idx_agent_moderations__retention_id ON agent_moderations (id);
+CREATE INDEX IF NOT EXISTS idx_agent_moderations__post_prompt_id
+ON agent_moderations (post_id, prompt_id, id DESC);
+
 -- RI-usable index for the prompt_id FK
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_agent_moderations__prompt_id ON agent_moderations (prompt_id);
@@ -829,7 +856,7 @@ CREATE INDEX IF NOT EXISTS idx_agent_moderations__transparency_community
   ON agent_moderations (moderation_transparency_community_id, id)
   WHERE moderation_transparency_category = 'community_ai';
 
-COMMENT ON TABLE agent_moderations IS 'LLM moderation results for posts. Keyed by (post, content hash, prompt). RANGE-partitioned by post_id.';
+COMMENT ON TABLE agent_moderations IS 'LLM moderation results for posts. Keyed by (post, content hash, prompt). RANGE-partitioned by post_id; superseded results without transparency stamps have a proposed default 90-day window.';
 COMMENT ON COLUMN agent_moderations.post_id IS 'The post that was moderated.';
 COMMENT ON COLUMN agent_moderations.prompt_id IS 'The agent prompt version used for this moderation.';
 COMMENT ON COLUMN agent_moderations.input_sha256 IS 'SHA-256 of the content that was moderated, for deduplication.';

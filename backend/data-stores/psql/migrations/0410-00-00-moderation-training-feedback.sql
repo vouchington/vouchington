@@ -71,7 +71,7 @@ CREATE TABLE IF NOT EXISTS moderation_training_feedbacks (
   moderation_report_id UUID REFERENCES moderation_reports(id) ON DELETE CASCADE,
   moderation_appeal_id UUID,
   review_dispute_id UUID REFERENCES review_disputes(id) ON DELETE SET NULL,
-  post_clearance_change_id UUID REFERENCES post_clearance_changes(id) ON DELETE SET NULL,
+  post_clearance_change_id UUID REFERENCES retained_post_clearance_change_identities(id) ON DELETE RESTRICT,
 
   input_sha256 BYTEA CHECK (input_sha256 IS NULL OR octet_length(input_sha256) = 32),
   metadata JSONB NOT NULL DEFAULT '{}'::jsonb CHECK (jsonb_typeof(metadata) = 'object'),

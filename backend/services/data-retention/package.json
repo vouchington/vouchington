@@ -29,6 +29,7 @@
     "@services/oauth": "workspace:^",
     "@services/oauth-accounts": "workspace:^",
     "@services/oauth-authorization-server": "workspace:^",
+    "@services/post-clearance": "workspace:^",
     "@services/post-publication": "workspace:^",
     "@services/user-import-export": "workspace:^",
     "@services/users": "workspace:^",

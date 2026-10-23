@@ -91,6 +91,7 @@ describe('cleanupAnalyticsLocalFiles', () => {
         webPushSubscriptionTombstones: emptyWindow,
         oldModerationQueueClaims: emptyWindow,
         oldModerationMediaReveals: emptyWindow,
+        contentHistory: { now: new Date('1974-01-02T00:00:00.000Z') },
       }),
     ).resolves.toEqual({
       retainedIdentityRoots: [],
@@ -118,6 +119,12 @@ describe('cleanupAnalyticsLocalFiles', () => {
       webPushSubscriptionTombstones: { deleted: 0, hasMore: false, continuation: null },
       oldModerationQueueClaims: { deleted: 0, hasMore: false, cursorId: null },
       oldModerationMediaReveals: { deleted: 0, hasMore: false, cursorId: null },
+      contentHistory: expect.arrayContaining([
+        expect.objectContaining({ family: 'topic_revisions' }),
+        expect.objectContaining({ family: 'post_moderation_versions' }),
+        expect.objectContaining({ family: 'post_moderation_dispositions' }),
+        expect.objectContaining({ family: 'agent_moderations' }),
+      ]),
     })
   })
 

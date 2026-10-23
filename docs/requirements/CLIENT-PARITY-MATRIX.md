@@ -12,6 +12,10 @@ cross-repo contract with `vouchington/vouchington-clients`; this page explains h
 - Native evidence paths are relative to the clients repository, which validates them. Web paths are
   relative to this repository. This repository does not assert that an external checkout has
   tracked files.
+- Staff moderation analytics preserve the shared `all` range token while defining it as the latest
+  24 calendar months; client labels must describe that bounded period. Current Swift and .NET staff
+  surfaces request only the default 30-day range, so they have no `all` label to change. Member
+  moderation transparency uses the same token for its complete released aggregate history.
 - Active gaps are tracked as issues in both repositories and kept in sync, so a `full` summary
   cannot hide a lower-level native mismatch.
 - A new or changed REST route, query parameter, or MCP tool parameter needs a parity decision here

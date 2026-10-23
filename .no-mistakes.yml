@@ -5296,6 +5296,12 @@ rules:
         - pattern: _(history|change_logs|audit_logs)$
           message: 'use the R4 shapes: _revisions, _changes, _work_items or _cursors'
       allow:
+        - object: table:topic_revisions
+          reason: >-
+            Topic revisions reject UPDATE through fn_reject_mutation and reject ordinary DELETE
+            through a dedicated BEFORE DELETE trigger. That trigger permits only an aged
+            superseded revision after the one-year window; requiring the generic DELETE trigger
+            would prevent bounded retention.
         - object: table:oauth_authorization_server_events
           reason: >-
             Consent and revocation events reject every UPDATE and ordinary DELETE. Their

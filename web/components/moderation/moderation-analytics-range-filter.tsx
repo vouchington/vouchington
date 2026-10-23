@@ -27,22 +27,21 @@ const RANGE_OPTIONS: { value: ModerationAnalyticsRange; labelKey?: MessageKey }[
     value: '90d',
     labelKey: 'extracted.moderationAnalytics.moderationAnalyticsDashboard.last90Days_9902d7ae',
   },
-  {
-    value: 'all',
-    labelKey: 'extracted.moderationAnalytics.moderationAnalyticsDashboard.allTime_9755c8d7',
-  },
+  { value: 'all' },
 ]
 
 interface ModerationAnalyticsRangeFilterProps {
   basePath: string
   range: ModerationAnalyticsRange
   todayLabelKey?: MessageKey
+  allRangeLabelKey?: MessageKey
 }
 
 export function ModerationAnalyticsRangeFilter({
   basePath,
   range,
   todayLabelKey = 'extracted.moderationAnalytics.moderationAnalyticsDashboard.today_2b065c7c',
+  allRangeLabelKey = 'extracted.moderationAnalytics.moderationAnalyticsDashboard.allTime_9755c8d7',
 }: ModerationAnalyticsRangeFilterProps) {
   const t = useTranslations()
   const router = useRouter()
@@ -79,7 +78,7 @@ export function ModerationAnalyticsRangeFilter({
               key={option.value}
               value={option.value}
             >
-              {t(option.labelKey ?? todayLabelKey)}
+              {t(option.value === 'all' ? allRangeLabelKey : (option.labelKey ?? todayLabelKey))}
             </SelectItem>
           ))}
         </SelectContent>

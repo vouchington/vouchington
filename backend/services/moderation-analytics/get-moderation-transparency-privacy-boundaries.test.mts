@@ -32,6 +32,10 @@ describe('moderation transparency privacy boundaries', () => {
     expect(getRangeStart('7d', now)).toEqual(new Date('2026-08-09T15:42:13.456Z'))
     expect(getRangeStart('30d', now)).toEqual(new Date('2026-07-17T15:42:13.456Z'))
     expect(getRangeStart('90d', now)).toEqual(new Date('2026-05-18T15:42:13.456Z'))
+    expect(getRangeStart('all', now)).toEqual(new Date('2024-08-16T15:42:13.456Z'))
+    expect(getRangeStart('all', new Date('2024-02-29T12:00:00.000Z'))).toEqual(
+      new Date('2022-02-28T12:00:00.000Z'),
+    )
   })
 
   it('aligns every short-range start to a complete UTC day', () => {

@@ -21,6 +21,11 @@ CREATE TABLE IF NOT EXISTS retained_topic_identities (
 );
 COMMENT ON TABLE retained_topic_identities IS 'Concrete topic identity owner that outlives the live row while durable references remain.';
 
+CREATE TABLE IF NOT EXISTS retained_post_clearance_change_identities (
+  id UUID PRIMARY KEY
+);
+COMMENT ON TABLE retained_post_clearance_change_identities IS 'Identity of a clearance decision retained while live post pointers or training lineage reference it; never authorizes a decision.';
+
 CREATE TABLE IF NOT EXISTS retained_post_identities (
   id UUID PRIMARY KEY
 ) PARTITION BY RANGE (id);
@@ -81,11 +86,11 @@ FOR EACH ROW
   WHEN (ROW(OLD.placement_id, OLD.image_id, OLD.binding_family) IS DISTINCT FROM ROW(NEW.placement_id, NEW.image_id, NEW.binding_family)) EXECUTE FUNCTION fn_reject_mutation();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TYPE retained_identity_families AS ENUM ('user', 'api_key', 'topic', 'post', 'rss_feed_item', 'membership');
+CREATE TYPE retained_identity_families AS ENUM ('user', 'api_key', 'topic', 'post', 'post_clearance_change', 'rss_feed_item', 'membership');
 COMMENT ON TYPE retained_identity_families IS 'Concrete identity owners supported by the shared ownership fence; image identity requires its uploader and uses a separate creator.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TYPE retained_identity_cleanup_families AS ENUM ('user', 'api_key', 'topic', 'post', 'rss_feed_item', 'image', 'membership');
+CREATE TYPE retained_identity_cleanup_families AS ENUM ('user', 'api_key', 'topic', 'post', 'post_clearance_change', 'rss_feed_item', 'image', 'membership');
 COMMENT ON TYPE retained_identity_cleanup_families IS 'Retained root families swept by cleanup, including image roots with their own provenance-aware creator.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

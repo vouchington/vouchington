@@ -75,16 +75,17 @@ async function writePostClearanceStatus(
       WITH inserted_change AS (
         INSERT INTO post_clearance_changes (
           post_id, change_type, changed_by_id, public_reason_code, private_note,
-          is_platform_override, metadata, is_creation_moderation_bypass, moderation_transparency_categories
+          is_platform_override, metadata, moderation_transparency_categories
         )
-        SELECT p.id, $2::post_clearance_change_types, $3, $6, $7, $8, $5::jsonb, $10::boolean,
+        SELECT p.id, $2::post_clearance_change_types, $3, $6, $7, $8, $5::jsonb,
           CASE WHEN $9 IS NOT TRUE
               AND $2::post_clearance_change_types = 'reject' AND actor.username = $4
             THEN ARRAY['post_clearance_reject']::moderation_transparency_categories[] ELSE '{}'::moderation_transparency_categories[] END
         FROM posts p
         LEFT JOIN users actor ON actor.id = $3
         WHERE p.id = $1
-        RETURNING id, post_id, change_type, created_at
+        RETURNING id, post_id, change_type, created_at, changed_by_id,
+          public_reason_code, private_note, is_platform_override
       ),
       staff_disposition AS (
         INSERT INTO post_moderation_dispositions (
@@ -110,6 +111,12 @@ async function writePostClearanceStatus(
       )
       UPDATE posts
       SET latest_clearance_change_id = inserted_change.id,
+        clearance_changed_at = inserted_change.created_at,
+        clearance_changed_by_id = inserted_change.changed_by_id,
+        clearance_public_reason_code = inserted_change.public_reason_code,
+        clearance_private_note = inserted_change.private_note,
+        clearance_is_platform_override = inserted_change.is_platform_override,
+        has_creation_moderation_bypass = has_creation_moderation_bypass OR $10::boolean,
         approved_at = CASE WHEN inserted_change.change_type = 'approve'
           THEN inserted_change.created_at ELSE NULL END,
         rejected_at = CASE WHEN inserted_change.change_type = 'reject'

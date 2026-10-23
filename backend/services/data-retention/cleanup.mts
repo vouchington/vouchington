@@ -69,6 +69,7 @@ import {
 } from './cleanup-retained-media-bindings.mts'
 import { cleanupSecurityRecords } from './cleanup-security-records.mts'
 import { cleanupOAuthFriendEdgeWork } from './cleanup-oauth-friend-edges.mts'
+import { cleanupContentHistory } from './cleanup-content-history.mts'
 
 export { cleanupAbandonedBlueskyLinkSessions, cleanupExpiredBlueskyLinkCompletions }
 export { cleanupExpiredOAuthAuthorizations }
@@ -136,6 +137,7 @@ type DataRetentionCleanupOptions = {
   }>
   oldModerationQueueClaims?: OptionalRetentionLimits<CleanupOptions>
   oldModerationMediaReveals?: OptionalRetentionLimits<CleanupOptions>
+  contentHistory?: { now?: Date }
 }
 
 type DataRetentionCleanupResult = {
@@ -164,6 +166,7 @@ type DataRetentionCleanupResult = {
   oldPendingNotificationPushIntents: PendingNotificationPushIntentCleanupResult
   oldModerationQueueClaims: CleanupResult & { cursorId: string | null }
   oldModerationMediaReveals: CleanupResult & { cursorId: string | null }
+  contentHistory: Awaited<ReturnType<typeof cleanupContentHistory>>
 }
 
 export async function runDataRetentionCleanup(
@@ -252,6 +255,7 @@ export async function runDataRetentionCleanup(
   const oldModerationMediaReveals = await cleanupOldModerationMediaReveals(
     withLimits(options.oldModerationMediaReveals),
   )
+  const contentHistory = await cleanupContentHistory(limits, options.contentHistory?.now)
   const retainedRelationIdentities = await cleanupRetainedRelationIdentities(
     retainedPageSize,
     options.retainedRelationIdentityKeys,
@@ -292,6 +296,7 @@ export async function runDataRetentionCleanup(
     oldPendingNotificationPushIntents,
     oldModerationQueueClaims,
     oldModerationMediaReveals,
+    contentHistory,
   }
 }
 
