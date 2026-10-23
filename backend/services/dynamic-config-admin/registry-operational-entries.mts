@@ -14,7 +14,6 @@ import { rssFeedDiscoverabilityConfig } from '@services/rss-feeds/discoverabilit
 import { webRiskConfig } from '@services/web-risk/config'
 import { defineDynamicConfigNamespace } from 'valkyries/dynamic-config'
 import { scoreField } from './registry-entry-utils.mts'
-import { dataRetentionRegistryEntry } from './registry-data-retention-entry.mts'
 import { membershipBillingRegistryEntry } from './registry-membership-billing-entry.mts'
 import { dataRetentionRegistryEntry } from './registry-data-retention-entry.mts'
 import { postRelatedUrlDisplayRegistryEntries } from './registry-post-related-url-entries.mts'
