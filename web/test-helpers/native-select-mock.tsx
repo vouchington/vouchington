@@ -16,6 +16,7 @@ export function nativeSelectMock() {
         child => isValidElement(child) && (child.props as { id?: string }).id,
       ) as ReactElement<{ id: string }> | undefined
       return (
+        // ast-grep-ignore: web-no-raw-form-elements -- test double gives selection tests native change semantics
         <select
           id={trigger?.props.id}
           value={value}
@@ -29,6 +30,7 @@ export function nativeSelectMock() {
     SelectValue: () => null,
     SelectContent: ({ children }: { children: ReactNode }) => children as ReactElement,
     SelectItem: ({ value, children }: { value: string; children: ReactNode }) => (
+      // ast-grep-ignore: web-no-raw-form-elements -- option belongs to the native select test double
       <option value={value}>{children}</option>
     ),
   } as unknown as typeof import('@/components/ui/select')

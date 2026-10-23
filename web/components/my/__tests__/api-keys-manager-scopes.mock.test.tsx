@@ -4,6 +4,7 @@ import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
 import type { ReactNode } from 'react'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AuthProvider } from '@/lib/auth/auth-provider'
+import { nativeSelectMock } from '@/test-helpers/native-select-mock'
 import type { ScopeCatalogResponse } from '@/types/scopes'
 import { toast } from 'sonner'
 import issuedApiKey from '../../../../api-fixtures/v1/responses/native.my.api-keys.create.json'
@@ -15,9 +16,7 @@ let translate!: (key: MessageKey, params?: Record<string, unknown>) => string
 vi.mock(import('@/lib/i18n/use-translations'), () => ({
   useTranslations: () => translate,
 }))
-vi.mock(import('@/components/ui/select'), async () =>
-  (await import('@/test-helpers/native-select-mock')).nativeSelectMock(),
-)
+vi.mock(import('@/components/ui/select'), () => nativeSelectMock())
 vi.mock(
   import('sonner'),
   () =>
