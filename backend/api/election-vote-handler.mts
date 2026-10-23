@@ -26,13 +26,14 @@ function createVoteMutationHandler<VoteResult extends ElectionVoteMutationResult
   return async function handleVote(ctx: Context): Promise<void> {
     const currentUser = await ctx.getCurrentUser()
     ctx.assert(currentUser, 401, 'Unauthorized')
+    await ctx.applyRouteRateLimit(options.routeKey)
     await enforceLowScoreBotChallenge(ctx)
     await applyVoteMutation(options, {
       currentUser,
       entityId: ctx.params.id!,
       isClear,
       accessContext: ctx,
-      applyRouteRateLimit: () => ctx.applyRouteRateLimit(options.routeKey),
+      applyRouteRateLimit: () => Promise.resolve(),
       readBody: () => parseJsonBody(ctx, '10kb'),
       validateRequest: body => {
         if (!options.requestContractOperation) return
