@@ -34,10 +34,7 @@ reset_pre() {
 
 reset_post() {
     echo -e "${GREEN}✓ Removed generated output${NC}\n"
-    rm -f "$REPO_ROOT/.initialized" \
-        "$REPO_ROOT/.local/cursor-session-id" \
-        "$REPO_ROOT/.local/grok-session-id"
-    # Root Codex persistence survives an in-session reset; the next root session rotates it explicitly.
+    rm -f "$REPO_ROOT/.initialized"
 
     echo -e "${YELLOW}Initializing monorepo tools...${NC}"
     "$REPO_ROOT/dev/initialize" monorepo

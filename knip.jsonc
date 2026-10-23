@@ -7,7 +7,6 @@
     ".": {
       "entry": [
         "dev/codex-hooks/pre-tool-use.mts",
-        "dev/codex-hooks/persist-session-id.mts",
         "dev/codex-hooks/post-tool-use.mts",
         "dev/codex-hooks/post-tool-use-command.mts",
         "dev/agent-policy.mts",

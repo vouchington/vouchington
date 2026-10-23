@@ -31,7 +31,6 @@
       "ci/validate-vitest-cli-timeouts.mts",
       "dev/agent-issue-labels/batch-issues.mts",
       "dev/agent-issue-labels/labels-from-paths.mts",
-      "dev/codex-hooks/persist-session-id.mts",
       "dev/codex-hooks/post-tool-use.mts",
       "dev/codex-hooks/pre-tool-use.mts",
       "dev/localization/local-catalog.mts",

@@ -12,7 +12,6 @@
 //
 import * as path from 'node:path'
 
-import { persistHookRealSessionId } from '../agent-session-id/persist.mts'
 import { isAttendedClaudeSession, isAutomationContext, preToolUseOutput } from './policy.mts'
 import { readHookPayload, resolvePreToolUseRuntime } from './hook-payload.mts'
 
@@ -25,7 +24,6 @@ const payload = readHookPayload()
 // Cursor and Grok also run) or `codex` (.codex/config.toml). Cursor and Grok are detected from
 // their own env/payload markers before argv `claude` is trusted.
 const runtime = resolvePreToolUseRuntime(process.argv[2], process.env, payload)
-persistHookRealSessionId(runtime, payload, process.env, worktreeRoot)
 
 const output = preToolUseOutput(payload, {
   attended: isAttendedClaudeSession(),

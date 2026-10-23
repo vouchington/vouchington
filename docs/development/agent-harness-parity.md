@@ -70,7 +70,7 @@ flowchart LR
 | Permissions   | `.claude/settings.json` allow/deny                           | `.codex/rules/default.rules`                                  | Claude permission strings via compat                              |
 | Sandbox       | User's config; only `dev/` script exclusions in the project  | User's config; allow prefixes run outside it without a prompt | User's config: off, because a sandboxed Grok cannot escalate `gh` |
 | MCP           | Registered per machine; no repository file                   | Registered per machine; every tool pre-approved               | Imports Claude's machine registration                             |
-| Session id    | `CLAUDE_CODE_SESSION_ID`                                     | `CODEX_THREAD_ID`                                             | Hook `GROK_SESSION_ID` plus `.local/grok-session-id`              |
+| Session id    | `CLAUDE_CODE_SESSION_ID`                                     | `CODEX_THREAD_ID`                                             | Shell and hook `GROK_SESSION_ID`                                  |
 | Merge confirm | Silent allow for one plain merge when attended               | Empty hook output (best-effort)                               | Empty confirm (best-effort)                                       |
 | Folder trust  | Always loads project settings                                | Loads project hooks                                           | Project Claude hooks need `/hooks-trust`                          |
 | CI            | Local agent only                                             | Scheduled / dispatch / shepherd                               | Out of scope while CI is being redone                             |
@@ -98,9 +98,8 @@ Grok tool names in the PreToolUse matcher so the policy fires even if name alias
 
 Cursor CLI runs the `.claude/settings.json` hooks through its Claude-compat loader, like Grok. Do
 not add `.cursor/hooks.json`: Cursor loads it as well, so every hook would double-fire.
-`dev/agent-sandbox-config.test.mts` fails if it (or `.grok/hooks/`) comes back. Cursor and Grok
-inject no session-id env into the agent shell, so Claude-compat hooks persist the payload id to
-`.local/cursor-session-id` / `.local/grok-session-id` as the MCP tools' only fallback. Hooks fail
+`dev/agent-sandbox-config.test.mts` fails if it (or `.grok/hooks/`) comes back. Cursor's agent
+shell has no session-id env, and Grok's exports `GROK_SESSION_ID`. Hooks fail
 open on a crash or timeout; accepted, because the hook is a mistake guardrail, not a security
 boundary. Without `.cursor/hooks.json`, Cursor never fires `UserPromptSubmit`, so it gets no tmux
 nudge on prompt submit.

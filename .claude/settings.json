@@ -39,8 +39,6 @@
       "Bash(./dev/status)",
       "Bash(./dev/status *)",
       "Bash(node node_modules/vouchington-tooling/bin/vouchington.mjs agent-blackboard session-start *)",
-      "Bash(node dev/codex-hooks/persist-session-id.mts)",
-      "Bash(node dev/codex-hooks/persist-session-id.mts *)",
       "Bash(node dev/codex-hooks/post-tool-use-command.mts)",
       "Bash(node dev/codex-hooks/post-tool-use-command.mts *)",
       "Bash(./dev/reset)",
@@ -278,10 +276,6 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$(git rev-parse --show-toplevel)/dev/codex-hooks/persist-session-id.mts\" claude"
-          },
-          {
-            "type": "command",
             "command": "b=$(git branch --show-current 2>/dev/null); echo \"Branch: ${b:-detached}\"; echo \"Status:\"; git status --short 2>/dev/null | head -20; echo; echo \"Recent commits:\"; git log --oneline -3 2>/dev/null; echo; gh pr view --json number,title,isDraft 2>/dev/null | jq -r '\"PR: #\" + (.number | tostring) + \" \" + .title + \" (\" + (if .isDraft then \"draft\" else \"ready\" end) + \")\"' 2>/dev/null || true"
           },
           {
@@ -388,8 +382,6 @@
       "./dev/stop-services *",
       "./dev/status",
       "./dev/status *",
-      "node dev/codex-hooks/persist-session-id.mts",
-      "node dev/codex-hooks/persist-session-id.mts *",
       "node dev/codex-hooks/post-tool-use-command.mts",
       "node dev/codex-hooks/post-tool-use-command.mts *",
       "./dev/reset",
