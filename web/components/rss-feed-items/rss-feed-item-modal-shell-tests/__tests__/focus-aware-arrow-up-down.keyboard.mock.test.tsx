@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeEach, vi } from 'vitest'
 import { fireEvent, render } from '@testing-library/react'
-import { navMockModule, createNavMock } from '@/test-helpers/next-navigation-mock'
+import { navMockModule, createNavMock } from 'vouchington-tooling/next-navigation-mock'
 import { RssFeedItemModalShell } from '../../rss-feed-item-modal-shell'
 
 vi.mock(

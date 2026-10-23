@@ -1,10 +1,16 @@
 import { describe, expect, it } from 'vitest'
 
-import { decide } from './decide.mts'
-import { RULES, type WorkflowRunContext } from './rules.mts'
+import { evaluateWorkflow as decide } from './decide.mts'
+import { rules, type WorkflowRunContext } from './rules.mts'
 
 const lintLinksJobName = 'lint-links / lint-links'
 const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContext => ({
+  jobNames: overrides.jobNames ?? overrides.failedJobNames ?? [],
+  jobConclusions: new Map((overrides.failedJobNames ?? []).map(name => [name, 'failure'])),
+  jobSteps: new Map(),
+  failedJobLogFetchFailures: () => Promise.resolve(new Set()),
+  jobLogs: () => overrides.failedJobLogs?.() ?? Promise.resolve(new Map()),
+  failedJobAnnotationFetchFailures: () => Promise.resolve(new Set()),
   workflowName: 'Lint Links',
   conclusion: 'failure',
   runAttempt: 1,
@@ -29,7 +35,7 @@ describe('lint-links-setup-lychee-download-flake github.com DNS', () => {
   it('matches a setup-lychee GitHub DNS failure that exits with curl status 6', async () => {
     const result = await decide(
       makeCtx({ failedJobLogs: failedJobLogs(setupLycheeCurl6DnsLog) }),
-      RULES,
+      rules,
     )
 
     expect(result.decision).toBe('rerun')
@@ -42,7 +48,7 @@ describe('lint-links-setup-lychee-download-flake github.com DNS', () => {
       'Could not resolve host: github.com.invalid',
     )
 
-    const result = await decide(makeCtx({ failedJobLogs: failedJobLogs(log) }), RULES)
+    const result = await decide(makeCtx({ failedJobLogs: failedJobLogs(log) }), rules)
 
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
@@ -54,7 +60,7 @@ describe('lint-links-setup-lychee-download-flake github.com DNS', () => {
       'install-github-release.sh: checksum not found for lychee-x86_64-unknown-linux-gnu.tar.gz',
     )
 
-    const result = await decide(makeCtx({ failedJobLogs: failedJobLogs(log) }), RULES)
+    const result = await decide(makeCtx({ failedJobLogs: failedJobLogs(log) }), rules)
 
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
@@ -68,7 +74,7 @@ describe('lint-links-setup-lychee-download-flake github.com DNS', () => {
       'lint-links\tInstall lychee\t##[error]Process completed with exit code 1.',
     ].join('\n')
 
-    const result = await decide(makeCtx({ failedJobLogs: failedJobLogs(log) }), RULES)
+    const result = await decide(makeCtx({ failedJobLogs: failedJobLogs(log) }), rules)
 
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
@@ -77,7 +83,7 @@ describe('lint-links-setup-lychee-download-flake github.com DNS', () => {
   it('does not match the github.com DNS fingerprint after the retry cap is exhausted', async () => {
     const result = await decide(
       makeCtx({ runAttempt: 2, failedJobLogs: failedJobLogs(setupLycheeCurl6DnsLog) }),
-      RULES,
+      rules,
     )
 
     expect(result.decision).toBe('dispatch')

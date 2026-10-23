@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { decide } from './decide.mts'
-import { RULES, type WorkflowRunContext } from './rules.mts'
+import { evaluateWorkflow as decide } from './decide.mts'
+import { rules, type WorkflowRunContext } from './rules.mts'
 import { runnerShutdownLeafRerunMatch } from './runner-shutdown-consumers.mts'
 
 const playwrightShardOneJobName = 'test-playwright / playwright-tests (1)'
@@ -44,6 +44,12 @@ const echoedTimeoutSourceLog = [
 ].join('\n')
 
 const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContext => ({
+  jobNames: overrides.jobNames ?? overrides.failedJobNames ?? [],
+  jobConclusions: new Map((overrides.failedJobNames ?? []).map(name => [name, 'failure'])),
+  jobSteps: new Map(),
+  failedJobLogFetchFailures: () => Promise.resolve(new Set()),
+  jobLogs: () => overrides.failedJobLogs?.() ?? Promise.resolve(new Map()),
+  failedJobAnnotationFetchFailures: () => Promise.resolve(new Set()),
   workflowName: 'Web',
   conclusion: 'failure',
   runAttempt: 1,
@@ -59,7 +65,7 @@ const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContex
   ...overrides,
 })
 
-// Production registration and retry accounting are covered through decide()/RULES in
+// Production registration and retry accounting are covered through decide()/rules in
 // runner-shutdown-production-rule.test.mts. These direct matcher cases also protect the
 // coverage-artifact rules that reuse the same conservative predicate.
 describe('runnerShutdownLeafRerunMatch (playwright shards only)', () => {
@@ -104,7 +110,7 @@ describe('main-web-playwright-setup-apt-lock', () => {
           failedJobNames: [playwrightShardOneJobName, 'web'],
           failedJobLogs: async () => new Map([[playwrightShardOneJobName, aptFailureLog]]),
         }),
-        RULES,
+        rules,
       )
       expect(result.decision).toBe('rerun')
       expect(result.matchedRule).toBe('main-web-playwright-setup-apt-lock')
@@ -119,7 +125,7 @@ describe('main-web-playwright-setup-apt-lock', () => {
         failedJobLogs: () =>
           Promise.resolve(new Map([[playwrightShardOneJobName, aptWaitTimeoutLog]])),
       }),
-      RULES,
+      rules,
     )
     expect(result.decision).toBe('rerun')
     expect(result.matchedRule).toBe('main-web-playwright-setup-apt-lock')
@@ -133,7 +139,7 @@ describe('main-web-playwright-setup-apt-lock', () => {
         failedJobLogs: () =>
           Promise.resolve(new Map([[credentialedPlaywrightJobName, aptWaitTimeoutLog]])),
       }),
-      RULES,
+      rules,
     )
     expect(result.decision).toBe('rerun')
     expect(result.matchedRule).toBe('main-web-playwright-setup-apt-lock')
@@ -146,7 +152,7 @@ describe('main-web-playwright-setup-apt-lock', () => {
         failedJobNames: [storybookJobName, 'web'],
         failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, aptWaitTimeoutLog]])),
       }),
-      RULES,
+      rules,
     )
     expect(result.decision).toBe('rerun')
     expect(result.matchedRule).toBe('main-web-playwright-setup-apt-lock')
@@ -160,7 +166,7 @@ describe('main-web-playwright-setup-apt-lock', () => {
         failedJobLogs: () =>
           Promise.resolve(new Map([[playwrightShardOneJobName, echoedTimeoutSourceLog]])),
       }),
-      RULES,
+      rules,
     )
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
@@ -173,7 +179,7 @@ describe('main-web-playwright-setup-apt-lock', () => {
         failedJobNames: [playwrightShardOneJobName, 'test-web / web-tests (1)'],
         failedJobLogs: () => Promise.resolve(new Map([[playwrightShardOneJobName, aptLockLog]])),
       }),
-      RULES,
+      rules,
     )
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
@@ -187,7 +193,7 @@ describe('main-web-playwright-setup-apt-lock', () => {
         failedJobNames: [playwrightShardOneJobName],
         failedJobLogs: () => Promise.resolve(new Map([[playwrightShardOneJobName, aptLockLog]])),
       }),
-      RULES,
+      rules,
     )
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')

@@ -80,7 +80,7 @@ onto `origin/main`; never run the non-stack form on a mid-stack branch.
   A native stack merge lands every ready bottom layer at once; the approval must cover every layer
   it lands. See [merge authority](../../../docs/development/merge-authority.md) and
   [stacked-prs](../stacked-prs/SKILL.md#merge-every-ready-bottom-layer-at-once).
-- After PR creation, set `./dev/tmux-name <topic>-pr<number>` outside the sandbox.
+- After PR creation, set `pnpm exec vouchington tmux name <topic>-pr<number>` outside the sandbox.
   For an ordinary authored PR, mark ready when required checks pass and actionable review is resolved. Authorized [triage handoffs](../ready-and-shepherd/SKILL.md) follow their recovery criteria.
 
 ## Shepherding

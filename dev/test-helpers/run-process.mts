@@ -25,7 +25,7 @@ interface ExecFileError {
  * errno, timeout) instead of collapsing every failure into a single
  * generic exit code. There is no default timeout: a caller that wants one
  * opts in with `timeoutMs`, chosen with headroom under its own project's
- * `testTimeout` (see `RUN_TMUX_TIMEOUT_MS` in `run-tmux.mts` for the
+ * `testTimeout` (see the owning test project for the
  * pattern) - see docs/development/reference-tests-vitest-projects.md.
  */
 export async function runProcess(

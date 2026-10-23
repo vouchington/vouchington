@@ -1,10 +1,16 @@
 import { describe, expect, it } from 'vitest'
 
-import { decide } from '../decide.mts'
+import { evaluateWorkflow as decide } from '../decide.mts'
 
-import { RULES, type WorkflowRunContext } from '../rules.mts'
+import { rules, type WorkflowRunContext } from '../rules.mts'
 
 const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContext => ({
+  jobNames: overrides.jobNames ?? overrides.failedJobNames ?? [],
+  jobConclusions: new Map((overrides.failedJobNames ?? []).map(name => [name, 'failure'])),
+  jobSteps: new Map(),
+  failedJobLogFetchFailures: () => Promise.resolve(new Set()),
+  jobLogs: () => overrides.failedJobLogs?.() ?? Promise.resolve(new Map()),
+  failedJobAnnotationFetchFailures: () => Promise.resolve(new Set()),
   workflowName: 'Web',
   conclusion: 'failure',
   runAttempt: 1,
@@ -14,7 +20,7 @@ const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContex
   ...overrides,
 })
 
-describe('RULES catalogue', () => {
+describe('rules catalogue', () => {
   describe('workflow-cancelled-without-failure-signal', () => {
     it('ignores Main CI web publication-selector cancellations when publication jobs were skipped', async () => {
       const failedJobName = 'detect-image-publication'
@@ -30,7 +36,7 @@ describe('RULES catalogue', () => {
           ]),
           failedJobNames: [failedJobName],
         }),
-        RULES,
+        rules,
       )
       expect(result.decision).toBe('ignore')
       expect(result.matchedRule).toBe('workflow-cancelled-without-failure-signal')
@@ -49,7 +55,7 @@ describe('RULES catalogue', () => {
           ]),
           failedJobNames: [failedJobName],
         }),
-        RULES,
+        rules,
       )
       expect(result.decision).toBe('dispatch')
       expect(result.matchedRule).toBe('')
@@ -68,7 +74,7 @@ describe('RULES catalogue', () => {
           ]),
           failedJobNames: [failedJobName, 'publish-web-images / build'],
         }),
-        RULES,
+        rules,
       )
       expect(result.decision).toBe('dispatch')
       expect(result.matchedRule).toBe('')

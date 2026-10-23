@@ -7,7 +7,7 @@ import {
 } from 'react'
 import { vi } from 'vitest'
 import { Input } from '@/components/ui/input'
-import { navMockModule } from '@/test-helpers/next-navigation-mock'
+import { navMockModule } from 'vouchington-tooling/next-navigation-mock'
 import type { SpendingCategory } from '@/types/my'
 
 vi.mock(import('@/lib/on-error'), () => ({

@@ -5,7 +5,7 @@ import {
   type ModQueueActionErrorCase,
   type ModQueueRejectedAction,
 } from '@/test-helpers/components/communities/mod-queue-action-errors'
-import { createNavMock, navMockModule } from '@/test-helpers/next-navigation-mock'
+import { createNavMock, navMockModule } from 'vouchington-tooling/next-navigation-mock'
 import type { ModerationQueueClaim } from '@/types/api-responses/community-moderation'
 import type { Post } from '@/types/posts'
 

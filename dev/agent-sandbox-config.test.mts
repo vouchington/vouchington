@@ -170,8 +170,6 @@ describe('Codex project rules', () => {
     const scripts = [
       './dev/initialize',
       './dev/tmux',
-      './dev/tmux-name',
-      './dev/tmux-agent-reminder',
       './dev/stop-services',
       './dev/status',
       './dev/rebase-onto-main',

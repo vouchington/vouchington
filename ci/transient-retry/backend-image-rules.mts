@@ -19,7 +19,7 @@ function hasRegistryLayerBlobNotFound(log: string): boolean {
 function isOnlyFailedPublishBackendImagesJob(ctx: {
   workflowName: string
   conclusion: string
-  failedJobNames: string[]
+  failedJobNames: readonly string[]
 }): boolean {
   return (
     ctx.workflowName === mainBackendWorkflowName &&

@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { expectInputEnterSubmits } from '@/test-helpers/form-keyboard'
-import { navMockModule, createNavMock } from '@/test-helpers/next-navigation-mock'
+import { navMockModule, createNavMock } from 'vouchington-tooling/next-navigation-mock'
 import { SourcesFilterForm } from '../sources-filter-form'
 
 vi.mock(import('@/components/ui/select'), () => {

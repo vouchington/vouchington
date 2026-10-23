@@ -195,7 +195,7 @@ describe('isCoveredByPolicy', () => {
   })
 
   it('covers every command under a directory glob and nothing beside it', () => {
-    expect(isCoveredByPolicy('./dev/tmux-name web', [['./dev/*']])).toBe(true)
+    expect(isCoveredByPolicy('./dev/check-task web', [['./dev/*']])).toBe(true)
     expect(isCoveredByPolicy('./devtools/run', [['./dev/*']])).toBe(false)
   })
 })

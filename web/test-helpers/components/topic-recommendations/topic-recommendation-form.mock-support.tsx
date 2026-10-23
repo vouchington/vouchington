@@ -2,7 +2,7 @@
 import type { ReactNode } from 'react'
 import { vi } from 'vitest'
 import type { Post } from '@/types/posts'
-import { createNavMock, navMockModule } from '@/test-helpers/next-navigation-mock'
+import { createNavMock, navMockModule } from 'vouchington-tooling/next-navigation-mock'
 
 const mockNav = createNavMock()
 export const mockRouterPush = mockNav.push

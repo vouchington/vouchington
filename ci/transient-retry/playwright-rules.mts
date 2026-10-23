@@ -12,7 +12,7 @@ const isSetupPlaywrightJob = (name: string) =>
   isPlaywrightSetupJob(name) || storybookSetupJobNames.has(name)
 
 export function getFailedPlaywrightShardNames(
-  failedJobNames: string[],
+  failedJobNames: readonly string[],
   workflowName: string,
 ): string[] | null {
   if (

@@ -28,7 +28,7 @@
   [ownership](../../../docs/development/agent-sandbox.md)), not this checkout. For sandbox
   failures follow [agent sandbox](../../../docs/development/agent-sandbox.md); a sandbox error is not
   evidence that credentials are missing. Do not inspect or print secrets.
-- Keep the tmux title current with `./dev/tmux-name <topic>` outside the sandbox; add `-pr<number>`
+- Keep the tmux title current with `pnpm exec vouchington tmux name <topic>` outside the sandbox; add `-pr<number>`
   after PR creation. Follow the tmux reminder hook rather than duplicating its state.
 - Keep large logs outside context and report bounded findings (canonical
   evidence sweep (`node_modules/vouchington-tooling/skills/agent-workflow/references/evidence-sweep.md`)).

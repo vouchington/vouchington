@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { decide } from '../decide.mts'
-import { RULES } from '../rules.mts'
+import { evaluateWorkflow as decide } from '../decide.mts'
+import { rules } from '../rules.mts'
 import { makeCtx } from '../../test-helpers/transient-retry/helpers.mts'
 describe('Storybook transient retry rules', () => {
   describe('storybook-browser-startup-transient watchdog shutdown', () => {
@@ -21,7 +21,7 @@ describe('Storybook transient retry rules', () => {
           failedJobNames: [storybookJobName],
           failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, watchdogShutdownLog]])),
         }),
-        RULES,
+        rules,
       )
       expect(`${result.decision}:${result.matchedRule}`).toBe(
         'rerun:storybook-browser-startup-transient',
@@ -41,7 +41,7 @@ describe('Storybook transient retry rules', () => {
           failedJobNames: [storybookJobName],
           failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, log]])),
         }),
-        RULES,
+        rules,
       )
       expect(`${result.decision}:${result.matchedRule}`).toBe('dispatch:')
     })
@@ -66,7 +66,7 @@ describe('Storybook transient retry rules', () => {
         failedJobNames: [storybookJobName],
         failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, matchingLog]])),
       })
-      const result = await decide(ctx, RULES)
+      const result = await decide(ctx, rules)
       expect(result.decision).toBe('rerun')
       expect(result.matchedRule).toBe('storybook-browser-startup-transient')
     })
@@ -76,7 +76,7 @@ describe('Storybook transient retry rules', () => {
         failedJobNames: [ciStorybookJobName, 'web'],
         failedJobLogs: () => Promise.resolve(new Map([[ciStorybookJobName, addonSetupLog]])),
       })
-      const result = await decide(ctx, RULES)
+      const result = await decide(ctx, rules)
       expect(result.decision).toBe('rerun')
       expect(result.matchedRule).toBe('storybook-browser-startup-transient')
     })
@@ -90,7 +90,7 @@ describe('Storybook transient retry rules', () => {
         failedJobNames: [storybookJobName],
         failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, log]])),
       })
-      const result = await decide(ctx, RULES)
+      const result = await decide(ctx, rules)
       expect(result.decision).toBe('rerun')
       expect(result.matchedRule).toBe('storybook-browser-startup-transient')
     })
@@ -102,7 +102,7 @@ describe('Storybook transient retry rules', () => {
         failedJobNames: [storybookJobName],
         failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, matchingLog]])),
       })
-      const result = await decide(ctx, RULES)
+      const result = await decide(ctx, rules)
       expect(result.decision).toBe('dispatch')
       expect(result.matchedRule).toBe('')
     })
@@ -118,7 +118,7 @@ describe('Storybook transient retry rules', () => {
         failedJobNames: [storybookJobName],
         failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, log]])),
       })
-      const result = await decide(ctx, RULES)
+      const result = await decide(ctx, rules)
       expect(result.decision).toBe('dispatch')
       expect(result.matchedRule).toBe('')
     })
@@ -132,7 +132,7 @@ describe('Storybook transient retry rules', () => {
             new Map([[storybookJobName, 'Error: expect(locator).toBeVisible() failed']]),
           ),
       })
-      const result = await decide(ctx, RULES)
+      const result = await decide(ctx, rules)
       expect(result.decision).toBe('dispatch')
       expect(result.matchedRule).toBe('')
     })
@@ -143,7 +143,7 @@ describe('Storybook transient retry rules', () => {
         failedJobNames: [storybookJobName, 'publish'],
         failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, matchingLog]])),
       })
-      const result = await decide(ctx, RULES)
+      const result = await decide(ctx, rules)
       expect(result.decision).toBe('dispatch')
       expect(result.matchedRule).toBe('')
     })
@@ -165,7 +165,7 @@ describe('Storybook transient retry rules', () => {
         failedJobNames: [storybookJobName],
         failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, matchingLog]])),
       })
-      const result = await decide(ctx, RULES)
+      const result = await decide(ctx, rules)
       expect(result.decision).toBe('rerun')
       expect(result.matchedRule).toBe('storybook-browser-startup-transient')
     })
@@ -176,7 +176,7 @@ describe('Storybook transient retry rules', () => {
         failedJobNames: [ciStorybookJobName, 'web'],
         failedJobLogs: () => Promise.resolve(new Map([[ciStorybookJobName, matchingLog]])),
       })
-      const result = await decide(ctx, RULES)
+      const result = await decide(ctx, rules)
       expect(result.decision).toBe('rerun')
       expect(result.matchedRule).toBe('storybook-browser-startup-transient')
     })
@@ -190,7 +190,7 @@ describe('Storybook transient retry rules', () => {
             new Map([[storybookJobName, matchingLog.replace('10 minutes', '12 minutes')]]),
           ),
       })
-      const result = await decide(ctx, RULES)
+      const result = await decide(ctx, rules)
       expect(result.decision).toBe('rerun')
       expect(result.matchedRule).toBe('storybook-browser-startup-transient')
     })
@@ -201,7 +201,7 @@ describe('Storybook transient retry rules', () => {
         failedJobNames: [storybookJobName],
         failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, matchingLog]])),
       })
-      const result = await decide(ctx, RULES)
+      const result = await decide(ctx, rules)
       expect(result.decision).toBe('dispatch')
       expect(result.matchedRule).toBe('')
     })
@@ -213,7 +213,7 @@ describe('Storybook transient retry rules', () => {
         failedJobNames: [storybookJobName],
         failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, matchingLog]])),
       })
-      const result = await decide(ctx, RULES)
+      const result = await decide(ctx, rules)
       expect(result.decision).toBe('dispatch')
       expect(result.matchedRule).toBe('')
     })
@@ -232,7 +232,7 @@ describe('Storybook transient retry rules', () => {
             ]),
           ),
       })
-      const result = await decide(ctx, RULES)
+      const result = await decide(ctx, rules)
       expect(result.decision).toBe('dispatch')
       expect(result.matchedRule).toBe('')
     })
@@ -253,7 +253,7 @@ describe('Storybook transient retry rules', () => {
             ]),
           ),
       })
-      const result = await decide(ctx, RULES)
+      const result = await decide(ctx, rules)
       expect(result.decision).toBe('dispatch')
       expect(result.matchedRule).toBe('')
     })
@@ -264,7 +264,7 @@ describe('Storybook transient retry rules', () => {
         failedJobNames: [ciStorybookJobName, 'test-web / web-tests (1)', 'web'],
         failedJobLogs: () => Promise.resolve(new Map([[ciStorybookJobName, matchingLog]])),
       })
-      const result = await decide(ctx, RULES)
+      const result = await decide(ctx, rules)
       expect(result.decision).toBe('dispatch')
       expect(result.matchedRule).toBe('')
     })
@@ -275,7 +275,7 @@ describe('Storybook transient retry rules', () => {
         failedJobNames: [storybookJobName, 'publish'],
         failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, matchingLog]])),
       })
-      const result = await decide(ctx, RULES)
+      const result = await decide(ctx, rules)
       expect(result.decision).toBe('dispatch')
       expect(result.matchedRule).toBe('')
     })

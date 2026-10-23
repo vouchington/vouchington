@@ -1,6 +1,6 @@
 /* oxlint-disable no-mistakes/playwright-consistent-attribute -- moved test support preserves existing Testing Library selectors */
 import React, { type ReactNode } from 'react'
-import { createNavMock, navMockModule } from '@/test-helpers/next-navigation-mock'
+import { createNavMock, navMockModule } from 'vouchington-tooling/next-navigation-mock'
 import { trackDynamicImport } from '@/test-helpers/components/topics/next-link-dynamic-mocks'
 import type { User } from '@/types/user'
 import { vi } from 'vitest'

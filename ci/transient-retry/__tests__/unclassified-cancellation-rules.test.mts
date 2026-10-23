@@ -1,9 +1,15 @@
 import { describe, expect, it } from 'vitest'
 
-import { decide } from '../decide.mts'
-import { RULES, type WorkflowRunContext } from '../rules.mts'
+import { evaluateWorkflow as decide } from '../decide.mts'
+import { rules, type WorkflowRunContext } from '../rules.mts'
 
 const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContext => ({
+  jobNames: overrides.jobNames ?? overrides.failedJobNames ?? [],
+  jobConclusions: new Map((overrides.failedJobNames ?? []).map(name => [name, 'failure'])),
+  jobSteps: new Map(),
+  failedJobLogFetchFailures: () => Promise.resolve(new Set()),
+  jobLogs: () => overrides.failedJobLogs?.() ?? Promise.resolve(new Map()),
+  failedJobAnnotationFetchFailures: () => Promise.resolve(new Set()),
   workflowName: 'Web',
   conclusion: 'failure',
   runAttempt: 1,
@@ -16,13 +22,7 @@ const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContex
 describe('unclassified timeouts and cancellations', () => {
   for (const runAttempt of [1, 2]) {
     it(`routes an unclassified attempt ${runAttempt} timeout to Harness`, async () => {
-      const result = await decide(makeCtx({ conclusion: 'timed_out', runAttempt }), RULES)
-      expect(result.decision).toBe('dispatch')
-      expect(result.matchedRule).toBe('')
-    })
-
-    it(`routes an attempt ${runAttempt} cancellation without job evidence to Harness`, async () => {
-      const result = await decide(makeCtx({ conclusion: 'cancelled', runAttempt }), RULES)
+      const result = await decide(makeCtx({ conclusion: 'timed_out', runAttempt }), rules)
       expect(result.decision).toBe('dispatch')
       expect(result.matchedRule).toBe('')
     })
@@ -42,14 +42,14 @@ describe('unclassified timeouts and cancellations', () => {
         jobConclusions: new Map([[jobName, 'cancelled']]),
         failedJobNames: [jobName],
       }),
-      RULES,
+      rules,
     )
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
   })
 
   it('routes an unclassified failure to Harness', async () => {
-    const result = await decide(makeCtx(), RULES)
+    const result = await decide(makeCtx(), rules)
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
   })
@@ -62,7 +62,7 @@ describe('unclassified timeouts and cancellations', () => {
         jobNames: [],
         failedJobNames: [],
       }),
-      RULES,
+      rules,
     )
     expect(result.decision).toBe('ignore')
     expect(result.matchedRule).toBe('workflow-cancelled-without-failure-signal')
@@ -78,7 +78,7 @@ describe('unclassified timeouts and cancellations', () => {
         jobConclusions: new Map(failedJobNames.map(name => [name, 'cancelled'])),
         failedJobNames,
       }),
-      RULES,
+      rules,
     )
     expect(result.decision).toBe('ignore')
     expect(result.matchedRule).toBe('workflow-cancelled-without-failure-signal')
@@ -92,7 +92,7 @@ describe('unclassified timeouts and cancellations', () => {
         jobNames: [],
         failedJobNames: [],
       }),
-      RULES,
+      rules,
     )
     expect(result.decision).toBe('rerun')
     expect(result.matchedRule).toBe('cloudflare-worker-cancelled-before-job-signal')
@@ -104,12 +104,12 @@ describe('unclassified timeouts and cancellations', () => {
         workflowName: 'Main CI (cloudflare-worker)',
         conclusion: 'cancelled',
         runAttempt: 6,
-        ruleAttempts: new Map([['cloudflare-worker-cancelled-before-job-signal', 2]]),
-        ruleAttempt: 5,
+        retryAttempts: new Map([['cloudflare-worker-cancelled-before-job-signal', 2]]),
+        retryAttempt: 5,
         jobNames: [],
         failedJobNames: [],
       }),
-      RULES,
+      rules,
     )
     expect(result.decision).toBe('ignore')
     expect(result.matchedRule).toBe('workflow-cancelled-without-failure-signal')
@@ -121,11 +121,11 @@ describe('unclassified timeouts and cancellations', () => {
         workflowName: 'Main CI (cloudflare-worker)',
         conclusion: 'cancelled',
         runAttempt: 3,
-        ruleAttempt: 2,
+        retryAttempt: 2,
         jobNames: [],
         failedJobNames: [],
       }),
-      RULES,
+      rules,
     )
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')

@@ -1,0 +1,39 @@
+{
+  "sessionPrefix": "voucha",
+  "readyMarker": "voucha-ready",
+  "launcherPidVar": "VOUCHA_LAUNCHER_PID",
+  "env": {},
+  "windows": [
+    {
+      "name": "nextjs",
+      "command": "./dev/service-window nextjs",
+      "env": {},
+      "keepOpen": true
+    },
+    {
+      "name": "backend",
+      "command": "./dev/service-window backend",
+      "env": {},
+      "keepOpen": true
+    },
+    {
+      "name": "worker",
+      "command": "./dev/service-window worker",
+      "env": {},
+      "keepOpen": true
+    },
+    {
+      "name": "cloudflare",
+      "command": "./dev/service-window cloudflare",
+      "env": {},
+      "keepOpen": true
+    },
+    {
+      "name": "lambdas",
+      "command": "./dev/service-window lambdas",
+      "env": {},
+      "keepOpen": true
+    }
+  ],
+  "summary": ["Starting Voucha services using worktree-local initialization."]
+}

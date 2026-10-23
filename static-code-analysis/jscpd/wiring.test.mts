@@ -35,10 +35,10 @@ describe('jscpd wiring', () => {
       scripts: Record<string, string>
     }
     expect(packageJson.scripts['jscpd:dead-code']).toBe(
-      'node static-code-analysis/jscpd/dead-code-gate.mts',
+      "vouchington dead-code --baseline static-code-analysis/jscpd/dead-code-baseline.json --exclude 'web/storybook/**' --exclude '**/test-helpers/**' --exclude '**/__tests__/**' --exclude '**/integration-tests/**'",
     )
     expect(packageJson.scripts['jscpd:dead-code:update']).toBe(
-      'node static-code-analysis/jscpd/dead-code-gate.mts --update',
+      "vouchington dead-code --baseline static-code-analysis/jscpd/dead-code-baseline.json --exclude 'web/storybook/**' --exclude '**/test-helpers/**' --exclude '**/__tests__/**' --exclude '**/integration-tests/**' --update",
     )
     expect(packageJson.scripts.lint).toContain(DEAD_CODE_COMMAND)
     expect(readFileSync('.github/workflows/static-code-analysis.yml', 'utf8')).toContain(

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { decide } from '../decide.mts'
-import { RULES } from '../rules.mts'
+import { evaluateWorkflow as decide } from '../decide.mts'
+import { rules } from '../rules.mts'
 import { makeCtx } from '../../test-helpers/transient-retry/helpers.mts'
 
 describe('storybook-browser-session-connection-timeout', () => {
@@ -24,7 +24,7 @@ describe('storybook-browser-session-connection-timeout', () => {
       failedJobNames: [storybookJobName],
       failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, matchingLog]])),
     })
-    const result = await decide(ctx, RULES)
+    const result = await decide(ctx, rules)
     expect(result.decision).toBe('rerun')
     expect(result.matchedRule).toBe('storybook-browser-startup-transient')
   })
@@ -35,7 +35,7 @@ describe('storybook-browser-session-connection-timeout', () => {
       failedJobNames: [ciStorybookJobName, 'web'],
       failedJobLogs: () => Promise.resolve(new Map([[ciStorybookJobName, matchingLog]])),
     })
-    const result = await decide(ctx, RULES)
+    const result = await decide(ctx, rules)
     expect(result.decision).toBe('rerun')
     expect(result.matchedRule).toBe('storybook-browser-startup-transient')
   })
@@ -46,7 +46,7 @@ describe('storybook-browser-session-connection-timeout', () => {
       failedJobNames: [storybookJobName, 'publish'],
       failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, matchingLog]])),
     })
-    const result = await decide(ctx, RULES)
+    const result = await decide(ctx, rules)
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
   })
@@ -57,7 +57,7 @@ describe('storybook-browser-session-connection-timeout', () => {
       failedJobNames: [ciStorybookJobName, 'test-web / web-tests (1)', 'web'],
       failedJobLogs: () => Promise.resolve(new Map([[ciStorybookJobName, matchingLog]])),
     })
-    const result = await decide(ctx, RULES)
+    const result = await decide(ctx, rules)
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
   })
@@ -69,7 +69,7 @@ describe('storybook-browser-session-connection-timeout', () => {
       failedJobNames: [storybookJobName],
       failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, matchingLog]])),
     })
-    const result = await decide(ctx, RULES)
+    const result = await decide(ctx, rules)
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
   })
@@ -81,7 +81,7 @@ describe('storybook-browser-session-connection-timeout', () => {
       failedJobNames: [storybookJobName],
       failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, matchingLog]])),
     })
-    const result = await decide(ctx, RULES)
+    const result = await decide(ctx, rules)
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
   })
@@ -97,7 +97,7 @@ describe('storybook-browser-session-connection-timeout', () => {
       failedJobNames: [storybookJobName],
       failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, warmCacheLog]])),
     })
-    const result = await decide(ctx, RULES)
+    const result = await decide(ctx, rules)
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
   })
@@ -109,7 +109,7 @@ describe('storybook-browser-session-connection-timeout', () => {
       failedJobNames: [storybookJobName],
       failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, matchingLog]])),
     })
-    const result = await decide(ctx, RULES)
+    const result = await decide(ctx, rules)
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
   })
@@ -118,11 +118,11 @@ describe('storybook-browser-session-connection-timeout', () => {
     const ctx = makeCtx({
       workflowName: 'Web',
       runAttempt: 2,
-      ruleAttempt: 1,
+      retryAttempt: 1,
       failedJobNames: [storybookJobName],
       failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, matchingLog]])),
     })
-    const result = await decide(ctx, RULES)
+    const result = await decide(ctx, rules)
     expect(result.decision).toBe('rerun')
     expect(result.matchedRule).toBe('storybook-browser-startup-transient')
   })
@@ -144,7 +144,7 @@ describe('storybook-browser-session-connection-timeout', () => {
           ]),
         ),
     })
-    const result = await decide(ctx, RULES)
+    const result = await decide(ctx, rules)
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
   })
@@ -172,7 +172,7 @@ describe('storybook-browser-session-connection-timeout', () => {
           ]),
         ),
     })
-    const result = await decide(ctx, RULES)
+    const result = await decide(ctx, rules)
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
   })
@@ -194,7 +194,7 @@ describe('storybook-browser-session-connection-timeout', () => {
           ]),
         ),
     })
-    const result = await decide(ctx, RULES)
+    const result = await decide(ctx, rules)
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
   })

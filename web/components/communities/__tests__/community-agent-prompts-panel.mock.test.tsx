@@ -1,6 +1,6 @@
 import { render } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { createNavMock, navMockModule } from '@/test-helpers/next-navigation-mock'
+import { createNavMock, navMockModule } from 'vouchington-tooling/next-navigation-mock'
 import type { CommunityAgentPrompt } from '@/lib/api/client/community-agent-prompts'
 import { CommunityAgentPromptsPanel } from '../community-agent-prompts-panel'
 

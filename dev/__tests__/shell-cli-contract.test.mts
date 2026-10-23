@@ -16,7 +16,6 @@ const surplusArguments: Record<string, string[]> = {
   initialize: ['web', 'extra'],
   'stop-services': ['--keep-valkey', '--keep-valkey'],
   teardown: ['--yes', '--yes'],
-  tmux: ['--no-attach', '--no-attach'],
   'reset-worktree': ['--force', '--force'],
 }
 
@@ -48,8 +47,6 @@ describe('dev shell CLI contracts', () => {
     'benchmark-topic-metrics',
     'claude-cloud',
     'initialize',
-    'tmux',
-    'tmux-name',
     'reset',
     'db-clean',
     'reset-worktree',
@@ -81,7 +78,6 @@ describe('dev shell CLI contracts', () => {
       'git',
       'pnpm',
       'sudo',
-      'tmux',
     ]
     await Promise.all(
       statefulCommands.map(async command => {

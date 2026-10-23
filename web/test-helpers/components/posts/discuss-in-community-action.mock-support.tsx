@@ -1,6 +1,6 @@
 import { createCommunityPost } from '@/lib/api/client/posts'
 import { loadMyCommunities, searchMyCommunities } from '@/lib/api/client/communities'
-import { createNavMock, navMockModule } from '@/test-helpers/next-navigation-mock'
+import { createNavMock, navMockModule } from 'vouchington-tooling/next-navigation-mock'
 import type { Community } from '@/types/api-responses'
 import type { Post } from '@/types/posts'
 import { toast } from 'sonner'

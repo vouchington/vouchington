@@ -4,7 +4,7 @@ import type { ComponentProps, ReactNode } from 'react'
 import { vi } from 'vitest'
 import { makeRssFeedItem, makeRssFeedItemTopic } from '@/test-helpers/api-responses'
 import { mockLucideReact } from '@/test-helpers/lucide-icons'
-import { navMockModule, createNavMock } from '@/test-helpers/next-navigation-mock'
+import { navMockModule, createNavMock } from 'vouchington-tooling/next-navigation-mock'
 import { createNextDynamicMock } from '@/test-helpers/components/topics/next-link-dynamic-mocks'
 import type { RssFeedItem } from '@/types/rss-feed-items'
 // Imported after the mock helpers above so the mock factories can reference them.

@@ -1,7 +1,7 @@
 /* oxlint-disable vitest/consistent-test-it, jest/consistent-test-it -- oxfmt rewrites it() to test() outside *.test.* files, and jest/no-export forbids exporting this registrar from a test file */
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { beforeEach, expect, test, type Mock } from 'vitest'
-import { createNavMock } from '@/test-helpers/next-navigation-mock'
+import { createNavMock } from 'vouchington-tooling/next-navigation-mock'
 
 const mockNav = createNavMock()
 

@@ -3,8 +3,8 @@ import { readFileSync } from 'node:fs'
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
 
-import { decide } from './decide.mts'
-import { RULES, type WorkflowRunContext } from './rules.mts'
+import { evaluateWorkflow as decide } from './decide.mts'
+import { rules, type WorkflowRunContext } from './rules.mts'
 
 // Forward guard, not a positive retry fixture: a bare GitHub job-timeout signature
 // cannot distinguish a no-mistakes stall from a real code deadlock or another silent
@@ -39,6 +39,12 @@ function jobTimeoutCeilingLog(runCommand: string, minutes: number): string {
 }
 
 const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContext => ({
+  jobNames: overrides.jobNames ?? overrides.failedJobNames ?? [],
+  jobConclusions: new Map((overrides.failedJobNames ?? []).map(name => [name, 'failure'])),
+  jobSteps: new Map(),
+  failedJobLogFetchFailures: () => Promise.resolve(new Set()),
+  jobLogs: () => overrides.failedJobLogs?.() ?? Promise.resolve(new Map()),
+  failedJobAnnotationFetchFailures: () => Promise.resolve(new Set()),
   workflowName: 'Static',
   conclusion: 'timed_out',
   runAttempt: 1,
@@ -59,7 +65,7 @@ describe('no-mistakes-job-timeout-ceiling-inconclusive (forward guard, no rule y
         failedJobNames: [staticAnalysisJobName],
         failedJobLogs: () => Promise.resolve(new Map([[staticAnalysisJobName, log]])),
       }),
-      RULES,
+      rules,
     )
 
     expect(result.decision).toBe('dispatch')

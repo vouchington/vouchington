@@ -6,7 +6,7 @@ import {
 } from '@/test-helpers/components/auth/login-form.email.mock-support'
 
 import { expectInputEnterSubmits } from '@/test-helpers/form-keyboard'
-import { createNavMock } from '@/test-helpers/next-navigation-mock'
+import { createNavMock } from 'vouchington-tooling/next-navigation-mock'
 
 import {
   clearRuntimePublicConfigForTest,

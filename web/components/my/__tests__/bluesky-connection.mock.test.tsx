@@ -1,7 +1,7 @@
 /* oxlint-disable vitest/prefer-import-in-mock, jest/no-untyped-mock-factory -- web tests use string-literal vi.mock() calls so runtime dynamic imports stay mocked at lazy boundaries. */
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { navMockModule, createNavMock } from '@/test-helpers/next-navigation-mock'
+import { navMockModule, createNavMock } from 'vouchington-tooling/next-navigation-mock'
 import { BlueskyConnection } from '../bluesky-connection'
 
 type SonnerModule = typeof import('sonner')

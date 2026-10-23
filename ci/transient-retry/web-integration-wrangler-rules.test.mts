@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { decide } from './decide.mts'
-import { RULES, type WorkflowRunContext } from './rules.mts'
+import { evaluateWorkflow as decide } from './decide.mts'
+import { rules, type WorkflowRunContext } from './rules.mts'
 
 const webIntegrationJobName = 'test-web-integration / web-integration-tests (1)'
 
@@ -52,6 +52,12 @@ const routeBaselineAssertionLog = [
 ].join('\n')
 
 const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContext => ({
+  jobNames: overrides.jobNames ?? overrides.failedJobNames ?? [],
+  jobConclusions: new Map((overrides.failedJobNames ?? []).map(name => [name, 'failure'])),
+  jobSteps: new Map(),
+  failedJobLogFetchFailures: () => Promise.resolve(new Set()),
+  jobLogs: () => overrides.failedJobLogs?.() ?? Promise.resolve(new Map()),
+  failedJobAnnotationFetchFailures: () => Promise.resolve(new Set()),
   workflowName: 'Web',
   conclusion: 'failure',
   runAttempt: 1,
@@ -63,7 +69,7 @@ const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContex
 
 describe('web-integration-wrangler-socket-closed', () => {
   it('reruns CI when wrangler drops the local socket and tests fail UND_ERR_SOCKET', async () => {
-    const result = await decide(makeCtx(), RULES)
+    const result = await decide(makeCtx(), rules)
 
     expect(result.decision).toBe('rerun')
     expect(result.matchedRule).toBe('web-integration-wrangler-socket-closed')
@@ -81,7 +87,7 @@ describe('web-integration-wrangler-socket-closed', () => {
       makeCtx({
         failedJobLogs: () => Promise.resolve(new Map([[webIntegrationJobName, prefixedLog]])),
       }),
-      RULES,
+      rules,
     )
 
     expect(result.decision).toBe('rerun')
@@ -89,7 +95,7 @@ describe('web-integration-wrangler-socket-closed', () => {
   })
 
   it('does not match Main CI web', async () => {
-    const result = await decide(makeCtx({ workflowName: 'Main CI (web)' }), RULES)
+    const result = await decide(makeCtx({ workflowName: 'Main CI (web)' }), rules)
 
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
@@ -98,7 +104,7 @@ describe('web-integration-wrangler-socket-closed', () => {
   it('does not match when another leaf job failed', async () => {
     const result = await decide(
       makeCtx({ failedJobNames: [webIntegrationJobName, 'test-web / web-tests (1)'] }),
-      RULES,
+      rules,
     )
 
     expect(result.decision).toBe('dispatch')
@@ -118,7 +124,7 @@ describe('web-integration-wrangler-socket-closed', () => {
             ]),
           ),
       }),
-      RULES,
+      rules,
     )
 
     expect(result.decision).toBe('dispatch')
@@ -131,7 +137,7 @@ describe('web-integration-wrangler-socket-closed', () => {
         failedJobLogs: () =>
           Promise.resolve(new Map([[webIntegrationJobName, routeBaselineAssertionLog]])),
       }),
-      RULES,
+      rules,
     )
 
     expect(result.decision).toBe('dispatch')
@@ -151,7 +157,7 @@ describe('web-integration-wrangler-socket-closed', () => {
             ]),
           ),
       }),
-      RULES,
+      rules,
     )
 
     expect(result.decision).toBe('dispatch')
@@ -174,7 +180,7 @@ describe('web-integration-wrangler-socket-closed', () => {
             ]),
           ),
       }),
-      RULES,
+      rules,
     )
 
     expect(result.decision).toBe('dispatch')
@@ -182,7 +188,7 @@ describe('web-integration-wrangler-socket-closed', () => {
   })
 
   it('does not match after the retry cap is exhausted', async () => {
-    const result = await decide(makeCtx({ runAttempt: 2 }), RULES)
+    const result = await decide(makeCtx({ runAttempt: 2 }), rules)
 
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
@@ -194,7 +200,7 @@ describe('web-integration-wrangler-socket-closed', () => {
         failedJobLogs: () =>
           Promise.resolve(new Map([[webIntegrationJobName, wranglerExhaustionLog]])),
       }),
-      RULES,
+      rules,
     )
 
     expect(result.decision).toBe('rerun')
@@ -217,7 +223,7 @@ describe('web-integration-wrangler-socket-closed', () => {
             ]),
           ),
       }),
-      RULES,
+      rules,
     )
 
     expect(result.decision).toBe('dispatch')
@@ -240,7 +246,7 @@ describe('web-integration-wrangler-socket-closed', () => {
             ]),
           ),
       }),
-      RULES,
+      rules,
     )
 
     expect(result.decision).toBe('dispatch')

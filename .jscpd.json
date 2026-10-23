@@ -27,10 +27,8 @@
       "backend/scripts/lookup-copyright-email-intakes.mts",
       "backend/scripts/seed-source/run.mts",
       "backend/types/lib-dom-absent.mts",
-      "ci/transient-retry/rerun-known-transient.mts",
       "ci/validate-vitest-cli-timeouts.mts",
       "dev/agent-issue-labels/batch-issues.mts",
-      "dev/agent-issue-labels/labels-from-paths.mts",
       "dev/codex-hooks/post-tool-use.mts",
       "dev/codex-hooks/pre-tool-use.mts",
       "dev/localization/local-catalog.mts",
@@ -46,7 +44,8 @@
       "web/storybook/mocks/load-server-messages.ts",
       "web/storybook/mocks/upgrade-membership-aside.tsx",
       "web/test-helpers/vitest.setup.fake-timer-guard.mts",
-      "web/test-helpers/vitest.setup.storybook-browser-guard.mts"
+      "web/test-helpers/vitest.setup.storybook-browser-guard.mts",
+      "dev/sandbox-command-audit/rules.mts"
     ]
   },
   "ignore": [

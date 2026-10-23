@@ -1,4 +1,4 @@
-import { terminalFailedGithubActionsStepLog } from './github-actions-log.mts'
+import { terminalFailedGithubActionsStepLog } from 'vouchington-tooling/transient-retry'
 import {
   hasCurlGithubReleaseTransportFailure,
   isGithubReleasesDownloadFlake,
@@ -36,7 +36,7 @@ function hasGitleaksInstallReleasesDownloadFlake(log: string): boolean {
 function isOnlyFailedGitleaksJob(ctx: {
   workflowName: string
   conclusion: string
-  failedJobNames: string[]
+  failedJobNames: readonly string[]
 }): boolean {
   return (
     ctx.workflowName === 'Gitleaks' &&

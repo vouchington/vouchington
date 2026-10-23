@@ -2,32 +2,32 @@ import { unregisteredRules } from '../rule-registry-policy.mts'
 
 import { describe, expect, it } from 'vitest'
 
-import { RULES } from '../rules.mts'
+import { rules } from '../rules.mts'
 
-describe('RULES registry integrity', () => {
+describe('rules registry integrity', () => {
   it('requires every discovered exported rule by identity and nonempty discovery', () => {
     const rule = { id: 'fixture', match: () => true }
     expect(unregisteredRules([{ rule, unrelated: {}, value: null }], [rule])).toEqual([])
     expect(unregisteredRules([{ rule }], [{ ...rule }])).toEqual([
-      'rule "fixture" is exported but missing from the RULES array',
+      'rule "fixture" is exported but missing from the rules array',
     ])
     expect(unregisteredRules([{ value: null, other: {} }], [])).toEqual([
       'No exported retry rules discovered',
     ])
   })
 
-  it('every rule id in RULES is unique', () => {
+  it('every rule id in rules is unique', () => {
     const seen = new Set<string>()
-    for (const rule of RULES) {
+    for (const rule of rules) {
       if (seen.has(rule.id)) throw new Error(`duplicate rule id "${rule.id}"`)
       seen.add(rule.id)
     }
-    expect(seen.size).toBe(RULES.length)
+    expect(seen.size).toBe(rules.length)
   })
 
   it('every consumer and root-cause pair is unique', () => {
     const seen = new Set<string>()
-    for (const rule of RULES) {
+    for (const rule of rules) {
       const key = `${rule.consumerKey}\u0000${rule.rootCauseKey}`
       if (seen.has(key)) {
         throw new Error(
@@ -36,11 +36,11 @@ describe('RULES registry integrity', () => {
       }
       seen.add(key)
     }
-    expect(seen.size).toBe(RULES.length)
+    expect(seen.size).toBe(rules.length)
   })
 
-  it('every RULES entry has the required shape fields', () => {
-    for (const rule of RULES) {
+  it('every rules entry has the required shape fields', () => {
+    for (const rule of rules) {
       const ctx = `rule "${rule.id}"`
       if (typeof rule.id !== 'string' || rule.id.length === 0)
         throw new Error(`${ctx}: id must be a non-empty string`)
@@ -59,6 +59,6 @@ describe('RULES registry integrity', () => {
       if (typeof rule.match !== 'function') throw new Error(`${ctx}: match must be a function`)
     }
     // At least one rule must exist to confirm the loop ran.
-    expect(RULES.length).toBeGreaterThan(0)
+    expect(rules.length).toBeGreaterThan(0)
   })
 })

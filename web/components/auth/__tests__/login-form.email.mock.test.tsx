@@ -5,7 +5,7 @@ import {
   turnstileCallbacks,
 } from '@/test-helpers/components/auth/login-form.email.mock-support'
 
-import { createNavMock } from '@/test-helpers/next-navigation-mock'
+import { createNavMock } from 'vouchington-tooling/next-navigation-mock'
 
 import {
   clearRuntimePublicConfigForTest,

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { decide } from './decide.mts'
-import { RULES, type WorkflowRunContext } from './rules.mts'
+import { evaluateWorkflow as decide } from './decide.mts'
+import { rules, type WorkflowRunContext } from './rules.mts'
 
 const toolingJobName = 'test-tooling / tooling'
 
@@ -23,6 +23,11 @@ const matchingLog = [
 ].join('\n')
 
 const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContext => ({
+  jobNames: overrides.jobNames ?? overrides.failedJobNames ?? [],
+  jobSteps: new Map(),
+  failedJobLogFetchFailures: () => Promise.resolve(new Set()),
+  jobLogs: () => overrides.failedJobLogs?.() ?? Promise.resolve(new Map()),
+  failedJobAnnotationFetchFailures: () => Promise.resolve(new Set()),
   workflowName: 'Tooling',
   conclusion: 'cancelled',
   runAttempt: 1,
@@ -39,7 +44,7 @@ const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContex
 
 describe('tooling teardown plus artifact upload timeout safety', () => {
   it('does not rerun a real tooling test failure even when a later coverage upload times out', async () => {
-    const result = await decide(makeCtx(), RULES)
+    const result = await decide(makeCtx(), rules)
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
   })
@@ -60,7 +65,7 @@ describe('tooling teardown plus artifact upload timeout safety', () => {
             ]),
           ),
       }),
-      RULES,
+      rules,
     )
 
     expect(result.decision).toBe('dispatch')
@@ -87,7 +92,7 @@ describe('tooling teardown plus artifact upload timeout safety', () => {
             ]),
           ),
       }),
-      RULES,
+      rules,
     )
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
@@ -103,7 +108,7 @@ describe('tooling teardown plus artifact upload timeout safety', () => {
           ['tooling', 'cancelled'],
         ]),
       }),
-      RULES,
+      rules,
     )
 
     expect(result.decision).toBe('dispatch')

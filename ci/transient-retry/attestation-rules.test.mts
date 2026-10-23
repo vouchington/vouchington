@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
 import { makeCtx } from '../test-helpers/transient-retry/helpers.mts'
-import { decide } from './decide.mts'
-import { RULES, type WorkflowRunContext } from './rules.mts'
+import { evaluateWorkflow as decide } from './decide.mts'
+import { rules, type WorkflowRunContext } from './rules.mts'
 
 const jobName = 'publish-backend-images / build'
 const stepName = 'Attest api image provenance'
@@ -48,7 +48,7 @@ function context(log = observedLog, overrides: Partial<WorkflowRunContext> = {})
 
 describe('Backend empty image attestation persistence failure', () => {
   it('reruns the observed failure once', async () => {
-    const result = await decide(context(), RULES)
+    const result = await decide(context(), rules)
     expect(result).toMatchObject({ decision: 'rerun', matchedRule: ruleId })
   })
 
@@ -93,7 +93,7 @@ describe('Backend empty image attestation persistence failure', () => {
       observedLog.replace('##[error]Error:', '##[group]Run unrelated/action\n##[error]Error:'),
     ],
   ])('rejects %s', async (_name, log) => {
-    expect(await decide(context(log), RULES)).toMatchObject({
+    expect(await decide(context(log), rules)).toMatchObject({
       decision: 'dispatch',
       matchedRule: '',
     })
@@ -120,9 +120,9 @@ describe('Backend empty image attestation persistence failure', () => {
         ],
       ]),
     },
-    { runAttempt: 2, ruleAttempts: new Map([[ruleId, 2]]) },
+    { runAttempt: 2, retryAttempts: new Map([[ruleId, 2]]) },
   ])('rejects missing, mixed, or exhausted run evidence %#', async overrides => {
-    expect(await decide(context(observedLog, overrides), RULES)).toMatchObject({
+    expect(await decide(context(observedLog, overrides), rules)).toMatchObject({
       decision: 'dispatch',
       matchedRule: '',
     })

@@ -3,7 +3,7 @@ import type { PostsResponseBody } from '@/types/api-responses'
 import type { Post, TopicRecommendationStatus } from '@/types/posts'
 import type { User } from '@/types/user'
 import { vi } from 'vitest'
-import { createNavMock, navMockModule } from '@/test-helpers/next-navigation-mock'
+import { createNavMock, navMockModule } from 'vouchington-tooling/next-navigation-mock'
 
 export const tableAuth: { currentUser: User | null } = { currentUser: null }
 

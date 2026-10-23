@@ -1,10 +1,16 @@
 import { describe, expect, it } from 'vitest'
 
-import { decide } from '../decide.mts'
+import { evaluateWorkflow as decide } from '../decide.mts'
 
-import { RULES, type WorkflowRunContext } from '../rules.mts'
+import { rules, type WorkflowRunContext } from '../rules.mts'
 
 const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContext => ({
+  jobNames: overrides.jobNames ?? overrides.failedJobNames ?? [],
+  jobConclusions: new Map((overrides.failedJobNames ?? []).map(name => [name, 'failure'])),
+  jobSteps: new Map(),
+  failedJobLogFetchFailures: () => Promise.resolve(new Set()),
+  jobLogs: () => overrides.failedJobLogs?.() ?? Promise.resolve(new Map()),
+  failedJobAnnotationFetchFailures: () => Promise.resolve(new Set()),
   workflowName: 'Web',
   conclusion: 'failure',
   runAttempt: 1,
@@ -14,7 +20,7 @@ const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContex
   ...overrides,
 })
 
-describe('RULES catalogue', () => {
+describe('rules catalogue', () => {
   describe('workflow-cancelled-without-failure-signal', () => {
     it.each([
       ['Web', 1],
@@ -31,7 +37,7 @@ describe('RULES catalogue', () => {
         jobNames: [],
         failedJobNames: [],
       })
-      const result = await decide(ctx, RULES)
+      const result = await decide(ctx, rules)
       expect(result.decision).toBe('ignore')
       expect(result.matchedRule).toBe('workflow-cancelled-without-failure-signal')
     })
@@ -43,7 +49,7 @@ describe('RULES catalogue', () => {
         jobNames: ['test-web / web-tests (1)'],
         failedJobNames: ['test-web / web-tests (1)'],
       })
-      const result = await decide(ctx, RULES)
+      const result = await decide(ctx, rules)
       expect(result.decision).toBe('dispatch')
       expect(result.matchedRule).toBe('')
     })
@@ -57,7 +63,7 @@ describe('RULES catalogue', () => {
           jobConclusions: new Map([['audit', 'cancelled']]),
           failedJobNames: ['audit'],
         }),
-        RULES,
+        rules,
       )
       expect(result.decision).toBe('ignore')
       expect(result.matchedRule).toBe('workflow-cancelled-without-failure-signal')
@@ -72,7 +78,7 @@ describe('RULES catalogue', () => {
           jobConclusions: new Map([['audit', 'failure']]),
           failedJobNames: ['audit'],
         }),
-        RULES,
+        rules,
       )
       expect(result.decision).toBe('dispatch')
       expect(result.matchedRule).toBe('')
@@ -87,7 +93,7 @@ describe('RULES catalogue', () => {
           jobConclusions: new Map([['audit', 'timed_out']]),
           failedJobNames: ['audit'],
         }),
-        RULES,
+        rules,
       )
       expect(result.decision).toBe('dispatch')
       expect(result.matchedRule).toBe('')
@@ -102,7 +108,7 @@ describe('RULES catalogue', () => {
           jobConclusions: new Map([['audit', 'failure']]),
           failedJobNames: ['audit'],
         }),
-        RULES,
+        rules,
       )
       expect(result.decision).toBe('dispatch')
       expect(result.matchedRule).toBe('')

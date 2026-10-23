@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
 import { makeCtx } from '../test-helpers/transient-retry/helpers.mts'
-import { decide } from './decide.mts'
-import { RULES } from './rules.mts'
+import { evaluateWorkflow as decide } from './decide.mts'
+import { rules } from './rules.mts'
 
 describe('bootstrap failure isolation', () => {
   it('does not apply Web Playwright consumers to Backend', async () => {
@@ -19,7 +19,7 @@ describe('bootstrap failure isolation', () => {
           failedJobNames: [jobName, 'backend'],
           failedJobLogs: async () => new Map([[jobName, log]]),
         }),
-        RULES,
+        rules,
       ),
     ).resolves.toEqual({ decision: 'dispatch', matchedRule: '' })
   })
@@ -41,7 +41,7 @@ describe('bootstrap failure isolation', () => {
           failedJobNames: [jobName, 'web'],
           failedJobLogs: async () => new Map([[jobName, log]]),
         }),
-        RULES,
+        rules,
       ),
     ).resolves.toEqual({ decision: 'dispatch', matchedRule: '' })
   })

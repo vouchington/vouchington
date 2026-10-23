@@ -1,7 +1,7 @@
 import { describe, expect, it, beforeAll, beforeEach, vi } from 'vitest'
 import { act, fireEvent, render } from '@testing-library/react'
 import { createTranslator, type MessageKey } from '@ts-shared/ui-messages'
-import { navMockModule, createNavMock } from '@/test-helpers/next-navigation-mock'
+import { navMockModule, createNavMock } from 'vouchington-tooling/next-navigation-mock'
 import { RssFeedItemModalShell } from '../../rss-feed-item-modal-shell'
 import { enMessages } from '@ts-shared/ui-messages/locale-catalogs'
 
@@ -216,7 +216,7 @@ describe('RssFeedItemModalShell auto-load-more on Next', () => {
     // Navigate Previous — clears pendingAdvance
     fireEvent.keyDown(window, { key: 'ArrowLeft' })
     const previousPushCall = mockNav.push.mock.calls.find(([url]) =>
-      url.includes('rss_item=item-2'),
+      String(url).includes('rss_item=item-2'),
     )
     expect(previousPushCall).toBeDefined()
 
@@ -240,7 +240,7 @@ describe('RssFeedItemModalShell auto-load-more on Next', () => {
 
     // Auto-advance to item-4 should NOT happen; only the Previous push should have fired
     const autoAdvanceCalls = mockNav.push.mock.calls.filter(([url]) =>
-      url.includes('rss_item=item-4'),
+      String(url).includes('rss_item=item-4'),
     )
     expect(autoAdvanceCalls).toHaveLength(0)
   })

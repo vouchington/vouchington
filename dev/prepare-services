@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -euo pipefail
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+if [ ! -f "$REPO_ROOT/.env" ] || [ ! -f "$REPO_ROOT/.initialized" ] || [ "$(tr -d '[:space:]' < "$REPO_ROOT/.initialized")" != web ]; then
+  echo 'Run ./dev/initialize web first.' >&2
+  exit 1
+fi
+set -a
+# shellcheck source=/dev/null
+source "$REPO_ROOT/.env"
+set +a
+if [ -n "${VALKEY_CONTAINER:-}" ]; then
+  if ! docker ps --format '{{.Names}}' | grep -qx "$VALKEY_CONTAINER"; then
+    docker start "$VALKEY_CONTAINER" >/dev/null
+  fi
+fi
+node "$REPO_ROOT/dev/localization/local-catalog.mts" >/dev/null

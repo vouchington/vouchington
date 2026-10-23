@@ -30,7 +30,7 @@ function makeDeps(overrides: Partial<BatchDeps> = {}): BatchDeps {
     },
     pathExists: async () => true,
     writeArtifact: async () => {},
-    labelerPath: '/dev/null',
+    labelerPath: '.github/labeler.yml',
     ...overrides,
   }
 }

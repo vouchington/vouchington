@@ -1,7 +1,7 @@
 import '@/test-helpers/i18n/mock-json-messages'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { navMockModule, createNavMock } from '@/test-helpers/next-navigation-mock'
+import { navMockModule, createNavMock } from 'vouchington-tooling/next-navigation-mock'
 import type { TopicClaim } from '@/types/topic-claims'
 
 const { mockGetTopicClaims, mockGetCurrentUser, mockRedirect, mockHeaders } = vi.hoisted(() => ({

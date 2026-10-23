@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { runnerShutdownLeafRerunMatch } from './runner-shutdown-consumers.mts'
 import type { WorkflowRunContext } from './types.mts'
 
-// Production registration and retry accounting are covered through decide()/RULES in
+// Production registration and retry accounting are covered through decide()/rules in
 // runner-shutdown-production-rule.test.mts. These direct matcher cases also protect the
 // coverage-artifact rules that reuse the same conservative predicate.
 
@@ -24,6 +24,12 @@ const assertionFailureLog = matchingLog
   .replace('##[error]The operation was canceled.', '##[error]Process completed with exit code 1.')
 
 const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContext => ({
+  jobNames: overrides.jobNames ?? overrides.failedJobNames ?? [],
+  jobConclusions: new Map((overrides.failedJobNames ?? []).map(name => [name, 'failure'])),
+  jobSteps: new Map(),
+  failedJobLogFetchFailures: () => Promise.resolve(new Set()),
+  jobLogs: () => overrides.failedJobLogs?.() ?? Promise.resolve(new Map()),
+  failedJobAnnotationFetchFailures: () => Promise.resolve(new Set()),
   workflowName: 'Web',
   conclusion: 'failure',
   runAttempt: 1,

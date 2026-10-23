@@ -1,6 +1,6 @@
 import { render } from '@testing-library/react'
 import { describe, vi } from 'vitest'
-import { navMockModule } from '@/test-helpers/next-navigation-mock'
+import { navMockModule } from 'vouchington-tooling/next-navigation-mock'
 import { registerPostActionButtonTests } from '@/test-helpers/components/posts/post-action-button-tests'
 import { PostLockButton } from '../post-lock-button'
 

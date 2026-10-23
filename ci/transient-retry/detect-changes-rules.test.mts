@@ -1,11 +1,17 @@
 import { describe, expect, it } from 'vitest'
 
-import { decide } from './decide.mts'
-import { RULES, type WorkflowRunContext } from './rules.mts'
+import { evaluateWorkflow as decide } from './decide.mts'
+import { rules, type WorkflowRunContext } from './rules.mts'
 
 const detectChangesJobName = 'changes / detect-changes'
 
 const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContext => ({
+  jobNames: overrides.jobNames ?? overrides.failedJobNames ?? [],
+  jobConclusions: new Map((overrides.failedJobNames ?? []).map(name => [name, 'failure'])),
+  jobSteps: new Map(),
+  failedJobLogFetchFailures: () => Promise.resolve(new Set()),
+  jobLogs: () => overrides.failedJobLogs?.() ?? Promise.resolve(new Map()),
+  failedJobAnnotationFetchFailures: () => Promise.resolve(new Set()),
   workflowName: 'Web',
   conclusion: 'failure',
   runAttempt: 1,
@@ -46,7 +52,7 @@ describe('detect-changes-paths-filter-github-5xx', () => {
           failedJobNames: [detectChangesJobName, gate],
           failedJobAnnotations: failedJobAnnotations([github5xxAnnotation]),
         }),
-        RULES,
+        rules,
       ),
     ).resolves.toMatchObject({
       decision: 'rerun',
@@ -61,7 +67,7 @@ describe('detect-changes-paths-filter-github-5xx', () => {
           failedJobNames: [detectChangesJobName, 'backend'],
           failedJobAnnotations: failedJobAnnotations([github5xxAnnotation]),
         }),
-        RULES,
+        rules,
       ),
     ).resolves.toEqual({ decision: 'dispatch', matchedRule: '' })
   })
@@ -71,7 +77,7 @@ describe('detect-changes-paths-filter-github-5xx', () => {
       makeCtx({
         failedJobAnnotations: failedJobAnnotations([github5xxAnnotation]),
       }),
-      RULES,
+      rules,
     )
 
     expect(result.decision).toBe('rerun')
@@ -85,7 +91,7 @@ describe('detect-changes-paths-filter-github-5xx', () => {
         failedJobNames: [jobName],
         failedJobAnnotations: failedJobAnnotations([github5xxAnnotation]),
       }),
-      RULES,
+      rules,
     )
     expect(result.matchedRule).toBe('detect-changes-paths-filter-github-5xx')
   })
@@ -95,7 +101,7 @@ describe('detect-changes-paths-filter-github-5xx', () => {
       makeCtx({
         failedJobAnnotations: failedJobAnnotations(['Process completed with exit code 1.']),
       }),
-      RULES,
+      rules,
     )
 
     expect(result.decision).toBe('dispatch')
@@ -109,7 +115,7 @@ describe('detect-changes-paths-filter-github-5xx', () => {
           'Error: Invalid filter configuration: unknown filter type',
         ]),
       }),
-      RULES,
+      rules,
     )
 
     expect(result.decision).toBe('dispatch')
@@ -126,7 +132,7 @@ describe('detect-changes-paths-filter-github-5xx', () => {
         ]),
         failedJobAnnotations: failedJobAnnotations([github5xxAnnotation]),
       }),
-      RULES,
+      rules,
     )
 
     expect(result.decision).toBe('dispatch')
@@ -146,7 +152,7 @@ describe('detect-changes-paths-filter-github-5xx', () => {
       makeCtx({
         failedJobAnnotations: failedJobAnnotations([nonGithub5xxAnnotation]),
       }),
-      RULES,
+      rules,
     )
 
     expect(result.decision).toBe('dispatch')
@@ -160,7 +166,7 @@ describe('detect-changes-paths-filter-github-5xx', () => {
         jobConclusions: new Map([[detectChangesJobName, 'cancelled']]),
         failedJobAnnotations: failedJobAnnotations([github5xxAnnotation]),
       }),
-      RULES,
+      rules,
     )
 
     expect(result.decision).toBe('dispatch')
@@ -173,7 +179,7 @@ describe('detect-changes-paths-filter-github-5xx', () => {
         workflowName: 'Main CI (backend)',
         failedJobAnnotations: failedJobAnnotations([github5xxAnnotation]),
       }),
-      RULES,
+      rules,
     )
 
     expect(result.decision).toBe('dispatch')
@@ -188,7 +194,7 @@ describe('detect-changes-paths-filter-github-5xx', () => {
           'Process completed with exit code 1.',
         ]),
       }),
-      RULES,
+      rules,
     )
 
     expect(result.decision).toBe('dispatch')
@@ -200,7 +206,7 @@ describe('detect-changes-paths-filter-github-5xx', () => {
       makeCtx({
         failedJobAnnotations: failedJobAnnotations([]),
       }),
-      RULES,
+      rules,
     )
 
     expect(result.decision).toBe('dispatch')
@@ -213,7 +219,7 @@ describe('detect-changes-paths-filter-github-5xx', () => {
         runAttempt: 2,
         failedJobAnnotations: failedJobAnnotations([github5xxAnnotation]),
       }),
-      RULES,
+      rules,
     )
 
     expect(result.decision).toBe('dispatch')

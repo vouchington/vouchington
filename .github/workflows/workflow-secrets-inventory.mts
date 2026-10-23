@@ -7,7 +7,7 @@
  * deliberate call on whether the name is provisioned.
  *
  * `provisioned` records intended state, not a live read of GitHub's secret store — that live
- * comparison is `dev/verify-workflow-secrets.mts` (trusted/local-only; see #8157).
+ * comparison is `vouchington verify-workflow-secrets` (trusted/local-only; see #8157).
  *
  * Security constraint (#8157): entries and the diagnostics built from them expose secret
  * NAMES and PRESENCE only. Nothing here reads, fetches, or holds a secret's value — GitHub
@@ -38,7 +38,7 @@ export interface SecretInventoryEntry {
   /**
    * True when this name must never become a real GitHub secret — a generic contract-only
    * placeholder (e.g. a `workflow_call` secret name every caller rebinds to its own real key).
-   * `dev/verify-workflow-secrets.mts` reports a live match here as `accidentallyProvisioned`
+   * `vouchington verify-workflow-secrets` reports a live match here as `accidentallyProvisioned`
    * rather than ordinary drift, since flipping `provisioned` to true would be the wrong fix.
    */
   readonly neverProvision?: boolean

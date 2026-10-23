@@ -1,10 +1,16 @@
 import { describe, expect, it } from 'vitest'
 
-import { decide } from './decide.mts'
-import { RULES, type WorkflowRunContext } from './rules.mts'
+import { evaluateWorkflow as decide } from './decide.mts'
+import { rules, type WorkflowRunContext } from './rules.mts'
 
 const lintLinksJobName = 'lint-links / lint-links'
 const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContext => ({
+  jobNames: overrides.jobNames ?? overrides.failedJobNames ?? [],
+  jobConclusions: new Map((overrides.failedJobNames ?? []).map(name => [name, 'failure'])),
+  jobSteps: new Map(),
+  failedJobLogFetchFailures: () => Promise.resolve(new Set()),
+  jobLogs: () => overrides.failedJobLogs?.() ?? Promise.resolve(new Map()),
+  failedJobAnnotationFetchFailures: () => Promise.resolve(new Set()),
   workflowName: 'Lint Links',
   conclusion: 'failure',
   runAttempt: 1,
@@ -27,7 +33,7 @@ describe('lint-links-github-5xx', () => {
   ].join('\n')
 
   it('matches GitHub 500 Lychee failures on attempt 1', async () => {
-    const result = await decide(makeCtx({ failedJobLogs: failedJobLogs(github500Log) }), RULES)
+    const result = await decide(makeCtx({ failedJobLogs: failedJobLogs(github500Log) }), rules)
 
     expect(result.decision).toBe('rerun')
     expect(result.matchedRule).toBe('lint-links-github-5xx')
@@ -41,7 +47,7 @@ describe('lint-links-github-5xx', () => {
       '##[error]Process completed with exit code 2.',
     ].join('\n')
 
-    const result = await decide(makeCtx({ failedJobLogs: failedJobLogs(log) }), RULES)
+    const result = await decide(makeCtx({ failedJobLogs: failedJobLogs(log) }), rules)
 
     expect(result.decision).toBe('rerun')
     expect(result.matchedRule).toBe('lint-links-github-5xx')
@@ -56,7 +62,7 @@ describe('lint-links-github-5xx', () => {
       '##[error]Process completed with exit code 2.',
     ].join('\n')
 
-    const result = await decide(makeCtx({ failedJobLogs: failedJobLogs(log) }), RULES)
+    const result = await decide(makeCtx({ failedJobLogs: failedJobLogs(log) }), rules)
 
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
@@ -72,7 +78,7 @@ describe('lint-links-github-5xx', () => {
       '##[error]Process completed with exit code 2.',
     ].join('\n')
 
-    const result = await decide(makeCtx({ failedJobLogs: failedJobLogs(log) }), RULES)
+    const result = await decide(makeCtx({ failedJobLogs: failedJobLogs(log) }), rules)
 
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
@@ -90,7 +96,7 @@ describe('lint-links-github-5xx', () => {
         '##[error]Process completed with exit code 2.',
       ].join('\n')
 
-      const result = await decide(makeCtx({ failedJobLogs: failedJobLogs(log) }), RULES)
+      const result = await decide(makeCtx({ failedJobLogs: failedJobLogs(log) }), rules)
 
       expect(result.decision).toBe('dispatch')
       expect(result.matchedRule).toBe('')
@@ -105,7 +111,7 @@ describe('lint-links-github-5xx', () => {
       '##[error]Process completed with exit code 2.',
     ].join('\n')
 
-    const result = await decide(makeCtx({ failedJobLogs: failedJobLogs(log) }), RULES)
+    const result = await decide(makeCtx({ failedJobLogs: failedJobLogs(log) }), rules)
 
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
@@ -114,14 +120,14 @@ describe('lint-links-github-5xx', () => {
   it('does not match wrong workflow or sibling failed jobs', async () => {
     const wrongWorkflow = await decide(
       makeCtx({ workflowName: 'Web', failedJobLogs: failedJobLogs(github500Log) }),
-      RULES,
+      rules,
     )
     const mixedJobs = await decide(
       makeCtx({
         failedJobNames: [lintLinksJobName, 'build'],
         failedJobLogs: failedJobLogs(github500Log),
       }),
-      RULES,
+      rules,
     )
 
     expect(wrongWorkflow.decision).toBe('dispatch')
@@ -131,7 +137,7 @@ describe('lint-links-github-5xx', () => {
   it('does not match after the retry cap is exhausted', async () => {
     const result = await decide(
       makeCtx({ runAttempt: 2, failedJobLogs: failedJobLogs(github500Log) }),
-      RULES,
+      rules,
     )
 
     expect(result.decision).toBe('dispatch')
@@ -158,7 +164,7 @@ describe('lint-links-setup-lychee-download-flake', () => {
       'lint-links\tInstall lychee\t##[error]Process completed with exit code 1.',
     ].join('\n')
 
-    const result = await decide(makeCtx({ failedJobLogs: failedJobLogs(log) }), RULES)
+    const result = await decide(makeCtx({ failedJobLogs: failedJobLogs(log) }), rules)
 
     expect(result.decision).toBe('rerun')
     expect(result.matchedRule).toBe('lint-links-setup-lychee-download-flake')
@@ -167,7 +173,7 @@ describe('lint-links-setup-lychee-download-flake', () => {
   it('matches the setup-lychee GitHub Releases curl 28 timeout on attempt 1', async () => {
     const result = await decide(
       makeCtx({ failedJobLogs: failedJobLogs(setupLycheeCurl28Log) }),
-      RULES,
+      rules,
     )
 
     expect(result.decision).toBe('rerun')
@@ -181,7 +187,7 @@ describe('lint-links-setup-lychee-download-flake', () => {
       'lint-links\tInstall lychee\t##[error]Process completed with exit code 1.',
     ].join('\n')
 
-    const result = await decide(makeCtx({ failedJobLogs: failedJobLogs(log) }), RULES)
+    const result = await decide(makeCtx({ failedJobLogs: failedJobLogs(log) }), rules)
 
     expect(result.decision).toBe('rerun')
     expect(result.matchedRule).toBe('lint-links-setup-lychee-download-flake')
@@ -195,7 +201,7 @@ describe('lint-links-setup-lychee-download-flake', () => {
       'lint-links\tInstall lychee\t##[error]Process completed with exit code 1.',
     ].join('\n')
 
-    const result = await decide(makeCtx({ failedJobLogs: failedJobLogs(log) }), RULES)
+    const result = await decide(makeCtx({ failedJobLogs: failedJobLogs(log) }), rules)
 
     expect(result.decision).toBe('rerun')
     expect(result.matchedRule).toBe('lint-links-setup-lychee-download-flake')
@@ -210,7 +216,7 @@ describe('lint-links-setup-lychee-download-flake', () => {
       'lint-links\tCheck links\t##[error]Process completed with exit code 1.',
     ].join('\n')
 
-    const result = await decide(makeCtx({ failedJobLogs: failedJobLogs(log) }), RULES)
+    const result = await decide(makeCtx({ failedJobLogs: failedJobLogs(log) }), rules)
 
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
@@ -223,7 +229,7 @@ describe('lint-links-setup-lychee-download-flake', () => {
       'lint-links\tInstall lychee\t##[error]Process completed with exit code 1.',
     ].join('\n')
 
-    const result = await decide(makeCtx({ failedJobLogs: failedJobLogs(log) }), RULES)
+    const result = await decide(makeCtx({ failedJobLogs: failedJobLogs(log) }), rules)
 
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
@@ -237,7 +243,7 @@ describe('lint-links-setup-lychee-download-flake', () => {
       'lint-links\tInstall lychee\t##[error]Process completed with exit code 1.',
     ].join('\n')
 
-    const result = await decide(makeCtx({ failedJobLogs: failedJobLogs(log) }), RULES)
+    const result = await decide(makeCtx({ failedJobLogs: failedJobLogs(log) }), rules)
 
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
@@ -250,7 +256,7 @@ describe('lint-links-setup-lychee-download-flake', () => {
       'lint-links\tInstall lychee\t##[error]Process completed with exit code 1.',
     ].join('\n')
 
-    const result = await decide(makeCtx({ failedJobLogs: failedJobLogs(log) }), RULES)
+    const result = await decide(makeCtx({ failedJobLogs: failedJobLogs(log) }), rules)
 
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
@@ -259,14 +265,14 @@ describe('lint-links-setup-lychee-download-flake', () => {
   it('does not match wrong workflow or sibling failed jobs', async () => {
     const wrongWorkflow = await decide(
       makeCtx({ workflowName: 'Web', failedJobLogs: failedJobLogs(setupLycheeCurl28Log) }),
-      RULES,
+      rules,
     )
     const mixedJobs = await decide(
       makeCtx({
         failedJobNames: [lintLinksJobName, 'build'],
         failedJobLogs: failedJobLogs(setupLycheeCurl28Log),
       }),
-      RULES,
+      rules,
     )
 
     expect(wrongWorkflow.decision).toBe('dispatch')
@@ -276,7 +282,7 @@ describe('lint-links-setup-lychee-download-flake', () => {
   it('does not match after the retry cap is exhausted', async () => {
     const result = await decide(
       makeCtx({ runAttempt: 2, failedJobLogs: failedJobLogs(setupLycheeCurl28Log) }),
-      RULES,
+      rules,
     )
 
     expect(result.decision).toBe('dispatch')

@@ -1,4 +1,4 @@
-import { sliceGithubActionsStepGroup } from './github-actions-log.mts'
+import { sliceGithubActionsStepGroup } from 'vouchington-tooling/transient-retry'
 
 // Exported so the marker-freshness guard (step-group-marker-freshness.test.mts) can assert these
 // stay in sync with the `run:` values in the workflows below, rather than drifting silently the way

@@ -6,7 +6,7 @@ Before rerunning a failed CI job, confirm the failure matches a known infrastruc
 **and** that the latest runs on the target branch are green. A look-alike failure that matches
 your diff is a real bug; do not rerun it. On non-`main`, non-Dependabot PR branches, once you
 have confirmed the run matches a known-transient fingerprint, use
-`node ci/transient-retry/rerun-known-transient.mts <run-id>` instead of manually matching rules
+`pnpm exec vouchington transient-retry --rules ci/transient-retry/rules.mts <run-id>` instead of manually matching rules
 and calling `gh run rerun`.
 
 Automatic `main` recovery runs only while `HARNESS_DISPATCH_ENABLED` and

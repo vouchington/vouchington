@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { decide } from './decide.mts'
-import { RULES, type WorkflowRunContext } from './rules.mts'
+import { evaluateWorkflow as decide } from './decide.mts'
+import { rules, type WorkflowRunContext } from './rules.mts'
 
 const backendUnitJobName = 'test-backend-unit / backend-tests (1)'
 const cleanCancellationLog = [
@@ -15,6 +15,12 @@ function makeContext(
   overrides: Partial<WorkflowRunContext> = {},
 ): WorkflowRunContext {
   return {
+    jobNames: [],
+    jobConclusions: new Map(),
+    jobSteps: new Map(),
+    failedJobLogFetchFailures: () => Promise.resolve(new Set()),
+    jobLogs: () => overrides.failedJobLogs?.() ?? Promise.resolve(new Map()),
+    failedJobAnnotationFetchFailures: () => Promise.resolve(new Set()),
     workflowName: 'Backend',
     conclusion: 'failure',
     runAttempt: 1,
@@ -27,7 +33,7 @@ function makeContext(
 
 describe('runner-shutdown-leaf-rerun production registration', () => {
   it('reruns a clean cancellation through the production rule catalogue', async () => {
-    await expect(decide(makeContext(), RULES)).resolves.toMatchObject({
+    await expect(decide(makeContext(), rules)).resolves.toMatchObject({
       decision: 'rerun',
       matchedRule: 'runner-shutdown-leaf-rerun',
     })
@@ -39,7 +45,7 @@ describe('runner-shutdown-leaf-rerun production registration', () => {
         makeContext(
           ` FAIL backend/modules/auth/auth.test.mts > login fails\n${cleanCancellationLog}`,
         ),
-        RULES,
+        rules,
       ),
     ).resolves.toMatchObject({ decision: 'dispatch', matchedRule: '' })
   })
@@ -52,7 +58,7 @@ describe('runner-shutdown-leaf-rerun production registration', () => {
           failedJobLogs: () =>
             Promise.resolve(new Map([['backend-smoke / smoke', cleanCancellationLog]])),
         }),
-        RULES,
+        rules,
       ),
     ).resolves.toMatchObject({ decision: 'rerun', matchedRule: 'runner-shutdown-leaf-rerun' })
   })
@@ -71,7 +77,7 @@ describe('runner-shutdown-leaf-rerun production registration', () => {
           failedJobNames: [toolingJobName],
           failedJobLogs: () => Promise.resolve(new Map([[toolingJobName, toolingShutdownLog]])),
         }),
-        RULES,
+        rules,
       ),
     ).resolves.toMatchObject({ decision: 'rerun', matchedRule: 'runner-shutdown-leaf-rerun' })
   })
@@ -82,7 +88,7 @@ describe('runner-shutdown-leaf-rerun production registration', () => {
         makeContext(cleanCancellationLog, {
           runAttempt: 3,
         }),
-        RULES,
+        rules,
       ),
     ).resolves.toMatchObject({ decision: 'dispatch', matchedRule: '' })
 
@@ -90,9 +96,9 @@ describe('runner-shutdown-leaf-rerun production registration', () => {
       decide(
         makeContext(cleanCancellationLog, {
           runAttempt: 4,
-          ruleAttempts: new Map([['runner-shutdown-leaf-rerun', 1]]),
+          retryAttempts: new Map([['runner-shutdown-leaf-rerun', 1]]),
         }),
-        RULES,
+        rules,
       ),
     ).resolves.toMatchObject({ decision: 'rerun', matchedRule: 'runner-shutdown-leaf-rerun' })
   })

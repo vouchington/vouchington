@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { navMockModule, createNavMock } from '@/test-helpers/next-navigation-mock'
+import { navMockModule, createNavMock } from 'vouchington-tooling/next-navigation-mock'
 import GithubCallbackPage from '../github/page'
 import LinkedInCallbackPage from '../linkedin/page'
 import MicrosoftCallbackPage from '../microsoft/page'

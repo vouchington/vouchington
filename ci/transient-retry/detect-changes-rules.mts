@@ -1,5 +1,5 @@
 import { isAreaGateJob } from './ci-aggregate-jobs.mts'
-import { getGithubActionsStepGroupSlices } from './github-actions-log.mts'
+import { getGithubActionsStepGroupSlices } from 'vouchington-tooling/transient-retry'
 import type { TransientRetryRule, WorkflowRunContext } from './types.mts'
 
 const detectChangesWorkflowNames = new Set([

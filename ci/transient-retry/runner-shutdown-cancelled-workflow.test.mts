@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { runnerShutdownLeafRerunMatch } from './runner-shutdown-consumers.mts'
 import type { WorkflowRunContext } from './types.mts'
 
-// Production registration and retry accounting are covered through decide()/RULES in
+// Production registration and retry accounting are covered through decide()/rules in
 // runner-shutdown-production-rule.test.mts. This direct matcher suite covers a cancelled sibling
 // matrix job alongside a cleanly-shutdown failed leaf.
 
@@ -16,6 +16,11 @@ const shutdownLog = [
 ].join('\n')
 
 const makeCtx = (cancelledShardLog: string): WorkflowRunContext => ({
+  jobNames: [],
+  jobSteps: new Map(),
+  failedJobLogFetchFailures: () => Promise.resolve(new Set()),
+  jobLogs: () => Promise.resolve(new Map()),
+  failedJobAnnotationFetchFailures: () => Promise.resolve(new Set()),
   workflowName: 'Web',
   conclusion: 'cancelled',
   runAttempt: 2,
