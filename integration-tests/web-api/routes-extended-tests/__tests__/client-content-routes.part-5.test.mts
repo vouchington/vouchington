@@ -63,7 +63,7 @@ describe('client-content-routes', () => {
       )
 
       const result = await harness.withClientRuntime(
-        () => clientRoutes.enqueuePsqlJob('runViews'),
+        () => clientRoutes.enqueuePsqlJob({ type: 'runViews' }),
         harness.adminCookieHeader,
       )
       expect(result).toMatchObject({ success: true })
