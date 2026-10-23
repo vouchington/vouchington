@@ -14,14 +14,13 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import type { ExplicitPartitionRange } from '@/lib/api/client/psql'
+import { fetchPartitions, type ExplicitPartitionRange } from '@/lib/api/client/psql'
 import {
   PARTITION_ACTION_DESCRIPTIONS,
   PARTITION_ACTION_LABELS,
   type PartitionAction,
 } from './postgresql-state'
 import { useTranslations } from '@/lib/i18n/use-translations'
-import { fetchPartitions } from '@/lib/api/client/psql'
 import type { PartitionInfo, PartitionStatusResponseBody } from '@/types/api-responses'
 
 const DROP_REASON_LABELS: Record<NonNullable<PartitionInfo['drop_refusal']>, string> = {
