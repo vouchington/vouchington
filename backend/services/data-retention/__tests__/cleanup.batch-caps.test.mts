@@ -18,6 +18,7 @@ import {
   insertTestRetainedRelationIdentity,
 } from '@voucha/test-helpers/entities/retained-identities'
 import { seedTestRetainedMediaOrphan } from '@voucha/test-helpers/entities/retained-media'
+import { acquirePaymentOperationRetentionTestLock } from '@voucha/test-helpers/payment-operation-retention'
 import * as cleanupBatches from '../cleanup-batches.mts'
 import * as retainedRoots from '../cleanup-retained-identities.mts'
 import * as retainedMedia from '../cleanup-retained-media-bindings.mts'
@@ -56,6 +57,8 @@ function emptyScopedOptions(now: Date) {
     expiredContributionQuotaConsumptions: emptyWindow,
     expiredTopicImportAttempts: emptyWindow,
     terminalNotificationPushIntents: emptyWindow,
+    terminalStripeEventWork: emptyWindow,
+    abandonedMembershipPurchaseIntents: emptyWindow,
   }
 }
 
@@ -64,6 +67,8 @@ describe('data retention per-run caps', () => {
     [1, 1],
     [DATA_RETENTION_MAX_VALUES.batch_size, 1_000],
   ])('uses a bounded retained page for batch size %i', async (batchSize, pageSize) => {
+    const lock = await acquirePaymentOperationRetentionTestLock()
+    onTestFinished(() => lock.release())
     const roots = vi.spyOn(retainedRoots, 'cleanupRetainedIdentityRoots')
     const media = vi.spyOn(retainedMedia, 'cleanupRetainedMediaBindings')
     const relations = vi.spyOn(retainedRelations, 'cleanupRetainedRelationIdentities')
@@ -144,6 +149,8 @@ describe('data retention per-run caps', () => {
   })
 
   it('stops after max_batches_per_run batches and reports hasMore while rows remain', async () => {
+    const lock = await acquirePaymentOperationRetentionTestLock()
+    onTestFinished(() => lock.release())
     const window = createTestRetentionWindow()
     const referrer = await createTestUserDirect()
     const eligibleDates = [
@@ -194,6 +201,8 @@ describe('data retention per-run caps', () => {
   })
 
   it('lets a per-cleanup override replace the run limits', async () => {
+    const lock = await acquirePaymentOperationRetentionTestLock()
+    onTestFinished(() => lock.release())
     const window = createTestRetentionWindow()
     const referrer = await createTestUserDirect()
     const ids = await Promise.all([

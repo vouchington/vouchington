@@ -1001,6 +1001,9 @@
     "passkey_device_types": {
       "values": ["singleDevice", "multiDevice"]
     },
+    "payment_operational_cleanup_kinds": {
+      "values": ["stripe_event_work", "purchase_intent"]
+    },
     "platform_account_kinds": {
       "values": ["official", "system"]
     },
@@ -61694,6 +61697,29 @@
           "unique": false,
           "valid": true
         },
+        "idx_membership_purchase_intents__retention": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_membership_purchase_intents__retention ON public.membership_purchase_intents USING btree (id) INCLUDE (expires_at) WHERE ((launched_at IS NULL) OR (failed_at IS NOT NULL))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "((launched_at IS NULL) OR (failed_at IS NOT NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_membership_purchase_intents__user_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -77044,6 +77070,79 @@
           "columns": ["response_id"]
         }
       }
+    },
+    "payment_operational_cleanup_cursors": {
+      "checkConstraints": {},
+      "columns": {
+        "cursor_id": {
+          "comment": "Last scanned UUIDv7 id; NULL starts the next full pass.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2
+        },
+        "kind": {
+          "comment": "Cleanup stream whose position this row stores.",
+          "dataType": "payment_operational_cleanup_kinds",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        },
+        "updated_at": {
+          "comment": "When this cleanup stream last checkpointed.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3
+        }
+      },
+      "comment": "One persisted UUIDv7 keyset position per daily payment operational cleanup.",
+      "foreignKeys": {},
+      "indexes": {
+        "payment_operational_cleanup_cursors_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX payment_operational_cleanup_cursors_pkey ON public.payment_operational_cleanup_cursors USING btree (kind)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "kind",
+              "descending": false,
+              "expression": "kind",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.enum_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["kind"]
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_payment_operational_cleanup_cursors_updated_at": {
+          "definition": "CREATE TRIGGER trigger_payment_operational_cleanup_cursors_updated_at BEFORE UPDATE ON public.payment_operational_cleanup_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        }
+      },
+      "uniqueConstraints": {}
     },
     "phone_number_login_tokens": {
       "checkConstraints": {
@@ -123918,7 +124017,7 @@
           "ordinalPosition": 1
         }
       },
-      "comment": "Processing and recovery state separate from immutable Stripe protocol events; retained with the event for exact replay.",
+      "comment": "Processing and recovery state separate from immutable Stripe protocol events; terminal work expires after 30 days while the event remains for deduplication.",
       "foreignKeys": {
         "stripe_event_processing_work_items_stripe_event_id_fkey": {
           "columns": ["stripe_event_id"],
@@ -123957,6 +124056,29 @@
           ],
           "live": true,
           "predicate": "((processed_at IS NULL) AND (ignored_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_stripe_event_processing_work_items__retention": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_stripe_event_processing_work_items__retention ON public.stripe_event_processing_work_items USING btree (stripe_event_id) WHERE ((processed_at IS NOT NULL) OR (ignored_at IS NOT NULL))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "stripe_event_id",
+              "descending": false,
+              "expression": "stripe_event_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "((processed_at IS NOT NULL) OR (ignored_at IS NOT NULL))",
           "primary": false,
           "ready": true,
           "unique": false,

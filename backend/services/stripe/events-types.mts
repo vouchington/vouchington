@@ -6,6 +6,7 @@ export type StripeEventProcessingStatus =
   | 'processed'
   | 'ignored'
   | 'failed'
+  | 'retained'
 
 export type StripeEventRecord = {
   id: string
@@ -20,12 +21,13 @@ export type StripeEventRecord = {
   checkout_session_id: string | null
   status: StripeEventProcessingStatus
   received_at: Date
-  lease_token: string
-  dispatched_at: Date
+  has_processing_work: boolean
+  lease_token: string | null
+  dispatched_at: Date | null
   lease_expires_at: Date | null
-  available_at: Date
+  available_at: Date | null
   leased_at: Date | null
-  attempt_count: number
+  attempt_count: number | null
   processed_at: Date | null
   ignored_at: Date | null
   failed_at: Date | null

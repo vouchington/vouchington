@@ -16,6 +16,7 @@ export function hydrateStripeEventRecord(
 }
 
 function deriveStripeEventProcessingStatus(row: StripeEventRow): StripeEventRecord['status'] {
+  if (!row.has_processing_work) return 'retained'
   if (row.failed_at) return 'failed'
   if (row.ignored_at) return 'ignored'
   if (row.processed_at) return 'processed'

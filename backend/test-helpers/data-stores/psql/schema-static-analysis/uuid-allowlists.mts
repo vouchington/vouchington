@@ -37,6 +37,10 @@ export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
     'Operational keyset scan position can outlive its prior root row; it is not a relationship.',
   ],
   [
+    'payment_operational_cleanup_cursors.cursor_id',
+    'Operational keyset position survives deletion of the swept row; it is not a relationship.',
+  ],
+  [
     'retained_image_placement_binding_cleanup_cursors.cursor_placement_id',
     'Operational placement UUIDv7 position survives deletion of the swept binding; it is not a relationship.',
   ],

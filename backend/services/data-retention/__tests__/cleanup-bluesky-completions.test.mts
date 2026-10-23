@@ -10,6 +10,7 @@ import {
   testBlueskyLinkCompletionExists,
 } from '@voucha/test-helpers'
 import { v7 } from 'uuid'
+import { acquirePaymentOperationRetentionTestLock } from '@voucha/test-helpers/payment-operation-retention'
 import {
   cleanupAbandonedBlueskyLinkSessions,
   cleanupExpiredBlueskyLinkCompletions,
@@ -20,6 +21,8 @@ const DAY_MS = 24 * 60 * 60 * 1000
 
 describe('runDataRetentionCleanup', () => {
   it('returns per-cleanup deletion summaries', async () => {
+    const lock = await acquirePaymentOperationRetentionTestLock()
+    onTestFinished(() => lock.release())
     const now = new Date()
     const limits = { batchSize: 10, maxBatches: 10 }
     const emptyWindow = {
@@ -42,6 +45,8 @@ describe('runDataRetentionCleanup', () => {
       expiredContributionQuotaConsumptions: emptyWindow,
       expiredTopicImportAttempts: emptyWindow,
       terminalNotificationPushIntents: emptyWindow,
+      terminalStripeEventWork: emptyWindow,
+      abandonedMembershipPurchaseIntents: emptyWindow,
     })
 
     expect(result.retainedIdentityRoots).toEqual([])
@@ -59,6 +64,8 @@ describe('runDataRetentionCleanup', () => {
       expiredContributionQuotaConsumptions: { deleted: 0, hasMore: false },
       expiredTopicImportAttempts: { deleted: 0, hasMore: false },
       terminalNotificationPushIntents: { deleted: 0, hasMore: false },
+      terminalStripeEventWork: { deleted: 0, hasMore: false },
+      abandonedMembershipPurchaseIntents: { deleted: 0, hasMore: false },
     })
   }, 30_000)
 })

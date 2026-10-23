@@ -20,7 +20,7 @@ export async function getStripeEventByStripeEventId(
     SELECT
   `.append(stripeEventColumns()).append(sql`
     FROM stripe_events event
-    JOIN stripe_event_processing_work_items work ON work.stripe_event_id = event.id
+    LEFT JOIN stripe_event_processing_work_items work ON work.stripe_event_id = event.id
     JOIN stripe_event_types event_type ON event_type.id = event.stripe_event_type_id
     WHERE event.stripe_event_id = ${stripeEventId}
     LIMIT 1

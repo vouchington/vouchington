@@ -14,6 +14,7 @@ const baseRow: StripeEventRow = {
   invoice_id: 'in_test_record',
   checkout_session_id: null,
   received_at: new Date('2026-01-01T00:00:01.000Z'),
+  has_processing_work: true,
   lease_token: '01912345-1234-7234-8234-123456789abd',
   dispatched_at: new Date('2026-01-01T00:00:01.000Z'),
   leased_at: null,
@@ -45,5 +46,12 @@ describe('hydrateStripeEventRecord', () => {
 
     expect(hydrated.is_new).toBe(true)
     expect(hydrated.payload.id).toBe('evt_test_record')
+  })
+
+  it('marks a ledger event with deleted processing work as retained', () => {
+    expect(
+      hydrateStripeEventRecord({ ...baseRow, has_processing_work: false, lease_token: null })
+        .status,
+    ).toBe('retained')
   })
 })

@@ -5,6 +5,7 @@ export function stripeEventColumns() {
     event.id, event.stripe_event_id, event_type.stripe_event_type AS stripe_event_type_id, event.is_live_mode,
     event.api_version, event.occurred_at, event.customer_id, event.subscription_id,
     event.invoice_id, event.checkout_session_id, event.received_at, event.payload, event.created_at,
+    work.stripe_event_id IS NOT NULL AS has_processing_work,
     work.lease_token, work.dispatched_at, work.leased_at, work.lease_expires_at,
     work.attempt_count, work.available_at, work.processed_at, work.ignored_at,
     work.failed_at, work.last_error_at, work.last_error_message

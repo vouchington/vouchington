@@ -999,6 +999,9 @@
     "passkey_device_types": {
       "values": ["singleDevice", "multiDevice"]
     },
+    "payment_operational_cleanup_kinds": {
+      "values": ["stripe_event_work", "purchase_intent"]
+    },
     "platform_account_kinds": {
       "values": ["official", "system"]
     },
@@ -58585,7 +58588,7 @@
           "validated": true
         }
       },
-      "growth": "unbounded",
+      "growth": "bounded",
       "indexes": {
         "idx_membership_purchase_intents__active_user": {
           "accessMethod": "btree",
@@ -58670,6 +58673,26 @@
             }
           ],
           "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_membership_purchase_intents__retention": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_membership_purchase_intents__retention ON public.membership_purchase_intents USING btree (id) INCLUDE (expires_at) WHERE ((launched_at IS NULL) OR (failed_at IS NOT NULL))",
+          "includedColumns": ["expires_at"],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((launched_at IS NULL) OR (failed_at IS NOT NULL))",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -73168,6 +73191,80 @@
           "definition": "UNIQUE (response_id)"
         }
       }
+    },
+    "payment_operational_cleanup_cursors": {
+      "checkConstraints": {},
+      "columns": {
+        "cursor_id": {
+          "collation": null,
+          "comment": "Last scanned UUIDv7 id; NULL starts the next full pass.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "kind": {
+          "collation": null,
+          "comment": "Cleanup stream whose position this row stores.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "payment_operational_cleanup_kinds"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": "When this cleanup stream last checkpointed.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "One persisted UUIDv7 keyset position per daily payment operational cleanup.",
+      "foreignKeys": {},
+      "growth": "bounded",
+      "indexes": {
+        "payment_operational_cleanup_cursors_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX payment_operational_cleanup_cursors_pkey ON public.payment_operational_cleanup_cursors USING btree (kind)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "kind",
+              "descending": false,
+              "expression": "kind",
+              "nullsFirst": false,
+              "opclass": "enum_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["kind"],
+        "definition": "PRIMARY KEY (kind)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_payment_operational_cleanup_cursors_updated_at": "CREATE TRIGGER trigger_payment_operational_cleanup_cursors_updated_at BEFORE UPDATE ON public.payment_operational_cleanup_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {}
     },
     "phone_number_login_tokens": {
       "checkConstraints": {
@@ -118041,7 +118138,7 @@
           "type": "uuid"
         }
       },
-      "comment": "Processing and recovery state separate from immutable Stripe protocol events; retained with the event for exact replay.",
+      "comment": "Processing and recovery state separate from immutable Stripe protocol events; terminal work expires after 30 days while the event remains for deduplication.",
       "foreignKeys": {
         "stripe_event_processing_work_items_stripe_event_id_fkey": {
           "columns": ["stripe_event_id"],
@@ -118053,7 +118150,7 @@
           "validated": true
         }
       },
-      "growth": "unbounded",
+      "growth": "bounded",
       "indexes": {
         "idx_stripe_event_processing_work_items__claim": {
           "accessMethod": "btree",
@@ -118077,6 +118174,26 @@
             }
           ],
           "predicate": "((processed_at IS NULL) AND (ignored_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_stripe_event_processing_work_items__retention": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_stripe_event_processing_work_items__retention ON public.stripe_event_processing_work_items USING btree (stripe_event_id) WHERE ((processed_at IS NOT NULL) OR (ignored_at IS NOT NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "stripe_event_id",
+              "descending": false,
+              "expression": "stripe_event_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((processed_at IS NOT NULL) OR (ignored_at IS NOT NULL))",
           "primary": false,
           "ready": true,
           "unique": false,

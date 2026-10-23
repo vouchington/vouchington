@@ -1327,6 +1327,11 @@
 - `singleDevice`
 - `multiDevice`
 
+## `payment_operational_cleanup_kinds`
+
+- `stripe_event_work`
+- `purchase_intent`
+
 ## `platform_account_kinds`
 
 - `official`

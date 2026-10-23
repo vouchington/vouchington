@@ -4,8 +4,9 @@ import sql from 'sql-template-strings'
 export async function markStripeEventCompleted(
   id: string,
   status: 'processed' | 'ignored',
-  leaseToken: string,
+  leaseToken: string | null,
 ): Promise<void> {
+  if (leaseToken === null) throw new Error('Stripe event has no processing work')
   await write(sql`/* markStripeEventCompleted */
     UPDATE stripe_event_processing_work_items
     SET processed_at = CASE WHEN ${status} = 'processed' THEN clock_timestamp() ELSE NULL END,
@@ -19,9 +20,10 @@ export async function markStripeEventCompleted(
 export async function markStripeEventFailed(
   id: string,
   errorMessage: string,
-  leaseToken: string,
+  leaseToken: string | null,
   terminal = true,
 ): Promise<void> {
+  if (leaseToken === null) throw new Error('Stripe event has no processing work')
   await write(sql`/* markStripeEventFailed */
     UPDATE stripe_event_processing_work_items
     SET failed_at = CASE WHEN ${terminal} THEN clock_timestamp() ELSE NULL END,

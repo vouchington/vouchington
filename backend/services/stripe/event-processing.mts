@@ -31,8 +31,9 @@ export async function restartFailedStripeEventAttempt(id: string): Promise<strin
 
 export async function markStripeEventProcessing(
   id: string,
-  leaseToken: string,
+  leaseToken: string | null,
 ): Promise<StripeEventRecord | null> {
+  if (leaseToken === null) throw new Error('Stripe event has no processing work')
   const duration = getStripeWorkLimit('processing_timeout_minutes')
   const { rows } = await write(
     sql`/* markStripeEventProcessing */

@@ -15,7 +15,7 @@ export async function ingestStripeEvent(event: Stripe.Event): Promise<InsertStri
       storedEvent.status === 'failed'
         ? await restartFailedStripeEventAttempt(storedEvent.id)
         : storedEvent.lease_token
-    if (leaseToken) {
+    if (leaseToken !== null) {
       await enqueueProcessStripeEvent({
         stripeEventRecordId: storedEvent.id,
         leaseToken,

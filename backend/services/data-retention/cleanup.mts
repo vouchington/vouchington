@@ -22,6 +22,12 @@ import { cleanupExpiredOAuthAuthorizations } from './cleanup-oauth-authorization
 import { cleanupExpiredOAuthAuthorizationServerArtifacts } from './cleanup-oauth-authorization-server.mts'
 import { cleanupTerminalNotificationPushIntents } from './cleanup-notification-push-intents.mts'
 import {
+  cleanupTerminalStripeEventWork,
+  cleanupAbandonedMembershipPurchaseIntents,
+  type PaymentOperationCleanupOptions,
+  type PaymentOperationCleanupResult,
+} from './cleanup-payment-operations.mts'
+import {
   applyRetentionLimits,
   getRetentionCutoffDate,
   normalizeRetentionDays,
@@ -51,6 +57,7 @@ export { cleanupAbandonedBlueskyLinkSessions, cleanupExpiredBlueskyLinkCompletio
 export { cleanupExpiredOAuthAuthorizations }
 export { cleanupExpiredOAuthAuthorizationServerArtifacts }
 export { cleanupTerminalNotificationPushIntents }
+export { cleanupTerminalStripeEventWork, cleanupAbandonedMembershipPurchaseIntents }
 
 export async function cleanupAnalyticsLocalFiles(): Promise<void> {
   if (process.env.ANALYTICS_BACKEND !== 'local') return
@@ -95,6 +102,8 @@ type DataRetentionCleanupOptions = {
   expiredContributionQuotaConsumptions?: OptionalRetentionLimits<ExpiryCleanupOptions>
   expiredTopicImportAttempts?: OptionalRetentionLimits<ExpiryCleanupOptions>
   terminalNotificationPushIntents?: OptionalRetentionLimits<CleanupOptions>
+  terminalStripeEventWork?: OptionalRetentionLimits<PaymentOperationCleanupOptions>
+  abandonedMembershipPurchaseIntents?: OptionalRetentionLimits<PaymentOperationCleanupOptions>
 }
 
 type DataRetentionCleanupResult = {
@@ -112,6 +121,8 @@ type DataRetentionCleanupResult = {
   expiredContributionQuotaConsumptions: CleanupResult
   expiredTopicImportAttempts: CleanupResult
   terminalNotificationPushIntents: CleanupResult
+  terminalStripeEventWork: PaymentOperationCleanupResult
+  abandonedMembershipPurchaseIntents: PaymentOperationCleanupResult
 }
 
 export async function runDataRetentionCleanup(
@@ -162,6 +173,12 @@ export async function runDataRetentionCleanup(
   const terminalNotificationPushIntents = await cleanupTerminalNotificationPushIntents(
     withLimits(options.terminalNotificationPushIntents),
   )
+  const terminalStripeEventWork = await cleanupTerminalStripeEventWork(
+    withLimits(options.terminalStripeEventWork),
+  )
+  const abandonedMembershipPurchaseIntents = await cleanupAbandonedMembershipPurchaseIntents(
+    withLimits(options.abandonedMembershipPurchaseIntents),
+  )
   const retainedRelationIdentities = await cleanupRetainedRelationIdentities(
     retainedPageSize,
     options.retainedRelationIdentityKeys,
@@ -191,6 +208,8 @@ export async function runDataRetentionCleanup(
     expiredContributionQuotaConsumptions,
     expiredTopicImportAttempts,
     terminalNotificationPushIntents,
+    terminalStripeEventWork,
+    abandonedMembershipPurchaseIntents,
   }
 }
 

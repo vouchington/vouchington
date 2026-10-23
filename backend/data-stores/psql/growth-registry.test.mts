@@ -113,8 +113,8 @@ describe('schema growth registry', () => {
     })
   })
 
-  it('keeps Stripe event processing work with the immutable event ledger', () => {
-    expect(EXPLICIT_BOUNDED_TABLES.has('stripe_event_processing_work_items')).toBe(false)
+  it('bounds Stripe processing work while retaining the immutable event ledger', () => {
+    expect(EXPLICIT_BOUNDED_TABLES.has('stripe_event_processing_work_items')).toBe(true)
     const [entry] = buildSchemaGrowthRegistry(
       new Map([
         [
@@ -128,13 +128,12 @@ describe('schema growth registry', () => {
     )
 
     expect(entry).toMatchObject({
-      growth: 'unbounded',
+      growth: 'bounded',
       partition: null,
-      noPartitionRationale: expect.stringContaining('immutable Stripe event'),
-      reconsiderPartitioningWhen:
-        'At approximately one million rows or measured planner/write pressure.',
+      noPartitionRationale: expect.stringContaining('immutable stripe_events'),
+      reconsiderPartitioningWhen: 'If the documented bounded-cardinality invariant changes.',
     })
-    expect(entry?.noPartitionRationale).not.toContain('inbound event retention')
+    expect(entry?.noPartitionRationale).toContain('terminal work older than 30 days')
   })
 
   it('keeps global endpoint uniqueness as the partitioning gate for push ownership', () => {
