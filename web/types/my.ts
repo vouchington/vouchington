@@ -173,4 +173,10 @@ export interface AuthSession {
   last_seen_at: string
   expires_at: string
   is_current: boolean
+  mcp_connections: {
+    grant_id: string
+    client_name: string
+    attestation_status: 'attested' | 'unattested'
+    last_minted_at: string
+  }[]
 }

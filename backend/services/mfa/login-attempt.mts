@@ -21,6 +21,7 @@ export type LoginAttempt = {
   deviceId: string
   sessionId: string
   deviceClass?: DeviceClass
+  authOrigin?: 'web' | 'native'
 }
 
 export async function createLoginAttempt(

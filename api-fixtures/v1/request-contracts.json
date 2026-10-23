@@ -46603,6 +46603,16 @@
         "$ref": "#/components/schemas/LogoutRequest"
       }
     },
+    "POST:/api/v1/auth/native/email-address/login": {
+      "body": {
+        "$ref": "#/components/schemas/EmailAddressLoginBody"
+      }
+    },
+    "POST:/api/v1/auth/native/email-address/tokens": {
+      "body": {
+        "$ref": "#/components/schemas/EmailAddressTokenBody"
+      }
+    },
     "POST:/api/v1/auth/mfa/passkeys/authentication/options": {
       "body": {
         "additionalProperties": false,
@@ -48800,6 +48810,19 @@
           }
         },
         "required": ["id"],
+        "type": "object"
+      }
+    },
+    "POST:/api/v1/oauth/native-session-tokens": {
+      "body": {
+        "additionalProperties": false,
+        "properties": {
+          "client_app": {
+            "enum": ["ios", "macos", "windows"],
+            "type": "string"
+          }
+        },
+        "required": ["client_app"],
         "type": "object"
       }
     },

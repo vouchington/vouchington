@@ -54,6 +54,7 @@ export async function completeMfaLoginWithContext(
     uiLocale: claims.uiLocale,
     deviceClass: attempt.deviceClass,
     deviceContext,
+    authOrigin: attempt.authOrigin,
   })
   return {
     userId: user.id,

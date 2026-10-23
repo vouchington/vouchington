@@ -32,6 +32,7 @@ export const ROOT_FAMILIES = {
       ['membership_administrator_refund_operation_requests', 'issued_by_id'],
       ['membership_sources', 'user_id'],
       ['oauth_authorization_server_events', 'user_id'],
+      ['oauth_native_session_token_mints', 'user_id'],
       ['post_moderation_dispositions', 'actor_user_id'],
       ['post_clearance_changes', 'changed_by_id'],
       ['community_post_review_changes', 'changed_by_id'],
@@ -119,7 +120,6 @@ export type RetainedIdentityCleanupPage = {
   deleted: number
   hasMore: boolean
 }
-
 /** One bounded keyset page per concrete family; no retained audit record has an expiry. */
 export async function cleanupRetainedIdentityRoots(
   pageSize = 1_000,

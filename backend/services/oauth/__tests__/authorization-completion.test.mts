@@ -14,6 +14,7 @@ import {
   unsuspendTestUser,
 } from '@voucha/test-helpers'
 import { getTestOAuthAuthorization } from '@voucha/test-helpers/entities/oauth-authorizations'
+import { getTestUserSessionById } from '@voucha/test-helpers/entities/user-sessions'
 import {
   createOAuthAccount,
   insertCompletionReadyAuthorization,
@@ -21,6 +22,52 @@ import {
 } from '../../../test-helpers/services/oauth/authorization-completion.mts'
 
 describe('OAuth authorization completion', () => {
+  it('persists native provenance only after a durable native broker proof completes', async () => {
+    const cleanup = registerCleanup()
+    const deviceId = randomUUID()
+    const sessionId = randomUUID()
+    const completionToken = randomBytes(32).toString('base64url')
+    const proofVerifier = randomBytes(32).toString('base64url')
+    const account = await createOAuthAccount('github', cleanup)
+    const flowId = await insertCompletionReadyAuthorization(
+      {
+        accountId: account.provider_user_id,
+        provider: 'github',
+        deviceId,
+        sessionId,
+        completionToken,
+        purpose: 'authenticate',
+        callbackMode: 'native',
+        proofChallenge: createHash('sha256').update(proofVerifier).digest('base64url'),
+      },
+      cleanup,
+    )
+    await expect(
+      completeOAuthAuthorization({
+        flowId,
+        completionToken,
+        completionTokenSource: 'body',
+        deviceId,
+        sessionId,
+      }),
+    ).rejects.toMatchObject({ status: 401 })
+
+    const result = await completeOAuthAuthorization({
+      flowId,
+      completionToken,
+      completionTokenSource: 'body',
+      completionProofVerifier: proofVerifier,
+      deviceId,
+      sessionId,
+    })
+    expect(result.status).toBe('authenticated')
+    if (result.status !== 'authenticated') throw new Error('Expected native authentication')
+    cleanup.userIds.push(result.user.id)
+    await expect(getTestUserSessionById(result.sessionToken.payload.sid)).resolves.toMatchObject({
+      authentication_origin: 'native',
+    })
+  })
+
   it('persists an authentication result and safely replays a lost response', async () => {
     const cleanup = registerCleanup()
     const deviceId = randomUUID()

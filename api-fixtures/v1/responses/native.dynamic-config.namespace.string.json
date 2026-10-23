@@ -4,12 +4,13 @@
     "can_view": true,
     "config": {
       "allow_development_attestation": false,
+      "allow_unattested_native_mcp_mint": true,
       "enabled": false,
       "request_signing_mode": "off",
       "require_attestation_for_bypass": false
     },
     "description": "Apple App Attest verification controls for the iOS app.",
-    "field_count": 4,
+    "field_count": 5,
     "fields": [
       {
         "default_value": false,
@@ -38,6 +39,13 @@
         "name": "request_signing_mode",
         "type": "string",
         "value": "off"
+      },
+      {
+        "default_value": true,
+        "description": "Allow native sessions without a registered App Attest key to mint member MCP tokens. A registered key always requires a valid assertion.",
+        "name": "allow_unattested_native_mcp_mint",
+        "type": "boolean",
+        "value": true
       }
     ],
     "label": "App Attestation",

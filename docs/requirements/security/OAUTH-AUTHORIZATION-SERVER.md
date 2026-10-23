@@ -84,12 +84,50 @@ A failed or invalid refresh aborts authorization rather than falling back to sta
 
 ### First-party native clients
 
-Native agents use the same authorization code with S256 PKCE flow to call the user MCP resource,
-with the same scope checks, rate limits, quota, and audit as every other MCP client. Consent always
-applies. Every mutating user-MCP tool requires a paid plan, so a Free member's native agent gets
-read tools only. Their exact client ids and redirect URIs live in code, so first-party clients
-resolve without a self-fetch; loopback redirects accept any port while the token endpoint matches
-the authorization request exactly.
+Signed-in native apps obtain an access token for in-app user MCP directly from their authenticated
+native session. This first-party path supersedes the authorization-code and consent requirement
+for in-app chat in [#1818](https://github.com/vouchington/vouchington/issues/1818). It does not
+issue a code or redirect through a browser. Third-party clients continue to use authorization code,
+S256 PKCE, and user consent. MCP still accepts bearer tokens only, never session cookies.
+
+Third-party native clients use the authorization-code flow for delegated MCP access, with the same
+scope checks, rate limits, quota, and audit as other MCP clients. Their client IDs and registered
+redirect URIs identify them independently of a signed-in native session. Voucha's published native
+client IDs and redirect URIs live in code, so these first-party metadata clients resolve without a
+self-fetch. Port-less IP loopback registrations accept any port; the token endpoint still requires
+the exact redirect URI used in the authorization request.
+
+Native email login uses a dedicated OTP entry point, and native OAuth broker completion carries its
+own verified completion proof. Both persist server-controlled native-session provenance through MFA.
+The shared web login path cannot create that provenance. Native OTP and token mint reject browser
+`Origin` and `Sec-Fetch-*` headers, so a browser page cannot silently turn its cookie session into
+an MCP bearer credential. The mint also requires the native session's device and session binding,
+a non-simple JSON request, and a custom header. Client-asserted platform headers are telemetry,
+not security evidence.
+
+If the session device has an App Attest key, every mint requires a valid assertion bound to that
+device. There is no fallback to the unattested path. A native session without such a key may mint
+only while the separate unattested setting allows it. Until Windows attestation is available, that
+setting is effectively global: disabling it makes the attested gate binding for every platform.
+The unattested path relies on native endpoint provenance rather than proof of the genuine app, so
+a script that completes native sign-in can use it with the same account authority it already has.
+
+The token is short-lived, has no refresh token, and is bound to the user MCP audience and fixed user
+MCP scopes. A session is the long-lived credential; the app mints again when its access token
+expires. Each native session keeps one grant, bound to the first native client selected for that
+session. Revoking it blocks minting again under another client identity. The server checks the
+linked session on every bearer call, so sign-out, session revocation, expiry, suspension, and account
+deletion remove that native grant's MCP authority. Third-party grants retain the existing
+appeal-only access for suspended paying members, matching REST. Users can see each native grant
+under its session with its attestation status and revoke
+that grant without signing out. Mint and MCP calls remain audited and rate limited; plan and scope
+checks still apply on every tool call, including Free members' read-only limit. Native adoption is
+tracked in [clients #210](https://github.com/vouchington/vouchington-clients/issues/210).
+
+Native token validation also honors session revocation markers while PostgreSQL logout persistence
+is incomplete. This closes the cross-store failure window: a failed registry write cannot leave a
+revoked session's MCP token usable. Logout reports persistence failures, and a retry repairs the
+durable session record without repeating push-subscription cleanup.
 
 ## Persistence and retention
 

@@ -32,6 +32,13 @@ export async function loadAttestationKeyByKeyId(
   return { ...row, sign_count: Number(row.sign_count) }
 }
 
+export async function hasAttestationKeyForDevice(did: string): Promise<boolean> {
+  const { rowCount } = await write(
+    sql`/* hasAttestationKeyForDevice */ SELECT 1 FROM app_attestation_keys WHERE did = ${did} LIMIT 1`,
+  )
+  return rowCount !== 0
+}
+
 export async function insertAttestationKey(params: {
   keyId: Buffer
   did: string

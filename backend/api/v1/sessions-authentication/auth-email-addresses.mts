@@ -8,6 +8,7 @@ import { isHoneypotTriggered } from '@services/honeypot'
 import { verifyCaptchaOrAttestation } from '@services/captcha'
 import { getDeviceContext } from './device-context.mts'
 import { validateRequestContract } from '../../response-helpers.mts'
+import { assertNativeRequest } from './native-request.mts'
 
 import type { Context } from '@jongleberry/api-server'
 
@@ -35,8 +36,15 @@ type EmailAddressLoginBody = {
   hp_phone?: string
 }
 
-app.route('/api/v1/auth/email-address/tokens').post(async (ctx: Context) => {
-  const routeKey = 'POST:/api/v1/auth/email-address/tokens'
+app
+  .route('/api/v1/auth/email-address/tokens')
+  .post(ctx => requestEmailToken(ctx, 'POST:/api/v1/auth/email-address/tokens', false))
+app
+  .route('/api/v1/auth/native/email-address/tokens')
+  .post(ctx => requestEmailToken(ctx, 'POST:/api/v1/auth/native/email-address/tokens', true))
+
+async function requestEmailToken(ctx: Context, routeKey: string, native: boolean): Promise<void> {
+  if (native) assertNativeRequest(ctx)
   ctx.assert(ctx.request.is('json'), 415, 'Invalid Content-Type')
   let body: EmailAddressTokenBody
   try {
@@ -73,10 +81,17 @@ app.route('/api/v1/auth/email-address/tokens').post(async (ctx: Context) => {
     uiLocale: rawUiLocale,
   })
   ctx.json({ email_address: result.emailAddress })
-})
+}
 
-app.route('/api/v1/auth/email-address/login').post(async (ctx: Context) => {
-  const routeKey = 'POST:/api/v1/auth/email-address/login'
+app
+  .route('/api/v1/auth/email-address/login')
+  .post(ctx => loginWithEmailToken(ctx, 'POST:/api/v1/auth/email-address/login', false))
+app
+  .route('/api/v1/auth/native/email-address/login')
+  .post(ctx => loginWithEmailToken(ctx, 'POST:/api/v1/auth/native/email-address/login', true))
+
+async function loginWithEmailToken(ctx: Context, routeKey: string, native: boolean): Promise<void> {
+  if (native) assertNativeRequest(ctx)
   ctx.assert(ctx.request.is('json'), 415, 'Invalid Content-Type')
   let body: EmailAddressLoginBody
   try {
@@ -107,6 +122,7 @@ app.route('/api/v1/auth/email-address/login').post(async (ctx: Context) => {
     sessionId: sessionData.sid,
     deviceClass,
     deviceContext: getDeviceContext(ctx),
+    authOrigin: native ? 'native' : 'web',
   })
 
   if (result.mfaRequired) {
@@ -129,7 +145,7 @@ app.route('/api/v1/auth/email-address/login').post(async (ctx: Context) => {
     st: result.sessionToken,
     session: result.sessionToken.payload,
   })
-})
+}
 
 function normalizeEmailAddressJsonBody<Body>(parsed: Body): Body {
   const isPlainObject = parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed)

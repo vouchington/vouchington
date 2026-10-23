@@ -187,7 +187,7 @@ async function upsertGrant(
   const result = await query<{ id: string }>(
     `/* upsertGrant */ INSERT INTO oauth_grants (user_id, client_id, resource, scopes)
      VALUES ($1, $2, $3, $4::api_scopes[])
-     ON CONFLICT (user_id, client_id, resource) WHERE revoked_at IS NULL
+     ON CONFLICT (user_id, client_id, resource) WHERE revoked_at IS NULL AND session_id IS NULL
      DO UPDATE SET scopes = EXCLUDED.scopes,
                    consented_at = CURRENT_TIMESTAMP
      RETURNING id`,

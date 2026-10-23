@@ -35,6 +35,33 @@ export async function getTestOAuthLifecycleEvents(clientId: string): Promise<str
   return result.rows.map(row => row.event_type)
 }
 
+export async function getTestNativeSessionMints(sessionId: string): Promise<
+  Array<{
+    user_id: string
+    client_id: string
+    grant_id: string
+    session_id: string
+    access_token_id: string
+    attestation_status: 'attested' | 'unattested'
+  }>
+> {
+  const result = await read<{
+    user_id: string
+    client_id: string
+    grant_id: string
+    session_id: string
+    access_token_id: string
+    attestation_status: 'attested' | 'unattested'
+  }>(
+    `/* getTestNativeSessionMints */ SELECT user_id, client_id, grant_id,
+       session_id, access_token_id, attestation_status
+     FROM oauth_native_session_token_mints
+     WHERE session_id = $1 ORDER BY id`,
+    [sessionId],
+  )
+  return result.rows
+}
+
 export async function mutateTestOAuthLifecycleEvent(
   clientId: string,
   mutation: 'delete' | 'update',

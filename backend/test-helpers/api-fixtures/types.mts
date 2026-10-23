@@ -22,6 +22,7 @@ export type ApiFixtureCase = {
   path: string
   route?: ApiFixtureRouteContract
   query?: Record<string, string>
+  requestHeaders?: Record<string, string>
   requestBody?: unknown
   auth: ApiFixtureAuthMode
   status: number

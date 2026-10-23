@@ -78,6 +78,7 @@ describe('OAuth authorization completion MFA', () => {
       await expect(peekLoginAttempt(flowId)).resolves.toBeNull()
       await expect(peekLoginAttempt(result.loginAttemptId)).resolves.toMatchObject({
         userId: user.id,
+        authOrigin: 'native',
       })
       expect(await getTestOAuthAuthorization(flowId)).toMatchObject({
         status: 'completed',
@@ -89,6 +90,7 @@ describe('OAuth authorization completion MFA', () => {
       })
       await expect(getAndDeleteLoginAttempt(result.loginAttemptId)).resolves.toMatchObject({
         userId: user.id,
+        authOrigin: 'native',
       })
     },
   )

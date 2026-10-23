@@ -35,6 +35,7 @@ _none_
 
 - `app_attestation_keys_key_id_key`: `CREATE UNIQUE INDEX app_attestation_keys_key_id_key ON public.app_attestation_keys USING btree (key_id)`
 - `app_attestation_keys_pkey`: `CREATE UNIQUE INDEX app_attestation_keys_pkey ON public.app_attestation_keys USING btree (id)`
+- `idx_app_attestation_keys__did`: `CREATE INDEX idx_app_attestation_keys__did ON public.app_attestation_keys USING btree (did)`
 
 **Triggers:**
 _none_

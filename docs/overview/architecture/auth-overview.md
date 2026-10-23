@@ -17,3 +17,8 @@
 - <a id="security-recommendations"></a>[Security Recommendations](reference-auth-overview-security-recommendations.md)
 - <a id="summary"></a>[Summary](reference-auth-overview-security-recommendations.md#summary)
 - <a id="related"></a>[Related](reference-auth-overview-security-recommendations.md#related)
+
+Native sign-in records whether the session came from a native entry point. In-app chat exchanges
+that session for a short-lived user-MCP bearer token, which the server binds to the session and
+checks on each call. The [first-party native authorization decision](../../requirements/security/OAUTH-AUTHORIZATION-SERVER.md#first-party-native-clients)
+explains the attestation gate and how a user can revoke the MCP grant from active sessions.

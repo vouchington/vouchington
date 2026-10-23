@@ -81,6 +81,8 @@ export const oauthManagementApiFixtureCases: ApiFixtureCase[] = [
           scopes: ['mcp.user:read', 'mcp.user:write'],
           consented_at: timestamp,
           last_used_at: null,
+          session_id: null,
+          attestation_status: null,
         },
       ],
       page_info: {

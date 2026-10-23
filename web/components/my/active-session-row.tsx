@@ -10,12 +10,16 @@ export function ActiveSessionRow({
   t,
   uiLocale,
   onSignOut,
+  onRevokeMcp,
+  revokingGrantId,
 }: {
   loading: boolean
   session: AuthSession
   t: Translator
   uiLocale: string
   onSignOut: (session: AuthSession) => void
+  onRevokeMcp: (grantId: string) => void
+  revokingGrantId: string | null
 }) {
   return (
     <li
@@ -51,6 +55,44 @@ export function ActiveSessionRow({
           </p>
           {session.user_agent ? (
             <p className='break-words text-xs text-muted-foreground'>{session.user_agent}</p>
+          ) : null}
+          {session.mcp_connections.length > 0 ? (
+            <div className='space-y-2 pt-2'>
+              <p className='text-sm font-medium'>{t('settings.activeSessions.mcpConnections')}</p>
+              <ul className='space-y-2'>
+                {session.mcp_connections.map(connection => (
+                  <li
+                    key={connection.grant_id}
+                    className='flex flex-wrap items-center gap-2'
+                  >
+                    <span className='text-sm'>{connection.client_name}</span>
+                    <Badge
+                      variant={
+                        connection.attestation_status === 'attested' ? 'secondary' : 'outline'
+                      }
+                    >
+                      {connection.attestation_status === 'attested'
+                        ? t('settings.activeSessions.attested')
+                        : t('settings.activeSessions.unattested')}
+                    </Badge>
+                    <span className='text-xs text-muted-foreground'>
+                      {t('settings.activeSessions.mcpLastConnected', {
+                        connectedAt: formatUtcDate(connection.last_minted_at, uiLocale),
+                      })}
+                    </span>
+                    <Button
+                      variant='outline'
+                      size='sm'
+                      loading={revokingGrantId === connection.grant_id}
+                      disabled={loading || revokingGrantId !== null}
+                      onClick={() => onRevokeMcp(connection.grant_id)}
+                    >
+                      {t('settings.activeSessions.revokeMcpAccess')}
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            </div>
           ) : null}
         </div>
         <Button

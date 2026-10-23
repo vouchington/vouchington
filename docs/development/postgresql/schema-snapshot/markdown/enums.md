@@ -1325,6 +1325,11 @@
 - `authorization_code`
 - `refresh_token`
 
+## `oauth_native_attestation_statuses`
+
+- `attested`
+- `unattested`
+
 ## `oauth_response_types`
 
 - `code`
@@ -1679,6 +1684,11 @@
 - `source_created`
 - `already_following`
 - `error`
+
+## `user_session_authentication_origins`
+
+- `web`
+- `native`
 
 ## `vote_integrity_flag_types`
 

@@ -16,6 +16,8 @@ export async function listUserOAuthGrants(
   const { rows } = await read<OAuthGrantRow>(
     `/* listUserOAuthGrants */ SELECT
        oauth_grant.id,
+       oauth_grant.session_id,
+       oauth_grant.attestation_status,
        json_build_object(
          'id', client.id,
          'client_id', client.client_id,

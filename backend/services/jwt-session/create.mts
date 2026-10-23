@@ -30,6 +30,7 @@ export async function createDeviceAndSessionTokens({
   deviceClass,
   deviceContext,
   recheckAfter,
+  authOrigin,
 }: {
   did: string
   sid?: string
@@ -43,6 +44,7 @@ export async function createDeviceAndSessionTokens({
   deviceClass?: DeviceClass
   deviceContext?: DeviceContext
   recheckAfter?: number
+  authOrigin?: 'web' | 'native'
 }): Promise<DeviceAndSessionTokenResult> {
   validateUUIDv7(did)
   validateUUIDv7(sid)
@@ -78,6 +80,7 @@ export async function createDeviceAndSessionTokens({
     uid,
     deviceClass,
     deviceContext,
+    authOrigin,
   })
 
   return {
@@ -105,6 +108,7 @@ export async function createSessionToken({
   deviceClass,
   deviceContext,
   recheckAfter,
+  authOrigin,
 }: {
   did: string
   sid?: string
@@ -118,6 +122,7 @@ export async function createSessionToken({
   deviceClass?: DeviceClass
   deviceContext?: DeviceContext
   recheckAfter?: number
+  authOrigin?: 'web' | 'native'
 }): Promise<{
   token: string
   payload: {
@@ -165,6 +170,7 @@ export async function createSessionToken({
     uid,
     deviceClass,
     deviceContext,
+    authOrigin,
   })
 
   return { token, payload }

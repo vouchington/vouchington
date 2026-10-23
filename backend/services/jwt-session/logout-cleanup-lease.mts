@@ -15,6 +15,7 @@ import {
 } from './constants.mts'
 import { REVOCATION_EXPIRATION_SECONDS } from './session-revocation-keys.mts'
 import { revokeSession } from './user-session-revocation.mts'
+import type { QueryExecutor } from '@data-stores/psql/types'
 
 // Production PostgreSQL statements are bounded at 30s. Cleanup and its following registry write
 // can run serially, so the lease exceeds both bounds with room for the Valkey operations.
@@ -51,9 +52,13 @@ export async function runLogoutPushCleanupAndRevoke(
   revocationOptions: SessionRevocationOptions,
   cleanup: () => Promise<void>,
   exactBinding?: ExactPushBinding,
+  registryQuery?: QueryExecutor,
 ): Promise<void> {
   const admitted = await admitLogoutCleanup(sessionId, revocationOptions)
-  if (!admitted) return
+  if (!admitted) {
+    await revokeSession(sessionId, { query: registryQuery })
+    return
+  }
   return attempt()
 
   async function attempt(attemptNumber = 0): Promise<void> {
@@ -61,7 +66,7 @@ export async function runLogoutPushCleanupAndRevoke(
       ? getJwtLogoutPushCleanupCompletionKey(sessionId, digestExactPushBinding(exactBinding))
       : undefined
     if (completionKey && (await sessionValkeyClient.get(completionKey)) !== null) {
-      await commitLogoutRevocation(sessionId)
+      await commitLogoutRevocation(sessionId, registryQuery)
       return
     }
 
@@ -69,7 +74,7 @@ export async function runLogoutPushCleanupAndRevoke(
     if (reservation.state === 'reserved') {
       try {
         if (completionKey && (await sessionValkeyClient.get(completionKey)) !== null) {
-          await commitLogoutRevocation(sessionId)
+          await commitLogoutRevocation(sessionId, registryQuery)
           return
         }
         await cleanup()
@@ -79,7 +84,7 @@ export async function runLogoutPushCleanupAndRevoke(
             expiry: { type: TimeUnit.Seconds, count: REVOCATION_EXPIRATION_SECONDS },
           })
         }
-        await commitLogoutRevocation(sessionId)
+        await commitLogoutRevocation(sessionId, registryQuery)
       } finally {
         await logoutCleanupLease
           .release(sessionId, reservation.token)
@@ -120,7 +125,10 @@ async function admitLogoutCleanup(
   return true
 }
 
-async function commitLogoutRevocation(sessionId: string): Promise<void> {
+async function commitLogoutRevocation(
+  sessionId: string,
+  registryQuery?: QueryExecutor,
+): Promise<void> {
   await sessionValkeyClient.invokeScript(commitLogoutRevocationScript, {
     keys: [
       getJwtLogoutCleanupAdmissionKey(sessionId),
@@ -129,7 +137,7 @@ async function commitLogoutRevocation(sessionId: string): Promise<void> {
     ],
     args: [String(REVOCATION_EXPIRATION_SECONDS)],
   })
-  await revokeSession(sessionId, { registryFailureMode: 'ignore' })
+  await revokeSession(sessionId, { query: registryQuery })
 }
 
 function digestExactPushBinding(binding: ExactPushBinding): string {

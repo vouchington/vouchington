@@ -1,11 +1,17 @@
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 -- Active user session registry keyed by UUIDv7 JWT sid.
 
+DO $$ BEGIN
+  CREATE TYPE user_session_authentication_origins AS ENUM ('web', 'native');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS user_sessions (
   id UUID PRIMARY KEY,
   user_id UUID NOT NULL REFERENCES users ON DELETE CASCADE,
   device_id UUID NOT NULL,
+  authentication_origin user_session_authentication_origins NOT NULL,
   device_name TEXT NOT NULL DEFAULT 'Unknown device',
   user_agent_string_id UUID NOT NULL REFERENCES user_agent_strings ON DELETE RESTRICT,
   ip_address INET,
@@ -45,6 +51,7 @@ CREATE INDEX IF NOT EXISTS idx_user_sessions__user_id__foreign_key
 COMMENT ON TABLE user_sessions IS 'User session registry keyed by UUIDv7 JWT sid. RANGE-partitioned by id with a default partition; bounded retention removes expired rows after the audit window.';
 COMMENT ON COLUMN user_sessions.user_id IS 'Owning user for this session row.';
 COMMENT ON COLUMN user_sessions.device_id IS 'JWT device ID (dt.did) associated with this session.';
+COMMENT ON COLUMN user_sessions.authentication_origin IS 'Server-controlled sign-in provenance; native is set only by native OTP or verified native OAuth broker completion.';
 COMMENT ON COLUMN user_sessions.device_name IS 'Human-readable device label derived from the request user-agent when available.';
 COMMENT ON COLUMN user_sessions.user_agent_string_id IS 'Normalized user-agent row for the raw browser user-agent captured for this session.';
 COMMENT ON COLUMN user_sessions.ip_address IS 'Client IP address captured when the session was registered or refreshed.';

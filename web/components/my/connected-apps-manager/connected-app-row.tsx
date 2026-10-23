@@ -48,6 +48,13 @@ export function ConnectedAppRow({ grant, onRevoke }: ConnectedAppRowProps) {
               {t('extracted.connectedAppsManager.connectedAppRow.unverified_33c8e8de')}
             </Badge>
           )}
+          {grant.session_id && grant.attestation_status ? (
+            <Badge variant={grant.attestation_status === 'attested' ? 'secondary' : 'outline'}>
+              {grant.attestation_status === 'attested'
+                ? t('settings.activeSessions.attested')
+                : t('settings.activeSessions.unattested')}
+            </Badge>
+          ) : null}
         </div>
         <p className='break-all font-mono text-xs text-muted-foreground'>{grant.resource}</p>
         <div className='flex flex-wrap gap-1'>

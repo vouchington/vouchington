@@ -3207,14 +3207,15 @@
       "namespace": "app-attestation-config",
       "label": "App Attestation",
       "description": "Apple App Attest verification controls for the iOS app.",
-      "field_count": 4,
+      "field_count": 5,
       "can_view": true,
       "can_update": false,
       "config": {
         "enabled": false,
         "require_attestation_for_bypass": false,
         "allow_development_attestation": false,
-        "request_signing_mode": "off"
+        "request_signing_mode": "off",
+        "allow_unattested_native_mcp_mint": true
       },
       "fields": [
         {
@@ -3244,6 +3245,13 @@
           "value": "off",
           "default_value": null,
           "description": "Per-request ECDSA signing mode for attested iOS devices. 'off' = disabled; 'observe' = verify and log failures but do not block; 'enforce' = reject requests with invalid or missing signatures."
+        },
+        {
+          "name": "allow_unattested_native_mcp_mint",
+          "type": "boolean",
+          "value": true,
+          "default_value": true,
+          "description": "Allow native sessions without a registered App Attest key to mint member MCP tokens. A registered key always requires a valid assertion."
         }
       ]
     }

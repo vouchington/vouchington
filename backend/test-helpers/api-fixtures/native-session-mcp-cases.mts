@@ -1,0 +1,95 @@
+import type { ApiFixtureCase } from './types.mts'
+
+const consumers = ['swift-core', 'swift-ui', 'dotnet-core'] as const
+
+export const nativeSessionMcpApiFixtureCases: ApiFixtureCase[] = [
+  {
+    id: 'native.auth.email-address.tokens',
+    method: 'POST',
+    path: '/api/v1/auth/native/email-address/tokens',
+    route: { routeTemplate: '/api/v1/auth/native/email-address/tokens' },
+    auth: 'none',
+    requestHeaders: { 'Content-Type': 'application/json' },
+    requestBody: { emailAddress: 'fixture@example.test' },
+    status: 200,
+    body: { email_address: 'fixture@example.test' },
+    consumers: [...consumers],
+    migratedFrom: [],
+  },
+  {
+    id: 'native.auth.email-address.login.authenticated',
+    method: 'POST',
+    path: '/api/v1/auth/native/email-address/login',
+    route: { routeTemplate: '/api/v1/auth/native/email-address/login' },
+    auth: 'none',
+    requestHeaders: { 'Content-Type': 'application/json' },
+    requestBody: { emailAddress: 'fixture@example.test', token: '123456' },
+    status: 200,
+    body: {
+      user: {
+        __entity_type: 'user',
+        id: '00000000-0000-7000-8000-000000000701',
+        roles: [],
+        email_address: 'fixture@example.test',
+        account_type: null,
+      },
+      did: '00000000-0000-7000-8000-000000000732',
+      sid: '00000000-0000-7000-8000-000000000733',
+      uid: '00000000-0000-7000-8000-000000000701',
+      dt: { token: 'fixture-device-jwt', payload: { did: '00000000-0000-7000-8000-000000000732' } },
+      st: {
+        token: 'fixture-session-jwt',
+        payload: {
+          did: '00000000-0000-7000-8000-000000000732',
+          sid: '00000000-0000-7000-8000-000000000733',
+          uid: '00000000-0000-7000-8000-000000000701',
+        },
+      },
+      session: {
+        did: '00000000-0000-7000-8000-000000000732',
+        sid: '00000000-0000-7000-8000-000000000733',
+        uid: '00000000-0000-7000-8000-000000000701',
+      },
+    },
+    consumers: [...consumers],
+    migratedFrom: [],
+  },
+  {
+    id: 'native.auth.email-address.login.mfa',
+    method: 'POST',
+    path: '/api/v1/auth/native/email-address/login',
+    route: { routeTemplate: '/api/v1/auth/native/email-address/login' },
+    auth: 'none',
+    requestHeaders: { 'Content-Type': 'application/json' },
+    requestBody: { emailAddress: 'fixture@example.test', token: '123456' },
+    status: 200,
+    body: {
+      mfa_required: true,
+      login_attempt_id: '00000000-0000-7000-8000-000000000731',
+    },
+    consumers: [...consumers],
+    migratedFrom: [],
+  },
+  {
+    id: 'native.oauth.session-mcp-token.ios',
+    method: 'POST',
+    path: '/api/v1/oauth/native-session-tokens',
+    route: { routeTemplate: '/api/v1/oauth/native-session-tokens' },
+    auth: 'fixture-user',
+    requestHeaders: {
+      'Content-Type': 'application/json',
+      'x-voucha-native-mcp-mint': '1',
+    },
+    requestBody: { client_app: 'ios' },
+    status: 200,
+    body: {
+      access_token: 'voucha_access_fixture-secret',
+      token_type: 'Bearer',
+      expires_in: 3600,
+      scope: 'mcp.user:read mcp.user:write',
+      resource: 'https://voucha.ai/api/v1/mcp',
+    },
+    consumers: [...consumers],
+    migratedFrom: [],
+  },
+]

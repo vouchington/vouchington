@@ -22,6 +22,7 @@ const sessions: AuthSession[] = [
     last_seen_at: '2026-07-06T18:00:00Z',
     expires_at: '2026-07-31T12:00:00Z',
     is_current: true,
+    mcp_connections: [],
   },
   {
     id: '019f38fe-0000-7000-8000-000000000002',
@@ -33,6 +34,14 @@ const sessions: AuthSession[] = [
     last_seen_at: '2026-07-05T16:45:00Z',
     expires_at: '2026-08-02T09:30:00Z',
     is_current: false,
+    mcp_connections: [
+      {
+        grant_id: '019f38fe-0000-7000-8000-000000000201',
+        client_name: 'Voucha iOS',
+        attestation_status: 'attested',
+        last_minted_at: '2026-07-05T16:45:00Z',
+      },
+    ],
   },
 ]
 
@@ -57,6 +66,8 @@ export const Row: Story = {
             t={defaultTranslator}
             uiLocale='en'
             onSignOut={() => undefined}
+            onRevokeMcp={() => undefined}
+            revokingGrantId={null}
           />
         </ul>
       </div>

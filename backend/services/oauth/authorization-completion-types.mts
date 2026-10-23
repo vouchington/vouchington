@@ -66,12 +66,19 @@ export type DurableOAuthAuthorizationCompletion =
       deviceId: string
       sessionId: string
       newlyCompleted: boolean
+      authOrigin: 'web' | 'native'
     }
 
 export type StoredOAuthAuthorizationCompletion =
   | { kind: 'connected'; userId: string }
   | { kind: 'mfa_required'; userId: string; loginAttemptId: string }
-  | { kind: 'authenticated'; userId: string; deviceId: string; sessionId: string }
+  | {
+      kind: 'authenticated'
+      userId: string
+      deviceId: string
+      sessionId: string
+      authOrigin: 'web' | 'native'
+    }
 
 export type PersistedOAuthAuthorizationCompletion =
   | { kind: 'connected'; userId: string }

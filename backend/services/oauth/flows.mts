@@ -88,6 +88,7 @@ export async function continuePersistedOAuthAccountFlow(options: {
   deviceClass?: DeviceClass
   deviceContext?: DeviceContext
   loginAttemptId?: string
+  authOrigin?: 'web' | 'native'
 }): Promise<OAuthFlowResult> {
   const result = await preparePersistedOAuthAccountFlow(options)
   if (result.mfaRequired) {
@@ -104,6 +105,7 @@ export async function preparePersistedOAuthAccountFlow(options: {
   deviceClass?: DeviceClass
   deviceContext?: DeviceContext
   loginAttemptId?: string
+  authOrigin?: 'web' | 'native'
 }) {
   await enqueueOAuthFriendSyncBestEffort(options.provider, options.account)
   return prepareOAuthFlowResultWithPersistedOwner(options)
@@ -117,6 +119,7 @@ async function prepareOAuthFlowResultWithPersistedOwner(options: {
   deviceClass?: DeviceClass
   deviceContext?: DeviceContext
   loginAttemptId?: string
+  authOrigin?: 'web' | 'native'
 }) {
   const user = await upsertUser({
     oauthAccount: { provider: options.provider, account: options.account },

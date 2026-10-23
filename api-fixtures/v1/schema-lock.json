@@ -141,7 +141,7 @@
     },
     "GET:/api/v1/auth/sessions": {
       "fixtureIds": ["native.auth.sessions.default"],
-      "hash": "537613ef6ea6334d9a50f8981463f0b78be7e68b8add2bd049df1e33c5762b66"
+      "hash": "c57b767778cc45de660995bc246b54c6ad2a79894b38a1c0344dce197b76ab28"
     },
     "GET:/api/v1/captcha-config": {
       "fixtureIds": ["native.captcha-config.default"],
@@ -659,7 +659,7 @@
     },
     "GET:/api/v1/my/oauth-grants": {
       "fixtureIds": ["native.my.oauth-grants.paginated"],
-      "hash": "65f5c5fc731af5716dee9dc01ea4f8c345ebc03ca3d0c47a7d3d5f98994ce8f6"
+      "hash": "bbf1f7dcd1601c70405dad5f47c2b0788490225c888eace3ee7b6d98c3262045"
     },
     "GET:/api/v1/my/profile": {
       "fixtureIds": ["swift.my.profile.default"],
@@ -1135,6 +1135,17 @@
       "fixtureIds": ["native.auth.bluesky.link-completion.default"],
       "hash": "4088de9fb3560826dcfb7fea014b55c235e18ed712559ee5ae3f7bd3862942f0"
     },
+    "POST:/api/v1/auth/native/email-address/login": {
+      "fixtureIds": [
+        "native.auth.email-address.login.authenticated",
+        "native.auth.email-address.login.mfa"
+      ],
+      "hash": "74808c22f87bc190e20ab5e93d3c98dbd5280f40bdea2c80567f034f562f6a22"
+    },
+    "POST:/api/v1/auth/native/email-address/tokens": {
+      "fixtureIds": ["native.auth.email-address.tokens"],
+      "hash": "1d959628b69bf9859504da182ef94992ef3b63138df348a9b1b4d028c64e7779"
+    },
     "POST:/api/v1/auth/oauth/:provider/authorizations": {
       "fixtureIds": ["native.oauth.authorization.begin"],
       "hash": "e735720f6f196dca040648c74bbeb459895bfdd30226ec03b1bceed6dc98b09c"
@@ -1412,6 +1423,10 @@
       "fixtureIds": ["native.spending-categories.create.default"],
       "hash": "f2127ada892422d1160e35df570d52f828ca8e9d8fd6b27cdc6a0b53171833c8"
     },
+    "POST:/api/v1/oauth/native-session-tokens": {
+      "fixtureIds": ["native.oauth.session-mcp-token.ios"],
+      "hash": "2ab31fc6f4d71ab892e4ec8a344977480c0dc3c7a5f13be991e20435eadc0760"
+    },
     "POST:/api/v1/posts/:idOrSlug/clearances": {
       "fixtureIds": [
         "native.moderation.clearance.approved",
@@ -1610,9 +1625,21 @@
       "fixtureIds": ["native.auth.bluesky.unlink.default"],
       "hash": "bcde375ebd4cbacf651311181173836b169d5a360c6ac158c6a2cdaf49be3f61"
     },
+    "native.auth.email-address.login.authenticated": {
+      "fixtureIds": ["native.auth.email-address.login.authenticated"],
+      "hash": "0f9e7b0f698ea7b7535ab1a6c1cb157c5a839ecc5bb0601563ffb8df9ac00567"
+    },
+    "native.auth.email-address.login.mfa": {
+      "fixtureIds": ["native.auth.email-address.login.mfa"],
+      "hash": "55a7500e07ea6637e2be4742b86d9ebb5a4b1a4bb16d6543c6b3c8d1c60a3fe9"
+    },
+    "native.auth.email-address.tokens": {
+      "fixtureIds": ["native.auth.email-address.tokens"],
+      "hash": "6e9d26e2df4015a49c547f658c18fe5e02fcfc5495c280a6232ec45c6f60c82d"
+    },
     "native.auth.sessions.default": {
       "fixtureIds": ["native.auth.sessions.default"],
-      "hash": "dd94218575514d39085bec7d67aa4a5fb8707f29f6e5a133311266cc85b5caa0"
+      "hash": "08d84623760e2c633e192f9e8ada31f90c923fa8c99819309408a26cb72ec6a1"
     },
     "native.bookmarks.communities.proxy-following.default": {
       "fixtureIds": ["native.bookmarks.communities.proxy-following.default"],
@@ -1800,7 +1827,7 @@
     },
     "native.dynamic-config.namespace.string": {
       "fixtureIds": ["native.dynamic-config.namespace.string"],
-      "hash": "6ffac054e79e32ba47decdccb3f52681f127ae845826f9ad07dde3e111d50971"
+      "hash": "e09bae0ad2840ae8e1eb8ba5bbf825863138917fa1013a80da9ff698074a5c5c"
     },
     "native.dynamic-config.namespace.typed": {
       "fixtureIds": ["native.dynamic-config.namespace.typed"],
@@ -2472,7 +2499,7 @@
     },
     "native.my.oauth-grants.paginated": {
       "fixtureIds": ["native.my.oauth-grants.paginated"],
-      "hash": "a4ea4509efefa13c29393ddf66000bcc91825bc8f330a1854bd3e6ab94c0f369"
+      "hash": "6a8fbc792e876f257432c021ddbfadb7a2966b98116856c94b4aa5f404e18f0e"
     },
     "native.my.oauth-grants.revoke": {
       "fixtureIds": ["native.my.oauth-grants.revoke"],
@@ -2509,6 +2536,10 @@
     "native.oauth.providers.broker-capabilities": {
       "fixtureIds": ["native.oauth.providers.broker-capabilities"],
       "hash": "c225a330ea6aa04e3e1714786830d16970a8d855e5cd2453a0c10af1093f4fbd"
+    },
+    "native.oauth.session-mcp-token.ios": {
+      "fixtureIds": ["native.oauth.session-mcp-token.ios"],
+      "hash": "f17b80f24e162eb84e259dc198a056a7f3f6a2b2cb7884871780f0c461c95391"
     },
     "native.paid.url-crawl.default": {
       "fixtureIds": ["native.paid.url-crawl.default"],

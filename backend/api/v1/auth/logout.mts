@@ -1,6 +1,7 @@
 import app from '../../app.mts'
 import {
   isSessionRevoked,
+  revokeSession,
   runLogoutPushCleanupAndRevoke,
   verifyDeviceAndSessionTokens,
 } from '@services/jwt-session'
@@ -43,7 +44,9 @@ app.route('/api/v1/auth/logout').post(async ctx => {
       })
       // Bindings must reach the service so its atomic admission fence can distinguish concurrent
       // pre-revocation cleanup from a later revoked replay.
-      if (!revoked || binding) {
+      if (revoked && !binding) {
+        await revokeSession(sid)
+      } else {
         await runLogoutPushCleanupAndRevoke(
           sid,
           { userId, issuedAt },

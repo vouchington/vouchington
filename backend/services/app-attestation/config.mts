@@ -7,6 +7,7 @@ export type AppAttestationConfig = {
   require_attestation_for_bypass: boolean
   allow_development_attestation: boolean
   request_signing_mode: string
+  allow_unattested_native_mcp_mint: boolean
 }
 
 const DEFAULTS: AppAttestationConfig = {
@@ -14,6 +15,7 @@ const DEFAULTS: AppAttestationConfig = {
   require_attestation_for_bypass: false,
   allow_development_attestation: false,
   request_signing_mode: 'off',
+  allow_unattested_native_mcp_mint: true,
 }
 
 export const appAttestationConfig = new DynamicConfig({
@@ -23,6 +25,7 @@ export const appAttestationConfig = new DynamicConfig({
     require_attestation_for_bypass: 'boolean',
     allow_development_attestation: 'boolean',
     request_signing_mode: 'string',
+    allow_unattested_native_mcp_mint: 'boolean',
   },
   defaultFields: DEFAULTS,
 })
@@ -50,6 +53,11 @@ export function getRequestSigningMode(): RequestSigningMode {
     return value as RequestSigningMode
   }
   return DEFAULTS.request_signing_mode as RequestSigningMode
+}
+
+export function isUnattestedNativeMcpMintAllowed(): boolean {
+  const allowed = appAttestationConfig.fields.get('allow_unattested_native_mcp_mint')
+  return typeof allowed === 'boolean' ? allowed : DEFAULTS.allow_unattested_native_mcp_mint
 }
 
 export function getAppleAppAttestTeamId(): string {

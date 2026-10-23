@@ -64,6 +64,7 @@ export async function completeOAuthAuthorization(
     refreshAuthenticatedSession: !durableResult.newlyCompleted,
     deviceClass: options.deviceClass,
     deviceContext: options.deviceContext,
+    authOrigin: durableResult.authOrigin,
   })
   if (result.mfaRequired) {
     throw new Error('Stored OAuth authentication result unexpectedly requires MFA')

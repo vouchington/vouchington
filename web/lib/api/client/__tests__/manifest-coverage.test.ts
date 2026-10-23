@@ -22,11 +22,12 @@ describe('web API client manifest endpoint coverage', () => {
     )
   })
 
-  it('matches each fixture method, path, query, and declared request body', () => {
+  it('matches each fixture method, path, query, declared headers, and request body', () => {
     const missing: string[] = []
     const methodMismatches: string[] = []
     const pathMismatches: string[] = []
     const queryMismatches: string[] = []
+    const headerMismatches: string[] = []
     const bodyMismatches: string[] = []
 
     for (const fixture of nonWebFixtures) {
@@ -48,6 +49,14 @@ describe('web API client manifest endpoint coverage', () => {
         }
       }
 
+      for (const [name, value] of Object.entries(fixture.requestHeaders ?? {})) {
+        if (endpoint.requestHeaders?.[name] !== value) {
+          headerMismatches.push(
+            `${fixture.id}: ${name}=${endpoint.requestHeaders?.[name]} !== ${value}`,
+          )
+        }
+      }
+
       if ('requestBody' in fixture && !jsonContains(endpoint.requestBody, fixture.requestBody)) {
         bodyMismatches.push(fixture.id)
       }
@@ -57,6 +66,7 @@ describe('web API client manifest endpoint coverage', () => {
     expect(methodMismatches).toEqual([])
     expect(pathMismatches).toEqual([])
     expect(queryMismatches).toEqual([])
+    expect(headerMismatches).toEqual([])
     expect(bodyMismatches).toEqual([])
   })
 })

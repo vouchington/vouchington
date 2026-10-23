@@ -32,27 +32,15 @@ import { nativeTagsBookmarksApiFixtureCases } from './native-tags-bookmarks-case
 import { nativeUserAccountDataApiFixtureCases } from './native-user-account-data-cases.mts'
 import { nativeUserProfileApiFixtureCases } from './native-user-profile-cases.mts'
 import { nativeOAuthBrokerApiFixtureCases } from './native-oauth-broker-cases.mts'
+import { nativeSessionMcpApiFixtureCases } from './native-session-mcp-cases.mts'
 import { oauthAppApiFixtureCases } from './oauth-app-cases.mts'
 import { oauthClientVerificationApiFixtureCases } from './oauth-client-verification-cases.mts'
 import { oauthManagementApiFixtureCases } from './oauth-management-cases.mts'
 import { referralApiFixtureCases } from './referral-cases.mts'
+import { fromCaseFile } from './resolve-case-file.mts'
 import { swiftApiFixtureCases } from './swift-cases.mts'
-import type { ApiFixtureCase, ResolvedApiFixtureCase } from './types.mts'
+import type { ResolvedApiFixtureCase } from './types.mts'
 import { webApiFixtureCases } from './web-cases.mts'
-function fromCaseFile(caseFile: string, cases: ApiFixtureCase[]): ResolvedApiFixtureCase[] {
-  return cases.map(fixtureCase => {
-    if (!fixtureCase.route)
-      throw new Error(`API fixture "${fixtureCase.id}" is missing route metadata`)
-    return {
-      ...fixtureCase,
-      route: fixtureCase.route,
-      backendResponseContractKey:
-        fixtureCase.backendResponseContractKey ??
-        `${fixtureCase.method}:${fixtureCase.route.routeTemplate}`,
-      source: { caseFile },
-    }
-  })
-}
 const caseRoot = 'backend/test-helpers/api-fixtures/'
 export const apiFixtureCases: ResolvedApiFixtureCase[] = [
   ...fromCaseFile(
@@ -77,6 +65,10 @@ export const apiFixtureCases: ResolvedApiFixtureCase[] = [
   ...fromCaseFile(
     'backend/test-helpers/api-fixtures/native-oauth-broker-cases.mts',
     nativeOAuthBrokerApiFixtureCases,
+  ),
+  ...fromCaseFile(
+    'backend/test-helpers/api-fixtures/native-session-mcp-cases.mts',
+    nativeSessionMcpApiFixtureCases,
   ),
   ...fromCaseFile(
     'backend/test-helpers/api-fixtures/oauth-management-cases.mts',

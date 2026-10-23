@@ -14,6 +14,7 @@
       "ip_address": "203.0.113.10",
       "is_current": true,
       "last_seen_at": "2026-07-06T12:15:00.000Z",
+      "mcp_connections": [],
       "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 Safari/605.1.15"
     },
     {
@@ -25,6 +26,14 @@
       "ip_address": null,
       "is_current": false,
       "last_seen_at": "2026-07-06T11:45:00.000Z",
+      "mcp_connections": [
+        {
+          "attestation_status": "attested",
+          "client_name": "Voucha iOS",
+          "grant_id": "00000000-0000-7000-8000-000000000711",
+          "last_minted_at": "2026-07-06T11:45:00.000Z"
+        }
+      ],
       "user_agent": "Voucha/1 CFNetwork/1568.100.1 Darwin/24.0.0"
     }
   ]

@@ -1,4 +1,4 @@
-import type { QueryExecutor } from '@data-stores/psql'
+import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
 
 /** Reject one write made through a caller-owned executor while preserving its transaction. */
 export function rejectQuery<Query extends QueryExecutor>(
@@ -15,4 +15,14 @@ export function rejectQuery<Query extends QueryExecutor>(
       return Reflect.apply(target, thisArgument, argumentsList)
     },
   })
+}
+
+/** Inject one write failure through a caller-owned real PostgreSQL transaction. */
+export async function withRejectedPostgresQueryForTest<Result>(
+  matches: (statement: string, values: readonly unknown[]) => boolean,
+  message: string,
+  operation: (query: QueryExecutor) => Promise<Result>,
+): Promise<Result> {
+  await using transaction = await beginTransaction()
+  return await operation(rejectQuery(transaction, matches, message))
 }

@@ -17,6 +17,7 @@ export async function upsertAuthenticatedSession(
     ipAddress?: string | null
     userAgent?: string | null
     refreshMetadata?: boolean
+    authOrigin?: 'web' | 'native'
   },
   queryOptions?: QueryOptions,
 ): Promise<UserSessionRow | null> {
@@ -32,9 +33,9 @@ export async function upsertAuthenticatedSession(
     const userAgentId = await upsertUserAgentString(userAgent, { query })
     const { rows } = await query(sql`/* upsertAuthenticatedSession */
       INSERT INTO user_sessions (
-        id, user_id, device_id, device_name, user_agent_string_id, ip_address, expires_at, last_seen_at
+        id, user_id, device_id, authentication_origin, device_name, user_agent_string_id, ip_address, expires_at, last_seen_at
       )
-      SELECT ${options.sid}, ${currentUserId}, ${options.deviceId},
+      SELECT ${options.sid}, ${currentUserId}, ${options.deviceId}, ${options.authOrigin ?? 'web'},
         ${deviceName}, ${userAgentId}, ${ipAddress}, ${options.expiresAt}, CURRENT_TIMESTAMP
       WHERE EXISTS (SELECT 1 FROM users WHERE id = ${currentUserId} AND deleted_at IS NULL)
       ON CONFLICT (id) DO UPDATE SET
@@ -51,7 +52,9 @@ export async function upsertAuthenticatedSession(
         expires_at = EXCLUDED.expires_at,
         last_seen_at = CURRENT_TIMESTAMP
       WHERE user_sessions.revoked_at IS NULL
-      RETURNING id, user_id, device_id, device_name,
+        AND user_sessions.user_id = EXCLUDED.user_id
+        AND user_sessions.device_id = EXCLUDED.device_id
+      RETURNING id, user_id, device_id, authentication_origin, device_name,
         (SELECT user_agent FROM user_agent_strings
           WHERE id = user_sessions.user_agent_string_id) AS user_agent,
         ip_address, created_at, last_seen_at, expires_at, revoked_at
@@ -74,6 +77,7 @@ export async function registerAuthenticatedSession({
   deviceContext,
   expiresAt,
   refreshMetadata,
+  authOrigin,
 }: {
   sid: string
   uid: string | null
@@ -82,6 +86,7 @@ export async function registerAuthenticatedSession({
   deviceContext?: DeviceContext
   expiresAt?: Date
   refreshMetadata?: boolean
+  authOrigin?: 'web' | 'native'
 }): Promise<void> {
   if (uid === null) return
 
@@ -92,6 +97,7 @@ export async function registerAuthenticatedSession({
     ipAddress: deviceContext?.ip_address,
     userAgent: deviceContext?.user_agent,
     refreshMetadata,
+    authOrigin,
   })
 }
 
@@ -104,10 +110,28 @@ export async function listActiveUserSessions(
   const query = sql`/* listActiveUserSessions */
     SELECT s.id, s.device_id, s.device_name, ua.user_agent, s.ip_address, s.created_at,
       s.last_seen_at, s.expires_at,
+      COALESCE(native_connections.connections, '[]'::json) AS mcp_connections,
       to_char(s.last_seen_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS last_seen_cursor
     -- no-mistakes-disable-next-line postgres-required-predicates: a session ID can be minted before its owning user and refreshed later, so active-session pagination must search all ID partitions
     FROM user_sessions s
     JOIN user_agent_strings ua ON ua.id = s.user_agent_string_id
+    LEFT JOIN LATERAL (
+      SELECT json_agg(json_build_object(
+        'grant_id', connection.id,
+        'client_name', connection.client_name,
+        'attestation_status', connection.attestation_status,
+        'last_minted_at', connection.last_used_at
+      ) ORDER BY connection.id DESC) AS connections
+      FROM (
+        SELECT oauth_grant.id, client.client_name, oauth_grant.attestation_status, oauth_grant.last_used_at
+        FROM oauth_grants AS oauth_grant
+        JOIN oauth_clients AS client ON client.id = oauth_grant.client_id AND client.revoked_at IS NULL
+        WHERE oauth_grant.session_id = s.id
+          AND oauth_grant.revoked_at IS NULL
+        ORDER BY oauth_grant.id DESC
+        LIMIT 1
+      ) AS connection
+    ) AS native_connections ON TRUE
     WHERE s.user_id = ${currentUserId}
       AND s.revoked_at IS NULL
       AND s.expires_at > CURRENT_TIMESTAMP
@@ -130,6 +154,7 @@ export async function listActiveUserSessions(
       created_at: row.created_at,
       last_seen_at: row.last_seen_at,
       expires_at: row.expires_at,
+      mcp_connections: row.mcp_connections,
       is_current: row.id === currentSessionId,
       cursor_timestamp: row.last_seen_cursor,
     }),

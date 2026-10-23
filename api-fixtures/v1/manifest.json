@@ -7216,7 +7216,7 @@
     },
     "GET:/api/v1/auth/sessions": {
       "bodyKind": "content",
-      "hash": "537613ef6ea6334d9a50f8981463f0b78be7e68b8add2bd049df1e33c5762b66",
+      "hash": "c57b767778cc45de660995bc246b54c6ad2a79894b38a1c0344dce197b76ab28",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -7329,6 +7329,42 @@
                       "required": true,
                       "schema": {
                         "type": "string"
+                      }
+                    },
+                    "mcp_connections": {
+                      "required": true,
+                      "schema": {
+                        "items": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "attestation_status": {
+                              "required": true,
+                              "schema": {
+                                "type": "string"
+                              }
+                            },
+                            "client_name": {
+                              "required": true,
+                              "schema": {
+                                "type": "string"
+                              }
+                            },
+                            "grant_id": {
+                              "required": true,
+                              "schema": {
+                                "type": "string"
+                              }
+                            },
+                            "last_minted_at": {
+                              "required": true,
+                              "schema": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "type": "object"
+                        },
+                        "type": "array"
                       }
                     },
                     "user_agent": {
@@ -38633,7 +38669,7 @@
     },
     "GET:/api/v1/my/oauth-grants": {
       "bodyKind": "content",
-      "hash": "65f5c5fc731af5716dee9dc01ea4f8c345ebc03ca3d0c47a7d3d5f98994ce8f6",
+      "hash": "bbf1f7dcd1601c70405dad5f47c2b0788490225c888eace3ee7b6d98c3262045",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -38673,6 +38709,20 @@
           "OAuthGrantView": {
             "additionalProperties": false,
             "properties": {
+              "attestation_status": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
               "client": {
                 "required": true,
                 "schema": {
@@ -38719,6 +38769,20 @@
                     "type": "string"
                   },
                   "type": "array"
+                }
+              },
+              "session_id": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               }
             },
@@ -81801,6 +81865,221 @@
       "statusCodes": [204],
       "statusKnowledge": "explicit"
     },
+    "POST:/api/v1/auth/native/email-address/login": {
+      "bodyKind": "content",
+      "hash": "74808c22f87bc190e20ab5e93d3c98dbd5280f40bdea2c80567f034f562f6a22",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "POST",
+      "routeTemplate": "/api/v1/auth/native/email-address/login",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "type": "union",
+          "variants": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "login_attempt_id": {
+                  "required": true,
+                  "schema": {
+                    "type": "string"
+                  }
+                },
+                "mfa_required": {
+                  "required": true,
+                  "schema": {
+                    "type": "literal",
+                    "value": true
+                  }
+                }
+              },
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "did": {
+                  "required": true,
+                  "schema": {
+                    "type": "string"
+                  }
+                },
+                "dt": {
+                  "required": true,
+                  "schema": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "payload": {
+                        "required": true,
+                        "schema": {
+                          "additionalProperties": {
+                            "type": "unknown"
+                          },
+                          "properties": {
+                            "did": {
+                              "required": true,
+                              "schema": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "type": "object"
+                        }
+                      },
+                      "token": {
+                        "required": true,
+                        "schema": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "type": "object"
+                  }
+                },
+                "session": {
+                  "required": true,
+                  "schema": {
+                    "additionalProperties": {
+                      "type": "unknown"
+                    },
+                    "properties": {
+                      "did": {
+                        "required": true,
+                        "schema": {
+                          "type": "string"
+                        }
+                      },
+                      "sid": {
+                        "required": true,
+                        "schema": {
+                          "type": "string"
+                        }
+                      },
+                      "uid": {
+                        "required": true,
+                        "schema": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "type": "object"
+                  }
+                },
+                "sid": {
+                  "required": true,
+                  "schema": {
+                    "type": "string"
+                  }
+                },
+                "st": {
+                  "required": true,
+                  "schema": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "payload": {
+                        "required": true,
+                        "schema": {
+                          "additionalProperties": {
+                            "type": "unknown"
+                          },
+                          "properties": {
+                            "did": {
+                              "required": true,
+                              "schema": {
+                                "type": "string"
+                              }
+                            },
+                            "sid": {
+                              "required": true,
+                              "schema": {
+                                "type": "string"
+                              }
+                            },
+                            "uid": {
+                              "required": true,
+                              "schema": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "type": "object"
+                        }
+                      },
+                      "token": {
+                        "required": true,
+                        "schema": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "type": "object"
+                  }
+                },
+                "uid": {
+                  "required": true,
+                  "schema": {
+                    "type": "string"
+                  }
+                },
+                "user": {
+                  "required": true,
+                  "schema": {
+                    "additionalProperties": {
+                      "type": "unknown"
+                    },
+                    "properties": {
+                      "__entity_type": {
+                        "required": true,
+                        "schema": {
+                          "type": "literal",
+                          "value": "user"
+                        }
+                      },
+                      "id": {
+                        "required": true,
+                        "schema": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "type": "object"
+                  }
+                }
+              },
+              "type": "object"
+            }
+          ]
+        }
+      },
+      "source": "backend/api/v1/sessions-authentication/auth-email-addresses.mts",
+      "statusKnowledge": "default"
+    },
+    "POST:/api/v1/auth/native/email-address/tokens": {
+      "bodyKind": "content",
+      "hash": "1d959628b69bf9859504da182ef94992ef3b63138df348a9b1b4d028c64e7779",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "POST",
+      "routeTemplate": "/api/v1/auth/native/email-address/tokens",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "email_address": {
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/v1/sessions-authentication/auth-email-addresses.mts",
+      "statusKnowledge": "default"
+    },
     "POST:/api/v1/auth/oauth/:provider/authorizations": {
       "bodyKind": "content",
       "hash": "e735720f6f196dca040648c74bbeb459895bfdd30226ec03b1bceed6dc98b09c",
@@ -89598,6 +89877,56 @@
       "statusCodes": [201],
       "statusKnowledge": "explicit"
     },
+    "POST:/api/v1/oauth/native-session-tokens": {
+      "bodyKind": "content",
+      "hash": "2ab31fc6f4d71ab892e4ec8a344977480c0dc3c7a5f13be991e20435eadc0760",
+      "mediaType": "application/json",
+      "mediaTypeKnowledge": "known",
+      "method": "POST",
+      "routeTemplate": "/api/v1/oauth/native-session-tokens",
+      "schema": {
+        "definitions": {},
+        "root": {
+          "additionalProperties": false,
+          "properties": {
+            "access_token": {
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            },
+            "expires_in": {
+              "required": true,
+              "schema": {
+                "type": "number"
+              }
+            },
+            "resource": {
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            },
+            "scope": {
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            },
+            "token_type": {
+              "required": true,
+              "schema": {
+                "type": "literal",
+                "value": "Bearer"
+              }
+            }
+          },
+          "type": "object"
+        }
+      },
+      "source": "backend/api/oauth/native-session-tokens.mts",
+      "statusKnowledge": "default"
+    },
     "POST:/api/v1/posts/:idOrSlug/clearances": {
       "bodyKind": "content",
       "hash": "c50267d3c1ab98efdbc5f0b0e3aae1932a6103e88f005e1ef0de96715b31fda4",
@@ -93776,6 +94105,117 @@
     },
     {
       "auth": "none",
+      "backendResponseContractKey": "POST:/api/v1/auth/native/email-address/tokens",
+      "bodyFile": "responses/native.auth.email-address.tokens.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.auth.email-address.tokens",
+      "method": "POST",
+      "migratedFrom": [],
+      "path": "/api/v1/auth/native/email-address/tokens",
+      "requestBody": {
+        "emailAddress": "fixture@example.test"
+      },
+      "requestHeaders": {
+        "Content-Type": "application/json"
+      },
+      "responseSchema": {
+        "hash": "6e9d26e2df4015a49c547f658c18fe5e02fcfc5495c280a6232ec45c6f60c82d",
+        "key": "native.auth.email-address.tokens"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/auth/native/email-address/tokens"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-session-mcp-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "none",
+      "backendResponseContractKey": "POST:/api/v1/auth/native/email-address/login",
+      "bodyFile": "responses/native.auth.email-address.login.authenticated.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.auth.email-address.login.authenticated",
+      "method": "POST",
+      "migratedFrom": [],
+      "path": "/api/v1/auth/native/email-address/login",
+      "requestBody": {
+        "emailAddress": "fixture@example.test",
+        "token": "123456"
+      },
+      "requestHeaders": {
+        "Content-Type": "application/json"
+      },
+      "responseSchema": {
+        "hash": "0f9e7b0f698ea7b7535ab1a6c1cb157c5a839ecc5bb0601563ffb8df9ac00567",
+        "key": "native.auth.email-address.login.authenticated"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/auth/native/email-address/login"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-session-mcp-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "none",
+      "backendResponseContractKey": "POST:/api/v1/auth/native/email-address/login",
+      "bodyFile": "responses/native.auth.email-address.login.mfa.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.auth.email-address.login.mfa",
+      "method": "POST",
+      "migratedFrom": [],
+      "path": "/api/v1/auth/native/email-address/login",
+      "requestBody": {
+        "emailAddress": "fixture@example.test",
+        "token": "123456"
+      },
+      "requestHeaders": {
+        "Content-Type": "application/json"
+      },
+      "responseSchema": {
+        "hash": "55a7500e07ea6637e2be4742b86d9ebb5a4b1a4bb16d6543c6b3c8d1c60a3fe9",
+        "key": "native.auth.email-address.login.mfa"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/auth/native/email-address/login"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-session-mcp-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "fixture-user",
+      "backendResponseContractKey": "POST:/api/v1/oauth/native-session-tokens",
+      "bodyFile": "responses/native.oauth.session-mcp-token.ios.json",
+      "consumers": ["swift-core", "swift-ui", "dotnet-core"],
+      "id": "native.oauth.session-mcp-token.ios",
+      "method": "POST",
+      "migratedFrom": [],
+      "path": "/api/v1/oauth/native-session-tokens",
+      "requestBody": {
+        "client_app": "ios"
+      },
+      "requestHeaders": {
+        "Content-Type": "application/json",
+        "x-voucha-native-mcp-mint": "1"
+      },
+      "responseSchema": {
+        "hash": "f17b80f24e162eb84e259dc198a056a7f3f6a2b2cb7884871780f0c461c95391",
+        "key": "native.oauth.session-mcp-token.ios"
+      },
+      "route": {
+        "routeTemplate": "/api/v1/oauth/native-session-tokens"
+      },
+      "source": {
+        "caseFile": "backend/test-helpers/api-fixtures/native-session-mcp-cases.mts"
+      },
+      "status": 200
+    },
+    {
+      "auth": "none",
       "backendResponseContractKey": "GET:/api/v1/scopes",
       "bodyFile": "responses/shared.scopes.catalog.json",
       "consumers": ["web", "swift-core", "dotnet-core"],
@@ -93835,7 +94275,7 @@
         "limit": "1"
       },
       "responseSchema": {
-        "hash": "a4ea4509efefa13c29393ddf66000bcc91825bc8f330a1854bd3e6ab94c0f369",
+        "hash": "6a8fbc792e876f257432c021ddbfadb7a2966b98116856c94b4aa5f404e18f0e",
         "key": "native.my.oauth-grants.paginated"
       },
       "route": {
@@ -95738,7 +96178,7 @@
       "migratedFrom": ["backend/api/v1/dynamic-config/dynamic-config.mts"],
       "path": "/api/v1/dynamic-config/namespaces/app-attestation-config",
       "responseSchema": {
-        "hash": "6ffac054e79e32ba47decdccb3f52681f127ae845826f9ad07dde3e111d50971",
+        "hash": "e09bae0ad2840ae8e1eb8ba5bbf825863138917fa1013a80da9ff698074a5c5c",
         "key": "native.dynamic-config.namespace.string"
       },
       "route": {
@@ -99264,7 +99704,7 @@
         "limit": "1"
       },
       "responseSchema": {
-        "hash": "dd94218575514d39085bec7d67aa4a5fb8707f29f6e5a133311266cc85b5caa0",
+        "hash": "08d84623760e2c633e192f9e8ada31f90c923fa8c99819309408a26cb72ec6a1",
         "key": "native.auth.sessions.default"
       },
       "route": {

@@ -1,6 +1,33 @@
 import { endpoint, type ManifestEndpoint } from './endpoint-registry'
 
 export const authAndFediverseEndpointRegistry = {
+  'native.auth.email-address.tokens': {
+    method: 'POST',
+    path: '/api/v1/auth/native/email-address/tokens',
+    requestHeaders: { 'Content-Type': 'application/json' },
+    requestBody: { emailAddress: 'fixture@example.test' },
+  },
+  'native.auth.email-address.login.authenticated': {
+    method: 'POST',
+    path: '/api/v1/auth/native/email-address/login',
+    requestHeaders: { 'Content-Type': 'application/json' },
+    requestBody: { emailAddress: 'fixture@example.test', token: '123456' },
+  },
+  'native.auth.email-address.login.mfa': {
+    method: 'POST',
+    path: '/api/v1/auth/native/email-address/login',
+    requestHeaders: { 'Content-Type': 'application/json' },
+    requestBody: { emailAddress: 'fixture@example.test', token: '123456' },
+  },
+  'native.oauth.session-mcp-token.ios': {
+    method: 'POST',
+    path: '/api/v1/oauth/native-session-tokens',
+    requestHeaders: {
+      'Content-Type': 'application/json',
+      'x-voucha-native-mcp-mint': '1',
+    },
+    requestBody: { client_app: 'ios' },
+  },
   'native.oauth.providers.broker-capabilities': endpoint('/api/v1/auth/oauth/providers'),
   'native.oauth.authorization.begin': {
     method: 'POST',
