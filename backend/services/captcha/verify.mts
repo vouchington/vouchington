@@ -1,3 +1,4 @@
+import onError from '@modules/on-error'
 import { toTurnstileAction } from '@ts-shared/utils/turnstile-action'
 import { getSiteOrigin } from '@modules/utils/site-origin'
 import { isDeployedEnvironment } from '@ts-shared/deploy-environment'
@@ -10,6 +11,7 @@ interface TurnstileResponse {
   success?: unknown
   hostname?: string
   action?: string
+  metadata?: { result_with_testing_key?: boolean }
   'error-codes'?: string[]
 }
 
@@ -83,23 +85,44 @@ export async function verifyCaptchaToken(
     throw createHttpError(422, 'CAPTCHA token is required')
   }
 
-  // Cloudflare's public dummy-key protocol returns fixed context instead of the widget context.
+  // Dummy keys return provider-controlled context rather than the widget's operation.
   const dummyProvider =
     !isDeployedEnvironment() && CLOUDFLARE_TURNSTILE_TEST_SECRET_KEYS.includes(getSecretKey())
-  const expectedAction = dummyProvider ? 'test' : toTurnstileAction(actionTag)
-  const expectedHostname = dummyProvider
-    ? 'localhost'
-    : new URL(getSiteOrigin()).hostname.toLowerCase()
   const result = await fetchTurnstileVerify(token, ip)
-  if (
-    result.success !== true ||
-    result.action !== expectedAction ||
-    result.hostname?.toLowerCase() !== expectedHostname
-  ) {
+  if (result.success !== true) {
     const codes = result['error-codes']?.join(', ')
     throw createHttpError(400, 'CAPTCHA verification failed', {
       cause: codes ? new Error(codes) : undefined,
     })
+  }
+  // The live dummy endpoint can return its test marker with no action; the documented
+  // localhost/test response is also valid. Neither exception applies to deployed services.
+  if (
+    dummyProvider &&
+    result.metadata?.result_with_testing_key === true &&
+    result.hostname === 'example.com' &&
+    result.action === undefined
+  )
+    return
+  const expectedAction = dummyProvider ? 'test' : toTurnstileAction(actionTag)
+  const expectedHostname = dummyProvider
+    ? 'localhost'
+    : new URL(getSiteOrigin()).hostname.toLowerCase()
+  if (result.action !== expectedAction) {
+    const cause = Object.assign(new Error('Turnstile action does not match'), {
+      code: 'turnstile_action_mismatch',
+      extra: { receivedAction: result.action },
+    })
+    onError(cause)
+    throw createHttpError(400, 'CAPTCHA verification failed', { cause })
+  }
+  if (result.hostname?.toLowerCase() !== expectedHostname) {
+    const cause = Object.assign(new Error('Turnstile hostname does not match'), {
+      code: 'turnstile_hostname_mismatch',
+      extra: { receivedHostname: result.hostname },
+    })
+    onError(cause)
+    throw createHttpError(400, 'CAPTCHA verification failed', { cause })
   }
 }
 

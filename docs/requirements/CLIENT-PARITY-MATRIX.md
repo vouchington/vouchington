@@ -145,7 +145,13 @@ adoption should use the same identities and safe fallback when a username is abs
 
 ## Browser challenge context
 
+| Behavior                                                                      | Web  | Swift                   | .NET                    |
+| ----------------------------------------------------------------------------- | ---- | ----------------------- | ----------------------- |
+| Render Turnstile fallback with its operation action and configured web origin | Full | Pending client adoption | Pending client adoption |
+
 Browser challenge producers identify the operation when rendering a Turnstile widget. Server
 verification binds that result to the configured site and the operation being requested. Native
 App Attest retains its existing operation tags; clients that embed a browser challenge need the
-same action mapping. That client adoption remains dependent work, with the producer landing first.
+same action mapping and configured web origin. Native adoption is tracked in
+[vouchington-clients#486](https://github.com/vouchington/vouchington-clients/issues/486), with the
+producer landing first.

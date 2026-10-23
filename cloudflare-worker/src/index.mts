@@ -44,6 +44,7 @@ export function createWorker(
   const captureException = dependencies.captureException ?? captureWorkerException
   const resolveRoute = dependencies.resolveRoute ?? getRouteTarget
   const serveDocsRequest = dependencies.serveDocs ?? serveDocs
+  const configurationChecks = new WeakMap<Env, Promise<void>>()
   return {
     async fetch(request: Request, env: Env, context: EdgeExecutionContext): Promise<Response> {
       // Generate per-request ID here so every response path — including errors, rate-limits,
@@ -63,7 +64,12 @@ export function createWorker(
           })
         }
         // Worker bindings are available only at fetch time; validate before origin dispatch.
-        await assertWorkerSessionJwtConfiguration(env)
+        let configurationCheck = configurationChecks.get(env)
+        if (!configurationCheck) {
+          configurationCheck = assertWorkerSessionJwtConfiguration(env)
+          configurationChecks.set(env, configurationCheck)
+        }
+        await configurationCheck
         warnIfWorkerSecretMisconfigured(env)
         warnIfProductionValueInvalid(env)
         warnIfSentryConfigurationInvalid(env)
