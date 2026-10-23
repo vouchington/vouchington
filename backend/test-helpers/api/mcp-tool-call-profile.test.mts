@@ -1,7 +1,7 @@
 import { EventEmitter } from 'node:events'
 import type http from 'node:http'
 import { describe, expect, it } from 'vitest'
-import { recordRequestQueryTiming } from '@data-stores/psql/request-query-profile'
+import { recordRequestQueryTiming } from '../request-query-profile-state.mts'
 import { withBatchRequestMarker, withToolCallProfile } from './mcp-tool-call-profile.mts'
 import { profileRequestQueries } from './request-query-profile.mts'
 import { takeRequestQueryProfileViolations } from './request-query-profile-violations.mts'

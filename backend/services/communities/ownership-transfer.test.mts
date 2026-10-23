@@ -1,5 +1,5 @@
 import { it, expect, describe } from 'vitest'
-import { createRequestQueryProfile } from '@data-stores/psql/request-query-profile'
+import { createRequestQueryProfile } from '../../test-helpers/request-query-profile-state.mts'
 import {
   createTestUser,
   createTestUserDirect,

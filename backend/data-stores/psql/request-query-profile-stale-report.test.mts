@@ -5,7 +5,7 @@ import {
   MIN_STALE_EVIDENCE_LOGS,
   observedRepeatAnnotations,
   observedScopedRepeatKeys,
-} from './request-query-profile-stale-report.mts'
+} from '../../test-helpers/request-query-profile-stale-report.mts'
 
 describe('request query profile stale report', () => {
   const baseline = [

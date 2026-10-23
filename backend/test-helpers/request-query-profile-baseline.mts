@@ -30,7 +30,7 @@ export type RepeatBaselineEntry = TemporaryBaselineEntry | PermanentBaselineEntr
 /**
  * Parsed baseline, or an error naming every malformed or duplicate entry.
  *
- * @public used by the API test server and the open-issue check in backend/test-helpers
+ * Used by the API test server and open-issue check in backend/test-helpers.
  */
 export function parseRepeatBaseline(raw: unknown): RepeatBaselineEntry[] {
   if (!Array.isArray(raw)) throw new Error('Query-profile baseline must be an array of entries')
@@ -60,7 +60,7 @@ export function temporaryBaselineEntries(
 /**
  * Repeats outside their exact baseline scope and maximum, in the order given.
  *
- * @public used by the API test server in backend/test-helpers, which production analysis ignores
+ * Used by the API test server in backend/test-helpers, which production analysis ignores.
  */
 export function findUnbaselinedRepeats(
   route: string,
@@ -81,7 +81,7 @@ export function findUnbaselinedRepeats(
 /**
  * Failure text for one request: names the route and every unbaselined annotation.
  *
- * @public used by the API test server in backend/test-helpers, which production analysis ignores
+ * Used by the API test server in backend/test-helpers, which production analysis ignores.
  */
 export function formatUnbaselinedRepeats(
   route: string,
@@ -95,7 +95,7 @@ export function formatUnbaselinedRepeats(
  * Failure text for temporary entries whose issue is not open, one line per entry. `states` maps an
  * issue number to its GitHub state; an issue missing from it counts as not found.
  *
- * @public used by the open-issue check in backend/test-helpers
+ * Used by the open-issue check in backend/test-helpers.
  */
 export function formatClosedBaselineIssues(
   baseline: readonly RepeatBaselineEntry[],

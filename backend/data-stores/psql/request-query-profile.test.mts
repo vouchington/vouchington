@@ -5,15 +5,15 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   findUnbaselinedRepeats,
   formatUnbaselinedRepeats,
-} from './request-query-profile-baseline.mts'
+} from '../../test-helpers/request-query-profile-baseline.mts'
 import {
   computeSerialDepth,
   findRepeatedAnnotations,
   formatRequestProfileLine,
   summarizeRequestQueries,
   type RequestQuery,
-} from './request-query-profile-summary.mts'
-import { createRequestQueryProfile } from './request-query-profile.mts'
+} from '../../test-helpers/request-query-profile-summary.mts'
+import { createRequestQueryProfile } from '../../test-helpers/request-query-profile-state.mts'
 import { recordQueryTiming } from './query-timing.mts'
 
 function query(annotation: string | null, startMs: number, endMs: number, excluded = false) {

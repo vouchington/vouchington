@@ -1,7 +1,7 @@
 import {
   runIndependentWorker,
   type WorkerQueryProfile,
-} from '../backend/data-stores/psql/request-query-profile.mts'
+} from '../backend/test-helpers/request-query-profile-state.mts'
 import { recordRequestQueryProfileViolation } from '../backend/test-helpers/api/request-query-profile-violations.mts'
 import { Worker, type WorkerOptions } from '@vouchington/worker-runtime/testing'
 

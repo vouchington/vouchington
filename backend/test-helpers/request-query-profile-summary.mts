@@ -69,7 +69,7 @@ export const REQUEST_PROFILE_PREFIX = '[pg-request-profile]'
 /**
  * One stderr line for a request, or null when it has nothing to report and `all` is off.
  *
- * @public used by the API test server in backend/test-helpers, which production analysis ignores
+ * Used by the API test server in backend/test-helpers, which production analysis ignores.
  */
 export function formatRequestProfileLine(
   route: string,

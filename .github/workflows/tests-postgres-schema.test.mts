@@ -94,7 +94,11 @@ describe('PostgreSQL Schema Tests workflow', () => {
     expect(native).toBeGreaterThan(platformStats)
     expect(tests).toBeGreaterThan(native)
     expect(nativeStep).toContain(
-      'python3 "$GITHUB_WORKSPACE/ci/run-bounded.py" 120 node scripts/check-materialized-view-contracts.mts',
+      'python3 "$GITHUB_WORKSPACE/ci/run-bounded.py" 120 node --experimental-test-module-mocks scripts/check-materialized-view-contracts.mts',
+    )
+    expect(nativeStep.indexOf('--experimental-test-module-mocks')).toBeGreaterThan(-1)
+    expect(nativeStep.indexOf('--experimental-test-module-mocks')).toBeLessThan(
+      nativeStep.indexOf('scripts/check-materialized-view-contracts.mts'),
     )
     expect(nativeStep).not.toContain('if:')
     expect(nativeStep).not.toContain('continue-on-error:')

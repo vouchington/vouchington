@@ -92,7 +92,7 @@ jobs:
           S3_BUCKET_USER_EXPORTS: test-user-exports
           S3_BUCKET_QUARANTINE: test-quarantine
           S3_BUCKET_BEDROCK_BATCH: test-bedrock-batch
-        run: python3 "$GITHUB_WORKSPACE/ci/run-bounded.py" 120 node scripts/check-materialized-view-contracts.mts
+        run: python3 "$GITHUB_WORKSPACE/ci/run-bounded.py" 120 node --experimental-test-module-mocks scripts/check-materialized-view-contracts.mts
       - name: Clear stale PostgreSQL schema JUnit report
         timeout-minutes: 1
         run: rm -f postgres-schema-test-report.junit.xml

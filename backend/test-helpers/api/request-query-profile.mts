@@ -5,12 +5,12 @@ import {
   findUnbaselinedRepeats,
   formatUnbaselinedRepeats,
   parseRepeatBaseline,
-} from '@data-stores/psql/request-query-profile-baseline'
+} from '../request-query-profile-baseline.mts'
 import {
   createRequestQueryProfile,
   type RequestQueryProfile,
-} from '@data-stores/psql/request-query-profile'
-import { formatRequestProfileLine } from '@data-stores/psql/request-query-profile-summary'
+} from '../request-query-profile-state.mts'
+import { formatRequestProfileLine } from '../request-query-profile-summary.mts'
 import { recordRequestQueryProfileViolation } from './request-query-profile-violations.mts'
 
 const UUID_SEGMENT = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi
