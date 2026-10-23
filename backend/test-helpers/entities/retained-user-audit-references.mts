@@ -1,4 +1,5 @@
 import { randomBytes, randomUUID } from 'node:crypto'
+import { v7 as uuidv7 } from 'uuid'
 import type { QueryExecutor } from '@data-stores/psql'
 import { registerOAuthClient } from '../../services/oauth-authorization-server/clients.mts'
 
@@ -80,12 +81,25 @@ export async function insertTestRetainedUserAuditRow(
       [randomUUID(), actorId, client.client_id],
     )
   } else {
+    const { rows: owners } = await query<{ created_by_id: string | null }>(
+      `/* readTestOAuthAuditGrantOwner */
+      SELECT created_by_id FROM posts WHERE id = $1::uuid`,
+      [postId],
+    )
+    const grantOwnerId = owners[0]?.created_by_id
+    if (!grantOwnerId) throw new Error('Retained OAuth audit fixture needs a post owner')
+    const grantId = uuidv7()
+    await query(
+      `/* insertTestOAuthAuditGrantAnchor */
+      INSERT INTO oauth_grant_retention_anchors (id, user_id) VALUES ($1::uuid, $2::uuid)`,
+      [grantId, grantOwnerId],
+    )
     await query(
       `/* insertTestRetainedUserAuditOAuthServerEvent */
       INSERT INTO oauth_authorization_server_events
         (event_type, access_token_id, user_id, client_id, grant_id, resource, scopes)
       VALUES ('access_token_revoked', $1, $2, $3, $4, 'https://example.test/mcp', ARRAY['mcp.user:read']::api_scopes[])`,
-      [randomUUID(), actorId, randomUUID(), randomUUID()],
+      [randomUUID(), actorId, randomUUID(), grantId],
     )
   }
 }

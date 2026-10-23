@@ -60,22 +60,21 @@ export async function cleanupSecuritySourcePage(
     source === 'copyright_rationales_erased' ||
     source === 'copyright_rationales_noncase'
   const keyset = idKeyed
-    ? '($3::uuid IS NULL OR target.id > $3::uuid)'
+    ? '($2::uuid IS NULL OR target.id > $2::uuid)'
     : `($2::timestamptz IS NULL OR (${plan.keyAt}, target.id) > ($2::timestamptz, $3::uuid))`
   const order = idKeyed ? 'target.id' : `${plan.keyAt}, target.id`
-  const pageParameters: unknown[] = [
-    plan.cutoffAt,
-    cursor.cursor_at,
-    cursor.cursor_id,
-    batchSize + 1,
-  ]
-  if (idKeyed) pageParameters.push(cutoffId)
+  // Every prepared-statement parameter must occur in its branch's SQL. Supplying the timestamp
+  // cursor to an id-keyed page leaves $1/$2 untyped and PostgreSQL rejects the statement.
+  const pageParameters: unknown[] = idKeyed
+    ? [cutoffId, cursor.cursor_id, batchSize + 1]
+    : [plan.cutoffAt, cursor.cursor_at, cursor.cursor_id, batchSize + 1]
+  const limitParameter = idKeyed ? '$3::integer' : '$4::integer'
   const page = await query<{ id: string; key_at: Date }>(
     `/* listSecurityRetentionPage:${source} */
      SELECT target.id, ${plan.keyAt} AS key_at
      FROM ${plan.table} target
      WHERE ${plan.predicate} AND ${keyset}
-     ORDER BY ${order} LIMIT $4
+     ORDER BY ${order} LIMIT ${limitParameter}
      FOR UPDATE OF target SKIP LOCKED`,
     pageParameters,
   )

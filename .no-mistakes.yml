@@ -4930,7 +4930,9 @@ rules:
       foreignKeys:
         targetSuffixes:
           [{ tables: [users, retained_user_identities], suffixes: [_user_id, _by_id] }]
-        targetNames: [{ tablePattern: '^retained_(.+)_identities$', name: '$1' }]
+        targetNames:
+          - { tablePattern: '^retained_(.+)_identities$', name: '$1' }
+          - { tablePattern: '^oauth_grant_retention_anchors$', name: grant }
         reservedSuffixes:
           - { suffix: _user_id, types: [uuid], tables: [users, retained_user_identities] }
           - { suffix: _by_id, types: [uuid], tables: [users, retained_user_identities] }
@@ -5050,8 +5052,6 @@ rules:
         - object: 'column:oauth_authorization_server_events.authorization_request_id'
           reason: 'Decision 14 immutable OAuth audit id.'
         - object: 'column:oauth_authorization_server_events.client_id'
-          reason: 'Decision 14 immutable OAuth audit id.'
-        - object: 'column:oauth_authorization_server_events.grant_id'
           reason: 'Decision 14 immutable OAuth audit id.'
         - object: 'column:oauth_authorization_server_events.refresh_token_family_id'
           reason: 'Decision 14 immutable OAuth audit id.'

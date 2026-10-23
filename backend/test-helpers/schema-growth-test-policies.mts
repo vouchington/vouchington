@@ -56,6 +56,14 @@ const naturalOrProviderId = (rationale: string): NonDefaultIdException => ({
 })
 export const NON_DEFAULT_ID_EXCEPTIONS = new Map<string, NonDefaultIdException>([
   ...SHARED_PARENT_ID_POLICIES,
+  [
+    'oauth_grant_retention_anchors',
+    {
+      policy: 'uuidv7',
+      rationale:
+        'The non-authorizing retained identity shares the UUIDv7 live grant id, is registered before the grant, and survives its deletion.',
+    },
+  ],
   ['post_publication_post_identities', sharedParentUuidv7('posts')],
   ['post_publication_community_identities', sharedParentUuidv7('communities')],
   ['post_publication_rss_feed_item_identities', sharedParentUuidv7('rss_feed_items')],

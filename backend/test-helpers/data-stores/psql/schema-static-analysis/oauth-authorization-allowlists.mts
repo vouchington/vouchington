@@ -33,10 +33,6 @@ export const OAUTH_AUTHORIZATION_UUID_COLUMNS_WITHOUT_KEYS = [
     'Immutable audit snapshot intentionally survives OAuth client deletion.',
   ],
   [
-    'oauth_authorization_server_events.grant_id',
-    'Immutable audit snapshot intentionally survives OAuth grant deletion.',
-  ],
-  [
     'oauth_native_session_token_mints.client_id',
     'Immutable mint audit snapshot intentionally survives OAuth client deletion.',
   ],
