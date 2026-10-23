@@ -1,6 +1,6 @@
 import { read, beginTransaction, write } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
-import { enqueueOnUserUpdated } from '@queues/entity-listeners/enqueues'
+import { enqueueOnUserUpdatedBestEffort } from '@queues/entity-listeners/enqueues'
 import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
 import { connectBlueskyAccountInLockedTransaction } from './connect-locked.mts'
@@ -56,7 +56,7 @@ export async function finalizeNativeBlueskyAccountLink(
   )
 
   await query.commit()
-  void enqueueOnUserUpdated(currentUserId)
+  await enqueueOnUserUpdatedBestEffort(currentUserId)
 }
 
 async function findCompletion(flowId: string): Promise<{ bluesky_did: string } | undefined> {

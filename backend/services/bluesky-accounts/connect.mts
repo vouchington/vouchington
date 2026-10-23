@@ -1,7 +1,7 @@
 import { read, beginTransaction, write, type QueryOptions } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
-import { enqueueOnUserUpdated } from '@queues/entity-listeners/enqueues'
+import { enqueueOnUserUpdatedBestEffort } from '@queues/entity-listeners/enqueues'
 import { connectBlueskyAccountInLockedTransaction } from './connect-locked.mts'
 import { lockAuthorization } from './session-generation.mts'
 
@@ -23,27 +23,18 @@ export async function connectBlueskyAccountToUser(
   userId: string,
   did: string,
   handle: string,
-  options: Omit<QueryOptions, 'query'> & {
-    query?: TransactionQuery
-    linkAuthorizationId: string
-    enqueueUserUpdate?: boolean
-  },
+  options: { linkAuthorizationId: string },
 ): Promise<void> {
-  const { enqueueUserUpdate = true, linkAuthorizationId, query } = options
-  if (query) {
-    await connectBlueskyAccountInTransaction(userId, did, handle, linkAuthorizationId, query)
-  } else {
-    await using transactionQuery = await beginTransaction()
-    await connectBlueskyAccountInTransaction(
-      userId,
-      did,
-      handle,
-      linkAuthorizationId,
-      transactionQuery,
-    )
-    await transactionQuery.commit()
-  }
-  if (enqueueUserUpdate) void enqueueOnUserUpdated(userId)
+  await using transactionQuery = await beginTransaction()
+  await connectBlueskyAccountInTransaction(
+    userId,
+    did,
+    handle,
+    options.linkAuthorizationId,
+    transactionQuery,
+  )
+  await transactionQuery.commit()
+  await enqueueOnUserUpdatedBestEffort(userId)
 }
 
 async function connectBlueskyAccountInTransaction(

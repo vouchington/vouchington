@@ -1,5 +1,5 @@
 import { revokeBlueskySession } from '@modules/bluesky-oauth'
-import { enqueueOnUserUpdated } from '@queues/entity-listeners/enqueues'
+import { enqueueOnUserUpdatedBestEffort } from '@queues/entity-listeners/enqueues'
 import { getBlueskyOAuthClient } from './client.mts'
 import { getExactBlueskyAccountForDisconnect } from './connect.mts'
 import { runWithAttachedBlueskySession } from './session-lifecycle-context.mts'
@@ -23,5 +23,5 @@ async function revokeLinkedBlueskyAccount(
   })
   // Busts the cached GET /api/v1/my/identity read (view_users_private.bluesky_account) — mirrors
   // disconnectOAuthAccount's invalidation call in @services/my/oauth-account.
-  void enqueueOnUserUpdated(userId)
+  await enqueueOnUserUpdatedBestEffort(userId)
 }
