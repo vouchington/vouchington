@@ -105,9 +105,10 @@ export async function handleOpenAIModerationOmniSingleJob(
       case OPENAI_MODERATION_RECONCILE_IMAGE_QUARANTINES_JOB.name:
         return await reconcilePendingImageQuarantines(scope?.imageIds)
       case OPENAI_MODERATION_RECONCILE_POST_MODERATION_JOB.name: {
+        const postIds = scope?.postIds ?? job.data.postIds
         const reconciliation = await reconcilePostModerationWork(
           undefined,
-          scope?.postIds,
+          postIds,
           job.data.cursor,
         )
         await Promise.all(
@@ -119,7 +120,7 @@ export async function handleOpenAIModerationOmniSingleJob(
         )
         await Promise.all(reconciliation.exhausted_post_ids.map(checkPostClearance))
         if (reconciliation.nextCursor)
-          await enqueueReconcilePostModerationContinuation(reconciliation.nextCursor)
+          await enqueueReconcilePostModerationContinuation(reconciliation.nextCursor, postIds)
         return {
           hasMore: reconciliation.hasMore,
           enqueued: reconciliation.due.length,

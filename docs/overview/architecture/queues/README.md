@@ -45,9 +45,11 @@ flowchart LR
 ## Why queues are shaped this way
 
 Moderation reconciliation and Bedrock batch polling carry a fixed sweep boundary through bounded
-continuations, so unchanged active rows cannot monopolize every page. Invalid-crawl cleanup retains
-its age cutoff while committed deletions advance the remaining-work predicate. A continuation keeps
-work eligible without holding a worker through the entire backlog.
+continuations, so unchanged active rows cannot monopolize every page. Moderation reconciliation
+indexes unfinished work so completed history cannot dominate page reads. Invalid-crawl cleanup
+retains its age cutoff while committed deletions advance the remaining-work predicate; its candidate
+index excludes successful historical crawls from each page. A continuation keeps work eligible
+without holding a worker through the entire backlog.
 
 - **PostgreSQL is the source of truth; the queue is a delivery hint.** Deduplication reduces
   duplicate enqueues but is never the correctness boundary, so every processor is idempotent against

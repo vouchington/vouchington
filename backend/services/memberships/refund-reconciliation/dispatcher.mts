@@ -12,7 +12,7 @@ export async function dispatchDueRefundReconciliations(
   const { rows } = await transaction<RefundReconciliationDispatch & { hasMore: boolean }>(
     sql`/* dispatchDueRefundReconciliations */
     WITH due_candidates AS (
-      SELECT operation.id FROM membership_operations operation
+      SELECT operation.id, work.available_at FROM membership_operations operation
       JOIN membership_operation_execution_work_items work ON work.membership_operation_id = operation.id
       WHERE operation.completed_at IS NULL AND operation.operation_kind = 'administrator_refund'
         AND work.available_at <= clock_timestamp()
@@ -20,7 +20,7 @@ export async function dispatchDueRefundReconciliations(
       ORDER BY work.available_at, operation.id LIMIT ${batchSize + 1}
       FOR UPDATE OF operation SKIP LOCKED
     ), due AS (
-      SELECT id FROM due_candidates LIMIT ${batchSize}
+      SELECT id FROM due_candidates ORDER BY available_at, id LIMIT ${batchSize}
     ), claimed AS (
       UPDATE membership_operation_execution_work_items work
       SET lease_token = uuidv7(), leased_at = clock_timestamp(),

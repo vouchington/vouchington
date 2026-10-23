@@ -6,6 +6,7 @@ import {
   enqueueCreatePostModeration,
   enqueueReconcileImageQuarantines,
   enqueueReconcilePostModeration,
+  enqueueReconcilePostModerationContinuation,
 } from './enqueues.mts'
 import {
   OPENAI_MODERATION_BACKFILL_IMAGES_JOB,
@@ -145,5 +146,32 @@ describe('enqueueReconcilePostModeration', () => {
         },
       },
     })
+  })
+
+  it('keys a scoped continuation by its cursor and scope', async () => {
+    const cursor = {
+      throughId: randomUUID(),
+      afterVersionId: randomUUID(),
+      afterSource: 'openai_omni' as const,
+    }
+    const postIds = [randomUUID()]
+    const continuation = await readEnqueuedJob(
+      openAiModerationQueue,
+      await enqueueReconcilePostModerationContinuation(cursor, postIds),
+    )
+    try {
+      expect(continuation).toMatchObject({
+        name: OPENAI_MODERATION_RECONCILE_POST_MODERATION_JOB.name,
+        data: { cursor, postIds },
+        opts: { removeOnComplete: true, removeOnFail: true },
+      })
+      expect(continuation.id).toMatch(
+        new RegExp(
+          `^post_moderation_reconciliation__${cursor.throughId}__${cursor.afterVersionId}__${cursor.afterSource}__[a-f0-9]{64}$`,
+        ),
+      )
+    } finally {
+      await continuation.remove()
+    }
   })
 })

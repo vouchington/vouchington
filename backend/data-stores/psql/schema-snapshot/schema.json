@@ -41522,6 +41522,26 @@
           "unique": false,
           "valid": true
         },
+        "idx_crawls__old_invalid": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_crawls__old_invalid ON ONLY public.crawls USING btree (id) WHERE ((network_error IS NOT NULL) OR (completed_at IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((network_error IS NOT NULL) OR (completed_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_crawls__redirect_url_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -77856,6 +77876,33 @@
               "nullsFirst": false,
               "opclass": "timestamptz_ops"
             },
+            {
+              "column": "version_id",
+              "descending": false,
+              "expression": "version_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "source",
+              "descending": false,
+              "expression": "source",
+              "nullsFirst": false,
+              "opclass": "enum_ops"
+            }
+          ],
+          "predicate": "(completed_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_post_moderation_work_items__incomplete_version_source": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_post_moderation_work_items__incomplete_version_source ON public.post_moderation_work_items USING btree (version_id, source) WHERE (completed_at IS NULL)",
+          "includedColumns": [],
+          "keys": [
             {
               "column": "version_id",
               "descending": false,

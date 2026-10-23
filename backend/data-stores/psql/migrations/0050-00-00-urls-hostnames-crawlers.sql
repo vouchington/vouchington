@@ -569,6 +569,10 @@ FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 CREATE INDEX IF NOT EXISTS idx_crawls__url_id__id_desc
 ON crawls (url_id, id DESC);
 
+CREATE INDEX IF NOT EXISTS idx_crawls__old_invalid
+ON crawls (id)
+WHERE network_error IS NOT NULL OR completed_at IS NULL;
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_crawls__crawler_id
 ON crawls (hostname_crawler_configuration_id)
