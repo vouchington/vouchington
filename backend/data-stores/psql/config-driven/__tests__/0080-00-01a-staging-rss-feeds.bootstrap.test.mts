@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import generateStagingRssFeedsSQL, { STAGING_RSS_FEEDS } from '../0080-00-01a-staging-rss-feeds.mts'
+import generateStagingRssFeedsSQL from '../0080-00-01a-staging-rss-feeds.mts'
+import { STAGING_RSS_FEEDS } from '../utils/staging-rss-feeds.mts'
 
 const seedFile = '0080-00-01a-staging-rss-feeds.mts'
 const relationsFile = '0080-00-02-publisher-type-relations.sql'

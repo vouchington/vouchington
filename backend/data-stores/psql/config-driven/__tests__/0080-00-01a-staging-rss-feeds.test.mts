@@ -15,7 +15,8 @@ import {
   insertActiveFeedUnderOtherTopic,
   readSeededFeeds,
 } from '../../../../test-helpers/data-stores/psql/staging-rss-feeds.mts'
-import generateStagingRssFeedsSQL, { STAGING_RSS_FEEDS } from '../0080-00-01a-staging-rss-feeds.mts'
+import generateStagingRssFeedsSQL from '../0080-00-01a-staging-rss-feeds.mts'
+import { STAGING_RSS_FEEDS } from '../utils/staging-rss-feeds.mts'
 
 // The three feeds the staging decision names (vouchington/vouchington#1956).
 const GUARDIAN_URL = 'https://www.theguardian.com/science/rss'

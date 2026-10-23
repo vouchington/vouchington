@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, it, vi } from 'vitest'
-import { STAGING_RSS_FEEDS } from './config-driven/0080-00-01a-staging-rss-feeds.mts'
+import { STAGING_RSS_FEEDS } from './config-driven/utils/staging-rss-feeds.mts'
 import {
   checkStagingRssBootstrap,
   type StagingBootstrapReader,

@@ -17,7 +17,7 @@ import { buildSystemUserUpsertSQL } from './utils/system-user-seed.mts'
  * The row is inserted pre-activated (ON CONFLICT DO NOTHING is a plain INSERT, so the
  * activation-lifecycle trigger, which only fires on UPDATE, never runs here).
  *
- * @public loaded by path by the config-driven migration runner
+ * loaded by path by the config-driven migration runner
  */
 export default function generateSeedAutotaggerAgentClassifierSQL(): string {
   return `${buildSystemUserUpsertSQL(AUTOTAGGER_AGENT_SYSTEM_USERNAME)}
