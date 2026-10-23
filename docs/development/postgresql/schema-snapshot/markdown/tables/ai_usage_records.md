@@ -11,7 +11,7 @@ RANGE partitioned on `id` (children: default, no retention owner, access class: 
 | `id`                          | `uuid`                             | no       | `uuidv7()`                   |          |           |           |                                                                                                                              |
 | `community_id`                | `uuid`                             | yes      |                              |          |           |           | The community the call is scoped to, if any; NULL for agents that run outside a community.                                   |
 | `post_id`                     | `uuid`                             | yes      |                              |          |           |           | The post that was moderated; nullable if the post has been deleted or the call was not post-scoped.                          |
-| `classifier_run_id`           | `uuid`                             | yes      |                              |          |           |           | The classifier run whose provider attempt made this call; NULL for every other agent, and after the run receipt is deleted.  |
+| `classifier_run_identity_id`  | `uuid`                             | yes      |                              |          |           |           | Retained classifier run identity whose provider attempt made this call; NULL for other agents.                               |
 | `agent_slug`                  | `text`                             | no       |                              |          |           |           | The slug of the agent that made the LLM call (a moderator, or another agent workload identifier).                            |
 | `model_provider`              | `ai_model_providers`               | no       |                              |          |           |           | The model provider that served the call.                                                                                     |
 | `provider_transport`          | `ai_provider_transports`           | no       |                              |          |           |           | How the call reached the provider: direct API, OpenRouter, or the typesafe jev transport.                                    |
@@ -55,12 +55,12 @@ _none_
 - `ai_usage_records_currency_code_fkey`: `FOREIGN KEY (currency_code) REFERENCES currencies(code) ON DELETE RESTRICT`
 - `ai_usage_records_post_id_fkey`: `FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE SET NULL`
 - `ai_usage_records_service_tier_id_fkey`: `FOREIGN KEY (service_tier_id) REFERENCES ai_service_tiers(id) ON DELETE RESTRICT`
-- `fk_ai_usage_records__classifier_run`: `FOREIGN KEY (classifier_run_id) REFERENCES classifier_runs(id) ON DELETE SET NULL`
+- `fk_ai_usage_records__classifier_run_identity`: `FOREIGN KEY (classifier_run_identity_id) REFERENCES classifier_run_identities(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
 - `ai_usage_records_pkey`: `CREATE UNIQUE INDEX ai_usage_records_pkey ON ONLY public.ai_usage_records USING btree (id)`
-- `idx_ai_usage_records__classifier_run_id`: `CREATE INDEX idx_ai_usage_records__classifier_run_id ON ONLY public.ai_usage_records USING btree (classifier_run_id) WHERE (classifier_run_id IS NOT NULL)`
+- `idx_ai_usage_records__classifier_run_identity_id`: `CREATE INDEX idx_ai_usage_records__classifier_run_identity_id ON ONLY public.ai_usage_records USING btree (classifier_run_identity_id) WHERE (classifier_run_identity_id IS NOT NULL)`
 - `idx_ai_usage_records__community_id_id`: `CREATE INDEX idx_ai_usage_records__community_id_id ON ONLY public.ai_usage_records USING btree (community_id, id DESC) WHERE (community_id IS NOT NULL)`
 - `idx_ai_usage_records__currency_code`: `CREATE INDEX idx_ai_usage_records__currency_code ON ONLY public.ai_usage_records USING btree (currency_code) WHERE (currency_code IS NOT NULL)`
 - `idx_ai_usage_records__post_id`: `CREATE INDEX idx_ai_usage_records__post_id ON ONLY public.ai_usage_records USING btree (post_id) WHERE (post_id IS NOT NULL)`
