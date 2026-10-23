@@ -141,4 +141,4 @@ Invitation responses now include the invitee, inviter, and household owner's nul
 alongside their IDs. Web uses those response facts for every page of invitation rows, including
 loaded pages, so it never needs to display a household UUID or fetch profiles for each row. Native
 adoption should use the same identities and safe fallback when a username is absent.
-A vouchington-clients issue is needed for native adoption. The producer lands first.
+[Native adoption is tracked in vouchington-clients#470](https://github.com/vouchington/vouchington-clients/issues/470). The producer lands first.
