@@ -41,3 +41,5 @@ Not partitioned — growth: unbounded.
 **Triggers:**
 
 - `trigger_copyright_staydown_entries_updated_at`: `CREATE TRIGGER trigger_copyright_staydown_entries_updated_at BEFORE UPDATE ON public.copyright_staydown_entries FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
+- `trigger_register_copy_blocker_staydown_entry`: `CREATE TRIGGER trigger_register_copy_blocker_staydown_entry AFTER INSERT ON public.copyright_staydown_entries FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_blocker_mutation('restriction')`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_staydown_entries FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_staydown_entries', 'public.copyright_staydown_entries')`

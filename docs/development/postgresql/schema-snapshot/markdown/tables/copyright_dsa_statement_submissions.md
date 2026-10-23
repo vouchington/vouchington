@@ -52,3 +52,6 @@ Not partitioned — growth: unbounded.
 **Triggers:**
 
 - `trigger_copyright_dsa_statement_submissions_updated_at`: `CREATE TRIGGER trigger_copyright_dsa_statement_submissions_updated_at BEFORE UPDATE ON public.copyright_dsa_statement_submissions FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
+- `trigger_lock_copyright_dsa_statement_notice`: `CREATE TRIGGER trigger_lock_copyright_dsa_statement_notice BEFORE INSERT ON public.copyright_dsa_statement_submissions FOR EACH ROW EXECUTE FUNCTION fn_lock_copyright_dsa_statement_notice()`
+- `trigger_register_copyright_dsa_statement_count`: `CREATE TRIGGER trigger_register_copyright_dsa_statement_count AFTER INSERT OR DELETE ON public.copyright_dsa_statement_submissions FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_dsa_statement_count()`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_dsa_statement_submissions FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_dsa_statement_submissions', 'public.copyright_dsa_statement_submissions')`

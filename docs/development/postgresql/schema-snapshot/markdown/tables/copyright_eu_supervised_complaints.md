@@ -31,7 +31,7 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
-- `fk_copyright_eu_supervised_complaints__notice`: `FOREIGN KEY (copyright_notice_id, jurisdiction) REFERENCES copyright_notices(id, jurisdiction) ON DELETE RESTRICT`
+- `fk_copyright_eu_supervised_complaints__notice`: `FOREIGN KEY (copyright_notice_id, jurisdiction) REFERENCES copyright_notices(id, jurisdiction) ON DELETE CASCADE`
 - `fk_copyright_eu_supervised_complaints__recorded_by`: `FOREIGN KEY (recorded_by_id) REFERENCES users(id) ON DELETE SET NULL`
 
 **Indexes:**
@@ -42,4 +42,5 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
-- `trigger_copyright_eu_supervised_complaints_immutable`: `CREATE TRIGGER trigger_copyright_eu_supervised_complaints_immutable BEFORE DELETE OR UPDATE ON public.copyright_eu_supervised_complaints FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`
+- `trigger_copyright_eu_supervised_complaints_immutable`: `CREATE TRIGGER trigger_copyright_eu_supervised_complaints_immutable BEFORE DELETE OR UPDATE ON public.copyright_eu_supervised_complaints FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_retention_mutation()`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_eu_supervised_complaints FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_eu_supervised_complaints', 'public.copyright_eu_supervised_complaints')`

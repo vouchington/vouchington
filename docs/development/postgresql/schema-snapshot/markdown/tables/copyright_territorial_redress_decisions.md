@@ -10,6 +10,7 @@ Not partitioned — growth: unbounded.
 | ------------------------------------------ | ----------------------------------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------- |
 | `id`                                       | `uuid`                                                      | no       | `uuidv7()`                   |          |           |           |                                                                           |
 | `copyright_territorial_redress_request_id` | `uuid`                                                      | no       |                              |          |           |           | Redress request this decision closes. One decision per request.           |
+| `revoked_assessment_id`                    | `uuid`                                                      | yes      |                              |          |           |           |                                                                           |
 | `decided_at`                               | `timestamp with time zone`                                  | no       | `CURRENT_TIMESTAMP`          |          |           |           | When staff recorded the redress decision.                                 |
 | `decided_by_id`                            | `uuid`                                                      | yes      |                              |          |           |           | Staff user who recorded the decision. Null after that account is deleted. |
 | `staff_disposition`                        | `copyright_territorial_redress_decision_staff_dispositions` | no       |                              |          |           |           | Staff outcome: maintain or revoke. The system does not choose it.         |
@@ -30,14 +31,19 @@ Not partitioned — growth: unbounded.
 **Foreign keys:**
 
 - `fk_copyright_territorial_redress_decisions__decided_by`: `FOREIGN KEY (decided_by_id) REFERENCES users(id) ON DELETE SET NULL`
-- `fk_copyright_territorial_redress_decisions__request`: `FOREIGN KEY (copyright_territorial_redress_request_id) REFERENCES copyright_territorial_redress_requests(id) ON DELETE RESTRICT`
+- `fk_copyright_territorial_redress_decisions__request`: `FOREIGN KEY (copyright_territorial_redress_request_id) REFERENCES copyright_territorial_redress_requests(id) ON DELETE CASCADE`
+- `fk_copyright_territorial_redress_decisions__revoked_assessment`: `FOREIGN KEY (revoked_assessment_id) REFERENCES copyright_notice_submission_assessments(id) ON DELETE CASCADE`
 
 **Indexes:**
 
 - `copyright_territorial_redress_decisions_pkey`: `CREATE UNIQUE INDEX copyright_territorial_redress_decisions_pkey ON public.copyright_territorial_redress_decisions USING btree (id)`
 - `idx_copyright_territorial_redress_decisions__decided_by`: `CREATE INDEX idx_copyright_territorial_redress_decisions__decided_by ON public.copyright_territorial_redress_decisions USING btree (decided_by_id) WHERE (decided_by_id IS NOT NULL)`
+- `idx_copyright_territorial_redress_decisions__revoked_assessment`: `CREATE INDEX idx_copyright_territorial_redress_decisions__revoked_assessment ON public.copyright_territorial_redress_decisions USING btree (revoked_assessment_id) WHERE (revoked_assessment_id IS NOT NULL)`
 - `uq_copyright_territorial_redress_decisions__request_id`: `CREATE UNIQUE INDEX uq_copyright_territorial_redress_decisions__request_id ON public.copyright_territorial_redress_decisions USING btree (copyright_territorial_redress_request_id)`
 
 **Triggers:**
 
-- `trigger_copyright_territorial_redress_decisions_immutable`: `CREATE TRIGGER trigger_copyright_territorial_redress_decisions_immutable BEFORE DELETE OR UPDATE ON public.copyright_territorial_redress_decisions FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`
+- `trigger_copyright_territorial_redress_decisions_immutable`: `CREATE TRIGGER trigger_copyright_territorial_redress_decisions_immutable BEFORE DELETE OR UPDATE ON public.copyright_territorial_redress_decisions FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_retention_mutation()`
+- `trigger_ensure_copyright_redress_assessment`: `CREATE TRIGGER trigger_ensure_copyright_redress_assessment BEFORE INSERT ON public.copyright_territorial_redress_decisions FOR EACH ROW EXECUTE FUNCTION fn_ensure_copyright_redress_assessment()`
+- `trigger_register_copy_blocker_redress_decision`: `CREATE TRIGGER trigger_register_copy_blocker_redress_decision AFTER INSERT ON public.copyright_territorial_redress_decisions FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_blocker_mutation('redress_request')`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_territorial_redress_decisions FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_territorial_redress_decisions', 'public.copyright_territorial_redress_decisions')`

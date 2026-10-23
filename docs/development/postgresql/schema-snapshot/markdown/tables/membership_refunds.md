@@ -42,8 +42,8 @@ _none_
 
 **Foreign keys:**
 
-- `fk_membership_refunds__administrator_request`: `FOREIGN KEY (membership_operation_id) REFERENCES membership_administrator_refund_operation_requests(membership_operation_id) ON DELETE RESTRICT`
-- `fk_membership_refunds__operation_source`: `FOREIGN KEY (membership_operation_id, membership_source_id) REFERENCES membership_operations(id, membership_source_id) ON DELETE RESTRICT`
+- `fk_membership_refunds__administrator_request`: `FOREIGN KEY (membership_operation_id) REFERENCES membership_administrator_refund_operation_requests(membership_operation_id) ON DELETE CASCADE`
+- `fk_membership_refunds__operation_source`: `FOREIGN KEY (membership_operation_id, membership_source_id) REFERENCES membership_operations(id, membership_source_id) ON DELETE CASCADE`
 - `membership_refunds_issued_by_id_fkey`: `FOREIGN KEY (issued_by_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT`
 - `membership_refunds_membership_id_fkey`: `FOREIGN KEY (membership_id) REFERENCES retained_membership_identities(id) ON DELETE RESTRICT`
 - `membership_refunds_membership_source_id_fkey`: `FOREIGN KEY (membership_source_id) REFERENCES membership_sources(id) ON DELETE RESTRICT`

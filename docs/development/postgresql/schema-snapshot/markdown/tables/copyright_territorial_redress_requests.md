@@ -35,8 +35,8 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
-- `fk_copyright_territorial_redress_requests__decision`: `FOREIGN KEY (copyright_notice_id, copyright_territorial_decision_id) REFERENCES copyright_territorial_decisions(copyright_notice_id, id) ON DELETE RESTRICT`
-- `fk_copyright_territorial_redress_requests__notice`: `FOREIGN KEY (copyright_notice_id, jurisdiction) REFERENCES copyright_notices(id, jurisdiction) ON DELETE RESTRICT`
+- `fk_copyright_territorial_redress_requests__decision`: `FOREIGN KEY (copyright_notice_id, copyright_territorial_decision_id) REFERENCES copyright_territorial_decisions(copyright_notice_id, id) ON DELETE CASCADE`
+- `fk_copyright_territorial_redress_requests__notice`: `FOREIGN KEY (copyright_notice_id, jurisdiction) REFERENCES copyright_notices(id, jurisdiction) ON DELETE CASCADE`
 - `fk_copyright_territorial_redress_requests__submitter`: `FOREIGN KEY (submitted_by_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT`
 
 **Indexes:**
@@ -44,6 +44,7 @@ Not partitioned — growth: unbounded.
 - `copyright_territorial_redress_requests_pkey`: `CREATE UNIQUE INDEX copyright_territorial_redress_requests_pkey ON public.copyright_territorial_redress_requests USING btree (id)`
 - `idx_copyright_territorial_redress_requests__decision`: `CREATE INDEX idx_copyright_territorial_redress_requests__decision ON public.copyright_territorial_redress_requests USING btree (copyright_notice_id, copyright_territorial_decision_id)`
 - `idx_copyright_territorial_redress_requests__decision_page`: `CREATE INDEX idx_copyright_territorial_redress_requests__decision_page ON public.copyright_territorial_redress_requests USING btree (copyright_territorial_decision_id, id)`
+- `idx_copyright_territorial_redress_requests__notice_id`: `CREATE INDEX idx_copyright_territorial_redress_requests__notice_id ON public.copyright_territorial_redress_requests USING btree (copyright_notice_id, id)`
 - `idx_copyright_territorial_redress_requests__submitter`: `CREATE INDEX idx_copyright_territorial_redress_requests__submitter ON public.copyright_territorial_redress_requests USING btree (submitted_by_id) WHERE (submitted_by_id IS NOT NULL)`
 - `uq_copyright_territorial_redress_requests__guest`: `CREATE UNIQUE INDEX uq_copyright_territorial_redress_requests__guest ON public.copyright_territorial_redress_requests USING btree (copyright_territorial_decision_id) WHERE (submitted_by_id IS NULL)`
 - `uq_copyright_territorial_redress_requests__idempotency`: `CREATE UNIQUE INDEX uq_copyright_territorial_redress_requests__idempotency ON public.copyright_territorial_redress_requests USING btree (submitted_by_id, jurisdiction, idempotency_key)`
@@ -51,4 +52,7 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
-- `trigger_copyright_territorial_redress_requests_immutable`: `CREATE TRIGGER trigger_copyright_territorial_redress_requests_immutable BEFORE DELETE OR UPDATE ON public.copyright_territorial_redress_requests FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`
+- `trigger_copyright_territorial_redress_request_identity`: `CREATE TRIGGER trigger_copyright_territorial_redress_request_identity BEFORE INSERT ON public.copyright_territorial_redress_requests FOR EACH ROW EXECUTE FUNCTION fn_reject_replayed_territorial_redress_identity()`
+- `trigger_copyright_territorial_redress_requests_immutable`: `CREATE TRIGGER trigger_copyright_territorial_redress_requests_immutable BEFORE DELETE OR UPDATE ON public.copyright_territorial_redress_requests FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_retention_mutation()`
+- `trigger_register_copy_blocker_redress_request`: `CREATE TRIGGER trigger_register_copy_blocker_redress_request AFTER INSERT ON public.copyright_territorial_redress_requests FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_blocker_mutation('direct')`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_territorial_redress_requests FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_territorial_redress_requests', 'public.copyright_territorial_redress_requests')`

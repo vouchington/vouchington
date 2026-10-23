@@ -32,7 +32,7 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
-- `fk_copyright_territorial_notice_acknowledgments__receipt`: `FOREIGN KEY (copyright_territorial_notice_receipt_id) REFERENCES copyright_territorial_notice_receipts(id) ON DELETE RESTRICT`
+- `fk_copyright_territorial_notice_acknowledgments__receipt`: `FOREIGN KEY (copyright_territorial_notice_receipt_id) REFERENCES copyright_territorial_notice_receipts(id) ON DELETE CASCADE`
 
 **Indexes:**
 
@@ -43,3 +43,4 @@ Not partitioned — growth: unbounded.
 
 - `trigger_copyright_territorial_notice_acknowledgments_attempt`: `CREATE TRIGGER trigger_copyright_territorial_notice_acknowledgments_attempt BEFORE DELETE OR UPDATE ON public.copyright_territorial_notice_acknowledgments FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_acknowledgment_attempt()`
 - `trigger_copyright_territorial_notice_acknowledgments_updated_at`: `CREATE TRIGGER trigger_copyright_territorial_notice_acknowledgments_updated_at BEFORE UPDATE ON public.copyright_territorial_notice_acknowledgments FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_territorial_notice_acknowledgments FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_territorial_notice_acknowledgments', 'public.copyright_territorial_notice_acknowledgments')`

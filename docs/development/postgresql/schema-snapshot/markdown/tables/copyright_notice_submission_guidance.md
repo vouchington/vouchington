@@ -31,7 +31,7 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
-- `fk_copyright_notice_submission_guidance__submission`: `FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT`
+- `fk_copyright_notice_submission_guidance__submission`: `FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE CASCADE`
 
 **Indexes:**
 
@@ -42,3 +42,4 @@ Not partitioned — growth: unbounded.
 **Triggers:**
 
 - `trigger_copyright_submission_guidance_immutable`: `CREATE TRIGGER trigger_copyright_submission_guidance_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_submission_guidance FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence()`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_notice_submission_guidance FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_notice_submission_guidance', 'public.copyright_notice_submission_guidance')`

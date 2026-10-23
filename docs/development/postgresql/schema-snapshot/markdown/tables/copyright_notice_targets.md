@@ -48,3 +48,6 @@ Not partitioned — growth: unbounded.
 **Triggers:**
 
 - `trigger_copyright_notice_targets_immutable`: `CREATE TRIGGER trigger_copyright_notice_targets_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_targets FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence()`
+- `trigger_register_copy_blocker_target`: `CREATE TRIGGER trigger_register_copy_blocker_target AFTER INSERT ON public.copyright_notice_targets FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_blocker_mutation('direct')`
+- `trigger_register_copyright_notice_target_retained_parties`: `CREATE TRIGGER trigger_register_copyright_notice_target_retained_parties AFTER INSERT ON public.copyright_notice_targets FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_notice_target_retained_parties()`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_notice_targets FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_notice_targets', 'public.copyright_notice_targets')`

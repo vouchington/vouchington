@@ -15,7 +15,7 @@ Not partitioned — growth: unbounded.
 | `reviewed_by_id`                                  | `uuid`                                           | yes      |                              |          |           |           | Staff member who decided the intake; erased on account deletion.                                                                                                                                                                   |
 | `decision`                                        | `copyright_notice_email_intake_review_decisions` | no       |                              |          |           |           | Staff decision: approved opened a case, rejected declined the email as a copyright notice and may have queued a reply, legal_process closed it as legal process such as a subpoena with no reply, case, or claimant-visible event. |
 | `rationale_ciphertext`                            | `text`                                           | no       |                              |          |           |           | Encrypted staff rationale, or for legal_process the encrypted reason; it can name a legal matter and is never logged or returned.                                                                                                  |
-| `promoted_copyright_notice_id`                    | `uuid`                                           | yes      |                              |          |           |           | Legal case created by an approved review; null for every other decision.                                                                                                                                                           |
+| `promoted_copyright_notice_id`                    | `uuid`                                           | yes      |                              |          |           |           | Retained identity of the case created by an approved review; null for other decisions and never authority to use a deleted case.                                                                                                   |
 | `created_at`                                      | `timestamp with time zone`                       | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                                                                                                                                    |
 
 **Primary key:** `PRIMARY KEY (id)`
@@ -34,7 +34,7 @@ Not partitioned — growth: unbounded.
 **Foreign keys:**
 
 - `copyright_notice_email_intake_reviews_reviewed_by_id_fkey`: `FOREIGN KEY (reviewed_by_id) REFERENCES users(id) ON DELETE SET NULL`
-- `fk_copyri_notice_email_intake_review__promoted_copyright_notice`: `FOREIGN KEY (promoted_copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT`
+- `fk_copyri_notice_email_intake_review__promoted_copyright_notice`: `FOREIGN KEY (promoted_copyright_notice_id) REFERENCES copyright_notice_retained_identities(id) ON DELETE RESTRICT`
 - `fk_copyright_email_reviews__recommendation_intake`: `FOREIGN KEY (copyright_notice_email_intake_id, copyright_notice_email_intake_recommendation_id) REFERENCES copyright_notice_email_intake_recommendations(copyright_notice_email_intake_id, id) ON DELETE RESTRICT`
 - `fk_copyright_notice_email_intake_reviews__intake`: `FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT`
 
@@ -50,4 +50,6 @@ Not partitioned — growth: unbounded.
 **Triggers:**
 
 - `trigger_copyright_email_reviews_immutable`: `CREATE TRIGGER trigger_copyright_email_reviews_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_email_intake_reviews FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_immutable_with_actor_erasure('reviewed_by_id')`
+- `trigger_copyright_email_reviews_live_case`: `CREATE TRIGGER trigger_copyright_email_reviews_live_case BEFORE INSERT ON public.copyright_notice_email_intake_reviews FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_email_review_without_live_case()`
 - `trigger_copyright_email_reviews_require_actor`: `CREATE TRIGGER trigger_copyright_email_reviews_require_actor BEFORE INSERT ON public.copyright_notice_email_intake_reviews FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_human_actor('reviewed_by_id')`
+- `trigger_register_copyright_email_review_activity`: `CREATE TRIGGER trigger_register_copyright_email_review_activity AFTER INSERT ON public.copyright_notice_email_intake_reviews FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_email_case_activity()`

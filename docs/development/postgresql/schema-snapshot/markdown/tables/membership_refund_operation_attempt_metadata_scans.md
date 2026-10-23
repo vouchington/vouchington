@@ -30,7 +30,7 @@ _none_
 
 **Foreign keys:**
 
-- `fk_membership_refund_operation_attempt_metadata_scans__attempt`: `FOREIGN KEY (membership_refund_operation_attempt_id) REFERENCES membership_refund_operation_attempts(id) ON DELETE RESTRICT`
+- `fk_membership_refund_operation_attempt_metadata_scans__attempt`: `FOREIGN KEY (membership_refund_operation_attempt_id) REFERENCES membership_refund_operation_attempts(id) ON DELETE CASCADE`
 
 **Indexes:**
 

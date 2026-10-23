@@ -28,12 +28,13 @@ _none_
 **Foreign keys:**
 
 - `copyright_repeat_infringer_incidents_account_user_id_fkey`: `FOREIGN KEY (account_user_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT`
-- `copyright_repeat_infringer_incidents_copyright_notice_id_fkey`: `FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT`
+- `copyright_repeat_infringer_incidents_copyright_notice_id_fkey`: `FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE CASCADE`
 
 **Indexes:**
 
 - `copyright_repeat_infringer_incidents_pkey`: `CREATE UNIQUE INDEX copyright_repeat_infringer_incidents_pkey ON public.copyright_repeat_infringer_incidents USING btree (id)`
-- `idx_copyright_repeat_infringer_incidents__notice`: `CREATE INDEX idx_copyright_repeat_infringer_incidents__notice ON public.copyright_repeat_infringer_incidents USING btree (copyright_notice_id)`
+- `idx_copyright_incidents__purge_operative`: `CREATE INDEX idx_copyright_incidents__purge_operative ON public.copyright_repeat_infringer_incidents USING btree (copyright_notice_id) WHERE is_operative`
+- `idx_copyright_repeat_infringer_incidents__legal_clock`: `CREATE INDEX idx_copyright_repeat_infringer_incidents__legal_clock ON public.copyright_repeat_infringer_incidents USING btree (copyright_notice_id, updated_at DESC)`
 - `idx_copyright_repeat_infringer_incidents__operative_account`: `CREATE INDEX idx_copyright_repeat_infringer_incidents__operative_account ON public.copyright_repeat_infringer_incidents USING btree (account_user_id) WHERE is_operative`
 - `uq_copyrig_repeat_infringe_incident__account_user_id__notice_id`: `CREATE UNIQUE INDEX uq_copyrig_repeat_infringe_incident__account_user_id__notice_id ON public.copyright_repeat_infringer_incidents USING btree (account_user_id, copyright_notice_id)`
 - `uq_copyright_repeat_infringer_incidents__id__notice`: `CREATE UNIQUE INDEX uq_copyright_repeat_infringer_incidents__id__notice ON public.copyright_repeat_infringer_incidents USING btree (id, copyright_notice_id)`
@@ -42,3 +43,5 @@ _none_
 
 - `trigger_copyright_repeat_infringer_incidents_guard`: `CREATE TRIGGER trigger_copyright_repeat_infringer_incidents_guard BEFORE DELETE OR UPDATE ON public.copyright_repeat_infringer_incidents FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_repeat_infringer_incident()`
 - `trigger_copyright_repeat_infringer_incidents_updated_at`: `CREATE TRIGGER trigger_copyright_repeat_infringer_incidents_updated_at BEFORE UPDATE ON public.copyright_repeat_infringer_incidents FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
+- `trigger_register_copyright_repeat_infringer_retained_party`: `CREATE TRIGGER trigger_register_copyright_repeat_infringer_retained_party AFTER INSERT ON public.copyright_repeat_infringer_incidents FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_repeat_infringer_retained_party()`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_repeat_infringer_incidents FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_repeat_infringer_incidents', 'public.copyright_repeat_infringer_incidents')`

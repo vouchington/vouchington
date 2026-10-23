@@ -39,3 +39,4 @@ _none_
 **Triggers:**
 
 - `trigger_notification_push_receipts_updated_at`: `CREATE TRIGGER trigger_notification_push_receipts_updated_at BEFORE UPDATE ON public.notification_push_intent_subscription_receipts FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.notification_push_intent_subscription_receipts FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('notification_push_intent_subscription_receipts', 'public.notification_push_intent_subscription_receipts')`

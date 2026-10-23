@@ -35,3 +35,5 @@ Not partitioned — growth: unbounded.
 **Triggers:**
 
 - `trigger_copyright_delivery_recipients_immutable`: `CREATE TRIGGER trigger_copyright_delivery_recipients_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_delivery_recipients FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence()`
+- `trigger_register_copy_blocker_delivery_recipient`: `CREATE TRIGGER trigger_register_copy_blocker_delivery_recipient AFTER INSERT ON public.copyright_notice_delivery_recipients FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_blocker_mutation('delivery_work')`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_notice_delivery_recipients FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_notice_delivery_recipients', 'public.copyright_notice_delivery_recipients')`

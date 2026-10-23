@@ -31,7 +31,7 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
-- `copyright_notice_guest_capabilities_copyright_notice_id_fkey`: `FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT`
+- `copyright_notice_guest_capabilities_copyright_notice_id_fkey`: `FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE CASCADE`
 - `copyright_notice_guest_capabilities_issued_by_id_fkey`: `FOREIGN KEY (issued_by_id) REFERENCES users(id) ON DELETE SET NULL`
 
 **Indexes:**
@@ -39,9 +39,12 @@ Not partitioned — growth: unbounded.
 - `copyright_guest_capability_notice_key`: `CREATE UNIQUE INDEX copyright_guest_capability_notice_key ON public.copyright_notice_guest_capabilities USING btree (id, copyright_notice_id)`
 - `copyright_notice_guest_capabilities_pkey`: `CREATE UNIQUE INDEX copyright_notice_guest_capabilities_pkey ON public.copyright_notice_guest_capabilities USING btree (id)`
 - `copyright_notice_guest_capabilities_token_hash_key`: `CREATE UNIQUE INDEX copyright_notice_guest_capabilities_token_hash_key ON public.copyright_notice_guest_capabilities USING btree (token_hash)`
+- `idx_copyright_notice_guest_capabilities__active_expiry`: `CREATE INDEX idx_copyright_notice_guest_capabilities__active_expiry ON public.copyright_notice_guest_capabilities USING btree (copyright_notice_id, expires_at DESC) WHERE (revoked_at IS NULL)`
 - `idx_copyright_notice_guest_capabilities__issued_by`: `CREATE INDEX idx_copyright_notice_guest_capabilities__issued_by ON public.copyright_notice_guest_capabilities USING btree (issued_by_id) WHERE (issued_by_id IS NOT NULL)`
+- `idx_copyright_notice_guest_capabilities__legal_clock`: `CREATE INDEX idx_copyright_notice_guest_capabilities__legal_clock ON public.copyright_notice_guest_capabilities USING btree (copyright_notice_id, updated_at DESC)`
 - `idx_copyright_notice_guest_capabilities__notice`: `CREATE INDEX idx_copyright_notice_guest_capabilities__notice ON public.copyright_notice_guest_capabilities USING btree (copyright_notice_id, id)`
 
 **Triggers:**
 
 - `trigger_copyright_notice_guest_capabilities_updated_at`: `CREATE TRIGGER trigger_copyright_notice_guest_capabilities_updated_at BEFORE UPDATE ON public.copyright_notice_guest_capabilities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_notice_guest_capabilities FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_notice_guest_capabilities', 'public.copyright_notice_guest_capabilities')`

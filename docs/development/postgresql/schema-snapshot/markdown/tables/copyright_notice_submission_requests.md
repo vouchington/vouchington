@@ -6,14 +6,14 @@ Idempotency records for authenticated appeal and counter-notice submissions.
 
 Not partitioned — growth: unbounded.
 
-| Column                           | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                        |
-| -------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | -------------------------------------------------------------- |
-| `id`                             | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                |
-| `copyright_notice_submission_id` | `uuid`                     | no       |                              |          |           |           | Submission admitted for this idempotent request.               |
-| `requester_user_id`              | `uuid`                     | yes      |                              |          |           |           | Authenticated affected poster making the request.              |
-| `idempotency_key`                | `uuid`                     | no       |                              |          |           |           | Caller-generated UUID preventing duplicate response admission. |
-| `request_sha256`                 | `bytea`                    | no       |                              |          |           |           | Digest used to reject conflicting reuse of an idempotency key. |
-| `created_at`                     | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                |
+| Column                           | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                               |
+| -------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------------------------------------- |
+| `id`                             | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                                       |
+| `copyright_notice_submission_id` | `uuid`                     | no       |                              |          |           |           | Submission admitted for this idempotent request.                                                                      |
+| `requester_user_id`              | `uuid`                     | yes      |                              |          |           |           | Authenticated affected poster making the request.                                                                     |
+| `idempotency_key`                | `uuid`                     | yes      |                              |          |           |           | Caller-generated UUID cleared from the raw legal row after 30 days; durable minimal replay identity remains separate. |
+| `request_sha256`                 | `bytea`                    | no       |                              |          |           |           | Digest used to reject conflicting reuse of an idempotency key.                                                        |
+| `created_at`                     | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                       |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -29,7 +29,7 @@ Not partitioned — growth: unbounded.
 **Foreign keys:**
 
 - `copyright_notice_submission_requests_requester_user_id_fkey`: `FOREIGN KEY (requester_user_id) REFERENCES users(id) ON DELETE SET NULL`
-- `fk_copyright_notice_submission_requests__submission`: `FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT`
+- `fk_copyright_notice_submission_requests__submission`: `FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE CASCADE`
 
 **Indexes:**
 
@@ -39,4 +39,6 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
+- `trigger_copyright_notice_submission_requests_retained_identity`: `CREATE TRIGGER trigger_copyright_notice_submission_requests_retained_identity BEFORE INSERT ON public.copyright_notice_submission_requests FOR EACH ROW EXECUTE FUNCTION fn_reject_replayed_copyright_submission_identity()`
 - `trigger_copyright_submission_requests_immutable`: `CREATE TRIGGER trigger_copyright_submission_requests_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_submission_requests FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_immutable_with_actor_erasure('requester_user_id')`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_notice_submission_requests FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_notice_submission_requests', 'public.copyright_notice_submission_requests')`

@@ -23,8 +23,8 @@ _none_
 
 **Foreign keys:**
 
-- `fk_copyr_repeat_infringe_incident_targets__incident`: `FOREIGN KEY (copyright_repeat_infringer_incident_id, copyright_notice_id) REFERENCES copyright_repeat_infringer_incidents(id, copyright_notice_id) ON DELETE RESTRICT`
-- `fk_copyr_repeat_infringe_incident_targets__target`: `FOREIGN KEY (copyright_notice_id, copyright_notice_target_id) REFERENCES copyright_notice_targets(copyright_notice_id, id) ON DELETE RESTRICT`
+- `fk_copyr_repeat_infringe_incident_targets__incident`: `FOREIGN KEY (copyright_repeat_infringer_incident_id, copyright_notice_id) REFERENCES copyright_repeat_infringer_incidents(id, copyright_notice_id) ON DELETE CASCADE`
+- `fk_copyr_repeat_infringe_incident_targets__target`: `FOREIGN KEY (copyright_notice_id, copyright_notice_target_id) REFERENCES copyright_notice_targets(copyright_notice_id, id) ON DELETE CASCADE`
 
 **Indexes:**
 
@@ -35,3 +35,4 @@ _none_
 **Triggers:**
 
 - `trigger_copyright_repeat_infringer_incident_targets_immutable`: `CREATE TRIGGER trigger_copyright_repeat_infringer_incident_targets_immutable BEFORE DELETE OR UPDATE ON public.copyright_repeat_infringer_incident_targets FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence()`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_repeat_infringer_incident_targets FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_repeat_infringer_incident_targets', 'public.copyright_repeat_infringer_incident_targets')`

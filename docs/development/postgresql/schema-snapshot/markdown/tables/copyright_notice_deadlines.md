@@ -34,13 +34,14 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
-- `copyright_notice_deadlines_copyright_notice_id_fkey`: `FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT`
-- `fk_copyrig_notice_deadlin__qualifying_counter_notice_assessment`: `FOREIGN KEY (qualifying_counter_notice_assessment_id) REFERENCES copyright_notice_submission_assessments(id) ON DELETE RESTRICT`
+- `copyright_notice_deadlines_copyright_notice_id_fkey`: `FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE CASCADE`
+- `fk_copyrig_notice_deadlin__qualifying_counter_notice_assessment`: `FOREIGN KEY (qualifying_counter_notice_assessment_id) REFERENCES copyright_notice_submission_assessments(id) ON DELETE CASCADE`
 
 **Indexes:**
 
 - `copyright_notice_deadlines_copyright_notice_id_id_key`: `CREATE UNIQUE INDEX copyright_notice_deadlines_copyright_notice_id_id_key ON public.copyright_notice_deadlines USING btree (copyright_notice_id, id)`
 - `copyright_notice_deadlines_pkey`: `CREATE UNIQUE INDEX copyright_notice_deadlines_pkey ON public.copyright_notice_deadlines USING btree (id)`
+- `idx_copyright_deadlines__purge_open`: `CREATE INDEX idx_copyright_deadlines__purge_open ON public.copyright_notice_deadlines USING btree (copyright_notice_id) WHERE ((resolved_at IS NULL) AND (cancelled_at IS NULL))`
 - `idx_copyright_notice_deadlines__notice`: `CREATE INDEX idx_copyright_notice_deadlines__notice ON public.copyright_notice_deadlines USING btree (copyright_notice_id, id DESC)`
 - `idx_copyright_notice_deadlines__pending`: `CREATE INDEX idx_copyright_notice_deadlines__pending ON public.copyright_notice_deadlines USING btree (escalation_at, id) WHERE ((resolved_at IS NULL) AND (cancelled_at IS NULL))`
 - `uq_copyr_notice_deadli__qualifying_counter_notice_assessment_id`: `CREATE UNIQUE INDEX uq_copyr_notice_deadli__qualifying_counter_notice_assessment_id ON public.copyright_notice_deadlines USING btree (qualifying_counter_notice_assessment_id)`
@@ -49,3 +50,4 @@ Not partitioned — growth: unbounded.
 
 - `trigger_copyright_deadlines_guard`: `CREATE TRIGGER trigger_copyright_deadlines_guard BEFORE DELETE OR UPDATE ON public.copyright_notice_deadlines FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_deadline()`
 - `trigger_copyright_deadlines_updated_at`: `CREATE TRIGGER trigger_copyright_deadlines_updated_at BEFORE UPDATE ON public.copyright_notice_deadlines FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_notice_deadlines FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_notice_deadlines', 'public.copyright_notice_deadlines')`

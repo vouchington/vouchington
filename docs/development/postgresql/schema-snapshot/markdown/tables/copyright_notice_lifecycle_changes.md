@@ -83,23 +83,23 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
-- `copyright_lifecycle_event_action_intent_fk`: `FOREIGN KEY (copyright_notice_id, copyright_notice_action_intent_id) REFERENCES copyright_notice_action_work_items(copyright_notice_id, id) ON DELETE RESTRICT`
-- `copyright_lifecycle_event_delivery_intent_fk`: `FOREIGN KEY (copyright_notice_delivery_work_item_id) REFERENCES copyright_notice_delivery_work_items(id) ON DELETE RESTRICT`
+- `copyright_lifecycle_event_action_intent_fk`: `FOREIGN KEY (copyright_notice_id, copyright_notice_action_intent_id) REFERENCES copyright_notice_action_work_items(copyright_notice_id, id) ON DELETE CASCADE`
+- `copyright_lifecycle_event_delivery_intent_fk`: `FOREIGN KEY (copyright_notice_delivery_work_item_id) REFERENCES copyright_notice_delivery_work_items(id) ON DELETE CASCADE`
 - `copyright_lifecycle_event_email_intake_fk`: `FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT`
 - `copyright_lifecycle_event_guest_capability_fk`: `FOREIGN KEY (copyright_notice_guest_capability_id, copyright_notice_id) REFERENCES copyright_notice_guest_capabilities(id, copyright_notice_id) ON DELETE RESTRICT`
 - `copyright_lifecycle_event_media_registry_fk`: `FOREIGN KEY (media_delivery_registry_record_id) REFERENCES media_delivery_registry_records(id) ON DELETE RESTRICT`
 - `copyright_notice_lifecycle_changes_changed_by_id_fkey`: `FOREIGN KEY (changed_by_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT`
 - `copyright_notice_lifecycle_changes_copyright_notice_id_fkey`: `FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE CASCADE`
-- `fk_copyright_lifecycle_changes__review_rationale`: `FOREIGN KEY (review_rationale_id) REFERENCES copyright_notice_lifecycle_change_rationales(id) ON DELETE RESTRICT DEFERRABLE INITIALLY DEFERRED`
-- `fk_copyright_lifecycle_events__artifact_notice`: `FOREIGN KEY (copyright_notice_id, copyright_notice_evidence_artifact_id) REFERENCES copyright_notice_evidence_artifacts(copyright_notice_id, id) ON DELETE RESTRICT`
-- `fk_copyright_lifecycle_events__assessment_notice`: `FOREIGN KEY (copyright_notice_id, copyright_notice_submission_assessment_id) REFERENCES copyright_notice_submission_assessments(copyright_notice_id, id) ON DELETE RESTRICT`
-- `fk_copyright_lifecycle_events__correspondence_notice`: `FOREIGN KEY (copyright_notice_id, copyright_notice_correspondence_id) REFERENCES copyright_notice_correspondence_messages(copyright_notice_id, id) ON DELETE RESTRICT`
-- `fk_copyright_lifecycle_events__deadline_notice`: `FOREIGN KEY (copyright_notice_id, copyright_notice_deadline_id) REFERENCES copyright_notice_deadlines(copyright_notice_id, id) ON DELETE RESTRICT`
-- `fk_copyright_lifecycle_events__email_intake_notice`: `FOREIGN KEY (copyright_notice_id, copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intake_notice_links(copyright_notice_id, copyright_notice_email_intake_id) ON DELETE RESTRICT`
-- `fk_copyright_lifecycle_events__hold_assessment_notice`: `FOREIGN KEY (copyright_notice_id, copyright_notice_legal_hold_assessment_id) REFERENCES copyright_notice_legal_hold_assessments(copyright_notice_id, id) ON DELETE RESTRICT`
-- `fk_copyright_lifecycle_events__hold_resolution_notice`: `FOREIGN KEY (copyright_notice_id, copyright_notice_legal_hold_resolution_id) REFERENCES copyright_notice_legal_hold_resolutions(copyright_notice_id, id) ON DELETE RESTRICT`
-- `fk_copyright_lifecycle_events__restriction_notice`: `FOREIGN KEY (copyright_notice_id, copyright_restriction_id) REFERENCES copyright_restrictions(copyright_notice_id, id) ON DELETE RESTRICT`
-- `fk_copyright_lifecycle_events__submission_notice`: `FOREIGN KEY (copyright_notice_id, copyright_notice_submission_id) REFERENCES copyright_notice_submissions(copyright_notice_id, id) ON DELETE RESTRICT`
+- `fk_copyright_lifecycle_changes__review_rationale`: `FOREIGN KEY (review_rationale_id) REFERENCES copyright_notice_lifecycle_change_rationales(id) DEFERRABLE INITIALLY DEFERRED`
+- `fk_copyright_lifecycle_events__artifact_notice`: `FOREIGN KEY (copyright_notice_id, copyright_notice_evidence_artifact_id) REFERENCES copyright_notice_evidence_artifacts(copyright_notice_id, id) ON DELETE CASCADE`
+- `fk_copyright_lifecycle_events__assessment_notice`: `FOREIGN KEY (copyright_notice_id, copyright_notice_submission_assessment_id) REFERENCES copyright_notice_submission_assessments(copyright_notice_id, id) ON DELETE CASCADE`
+- `fk_copyright_lifecycle_events__correspondence_notice`: `FOREIGN KEY (copyright_notice_id, copyright_notice_correspondence_id) REFERENCES copyright_notice_correspondence_messages(copyright_notice_id, id) ON DELETE CASCADE`
+- `fk_copyright_lifecycle_events__deadline_notice`: `FOREIGN KEY (copyright_notice_id, copyright_notice_deadline_id) REFERENCES copyright_notice_deadlines(copyright_notice_id, id) ON DELETE CASCADE`
+- `fk_copyright_lifecycle_events__email_intake_notice`: `FOREIGN KEY (copyright_notice_id, copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intake_notice_links(copyright_notice_id, copyright_notice_email_intake_id) ON DELETE CASCADE`
+- `fk_copyright_lifecycle_events__hold_assessment_notice`: `FOREIGN KEY (copyright_notice_id, copyright_notice_legal_hold_assessment_id) REFERENCES copyright_notice_legal_hold_assessments(copyright_notice_id, id) ON DELETE CASCADE`
+- `fk_copyright_lifecycle_events__hold_resolution_notice`: `FOREIGN KEY (copyright_notice_id, copyright_notice_legal_hold_resolution_id) REFERENCES copyright_notice_legal_hold_resolutions(copyright_notice_id, id) ON DELETE CASCADE`
+- `fk_copyright_lifecycle_events__restriction_notice`: `FOREIGN KEY (copyright_notice_id, copyright_restriction_id) REFERENCES copyright_restrictions(copyright_notice_id, id) ON DELETE CASCADE`
+- `fk_copyright_lifecycle_events__submission_notice`: `FOREIGN KEY (copyright_notice_id, copyright_notice_submission_id) REFERENCES copyright_notice_submissions(copyright_notice_id, id) ON DELETE CASCADE`
 
 **Indexes:**
 
@@ -124,6 +124,7 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
-- `trigger_copyright_notice_events_immutable`: `CREATE TRIGGER trigger_copyright_notice_events_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_lifecycle_changes FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`
+- `trigger_copyright_notice_events_immutable`: `CREATE TRIGGER trigger_copyright_notice_events_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_lifecycle_changes FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_purge_only_mutation()`
 - `trigger_ensure_copyright_notice_lifecycle_changes_actor`: `CREATE TRIGGER trigger_ensure_copyright_notice_lifecycle_changes_actor BEFORE INSERT ON public.copyright_notice_lifecycle_changes FOR EACH ROW EXECUTE FUNCTION fn_ensure_retained_actor_identity('changed_by_id')`
 - `trigger_guard_copyright_lifecycle_event_source_notice`: `CREATE TRIGGER trigger_guard_copyright_lifecycle_event_source_notice BEFORE INSERT ON public.copyright_notice_lifecycle_changes FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_lifecycle_event_source_notice()`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_notice_lifecycle_changes FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_notice_lifecycle_changes', 'public.copyright_notice_lifecycle_changes')`

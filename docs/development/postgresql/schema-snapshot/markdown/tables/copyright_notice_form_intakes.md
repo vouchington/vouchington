@@ -36,9 +36,9 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
-- `copyright_notice_form_intakes_copyright_notice_id_fkey`: `FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT`
+- `copyright_notice_form_intakes_copyright_notice_id_fkey`: `FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE CASCADE`
 - `copyright_notice_form_intakes_requester_user_id_fkey`: `FOREIGN KEY (requester_user_id) REFERENCES users(id) ON DELETE SET NULL`
-- `fk_copyright_notice_form_intakes__submission`: `FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT`
+- `fk_copyright_notice_form_intakes__submission`: `FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE CASCADE`
 
 **Indexes:**
 
@@ -51,3 +51,6 @@ Not partitioned — growth: unbounded.
 **Triggers:**
 
 - `trigger_copyright_form_intakes_immutable`: `CREATE TRIGGER trigger_copyright_form_intakes_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_form_intakes FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_immutable_with_actor_erasure('requester_user_id')`
+- `trigger_copyright_notice_form_intakes_retained_identity`: `CREATE TRIGGER trigger_copyright_notice_form_intakes_retained_identity BEFORE INSERT ON public.copyright_notice_form_intakes FOR EACH ROW EXECUTE FUNCTION fn_reject_replayed_copyright_form_identity()`
+- `trigger_register_copy_blocker_form_intake`: `CREATE TRIGGER trigger_register_copy_blocker_form_intake AFTER INSERT ON public.copyright_notice_form_intakes FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_blocker_mutation('direct')`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_notice_form_intakes FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_notice_form_intakes', 'public.copyright_notice_form_intakes')`

@@ -34,3 +34,4 @@ _none_
 **Triggers:**
 
 - `trigger_copyright_lifecycle_change_rationales_immutable`: `CREATE TRIGGER trigger_copyright_lifecycle_change_rationales_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_lifecycle_change_rationales FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence()`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_notice_lifecycle_change_rationales FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_notice_lifecycle_change_rationales', 'public.copyright_notice_lifecycle_change_rationales')`

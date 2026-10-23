@@ -34,7 +34,7 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
-- `fk_membership_refund_operation_attempts__operation_context`: `FOREIGN KEY (membership_operation_id, membership_provider_context_id) REFERENCES membership_operations(id, membership_provider_context_id) ON DELETE RESTRICT`
+- `fk_membership_refund_operation_attempts__operation_context`: `FOREIGN KEY (membership_operation_id, membership_provider_context_id) REFERENCES membership_operations(id, membership_provider_context_id) ON DELETE CASCADE`
 - `membership_refund_operation_attempts_currency_code_fkey`: `FOREIGN KEY (currency_code) REFERENCES currencies(code) ON DELETE RESTRICT`
 
 **Indexes:**

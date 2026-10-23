@@ -43,7 +43,7 @@ Not partitioned — growth: unbounded.
 - `fk_membershi_administr_refund_operation_requests__currency_code`: `FOREIGN KEY (currency_code) REFERENCES currencies(code) ON DELETE RESTRICT`
 - `fk_membership_administra_refund_operation_requests__membership`: `FOREIGN KEY (membership_id) REFERENCES retained_membership_identities(id) ON DELETE RESTRICT`
 - `fk_membership_administrato_refund_operation_requests__issued_by`: `FOREIGN KEY (issued_by_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT`
-- `fk_membership_administrato_refund_operation_requests__operation`: `FOREIGN KEY (membership_operation_id) REFERENCES membership_operations(id) ON DELETE RESTRICT`
+- `fk_membership_administrato_refund_operation_requests__operation`: `FOREIGN KEY (membership_operation_id) REFERENCES membership_operations(id) ON DELETE CASCADE`
 
 **Indexes:**
 
@@ -56,4 +56,4 @@ Not partitioned — growth: unbounded.
 **Triggers:**
 
 - `trigger_maror_context`: `CREATE TRIGGER trigger_maror_context BEFORE INSERT ON public.membership_administrator_refund_operation_requests FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_administrator_refund_request_context()`
-- `trigger_maror_immutable`: `CREATE TRIGGER trigger_maror_immutable BEFORE DELETE OR UPDATE ON public.membership_administrator_refund_operation_requests FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`
+- `trigger_maror_immutable`: `CREATE TRIGGER trigger_maror_immutable BEFORE DELETE OR UPDATE ON public.membership_administrator_refund_operation_requests FOR EACH ROW EXECUTE FUNCTION fn_reject_membership_administrator_refund_request_mutation()`

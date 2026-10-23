@@ -28,7 +28,7 @@ Not partitioned — growth: unbounded.
 **Foreign keys:**
 
 - `copyright_restriction_administrator_lifts_lifted_by_id_fkey`: `FOREIGN KEY (lifted_by_id) REFERENCES users(id) ON DELETE SET NULL`
-- `fk_copyright_restriction_administrator_lifts__restriction`: `FOREIGN KEY (copyright_restriction_id) REFERENCES copyright_restrictions(id) ON DELETE RESTRICT`
+- `fk_copyright_restriction_administrator_lifts__restriction`: `FOREIGN KEY (copyright_restriction_id) REFERENCES copyright_restrictions(id) ON DELETE CASCADE`
 
 **Indexes:**
 
@@ -40,3 +40,4 @@ Not partitioned — growth: unbounded.
 
 - `trigger_copyright_restriction_administrator_lifts_immutable`: `CREATE TRIGGER trigger_copyright_restriction_administrator_lifts_immutable BEFORE DELETE OR UPDATE ON public.copyright_restriction_administrator_lifts FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_immutable_with_actor_erasure('lifted_by_id')`
 - `trigger_copyright_restriction_administrator_lifts_require_actor`: `CREATE TRIGGER trigger_copyright_restriction_administrator_lifts_require_actor BEFORE INSERT ON public.copyright_restriction_administrator_lifts FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_human_actor('lifted_by_id')`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_restriction_administrator_lifts FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_restriction_administrator_lifts', 'public.copyright_restriction_administrator_lifts')`

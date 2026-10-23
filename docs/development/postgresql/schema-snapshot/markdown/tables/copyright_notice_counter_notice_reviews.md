@@ -34,9 +34,9 @@ Not partitioned — growth: unbounded.
 **Foreign keys:**
 
 - `copyright_notice_counter_notice_reviews_reviewed_by_id_fkey`: `FOREIGN KEY (reviewed_by_id) REFERENCES users(id) ON DELETE SET NULL`
-- `fk_copyrig_notice_counter_notice_reviews__submission_assessment`: `FOREIGN KEY (copyright_notice_submission_assessment_id) REFERENCES copyright_notice_submission_assessments(id) ON DELETE RESTRICT`
-- `fk_copyright_notice_counter_notice_reviews__deadline`: `FOREIGN KEY (copyright_notice_deadline_id) REFERENCES copyright_notice_deadlines(id) ON DELETE RESTRICT`
-- `fk_copyright_notice_counter_notice_reviews__submission`: `FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT`
+- `fk_copyrig_notice_counter_notice_reviews__submission_assessment`: `FOREIGN KEY (copyright_notice_submission_assessment_id) REFERENCES copyright_notice_submission_assessments(id) ON DELETE CASCADE`
+- `fk_copyright_notice_counter_notice_reviews__deadline`: `FOREIGN KEY (copyright_notice_deadline_id) REFERENCES copyright_notice_deadlines(id) ON DELETE CASCADE`
+- `fk_copyright_notice_counter_notice_reviews__submission`: `FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE CASCADE`
 
 **Indexes:**
 
@@ -50,3 +50,5 @@ Not partitioned — growth: unbounded.
 
 - `trigger_copyright_counter_reviews_immutable`: `CREATE TRIGGER trigger_copyright_counter_reviews_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_counter_notice_reviews FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_immutable_with_actor_erasure('reviewed_by_id')`
 - `trigger_copyright_counter_reviews_require_actor`: `CREATE TRIGGER trigger_copyright_counter_reviews_require_actor BEFORE INSERT ON public.copyright_notice_counter_notice_reviews FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_human_actor('reviewed_by_id')`
+- `trigger_register_copy_blocker_counter_review`: `CREATE TRIGGER trigger_register_copy_blocker_counter_review AFTER INSERT ON public.copyright_notice_counter_notice_reviews FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_blocker_mutation('submission')`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_notice_counter_notice_reviews FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_notice_counter_notice_reviews', 'public.copyright_notice_counter_notice_reviews')`

@@ -29,7 +29,7 @@ _none_
 
 **Foreign keys:**
 
-- `fk_membership_automatic_refund_receipts__operation_context`: `FOREIGN KEY (membership_operation_id, membership_provider_context_id) REFERENCES membership_operations(id, membership_provider_context_id) ON DELETE RESTRICT`
+- `fk_membership_automatic_refund_receipts__operation_context`: `FOREIGN KEY (membership_operation_id, membership_provider_context_id) REFERENCES membership_operations(id, membership_provider_context_id) ON DELETE CASCADE`
 - `membership_automatic_refund_receipts_currency_code_fkey`: `FOREIGN KEY (currency_code) REFERENCES currencies(code) ON DELETE RESTRICT`
 
 **Indexes:**

@@ -24,7 +24,7 @@ _none_
 
 **Foreign keys:**
 
-- `copyright_trusted_flagger_matches_copyright_notice_id_fkey`: `FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT`
+- `copyright_trusted_flagger_matches_copyright_notice_id_fkey`: `FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE CASCADE`
 - `fk_copyright_trusted_flagger_matches__flagger`: `FOREIGN KEY (copyright_trusted_flagger_id) REFERENCES copyright_trusted_flaggers(id) ON DELETE RESTRICT`
 
 **Indexes:**
@@ -36,3 +36,4 @@ _none_
 **Triggers:**
 
 - `trigger_copyright_trusted_flagger_matches_immutable`: `CREATE TRIGGER trigger_copyright_trusted_flagger_matches_immutable BEFORE DELETE OR UPDATE ON public.copyright_trusted_flagger_matches FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_trusted_flagger_matches FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_trusted_flagger_matches', 'public.copyright_trusted_flagger_matches')`

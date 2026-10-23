@@ -50,12 +50,13 @@ Not partitioned — growth: unbounded.
 **Foreign keys:**
 
 - `fk_copyright_action_intents__parent_notice`: `FOREIGN KEY (copyright_notice_id, copyright_restriction_id) REFERENCES copyright_restrictions(copyright_notice_id, id) ON DELETE CASCADE`
-- `fk_copyright_notice_action_work_items__deadline`: `FOREIGN KEY (copyright_notice_deadline_id) REFERENCES copyright_notice_deadlines(id) ON DELETE RESTRICT`
+- `fk_copyright_notice_action_work_items__deadline`: `FOREIGN KEY (copyright_notice_deadline_id) REFERENCES copyright_notice_deadlines(id) ON DELETE CASCADE`
 
 **Indexes:**
 
 - `copyright_notice_action_work_items_copyright_notice_id_id_key`: `CREATE UNIQUE INDEX copyright_notice_action_work_items_copyright_notice_id_id_key ON public.copyright_notice_action_work_items USING btree (copyright_notice_id, id)`
 - `copyright_notice_action_work_items_pkey`: `CREATE UNIQUE INDEX copyright_notice_action_work_items_pkey ON public.copyright_notice_action_work_items USING btree (id)`
+- `idx_copyright_action_work__purge_failed`: `CREATE INDEX idx_copyright_action_work__purge_failed ON public.copyright_notice_action_work_items USING btree (copyright_notice_id) WHERE (state = 'failed'::copyright_notice_action_intent_states)`
 - `idx_copyright_notice_action_work_items__available`: `CREATE INDEX idx_copyright_notice_action_work_items__available ON public.copyright_notice_action_work_items USING btree (available_at, id) WHERE ((lease_token IS NULL) AND (state = 'pending'::copyright_notice_action_intent_states))`
 - `idx_copyright_notice_action_work_items__deadline`: `CREATE INDEX idx_copyright_notice_action_work_items__deadline ON public.copyright_notice_action_work_items USING btree (copyright_notice_deadline_id) WHERE (copyright_notice_deadline_id IS NOT NULL)`
 - `idx_copyright_notice_action_work_items__expired`: `CREATE INDEX idx_copyright_notice_action_work_items__expired ON public.copyright_notice_action_work_items USING btree (lease_expires_at, id) WHERE (lease_token IS NOT NULL)`
@@ -68,4 +69,5 @@ Not partitioned — growth: unbounded.
 - `trigger_copyright_action_intents_guard`: `CREATE TRIGGER trigger_copyright_action_intents_guard BEFORE DELETE OR UPDATE ON public.copyright_notice_action_work_items FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_action_intent()`
 - `trigger_copyright_action_intents_updated_at`: `CREATE TRIGGER trigger_copyright_action_intents_updated_at BEFORE UPDATE ON public.copyright_notice_action_work_items FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
 - `trigger_copyright_action_work_attempt`: `CREATE TRIGGER trigger_copyright_action_work_attempt AFTER INSERT OR UPDATE ON public.copyright_notice_action_work_items FOR EACH ROW EXECUTE FUNCTION fn_create_copyright_action_attempt()`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_notice_action_work_items FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_notice_action_work_items', 'public.copyright_notice_action_work_items')`
 - `trigger_update_copyright_action_intents_scope`: `CREATE TRIGGER trigger_update_copyright_action_intents_scope BEFORE INSERT ON public.copyright_notice_action_work_items FOR EACH ROW EXECUTE FUNCTION fn_update_parent_notice_scope('copyright_restrictions', 'copyright_restriction_id')`

@@ -30,7 +30,7 @@ Not partitioned — growth: unbounded.
 **Foreign keys:**
 
 - `copyright_repeat_infringer_dispositions_recorded_by_id_fkey`: `FOREIGN KEY (recorded_by_id) REFERENCES users(id) ON DELETE SET NULL`
-- `fk_copyright_repeat_infringer_dispositions__incident`: `FOREIGN KEY (copyright_repeat_infringer_incident_id) REFERENCES copyright_repeat_infringer_incidents(id) ON DELETE RESTRICT`
+- `fk_copyright_repeat_infringer_dispositions__incident`: `FOREIGN KEY (copyright_repeat_infringer_incident_id) REFERENCES copyright_repeat_infringer_incidents(id) ON DELETE CASCADE`
 
 **Indexes:**
 
@@ -42,3 +42,4 @@ Not partitioned — growth: unbounded.
 
 - `trigger_copyright_repeat_infringer_dispositions_actor`: `CREATE TRIGGER trigger_copyright_repeat_infringer_dispositions_actor BEFORE INSERT ON public.copyright_repeat_infringer_dispositions FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_human_actor('recorded_by_id')`
 - `trigger_copyright_repeat_infringer_dispositions_immutable`: `CREATE TRIGGER trigger_copyright_repeat_infringer_dispositions_immutable BEFORE DELETE OR UPDATE ON public.copyright_repeat_infringer_dispositions FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_immutable_with_actor_erasure('recorded_by_id')`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_repeat_infringer_dispositions FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_repeat_infringer_dispositions', 'public.copyright_repeat_infringer_dispositions')`

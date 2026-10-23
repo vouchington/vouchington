@@ -32,7 +32,7 @@ Not partitioned — growth: unbounded.
 **Foreign keys:**
 
 - `copyright_notice_legal_hold_resolutions_resolved_by_id_fkey`: `FOREIGN KEY (resolved_by_id) REFERENCES users(id) ON DELETE SET NULL`
-- `fk_copyright_hold_resolutions__parent_notice`: `FOREIGN KEY (copyright_notice_id, copyright_notice_legal_hold_assessment_id) REFERENCES copyright_notice_legal_hold_assessments(copyright_notice_id, id) ON DELETE RESTRICT`
+- `fk_copyright_hold_resolutions__parent_notice`: `FOREIGN KEY (copyright_notice_id, copyright_notice_legal_hold_assessment_id) REFERENCES copyright_notice_legal_hold_assessments(copyright_notice_id, id) ON DELETE CASCADE`
 
 **Indexes:**
 
@@ -45,4 +45,6 @@ Not partitioned — growth: unbounded.
 
 - `trigger_copyright_notice_hold_resolutions_immutable`: `CREATE TRIGGER trigger_copyright_notice_hold_resolutions_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_legal_hold_resolutions FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_immutable_with_actor_erasure('resolved_by_id')`
 - `trigger_copyright_notice_hold_resolutions_require_actor`: `CREATE TRIGGER trigger_copyright_notice_hold_resolutions_require_actor BEFORE INSERT ON public.copyright_notice_legal_hold_resolutions FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_human_actor('resolved_by_id')`
+- `trigger_register_copy_blocker_hold_resolution`: `CREATE TRIGGER trigger_register_copy_blocker_hold_resolution AFTER INSERT ON public.copyright_notice_legal_hold_resolutions FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_blocker_mutation('direct')`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_notice_legal_hold_resolutions FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_notice_legal_hold_resolutions', 'public.copyright_notice_legal_hold_resolutions')`
 - `trigger_update_copyright_hold_resolutions_scope`: `CREATE TRIGGER trigger_update_copyright_hold_resolutions_scope BEFORE INSERT ON public.copyright_notice_legal_hold_resolutions FOR EACH ROW EXECUTE FUNCTION fn_update_parent_notice_scope('copyright_notice_legal_hold_assessments', 'copyright_notice_legal_hold_assessment_id')`

@@ -31,7 +31,7 @@ Not partitioned — growth: unbounded.
 
 - `fk_copyright_notice_email_intake_notice_links__intake`: `FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT`
 - `fk_copyright_notice_email_intake_notice_links__matched_token`: `FOREIGN KEY (matched_token_id) REFERENCES copyright_notice_email_thread_tokens(id) ON DELETE RESTRICT`
-- `fk_copyright_notice_email_intake_notice_links__notice`: `FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT`
+- `fk_copyright_notice_email_intake_notice_links__notice`: `FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE CASCADE`
 - `fk_copyright_notice_email_intake_notice_links__recommendation`: `FOREIGN KEY (copyright_notice_email_intake_recommendation_id) REFERENCES copyright_notice_email_intake_recommendations(id) ON DELETE RESTRICT`
 
 **Indexes:**
@@ -46,3 +46,5 @@ Not partitioned — growth: unbounded.
 **Triggers:**
 
 - `trigger_copyright_email_thread_links_immutable`: `CREATE TRIGGER trigger_copyright_email_thread_links_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_email_intake_notice_links FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence()`
+- `trigger_register_copyright_email_link_activity`: `CREATE TRIGGER trigger_register_copyright_email_link_activity AFTER INSERT ON public.copyright_notice_email_intake_notice_links FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_email_case_activity()`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_notice_email_intake_notice_links FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_notice_email_intake_notice_links', 'public.copyright_notice_email_intake_notice_links')`

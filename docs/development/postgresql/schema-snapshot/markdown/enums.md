@@ -386,6 +386,12 @@
 - `uk`
 - `other`
 
+## `copyright_minimal_purge_cursor_families`
+
+- `work`
+- `new`
+- `identity`
+
 ## `copyright_notice_action_intent_actions`
 
 - `withhold`
@@ -800,6 +806,12 @@
 
 - `topic`
 - `rss_feed`
+
+## `legal_record_retention_families`
+
+- `identity_verification_attempt`
+- `user_deletion_request`
+- `user_legal_preservation_hold`
 
 ## `list_visibilities`
 
@@ -1326,6 +1338,11 @@
 
 - `singleDevice`
 - `multiDevice`
+
+## `payment_ledger_retention_families`
+
+- `stripe_event`
+- `membership_operation`
 
 ## `platform_account_kinds`
 

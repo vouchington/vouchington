@@ -38,8 +38,8 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
-- `fk_copyright_notice_form_screening_attempts__intake`: `FOREIGN KEY (copyright_notice_form_intake_id) REFERENCES copyright_notice_form_intakes(id) ON DELETE RESTRICT`
-- `fk_copyright_notice_form_screening_attempts__intake__screening`: `FOREIGN KEY (copyright_notice_form_intake_id, copyright_notice_form_screening_id) REFERENCES copyright_notice_form_screenings(copyright_notice_form_intake_id, id) ON DELETE RESTRICT`
+- `fk_copyright_notice_form_screening_attempts__intake`: `FOREIGN KEY (copyright_notice_form_intake_id) REFERENCES copyright_notice_form_intakes(id) ON DELETE CASCADE`
+- `fk_copyright_notice_form_screening_attempts__intake__screening`: `FOREIGN KEY (copyright_notice_form_intake_id, copyright_notice_form_screening_id) REFERENCES copyright_notice_form_screenings(copyright_notice_form_intake_id, id) ON DELETE CASCADE`
 
 **Indexes:**
 
@@ -53,3 +53,5 @@ Not partitioned — growth: unbounded.
 
 - `trigger_copyright_form_screening_work`: `CREATE TRIGGER trigger_copyright_form_screening_work AFTER INSERT OR UPDATE ON public.copyright_notice_form_screening_attempts FOR EACH ROW EXECUTE FUNCTION fn_project_copyright_form_screening_work()`
 - `trigger_copyright_screening_attempts_monotonic`: `CREATE TRIGGER trigger_copyright_screening_attempts_monotonic BEFORE DELETE OR UPDATE ON public.copyright_notice_form_screening_attempts FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_screening_attempt_rewind()`
+- `trigger_register_copy_blocker_form_attempt`: `CREATE TRIGGER trigger_register_copy_blocker_form_attempt AFTER INSERT OR UPDATE OF completed_at, failed_at, copyright_notice_form_screening_id ON public.copyright_notice_form_screening_attempts FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_blocker_mutation('intake')`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_notice_form_screening_attempts FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_notice_form_screening_attempts', 'public.copyright_notice_form_screening_attempts')`

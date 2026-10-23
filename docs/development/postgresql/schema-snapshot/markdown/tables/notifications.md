@@ -66,7 +66,7 @@ _none_
 
 - `fk_notifications__community_ban_id`: `FOREIGN KEY (community_ban_id) REFERENCES community_bans(id) ON DELETE SET NULL`
 - `fk_notifications__community_id`: `FOREIGN KEY (community_id) REFERENCES communities(id) ON DELETE CASCADE`
-- `fk_notifications__copyright_notice`: `FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT`
+- `fk_notifications__copyright_notice`: `FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE CASCADE`
 - `fk_notifications__household_invitation_scope`: `FOREIGN KEY (household_id, user_id, household_invitation_id) REFERENCES household_invitations(household_id, invited_user_id, id) ON DELETE CASCADE`
 - `fk_notifications__moderation_appeal_id`: `FOREIGN KEY (moderation_appeal_id) REFERENCES moderation_appeals(id) ON DELETE SET NULL`
 - `fk_notifications__moderation_report_id`: `FOREIGN KEY (moderation_report_id) REFERENCES moderation_reports(id) ON DELETE SET NULL`
@@ -128,3 +128,4 @@ _none_
 - `trigger_notifications_preserve_publication_target`: `CREATE TRIGGER trigger_notifications_preserve_publication_target BEFORE INSERT OR UPDATE OF post_id, rss_feed_item_id ON public.notifications FOR EACH ROW EXECUTE FUNCTION fn_update_notification_publication_target()`
 - `trigger_notifications_retire_push_intent`: `CREATE TRIGGER trigger_notifications_retire_push_intent BEFORE UPDATE OF id ON public.notifications FOR EACH ROW WHEN ((old.id IS DISTINCT FROM new.id)) EXECUTE FUNCTION fn_project_retire_notification_push_intent()`
 - `trigger_notifications_updated_at`: `CREATE TRIGGER trigger_notifications_updated_at BEFORE UPDATE ON public.notifications FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.notifications FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('notifications', 'public.notifications')`

@@ -32,10 +32,10 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
-- `copyright_claimant_misuse_events_copyright_notice_id_fkey`: `FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT`
-- `copyright_claimant_misuse_events_copyright_restriction_id_fkey`: `FOREIGN KEY (copyright_restriction_id) REFERENCES copyright_restrictions(id) ON DELETE RESTRICT`
-- `fk_copyrig_claimant_misuse_events__notice_submission_assessment`: `FOREIGN KEY (copyright_notice_submission_assessment_id) REFERENCES copyright_notice_submission_assessments(id) ON DELETE RESTRICT`
-- `fk_copyright_claimant_misuse_events__notice_submission`: `FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT`
+- `copyright_claimant_misuse_events_copyright_notice_id_fkey`: `FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE CASCADE`
+- `copyright_claimant_misuse_events_copyright_restriction_id_fkey`: `FOREIGN KEY (copyright_restriction_id) REFERENCES copyright_restrictions(id) ON DELETE CASCADE`
+- `fk_copyrig_claimant_misuse_events__notice_submission_assessment`: `FOREIGN KEY (copyright_notice_submission_assessment_id) REFERENCES copyright_notice_submission_assessments(id) ON DELETE CASCADE`
+- `fk_copyright_claimant_misuse_events__notice_submission`: `FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE CASCADE`
 
 **Indexes:**
 
@@ -47,4 +47,5 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
-- `trigger_copyright_claimant_misuse_events_immutable`: `CREATE TRIGGER trigger_copyright_claimant_misuse_events_immutable BEFORE DELETE OR UPDATE ON public.copyright_claimant_misuse_events FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`
+- `trigger_copyright_claimant_misuse_events_immutable`: `CREATE TRIGGER trigger_copyright_claimant_misuse_events_immutable BEFORE DELETE OR UPDATE ON public.copyright_claimant_misuse_events FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_purge_only_mutation()`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_claimant_misuse_events FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_claimant_misuse_events', 'public.copyright_claimant_misuse_events')`

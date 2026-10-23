@@ -26,7 +26,7 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
-- `fk_copyright_automatic_withholding_refusals__notice_submission`: `FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT`
+- `fk_copyright_automatic_withholding_refusals__notice_submission`: `FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE CASCADE`
 
 **Indexes:**
 
@@ -36,3 +36,4 @@ Not partitioned — growth: unbounded.
 **Triggers:**
 
 - `trigger_copyright_automatic_withholding_refusals_immutable`: `CREATE TRIGGER trigger_copyright_automatic_withholding_refusals_immutable BEFORE DELETE OR UPDATE ON public.copyright_automatic_withholding_refusals FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence()`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_automatic_withholding_refusals FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_automatic_withholding_refusals', 'public.copyright_automatic_withholding_refusals')`

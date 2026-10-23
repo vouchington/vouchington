@@ -32,4 +32,5 @@ _none_
 - `uq_copyright_legal_hold_restrictions__assessment_restriction`: `CREATE UNIQUE INDEX uq_copyright_legal_hold_restrictions__assessment_restriction ON public.copyright_legal_hold_restrictions USING btree (copyright_notice_legal_hold_assessment_id, copyright_restriction_id)`
 
 **Triggers:**
-_none_
+
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_legal_hold_restrictions FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_legal_hold_restrictions', 'public.copyright_legal_hold_restrictions')`

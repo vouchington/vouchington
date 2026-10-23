@@ -43,7 +43,7 @@ Not partitioned — growth: unbounded.
 **Foreign keys:**
 
 - `fk_copyright_territorial_notice_receipts__approval`: `FOREIGN KEY (copyright_jurisdiction_policy_approval_id, jurisdiction) REFERENCES copyright_jurisdiction_policy_approvals(id, jurisdiction) ON DELETE RESTRICT`
-- `fk_copyright_territorial_notice_receipts__notice`: `FOREIGN KEY (copyright_notice_id, jurisdiction) REFERENCES copyright_notices(id, jurisdiction) ON DELETE RESTRICT`
+- `fk_copyright_territorial_notice_receipts__notice`: `FOREIGN KEY (copyright_notice_id, jurisdiction) REFERENCES copyright_notices(id, jurisdiction) ON DELETE CASCADE`
 - `fk_copyright_territorial_notice_receipts__requester`: `FOREIGN KEY (requester_user_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT`
 
 **Indexes:**
@@ -56,4 +56,7 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
-- `trigger_copyright_territorial_notice_receipts_immutable`: `CREATE TRIGGER trigger_copyright_territorial_notice_receipts_immutable BEFORE DELETE OR UPDATE ON public.copyright_territorial_notice_receipts FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`
+- `trigger_copyright_territorial_notice_receipts_immutable`: `CREATE TRIGGER trigger_copyright_territorial_notice_receipts_immutable BEFORE DELETE OR UPDATE ON public.copyright_territorial_notice_receipts FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_retention_mutation()`
+- `trigger_copyright_territorial_notice_receipts_retained_identity`: `CREATE TRIGGER trigger_copyright_territorial_notice_receipts_retained_identity BEFORE INSERT ON public.copyright_territorial_notice_receipts FOR EACH ROW EXECUTE FUNCTION fn_reject_replayed_territorial_notice_identity()`
+- `trigger_register_copy_blocker_territorial_receipt`: `CREATE TRIGGER trigger_register_copy_blocker_territorial_receipt AFTER INSERT ON public.copyright_territorial_notice_receipts FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_blocker_mutation('direct')`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_territorial_notice_receipts FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_territorial_notice_receipts', 'public.copyright_territorial_notice_receipts')`

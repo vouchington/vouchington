@@ -26,8 +26,8 @@ _none_
 
 **Foreign keys:**
 
-- `fk_copyright_submission_targets__parent_notice`: `FOREIGN KEY (copyright_notice_id, copyright_notice_submission_id) REFERENCES copyright_notice_submissions(copyright_notice_id, id) ON DELETE RESTRICT`
-- `fk_copyright_submission_targets__target_notice`: `FOREIGN KEY (copyright_notice_id, copyright_notice_target_id) REFERENCES copyright_notice_targets(copyright_notice_id, id) ON DELETE RESTRICT`
+- `fk_copyright_submission_targets__parent_notice`: `FOREIGN KEY (copyright_notice_id, copyright_notice_submission_id) REFERENCES copyright_notice_submissions(copyright_notice_id, id) ON DELETE CASCADE`
+- `fk_copyright_submission_targets__target_notice`: `FOREIGN KEY (copyright_notice_id, copyright_notice_target_id) REFERENCES copyright_notice_targets(copyright_notice_id, id) ON DELETE CASCADE`
 
 **Indexes:**
 
@@ -39,4 +39,5 @@ _none_
 **Triggers:**
 
 - `trigger_copyright_submission_targets_immutable`: `CREATE TRIGGER trigger_copyright_submission_targets_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_submission_targets FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence()`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_notice_submission_targets FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_notice_submission_targets', 'public.copyright_notice_submission_targets')`
 - `trigger_update_copyright_submission_targets_scope`: `CREATE TRIGGER trigger_update_copyright_submission_targets_scope BEFORE INSERT ON public.copyright_notice_submission_targets FOR EACH ROW EXECUTE FUNCTION fn_update_parent_notice_scope('copyright_notice_submissions', 'copyright_notice_submission_id')`

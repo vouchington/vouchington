@@ -40,10 +40,10 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
-- `fk_copyright_territorial_decisions__assessment`: `FOREIGN KEY (copyright_notice_submission_assessment_id) REFERENCES copyright_notice_submission_assessments(id) ON DELETE RESTRICT`
+- `fk_copyright_territorial_decisions__assessment`: `FOREIGN KEY (copyright_notice_submission_assessment_id) REFERENCES copyright_notice_submission_assessments(id) ON DELETE CASCADE`
 - `fk_copyright_territorial_decisions__decided_by`: `FOREIGN KEY (decided_by_id) REFERENCES users(id) ON DELETE SET NULL`
-- `fk_copyright_territorial_decisions__notice`: `FOREIGN KEY (copyright_notice_id, jurisdiction) REFERENCES copyright_notices(id, jurisdiction) ON DELETE RESTRICT`
-- `fk_copyright_territorial_decisions__predecessor`: `FOREIGN KEY (copyright_notice_id, supersedes_decision_id) REFERENCES copyright_territorial_decisions(copyright_notice_id, id) ON DELETE RESTRICT`
+- `fk_copyright_territorial_decisions__notice`: `FOREIGN KEY (copyright_notice_id, jurisdiction) REFERENCES copyright_notices(id, jurisdiction) ON DELETE CASCADE`
+- `fk_copyright_territorial_decisions__predecessor`: `FOREIGN KEY (copyright_notice_id, supersedes_decision_id) REFERENCES copyright_territorial_decisions(copyright_notice_id, id) ON DELETE CASCADE`
 
 **Indexes:**
 
@@ -56,5 +56,7 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
-- `trigger_copyright_territorial_decisions_immutable`: `CREATE TRIGGER trigger_copyright_territorial_decisions_immutable BEFORE DELETE OR UPDATE ON public.copyright_territorial_decisions FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`
+- `trigger_copyright_territorial_decisions_immutable`: `CREATE TRIGGER trigger_copyright_territorial_decisions_immutable BEFORE DELETE OR UPDATE ON public.copyright_territorial_decisions FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_retention_mutation()`
 - `trigger_copyright_territorial_decisions_scope`: `CREATE TRIGGER trigger_copyright_territorial_decisions_scope BEFORE INSERT ON public.copyright_territorial_decisions FOR EACH ROW EXECUTE FUNCTION fn_reject_invalid_copyright_territorial_decision()`
+- `trigger_register_copy_blocker_territorial_decision`: `CREATE TRIGGER trigger_register_copy_blocker_territorial_decision AFTER INSERT ON public.copyright_territorial_decisions FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_blocker_mutation('direct')`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_territorial_decisions FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_territorial_decisions', 'public.copyright_territorial_decisions')`

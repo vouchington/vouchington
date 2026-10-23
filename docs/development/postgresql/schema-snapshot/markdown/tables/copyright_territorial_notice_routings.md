@@ -24,7 +24,7 @@ _none_
 
 **Foreign keys:**
 
-- `fk_copyright_territorial_notice_routings__receipt`: `FOREIGN KEY (copyright_territorial_notice_receipt_id) REFERENCES copyright_territorial_notice_receipts(id) ON DELETE RESTRICT`
+- `fk_copyright_territorial_notice_routings__receipt`: `FOREIGN KEY (copyright_territorial_notice_receipt_id) REFERENCES copyright_territorial_notice_receipts(id) ON DELETE CASCADE`
 
 **Indexes:**
 
@@ -32,4 +32,5 @@ _none_
 
 **Triggers:**
 
-- `trigger_copyright_territorial_notice_routings_immutable`: `CREATE TRIGGER trigger_copyright_territorial_notice_routings_immutable BEFORE DELETE OR UPDATE ON public.copyright_territorial_notice_routings FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`
+- `trigger_copyright_territorial_notice_routings_immutable`: `CREATE TRIGGER trigger_copyright_territorial_notice_routings_immutable BEFORE DELETE OR UPDATE ON public.copyright_territorial_notice_routings FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_purge_only_mutation()`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_territorial_notice_routings FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_territorial_notice_routings', 'public.copyright_territorial_notice_routings')`

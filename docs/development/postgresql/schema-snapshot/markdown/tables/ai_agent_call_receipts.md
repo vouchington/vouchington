@@ -45,7 +45,7 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
-- `fk_ai_agent_call_receipts__copyright_notice_submission`: `FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT`
+- `fk_ai_agent_call_receipts__copyright_notice_submission`: `FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE CASCADE`
 - `fk_ai_agent_call_receipts__hostname`: `FOREIGN KEY (hostname_id) REFERENCES url_hostnames(id) ON DELETE SET NULL`
 - `fk_ai_agent_call_receipts__post`: `FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE SET NULL`
 - `fk_ai_agent_call_receipts__reported_user`: `FOREIGN KEY (reported_user_id) REFERENCES users(id) ON DELETE SET NULL`
@@ -64,3 +64,4 @@ Not partitioned — growth: unbounded.
 **Triggers:**
 
 - `trigger_erase_report_agent_call_receipt_target`: `CREATE TRIGGER trigger_erase_report_agent_call_receipt_target BEFORE INSERT OR UPDATE ON public.ai_agent_call_receipts FOR EACH ROW EXECUTE FUNCTION fn_update_report_agent_call_receipt_target()`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.ai_agent_call_receipts FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('ai_agent_call_receipts', 'public.ai_agent_call_receipts')`

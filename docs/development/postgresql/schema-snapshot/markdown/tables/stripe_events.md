@@ -44,4 +44,6 @@ _none_
 
 **Triggers:**
 
-- `trigger_stripe_events_reject_mutation`: `CREATE TRIGGER trigger_stripe_events_reject_mutation BEFORE DELETE OR UPDATE ON public.stripe_events FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`
+- `trigger_stripe_events_reject_mutation`: `CREATE TRIGGER trigger_stripe_events_reject_mutation BEFORE UPDATE ON public.stripe_events FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`
+- `trigger_stripe_events_retained_identity`: `CREATE TRIGGER trigger_stripe_events_retained_identity BEFORE INSERT ON public.stripe_events FOR EACH ROW EXECUTE FUNCTION fn_reject_replayed_stripe_event_identity()`
+- `trigger_stripe_events_retention_delete`: `CREATE TRIGGER trigger_stripe_events_retention_delete BEFORE DELETE ON public.stripe_events FOR EACH ROW EXECUTE FUNCTION fn_reject_unretained_stripe_event_delete()`

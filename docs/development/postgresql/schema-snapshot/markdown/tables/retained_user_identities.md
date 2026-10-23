@@ -6,9 +6,11 @@ Concrete user identity owner that outlives the live row while durable references
 
 Not partitioned — growth: unbounded.
 
-| Column | Type   | Nullable | Default | Identity | Generated | Collation | Comment |
-| ------ | ------ | -------- | ------- | -------- | --------- | --------- | ------- |
-| `id`   | `uuid` | no       |         |          |           |           |         |
+| Column                              | Type                       | Nullable | Default | Identity | Generated | Collation | Comment                                                                                                                      |
+| ----------------------------------- | -------------------------- | -------- | ------- | -------- | --------- | --------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `id`                                | `uuid`                     | no       |         |          |           |           |                                                                                                                              |
+| `purged_at`                         | `timestamp with time zone` | yes      |         |          |           |           | Time final user deletion removed the live account; factual retention clock only, never authorization.                        |
+| `legal_retention_mutation_sequence` | `bigint`                   | no       | `0`     |          |           |           | Latest committed preservation-hold or final-account-purge sequence; a compact current fact for bounded copyright case proof. |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -23,7 +25,9 @@ _none_
 
 **Indexes:**
 
+- `idx_retained_user_identities__legal_retention_mutation`: `CREATE INDEX idx_retained_user_identities__legal_retention_mutation ON public.retained_user_identities USING btree (legal_retention_mutation_sequence, id) WHERE (legal_retention_mutation_sequence > 0)`
 - `retained_user_identities_pkey`: `CREATE UNIQUE INDEX retained_user_identities_pkey ON public.retained_user_identities USING btree (id)`
 
 **Triggers:**
-_none_
+
+- `trigger_register_copyright_account_purge_sequence`: `CREATE TRIGGER trigger_register_copyright_account_purge_sequence AFTER UPDATE OF purged_at ON public.retained_user_identities FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_legal_mutation_sequence()`

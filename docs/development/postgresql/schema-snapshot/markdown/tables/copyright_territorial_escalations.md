@@ -30,9 +30,9 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
-- `fk_copyright_territorial_escalations__eu_supervised_complaint`: `FOREIGN KEY (copyright_eu_supervised_complaint_id) REFERENCES copyright_eu_supervised_complaints(id) ON DELETE RESTRICT`
-- `fk_copyright_territorial_escalations__notice`: `FOREIGN KEY (copyright_notice_id, jurisdiction) REFERENCES copyright_notices(id, jurisdiction) ON DELETE RESTRICT`
-- `fk_copyright_territorial_escalations__notice_acknowledgment`: `FOREIGN KEY (copyright_territorial_notice_acknowledgment_id) REFERENCES copyright_territorial_notice_acknowledgments(id) ON DELETE RESTRICT`
+- `fk_copyright_territorial_escalations__eu_supervised_complaint`: `FOREIGN KEY (copyright_eu_supervised_complaint_id) REFERENCES copyright_eu_supervised_complaints(id) ON DELETE CASCADE`
+- `fk_copyright_territorial_escalations__notice`: `FOREIGN KEY (copyright_notice_id, jurisdiction) REFERENCES copyright_notices(id, jurisdiction) ON DELETE CASCADE`
+- `fk_copyright_territorial_escalations__notice_acknowledgment`: `FOREIGN KEY (copyright_territorial_notice_acknowledgment_id) REFERENCES copyright_territorial_notice_acknowledgments(id) ON DELETE CASCADE`
 
 **Indexes:**
 
@@ -43,5 +43,6 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
-- `trigger_copyright_territorial_escalations_immutable`: `CREATE TRIGGER trigger_copyright_territorial_escalations_immutable BEFORE DELETE OR UPDATE ON public.copyright_territorial_escalations FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`
+- `trigger_copyright_territorial_escalations_immutable`: `CREATE TRIGGER trigger_copyright_territorial_escalations_immutable BEFORE DELETE OR UPDATE ON public.copyright_territorial_escalations FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_purge_only_mutation()`
 - `trigger_copyright_territorial_escalations_source`: `CREATE TRIGGER trigger_copyright_territorial_escalations_source BEFORE INSERT ON public.copyright_territorial_escalations FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_territorial_escalation()`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_territorial_escalations FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_territorial_escalations', 'public.copyright_territorial_escalations')`

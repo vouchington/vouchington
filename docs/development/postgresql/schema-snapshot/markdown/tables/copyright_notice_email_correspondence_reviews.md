@@ -43,16 +43,17 @@ Not partitioned — growth: unbounded.
 **Foreign keys:**
 
 - `fk_copyright_email_corresp_reviews__recommendation_intake`: `FOREIGN KEY (copyright_notice_email_intake_id, copyright_notice_email_intake_recommendation_id) REFERENCES copyright_notice_email_intake_recommendations(copyright_notice_email_intake_id, id) ON DELETE RESTRICT`
-- `fk_copyright_notice_email_correspondenc_reviews__correspondence`: `FOREIGN KEY (copyright_notice_correspondence_message_id) REFERENCES copyright_notice_correspondence_messages(id) ON DELETE RESTRICT`
+- `fk_copyright_notice_email_correspondenc_reviews__correspondence`: `FOREIGN KEY (copyright_notice_correspondence_message_id) REFERENCES copyright_notice_correspondence_messages(id) ON DELETE CASCADE`
 - `fk_copyright_notice_email_correspondence_reviews__intake`: `FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT`
-- `fk_copyright_notice_email_correspondence_reviews__notice`: `FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT`
+- `fk_copyright_notice_email_correspondence_reviews__notice`: `FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE CASCADE`
 - `fk_copyright_notice_email_correspondence_reviews__reviewed_by`: `FOREIGN KEY (reviewed_by_id) REFERENCES users(id) ON DELETE SET NULL`
-- `fk_copyright_notice_email_correspondence_reviews__submission`: `FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT`
+- `fk_copyright_notice_email_correspondence_reviews__submission`: `FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE CASCADE`
 
 **Indexes:**
 
 - `copyright_notice_email_correspondence_reviews_pkey`: `CREATE UNIQUE INDEX copyright_notice_email_correspondence_reviews_pkey ON public.copyright_notice_email_correspondence_reviews USING btree (id)`
 - `idx_copyright_notice_email_corresponden_reviews__recommendation`: `CREATE INDEX idx_copyright_notice_email_corresponden_reviews__recommendation ON public.copyright_notice_email_correspondence_reviews USING btree (copyright_notice_email_intake_recommendation_id) WHERE (copyright_notice_email_intake_recommendation_id IS NOT NULL)`
+- `idx_copyright_notice_email_correspondence_reviews__clock`: `CREATE INDEX idx_copyright_notice_email_correspondence_reviews__clock ON public.copyright_notice_email_correspondence_reviews USING btree (copyright_notice_id, reviewed_at DESC) WHERE (reviewed_at IS NOT NULL)`
 - `idx_copyright_notice_email_correspondence_reviews__notice`: `CREATE INDEX idx_copyright_notice_email_correspondence_reviews__notice ON public.copyright_notice_email_correspondence_reviews USING btree (copyright_notice_id, id)`
 - `idx_copyright_notice_email_correspondence_reviews__reviewer`: `CREATE INDEX idx_copyright_notice_email_correspondence_reviews__reviewer ON public.copyright_notice_email_correspondence_reviews USING btree (reviewed_by_id) WHERE (reviewed_by_id IS NOT NULL)`
 - `idx_copyright_notice_email_correspondence_reviews__terminal`: `CREATE UNIQUE INDEX idx_copyright_notice_email_correspondence_reviews__terminal ON public.copyright_notice_email_correspondence_reviews USING btree (copyright_notice_email_intake_id) WHERE (action = ANY (ARRAY['admitted'::copyright_notice_email_correspondence_review_actions, 'rejected'::copyright_notice_email_correspondence_review_actions]))`
@@ -64,3 +65,5 @@ Not partitioned — growth: unbounded.
 
 - `trigger_copyright_email_correspondence_reviews_immutable`: `CREATE TRIGGER trigger_copyright_email_correspondence_reviews_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_email_correspondence_reviews FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_immutable_with_actor_erasure('reviewed_by_id')`
 - `trigger_copyright_email_correspondence_reviews_require_actor`: `CREATE TRIGGER trigger_copyright_email_correspondence_reviews_require_actor BEFORE INSERT ON public.copyright_notice_email_correspondence_reviews FOR EACH ROW WHEN ((new.action <> 'pending'::copyright_notice_email_correspondence_review_actions)) EXECUTE FUNCTION fn_reject_copyright_human_actor('reviewed_by_id')`
+- `trigger_register_copy_blocker_email_correspondence`: `CREATE TRIGGER trigger_register_copy_blocker_email_correspondence AFTER INSERT ON public.copyright_notice_email_correspondence_reviews FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_minimal_blocker_mutation('direct')`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_notice_email_correspondence_reviews FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_notice_email_correspondence_reviews', 'public.copyright_notice_email_correspondence_reviews')`

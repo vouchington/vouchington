@@ -6,13 +6,14 @@ Append-only record that a case's personal data and stored evidence were erased a
 
 Not partitioned — growth: unbounded.
 
-| Column                | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                 |
-| --------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `id`                  | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                                         |
-| `copyright_notice_id` | `uuid`                     | no       |                              |          |           |           | The erased case; one row per case, so the sweep is idempotent.                                                          |
-| `retention_days`      | `integer`                  | no       |                              |          |           |           | Owner-approved retention period, in days, that was in force when the case was erased.                                   |
-| `erased_object_count` | `integer`                  | no       |                              |          |           |           | Count of exclusively owned storage objects whose every evidence-bucket version was removed before this row was written. |
-| `created_at`          | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           | Time the case was erased, derived from the UUIDv7 id; the row is append-only.                                           |
+| Column                | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                                     |
+| --------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                  | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                                                             |
+| `copyright_notice_id` | `uuid`                     | no       |                              |          |           |           | The erased case; one row per case, so the sweep is idempotent.                                                                              |
+| `retention_days`      | `integer`                  | no       |                              |          |           |           | Owner-approved retention period, in days, that was in force when the case was erased.                                                       |
+| `erased_object_count` | `integer`                  | no       |                              |          |           |           | Count of exclusively owned storage objects whose every evidence-bucket version was removed before this row was written.                     |
+| `legal_clock_at`      | `timestamp with time zone` | no       |                              |          |           |           | Latest substantive case activity captured before erasure rewrites updated_at values; the minimal-record window does not restart at erasure. |
+| `created_at`          | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           | Time the case was erased, derived from the UUIDv7 id; the row is append-only.                                                               |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -27,7 +28,7 @@ Not partitioned — growth: unbounded.
 
 **Foreign keys:**
 
-- `copyright_notice_retention_erasures_copyright_notice_id_fkey`: `FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT`
+- `copyright_notice_retention_erasures_copyright_notice_id_fkey`: `FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE CASCADE`
 
 **Indexes:**
 
@@ -37,3 +38,4 @@ Not partitioned — growth: unbounded.
 **Triggers:**
 
 - `trigger_copyright_retention_erasures_immutable`: `CREATE TRIGGER trigger_copyright_retention_erasures_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_retention_erasures FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence()`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_notice_retention_erasures FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_notice_retention_erasures', 'public.copyright_notice_retention_erasures')`

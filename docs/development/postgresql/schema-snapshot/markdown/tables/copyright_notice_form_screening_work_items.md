@@ -38,4 +38,5 @@ _none_
 - `idx_copyright_notice_form_screening_work_items__expired`: `CREATE INDEX idx_copyright_notice_form_screening_work_items__expired ON public.copyright_notice_form_screening_work_items USING btree (lease_expires_at, copyright_notice_form_intake_id) WHERE (lease_token IS NOT NULL)`
 
 **Triggers:**
-_none_
+
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_notice_form_screening_work_items FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_notice_form_screening_work_items', 'public.copyright_notice_form_screening_work_items')`

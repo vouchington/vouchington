@@ -47,8 +47,8 @@ Not partitioned — growth: unbounded.
 - `copyright_notice_correspondence_messages_approved_by_id_fkey`: `FOREIGN KEY (approved_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `copyright_notice_correspondence_messages_drafted_by_id_fkey`: `FOREIGN KEY (drafted_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `fk_copyright_correspondence__email_intake`: `FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT`
-- `fk_copyright_notice_correspondence_messages__notice`: `FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT`
-- `fk_copyright_notice_correspondence_messages__submission`: `FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT`
+- `fk_copyright_notice_correspondence_messages__notice`: `FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE CASCADE`
+- `fk_copyright_notice_correspondence_messages__submission`: `FOREIGN KEY (copyright_notice_submission_id) REFERENCES copyright_notice_submissions(id) ON DELETE CASCADE`
 
 **Indexes:**
 
@@ -64,3 +64,4 @@ Not partitioned — growth: unbounded.
 
 - `trigger_copyright_correspondence_guard`: `CREATE TRIGGER trigger_copyright_correspondence_guard BEFORE DELETE OR UPDATE ON public.copyright_notice_correspondence_messages FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_correspondence()`
 - `trigger_copyright_correspondence_updated_at`: `CREATE TRIGGER trigger_copyright_correspondence_updated_at BEFORE UPDATE ON public.copyright_notice_correspondence_messages FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
+- `trigger_reject_copyright_minimal_purge_late_child`: `CREATE TRIGGER trigger_reject_copyright_minimal_purge_late_child BEFORE DELETE ON public.copyright_notice_correspondence_messages FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_minimal_purge_late_child('copyright_notice_correspondence_messages', 'public.copyright_notice_correspondence_messages')`
