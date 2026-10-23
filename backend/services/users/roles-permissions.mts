@@ -1,7 +1,7 @@
 import assert from 'http-assert'
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { enqueueRecalculateUserVoteWeight } from '@queues/vote-aggregation/enqueues/vote-weight'
+import { enqueueRecalculateUserVoteWeightBestEffort } from '@queues/vote-aggregation/enqueues/vote-weight'
 import { markJwtStale } from '@data-stores/valkey/jwt-stale'
 import onError from '@modules/on-error'
 
@@ -31,6 +31,8 @@ export const addUserRole = async (userId: string, role: string) => {
     await query(sql`/* addUserRole: mark vote weight dirty */
       UPDATE users SET vote_weight_recalculated_at = NULL WHERE id = ${userId}::uuid`)
   await query.commit()
-  void enqueueRecalculateUserVoteWeight(userId)
-  markJwtStale(userId).catch(onError)
+  await Promise.all([
+    enqueueRecalculateUserVoteWeightBestEffort(userId),
+    markJwtStale(userId).catch(onError),
+  ])
 }

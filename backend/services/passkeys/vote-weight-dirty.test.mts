@@ -1,5 +1,6 @@
 import { randomInt } from 'node:crypto'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { runInsideTestWorkerProcessor } from '@vouchington/worker-runtime/testing'
 import {
   countTestPasskeys,
   createTestUserDirect,
@@ -33,24 +34,28 @@ describe('passkey vote-weight dirty markers', () => {
     await recalculateUserVoteWeight(userId)
     const release = holdBackgroundDomain('vote-aggregation')
     try {
-      const created = await createPasskey(userId, createTestVerifiedPasskeyRegistration(), 'First')
-      expect((await getTestUserRaw(userId))?.vote_weight_recalculated_at).toBeNull()
-      expect((await dispatchVoteWeightDirtyMarkers({ afterId })).events).toContainEqual(dirtyEvent)
-      await recalculateUserVoteWeight(userId)
-
-      await deletePasskey(userId, created.id)
-      expect((await getTestUserRaw(userId))?.vote_weight_recalculated_at).toBeNull()
-      expect((await dispatchVoteWeightDirtyMarkers({ afterId })).events).toContainEqual(dirtyEvent)
-      await recalculateUserVoteWeight(userId)
-
-      const protectedPasskey = await createPasskey(
-        userId,
-        createTestVerifiedPasskeyRegistration(),
-        'Protected',
+      const created = await runInsideTestWorkerProcessor(() =>
+        createPasskey(userId, createTestVerifiedPasskeyRegistration(), 'First'),
       )
-      await createPasskey(userId, createTestVerifiedPasskeyRegistration(), 'Other')
+      expect((await getTestUserRaw(userId))?.vote_weight_recalculated_at).toBeNull()
+      expect((await dispatchVoteWeightDirtyMarkers({ afterId })).events).toContainEqual(dirtyEvent)
       await recalculateUserVoteWeight(userId)
-      await deletePasskeyWithMfaProtection(userId, protectedPasskey.id, undefined)
+
+      await runInsideTestWorkerProcessor(() => deletePasskey(userId, created.id))
+      expect((await getTestUserRaw(userId))?.vote_weight_recalculated_at).toBeNull()
+      expect((await dispatchVoteWeightDirtyMarkers({ afterId })).events).toContainEqual(dirtyEvent)
+      await recalculateUserVoteWeight(userId)
+
+      const protectedPasskey = await runInsideTestWorkerProcessor(() =>
+        createPasskey(userId, createTestVerifiedPasskeyRegistration(), 'Protected'),
+      )
+      await runInsideTestWorkerProcessor(() =>
+        createPasskey(userId, createTestVerifiedPasskeyRegistration(), 'Other'),
+      )
+      await recalculateUserVoteWeight(userId)
+      await runInsideTestWorkerProcessor(() =>
+        deletePasskeyWithMfaProtection(userId, protectedPasskey.id, undefined),
+      )
       expect((await getTestUserRaw(userId))?.vote_weight_recalculated_at).toBeNull()
       expect((await dispatchVoteWeightDirtyMarkers({ afterId })).events).toContainEqual(dirtyEvent)
       await recalculateUserVoteWeight(userId)
