@@ -116,6 +116,27 @@ describe('worker unexpected-error boundary', () => {
     expect(response.headers.get('content-security-policy')).toContain("default-src 'self'")
   })
 
+  it.each([null, 0, 'invalid'])('rejects non-object worker bindings: %s', async invalidEnv => {
+    const captureException = vi.fn<(error: unknown, tags?: WorkerExceptionTags) => void>()
+    const fetchInner = vi.fn<() => Promise<Response>>(() => Promise.resolve(new Response()))
+    const worker = createWorker({ fetchInner, captureException })
+
+    const response = await worker.fetch(
+      new Request('https://voucha.ai/about'),
+      invalidEnv as unknown as Env,
+      createContext({}),
+    )
+
+    expect(fetchInner).not.toHaveBeenCalled()
+    expect(response.status).toBe(500)
+    expect(await response.json()).toEqual({
+      message: 'Internal Server Error',
+      code: 'INTERNAL_ERROR',
+    })
+    expect(captureException).toHaveBeenCalledOnce()
+    expect(captureException.mock.calls[0]?.[0]).toBeInstanceOf(TypeError)
+  })
+
   it('standardizes a rejected rate-limiter Promise as a secured 500', async () => {
     const worker = createWorker()
     const env = {
