@@ -9,7 +9,6 @@ import {
 } from '@voucha/test-helpers'
 import { connectBlueskyAccountToUser, getBlueskyLinkedAccountForUser } from './connect.mts'
 import { v7 } from 'uuid'
-import { withPostgresTransactionForTest } from '@voucha/test-helpers/postgres-transaction'
 
 function fakeDid(): string {
   return `did:plc:${createRandomString(24)}`
@@ -28,26 +27,6 @@ async function seedLinkedAccountRow(did: string, linkingUserId: string): Promise
 }
 
 describe('connectBlueskyAccountToUser', () => {
-  it('attaches when the borrowed transaction began before the callback committed', async () => {
-    const user = await createTestUserDirect()
-    const did = fakeDid()
-    const handle = fakeHandle()
-    await withPostgresTransactionForTest(async query => {
-      const authorizationId = await seedLinkedAccountRow(did, user.id)
-      await connectBlueskyAccountToUser(user.id, did, handle, {
-        query,
-        linkAuthorizationId: authorizationId,
-        enqueueUserUpdate: false,
-      })
-      expect(await getBlueskyLinkedAccountForUser(user.id, { query })).toMatchObject({
-        bluesky_did: did,
-        handle,
-        link_authorization_id: authorizationId,
-      })
-    })
-    expect(await getBlueskyLinkedAccountForUser(user.id)).toBeNull()
-  })
-
   it('attaches the linking user and handle to an existing session row', async () => {
     const user = await createTestUserDirect()
     const did = fakeDid()

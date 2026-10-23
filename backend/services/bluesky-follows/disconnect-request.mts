@@ -2,7 +2,7 @@ import { getBlueskyFollowsWorkLimit } from './work-limits.mts'
 import { read, write } from '@data-stores/psql'
 import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
-import { enqueueOnUserUpdated } from '@queues/entity-listeners/enqueues'
+import { enqueueOnUserUpdatedBestEffort } from '@queues/entity-listeners/enqueues'
 
 export type BlueskyDisconnectRequest = {
   userId: string
@@ -31,7 +31,7 @@ export async function requestBlueskyDisconnect(userId: string): Promise<BlueskyD
     blueskyDid: row.bluesky_did,
     linkAuthorizationId: row.link_authorization_id,
   }
-  void enqueueOnUserUpdated(userId)
+  await enqueueOnUserUpdatedBestEffort(userId)
   return request
 }
 
