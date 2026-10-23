@@ -10,7 +10,6 @@ import {
   insertMissingCategories,
   insertMissingHashtagAliases,
   updateMatchedCategories,
-  type CategoryTopicMutation,
 } from './categories-chunks.mts'
 import { recordCategoryPublicationChanges } from './category-publication-changes.mts'
 import { createCategoryRelations } from './category-relations.mts'
