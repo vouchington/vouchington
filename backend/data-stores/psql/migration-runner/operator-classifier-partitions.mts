@@ -33,42 +33,59 @@ export async function createClassifierResultRange(
     connectionTimeoutMs: CONNECTION_TIMEOUT_MS,
     statementTimeoutMs: STATEMENT_TIMEOUT_MS,
   })
-  await transaction(
-    `/* createClassifierResultRange:lockBudget */ SET LOCAL lock_timeout = '2000ms'`,
-  )
-  await lockClassifierResultParents(transaction)
-  const children = await readClassifierChildren(transaction, range.nameSuffix)
+  await guardAndCreateClassifierResultRange(transaction, input, new Date())
+  await transaction.commit()
+}
+
+/** The caller owns the transaction, so a failed seal rolls back every partition change. */
+export async function guardAndCreateClassifierResultRange(
+  query: QueryExecutor,
+  input: ClassifierPartitionRangeInput,
+  referenceDate: Date,
+): Promise<void> {
+  const range = parseClassifierPartitionRange(input)
+  const nextUtcDay = new Date(referenceDate)
+  nextUtcDay.setUTCHours(24, 0, 0, 0)
+  if (range.toDate > nextUtcDay) {
+    throw new Error('Classifier result ranges cannot be created ahead of observed data')
+  }
+  // ast-grep-ignore: no-three-sequential-awaits -- set the lock budget, then lock result parents, then inspect child catalog on this transaction client
+  await query(`/* createClassifierResultRange:lockBudget */ SET LOCAL lock_timeout = '2000ms'`)
+  await lockClassifierResultParents(query)
+  const children = await readClassifierChildren(query, range.nameSuffix)
   if (allRangesAttached(children, range.nameSuffix, range.fromId, range.toId)) {
     assertEveryDefaultAttached(children)
-    await transaction.commit()
     return
   }
   if (children.some(child => child.partition_name.endsWith(`__${range.nameSuffix}`))) {
     throw new Error('Classifier partition range is only partly attached')
   }
   assertEveryDefaultAttached(children)
-  await assertDefaultsFitRange(transaction, range.fromId, range.toId, range.maxDefaultRows)
+  await assertDefaultsFitRange(query, range.fromId, range.toId, range.maxDefaultRows)
 
   // The candidate FK target stays unpartitioned. All DDL and FK validation commit together;
   // failure restores every DEFAULT without moving immutable result rows.
   for (const table of TABLES) {
-    await transaction(`/* createClassifierResultRange:detach */
+    // no-mistakes-disable-next-line query-reached-per-item: exactly three catalog-validated DEFAULT children must detach serially within one transaction before their names can change.
+    await query(`/* createClassifierResultRange:detach */
       ALTER TABLE ${table} DETACH PARTITION ${table}__default`)
   }
   for (const table of TABLES) {
-    await transaction(`/* createClassifierResultRange:rename */
+    // no-mistakes-disable-next-line query-reached-per-item: exactly three detached DEFAULT children are renamed serially before any range is attached.
+    await query(`/* createClassifierResultRange:rename */
       ALTER TABLE ${table}__default RENAME TO ${table}__${range.nameSuffix}`)
   }
   for (const table of TABLES) {
-    await transaction(`/* createClassifierResultRange:attach */
+    // no-mistakes-disable-next-line query-reached-per-item: exactly three renamed children attach in one DDL transaction after all original DEFAULT children are detached.
+    await query(`/* createClassifierResultRange:attach */
       ALTER TABLE ${table} ATTACH PARTITION ${table}__${range.nameSuffix}
       FOR VALUES FROM ('${range.fromId}') TO ('${range.toId}')`)
   }
   for (const table of TABLES) {
-    await transaction(`/* createClassifierResultRange:newDefault */
+    // no-mistakes-disable-next-line query-reached-per-item: exactly three new DEFAULT children are created serially after all range attachments in the same transaction.
+    await query(`/* createClassifierResultRange:newDefault */
       CREATE TABLE ${table}__default PARTITION OF ${table} DEFAULT`)
   }
-  await transaction.commit()
 }
 
 /** Retire exactly three aligned result children after the merged partition guard and live-work checks. */

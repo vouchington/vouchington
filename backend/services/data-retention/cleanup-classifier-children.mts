@@ -38,6 +38,25 @@ async function sweepClassifierChildPage(
   batchSize: number,
 ): Promise<PageResult> {
   await using query = await beginTransaction()
+  const result = await sweepClassifierChildPageWithQuery(
+    query,
+    sweep,
+    cutoffId,
+    lowerBoundId,
+    batchSize,
+  )
+  await query.commit()
+  return result
+}
+
+/** The caller owns the transaction; the page and cursor checkpoint commit atomically. */
+export async function sweepClassifierChildPageWithQuery(
+  query: OwnedTransaction,
+  sweep: ChildSweep,
+  cutoffId: string,
+  lowerBoundId: string,
+  batchSize: number,
+): Promise<PageResult> {
   await query(sql`/* ensureClassifierChildCursor */
     INSERT INTO classifier_retention_cursors (sweep) VALUES (${sweep}) ON CONFLICT DO NOTHING`)
   const { rows: progress } = await query<{
@@ -72,7 +91,6 @@ async function sweepClassifierChildPage(
       cursor_child_id = ${sweep === 'agent_topics' ? (last?.topic_id ?? null) : null},
       sweep_end_key = ${hasMore ? sweepEnd : null}
     WHERE sweep = ${sweep}`)
-  await query.commit()
   return { scanned: page.length, deleted, hasMore }
 }
 
