@@ -7,6 +7,7 @@ import {
   getOAuthAccountUnlinkedAt,
   getTestOAuthAccountRaw,
   insertTestGithubFriend,
+  observeGithubFriendBeforeQueuedUnlink,
   testGithubFriendExists,
   createTestRetentionWindow,
   backdateOAuthAccountUnlinkedAt,
@@ -18,6 +19,24 @@ import { cleanupOAuthFriendEdgePage } from '../data-retention/cleanup-oauth-frie
 import { deleteOrphanedOAuthAccountBatch } from '../data-retention/cleanup-batches.mts'
 
 describe('disconnectOAuthAccount', () => {
+  it('invalidates an observation committed after the unlink transaction began', async () => {
+    const user = await createTestUser()
+    const providerUserId = `github-unlink-clock-${randomUUID()}`
+    onTestFinished(() =>
+      deleteTestOAuthAuthorizationFixtures({ githubUserIds: [providerUserId], userIds: [user.id] }),
+    )
+    const account = await upsertOAuthAccount('github', providerUserId, null, {})
+    if (!account.account_id) throw new Error('GitHub account ID missing')
+    await connectTestOAuthAccount('github', user.id, providerUserId)
+
+    expect(
+      await observeGithubFriendBeforeQueuedUnlink(account.account_id, `observed-${randomUUID()}`),
+    ).toEqual({
+      transactionStartedBeforeObservation: true,
+      invalidatedAfterObservation: true,
+    })
+  })
+
   it('scrubs the provider account atomically and drains both edge directions in bounded pages', async () => {
     const user = await createTestUser()
     const providerUserId = `github-disconnect-${randomUUID()}`

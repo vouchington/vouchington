@@ -26,13 +26,45 @@ import {
   testNativeMintAuditExists,
 } from '@voucha/test-helpers/entities/oauth-retention-evidence'
 import {
+  createTestMicrosecondRevokedGrantPage,
+  testOAuthGrantExists,
+  testSecurityRetentionCursorAt,
+} from '@voucha/test-helpers/entities/oauth-retention-microsecond-page'
+import {
   insertPreservationHoldForTest,
   releasePreservationHoldForTest,
 } from '@voucha/test-helpers/entities/user-legal-preservation-holds'
 import { cleanupSecuritySourcePage } from './cleanup-security-records.mts'
+import { cleanupSecuritySourcePageInTransaction } from './security-record-page.mts'
 import { SOURCES, sourcePlan } from './security-record-plans.mts'
 
 describe('security record cleanup', () => {
+  it('advances beyond a retained microsecond-keyed grant to the next eligible row', async () => {
+    const user = await createTestUser()
+    const pending = await createTestPendingOAuthAuthorization(user)
+    const blockedRevokedAt = '1970-03-01T00:00:00.123400Z'
+    await using query = await beginTransaction()
+    const { blockedId, deletableId } = await createTestMicrosecondRevokedGrantPage(query, {
+      userId: user.id,
+      clientId: pending.client.client_id,
+      blockedRevokedAt,
+      deletableRevokedAt: '1970-03-01T00:00:00.123900Z',
+    })
+    const now = new Date('1970-06-01T00:00:00Z')
+    expect(await cleanupSecuritySourcePageInTransaction(query, 'oauth_grants', 1, now)).toEqual({
+      deleted: 0,
+      hasMore: true,
+    })
+    expect(await testSecurityRetentionCursorAt(query, blockedRevokedAt)).toBe(true)
+    expect(await cleanupSecuritySourcePageInTransaction(query, 'oauth_grants', 1, now)).toEqual({
+      deleted: 1,
+      hasMore: false,
+    })
+    expect(await testOAuthGrantExists(query, blockedId)).toBe(true)
+    expect(await testOAuthGrantExists(query, deletableId)).toBe(false)
+    // The transaction rolls back both fixture rows and its temporary cursor position.
+  })
+
   it('does not cascade a never-granted client into pending consent requests', async () => {
     const user = await createTestUser()
     const pending = await createTestPendingOAuthAuthorization(user, {

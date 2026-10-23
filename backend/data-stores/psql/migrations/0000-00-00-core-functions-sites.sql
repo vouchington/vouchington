@@ -41,14 +41,26 @@ $$;
 -- Preserve the cleanup clock for both explicit unlink and user-deletion FK SET NULL.
 CREATE OR REPLACE FUNCTION fn_update_oauth_account_linkage()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
+DECLARE
+  transition_at TIMESTAMPTZ;
 BEGIN
   IF NEW.user_id IS DISTINCT FROM OLD.user_id THEN
-    NEW.unlinked_at := CASE WHEN NEW.user_id IS NULL THEN CURRENT_TIMESTAMP ELSE NULL END;
-    IF NEW.user_id IS NULL AND TG_TABLE_NAME IN ('facebook_accounts', 'github_accounts', 'x_accounts') THEN
-      NEW.friend_edges_invalidated_at := CURRENT_TIMESTAMP;
-      NEW.friend_edges_cleanup_completed_at := NULL;
-      NEW.friend_references_resolve_pending_at := NULL;
-      NEW.friends_synced_at := NULL;
+    IF NEW.user_id IS NULL THEN
+      -- BEFORE UPDATE runs after the account row lock is acquired. Transaction start can
+      -- precede a committed friend observation while this mutation waits for that lock.
+      transition_at := clock_timestamp();
+      IF TG_TABLE_NAME IN ('facebook_accounts', 'github_accounts', 'x_accounts') THEN
+        transition_at := GREATEST(
+          transition_at, COALESCE(OLD.friend_edges_invalidated_at, '-infinity'::timestamptz)
+        );
+        NEW.friend_edges_invalidated_at := transition_at;
+        NEW.friend_edges_cleanup_completed_at := NULL;
+        NEW.friend_references_resolve_pending_at := NULL;
+        NEW.friends_synced_at := NULL;
+      END IF;
+      NEW.unlinked_at := transition_at;
+    ELSE
+      NEW.unlinked_at := NULL;
     END IF;
   END IF;
   RETURN NEW;
