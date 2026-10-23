@@ -61,6 +61,14 @@ export const NON_DEFAULT_ID_EXCEPTIONS = new Map<string, NonDefaultIdException>(
     naturalOrProviderId('Finite retention sweep names are the key.'),
   ],
   ...SHARED_PARENT_ID_POLICIES,
+  [
+    'oauth_grant_retention_anchors',
+    {
+      policy: 'uuidv7',
+      rationale:
+        'The non-authorizing retained identity shares the UUIDv7 live grant id, is registered before the grant, and survives its deletion.',
+    },
+  ],
   ['post_publication_community_identities', sharedParentUuidv7('communities')],
   ['membership_google_play_recovery_cursors', naturalOrProviderId('Singleton recovery scan.')],
   ['membership_microsoft_store_recovery_cursors', naturalOrProviderId('Singleton recovery scan.')],

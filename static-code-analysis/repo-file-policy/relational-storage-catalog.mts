@@ -89,6 +89,7 @@ export const ALLOWED_NONRELATION_UUID = new Set([
 // roots, publication bridges that mint their own id, and the session JWT sid are their own identity.
 // Extension tables such as user_metrics.id must keep the target FK instead of joining this set.
 export const ALLOWED_OWN_PRIMARY_UUID = new Set([
+  'oauth_grant_retention_anchors.id',
   'post_publication_community_identities.id',
   'retained_api_key_identities.id',
   'retained_image_identities.id',

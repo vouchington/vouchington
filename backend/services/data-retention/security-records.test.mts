@@ -7,8 +7,19 @@ import {
   testGithubFriendExists,
 } from '@voucha/test-helpers'
 import { cleanupSecuritySourcePage } from './cleanup-security-records.mts'
+import { SOURCES } from './security-record-plans.mts'
 
 describe('security record cleanup', () => {
+  it('prepares a bounded page for every source with its own typed cursor', async () => {
+    // This cutoff predates synthetic records; the query checks every source without deleting
+    // fixtures owned by another parallel test.
+    const now = new Date('1974-01-02T00:00:00.000Z')
+    const pages = await Promise.all(
+      SOURCES.map(source => cleanupSecuritySourcePage(source, 1, now)),
+    )
+    expect(pages).toEqual(SOURCES.map(() => ({ deleted: 0, hasMore: false })))
+  })
+
   it('uses a durable one-row page and reports remaining old friend observations', async () => {
     const day = 86_400_000
     const now = new Date()

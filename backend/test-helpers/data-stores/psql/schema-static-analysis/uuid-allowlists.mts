@@ -49,6 +49,10 @@ export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
     'Subscription partition tie-breaker survives deletion of its user and subscription rows.',
   ],
   ...RETENTION_CURSOR_UUID_COLUMNS_WITHOUT_KEYS,
+  [
+    'security_retention_cleanup_cursors.cursor_id',
+    'Deletion-stable keyset position; the scanned source row can be deleted before the next pass.',
+  ],
   ...NOTIFICATION_PUSH_RETENTION_UUID_COLUMNS_WITHOUT_KEYS,
   ...ALLOWED_MEMBERSHIP_UUID_COLUMNS_WITHOUT_KEYS,
   ...OAUTH_AUTHORIZATION_UUID_COLUMNS_WITHOUT_KEYS,

@@ -42,7 +42,7 @@ export function sourcePlan(source: Source, now: Date): SourcePlan {
         table: 'oauth_authorization_server_events',
         keyAt: 'target.occurred_at',
         cutoffAt: twelveMonthsAgo(now),
-        predicate: 'target.id < $5::uuid',
+        predicate: 'target.id < $1::uuid',
         deletePredicate: `(
           target.event_type <> 'consent_approved' OR NOT EXISTS (
             SELECT 1 FROM oauth_grant_retention_anchors anchor
@@ -81,7 +81,7 @@ export function sourcePlan(source: Source, now: Date): SourcePlan {
         table: 'oauth_clients',
         keyAt: 'target.created_at',
         cutoffAt: ninetyDaysAgo,
-        predicate: 'target.id < $5::uuid AND target.first_granted_at IS NULL',
+        predicate: 'target.id < $1::uuid AND target.first_granted_at IS NULL',
         deletePredicate: `NOT EXISTS (
             SELECT 1 FROM mcp_call_audit_events audit
             WHERE audit.oauth_client_id = target.id
@@ -126,7 +126,7 @@ export function sourcePlan(source: Source, now: Date): SourcePlan {
         table: 'copyright_decision_rationales',
         keyAt: 'target.created_at',
         cutoffAt: new Date(now.getTime() - 1_095 * 86_400_000),
-        predicate: `target.id < $5::uuid AND target.rationale_ciphertext = 'erased'`,
+        predicate: `target.id < $1::uuid AND target.rationale_ciphertext = 'erased'`,
         deletePredicate: 'fn_copyright_decision_rationale_retention_eligible(target, $2)',
         deletePredicateUsesCutoff: true,
       }
@@ -135,7 +135,7 @@ export function sourcePlan(source: Source, now: Date): SourcePlan {
         table: 'copyright_decision_rationales',
         keyAt: 'target.created_at',
         cutoffAt: new Date(now.getTime() - 1_095 * 86_400_000),
-        predicate: `target.id < $5::uuid AND target.copyright_notice_id IS NULL
+        predicate: `target.id < $1::uuid AND target.copyright_notice_id IS NULL
           AND target.rationale_ciphertext <> 'erased'`,
         deletePredicate: 'fn_copyright_decision_rationale_retention_eligible(target, $2)',
         deletePredicateUsesCutoff: true,
