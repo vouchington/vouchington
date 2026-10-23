@@ -1,6 +1,8 @@
 import type { DistributeActivityData } from '../queues/activitypub/enqueues/delivery.mts'
 import { v7 as uuidv7 } from 'uuid'
 
+export const mintDistributionActivityIdForTest = uuidv7
+
 export const FOLLOW_DATA: DistributeActivityData = {
   activityId: uuidv7(),
   activityType: 'Follow',
