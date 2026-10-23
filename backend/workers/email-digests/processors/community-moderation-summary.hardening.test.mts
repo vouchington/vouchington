@@ -2,15 +2,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as ses from '@modules/aws/ses'
 import {
   createTestUser,
+  claimCurrentModerationSummaryForTest,
   insertTestCommunity,
   insertTestCommunityMember,
 } from '@voucha/test-helpers'
 import { insertTestPendingCommunityPostReview } from '@voucha/test-helpers/entities/community-post-reviews'
 import { insertTestPost } from '@voucha/test-helpers/entities/posts'
-import {
-  claimModerationEmailSend,
-  hasModerationEmailSent,
-} from '@services/communities/moderation-summary-emails'
+import { hasModerationEmailSent } from '@services/communities/moderation-summary-emails'
 import { createSesBounceEvent } from '@services/ses-bounce-events'
 import { processSendCommunityModerationSummaryEmail } from './community-moderation-summary.mts'
 
@@ -47,9 +45,8 @@ describe('moderation summary definitive SES rejection', () => {
       postId,
       submittedById: user!.id,
     })
-    const trackingKey = 'daily:2026-07-14'
+    const { trackingKey, windowEnd } = await claimCurrentModerationSummaryForTest(user!.id)
     const emailAddress = user!.email_address!
-    await claimModerationEmailSend(user!.id, trackingKey)
     await createSesBounceEvent({
       notification_type: 'bounce',
       bounce_type: 'permanent',
@@ -59,7 +56,7 @@ describe('moderation summary definitive SES rejection', () => {
 
     await expect(
       processSendCommunityModerationSummaryEmail(
-        { emailAddress, userId: user!.id, trackingKey },
+        { emailAddress, userId: user!.id, trackingKey, windowEnd },
         {
           generatedForDate: '2026-07-14',
           settingsUrl: 'https://voucha.ai/my/notification-settings',
@@ -94,9 +91,13 @@ describe('moderation summary definitive SES rejection', () => {
       postId,
       submittedById: user!.id,
     })
-    const trackingKey = 'daily:2026-07-11'
-    await claimModerationEmailSend(user!.id, trackingKey)
-    const input = { emailAddress: 'tests+moderator@voucha.ai', userId: user!.id, trackingKey }
+    const { trackingKey, windowEnd } = await claimCurrentModerationSummaryForTest(user!.id)
+    const input = {
+      emailAddress: 'tests+moderator@voucha.ai',
+      userId: user!.id,
+      trackingKey,
+      windowEnd,
+    }
     const variables = {
       generatedForDate: '2026-07-11',
       settingsUrl: 'https://voucha.ai/my/notification-settings',
@@ -116,5 +117,31 @@ describe('moderation summary definitive SES rejection', () => {
       processSendCommunityModerationSummaryEmail(input, variables),
     ).resolves.not.toBeNull()
     expect(ses.sendEmail).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('moderation summary queued retention', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks()
+    vi.spyOn(ses, 'sendEmail').mockResolvedValue({} as never)
+  })
+
+  it('skips a tracked job without its window end or after its claim horizon', async () => {
+    const user = await createTestUser()
+    const oldWindowEnd = '2020-01-01T12:00:00.000Z'
+    const variables = { generatedForDate: '2020-01-01', settingsUrl: '/settings', communities: [] }
+    await expect(
+      processSendCommunityModerationSummaryEmail(
+        { userId: user!.id, trackingKey: 'daily:2020-01-01' },
+        variables,
+      ),
+    ).resolves.toBeNull()
+    await expect(
+      processSendCommunityModerationSummaryEmail(
+        { userId: user!.id, trackingKey: 'daily:2020-01-01', windowEnd: oldWindowEnd },
+        variables,
+      ),
+    ).resolves.toBeNull()
+    expect(ses.sendEmail).not.toHaveBeenCalled()
   })
 })

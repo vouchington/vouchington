@@ -64,5 +64,11 @@ export type SendPostReferralLinkEmailData =
   EmailDigestSendData<ProcessSendPostReferralLinkEmailVariables>
 export type SendFollowNewsSourcesEmailData =
   EmailDigestSendData<ProcessSendFollowNewsSourcesEmailVariables>
-export type SendCommunityModerationSummaryEmailData =
-  EmailDigestSendData<ProcessSendCommunityModerationSummaryEmailVariables>
+export type SendCommunityModerationSummaryEmailData = {
+  input: Extract<EmailDigestInput, { userId: string }> & {
+    trackingKey: string
+    windowStart: string
+    windowEnd: string
+  }
+  variables: ProcessSendCommunityModerationSummaryEmailVariables
+}

@@ -625,7 +625,7 @@ function getIsoDayOfWeekForLocalDate(localDate: string): number {
   return day === 0 ? 7 : day
 }
 
-function getIsoWeekKey(localDate: string): string {
+export function getIsoWeekKey(localDate: string): string {
   const date = new Date(`${localDate}T00:00:00.000Z`)
   const utcDate = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()))
   const dayNumber = utcDate.getUTCDay() || 7

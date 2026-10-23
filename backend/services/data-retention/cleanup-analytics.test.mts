@@ -89,6 +89,10 @@ describe('cleanupAnalyticsLocalFiles', () => {
         webPushSubscriptionTombstones: emptyWindow,
         oldModerationQueueClaims: emptyWindow,
         oldModerationMediaReveals: emptyWindow,
+        sesBounceEvents: emptyWindow,
+        systemPrunedNotifications: emptyWindow,
+        userDeletedNotifications: emptyWindow,
+        moderationEmailSends: emptyWindow,
       }),
     ).resolves.toEqual({
       retainedIdentityRoots: [],
@@ -114,6 +118,10 @@ describe('cleanupAnalyticsLocalFiles', () => {
       webPushSubscriptionTombstones: { deleted: 0, hasMore: false, continuation: null },
       oldModerationQueueClaims: { deleted: 0, hasMore: false, cursorId: null },
       oldModerationMediaReveals: { deleted: 0, hasMore: false, cursorId: null },
+      sesBounceEvents: { deleted: 0, hasMore: false, continuation: null },
+      systemPrunedNotifications: { deleted: 0, hasMore: false, continuation: null },
+      userDeletedNotifications: { deleted: 0, hasMore: false, continuation: null },
+      moderationEmailSends: { deleted: 0, hasMore: false, continuation: null },
     })
   })
 
