@@ -11,6 +11,12 @@ import { extractTurnstileTokenFromBody, verifyCaptchaToken } from './verify.mts'
 export type VerifyCaptchaOrAttestationOptions = {
   actionTag: string
   fieldNames?: readonly string[]
+  createMissingTokenError?: () => Error
+  nativeChallengeHeaders?: {
+    assertion?: string
+    challengeId?: string
+    keyId?: string
+  } | null
 }
 
 function headerValueToString(value: string | string[] | undefined): string {
@@ -30,9 +36,17 @@ export async function verifyCaptchaOrAttestation(
   )
     return
 
-  const keyId = headerValueToString(ctx.req.headers['x-app-attest-key-id'])
-  const assertion = headerValueToString(ctx.req.headers['x-app-attest-assertion'])
-  const challengeId = headerValueToString(ctx.req.headers['x-app-attest-challenge-id'])
+  const nativeHeaders =
+    opts.nativeChallengeHeaders === undefined
+      ? {
+          assertion: headerValueToString(ctx.req.headers['x-app-attest-assertion']),
+          challengeId: headerValueToString(ctx.req.headers['x-app-attest-challenge-id']),
+          keyId: headerValueToString(ctx.req.headers['x-app-attest-key-id']),
+        }
+      : opts.nativeChallengeHeaders
+  const keyId = nativeHeaders?.keyId ?? ''
+  const assertion = nativeHeaders?.assertion ?? ''
+  const challengeId = nativeHeaders?.challengeId ?? ''
 
   if (keyId && assertion && challengeId) {
     if (!isAppAttestationEnabled() || !isAttestationRequiredForBypass()) {
@@ -54,5 +68,6 @@ export async function verifyCaptchaOrAttestation(
     extractTurnstileTokenFromBody(body, opts.fieldNames),
     ctx.ip,
     opts.actionTag,
+    { createMissingTokenError: opts.createMissingTokenError },
   )
 }

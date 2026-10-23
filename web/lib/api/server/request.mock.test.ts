@@ -224,6 +224,22 @@ describe('request', () => {
       })
     })
 
+    it.each(['x-voucha-bot-score', 'X-Voucha-Bot-Score'])(
+      'strips private Worker metadata from caller header %s',
+      async headerName => {
+        const request = new ServerRequest()
+
+        await request.post('/api/v1/posts', {}, { headers: { [headerName]: '7' } })
+
+        const [, init] = mockFetch.mock.calls[0] as [string, RequestInit]
+        expect(
+          Object.keys(init.headers as Record<string, string>).find(
+            name => name.toLowerCase() === 'x-voucha-bot-score',
+          ),
+        ).toBeUndefined()
+      },
+    )
+
     it('per-call x-request-id header override wins over inbound request id', async () => {
       mockHeaders.mockResolvedValue(new Headers({ 'x-request-id': 'inbound-id' }))
       const request = new ServerRequest()

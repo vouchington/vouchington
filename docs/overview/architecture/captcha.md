@@ -70,6 +70,24 @@ See [app-attestation.md](app-attestation.md) for the full attestation/assertion 
 `docs/overview/architecture/services/README.md` § App Attest bypass
 for the exact decision logic and error codes.
 
+## Low-score mutation proof
+
+The Cloudflare Worker removes caller-supplied bot-score metadata and forwards a score only from
+Cloudflare's request context. The API trusts that signal only on a Worker-authenticated origin
+request and asks cookie-session mutations with a low score for a separate, generic proof. Missing
+metadata intentionally leaves the request unchanged so deployments without granular Bot
+Management degrade gracefully.
+
+The generic Turnstile token travels in its own header rather than the route body's
+`cf_turnstile_response`, so a successful retry does not spend one single-use token at two gates.
+Native clients select the equivalent App Attest operation challenge with the shared `app-attest`
+marker in that header and put its assertion in the dedicated bot-challenge App Attest headers. The
+marker is not an exemption: the hardware-backed assertion must still verify against the generic
+operation. The standard App Attest headers remain available for a distinct route-specific
+assertion, so each single-use challenge is consumed only by its owning verifier. Because challenge
+assertions share a monotonic device counter, a native client generating the generic assertion after
+an earlier route assertion must re-sign the still-unused route challenge before retrying.
+
 ## reCAPTCHA behaviour
 
 ### Skip conditions (no assessment, request proceeds)

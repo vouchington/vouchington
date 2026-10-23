@@ -9,6 +9,7 @@ import { parseErrorResponseBody } from '../error-helpers'
 import { buildWorkerSecretHeader } from '../worker-secret'
 import { safeFeatureFlagCookiePart } from '@/lib/feature-flags/shared'
 import { buildWebClientInfoHeaders } from './client-info'
+import { VOUCHA_BOT_SCORE_HEADER } from '@ts-shared/utils/bot-challenge'
 interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
   body?: unknown
@@ -35,13 +36,14 @@ export class ServerRequest {
       )
     }
     const { method = 'GET', body, headers = {} } = options
+    const safeHeaders = withoutPrivateWorkerHeaders(headers)
     const url = `${this.getBaseUrl()}${endpoint}`
     const [cookieHeader, requestIdHeader, forwardedIpHeaders] = await Promise.all([
-      buildCookieHeader(headers),
+      buildCookieHeader(safeHeaders),
       buildRequestIdHeader(),
       buildForwardedIpHeaders(),
     ])
-    const hasCookieAuth = hasHeader(headers, 'cookie') || hasHeader(cookieHeader, 'cookie')
+    const hasCookieAuth = hasHeader(safeHeaders, 'cookie') || hasHeader(cookieHeader, 'cookie')
     const originHeader: Record<string, string> =
       method === 'GET' || !hasCookieAuth ? {} : { Origin: new URL(url).origin }
     const fetchOptions: RequestInit = {
@@ -50,7 +52,7 @@ export class ServerRequest {
       headers: {
         'Content-Type': 'application/json',
         ...requestIdHeader,
-        ...headers,
+        ...safeHeaders,
         ...forwardedIpHeaders,
         ...buildWebClientInfoHeaders(),
         ...buildWorkerSecretHeader(),
@@ -189,4 +191,10 @@ function hasCookieHeader(headers: Record<string, string>): boolean {
 function hasHeader(headers: Record<string, string>, name: string): boolean {
   const normalizedName = name.toLowerCase()
   return Object.keys(headers).some(headerName => headerName.toLowerCase() === normalizedName)
+}
+
+function withoutPrivateWorkerHeaders(headers: Record<string, string>): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(headers).filter(([name]) => name.toLowerCase() !== VOUCHA_BOT_SCORE_HEADER),
+  )
 }

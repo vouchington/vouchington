@@ -177,6 +177,12 @@ describe('proxy.session', () => {
         expect(headers.get('x-session-token')).toBeNull()
       })
 
+      it('strips private Worker bot metadata before Next request handling', async () => {
+        await proxy(makeRequest({ headers: { 'x-voucha-bot-score': '7' } }) as any)
+        const headers = (mockNextResponseNext.mock as any).calls[0][0].request.headers as Headers
+        expect(headers.get('x-voucha-bot-score')).toBeNull()
+      })
+
       it('strips injected auth headers even when session fetch fails', async () => {
         mockDecodeSessionJwt.mockReturnValue(AUTH_ST_PAYLOAD)
         fetchMock.mockRejectedValue(new Error('Network error'))
