@@ -102,14 +102,16 @@ jobs:
       area-tooling: ${{ steps.areas.outputs.tooling }}
       i18n-route-bounds: ${{ steps.areas.outputs.i18n-route-bounds }}
     steps:
-      # Full history keeps both parents of a pull request's merge commit (the docs-only check diffs
-      # HEAD^1..HEAD) and the merge-queue range's merge base.
+      # The checkout is one commit. fetch-base-ref then fetches only that commit's ancestry (both
+      # parents of a pull request's merge commit, which the docs-only check diffs as HEAD^1..HEAD)
+      # and the base branch (the merge-queue range's merge base). It never fetches every branch,
+      # and the blobless filter skips file contents because every diff here reads names only.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 2
-        with:
-          fetch-depth: 0
       - uses: ./.github/actions/fetch-base-ref
         timeout-minutes: 2
+        with:
+          filter: blob:none
       - name: Resolve merge queue diff range
         timeout-minutes: 2
         id: merge-queue-range
