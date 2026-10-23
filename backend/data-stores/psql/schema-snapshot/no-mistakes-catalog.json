@@ -8924,7 +8924,7 @@
         "idx_blocklisted_domains__source_id__domain": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_blocklisted_domains__source_id__domain ON public.blocklisted_domains USING btree (source_id, domain)",
+          "definition": "CREATE INDEX idx_blocklisted_domains__source_id__domain ON public.blocklisted_domains USING btree (source_id, domain COLLATE \"C\")",
           "immediate": true,
           "keys": [
             {
@@ -8937,13 +8937,13 @@
               "orderingSupported": true
             },
             {
-              "collation": "pg_catalog.\"default\"",
+              "collation": "pg_catalog.\"C\"",
               "column": "domain",
               "descending": false,
               "expression": "domain",
               "nullsFirst": false,
               "opclass": "pg_catalog.text_ops",
-              "orderingSupported": true
+              "orderingSupported": false
             }
           ],
           "live": true,

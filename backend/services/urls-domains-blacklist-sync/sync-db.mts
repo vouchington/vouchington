@@ -1,14 +1,13 @@
+import { mkdtempSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import {
   beginTransaction,
   writePool,
   type PoolClient,
   type TransactionQuery,
 } from '@data-stores/psql'
-import { from as copyFrom } from 'pg-copy-streams'
-import { Readable } from 'node:stream'
-import { pipeline } from 'node:stream/promises'
 import onError from '@modules/on-error'
-import { readNormalizedDomains } from './sync-utils.mts'
 import {
   rebuildBloomForSource,
   defaultBloomRebuildDependencies,
@@ -24,14 +23,15 @@ import {
 } from './sync-cache.mts'
 import { drainHostnameCacheInvalidationWork } from '@services/entity-cache/hostname-invalidation-drain'
 import { entityCacheWorkConfig } from '@services/entity-cache/work-limits'
-const RAW_DOMAINS_TABLE = 'tmp_domain_blacklist_raw_domains'
-const NEW_DOMAINS_TABLE = 'tmp_domain_blacklist_new_domains'
+import { writeSortedDesiredDomains } from './diff-files.mts'
+import { stageBothDiffFiles, type MembershipDiffPaths } from './membership-diff-stage.mts'
+import { applyWithPreparedMembership, lockSourceForDiff } from './membership-version.mts'
+
 type AppliedDomainDiff = { result: SyncBlacklistSourceResult; inlineHostnameIds: string[] }
-async function* generateDomainCsvRows(response: Response): AsyncGenerator<string> {
-  for await (const domain of readNormalizedDomains(response)) {
-    yield `"${domain.replaceAll('"', '""')}"\n`
-  }
-}
+
+// Pid keeps an interrupted run's directory distinct from another worker's live diff.
+export const BLOCKLIST_DIFF_DIRECTORY_PREFIX = `blocklist-diff-${process.pid}-`
+
 export async function syncDomainsWithDatabase(
   sourceId: DomainBlacklistSourceId,
   response: Response,
@@ -39,110 +39,108 @@ export async function syncDomainsWithDatabase(
   bloomRebuildDependencies: BloomRebuildDependencies = defaultBloomRebuildDependencies,
 ): Promise<SyncBlacklistSourceResult> {
   await entityCacheWorkConfig.waitForInitialization()
-  const client = await writePool.connect()
-  let result: SyncBlacklistSourceResult
+  const directory = mkdtempSync(join(tmpdir(), BLOCKLIST_DIFF_DIRECTORY_PREFIX))
+  const desiredPath = join(directory, 'desired')
+  const membershipPath = join(directory, 'membership')
+  const addedPath = join(directory, 'added')
+  const removedPath = join(directory, 'removed')
   try {
-    await stageDesiredDomains(client, response)
+    await writeSortedDesiredDomains(response, desiredPath)
+    const paths: MembershipDiffPaths = {
+      membershipPath,
+      desiredPath,
+      addedPath,
+      removedPath,
+    }
+    // The first preparation uses the reader. A concurrent writer sync changes
+    // the source row's MVCC version; then rebuild from the writer outside the
+    // short apply lock so the second sync replaces, rather than unions, feeds.
+    const result = await applyWithPreparedMembership(sourceId, paths, version =>
+      applyLockedDomainDiff(
+        sourceId,
+        sourceType,
+        client => stageBothDiffFiles(client, addedPath, removedPath),
+        version,
+      ),
+    )
+    await rebuildBloomForSource(sourceType, bloomRebuildDependencies)
+    return result
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+}
+
+/**
+ * Stage only the diff. A lagging membership snapshot can omit a domain the writer
+ * still has: that removal is absent from the diff and the domain stays blocked
+ * until the next run. A repeated addition hits ON CONFLICT DO NOTHING.
+ * @internal Stale-membership tests apply a prepared diff without the reader copy.
+ */
+export async function applyDomainDiffFiles(
+  sourceId: DomainBlacklistSourceId,
+  sourceType: 'url' | 'email',
+  addedPath: string,
+  removedPath: string,
+): Promise<SyncBlacklistSourceResult> {
+  const result = await applyLockedDomainDiff(sourceId, sourceType, client =>
+    stageBothDiffFiles(client, addedPath, removedPath),
+  )
+  if (!result) throw new Error('Unexpected domain blacklist membership conflict')
+  return result
+}
+
+async function applyLockedDomainDiff(
+  sourceId: DomainBlacklistSourceId,
+  sourceType: 'url' | 'email',
+  stage: (client: PoolClient) => Promise<void>,
+  expectedVersion?: string | null,
+): Promise<SyncBlacklistSourceResult | null> {
+  await entityCacheWorkConfig.waitForInitialization()
+  const client = await writePool.connect()
+  try {
     await using transaction = await beginTransaction({ client })
-    const applied = await applyDesiredDomains(transaction, sourceId, sourceType)
-    result = applied.result
+    const applied = await stageLockedDiff(
+      transaction,
+      client,
+      sourceId,
+      sourceType,
+      stage,
+      expectedVersion,
+    )
+    if (!applied) return null
     await transaction.commit()
     await drainHostnameCacheInvalidationWork({ hostnameIds: applied.inlineHostnameIds }).catch(
       onError,
     )
+    return applied.result
   } finally {
     await dropSyncTempTables(client).catch(onError)
     client.release()
   }
-  await rebuildBloomForSource(sourceType, bloomRebuildDependencies)
-  return result
 }
-async function stageDesiredDomains(client: PoolClient, response: Response): Promise<void> {
-  await copyRawDomains(client, response)
-  await materializeDesiredDomains(client)
-}
-async function copyRawDomains(client: PoolClient, response: Response): Promise<void> {
-  await client.query(
-    `/* syncDomainsWithDatabase */ CREATE TEMP TABLE ${RAW_DOMAINS_TABLE} (domain TEXT NOT NULL)`,
-  )
-  // no-mistakes-disable-next-line postgres-required-predicates: COPY FROM STDIN transports bound batch data into a temporary staging table; it is not a guarded-relation read
-  const copyStream = client.query(
-    copyFrom(
-      `/* syncDomainsWithDatabase */ COPY ${RAW_DOMAINS_TABLE} (domain) FROM STDIN WITH (FORMAT CSV)`,
-    ),
-  )
-  await pipeline(Readable.from(generateDomainCsvRows(response)), copyStream)
-}
-async function materializeDesiredDomains(client: PoolClient): Promise<void> {
-  await client.query(`/* syncDomainsWithDatabase */
-      CREATE TEMP TABLE ${NEW_DOMAINS_TABLE}
-      AS
-      SELECT DISTINCT domain
-      FROM ${RAW_DOMAINS_TABLE}
-    `)
-  await client.query(`/* syncDomainsWithDatabase */ CREATE INDEX ON ${NEW_DOMAINS_TABLE} (domain)`)
-}
-async function applyDesiredDomains(
-  query: TransactionQuery,
+
+async function stageLockedDiff(
+  transaction: Awaited<ReturnType<typeof beginTransaction>>,
+  client: PoolClient,
   sourceId: DomainBlacklistSourceId,
   sourceType: 'url' | 'email',
-): Promise<AppliedDomainDiff> {
-  await prepareDomainDiff(query, sourceId, sourceType)
-  return applyPreparedDomainDiff(query, sourceId, sourceType)
-}
-async function prepareDomainDiff(
-  query: TransactionQuery,
-  sourceId: DomainBlacklistSourceId,
-  sourceType: 'url' | 'email',
-): Promise<void> {
-  await query(
-    `/* syncDomainsWithDatabase */ SELECT pg_advisory_xact_lock(hashtextextended($1::text, 0))`,
+  stage: (client: PoolClient) => Promise<void>,
+  expectedVersion?: string | null,
+): Promise<AppliedDomainDiff | null> {
+  await stage(client)
+  const version = await lockSourceForDiff(transaction, sourceId, sourceType)
+  if (expectedVersion !== undefined && version !== expectedVersion) return null
+  const applied = await applyPreparedDomainDiff(transaction, sourceId, sourceType)
+  // Advance the generation atomically with membership writes. Source metadata
+  // updates already change xmin, so they also invalidate in-flight diffs.
+  await transaction(
+    `/* syncDomainsWithDatabase:advanceVersion */
+     UPDATE domain_blocklist_sources SET updated_at = updated_at WHERE id = $1`,
     [sourceId],
   )
-  // A source reclassified during download must not publicly introduce its email-only domains.
-  const { rows } = await query<{ type: 'url' | 'email' }>(
-    `/* syncDomainsWithDatabase:sourceType */ SELECT type FROM domain_blocklist_sources WHERE id = $1 FOR UPDATE`,
-    [sourceId],
-  )
-  if (rows[0]?.type !== sourceType)
-    throw new Error('Domain blacklist source type changed during sync')
-  await materializeDomainDiff(query, sourceId)
+  return applied
 }
-async function materializeDomainDiff(
-  query: TransactionQuery,
-  sourceId: DomainBlacklistSourceId,
-): Promise<void> {
-  await Promise.all([
-    query(
-      `/* syncDomainsWithDatabase */
-      CREATE TEMP TABLE ${ADDED_DOMAINS_TABLE}
-      AS
-      SELECT n.domain
-      FROM ${NEW_DOMAINS_TABLE} n
-      LEFT JOIN blocklisted_domains d
-        ON d.source_id = $1 AND d.domain = n.domain
-      WHERE d.domain IS NULL
-    `,
-      [sourceId],
-    ),
-    query(
-      `/* syncDomainsWithDatabase */
-      CREATE TEMP TABLE ${REMOVED_DOMAINS_TABLE}
-      AS
-      SELECT d.domain
-      FROM blocklisted_domains d
-      LEFT JOIN ${NEW_DOMAINS_TABLE} n
-        ON n.domain = d.domain
-      WHERE d.source_id = $1 AND n.domain IS NULL
-    `,
-      [sourceId],
-    ),
-  ])
-  await Promise.all([
-    query(`/* syncDomainsWithDatabase */ CREATE INDEX ON ${ADDED_DOMAINS_TABLE} (domain)`),
-    query(`/* syncDomainsWithDatabase */ CREATE INDEX ON ${REMOVED_DOMAINS_TABLE} (domain)`),
-  ])
-}
+
 async function applyPreparedDomainDiff(
   query: TransactionQuery,
   sourceId: DomainBlacklistSourceId,
@@ -167,8 +165,8 @@ async function applyPreparedDomainDiff(
     inlineHostnameIds,
   }
 }
+
 async function dropSyncTempTables(client: PoolClient): Promise<void> {
   await client.query(`/* syncDomainsWithDatabase */ DROP TABLE IF EXISTS
-    ${RAW_DOMAINS_TABLE}, ${NEW_DOMAINS_TABLE},
     ${ADDED_DOMAINS_TABLE}, ${REMOVED_DOMAINS_TABLE}`)
 }

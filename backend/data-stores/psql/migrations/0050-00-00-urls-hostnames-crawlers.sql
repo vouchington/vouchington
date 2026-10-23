@@ -414,8 +414,9 @@ FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+-- C collation matches LC_ALL=C sort and comm, so the reader membership COPY does not sort.
 CREATE INDEX IF NOT EXISTS idx_blocklisted_domains__source_id__domain
-ON blocklisted_domains (source_id, domain);
+ON blocklisted_domains (source_id, domain COLLATE "C");
 
 COMMENT ON TABLE blocklisted_domains IS 'Individual blacklisted domains from external sources.';
 COMMENT ON COLUMN blocklisted_domains.source_id IS 'The blacklist source this domain came from.';
