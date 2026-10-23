@@ -70,6 +70,63 @@ CREATE TABLE IF NOT EXISTS ai_usage_provider_response_keys (
   CHECK (response_id = TRIM(response_id) AND char_length(response_id) BETWEEN 1 AND 100)
 );
 
+-- Fold a bounded page of old calls and delete that same page in one transaction. A month may be
+-- folded in several pages, including the part of a month before the 180-day cutoff.
+CREATE TABLE IF NOT EXISTS ai_usage_community_monthly_rollups (
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
+  community_id UUID NOT NULL REFERENCES communities (id) ON DELETE CASCADE,
+  month_start_on DATE NOT NULL,
+  request_count BIGINT NOT NULL DEFAULT 0 CHECK (request_count >= 0),
+  input_tokens BIGINT NOT NULL DEFAULT 0 CHECK (input_tokens >= 0),
+  output_tokens BIGINT NOT NULL DEFAULT 0 CHECK (output_tokens >= 0),
+  unpriced_request_count BIGINT NOT NULL DEFAULT 0 CHECK (unpriced_request_count >= 0),
+  cost_microunits BIGINT NOT NULL DEFAULT 0 CHECK (cost_microunits >= 0),
+  UNIQUE (community_id, month_start_on)
+);
+COMMENT ON TABLE ai_usage_community_monthly_rollups IS 'All-time cost facts for live communities, folded from old per-call usage in bounded atomic pages.';
+COMMENT ON COLUMN ai_usage_community_monthly_rollups.id IS 'Stable identifier of this community-month total.';
+COMMENT ON COLUMN ai_usage_community_monthly_rollups.community_id IS 'Live community whose calls contributed to this month; removal follows community deletion.';
+COMMENT ON COLUMN ai_usage_community_monthly_rollups.month_start_on IS 'UTC first day of the call month.';
+COMMENT ON COLUMN ai_usage_community_monthly_rollups.request_count IS 'Count of folded provider calls.';
+COMMENT ON COLUMN ai_usage_community_monthly_rollups.input_tokens IS 'Sum of folded input tokens.';
+COMMENT ON COLUMN ai_usage_community_monthly_rollups.output_tokens IS 'Sum of folded output tokens.';
+COMMENT ON COLUMN ai_usage_community_monthly_rollups.unpriced_request_count IS 'Count of folded calls without known pricing.';
+COMMENT ON COLUMN ai_usage_community_monthly_rollups.cost_microunits IS 'Exact sum of priced costs in millionths of a currency unit.';
+
+CREATE TABLE IF NOT EXISTS ai_usage_global_monthly_rollups (
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
+  month_start_on DATE NOT NULL UNIQUE,
+  request_count BIGINT NOT NULL DEFAULT 0 CHECK (request_count >= 0),
+  input_tokens BIGINT NOT NULL DEFAULT 0 CHECK (input_tokens >= 0),
+  output_tokens BIGINT NOT NULL DEFAULT 0 CHECK (output_tokens >= 0),
+  unpriced_request_count BIGINT NOT NULL DEFAULT 0 CHECK (unpriced_request_count >= 0),
+  cost_microunits BIGINT NOT NULL DEFAULT 0 CHECK (cost_microunits >= 0)
+);
+COMMENT ON TABLE ai_usage_global_monthly_rollups IS 'All provider calls, including calls without a community, after per-call usage expires.';
+COMMENT ON COLUMN ai_usage_global_monthly_rollups.id IS 'Stable identifier of this platform-month total.';
+COMMENT ON COLUMN ai_usage_global_monthly_rollups.month_start_on IS 'UTC first day of the call month.';
+COMMENT ON COLUMN ai_usage_global_monthly_rollups.request_count IS 'Count of folded provider calls.';
+COMMENT ON COLUMN ai_usage_global_monthly_rollups.input_tokens IS 'Sum of folded input tokens.';
+COMMENT ON COLUMN ai_usage_global_monthly_rollups.output_tokens IS 'Sum of folded output tokens.';
+COMMENT ON COLUMN ai_usage_global_monthly_rollups.unpriced_request_count IS 'Count of folded calls without known pricing.';
+COMMENT ON COLUMN ai_usage_global_monthly_rollups.cost_microunits IS 'Exact sum of priced costs in millionths of a currency unit.';
+
+CREATE TABLE IF NOT EXISTS ai_usage_retention_cursors (
+  is_singleton BOOLEAN PRIMARY KEY DEFAULT true CHECK (is_singleton),
+  cursor_id UUID,
+  sweep_upper_bound_id UUID,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+INSERT INTO ai_usage_retention_cursors (is_singleton) VALUES (true) ON CONFLICT DO NOTHING;
+CREATE TRIGGER trigger_ai_usage_retention_cursors_updated_at
+BEFORE UPDATE ON ai_usage_retention_cursors
+FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+COMMENT ON TABLE ai_usage_retention_cursors IS 'Persistent UUIDv7 position of the bounded AI usage fold and delete sweep.';
+COMMENT ON COLUMN ai_usage_retention_cursors.is_singleton IS 'The one AI usage retention sweep.';
+COMMENT ON COLUMN ai_usage_retention_cursors.cursor_id IS 'Last examined raw usage id; cleared after a complete pass so late backdated calls are revisited.';
+COMMENT ON COLUMN ai_usage_retention_cursors.sweep_upper_bound_id IS 'Fixed exclusive UUIDv7 cutoff for the active scan; cleared when that pass completes.';
+COMMENT ON COLUMN ai_usage_retention_cursors.updated_at IS 'Last checkpoint change time.';
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_ai_usage_records__community_id_id
   ON ai_usage_records (community_id, id DESC)
@@ -92,7 +149,7 @@ CREATE INDEX IF NOT EXISTS idx_ai_usage_records__currency_code
   ON ai_usage_records (currency_code)
   WHERE currency_code IS NOT NULL;
 
-COMMENT ON TABLE ai_usage_records IS 'Append-only per-call LLM usage and cost ledger for every agent that calls a model provider (Anthropic or OpenAI), not only community moderation.';
+COMMENT ON TABLE ai_usage_records IS 'Per-call LLM usage and cost for every model-calling agent, retained as raw evidence until a bounded atomic monthly fold retires it.';
 COMMENT ON TABLE ai_usage_provider_response_keys IS 'Global idempotency map from a provider response or decision id to its single partitioned ai_usage_records row.';
 
 COMMENT ON COLUMN ai_usage_records.community_id IS 'The community the call is scoped to, if any; NULL for agents that run outside a community.';

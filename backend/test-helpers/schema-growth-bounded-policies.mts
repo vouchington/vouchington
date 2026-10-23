@@ -29,6 +29,10 @@ export const PROVIDER_LOOKUP_BOUNDS = new Map<string, string>(
 )
 
 export const EXPLICIT_BOUNDED_TABLES = new Map<string, string>([
+  [
+    'ai_usage_retention_cursors',
+    'A checked singleton persists the cyclic UUIDv7 keyset position for AI usage folding.',
+  ],
   ...PROVIDER_LOOKUP_BOUNDS,
   ...STATIC_IDENTITY_EXCEPTIONS,
   ...EXTRA_BOUNDED_TABLES,

@@ -134,6 +134,13 @@ makes an otherwise unbreached window inconclusive, and unpriced calls make cost 
 figures are tracked in [#1804](https://github.com/vouchington/vouchington/issues/1804); this overview
 publishes no figures.
 
+Per-call AI usage is finite because model-call details and classifier run payloads are operational
+evidence. An atomic retention pass moves aged usage into monthly cost totals before deleting the
+same raw rows. Community totals retain their all-time meaning; a separate platform total includes
+calls without a community. A provider response key younger than its replay window holds its raw
+row even if the call timestamp is older. Classifier reports reject windows outside their receipt
+retention period, since a monthly community total cannot reconstruct one run's cost or latency.
+
 Measurement limits remain explicit:
 
 - Replays have no durable counter, so replay frequency cannot be inferred from job counts.

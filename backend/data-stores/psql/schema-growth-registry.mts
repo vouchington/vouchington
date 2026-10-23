@@ -60,7 +60,14 @@ const PARTITION_POLICY_ENTRIES: [string, PartitionPolicy][] = [
   ['post_publication_post_identities', defaultRange('id')],
   ['post_publication_dirty_work_keys', defaultRange('dirty_work_id')],
   ['post_revisions', defaultRange('id')],
-  ['ai_usage_records', defaultRange('id')],
+  [
+    'ai_usage_records',
+    {
+      ...defaultRange('id'),
+      accessClass: 'retention-window',
+      retentionOwner: 'runDataRetentionCleanup',
+    },
+  ],
   ['post_clearance_changes', defaultRange('id')],
   ['mcp_call_audit_events', defaultRange('id')],
   ['community_post_review_changes', defaultRange('id')],
