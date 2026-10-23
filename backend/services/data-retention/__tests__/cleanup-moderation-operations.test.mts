@@ -1,6 +1,7 @@
 import { describe, expect, it, onTestFinished } from 'vitest'
 import { v7 as uuidv7 } from 'uuid'
 import {
+  acquireModerationOperationRetentionTestLock,
   createTestUser,
   deleteTestModerationRetentionRows,
   insertTestCommunity,
@@ -16,6 +17,8 @@ const DAY_MS = 24 * 60 * 60 * 1_000
 
 describe('moderation operation retention', () => {
   it('resumes a capped claim sweep and preserves a recently renewed old claim', async () => {
+    const lock = await acquireModerationOperationRetentionTestLock()
+    onTestFinished(() => lock.release())
     const moderator = await createTestUser()
     const community = await insertTestCommunity({ createdById: moderator.id })
     const posts = await Promise.all(
@@ -64,6 +67,8 @@ describe('moderation operation retention', () => {
   })
 
   it('keeps a recently revealed row until the next cyclic sweep', async () => {
+    const lock = await acquireModerationOperationRetentionTestLock()
+    onTestFinished(() => lock.release())
     const fixtureAt = new Date(1_610_000_000_000 + Math.floor(Math.random() * 1_000_000))
     const ids = [0, 1].map(seq => uuidv7({ msecs: fixtureAt.getTime(), seq })).toSorted()
     const laterId = uuidv7({ msecs: fixtureAt.getTime() + 2 })

@@ -1,5 +1,10 @@
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { acquireTestPostgresAdvisoryLock } from './postgres-advisory-lock.mts'
+
+export function acquireModerationOperationRetentionTestLock() {
+  return acquireTestPostgresAdvisoryLock({ namespace: 1_447_904_068, key: 3547, timeout: '25s' })
+}
 
 export async function insertTestModerationRetentionClaim(options: {
   id: string

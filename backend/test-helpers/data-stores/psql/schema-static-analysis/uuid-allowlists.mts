@@ -33,6 +33,14 @@ export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
     'Deletion-stable recipient UUIDv7 keyset position, not a relationship.',
   ],
   [
+    'moderation_media_reveal_cleanup_cursors.cursor_reveal_id',
+    'Operational keyset position survives deletion of the swept reveal; it is not a relationship.',
+  ],
+  [
+    'moderation_queue_claim_cleanup_cursors.cursor_claim_id',
+    'Operational keyset position survives deletion of the swept claim; it is not a relationship.',
+  ],
+  [
     'retained_identity_cleanup_cursors.cursor_identity_id',
 
     'Operational keyset scan position can outlive its prior root row; it is not a relationship.',
