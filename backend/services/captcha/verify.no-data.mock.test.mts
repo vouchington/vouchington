@@ -1,9 +1,9 @@
+import { sentryCaptureExceptionMock } from '@voucha/test-helpers/vitest.setup.sentry-mock'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import {
   extractTurnstileTokenFromBody,
   verifyCaptchaToken,
   CLOUDFLARE_TURNSTILE_TEST_SECRET_KEY,
-  CLOUDFLARE_TURNSTILE_TEST_SECRET_KEYS,
 } from './verify.mts'
 import { getExternalRequestDispatcher } from '@modules/utils/http'
 import { turnstileConfig } from './config.mts'
@@ -58,17 +58,54 @@ describe('verifyCaptchaToken', () => {
   })
 
   it.each([
-    { hostname: 'other.example.com', action: 'posts-create' },
-    { hostname: 'voucha.ai', action: 'reports-create' },
-    { hostname: 'voucha.ai' },
-    { action: 'posts-create' },
-  ])('rejects success without the trusted action and hostname (%j)', async metadata => {
+    { hostname: 'other.example.com', action: 'posts-create', code: 'turnstile_hostname_mismatch' },
+    { hostname: 'voucha.ai', action: 'reports-create', code: 'turnstile_action_mismatch' },
+    { hostname: 'voucha.ai', action: undefined, code: 'turnstile_action_mismatch' },
+    { hostname: undefined, action: 'posts-create', code: 'turnstile_hostname_mismatch' },
+  ])(
+    'rejects success without the trusted action and hostname (%j)',
+    async ({ code, ...metadata }) => {
+      fetchSpy.mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ success: true, ...metadata }),
+      })
+      const extra =
+        code === 'turnstile_action_mismatch'
+          ? { receivedAction: metadata.action }
+          : { receivedHostname: metadata.hostname }
+      await expect(
+        verifyCaptchaToken('valid-token', '1.2.3.4', 'posts.create'),
+      ).rejects.toMatchObject({
+        status: 400,
+        message: 'CAPTCHA verification failed',
+        cause: { code, extra },
+      })
+      expect(sentryCaptureExceptionMock).toHaveBeenCalledTimes(1)
+      expect(sentryCaptureExceptionMock).toHaveBeenCalledWith(
+        expect.objectContaining({ code }),
+        expect.objectContaining({ extra }),
+      )
+    },
+  )
+
+  it('accepts the live dummy-key response only outside deployed environments', async () => {
+    vi.stubEnv('CLOUDFLARE_TURNSTILE_SECRET_KEY', CLOUDFLARE_TURNSTILE_TEST_SECRET_KEY)
+    vi.stubEnv('ENVIRONMENT', 'development')
     fetchSpy.mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({ success: true, ...metadata }),
+      json: () =>
+        Promise.resolve({
+          success: true,
+          hostname: 'example.com',
+          metadata: { result_with_testing_key: true },
+        }),
     })
     await expect(
-      verifyCaptchaToken('valid-token', '1.2.3.4', 'posts.create'),
+      verifyCaptchaToken('dummy-token', undefined, 'posts.create'),
+    ).resolves.toBeUndefined()
+    vi.stubEnv('ENVIRONMENT', 'staging')
+    await expect(
+      verifyCaptchaToken('dummy-token', undefined, 'posts.create'),
     ).rejects.toMatchObject({ status: 400 })
   })
 
@@ -169,12 +206,6 @@ describe('verifyCaptchaToken', () => {
     expect(fetchSpy).not.toHaveBeenCalled()
   })
 
-  it('skips the missing-token check when SKIP_CAPTCHA_VERIFICATION is set', async () => {
-    process.env.SKIP_CAPTCHA_VERIFICATION = 'true'
-    await expect(verifyCaptchaToken(undefined, undefined, 'posts.create')).resolves.toBeUndefined()
-    expect(fetchSpy).not.toHaveBeenCalled()
-  })
-
   it('skips verification on staging when turnstile-config always_approve is true', async () => {
     vi.stubEnv('ENVIRONMENT', 'staging')
     overrideDynamicConfigFieldsForTest(turnstileConfig, { always_approve: true })
@@ -224,17 +255,6 @@ describe('verifyCaptchaToken', () => {
     const body = fetchSpy.mock.calls[0]?.[1]?.body as string
     const params = new URLSearchParams(body)
     expect(params.get('secret')).toBe(CLOUDFLARE_TURNSTILE_TEST_SECRET_KEY)
-  })
-
-  it('exposes every public Cloudflare test secret in CLOUDFLARE_TURNSTILE_TEST_SECRET_KEYS', () => {
-    expect(CLOUDFLARE_TURNSTILE_TEST_SECRET_KEYS).toContain(CLOUDFLARE_TURNSTILE_TEST_SECRET_KEY)
-    expect(CLOUDFLARE_TURNSTILE_TEST_SECRET_KEYS).toEqual(
-      expect.arrayContaining([
-        '1x0000000000000000000000000000000AA',
-        '2x0000000000000000000000000000000AA',
-        '3x0000000000000000000000000000000AA',
-      ]),
-    )
   })
 })
 
