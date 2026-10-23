@@ -2,13 +2,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import webpush, { type SendResult } from 'web-push'
 import {
   createTestUserDirect,
+  deleteTestHouseholdById,
   getTestNotificationPushIntent,
   insertTestHousehold,
   insertTestHouseholdInvitation,
   listHouseholdInvitationNotificationIdsForTest,
   setTestHouseholdInvitationTerminalState,
 } from '@voucha/test-helpers'
-import { deleteHousehold } from '@services/individuals-households/households/households'
 import { createHouseholdInvitationNotifications } from '@services/notifications/create-household-invitation-notification'
 import { upsertWebPushSubscription } from '@services/notifications/push-subscriptions'
 import { deliverClaimedNotificationPushIntent } from './push-intent-delivery.mts'
@@ -83,7 +83,7 @@ describe('household invitation push delivery', () => {
       { user_id: fixture.invitee.id, notification_id: fixture.notificationId },
       120,
     )
-    await deleteHousehold(fixture.owner, fixture.householdId)
+    await deleteTestHouseholdById(fixture.householdId)
 
     await expect(deliverClaimedNotificationPushIntent(intent!)).resolves.toEqual({
       delivered: 0,
@@ -121,7 +121,6 @@ async function createFixture() {
     userAgent: 'vitest',
   })
   return {
-    owner,
     invitee,
     householdId: household.id,
     invitationId,

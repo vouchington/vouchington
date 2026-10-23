@@ -73,6 +73,12 @@ export async function deleteOwnedHouseholdsForTestUser(userId: string): Promise<
   return rows.length
 }
 
+export async function deleteTestHouseholdById(householdId: string): Promise<void> {
+  await write(sql`/* deleteTestHouseholdById */
+    DELETE FROM households WHERE id = ${householdId}
+  `)
+}
+
 export async function deleteTestHouseholdsForOwners(ownerIds: string[]): Promise<void> {
   await write(sql`/* deleteTestHouseholdsForOwners */
     DELETE FROM households
