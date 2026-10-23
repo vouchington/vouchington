@@ -1,8 +1,6 @@
 import { DEFAULT_BATCH_SIZE } from './cleanup-batches.mts'
+import { getAIRetentionPageLimits } from './config.mts'
 import { assertPositiveInteger, normalizePositiveInteger } from './normalize-positive-integer.mts'
-
-const MAX_PAGE_SIZE = 500
-const MAX_PAGES_PER_RUN = 10
 
 export type PersistedPage<Position> = {
   deleted: number
@@ -15,13 +13,14 @@ export async function runPersistedRetentionPages<Position>(
   limits: { batchSize?: number; maxBatches: number },
   deletePage: (batchSize: number) => Promise<PersistedPage<Position>>,
 ): Promise<PersistedPage<Position>> {
+  const aiLimits = getAIRetentionPageLimits()
   const batchSize = Math.min(
     normalizePositiveInteger(limits.batchSize, DEFAULT_BATCH_SIZE, 'batchSize'),
-    MAX_PAGE_SIZE,
+    aiLimits.batchSize,
   )
   const maxBatches = Math.min(
     assertPositiveInteger(limits.maxBatches, 'maxBatches'),
-    MAX_PAGES_PER_RUN,
+    aiLimits.maxBatches,
   )
   let result: PersistedPage<Position> = { deleted: 0, hasMore: false, continuation: null }
   // oxlint-disable no-await-in-loop -- each committed cursor page determines the next page

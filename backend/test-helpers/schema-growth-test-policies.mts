@@ -26,6 +26,7 @@ function sharedParentUuidv7(parentTable: string) {
 }
 
 const COMPANION_ID_POLICIES = [
+  ['ai_agent_call_receipts', sharedParentUuidv7('ai_agent_call_receipt_keys')],
   [
     'copyright_notice_lifecycle_change_rationales',
     sharedParentUuidv7('copyright_notice_lifecycle_changes'),

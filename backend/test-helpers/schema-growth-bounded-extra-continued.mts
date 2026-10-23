@@ -1,5 +1,17 @@
 export const EXTRA_BOUNDED_TABLES_CONTINUED = new Map<string, string>([
   [
+    'stripe_event_processing_work_items',
+    'Unfinished Stripe processing state remains while terminal work older than 30 days is deleted by bounded UUIDv7 keyset cleanup; immutable stripe_events retain deduplication.',
+  ],
+  [
+    'membership_purchase_intents',
+    'Live launch replays remain; failed or unlaunched intents with expiry over 30 days ago and no verification reference are deleted by bounded UUIDv7 keyset cleanup.',
+  ],
+  [
+    'payment_operational_cleanup_cursors',
+    'One persisted keyset position per payment operational cleanup stream.',
+  ],
+  [
     'post_admission_quota_consumptions',
     'Committed quota rows are retained for seven days, while policy windows are capped at one day; bounded cleanup keeps cardinality tied to recent admission traffic.',
   ],
