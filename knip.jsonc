@@ -14,6 +14,7 @@
         "dev/otel-register.mts",
         "dev/launch-services.mts",
         "dev/sandbox-command-audit/rules.mts",
+        "dev/agent-session-id/valid-id.mts",
         "test-helpers/vitest.runner.backend-data-guards.mts",
       ],
       "project": [
