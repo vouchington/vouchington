@@ -1,5 +1,8 @@
 import { ValkeyCache } from '@data-stores/valkey/cache'
-import { enqueueBulkPurgeCacheTags } from '@queues/cache-purge/enqueues'
+import {
+  enqueueBulkPurgeCacheTags,
+  enqueueBulkPurgeCacheTagsBestEffort,
+} from '@queues/cache-purge/enqueues'
 import { postTag } from '@ts-shared/cache'
 import { caches } from './caches.mts'
 import { getCacheKeys, getPostCacheKeys } from './keys.mts'
@@ -12,6 +15,14 @@ export type PostCacheInvalidation = {
 type DeleteCacheGroups = (
   groups: Parameters<typeof ValkeyCache.deleteFromCaches>[0],
 ) => Promise<void>
+
+export async function invalidateAndPurge(
+  invalidate: Promise<unknown>,
+  tags: string[],
+): Promise<void> {
+  await invalidate
+  await enqueueBulkPurgeCacheTagsBestEffort(tags)
+}
 
 /** Bind the canonical bounded deletion operation; each invocation owns its reporting state. */
 export function createPostCacheInvalidator(deleteCacheGroups: DeleteCacheGroups) {

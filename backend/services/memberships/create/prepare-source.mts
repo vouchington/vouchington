@@ -1,5 +1,6 @@
-import { registerPostCommitAction, type QueryExecutor } from '@data-stores/psql'
+import type { QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { registerEntitlementEffectsAfterCommit } from '../entitlement-effects-after-commit.mts'
 import { createSource, getMembershipProductIdForCreation } from '../create-source.mts'
 import {
   getStripeMembershipSourceIdentity,
@@ -87,7 +88,8 @@ export async function prepareMembershipCreation(
   const { expired: expiredMemberships } = await expireElapsedMemberships(options.userId, query, {
     expiresThrough: directTermEffectiveAt,
   })
-  if (expiredMemberships > 0) enqueueEntitlementEffectsAfterCommit(query, enqueueEntitlementEffects)
+  if (expiredMemberships > 0)
+    registerEntitlementEffectsAfterCommit(query, enqueueEntitlementEffects)
   const directStatus = options.status ?? 'active'
   if (
     options.stripeSubscriptionId &&
@@ -145,14 +147,4 @@ async function lockRetainedDirectSourceProjection(sourceId: string, query: Query
       FOR UPDATE OF membership`,
   )
   return rows
-}
-
-function enqueueEntitlementEffectsAfterCommit(
-  query: QueryExecutor,
-  enqueueEntitlementEffects: () => Promise<void>,
-): void {
-  registerPostCommitAction(query, () => {
-    void enqueueEntitlementEffects()
-    return Promise.resolve()
-  })
 }

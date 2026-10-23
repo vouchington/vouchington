@@ -18,7 +18,6 @@
   "scripts": {},
   "dependencies": {
     "@queues/background": "workspace:^",
-    "@ts-shared/cache": "workspace:^",
-    "@voucha/types": "workspace:^"
+    "@ts-shared/cache": "workspace:^"
   }
 }

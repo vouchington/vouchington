@@ -2928,9 +2928,6 @@ importers:
       '@ts-shared/cache':
         specifier: workspace:^
         version: link:../../../ts-shared/cache
-      '@voucha/types':
-        specifier: workspace:^
-        version: link:../../types
 
   backend/queues/content-analysis:
     dependencies:
@@ -3440,6 +3437,9 @@ importers:
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
         version: link:../../data-stores/valkey-glide-mq
+      '@modules/on-error':
+        specifier: workspace:^
+        version: link:../../modules/on-error
       '@modules/scheduled-job-manifest':
         specifier: workspace:^
         version: link:../../modules/scheduled-job-manifest
@@ -7681,6 +7681,12 @@ importers:
         specifier: ^0.11.1
         version: 0.11.1
     devDependencies:
+      '@data-stores/valkey-glide-mq':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-glide-mq
+      '@glidemq/speedkey':
+        specifier: ^0.4.2
+        version: 0.4.2
       '@types/http-errors':
         specifier: ^2.0.5
         version: 2.0.5

@@ -1,6 +1,6 @@
 import { getMembershipWorkLimits } from '../work-limits.mts'
 import createError from 'http-errors'
-import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
+import { beginTransaction, registerPostCommitAction, type QueryExecutor } from '@data-stores/psql'
 import { enqueueDeliverMembershipEntitlementEffectsBestEffort } from '@queues/memberships/enqueues'
 import sql from 'sql-template-strings'
 import { recordMembershipChange } from '../changes.mts'
@@ -16,8 +16,12 @@ export type MembershipExpiryResult = { expired: number; hasMore: boolean }
 export async function expireElapsedMembershipsForUser(userId: string): Promise<number> {
   await using query = await beginTransaction()
   const { expired } = await expireElapsedMemberships(userId, query)
+  if (expired > 0) {
+    registerPostCommitAction(query, async () => {
+      await enqueueDeliverMembershipEntitlementEffectsBestEffort()
+    })
+  }
   await query.commit()
-  if (expired > 0) void enqueueDeliverMembershipEntitlementEffectsBestEffort()
   return expired
 }
 

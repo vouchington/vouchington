@@ -1,4 +1,8 @@
-import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
+import {
+  awaitReportedEnqueueAdmission,
+  createBulkEnqueueFunction,
+  createEnqueueFunction,
+} from '@data-stores/valkey-glide-mq'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
 import { PRIORITY_DEFAULT, PRIORITY_DISPATCHER } from './config.mts'
@@ -87,4 +91,10 @@ export function enqueueRemoveUnfurledChildrenForUser(userId: string): EnqueueRet
       mode: 'debounce' as const,
     },
   } satisfies Partial<JobOptions>)
+}
+
+export function enqueueRemoveUnfurledChildrenForUserBestEffort(userId: string): Promise<void> {
+  return awaitReportedEnqueueAdmission(() => {
+    return enqueueRemoveUnfurledChildrenForUser(userId)
+  })
 }

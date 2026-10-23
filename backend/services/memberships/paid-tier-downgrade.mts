@@ -1,5 +1,5 @@
 import { hasPlusTier } from '@modules/membership-helpers'
-import { enqueueRemoveUnfurledChildrenForUser } from '@queues/unfurl-referral-links/enqueues'
+import { enqueueRemoveUnfurledChildrenForUserBestEffort } from '@queues/unfurl-referral-links/enqueues'
 import type { MembershipLifecycleFields, MembershipUpdateResult } from './update-result.mts'
 
 /**
@@ -18,8 +18,8 @@ function didLosePaidTier(
 export function enqueueUnfurledChildRemovalOnDowngrade(
   membership: MembershipUpdateResult,
   retainsPaidAccess = false,
-): void {
-  if (!retainsPaidAccess && didLosePaidTier(membership.previous, membership.current)) {
-    void enqueueRemoveUnfurledChildrenForUser(membership.current.user_id)
-  }
+): Promise<void> {
+  if (!retainsPaidAccess && didLosePaidTier(membership.previous, membership.current))
+    return enqueueRemoveUnfurledChildrenForUserBestEffort(membership.current.user_id)
+  return Promise.resolve()
 }
