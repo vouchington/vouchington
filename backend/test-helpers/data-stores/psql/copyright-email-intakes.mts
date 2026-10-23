@@ -4,14 +4,14 @@ import sql from 'sql-template-strings'
 export async function readCopyrightEmailIntakeReview(intakeId: string): Promise<
   {
     decision: string
-    promoted_copyright_notice_id: string | null
+    promoted_copyright_notice_identity_id: string | null
   }[]
 > {
   const { rows } = await read<{
     decision: string
-    promoted_copyright_notice_id: string | null
+    promoted_copyright_notice_identity_id: string | null
   }>(sql`/* readCopyrightEmailIntakeReview */
-    SELECT decision, promoted_copyright_notice_id
+    SELECT decision, promoted_copyright_notice_identity_id
     FROM copyright_notice_email_intake_reviews
     WHERE copyright_notice_email_intake_id = ${intakeId}`)
   return rows
@@ -24,7 +24,7 @@ export async function readCopyrightEmailIntakeReviewRecord(intakeId: string): Pr
     reviewed_by_id: string | null
     rationale_ciphertext: string
     recommendation_id: string | null
-    promoted_copyright_notice_id: string | null
+    promoted_copyright_notice_identity_id: string | null
   }[]
 > {
   const { rows } = await read<{
@@ -33,11 +33,11 @@ export async function readCopyrightEmailIntakeReviewRecord(intakeId: string): Pr
     reviewed_by_id: string | null
     rationale_ciphertext: string
     recommendation_id: string | null
-    promoted_copyright_notice_id: string | null
+    promoted_copyright_notice_identity_id: string | null
   }>(sql`/* readCopyrightEmailIntakeReviewRecord */
     SELECT decision, reviewed_at, reviewed_by_id, rationale_ciphertext,
       copyright_notice_email_intake_recommendation_id AS recommendation_id,
-      promoted_copyright_notice_id
+      promoted_copyright_notice_identity_id
     FROM copyright_notice_email_intake_reviews
     WHERE copyright_notice_email_intake_id = ${intakeId}`)
   return rows

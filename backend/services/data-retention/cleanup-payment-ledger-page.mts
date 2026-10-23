@@ -139,6 +139,7 @@ export async function cleanupPaymentLedgerPage(
            ON request.membership_operation_id = operation.id
          LEFT JOIN membership_refunds refund ON refund.membership_operation_id = operation.id
          WHERE operation.id = ANY($1::uuid[])
+         ORDER BY operation.id
          ON CONFLICT ON CONSTRAINT membership_operation_retained_identities_pkey DO NOTHING`,
         [expiring.map(operation => operation.id)],
       )
@@ -184,8 +185,7 @@ export async function cleanupPaymentLedgerPage(
     await query(
       `/* checkpointPaymentLedgerRetentionCursor */
      UPDATE payment_ledger_retention_cursors SET cursor_record_id = $2 WHERE family = $1`,
-      // Keep the previous position while a selected parent still has attempts. Advancing past
-      // it would defer the next bounded child page until a full cursor cycle.
+      // Retry this parent before advancing while its attempt page remains.
       [
         family,
         retainedChildWork

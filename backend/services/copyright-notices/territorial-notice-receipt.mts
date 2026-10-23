@@ -157,10 +157,10 @@ export async function receiveTerritorialCopyrightNoticeInTransaction(
   assert(acknowledgment, 500, failure)
   await transaction(sql`/* receiveTerritorialCopyrightNotice:retainReplayIdentity */
     INSERT INTO copyright_territorial_notice_retained_identities (
-      receipt_id, jurisdiction, requester_identity_sha256, idempotency_key,
+      jurisdiction, requester_identity_sha256, idempotency_key,
       request_sha256, response_snapshot
     ) VALUES (
-      ${receipt.id}, ${jurisdiction}, ${identitySha256}, ${idempotencyKey},
+      ${jurisdiction}, ${identitySha256}, ${idempotencyKey},
       ${requestSha256}, jsonb_build_object('notice_id', ${notice.id}::text,
         'receipt_id', ${receipt.id}::text, 'acknowledgment_id', ${acknowledgment.id}::text,
         'route_destination', 'staff_queue')

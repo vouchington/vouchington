@@ -49,8 +49,9 @@ CREATE TABLE copyright_notice_submission_retained_identities (
   ),
   PRIMARY KEY (requester_identity_sha256, idempotency_key)
 );
+CREATE TYPE copyright_submission_key_retention_cursor_families AS ENUM ('submission_request');
 CREATE TABLE copyright_submission_key_retention_cursors (
-  family text PRIMARY KEY CHECK (family = 'submission_request'),
+  family copyright_submission_key_retention_cursor_families PRIMARY KEY,
   cursor_record_id uuid,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -62,6 +63,10 @@ COMMENT ON COLUMN copyright_submission_key_retention_cursors.family IS 'The one 
 COMMENT ON COLUMN copyright_submission_key_retention_cursors.cursor_record_id IS 'Last scanned raw request UUIDv7 identity, independent of its nullable key.';
 COMMENT ON COLUMN copyright_submission_key_retention_cursors.updated_at IS 'Last committed scan progress.';
 COMMENT ON TABLE copyright_notice_submission_retained_identities IS 'Compact authenticated appeal/counter-notice replay identity and public receipt metadata after legal records expire; no submission statement or case authority.';
+COMMENT ON COLUMN copyright_notice_submission_retained_identities.requester_identity_sha256 IS 'Digest scoping submission replay without retaining the raw requester account identifier here.';
+COMMENT ON COLUMN copyright_notice_submission_retained_identities.idempotency_key IS 'Authenticated submission key scoped to requester digest for exact response replay.';
+COMMENT ON COLUMN copyright_notice_submission_retained_identities.request_sha256 IS 'Canonical request digest that detects changed content under a reused requester key.';
+COMMENT ON COLUMN copyright_notice_submission_retained_identities.response_snapshot IS 'Minimal original appeal or counter-notice receipt; its historical IDs grant no case authority.';
 CREATE TRIGGER trigger_copyright_submission_retained_identity_immutable
 BEFORE UPDATE OR DELETE ON copyright_notice_submission_retained_identities FOR EACH ROW
 EXECUTE FUNCTION fn_reject_mutation();

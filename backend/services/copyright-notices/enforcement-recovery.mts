@@ -42,7 +42,7 @@ export async function recoverMissingDecisionAssessments(
           review.reviewed_by_id AS assessed_by_id, NULL::uuid AS screening_id, 2 AS priority
         FROM copyright_notice_email_intake_reviews review
         JOIN copyright_notice_submissions submission
-          ON submission.copyright_notice_id = review.promoted_copyright_notice_id
+          ON submission.copyright_notice_id = review.promoted_copyright_notice_identity_id
           AND submission.kind = 'notice'
         WHERE review.decision = 'approved'
       ) durable_decisions

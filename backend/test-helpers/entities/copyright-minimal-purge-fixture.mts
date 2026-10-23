@@ -41,14 +41,14 @@ export async function releaseErasedClaimantHold(
 export async function countRetainedMinimalParties(noticeId: string): Promise<number> {
   const { rows } = await read<{ count: number }>(sql`/* assertCopyrightRetainedPartiesDrained */
     SELECT count(*)::integer AS count FROM copyright_notice_retained_parties
-    WHERE copyright_notice_id = ${noticeId}`)
+    WHERE copyright_notice_identity_id = ${noticeId}`)
   return rows[0]?.count ?? 0
 }
 
 export async function minimalPurgeWorkExists(noticeId: string): Promise<boolean> {
   const { rows } = await read(sql`/* assertCopyrightPurgeWorkComplete */
-    SELECT 1 FROM copyright_notice_minimal_purge_work
-    WHERE copyright_notice_id = ${noticeId}`)
+    SELECT 1 FROM copyright_notice_minimal_purge_continuations
+    WHERE copyright_notice_identity_id = ${noticeId}`)
   return rows.length > 0
 }
 
@@ -68,15 +68,15 @@ export async function seedAdvancedCopyrightParentPhase(
   parentPhase: number,
 ): Promise<void> {
   await write(sql`/* seedCopyrightAdvancedParentPhase */
-    INSERT INTO copyright_notice_minimal_purge_work
-      (copyright_notice_id, legal_clock_at, phase_index, proof_generation,
-        mutation_cursor, party_scan_complete, blocker_generation, blocker_scan_complete)
+    INSERT INTO copyright_notice_minimal_purge_continuations
+      (copyright_notice_identity_id, legal_clock_at, phase_index, proof_generation,
+        mutation_cursor, is_party_scan_complete, blocker_generation, is_blocker_scan_complete)
     SELECT erased.copyright_notice_id, erased.legal_clock_at, ${parentPhase},
       identity.proof_generation, mutation.current_sequence, true,
       identity.proof_generation, true
     FROM copyright_notice_retention_erasures erased
     JOIN copyright_notice_retained_identities identity ON identity.id = erased.copyright_notice_id
-    JOIN copyright_legal_mutation_sequence_state mutation ON mutation.singleton
+    JOIN copyright_legal_mutation_sequence_states mutation ON mutation.is_singleton
     WHERE erased.copyright_notice_id = ${noticeId}`)
 }
 
@@ -95,9 +95,9 @@ export async function readLateCopyrightAttemptsAndPhase(
   const { rows } = await read<{ count: number; phase_index: number }>(sql`
     /* assertLateCopyrightAttemptsSurviveParentPage */
     SELECT count(attempt.id)::integer AS count, work.phase_index
-    FROM copyright_notice_minimal_purge_work work
+    FROM copyright_notice_minimal_purge_continuations work
     LEFT JOIN copyright_notice_delivery_attempts attempt ON attempt.work_item_id = ${intentId}
-    WHERE work.copyright_notice_id = ${noticeId}
+    WHERE work.copyright_notice_identity_id = ${noticeId}
     GROUP BY work.phase_index`)
   return rows[0]
 }

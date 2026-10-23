@@ -14,10 +14,9 @@ import {
   readCopyrightMinimalPurgeGeneration,
 } from './retention-minimal-purge-generation.mts'
 
-const MAX_PAGE_SIZE = 50 // A lifecycle row may cascade its one rationale companion.
+const MAX_PAGE_SIZE = 50 // Defensive ceiling; the cleanup caller supplies its DynamicConfig page size.
 type PageOutcome = 'progress' | 'purged' | 'ineligible' | 'stale'
 export type CopyrightMinimalPurgeOutcome = PageOutcome | 'more'
-
 async function purgeCopyrightMinimalRecordPage(
   noticeId: string,
   options: { now: Date; cutoff: Date; pageSize: number },
@@ -34,8 +33,8 @@ async function purgeCopyrightMinimalRecordPage(
     SELECT pg_advisory_xact_lock_shared(hashtextextended(${FINAL_USER_PURGE_LOCK_KEY}, 0))`)
   const { rows: sequences } = await transaction<{ current_sequence: string }>(sql`
     /* fenceCopyrightMinimalPurgeLegalMutations */
-    SELECT current_sequence FROM copyright_legal_mutation_sequence_state
-    WHERE singleton FOR SHARE`)
+    SELECT current_sequence FROM copyright_legal_mutation_sequence_states
+    WHERE is_singleton FOR SHARE`)
   const currentSequence = sequences[0]?.current_sequence
   if (currentSequence === undefined) throw new Error('Copyright mutation sequence is missing')
   const { rows: notices } = await transaction<{
@@ -46,9 +45,8 @@ async function purgeCopyrightMinimalRecordPage(
     phase_index: number
     root_purged_at: Date | null
   }>(sql`/* lockCopyrightMinimalPurgeWork */
-    SELECT phase_index, root_purged_at FROM copyright_notice_minimal_purge_work
-    WHERE copyright_notice_id = ${noticeId} FOR UPDATE`)
-
+    SELECT phase_index, root_purged_at FROM copyright_notice_minimal_purge_continuations
+    WHERE copyright_notice_identity_id = ${noticeId} FOR UPDATE`)
   if (notices.length === 0) {
     const outcome = await drainCopyrightMinimalPurgePostroot(
       transaction,
@@ -85,12 +83,11 @@ async function purgeCopyrightMinimalRecordPage(
     throw new Error('Copyright minimal purge manifest does not cover the current FK graph')
   const { rows: work } = await transaction<{ phase_index: number }>(sql`
     /* currentCopyrightMinimalPurgePhase */
-    SELECT phase_index FROM copyright_notice_minimal_purge_work
-    WHERE copyright_notice_id = ${noticeId} FOR UPDATE`)
+    SELECT phase_index FROM copyright_notice_minimal_purge_continuations
+    WHERE copyright_notice_identity_id = ${noticeId} FOR UPDATE`)
   let phaseIndex = work[0]?.phase_index
   if (phaseIndex === undefined || phaseIndex > COPYRIGHT_MINIMAL_PURGE_PHASES.length)
     throw new Error('Copyright minimal purge phase is missing or invalid')
-
   await transaction(sql`/* scopeCopyrightMinimalPurge */
     SELECT set_config('app.copyright_minimal_purge_notice_id', ${noticeId}, true),
       set_config('app.copyright_minimal_purge_now', ${options.now.toISOString()}, true),
@@ -123,8 +120,8 @@ async function purgeCopyrightMinimalRecordPage(
     phaseIndex++
     // no-mistakes-disable-next-line query-reached-per-item: this checkpoint occurs once for each of the finite empty phases.
     await transaction(sql`/* advanceCopyrightMinimalPurgePhase */
-      UPDATE copyright_notice_minimal_purge_work SET phase_index = ${phaseIndex}
-      WHERE copyright_notice_id = ${noticeId}`)
+      UPDATE copyright_notice_minimal_purge_continuations SET phase_index = ${phaseIndex}
+      WHERE copyright_notice_identity_id = ${noticeId}`)
   }
   // oxlint-enable no-await-in-loop
   const { rows: graph } = await transaction<{
@@ -139,8 +136,8 @@ async function purgeCopyrightMinimalRecordPage(
     // A late descendant may have appeared after its phase. Revisit the fixed manifest
     // under the next page's fresh hold and eligibility check.
     await transaction(sql`/* restartCopyrightMinimalPurgeAfterLateChild */
-      UPDATE copyright_notice_minimal_purge_work SET phase_index = 0
-      WHERE copyright_notice_id = ${noticeId}`)
+      UPDATE copyright_notice_minimal_purge_continuations SET phase_index = 0
+      WHERE copyright_notice_identity_id = ${noticeId}`)
     await transaction.commit()
     return 'progress'
   }
@@ -153,13 +150,12 @@ async function purgeCopyrightMinimalRecordPage(
     DELETE FROM copyright_notices WHERE id = ${noticeId}`)
   if (result.rowCount !== 1) return 'ineligible'
   await transaction(sql`/* recordCopyrightMinimalPurgeRootRemoval */
-    UPDATE copyright_notice_minimal_purge_work
+    UPDATE copyright_notice_minimal_purge_continuations
     SET root_purged_at = CURRENT_TIMESTAMP
-    WHERE copyright_notice_id = ${noticeId} AND root_purged_at IS NULL`)
+    WHERE copyright_notice_identity_id = ${noticeId} AND root_purged_at IS NULL`)
   await transaction.commit()
   return 'progress'
 }
-
 /** A run commits at most maxBatches bounded child or retained-party pages. */
 export async function purgeCopyrightMinimalRecord(
   noticeId: string,

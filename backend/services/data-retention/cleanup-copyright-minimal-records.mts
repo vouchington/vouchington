@@ -1,6 +1,6 @@
 import { beginTransaction, read } from '@data-stores/psql'
 import { getMaxUUIDv7ForDate } from '@modules/utils'
-import { purgeCopyrightMinimalRecord } from '../copyright-notices/index.mts'
+import { purgeCopyrightMinimalRecord } from '@services/copyright-notices'
 import sql from 'sql-template-strings'
 import { getCopyrightMinimalPurgeLimits, type DataRetentionLimits } from './config.mts'
 
@@ -38,9 +38,9 @@ async function selectCandidatePage(
     const { rows } =
       family === 'work'
         ? await read<{ id: string }>(sql`/* scopedCopyrightMinimalPurgeWork */
-        SELECT copyright_notice_id AS id FROM copyright_notice_minimal_purge_work
-        WHERE copyright_notice_id = ANY(${[...noticeIds]}::uuid[])
-        ORDER BY copyright_notice_id LIMIT ${limit + 1}`)
+        SELECT copyright_notice_identity_id AS id FROM copyright_notice_minimal_purge_continuations
+        WHERE copyright_notice_identity_id = ANY(${[...noticeIds]}::uuid[])
+        ORDER BY copyright_notice_identity_id LIMIT ${limit + 1}`)
         : family === 'identity'
           ? await read<{ id: string }>(sql`/* scopedCopyrightRetainedCaseIdentities */
           SELECT identity.id FROM copyright_notice_retained_identities identity
@@ -64,9 +64,9 @@ async function selectCandidatePage(
   const { rows } =
     family === 'work'
       ? await query<{ id: string }>(sql`/* listCopyrightMinimalPurgeWorkPage */
-      SELECT copyright_notice_id AS id FROM copyright_notice_minimal_purge_work
-      WHERE (${after}::uuid IS NULL OR copyright_notice_id > ${after}::uuid)
-      ORDER BY copyright_notice_id LIMIT ${limit + 1}`)
+      SELECT copyright_notice_identity_id AS id FROM copyright_notice_minimal_purge_continuations
+      WHERE (${after}::uuid IS NULL OR copyright_notice_identity_id > ${after}::uuid)
+      ORDER BY copyright_notice_identity_id LIMIT ${limit + 1}`)
       : family === 'identity'
         ? await query<{ id: string }>(sql`/* listCopyrightRetainedCaseIdentityPage */
         SELECT identity.id FROM copyright_notice_retained_identities identity
@@ -152,12 +152,12 @@ export async function cleanupCopyrightMinimalRecords(
       const deleted = await query(sql`/* deleteOrphanCopyrightRetainedCaseIdentity */
         DELETE FROM copyright_notice_retained_identities identity WHERE identity.id = ${noticeId}
           AND NOT EXISTS (SELECT 1 FROM copyright_notices notice WHERE notice.id = identity.id)
-          AND NOT EXISTS (SELECT 1 FROM copyright_notice_minimal_purge_work work
-            WHERE work.copyright_notice_id = identity.id)
+          AND NOT EXISTS (SELECT 1 FROM copyright_notice_minimal_purge_continuations work
+            WHERE work.copyright_notice_identity_id = identity.id)
           AND NOT EXISTS (SELECT 1 FROM copyright_notice_retained_parties party
-            WHERE party.copyright_notice_id = identity.id)
+            WHERE party.copyright_notice_identity_id = identity.id)
           AND NOT EXISTS (SELECT 1 FROM copyright_notice_email_intake_reviews review
-            WHERE review.promoted_copyright_notice_id = identity.id)`)
+            WHERE review.promoted_copyright_notice_identity_id = identity.id)`)
       await query.commit()
       result.retainedIdentitiesDeleted += deleted.rowCount ?? 0
     } catch (err) {

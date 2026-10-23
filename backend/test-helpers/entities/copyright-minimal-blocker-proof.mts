@@ -17,15 +17,15 @@ export async function readMinimalProofFormAuthority(
 ) {
   const { rows } = await read<{
     current_screening: boolean
-    valid_target_found: boolean
-    claimant_receipt_found: boolean
-    compliant_form_assessment_found: boolean
+    has_valid_target: boolean
+    has_claimant_receipt: boolean
+    has_compliant_form_assessment: boolean
   }>(sql`/* compareCopyrightMinimalFormAuthority */
     SELECT fn_current_copyright_form_screening(${submissionId}, ${screeningId}) AS current_screening,
-      work.valid_target_found, work.claimant_receipt_found,
-      work.compliant_form_assessment_found
-    FROM copyright_notice_minimal_purge_work work
-    WHERE work.copyright_notice_id = ${noticeId}`)
+      work.has_valid_target, work.has_claimant_receipt,
+      work.has_compliant_form_assessment
+    FROM copyright_notice_minimal_purge_continuations work
+    WHERE work.copyright_notice_identity_id = ${noticeId}`)
   return rows[0]
 }
 
@@ -83,8 +83,8 @@ export async function readMinimalBlockerCursor(noticeId: string): Promise<{
 }> {
   const { rows } = await read<{ blocker_cursor: string | null; blocker_phase_index: number }>(sql`
     /* readCopyrightBlockerCursor */
-    SELECT blocker_cursor, blocker_phase_index FROM copyright_notice_minimal_purge_work
-    WHERE copyright_notice_id = ${noticeId}`)
+    SELECT blocker_cursor, blocker_phase_index FROM copyright_notice_minimal_purge_continuations
+    WHERE copyright_notice_identity_id = ${noticeId}`)
   if (!rows[0]) throw new Error('Expected minimal purge work cursor')
   return rows[0]
 }
@@ -111,8 +111,8 @@ export async function selectMinimalProofChildPhase(
   phaseIndex: number,
 ): Promise<void> {
   await write(sql`/* selectCopyrightBlockerRaceChildPhase */
-    UPDATE copyright_notice_minimal_purge_work SET phase_index = ${phaseIndex}
-    WHERE copyright_notice_id = ${noticeId}`)
+    UPDATE copyright_notice_minimal_purge_continuations SET phase_index = ${phaseIndex}
+    WHERE copyright_notice_identity_id = ${noticeId}`)
 }
 
 export async function admitLateCopyrightAppeal(noticeId: string): Promise<void> {

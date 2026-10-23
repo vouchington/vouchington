@@ -118,14 +118,14 @@ async function admitCopyrightEmailIntake(
   await assertNoThreadCorrespondenceDecision(transaction, intake.id)
   const { rows: priorPromotions } = await transaction<{
     decision: string
-    promoted_copyright_notice_id: string | null
+    promoted_copyright_notice_identity_id: string | null
     submission_id: string | null
   }>(
     sql`/* promoteCopyrightEmailIntake:priorPromotion */
-      SELECT review.decision, review.promoted_copyright_notice_id, submission.id AS submission_id
+      SELECT review.decision, review.promoted_copyright_notice_identity_id, submission.id AS submission_id
       FROM copyright_notice_email_intake_reviews review
       LEFT JOIN copyright_notice_submissions submission
-        ON submission.copyright_notice_id = review.promoted_copyright_notice_id
+        ON submission.copyright_notice_id = review.promoted_copyright_notice_identity_id
         AND submission.kind = 'notice'
       WHERE copyright_notice_email_intake_id = ${intake.id}
     `,
@@ -134,7 +134,9 @@ async function admitCopyrightEmailIntake(
   if (prior) {
     assert(prior.decision !== 'legal_process', 409, 'Copyright email intake is legal process')
     assert(
-      prior.decision === 'approved' && prior.promoted_copyright_notice_id && prior.submission_id,
+      prior.decision === 'approved' &&
+        prior.promoted_copyright_notice_identity_id &&
+        prior.submission_id,
       409,
       'Copyright email intake was already rejected',
     )
@@ -145,7 +147,7 @@ async function admitCopyrightEmailIntake(
     }>(sql`/* promoteCopyrightEmailIntake:initialThreadLink */
       INSERT INTO copyright_notice_email_intake_notice_links (
         copyright_notice_email_intake_id, copyright_notice_id, link_kind
-      ) VALUES (${intake.id}, ${prior.promoted_copyright_notice_id}, 'initial')
+      ) VALUES (${intake.id}, ${prior.promoted_copyright_notice_identity_id}, 'initial')
       ON CONFLICT (copyright_notice_email_intake_id) DO NOTHING
       RETURNING copyright_notice_id, link_kind
     `)
@@ -159,7 +161,7 @@ async function admitCopyrightEmailIntake(
       `)
       ).rows[0]
     assert(
-      retainedLink?.copyright_notice_id === prior.promoted_copyright_notice_id &&
+      retainedLink?.copyright_notice_id === prior.promoted_copyright_notice_identity_id &&
         retainedLink.link_kind === 'initial',
       409,
       'Copyright email intake was linked concurrently',
@@ -168,18 +170,19 @@ async function admitCopyrightEmailIntake(
       await linkPendingCopyrightEmailRepliesInTransaction(
         {
           initialIntakeId: intake.id,
-          noticeId: prior.promoted_copyright_notice_id,
+          noticeId: prior.promoted_copyright_notice_identity_id,
           descendantIntakeIds: graph.descendantIntakeIds.filter(id => id !== intake.id),
           graphIntakeIds: graph.intakeIds,
         },
         transaction,
       )
     await transaction.commit()
-    if (graph.overflow) logCopyrightEmailGraphOverflow(prior.promoted_copyright_notice_id, graph)
+    if (graph.overflow)
+      logCopyrightEmailGraphOverflow(prior.promoted_copyright_notice_identity_id, graph)
     if (tokens.overflow)
-      logCopyrightEmailTokenLockOverflow(prior.promoted_copyright_notice_id, maxGraphRows)
+      logCopyrightEmailTokenLockOverflow(prior.promoted_copyright_notice_identity_id, maxGraphRows)
     return {
-      noticeId: prior.promoted_copyright_notice_id,
+      noticeId: prior.promoted_copyright_notice_identity_id,
       submissionId: prior.submission_id,
     }
   }
@@ -306,7 +309,7 @@ async function recordEmailPromotion(
   await transaction(sql`/* promoteCopyrightEmailIntake:review */
     INSERT INTO copyright_notice_email_intake_reviews (
       copyright_notice_email_intake_id, copyright_notice_email_intake_recommendation_id, reviewed_at,
-      reviewed_by_id, decision, rationale_ciphertext, promoted_copyright_notice_id
+      reviewed_by_id, decision, rationale_ciphertext, promoted_copyright_notice_identity_id
     ) VALUES (${intake.id}, ${input.recommendationId}, CURRENT_TIMESTAMP, ${input.currentUser.id}, 'approved',
       ${encryptSecret(
         JSON.stringify({

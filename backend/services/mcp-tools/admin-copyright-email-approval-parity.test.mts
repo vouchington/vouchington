@@ -190,7 +190,7 @@ describe('copyright email approval parity between REST and MCP', () => {
       expect(outcome).toMatchObject({ status: 201, noticeId: expect.any(String) })
       const noticeId = outcome.noticeId!
       await expect(readCopyrightEmailIntakeReview(intake.id)).resolves.toEqual([
-        { decision: 'approved', promoted_copyright_notice_id: noticeId },
+        { decision: 'approved', promoted_copyright_notice_identity_id: noticeId },
       ])
       await expect(readCopyrightEmailIntakeNoticeLinks(intake.id)).resolves.toEqual([
         { copyright_notice_id: noticeId, link_kind: 'initial' },

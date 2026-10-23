@@ -33,7 +33,7 @@ export async function scanCopyrightMinimalPurgeMutations(
       SELECT id, sequence FROM candidate ORDER BY sequence, id LIMIT ${pageSize}
     ), facts AS MATERIALIZED (
       SELECT selected.id AS account_user_id, party.proof_has_open_hold AS previous_open_hold,
-        party.proof_incident_account_unpurged AS previous_incident_unpurged,
+        party.proof_has_unpurged_incident_account AS previous_incident_unpurged,
         EXISTS (SELECT 1 FROM user_legal_preservation_holds hold
           WHERE hold.account_user_id = selected.id AND hold.released_at IS NULL)
           AS has_open_hold,
@@ -43,13 +43,13 @@ export async function scanCopyrightMinimalPurgeMutations(
         CASE WHEN party.is_repeat_infringer_account THEN identity.purged_at END AS purged_at,
         party.is_repeat_infringer_account AND identity.purged_at IS NULL AS incident_unpurged
       FROM selected JOIN copyright_notice_retained_parties party
-        ON party.copyright_notice_id = ${noticeId} AND party.account_user_id = selected.id
+        ON party.copyright_notice_identity_id = ${noticeId} AND party.account_user_id = selected.id
       JOIN retained_user_identities identity ON identity.id = selected.id
     ), updated AS (
       UPDATE copyright_notice_retained_parties party
       SET proof_has_open_hold = facts.has_open_hold,
-        proof_incident_account_unpurged = facts.incident_unpurged FROM facts
-      WHERE party.copyright_notice_id = ${noticeId}
+        proof_has_unpurged_incident_account = facts.incident_unpurged FROM facts
+      WHERE party.copyright_notice_identity_id = ${noticeId}
         AND party.account_user_id = facts.account_user_id
       RETURNING party.account_user_id
     )

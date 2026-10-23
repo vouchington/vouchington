@@ -38,7 +38,7 @@ export async function isRetainedIncidentAccount(
   const { rows } = await read<{ is_repeat_infringer_account: boolean }>(sql`
     /* assertCopyrightIncidentRetainedAccountRelation */
     SELECT is_repeat_infringer_account FROM copyright_notice_retained_parties
-    WHERE copyright_notice_id = ${noticeId} AND account_user_id = ${accountId}`)
+    WHERE copyright_notice_identity_id = ${noticeId} AND account_user_id = ${accountId}`)
   return rows[0]?.is_repeat_infringer_account ?? false
 }
 

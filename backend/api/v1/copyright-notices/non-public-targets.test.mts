@@ -170,7 +170,7 @@ describe('copyright notice targets are limited to posts the claimant can view', 
       })
       .expect(201)
     await expect(readCopyrightEmailIntakeReview(intake.id)).resolves.toEqual([
-      { decision: 'approved', promoted_copyright_notice_id: expect.any(String) },
+      { decision: 'approved', promoted_copyright_notice_identity_id: expect.any(String) },
     ])
   })
 })

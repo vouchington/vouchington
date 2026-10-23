@@ -1,16 +1,18 @@
 -- Canonical pre-launch copyright minimal-record purge predicate and finite-case guard.
 -- Defined after every legal, notification, and agent receipt table it references.
 
-CREATE TABLE copyright_legal_mutation_sequence_state (
-  singleton boolean PRIMARY KEY DEFAULT true CHECK (singleton),
+CREATE TABLE copyright_legal_mutation_sequence_states (
+  is_singleton boolean PRIMARY KEY DEFAULT true CHECK (is_singleton),
   current_sequence bigint NOT NULL DEFAULT 0 CHECK (current_sequence >= 0),
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-INSERT INTO copyright_legal_mutation_sequence_state (singleton) VALUES (true);
-CREATE TRIGGER trigger_copyright_legal_mutation_sequence_state_updated_at
-BEFORE UPDATE ON copyright_legal_mutation_sequence_state FOR EACH ROW
+INSERT INTO copyright_legal_mutation_sequence_states (is_singleton) VALUES (true);
+CREATE TRIGGER trigger_copyright_legal_mutation_sequence_states_updated_at
+BEFORE UPDATE ON copyright_legal_mutation_sequence_states FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
-COMMENT ON TABLE copyright_legal_mutation_sequence_state IS 'Transactional commit-order fence for bounded copyright party proof; it contains no user or case payload.';
+COMMENT ON TABLE copyright_legal_mutation_sequence_states IS 'Transactional commit-order fence for bounded copyright party proof; it contains no user or case payload.';
+COMMENT ON COLUMN copyright_legal_mutation_sequence_states.is_singleton IS 'Identifies the one row that serializes legal-retention mutation sequence allocation.';
+COMMENT ON COLUMN copyright_legal_mutation_sequence_states.current_sequence IS 'Commit-order sequence for preservation-hold changes and final account purges, used to invalidate stale party proofs.';
 CREATE FUNCTION fn_register_copyright_legal_mutation_sequence()
 RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE
@@ -23,8 +25,8 @@ BEGIN
   ELSE
     target_user_id := NEW.account_user_id;
   END IF;
-  UPDATE copyright_legal_mutation_sequence_state
-    SET current_sequence = current_sequence + 1 WHERE singleton
+  UPDATE copyright_legal_mutation_sequence_states
+    SET current_sequence = current_sequence + 1 WHERE is_singleton
     RETURNING current_sequence INTO assigned_sequence;
   UPDATE retained_user_identities
     SET legal_retention_mutation_sequence = assigned_sequence WHERE id = target_user_id;
@@ -39,17 +41,17 @@ AFTER UPDATE OF purged_at ON retained_user_identities FOR EACH ROW
 EXECUTE FUNCTION fn_register_copyright_legal_mutation_sequence();
 
 -- Negative blocker proofs start at the case and probe only live work.
-CREATE INDEX idx_copyright_incidents__purge_operative
+CREATE INDEX idx_copyright_repeat_infringer_incidents__purge_operative
   ON copyright_repeat_infringer_incidents(copyright_notice_id) WHERE is_operative;
 CREATE INDEX idx_copyright_restrictions__purge_active
   ON copyright_restrictions(copyright_notice_id) WHERE lifted_at IS NULL;
-CREATE INDEX idx_copyright_deadlines__purge_open
+CREATE INDEX idx_copyright_notice_deadlines__purge_open
   ON copyright_notice_deadlines(copyright_notice_id)
   WHERE resolved_at IS NULL AND cancelled_at IS NULL;
-CREATE INDEX idx_copyright_delivery_work__purge_pending
+CREATE INDEX idx_copyright_notice_delivery_work_items__purge_pending
   ON copyright_notice_delivery_work_items(copyright_notice_id)
   WHERE state IN ('pending', 'claimed');
-CREATE INDEX idx_copyright_action_work__purge_failed
+CREATE INDEX idx_copyright_notice_action_work_items__purge_failed
   ON copyright_notice_action_work_items(copyright_notice_id) WHERE state = 'failed';
 
 CREATE FUNCTION fn_lock_copyright_dsa_statement_notice()
@@ -208,16 +210,16 @@ CREATE FUNCTION fn_project_copyright_minimal_record_purge_eligible(
     SELECT 1 FROM copyright_notices notice
     JOIN copyright_notice_retention_erasures erased
       ON erased.copyright_notice_id = notice.id
-    JOIN copyright_notice_minimal_purge_work work
-      ON work.copyright_notice_id = notice.id
+    JOIN copyright_notice_minimal_purge_continuations work
+      ON work.copyright_notice_identity_id = notice.id
     JOIN copyright_notice_retained_identities identity ON identity.id = notice.id
-    JOIN copyright_legal_mutation_sequence_state mutation_state ON mutation_state.singleton
+    JOIN copyright_legal_mutation_sequence_states mutation_state ON mutation_state.is_singleton
     WHERE notice.id = target_notice_id
       AND notice.jurisdiction IN ('us_dmca', 'eu_dsa', 'uk')
       AND purge_now IS NOT NULL AND cutoff IS NOT NULL
       AND cutoff <= purge_now - INTERVAL '3 years'
-      AND work.party_scan_complete
-      AND work.blocker_scan_complete AND NOT work.blocker_found
+      AND work.is_party_scan_complete
+      AND work.is_blocker_scan_complete AND NOT work.has_blocker
       AND work.proof_generation = identity.proof_generation
       AND work.mutation_cursor = mutation_state.current_sequence
       AND work.open_hold_count = 0

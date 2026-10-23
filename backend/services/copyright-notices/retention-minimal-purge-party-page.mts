@@ -23,7 +23,7 @@ export async function scanCopyrightMinimalPurgeParties(
   const { rows } = await query<ProofPage>(sql`/* scanCopyrightMinimalPurgeParties */
     WITH candidate AS MATERIALIZED (
       SELECT party.account_user_id FROM copyright_notice_retained_parties party
-      WHERE party.copyright_notice_id = ${noticeId}
+      WHERE party.copyright_notice_identity_id = ${noticeId}
         AND (${after}::uuid IS NULL OR party.account_user_id > ${after}::uuid)
       ORDER BY party.account_user_id LIMIT ${pageSize + 1}
     ), selected AS MATERIALIZED (
@@ -40,14 +40,14 @@ export async function scanCopyrightMinimalPurgeParties(
         CASE WHEN party.is_repeat_infringer_account THEN identity.purged_at END AS purged_at,
         party.is_repeat_infringer_account AND identity.purged_at IS NULL AS incident_unpurged
       FROM selected JOIN copyright_notice_retained_parties party
-        ON party.copyright_notice_id = ${noticeId}
+        ON party.copyright_notice_identity_id = ${noticeId}
           AND party.account_user_id = selected.account_user_id
       JOIN retained_user_identities identity ON identity.id = selected.account_user_id
     ), updated AS (
       UPDATE copyright_notice_retained_parties party
       SET proof_has_open_hold = facts.has_open_hold,
-        proof_incident_account_unpurged = facts.incident_unpurged FROM facts
-      WHERE party.copyright_notice_id = ${noticeId}
+        proof_has_unpurged_incident_account = facts.incident_unpurged FROM facts
+      WHERE party.copyright_notice_identity_id = ${noticeId}
         AND party.account_user_id = facts.account_user_id
       RETURNING party.account_user_id
     )

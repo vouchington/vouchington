@@ -11,6 +11,14 @@ export const workTunableAllowlistFile =
 
 export const workTunableAllowlist: readonly WorkTunableAllowEntry[] = [
   {
+    file: 'backend/services/copyright-notices/retention-minimal-purge-case.mts',
+    ruleId: 'bounded-work-literal',
+    identifier: 'MAX_PAGE_SIZE',
+    value: '50',
+    reason:
+      'Defensive hard ceiling for the internal purge service. The cleanup caller supplies its page size from the validated data-retention DynamicConfig; the service rejects a larger direct override.',
+  },
+  {
     file: 'backend/services/copyright-notices/retention-erasure-s3.mts',
     ruleId: 'bounded-work-literal',
     identifier: 'DELETE_BATCH_SIZE',

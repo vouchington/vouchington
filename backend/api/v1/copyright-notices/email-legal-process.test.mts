@@ -32,7 +32,7 @@ describe('POST /api/v1/copyright-email-intakes/:id/legal-process', () => {
 
     expect(response.body).toEqual({ decision: 'legal_process' })
     await expect(readCopyrightEmailIntakeReviewRecord(intake.id)).resolves.toMatchObject([
-      { decision: 'legal_process', promoted_copyright_notice_id: null },
+      { decision: 'legal_process', promoted_copyright_notice_identity_id: null },
     ])
     await expect(readCopyrightEmailIntakeResponses(intake.id)).resolves.toEqual([])
   })

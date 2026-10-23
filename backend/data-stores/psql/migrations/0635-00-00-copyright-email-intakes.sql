@@ -20,29 +20,23 @@ CREATE TABLE copyright_notice_email_intakes (
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL);
 
 CREATE TABLE copyright_notice_email_retained_identities (
-  amazon_ses_message_id text PRIMARY KEY CHECK (char_length(amazon_ses_message_id) BETWEEN 1 AND 512),
+  id uuid PRIMARY KEY DEFAULT uuidv7(),
+  amazon_ses_message_id text NOT NULL UNIQUE CHECK (char_length(amazon_ses_message_id) BETWEEN 1 AND 512),
   raw_sha256 bytea NOT NULL CHECK (octet_length(raw_sha256) = 32),
   raw_byte_size integer NOT NULL CHECK (raw_byte_size >= 0)
 );
 COMMENT ON TABLE copyright_notice_email_retained_identities IS 'Minimal provider replay fence after original MIME evidence is erased; no email body, storage key, account, or case identity.';
+COMMENT ON COLUMN copyright_notice_email_retained_identities.id IS 'Internal UUIDv7 row identity; provider message identity remains unique separately.';
+COMMENT ON COLUMN copyright_notice_email_retained_identities.amazon_ses_message_id IS 'Provider delivery identity retained as the replay fence after raw MIME erasure, without message content.';
+COMMENT ON COLUMN copyright_notice_email_retained_identities.raw_sha256 IS 'Digest of the original MIME bytes used to verify the identity of erased evidence.';
+COMMENT ON COLUMN copyright_notice_email_retained_identities.raw_byte_size IS 'Original MIME byte length paired with the digest, without retaining the MIME content.';
 CREATE TRIGGER trigger_copyright_notice_email_retained_identities_immutable
 BEFORE UPDATE OR DELETE ON copyright_notice_email_retained_identities FOR EACH ROW
 EXECUTE FUNCTION fn_reject_mutation();
 
-CREATE FUNCTION fn_reject_replayed_copyright_email_identity()
-RETURNS trigger LANGUAGE plpgsql AS $$
-BEGIN
-  PERFORM pg_advisory_xact_lock(hashtextextended(
-    'copyright-email:' || NEW.amazon_ses_message_id, 0));
-  IF EXISTS (SELECT 1 FROM copyright_notice_email_retained_identities identity
-    WHERE identity.amazon_ses_message_id = NEW.amazon_ses_message_id) THEN
-    RAISE EXCEPTION 'copyright email identity is retained' USING ERRCODE = 'unique_violation';
-  END IF;
-  RETURN NEW;
-END $$;
 CREATE TRIGGER trigger_copyright_notice_email_intakes_retained_identity
 BEFORE INSERT ON copyright_notice_email_intakes FOR EACH ROW
-EXECUTE FUNCTION fn_reject_replayed_copyright_email_identity();
+EXECUTE FUNCTION fn_reject_replayed_external_event_identity();
 ALTER TABLE copyright_notice_email_intakes
   ADD CONSTRAINT fk_copyright_notice_email_intakes__raw_storage_object
   FOREIGN KEY (raw_storage_object_id) REFERENCES copyright_notice_storage_objects(id)
@@ -116,11 +110,11 @@ CREATE TABLE copyright_notice_email_intake_reviews (
   reviewed_by_id uuid REFERENCES users(id) ON DELETE SET NULL,
   decision copyright_notice_email_intake_review_decisions NOT NULL CHECK (decision IN ('approved', 'rejected', 'legal_process')),
   rationale_ciphertext text NOT NULL CONSTRAINT chk_copyright_notice_email_intake_reviews__rationale_ciphertext CHECK (char_length(rationale_ciphertext) BETWEEN 1 AND 1048576),
-  promoted_copyright_notice_id uuid CONSTRAINT uq_copyr_notic_email_intak_review__promoted_copyright_notice_id UNIQUE CONSTRAINT fk_copyri_notice_email_intake_review__promoted_copyright_notice REFERENCES copyright_notice_retained_identities(id) ON DELETE RESTRICT,
+  promoted_copyright_notice_identity_id uuid CONSTRAINT uq_copyr_notic_email_intak_review__promoted_identity UNIQUE CONSTRAINT fk_copyri_notice_email_intake_review__promoted_copyright_notice REFERENCES copyright_notice_retained_identities(id) ON DELETE RESTRICT,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
 
   CONSTRAINT uq_copyright_notice_email_intake_reviews__intake_id UNIQUE (copyright_notice_email_intake_id),
-  CHECK ((decision = 'approved') = (promoted_copyright_notice_id IS NOT NULL)),
+  CHECK ((decision = 'approved') = (promoted_copyright_notice_identity_id IS NOT NULL)),
   CONSTRAINT fk_copyright_email_reviews__recommendation_intake
     FOREIGN KEY (copyright_notice_email_intake_id, copyright_notice_email_intake_recommendation_id)
     REFERENCES copyright_notice_email_intake_recommendations(copyright_notice_email_intake_id, id) ON DELETE RESTRICT
@@ -152,11 +146,11 @@ CREATE TRIGGER trigger_copyright_email_reviews_immutable BEFORE UPDATE OR DELETE
 CREATE FUNCTION fn_reject_copyright_email_review_without_live_case()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
-  IF NEW.promoted_copyright_notice_id IS NULL THEN RETURN NEW; END IF;
+  IF NEW.promoted_copyright_notice_identity_id IS NULL THEN RETURN NEW; END IF;
   PERFORM 1 FROM copyright_notices notice
-    WHERE notice.id = NEW.promoted_copyright_notice_id FOR KEY SHARE;
+    WHERE notice.id = NEW.promoted_copyright_notice_identity_id FOR KEY SHARE;
   IF NOT FOUND OR EXISTS (SELECT 1 FROM copyright_notice_retention_erasures erased
-    WHERE erased.copyright_notice_id = NEW.promoted_copyright_notice_id) THEN
+    WHERE erased.copyright_notice_id = NEW.promoted_copyright_notice_identity_id) THEN
     RAISE EXCEPTION 'copyright email review cannot promote an erased or deleted case'
       USING ERRCODE = 'check_violation';
   END IF;
@@ -212,7 +206,7 @@ COMMENT ON COLUMN copyright_notice_email_intake_reviews.reviewed_at IS 'Moderato
 COMMENT ON COLUMN copyright_notice_email_intake_reviews.reviewed_by_id IS 'Staff member who decided the intake; erased on account deletion.';
 COMMENT ON COLUMN copyright_notice_email_intake_reviews.decision IS 'Staff decision: approved opened a case, rejected declined the email as a copyright notice and may have queued a reply, legal_process closed it as legal process such as a subpoena with no reply, case, or claimant-visible event.';
 COMMENT ON COLUMN copyright_notice_email_intake_reviews.rationale_ciphertext IS 'Encrypted staff rationale, or for legal_process the encrypted reason; it can name a legal matter and is never logged or returned.';
-COMMENT ON COLUMN copyright_notice_email_intake_reviews.promoted_copyright_notice_id IS 'Retained identity of the case created by an approved review; null for other decisions and never authority to use a deleted case.';
+COMMENT ON COLUMN copyright_notice_email_intake_reviews.promoted_copyright_notice_identity_id IS 'Retained identity of the case created by an approved review; null for other decisions and never authority to use a deleted case.';
 
 -- Current indexes for fresh schema bootstrap.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

@@ -41,7 +41,7 @@ describe('recordCopyrightEmailIntakeLegalProcess', () => {
       decision: 'legal_process',
       reviewed_by_id: moderator.id,
       recommendation_id: null,
-      promoted_copyright_notice_id: null,
+      promoted_copyright_notice_identity_id: null,
     })
     expect(review?.reviewed_at).toBeInstanceOf(Date)
     expect(review?.rationale_ciphertext).not.toContain(reason)

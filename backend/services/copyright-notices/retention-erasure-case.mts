@@ -123,7 +123,8 @@ export async function eraseCopyrightRetentionCase(
     JOIN copyright_notice_email_intakes intake
       ON intake.id = link.copyright_notice_email_intake_id
     WHERE link.copyright_notice_id = ${noticeId}
-    ON CONFLICT ON CONSTRAINT copyright_notice_email_retained_identities_pkey DO NOTHING`)
+    ORDER BY intake.amazon_ses_message_id
+    ON CONFLICT (amazon_ses_message_id) DO NOTHING`)
   await transaction(
     sql`/* enableCopyrightRetentionErasure */ SET LOCAL app.copyright_retention_erasure = 'on'`,
   )

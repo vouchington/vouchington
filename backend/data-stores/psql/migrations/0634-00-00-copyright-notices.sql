@@ -179,8 +179,8 @@ BEGIN
     COALESCE(phase_table = 'copyright_notice_lifecycle_changes'
       AND table_name = 'copyright_notice_lifecycle_change_rationales', false)) THEN RETURN false; END IF;
   IF selected_phase_index IS NULL OR selected_phase_index = '' OR NOT EXISTS (
-    SELECT 1 FROM copyright_notice_minimal_purge_work work
-    WHERE work.copyright_notice_id = notice_id::uuid
+    SELECT 1 FROM copyright_notice_minimal_purge_continuations work
+    WHERE work.copyright_notice_identity_id = notice_id::uuid
       AND work.phase_index = selected_phase_index::smallint
       AND work.root_purged_at IS NULL) THEN RETURN false; END IF;
   IF NOT fn_project_copyright_minimal_record_purge_eligible(
@@ -241,19 +241,19 @@ CREATE TRIGGER trigger_copyright_notice_retained_identities_updated_at
 BEFORE UPDATE ON copyright_notice_retained_identities
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 CREATE TABLE copyright_notice_retained_parties (
-  copyright_notice_id uuid NOT NULL REFERENCES copyright_notice_retained_identities(id) ON DELETE RESTRICT,
+  copyright_notice_identity_id uuid NOT NULL REFERENCES copyright_notice_retained_identities(id) ON DELETE RESTRICT,
   account_user_id uuid NOT NULL REFERENCES retained_user_identities(id) ON DELETE RESTRICT,
   is_repeat_infringer_account boolean NOT NULL DEFAULT false,
   proof_has_open_hold boolean,
-  proof_incident_account_unpurged boolean,
-  PRIMARY KEY (copyright_notice_id, account_user_id),
+  proof_has_unpurged_incident_account boolean,
+  PRIMARY KEY (copyright_notice_identity_id, account_user_id),
   created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX idx_copyright_notice_retained_parties__account_user
-  ON copyright_notice_retained_parties(account_user_id, copyright_notice_id);
+  ON copyright_notice_retained_parties(account_user_id, copyright_notice_identity_id);
 CREATE INDEX idx_copyright_notice_retained_parties__repeat_account
-  ON copyright_notice_retained_parties(copyright_notice_id, account_user_id)
+  ON copyright_notice_retained_parties(copyright_notice_identity_id, account_user_id)
   WHERE is_repeat_infringer_account;
 CREATE TRIGGER trigger_copyright_notice_retained_parties_updated_at
 BEFORE UPDATE ON copyright_notice_retained_parties
@@ -262,7 +262,7 @@ CREATE FUNCTION fn_register_copyright_notice_proof_generation()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   UPDATE copyright_notice_retained_identities
-    SET proof_generation = proof_generation + 1 WHERE id = NEW.copyright_notice_id;
+    SET proof_generation = proof_generation + 1 WHERE id = NEW.copyright_notice_identity_id;
   RETURN NEW;
 END;
 $$;
@@ -274,7 +274,7 @@ RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   INSERT INTO copyright_notice_retained_identities (id) VALUES (NEW.id);
   IF NEW.claimant_user_id IS NOT NULL THEN
-    INSERT INTO copyright_notice_retained_parties (copyright_notice_id, account_user_id)
+    INSERT INTO copyright_notice_retained_parties (copyright_notice_identity_id, account_user_id)
       VALUES (NEW.id, NEW.claimant_user_id) ON CONFLICT DO NOTHING;
   END IF;
   RETURN NEW;
@@ -284,8 +284,8 @@ CREATE TRIGGER trigger_register_copyright_notice_retained_identity
 AFTER INSERT ON copyright_notices FOR EACH ROW
 EXECUTE FUNCTION fn_register_copyright_notice_retained_identity();
 
-CREATE TABLE copyright_notice_minimal_purge_work (
-  copyright_notice_id uuid PRIMARY KEY REFERENCES copyright_notice_retained_identities(id) ON DELETE RESTRICT,
+CREATE TABLE copyright_notice_minimal_purge_continuations (
+  copyright_notice_identity_id uuid PRIMARY KEY REFERENCES copyright_notice_retained_identities(id) ON DELETE RESTRICT,
   legal_clock_at timestamptz NOT NULL,
   party_scan_cursor uuid,
   proof_generation bigint,
@@ -294,26 +294,26 @@ CREATE TABLE copyright_notice_minimal_purge_work (
   unpurged_incident_account_count integer NOT NULL DEFAULT 0
     CHECK (unpurged_incident_account_count >= 0),
   party_legal_clock_at timestamptz,
-  party_scan_complete boolean NOT NULL DEFAULT false,
+  is_party_scan_complete boolean NOT NULL DEFAULT false,
   blocker_phase_index smallint NOT NULL DEFAULT 0 CHECK (blocker_phase_index >= 0),
   blocker_cursor uuid,
   blocker_generation bigint,
-  blocker_scan_complete boolean NOT NULL DEFAULT false,
-  blocker_found boolean NOT NULL DEFAULT false,
-  valid_target_found boolean NOT NULL DEFAULT false,
-  unrestricted_target_found boolean NOT NULL DEFAULT false,
-  claimant_receipt_found boolean NOT NULL DEFAULT false,
-  compliant_notice_assessment_found boolean NOT NULL DEFAULT false,
-  compliant_form_assessment_found boolean NOT NULL DEFAULT false,
+  is_blocker_scan_complete boolean NOT NULL DEFAULT false,
+  has_blocker boolean NOT NULL DEFAULT false,
+  has_valid_target boolean NOT NULL DEFAULT false,
+  has_unrestricted_target boolean NOT NULL DEFAULT false,
+  has_claimant_receipt boolean NOT NULL DEFAULT false,
+  has_compliant_notice_assessment boolean NOT NULL DEFAULT false,
+  has_compliant_form_assessment boolean NOT NULL DEFAULT false,
   phase_index smallint NOT NULL DEFAULT 0 CHECK (phase_index >= 0),
   started_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   root_purged_at timestamptz,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-CREATE TRIGGER trigger_copyright_notice_minimal_purge_work_updated_at
-BEFORE UPDATE ON copyright_notice_minimal_purge_work
+CREATE TRIGGER trigger_copyright_notice_minimal_purge_continuations_updated_at
+BEFORE UPDATE ON copyright_notice_minimal_purge_continuations
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
-COMMENT ON TABLE copyright_notice_minimal_purge_work IS 'Durable continuation for bounded physical deletion of an eligible copyright case; it preserves the original legal clock while case-owned children are drained.';
+COMMENT ON TABLE copyright_notice_minimal_purge_continuations IS 'Durable continuation for bounded physical deletion of an eligible copyright case; it preserves the original legal clock while case-owned children are drained.';
 CREATE TYPE copyright_minimal_purge_cursor_families AS ENUM ('work', 'new', 'identity');
 CREATE TABLE copyright_notice_minimal_purge_cursors (
   family copyright_minimal_purge_cursor_families PRIMARY KEY,
@@ -324,40 +324,71 @@ CREATE TRIGGER trigger_copyright_notice_minimal_purge_cursors_updated_at
 BEFORE UPDATE ON copyright_notice_minimal_purge_cursors
 FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 COMMENT ON TABLE copyright_notice_minimal_purge_cursors IS 'High-water cursors for bounded, cyclic selection of new cases, unfinished work and orphan retained case identities.';
+COMMENT ON COLUMN copyright_notice_minimal_purge_cursors.family IS 'Selects the independently cycled continuation, new-case, or orphan-identity scan.';
+COMMENT ON COLUMN copyright_notice_minimal_purge_cursors.cursor_notice_id IS 'High-water case scan position that may refer to a case already deleted.';
 COMMENT ON TABLE copyright_notice_retained_identities IS 'Case identity retained only while a minimal-record purge and its bounded party cleanup are incomplete; it never authorizes the deleted case.';
+COMMENT ON COLUMN copyright_notice_retained_identities.proof_generation IS 'Monotonic case-evidence generation that invalidates accumulated bounded purge proofs after a relevant mutation.';
+COMMENT ON COLUMN copyright_notice_retained_identities.email_activity_at IS 'Latest linked designated-email receipt or review time, retained as a legal clock after raw evidence erasure.';
+COMMENT ON COLUMN copyright_notice_retained_identities.dsa_statement_count IS 'Current count of public DSA statement records attached to this case, excluding submission attempts.';
 COMMENT ON TABLE copyright_notice_retained_parties IS 'Opaque retained user relations for preservation-hold and repeat-infringer account-clock checks after case evidence or incident rows are erased; never a case authorization relation.';
+COMMENT ON COLUMN copyright_notice_retained_parties.copyright_notice_identity_id IS 'Retained case identity that owns this party relation after the live case is purged.';
+COMMENT ON COLUMN copyright_notice_retained_parties.account_user_id IS 'Retained party identity used for hold and incident legal clocks, never authorization of the account or deleted case.';
 COMMENT ON COLUMN copyright_notice_retained_parties.is_repeat_infringer_account IS 'Incident account relation retained after raw incident deletion so final account purge remains a legal clock anchor; never grants access.';
+COMMENT ON COLUMN copyright_notice_retained_parties.proof_has_open_hold IS 'Cached result of the latest bounded proof check for an active preservation hold on this party.';
+COMMENT ON COLUMN copyright_notice_retained_parties.proof_has_unpurged_incident_account IS 'Cached proof that a repeat-infringer account still lacks its final-account-purge clock event.';
+COMMENT ON COLUMN copyright_notice_minimal_purge_continuations.copyright_notice_identity_id IS 'Case identity whose bounded physical purge this continuation advances.';
+COMMENT ON COLUMN copyright_notice_minimal_purge_continuations.legal_clock_at IS 'Original legal clock captured before erasure changes activity stamps; purge progress does not restart it.';
+COMMENT ON COLUMN copyright_notice_minimal_purge_continuations.party_scan_cursor IS 'High-water retained-party account already included in the bounded proof; the live account may later be deleted.';
+COMMENT ON COLUMN copyright_notice_minimal_purge_continuations.proof_generation IS 'Case generation snapshot used to invalidate accumulated party and blocker proof after relevant writes.';
+COMMENT ON COLUMN copyright_notice_minimal_purge_continuations.mutation_cursor IS 'Commit-order sequence through which account-hold and purge mutations have been reconciled.';
+COMMENT ON COLUMN copyright_notice_minimal_purge_continuations.open_hold_count IS 'Current open preservation holds among retained case parties in the completed proof.';
+COMMENT ON COLUMN copyright_notice_minimal_purge_continuations.unpurged_incident_account_count IS 'Retained repeat-infringer accounts still awaiting their final account-purge legal clock.';
+COMMENT ON COLUMN copyright_notice_minimal_purge_continuations.party_legal_clock_at IS 'Latest hold-release or final-account-purge legal clock observed across retained parties.';
+COMMENT ON COLUMN copyright_notice_minimal_purge_continuations.is_party_scan_complete IS 'Whether the bounded retained-party scan reached its end for the current proof generation.';
+COMMENT ON COLUMN copyright_notice_minimal_purge_continuations.blocker_phase_index IS 'Next bounded legal-blocker query in the fixed phase sequence.';
+COMMENT ON COLUMN copyright_notice_minimal_purge_continuations.blocker_cursor IS 'Keyset position within the current blocker phase; its child row may since have been deleted.';
+COMMENT ON COLUMN copyright_notice_minimal_purge_continuations.blocker_generation IS 'Case generation snapshot used to discard stale legal-blocker scan progress.';
+COMMENT ON COLUMN copyright_notice_minimal_purge_continuations.is_blocker_scan_complete IS 'Whether all blocker phases finished for the current proof generation.';
+COMMENT ON COLUMN copyright_notice_minimal_purge_continuations.has_blocker IS 'Sticky proof result that at least one legal blocker was found for the current generation.';
+COMMENT ON COLUMN copyright_notice_minimal_purge_continuations.has_valid_target IS 'Current proof found a target satisfying the case validity conditions.';
+COMMENT ON COLUMN copyright_notice_minimal_purge_continuations.has_unrestricted_target IS 'Current proof found a target that remains unrestricted under purge eligibility rules.';
+COMMENT ON COLUMN copyright_notice_minimal_purge_continuations.has_claimant_receipt IS 'Current proof found the required claimant receipt.';
+COMMENT ON COLUMN copyright_notice_minimal_purge_continuations.has_compliant_notice_assessment IS 'Current proof found a qualifying notice assessment under the applicable rules.';
+COMMENT ON COLUMN copyright_notice_minimal_purge_continuations.has_compliant_form_assessment IS 'Current proof found a qualifying form assessment under the applicable rules.';
+COMMENT ON COLUMN copyright_notice_minimal_purge_continuations.phase_index IS 'Next bounded physical-deletion phase for this case.';
+COMMENT ON COLUMN copyright_notice_minimal_purge_continuations.started_at IS 'Creation time of the operational continuation, not a legal retention clock.';
+COMMENT ON COLUMN copyright_notice_minimal_purge_continuations.root_purged_at IS 'Time the case root was removed; bounded retained-party cleanup can continue afterward.';
 CREATE FUNCTION fn_reject_copyright_notice_retained_party_mutation()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'UPDATE'
-    AND NEW.copyright_notice_id = OLD.copyright_notice_id
+    AND NEW.copyright_notice_identity_id = OLD.copyright_notice_identity_id
     AND NEW.account_user_id = OLD.account_user_id
     AND NEW.is_repeat_infringer_account = OLD.is_repeat_infringer_account
     AND NEW.created_at = OLD.created_at
-    AND current_setting('app.copyright_minimal_purge_notice_id', true) = OLD.copyright_notice_id::text
+    AND current_setting('app.copyright_minimal_purge_notice_id', true) = OLD.copyright_notice_identity_id::text
     AND current_setting('app.copyright_minimal_purge_proof_update', true) = 'on'
-    AND EXISTS (SELECT 1 FROM copyright_notice_minimal_purge_work work
-      WHERE work.copyright_notice_id = OLD.copyright_notice_id AND work.root_purged_at IS NULL) THEN
+    AND EXISTS (SELECT 1 FROM copyright_notice_minimal_purge_continuations work
+      WHERE work.copyright_notice_identity_id = OLD.copyright_notice_identity_id AND work.root_purged_at IS NULL) THEN
     RETURN NEW;
   END IF;
   IF TG_OP = 'UPDATE' AND NOT OLD.is_repeat_infringer_account
     AND NEW.is_repeat_infringer_account
-    AND NEW.copyright_notice_id = OLD.copyright_notice_id
+    AND NEW.copyright_notice_identity_id = OLD.copyright_notice_identity_id
     AND NEW.account_user_id = OLD.account_user_id
     AND NEW.created_at = OLD.created_at
     AND EXISTS (SELECT 1 FROM copyright_repeat_infringer_incidents incident
-      WHERE incident.copyright_notice_id = OLD.copyright_notice_id
+      WHERE incident.copyright_notice_id = OLD.copyright_notice_identity_id
         AND incident.account_user_id = OLD.account_user_id) THEN
     RETURN NEW;
   END IF;
   IF TG_OP = 'DELETE'
-    AND current_setting('app.copyright_minimal_purge_notice_id', true) = OLD.copyright_notice_id::text
-    AND EXISTS (SELECT 1 FROM copyright_notice_minimal_purge_work work
-      WHERE work.copyright_notice_id = OLD.copyright_notice_id
+    AND current_setting('app.copyright_minimal_purge_notice_id', true) = OLD.copyright_notice_identity_id::text
+    AND EXISTS (SELECT 1 FROM copyright_notice_minimal_purge_continuations work
+      WHERE work.copyright_notice_identity_id = OLD.copyright_notice_identity_id
         AND work.root_purged_at IS NOT NULL)
     AND NOT EXISTS (SELECT 1 FROM copyright_notices notice
-      WHERE notice.id = OLD.copyright_notice_id) THEN
+      WHERE notice.id = OLD.copyright_notice_identity_id) THEN
     RETURN OLD;
   END IF;
   RAISE EXCEPTION 'copyright retained parties are preserved until bounded post-purge cleanup'
@@ -387,12 +418,12 @@ BEGIN
   IF TG_OP = 'DELETE'
     AND current_setting('app.copyright_minimal_purge_notice_id', true) = OLD.id::text
     AND NOT EXISTS (SELECT 1 FROM copyright_notices notice WHERE notice.id = OLD.id)
-    AND NOT EXISTS (SELECT 1 FROM copyright_notice_minimal_purge_work work
-      WHERE work.copyright_notice_id = OLD.id)
+    AND NOT EXISTS (SELECT 1 FROM copyright_notice_minimal_purge_continuations work
+      WHERE work.copyright_notice_identity_id = OLD.id)
     AND NOT EXISTS (SELECT 1 FROM copyright_notice_retained_parties party
-      WHERE party.copyright_notice_id = OLD.id)
+      WHERE party.copyright_notice_identity_id = OLD.id)
     AND NOT EXISTS (SELECT 1 FROM copyright_notice_email_intake_reviews review
-      WHERE review.promoted_copyright_notice_id = OLD.id) THEN
+      WHERE review.promoted_copyright_notice_identity_id = OLD.id) THEN
     RETURN OLD;
   END IF;
   RAISE EXCEPTION 'copyright retained case identity is still referenced by its lifecycle'
@@ -421,7 +452,7 @@ CREATE TABLE copyright_notice_targets (
 CREATE FUNCTION fn_register_copyright_notice_target_retained_parties()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
-  INSERT INTO copyright_notice_retained_parties (copyright_notice_id, account_user_id)
+  INSERT INTO copyright_notice_retained_parties (copyright_notice_identity_id, account_user_id)
   SELECT NEW.copyright_notice_id, party.user_id FROM (
     SELECT NEW.surface_owner_user_id AS user_id
     UNION
@@ -516,7 +547,7 @@ CREATE FUNCTION fn_register_copyright_notice_submission_retained_party()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF NEW.submitted_by_id IS NOT NULL THEN
-    INSERT INTO copyright_notice_retained_parties (copyright_notice_id, account_user_id)
+    INSERT INTO copyright_notice_retained_parties (copyright_notice_identity_id, account_user_id)
       VALUES (NEW.copyright_notice_id, NEW.submitted_by_id) ON CONFLICT DO NOTHING;
   END IF;
   RETURN NEW;
@@ -1307,8 +1338,8 @@ BEGIN
   END IF;
   IF TG_OP = 'DELETE' THEN
     IF current_setting('app.copyright_minimal_purge_notice_id', true) = OLD.id::text
-      AND EXISTS (SELECT 1 FROM copyright_notice_minimal_purge_work work
-        WHERE work.copyright_notice_id = OLD.id AND work.root_purged_at IS NULL)
+      AND EXISTS (SELECT 1 FROM copyright_notice_minimal_purge_continuations work
+        WHERE work.copyright_notice_identity_id = OLD.id AND work.root_purged_at IS NULL)
       AND fn_project_copyright_minimal_purge_catalog_complete()
       AND fn_project_copyright_minimal_purge_children_drained(OLD.id)
       AND fn_project_copyright_minimal_record_purge_eligible(

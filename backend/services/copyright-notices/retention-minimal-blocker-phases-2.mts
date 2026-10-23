@@ -62,7 +62,7 @@ export const COPYRIGHT_MINIMAL_BLOCKER_PHASES_2: readonly CopyrightMinimalBlocke
             AND intake.has_good_faith_belief
             AND intake.has_accuracy_authority_under_penalty_of_perjury
             AND char_length(intake.electronic_signature_ciphertext) > 0
-            AND work.valid_target_found AND work.claimant_receipt_found
+            AND work.has_valid_target AND work.has_claimant_receipt
             AND NOT EXISTS (SELECT 1 FROM copyright_notice_form_intake_reviews review
               WHERE review.copyright_notice_form_intake_id = intake.id AND NOT review.is_accepted)
             AS current_form_screening
@@ -71,7 +71,7 @@ export const COPYRIGHT_MINIMAL_BLOCKER_PHASES_2: readonly CopyrightMinimalBlocke
         JOIN copyright_notice_submissions submission
           ON submission.id = assessment.copyright_notice_submission_id
         JOIN copyright_notices notice ON notice.id = ${noticeId}
-        JOIN copyright_notice_minimal_purge_work work ON work.copyright_notice_id = ${noticeId}
+        JOIN copyright_notice_minimal_purge_continuations work ON work.copyright_notice_identity_id = ${noticeId}
         LEFT JOIN copyright_notice_form_intakes intake
           ON intake.copyright_notice_submission_id = submission.id
         LEFT JOIN LATERAL (

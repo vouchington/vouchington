@@ -13,7 +13,7 @@ export async function restartCopyrightMinimalPurgeAfterLateChild(noticeId: strin
     statementTimeoutMs: 20_000,
   })
   await transaction(sql`/* restartCopyrightMinimalPurgeAfterLateChildGuard */
-    UPDATE copyright_notice_minimal_purge_work SET phase_index = 0
-    WHERE copyright_notice_id = ${noticeId} AND root_purged_at IS NULL`)
+    UPDATE copyright_notice_minimal_purge_continuations SET phase_index = 0
+    WHERE copyright_notice_identity_id = ${noticeId} AND root_purged_at IS NULL`)
   await transaction.commit()
 }

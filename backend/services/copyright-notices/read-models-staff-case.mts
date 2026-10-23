@@ -55,7 +55,7 @@ export async function getPendingCopyrightStaffCases(
       receipt.idempotency_key AS territorial_key
     FROM copyright_notices notice
     LEFT JOIN copyright_notice_form_intakes form ON form.copyright_notice_id = notice.id
-    LEFT JOIN copyright_notice_email_intake_reviews email_review ON email_review.promoted_copyright_notice_id = notice.id
+    LEFT JOIN copyright_notice_email_intake_reviews email_review ON email_review.promoted_copyright_notice_identity_id = notice.id
     LEFT JOIN copyright_notice_email_intakes email ON email.id = email_review.copyright_notice_email_intake_id
     LEFT JOIN copyright_territorial_notice_receipts receipt
       ON receipt.copyright_notice_id = notice.id AND receipt.jurisdiction = notice.jurisdiction

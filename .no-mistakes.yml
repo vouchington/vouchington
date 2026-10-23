@@ -5282,6 +5282,15 @@ rules:
         - object: table:agent_moderation_votes
           reason: Binary moderation ballots intentionally do not model neutral or semantic
             score provenance;
+        - object: table:copyright_claimant_misuse_events
+          reason: Updates are rejected by fn_reject_copyright_purge_only_mutation; a narrowly scoped
+            eligible-case purge may delete expired case-owned events in bounded pages.
+        - object: table:copyright_notice_lifecycle_changes
+          reason: Updates are rejected by fn_reject_copyright_purge_only_mutation; a narrowly scoped
+            eligible-case purge may delete expired case-owned changes in bounded pages.
+        - object: table:stripe_events
+          reason: fn_reject_mutation rejects updates; the separate fiscal-year retention guard
+            permits deletion only after the terminal replay identity has been retained.
   - name: NM-11 status beside lifecycle timestamps
     rule: postgres-status-with-lifecycle-timestamps
     scope: repository

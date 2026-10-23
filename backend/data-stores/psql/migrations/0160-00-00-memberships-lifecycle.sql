@@ -700,6 +700,14 @@ CREATE INDEX idx_membership_operation_retained_identities__admin_membership
   ON membership_operation_retained_identities(administrator_membership_id)
   WHERE administrator_membership_id IS NOT NULL;
 COMMENT ON TABLE membership_operation_retained_identities IS 'Compact terminal provider operation identity and exact administrator replay result after the seven-year raw ledger expires; no provider payload, attempts, or request note.';
+COMMENT ON COLUMN membership_operation_retained_identities.membership_provider_context_id IS 'Provider application and environment that scopes the operation replay key.';
+COMMENT ON COLUMN membership_operation_retained_identities.membership_lineage_binding_id IS 'Historical lineage binding used to validate exact cancellation replay, never current membership authority.';
+COMMENT ON COLUMN membership_operation_retained_identities.idempotency_key IS 'Terminal provider operation key retained to prevent repeat financial effects on replay.';
+COMMENT ON COLUMN membership_operation_retained_identities.operation_kind IS 'Terminal operation family that determines replay fingerprint and response interpretation.';
+COMMENT ON COLUMN membership_operation_retained_identities.administrator_membership_id IS 'Retained membership identity needed to validate an administrator refund replay, not live authorization.';
+COMMENT ON COLUMN membership_operation_retained_identities.administrator_issuer_sha256 IS 'Digest of the staff issuer used to reject replay by a different issuer without retaining the raw identifier.';
+COMMENT ON COLUMN membership_operation_retained_identities.administrator_request_fingerprint IS 'Canonical refund request fingerprint used to reject changed parameters under a retained key.';
+COMMENT ON COLUMN membership_operation_retained_identities.administrator_response_snapshot IS 'Minimal terminal administrator refund response returned on exact replay after detailed ledger deletion.';
 CREATE OR REPLACE FUNCTION fn_reject_unretained_membership_operation_delete()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
@@ -1131,23 +1139,37 @@ CREATE TABLE IF NOT EXISTS stripe_events (
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
 );
 CREATE TABLE stripe_event_retained_identities (
-  stripe_event_id TEXT PRIMARY KEY
+  id uuid PRIMARY KEY DEFAULT uuidv7(),
+  stripe_event_id TEXT NOT NULL UNIQUE
 );
 COMMENT ON TABLE stripe_event_retained_identities IS 'Minimal terminal Stripe protocol identity written with processed or ignored outcome; it survives the work item and financial ledger so a valid old EventBridge replay remains an exact no-op.';
+COMMENT ON COLUMN stripe_event_retained_identities.id IS 'Internal UUIDv7 row identity, separate from the exact provider event key.';
 COMMENT ON COLUMN stripe_event_retained_identities.stripe_event_id IS 'Provider event identity only; no payload, account identifier, amount, or processing history.';
-CREATE OR REPLACE FUNCTION fn_reject_replayed_stripe_event_identity()
+CREATE OR REPLACE FUNCTION fn_reject_replayed_external_event_identity()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
-  PERFORM pg_advisory_xact_lock(hashtextextended('stripe-event:' || NEW.stripe_event_id, 0));
-  IF EXISTS (SELECT 1 FROM stripe_event_retained_identities identity
-    WHERE identity.stripe_event_id = NEW.stripe_event_id) THEN
-    RAISE EXCEPTION 'terminal Stripe event identity is retained'
-      USING ERRCODE = 'unique_violation';
+  IF TG_TABLE_NAME = 'stripe_events' THEN
+    PERFORM pg_advisory_xact_lock(hashtextextended('stripe-event:' || NEW.stripe_event_id, 0));
+    IF EXISTS (SELECT 1 FROM stripe_event_retained_identities identity
+      WHERE identity.stripe_event_id = NEW.stripe_event_id) THEN
+      RAISE EXCEPTION 'terminal Stripe event identity is retained'
+        USING ERRCODE = 'unique_violation';
+    END IF;
+  ELSIF TG_TABLE_NAME = 'copyright_notice_email_intakes' THEN
+    PERFORM pg_advisory_xact_lock(hashtextextended(
+      'copyright-email:' || NEW.amazon_ses_message_id, 0));
+    IF EXISTS (SELECT 1 FROM copyright_notice_email_retained_identities identity
+      WHERE identity.amazon_ses_message_id = NEW.amazon_ses_message_id) THEN
+      RAISE EXCEPTION 'copyright email identity is retained'
+        USING ERRCODE = 'unique_violation';
+    END IF;
+  ELSE
+    RAISE EXCEPTION 'Unsupported replay identity admission table %', TG_TABLE_NAME;
   END IF;
   RETURN NEW;
 END $$;
 CREATE TRIGGER trigger_stripe_events_retained_identity
-BEFORE INSERT ON stripe_events FOR EACH ROW EXECUTE FUNCTION fn_reject_replayed_stripe_event_identity();
+BEFORE INSERT ON stripe_events FOR EACH ROW EXECUTE FUNCTION fn_reject_replayed_external_event_identity();
 CREATE OR REPLACE FUNCTION fn_reject_unretained_stripe_event_delete()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN

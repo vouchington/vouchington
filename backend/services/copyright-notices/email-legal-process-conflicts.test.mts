@@ -101,7 +101,7 @@ describe('a copyright email intake recorded as legal process', () => {
     ).rejects.toMatchObject({ status: 409 })
 
     await expect(readCopyrightEmailIntakeReviewRecord(intake.id)).resolves.toMatchObject([
-      { decision: 'legal_process', promoted_copyright_notice_id: null },
+      { decision: 'legal_process', promoted_copyright_notice_identity_id: null },
     ])
   })
 
@@ -119,7 +119,7 @@ describe('a copyright email intake recorded as legal process', () => {
     ).rejects.toMatchObject({ status: 409 })
 
     await expect(readCopyrightEmailIntakeReviewRecord(intake.id)).resolves.toMatchObject([
-      { decision: 'approved', promoted_copyright_notice_id: approved.noticeId },
+      { decision: 'approved', promoted_copyright_notice_identity_id: approved.noticeId },
     ])
   })
 })

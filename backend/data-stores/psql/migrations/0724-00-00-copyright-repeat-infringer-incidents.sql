@@ -27,9 +27,9 @@ CREATE FUNCTION fn_register_copyright_repeat_infringer_retained_party()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   INSERT INTO copyright_notice_retained_parties AS party
-    (copyright_notice_id, account_user_id, is_repeat_infringer_account)
+    (copyright_notice_identity_id, account_user_id, is_repeat_infringer_account)
   VALUES (NEW.copyright_notice_id, NEW.account_user_id, true)
-  ON CONFLICT (copyright_notice_id, account_user_id) DO UPDATE
+  ON CONFLICT (copyright_notice_identity_id, account_user_id) DO UPDATE
     SET is_repeat_infringer_account = true
     WHERE NOT party.is_repeat_infringer_account;
   RETURN NEW;

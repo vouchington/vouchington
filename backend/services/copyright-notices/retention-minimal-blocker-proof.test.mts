@@ -41,9 +41,9 @@ describe('bounded copyright minimal blocker proof', () => {
     ).resolves.toBe('ineligible')
     expect(await readMinimalProofFormAuthority(submissionId, screeningId, noticeId)).toEqual({
       current_screening: true,
-      valid_target_found: true,
-      claimant_receipt_found: true,
-      compliant_form_assessment_found: true,
+      has_valid_target: true,
+      has_claimant_receipt: true,
+      has_compliant_form_assessment: true,
     })
   })
 

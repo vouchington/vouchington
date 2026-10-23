@@ -106,7 +106,7 @@ CREATE TABLE IF NOT EXISTS copyright_territorial_notice_acknowledgments (
 -- The original notice and receipt expire; exact idempotent receipt acknowledgments do not.
 -- This is the sole replay lookup from admission onward, without retained statements or ciphertext.
 CREATE TABLE copyright_territorial_notice_retained_identities (
-  receipt_id uuid PRIMARY KEY,
+  id uuid PRIMARY KEY DEFAULT uuidv7(),
   jurisdiction copyright_jurisdictions NOT NULL CHECK (jurisdiction IN ('eu_dsa', 'uk')),
   requester_identity_sha256 bytea NOT NULL CHECK (octet_length(requester_identity_sha256) = 32),
   idempotency_key text NOT NULL CHECK (char_length(idempotency_key) = 36),
@@ -118,11 +118,16 @@ CREATE TABLE copyright_territorial_notice_retained_identities (
     AND jsonb_typeof(response_snapshot->'receipt_id') = 'string'
     AND jsonb_typeof(response_snapshot->'acknowledgment_id') = 'string'
     AND response_snapshot->>'route_destination' = 'staff_queue'
-    AND response_snapshot->>'receipt_id' = receipt_id::text
   ),
   UNIQUE (requester_identity_sha256, jurisdiction, idempotency_key)
 );
 COMMENT ON TABLE copyright_territorial_notice_retained_identities IS 'Compact exact replay result after a territorial case expires; historical ids do not authorize the deleted case.';
+COMMENT ON COLUMN copyright_territorial_notice_retained_identities.id IS 'Internal UUIDv7 row identity; public receipt ID remains only in the response snapshot.';
+COMMENT ON COLUMN copyright_territorial_notice_retained_identities.jurisdiction IS 'Legal protocol scope that prevents idempotency keys from crossing jurisdictions.';
+COMMENT ON COLUMN copyright_territorial_notice_retained_identities.requester_identity_sha256 IS 'Digest that scopes admission replay without retaining raw requester contact data.';
+COMMENT ON COLUMN copyright_territorial_notice_retained_identities.idempotency_key IS 'Admission key scoped to requester digest and jurisdiction to prevent a second notice on replay.';
+COMMENT ON COLUMN copyright_territorial_notice_retained_identities.request_sha256 IS 'Canonical request digest that rejects changed content under a reused scoped key.';
+COMMENT ON COLUMN copyright_territorial_notice_retained_identities.response_snapshot IS 'Minimal original admission response; embedded case and receipt IDs do not authorize the expired case.';
 CREATE TRIGGER trigger_copyright_territorial_notice_retained_immutable
 BEFORE UPDATE OR DELETE ON copyright_territorial_notice_retained_identities FOR EACH ROW
 EXECUTE FUNCTION fn_reject_mutation();
@@ -144,7 +149,10 @@ CREATE TABLE copyright_territorial_acknowledgment_retained_identities (
   )
 );
 COMMENT ON TABLE copyright_territorial_acknowledgment_retained_identities IS 'Compact terminal acknowledgment result retained for exact replay under the current external protocol without a replay-age limit; the requester digest remains linkable but neither digest is live case authority. No raw contact data, ciphertext, or evidence is retained.';
-CREATE TRIGGER trigger_copyright_territorial_ack_retained_immutable
+COMMENT ON COLUMN copyright_territorial_acknowledgment_retained_identities.notice_lookup_sha256 IS 'Digest of the external notice lookup token used to resolve a terminal acknowledgment without the raw token.';
+COMMENT ON COLUMN copyright_territorial_acknowledgment_retained_identities.requester_user_sha256 IS 'Optional linkable requester digest used for replay scope, never live case authorization.';
+COMMENT ON COLUMN copyright_territorial_acknowledgment_retained_identities.response_snapshot IS 'Compact terminal public outcome retained for exact protocol replay without granting case authority.';
+CREATE TRIGGER trigger_copyright_territorial_acknowledgment_retained_immutable
 BEFORE UPDATE OR DELETE ON copyright_territorial_acknowledgment_retained_identities FOR EACH ROW
 EXECUTE FUNCTION fn_reject_mutation();
 
@@ -232,6 +240,7 @@ CREATE TABLE IF NOT EXISTS copyright_territorial_redress_requests (
 );
 
 CREATE TABLE copyright_territorial_redress_retained_identities (
+  id uuid PRIMARY KEY DEFAULT uuidv7(),
   requester_identity_sha256 bytea NOT NULL CHECK (octet_length(requester_identity_sha256) = 32),
   jurisdiction copyright_jurisdictions NOT NULL CHECK (jurisdiction IN ('eu_dsa', 'uk')),
   idempotency_key text NOT NULL CHECK (char_length(idempotency_key) = 36),
@@ -242,9 +251,14 @@ CREATE TABLE copyright_territorial_redress_retained_identities (
     AND jsonb_typeof(response_snapshot->'notice_id') = 'string'
     AND jsonb_typeof(response_snapshot->'decision_id') = 'string'
   ),
-  PRIMARY KEY (requester_identity_sha256, jurisdiction, idempotency_key)
+  UNIQUE (requester_identity_sha256, jurisdiction, idempotency_key)
 );
 COMMENT ON TABLE copyright_territorial_redress_retained_identities IS 'Compact authenticated redress receipt identity; no explanation, decision text, or case authority survives.';
+COMMENT ON COLUMN copyright_territorial_redress_retained_identities.id IS 'Internal UUIDv7 row identity, separate from the public redress receipt in the response snapshot.';
+COMMENT ON COLUMN copyright_territorial_redress_retained_identities.requester_identity_sha256 IS 'Submitting account digest used to scope replay without retaining raw requester data here.';
+COMMENT ON COLUMN copyright_territorial_redress_retained_identities.jurisdiction IS 'Legal process scope for the retained redress replay key.';
+COMMENT ON COLUMN copyright_territorial_redress_retained_identities.idempotency_key IS 'Authenticated submission key scoped to requester digest and jurisdiction for receipt replay.';
+COMMENT ON COLUMN copyright_territorial_redress_retained_identities.response_snapshot IS 'Compact original redress receipt; historical IDs grant no case authority.';
 CREATE TRIGGER trigger_copyright_territorial_redress_retained_immutable
 BEFORE UPDATE OR DELETE ON copyright_territorial_redress_retained_identities FOR EACH ROW
 EXECUTE FUNCTION fn_reject_mutation();
@@ -550,6 +564,8 @@ COMMENT ON COLUMN copyright_territorial_redress_requests.received_at IS
 
 COMMENT ON TABLE copyright_territorial_redress_decisions IS
   'Staff disposition of one EU or UK redress request. The system does not choose the rationale.';
+COMMENT ON COLUMN copyright_territorial_redress_decisions.revoked_assessment_id IS
+  'Assessment whose territorial restriction this staff redress decision revoked; directly indexed for bounded purge eligibility.';
 COMMENT ON COLUMN copyright_territorial_redress_decisions.copyright_territorial_redress_request_id IS
   'Redress request this decision closes. One decision per request.';
 COMMENT ON COLUMN copyright_territorial_redress_decisions.decided_at IS

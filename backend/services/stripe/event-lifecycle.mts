@@ -20,7 +20,8 @@ export async function markStripeEventCompleted(
     INSERT INTO stripe_event_retained_identities (stripe_event_id)
     SELECT event.stripe_event_id FROM completed
     JOIN stripe_events event ON event.id = completed.stripe_event_id
-    ON CONFLICT ON CONSTRAINT stripe_event_retained_identities_pkey DO NOTHING
+    ORDER BY event.stripe_event_id
+    ON CONFLICT (stripe_event_id) DO NOTHING
   `)
 }
 

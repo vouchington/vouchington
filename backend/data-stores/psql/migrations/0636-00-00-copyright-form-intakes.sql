@@ -36,6 +36,10 @@ CREATE TABLE copyright_notice_form_retained_identities (
   PRIMARY KEY (requester_identity_sha256, idempotency_key)
 );
 COMMENT ON TABLE copyright_notice_form_retained_identities IS 'Compact immutable form admission identity and public receipt IDs; retained IDs do not authorize an expired case.';
+COMMENT ON COLUMN copyright_notice_form_retained_identities.requester_identity_sha256 IS 'Digest that scopes form replay without retaining a raw requester address or account identifier.';
+COMMENT ON COLUMN copyright_notice_form_retained_identities.idempotency_key IS 'Admission key scoped to the requester digest for exact original form-receipt replay.';
+COMMENT ON COLUMN copyright_notice_form_retained_identities.request_sha256 IS 'Canonical form-request digest used to reject changed content under a reused key.';
+COMMENT ON COLUMN copyright_notice_form_retained_identities.response_snapshot IS 'Minimal original public form response; historical identifiers grant no access to a purged case.';
 CREATE TRIGGER trigger_copyright_notice_form_retained_identities_immutable
 BEFORE UPDATE OR DELETE ON copyright_notice_form_retained_identities FOR EACH ROW
 EXECUTE FUNCTION fn_reject_mutation();
