@@ -1,9 +1,17 @@
 import { read } from '@data-stores/psql'
 import onError from '@modules/on-error'
+import { dataRetentionConfig, getPartitionStatusProbeLimit } from '@services/data-retention/config'
+import { PARTITION_DROP_POLICIES } from '@data-stores/psql/config-driven/utils/partition-config'
+import {
+  getMonthlyPartitionUpperBound,
+  getPartitionDropStatusRefusals,
+  type PartitionDropStatusReason,
+} from '@data-stores/psql/migration-runner/partition-drop-guard'
 
 interface PartitionInfo {
   name: string
   size_bytes: number
+  drop_refusal: PartitionDropStatusReason | null
 }
 
 interface PartitionTable {
@@ -18,6 +26,8 @@ export interface PartitionStatus {
 }
 
 export async function getPartitionStatus(): Promise<PartitionStatus> {
+  await dataRetentionConfig.waitForInitialization()
+  const referenceDate = new Date()
   let rows: Record<string, unknown>[]
   try {
     const result = await read(
@@ -39,12 +49,28 @@ export async function getPartitionStatus(): Promise<PartitionStatus> {
     throw err
   }
 
+  const candidates = rows.map(row => ({
+    table: row.parent_table as string,
+    partition: row.partition_name as string,
+    upperBound: getMonthlyPartitionUpperBound(
+      row.parent_table as string,
+      row.partition_name as string,
+    ),
+  }))
+  const refusals = await getPartitionDropStatusRefusals(
+    read,
+    candidates,
+    PARTITION_DROP_POLICIES,
+    referenceDate,
+    getPartitionStatusProbeLimit(),
+  )
   const tableMap = new Map<string, PartitionInfo[]>()
   for (const row of rows) {
     const parentTable = row.parent_table as string
     const partition: PartitionInfo = {
       name: row.partition_name as string,
       size_bytes: parseInt(row.size_bytes as string, 10),
+      drop_refusal: refusals.get(row.partition_name as string) ?? null,
     }
     if (!tableMap.has(parentTable)) tableMap.set(parentTable, [])
     tableMap.get(parentTable)!.push(partition)

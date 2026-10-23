@@ -69,6 +69,7 @@ _none_
 - `idx_crawls__oembed_pending`: `CREATE INDEX idx_crawls__oembed_pending ON ONLY public.crawls USING btree (id) WHERE ((embed_metadata IS NOT NULL) AND (embed_oembed_url IS NOT NULL) AND (embed_oembed_resolved_at IS NULL))`
 - `idx_crawls__old_invalid`: `CREATE INDEX idx_crawls__old_invalid ON ONLY public.crawls USING btree (id) WHERE ((network_error IS NOT NULL) OR (completed_at IS NULL))`
 - `idx_crawls__redirect_url_id`: `CREATE INDEX idx_crawls__redirect_url_id ON ONLY public.crawls USING btree (redirect_url_id) WHERE (redirect_url_id IS NOT NULL)`
+- `idx_crawls__unfinished`: `CREATE INDEX idx_crawls__unfinished ON ONLY public.crawls USING btree (id) WHERE (completed_at IS NULL)`
 - `idx_crawls__url_id__completed_at_desc`: `CREATE INDEX idx_crawls__url_id__completed_at_desc ON ONLY public.crawls USING btree (url_id, completed_at DESC, id DESC) WHERE (completed_at IS NOT NULL)`
 - `idx_crawls__url_id__embeddings_generated_at`: `CREATE INDEX idx_crawls__url_id__embeddings_generated_at ON ONLY public.crawls USING btree (url_id, embeddings_generated_at DESC) WHERE (embeddings_generated_at IS NOT NULL)`
 - `idx_crawls__url_id__id_desc`: `CREATE INDEX idx_crawls__url_id__id_desc ON ONLY public.crawls USING btree (url_id, id DESC)`

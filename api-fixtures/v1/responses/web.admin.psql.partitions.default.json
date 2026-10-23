@@ -5,10 +5,12 @@
       "partition_count": 2,
       "partitions": [
         {
+          "drop_refusal": "no-declared-retention",
           "name": "posts_2026_06",
           "size_bytes": 523776000
         },
         {
+          "drop_refusal": "no-declared-retention",
           "name": "posts_2026_07",
           "size_bytes": 463878321
         }
@@ -20,6 +22,7 @@
       "partition_count": 1,
       "partitions": [
         {
+          "drop_refusal": "no-declared-retention",
           "name": "rss_feed_items_2026_07",
           "size_bytes": 12345678
         }

@@ -39,6 +39,13 @@ export interface PsqlJobEnqueueResponse {
 export interface PartitionInfo {
   name: string
   size_bytes: number
+  drop_refusal:
+    | 'no-declared-retention'
+    | 'inside-retention'
+    | 'legal-hold'
+    | 'in-flight'
+    | 'check-pending'
+    | null
 }
 
 export interface PartitionTable {

@@ -43094,6 +43094,29 @@
           "unique": false,
           "valid": true
         },
+        "idx_crawl_chunks__embedding_pending": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_crawl_chunks__embedding_pending ON ONLY public.crawl_chunks USING btree (crawl_id) WHERE (bedrock_nova_multimodal_v1_embedding_created_at IS NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "crawl_id",
+              "descending": false,
+              "expression": "crawl_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(bedrock_nova_multimodal_v1_embedding_created_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_crawl_chunks__search_vector": {
           "accessMethod": "gin",
           "constraintBacked": false,
@@ -43630,6 +43653,29 @@
           ],
           "live": true,
           "predicate": "(redirect_url_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_crawls__unfinished": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_crawls__unfinished ON ONLY public.crawls USING btree (id) WHERE (completed_at IS NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(completed_at IS NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
