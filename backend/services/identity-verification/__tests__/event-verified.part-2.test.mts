@@ -161,7 +161,8 @@ describe('onVerificationSessionVerified', () => {
             ]),
           ) // guard
           .mockResolvedValueOnce(makeQueryResult([])) // collision → none
-          .mockResolvedValueOnce(makeQueryResult([{ user_id: 'user-1' }])) // INSERT
+          .mockResolvedValueOnce(makeQueryResult([{ identity_fingerprint: 'fingerprint' }])) // permanent hash
+          .mockResolvedValueOnce(makeQueryResult()) // live link
           .mockResolvedValue(makeQueryResult([{ rowCount: 1 }])) // UPDATE
         return createTransactionResource(query as never)
       })

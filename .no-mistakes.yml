@@ -4923,8 +4923,6 @@ rules:
           reason: 'UTM source is user-controlled analytics input; see decision 8.'
         - object: 'column:media_types.mime_type'
           reason: 'MIME values are provider-defined lookup keys; see decision 8.'
-        - object: 'column:identity_document_types.identity_document_type'
-          reason: 'Identity provider document types are externally defined open lookup values; #2513 stores their relational identity as UUID.'
         - object: 'column:stripe_event_types.stripe_event_type'
           reason: 'Stripe event types are provider-defined open lookup values; #2513 stores their relational identity as UUID.'
         - object: 'column:copyright_trusted_flaggers.awarding_member_state'

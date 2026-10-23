@@ -76,6 +76,11 @@ registry row. Existing rows, including revoked or expired sessions, prevent lost
 being recreated. Session rows must therefore remain until user deletion; active-SID pruning would
 break this invariant. A registry read failure cannot authorize initialization.
 
+Identity verification keeps a keyed document fingerprint after revocation and account deletion so
+the same document cannot verify another account. The domain HMAC key must remain stable while these
+hashes are retained: changing it would make older hashes uncheckable because raw document values
+are discarded. Fingerprint-key rotation is not implemented.
+
 Moderation reconciliation admits expired and retryable work through the same bounded candidate
 page. Terminal dispositions are written only for that admitted page; lease and disposition updates
 commit together. Batch embedding listings use a fixed ID boundary and keyset continuation because

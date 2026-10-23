@@ -73,6 +73,28 @@ CREATE INDEX IF NOT EXISTS idx_membership_google_play_acknowledgments__lineage_c
 CREATE INDEX IF NOT EXISTS idx_membership_google_play_acknowledgment_work_items__claim ON membership_google_play_acknowledgment_work_items (available_at, membership_google_play_acknowledgment_id) WHERE completed_at IS NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_google_play_acknowledgments__pending_id ON membership_google_play_acknowledgments (id) WHERE acknowledged_at IS NULL AND skipped_at IS NULL;
+CREATE INDEX idx_membership_google_play_acknowledgments__terminal
+  ON membership_google_play_acknowledgments (COALESCE(acknowledged_at, skipped_at), id)
+  WHERE acknowledged_at IS NOT NULL OR skipped_at IS NOT NULL;
+CREATE TYPE membership_operational_cleanup_kinds AS ENUM ('entitlement_effects', 'renewal_notices', 'google_acknowledgments');
+CREATE TABLE membership_operational_cleanup_cursors (
+  kind membership_operational_cleanup_kinds PRIMARY KEY,
+  cursor_at TIMESTAMPTZ,
+  cursor_id UUID,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CHECK ((cursor_at IS NULL) = (cursor_id IS NULL))
+);
+CREATE TRIGGER trigger_membership_operational_cleanup_cursors_updated_at
+BEFORE UPDATE ON membership_operational_cleanup_cursors FOR EACH ROW
+EXECUTE FUNCTION fn_update_updated_at();
+COMMENT ON TABLE membership_operational_cleanup_cursors IS 'One persisted keyset position per bounded membership operational retention sweep.';
+COMMENT ON COLUMN membership_operational_cleanup_cursors.kind IS 'Fixed retention family.';
+COMMENT ON COLUMN membership_operational_cleanup_cursors.cursor_at IS 'Last examined due timestamp in the current sweep.';
+COMMENT ON COLUMN membership_operational_cleanup_cursors.cursor_id IS 'Last examined UUIDv7 identity in the current sweep.';
+COMMENT ON COLUMN membership_operational_cleanup_cursors.updated_at IS 'When this cleanup stream last checkpointed.';
+INSERT INTO membership_operational_cleanup_cursors (kind)
+VALUES ('entitlement_effects'), ('renewal_notices'), ('google_acknowledgments')
+ON CONFLICT (kind) DO NOTHING;
 COMMENT ON TABLE membership_google_play_acknowledgments IS 'Durable Google Play acknowledgement ledger. A retry always refetches subscriptionsv2 before another acknowledgement attempt.';
 COMMENT ON COLUMN membership_google_play_acknowledgments.membership_provider_evidence_record_id IS 'Immutable verified provider evidence whose eligible purchase requires acknowledgement.';
 COMMENT ON COLUMN membership_google_play_acknowledgments.membership_provider_lineage_id IS 'Canonical Google Play purchase lineage constrained to match the evidence context.';
