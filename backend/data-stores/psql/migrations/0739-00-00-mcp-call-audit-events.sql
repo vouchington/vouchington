@@ -120,7 +120,7 @@ COMMENT ON COLUMN copyright_decision_rationales.rationale_ciphertext IS 'Validat
 -- Each security-retention family has its own durable keyset position. A completed pass resets
 -- the position so rows that became eligible after an earlier scan are reconsidered.
 CREATE TYPE security_retention_sources AS ENUM (
-  'oauth_events', 'oauth_grants', 'oauth_grant_anchors', 'oauth_clients', 'api_keys_revoked',
+  'oauth_events', 'oauth_native_mints', 'oauth_grants', 'oauth_grant_anchors', 'oauth_clients', 'api_keys_revoked',
   'api_keys_expired', 'facebook_friends', 'github_friends', 'x_friends',
   'copyright_rationales_erased', 'copyright_rationales_noncase'
 );

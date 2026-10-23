@@ -347,9 +347,34 @@ CREATE TABLE IF NOT EXISTS oauth_native_session_token_mints (
 CREATE INDEX IF NOT EXISTS idx_oauth_native_session_token_mints__user
 ON oauth_native_session_token_mints (user_id, id);
 
+CREATE OR REPLACE FUNCTION fn_reject_native_session_mint_mutation()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+DECLARE retention_cutoff TIMESTAMPTZ;
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    retention_cutoff := NULLIF(current_setting('app.oauth_native_mint_retention_cutoff', TRUE), '')::timestamptz;
+    IF retention_cutoff IS NOT NULL
+       AND retention_cutoff <= CURRENT_TIMESTAMP - INTERVAL '12 months'
+       AND uuid_extract_timestamp(OLD.id) < retention_cutoff THEN
+      -- Hold placement takes this account lock first; deletion checks the hold after acquiring it.
+      PERFORM pg_advisory_xact_lock(hashtextextended(OLD.user_id::text, 0));
+      IF NOT EXISTS (
+        SELECT 1 FROM user_legal_preservation_holds preservation_hold
+        WHERE preservation_hold.account_user_id = OLD.user_id
+          AND preservation_hold.released_at IS NULL
+      ) THEN
+        RETURN OLD;
+      END IF;
+    END IF;
+  END IF;
+  RAISE EXCEPTION 'oauth_native_session_token_mints rows are append-only until eligible for retention'
+    USING ERRCODE = 'check_violation';
+END;
+$$;
 CREATE OR REPLACE TRIGGER trigger_oauth_native_session_token_mints_append_only
 BEFORE UPDATE OR DELETE ON oauth_native_session_token_mints
-FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
+FOR EACH ROW EXECUTE FUNCTION fn_reject_native_session_mint_mutation();
+COMMENT ON FUNCTION fn_reject_native_session_mint_mutation() IS 'Rejects mint audit updates and ordinary deletion; only aged rows outside an active account preservation hold may be deleted by bounded retention.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS oauth_authorization_codes (
@@ -476,7 +501,7 @@ COMMENT ON TABLE oauth_clients IS 'Dynamically registered and Client ID Metadata
 COMMENT ON TABLE oauth_authorization_requests IS 'Short-lived browser consent requests bound to one Voucha user session.';
 COMMENT ON TABLE oauth_grants IS 'Durable user consent for one client, resource, and canonical scope set.';
 COMMENT ON TABLE oauth_authorization_server_events IS 'Durable OAuth consent and token revocation evidence. Ordinary mutation is rejected; bounded retention deletes after 12 months while the latest consent remains through the live grant and for 12 months after its end.';
-COMMENT ON TABLE oauth_native_session_token_mints IS 'Append-only record of native-session MCP token issuance, preserved after grant or session deletion.';
+COMMENT ON TABLE oauth_native_session_token_mints IS 'Native-session MCP token issuance audit survives grant or session deletion, rejects ordinary mutation, and is retired after 12 months unless the account has an active preservation hold.';
 COMMENT ON COLUMN oauth_native_session_token_mints.user_id IS 'Retained user identity at mint time.';
 COMMENT ON COLUMN oauth_native_session_token_mints.client_id IS 'Snapshot of native OAuth client identifier at mint time.';
 COMMENT ON COLUMN oauth_native_session_token_mints.grant_id IS 'Snapshot of session-scoped grant identifier at mint time.';

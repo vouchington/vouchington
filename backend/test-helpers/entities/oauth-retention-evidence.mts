@@ -96,3 +96,45 @@ export async function getTestNativeGrantRetentionState(userId: string, sessionId
   )
   return result.rows[0]
 }
+
+export async function insertTestNativeMintAudit(userId: string, occurredAt: Date): Promise<string> {
+  const id = uuidv7({ msecs: occurredAt.getTime() })
+  await write(
+    `/* insertTestNativeMintAudit */ INSERT INTO oauth_native_session_token_mints
+       (id, user_id, client_id, grant_id, session_id, access_token_id, attestation_status)
+     VALUES ($1, $2, $3, $4, $5, $6, 'unattested')`,
+    [id, userId, randomUUID(), randomUUID(), randomUUID(), randomUUID()],
+  )
+  return id
+}
+
+export async function testNativeMintAuditExists(id: string): Promise<boolean> {
+  const result = await read(
+    `/* testNativeMintAuditExists */ SELECT 1 FROM oauth_native_session_token_mints WHERE id = $1`,
+    [id],
+  )
+  return result.rows.length > 0
+}
+
+export async function deleteTestNativeMintAudit(id: string): Promise<void> {
+  await write(
+    `/* deleteTestNativeMintAudit */ DELETE FROM oauth_native_session_token_mints WHERE id = $1`,
+    [id],
+  )
+}
+
+export async function deleteTestNativeMintAuditForRetention(
+  id: string,
+  cutoff: Date,
+): Promise<void> {
+  await using query = await beginTransaction()
+  await query(
+    `/* deleteTestNativeMintAuditForRetention */ SELECT set_config('app.oauth_native_mint_retention_cutoff', $1, true)`,
+    [cutoff.toISOString()],
+  )
+  await query(
+    `/* deleteTestNativeMintAuditForRetention */ DELETE FROM oauth_native_session_token_mints WHERE id = $1`,
+    [id],
+  )
+  await query.commit()
+}

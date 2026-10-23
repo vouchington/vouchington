@@ -1,5 +1,16 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it, onTestFinished } from 'vitest'
+import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
+import {
+  deleteTestNativeMintAudit,
+  deleteTestNativeMintAuditForRetention,
+  insertTestNativeMintAudit,
+  testNativeMintAuditExists,
+} from '@voucha/test-helpers/entities/oauth-retention-evidence'
+import {
+  insertPreservationHoldForTest,
+  releasePreservationHoldForTest,
+} from '@voucha/test-helpers/entities/user-legal-preservation-holds'
 import {
   deleteTestOAuthAuthorizationFixtures,
   insertTestGithubFriend,
@@ -7,9 +18,40 @@ import {
   testGithubFriendExists,
 } from '@voucha/test-helpers'
 import { cleanupSecuritySourcePage } from './cleanup-security-records.mts'
-import { SOURCES } from './security-record-plans.mts'
+import { SOURCES, sourcePlan } from './security-record-plans.mts'
 
 describe('security record cleanup', () => {
+  it('retires aged native mint audit only after its account hold is released', async () => {
+    const now = new Date()
+    const cutoff = sourcePlan('oauth_native_mints', now).cutoffAt
+    const user = await createTestUserDirect()
+    const oldMintId = await insertTestNativeMintAudit(
+      user.id,
+      new Date(now.getTime() - 730 * 86_400_000),
+    )
+    const recentMintId = await insertTestNativeMintAudit(
+      user.id,
+      new Date(now.getTime() - 10 * 86_400_000),
+    )
+    const holdId = await insertPreservationHoldForTest(user.id, user.id)
+
+    await expect(deleteTestNativeMintAudit(recentMintId)).rejects.toThrow(
+      'oauth_native_session_token_mints rows are append-only',
+    )
+    await expect(deleteTestNativeMintAuditForRetention(oldMintId, cutoff)).rejects.toThrow(
+      'oauth_native_session_token_mints rows are append-only',
+    )
+    expect(await testNativeMintAuditExists(oldMintId)).toBe(true)
+
+    await releasePreservationHoldForTest(holdId, user.id)
+    await deleteTestNativeMintAuditForRetention(oldMintId, cutoff)
+    await expect(deleteTestNativeMintAuditForRetention(recentMintId, cutoff)).rejects.toThrow(
+      'oauth_native_session_token_mints rows are append-only',
+    )
+    expect(await testNativeMintAuditExists(oldMintId)).toBe(false)
+    expect(await testNativeMintAuditExists(recentMintId)).toBe(true)
+  })
+
   it('prepares a bounded page for every source with its own typed cursor', async () => {
     // This cutoff predates synthetic records; the query checks every source without deleting
     // fixtures owned by another parallel test.
