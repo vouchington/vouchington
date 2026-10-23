@@ -30,7 +30,7 @@
     "@services/urls-domains-blacklist": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "sql-template-strings": "^2.2.2",
-    "valkyries": "^0.10.0"
+    "valkyries": "^0.11.1"
   },
   "devDependencies": {
     "@services/post-revisions": "workspace:^",

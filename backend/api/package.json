@@ -258,7 +258,7 @@
     "p-map": "^7.1.0",
     "undici": "^8.11.2",
     "uuid": "^14.0.3",
-    "valkyries": "^0.10.0"
+    "valkyries": "^0.11.1"
   },
   "devDependencies": {
     "@aws-sdk/client-cloudfront": "^3.1153.0",

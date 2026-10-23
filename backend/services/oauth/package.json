@@ -43,7 +43,7 @@
     "@vouchington/postgres": "^0.0.16",
     "http-errors": "^2.0.1",
     "uuid": "^14.0.3",
-    "valkyries": "^0.10.0"
+    "valkyries": "^0.11.1"
   },
   "devDependencies": {
     "@types/http-errors": "^2.0.5",

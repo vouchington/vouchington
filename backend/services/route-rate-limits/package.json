@@ -32,7 +32,7 @@
     "@services/users": "workspace:^",
     "@ts-shared/session-jwt": "workspace:^",
     "@vouchington/rate-limit": "^0.2.0",
-    "valkyries": "^0.10.0"
+    "valkyries": "^0.11.1"
   },
   "devDependencies": {
     "@voucha/test-helpers": "workspace:^"
