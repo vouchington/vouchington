@@ -1,6 +1,6 @@
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import type { TestJob } from 'glide-mq/testing'
-import type { WorkerQueryProfile } from '../backend/test-helpers/request-query-profile-state.mts'
+import type { WorkerQueryProfile } from '../backend/test-helpers/query-profiles.mts'
 
 describe('public SDK worker profiling adapter', () => {
   it.each([false, true])(
@@ -11,12 +11,12 @@ describe('public SDK worker profiling adapter', () => {
         { closeAndUnregisterGlideMQInstance, createWorker },
         { Queue },
         { RequestQueryProfileWorker },
-        { recordRequestQueryTiming },
+        { observeQueryProfile },
       ] = await Promise.all([
         import('../backend/data-stores/valkey-glide-mq/glide-mq-factory.mts'),
         import('glide-mq'),
         import('./request-query-profile-worker.mts'),
-        import('../backend/test-helpers/request-query-profile-state.mts'),
+        import('../backend/test-helpers/query-profiles.mts'),
       ])
       const queueName = `app-factory-profile-${crypto.randomUUID()}`
       const queue = new Queue<{ value: number }, number>(queueName, {})
@@ -40,7 +40,7 @@ describe('public SDK worker profiling adapter', () => {
       const calls: string[] = []
       const worker = createWorker<{ value: number }, number>(queueName, async job => {
         calls.push('processor')
-        recordRequestQueryTiming({ durationMs: 0, annotation: 'appFactoryWorker' })
+        observeQueryProfile({ durationMs: 0, annotation: 'appFactoryWorker' })
         return job.data.value
       })
       closeWorker = () => closeAndUnregisterGlideMQInstance(worker)
