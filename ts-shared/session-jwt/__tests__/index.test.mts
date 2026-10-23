@@ -137,4 +137,29 @@ describe('@ts-shared/session-jwt', () => {
       }),
     ).rejects.toThrow('VOUCHA_SESSION_JWT_PUBLIC_KEYS_B64 must contain at least one JWK')
   })
+
+  it('rejects ambiguous public key identities across rotation candidates', async () => {
+    const signingKey = await generatePrivateJwk('ambiguous-public-kid')
+    const otherKey = await generatePrivateJwk('ambiguous-public-kid')
+    const { did, sid } = makeIds()
+    const token = await signSessionJwt(
+      { did, sid, uid: null },
+      {
+        mode: 'production',
+        env: { VOUCHA_SESSION_JWT_PRIVATE_KEYS_B64: encodeJwkSetForEnv([signingKey]) },
+        expiresIn: '2 days',
+      },
+    )
+    await expect(
+      verifySessionJwt(token, {
+        mode: 'production',
+        env: {
+          VOUCHA_SESSION_JWT_PUBLIC_KEYS_B64: encodeJwkSetForEnv([
+            derivePublicJwk(signingKey),
+            derivePublicJwk(otherKey),
+          ]),
+        },
+      }),
+    ).rejects.toThrow('contains duplicate kid values: ambiguous-public-kid')
+  })
 })

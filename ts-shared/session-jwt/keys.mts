@@ -100,6 +100,16 @@ async function resolveConfiguredKeys(
       : [decoded]
   if (!Array.isArray(values) || !values.length)
     throw new Error(`${SESSION_JWT_PUBLIC_KEYS_ENV} must contain at least one JWK`)
+  // Candidate imports are isolated, but rotation key identities must remain unique as a set.
+  const configuredKids = values
+    .map(value => (value as { kid?: unknown } | null)?.kid)
+    .filter((kid): kid is string => typeof kid === 'string')
+  const seenKids = new Set<string>()
+  for (const kid of configuredKids) {
+    if (seenKids.has(kid))
+      throw new Error(`${SESSION_JWT_PUBLIC_KEYS_ENV} contains duplicate kid values: ${kid}`)
+    seenKids.add(kid)
+  }
   const results = await Promise.allSettled(
     values.map(async value => {
       const publicJwks = parseJwkSet(value, SESSION_JWT_PUBLIC_KEYS_ENV)
