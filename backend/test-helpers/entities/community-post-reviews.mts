@@ -1,4 +1,5 @@
 import { read, write } from '@data-stores/psql'
+import { getMinUUIDv7ForParentHistory } from '@modules/utils/ids'
 import sql from 'sql-template-strings'
 
 type InsertTestCommunityPostReviewOptions = {
@@ -139,4 +140,34 @@ export async function getCommunityPostReviewStatus(
   return rows[0] as
     | { approved_at: Date | null; unpublished_at: Date | null; unpublished_by_id: string | null }
     | undefined
+}
+
+type TestPublicationReviewChange = {
+  id: string
+  community_id: string
+  post_id: string
+  actor_user_id: string | null
+  action: 'approve' | 'reject' | 'unpublish' | 'restore'
+  is_platform_override: boolean
+  reason_code: string | null
+  private_note: string | null
+  created_at: Date
+}
+
+export async function getTestPublicationReviewChanges(
+  communityId: string,
+  postId: string,
+): Promise<TestPublicationReviewChange[]> {
+  const minHistoryId = getMinUUIDv7ForParentHistory(postId)
+  const { rows } = await read(
+    sql`/* getTestPublicationReviewChanges */
+      SELECT id, community_id, post_id, changed_by_id AS actor_user_id, change_type AS action,
+        is_platform_override, reason_code, private_note, created_at
+      FROM community_post_review_changes
+      WHERE community_id = ${communityId}
+        AND post_id = ${postId}
+        AND id >= ${minHistoryId}::uuid
+      ORDER BY id ASC`,
+  )
+  return rows as TestPublicationReviewChange[]
 }

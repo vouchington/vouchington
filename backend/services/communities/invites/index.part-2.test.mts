@@ -5,7 +5,7 @@ import {
   insertTestCommunityMember,
   insertTestCommunityInvite,
 } from '@voucha/test-helpers'
-import { searchInvites, getMyInvites } from './get.mts'
+import { searchInvites } from './get.mts'
 import type { PrivateUser } from '@services/users/types'
 import type { Community } from '../types.mts'
 
@@ -19,25 +19,19 @@ describe('index', () => {
     await insertTestCommunityMember({ communityId: community.id, userId: owner.id, role: 'owner' })
   })
 
-  describe('searchInvites / getMyInvites', () => {
-    it('searchInvites returns invites for a community', async () => {
-      const result = await searchInvites(community.id)
-      expect(result.results).toBeDefined()
-      expect(result.page_info).toBeDefined()
-    })
-
-    it('getMyInvites returns invites for a user', async () => {
+  describe('searchInvites', () => {
+    it('returns the community invite without its code or hash', async () => {
       const invitee = await createTestUser()
-      await insertTestCommunityInvite({
+      const invite = await insertTestCommunityInvite({
         communityId: community.id,
         invitedById: owner.id,
         invitedUserId: invitee.id,
       })
-      const invites = await getMyInvites(invitee.id)
-      expect(invites.length).toBeGreaterThanOrEqual(1)
-      expect(invites[0]!.invited_user_id).toBe(invitee.id)
-      expect(invites[0]).not.toHaveProperty('code')
-      expect(invites[0]).not.toHaveProperty('code_hash')
+      const result = await searchInvites(community.id)
+      const listed = result.results.find(row => row.id === invite.id)
+      expect(listed?.invited_user_id).toBe(invitee.id)
+      expect(listed).not.toHaveProperty('code')
+      expect(listed).not.toHaveProperty('code_hash')
     })
   })
 })
