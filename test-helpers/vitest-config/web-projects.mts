@@ -85,29 +85,6 @@ export const webProjects: TestProjectConfiguration[] = [
       isolate: true,
       name: 'web-storybook',
       include: ['web/storybook/**/*.test.ts', 'web/storybook/**/*.test.tsx'],
-      exclude: [
-        '**/node_modules/**',
-        '**/.git/**',
-        'web/storybook/__tests__/component-story-coverage.test.ts',
-      ],
-      environment: 'node',
-      setupFiles: ['./web/test-helpers/vitest.setup.web-storybook.mts'],
-    },
-  },
-  {
-    extends: true,
-    plugins: [react()],
-    resolve: {
-      alias: [
-        ...storybookMockResolveAliases,
-        ...Object.entries(webAlias).map(([find, replacement]) => ({ find, replacement })),
-      ],
-    },
-    test: {
-      ...fiveSecondTestBudget,
-      isolate: true,
-      name: 'web-storybook-component-coverage',
-      include: ['web/storybook/__tests__/component-story-coverage.test.ts'],
       exclude: ['**/node_modules/**', '**/.git/**'],
       environment: 'node',
       setupFiles: ['./web/test-helpers/vitest.setup.web-storybook.mts'],

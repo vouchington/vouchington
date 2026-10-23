@@ -140,8 +140,9 @@ describe('static-code-analysis workflow', () => {
     type Step = { name?: string; run?: string; if?: string; 'timeout-minutes'?: number }
     const parsed = load(workflow) as { jobs: Record<string, { steps: Step[] }> }
     const steps = parsed.jobs['no-mistakes']?.steps ?? []
-    const command = 'node web/storybook/check-component-story-coverage.mts'
-    const coverage = steps.filter(step => step.run === command)
+    const coverage = steps.filter(step =>
+      step.run?.startsWith('pnpm exec vouchington story-coverage '),
+    )
     const analyzer = steps.findIndex(
       step => step.run === 'pnpm exec no-mistakes --timeout 0 --lock-timeout 0 check',
     )

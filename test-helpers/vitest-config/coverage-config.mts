@@ -25,7 +25,6 @@ export const coverageConfigForScope = (scope: string | undefined): CoverageConfi
           ? [
               'web/storybook/entities/entity-fixtures.ts',
               'web/storybook/entities/topics-story-recommendations.ts',
-              'web/test-helpers/storybook/component-story-coverage/message.ts',
             ]
           : storybookBrowser
             ? ['web/components/**/*.{ts,tsx}', 'web/hooks/**/*.{ts,tsx}']

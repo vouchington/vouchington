@@ -3330,7 +3330,6 @@ rules:
         backend-lightpanda: [backend-credentialed]
         web: [web]
         web-storybook: [storybook]
-        web-storybook-component-coverage: [storybook]
         web-storybook-browser: [storybook]
         web-api: [web-integration]
         web-integration: [web-integration]

@@ -121,7 +121,6 @@ export const VITEST_OWNERSHIP: readonly VitestJobOwnership[] = [
     invocation: 'storybook',
     projects: [
       { project: 'web-storybook', credential: NONE },
-      { project: 'web-storybook-component-coverage', credential: NONE },
       {
         project: 'web-storybook-browser',
         credential: NONE,

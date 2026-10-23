@@ -86,7 +86,6 @@ describe('durable Vitest workflow commands', () => {
     }
 
     const storybook = readFileSync('.github/workflows/storybook.yml', 'utf8')
-    expect(storybook).toContain('--project web-storybook-component-coverage')
     expect(storybook).toContain(
       "STORYBOOK_BROWSER_COVERAGE: ${{ inputs.publish_coverage && '1' || '0' }}",
     )

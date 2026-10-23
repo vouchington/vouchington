@@ -82,10 +82,6 @@ rules:
     area: backend
   - paths: 'web/test-helpers/components/**/*fixtures.tsx'
     patch_coverage_min: 0
-  - paths: 'web/test-helpers/storybook/**'
-    patch_coverage_min: 0
-  - paths: 'web/storybook/__tests__/component-story-coverage.test.ts'
-    patch_coverage_min: 0
   - paths: 'web/storybook/__tests__/design-system-stories.snapshot.test.tsx'
     patch_coverage_min: 0
   - paths: 'web/storybook/__tests__/design-system-stories.*.json'
