@@ -5,7 +5,7 @@
     "user": {
       "read_my_households": {
         "measured": {
-          "list": 5350,
+          "list": 5684,
           "core": 2477
         },
         "max": {
@@ -15,7 +15,7 @@
       },
       "manage_my_households": {
         "measured": {
-          "list": 5450,
+          "list": 5784,
           "core": 3226
         },
         "max": {

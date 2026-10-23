@@ -6,6 +6,8 @@ import { test, expect } from '../../helpers/test.mts'
 
 let fixture: {
   ownerId: string
+  ownerUsername: string
+  inviteeId: string
   inviteeUsername: string
   householdId: string
   relationship: string
@@ -18,21 +20,23 @@ test.beforeEach(async () => {
     'Expected household owner',
   )
   const inviteeUsername = `hh-invitee-${suffix}`
-  requireTestValue(
+  const invitee = requireTestValue(
     await createTestUserDirect({ username: inviteeUsername }),
     'Expected household invitee',
   )
   const household = await insertTestHousehold(owner.id)
   fixture = {
     ownerId: owner.id,
+    ownerUsername: owner.username!,
+    inviteeId: invitee.id,
     inviteeUsername,
     householdId: household.id,
-    relationship: `Friend ${suffix}`,
+    relationship: '😀'.repeat(64),
   }
 })
 
 test('owner invites an existing user and revokes the pending invitation', async ({ page }) => {
-  const { ownerId, inviteeUsername, householdId, relationship } = fixture
+  const { ownerId, ownerUsername, inviteeId, inviteeUsername, householdId, relationship } = fixture
   await loginAsUser(page, ownerId)
   await navigateTo(page, '/my/household')
   await expect(page.getByTestId('household-manager')).toBeVisible()
@@ -47,7 +51,8 @@ test('owner invites an existing user and revokes the pending invitation', async 
   await expect(username).toHaveValue('')
   await username.pressSequentially(inviteeUsername)
   await page.getByRole('listbox').getByRole('option').filter({ hasText: inviteeUsername }).click()
-  await form.getByTestId('household-invitation-relationship').pressSequentially(relationship)
+  await form.getByTestId('household-invitation-relationship').fill(relationship)
+  await expect(form.getByTestId('household-invitation-relationship')).toHaveValue(relationship)
 
   const createResponse = page.waitForResponse(
     response =>
@@ -58,8 +63,27 @@ test('owner invites an existing user and revokes the pending invitation', async 
   expect((await createResponse).status()).toBe(201)
   const row = sent.getByTestId('household-invitation-row')
   await expect(row).toHaveCount(1)
+  await expect(row).toContainText(`@${inviteeUsername}`)
   await expect(row).toContainText(relationship)
-  await expect(row).toContainText(householdId)
+  await expect(page.locator('body')).not.toContainText(/[0-9a-f]{8}-[0-9a-f]{4}-/)
+
+  await loginAsUser(page, inviteeId)
+  await navigateTo(page, '/my/household')
+  const received = page
+    .getByTestId('household-invitations')
+    .filter({ hasNot: page.getByTestId('household-invitation-form') })
+  await expect(received.getByTestId('household-invitation-row')).toContainText(
+    `Invited by @${ownerUsername}`,
+  )
+  await expect(page.locator('body')).not.toContainText(/[0-9a-f]{8}-[0-9a-f]{4}-/)
+
+  await loginAsUser(page, ownerId)
+  await navigateTo(page, '/my/household')
+  const ownerRow = page
+    .getByTestId('household-invitations')
+    .filter({ has: page.getByTestId('household-invitation-form') })
+    .getByTestId('household-invitation-row')
+  await expect(ownerRow).toHaveCount(1)
 
   const revokeResponse = page.waitForResponse(
     response =>
@@ -67,8 +91,8 @@ test('owner invites an existing user and revokes the pending invitation', async 
         `/api/v1/households/${householdId}/invitations/`,
       ) && response.request().method() === 'DELETE',
   )
-  await row.getByRole('button').click()
+  await ownerRow.getByRole('button').click()
   expect((await revokeResponse).status()).toBe(204)
-  await expect(row).toHaveCount(0)
+  await expect(ownerRow).toHaveCount(0)
   await expect(sent).toContainText('No pending invitations.')
 })

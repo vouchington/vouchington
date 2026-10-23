@@ -31,6 +31,11 @@ describe('household invitation REST response contracts', () => {
       .send({ user: invitee.username, relationship: 'partner' })
       .expect(201)
     matches(createRoute, invited.body)
+    expect(invited.body.invitation).toMatchObject({
+      invited_user: { id: invitee.id, username: invitee.username },
+      invited_by: { id: owner.id, username: owner.username },
+      household_owner: { id: owner.id, username: owner.username },
+    })
     const duplicate = await ownerRequest
       .post(`/api/v1/households/${householdId}/invitations`)
       .send({ user: invitee.id, relationship: 'ignored' })
@@ -40,6 +45,7 @@ describe('household invitation REST response contracts', () => {
 
     const sent = await ownerRequest.get(`/api/v1/households/${householdId}/invitations`).expect(200)
     matches('GET:/api/v1/households/:id/invitations', sent.body)
+    expect(sent.body.results).toContainEqual(invited.body.invitation)
     const inviteeRequest = createRequest()
     await inviteeRequest.authenticateAs(invitee)
     const notifications = await inviteeRequest.get('/api/v1/my/notifications').expect(200)
@@ -59,6 +65,9 @@ describe('household invitation REST response contracts', () => {
     expect(received.body.results[0]).toMatchObject({
       household_id: householdId,
       invited_by_id: owner.id,
+      invited_user: { id: invitee.id, username: invitee.username },
+      invited_by: { id: owner.id, username: owner.username },
+      household_owner: { id: owner.id, username: owner.username },
     })
     const accepted = await inviteeRequest
       .post(`/api/v1/my/household-invitations/${invited.body.invitation.id}/acceptance`)
@@ -108,6 +117,11 @@ describe('household invitation REST response contracts', () => {
       .post(`/api/v1/households/${householdId}/invitations`)
       .send({ user: invitee.id })
       .expect(201)
+    expect(invited.body.invitation).toMatchObject({
+      invited_user: { id: invitee.id, username: invitee.username },
+      invited_by: { id: administrator.id, username: administrator.username },
+      household_owner: { id: owner.id, username: owner.username },
+    })
     expect(
       (await adminRequest.get(`/api/v1/households/${householdId}/invitations`).expect(200)).body
         .results,
@@ -115,5 +129,38 @@ describe('household invitation REST response contracts', () => {
     await adminRequest
       .delete(`/api/v1/households/${householdId}/invitations/${invited.body.invitation.id}`)
       .expect(204)
+  })
+
+  it('returns 403 to a visible non-owner member on owner invitation routes', async () => {
+    const owner = await createTestUser()
+    const member = await createTestUser()
+    const invitee = await createTestUser()
+    const ownerRequest = createRequest()
+    await ownerRequest.authenticateAs(owner)
+    const householdId = (await ownerRequest.post('/api/v1/households').send({}).expect(201)).body
+      .household.id as string
+    const memberInvitation = await ownerRequest
+      .post(`/api/v1/households/${householdId}/invitations`)
+      .send({ user: member.id })
+      .expect(201)
+    const memberRequest = createRequest()
+    await memberRequest.authenticateAs(member)
+    await memberRequest
+      .post(`/api/v1/my/household-invitations/${memberInvitation.body.invitation.id}/acceptance`)
+      .send({})
+      .expect(200)
+    const pending = await ownerRequest
+      .post(`/api/v1/households/${householdId}/invitations`)
+      .send({ user: invitee.id })
+      .expect(201)
+
+    await memberRequest.get(`/api/v1/households/${householdId}/invitations`).expect(403)
+    await memberRequest
+      .post(`/api/v1/households/${householdId}/invitations`)
+      .send({ user: invitee.id })
+      .expect(403)
+    await memberRequest
+      .delete(`/api/v1/households/${householdId}/invitations/${pending.body.invitation.id}`)
+      .expect(403)
   })
 })

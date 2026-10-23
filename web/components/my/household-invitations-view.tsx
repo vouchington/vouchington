@@ -5,8 +5,14 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { UserAutocomplete } from '@/components/users/user-autocomplete'
-import { UserLink } from '@/components/users/user-link'
+import { useTranslations } from '@/lib/i18n/use-translations'
 import type { HouseholdInvitation } from '@/types/household-invitations'
+import {
+  INVITEE_SLOT,
+  INVITER_SLOT,
+  OWNER_SLOT,
+  renderInvitationMessage,
+} from './household-invitation-message'
 
 export interface HouseholdInvitationsViewProps {
   kind: 'sent' | 'received'
@@ -19,7 +25,6 @@ export interface HouseholdInvitationsViewProps {
   selectedUserId: string | null
   relationship: string
   formKey?: number
-  usernames?: Readonly<Record<string, string>>
   onSelectUser: (id: string, username: string) => void
   onRelationshipChange: (value: string) => void
   onInvite: () => void
@@ -29,6 +34,7 @@ export interface HouseholdInvitationsViewProps {
 }
 
 export function HouseholdInvitationsView(props: HouseholdInvitationsViewProps) {
+  const t = useTranslations()
   const formId = useId()
   const sent = props.kind === 'sent'
   return (
@@ -37,7 +43,9 @@ export function HouseholdInvitationsView(props: HouseholdInvitationsViewProps) {
       data-pw='household-invitations'
     >
       <h2 className='text-lg font-semibold'>
-        {sent ? 'Sent invitations' : 'Household invitations'}
+        {sent
+          ? t('settings.householdInvitations.sentTitle')
+          : t('settings.householdInvitations.receivedTitle')}
       </h2>
       {sent && (
         <form
@@ -48,26 +56,29 @@ export function HouseholdInvitationsView(props: HouseholdInvitationsViewProps) {
           }}
           data-pw='household-invitation-form'
         >
-          <Label htmlFor={`${formId}-user`}>Username</Label>
+          <Label htmlFor={`${formId}-user`}>{t('settings.householdInvitations.username')}</Label>
           <UserAutocomplete
             key={props.formKey}
             id={`${formId}-user`}
             value={props.selectedUserId}
             label=''
-            placeholder='Search by username'
-            ariaLabel='Username'
+            placeholder={t('settings.householdInvitations.searchByUsername')}
+            ariaLabel={t('settings.householdInvitations.username')}
             clearOnTextEdit
             onChange={props.onSelectUser}
             disabled={props.pending}
             dataPw={{ input: 'household-invitation-user' }}
           />
           <div className='space-y-1'>
-            <Label htmlFor={`${formId}-relationship`}>Relationship (optional)</Label>
+            <Label htmlFor={`${formId}-relationship`}>
+              {t('settings.householdInvitations.relationshipOptional')}
+            </Label>
             <Input
               id={`${formId}-relationship`}
               value={props.relationship}
-              onChange={event => props.onRelationshipChange(event.target.value)}
-              maxLength={64}
+              onChange={event =>
+                props.onRelationshipChange(Array.from(event.target.value).slice(0, 64).join(''))
+              }
               disabled={props.pending}
               data-pw='household-invitation-relationship'
             />
@@ -76,7 +87,7 @@ export function HouseholdInvitationsView(props: HouseholdInvitationsViewProps) {
             type='submit'
             disabled={props.pending || !props.selectedUserId}
           >
-            Send invitation
+            {t('settings.householdInvitations.sendInvitation')}
           </Button>
         </form>
       )}
@@ -85,17 +96,19 @@ export function HouseholdInvitationsView(props: HouseholdInvitationsViewProps) {
           className='space-y-2'
           role='alert'
         >
-          <p>Invitations could not be loaded.</p>
+          <p>{t('settings.householdInvitations.loadFailed')}</p>
           <Button
             variant='outline'
             onClick={props.onRetry}
             disabled={props.pending}
           >
-            Retry
+            {t('settings.householdInvitations.retry')}
           </Button>
         </div>
       ) : props.invitations.length === 0 ? (
-        <p className='text-sm text-muted-foreground'>No pending invitations.</p>
+        <p className='text-sm text-muted-foreground'>
+          {t('settings.householdInvitations.noPendingInvitations')}
+        </p>
       ) : (
         <ul className='space-y-3'>
           {props.invitations.map(invitation => (
@@ -105,25 +118,32 @@ export function HouseholdInvitationsView(props: HouseholdInvitationsViewProps) {
               data-pw='household-invitation-row'
             >
               <p className='text-sm'>
-                {sent ? 'Invitation for ' : 'Invited by '}
-                <UserLink
-                  user={userFor(
-                    sent ? invitation.invited_user_id : invitation.invited_by_id,
-                    props.usernames,
-                  )}
-                  className='underline'
-                >
-                  {usernameLabel(
-                    sent ? invitation.invited_user_id : invitation.invited_by_id,
-                    props.usernames,
-                  )}
-                </UserLink>
+                {sent
+                  ? renderInvitationMessage(
+                      t('settings.householdInvitations.sentFor', { invitee: INVITEE_SLOT }),
+                      { [INVITEE_SLOT]: invitation.invited_user },
+                      t('settings.householdInvitations.memberFallback'),
+                    )
+                  : invitation.invited_by.id === invitation.household_owner.id
+                    ? renderInvitationMessage(
+                        t('settings.householdInvitations.receivedFromOwner', { owner: OWNER_SLOT }),
+                        { [OWNER_SLOT]: invitation.household_owner },
+                        t('settings.householdInvitations.memberFallback'),
+                      )
+                    : renderInvitationMessage(
+                        t('settings.householdInvitations.receivedFromOther', {
+                          inviter: INVITER_SLOT,
+                          owner: OWNER_SLOT,
+                        }),
+                        {
+                          [INVITER_SLOT]: invitation.invited_by,
+                          [OWNER_SLOT]: invitation.household_owner,
+                        },
+                        t('settings.householdInvitations.memberFallback'),
+                      )}
               </p>
-              <p className='break-all text-sm text-muted-foreground'>
-                Household: <span>{invitation.household_id}</span>
-              </p>
-              {invitation.relationship && (
-                <p className='text-sm text-muted-foreground'>{invitation.relationship}</p>
+              {invitation.relationship?.trim() && (
+                <p className='text-sm text-muted-foreground'>{invitation.relationship.trim()}</p>
               )}
               <div className='flex gap-2'>
                 {sent ? (
@@ -132,7 +152,7 @@ export function HouseholdInvitationsView(props: HouseholdInvitationsViewProps) {
                     disabled={props.pending}
                     onClick={() => props.onResolve(invitation, 'revoke')}
                   >
-                    Revoke invitation
+                    {t('settings.householdInvitations.revokeInvitation')}
                   </Button>
                 ) : (
                   <>
@@ -140,14 +160,14 @@ export function HouseholdInvitationsView(props: HouseholdInvitationsViewProps) {
                       disabled={props.pending}
                       onClick={() => props.onResolve(invitation, 'accept')}
                     >
-                      Accept
+                      {t('settings.householdInvitations.accept')}
                     </Button>
                     <Button
                       variant='outline'
                       disabled={props.pending}
                       onClick={() => props.onResolve(invitation, 'decline')}
                     >
-                      Decline
+                      {t('settings.householdInvitations.decline')}
                     </Button>
                   </>
                 )}
@@ -163,21 +183,12 @@ export function HouseholdInvitationsView(props: HouseholdInvitationsViewProps) {
           onClick={props.onLoadMore}
         >
           {props.pageError
-            ? 'Retry loading invitations'
+            ? t('settings.householdInvitations.retryLoading')
             : props.loadingMore
-              ? 'Loading...'
-              : 'Load more invitations'}
+              ? t('common.loading')
+              : t('settings.householdInvitations.loadMore')}
         </Button>
       )}
     </section>
   )
-}
-
-function userFor(id: string, usernames: Readonly<Record<string, string>> = {}) {
-  return { id, username: usernames[id] ?? null }
-}
-
-/** Never expose an opaque id as link text when no username has been resolved. */
-function usernameLabel(id: string, usernames: Readonly<Record<string, string>> = {}) {
-  return usernames[id] ? `@${usernames[id]}` : 'A Voucha member'
 }

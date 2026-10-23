@@ -10,10 +10,23 @@ CREATE TABLE IF NOT EXISTS household_invitations (
   revoked_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT uq_household_invitations__household_invited_user_id_id
+    UNIQUE (household_id, invited_user_id, id),
   CONSTRAINT chk_household_invitations__terminal_state CHECK (
     num_nonnulls(accepted_at, declined_at, revoked_at) <= 1
   )
 );
+
+ALTER TABLE notifications
+  ADD CONSTRAINT fk_notifications__household_invitation_scope
+  FOREIGN KEY (household_id, user_id, household_invitation_id)
+  REFERENCES household_invitations (household_id, invited_user_id, id)
+  ON DELETE CASCADE NOT VALID;
+ALTER TABLE notifications
+  VALIDATE CONSTRAINT fk_notifications__household_invitation_scope;
+
+CREATE INDEX IF NOT EXISTS idx_notifications__household_invitation_id
+  ON notifications (household_invitation_id);
 
 CREATE OR REPLACE TRIGGER trigger_household_invitations_updated_at
   BEFORE UPDATE ON household_invitations

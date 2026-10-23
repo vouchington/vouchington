@@ -1,10 +1,14 @@
 export const dynamic = 'force-dynamic'
 
 import type { Metadata } from 'next'
+import { getTranslations } from '@/lib/i18n/get-translations'
 import { createNoIndexMetadata } from '@/lib/seo/metadata'
 
-export const metadata: Metadata = createNoIndexMetadata('Household')
-import { getHouseholdMemberships, getHouseholds, getUserProfile } from '@/lib/api/server'
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations()
+  return createNoIndexMetadata(t('extracted.household.page.household_a1c6c97f'))
+}
+import { getHouseholdMemberships, getHouseholds } from '@/lib/api/server'
 import { requireCurrentUser } from '@/lib/auth/require-current-user'
 import { HouseholdPageContent } from '@/components/my/household-page-content'
 import {
@@ -15,8 +19,6 @@ import { SettingsPageHeader } from '@/components/my/settings-page-header'
 import type { Household, HouseholdSection, HouseholdSectionListItem } from '@/types/my'
 import type { ListResponse, PageInfo } from '@/types/api-responses'
 import type { HouseholdInvitation, HouseholdInvitationPage } from '@/types/household-invitations'
-import { getTranslations } from '@/lib/i18n/get-translations'
-
 const PAGE_LIMIT = 25
 const TERMINAL_PAGE_INFO: PageInfo = {
   has_next_page: false,
@@ -46,32 +48,11 @@ async function sectionFor(household: Household, isOwner: boolean): Promise<House
 }
 
 function invitationPage(
-  result: PromiseSettledResult<ListResponse<HouseholdInvitation>>,
+  result: PromiseSettledResult<ListResponse<HouseholdInvitation> | null>,
 ): HouseholdInvitationPage {
-  return result.status === 'fulfilled'
+  return result.status === 'fulfilled' && result.value
     ? { invitations: result.value.results, pageInfo: result.value.page_info, loadError: false }
     : { invitations: [], pageInfo: TERMINAL_PAGE_INFO, loadError: true }
-}
-
-/** Resolves invitation user ids to usernames so rows show people instead of opaque ids. */
-async function invitationUsernames(
-  sent: HouseholdInvitationPage | null,
-  received: HouseholdInvitationPage,
-) {
-  // Only the id each row displays: the invitee when sent, the inviter when received.
-  const ids = new Set([
-    ...(sent?.invitations.map(invitation => invitation.invited_user_id) ?? []),
-    ...received.invitations.map(invitation => invitation.invited_by_id),
-  ])
-  const profiles = await Promise.allSettled([...ids].map(id => getUserProfile(id)))
-  const usernames: Record<string, string> = {}
-  for (const [index, id] of [...ids].entries()) {
-    const profile = profiles[index]
-    if (profile?.status === 'fulfilled' && profile.value?.user.username) {
-      usernames[id] = profile.value.user.username
-    }
-  }
-  return usernames
 }
 
 export default async function HouseholdPage() {
@@ -83,27 +64,30 @@ export default async function HouseholdPage() {
   ])
   const ownedHousehold =
     ownedResult.status === 'fulfilled' ? ownedResult.value.results[0] : undefined
-  const ownedSection = ownedHousehold ? await sectionFor(ownedHousehold, true) : null
-  const [sentResult] = ownedHousehold
-    ? await Promise.allSettled([getHouseholdInvitations(ownedHousehold.id, { limit: PAGE_LIMIT })])
-    : []
+  const [ownedSectionResult, sentResult, sharedSectionsResult] = await Promise.allSettled([
+    ownedHousehold ? sectionFor(ownedHousehold, true) : Promise.resolve(null),
+    ownedHousehold
+      ? getHouseholdInvitations(ownedHousehold.id, { limit: PAGE_LIMIT })
+      : Promise.resolve(null),
+    sharedResult.status === 'fulfilled'
+      ? Promise.all(sharedResult.value.results.map(household => sectionFor(household, false)))
+      : Promise.resolve([]),
+  ])
+  const ownedSection = ownedSectionResult.status === 'fulfilled' ? ownedSectionResult.value : null
   let sharedPage: ListResponse<HouseholdSectionListItem> = {
     results: [],
     page_info: TERMINAL_PAGE_INFO,
   }
-  if (sharedResult.status === 'fulfilled') {
-    const sections = await Promise.all(
-      sharedResult.value.results.map(household => sectionFor(household, false)),
-    )
+  if (sharedResult.status === 'fulfilled' && sharedSectionsResult.status === 'fulfilled') {
+    const sections = sharedSectionsResult.value
     sharedPage = {
       results: sections.map(section => ({ id: section.household.id, section })),
       page_info: sharedResult.value.page_info,
     }
   }
 
-  const sentInvitations = sentResult ? invitationPage(sentResult) : null
+  const sentInvitations = ownedHousehold ? invitationPage(sentResult) : null
   const receivedInvitations = invitationPage(receivedResult)
-  const usernames = await invitationUsernames(sentInvitations, receivedInvitations)
 
   return (
     <div className='space-y-6'>
@@ -119,7 +103,6 @@ export default async function HouseholdPage() {
         sharedLoadError={sharedResult.status === 'rejected'}
         sentInvitations={sentInvitations}
         receivedInvitations={receivedInvitations}
-        usernames={usernames}
       />
     </div>
   )

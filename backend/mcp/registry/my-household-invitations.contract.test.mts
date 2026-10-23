@@ -58,6 +58,14 @@ describe('household invitation MCP REST twins — real DB', () => {
       limit: 1,
     })
     expect(householdTool).toEqual(householdRest.body)
+    expect(householdTool).toMatchObject({
+      results: [
+        {
+          invited_by: { id: owner.id, username: owner.username },
+          household_owner: { id: owner.id, username: owner.username },
+        },
+      ],
+    })
     const cursor = (householdTool.page_info as { end_cursor: string }).end_cursor
     expect(
       await read(caller(owner), 'invitations', {
@@ -76,9 +84,19 @@ describe('household invitation MCP REST twins — real DB', () => {
 
     const inviteeRequest = createRequest()
     await inviteeRequest.authenticateAs(invitee)
-    expect(await read(caller(invitee), 'my_invitations', {})).toEqual(
+    const receivedTool = await read(caller(invitee), 'my_invitations', {})
+    expect(receivedTool).toEqual(
       (await inviteeRequest.get('/api/v1/my/household-invitations').expect(200)).body,
     )
+    expect(receivedTool).toMatchObject({
+      results: [
+        {
+          invited_user: { id: invitee.id, username: invitee.username },
+          invited_by: { id: owner.id, username: owner.username },
+          household_owner: { id: owner.id, username: owner.username },
+        },
+      ],
+    })
     expect(await read(caller(stranger), 'my_invitations', {})).toMatchObject({ results: [] })
 
     const strangerRequest = createRequest()
@@ -108,6 +126,13 @@ describe('household invitation MCP REST twins — real DB', () => {
       .post(`/api/v1/households/${householdId}/invitations`)
       .send({ user: invitee.id, relationship: 'friend' })
       .expect(201)
+    expect(restInvite.body).toMatchObject({
+      invitation: {
+        invited_user: { id: invitee.id, username: invitee.username },
+        invited_by: { id: owner.id, username: owner.username },
+        household_owner: { id: owner.id, username: owner.username },
+      },
+    })
     expect(
       await write(caller(owner, 'plus'), 'invite', {
         household_id: householdId,

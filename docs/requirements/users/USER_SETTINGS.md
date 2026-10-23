@@ -56,9 +56,7 @@ Bluesky account linking is distinct from the ActivityPub federation opt-in.
 
 ## Data Display Rules
 
-- **No UUIDs**: Internal IDs (e.g. household ID) must not be shown to users. The one exception is a
-  pending household invitation, which has no household name to distinguish it, so it shows the
-  household identifier next to the inviter.
+- **No UUIDs**: Internal IDs (e.g. household ID) must not be shown to users.
 - **Number formatting**: Strip trailing zeros from decimal displays (e.g. show `2¢` not `2.0000¢`)
 
 ## Financial Workflows
@@ -106,9 +104,11 @@ settings page does not satisfy the route.
 - On web, owners can invite an existing user by username, review pending invitations, and revoke
   them. Invitees can accept or decline from the same household page. Acceptance adds the invitee
   with the relationship chosen by the inviter. An invitation notification opens this page.
-- Pending invitations identify the inviter or invitee with a profile link and show the household
-  identifier, so separate invitations can be distinguished before a decision. Invitation loads and
-  retries remain independent of household and membership loads. Failed actions preserve the row.
+- Pending invitations identify the invitee or inviter by username. Received invitations also
+  identify the household owner by username when the inviter differs from the owner. A missing
+  username displays as `A Voucha member`; household identifiers never appear in invitation rows.
+  Invitation loads and retries remain independent of household and membership loads. Failed
+  actions preserve the row.
 - Invitation management on Swift and .NET requires dependent client work.
 - Relationship editing, ownership transfer, household deletion, and member self-removal remain
   outside the current scope.
