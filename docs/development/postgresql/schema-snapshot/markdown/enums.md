@@ -1690,6 +1690,32 @@
 - `web`
 - `native`
 
+## `vote_ballot_cleanup_families`
+
+- `post_votes`
+- `topic_votes`
+- `hostname_votes`
+- `rss_feed_item_votes`
+- `agent_moderation_votes`
+- `user_vouch_votes`
+- `relation__user__category__topic__votes`
+- `relation__post__category__topic__votes`
+- `relation__post__category__topic_alias__votes`
+- `relation__post__related__post__votes`
+- `relation__post__related__url__votes`
+- `relation__topic__related__topic__votes`
+- `relation__topic__category__topic__votes`
+- `relation__topic__publisher_type__topic__votes`
+- `relation__topic__faq__post__votes`
+- `relation__topic__related__post__votes`
+- `relation__topic__related__url__votes`
+- `relation__topic__faq__url__votes`
+- `relation__topic__guide__url__votes`
+- `relation__topic__landing_page__url__votes`
+- `relation__topic__terms_of_service__url__votes`
+- `relation__rss_feed_item__category__topic__votes`
+- `relation__rss_feed_item__category__topic_alias__votes`
+
 ## `vote_integrity_flag_types`
 
 - `velocity_spike`

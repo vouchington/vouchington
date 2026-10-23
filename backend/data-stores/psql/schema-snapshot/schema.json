@@ -1252,6 +1252,33 @@
     "user_session_authentication_origins": {
       "values": ["web", "native"]
     },
+    "vote_ballot_cleanup_families": {
+      "values": [
+        "post_votes",
+        "topic_votes",
+        "hostname_votes",
+        "rss_feed_item_votes",
+        "agent_moderation_votes",
+        "user_vouch_votes",
+        "relation__user__category__topic__votes",
+        "relation__post__category__topic__votes",
+        "relation__post__category__topic_alias__votes",
+        "relation__post__related__post__votes",
+        "relation__post__related__url__votes",
+        "relation__topic__related__topic__votes",
+        "relation__topic__category__topic__votes",
+        "relation__topic__publisher_type__topic__votes",
+        "relation__topic__faq__post__votes",
+        "relation__topic__related__post__votes",
+        "relation__topic__related__url__votes",
+        "relation__topic__faq__url__votes",
+        "relation__topic__guide__url__votes",
+        "relation__topic__landing_page__url__votes",
+        "relation__topic__terms_of_service__url__votes",
+        "relation__rss_feed_item__category__topic__votes",
+        "relation__rss_feed_item__category__topic_alias__votes"
+      ]
+    },
     "vote_integrity_flag_types": {
       "values": ["velocity_spike", "ip_correlation"]
     },
@@ -135601,6 +135628,17 @@
           "ordinalPosition": 2,
           "type": "uuid"
         },
+        "family": {
+          "collation": null,
+          "comment": "Concrete ballot family selected by the cleanup worker.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "vote_ballot_cleanup_families"
+        },
         "updated_at": {
           "collation": null,
           "comment": "Last committed ballot sweep progress.",
@@ -135611,17 +135649,6 @@
           "nullable": false,
           "ordinalPosition": 3,
           "type": "timestamp with time zone"
-        },
-        "vote_table": {
-          "collation": null,
-          "comment": "Whitelisted concrete ballot table selected by the cleanup worker.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1,
-          "type": "text"
         }
       },
       "comment": "One bounded cyclic UUIDv7 cleanup position per concrete ballot table.",
@@ -135631,15 +135658,15 @@
         "vote_ballot_cleanup_cursors_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX vote_ballot_cleanup_cursors_pkey ON public.vote_ballot_cleanup_cursors USING btree (vote_table)",
+          "definition": "CREATE UNIQUE INDEX vote_ballot_cleanup_cursors_pkey ON public.vote_ballot_cleanup_cursors USING btree (family)",
           "includedColumns": [],
           "keys": [
             {
-              "column": "vote_table",
+              "column": "family",
               "descending": false,
-              "expression": "vote_table",
+              "expression": "family",
               "nullsFirst": false,
-              "opclass": "text_ops"
+              "opclass": "enum_ops"
             }
           ],
           "predicate": null,
@@ -135652,8 +135679,8 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["vote_table"],
-        "definition": "PRIMARY KEY (vote_table)"
+        "columns": ["family"],
+        "definition": "PRIMARY KEY (family)"
       },
       "relationKind": "table",
       "triggers": {
