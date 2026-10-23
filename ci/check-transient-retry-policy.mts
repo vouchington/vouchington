@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { join, posix } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
-import { trackedFiles } from './test-helpers/tracked-files.mts'
+import { trackedFiles } from './tracked-files.mts'
 import { areaGateViolations } from './transient-retry/area-gate-policy.mts'
 import {
   externalActionPrefixes,

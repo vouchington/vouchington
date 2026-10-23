@@ -8,6 +8,7 @@
 /** @type {import('dependency-cruiser').IConfiguration} */
 module.exports = {
   forbidden: [
+    ...require('./static-code-analysis/production-test-helper-boundary.cjs'),
     {
       name: 'not-to-unresolvable',
       comment: 'imports must resolve to source files or installed packages.',

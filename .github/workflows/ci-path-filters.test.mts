@@ -49,6 +49,15 @@ const pr9389Files = [
 ] as const
 
 describe('detect-changes path filters', () => {
+  it('routes catalog generator sources and their existing owners without all scripts', () => {
+    const backend = loadDetectChangesFilters()['backend']
+    for (const stem of ['generate-mcp-catalog', 'mcp-catalog-generation', 'mcp-result-fixtures']) {
+      expect(filterMatches(backend, `backend/scripts/${stem}.mts`)).toBe(true)
+      expect(filterMatches(backend, `backend/scripts/${stem}.test.mts`)).toBe(true)
+    }
+    expect(filterMatches(backend, 'backend/scripts/unrelated-operation.mts')).toBe(false)
+  })
+
   it('routes the Storybook browser project through every Storybook trigger surface', () => {
     const projectPath = 'test-helpers/vitest-config/storybook-browser-project.mts'
     const mainStorybook = load(readFileSync('.github/workflows/main-storybook.yml', 'utf8')) as {

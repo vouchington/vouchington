@@ -11,8 +11,12 @@ import {
   staleInventoryEntries,
 } from '../.github/workflows/workflow-secrets-policy.mts'
 import { unprovisionedSecretsWithoutReadinessStep } from '../.github/workflows/workflow-secrets-readiness.mts'
-import { assertNoWorkflowViolations } from '../.github/test-helpers/workflow-fixtures.mts'
 import { githubWorkflowPaths, loadRepoTopology } from './repo-topology.mts'
+
+function assertNoWorkflowViolations(violations: readonly string[], heading?: string): void {
+  if (violations.length === 0) return
+  throw new Error(heading ? `${heading}\n${violations.join('\n')}` : violations.join('\n'))
+}
 
 const noMistakesPolicyCommand = 'node ci/check-no-mistakes-test-policy.mts'
 

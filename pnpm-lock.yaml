@@ -3467,6 +3467,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../data-stores/psql
+      '@data-stores/valkey-core':
+        specifier: workspace:^
+        version: link:../data-stores/valkey-core
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
         version: link:../data-stores/valkey-glide-mq
@@ -3587,6 +3590,9 @@ importers:
       '@services/lists':
         specifier: workspace:^
         version: link:../services/lists
+      '@services/mcp-tools':
+        specifier: workspace:^
+        version: link:../services/mcp-tools
       '@services/media-delivery-safety':
         specifier: workspace:^
         version: link:../services/media-delivery-safety
@@ -3692,6 +3698,9 @@ importers:
       '@voucha/config':
         specifier: workspace:^
         version: link:../config
+      '@voucha/mcp':
+        specifier: workspace:^
+        version: link:../mcp
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../test-helpers
@@ -3710,6 +3719,9 @@ importers:
       glide-mq:
         specifier: ^0.19.0
         version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
+      oxfmt:
+        specifier: ^0.74.0
+        version: 0.74.0
       pgvector:
         specifier: ^0.3.0
         version: 0.3.0
@@ -3723,6 +3735,9 @@ importers:
         specifier: ^0.10.0
         version: 0.10.0
     devDependencies:
+      '@services/openai-agents':
+        specifier: workspace:^
+        version: link:../services/openai-agents
       husky:
         specifier: ^9.1.7
         version: 9.1.7

@@ -3,7 +3,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { createAnalyzerFixtureBudget } from '../test-helpers/analyzer-fixture-budget.mts'
+import { createAnalyzerFixtureBudget } from '../../ci/analyzer-fixture-budget.mts'
 import { parse, stringify } from 'yaml'
 
 let budget: ReturnType<typeof createAnalyzerFixtureBudget>

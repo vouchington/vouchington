@@ -26,6 +26,7 @@ backend:
   - 'backend/md/**'
   - 'backend/modules/**'
   - 'backend/rss/**'
+  - 'backend/scripts/{generate-mcp-catalog,mcp-catalog-generation,mcp-result-fixtures}{,.test}.mts'
   - 'backend/scripts/consolidate-seed-rss-feeds.mts'
   - 'backend/scripts/explain-analyze/**'
   - 'backend/scripts/fix-bullmq-sourcemaps.sh'

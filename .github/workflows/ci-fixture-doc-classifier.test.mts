@@ -5,7 +5,7 @@ import picomatch from 'picomatch'
 import { parse as parseYaml } from 'yaml'
 import { describe, expect, it } from 'vitest'
 
-import { trackedFiles } from '../../ci/test-helpers/tracked-files.mts'
+import { trackedFiles } from '../../ci/tracked-files.mts'
 import { LIVING_DOCS_PIN_CASES } from '../../static-code-analysis/repo-file-policy/living-docs-pin-guard.mts'
 
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url))

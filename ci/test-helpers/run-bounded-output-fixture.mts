@@ -2,7 +2,7 @@ import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { observeFixtureExit } from './run-bounded-exit-observer.mts'
+import { observeFixtureExit } from '../bounded-exit-observer.mts'
 
 type Fixture = {
   dir: string

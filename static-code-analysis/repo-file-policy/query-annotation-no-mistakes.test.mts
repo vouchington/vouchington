@@ -2,7 +2,7 @@ import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { createAnalyzerFixtureBudget } from '../test-helpers/analyzer-fixture-budget.mts'
+import { createAnalyzerFixtureBudget } from '../../ci/analyzer-fixture-budget.mts'
 import { parse, stringify } from 'yaml'
 
 let budget: ReturnType<typeof createAnalyzerFixtureBudget>

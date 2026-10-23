@@ -13,7 +13,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { Tool } from '@services/openai-agents/tool-types'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { runCatalogGeneration } from './generate-catalog.mts'
+import { runCatalogGeneration } from './mcp-catalog-generation.mts'
 
 const markdown = 'docs/overview/architecture/mcp/catalog.md'
 const artifacts = [
