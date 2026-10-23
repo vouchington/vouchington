@@ -6,7 +6,6 @@ import {
   createTestUser,
   createTestMembership,
   createTestSku,
-  createRetiredTestSku,
   rejectTestMembershipProviderEvidence,
   updateTestMembershipExpiresAt,
 } from '@voucha/test-helpers'
@@ -17,8 +16,8 @@ import {
   getUserActivePlan,
   getMembershipByStripeSubscriptionId,
   getMembershipHistory,
+  getSkuByStripePriceIdForLifecycle,
 } from './get.mts'
-import { getActivePlans, getSkuByStripePriceId } from './get-catalog.mts'
 
 import { recordMembershipChange } from './changes.mts'
 import { getStripeMembershipSourceIdentity } from './create-types.mts'
@@ -237,33 +236,8 @@ describe('get', () => {
     })
   })
 
-  describe('getActivePlans', () => {
-    it('returns plans grouped by slug', async () => {
-      const plans = await getActivePlans()
-      expect(plans).toBeInstanceOf(Map)
-    })
-
-    it('excludes retired SKUs', async () => {
-      const applicationId = `retired-catalog-${randomUUID()}`
-      const retiredSku = await createRetiredTestSku({
-        plan: 'plus',
-        stripe_price_id: `price_retired_${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        provider_environment: STRIPE_PROVIDER_ENVIRONMENT,
-        provider_application_id: applicationId,
-      })
-
-      const plans = await getActivePlans({
-        applicationId,
-        environment: STRIPE_PROVIDER_ENVIRONMENT,
-      })
-      const plusSkus = plans.get('plus') ?? []
-      const retiredIds = plusSkus.map(s => s.id)
-      expect(retiredIds).not.toContain(retiredSku.id)
-    })
-  })
-
-  describe('getSkuByStripePriceId', () => {
-    it('returns sku for valid stripe price id', async () => {
+  describe('getSkuByStripePriceIdForLifecycle', () => {
+    it('returns sku for an active stripe price id', async () => {
       const priceId = `price_test_lookup_${Math.random().toString(36).slice(2, 8)}`
       const applicationId = `sku-lookup-${randomUUID()}`
       const sku = await createTestSku({
@@ -271,7 +245,9 @@ describe('get', () => {
         provider_environment: STRIPE_PROVIDER_ENVIRONMENT,
         provider_application_id: applicationId,
       })
-      const result = await getSkuByStripePriceId(priceId, {
+      const result = await getSkuByStripePriceIdForLifecycle(priceId, {
+        provider: 'stripe',
+        providerLineageId: `sub_test_lookup_${randomUUID()}`,
         applicationId,
         environment: STRIPE_PROVIDER_ENVIRONMENT,
       })
@@ -279,8 +255,13 @@ describe('get', () => {
       expect(result!.id).toBe(sku.id)
     })
 
-    it('returns null for unknown stripe price id', async () => {
-      const result = await getSkuByStripePriceId('price_nonexistent')
+    it('returns null for an unknown stripe price id', async () => {
+      const result = await getSkuByStripePriceIdForLifecycle('price_nonexistent', {
+        provider: 'stripe',
+        providerLineageId: `sub_test_unknown_${randomUUID()}`,
+        applicationId: `unknown-sku-${randomUUID()}`,
+        environment: STRIPE_PROVIDER_ENVIRONMENT,
+      })
       expect(result).toBeNull()
     })
   })

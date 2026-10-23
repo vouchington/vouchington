@@ -1,11 +1,7 @@
 import { beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { resolveRecurringCatalogPrice } from '@modules/stripe/catalog'
-import {
-  DEFAULT_STRIPE_CATALOG_CONTEXT,
-  invalidateMembershipProductCaches,
-  type StripeCatalogContext,
-} from './get-catalog.mts'
+import { DEFAULT_STRIPE_CATALOG_CONTEXT, type StripeCatalogContext } from './get-catalog.mts'
 import { withStripeCatalogReconciliationLock } from './stripe-catalog-lock.mts'
 import { publishStripeCatalogMapping } from './stripe-catalog-mappings.mts'
 import { getOrCreateProviderContextId } from './provider-context.mts'
@@ -46,17 +42,15 @@ const CATALOG = [
 export async function reconcileStripeMembershipCatalog({
   context = DEFAULT_STRIPE_CATALOG_CONTEXT,
   resolvePrice = resolveRecurringCatalogPrice,
-  invalidateCaches = invalidateMembershipProductCaches,
 }: {
   context?: StripeCatalogContext
   resolvePrice?: typeof resolveRecurringCatalogPrice
-  invalidateCaches?: typeof invalidateMembershipProductCaches
 } = {}): Promise<void> {
   await withStripeCatalogReconciliationLock(context, async () => {
     try {
-      await reconcileLockedStripeMembershipCatalog(context, resolvePrice, invalidateCaches)
+      await reconcileLockedStripeMembershipCatalog(context, resolvePrice)
     } catch (err) {
-      await retireStripeCatalogMappings(context, invalidateCaches, err)
+      await retireStripeCatalogMappings(context, err)
       throw err
     }
   })
@@ -65,7 +59,6 @@ export async function reconcileStripeMembershipCatalog({
 async function reconcileLockedStripeMembershipCatalog(
   context: StripeCatalogContext,
   resolvePrice: typeof resolveRecurringCatalogPrice,
-  invalidateCaches: typeof invalidateMembershipProductCaches,
 ): Promise<void> {
   let prices: Awaited<ReturnType<typeof resolveRecurringCatalogPrice>>[]
   prices = await Promise.all(
@@ -120,12 +113,10 @@ async function reconcileLockedStripeMembershipCatalog(
     { query: transaction },
   )
   await transaction.commit()
-  await invalidateCaches()
 }
 
 async function retireStripeCatalogMappings(
   context: StripeCatalogContext,
-  invalidateCaches: typeof invalidateMembershipProductCaches,
   providerError: unknown,
 ): Promise<void> {
   try {
@@ -141,7 +132,6 @@ async function retireStripeCatalogMappings(
       { query: transaction },
     )
     await transaction.commit()
-    await invalidateCaches()
   } catch (err) {
     throw new AggregateError(
       [providerError, err],
@@ -149,35 +139,4 @@ async function retireStripeCatalogMappings(
       { cause: err },
     )
   }
-}
-/**
- * @public Documented contract; production use is unconfirmed and this export may be
- * removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
- */
-export async function isStripeMembershipCatalogReady(
-  context: StripeCatalogContext = DEFAULT_STRIPE_CATALOG_CONTEXT,
-): Promise<boolean> {
-  const { rows } = await write(
-    sql`/* isStripeMembershipCatalogReady */
-      SELECT product.plan, product.billing_interval, mapping.sku_id, mapping.price_minor_units, mapping.currency_code
-      FROM membership_provider_products mapping
-      INNER JOIN membership_products product ON product.id = mapping.membership_product_id
-      INNER JOIN membership_provider_contexts provider_context ON provider_context.id = mapping.membership_provider_context_id
-      WHERE provider_context.provider = 'stripe' AND provider_context.environment = ${context.environment}
-        AND provider_context.application_id = ${context.applicationId} AND mapping.retired_at IS NULL
-        AND product.retired_at IS NULL`,
-  )
-  return (
-    rows.length === CATALOG.length &&
-    CATALOG.every(item =>
-      rows.some(
-        row =>
-          row.plan === item.plan &&
-          row.billing_interval === item.interval &&
-          row.sku_id === item.lookupKey &&
-          Number(row.price_minor_units) === item.amount &&
-          row.currency_code === 'usd',
-      ),
-    )
-  )
 }

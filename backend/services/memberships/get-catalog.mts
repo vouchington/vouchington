@@ -1,21 +1,13 @@
-import { read, type QueryExecutor } from '@data-stores/psql'
+import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { ValkeyCache } from '@data-stores/valkey/cache'
 import { parsePostgresMoneyAmount } from '@vouchington/utils/money'
-import { groupMembershipSkusByPlan } from '@vouchington/memberships'
 import { STRIPE_PROVIDER_ENVIRONMENT } from '@voucha/config'
-import {
-  MEMBERSHIP_PRODUCT_CACHE_PREFIXES,
-  serializeMembershipProductCacheKey,
-  type MembershipProductCacheKey,
-} from './cache-schema.mts'
 import {
   DEFAULT_STRIPE_MEMBERSHIP_APPLICATION_CONTEXT,
   type StripeMembershipSourceIdentity,
 } from './create-types.mts'
-import type { MembershipSku, MembershipPlanSlug } from './types.mts'
+import type { MembershipSku } from './types.mts'
 
-const ONE_HOUR_IN_SECONDS = 60 * 60
 export const DEFAULT_STRIPE_CATALOG_CONTEXT = {
   environment: STRIPE_PROVIDER_ENVIRONMENT,
   ...DEFAULT_STRIPE_MEMBERSHIP_APPLICATION_CONTEXT,
@@ -24,67 +16,6 @@ export const DEFAULT_STRIPE_CATALOG_CONTEXT = {
 export type StripeCatalogContext = {
   environment: 'test' | 'production'
   applicationId: string
-}
-
-const skuByStripePriceIdCache = new ValkeyCache<MembershipProductCacheKey>({
-  prefix: MEMBERSHIP_PRODUCT_CACHE_PREFIXES.byStripePriceId,
-  ttlSeconds: ONE_HOUR_IN_SECONDS,
-  nullTtlSeconds: 5,
-  keySerializer: serializeMembershipProductCacheKey,
-})
-
-const activePlansCache = new ValkeyCache<MembershipProductCacheKey>({
-  prefix: MEMBERSHIP_PRODUCT_CACHE_PREFIXES.activePlans,
-  ttlSeconds: ONE_HOUR_IN_SECONDS,
-  keySerializer: serializeMembershipProductCacheKey,
-})
-
-export async function invalidateMembershipProductCaches(): Promise<void> {
-  await ValkeyCache.invalidateMany(Object.values(MEMBERSHIP_PRODUCT_CACHE_PREFIXES))
-}
-
-/**
- * @public Documented contract; production use is unconfirmed and this export may be
- * removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
- */
-export async function getActivePlans(
-  context: StripeCatalogContext = DEFAULT_STRIPE_CATALOG_CONTEXT,
-): Promise<Map<MembershipPlanSlug, MembershipSku[]>> {
-  const skus = await fetchSkusForActivePlans(context)
-  return groupMembershipSkusByPlan(skus)
-}
-
-export async function getSkuByStripePriceId(
-  stripePriceId: string,
-  context: StripeCatalogContext = DEFAULT_STRIPE_CATALOG_CONTEXT,
-): Promise<MembershipSku | null> {
-  return loadSkuByStripePriceId(stripePriceId, context)
-}
-
-async function loadSkuByStripePriceId(
-  stripePriceId: string,
-  context: StripeCatalogContext,
-  query: QueryExecutor = read,
-): Promise<MembershipSku | null> {
-  const { rows } = await query(
-    sql`/* loadSkuByStripePriceId */
-    SELECT
-      p.id, p.plan, provider_product.price_minor_units, p.billing_interval AS interval, provider_product.currency_code,
-      provider_product.provider_product_id AS stripe_price_id, p.retired_at, p.created_at, p.updated_at
-    FROM membership_provider_products provider_product
-    INNER JOIN membership_products p ON p.id = provider_product.membership_product_id
-    INNER JOIN membership_provider_contexts context
-      ON context.id = provider_product.membership_provider_context_id
-    WHERE context.provider = 'stripe'
-      AND provider_product.provider_product_id = ${stripePriceId}
-      AND context.environment = ${context.environment}
-      AND context.application_id = ${context.applicationId}
-      AND provider_product.retired_at IS NULL
-      AND p.retired_at IS NULL
-    LIMIT 1
-  `,
-  )
-  return mapMembershipSku(rows[0])
 }
 
 /**
@@ -126,33 +57,6 @@ export async function getSkuByStripePriceIdForLifecycle(
   return mapMembershipSku(rows[0])
 }
 
-async function fetchSkusForActivePlans(context: StripeCatalogContext, query: QueryExecutor = read) {
-  const { rows } = await query(
-    sql`/* fetchSkusForActivePlans */
-    SELECT
-      p.id, p.plan, stripe_mapping.price_minor_units, p.billing_interval AS interval, stripe_mapping.currency_code,
-      stripe_mapping.provider_product_id AS stripe_price_id, p.retired_at, p.created_at, p.updated_at
-    FROM membership_products p
-    INNER JOIN LATERAL (
-      SELECT mapping.price_minor_units, mapping.currency_code, mapping.provider_product_id
-      FROM membership_provider_products mapping
-      INNER JOIN membership_provider_contexts provider_context
-        ON provider_context.id = mapping.membership_provider_context_id
-      WHERE mapping.membership_product_id = p.id
-        AND provider_context.provider = 'stripe'
-        AND provider_context.environment = ${context.environment}
-        AND provider_context.application_id = ${context.applicationId}
-        AND mapping.retired_at IS NULL
-      ORDER BY mapping.id DESC
-      LIMIT 1
-    ) stripe_mapping ON true
-    WHERE p.retired_at IS NULL
-    ORDER BY p.plan, p.billing_interval
-  `,
-  )
-  return rows.map(mapMembershipSku).filter((sku): sku is MembershipSku => sku !== null)
-}
-
 type MembershipSkuRow = Omit<MembershipSku, 'price'> & {
   price_minor_units: string | null
   currency_code: MembershipSku['price']['currency'] | null
@@ -169,32 +73,4 @@ function mapMembershipSku(row: unknown): MembershipSku | null {
       currency: currency_code,
     },
   }
-}
-
-const getActivePlansCachedFn = activePlansCache.cacheGetByAny(async key =>
-  fetchSkusForActivePlans(key),
-)
-/**
- * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
- * export may be made private or removed after intended-use review.
- * Evidence: `docs/overview/architecture/services/README.md`.
- */
-export async function getActivePlansCached(
-  context: StripeCatalogContext = DEFAULT_STRIPE_CATALOG_CONTEXT,
-): Promise<Map<MembershipPlanSlug, MembershipSku[]>> {
-  const skus = (await getActivePlansCachedFn({ ...context, value: 'active' })) ?? []
-  return groupMembershipSkusByPlan(skus)
-}
-const getSkuByStripePriceIdCachedFn = skuByStripePriceIdCache.cacheGetByAny(key =>
-  getSkuByStripePriceId(key.value, key),
-)
-/**
- * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
- * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
- */
-export function getSkuByStripePriceIdCached(
-  stripePriceId: string,
-  context: StripeCatalogContext = DEFAULT_STRIPE_CATALOG_CONTEXT,
-): Promise<MembershipSku | null> {
-  return getSkuByStripePriceIdCachedFn({ ...context, value: stripePriceId })
 }

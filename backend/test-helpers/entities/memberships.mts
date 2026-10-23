@@ -1,5 +1,4 @@
 import { beginTransaction } from '@data-stores/psql'
-import { ValkeyCache } from '@data-stores/valkey/cache'
 import sql from 'sql-template-strings'
 import { randomUUID } from 'node:crypto'
 import type { MembershipPlanSlug, MembershipStatus } from '@voucha/types/entities/membership'
@@ -45,18 +44,12 @@ export {
   getTestMembershipRaw,
   getTestMembershipSourceState,
 } from './memberships-read.mts'
-const ACTIVE_PLANS_CACHE_PREFIX = 'membership_products:provider-v1:active_plans'
-
 export async function createTestSku(options: CreateTestSkuOptions = {}) {
-  const sku = await createTestSkuRecord(options)
-  await ValkeyCache.invalidate(ACTIVE_PLANS_CACHE_PREFIX)
-  return sku
+  return createTestSkuRecord(options)
 }
 
 export async function createRetiredTestSku(options: CreateTestSkuOptions = {}) {
-  const sku = await createRetiredTestSkuRecord(options)
-  await ValkeyCache.invalidate(ACTIVE_PLANS_CACHE_PREFIX)
-  return sku
+  return createRetiredTestSkuRecord(options)
 }
 
 type CreateTestMembershipOptions = {

@@ -13,10 +13,9 @@ import {
   getRetainedDirectMembershipSourceByStripeIdentity,
   getSkuByStripePriceIdForLifecycle,
 } from './get.mts'
-import { getActivePlans, getSkuByStripePriceId } from './get-catalog.mts'
 
 describe('membership provider context lookups', () => {
-  it('uses one test-mode context for active catalog and lifecycle lookup', async () => {
+  it('uses the supplied test-mode context for lifecycle lookup', async () => {
     const applicationId = `test-provider-context-catalog-${randomUUID()}`
     const sku = await createTestSku({
       provider_environment: 'test',
@@ -29,12 +28,6 @@ describe('membership provider context lookups', () => {
       context.applicationId,
     )
 
-    await expect(getSkuByStripePriceId(sku.stripe_price_id, context)).resolves.toMatchObject({
-      id: sku.id,
-    })
-    expect((await getActivePlans(context)).get(sku.plan)).toEqual(
-      expect.arrayContaining([expect.objectContaining({ id: sku.id })]),
-    )
     await expect(
       getSkuByStripePriceIdForLifecycle(sku.stripe_price_id, sourceIdentity),
     ).resolves.toMatchObject({ id: sku.id })
@@ -229,7 +222,6 @@ describe('membership provider context lookups', () => {
       provider_application_id: sourceIdentity.applicationId,
     })
 
-    await expect(getSkuByStripePriceId(sku.stripe_price_id)).resolves.toBeNull()
     await expect(
       getSkuByStripePriceIdForLifecycle(sku.stripe_price_id, sourceIdentity),
     ).resolves.toMatchObject({
