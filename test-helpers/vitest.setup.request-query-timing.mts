@@ -4,8 +4,7 @@ vi.mock<typeof import('@vouchington/postgres/query-telemetry')>(
   import('@vouchington/postgres/query-telemetry'),
   async importOriginal => {
     const actual = await importOriginal()
-    const { recordRequestQueryTiming } =
-      await import('../backend/test-helpers/request-query-profile-state.mts')
+    const { observeQueryProfile } = await import('../backend/test-helpers/query-profiles.mts')
 
     return {
       ...actual,
@@ -14,7 +13,7 @@ vi.mock<typeof import('@vouchington/postgres/query-telemetry')>(
           ...options,
           observe: input => {
             options.observe?.(input)
-            recordRequestQueryTiming(input)
+            observeQueryProfile(input)
           },
         }),
     }

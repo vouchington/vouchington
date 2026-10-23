@@ -1,6 +1,6 @@
 import { randomBytes, randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
-import { createRequestQueryProfile } from '../../../test-helpers/request-query-profile-state.mts'
+import { createRequestQueryProfile } from '../../../test-helpers/query-profiles.mts'
 import { createTestUser, getTestOAuthAccountRaw } from '@voucha/test-helpers'
 import { completeOAuthAuthorizationTransaction } from '../authorization-completion-transaction.mts'
 import {

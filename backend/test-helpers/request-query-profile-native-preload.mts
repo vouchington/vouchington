@@ -1,7 +1,7 @@
 /* oxlint-disable vitest/no-import-node-test -- The native MV preflight uses Node's public module mock API, outside Vitest. */
 import { mock } from 'node:test'
 import * as actual from '@vouchington/postgres/query-telemetry'
-import { recordRequestQueryTiming } from './request-query-profile-state.mts'
+import { observeQueryProfile } from './query-profiles.mts'
 
 if (typeof mock.module !== 'function') {
   throw new Error(
@@ -14,7 +14,7 @@ const createQueryTimingRecorder: typeof actual.createQueryTimingRecorder = optio
     ...options,
     observe: input => {
       options.observe?.(input)
-      recordRequestQueryTiming(input)
+      observeQueryProfile(input)
     },
   })
 

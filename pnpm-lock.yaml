@@ -74,8 +74,8 @@ importers:
         specifier: ^0.2.2
         version: 0.2.2(react@19.3.1)
       '@vouchington/postgres':
-        specifier: ^0.0.16
-        version: 0.0.16
+        specifier: ^0.0.17
+        version: 0.0.17
       '@vouchington/session-jwt':
         specifier: ^0.0.2
         version: 0.0.2
@@ -1464,8 +1464,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/postgres':
-        specifier: ^0.0.16
-        version: 0.0.16
+        specifier: ^0.0.17
+        version: 0.0.17
       '@vouchington/utils':
         specifier: ^0.7.5
         version: 0.7.5
@@ -3723,8 +3723,8 @@ importers:
         specifier: workspace:^
         version: link:../types
       '@vouchington/postgres':
-        specifier: ^0.0.16
-        version: 0.0.16
+        specifier: ^0.0.17
+        version: 0.0.17
       '@vouchington/rss-parser':
         specifier: ^0.1.0
         version: 0.1.0
@@ -4001,8 +4001,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/postgres':
-        specifier: ^0.0.16
-        version: 0.0.16
+        specifier: ^0.0.17
+        version: 0.0.17
       '@vouchington/utils':
         specifier: ^0.7.5
         version: 0.7.5
@@ -4099,8 +4099,8 @@ importers:
         specifier: workspace:^
         version: link:../users
       '@vouchington/postgres':
-        specifier: ^0.0.16
-        version: 0.0.16
+        specifier: ^0.0.17
+        version: 0.0.17
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -5277,8 +5277,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/postgres':
-        specifier: ^0.0.16
-        version: 0.0.16
+        specifier: ^0.0.17
+        version: 0.0.17
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -5830,8 +5830,8 @@ importers:
         specifier: workspace:^
         version: link:../users
       '@vouchington/postgres':
-        specifier: ^0.0.16
-        version: 0.0.16
+        specifier: ^0.0.17
+        version: 0.0.17
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -7582,8 +7582,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/postgres':
-        specifier: ^0.0.16
-        version: 0.0.16
+        specifier: ^0.0.17
+        version: 0.0.17
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -8319,8 +8319,8 @@ importers:
         specifier: workspace:^
         version: link:../notifications
       '@vouchington/postgres':
-        specifier: ^0.0.16
-        version: 0.0.16
+        specifier: ^0.0.17
+        version: 0.0.17
       p-map:
         specifier: ^7.1.0
         version: 7.1.0
@@ -8395,8 +8395,8 @@ importers:
         specifier: workspace:^
         version: link:../../config
       '@vouchington/postgres':
-        specifier: ^0.0.16
-        version: 0.0.16
+        specifier: ^0.0.17
+        version: 0.0.17
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -10414,8 +10414,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/postgres':
-        specifier: ^0.0.16
-        version: 0.0.16
+        specifier: ^0.0.17
+        version: 0.0.17
       p-map:
         specifier: ^7.1.0
         version: 7.1.0
@@ -12057,8 +12057,8 @@ importers:
         specifier: ^0.2.2
         version: 0.2.2(react@19.3.1)
       '@vouchington/postgres':
-        specifier: ^0.0.16
-        version: 0.0.16
+        specifier: ^0.0.17
+        version: 0.0.17
       '@vouchington/rate-limit':
         specifier: ^0.2.0
         version: 0.2.0(@jongleberry/api-server@3.0.1)(valkyries@0.11.1)
@@ -14437,8 +14437,8 @@ importers:
         specifier: ^0.2.2
         version: 0.2.2(react@19.3.1)
       '@vouchington/postgres':
-        specifier: ^0.0.16
-        version: 0.0.16
+        specifier: ^0.0.17
+        version: 0.0.17
       ajv:
         specifier: ^8.20.0
         version: 8.20.0
@@ -19833,8 +19833,8 @@ packages:
     resolution: {integrity: sha512-0RvW2h4T+tl+u0xeAzCm11/WtaLkf/1r9PnitsnKtSuH/z6zyAcGjTZYQQTvoxgjvqRPSoDEyeU/6ESjNi575Q==}
     engines: {node: '>=24.0.0'}
 
-  '@vouchington/postgres@0.0.16':
-    resolution: {integrity: sha512-iCmxEDzjMLZkFjjXm4gicdDs7uPeCpXmnZpf/+Ii4ysS5fIcgX4tCy+jcsIQB/V/yCQLK9fIlmh1e42K68D//w==}
+  '@vouchington/postgres@0.0.17':
+    resolution: {integrity: sha512-3TLumKZW2fOvDV2TW/898NJk+8n3zD6uwZTVwY9tGxNAkA66aX4HcUsZ5QnzE68NbQQirEAwQkhpjkveqDexFw==}
     engines: {node: '>=24.0.0'}
 
   '@vouchington/queue-errors@0.1.3':
@@ -28824,7 +28824,7 @@ snapshots:
     dependencies:
       phone: 3.1.71
 
-  '@vouchington/postgres@0.0.16':
+  '@vouchington/postgres@0.0.17':
     dependencies:
       '@libpg-query/parser': 18.0.0
       pg: 8.23.1

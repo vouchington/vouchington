@@ -1,12 +1,12 @@
 import { EventEmitter } from 'node:events'
 import type http from 'node:http'
 import { describe, expect, it } from 'vitest'
-import { recordRequestQueryTiming } from '../request-query-profile-state.mts'
+import { observeQueryProfile } from '../query-profiles.mts'
 import { withBatchRequestMarker, withToolCallProfile } from './mcp-tool-call-profile.mts'
 import { profileRequestQueries } from './request-query-profile.mts'
 import { takeRequestQueryProfileViolations } from './request-query-profile-violations.mts'
 
-const query = (annotation: string) => recordRequestQueryTiming({ annotation, durationMs: 0 })
+const query = (annotation: string) => observeQueryProfile({ annotation, durationMs: 0 })
 const probe = 'mcpToolCallProfileProbe'
 
 async function serve(handle: () => Promise<unknown>): Promise<string[]> {

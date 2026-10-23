@@ -7,9 +7,9 @@ import {
 } from './request-query-profile-worker.mts'
 import {
   createRequestQueryProfile,
-  recordRequestQueryTiming,
+  observeQueryProfile,
   type WorkerQueryProfile,
-} from '../backend/test-helpers/request-query-profile-state.mts'
+} from '../backend/test-helpers/query-profiles.mts'
 import { takeRequestQueryProfileViolations } from '../backend/test-helpers/api/request-query-profile-violations.mts'
 
 type WorkerQueryProfileSnapshot = {
@@ -74,7 +74,7 @@ describe('owned worker query profiles', () => {
     const queue = new Queue<{ value: number }, number>(`profile-${crypto.randomUUID()}`)
     owned.queues.push(queue)
     const worker = new Worker(queue, (job: TestJob<{ value: number }, number>) => {
-      recordRequestQueryTiming({ durationMs: 0, annotation: 'actualAdapterProcessor' })
+      observeQueryProfile({ durationMs: 0, annotation: 'actualAdapterProcessor' })
       return job.data.value
     })
     owned.workers.push(worker)
@@ -112,7 +112,7 @@ describe('owned worker query profiles', () => {
     const childQueue = new Queue<{ value: number }, number>(`child-${crypto.randomUUID()}`)
     owned.queues.push(parentQueue, childQueue)
     const childWorker = new Worker(childQueue, (job: TestJob<{ value: number }, number>) => {
-      recordRequestQueryTiming({ durationMs: 0, annotation: 'childProcessor' })
+      observeQueryProfile({ durationMs: 0, annotation: 'childProcessor' })
       return job.data.value
     })
     owned.workers.push(childWorker)
@@ -120,9 +120,9 @@ describe('owned worker query profiles', () => {
     const parentWorker = new Worker(
       parentQueue,
       async (job: TestJob<{ value: number }, number>) => {
-        recordRequestQueryTiming({ durationMs: 0, annotation: 'parentBefore' })
+        observeQueryProfile({ durationMs: 0, annotation: 'parentBefore' })
         childJob = await owned.run(() => childQueue.add('child', job.data))
-        recordRequestQueryTiming({ durationMs: 0, annotation: 'parentAfter' })
+        observeQueryProfile({ durationMs: 0, annotation: 'parentAfter' })
         return job.data.value
       },
     )
@@ -208,7 +208,7 @@ describe('owned worker query profiles', () => {
     const queue = new Queue<{ value: number }, number>(`observer-${crypto.randomUUID()}`)
     owned.queues.push(queue)
     const worker = new Worker(queue, (job: TestJob<{ value: number }, number>) => {
-      recordRequestQueryTiming({ durationMs: 0, annotation: 'listenerFaultProcessor' })
+      observeQueryProfile({ durationMs: 0, annotation: 'listenerFaultProcessor' })
       return job.data.value
     })
     owned.workers.push(worker)
@@ -267,7 +267,7 @@ describe('owned worker query profiles', () => {
     const queue = new Queue<{ value: number }, number>(`output-${crypto.randomUUID()}`)
     owned.queues.push(queue)
     const worker = new Worker(queue, (job: TestJob<{ value: number }, number>) => {
-      recordRequestQueryTiming({ durationMs: 0, annotation: 'reportingFaultProcessor' })
+      observeQueryProfile({ durationMs: 0, annotation: 'reportingFaultProcessor' })
       return job.data.value
     })
     owned.workers.push(worker)

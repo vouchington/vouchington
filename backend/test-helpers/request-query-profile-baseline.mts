@@ -1,4 +1,4 @@
-import type { RepeatedAnnotation } from './request-query-profile-summary.mts'
+import type { RepeatedAnnotation } from '@vouchington/postgres/query-telemetry'
 import { baselineEntryProblem } from './request-query-profile-baseline-validation.mts'
 
 /** A repeat tolerated until the open `issue` removes it. */
