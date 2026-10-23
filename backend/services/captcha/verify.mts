@@ -15,6 +15,17 @@ interface TurnstileResponse {
   'error-codes'?: string[]
 }
 
+class TurnstileContextMismatchError extends Error {
+  readonly code: string
+  readonly extra: Record<string, string | undefined>
+
+  constructor(field: 'action' | 'hostname', received: string | undefined) {
+    super(`Turnstile ${field} does not match`)
+    this.code = `turnstile_${field}_mismatch`
+    this.extra = field === 'action' ? { receivedAction: received } : { receivedHostname: received }
+  }
+}
+
 // Cloudflare's well-known always-pass test secret. Used as the default in dev/test so the
 // verification flow always exercises the real code path without requiring real keys. Backend
 // startup (backend/entrypoints/api/serve.mts) asserts this value (and every other public Cloudflare
@@ -109,18 +120,12 @@ export async function verifyCaptchaToken(
     ? 'localhost'
     : new URL(getSiteOrigin()).hostname.toLowerCase()
   if (result.action !== expectedAction) {
-    const cause = Object.assign(new Error('Turnstile action does not match'), {
-      code: 'turnstile_action_mismatch',
-      extra: { receivedAction: result.action },
-    })
+    const cause = new TurnstileContextMismatchError('action', result.action)
     onError(cause)
     throw createHttpError(400, 'CAPTCHA verification failed', { cause })
   }
   if (result.hostname?.toLowerCase() !== expectedHostname) {
-    const cause = Object.assign(new Error('Turnstile hostname does not match'), {
-      code: 'turnstile_hostname_mismatch',
-      extra: { receivedHostname: result.hostname },
-    })
+    const cause = new TurnstileContextMismatchError('hostname', result.hostname)
     onError(cause)
     throw createHttpError(400, 'CAPTCHA verification failed', { cause })
   }
