@@ -8,8 +8,21 @@ import { processRetainedSweep } from './retained-sweep.mts'
 import { getPagedDispatchLimit, type PagedDispatcher } from './paged-dispatcher-config.mts'
 
 /** Reviewed immutable unique keysets; a timestamp alone or updated_at is never a cursor. */
-export type DispatchCursorKey = 'id' | 'feedUrl' | 'lane,id' | 'remoteActorId' | 'userId'
-const CURSOR_KEYS: readonly string[] = ['id', 'feedUrl', 'lane,id', 'remoteActorId', 'userId']
+export type DispatchCursorKey =
+  | 'id'
+  | 'feedUrl'
+  | 'lane,id'
+  | 'remoteActorId'
+  | 'userId'
+  | 'phase,claim,userId'
+const CURSOR_KEYS: readonly string[] = [
+  'id',
+  'feedUrl',
+  'lane,id',
+  'remoteActorId',
+  'userId',
+  'phase,claim,userId',
+]
 
 export const PAGED_DISPATCH_OPTIONS = {
   attempts: 2_147_483_647,
@@ -18,14 +31,16 @@ export const PAGED_DISPATCH_OPTIONS = {
 
 export function pagedDispatchBackoffStrategies() {
   return Object.fromEntries(
-    ['hostnames', 'rss', 'kagi', 'elections', 'notifications', 'activitypub'].map(dispatcher => [
-      `paged-dispatch-${dispatcher}`,
-      (attempt: number) =>
-        Math.min(
-          1000 * 2 ** Math.min(attempt, 20),
-          getPagedDispatchLimit(`${dispatcher}_backoff_ms`),
-        ),
-    ]),
+    ['hostnames', 'rss', 'kagi', 'elections', 'notifications', 'activitypub', 'engagement'].map(
+      dispatcher => [
+        `paged-dispatch-${dispatcher}`,
+        (attempt: number) =>
+          Math.min(
+            1000 * 2 ** Math.min(attempt, 20),
+            getPagedDispatchLimit(`${dispatcher}_backoff_ms`),
+          ),
+      ],
+    ),
   )
 }
 

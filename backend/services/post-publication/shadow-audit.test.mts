@@ -14,12 +14,12 @@ import {
   insertAuditPost,
   withTestShadowAuditCheckpoint,
 } from '@voucha/test-helpers/post-publication-shadow-audit-fixtures'
+import { reconcileTestPublicationThroughPostSweep } from '@voucha/test-helpers/post-publication-fixtures'
 import {
   acknowledgePostPublicationProjectionReceipts,
   acknowledgePostPublicationDirtyWork,
   claimPostPublicationDirtyWork,
   deleteOrphanPostPublicationProjectionReceipts,
-  reconcilePostPublicationDirtyWork,
   recordPostPublicationChange,
 } from './index.mts'
 import { runPostPublicationShadowAudit } from './shadow-audit.mts'
@@ -43,7 +43,8 @@ describe('post publication shadow audit', () => {
     await query.commit()
     const claimed = await claimPostPublicationDirtyWork(work, 60)
     if (!claimed) throw new Error('Expected orphan-receipt initial lease')
-    const initial = await reconcilePostPublicationDirtyWork(claimed)
+    const initial = await reconcileTestPublicationThroughPostSweep(claimed, undefined, postId)
+    expect(initial.posts.map(post => post.id)).toContain(postId)
     await acknowledgePostPublicationProjectionReceipts(claimed, initial.posts)
     await acknowledgePostPublicationDirtyWork({
       id: claimed.id,
@@ -70,7 +71,11 @@ describe('post publication shadow audit', () => {
     if (!repairWork) throw new Error('Expected orphan-receipt repair work')
     const repairClaim = await claimPostPublicationDirtyWork(repairWork, 60)
     if (!repairClaim) throw new Error('Expected orphan-receipt repair lease')
-    const repaired = await reconcilePostPublicationDirtyWork(repairClaim)
+    const { final: repaired } = await reconcileTestPublicationThroughPostSweep(
+      repairClaim,
+      undefined,
+      postId,
+    )
 
     expect(repaired).toMatchObject({
       posts: [],
@@ -190,7 +195,12 @@ describe('post publication shadow audit', () => {
     await query.commit()
     const claimed = await claimPostPublicationDirtyWork(work, 60)
     if (!claimed) throw new Error('Expected receipt work lease')
-    const reconciliation = await reconcilePostPublicationDirtyWork(claimed)
+    const reconciliation = await reconcileTestPublicationThroughPostSweep(
+      claimed,
+      undefined,
+      postId,
+    )
+    expect(reconciliation.posts.map(post => post.id)).toContain(postId)
     await expect(
       acknowledgePostPublicationProjectionReceipts(claimed, reconciliation.posts),
     ).resolves.toBe(true)
@@ -225,10 +235,11 @@ describe('post publication shadow audit', () => {
     if (!repairWork) throw new Error('Expected exact shadow repair work')
     const repairClaim = await claimPostPublicationDirtyWork(repairWork, 60)
     if (!repairClaim) throw new Error('Expected exact shadow repair lease')
-    const repaired = await reconcilePostPublicationDirtyWork(repairClaim)
+    const repaired = await reconcileTestPublicationThroughPostSweep(repairClaim, undefined, postId)
 
-    expect(repaired.topicIds).toContain(oldTopicId)
-    expect(repaired.identityKeys).toEqual(
+    expect(repaired.posts.map(post => post.id)).toContain(postId)
+    expect(repaired.final.topicIds).toContain(oldTopicId)
+    expect(repaired.final.identityKeys).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ kind: 'post_slug', value: oldSlug }),
         expect.objectContaining({ kind: 'post_slug', value: newSlug }),

@@ -33,8 +33,10 @@ export async function listPostPublicationIdentityKeys(
   }>(
     sql`/* listPostPublicationIdentityKeys */ WITH page AS MATERIALIZED (`.append(
       publicationRetainedKeyPageSql(work.id, work.cursor_key_id, limit),
-    ).append(sql`) SELECT page.*, identity.post_id AS live_post_id FROM page
-        LEFT JOIN post_publication_post_identities identity ON identity.id = page.impact_post_identity_id ORDER BY page.id`),
+    ).append(sql`) SELECT page.*,
+        (SELECT identity.post_id FROM post_publication_post_identities identity
+         WHERE identity.id = page.impact_post_identity_id) AS live_post_id
+        FROM page ORDER BY page.id`),
   )
   const page = rows.slice(0, limit)
   return {

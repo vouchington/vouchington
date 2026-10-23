@@ -153,7 +153,8 @@ export const streamDynamicConfigRegistryEntries = [
         integer: true,
       },
       max_rows_per_provider_per_run: {
-        description: 'Maximum eligible rows per dispatch run.',
+        description:
+          'Maximum account rows read, including lookahead, per provider per dispatch run.',
         minValue: 1,
         maxValue: 100000,
         integer: true,

@@ -63,6 +63,12 @@ WHERE submitted_at IS NOT NULL
   AND cancelled_at IS NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_bedrock_embedding_batches__stale_due
+ON bedrock_embedding_batches (COALESCE(in_progress_at, submitted_at), id)
+WHERE submitted_at IS NOT NULL AND completed_at IS NULL
+  AND failed_at IS NULL AND cancelled_at IS NULL AND job_arn IS NOT NULL;
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_bedrock_embedding_batches__job_arn
 ON bedrock_embedding_batches (job_arn)
 WHERE job_arn IS NOT NULL;

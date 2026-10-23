@@ -56,11 +56,11 @@ export async function advanceGooglePlayRecoverySweep(options: {
   nextCursor: string | null
   completesSweep: boolean
   sweepUpperBound: string | null
-}): Promise<void> {
-  if (!options.sweepUpperBound || (!options.nextCursor && !options.completesSweep)) return
+}): Promise<boolean> {
+  if (!options.sweepUpperBound || (!options.nextCursor && !options.completesSweep)) return false
   const lastEvidenceId = options.completesSweep ? null : options.nextCursor
   const sweepUpperBoundId = options.completesSweep ? null : options.sweepUpperBound
-  await write(sql`/* advanceGooglePlayRecoverySweep */
+  const { rowCount } = await write(sql`/* advanceGooglePlayRecoverySweep */
     INSERT INTO membership_google_play_recovery_cursors (
       recovery_sweep, cursor_evidence_id, sweep_upper_bound_evidence_id
     ) VALUES (${options.cursorId}, ${lastEvidenceId}::UUID, ${sweepUpperBoundId}::UUID)
@@ -71,4 +71,5 @@ export async function advanceGooglePlayRecoverySweep(options: {
           IS NOT DISTINCT FROM ${options.previousCursor}::UUID
         AND membership_google_play_recovery_cursors.sweep_upper_bound_evidence_id
           IS NOT DISTINCT FROM ${options.previousUpperBound}::UUID`)
+  return rowCount === 1
 }

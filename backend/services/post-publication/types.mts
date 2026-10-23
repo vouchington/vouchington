@@ -62,6 +62,8 @@ export type PostPublicationDirtyWork = {
   reasons: PostPublicationReason[]
   generation: string
   cursor_post_id: string | null
+  pending_post_identity_id: string | null
+  pending_ancestor_post_identity_id: string | null
   cursor_topic_id: string | null
   cursor_key_id: string | null
   lease_token: string | null

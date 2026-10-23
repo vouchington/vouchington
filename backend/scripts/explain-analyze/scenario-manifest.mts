@@ -6,6 +6,7 @@ import { RELATION_READ_BATCH_SCENARIO_IDS } from './relation-read-batch-scenario
 import { BOUNDED_WORK_SCENARIOS } from './scenario-manifest-work.mts'
 import { VOTE_WEIGHT_DISPATCH_SCENARIO_IDS } from './vote-weight-dispatch-scenario-ids.mts'
 import { SHARED_LOADER_SCENARIO_IDS } from './shared-loader-scenario-ids.mts'
+import { SELECTION_SCENARIO_IDS } from './selection-scenario-ids.mts'
 import { ROUND_TRIP_SHAPE_SCENARIO_IDS } from './round-trip-shape-scenario-ids.mts'
 
 export const EXPLAIN_SCENARIO_MANIFEST = [
@@ -46,8 +47,7 @@ export const EXPLAIN_SCENARIO_MANIFEST = [
   'follow-context-votes',
   ...RELATION_READ_BATCH_SCENARIO_IDS,
   'relatable-post-access-batch',
-  'friend-recommendations',
-  'friend-trusted-hostnames',
+  ...SELECTION_SCENARIO_IDS,
   'individual-cards-page',
   ...USER_PROFILE_SCENARIO_IDS,
   ...SHARED_LOADER_SCENARIO_IDS,

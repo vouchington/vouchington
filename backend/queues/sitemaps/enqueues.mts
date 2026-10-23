@@ -34,6 +34,7 @@ const enqueueBulkUpdatePostDaySitemapJobs = createBackgroundBulkEnqueue(
 const enqueueUpdatePostTypeIndexJob = createBackgroundEnqueue(SITEMAPS_POST_TYPE_INDEX_JOB)
 const enqueueUpdatePostsIndexJob = createBackgroundEnqueue(SITEMAPS_POSTS_INDEX_JOB)
 const enqueueUpdateFamilySitemapJob = createBackgroundEnqueue(SITEMAPS_FAMILY_JOB)
+const enqueueUpdatePostDaySitemapJob = createBackgroundEnqueue(SITEMAPS_POST_DAY_JOB)
 const enqueueUpdateRootIndexJob = createBackgroundEnqueue(SITEMAPS_ROOT_INDEX_JOB)
 
 function postDayJobOptions(entry: PostDayJobData): Partial<JobOptions> {
@@ -119,6 +120,31 @@ export const enqueueUpdateFamilySitemap = (
     indexOptions(`family-index__${family}`, priority),
   )
 }
+
+export const enqueuePostDaySitemapContinuation = (
+  entry: PostDayJobData,
+  continuationId: string,
+): EnqueueReturnType =>
+  enqueueUpdatePostDaySitemapJob(entry, {
+    ordering: SITEMAPS_ORDERING[getSitemapsOrderingKeyForDay(entry.day)],
+    jobId: `sitemap-post-day-${entry.postType}-${entry.day}-${continuationId}`,
+    removeOnComplete: true,
+    removeOnFail: true,
+  })
+
+export const enqueueFamilySitemapContinuation = (
+  family: SitemapFamilyJobData['family'],
+  continuationId: string,
+): EnqueueReturnType =>
+  enqueueUpdateFamilySitemapJob(
+    { family },
+    {
+      ordering: SITEMAPS_ORDERING.indexes,
+      jobId: `sitemap-family-${family}-${continuationId}`,
+      removeOnComplete: true,
+      removeOnFail: true,
+    },
+  )
 
 export const enqueueUpdateRootIndex = (priority?: number): EnqueueReturnType => {
   return enqueueUpdateRootIndexJob({}, indexOptions('sitemaps:root-index', priority))

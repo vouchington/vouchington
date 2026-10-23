@@ -17,6 +17,7 @@ export {
   enqueueProcessGooglePlayNotification,
   enqueueRecoverGooglePlayNotifications,
   enqueueRecoverGooglePlayActiveSources,
+  enqueueContinueRecoverGooglePlayActiveSources,
   enqueueAcknowledgeGooglePlayPurchase,
   enqueueRecoverGooglePlayAcknowledgements,
   enqueueRefreshGooglePlayOidcTrust,

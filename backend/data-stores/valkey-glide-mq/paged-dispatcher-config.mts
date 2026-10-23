@@ -8,6 +8,7 @@ export type PagedDispatcher =
   | 'elections'
   | 'notifications'
   | 'activitypub'
+  | 'engagement'
 const defaultFields = {
   hostnames_page_size: 500,
   hostnames_backoff_ms: 300000,
@@ -21,6 +22,8 @@ const defaultFields = {
   notifications_backoff_ms: 300000,
   activitypub_page_size: 500,
   activitypub_backoff_ms: 300000,
+  engagement_page_size: 500,
+  engagement_backoff_ms: 300000,
   background_max_depth: 10000,
   'background-cpu_max_depth': 10000,
 }

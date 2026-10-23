@@ -34,14 +34,16 @@ describe('Google Play active-source recovery', () => {
     expect(batch.nextCursor).toBeTruthy()
     expect(batch.completesSweep).toBe(true)
 
-    await advanceGooglePlayActiveSourceRecoveryCursor(batch)
+    await expect(advanceGooglePlayActiveSourceRecoveryCursor(batch)).resolves.toBe(true)
     const afterAdvance = await findRecoverableGooglePlayActiveSourceJobs()
     expect(afterAdvance.previousCursor).toBeNull()
 
-    await advanceGooglePlayActiveSourceRecoveryCursor({
-      ...batch,
-      nextCursor: randomUUID(),
-    })
+    await expect(
+      advanceGooglePlayActiveSourceRecoveryCursor({
+        ...batch,
+        nextCursor: randomUUID(),
+      }),
+    ).resolves.toBe(false)
     await expect(findRecoverableGooglePlayActiveSourceJobs()).resolves.toMatchObject({
       previousCursor: null,
     })

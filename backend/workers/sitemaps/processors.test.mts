@@ -24,9 +24,8 @@ import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic
 
 const manifest: PostDayManifest = {
   active_page_count: 1,
-  highest_written_page: 1,
+  generation_id: '11111111-1111-4111-8111-111111111111',
   generated_at: '2026-06-01T00:00:00.000Z',
-  content_hashes: { 'index.xml': 'hash' },
 }
 
 describe('sitemap processors', () => {
@@ -37,7 +36,7 @@ describe('sitemap processors', () => {
   it('generates a post-day sitemap before enqueueing all dependent index updates', async () => {
     const generateSpy = vi
       .spyOn(updatePostDaySitemapDependencies, 'generatePostDaySitemapFiles')
-      .mockResolvedValue(manifest)
+      .mockResolvedValue({ manifest, hasMore: false })
     const typeIndexSpy = vi
       .spyOn(updatePostDaySitemapDependencies, 'enqueueUpdatePostTypeIndex')
       .mockResolvedValue(undefined)
@@ -58,6 +57,32 @@ describe('sitemap processors', () => {
     expect(typeIndexSpy).toHaveBeenCalledWith('review')
     expect(postsIndexSpy).toHaveBeenCalledWith()
     expect(rootIndexSpy).toHaveBeenCalledWith()
+  })
+
+  it('continues an unfinished day without publishing its dependent indexes', async () => {
+    vi.spyOn(updatePostDaySitemapDependencies, 'generatePostDaySitemapFiles').mockResolvedValue({
+      manifest: null,
+      hasMore: true,
+      continuationId: 'next-page',
+    })
+    const continuation = vi
+      .spyOn(updatePostDaySitemapDependencies, 'enqueuePostDaySitemapContinuation')
+      .mockResolvedValue(undefined)
+    const typeIndex = vi
+      .spyOn(updatePostDaySitemapDependencies, 'enqueueUpdatePostTypeIndex')
+      .mockResolvedValue(undefined)
+    const invalidate = vi
+      .spyOn(updatePostDaySitemapDependencies, 'invalidateSitemaps')
+      .mockResolvedValue(undefined)
+
+    await processUpdatePostDaySitemap({ postType: 'review', day: '2026-06-01' })
+
+    expect(continuation).toHaveBeenCalledWith(
+      { postType: 'review', day: '2026-06-01' },
+      'next-page',
+    )
+    expect(typeIndex).not.toHaveBeenCalled()
+    expect(invalidate).not.toHaveBeenCalled()
   })
 
   it('invalidates the sitemap tag after regenerating each sitemap index', async () => {
@@ -87,7 +112,7 @@ describe('sitemap processors', () => {
   it('regenerates a family sitemap, invalidates, and enqueues the root index', async () => {
     const familySpy = vi
       .spyOn(updateSitemapIndexDependencies, 'generateSitemapFamilyFiles')
-      .mockResolvedValue(manifest)
+      .mockResolvedValue({ manifest, hasMore: false })
     const rootIndexSpy = vi
       .spyOn(updateSitemapIndexDependencies, 'enqueueUpdateRootIndex')
       .mockResolvedValue(undefined)
@@ -111,8 +136,10 @@ describe('sitemap processors', () => {
 
       await processNightlyBackfillWeekDispatcher({
         enqueueBulkUpdatePostDaySitemaps: bulkSpy,
-        enqueueMonthlyBackfillArchiveContinuation: vi.fn<VitestLooseMock>(),
         enqueueUpdateFamilySitemap: familySpy,
+        cleanupRetiredSitemapGenerations: vi
+          .fn<VitestLooseMock>()
+          .mockResolvedValue({ deletedPages: 0, hasMore: false }),
       })
 
       const expectedDays = [
@@ -161,6 +188,13 @@ describe('sitemap processors', () => {
       const familySpy = vi
         .spyOn(backfillDispatcherDependencies, 'enqueueUpdateFamilySitemap')
         .mockResolvedValue(undefined)
+      vi.spyOn(
+        backfillDispatcherDependencies,
+        'cleanupRetiredSitemapGenerations',
+      ).mockResolvedValue({
+        deletedPages: 0,
+        hasMore: false,
+      })
 
       await processNightlyBackfillWeekDispatcher()
 
@@ -220,7 +254,6 @@ describe('sitemap processors', () => {
       processMonthlyBackfillArchiveDispatcher(undefined, {
         enqueueBulkUpdatePostDaySitemaps: bulkSpy,
         enqueueMonthlyBackfillArchiveContinuation: continuationSpy,
-        enqueueUpdateFamilySitemap: vi.fn<VitestLooseMock>(),
       }),
     ).resolves.toEqual({ enqueued: 0, hasMore: false })
     expect(bulkSpy).not.toHaveBeenCalled()

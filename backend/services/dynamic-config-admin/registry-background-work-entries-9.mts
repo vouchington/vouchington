@@ -18,7 +18,11 @@ import {
   findYourFriendsWorkMaxValues,
 } from '@queues/find-your-friends/config'
 import { articlesWorkConfig, articlesWorkMaxValues } from '@services/articles/work-limits'
-import { sitemapsWorkConfig, sitemapsWorkMaxValues } from '@services/sitemaps/work-limits'
+import {
+  MIN_RETIRED_GENERATION_GRACE_SECONDS,
+  sitemapsWorkConfig,
+  sitemapsWorkMaxValues,
+} from '@services/sitemaps/work-limits'
 
 export const backgroundWorkRegistryEntries9 = {
   'articles-work-config': defineBoundedWorkNamespace({
@@ -83,8 +87,16 @@ export const backgroundWorkRegistryEntries9 = {
     config: sitemapsWorkConfig,
     label: 'Sitemaps',
     maxValues: sitemapsWorkMaxValues,
+    minValues: { retired_generation_grace_seconds: MIN_RETIRED_GENERATION_GRACE_SECONDS },
     descriptions: {
       archive_backfill_day_page_size: 'Days per archive sitemap backfill page.',
+      generation_page_row_limit: 'Source rows read and staged per sitemap generation job.',
+      weekly_backfill_days: 'Recent days included by the weekly sitemap dispatcher.',
+      retired_generation_grace_seconds:
+        'Delay before deleting replaced sitemap child files; minimum covers the edge sitemap TTL and stale window.',
+      retired_generation_delete_page_size: 'Retired sitemap child files deleted per cleanup run.',
+      retired_generation_record_scan_limit:
+        'Retired sitemap generations inspected per cleanup run.',
     },
   }),
   'find-your-friends-work-config': defineBoundedWorkNamespace({

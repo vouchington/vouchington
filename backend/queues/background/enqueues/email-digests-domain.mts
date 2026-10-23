@@ -16,6 +16,17 @@ export const EMAIL_DIGESTS_DOMAIN = defineBackgroundDomain({
 })
 
 export type EmptyEmailDigestsJobData = Record<string, never>
+export type EngagementDispatchData = {
+  phase?: 'follow_topics' | 'post_referral_link' | 'follow_news_sources'
+  cursor?: { lane: 'unclaimed' | 'claimed'; afterUserId: string; afterClaimedAt?: string }
+  preparedPage?: {
+    recipientIds: string[]
+    scannedCount: number
+    nextCursor?: { lane: 'unclaimed' | 'claimed'; afterUserId: string; afterClaimedAt?: string }
+  }
+  dispatchStartedAt?: string
+  remainingBudget?: number
+}
 /** One page of API keys; `afterId` is the last key of the previous page. */
 export type DispatchApiKeyExpiryRemindersData = { afterId?: string }
 export type SendApiKeyExpiryReminderData = { apiKeyId: string }
@@ -26,6 +37,8 @@ export type EmailDigestRecipient =
 
 /** The recipient plus the optional metadata a digest email carries. */
 export type EmailDigestInput = EmailDigestRecipient & {
+  /** Fences an engagement send against a newer dispatcher claim. */
+  claimOwnerJobId?: string
   trackingKey?: string
   windowStart?: string
   windowEnd?: string

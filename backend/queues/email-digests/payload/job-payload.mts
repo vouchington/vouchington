@@ -1,6 +1,6 @@
 import { JobPayloadError } from '@queues/emails/payload/job-payload-error'
 import { parseEmailInput } from '@queues/emails/payload/job-payload-input'
-import { asRecord, assertExactKeys } from '@queues/emails/payload/job-payload-read'
+import { asRecord, assertExactKeys, optionalString } from '@queues/emails/payload/job-payload-read'
 import type {
   EmailDigestDispatcherJobs,
   EmailDigestSendJobs,
@@ -20,7 +20,7 @@ export type ParsedEmailDigestJob =
   | {
       kind: 'template'
       name: TemplateName
-      input: EmailJobInput
+      input: EmailJobInput & { claimOwnerJobId?: string }
       variables: Record<string, unknown>
     }
 
@@ -41,10 +41,25 @@ export function parseEmailDigestJob(name: string, data: unknown): ParsedEmailDig
   if (!isTemplate(name)) throw new JobPayloadError(`unknown job ${name}`)
   const record = asRecord(data, 'payload')
   assertExactKeys(record, ['input', 'variables'])
+  const inputRecord = asRecord(record.input, 'input')
+  optionalString(inputRecord, 'claimOwnerJobId')
+  if (
+    inputRecord.claimOwnerJobId !== undefined &&
+    ![
+      'processSendFollowTopicsEmail',
+      'processSendPostReferralLinkEmail',
+      'processSendFollowNewsSourcesEmail',
+    ].includes(name)
+  )
+    throw new JobPayloadError('claimOwnerJobId is only valid for engagement sends')
+  const { claimOwnerJobId, ...emailInput } = inputRecord
   return {
     kind: 'template',
     name,
-    input: parseEmailInput(record.input),
+    input: {
+      ...parseEmailInput(emailInput),
+      ...(typeof claimOwnerJobId === 'string' && { claimOwnerJobId }),
+    },
     variables: parseEngagementVariables[name](record.variables),
   }
 }

@@ -7,16 +7,24 @@ type EngagementEmailType = 'follow_topics' | 'post_referral_link' | 'follow_news
 export async function claimEngagementEmailSend(
   userId: string,
   emailType: EngagementEmailType,
+  ownerJobId?: string,
 ): Promise<boolean> {
   const USERS_ENGAGEMENT_CLAIM_HOURS = getUsersWorkLimit('engagement_claim_hours')
   const { rows } = await write(sql`/* claimEngagementEmailSend */
-    INSERT INTO user_engagement_email_sends (user_id, email_type)
-    VALUES (${userId}, ${emailType})
+    INSERT INTO user_engagement_email_sends (user_id, email_type, claim_owner_job_id)
+    VALUES (${userId}, ${emailType}, ${ownerJobId ?? null})
     ON CONFLICT (user_id, email_type) DO UPDATE
-      SET claimed_at = CURRENT_TIMESTAMP
+      SET claimed_at = CASE
+            WHEN ${ownerJobId ?? null}::text IS NOT NULL
+              AND user_engagement_email_sends.claim_owner_job_id = ${ownerJobId ?? null}
+              THEN user_engagement_email_sends.claimed_at
+            ELSE CURRENT_TIMESTAMP END,
+          claim_owner_job_id = ${ownerJobId ?? null}
       WHERE user_engagement_email_sends.sent_at IS NULL
         AND user_engagement_email_sends.delivery_attempted_at IS NULL
-        AND user_engagement_email_sends.claimed_at < CURRENT_TIMESTAMP - ${USERS_ENGAGEMENT_CLAIM_HOURS}::integer * INTERVAL '1 hour'
+        AND (user_engagement_email_sends.claimed_at < CURRENT_TIMESTAMP - ${USERS_ENGAGEMENT_CLAIM_HOURS}::integer * INTERVAL '1 hour'
+          OR (${ownerJobId ?? null}::text IS NOT NULL
+            AND user_engagement_email_sends.claim_owner_job_id = ${ownerJobId ?? null}))
     RETURNING user_id
   `)
   return rows.length > 0
@@ -25,6 +33,7 @@ export async function claimEngagementEmailSend(
 export async function markEngagementEmailDeliveryAttempted(
   userId: string,
   emailType: EngagementEmailType,
+  ownerJobId?: string,
 ): Promise<boolean> {
   const { rows } = await write(sql`/* markEngagementEmailDeliveryAttempted */
     UPDATE user_engagement_email_sends
@@ -33,6 +42,7 @@ export async function markEngagementEmailDeliveryAttempted(
       AND email_type = ${emailType}
       AND sent_at IS NULL
       AND delivery_attempted_at IS NULL
+      AND claim_owner_job_id IS NOT DISTINCT FROM ${ownerJobId ?? null}::text
     RETURNING user_id
   `)
   return rows.length > 0
@@ -41,6 +51,7 @@ export async function markEngagementEmailDeliveryAttempted(
 export async function markEngagementEmailSent(
   userId: string,
   emailType: EngagementEmailType,
+  ownerJobId?: string,
 ): Promise<boolean> {
   const { rows } = await write(sql`/* markEngagementEmailSent */
     UPDATE user_engagement_email_sends
@@ -49,6 +60,7 @@ export async function markEngagementEmailSent(
       AND email_type = ${emailType}
       AND sent_at IS NULL
       AND delivery_attempted_at IS NOT NULL
+      AND claim_owner_job_id IS NOT DISTINCT FROM ${ownerJobId ?? null}::text
     RETURNING user_id
   `)
   return rows.length > 0
@@ -57,12 +69,15 @@ export async function markEngagementEmailSent(
 export async function releaseUnsentEngagementEmailClaim(
   userId: string,
   emailType: EngagementEmailType,
+  ownerJobId?: string,
 ): Promise<boolean> {
   const { rows } = await write(sql`/* releaseUnsentEngagementEmailClaim */
     DELETE FROM user_engagement_email_sends
     WHERE user_id = ${userId}
       AND email_type = ${emailType}
       AND sent_at IS NULL
+      AND delivery_attempted_at IS NULL
+      AND claim_owner_job_id IS NOT DISTINCT FROM ${ownerJobId ?? null}::text
     RETURNING user_id
   `)
   return rows.length > 0

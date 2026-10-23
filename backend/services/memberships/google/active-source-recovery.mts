@@ -4,11 +4,7 @@ import { write } from '@data-stores/psql'
 import { decryptSecret } from '@modules/token-secrets'
 import { createMembershipVerification } from '../verifications.mts'
 import { processGooglePlayMembershipVerification } from './process-verification.mts'
-import {
-  advanceGooglePlayRecoverySweep,
-  beginGooglePlayRecoverySweep,
-  pageGooglePlayRecoveryItems,
-} from './recovery-cursor.mts'
+import { advanceGooglePlayRecoverySweep, beginGooglePlayRecoverySweep } from './recovery-cursor.mts'
 import sql from 'sql-template-strings'
 import type { GooglePlaySubscriptionsV2Client } from './types.mts'
 
@@ -16,6 +12,8 @@ const RECOVERY_CURSOR_ID = 'active_sources'
 const SWEEP_BUCKET_MS = 60 * 60 * 1000
 
 export type GooglePlayActiveSourceRecoveryBatch = {
+  /** Raw source identities read from the bounded page, including ineligible sources. */
+  scannedCount: number
   sourceIds: string[]
   previousCursor: string | null
   previousUpperBound: string | null
@@ -31,23 +29,26 @@ export async function findRecoverableGooglePlayActiveSourceJobs(): Promise<Googl
     cursorId: RECOVERY_CURSOR_ID,
     findUpperBound: findActiveSourceSweepUpperBound,
   })
-  const page = pageGooglePlayRecoveryItems(
-    cursor,
-    await findSourcesAfterCursor(
-      cursor.previousCursor,
-      cursor.sweepUpperBound,
-      RECOVERY_BATCH_SIZE,
-    ),
+  const rawPage = await findSourcesAfterCursor(
+    cursor.previousCursor,
+    cursor.sweepUpperBound,
     RECOVERY_BATCH_SIZE,
   )
-  return { ...page, sourceIds: page.items.map(item => item.id) }
+  const scannedIds = rawPage.slice(0, RECOVERY_BATCH_SIZE)
+  return {
+    ...cursor,
+    scannedCount: scannedIds.length,
+    sourceIds: await findEligibleSourcesInPage(scannedIds),
+    nextCursor: scannedIds.at(-1) ?? null,
+    completesSweep: rawPage.length <= RECOVERY_BATCH_SIZE,
+  }
 }
 
 /** Advances only when the caller's fan-out still owns the cursor it scanned. */
 export async function advanceGooglePlayActiveSourceRecoveryCursor(
   batch: GooglePlayActiveSourceRecoveryBatch,
-): Promise<void> {
-  await advanceGooglePlayRecoverySweep({ cursorId: RECOVERY_CURSOR_ID, ...batch })
+): Promise<boolean> {
+  return advanceGooglePlayRecoverySweep({ cursorId: RECOVERY_CURSOR_ID, ...batch })
 }
 
 /** Revalidates and reconciles one source; the queue payload never contains the raw token. */
@@ -88,10 +89,23 @@ async function findSourcesAfterCursor(
   cursor: string | null,
   upperBound: string | null,
   RECOVERY_BATCH_SIZE: number,
-) {
+): Promise<string[]> {
+  if (!upperBound) return []
+  const { rows } = await write<{
+    id: string
+  }>(sql`/* findGooglePlayActiveSourceRecoveryBatch.sources */
+    SELECT id FROM membership_sources
+    WHERE (${cursor}::UUID IS NULL OR id > ${cursor}::UUID)
+      AND id <= ${upperBound}::UUID
+    ORDER BY id LIMIT ${RECOVERY_BATCH_SIZE + 1}`)
+  return rows.map(row => row.id)
+}
+
+async function findEligibleSourcesInPage(sourceIds: readonly string[]): Promise<string[]> {
+  if (sourceIds.length === 0) return []
   const { rows } = await write<{
     sourceId: string
-  }>(sql`/* findGooglePlayActiveSourceRecoveryBatch.sources */
+  }>(sql`/* findGooglePlayActiveSourceRecoveryBatch.eligible */
     SELECT source.id AS "sourceId"
     FROM membership_sources source
     INNER JOIN membership_source_states state ON state.membership_source_id = source.id
@@ -114,26 +128,19 @@ async function findSourcesAfterCursor(
     WHERE source.source_kind = 'direct'
       AND source.user_id IS NOT NULL
       AND context.provider = 'google_play'
+      AND state.source_kind = 'direct'
       AND state.cancelled_at IS NULL
       AND state.expired_at IS NULL
-      AND (${cursor}::UUID IS NULL OR source.id > ${cursor}::UUID)
-      AND (${upperBound}::UUID IS NULL OR source.id <= ${upperBound}::UUID)
-    ORDER BY source.id
-    LIMIT ${RECOVERY_BATCH_SIZE + 1}`)
-  return rows.map(row => ({ id: row.sourceId }))
+      AND source.id = ANY(${sourceIds}::uuid[])
+    ORDER BY source.id`)
+  return rows.map(row => row.sourceId)
 }
 
 async function findActiveSourceSweepUpperBound(): Promise<string | null> {
   const { rows } = await write<{
     id: string | null
   }>(sql`/* findGooglePlayActiveSourceSweepUpperBound */
-    SELECT source.id FROM membership_sources source
-    INNER JOIN membership_source_states state ON state.membership_source_id = source.id
-    INNER JOIN membership_provider_lineages lineage ON lineage.id = source.membership_provider_lineage_id
-    INNER JOIN membership_provider_contexts context ON context.id = lineage.membership_provider_context_id
-    WHERE source.source_kind = 'direct' AND source.user_id IS NOT NULL
-      AND context.provider = 'google_play' AND state.cancelled_at IS NULL AND state.expired_at IS NULL
-    ORDER BY source.id DESC LIMIT 1`)
+    SELECT id FROM membership_sources ORDER BY id DESC LIMIT 1`)
   return rows[0]?.id ?? null
 }
 
@@ -174,6 +181,7 @@ async function getActiveSourceContext(sourceId: string): Promise<ActiveSourceCon
       AND source.source_kind = 'direct'
       AND source.user_id IS NOT NULL
       AND context.provider = 'google_play'
+      AND state.source_kind = 'direct'
       AND state.cancelled_at IS NULL
       AND state.expired_at IS NULL`)
   return rows[0] ?? null

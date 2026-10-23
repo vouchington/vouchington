@@ -6,6 +6,7 @@ import { readTestRssFeedAtTtlOffset } from '@voucha/test-helpers/rss-feed-ttl-bo
 import { getRssFeedById } from './get.mts'
 import { updateRssFeedById } from './update.mts'
 import { rssFeedCrawlConfig } from './crawl-config.mts'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 
 describe('get-to-fetch', () => {
   const TTL_MS = 60_000 // 1 minute
@@ -72,6 +73,23 @@ describe('get-to-fetch', () => {
     expect(() => getRssFeedsToFetch({ asOf: new Date(Number.NaN) })).toThrow(
       'Invalid RSS tier scheduling time',
     )
+  })
+
+  it('advances a capped raw page even when the requested lane has no eligible feed', async () => {
+    const restore = overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, {
+      selection_scan_page_size: 1,
+    })
+    try {
+      const page = await getRssFeedsToFetch({
+        cursor: { lane: 10, afterId: '00000000-0000-0000-0000-000000000000' },
+        asOf: new Date('1970-01-01T00:00:00.000Z'),
+      })
+      expect(page.scannedCount).toBe(1)
+      expect(page.feeds).toEqual([])
+      expect(page.nextCursor).toEqual({ lane: 10, afterId: expect.any(String) })
+    } finally {
+      restore()
+    }
   })
 
   it('getRssFeedByIdToFetch returns feed_ignore_robots_txt=null by default', async () => {

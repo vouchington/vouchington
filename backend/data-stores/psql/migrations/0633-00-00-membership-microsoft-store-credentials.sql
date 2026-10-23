@@ -31,6 +31,10 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_microsoft_store_credentials__us
 CREATE INDEX IF NOT EXISTS idx_membership_microsoft_store_credentials__provider_context ON membership_microsoft_store_credentials (membership_provider_context_id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_microsoft_store_credentials__due ON membership_microsoft_store_credentials (next_reconciliation_at, id);
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_mmbrshp_mcrsft_str_crdntls__unexpired_collections
+  ON membership_microsoft_store_credentials (collections_expires_at, user_id, membership_provider_context_id)
+  INCLUDE (purchase_expires_at);
 CREATE INDEX IF NOT EXISTS idx_membership_verifications__pending_microsoft_source_recovery ON membership_verifications (user_id, membership_provider_context_id, request_fingerprint) WHERE verified_at IS NULL AND conflicted_at IS NULL AND rejected_at IS NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_microsoft_store_recovery_cursors (

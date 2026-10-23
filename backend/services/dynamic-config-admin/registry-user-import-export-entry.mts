@@ -18,6 +18,12 @@ export const userImportExportRegistryEntry = defineDynamicConfigNamespace({
       maxValue: USER_IMPORT_EXPORT_MAX_VALUES.sync_export_max_items,
       integer: true,
     },
+    sync_export_cursor_batch_size: {
+      description: 'Rows fetched at a time by synchronous RSS feed and topic export cursors.',
+      minValue: USER_IMPORT_EXPORT_MIN_VALUES.sync_export_cursor_batch_size,
+      maxValue: USER_IMPORT_EXPORT_MAX_VALUES.sync_export_cursor_batch_size,
+      integer: true,
+    },
     import_max_body_bytes: {
       description: 'Largest JSON body, in bytes, the RSS feed import endpoint reads.',
       minValue: USER_IMPORT_EXPORT_MIN_VALUES.import_max_body_bytes,
@@ -40,6 +46,12 @@ export const userImportExportRegistryEntry = defineDynamicConfigNamespace({
       description: 'Stalled RSS feed imports one recovery sweep re-dispatches.',
       minValue: USER_IMPORT_EXPORT_MIN_VALUES.import_recovery_batch_size,
       maxValue: USER_IMPORT_EXPORT_MAX_VALUES.import_recovery_batch_size,
+      integer: true,
+    },
+    topic_attempt_prune_batch_size: {
+      description: 'Expired topic import attempts removed per cleanup page.',
+      minValue: USER_IMPORT_EXPORT_MIN_VALUES.topic_attempt_prune_batch_size,
+      maxValue: USER_IMPORT_EXPORT_MAX_VALUES.topic_attempt_prune_batch_size,
       integer: true,
     },
     import_status_page_size: {

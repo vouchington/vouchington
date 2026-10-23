@@ -1,4 +1,5 @@
 import type { BatchListingCursor } from '@services/bedrock-embeddings/batch/orchestrator/listing-page'
+import type { StaleBatchCursor } from '@services/bedrock-embeddings-batch/orchestrator/find-stale'
 import { processBatch } from '@services/bedrock-embeddings-batch/orchestrator/poll'
 import {
   getBatchInfo,
@@ -122,7 +123,7 @@ export const processBacklogDispatcher = async (): Promise<{
   return { triggered: false, depth, threshold }
 }
 
-export const processStaleCleanupDispatcher = async (cursor?: BatchListingCursor) => {
+export const processStaleCleanupDispatcher = async (cursor?: StaleBatchCursor) => {
   const result = await runStaleCleanup(getStaleTtlHours(), cursor)
   if (result.nextCursor)
     await enqueueEmbeddingsBatchStaleCleanupDispatcher({ cursor: result.nextCursor })

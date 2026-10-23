@@ -9,6 +9,21 @@ const links = {
 }
 
 describe('engagement email payloads', () => {
+  it('passes a dispatcher claim fence only to engagement send processors', () => {
+    const owner = 'email-digests:page:owned'
+    const parsed = parseEmailDigestJob('processSendFollowTopicsEmail', {
+      input: { userId: '00000000-0000-7000-8000-000000000042', claimOwnerJobId: owner },
+      variables: { ...links, topics: [] },
+    })
+    expect(parsed).toMatchObject({ kind: 'template', input: { claimOwnerJobId: owner } })
+    expect(() =>
+      parseEmailDigestJob('processSendCommunityModerationSummaryEmail', {
+        input: { ...address, claimOwnerJobId: owner },
+        variables: { ...links, generatedForDate: '2026-09-27', communities: [] },
+      }),
+    ).toThrow(/claimOwnerJobId is only valid/)
+  })
+
   it('validates engagement and moderation variables', () => {
     const topic = parseEmailDigestJob('processSendFollowTopicsEmail', {
       input: address,

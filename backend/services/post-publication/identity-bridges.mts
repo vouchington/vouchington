@@ -7,6 +7,7 @@ export const PUBLICATION_IDENTITY_BRIDGES = {
     liveColumn: 'post_id',
     keyColumn: 'impact_post_identity_id',
     workColumn: 'post_identity_id',
+    resumeColumns: ['pending_post_identity_id', 'pending_ancestor_post_identity_id'],
   },
   community: {
     table: 'post_publication_community_identities',
@@ -14,6 +15,7 @@ export const PUBLICATION_IDENTITY_BRIDGES = {
     liveColumn: 'community_id',
     keyColumn: 'impact_community_identity_id',
     workColumn: 'community_identity_id',
+    resumeColumns: [],
   },
   rss_feed_item: {
     table: 'post_publication_rss_feed_item_identities',
@@ -21,6 +23,7 @@ export const PUBLICATION_IDENTITY_BRIDGES = {
     liveColumn: 'rss_feed_item_id',
     keyColumn: 'impact_rss_feed_item_identity_id',
     workColumn: null,
+    resumeColumns: [],
   },
   author: {
     table: 'post_publication_author_identities',
@@ -28,6 +31,7 @@ export const PUBLICATION_IDENTITY_BRIDGES = {
     liveColumn: 'user_id',
     keyColumn: null,
     workColumn: 'author_identity_id',
+    resumeColumns: [],
   },
   rss_feed: {
     table: 'post_publication_rss_feed_identities',
@@ -35,6 +39,7 @@ export const PUBLICATION_IDENTITY_BRIDGES = {
     liveColumn: 'rss_feed_id',
     keyColumn: null,
     workColumn: 'rss_feed_identity_id',
+    resumeColumns: [],
   },
   topic_alias: {
     table: 'post_publication_topic_alias_identities',
@@ -42,6 +47,7 @@ export const PUBLICATION_IDENTITY_BRIDGES = {
     liveColumn: 'topic_alias_id',
     keyColumn: null,
     workColumn: 'topic_alias_identity_id',
+    resumeColumns: [],
   },
   story: {
     table: 'post_publication_story_identities',
@@ -49,6 +55,7 @@ export const PUBLICATION_IDENTITY_BRIDGES = {
     liveColumn: 'story_id',
     keyColumn: null,
     workColumn: 'story_identity_id',
+    resumeColumns: [],
   },
 } as const
 export type PublicationIdentityBridgeFamily = keyof typeof PUBLICATION_IDENTITY_BRIDGES

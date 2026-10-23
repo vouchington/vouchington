@@ -1,5 +1,6 @@
 import { createAsyncGeneratorFromCursor, read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { getUserImportExportConfig } from './config.mts'
 
 export type ExportTopic = {
   name: string
@@ -24,7 +25,9 @@ export function streamUserTopics(
       ORDER BY t.name ASC, t.id ASC
       LIMIT ${maxItems}
     `
-  return createAsyncGeneratorFromCursor<ExportTopic>(query, { batchSize: 1000 })
+  return createAsyncGeneratorFromCursor<ExportTopic>(query, {
+    batchSize: getUserImportExportConfig().sync_export_cursor_batch_size,
+  })
 }
 
 export async function* streamUserTopicsAsJsonArray(

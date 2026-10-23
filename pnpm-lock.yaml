@@ -3532,6 +3532,12 @@ importers:
       '@services/autotagger':
         specifier: workspace:^
         version: link:../services/autotagger
+      '@services/bedrock-embeddings-batch':
+        specifier: workspace:^
+        version: link:../services/bedrock-embeddings-batch
+      '@services/boilerplate-removals':
+        specifier: workspace:^
+        version: link:../services/boilerplate-removals
       '@services/bookmarks':
         specifier: workspace:^
         version: link:../services/bookmarks
@@ -3577,6 +3583,9 @@ importers:
       '@services/email-address-validator':
         specifier: workspace:^
         version: link:../services/email-address-validator
+      '@services/engagement-emails':
+        specifier: workspace:^
+        version: link:../services/engagement-emails
       '@services/entity-cache':
         specifier: workspace:^
         version: link:../services/entity-cache
@@ -13263,6 +13272,9 @@ importers:
 
   backend/workers/email-digests:
     dependencies:
+      '@data-stores/valkey-glide-mq':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey-glide-mq
       '@email-templates/core':
         specifier: workspace:^
         version: link:../../../email-templates

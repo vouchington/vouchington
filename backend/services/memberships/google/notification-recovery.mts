@@ -76,7 +76,7 @@ export async function findRecoverableGooglePlayNotificationJobs(): Promise<Googl
   }
 }
 
-async function findPendingNotificationRows(
+export async function findPendingNotificationRows(
   cursor: string | null,
   upperBound: string | null,
   WORK_PAGE_SIZE: number,
@@ -107,7 +107,7 @@ async function findPendingNotificationRows(
   return rows
 }
 
-async function findNotificationSweepUpperBound(): Promise<string | null> {
+export async function findNotificationSweepUpperBound(): Promise<string | null> {
   const { rows } = await write<{
     id: string | null
   }>(sql`/* findGooglePlayNotificationSweepUpperBound */
