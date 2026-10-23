@@ -92,7 +92,8 @@ async function resolveConfiguredKeys(
         })
   if (!publicValue) return signing
   // Rotation must keep healthy verification keys usable if an unrelated candidate is corrupt.
-  const decoded: unknown = JSON.parse(atob(publicValue))
+  const bytes = Uint8Array.from(atob(publicValue), character => character.charCodeAt(0))
+  const decoded: unknown = JSON.parse(new TextDecoder().decode(bytes))
   const values = Array.isArray(decoded)
     ? decoded
     : typeof decoded === 'object' && decoded !== null && 'keys' in decoded

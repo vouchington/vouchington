@@ -162,4 +162,25 @@ describe('@ts-shared/session-jwt', () => {
       }),
     ).rejects.toThrow('contains duplicate kid values: ambiguous-public-kid')
   })
+
+  it('preserves Unicode rotation key identities from public environment bindings', async () => {
+    const signingKey = await generatePrivateJwk('clé-🔑')
+    const { did, sid } = makeIds()
+    const token = await signSessionJwt(
+      { did, sid, uid: null },
+      {
+        mode: 'production',
+        env: { VOUCHA_SESSION_JWT_PRIVATE_KEYS_B64: encodeJwkSetForEnv([signingKey]) },
+        expiresIn: '2 days',
+      },
+    )
+    await expect(
+      verifySessionJwt(token, {
+        mode: 'production',
+        env: {
+          VOUCHA_SESSION_JWT_PUBLIC_KEYS_B64: encodeJwkSetForEnv([derivePublicJwk(signingKey)]),
+        },
+      }),
+    ).resolves.toMatchObject({ did, sid, uid: null })
+  })
 })
