@@ -31,6 +31,17 @@ async function postForTest() {
 }
 
 describe('vote and user-agent retention', () => {
+  it('rejects pages beyond the per-run read bound before querying a table', async () => {
+    const scopedIds = [uuidv7(), uuidv7()]
+    await expect(cleanupSupersededVoteBallotTable('post_votes', 5_001)).rejects.toThrow(RangeError)
+    await expect(cleanupOrphanedUserAgentStrings(5_001)).rejects.toThrow(RangeError)
+    await expect(cleanupVoteIntegrityDetails(5_001)).rejects.toThrow(RangeError)
+    await expect(cleanupSupersededVoteBallotTable('post_votes', 1, NOW, scopedIds)).rejects.toThrow(
+      RangeError,
+    )
+    await expect(cleanupOrphanedUserAgentStrings(1, scopedIds)).rejects.toThrow(RangeError)
+  })
+
   it('deletes only ballots superseded for 90 days and keeps the newest ballot', async () => {
     const { userId, postId } = await postForTest()
     const firstId = uuidv7({ msecs: Date.parse('2026-01-01T00:00:00.000Z') })

@@ -31,6 +31,5 @@ export async function storeVoteIpEvidence(
 /** A retry may read the same immutable evidence until its original expiry. */
 export async function getVoteIpEvidence(voteId: string): Promise<string | null> {
   const value = await cacheValkeyClient.get(voteIpEvidenceKey(voteId))
-  if (value === null || typeof value === 'string') return value
-  return Buffer.from(value).toString('utf8')
+  return value === null ? null : value.toString()
 }

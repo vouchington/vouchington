@@ -52,6 +52,7 @@ export async function upsertElectionVotesShared(
         query,
         values.map(value => value.entityId),
       )
+    // ast-grep-ignore: no-three-sequential-awaits -- the active-user lock precedes authorization, then entity locks precede the ballot write in one transaction.
     await query(sql`/* lockActiveUserForElectionVoteMutation */
       SELECT fn_lock_active_user_for_mutation(${userId}::uuid)
     `)
