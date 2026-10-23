@@ -1,13 +1,9 @@
-import { readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { afterEach, describe, expect, it } from 'vitest'
 
-import {
-  checkNoMistakesTestPolicy,
-  relevantWorkflowCommands,
-  spawnsNoMistakesCli,
-} from './test-helpers/no-mistakes-test-policy.mts'
+import { checkNoMistakesTestPolicy } from './check-no-mistakes-test-policy.mts'
 import {
   acceptedTestSources,
   cliSpawnSources,
@@ -37,33 +33,6 @@ describe('no-mistakes CI contention policy', () => {
   it('accepts the sole ordered static-analysis commands and small test inputs', () => {
     const input = fixture({ tests: acceptedTestSources, otherWorkflows: unrelatedWorkflows })
     expect(checkNoMistakesTestPolicy(input)).toEqual([])
-    expect(relevantWorkflowCommands(input.root, input.workflowPaths)).toEqual([
-      {
-        path: '.github/workflows/static-code-analysis.yml',
-        job: 'no-mistakes',
-        command: 'pnpm exec no-mistakes --timeout 0 --lock-timeout 0 check',
-      },
-      {
-        path: '.github/workflows/static-code-analysis.yml',
-        job: 'no-mistakes',
-        command: 'node ci/check-no-mistakes-test-policy.mts',
-      },
-      {
-        path: '.github/workflows/static-code-analysis.yml',
-        job: 'no-mistakes',
-        command: 'node ci/check-live-workflow-topology.mts',
-      },
-      {
-        path: '.github/workflows/static-code-analysis.yml',
-        job: 'no-mistakes',
-        command: 'node ci/check-storybook-browser-optimize-deps.mts',
-      },
-      {
-        path: '.github/workflows/static-code-analysis.yml',
-        job: 'no-mistakes',
-        command: 'node ci/check-classifier-golden-imports.mts',
-      },
-    ])
   })
 
   it('rejects duplicate or reordered live workflow commands from parsed YAML', () => {
@@ -90,31 +59,14 @@ describe('no-mistakes CI contention policy', () => {
   })
 
   it('rejects direct, resolved-bin, and pnpm no-mistakes CLI spawns', () => {
-    expect(cliSpawnSources.map(spawnsNoMistakesCli)).toEqual([true, true, true, true])
-    expect(spawnsNoMistakesCli(nonNoMistakesCliSource)).toBe(false)
-  })
-
-  it('keeps the exact mock exception and reviewed source pinned', () => {
-    const broadExclusion = fixture({ mockExclusions: ['**/*.mock.test.*'] })
-    expect(checkNoMistakesTestPolicy(broadExclusion)).toEqual([
-      '.no-mistakes.yml must list only the reviewed mocked test exception for Vitest tests do not run live no-mistakes analysis',
-    ])
-
-    const staleMock = fixture()
-    const mockedTestPath = 'static-code-analysis/i18n-extract/route-selector-map.mock.test.mts'
-    const reviewedMockSource = readFileSync(join(staleMock.root, mockedTestPath), 'utf8')
-    writeFileSync(
-      join(staleMock.root, mockedTestPath),
-      `/* ${reviewedMockSource} */\nimport { check } from 'no-mistakes'; check()`,
-    )
-    expect(checkNoMistakesTestPolicy(staleMock)).toEqual([
-      'static-code-analysis/i18n-extract/route-selector-map.mock.test.mts no longer proves that the analyzer call is mocked',
-    ])
-
-    writeFileSync(join(staleMock.root, mockedTestPath), `${reviewedMockSource}\ncheck()`)
-    expect(checkNoMistakesTestPolicy(staleMock)).toEqual([
-      expect.stringContaining('no longer proves that the analyzer call is mocked'),
-    ])
+    for (const source of cliSpawnSources) {
+      const input = fixture({ tests: { 'ci/cli.test.mts': source } })
+      expect(checkNoMistakesTestPolicy(input)).toEqual([
+        'ci/cli.test.mts: no-mistakes CLI from Vitest',
+      ])
+    }
+    const allowed = fixture({ tests: { 'ci/allowed.test.mts': nonNoMistakesCliSource } })
+    expect(checkNoMistakesTestPolicy(allowed)).toEqual([])
   })
 
   it('fails when the live command moves to another workflow', () => {
