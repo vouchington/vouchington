@@ -11,7 +11,10 @@ import type { PrivateUser } from '../../services/users/types.mts'
 import { createDeviceAndSessionTokens } from '../../services/jwt-session/index.mts'
 import { encodeFeatureFlagCookie, type FeatureFlags } from '../../services/feature-flags/index.mts'
 import { v7 } from 'uuid'
-import { listenOnLoopbackEphemeralPort, type LoopbackHost } from '@ts-shared/utils/ephemeral-ports'
+import {
+  listenOnLoopbackEphemeralPort,
+  type LoopbackHost,
+} from 'vouchington-tooling/runner-port-policy'
 import { recordServerErrorResponse } from './server-error-responses.mts'
 import { profileRequestQueries } from './request-query-profile.mts'
 import { withOwnedApiServer } from '../api-query-options-server.mts'

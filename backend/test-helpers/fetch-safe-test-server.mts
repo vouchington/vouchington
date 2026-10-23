@@ -1,8 +1,8 @@
 import http, { type RequestListener } from 'node:http'
 import {
   EphemeralListenerAttemptsExhaustedError,
-  listenOnEphemeralPort,
-} from '@ts-shared/utils/ephemeral-ports'
+  listenOnRunnerUnreservedEphemeralPort,
+} from 'vouchington-tooling/runner-port-policy'
 import {
   isFetchForbiddenPort as isFetchForbiddenTestPort,
   isFetchSafePort,
@@ -37,7 +37,7 @@ export async function createFetchSafeTestServer(
   const server = http.createServer(listener)
   let port: number
   try {
-    port = await listenOnEphemeralPort(server, host, {
+    port = await listenOnRunnerUnreservedEphemeralPort(server, host, {
       isAllowedPort: isFetchSafePort,
       maxBindAttempts,
     })

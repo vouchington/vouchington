@@ -1,7 +1,7 @@
 import { createServer, type Server } from 'node:http'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getLongRunningExternalFetch } from '@modules/utils'
-import { listenOnEphemeralPort } from '@ts-shared/utils/ephemeral-ports'
+import { listenOnRunnerUnreservedEphemeralPort } from 'vouchington-tooling/runner-port-policy'
 import { isFetchSafePort } from '@ts-shared/utils/fetch-ports'
 import { MissingModelClientCredentialError } from './missing-client-credential.mts'
 
@@ -84,7 +84,7 @@ describe('openai client', () => {
 })
 
 async function listen(server: Server, host: string): Promise<{ port: number }> {
-  const port = await listenOnEphemeralPort(server, host, {
+  const port = await listenOnRunnerUnreservedEphemeralPort(server, host, {
     isAllowedPort: isFetchSafePort,
   })
   return { port }

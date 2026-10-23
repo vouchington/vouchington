@@ -1,7 +1,7 @@
 import { createServer, type Server } from 'node:http'
 import { fetch as undiciFetch, MockAgent } from 'undici'
 import { afterEach, beforeEach, expect, it, describe, vi } from 'vitest'
-import { listenOnEphemeralPort } from '@ts-shared/utils/ephemeral-ports'
+import { listenOnRunnerUnreservedEphemeralPort } from 'vouchington-tooling/runner-port-policy'
 import { isFetchSafePort } from '@ts-shared/utils/fetch-ports'
 import {
   createHttpDispatchers,
@@ -229,7 +229,7 @@ describe('http-dispatchers', () => {
 })
 
 async function listen(server: Server, host: string): Promise<{ port: number }> {
-  const port = await listenOnEphemeralPort(server, host, {
+  const port = await listenOnRunnerUnreservedEphemeralPort(server, host, {
     isAllowedPort: isFetchSafePort,
   })
   return { port }

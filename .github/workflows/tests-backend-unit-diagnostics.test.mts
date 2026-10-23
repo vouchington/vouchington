@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
-import { formatBackendUnitFileProgress } from '../../test-helpers/vitest-file-progress-reporter.mts'
+import { formatFileProgress } from 'vouchington-tooling/vitest-diagnostics'
 
 const workflow = load(readFileSync('.github/workflows/tests-backend-unit.yml', 'utf8')) as {
   jobs?: Record<string, { steps?: Array<{ name?: string; run?: string }> }>
@@ -86,7 +86,16 @@ describe('backend-unit deadline dump', () => {
     const definitions = (runScript?.run ?? '').split('trap stop_samplers EXIT')[0]
     const dir = mkdtempSync(path.join(tmpdir(), 'deadline-'))
     const progress = path.join(dir, 'progress.log')
-    writeFileSync(progress, formatBackendUnitFileProgress('start', 'backend/hung.test.mts'))
+    writeFileSync(
+      progress,
+      formatFileProgress(
+        'start',
+        'backend/hung.test.mts',
+        undefined,
+        undefined,
+        '[backend-unit-file]',
+      ),
+    )
     const script = `${definitions}\nstart_deadline_dump\nwait`
 
     const fired = spawnSync('bash', ['-c', script], {

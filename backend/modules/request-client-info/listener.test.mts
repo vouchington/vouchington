@@ -5,7 +5,7 @@ import {
   type ServerResponse,
 } from 'node:http'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { listenOnEphemeralPort } from '@ts-shared/utils/ephemeral-ports'
+import { listenOnRunnerUnreservedEphemeralPort } from 'vouchington-tooling/runner-port-policy'
 import type { DeviceTokenPayload } from '@ts-shared/session-jwt'
 import { mintUuidv7 as mintUUIDv7 } from '@vouchington/session-jwt'
 import { getOptionalRequestClientInfo } from './index.mts'
@@ -265,7 +265,7 @@ async function send(options: SendOptions): Promise<Response> {
           },
     ),
   )
-  const port = await listenOnEphemeralPort(server, '127.0.0.1')
+  const port = await listenOnRunnerUnreservedEphemeralPort(server, '127.0.0.1')
   try {
     return await new Promise<Response>((resolve, reject) => {
       const request = sendHttpRequest({

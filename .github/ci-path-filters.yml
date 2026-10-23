@@ -391,7 +391,6 @@ shell-scripts:
   - '**/*.sh'
 portability:
   - '.github/ci-path-filters.yml'
-  - 'ts-shared/utils/ephemeral-ports.mts'
   - 'ci/run-vitest-project-group.mts'
   - 'cloudflare-worker/scripts/wrangler/runtime.mts'
   - 'cloudflare-worker/scripts/wrangler/runtime.test.mts'

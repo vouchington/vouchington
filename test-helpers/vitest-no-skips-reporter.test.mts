@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { ciReporters } from './vitest-ci-reporters.mts'
+import { ciReporters } from 'vouchington-tooling/vitest-diagnostics'
+import { vitestCiReporterOptions } from './vitest-ci-reporter-options.mts'
 import { VitestNoSkipsReporter } from './vitest-no-skips-reporter.mts'
 
 type CompletedModule = Parameters<VitestNoSkipsReporter['onTestRunEnd']>[0][number]
@@ -52,7 +53,7 @@ describe('CI whole-test skip acceptance', () => {
     async browser => {
       vi.stubEnv('VITEST_CI_REPORTERS', 'run')
       vi.stubEnv('VITEST_STORYBOOK_BROWSER', browser)
-      const reporters = ciReporters()
+      const reporters = ciReporters(vitestCiReporterOptions)
       if (!Array.isArray(reporters)) throw new Error('CI reporter array missing')
       const gates = reporters.filter(reporter => reporter instanceof VitestNoSkipsReporter)
       expect(gates).toHaveLength(1)
@@ -64,22 +65,4 @@ describe('CI whole-test skip acceptance', () => {
       )
     },
   )
-
-  it.each([undefined, ''])('keeps local reporter selection for %s', configured => {
-    vi.stubEnv('VITEST_CI_REPORTERS', configured)
-    vi.stubEnv('VITEST_DIAGNOSTICS', '')
-    expect(ciReporters()).toBeUndefined()
-    vi.stubEnv('VITEST_DIAGNOSTICS', '1')
-    const diagnosticReporters = ciReporters()
-    if (!Array.isArray(diagnosticReporters)) throw new Error('Diagnostic reporter array missing')
-    expect(diagnosticReporters[0]).toBe('default')
-    expect(diagnosticReporters.some(reporter => reporter instanceof VitestNoSkipsReporter)).toBe(
-      false,
-    )
-  })
-
-  it('retains rejection of unsupported reporter modes', () => {
-    vi.stubEnv('VITEST_CI_REPORTERS', 'verbose')
-    expect(ciReporters).toThrow('Unknown VITEST_CI_REPORTERS value')
-  })
 })

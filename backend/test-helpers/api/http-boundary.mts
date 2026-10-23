@@ -8,7 +8,7 @@ import {
   type Server,
 } from 'node:http'
 import { createConnection, type AddressInfo, type Socket } from 'node:net'
-import { listenOnEphemeralPort } from '@ts-shared/utils/ephemeral-ports'
+import { listenOnRunnerUnreservedEphemeralPort } from 'vouchington-tooling/runner-port-policy'
 
 const NETWORK_TIMEOUT_MS = 5000
 
@@ -27,7 +27,7 @@ export async function listen(listener: RequestListener): Promise<Server> {
 
 export async function startListening(server: Server): Promise<void> {
   try {
-    await listenOnEphemeralPort(server, '127.0.0.1')
+    await listenOnRunnerUnreservedEphemeralPort(server, '127.0.0.1')
   } catch (err) {
     server.closeAllConnections()
     if (server.listening) server.close()

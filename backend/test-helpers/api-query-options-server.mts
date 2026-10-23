@@ -1,5 +1,8 @@
 import http from 'node:http'
-import { listenOnLoopbackEphemeralPort, type LoopbackHost } from '@ts-shared/utils/ephemeral-ports'
+import {
+  listenOnLoopbackEphemeralPort,
+  type LoopbackHost,
+} from 'vouchington-tooling/runner-port-policy'
 import { profileRequestQueries } from './api/request-query-profile.mts'
 
 /** Real HTTP dispatch on an owned listener; inherited transaction ownership stays with the caller. */

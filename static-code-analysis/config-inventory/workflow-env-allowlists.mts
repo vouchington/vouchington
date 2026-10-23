@@ -58,6 +58,10 @@ const EXTERNAL_WORKFLOW_ENV_ALLOWLIST = new Set([
   'POSTGRES_USER',
   'PUSH',
   'RUN_NUMBER',
+  // Read by vouchington-tooling/vitest-diagnostics ciReporters() and ciOutputFile(); the
+  // published reporter implementations are outside the repository source inventory.
+  'VITEST_FILE_PROGRESS_FILE',
+  'VITEST_JUNIT_OUTPUT_FILE',
   // Read through required(env, 'VITEST_REPORT_EXPECTATIONS') in the report-preparation CLI. This
   // dynamic NodeJS.ProcessEnv lookup is intentionally not matched by the static reader patterns.
   'VITEST_REPORT_EXPECTATIONS',

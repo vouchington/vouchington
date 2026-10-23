@@ -1,5 +1,6 @@
+import { vitestCiReporterOptions } from './test-helpers/vitest-ci-reporter-options.mts'
 import { defineConfig } from 'vitest/config'
-import { ciOutputFile, ciReporters } from './test-helpers/vitest-ci-reporters.mts'
+import { ciOutputFile, ciReporters } from 'vouchington-tooling/vitest-diagnostics'
 import { effectiveTimeoutCap } from 'vouchington-tooling/vitest-effective-timeout'
 import {
   backendAliases,
@@ -19,7 +20,7 @@ import {
 import { toolingProjects } from './test-helpers/vitest-config/tooling-projects.mts'
 import { webProjects } from './test-helpers/vitest-config/web-projects.mts'
 
-const reporters = ciReporters()
+const reporters = ciReporters(vitestCiReporterOptions)
 const outputFile = ciOutputFile()
 
 export default defineConfig({
