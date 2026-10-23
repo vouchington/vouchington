@@ -30,18 +30,12 @@ describe('update_crawler topic references', () => {
       .send({ referral_program_id: missingTopicId })
 
     const tool = getRegisteredToolByName('update_crawler')!
-    const mcp = await runWithCredentialRequestContext(MCP_ORIGIN, () =>
+    const mcp = runWithCredentialRequestContext(MCP_ORIGIN, () =>
       tool.function(admin)({ id: crawlerId, updates: { referral_program_id: missingTopicId } }),
-    ).then(
-      result => ({ ok: true as const, result }),
-      err => ({ ok: false as const, error: err }),
     )
 
     expect(rest.status).toBe(404)
-    expect(mcp).toMatchObject({
-      ok: false,
-      error: { status: 404, message: 'Topic not found' },
-    })
+    await expect(mcp).rejects.toMatchObject({ status: 404, message: 'Topic not found' })
   })
 
   it('returns matching REST and MCP errors for a merged source whose destination was deleted', async () => {
@@ -70,14 +64,11 @@ describe('update_crawler topic references', () => {
       .set('Content-Type', 'application/json')
       .send({ referral_program_id: sourceId })
     const tool = getRegisteredToolByName('update_crawler')!
-    const mcp = await runWithCredentialRequestContext(MCP_ORIGIN, () =>
+    const mcp = runWithCredentialRequestContext(MCP_ORIGIN, () =>
       tool.function(admin)({ id: crawlerId, updates: { referral_program_id: sourceId } }),
-    ).then(
-      result => ({ ok: true as const, result }),
-      err => ({ ok: false as const, error: err }),
     )
 
     expect(rest.status).toBe(409)
-    expect(mcp).toMatchObject({ ok: false, error: { status: 409 } })
+    await expect(mcp).rejects.toMatchObject({ status: 409 })
   })
 })
