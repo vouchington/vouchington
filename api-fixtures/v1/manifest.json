@@ -44164,7 +44164,7 @@
     },
     "GET:/api/v1/psql/partitions": {
       "bodyKind": "content",
-      "hash": "3f9555763239360e936d6c9dd87610637c1e88dc64b0ebd74d13c6b0ffb38c1b",
+      "hash": "f1afb1c7074182fffc3d65df471c49f444ce5cc1db79d270c63de09df1bad98b",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -44174,6 +44174,37 @@
           "PartitionInfo": {
             "additionalProperties": false,
             "properties": {
+              "drop_refusal": {
+                "required": true,
+                "schema": {
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "literal",
+                      "value": "check-pending"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "in-flight"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "inside-retention"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "legal-hold"
+                    },
+                    {
+                      "type": "literal",
+                      "value": "no-declared-retention"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
               "name": {
                 "required": true,
                 "schema": {
@@ -104312,7 +104343,7 @@
       "migratedFrom": ["backend/api/v1/psql/index.mts"],
       "path": "/api/v1/psql/partitions",
       "responseSchema": {
-        "hash": "9060fdf56dd3dcb8be273deca20f0b2acf353a9aa23f15efd1dfdaf8c4af4d8d",
+        "hash": "f4bc580cfa98d1139d6d93704d281b07d9e7b2a85a1d29acbaeda138e9576912",
         "key": "web.admin.psql.partitions.default"
       },
       "route": {

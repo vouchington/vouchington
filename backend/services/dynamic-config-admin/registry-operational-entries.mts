@@ -4,7 +4,6 @@ import {
   LIST_IMPORT_MAX_ITEMS,
   COMMUNITY_LIST_MAX_FEEDS,
 } from '@services/lists/import-config'
-import { DATA_RETENTION_MAX_VALUES, dataRetentionConfig } from '@services/data-retention/config'
 import { moderationAiConfig, moderationAiDispatchConfig } from '@services/moderation-ai-config'
 import {
   RSS_FEED_CRAWL_MAX_VALUES,
@@ -16,6 +15,7 @@ import { webRiskConfig } from '@services/web-risk/config'
 import { defineDynamicConfigNamespace } from 'valkyries/dynamic-config'
 import { scoreField } from './registry-entry-utils.mts'
 import { membershipBillingRegistryEntry } from './registry-membership-billing-entry.mts'
+import { dataRetentionRegistryEntry } from './registry-data-retention-entry.mts'
 import { postRelatedUrlDisplayRegistryEntries } from './registry-post-related-url-entries.mts'
 import { storyRelatedItemsRegistryEntry } from './registry-story-related-items-entry.mts'
 import { userImportExportRegistryEntry } from './registry-user-import-export-entry.mts'
@@ -113,41 +113,7 @@ export const operationalDynamicConfigRegistryEntries = [
     },
     validate: validateRssFeedCrawlConfig,
   }),
-  defineDynamicConfigNamespace({
-    namespace: 'data-retention-config',
-    label: 'Data Retention',
-    description: 'Per-run batch bounds for the daily data retention cleanup.',
-    config: dataRetentionConfig,
-    access: { update_roles: ['developer'] },
-    fields: {
-      topic_import_attempt_batch_size: {
-        description: 'Topic import attempt rows per retention page.',
-        minValue: 1,
-        maxValue: 250,
-        integer: true,
-      },
-      batch_size: {
-        description: 'Rows each data retention cleanup deletes per batch.',
-        minValue: 1,
-        maxValue: DATA_RETENTION_MAX_VALUES.batch_size,
-        integer: true,
-      },
-      max_batches_per_run: {
-        description:
-          'Maximum batches each data retention cleanup runs per daily job. A cleanup that hits the cap reports more work and resumes on the next run.',
-        minValue: 1,
-        maxValue: DATA_RETENTION_MAX_VALUES.max_batches_per_run,
-        integer: true,
-      },
-      partition_status_probe_limit: {
-        description:
-          'Maximum eligible partition children checked for holds or in-flight rows in one admin status request. Remaining children are marked check-pending and rechecked during cleanup.',
-        minValue: 1,
-        maxValue: DATA_RETENTION_MAX_VALUES.partition_status_probe_limit,
-        integer: true,
-      },
-    },
-  }),
+  dataRetentionRegistryEntry,
   defineDynamicConfigNamespace({
     namespace: 'web-risk-config',
     label: 'Web Risk',

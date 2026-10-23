@@ -103,8 +103,10 @@ consumers, and their tests.
    pnpm exec no-mistakes tests plan dotnet --changed-file <dotnet-source-file-a> --changed-file <dotnet-source-file-b> --format commands
    ```
 
-Never edit `api-fixtures/v1/manifest.json`, `schema-lock.json`, or `responses/**` by hand; change the
-fixture source and follow the [fixture update flow](../../../docs/development/testing/backend/api-fixtures.md):
+The explicit `backendResponseContracts` data in `api-fixtures/v1/manifest.json` is maintained with
+the backend response type. Do not hand-edit its generated fixture entries, `schema-lock.json`, or
+`responses/**`; change the fixture source and follow the
+[fixture update flow](../../../docs/development/testing/backend/api-fixtures.md):
 
 ```sh
 pnpm run api-fixtures:generate

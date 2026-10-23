@@ -1,4 +1,5 @@
 import type * as Deps from './dependencies.mts'
+import type { PartitionDropStatusReason } from '@data-stores/psql/migration-runner/partition-drop-guard'
 
 type ElectionVote = Deps.ElectionVote
 type PageInfo = Deps.PageInfo
@@ -76,6 +77,7 @@ export type PsqlJobEnqueueResponse = {
 export type PartitionInfo = {
   name: string
   size_bytes: number
+  drop_refusal: PartitionDropStatusReason | null
 }
 
 export type PartitionTable = {
