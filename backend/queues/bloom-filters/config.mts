@@ -23,6 +23,12 @@ export const BLOOM_FILTER_ORDERING = {
   backfill_rss_feed_items: { key: 'entity-cache:rss_feed_items', concurrency: 1 },
 } as const
 
+const replicaLagSafetyMarginMs = 1_000
+
+export const BLOOM_FILTER_DEFAULTS = {
+  replicaLagSafetyMarginMs,
+}
+
 const BLOOM_FILTER_JOB_DEFAULTS = {
   attempts: 3,
   backoff: { type: 'exponential' as const, delay: 1000, jitter: 0.5 },
@@ -80,6 +86,7 @@ export function rebuildBloomFilterJobOptions(
   data: RebuildBloomFilterData,
   priority?: number,
 ): Partial<JobOptions> {
+  const delay = blocklistReplicaLagDelay(data.filter)
   return {
     ...BLOOM_FILTER_JOB_DEFAULTS,
     priority: priority ?? PRIORITY_DEFAULT,
@@ -87,7 +94,19 @@ export function rebuildBloomFilterJobOptions(
     jobId: `bloomFilterRebuild__${data.filter}`,
     removeOnComplete: true,
     removeOnFail: true,
+    ...(delay === undefined ? {} : { delay }),
   } satisfies Partial<JobOptions>
+}
+
+function blocklistReplicaLagDelay(filter: RebuildBloomFilterData['filter']): number | undefined {
+  switch (filter) {
+    case 'url-blocklist':
+    case 'email-blocklist':
+      return BLOOM_FILTER_DEFAULTS.replicaLagSafetyMarginMs
+    case 'embedding':
+    case 'api-keys':
+      return undefined
+  }
 }
 
 function rebuildBloomFilterOrdering(data: RebuildBloomFilterData): JobOptions['ordering'] {

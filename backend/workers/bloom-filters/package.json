@@ -33,6 +33,7 @@
     "@services/entity-relations": "workspace:^",
     "@services/rss-feeds": "workspace:^",
     "@services/urls": "workspace:^",
+    "@services/urls-domains-blacklist-sync": "workspace:^",
     "@services/users": "workspace:^",
     "@voucha/test-helpers": "workspace:^"
   }

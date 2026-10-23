@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
+  BLOOM_FILTER_DEFAULTS,
   backfillBloomFilterJobOptions,
   backfillUserBookmarkBloomFilterJobOptions,
   rebuildBloomFilterJobOptions,
@@ -39,6 +40,18 @@ describe('enqueues.generated', () => {
       removeOnComplete: true,
       removeOnFail: true,
     })
+  })
+
+  it('delays blocklist rebuilds by the replica-lag safety margin', () => {
+    expect(BLOOM_FILTER_DEFAULTS.replicaLagSafetyMarginMs).toBe(1_000)
+    expect(rebuildBloomFilterJobOptions({ filter: 'url-blocklist' }).delay).toBe(
+      BLOOM_FILTER_DEFAULTS.replicaLagSafetyMarginMs,
+    )
+    expect(rebuildBloomFilterJobOptions({ filter: 'email-blocklist' }).delay).toBe(
+      BLOOM_FILTER_DEFAULTS.replicaLagSafetyMarginMs,
+    )
+    expect(rebuildBloomFilterJobOptions({ filter: 'embedding' })).not.toHaveProperty('delay')
+    expect(rebuildBloomFilterJobOptions({ filter: 'api-keys' })).not.toHaveProperty('delay')
   })
 
   it('shares one rebuild identity across embedding entry points', () => {

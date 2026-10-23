@@ -55,6 +55,9 @@ work eligible without holding a worker through the entire backlog.
   reconciler, or a documented accepted loss. See [job replayability](../../../requirements/platform/JOB-REPLAYABILITY.md). Worker sizing is covered in [worker performance](../../../development/worker-performance.md).
 - **Never enqueue and wait.** A request or job does not block on another job's result. Clients poll
   durable state; a job that needs a result calls the service directly.
+- **Blocklist membership rebuilds wait out replica lag.** URL and email blocklist rebuilds read the
+  replica. The job that follows a committed sync is delayed by a lag safety margin so that commit
+  is visible, and the rebuild stays off the writer.
 - **User-waiting jobs get their own queue.** Latency-critical mail a person is waiting on (login,
   verification) is isolated from bulk digest work, so it never waits behind a digest backlog.
 - **A `limiter` exists only for an external rate limit.** Database-only work is throttled with
