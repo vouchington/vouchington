@@ -5,7 +5,11 @@ import {
   buildRssFeedItemCategorySqlBatches,
   normalizeRssFeedItemCategorySnapshots,
 } from './category-batches.mts'
-import { readCategoryDataChunk, type CategoryDataRow } from './category-data.mts'
+import {
+  categorySnapshotKey,
+  readCategoryDataChunk,
+  type CategoryDataRow,
+} from './category-data.mts'
 import {
   insertMissingCategories,
   insertMissingHashtagAliases,
@@ -146,7 +150,7 @@ async function upsertRssFeedItemCategorySnapshots(
       // oxlint-disable-next-line no-await-in-loop -- bounded chunks are rechecked in the fenced transaction.
       currentCategoryData.push(...(await readCategoryDataChunk(batch, query)))
     }
-    if (JSON.stringify(currentCategoryData) !== JSON.stringify(categoryData))
+    if (categorySnapshotKey(currentCategoryData) !== categorySnapshotKey(categoryData))
       throw createHttpError(
         409,
         'RSS item category topics changed while acquiring attachment fences',

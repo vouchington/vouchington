@@ -97,3 +97,15 @@ export async function readCategoryDataChunk(
   )
   return rows
 }
+
+/** Row order from the unordered snapshot read is not stable, so compare by item and category key. */
+export function categorySnapshotKey(rows: readonly CategoryDataRow[]): string {
+  return JSON.stringify(
+    rows
+      .map(row => [row.rss_feed_item_id, row.category_text, row] as const)
+      .toSorted(([itemA, textA], [itemB, textB]) =>
+        itemA === itemB ? (textA < textB ? -1 : textA > textB ? 1 : 0) : itemA < itemB ? -1 : 1,
+      )
+      .map(([, , row]) => row),
+  )
+}
