@@ -4403,16 +4403,18 @@ rules:
         # step deadlines remain diagnostic guards, while this is the fail-fast end-to-end cap.
         - job: '.github/workflows/tests-web-api.yml#web-api-tests'
           maxMinutes: 27
-        # Steps sum to 25m; cap 23m is below it; healthy max was 97 seconds across 78
-        # GitHub-hosted successes in #2260.
+        # Steps sum to 27m; cap 23m is below it; healthy max was 97 seconds across 78
+        # GitHub-hosted successes in #2260. The pnpm standalone download needs more
+        # than one minute on a cold runner.
         - job: '.github/workflows/initialize-smoke-test.yml#initialize-smoke-test'
           maxMinutes: 23
         # Healthy maximum was 442 seconds across 75 GitHub-hosted successes in #2260.
         - job: '.github/workflows/static-code-analysis.yml#static-code-analysis'
           maxMinutes: 24
-        # Healthy maximum was 150 seconds across 80 GitHub-hosted successes in #2260.
+        # no-mistakes 0.95 exceeds the earlier hosted budget. The check step is 18 minutes,
+        # and this job cap stays above that step and below the sum of the step budgets.
         - job: '.github/workflows/static-code-analysis.yml#no-mistakes'
-          maxMinutes: 20
+          maxMinutes: 30
         # Healthy maximum was 347 seconds across 555 GitHub-hosted successes in #2260.
         - job: '.github/workflows/storybook.yml#storybook'
           maxMinutes: 30
