@@ -1,4 +1,4 @@
-export const MODERATION_BOUNDED_TABLES = new Map<string, string>([
+export const MODERATION_RETENTION_BOUNDED_TABLES = new Map<string, string>([
   [
     'moderation_queue_claims',
     'Daily keyset cleanup deletes claims more than one day old once their last claim activity is also older than one day.',

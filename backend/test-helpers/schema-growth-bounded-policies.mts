@@ -1,5 +1,4 @@
 import { RETENTION_BOUNDED_TABLES } from './schema-growth-bounded-retention.mts'
-import { MODERATION_BOUNDED_TABLES } from './schema-growth-bounded-moderation.mts'
 import { EXTRA_BOUNDED_TABLES } from './schema-growth-bounded-extra.mts'
 
 export const STATIC_IDENTITY_EXCEPTIONS = new Map<string, string>([
@@ -34,7 +33,6 @@ export const EXPLICIT_BOUNDED_TABLES = new Map<string, string>([
   ...STATIC_IDENTITY_EXCEPTIONS,
   ...EXTRA_BOUNDED_TABLES,
   ...RETENTION_BOUNDED_TABLES,
-  ...MODERATION_BOUNDED_TABLES,
   [
     'oauth_authorizations',
     'Authorization rows expire after ten minutes and data retention deletes terminal or expired rows, bounding cardinality to recent OAuth traffic.',
