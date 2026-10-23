@@ -15,7 +15,7 @@ import {
 import { getLocalTestUserRawByUsername } from '../../../../test-helpers/data-stores/psql/users.mts'
 import { countLocalAgentsForSystemUsername } from '../../../../test-helpers/data-stores/psql/classifiers-seed.mts'
 import generateSeedPostClassifierSQL from '../0635-00-03-seed-post-classifier.mts'
-import { SEEDED_TOPICS } from '../0005-00-01-seed-topics.mts'
+import { SEEDED_TOPICS } from '../utils/seeded-topics.mts'
 import { acquirePostClassifierSeedTestLock } from '../../../../test-helpers/data-stores/psql/post-classifier/seed-lock.mts'
 
 describe('post classifier config-driven seed (real DB)', () => {

@@ -26,7 +26,7 @@ const PROMPT = `Does the content above clearly break this community rule? Answer
  * rotation pattern as the tagging seed: deactivate the active version only when its content
  * differs, then insert-and-activate when no matching active row exists.
  *
- * @public loaded by path by the config-driven migration runner
+ * loaded by path by the config-driven migration runner
  */
 export default function generateSeedCommunityModerationClassifierSQL(): string {
   return `DO $community_moderation_actor$ BEGIN

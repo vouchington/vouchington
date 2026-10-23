@@ -22,7 +22,7 @@ function escapeSqlString(str: string): string {
   return str.replaceAll("'", "''")
 }
 
-/** @public loaded by path by the config-driven migration runner */
+/** loaded by path by the config-driven migration runner */
 export default function generateSeedCommunitiesSQL(): string {
   const parts: string[] = ['-- Seed platform communities']
 

@@ -15,7 +15,7 @@ const AGENT_SYSTEM_USERS = [
   ...MODERATOR_CONFIGS.map(c => c.slug),
 ]
 
-/** @public loaded by path by the config-driven migration runner */
+/** loaded by path by the config-driven migration runner */
 export default function generateSeedAgentsSQL(): string {
   const parts: string[] = ['-- Ensure agent system users and agent rows during db:migrate']
 

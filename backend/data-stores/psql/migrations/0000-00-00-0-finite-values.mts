@@ -1,6 +1,6 @@
 import { GENERATED_FINITE_VALUES } from '../finite-values/index.mts'
 
-/** @public Loaded by path by the fixed migration runner; current bootstrap enum definitions. */
+/** Loaded by path by the fixed migration runner; current bootstrap enum definitions. */
 export default function createFiniteValueTypes(): string {
   return Object.entries(GENERATED_FINITE_VALUES)
     .map(([name, values]) => {

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { STAGING_RSS_FEEDS } from './config-driven/0080-00-01a-staging-rss-feeds.mts'
+import { STAGING_RSS_FEEDS } from './config-driven/utils/staging-rss-feeds.mts'
 import { close, read } from './setup.mts'
 import type { QueryValues } from './types.mts'
 

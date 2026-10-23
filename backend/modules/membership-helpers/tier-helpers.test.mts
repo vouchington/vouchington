@@ -1,11 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Membership } from '@voucha/types/entities/membership'
-import {
-  isActiveMembership,
-  hasPlusTier,
-  hasProTier,
-  hasUnexpiredPlusTier,
-} from './tier-helpers.mts'
+import { isActiveMembership, hasPlusTier, hasUnexpiredPlusTier } from './tier-helpers.mts'
 
 const fixedNow = new Date('2026-10-05T23:59:40.000Z')
 
@@ -107,16 +102,6 @@ describe('hasPlusTier', () => {
 
   it('returns false for cancelled', () => {
     expect(hasPlusTier(makeMembership({ status: 'cancelled' }), fixedNow)).toBe(false)
-  })
-})
-
-describe('hasProTier', () => {
-  it('returns true for active pro', () => {
-    expect(hasProTier(makeMembership({ plan: 'pro' }))).toBe(true)
-  })
-
-  it('returns false for active plus', () => {
-    expect(hasProTier(makeMembership({ plan: 'plus' }))).toBe(false)
   })
 })
 

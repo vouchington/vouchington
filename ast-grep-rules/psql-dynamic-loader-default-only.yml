@@ -1,0 +1,149 @@
+id: psql-dynamic-loader-default-only
+language: Tsx
+severity: error
+message: 'dynamically loaded PostgreSQL modules may only export a default function'
+files:
+  - 'backend/data-stores/psql/config-driven/*.mts'
+  - 'backend/data-stores/psql/migrations/*.mts'
+ignores:
+  - 'backend/data-stores/psql/config-driven/__tests__/**'
+  - 'backend/data-stores/psql/config-driven/utils/**'
+rule:
+  all:
+    - kind: export_statement
+    - not:
+        all:
+          - pattern: 'export default $VALUE'
+          - has:
+              stopBy: neighbor
+              any:
+                - kind: function_declaration
+                - kind: function_expression
+                - kind: arrow_function
+examples:
+  - code: 'export default function generateSql() { return "SELECT 1" }'
+    isValid: true
+    file: 'backend/data-stores/psql/config-driven/0000-sample.mts'
+  - code: 'export default function generateSql(): string { return "SELECT 1" }'
+    isValid: true
+    file: 'backend/data-stores/psql/config-driven/0000-sample.mts'
+  - code: 'export default async function generateSql(): Promise<string> { return "SELECT 1" }'
+    isValid: true
+    file: 'backend/data-stores/psql/config-driven/0000-sample.mts'
+  - code: 'export default async () => "SELECT 1"'
+    isValid: true
+    file: 'backend/data-stores/psql/migrations/0000-sample.mts'
+  - code: 'export default async (): Promise<string> => "SELECT 1"'
+    isValid: true
+    file: 'backend/data-stores/psql/migrations/0000-sample.mts'
+  - code: 'export const helper = () => "SELECT 1"; export default function generateSql() { return helper() }'
+    isValid: false
+    file: 'backend/data-stores/psql/config-driven/0000-sample.mts'
+  - code: 'export let helper = "unused"'
+    isValid: false
+    file: 'backend/data-stores/psql/config-driven/0000-sample.mts'
+  - code: 'export var helper = "unused"'
+    isValid: false
+    file: 'backend/data-stores/psql/config-driven/0000-sample.mts'
+  - code: 'export function helper() {}'
+    isValid: false
+    file: 'backend/data-stores/psql/config-driven/0000-sample.mts'
+  - code: 'export async function helper() {}'
+    isValid: false
+    file: 'backend/data-stores/psql/config-driven/0000-sample.mts'
+  - code: 'export function helper(): string { return "SELECT 1" }'
+    isValid: false
+    file: 'backend/data-stores/psql/config-driven/0000-sample.mts'
+  - code: 'export async function helper(): Promise<string> { return "SELECT 1" }'
+    isValid: false
+    file: 'backend/data-stores/psql/config-driven/0000-sample.mts'
+  - code: 'export function helper<T>(value: T): T { return value }'
+    isValid: false
+    file: 'backend/data-stores/psql/config-driven/0000-sample.mts'
+  - code: 'export const helper: string = "unused"'
+    isValid: false
+    file: 'backend/data-stores/psql/config-driven/0000-sample.mts'
+  - code: 'export const first = 1, second = 2'
+    isValid: false
+    file: 'backend/data-stores/psql/config-driven/0000-sample.mts'
+  - code: 'export interface Helper<T> { value: T }'
+    isValid: false
+    file: 'backend/data-stores/psql/config-driven/0000-sample.mts'
+  - code: 'export type Helper<T> = { value: T }'
+    isValid: false
+    file: 'backend/data-stores/psql/config-driven/0000-sample.mts'
+  - code: 'export declare class Helper { value: string }'
+    isValid: false
+    file: 'backend/data-stores/psql/migrations/0000-sample.mts'
+  - code: 'export const helper: string = "unused"'
+    isValid: false
+    file: 'backend/data-stores/psql/migrations/0000-sample.mts'
+  - code: 'export abstract class Helper {}'
+    isValid: false
+    file: 'backend/data-stores/psql/config-driven/0000-sample.mts'
+  - code: 'export enum Helper { A }'
+    isValid: false
+    file: 'backend/data-stores/psql/config-driven/0000-sample.mts'
+  - code: 'export namespace Helper {}'
+    isValid: false
+    file: 'backend/data-stores/psql/config-driven/0000-sample.mts'
+  - code: 'export type Helper = string'
+    isValid: false
+    file: 'backend/data-stores/psql/config-driven/0000-sample.mts'
+  - code: 'export declare const helper: string'
+    isValid: false
+    file: 'backend/data-stores/psql/config-driven/0000-sample.mts'
+  - code: "export type { Helper } from './helper.mts'"
+    isValid: false
+    file: 'backend/data-stores/psql/config-driven/0000-sample.mts'
+  - code: "export type * from './helper.mts'"
+    isValid: false
+    file: 'backend/data-stores/psql/config-driven/0000-sample.mts'
+  - code: 'export interface Helper {}'
+    isValid: false
+    file: 'backend/data-stores/psql/config-driven/0000-sample.mts'
+  - code: "export { helper as default } from './helper.mts'"
+    isValid: false
+    file: 'backend/data-stores/psql/config-driven/0000-sample.mts'
+  - code: "export * from './helper.mts'"
+    isValid: false
+    file: 'backend/data-stores/psql/config-driven/0000-sample.mts'
+  - code: "export * as helper from './helper.mts'"
+    isValid: false
+    file: 'backend/data-stores/psql/config-driven/0000-sample.mts'
+  - code: 'export default "SELECT 1"'
+    isValid: false
+    file: 'backend/data-stores/psql/config-driven/0000-sample.mts'
+  - code: 'const sql = "SELECT 1"; export default sql'
+    isValid: false
+    file: 'backend/data-stores/psql/config-driven/0000-sample.mts'
+  - code: 'export default {}'
+    isValid: false
+    file: 'backend/data-stores/psql/config-driven/0000-sample.mts'
+  - code: 'export default { run: () => "SELECT 1" }'
+    isValid: false
+    file: 'backend/data-stores/psql/config-driven/0000-sample.mts'
+  - code: 'export default function* generateSql() { yield "SELECT 1" }'
+    isValid: false
+    file: 'backend/data-stores/psql/config-driven/0000-sample.mts'
+  - code: 'export default class Migration {}'
+    isValid: false
+    file: 'backend/data-stores/psql/config-driven/0000-sample.mts'
+  - code: 'export { helper }'
+    isValid: false
+    file: 'backend/data-stores/psql/config-driven/0000-sample.mts'
+  - code: 'export = helper'
+    isValid: false
+    file: 'backend/data-stores/psql/config-driven/0000-sample.mts'
+  - code: 'export as namespace Helper'
+    isValid: false
+    file: 'backend/data-stores/psql/config-driven/0000-sample.mts'
+  - code: 'export const helper = true'
+    isValid: true
+    file: 'backend/data-stores/psql/config-driven/utils/helper.mts'
+  - code: 'export const helper = true'
+    isValid: true
+    file: 'backend/data-stores/psql/config-driven/__tests__/helper.test.mts'
+  - code: 'export const helper = true'
+    isValid: true
+    file: 'backend/data-stores/psql/migration-runner/helper.mts'

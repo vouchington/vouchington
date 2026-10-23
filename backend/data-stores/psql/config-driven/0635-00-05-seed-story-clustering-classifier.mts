@@ -48,7 +48,7 @@ Pick the single best-matching candidate's key, or the "none" key if the incoming
  * rotates like tagging's: deactivate the active version only when its content differs, then insert
  * and activate the current one when no matching active row exists.
  *
- * @public loaded by path by the config-driven migration runner
+ * loaded by path by the config-driven migration runner
  */
 export default function generateSeedStoryClusteringClassifierSQL(): string {
   return `${buildSystemUserUpsertSQL(STORY_CLUSTERING_CLASSIFIER_SYSTEM_USERNAME)}

@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import generateSeedBlacklistSourcesSQL, {
-  generateSQL,
-} from '../0050-00-01-seed-blacklist-sources.mts'
+import generateSeedBlacklistSourcesSQL from '../0050-00-01-seed-blacklist-sources.mts'
+import { generateSQL } from '../utils/blacklist-source-seed-sql.mts'
 import { BLACKLISTS } from '@voucha/types/entities/domain-blacklist-source'
 
 describe('0050-00-01-seed-blacklist-sources', () => {

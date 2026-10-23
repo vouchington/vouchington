@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import generateSeedTopicsSQL, { SEEDED_TOPICS } from '../0005-00-01-seed-topics.mts'
+import generateSeedTopicsSQL from '../0005-00-01-seed-topics.mts'
+import { SEEDED_TOPICS } from '../utils/seeded-topics.mts'
 
 describe('0005-00-01-seed-topics idempotent', () => {
   it('generates SQL for every seeded topic', () => {

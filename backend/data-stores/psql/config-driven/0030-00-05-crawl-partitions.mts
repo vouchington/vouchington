@@ -7,7 +7,7 @@
 import { generateMonthlyPartitions } from '@vouchington/postgres/partitions'
 import { CRAWL_PARTITION_TABLES } from './utils/partition-config.mts'
 
-/** @public loaded by path by the config-driven migration runner */
+/** loaded by path by the config-driven migration runner */
 export default function createCrawlPartitions(): string {
   return generateMonthlyPartitions({
     tables: CRAWL_PARTITION_TABLES,

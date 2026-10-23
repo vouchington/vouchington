@@ -7,7 +7,7 @@
 import { generateDefaultPartitions } from '@vouchington/postgres/partitions'
 import { USER_SESSION_PARTITION_TABLES } from './utils/partition-config.mts'
 
-/** @public loaded by path by the config-driven migration runner */
+/** loaded by path by the config-driven migration runner */
 export default function createUserSessionPartitions(): string {
   return generateDefaultPartitions(USER_SESSION_PARTITION_TABLES)
 }

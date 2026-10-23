@@ -33,9 +33,3 @@ function entitlementClockIsOpen(membership: MembershipTierFields, now = new Date
     membership.expires_at.getTime() > now.getTime()
   )
 }
-
-/** @public Documented membership tier predicate. */
-export function hasProTier(m: MembershipTierFields | null): boolean {
-  if (!isActiveMembership(m)) return false
-  return m.plan === 'pro'
-}
