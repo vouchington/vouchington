@@ -210,6 +210,7 @@ describe('partition drop guard', () => {
       'cleanupPartitions:lockCandidate',
       'getPartitionDropRefusal:inFlight',
     ])
+    expect(statements[0]).toContain('IN ACCESS EXCLUSIVE MODE')
     statements.length = 0
     inFlight = false
     await expect(

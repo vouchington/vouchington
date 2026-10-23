@@ -1,7 +1,12 @@
 import { it, expect, describe } from 'vitest'
-import { finalizeChunksIfComplete, deleteOldCrawlChunks } from '@services/crawl-chunks/cleanup'
+import {
+  finalizeChunksIfComplete,
+  finalizeChunksIfCompleteForMany,
+  deleteOldCrawlChunks,
+} from '@services/crawl-chunks/cleanup'
 import {
   createTestCrawlWithChunks,
+  insertTestCrawlPending,
   crawlHasPendingEmbeddings,
   getCrawlEmbeddingsGeneratedAt,
   getAllCrawlChunksForUrl,
@@ -87,5 +92,27 @@ describe('cleanup', () => {
     // Should only have chunks for crawl1
     expect(afterGroups).toHaveLength(1)
     expect(afterGroups[0].crawl_id).toBe(crawl1.crawl.id)
+  })
+
+  it.each([
+    [
+      'finalizeChunksIfComplete',
+      (urlId: string, id: string) => finalizeChunksIfComplete(urlId, id),
+    ],
+    [
+      'finalizeChunksIfCompleteForMany',
+      (_urlId: string, id: string) => finalizeChunksIfCompleteForMany([id]),
+    ],
+  ])('%s clears the pending marker of superseded crawls', async (_name, finalize) => {
+    const older = (await createTestCrawlWithChunks({
+      markdown: `Test superseded ${Date.now()} ${Math.random()}`,
+    })) as TestCrawlWithChunks
+    const urlId = older.url!.id
+    const newer = await insertTestCrawlPending(urlId, older.crawler.id)
+
+    await finalize(urlId, newer.id)
+
+    expect(await crawlHasPendingEmbeddings(urlId, older.crawl.id)).toBe(false)
+    expect(await countCrawlChunks({ urlId })).toBe(0)
   })
 })

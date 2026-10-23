@@ -45,6 +45,16 @@ export const finalizeChunksIfCompleteForMany = async (crawlIds: string[]): Promi
         AND crawls.id = complete_crawls.crawl_id
         AND crawls.embeddings_generated_at IS NULL
       RETURNING crawls.url_id, crawls.id AS crawl_id
+    ),
+    superseded_crawls AS (
+      -- Older crawls lose their chunks below, so their pending marker has no work left.
+      UPDATE crawls
+      SET has_pending_embeddings = false
+      FROM updated_crawls
+      WHERE crawls.url_id = updated_crawls.url_id
+        AND crawls.id < updated_crawls.crawl_id
+        AND crawls.has_pending_embeddings
+        AND crawls.id NOT IN (SELECT crawl_id FROM updated_crawls)
     )
     DELETE FROM crawl_chunks
     USING updated_crawls, crawls old_crawl
@@ -83,6 +93,13 @@ export const finalizeChunksIfComplete = async (
     WHERE url_id = ${urlId}
       AND id = ${crawlId}
       AND embeddings_generated_at IS NULL
+  `)
+  await write(sql`/* finalizeChunksIfComplete:clearSuperseded */
+    UPDATE crawls
+    SET has_pending_embeddings = false
+    WHERE url_id = ${urlId}
+      AND id < ${crawlId}
+      AND has_pending_embeddings
   `)
   await deleteOldCrawlChunks(urlId, crawlId)
   return true

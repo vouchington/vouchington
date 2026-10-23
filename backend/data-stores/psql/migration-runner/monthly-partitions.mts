@@ -121,9 +121,10 @@ export async function guardAndRetireMonthlyPartition(
 ): Promise<PartitionDropRefusal | null> {
   const table = assertSafeSqlIdentifier(candidate.table)
   const partition = assertSafeSqlIdentifier(candidate.partition)
-  // Parent-before-child lock ordering matches partition DDL and blocks child writers during the check.
+  // Ordinary DETACH needs ACCESS EXCLUSIVE on the parent, so take that final mode before the child
+  // to avoid a lock-upgrade deadlock with concurrent readers and writers.
   await transaction(
-    `/* cleanupPartitions:lockParent */ LOCK TABLE ${table} IN SHARE UPDATE EXCLUSIVE MODE`,
+    `/* cleanupPartitions:lockParent */ LOCK TABLE ${table} IN ACCESS EXCLUSIVE MODE`,
   )
   await transaction(
     `/* cleanupPartitions:lockCandidate */ LOCK TABLE ${partition} IN ACCESS EXCLUSIVE MODE`,
