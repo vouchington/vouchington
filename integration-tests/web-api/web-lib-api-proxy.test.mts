@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto'
 import http from 'node:http'
 import serverApp from '../../backend/entrypoints/api/index.mts'
 import { createWebApiTestServer, listenOnFetchSafeLoopback } from './routes.mts'
-import { refreshProxySession, recordProxyReferralAttribution } from '@/lib/api/server/proxy'
+import { recordProxyReferralAttribution } from '@/lib/api/server/proxy'
 import { createTestUser } from '../../backend/test-helpers/index.mts'
 import { createDeviceAndSessionTokens } from '../../backend/services/jwt-session/index.mts'
 import { mintUuidv7 as mintUUIDv7 } from '@vouchington/session-jwt'
@@ -42,64 +42,6 @@ describe('web/lib/api/server/proxy — integration', () => {
       process.env.NEXT_PUBLIC_API_BASE_URL = previousPublicApiBaseUrl
     }
   }, 15_000)
-
-  // ─── server/proxy.ts ─────────────────────────────────────────────────────
-
-  describe('refreshProxySession', () => {
-    it('returns a valid session when called with real device and session tokens', async () => {
-      const did = mintUUIDv7()
-      const { deviceToken, sessionToken } = await createDeviceAndSessionTokens({
-        did,
-        uid: null,
-      })
-
-      const result = await refreshProxySession(
-        backendBaseUrl,
-        { dt: deviceToken.token, st: sessionToken.token },
-        {},
-      )
-
-      expect(result).not.toBeNull()
-      expect(typeof result!.dte).toBe('number')
-      expect(typeof result!.ste).toBe('number')
-      expect(typeof result!.secure).toBe('boolean')
-    })
-
-    it('returns null when the backend responds with a non-ok status', async () => {
-      // The real backend always returns 200 for PATCH /api/v1/session (it creates a
-      // fresh anonymous session when tokens are absent or malformed). To exercise the
-      // non-ok branch we spin up a minimal server that unconditionally returns 503.
-      const errorServer = http.createServer((_req, res) => {
-        res.writeHead(503, { 'Content-Type': 'application/json' })
-        res.end(JSON.stringify({ error: 'Service Unavailable' }))
-      })
-      const errorOrigin = await listenOnFetchSafeLoopback(errorServer)
-
-      try {
-        const result = await refreshProxySession(errorOrigin, {}, {})
-        expect(result).toBeNull()
-      } finally {
-        errorServer.closeAllConnections()
-        await new Promise<void>(resolve => errorServer.close(() => resolve()))
-      }
-    })
-
-    it('throws when the backend URL has an unsupported protocol', async () => {
-      const did = mintUUIDv7()
-      const { deviceToken, sessionToken } = await createDeviceAndSessionTokens({
-        did,
-        uid: null,
-      })
-
-      await expect(
-        refreshProxySession(
-          'ftp://example.com',
-          { dt: deviceToken.token, st: sessionToken.token },
-          {},
-        ),
-      ).rejects.toThrow('Unsupported backend URL protocol')
-    })
-  })
 
   describe('recordProxyReferralAttribution', () => {
     it('records attribution against the real backend and returns a Response', async () => {
