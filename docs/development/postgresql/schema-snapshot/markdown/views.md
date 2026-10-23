@@ -715,21 +715,20 @@ Current OAuth lifecycle and active exchange projected from timestamp facts and i
 Current post clearance derived from moderation lifecycle facts.
 
 ```sql
- SELECT posts.id AS post_id,
-    posts.latest_clearance_change_id,
+ SELECT id AS post_id,
+    latest_clearance_change_id,
         CASE
-            WHEN (posts.approved_at IS NOT NULL) THEN 'approved'::text
-            WHEN (posts.rejected_at IS NOT NULL) THEN 'rejected'::text
-            WHEN (posts.in_review_at IS NOT NULL) THEN 'in_review'::text
+            WHEN (approved_at IS NOT NULL) THEN 'approved'::text
+            WHEN (rejected_at IS NOT NULL) THEN 'rejected'::text
+            WHEN (in_review_at IS NOT NULL) THEN 'in_review'::text
             ELSE 'pending'::text
         END AS clearance_status,
-    COALESCE(posts.approved_at, posts.rejected_at, posts.in_review_at, post_clearance_changes.created_at) AS clearance_updated_at,
+    COALESCE(approved_at, rejected_at, in_review_at, clearance_changed_at) AS clearance_updated_at,
         CASE
-            WHEN ((posts.rejected_at IS NOT NULL) OR (posts.in_review_at IS NOT NULL)) THEN post_clearance_changes.public_reason_code
+            WHEN ((rejected_at IS NOT NULL) OR (in_review_at IS NOT NULL)) THEN clearance_public_reason_code
             ELSE NULL::text
         END AS clearance_reason
-   FROM (posts
-     LEFT JOIN post_clearance_changes ON ((post_clearance_changes.id = posts.latest_clearance_change_id)));
+   FROM posts;
 ```
 
 ## `view_posts`
