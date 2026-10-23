@@ -1,12 +1,13 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { createTestUrlWithHostname } from '@voucha/test-helpers/entities/urls'
 import { insertTestCrawl } from '@voucha/test-helpers/entities/crawls'
-import * as crawlEmbedEnqueues from '@queues/crawl-embeds/enqueues'
+import { readAllQueueJobs } from '@voucha/test-helpers/queue-jobs'
+import { crawlEmbedsQueue } from '@queues/crawl-embeds/queues'
+import { OEMBED_HOST_RATE_LIMIT_MS, PRIORITY_DEFAULT } from '@queues/crawl-embeds/config'
 import { backfillPendingCrawlEmbeds } from './backfill.mts'
 
 describe('backfillPendingCrawlEmbeds', () => {
   it('enqueues valid pending crawls and skips malformed persisted endpoints', async () => {
-    const enqueueSpy = vi.spyOn(crawlEmbedEnqueues, 'enqueueBulkCrawlEmbeds').mockResolvedValue([])
     const embedMetadata = {
       kind: 'article',
       requestedUrl: 'https://example.test/article',
@@ -38,11 +39,23 @@ describe('backfillPendingCrawlEmbeds', () => {
 
     await backfillPendingCrawlEmbeds()
 
-    const enqueued = enqueueSpy.mock.calls.flatMap(([entries]) => entries)
-    expect(enqueued).toContainEqual({
-      crawlId: validCrawlId,
-      endpointHostname: 'api.example.test',
-    })
-    expect(enqueued.some(entry => entry.crawlId === invalidCrawlId)).toBe(false)
+    const enqueued = await readAllQueueJobs(crawlEmbedsQueue)
+    expect(enqueued).toContainEqual(
+      expect.objectContaining({
+        name: 'resolve_crawl_oembed',
+        data: { crawl_id: validCrawlId },
+        opts: expect.objectContaining({
+          priority: PRIORITY_DEFAULT,
+          deduplication: { id: `resolve_crawl_oembed__${validCrawlId}`, mode: 'simple' },
+          ordering: {
+            key: 'oembed:api.example.test',
+            rateLimit: { max: 1, duration: OEMBED_HOST_RATE_LIMIT_MS },
+          },
+        }),
+      }),
+    )
+    expect(enqueued).not.toContainEqual(
+      expect.objectContaining({ data: { crawl_id: invalidCrawlId } }),
+    )
   })
 })
