@@ -1,7 +1,8 @@
 import type { RenewalPriceIncreaseNotificationClaim } from './renewal-check.mts'
 import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { parsePostgresMoneyAmount, type Money } from '@ts-shared/money'
+import type { Money } from '@ts-shared/money'
+import { parsePostgresMoneyAmount } from '@vouchington/utils/money'
 
 export type RenewalPriceIncreaseDetails = {
   current_price: Money

@@ -1,4 +1,4 @@
-import { parsePostgresMoneyAmount } from '@ts-shared/money'
+import { parsePostgresMoneyAmount } from '@vouchington/utils/money'
 import createHttpError from 'http-errors'
 import type { AdministratorRefundRequest } from './types.mts'
 

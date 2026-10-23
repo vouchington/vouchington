@@ -1,6 +1,5 @@
-import { createMoneyCatalog, parsePostgresMoneyAmount } from '@vouchington/utils/money'
+import { createMoneyCatalog } from '@vouchington/utils/money'
 
-export { parsePostgresMoneyAmount }
 export const MAX_MONEY_AMOUNT = Number.MAX_SAFE_INTEGER
 export const MONEY_SCALE = 6 as const
 export const MAX_POINT_VALUE_MICROUNITS = 9_999_999_999

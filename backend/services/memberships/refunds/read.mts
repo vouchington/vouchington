@@ -1,5 +1,5 @@
 import { read } from '@data-stores/psql'
-import { parsePostgresMoneyAmount } from '@ts-shared/money'
+import { parsePostgresMoneyAmount } from '@vouchington/utils/money'
 import sql from 'sql-template-strings'
 import type { MembershipRefund, MembershipRefundRow } from '../types.mts'
 

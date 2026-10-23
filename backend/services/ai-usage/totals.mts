@@ -7,7 +7,8 @@ import {
   hasExactKeys,
   parseBoundedIntegerLimit,
 } from '@modules/pagination'
-import { MONEY_SCALE, parsePostgresMoneyAmount, type ScaledMoneyAggregate } from '@ts-shared/money'
+import { MONEY_SCALE, type ScaledMoneyAggregate } from '@ts-shared/money'
+import { parsePostgresMoneyAmount } from '@vouchington/utils/money'
 import type { PageInfo } from '@voucha/types/pagination'
 
 export type CommunityAiCostTotal = {

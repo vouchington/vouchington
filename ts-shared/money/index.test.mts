@@ -12,7 +12,6 @@ import {
   isScaledMoneyAggregate,
   parseMajorUnitsToMoney,
   parseMajorUnitsToScaledMoney,
-  parsePostgresMoneyAmount,
 } from './index.mts'
 
 describe('currency catalog', () => {
@@ -182,16 +181,6 @@ describe('money validation', () => {
         scale: MONEY_SCALE,
       }),
     ).toBe(false)
-  })
-
-  it('converts PostgreSQL bigint strings only when they are canonical JSON-safe integers', () => {
-    expect(parsePostgresMoneyAmount('0')).toBe(0)
-    expect(parsePostgresMoneyAmount(String(MAX_MONEY_AMOUNT))).toBe(MAX_MONEY_AMOUNT)
-    expect(() => parsePostgresMoneyAmount('-1')).toThrow(TypeError)
-    expect(() => parsePostgresMoneyAmount(String(BigInt(MAX_MONEY_AMOUNT) + 1n))).toThrow(
-      RangeError,
-    )
-    expect(() => parsePostgresMoneyAmount('1.0')).toThrow(TypeError)
   })
 })
 

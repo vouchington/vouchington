@@ -10,9 +10,9 @@ import {
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { PrivateUser } from '@services/users/types'
-import { parsePostgresMoneyAmount, type CurrencyCode, type Money } from '@ts-shared/money'
+import type { CurrencyCode, Money } from '@ts-shared/money'
+import { parsePostgresMoneyAmount } from '@vouchington/utils/money'
 import type { PageInfo } from '@voucha/types/pagination'
-
 type GetHouseholdSpendingCategoriesOptions = QueryOptions & {
   entry_id?: string
   individual_id?: string

@@ -1,12 +1,8 @@
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { UserFinancialProfile } from './types.mts'
-import {
-  parsePostgresMoneyAmount,
-  type CurrencyCode,
-  type Money,
-  type MoneyRange,
-} from '@ts-shared/money'
+import type { CurrencyCode, Money, MoneyRange } from '@ts-shared/money'
+import { parsePostgresMoneyAmount } from '@vouchington/utils/money'
 
 export type UserFinancialProfileRow = {
   individual_id: string

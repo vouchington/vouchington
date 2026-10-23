@@ -27,6 +27,7 @@
     "@ts-shared/data-points": "workspace:^",
     "@ts-shared/money": "workspace:^",
     "@voucha/types": "workspace:^",
+    "@vouchington/utils": "^0.7.5",
     "http-assert": "^1.5.0",
     "sql-template-strings": "^2.2.2"
   },

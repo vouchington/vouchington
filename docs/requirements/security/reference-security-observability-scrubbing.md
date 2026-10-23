@@ -7,7 +7,9 @@
 Unsubscribe tokens, email-verification tokens, and API keys travel as query parameters across this
 codebase, so URLs shipped to Sentry would leak secrets. Sentry also copies request headers and
 cookies into error Request Interfaces and span attributes without applying its own header
-filtering. Repository-side scrubbing is therefore mandatory defense in depth; hosted Sentry
+filtering. The app injects its credential-header vocabulary and Grafana path-redaction policy into
+`@vouchington/utils/observability`; that package owns the shared copy-on-write scrubbing mechanics.
+Application-side scrubbing is therefore mandatory defense in depth; hosted Sentry
 scrubbing settings are not known from this repository.
 
 ## Data collection: the least-data policy
@@ -17,8 +19,8 @@ cookies, query strings, every HTTP body, bound database values, stack-frame vari
 arguments, and gen-AI inputs and outputs. Request bodies carry legal identities and perjury
 statements from copyright forms, and gen-AI inputs carry user content and MCP tool arguments. So
 [`ts-shared/utils/sentry-data-collection.mts`](../../../ts-shared/utils/sentry-data-collection.mts)
-turns these off at the source and every SDK init site passes it as `dataCollection`. The scrubbers
-in `ts-shared/utils/observability-scrubbing.mts` are defense in depth behind that policy, not the
+turns these off at the source and every SDK init site passes it as `dataCollection`. The configured pipeline
+in `ts-shared/utils/sentry-event-scrubbing.mts` are defense in depth behind that policy, not the
 only control.
 
 ## Boundary

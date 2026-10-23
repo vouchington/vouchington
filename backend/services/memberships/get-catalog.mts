@@ -1,7 +1,7 @@
 import { read, type QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { ValkeyCache } from '@data-stores/valkey/cache'
-import { parsePostgresMoneyAmount } from '@ts-shared/money'
+import { parsePostgresMoneyAmount } from '@vouchington/utils/money'
 import { groupMembershipSkusByPlan } from '@vouchington/memberships'
 import { STRIPE_PROVIDER_ENVIRONMENT } from '@voucha/config'
 import {

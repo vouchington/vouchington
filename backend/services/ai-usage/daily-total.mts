@@ -1,7 +1,8 @@
 import { write } from '@data-stores/psql'
 import { getUtcDayUuidv7Bounds } from '@vouchington/postgres/partitions'
 import sql from 'sql-template-strings'
-import { MAX_MONEY_AMOUNT, parsePostgresMoneyAmount } from '@ts-shared/money'
+import { MAX_MONEY_AMOUNT } from '@ts-shared/money'
+import { parsePostgresMoneyAmount } from '@vouchington/utils/money'
 import { getCurrentUtcDay } from '@ts-shared/utils/dates'
 
 const DAILY_AI_COST_TOTAL_CACHE_TTL_MS = 60_000

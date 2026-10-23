@@ -33,7 +33,7 @@
     "@services/entity-cache": "workspace:^",
     "@services/urls-domains-blacklist": "workspace:^",
     "@ts-shared/deploy-environment": "workspace:^",
-    "@ts-shared/utils": "workspace:^",
+    "@vouchington/utils": "^0.7.5",
     "@vouchington/worker-runtime": "^0.1.3",
     "@workers/heartbeat": "workspace:^",
     "glide-mq": "^0.19.0"

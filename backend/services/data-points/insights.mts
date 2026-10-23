@@ -1,7 +1,8 @@
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { buildPublicPostEligibilityFilter } from '@modules/feed-query-builders'
-import { parsePostgresMoneyAmount, type CurrencyCode, type Money } from '@ts-shared/money'
+import type { CurrencyCode, Money } from '@ts-shared/money'
+import { parsePostgresMoneyAmount } from '@vouchington/utils/money'
 
 export type CreditScoreDistribution = Record<string, number>
 

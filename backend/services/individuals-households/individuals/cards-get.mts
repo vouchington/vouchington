@@ -15,7 +15,8 @@ import type {
   IndividualCard,
   IndividualCardPage,
 } from './cards-types.mts'
-import { parsePostgresMoneyAmount, type CurrencyCode } from '@ts-shared/money'
+import type { CurrencyCode } from '@ts-shared/money'
+import { parsePostgresMoneyAmount } from '@vouchington/utils/money'
 
 type IndividualCardRow = Omit<
   IndividualCard,

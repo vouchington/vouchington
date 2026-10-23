@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  createSentryDataCollection,
-  dropRequestBody,
-  dropSpanRequestBody,
-} from './sentry-data-collection.mts'
+import { createSentryDataCollection } from './sentry-data-collection.mts'
 import { scrubSentryEvent, scrubSpanAttributes } from './sentry-event-scrubbing.mts'
 
 const noticeBody = JSON.stringify({ legalName: 'Claimant', perjuryStatement: true })
@@ -48,34 +44,6 @@ describe('createSentryDataCollection', () => {
 
     expect(second).not.toBe(first)
     expect(second.httpBodies).not.toBe(first.httpBodies)
-  })
-})
-
-describe('request body backstops', () => {
-  it('drops the request body span attribute and keeps every other attribute', () => {
-    expect(
-      dropSpanRequestBody({
-        'http.request.body.data': noticeBody,
-        'http.request.body.size': 64,
-        'http.request.method': 'POST',
-      }),
-    ).toEqual({ 'http.request.body.size': 64, 'http.request.method': 'POST' })
-  })
-
-  it('drops the Request Interface body and keeps the rest of the request', () => {
-    expect(dropRequestBody({ data: noticeBody, method: 'POST', url: '/notices' })).toEqual({
-      method: 'POST',
-      url: '/notices',
-    })
-  })
-
-  it('returns the same reference when there is no body to drop', () => {
-    const attributes = { 'http.request.method': 'GET' }
-    const request = { method: 'GET' }
-
-    expect(dropSpanRequestBody(attributes)).toBe(attributes)
-    expect(dropRequestBody(request)).toBe(request)
-    expect(dropRequestBody(undefined)).toBeUndefined()
   })
 })
 

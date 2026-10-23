@@ -1,13 +1,13 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { isIP } from 'node:net'
 import {
-  ClientInfoValidationError,
   parseClientHeaders,
   VOUCHA_REQUEST_KIND_HEADER,
   type RequestClientInfo,
 } from '@ts-shared/request-client-info'
 import { verifyDeviceJwt } from '@ts-shared/session-jwt'
 import { mintUuidv7 as mintUUIDv7 } from '@vouchington/session-jwt'
+import { ClientInfoValidationError } from '@vouchington/utils/request-client-info'
 import {
   cacheBootstrapDeviceId,
   cacheVerifiedDeviceToken,

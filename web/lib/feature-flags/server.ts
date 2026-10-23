@@ -2,12 +2,12 @@ import 'server-only'
 
 import { Buffer } from 'node:buffer'
 import { cookies } from 'next/headers'
+import { FF_COOKIE } from '@ts-shared/feature-flags'
 import {
-  FF_COOKIE,
   parseFeatureFlagCookie as parseSharedFeatureFlagCookie,
   type FeatureFlagCookieCodec,
   type FeatureFlags,
-} from '@ts-shared/feature-flags'
+} from '@vouchington/utils/feature-flags'
 import { getFeatureFlags } from '@/lib/api/server/feature-flags'
 import { featureFlagCookieMaxLengthFromEnv } from './cookie-max-length'
 import { mergeFeatureFlagOverrides } from './shared'

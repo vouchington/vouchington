@@ -1,14 +1,16 @@
 import {
-  DEFAULT_FEATURE_FLAG_COOKIE_MAX_LENGTH,
   FF_COOKIE,
+  safeFeatureFlagCookiePart as safeSharedFeatureFlagCookiePart,
+} from '@ts-shared/feature-flags'
+import {
+  DEFAULT_FEATURE_FLAG_COOKIE_MAX_LENGTH,
   encodeFeatureFlagCookie as encodeSharedFeatureFlagCookie,
   parseFeatureFlagCookie as parseSharedFeatureFlagCookie,
   parseFeatureFlagCookieMaxLength,
-  safeFeatureFlagCookiePart as safeSharedFeatureFlagCookiePart,
   type FeatureFlagCookieCodec,
   type FeatureFlagCookieOptions,
   type FeatureFlags,
-} from '@ts-shared/feature-flags'
+} from '@vouchington/utils/feature-flags'
 import { getBrowserRuntimePublicConfig } from '@/lib/runtime-public-config'
 import { featureFlagCookieMaxLengthFromEnv } from './cookie-max-length'
 

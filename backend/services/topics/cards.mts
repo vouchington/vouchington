@@ -6,7 +6,8 @@ import type { Topic } from './types.mts'
 import { assertTopicExists } from './validation.mts'
 import { currentUserCanUpdateTopic } from './authorization.mts'
 import { upsertTopicAttributes } from './upsert-attributes.mts'
-import { isMoney, parsePostgresMoneyAmount, type CurrencyCode, type Money } from '@ts-shared/money'
+import { isMoney, type CurrencyCode, type Money } from '@ts-shared/money'
+import { parsePostgresMoneyAmount } from '@vouchington/utils/money'
 import { mapCardAttributeReferenceError } from './card-attribute-errors.mts'
 
 type CardAttributes = {
