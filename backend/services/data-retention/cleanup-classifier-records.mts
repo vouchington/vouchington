@@ -46,6 +46,7 @@ export async function cleanupClassifierRecords(
     sweepClassifierChildren('agent_topics', cutoffId, lowerBoundId, batchSize, maxBatches),
     sweepClassifierChildren('local_outcomes', cutoffId, lowerBoundId, batchSize, maxBatches),
   ])
+  // ast-grep-ignore: no-three-sequential-awaits -- runs, calls, and batch candidate snapshots retire in FK order, each bounded phase commits before its dependent phase
   const runs = await sweepClassifierPages(
     'runs',
     cutoffId,

@@ -3,13 +3,11 @@ import {
   runViews,
   runConfigDriven,
   createMonthlyPartitions,
+  createClassifierResultRange,
+  retireClassifierResultRange,
   cleanupPartitions,
   refreshMaterializedView,
 } from '@data-stores/psql/migrate'
-import {
-  createClassifierResultRange,
-  retireClassifierResultRange,
-} from '@data-stores/psql/migration-runner/operator-classifier-partitions'
 import { runDataRetentionCleanup } from '@services/data-retention'
 import {
   dataRetentionConfig,
