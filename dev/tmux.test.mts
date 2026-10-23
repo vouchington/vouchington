@@ -19,7 +19,7 @@ describe('dev/tmux', () => {
     const cwd = await makeRepo()
     const binDir = await makeFakeBin()
     await rm(join(cwd, '.initialized'))
-    await rm(join(cwd, 'dev', 'lib', 'git-worktrees.sh'))
+    await rm(join(cwd, 'node_modules/vouchington-tooling'), { recursive: true })
 
     const result = await runTmux({ binDir, cwd })
 

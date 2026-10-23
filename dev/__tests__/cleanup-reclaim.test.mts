@@ -16,6 +16,8 @@ import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 import { afterEach, describe, expect, it } from 'vitest'
 
+import { stageToolingWorktreeScripts } from '../test-helpers/tooling-worktree-scripts.mts'
+
 const execFileAsync = promisify(execFile)
 const devDir = fileURLToPath(new URL('..', import.meta.url))
 const testDirs: string[] = []
@@ -27,6 +29,7 @@ async function makeRepo({ withCli }: { withCli: boolean }) {
   await mkdir(join(dir, 'dev'), { recursive: true })
   await cp(join(devDir, 'cleanup'), join(dir, 'dev', 'cleanup'))
   await cp(join(devDir, 'lib'), join(dir, 'dev', 'lib'), { recursive: true })
+  await stageToolingWorktreeScripts(dir)
   const bin = join(dir, 'bin')
   await mkdir(bin)
   for (const name of ['psql', 'dropdb', 'docker']) {

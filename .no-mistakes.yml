@@ -1938,7 +1938,6 @@ rules:
       - 'ci/transient-retry/run-context-logs.test.mts'
       - 'cloudflare-worker/scripts/wrangler/start.mock.test.mts'
       - 'dev/__tests__/cloc-child-process.test.mts'
-      - 'dev/__tests__/reset-worktree-concurrency.test.mts'
       - 'dev/__tests__/stop-services.process.part-2.test.mts'
       - 'dev/__tests__/stop-services.process.part-3.test.mts'
       - 'dev/__tests__/stop-services.process.part-4.test.mts'

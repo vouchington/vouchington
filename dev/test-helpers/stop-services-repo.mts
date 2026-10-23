@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import { basename, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
+import { stageToolingWorktreeScripts } from './tooling-worktree-scripts.mts'
 
 const execFileAsync = promisify(execFile)
 const devDir = fileURLToPath(new URL('..', import.meta.url))
@@ -14,10 +15,6 @@ const refuseOnMainPath = join(devDir, 'lib/refuse-on-main.sh')
 const dbNameFromUrlPath = join(devDir, 'lib/db-name-from-url.sh')
 const dbTargetPath = join(devDir, 'lib/db-target.sh')
 const flushValkeyPath = join(devDir, 'lib/flush-valkey.sh')
-const gitWorktreesPath = join(
-  devDir,
-  '../node_modules/vouchington-tooling/scripts/worktree/git-worktrees.sh',
-)
 
 const fakeGitdir = 'gitdir: /fake/.git/worktrees/test\n'
 const tmuxDbCleanStub = '#!/usr/bin/env bash\nprintf "db-clean\\n" >> "${FAKE_COMMAND_LOG:?}"\n'
@@ -93,7 +90,7 @@ export async function makeStopServicesRepo(
   }
   await copyText(refuseOnMainPath, join(libDir, 'refuse-on-main.sh'))
   await copyText(dbNameFromUrlPath, join(libDir, 'db-name-from-url.sh'))
-  await copyText(gitWorktreesPath, join(libDir, 'git-worktrees.sh'))
+  await stageToolingWorktreeScripts(dir)
   await writeFile(
     join(libDir, 'worktree-resource-env.sh'),
     profile === 'tmux' ? tmuxResourceEnv : valkeyResourceEnv,

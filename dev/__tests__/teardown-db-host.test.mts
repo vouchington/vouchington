@@ -6,18 +6,13 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 import { afterEach, describe, expect, it } from 'vitest'
+import { stageToolingWorktreeScripts } from '../test-helpers/tooling-worktree-scripts.mts'
 
 const execFileAsync = promisify(execFile)
 const teardownPath = fileURLToPath(new URL('../teardown', import.meta.url))
 const refuseOnMainPath = fileURLToPath(new URL('../lib/refuse-on-main.sh', import.meta.url))
 const dbNameFromUrlPath = fileURLToPath(new URL('../lib/db-name-from-url.sh', import.meta.url))
 const dbTargetPath = fileURLToPath(new URL('../lib/db-target.sh', import.meta.url))
-const gitWorktreesPath = fileURLToPath(
-  new URL(
-    '../../node_modules/vouchington-tooling/scripts/worktree/git-worktrees.sh',
-    import.meta.url,
-  ),
-)
 const worktreeResourceEnvPath = fileURLToPath(
   new URL('../lib/worktree-resource-env.sh', import.meta.url),
 )
@@ -44,10 +39,7 @@ async function makeRepo(databaseUrl: string, worktreeDir?: string) {
     await readFile(dbNameFromUrlPath, 'utf8'),
   )
   await writeFile(join(dir, 'dev', 'lib', 'db-target.sh'), await readFile(dbTargetPath, 'utf8'))
-  await writeFile(
-    join(dir, 'dev', 'lib', 'git-worktrees.sh'),
-    await readFile(gitWorktreesPath, 'utf8'),
-  )
+  await stageToolingWorktreeScripts(dir)
   await writeFile(
     join(dir, 'dev', 'lib', 'worktree-resource-env.sh'),
     await readFile(worktreeResourceEnvPath, 'utf8'),

@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import { basename, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
+import { stageToolingWorktreeScripts } from './tooling-worktree-scripts.mts'
 
 const execFileAsync = promisify(execFile)
 const scriptDir = fileURLToPath(new URL('..', import.meta.url))
@@ -11,10 +12,6 @@ const stopServicesPath = join(scriptDir, 'stop-services')
 const resetPath = join(scriptDir, 'reset')
 const refuseOnMainPath = join(scriptDir, 'lib/refuse-on-main.sh')
 const dbNameFromUrlPath = join(scriptDir, 'lib/db-name-from-url.sh')
-const publishedGitWorktreesPath = join(
-  scriptDir,
-  '../node_modules/vouchington-tooling/scripts/worktree/git-worktrees.sh',
-)
 
 async function writeExecutable(path: string, content: string) {
   await writeFile(path, content)
@@ -50,10 +47,7 @@ refuse_shared_resources_on_disposable() { :; }
 `,
       ),
     ])
-    await writeFile(
-      join(dir, 'dev', 'lib', 'git-worktrees.sh'),
-      await readFile(publishedGitWorktreesPath, 'utf8'),
-    )
+    await stageToolingWorktreeScripts(dir)
     if (isMainWorktree) await mkdir(join(dir, '.git'), { recursive: true })
     else await writeFile(join(dir, '.git'), 'gitdir: /fake/.git/worktrees/test\n')
     if (withEnv) {

@@ -26,8 +26,8 @@ done
 source "$REPO_ROOT/dev/lib/db-target.sh"
 # shellcheck source=lib/orphan-scan.sh
 source "$REPO_ROOT/dev/lib/orphan-scan.sh"
-# shellcheck source=lib/git-worktrees.sh
-source "$REPO_ROOT/dev/lib/git-worktrees.sh"
+# shellcheck source=/dev/null
+source "$REPO_ROOT/node_modules/vouchington-tooling/scripts/worktree/git-worktrees.sh"
 
 if [ -f "$REPO_ROOT/.env" ]; then
     set -a

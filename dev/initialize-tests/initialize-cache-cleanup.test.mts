@@ -95,43 +95,4 @@ describe('initialize cache cleanup helpers', () => {
       expect(await fileExists(filePath)).toBe(true)
     })
   })
-
-  describe('clear_stale_index_lock', () => {
-    it('removes a 0-byte index.lock', async () => {
-      const cwd = await makeWorktreeDir('feature-lock-stale')
-      const lockPath = join(cwd, 'index.lock')
-      await writeFile(lockPath, '')
-
-      await runHelper({
-        cwd,
-        script: `clear_stale_index_lock '${cwd}'`,
-      })
-
-      expect(await fileExists(lockPath)).toBe(false)
-    })
-
-    it('does not remove a non-empty index.lock', async () => {
-      const cwd = await makeWorktreeDir('feature-lock-nonfatal')
-      const lockPath = join(cwd, 'index.lock')
-      await writeFile(lockPath, 'real-lock-content')
-
-      await runHelper({
-        cwd,
-        script: `clear_stale_index_lock '${cwd}'`,
-      })
-
-      expect(await fileExists(lockPath)).toBe(true)
-    })
-
-    it('is a no-op when index.lock is absent', async () => {
-      const cwd = await makeWorktreeDir('feature-lock-absent')
-
-      await runHelper({
-        cwd,
-        script: `clear_stale_index_lock '${cwd}'`,
-      })
-
-      expect(await fileExists(join(cwd, 'index.lock'))).toBe(false)
-    })
-  })
 })

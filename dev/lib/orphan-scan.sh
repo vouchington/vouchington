@@ -69,8 +69,8 @@ worktree_resource_live_paths() {
 }
 
 if ! declare -F worktree_dir_from_path >/dev/null 2>&1; then
-  # shellcheck source=dev/lib/git-worktrees.sh
-  source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)/git-worktrees.sh"
+  # shellcheck source=/dev/null
+  source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)/node_modules/vouchington-tooling/scripts/worktree/git-worktrees.sh"
 fi
 if ! declare -F worktree_resource_owned_db_name >/dev/null 2>&1; then
   # shellcheck source=dev/lib/worktree-resource-env.sh

@@ -13,8 +13,8 @@ REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
 source "$REPO_ROOT/dev/lib/db-name-from-url.sh"
 # shellcheck source=lib/orphan-scan.sh
 source "$REPO_ROOT/dev/lib/orphan-scan.sh"
-# shellcheck source=lib/git-worktrees.sh
-source "$REPO_ROOT/dev/lib/git-worktrees.sh"
+# shellcheck source=/dev/null
+source "$REPO_ROOT/node_modules/vouchington-tooling/scripts/worktree/git-worktrees.sh"
 
 # Check if a port has a listening process (cross-platform)
 is_port_listening() {

@@ -18,8 +18,8 @@ worktree_resource_dir_from_path() {
     worktree_dir=$(basename "$physical_path")
   else
     if ! declare -F git_worktree_canonical_path_hash >/dev/null 2>&1; then
-      # shellcheck source=dev/lib/git-worktrees.sh
-      source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)/git-worktrees.sh"
+      # shellcheck source=/dev/null
+      source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)/node_modules/vouchington-tooling/scripts/worktree/git-worktrees.sh"
     fi
     worktree_dir=$(git_worktree_canonical_path_hash "$physical_path") || return 1
   fi

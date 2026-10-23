@@ -6,6 +6,7 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 import { afterEach, describe, expect, it } from 'vitest'
+import { stageToolingWorktreeScripts } from '../test-helpers/tooling-worktree-scripts.mts'
 
 const execFileAsync = promisify(execFile)
 const dbCleanPath = fileURLToPath(new URL('../db-clean', import.meta.url))
@@ -15,12 +16,6 @@ const dbTargetPath = fileURLToPath(new URL('../lib/db-target.sh', import.meta.ur
 const flushValkeyPath = fileURLToPath(new URL('../lib/flush-valkey.sh', import.meta.url))
 const worktreeResourceEnvPath = fileURLToPath(
   new URL('../lib/worktree-resource-env.sh', import.meta.url),
-)
-const publishedGitWorktreesPath = fileURLToPath(
-  new URL(
-    '../../node_modules/vouchington-tooling/scripts/worktree/git-worktrees.sh',
-    import.meta.url,
-  ),
 )
 const testDirs: string[] = []
 
@@ -39,10 +34,7 @@ async function makeRepo(databaseUrl: string) {
     await readFile(dbNameFromUrlPath, 'utf8'),
   )
   await writeFile(join(dir, 'dev', 'lib', 'db-target.sh'), await readFile(dbTargetPath, 'utf8'))
-  await writeFile(
-    join(dir, 'dev', 'lib', 'git-worktrees.sh'),
-    await readFile(publishedGitWorktreesPath, 'utf8'),
-  )
+  await stageToolingWorktreeScripts(dir)
   await writeFile(
     join(dir, 'dev', 'lib', 'flush-valkey.sh'),
     await readFile(flushValkeyPath, 'utf8'),

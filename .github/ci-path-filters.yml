@@ -385,10 +385,8 @@ build-web-infra:
   - 'ci/prepare-trivy-db.sh'
 shell-scripts:
   - '.github/ci-path-filters.yml'
-  - 'dev/worktree-port-policy.json'
   - 'dev/initialize*'
   - 'dev/lib/**'
-  - 'dev/host-storage-preflight.mts'
   - '**/*.sh'
 portability:
   - '.github/ci-path-filters.yml'

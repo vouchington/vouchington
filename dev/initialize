@@ -19,9 +19,6 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# shellcheck source=dev/lib/git-index-lock.sh
-source "$REPO_ROOT/dev/lib/git-index-lock.sh"
-
 register_live_worktree_resource_paths() {
     local repo_root=$1
     local live_worktree
@@ -207,9 +204,7 @@ is_valid_port() {
 load_worktree_port_policy() {
     local policy_values
 
-    # Read the JSON directly. This script's own isolated tests (and some
-    # callers) run without node_modules, so initialize cannot import a
-    # TypeScript loader module here.
+    # Read the published policy directly; Bash cannot import the TypeScript loader.
     # shellcheck disable=SC2016 # JavaScript template literal is evaluated by node, not Bash.
     policy_values=$(node -e '
 import { readFileSync } from "node:fs"
@@ -218,8 +213,8 @@ if (!Number.isInteger(policy.reservedPortStart) || !Number.isInteger(policy.rese
   process.exit(1)
 }
 console.log(`${policy.reservedPortStart} ${policy.reservedPortEnd}`)
-' "$REPO_ROOT/dev/worktree-port-policy.json") || {
-        echo -e "${RED}Error: Invalid worktree port policy at dev/worktree-port-policy.json${NC}"
+' "$REPO_ROOT/node_modules/vouchington-tooling/scripts/runner-port-policy.json") || {
+        echo -e "${RED}Error: Invalid runner port policy in vouchington-tooling${NC}"
         exit 1
     }
     read -r WORKTREE_RESERVED_PORT_START WORKTREE_RESERVED_PORT_END <<< "$policy_values"
@@ -1423,23 +1418,11 @@ main() {
     fi
 
     GIT_DIR=$(git rev-parse --git-dir)
-    clear_stale_index_lock "$GIT_DIR"
     COMMON_CONFIG="$(git -C "$REPO_ROOT" rev-parse --git-common-dir 2>/dev/null || echo "$GIT_DIR")/config"
     heal_shared_git_config "$COMMON_CONFIG"
     "$REPO_ROOT/dev/lib/localization-merge-driver.sh" "$REPO_ROOT"
 
     ensure_node_version
-
-    # Node activation makes the comprehensive TypeScript probe available. Its
-    # optional pnpm/Docker discovery runs only after required probes pass.
-    local storage_preflight_args=(--worktree "$REPO_ROOT" --pnpm-store)
-    if mode_at_least "$MODE" backend; then
-        storage_preflight_args+=(--docker-root)
-    fi
-    if ! node "$REPO_ROOT/dev/host-storage-preflight.mts" "${storage_preflight_args[@]}"; then
-        exit 1
-    fi
-    echo ""
 
     echo -e "${BLUE}Ensuring pnpm is available...${NC}"
     if ! command -v pnpm >/dev/null 2>&1; then
@@ -1460,8 +1443,23 @@ main() {
         pnpm install ${lockfile_arg:+"$lockfile_arg"} --config.confirmModulesPurge=false
     echo ""
 
-    # shellcheck source=dev/lib/git-worktrees.sh
-    source "$REPO_ROOT/dev/lib/git-worktrees.sh"
+    # The published helpers are available once dependencies are installed.
+    local tooling_scripts="$REPO_ROOT/node_modules/vouchington-tooling/scripts"
+    # shellcheck source=/dev/null
+    source "$tooling_scripts/worktree/git-worktrees.sh"
+    # shellcheck source=/dev/null
+    source "$tooling_scripts/worktree/git-index-lock.sh"
+    clear_stale_index_lock "$GIT_DIR"
+
+    # The Bash gate above covers bootstrap; the full probe needs the installed package.
+    local storage_preflight_args=(--path "$REPO_ROOT" --path "$HOME" --path "${TMPDIR:-/tmp}" --pnpm-store)
+    if mode_at_least "$MODE" backend; then
+        storage_preflight_args+=(--docker-root)
+    fi
+    if ! node "$REPO_ROOT/node_modules/vouchington-tooling/bin/vouchington.mjs" host-storage "${storage_preflight_args[@]}"; then
+        exit 1
+    fi
+    echo ""
 
     IS_MAIN=false
     if worktree_resource_is_main "$REPO_ROOT"; then

@@ -3,16 +3,11 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { trackTmuxTestDir } from './tmux-fake-bin.mts'
+import { stageToolingWorktreeScripts } from './tooling-worktree-scripts.mts'
 export { runTmux } from './run-tmux.mts'
 export { registerTmuxFakeHooks } from './tmux-fake-bin.mts'
 
 const sourceTmuxPath = fileURLToPath(new URL('../tmux', import.meta.url))
-const sourceGitWorktreesPath = fileURLToPath(
-  new URL(
-    '../../node_modules/vouchington-tooling/scripts/worktree/git-worktrees.sh',
-    import.meta.url,
-  ),
-)
 
 export async function makeRepo({
   certs = false,
@@ -41,10 +36,7 @@ export async function makeRepo({
     await writeFile(join(dir, 'dev', 'certs', 'localhost-key.pem'), '')
   }
   await writeFile(join(dir, 'dev', 'tmux'), await readFile(sourceTmuxPath, 'utf8'))
-  await writeFile(
-    join(dir, 'dev', 'lib', 'git-worktrees.sh'),
-    await readFile(sourceGitWorktreesPath, 'utf8'),
-  )
+  await stageToolingWorktreeScripts(dir)
   await chmod(join(dir, 'dev', 'tmux'), 0o755)
   await writeFile(
     join(dir, '.env'),

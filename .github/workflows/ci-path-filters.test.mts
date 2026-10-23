@@ -120,25 +120,13 @@ describe('detect-changes path filters', () => {
     expect(shellScripts).not.toContain('dev/**')
     expect(shellScripts).not.toContain('static-code-analysis/**')
     expect(shellScripts).toEqual(
-      expect.arrayContaining([
-        '**/*.sh',
-        'dev/initialize*',
-        'dev/lib/**',
-        'dev/host-storage-preflight.mts',
-        'dev/worktree-port-policy.json',
-      ]),
+      expect.arrayContaining(['**/*.sh', 'dev/initialize*', 'dev/lib/**']),
     )
   })
 
   it('selects initialize-smoke inputs and ignores a ci-tools contract test', () => {
     const shellScripts = loadDetectChangesFilters()['shell-scripts']
-    const hits = [
-      'dev/initialize',
-      'dev/lib/db-target.sh',
-      'dev/host-storage-preflight.mts',
-      'dev/worktree-port-policy.json',
-      'ci/download-with-diagnostics.sh',
-    ]
+    const hits = ['dev/initialize', 'dev/lib/db-target.sh', 'ci/download-with-diagnostics.sh']
     const misses = ['ci/agent-workflow-docs.test.mts', 'dev/pr-description/validate.mts']
     assertNoWorkflowViolations(
       hits.filter(path => !filterMatches(shellScripts, path)),
