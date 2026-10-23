@@ -3,11 +3,9 @@ import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import onError from '@modules/on-error'
 import { markImageUploadSourceDeleted } from './complete-upload-state.mts'
-import { cleanupStagedUploadSource } from './cleanup-staged-upload-source.mts'
 import { deleteKnownImageStorageFromS3 } from './s3-upload-lifecycle.mts'
 import { enqueueExtractImageMetadata } from '@queues/image-uploads/enqueues'
 
-const STAGED_SOURCE_CLEANUP_CONCURRENCY = 4
 const ABANDONED_UPLOAD_ERROR = 'Upload abandoned before completion'
 
 interface AbandonedImageStorage {
@@ -31,46 +29,6 @@ export async function cleanupAbandonedUploads(scope?: AbandonedUploadScope) {
   const CLEANUP_BATCH_SIZE = getImagesWorkLimit('cleanup_batch_size')
   const recoveryCutoff = new Date(now - RECOVERY_THRESHOLD_HOURS * 60 * 60 * 1000)
   const abandonmentCutoff = new Date(now - ABANDONED_THRESHOLD_HOURS * 60 * 60 * 1000)
-
-  await using stagedTransaction = await beginTransaction()
-  const stagedQuery = sql`/* cleanupAbandonedUploads:stagedSources */
-      SELECT id,
-        s3_key,
-        sha_256,
-        upload_staged_at,
-        upload_completed_at,
-        upload_failed_at,
-        deleted_at
-      FROM images
-      WHERE upload_staged_at IS NOT NULL
-        AND upload_source_deleted_at IS NULL
-        AND upload_staged_at < ${recoveryCutoff}
-        AND (
-          deleted_at IS NOT NULL
-          OR upload_failed_at IS NOT NULL
-          OR upload_completed_at IS NOT NULL
-          OR (
-            upload_started_at IS NOT NULL
-            AND sha_256 IS NOT NULL
-            AND s3_key = encode(sha_256, 'hex')
-          )
-        )`
-  if (imageIds) stagedQuery.append(sql` AND id = ANY(${imageIds}::uuid[])`)
-  stagedQuery.append(sql`
-      ORDER BY upload_staged_at, id
-      LIMIT ${CLEANUP_BATCH_SIZE}
-      FOR UPDATE SKIP LOCKED
-    `)
-  const { rows: stagedSources } = await stagedTransaction<AbandonedImageStorage>(stagedQuery)
-  await stagedTransaction.commit()
-
-  const stagedSourceResults: boolean[] = []
-  for (let offset = 0; offset < stagedSources.length; offset += STAGED_SOURCE_CLEANUP_CONCURRENCY) {
-    const batch = stagedSources.slice(offset, offset + STAGED_SOURCE_CLEANUP_CONCURRENCY)
-    // oxlint-disable-next-line no-await-in-loop -- cap dedicated advisory-lock sessions per process
-    const results = await Promise.all(batch.map(image => cleanupStagedUploadSource(image.id)))
-    stagedSourceResults.push(...results)
-  }
 
   await using recoveryTransaction = await beginTransaction()
   const recoveryQuery = sql`/* cleanupAbandonedUploads:recoverable */
@@ -143,6 +101,5 @@ export async function cleanupAbandonedUploads(scope?: AbandonedUploadScope) {
   return {
     cleaned: rows.length,
     recovered: recoverableRows.length,
-    stagedSourcesDeleted: stagedSourceResults.filter(Boolean).length,
   }
 }

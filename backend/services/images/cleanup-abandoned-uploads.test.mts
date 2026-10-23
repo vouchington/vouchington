@@ -15,8 +15,8 @@ import {
 } from '@voucha/test-helpers'
 import { createOwnedStagedImage } from '@voucha/test-helpers/image-upload-cleanup-fixtures'
 import { installOwnedUploadCleanupStorage } from '@voucha/test-helpers/image-upload-cleanup-storage'
-import { waitForQueueDomainTestResult } from '@voucha/test-helpers/queue-domain-controls'
 import { cleanupAbandonedUploads } from './cleanup-abandoned-uploads.mts'
+import { cleanupStagedUploadSource } from './cleanup-staged-upload-source.mts'
 import { getImageByHash, getImageById } from './get.mts'
 
 const HOUR = 60 * 60 * 1000
@@ -42,9 +42,9 @@ describe('abandoned upload cleanup', () => {
   })
 
   it('retries a failed staged-source deletion without acknowledging it early', async () => {
-    const now = new Date()
-    const id = await createOwnedStagedImage(new Date(now.getTime() - 2 * HOUR))
-    await backdateImageUploadStagedAt(id, new Date(now.getTime() - 2 * HOUR), 'complete')
+    const stagedAt = new Date(Date.now() - 2 * HOUR)
+    const id = await createOwnedStagedImage(stagedAt)
+    await backdateImageUploadStagedAt(id, stagedAt, 'complete')
     let failed = false
     const storage = installOwnedUploadCleanupStorage(
       [id, id.replaceAll('-', '').repeat(2)],
@@ -55,9 +55,9 @@ describe('abandoned upload cleanup', () => {
         }
       },
     )
-    await cleanupAbandonedUploads({ imageIds: [id], now })
+    expect(await cleanupStagedUploadSource(id)).toBe(false)
     expect((await getImageById(id, true))?.upload_source_deleted_at).toBeNull()
-    await cleanupAbandonedUploads({ imageIds: [id], now })
+    expect(await cleanupStagedUploadSource(id)).toBe(true)
     expect((await getImageById(id, true))?.upload_source_deleted_at).toBeInstanceOf(Date)
     expect((await getImageById(id))?.upload_completed_at).toBeInstanceOf(Date)
     expect(storage.calls).toEqual([
@@ -91,7 +91,8 @@ describe('abandoned upload cleanup', () => {
     await setImageHashAndProcessing(id, digest)
     const storage = installOwnedUploadCleanupStorage([id])
     const result = await cleanupAbandonedUploads({ imageIds: [id], now })
-    expect(result).toMatchObject({ cleaned: 0, recovered: 1, stagedSourcesDeleted: 1 })
+    expect(await cleanupStagedUploadSource(id)).toBe(true)
+    expect(result).toMatchObject({ cleaned: 0, recovered: 1 })
     expect(storage.calls).toEqual([{ Bucket: S3Buckets.imageUploads, Key: id }])
     expect(await getImageById(id)).not.toBeNull()
     expect((await getImageById(id))?.upload_source_deleted_at).toBeInstanceOf(Date)
@@ -112,8 +113,8 @@ describe('abandoned upload cleanup', () => {
     const first = await cleanupAbandonedUploads({ imageIds: [id], now })
     expect(first.cleaned).toBe(1)
     expect((await getImageById(id, true))?.sha_256).toEqual(digest)
-    const second = await cleanupAbandonedUploads({ imageIds: [id], now })
-    expect(second.stagedSourcesDeleted).toBe(1)
+    expect(await cleanupStagedUploadSource(id)).toBe(true)
+    await cleanupAbandonedUploads({ imageIds: [id], now })
     expect(storage.calls).toEqual(
       Array.from({ length: 2 }, () => [
         { Bucket: S3Buckets.imageUploads, Key: id },
@@ -123,41 +124,6 @@ describe('abandoned upload cleanup', () => {
     )
     expect((await getImageById(id, true))?.sha_256).toBeNull()
     expect(await getImageByHash(digest, true)).toBeNull()
-  })
-
-  it('bounds simultaneous staged-source deletions to the worker pool', async context => {
-    const now = new Date()
-    const user = await createTestUser()
-    const ids = await Promise.all(
-      Array.from({ length: 5 }, () =>
-        createOwnedStagedImage(new Date(now.getTime() - 2 * HOUR), false, user),
-      ),
-    )
-    for (const id of ids)
-      await backdateImageUploadStagedAt(id, new Date(now.getTime() - 2 * HOUR), 'complete')
-    let active = 0
-    let peak = 0
-    const entered = Promise.withResolvers<void>()
-    const release = Promise.withResolvers<void>()
-    const storage = installOwnedUploadCleanupStorage(ids, async () => {
-      active += 1
-      peak = Math.max(peak, active)
-      if (active === 4) entered.resolve()
-      await release.promise
-      active -= 1
-    })
-    const running = cleanupAbandonedUploads({ imageIds: ids, now })
-    let result: Awaited<ReturnType<typeof cleanupAbandonedUploads>> | undefined
-    try {
-      await waitForQueueDomainTestResult(Promise.race([entered.promise, running]), context.signal)
-      expect(peak).toBe(4)
-    } finally {
-      release.resolve()
-      result = await running
-    }
-    expect(result?.stagedSourcesDeleted).toBe(ids.length)
-    expect(storage.calls.map(call => call.Key).toSorted()).toEqual(ids.toSorted())
-    expect(storage.calls.every(call => call.Bucket === S3Buckets.imageUploads)).toBe(true)
   })
 
   it.each(ROLLOVERS)('enqueues only before the one-hour UTC edge at %s', async instant => {
@@ -192,7 +158,7 @@ describe('abandoned upload cleanup', () => {
       expect((await readEnqueuedJob(imageUploadsQueue, await admission.completion)).data).toEqual({
         id: ids[0],
       })
-      expect(storage.calls).toEqual([{ Bucket: S3Buckets.imageUploads, Key: ids[0] }])
+      expect(storage.calls).toEqual([])
       for (const id of ids) expect(await getImageById(id)).not.toBeNull()
     } finally {
       off()

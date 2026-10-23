@@ -16,3 +16,12 @@ export type LanguageDetectionBackfillJobName =
 
 /** The snapshot fence and keyset position retained by one backfill job. */
 export type LanguageDetectionBackfillCursor = { sweepStartedAt: string; afterId?: string }
+
+export type StagedUploadCleanupKey = { stagedAt: string; id: string }
+export type StagedUploadCleanupSweep = {
+  cutoff: string
+  upper: StagedUploadCleanupKey | null
+  after?: StagedUploadCleanupKey
+  done: boolean
+}
+export type CleanupAbandonedUploadsData = { staged?: StagedUploadCleanupSweep }

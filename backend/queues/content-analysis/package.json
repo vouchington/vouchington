@@ -16,8 +16,10 @@
   "scripts": {},
   "dependencies": {
     "@data-stores/valkey-glide-mq": "workspace:^",
+    "@modules/pagination": "workspace:^",
     "@modules/scheduled-job-manifest": "workspace:^",
     "@queues/background-cpu": "workspace:^",
+    "@ts-shared/utils": "workspace:^",
     "@voucha/types": "workspace:^",
     "glide-mq": "^0.19.0"
   }

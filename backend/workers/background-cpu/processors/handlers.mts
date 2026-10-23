@@ -2,6 +2,11 @@ import { backgroundHandler } from '@queues/background-cpu/enqueues/define-handle
 import { BACKGROUND_CPU_JOBS } from '@queues/background-cpu/enqueues/registry'
 import type { BackgroundCpuHandler } from '@queues/background-cpu/types'
 import { cleanupAbandonedUploads } from '@services/images/cleanup-abandoned-uploads'
+import {
+  captureStagedUploadCleanupSweep,
+  cleanupStagedUploadSweepPage,
+} from '@services/images/cleanup-staged-upload-sweep'
+import { parseCleanupAbandonedUploadsData } from '@queues/content-analysis/payload/upload-cleanup'
 import type { BatchJobType } from '@services/bedrock-embeddings/batch/types'
 import type {
   LanguageDetectionBackfillCursor,
@@ -132,7 +137,19 @@ async function runCpuJob(job: Job): Promise<unknown> {
       await import('@workers/ai-agents/processors/spend-cap-recheck')
     return processSpendCapRecheckJob(job)
   }
-  if (route === 'upload-cleanup') return cleanupAbandonedUploads()
+  if (route === 'upload-cleanup')
+    return processRetainedSweep(job, async save => {
+      const data = parseCleanupAbandonedUploadsData(job.data)
+      const staged = data.staged ?? (await captureStagedUploadCleanupSweep())
+      if (!data.staged) await save({ staged })
+      const otherPhases = await cleanupAbandonedUploads()
+      const page = await cleanupStagedUploadSweepPage(staged, next => save({ staged: next }))
+      return {
+        ...otherPhases,
+        stagedSourcesDeleted: page.stagedSourcesDeleted,
+        hasMore: page.hasMore,
+      }
+    })
   if (route === 'staydown-hash') {
     const id = job.data?.id
     if (typeof id !== 'string') throw new Error('Staydown hash job requires id')
