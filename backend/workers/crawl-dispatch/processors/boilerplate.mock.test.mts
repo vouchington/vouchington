@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 import { Readable } from 'node:stream'
+import { gzipSync } from 'node:zlib'
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { gzipBytes } from '@modules/utils/compression'
 import { createTestUser } from '@voucha/test-helpers'
 import { addUrls } from '@services/urls/upsert'
 import { updateUrlHostname } from '@services/urls-hostnames/update'
@@ -31,7 +31,7 @@ describe('processBoilerplateRemoval', () => {
   it('extracts DOM removals from the latest HTML snapshots and persists the result', async () => {
     const mockSend = vi.mocked(S3ImagesClient.send)
     const html = '<html><body><header>Nav</header><p>Unique content</p></body></html>'
-    const gzipped = await gzipBytes(Buffer.from(html))
+    const gzipped = gzipSync(Buffer.from(html))
     mockSend.mockImplementation(
       async () =>
         ({
