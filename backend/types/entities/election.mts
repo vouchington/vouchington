@@ -113,10 +113,3 @@ export type EntityElectionConfig = {
     policies: Record<string, ElectionVotePolicy>
   }
 }
-
-export type VoteEventContext = {
-  ipAddress: string | null
-  deviceId: string | null
-  sessionId: string | null
-  userAgent: string | null
-}

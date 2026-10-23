@@ -9,11 +9,11 @@ export async function upsertUserAgentString(
 ): Promise<string | null> {
   if (userAgent === null || userAgent === undefined) return null
   const normalized = userAgent.trim().slice(0, 1024).trim()
-  // Rows are never deleted or changed, so a hit is final: one round trip in the common case.
+  // A session insert must hold the row against orphan cleanup until its FK is stored.
   // The read uses the caller's transaction so it sees rows that transaction already inserted.
   const existing = await write(
     sql`/* upsertUserAgentString */
-      SELECT id FROM user_agent_strings WHERE user_agent = ${normalized}`,
+      SELECT id FROM user_agent_strings WHERE user_agent = ${normalized} FOR KEY SHARE`,
     options,
   )
   const existingId = (existing.rows[0] as { id: string } | undefined)?.id
@@ -29,7 +29,7 @@ export async function upsertUserAgentString(
   // the insert and read into one statement: its snapshot would miss that concurrently committed row.
   const { rows } = await write(
     sql`/* upsertUserAgentString */
-      SELECT id FROM user_agent_strings WHERE user_agent = ${normalized}`,
+      SELECT id FROM user_agent_strings WHERE user_agent = ${normalized} FOR KEY SHARE`,
     options,
   )
   return (rows[0] as { id: string } | undefined)?.id ?? null

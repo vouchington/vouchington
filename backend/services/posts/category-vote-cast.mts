@@ -122,7 +122,7 @@ async function writeUserVotes(
   const cast = groups.flatMap(([, items]) => items)
   const relations = groups.flatMap(([relation, items]) => (items.length > 0 ? [relation] : []))
   if (cast.length === 0 || relations.length === 0) return
-  await upsertEntityRelationElectionVotes(userId, cast, undefined, relations, {
+  await upsertEntityRelationElectionVotes(userId, cast, relations, {
     query,
     enqueueVoteStats: false,
   })

@@ -111,8 +111,8 @@ export const VOTE_AGGREGATION_VOTE_INTEGRITY_JOB = defineBackgroundJob<{
   entityType: string
   entityId: string
   userId: string
-  ipAddress: string | null
   score: number
+  voteId: string
 }>(VOTE_AGGREGATION_DOMAIN, {
   name: 'processVoteIntegrityCheck',
   priority: PRIORITY_TASK,

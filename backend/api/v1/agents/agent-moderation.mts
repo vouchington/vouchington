@@ -33,8 +33,7 @@ const getAgentModerationElectionForRoute = (id: string) =>
 const upsertAgentModerationVotesWithFeedback: CreateVoteHandlerOptions['upsertVotes'] = (
   userId,
   votes,
-  context,
-) => upsertAgentModerationVotesWithTrainingEvidence(userId, votes, context, 'staff_or_user')
+) => upsertAgentModerationVotesWithTrainingEvidence(userId, votes, 'staff_or_user')
 
 // PUT /api/v1/agent-moderations/:id/vote (admin only)
 const agentModerationVoteHandler = createVoteHandler({

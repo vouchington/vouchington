@@ -129,12 +129,7 @@ describe('vote hostname visibility', () => {
     })
     await request.delete(route('hostname', id)).expect(404)
 
-    await upsertHostnameElectionVotes(user.id, [{ entityId: id, score: 1 }], {
-      ipAddress: null,
-      deviceId: null,
-      sessionId: null,
-      userAgent: null,
-    })
+    await upsertHostnameElectionVotes(user.id, [{ entityId: id, score: 1 }])
     expect(
       await callStructuredMcpTool(user, 'vote', optionArgs('clear_hostname', { id }), VOTE_SCOPES),
     ).toEqual({ success: true })

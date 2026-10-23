@@ -59,6 +59,11 @@ work ahead of housekeeping.
   duplicate enqueues but is never the correctness boundary, so every processor is idempotent against
   durable state. There is no dead-letter queue: each queue needs a backfill, a self-healing
   reconciler, or a documented accepted loss. See [job replayability](../../../requirements/platform/JOB-REPLAYABILITY.md). Worker sizing is covered in [worker performance](../../../development/worker-performance.md).
+- **Vote integrity checks are event keyed.** Each committed ballot change has its own sensitive
+  check job containing the ballot ID, not its request IP. The request caches IP evidence under
+  that ballot ID for at most two hours; duplicate enqueues never extend its expiry. The worker
+  reads that evidence and records the ballot in a short-lived correlation window. A delayed job
+  with expired evidence still runs the other checks. This transient signal is advisory to moderation.
 - **Never enqueue and wait.** A request or job does not block on another job's result. Clients poll
   durable state; a job that needs a result calls the service directly.
 - **Post-commit invalidation waits for admission, not completion.** A committed request may wait

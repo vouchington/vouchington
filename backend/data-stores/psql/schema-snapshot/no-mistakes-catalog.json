@@ -1254,6 +1254,33 @@
     "user_session_authentication_origins": {
       "values": ["web", "native"]
     },
+    "vote_ballot_cleanup_families": {
+      "values": [
+        "post_votes",
+        "topic_votes",
+        "hostname_votes",
+        "rss_feed_item_votes",
+        "agent_moderation_votes",
+        "user_vouch_votes",
+        "relation__user__category__topic__votes",
+        "relation__post__category__topic__votes",
+        "relation__post__category__topic_alias__votes",
+        "relation__post__related__post__votes",
+        "relation__post__related__url__votes",
+        "relation__topic__related__topic__votes",
+        "relation__topic__category__topic__votes",
+        "relation__topic__publisher_type__topic__votes",
+        "relation__topic__faq__post__votes",
+        "relation__topic__related__post__votes",
+        "relation__topic__related__url__votes",
+        "relation__topic__faq__url__votes",
+        "relation__topic__guide__url__votes",
+        "relation__topic__landing_page__url__votes",
+        "relation__topic__terms_of_service__url__votes",
+        "relation__rss_feed_item__category__topic__votes",
+        "relation__rss_feed_item__category__topic_alias__votes"
+      ]
+    },
     "vote_integrity_flag_types": {
       "values": ["velocity_spike", "ip_correlation"]
     },
@@ -3809,17 +3836,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10
-        },
-        "device_id": {
-          "comment": "Opaque client device token with no durable owner row.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 7
+          "ordinalPosition": 6
         },
         "id": {
           "comment": null,
@@ -3830,16 +3847,6 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 4
-        },
-        "ip_address": {
-          "comment": "Audit IP address captured with the ballot event.",
-          "dataType": "inet",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 6
         },
         "post_id": {
           "comment": "Post scope paired with the concrete agent moderation ballot target.",
@@ -3861,26 +3868,6 @@
           "nullable": true,
           "ordinalPosition": 5
         },
-        "session_id": {
-          "comment": "Opaque client session token with no durable owner row.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 8
-        },
-        "user_agent_string_id": {
-          "comment": "Shared bounded user-agent string captured with the ballot event.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 9
-        },
         "user_id": {
           "comment": "User who cast this ballot event.",
           "dataType": "uuid",
@@ -3900,14 +3887,6 @@
           "onUpdate": "NO ACTION",
           "referencedColumns": ["post_id", "id"],
           "referencedTable": "agent_moderations",
-          "validated": true
-        },
-        "agent_moderation_votes_user_agent_string_id_fkey": {
-          "columns": ["user_agent_string_id"],
-          "onDelete": "SET NULL",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "user_agent_strings",
           "validated": true
         },
         "agent_moderation_votes_user_id_fkey": {
@@ -4014,6 +3993,29 @@
               "descending": true,
               "expression": "id",
               "nullsFirst": true,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_agent_moderation_votes__cleanup__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_agent_moderation_votes__cleanup__id ON ONLY public.agent_moderation_votes USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
             }
@@ -47824,17 +47826,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11
-        },
-        "device_id": {
-          "comment": "Opaque client device token with no durable owner row.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 8
+          "ordinalPosition": 7
         },
         "hostname_id": {
           "comment": "Concrete ballot target in url_hostnames.",
@@ -47855,16 +47847,6 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 3
-        },
-        "ip_address": {
-          "comment": "Audit IP address captured with the ballot event.",
-          "dataType": "inet",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 7
         },
         "score": {
           "comment": "Ballot score; nullable events clear the current ballot.",
@@ -47896,26 +47878,6 @@
           "nullable": false,
           "ordinalPosition": 6
         },
-        "session_id": {
-          "comment": "Opaque client session token with no durable owner row.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 9
-        },
-        "user_agent_string_id": {
-          "comment": "Shared bounded user-agent string captured with the ballot event.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 10
-        },
         "user_id": {
           "comment": "User who cast this ballot event.",
           "dataType": "uuid",
@@ -47935,14 +47897,6 @@
           "onUpdate": "NO ACTION",
           "referencedColumns": ["id"],
           "referencedTable": "url_hostnames",
-          "validated": true
-        },
-        "hostname_votes_user_agent_string_id_fkey": {
-          "columns": ["user_agent_string_id"],
-          "onDelete": "SET NULL",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "user_agent_strings",
           "validated": true
         },
         "hostname_votes_user_id_fkey": {
@@ -47985,6 +47939,29 @@
           "primary": true,
           "ready": true,
           "unique": true,
+          "valid": true
+        },
+        "idx_hostname_votes__cleanup__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_hostname_votes__cleanup__id ON ONLY public.hostname_votes USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
           "valid": true
         },
         "idx_hostname_votes__hostname_id__id": {
@@ -87194,6 +87171,107 @@
       },
       "uniqueConstraints": {}
     },
+    "post_vote_retained_daily_counts": {
+      "checkConstraints": {
+        "post_vote_retained_daily_counts_count_check": {
+          "definition": "CHECK ((count >= 0))",
+          "validated": true
+        }
+      },
+      "columns": {
+        "count": {
+          "comment": "Number of qualifying removed post vote events on this day.",
+          "dataType": "bigint",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3
+        },
+        "day": {
+          "comment": "UTC day of the removed ballot event.",
+          "dataType": "date",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2
+        },
+        "id": {
+          "comment": "Identity of this anonymous daily aggregate row.",
+          "dataType": "uuid",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        }
+      },
+      "comment": "Anonymous daily count of post vote events removed by ballot retention, preserving historical engagement metrics.",
+      "foreignKeys": {},
+      "indexes": {
+        "post_vote_retained_daily_counts_day_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX post_vote_retained_daily_counts_day_key ON public.post_vote_retained_daily_counts USING btree (day)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "day",
+              "descending": false,
+              "expression": "day",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.date_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "post_vote_retained_daily_counts_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX post_vote_retained_daily_counts_pkey ON public.post_vote_retained_daily_counts USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"]
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {
+        "post_vote_retained_daily_counts_day_key": {
+          "columns": ["day"]
+        }
+      }
+    },
     "post_votes": {
       "checkConstraints": {
         "chk_post_votes_score_domain": {
@@ -87222,17 +87300,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12
-        },
-        "device_id": {
-          "comment": "Opaque client device token with no durable owner row.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 9
+          "ordinalPosition": 8
         },
         "id": {
           "comment": null,
@@ -87243,16 +87311,6 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 4
-        },
-        "ip_address": {
-          "comment": "Audit IP address captured with the ballot event.",
-          "dataType": "inet",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 8
         },
         "outbound_activitypub_like_activity_id": {
           "comment": "Stable outbound ActivityPub Like protocol identity.",
@@ -87304,26 +87362,6 @@
           "nullable": false,
           "ordinalPosition": 7
         },
-        "session_id": {
-          "comment": "Opaque client session token with no durable owner row.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 10
-        },
-        "user_agent_string_id": {
-          "comment": "Shared bounded user-agent string captured with the ballot event.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 11
-        },
         "user_id": {
           "comment": "User who cast this ballot event.",
           "dataType": "uuid",
@@ -87345,14 +87383,6 @@
           "referencedTable": "posts",
           "validated": true
         },
-        "post_votes_user_agent_string_id_fkey": {
-          "columns": ["user_agent_string_id"],
-          "onDelete": "SET NULL",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "user_agent_strings",
-          "validated": true
-        },
         "post_votes_user_id_fkey": {
           "columns": ["user_id"],
           "onDelete": "CASCADE",
@@ -87363,6 +87393,29 @@
         }
       },
       "indexes": {
+        "idx_post_votes__cleanup__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_post_votes__cleanup__id ON ONLY public.post_votes USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_post_votes__post_id__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -91127,17 +91180,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12
-        },
-        "device_id": {
-          "comment": "Opaque client device token with no durable owner row.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 9
+          "ordinalPosition": 8
         },
         "entity_relation_id": {
           "comment": "Concrete elected relation identifier and UUIDv7 partition key.",
@@ -91158,16 +91201,6 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 4
-        },
-        "ip_address": {
-          "comment": "Audit IP address captured with this ballot event.",
-          "dataType": "inet",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 8
         },
         "score": {
           "comment": "Binary relation ballot or retained clear event; nullable events clear the current ballot.",
@@ -91199,16 +91232,6 @@
           "nullable": false,
           "ordinalPosition": 7
         },
-        "session_id": {
-          "comment": "Opaque client session token with no durable owner row.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 10
-        },
         "subject_id": {
           "comment": "Authoritative subject paired with the concrete elected relation identifier.",
           "dataType": "uuid",
@@ -91218,16 +91241,6 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 2
-        },
-        "user_agent_string_id": {
-          "comment": "Shared bounded user-agent string captured with this ballot event.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 11
         },
         "user_id": {
           "comment": "User who cast this concrete relation ballot event.",
@@ -91250,14 +91263,6 @@
           "referencedTable": "relation__post__category__topic",
           "validated": true
         },
-        "fk_relation__post__category__topic__votes__user_agent_string_id": {
-          "columns": ["user_agent_string_id"],
-          "onDelete": "SET NULL",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "user_agent_strings",
-          "validated": true
-        },
         "relation__post__category__topic__votes_user_id_fkey": {
           "columns": ["user_id"],
           "onDelete": "CASCADE",
@@ -91268,6 +91273,29 @@
         }
       },
       "indexes": {
+        "idx_relation__post__category__topic__votes__cleanup__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__post__category__topic__votes__cleanup__id ON ONLY public.relation__post__category__topic__votes USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__post__category__topic__votes__relation__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -92025,17 +92053,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12
-        },
-        "device_id": {
-          "comment": "Opaque client device token with no durable owner row.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 9
+          "ordinalPosition": 8
         },
         "entity_relation_id": {
           "comment": "Concrete elected relation identifier and UUIDv7 partition key.",
@@ -92056,16 +92074,6 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 4
-        },
-        "ip_address": {
-          "comment": "Audit IP address captured with this ballot event.",
-          "dataType": "inet",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 8
         },
         "score": {
           "comment": "Binary relation ballot or retained clear event; nullable events clear the current ballot.",
@@ -92097,16 +92105,6 @@
           "nullable": false,
           "ordinalPosition": 7
         },
-        "session_id": {
-          "comment": "Opaque client session token with no durable owner row.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 10
-        },
         "subject_id": {
           "comment": "Authoritative subject paired with the concrete elected relation identifier.",
           "dataType": "uuid",
@@ -92116,16 +92114,6 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 2
-        },
-        "user_agent_string_id": {
-          "comment": "Shared bounded user-agent string captured with this ballot event.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 11
         },
         "user_id": {
           "comment": "User who cast this concrete relation ballot event.",
@@ -92146,14 +92134,6 @@
           "onUpdate": "NO ACTION",
           "referencedColumns": ["subject_id", "id"],
           "referencedTable": "relation__post__category__topic_alias",
-          "validated": true
-        },
-        "fk_relat__post__categ__topic_alias__votes__user_agent_string_id": {
-          "columns": ["user_agent_string_id"],
-          "onDelete": "SET NULL",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "user_agent_strings",
           "validated": true
         },
         "relation__post__category__topic_alias__votes_user_id_fkey": {
@@ -92237,6 +92217,29 @@
               "descending": true,
               "expression": "id",
               "nullsFirst": true,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__post__category__topic_alias__votes__cleanup__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__post__category__topic_alias__votes__cleanup__id ON ONLY public.relation__post__category__topic_alias__votes USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
             }
@@ -93575,17 +93578,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12
-        },
-        "device_id": {
-          "comment": "Opaque client device token with no durable owner row.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 9
+          "ordinalPosition": 8
         },
         "entity_relation_id": {
           "comment": "Concrete elected relation identifier and UUIDv7 partition key.",
@@ -93606,16 +93599,6 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 4
-        },
-        "ip_address": {
-          "comment": "Audit IP address captured with this ballot event.",
-          "dataType": "inet",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 8
         },
         "score": {
           "comment": "Binary relation ballot or retained clear event; nullable events clear the current ballot.",
@@ -93647,16 +93630,6 @@
           "nullable": false,
           "ordinalPosition": 7
         },
-        "session_id": {
-          "comment": "Opaque client session token with no durable owner row.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 10
-        },
         "subject_id": {
           "comment": "Authoritative subject paired with the concrete elected relation identifier.",
           "dataType": "uuid",
@@ -93666,16 +93639,6 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 2
-        },
-        "user_agent_string_id": {
-          "comment": "Shared bounded user-agent string captured with this ballot event.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 11
         },
         "user_id": {
           "comment": "User who cast this concrete relation ballot event.",
@@ -93698,14 +93661,6 @@
           "referencedTable": "relation__post__related__post",
           "validated": true
         },
-        "relation__post__related__post__votes_user_agent_string_id_fkey": {
-          "columns": ["user_agent_string_id"],
-          "onDelete": "SET NULL",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "user_agent_strings",
-          "validated": true
-        },
         "relation__post__related__post__votes_user_id_fkey": {
           "columns": ["user_id"],
           "onDelete": "CASCADE",
@@ -93716,6 +93671,29 @@
         }
       },
       "indexes": {
+        "idx_relation__post__related__post__votes__cleanup__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__post__related__post__votes__cleanup__id ON ONLY public.relation__post__related__post__votes USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__post__related__post__votes__relation__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -94477,17 +94455,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12
-        },
-        "device_id": {
-          "comment": "Opaque client device token with no durable owner row.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 9
+          "ordinalPosition": 8
         },
         "entity_relation_id": {
           "comment": "Concrete elected relation identifier and UUIDv7 partition key.",
@@ -94508,16 +94476,6 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 4
-        },
-        "ip_address": {
-          "comment": "Audit IP address captured with this ballot event.",
-          "dataType": "inet",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 8
         },
         "score": {
           "comment": "Binary relation ballot or retained clear event; nullable events clear the current ballot.",
@@ -94549,16 +94507,6 @@
           "nullable": false,
           "ordinalPosition": 7
         },
-        "session_id": {
-          "comment": "Opaque client session token with no durable owner row.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 10
-        },
         "subject_id": {
           "comment": "Authoritative subject paired with the concrete elected relation identifier.",
           "dataType": "uuid",
@@ -94568,16 +94516,6 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 2
-        },
-        "user_agent_string_id": {
-          "comment": "Shared bounded user-agent string captured with this ballot event.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 11
         },
         "user_id": {
           "comment": "User who cast this concrete relation ballot event.",
@@ -94600,14 +94538,6 @@
           "referencedTable": "relation__post__related__url",
           "validated": true
         },
-        "relation__post__related__url__votes_user_agent_string_id_fkey": {
-          "columns": ["user_agent_string_id"],
-          "onDelete": "SET NULL",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "user_agent_strings",
-          "validated": true
-        },
         "relation__post__related__url__votes_user_id_fkey": {
           "columns": ["user_id"],
           "onDelete": "CASCADE",
@@ -94618,6 +94548,29 @@
         }
       },
       "indexes": {
+        "idx_relation__post__related__url__votes__cleanup__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__post__related__url__votes__cleanup__id ON ONLY public.relation__post__related__url__votes USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__post__related__url__votes__relation__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -95623,17 +95576,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12
-        },
-        "device_id": {
-          "comment": "Opaque client device token with no durable owner row.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 9
+          "ordinalPosition": 8
         },
         "entity_relation_id": {
           "comment": "Concrete elected relation identifier and UUIDv7 partition key.",
@@ -95654,16 +95597,6 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 4
-        },
-        "ip_address": {
-          "comment": "Audit IP address captured with this ballot event.",
-          "dataType": "inet",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 8
         },
         "score": {
           "comment": "Binary relation ballot or retained clear event; nullable events clear the current ballot.",
@@ -95695,16 +95628,6 @@
           "nullable": false,
           "ordinalPosition": 7
         },
-        "session_id": {
-          "comment": "Opaque client session token with no durable owner row.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 10
-        },
         "subject_id": {
           "comment": "Authoritative subject paired with the concrete elected relation identifier.",
           "dataType": "uuid",
@@ -95714,16 +95637,6 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 2
-        },
-        "user_agent_string_id": {
-          "comment": "Shared bounded user-agent string captured with this ballot event.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 11
         },
         "user_id": {
           "comment": "User who cast this concrete relation ballot event.",
@@ -95744,14 +95657,6 @@
           "onUpdate": "NO ACTION",
           "referencedColumns": ["subject_id", "id"],
           "referencedTable": "relation__rss_feed_item__category__topic",
-          "validated": true
-        },
-        "fk_rela__rss_feed_item__cate__topi__votes__user_agent_string_id": {
-          "columns": ["user_agent_string_id"],
-          "onDelete": "SET NULL",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "user_agent_strings",
           "validated": true
         },
         "relation__rss_feed_item__category__topic__votes_user_id_fkey": {
@@ -95861,6 +95766,29 @@
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
             },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relatio__rss_feed_item__category__topic__votes__cleanup__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relatio__rss_feed_item__category__topic__votes__cleanup__id ON ONLY public.relation__rss_feed_item__category__topic__votes USING btree (id)",
+          "immediate": true,
+          "keys": [
             {
               "collation": null,
               "column": "id",
@@ -96519,17 +96447,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12
-        },
-        "device_id": {
-          "comment": "Opaque client device token with no durable owner row.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 9
+          "ordinalPosition": 8
         },
         "entity_relation_id": {
           "comment": "Concrete elected relation identifier and UUIDv7 partition key.",
@@ -96550,16 +96468,6 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 4
-        },
-        "ip_address": {
-          "comment": "Audit IP address captured with this ballot event.",
-          "dataType": "inet",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 8
         },
         "score": {
           "comment": "Binary relation ballot or retained clear event; nullable events clear the current ballot.",
@@ -96591,16 +96499,6 @@
           "nullable": false,
           "ordinalPosition": 7
         },
-        "session_id": {
-          "comment": "Opaque client session token with no durable owner row.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 10
-        },
         "subject_id": {
           "comment": "Authoritative subject paired with the concrete elected relation identifier.",
           "dataType": "uuid",
@@ -96610,16 +96508,6 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 2
-        },
-        "user_agent_string_id": {
-          "comment": "Shared bounded user-agent string captured with this ballot event.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 11
         },
         "user_id": {
           "comment": "User who cast this concrete relation ballot event.",
@@ -96640,14 +96528,6 @@
           "onUpdate": "NO ACTION",
           "referencedColumns": ["subject_id", "id"],
           "referencedTable": "relation__rss_feed_item__category__topic_alias",
-          "validated": true
-        },
-        "fk_rel__rss_fee_ite__cat__topi_alia__vote__user_agent_string_id": {
-          "columns": ["user_agent_string_id"],
-          "onDelete": "SET NULL",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "user_agent_strings",
           "validated": true
         },
         "fk_relatio__rss_feed_item__categor__topic_alias__votes__user_id": {
@@ -96757,6 +96637,29 @@
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
             },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_rela__rss_feed_item__categ__topic_alias__votes__cleanup__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_rela__rss_feed_item__categ__topic_alias__votes__cleanup__id ON ONLY public.relation__rss_feed_item__category__topic_alias__votes USING btree (id)",
+          "immediate": true,
+          "keys": [
             {
               "collation": null,
               "column": "id",
@@ -97419,17 +97322,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12
-        },
-        "device_id": {
-          "comment": "Opaque client device token with no durable owner row.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 9
+          "ordinalPosition": 8
         },
         "entity_relation_id": {
           "comment": "Concrete elected relation identifier and UUIDv7 partition key.",
@@ -97450,16 +97343,6 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 4
-        },
-        "ip_address": {
-          "comment": "Audit IP address captured with this ballot event.",
-          "dataType": "inet",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 8
         },
         "score": {
           "comment": "Binary relation ballot or retained clear event; nullable events clear the current ballot.",
@@ -97491,16 +97374,6 @@
           "nullable": false,
           "ordinalPosition": 7
         },
-        "session_id": {
-          "comment": "Opaque client session token with no durable owner row.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 10
-        },
         "subject_id": {
           "comment": "Authoritative subject paired with the concrete elected relation identifier.",
           "dataType": "uuid",
@@ -97510,16 +97383,6 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 2
-        },
-        "user_agent_string_id": {
-          "comment": "Shared bounded user-agent string captured with this ballot event.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 11
         },
         "user_id": {
           "comment": "User who cast this concrete relation ballot event.",
@@ -97542,14 +97405,6 @@
           "referencedTable": "relation__topic__category__topic",
           "validated": true
         },
-        "fk_relatio__topic__category__topic__votes__user_agent_string_id": {
-          "columns": ["user_agent_string_id"],
-          "onDelete": "SET NULL",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "user_agent_strings",
-          "validated": true
-        },
         "relation__topic__category__topic__votes_user_id_fkey": {
           "columns": ["user_id"],
           "onDelete": "CASCADE",
@@ -97560,6 +97415,29 @@
         }
       },
       "indexes": {
+        "idx_relation__topic__category__topic__votes__cleanup__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__category__topic__votes__cleanup__id ON ONLY public.relation__topic__category__topic__votes USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__topic__category__topic__votes__relation__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -98319,17 +98197,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12
-        },
-        "device_id": {
-          "comment": "Opaque client device token with no durable owner row.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 9
+          "ordinalPosition": 8
         },
         "entity_relation_id": {
           "comment": "Concrete elected relation identifier and UUIDv7 partition key.",
@@ -98350,16 +98218,6 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 4
-        },
-        "ip_address": {
-          "comment": "Audit IP address captured with this ballot event.",
-          "dataType": "inet",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 8
         },
         "score": {
           "comment": "Binary relation ballot or retained clear event; nullable events clear the current ballot.",
@@ -98391,16 +98249,6 @@
           "nullable": false,
           "ordinalPosition": 7
         },
-        "session_id": {
-          "comment": "Opaque client session token with no durable owner row.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 10
-        },
         "subject_id": {
           "comment": "Authoritative subject paired with the concrete elected relation identifier.",
           "dataType": "uuid",
@@ -98410,16 +98258,6 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 2
-        },
-        "user_agent_string_id": {
-          "comment": "Shared bounded user-agent string captured with this ballot event.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 11
         },
         "user_id": {
           "comment": "User who cast this concrete relation ballot event.",
@@ -98442,14 +98280,6 @@
           "referencedTable": "relation__topic__faq__post",
           "validated": true
         },
-        "relation__topic__faq__post__votes_user_agent_string_id_fkey": {
-          "columns": ["user_agent_string_id"],
-          "onDelete": "SET NULL",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "user_agent_strings",
-          "validated": true
-        },
         "relation__topic__faq__post__votes_user_id_fkey": {
           "columns": ["user_id"],
           "onDelete": "CASCADE",
@@ -98460,6 +98290,29 @@
         }
       },
       "indexes": {
+        "idx_relation__topic__faq__post__votes__cleanup__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__faq__post__votes__cleanup__id ON ONLY public.relation__topic__faq__post__votes USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__topic__faq__post__votes__relation__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -99219,17 +99072,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12
-        },
-        "device_id": {
-          "comment": "Opaque client device token with no durable owner row.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 9
+          "ordinalPosition": 8
         },
         "entity_relation_id": {
           "comment": "Concrete elected relation identifier and UUIDv7 partition key.",
@@ -99250,16 +99093,6 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 4
-        },
-        "ip_address": {
-          "comment": "Audit IP address captured with this ballot event.",
-          "dataType": "inet",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 8
         },
         "score": {
           "comment": "Binary relation ballot or retained clear event; nullable events clear the current ballot.",
@@ -99291,16 +99124,6 @@
           "nullable": false,
           "ordinalPosition": 7
         },
-        "session_id": {
-          "comment": "Opaque client session token with no durable owner row.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 10
-        },
         "subject_id": {
           "comment": "Authoritative subject paired with the concrete elected relation identifier.",
           "dataType": "uuid",
@@ -99310,16 +99133,6 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 2
-        },
-        "user_agent_string_id": {
-          "comment": "Shared bounded user-agent string captured with this ballot event.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 11
         },
         "user_id": {
           "comment": "User who cast this concrete relation ballot event.",
@@ -99342,14 +99155,6 @@
           "referencedTable": "relation__topic__faq__url",
           "validated": true
         },
-        "relation__topic__faq__url__votes_user_agent_string_id_fkey": {
-          "columns": ["user_agent_string_id"],
-          "onDelete": "SET NULL",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "user_agent_strings",
-          "validated": true
-        },
         "relation__topic__faq__url__votes_user_id_fkey": {
           "columns": ["user_id"],
           "onDelete": "CASCADE",
@@ -99360,6 +99165,29 @@
         }
       },
       "indexes": {
+        "idx_relation__topic__faq__url__votes__cleanup__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__faq__url__votes__cleanup__id ON ONLY public.relation__topic__faq__url__votes USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__topic__faq__url__votes__relation__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -100119,17 +99947,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12
-        },
-        "device_id": {
-          "comment": "Opaque client device token with no durable owner row.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 9
+          "ordinalPosition": 8
         },
         "entity_relation_id": {
           "comment": "Concrete elected relation identifier and UUIDv7 partition key.",
@@ -100150,16 +99968,6 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 4
-        },
-        "ip_address": {
-          "comment": "Audit IP address captured with this ballot event.",
-          "dataType": "inet",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 8
         },
         "score": {
           "comment": "Binary relation ballot or retained clear event; nullable events clear the current ballot.",
@@ -100191,16 +99999,6 @@
           "nullable": false,
           "ordinalPosition": 7
         },
-        "session_id": {
-          "comment": "Opaque client session token with no durable owner row.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 10
-        },
         "subject_id": {
           "comment": "Authoritative subject paired with the concrete elected relation identifier.",
           "dataType": "uuid",
@@ -100210,16 +100008,6 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 2
-        },
-        "user_agent_string_id": {
-          "comment": "Shared bounded user-agent string captured with this ballot event.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 11
         },
         "user_id": {
           "comment": "User who cast this concrete relation ballot event.",
@@ -100242,14 +100030,6 @@
           "referencedTable": "relation__topic__guide__url",
           "validated": true
         },
-        "relation__topic__guide__url__votes_user_agent_string_id_fkey": {
-          "columns": ["user_agent_string_id"],
-          "onDelete": "SET NULL",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "user_agent_strings",
-          "validated": true
-        },
         "relation__topic__guide__url__votes_user_id_fkey": {
           "columns": ["user_id"],
           "onDelete": "CASCADE",
@@ -100260,6 +100040,29 @@
         }
       },
       "indexes": {
+        "idx_relation__topic__guide__url__votes__cleanup__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__guide__url__votes__cleanup__id ON ONLY public.relation__topic__guide__url__votes USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__topic__guide__url__votes__relation__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -101019,17 +100822,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12
-        },
-        "device_id": {
-          "comment": "Opaque client device token with no durable owner row.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 9
+          "ordinalPosition": 8
         },
         "entity_relation_id": {
           "comment": "Concrete elected relation identifier and UUIDv7 partition key.",
@@ -101050,16 +100843,6 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 4
-        },
-        "ip_address": {
-          "comment": "Audit IP address captured with this ballot event.",
-          "dataType": "inet",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 8
         },
         "score": {
           "comment": "Binary relation ballot or retained clear event; nullable events clear the current ballot.",
@@ -101091,16 +100874,6 @@
           "nullable": false,
           "ordinalPosition": 7
         },
-        "session_id": {
-          "comment": "Opaque client session token with no durable owner row.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 10
-        },
         "subject_id": {
           "comment": "Authoritative subject paired with the concrete elected relation identifier.",
           "dataType": "uuid",
@@ -101110,16 +100883,6 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 2
-        },
-        "user_agent_string_id": {
-          "comment": "Shared bounded user-agent string captured with this ballot event.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 11
         },
         "user_id": {
           "comment": "User who cast this concrete relation ballot event.",
@@ -101140,14 +100903,6 @@
           "onUpdate": "NO ACTION",
           "referencedColumns": ["subject_id", "id"],
           "referencedTable": "relation__topic__landing_page__url",
-          "validated": true
-        },
-        "fk_relati__topic__landin_page__url__votes__user_agent_string_id": {
-          "columns": ["user_agent_string_id"],
-          "onDelete": "SET NULL",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "user_agent_strings",
           "validated": true
         },
         "relation__topic__landing_page__url__votes_user_id_fkey": {
@@ -101231,6 +100986,29 @@
               "descending": true,
               "expression": "id",
               "nullsFirst": true,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__topic__landing_page__url__votes__cleanup__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__landing_page__url__votes__cleanup__id ON ONLY public.relation__topic__landing_page__url__votes USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
             }
@@ -102355,17 +102133,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12
-        },
-        "device_id": {
-          "comment": "Opaque client device token with no durable owner row.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 9
+          "ordinalPosition": 8
         },
         "entity_relation_id": {
           "comment": "Concrete elected relation identifier and UUIDv7 partition key.",
@@ -102386,16 +102154,6 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 4
-        },
-        "ip_address": {
-          "comment": "Audit IP address captured with this ballot event.",
-          "dataType": "inet",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 8
         },
         "score": {
           "comment": "Binary relation ballot or retained clear event; nullable events clear the current ballot.",
@@ -102427,16 +102185,6 @@
           "nullable": false,
           "ordinalPosition": 7
         },
-        "session_id": {
-          "comment": "Opaque client session token with no durable owner row.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 10
-        },
         "subject_id": {
           "comment": "Authoritative subject paired with the concrete elected relation identifier.",
           "dataType": "uuid",
@@ -102446,16 +102194,6 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 2
-        },
-        "user_agent_string_id": {
-          "comment": "Shared bounded user-agent string captured with this ballot event.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 11
         },
         "user_id": {
           "comment": "User who cast this concrete relation ballot event.",
@@ -102476,14 +102214,6 @@
           "onUpdate": "NO ACTION",
           "referencedColumns": ["subject_id", "id"],
           "referencedTable": "relation__topic__publisher_type__topic",
-          "validated": true
-        },
-        "fk_relat__topic__publi_type__topic__votes__user_agent_string_id": {
-          "columns": ["user_agent_string_id"],
-          "onDelete": "SET NULL",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "user_agent_strings",
           "validated": true
         },
         "relation__topic__publisher_type__topic__votes_user_id_fkey": {
@@ -102567,6 +102297,29 @@
               "descending": true,
               "expression": "id",
               "nullsFirst": true,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__topic__publisher_type__topic__votes__cleanup__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__publisher_type__topic__votes__cleanup__id ON ONLY public.relation__topic__publisher_type__topic__votes USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
             }
@@ -103255,17 +103008,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12
-        },
-        "device_id": {
-          "comment": "Opaque client device token with no durable owner row.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 9
+          "ordinalPosition": 8
         },
         "entity_relation_id": {
           "comment": "Concrete elected relation identifier and UUIDv7 partition key.",
@@ -103286,16 +103029,6 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 4
-        },
-        "ip_address": {
-          "comment": "Audit IP address captured with this ballot event.",
-          "dataType": "inet",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 8
         },
         "score": {
           "comment": "Binary relation ballot or retained clear event; nullable events clear the current ballot.",
@@ -103327,16 +103060,6 @@
           "nullable": false,
           "ordinalPosition": 7
         },
-        "session_id": {
-          "comment": "Opaque client session token with no durable owner row.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 10
-        },
         "subject_id": {
           "comment": "Authoritative subject paired with the concrete elected relation identifier.",
           "dataType": "uuid",
@@ -103346,16 +103069,6 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 2
-        },
-        "user_agent_string_id": {
-          "comment": "Shared bounded user-agent string captured with this ballot event.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 11
         },
         "user_id": {
           "comment": "User who cast this concrete relation ballot event.",
@@ -103378,14 +103091,6 @@
           "referencedTable": "relation__topic__related__post",
           "validated": true
         },
-        "relation__topic__related__post__votes_user_agent_string_id_fkey": {
-          "columns": ["user_agent_string_id"],
-          "onDelete": "SET NULL",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "user_agent_strings",
-          "validated": true
-        },
         "relation__topic__related__post__votes_user_id_fkey": {
           "columns": ["user_id"],
           "onDelete": "CASCADE",
@@ -103396,6 +103101,29 @@
         }
       },
       "indexes": {
+        "idx_relation__topic__related__post__votes__cleanup__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__related__post__votes__cleanup__id ON ONLY public.relation__topic__related__post__votes USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__topic__related__post__votes__relation__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -104155,17 +103883,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12
-        },
-        "device_id": {
-          "comment": "Opaque client device token with no durable owner row.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 9
+          "ordinalPosition": 8
         },
         "entity_relation_id": {
           "comment": "Concrete elected relation identifier and UUIDv7 partition key.",
@@ -104186,16 +103904,6 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 4
-        },
-        "ip_address": {
-          "comment": "Audit IP address captured with this ballot event.",
-          "dataType": "inet",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 8
         },
         "score": {
           "comment": "Binary relation ballot or retained clear event; nullable events clear the current ballot.",
@@ -104227,16 +103935,6 @@
           "nullable": false,
           "ordinalPosition": 7
         },
-        "session_id": {
-          "comment": "Opaque client session token with no durable owner row.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 10
-        },
         "subject_id": {
           "comment": "Authoritative subject paired with the concrete elected relation identifier.",
           "dataType": "uuid",
@@ -104246,16 +103944,6 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 2
-        },
-        "user_agent_string_id": {
-          "comment": "Shared bounded user-agent string captured with this ballot event.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 11
         },
         "user_id": {
           "comment": "User who cast this concrete relation ballot event.",
@@ -104278,14 +103966,6 @@
           "referencedTable": "relation__topic__related__topic",
           "validated": true
         },
-        "fk_relation__topic__related__topic__votes__user_agent_string_id": {
-          "columns": ["user_agent_string_id"],
-          "onDelete": "SET NULL",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "user_agent_strings",
-          "validated": true
-        },
         "relation__topic__related__topic__votes_user_id_fkey": {
           "columns": ["user_id"],
           "onDelete": "CASCADE",
@@ -104296,6 +103976,29 @@
         }
       },
       "indexes": {
+        "idx_relation__topic__related__topic__votes__cleanup__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__related__topic__votes__cleanup__id ON ONLY public.relation__topic__related__topic__votes USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__topic__related__topic__votes__relation__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -105055,17 +104758,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12
-        },
-        "device_id": {
-          "comment": "Opaque client device token with no durable owner row.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 9
+          "ordinalPosition": 8
         },
         "entity_relation_id": {
           "comment": "Concrete elected relation identifier and UUIDv7 partition key.",
@@ -105086,16 +104779,6 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 4
-        },
-        "ip_address": {
-          "comment": "Audit IP address captured with this ballot event.",
-          "dataType": "inet",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 8
         },
         "score": {
           "comment": "Binary relation ballot or retained clear event; nullable events clear the current ballot.",
@@ -105127,16 +104810,6 @@
           "nullable": false,
           "ordinalPosition": 7
         },
-        "session_id": {
-          "comment": "Opaque client session token with no durable owner row.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 10
-        },
         "subject_id": {
           "comment": "Authoritative subject paired with the concrete elected relation identifier.",
           "dataType": "uuid",
@@ -105146,16 +104819,6 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 2
-        },
-        "user_agent_string_id": {
-          "comment": "Shared bounded user-agent string captured with this ballot event.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 11
         },
         "user_id": {
           "comment": "User who cast this concrete relation ballot event.",
@@ -105178,14 +104841,6 @@
           "referencedTable": "relation__topic__related__url",
           "validated": true
         },
-        "relation__topic__related__url__votes_user_agent_string_id_fkey": {
-          "columns": ["user_agent_string_id"],
-          "onDelete": "SET NULL",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "user_agent_strings",
-          "validated": true
-        },
         "relation__topic__related__url__votes_user_id_fkey": {
           "columns": ["user_id"],
           "onDelete": "CASCADE",
@@ -105196,6 +104851,29 @@
         }
       },
       "indexes": {
+        "idx_relation__topic__related__url__votes__cleanup__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__related__url__votes__cleanup__id ON ONLY public.relation__topic__related__url__votes USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__topic__related__url__votes__relation__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -105955,17 +105633,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12
-        },
-        "device_id": {
-          "comment": "Opaque client device token with no durable owner row.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 9
+          "ordinalPosition": 8
         },
         "entity_relation_id": {
           "comment": "Concrete elected relation identifier and UUIDv7 partition key.",
@@ -105986,16 +105654,6 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 4
-        },
-        "ip_address": {
-          "comment": "Audit IP address captured with this ballot event.",
-          "dataType": "inet",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 8
         },
         "score": {
           "comment": "Binary relation ballot or retained clear event; nullable events clear the current ballot.",
@@ -106027,16 +105685,6 @@
           "nullable": false,
           "ordinalPosition": 7
         },
-        "session_id": {
-          "comment": "Opaque client session token with no durable owner row.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 10
-        },
         "subject_id": {
           "comment": "Authoritative subject paired with the concrete elected relation identifier.",
           "dataType": "uuid",
@@ -106046,16 +105694,6 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 2
-        },
-        "user_agent_string_id": {
-          "comment": "Shared bounded user-agent string captured with this ballot event.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 11
         },
         "user_id": {
           "comment": "User who cast this concrete relation ballot event.",
@@ -106076,14 +105714,6 @@
           "onUpdate": "NO ACTION",
           "referencedColumns": ["subject_id", "id"],
           "referencedTable": "relation__topic__terms_of_service__url",
-          "validated": true
-        },
-        "fk_rela__topi__terms_of_servi__url__votes__user_agent_string_id": {
-          "columns": ["user_agent_string_id"],
-          "onDelete": "SET NULL",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "user_agent_strings",
           "validated": true
         },
         "relation__topic__terms_of_service__url__votes_user_id_fkey": {
@@ -106167,6 +105797,29 @@
               "descending": true,
               "expression": "id",
               "nullsFirst": true,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_relation__topic__terms_of_service__url__votes__cleanup__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__topic__terms_of_service__url__votes__cleanup__id ON ONLY public.relation__topic__terms_of_service__url__votes USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
             }
@@ -107501,17 +107154,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12
-        },
-        "device_id": {
-          "comment": "Opaque client device token with no durable owner row.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 9
+          "ordinalPosition": 8
         },
         "entity_relation_id": {
           "comment": "Concrete elected relation identifier and UUIDv7 partition key.",
@@ -107532,16 +107175,6 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 4
-        },
-        "ip_address": {
-          "comment": "Audit IP address captured with this ballot event.",
-          "dataType": "inet",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 8
         },
         "score": {
           "comment": "Binary relation ballot or retained clear event; nullable events clear the current ballot.",
@@ -107573,16 +107206,6 @@
           "nullable": false,
           "ordinalPosition": 7
         },
-        "session_id": {
-          "comment": "Opaque client session token with no durable owner row.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 10
-        },
         "subject_id": {
           "comment": "Authoritative subject paired with the concrete elected relation identifier.",
           "dataType": "uuid",
@@ -107592,16 +107215,6 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 2
-        },
-        "user_agent_string_id": {
-          "comment": "Shared bounded user-agent string captured with this ballot event.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 11
         },
         "user_id": {
           "comment": "User who cast this concrete relation ballot event.",
@@ -107624,14 +107237,6 @@
           "referencedTable": "relation__user__category__topic",
           "validated": true
         },
-        "fk_relation__user__category__topic__votes__user_agent_string_id": {
-          "columns": ["user_agent_string_id"],
-          "onDelete": "SET NULL",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "user_agent_strings",
-          "validated": true
-        },
         "relation__user__category__topic__votes_user_id_fkey": {
           "columns": ["user_id"],
           "onDelete": "CASCADE",
@@ -107642,6 +107247,29 @@
         }
       },
       "indexes": {
+        "idx_relation__user__category__topic__votes__cleanup__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_relation__user__category__topic__votes__cleanup__id ON ONLY public.relation__user__category__topic__votes USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_relation__user__category__topic__votes__relation__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -120350,17 +119978,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11
-        },
-        "device_id": {
-          "comment": "Opaque client device token with no durable owner row.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 8
+          "ordinalPosition": 7
         },
         "id": {
           "comment": null,
@@ -120371,16 +119989,6 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 3
-        },
-        "ip_address": {
-          "comment": "Audit IP address captured with the ballot event.",
-          "dataType": "inet",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 7
         },
         "rss_feed_item_id": {
           "comment": "Concrete ballot target in rss_feed_items.",
@@ -120422,26 +120030,6 @@
           "nullable": false,
           "ordinalPosition": 6
         },
-        "session_id": {
-          "comment": "Opaque client session token with no durable owner row.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 9
-        },
-        "user_agent_string_id": {
-          "comment": "Shared bounded user-agent string captured with the ballot event.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 10
-        },
         "user_id": {
           "comment": "User who cast this ballot event.",
           "dataType": "uuid",
@@ -120463,14 +120051,6 @@
           "referencedTable": "rss_feed_items",
           "validated": true
         },
-        "rss_feed_item_votes_user_agent_string_id_fkey": {
-          "columns": ["user_agent_string_id"],
-          "onDelete": "SET NULL",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "user_agent_strings",
-          "validated": true
-        },
         "rss_feed_item_votes_user_id_fkey": {
           "columns": ["user_id"],
           "onDelete": "CASCADE",
@@ -120481,6 +120061,29 @@
         }
       },
       "indexes": {
+        "idx_rss_feed_item_votes__cleanup__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_rss_feed_item_votes__cleanup__id ON ONLY public.rss_feed_item_votes USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_rss_feed_item_votes__rss_feed_item_id__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -127454,17 +127057,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11
-        },
-        "device_id": {
-          "comment": "Opaque client device token with no durable owner row.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 8
+          "ordinalPosition": 7
         },
         "id": {
           "comment": null,
@@ -127475,16 +127068,6 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 3
-        },
-        "ip_address": {
-          "comment": "Audit IP address captured with the ballot event.",
-          "dataType": "inet",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 7
         },
         "score": {
           "comment": "Ballot score; nullable events clear the current ballot.",
@@ -127516,16 +127099,6 @@
           "nullable": false,
           "ordinalPosition": 6
         },
-        "session_id": {
-          "comment": "Opaque client session token with no durable owner row.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 9
-        },
         "topic_id": {
           "comment": "Concrete ballot target in topics.",
           "dataType": "uuid",
@@ -127535,16 +127108,6 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 2
-        },
-        "user_agent_string_id": {
-          "comment": "Shared bounded user-agent string captured with the ballot event.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 10
         },
         "user_id": {
           "comment": "User who cast this ballot event.",
@@ -127567,14 +127130,6 @@
           "referencedTable": "topics",
           "validated": true
         },
-        "topic_votes_user_agent_string_id_fkey": {
-          "columns": ["user_agent_string_id"],
-          "onDelete": "SET NULL",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "user_agent_strings",
-          "validated": true
-        },
         "topic_votes_user_id_fkey": {
           "columns": ["user_id"],
           "onDelete": "CASCADE",
@@ -127585,6 +127140,29 @@
         }
       },
       "indexes": {
+        "idx_topic_votes__cleanup__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_topic_votes__cleanup__id ON ONLY public.topic_votes USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_topic_votes__topic_id__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -131012,6 +130590,84 @@
         }
       }
     },
+    "user_agent_string_cleanup_cursors": {
+      "checkConstraints": {
+        "user_agent_string_cleanup_cursors_is_singleton_check": {
+          "definition": "CHECK (is_singleton)",
+          "validated": true
+        }
+      },
+      "columns": {
+        "cursor_user_agent_string_id": {
+          "comment": "Last examined user-agent row; not a relationship to the row.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2
+        },
+        "is_singleton": {
+          "comment": "Checked singleton key serializes the sweep.",
+          "dataType": "boolean",
+          "defaultExpression": "true",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        },
+        "updated_at": {
+          "comment": "Last committed user-agent sweep progress.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3
+        }
+      },
+      "comment": "Bounded cyclic UUIDv7 sweep of user-agent strings that may become orphaned after a session ends.",
+      "foreignKeys": {},
+      "indexes": {
+        "user_agent_string_cleanup_cursors_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX user_agent_string_cleanup_cursors_pkey ON public.user_agent_string_cleanup_cursors USING btree (is_singleton)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "is_singleton",
+              "descending": false,
+              "expression": "is_singleton",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.bool_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["is_singleton"]
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_user_agent_string_cleanup_cursors_updated_at": {
+          "definition": "CREATE TRIGGER trigger_user_agent_string_cleanup_cursors_updated_at BEFORE UPDATE ON public.user_agent_string_cleanup_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        }
+      },
+      "uniqueConstraints": {}
+    },
     "user_agent_strings": {
       "checkConstraints": {
         "user_agent_strings_user_agent_check": {
@@ -131055,7 +130711,7 @@
           "ordinalPosition": 2
         }
       },
-      "comment": "Insert-only deduplicated lookup table for browser user-agent strings shared by sessions and votes. Empty string represents an unknown session user agent.",
+      "comment": "Deduplicated lookup table for browser user-agent strings used by sessions. Empty string represents an unknown session user agent.",
       "foreignKeys": {},
       "indexes": {
         "uq_user_agent_strings__user_agent": {
@@ -140982,17 +140638,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11
-        },
-        "device_id": {
-          "comment": "Opaque client device token with no durable owner row.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 8
+          "ordinalPosition": 7
         },
         "id": {
           "comment": null,
@@ -141003,16 +140649,6 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 3
-        },
-        "ip_address": {
-          "comment": "Audit IP address captured with the ballot event.",
-          "dataType": "inet",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 7
         },
         "score": {
           "comment": "Ballot score; nullable events clear the current ballot.",
@@ -141044,16 +140680,6 @@
           "nullable": false,
           "ordinalPosition": 6
         },
-        "session_id": {
-          "comment": "Opaque client session token with no durable owner row.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 9
-        },
         "target_user_id": {
           "comment": "Concrete ballot target in users.",
           "dataType": "uuid",
@@ -141063,16 +140689,6 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 2
-        },
-        "user_agent_string_id": {
-          "comment": "Shared bounded user-agent string captured with the ballot event.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 10
         },
         "user_id": {
           "comment": "User who cast this ballot event.",
@@ -141095,14 +140711,6 @@
           "referencedTable": "users",
           "validated": true
         },
-        "user_vouch_votes_user_agent_string_id_fkey": {
-          "columns": ["user_agent_string_id"],
-          "onDelete": "SET NULL",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "user_agent_strings",
-          "validated": true
-        },
         "user_vouch_votes_user_id_fkey": {
           "columns": ["user_id"],
           "onDelete": "CASCADE",
@@ -141113,6 +140721,29 @@
         }
       },
       "indexes": {
+        "idx_user_vouch_votes__cleanup__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_user_vouch_votes__cleanup__id ON ONLY public.user_vouch_votes USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_user_vouch_votes__target_user_id__id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -143060,6 +142691,157 @@
       },
       "uniqueConstraints": {}
     },
+    "vote_ballot_cleanup_cursors": {
+      "checkConstraints": {},
+      "columns": {
+        "cursor_vote_id": {
+          "comment": "Last scanned ballot ID; not a durable relationship to a ballot.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2
+        },
+        "family": {
+          "comment": "Concrete ballot family selected by the cleanup worker.",
+          "dataType": "vote_ballot_cleanup_families",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        },
+        "updated_at": {
+          "comment": "Last committed ballot sweep progress.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3
+        }
+      },
+      "comment": "One bounded cyclic UUIDv7 cleanup position per concrete ballot table.",
+      "foreignKeys": {},
+      "indexes": {
+        "vote_ballot_cleanup_cursors_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX vote_ballot_cleanup_cursors_pkey ON public.vote_ballot_cleanup_cursors USING btree (family)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "family",
+              "descending": false,
+              "expression": "family",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.enum_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["family"]
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_vote_ballot_cleanup_cursors_updated_at": {
+          "definition": "CREATE TRIGGER trigger_vote_ballot_cleanup_cursors_updated_at BEFORE UPDATE ON public.vote_ballot_cleanup_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        }
+      },
+      "uniqueConstraints": {}
+    },
+    "vote_integrity_flag_detail_cleanup_cursors": {
+      "checkConstraints": {
+        "vote_integrity_flag_detail_cleanup_cursors_is_singleton_check": {
+          "definition": "CHECK (is_singleton)",
+          "validated": true
+        }
+      },
+      "columns": {
+        "cursor_flag_id": {
+          "comment": "Last examined flag ID; not a relationship to the flag.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2
+        },
+        "is_singleton": {
+          "comment": "Checked singleton key serializes the sweep.",
+          "dataType": "boolean",
+          "defaultExpression": "true",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        },
+        "updated_at": {
+          "comment": "Last committed flag-detail sweep progress.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3
+        }
+      },
+      "comment": "Bounded cyclic UUIDv7 sweep that strips aged identifying details while retaining moderation flags.",
+      "foreignKeys": {},
+      "indexes": {
+        "vote_integrity_flag_detail_cleanup_cursors_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX vote_integrity_flag_detail_cleanup_cursors_pkey ON public.vote_integrity_flag_detail_cleanup_cursors USING btree (is_singleton)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "is_singleton",
+              "descending": false,
+              "expression": "is_singleton",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.bool_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["is_singleton"]
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_vote_integrity_flag_detail_cleanup_cursors_updated_at": {
+          "definition": "CREATE TRIGGER trigger_vote_integrity_flag_detail_cleanup_cursors_updated_at BEFORE UPDATE ON public.vote_integrity_flag_detail_cleanup_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        }
+      },
+      "uniqueConstraints": {}
+    },
     "vote_integrity_flags": {
       "checkConstraints": {
         "chk_vote_integrity_flags__one_target": {
@@ -144159,6 +143941,29 @@
           ],
           "live": true,
           "predicate": "(hostname_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_vote_integrity_flags__identifying_details__id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_vote_integrity_flags__identifying_details__id ON public.vote_integrity_flags USING btree (id) WHERE (details ?| ARRAY['correlated_ips'::text, 'ip_address'::text, 'ipAddress'::text, 'device_id'::text, 'deviceId'::text, 'session_id'::text, 'sessionId'::text, 'user_agent'::text, 'userAgent'::text, 'user_agent_string_id'::text])",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(details ?| ARRAY['correlated_ips'::text, 'ip_address'::text, 'ipAddress'::text, 'device_id'::text, 'deviceId'::text, 'session_id'::text, 'sessionId'::text, 'user_agent'::text, 'userAgent'::text, 'user_agent_string_id'::text])",
           "primary": false,
           "ready": true,
           "unique": false,

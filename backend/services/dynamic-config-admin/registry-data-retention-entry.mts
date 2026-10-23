@@ -14,6 +14,12 @@ export const dataRetentionRegistryEntry = defineDynamicConfigNamespace({
       maxValue: 250,
       integer: true,
     },
+    vote_integrity_detail_days: {
+      description: 'Days identifying vote integrity flag details remain before redaction.',
+      minValue: 1,
+      maxValue: DATA_RETENTION_MAX_VALUES.vote_integrity_detail_days,
+      integer: true,
+    },
     batch_size: {
       description: 'Rows each data retention cleanup deletes per batch.',
       minValue: 1,

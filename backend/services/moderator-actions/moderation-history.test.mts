@@ -187,7 +187,7 @@ describe('moderation staff history transactions', () => {
       const actor = await createTestUserDirect()
       const user = await createTestUserDirect()
       const postId = await post(user.id)
-      await insertTestPostVote(postId, user.id, '192.0.2.10', 1)
+      await insertTestPostVote(postId, user.id, 1)
       const flag = await createVoteIntegrityFlag('post', postId, 'ip_correlation', {})
       let penaltyId: string | undefined
       if (action === 'revoke') {
@@ -284,7 +284,6 @@ describe('moderation staff history transactions', () => {
           upsertAgentModerationElectionVotes(
             actor.id,
             [{ entityId: moderationId, score: action === 'delete' ? null : 1 }],
-            undefined,
             undefined,
             { query },
           ),

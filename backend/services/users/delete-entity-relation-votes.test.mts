@@ -235,7 +235,6 @@ describe('deleteUser entity-relation vote cleanup', () => {
         deletingVoter.id,
         [{ entityId: relationId, score: 1 }],
         undefined,
-        undefined,
         { query, enqueueVoteStats: false },
       )
     })
@@ -267,7 +266,6 @@ describe('deleteUser entity-relation vote cleanup', () => {
       upsertEntityRelationElectionVotes(
         deletingVoter.id,
         [{ entityId: relationId, score: -1 }],
-        undefined,
         undefined,
         { enqueueVoteStats: false },
       ),

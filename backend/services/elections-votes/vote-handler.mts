@@ -12,7 +12,8 @@ import {
   type ElectionVoteMutationResult,
 } from './shared/index.mts'
 import { enqueueVoteIntegrityCheck } from '@queues/vote-aggregation/enqueues/vote-integrity'
-import type { VoteEventContext } from '@voucha/types/entities/election'
+import { storeVoteIpEvidence } from './vote-ip-evidence.mts'
+import onError from '@modules/on-error'
 import { getContributionStatus } from '@services/contribution-gating/assert'
 import { assertWithinContributionQuota } from '@services/contribution-gating/quota'
 import { createCodedError } from '@modules/on-error/create-coded-error'
@@ -118,12 +119,6 @@ export async function applyVoteMutation<
     })
   }
 
-  const context: VoteEventContext = {
-    ipAddress: ip ?? null,
-    deviceId: sessionData?.did ?? null,
-    sessionId: sessionData?.sid ?? null,
-    userAgent: request.userAgent,
-  }
   // Serialize read/quota/append; persistence uses a separate lock namespace to prevent deadlocks.
   const upsertedVotes = await withElectionVoteRequestLock(
     options.entityType,
@@ -159,7 +154,7 @@ export async function applyVoteMutation<
         await assertWithinContributionQuota(currentUser.id, isAdmin, membershipPlan)
       }
 
-      return options.upsertVotes(currentUser.id, [{ entityId, score }], context)
+      return options.upsertVotes(currentUser.id, [{ entityId, score }])
     },
   )
 
@@ -172,6 +167,17 @@ export async function applyVoteMutation<
   }
 
   if (!isClear && score !== null && options.enqueueIntegrityCheck !== false) {
-    void enqueueVoteIntegrityCheck(options.entityType, entityId, currentUser.id, ip ?? null, score)
+    void storeVoteIpEvidence(upsertedVote.id, ip ?? null)
+      .catch(() => onError(new Error('Vote IP evidence cache write failed')))
+      .then(async () => {
+        await enqueueVoteIntegrityCheck(
+          options.entityType,
+          entityId,
+          currentUser.id,
+          score,
+          upsertedVote.id,
+        )
+      })
+      .catch(() => onError(new Error('Vote integrity job admission failed')))
   }
 }

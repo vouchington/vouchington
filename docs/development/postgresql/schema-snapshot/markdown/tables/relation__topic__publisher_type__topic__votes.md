@@ -6,20 +6,16 @@ Append-only votes for the concrete relation__topic__publisher_type__topic electe
 
 RANGE partitioned on `entity_relation_id` (children: default, no retention owner, access class: target-scoped, growth: unbounded).
 
-| Column                 | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                   |
-| ---------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------- |
-| `user_id`              | `uuid`                     | no       |                              |          |           |           | User who cast this concrete relation ballot event.                                        |
-| `subject_id`           | `uuid`                     | no       |                              |          |           |           | Authoritative subject paired with the concrete elected relation identifier.               |
-| `entity_relation_id`   | `uuid`                     | no       |                              |          |           |           | Concrete elected relation identifier and UUIDv7 partition key.                            |
-| `id`                   | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                           |
-| `score`                | `smallint`                 | yes      |                              |          |           |           | Binary relation ballot or retained clear event; nullable events clear the current ballot. |
-| `score_is_neutral`     | `boolean`                  | no       | `false`                      |          |           |           | Explicit neutral provenance; binary relation vote producers leave this false.             |
-| `score_is_semantic`    | `boolean`                  | no       | `false`                      |          |           |           | Explicit semantic score provenance; binary relation vote producers leave this false.      |
-| `ip_address`           | `inet`                     | yes      |                              |          |           |           | Audit IP address captured with this ballot event.                                         |
-| `device_id`            | `uuid`                     | yes      |                              |          |           |           | Opaque client device token with no durable owner row.                                     |
-| `session_id`           | `uuid`                     | yes      |                              |          |           |           | Opaque client session token with no durable owner row.                                    |
-| `user_agent_string_id` | `uuid`                     | yes      |                              |          |           |           | Shared bounded user-agent string captured with this ballot event.                         |
-| `created_at`           | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                           |
+| Column               | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                   |
+| -------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------- |
+| `user_id`            | `uuid`                     | no       |                              |          |           |           | User who cast this concrete relation ballot event.                                        |
+| `subject_id`         | `uuid`                     | no       |                              |          |           |           | Authoritative subject paired with the concrete elected relation identifier.               |
+| `entity_relation_id` | `uuid`                     | no       |                              |          |           |           | Concrete elected relation identifier and UUIDv7 partition key.                            |
+| `id`                 | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                           |
+| `score`              | `smallint`                 | yes      |                              |          |           |           | Binary relation ballot or retained clear event; nullable events clear the current ballot. |
+| `score_is_neutral`   | `boolean`                  | no       | `false`                      |          |           |           | Explicit neutral provenance; binary relation vote producers leave this false.             |
+| `score_is_semantic`  | `boolean`                  | no       | `false`                      |          |           |           | Explicit semantic score provenance; binary relation vote producers leave this false.      |
+| `created_at`         | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                           |
 
 **Primary key:** `PRIMARY KEY (entity_relation_id, id)`
 
@@ -35,13 +31,13 @@ _none_
 **Foreign keys:**
 
 - `fk_rela__topi__publ_type__topic__votes__subject_entity_relation`: `FOREIGN KEY (subject_id, entity_relation_id) REFERENCES relation__topic__publisher_type__topic(subject_id, id) ON DELETE CASCADE`
-- `fk_relat__topic__publi_type__topic__votes__user_agent_string_id`: `FOREIGN KEY (user_agent_string_id) REFERENCES user_agent_strings(id) ON DELETE SET NULL`
 - `relation__topic__publisher_type__topic__votes_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
 
 **Indexes:**
 
 - `idx_relat__topic__publis_type__topic__votes__relation__user__id`: `CREATE INDEX idx_relat__topic__publis_type__topic__votes__relation__user__id ON ONLY public.relation__topic__publisher_type__topic__votes USING btree (entity_relation_id, user_id, id DESC)`
 - `idx_relat__topic__publis_type__topic__votes__user__relation__id`: `CREATE INDEX idx_relat__topic__publis_type__topic__votes__user__relation__id ON ONLY public.relation__topic__publisher_type__topic__votes USING btree (user_id, entity_relation_id, id DESC)`
+- `idx_relation__topic__publisher_type__topic__votes__cleanup__id`: `CREATE INDEX idx_relation__topic__publisher_type__topic__votes__cleanup__id ON ONLY public.relation__topic__publisher_type__topic__votes USING btree (id)`
 - `idx_relation__topic__publisher_type__topic__votes__relation__id`: `CREATE INDEX idx_relation__topic__publisher_type__topic__votes__relation__id ON ONLY public.relation__topic__publisher_type__topic__votes USING btree (entity_relation_id, id)`
 - `idx_relation__topic__publisher_type__topic__votes__user__id`: `CREATE INDEX idx_relation__topic__publisher_type__topic__votes__user__id ON ONLY public.relation__topic__publisher_type__topic__votes USING btree (user_id, id)`
 - `relation__topic__publisher_type__topic__votes_pkey`: `CREATE UNIQUE INDEX relation__topic__publisher_type__topic__votes_pkey ON ONLY public.relation__topic__publisher_type__topic__votes USING btree (entity_relation_id, id)`

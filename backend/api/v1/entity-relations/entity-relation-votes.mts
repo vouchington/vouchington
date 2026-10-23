@@ -107,8 +107,7 @@ function createEntityRelationVoteHandler(isClear: boolean) {
           ? getEntityRelationElectionVote(userId, entityId, resolvedTarget)
           : null
       },
-      upsertVotes: (userId, votes, context) =>
-        upsertEntityRelationVotesById(userId, votes, context, resolvedTarget),
+      upsertVotes: (userId, votes) => upsertEntityRelationVotesById(userId, votes, resolvedTarget),
     }
     const handler = isClear ? createVoteClearHandler(options) : createVoteHandler(options)
     await handler(ctx)

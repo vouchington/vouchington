@@ -52,7 +52,6 @@ function agentVoteTool(name: string, clear: boolean) {
               score: clear ? null : getElectionVoteChoiceScore('moderation', args.choice!),
             },
           ],
-          { ipAddress: null, deviceId: null, sessionId: null, userAgent: null },
           'agent',
         )
       })

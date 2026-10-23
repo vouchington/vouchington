@@ -30,12 +30,14 @@
     "@services/post-publication": "workspace:^",
     "@services/user-import-export": "workspace:^",
     "@services/users": "workspace:^",
+    "@voucha/types": "workspace:^",
     "@vouchington/postgres": "^0.0.17",
     "sql-template-strings": "^2.2.2",
     "uuid": "^14.0.3",
     "valkyries": "^0.11.1"
   },
   "devDependencies": {
+    "@services/growth-metrics": "workspace:^",
     "@services/oauth-accounts": "workspace:^",
     "@services/user-deletions": "workspace:^",
     "@voucha/test-helpers": "workspace:^"

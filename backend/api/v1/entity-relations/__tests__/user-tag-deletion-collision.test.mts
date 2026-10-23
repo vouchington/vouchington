@@ -51,15 +51,9 @@ async function createSameIdUserAndPostRelations(voteIn: Array<'user' | 'post'>) 
     ['post', postMetadata],
   ] as const) {
     if (!voteIn.includes(family)) continue
-    await upsertEntityRelationElectionVotes(
-      voter.id,
-      [{ entityId: id, score: 1 }],
-      undefined,
-      metadata,
-      {
-        enqueueVoteStats: false,
-      },
-    )
+    await upsertEntityRelationElectionVotes(voter.id, [{ entityId: id, score: 1 }], metadata, {
+      enqueueVoteStats: false,
+    })
   }
   return { voter, target, tag: tag!, postId, id, userMetadata, postMetadata }
 }

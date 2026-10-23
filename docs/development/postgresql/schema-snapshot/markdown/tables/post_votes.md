@@ -6,20 +6,16 @@ Append-only ballot events for posts.
 
 RANGE partitioned on `post_id` (children: default, no retention owner, access class: target-scoped, growth: unbounded).
 
-| Column                                  | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                          |
-| --------------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ---------------------------------------------------------------- |
-| `user_id`                               | `uuid`                     | no       |                              |          |           |           | User who cast this ballot event.                                 |
-| `post_id`                               | `uuid`                     | no       |                              |          |           |           | Concrete ballot target in posts.                                 |
-| `outbound_activitypub_like_activity_id` | `uuid`                     | yes      |                              |          |           |           | Stable outbound ActivityPub Like protocol identity.              |
-| `id`                                    | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                  |
-| `score`                                 | `smallint`                 | yes      |                              |          |           |           | Ballot score; nullable events clear the current ballot.          |
-| `score_is_neutral`                      | `boolean`                  | no       | `false`                      |          |           |           | Explicit neutral ballot provenance.                              |
-| `score_is_semantic`                     | `boolean`                  | no       | `false`                      |          |           |           | Explicit semantic ballot provenance.                             |
-| `ip_address`                            | `inet`                     | yes      |                              |          |           |           | Audit IP address captured with the ballot event.                 |
-| `device_id`                             | `uuid`                     | yes      |                              |          |           |           | Opaque client device token with no durable owner row.            |
-| `session_id`                            | `uuid`                     | yes      |                              |          |           |           | Opaque client session token with no durable owner row.           |
-| `user_agent_string_id`                  | `uuid`                     | yes      |                              |          |           |           | Shared bounded user-agent string captured with the ballot event. |
-| `created_at`                            | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                  |
+| Column                                  | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                 |
+| --------------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------- |
+| `user_id`                               | `uuid`                     | no       |                              |          |           |           | User who cast this ballot event.                        |
+| `post_id`                               | `uuid`                     | no       |                              |          |           |           | Concrete ballot target in posts.                        |
+| `outbound_activitypub_like_activity_id` | `uuid`                     | yes      |                              |          |           |           | Stable outbound ActivityPub Like protocol identity.     |
+| `id`                                    | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                         |
+| `score`                                 | `smallint`                 | yes      |                              |          |           |           | Ballot score; nullable events clear the current ballot. |
+| `score_is_neutral`                      | `boolean`                  | no       | `false`                      |          |           |           | Explicit neutral ballot provenance.                     |
+| `score_is_semantic`                     | `boolean`                  | no       | `false`                      |          |           |           | Explicit semantic ballot provenance.                    |
+| `created_at`                            | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                         |
 
 **Primary key:** `PRIMARY KEY (post_id, id)`
 
@@ -36,11 +32,11 @@ _none_
 **Foreign keys:**
 
 - `post_votes_post_id_fkey`: `FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE`
-- `post_votes_user_agent_string_id_fkey`: `FOREIGN KEY (user_agent_string_id) REFERENCES user_agent_strings(id) ON DELETE SET NULL`
 - `post_votes_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
 
 **Indexes:**
 
+- `idx_post_votes__cleanup__id`: `CREATE INDEX idx_post_votes__cleanup__id ON ONLY public.post_votes USING btree (id)`
 - `idx_post_votes__post_id__id`: `CREATE INDEX idx_post_votes__post_id__id ON ONLY public.post_votes USING btree (post_id, id)`
 - `idx_post_votes__post_id__user_id__id`: `CREATE INDEX idx_post_votes__post_id__user_id__id ON ONLY public.post_votes USING btree (post_id, user_id, id DESC)`
 - `idx_post_votes__user_id__post_id__id`: `CREATE INDEX idx_post_votes__user_id__post_id__id ON ONLY public.post_votes USING btree (user_id, post_id, id DESC)`

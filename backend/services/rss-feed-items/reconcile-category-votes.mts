@@ -103,7 +103,6 @@ async function retractUnsupportedCategorizerVotesForKind(
   await upsertEntityRelationElectionVotes(
     categorizerId,
     rows.map(row => ({ entityId: row.id, score: 0 as const })),
-    undefined,
     metadata,
     { query, enqueueVoteStats: false },
   )

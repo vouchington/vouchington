@@ -10,7 +10,6 @@ import type {
   ElectionVoteScore,
   EntityElectionConfig,
   ViewBaseElection,
-  VoteEventContext,
 } from './types.mts'
 import type { ElectionVotePolicy } from '@voucha/types/entities/election'
 import {
@@ -60,21 +59,9 @@ export function createVotesUpsert(
   return async function upsertElectionVotes(
     userId: string,
     votes: Array<{ entityId: string; score: ElectionVoteScore }>,
-    context: VoteEventContext = {
-      ipAddress: null,
-      deviceId: null,
-      sessionId: null,
-      userAgent: null,
-    },
     queryOptions: QueryOptions = {},
   ): Promise<ElectionVoteMutationResult[]> {
-    const upsertedVotes = await upsertElectionVotesShared(
-      config,
-      userId,
-      votes,
-      context,
-      queryOptions,
-    )
+    const upsertedVotes = await upsertElectionVotesShared(config, userId, votes, queryOptions)
     const entityIds = options.getEntityIds?.(votes, upsertedVotes) ?? [
       ...new Set(votes.map(vote => vote.entityId)),
     ]

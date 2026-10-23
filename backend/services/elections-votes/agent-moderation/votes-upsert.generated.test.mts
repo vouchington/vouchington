@@ -71,7 +71,10 @@ describe('votes-upsert.generated', () => {
     })
     expect((await getAgentModerationElectionByIdCached(moderationId))?.votes_score_net).toBe(-25)
 
-    await upsertAgentModerationElectionVotes(user.id, [{ entityId: moderationId, score: 1 }])
+    const [ballot] = await upsertAgentModerationElectionVotes(user.id, [
+      { entityId: moderationId, score: 1 },
+    ])
+    expect(ballot?.id).toMatch(/^[0-9a-f-]{36}$/)
 
     const refreshed = await waitForUpdatedElectionStats(moderationId)
     expect(refreshed?.votes_count_up).toBe(1)
@@ -151,7 +154,6 @@ describe('votes-upsert.generated', () => {
       upsertAgentModerationElectionVotes(
         user.id,
         [{ entityId: moderationId, score: 1 }],
-        undefined,
         async () => {
           throw new Error('feedback write failed')
         },

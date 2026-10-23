@@ -77,8 +77,10 @@ describe('0000-00-00-entity-elections', () => {
     }
     expect(sql).not.toContain('CREATE TABLE IF NOT EXISTS entity_relation_votes')
     expect(sql).not.toContain('user_bot_votes')
-    expect(sql).toContain('device_id UUID')
-    expect(sql).toContain('session_id UUID')
+    expect(sql).not.toContain('ip_address INET')
+    expect(sql).not.toContain('device_id UUID')
+    expect(sql).not.toContain('session_id UUID')
+    expect(sql).not.toContain('user_agent_string_id UUID')
   })
 
   it('keeps the binary moderation vote domain', () => {

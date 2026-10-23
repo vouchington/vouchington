@@ -72,8 +72,8 @@ describe('vote-aggregation', () => {
       const downvoter = await createTestUserDirect({
         username: `test-va-dn-${randomBytes(4).toString('hex')}`,
       })
-      await insertTestPostVote(postId, upvoter.id, '1.2.3.4', 1)
-      await insertTestPostVote(postId, downvoter.id, '1.2.3.5', -1)
+      await insertTestPostVote(postId, upvoter.id, 1)
+      await insertTestPostVote(postId, downvoter.id, -1)
 
       const stats = await aggregateElectionVoteStatsFromReplica(POST_ELECTION_CONFIG, postId)
 

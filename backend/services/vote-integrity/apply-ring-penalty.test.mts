@@ -48,12 +48,12 @@ describe('apply-ring-penalty', () => {
         Array.from({ length: 3 }, () => createTestUserDirect({ username: randomUsername() })),
       )
       for (const user of upvoters) {
-        await insertTestPostVote(postId, user!.id, '9.9.9.9', 1)
+        await insertTestPostVote(postId, user!.id, 1)
       }
 
       // Downvoter should not be penalized
       const downvoter = await createTestUserDirect({ username: randomUsername() })
-      await insertTestPostVote(postId, downvoter!.id, '9.9.9.9', -1)
+      await insertTestPostVote(postId, downvoter!.id, -1)
 
       const flag = await createVoteIntegrityFlag('post', postId, 'ip_correlation', {})
       expect(flag).not.toBeNull()
@@ -130,7 +130,7 @@ describe('apply-ring-penalty', () => {
     it('rejects a repeated request even after a penalty was revoked', async () => {
       const postId = await makePost(randomSlug())
       const upvoter = await createTestUserDirect({ username: randomUsername() })
-      await insertTestPostVote(postId, upvoter!.id, '9.9.9.9', 1)
+      await insertTestPostVote(postId, upvoter!.id, 1)
       const flag = await createVoteIntegrityFlag('post', postId, 'ip_correlation', {})
       const first = await applyVoteRingPenalty(flag!.id, adminUser.id)
       expect(first.penalized_user_count).toBe(1)

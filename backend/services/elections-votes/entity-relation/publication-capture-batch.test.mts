@@ -32,25 +32,17 @@ describe('post topic election batch publication capture', () => {
     }>
     const target = createEntityRelationElectionTarget(row!.id, relation.table_name)
 
-    await upsertEntityRelationElectionVotes(
-      voter.id,
-      [{ entityId: row!.id, score: 1 }],
-      undefined,
-      relation,
-      { enqueueVoteStats: false },
-    )
+    await upsertEntityRelationElectionVotes(voter.id, [{ entityId: row!.id, score: 1 }], relation, {
+      enqueueVoteStats: false,
+    })
     await updateEntityRelationElectionVoteStatsFromPrimaryBatch([target])
     const entered = await getTestPostPublicationDirtyWorkForScope({ type: 'post', id: post.id })
     expect(entered).toBeDefined()
     await expect(listTestPostPublicationImpactTopicIds(entered!.id)).resolves.toEqual([topic.id])
 
-    await upsertEntityRelationElectionVotes(
-      voter.id,
-      [{ entityId: row!.id, score: 0 }],
-      undefined,
-      relation,
-      { enqueueVoteStats: false },
-    )
+    await upsertEntityRelationElectionVotes(voter.id, [{ entityId: row!.id, score: 0 }], relation, {
+      enqueueVoteStats: false,
+    })
     await updateEntityRelationElectionVoteStatsFromPrimaryBatch([target])
     const exited = await getTestPostPublicationDirtyWorkForScope({ type: 'post', id: post.id })
     expect(Number(exited!.generation)).toBeGreaterThan(Number(entered!.generation))
@@ -75,26 +67,18 @@ describe('post topic election batch publication capture', () => {
     }>
     const target = createEntityRelationElectionTarget(row!.id, relation.table_name)
 
-    await upsertEntityRelationElectionVotes(
-      voter.id,
-      [{ entityId: row!.id, score: 1 }],
-      undefined,
-      relation,
-      { enqueueVoteStats: false },
-    )
+    await upsertEntityRelationElectionVotes(voter.id, [{ entityId: row!.id, score: 1 }], relation, {
+      enqueueVoteStats: false,
+    })
     await updateEntityRelationElectionVoteStatsFromPrimaryBatch([target])
     const entered = await getTestPostPublicationDirtyWorkForScope({ type: 'post', id: post.id })
     expect(entered).toBeDefined()
     await expect(listTestPostPublicationImpactPostIds(entered!.id)).resolves.toEqual([post.id])
     await expect(listTestPostPublicationImpactTopicIds(entered!.id)).resolves.toEqual([])
 
-    await upsertEntityRelationElectionVotes(
-      voter.id,
-      [{ entityId: row!.id, score: 0 }],
-      undefined,
-      relation,
-      { enqueueVoteStats: false },
-    )
+    await upsertEntityRelationElectionVotes(voter.id, [{ entityId: row!.id, score: 0 }], relation, {
+      enqueueVoteStats: false,
+    })
     await updateEntityRelationElectionVoteStatsFromPrimaryBatch([target])
     const exited = await getTestPostPublicationDirtyWorkForScope({ type: 'post', id: post.id })
     expect(Number(exited!.generation)).toBeGreaterThan(Number(entered!.generation))

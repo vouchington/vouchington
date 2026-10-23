@@ -54,7 +54,6 @@ describe('account-data vote export', () => {
     await upsertEntityRelationElectionVotes(
       voter.id,
       [{ entityId: relation.id, score: 0 }],
-      undefined,
       relationMetadata,
     )
     await upsertAgentModerationElectionVotes(voter.id, [{ entityId: moderationId, score: 0 }])

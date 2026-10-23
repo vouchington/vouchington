@@ -63,19 +63,51 @@ export async function getTestPenaltiesByUserId(userId: string): Promise<TestVote
 
 /**
  * Inserts a vote event directly into post_votes for testing detection services.
- * Uses a real postId (with FK constraint) and arbitrary ip/device/session values.
+ * Uses a real postId (with FK constraint).
  */
 export async function insertTestPostVote(
   postId: string,
   userId: string,
-  ipAddress: string,
   score: number,
   id?: string,
 ): Promise<void> {
   await write(sql`/* insertTestPostVote */
-    INSERT INTO post_votes (id, post_id, user_id, score, ip_address)
-    VALUES (COALESCE(${id}::uuid, uuidv7()), ${postId}, ${userId}, ${score}, ${ipAddress}::inet)
+    INSERT INTO post_votes (id, post_id, user_id, score)
+    VALUES (COALESCE(${id}::uuid, uuidv7()), ${postId}, ${userId}, ${score})
   `)
+}
+
+export async function getTestPostVoteIds(postId: string, userId: string): Promise<string[]> {
+  const { rows } = await read<{ id: string }>(sql`/* getTestPostVoteIds */
+    SELECT id FROM post_votes WHERE post_id = ${postId} AND user_id = ${userId}
+    ORDER BY id
+  `)
+  return rows.map(row => row.id)
+}
+
+export async function getTestRetainedPostVoteCount(day: string): Promise<number> {
+  const { rows } = await read<{ count: string }>(sql`/* getTestRetainedPostVoteCount */
+    SELECT count FROM post_vote_retained_daily_counts WHERE day = ${day}::date
+  `)
+  return Number(rows[0]?.count ?? 0)
+}
+
+export async function hasTestUserAgentString(id: string): Promise<boolean> {
+  const { rows } = await read<{ exists: boolean }>(sql`/* hasTestUserAgentString */
+    SELECT EXISTS(SELECT 1 FROM user_agent_strings WHERE id = ${id}::uuid) AS exists
+  `)
+  return rows[0]?.exists ?? false
+}
+
+export async function getTestVoteIntegrityFlagDetails(
+  id: string,
+): Promise<Record<string, unknown>> {
+  const { rows } = await read<{
+    details: Record<string, unknown>
+  }>(sql`/* getTestVoteIntegrityFlagDetails */
+    SELECT details FROM vote_integrity_flags WHERE id = ${id}::uuid
+  `)
+  return rows[0]?.details ?? {}
 }
 
 export async function getTestVoteIntegrityFlagTypesByPostId(postId: string): Promise<string[]> {
@@ -124,10 +156,13 @@ export async function insertTestVoteWeightPenaltyRecord(options: {
 export async function insertTestVoteIntegrityFlag(params: {
   postId: string
   flagType?: 'velocity_spike' | 'ip_correlation'
+  id?: string
+  details?: Record<string, unknown>
 }): Promise<string> {
   const { rows } = await write(sql`/* insertTestVoteIntegrityFlag */
-    INSERT INTO vote_integrity_flags (post_id, flag_type)
-    VALUES (${params.postId}::uuid, ${params.flagType ?? 'velocity_spike'})
+    INSERT INTO vote_integrity_flags (id, post_id, flag_type, details)
+    VALUES (COALESCE(${params.id}::uuid, uuidv7()), ${params.postId}::uuid,
+      ${params.flagType ?? 'velocity_spike'}, ${JSON.stringify(params.details ?? {})}::jsonb)
     RETURNING id
   `)
   return (rows[0] as { id: string }).id

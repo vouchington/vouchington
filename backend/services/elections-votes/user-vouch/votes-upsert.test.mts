@@ -131,19 +131,14 @@ describe('votes-upsert', () => {
     expect(muteRelations).toHaveLength(1)
   }, 30_000)
 
-  it('completes with a user agent while its transaction holds the final write-pool client', async () => {
+  it('completes while its transaction holds the final write-pool client', async () => {
     const target = await createTestUser()
     await withOwnedVouchStats(target.id, async () => {
       let upsert: Promise<unknown> | undefined
       const failures: unknown[] = []
       try {
         await withOnlyOneWritePoolClientAvailable(async () => {
-          upsert = upsertUserVouchElectionVotes(voter.id, [{ entityId: target.id, score: 1 }], {
-            ipAddress: null,
-            deviceId: null,
-            sessionId: null,
-            userAgent: `pool-saturation-${crypto.randomUUID()}`,
-          })
+          upsert = upsertUserVouchElectionVotes(voter.id, [{ entityId: target.id, score: 1 }])
 
           await expect(withDeadline(upsert, 5_000)).resolves.toBeDefined()
         })

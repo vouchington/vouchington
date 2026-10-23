@@ -54,10 +54,6 @@ CREATE TABLE IF NOT EXISTS ${config.voteTable} (
   CONSTRAINT chk_${config.voteTable}_score_domain ${config.voteScoreConstraint ?? 'CHECK (score IS NULL OR score BETWEEN -2 AND 2)'},
   ${config.tracksNeutralScore ? `CONSTRAINT chk_${config.voteTable}_score_is_neutral CHECK (NOT score_is_neutral OR score IS NOT DISTINCT FROM 0),` : ''}
   ${config.tracksSemanticScore ? `CONSTRAINT chk_${config.voteTable}_score_is_semantic CHECK (NOT score_is_semantic OR score IS NOT NULL),` : ''}
-  ip_address INET,
-  device_id UUID,
-  session_id UUID,
-  user_agent_string_id UUID REFERENCES user_agent_strings ON DELETE SET NULL,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
 ) PARTITION BY RANGE (${config.entityIdColumn});`
 }

@@ -67,6 +67,18 @@ import {
   cleanupRetainedMediaBindings,
   type RetainedMediaBindingCleanupPage,
 } from './cleanup-retained-media-bindings.mts'
+import {
+  cleanupSupersededVoteBallots,
+  type VoteBallotCleanupPage,
+} from './cleanup-vote-ballots.mts'
+import {
+  cleanupOrphanedUserAgentStrings,
+  type UserAgentStringCleanupPage,
+} from './cleanup-user-agent-strings.mts'
+import {
+  cleanupVoteIntegrityDetails,
+  type VoteIntegrityDetailCleanupPage,
+} from './cleanup-vote-integrity-details.mts'
 
 export { cleanupAbandonedBlueskyLinkSessions, cleanupExpiredBlueskyLinkCompletions }
 export { cleanupExpiredOAuthAuthorizations }
@@ -103,6 +115,9 @@ type ExpiryCleanupOptions = Pick<
 // Each cleanup in a run takes its batch size and per-run cap from the required run limits; a
 // per-cleanup option can override either one (tests use this to scope windows and shrink limits).
 type DataRetentionCleanupOptions = {
+  voteBallotIdsByTable?: Readonly<Record<string, readonly string[]>>
+  userAgentStringIds?: readonly string[]
+  voteIntegrityFlagIds?: readonly string[]
   retainedIdentityRootIds?: Partial<Record<RetainedIdentityFamily, readonly string[]>>
   retainedRelationIdentityKeys?: Readonly<Record<string, readonly RetainedRelationIdentityKey[]>>
   retainedMediaBindingIds?: readonly string[]
@@ -158,6 +173,9 @@ type DataRetentionCleanupResult = {
   oldPendingNotificationPushIntents: PendingNotificationPushIntentCleanupResult
   oldModerationQueueClaims: CleanupResult & { cursorId: string | null }
   oldModerationMediaReveals: CleanupResult & { cursorId: string | null }
+  supersededVoteBallots: VoteBallotCleanupPage[]
+  orphanedUserAgentStrings: UserAgentStringCleanupPage
+  voteIntegrityDetails: VoteIntegrityDetailCleanupPage
 }
 
 export async function runDataRetentionCleanup(
@@ -238,6 +256,20 @@ export async function runDataRetentionCleanup(
   const oldModerationMediaReveals = await cleanupOldModerationMediaReveals(
     withLimits(options.oldModerationMediaReveals),
   )
+  const supersededVoteBallots = await cleanupSupersededVoteBallots(
+    limits.batchSize,
+    new Date(),
+    options.voteBallotIdsByTable,
+  )
+  const orphanedUserAgentStrings = await cleanupOrphanedUserAgentStrings(
+    limits.batchSize,
+    options.userAgentStringIds,
+  )
+  const voteIntegrityDetails = await cleanupVoteIntegrityDetails(
+    limits.batchSize,
+    new Date(),
+    options.voteIntegrityFlagIds,
+  )
   const retainedRelationIdentities = await cleanupRetainedRelationIdentities(
     retainedPageSize,
     options.retainedRelationIdentityKeys,
@@ -276,6 +308,9 @@ export async function runDataRetentionCleanup(
     oldPendingNotificationPushIntents,
     oldModerationQueueClaims,
     oldModerationMediaReveals,
+    supersededVoteBallots,
+    orphanedUserAgentStrings,
+    voteIntegrityDetails,
   }
 }
 

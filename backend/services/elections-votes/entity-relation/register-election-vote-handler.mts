@@ -32,7 +32,7 @@ async function handleEntityRelationElectionVotes(
   )
 
   if (votes.length > 0) {
-    await upsertEntityRelationElectionVotes(creator.id, votes, undefined, relation, {
+    await upsertEntityRelationElectionVotes(creator.id, votes, relation, {
       query: options?.query,
       // A queue worker cannot observe an uncommitted outer transaction. Refresh the primary
       // aggregate on that same transaction instead; callers without a transaction retain the

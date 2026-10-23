@@ -82,6 +82,7 @@
     "@services/session-advisory-lock": "workspace:^",
     "@services/urls-hostnames": "workspace:^",
     "@services/users": "workspace:^",
+    "@valkey/valkey-glide": "^2.5.3",
     "@voucha/types": "workspace:^",
     "http-errors": "^2.0.1",
     "sql-template-strings": "^2.2.2",

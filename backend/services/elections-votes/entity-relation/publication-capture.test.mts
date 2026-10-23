@@ -37,13 +37,9 @@ describe('post topic election publication capture', () => {
     if (!row) throw new Error('Expected post topic relation')
     const target = createEntityRelationElectionTarget(row.id, relation.table_name)
     const voter = await createTestUser({ administrator: true })
-    await upsertEntityRelationElectionVotes(
-      voter.id,
-      [{ entityId: row.id, score: 1 }],
-      undefined,
-      relation,
-      { enqueueVoteStats: false },
-    )
+    await upsertEntityRelationElectionVotes(voter.id, [{ entityId: row.id, score: 1 }], relation, {
+      enqueueVoteStats: false,
+    })
     const relationLocked = Promise.withResolvers<void>()
     const releaseRelation = Promise.withResolvers<void>()
     const holder = holdRelationRowLock()
@@ -101,7 +97,6 @@ describe('post topic election publication capture', () => {
     await upsertEntityRelationElectionVotes(
       firstVoter.id,
       [{ entityId: row!.id, score: 1 }],
-      undefined,
       relation,
       { enqueueVoteStats: false },
     )
@@ -112,7 +107,6 @@ describe('post topic election publication capture', () => {
     await upsertEntityRelationElectionVotes(
       secondVoter.id,
       [{ entityId: row!.id, score: 1 }],
-      undefined,
       relation,
       { enqueueVoteStats: false },
     )
@@ -122,7 +116,6 @@ describe('post topic election publication capture', () => {
     await upsertEntityRelationElectionVotes(
       firstVoter.id,
       [{ entityId: row!.id, score: 0 }],
-      undefined,
       relation,
       { enqueueVoteStats: false },
     )
@@ -130,7 +123,6 @@ describe('post topic election publication capture', () => {
     await upsertEntityRelationElectionVotes(
       secondVoter.id,
       [{ entityId: row!.id, score: 0 }],
-      undefined,
       relation,
       { enqueueVoteStats: false },
     )
@@ -158,25 +150,17 @@ describe('post topic election publication capture', () => {
     }>
     const target = createEntityRelationElectionTarget(row!.id, relation.table_name)
 
-    await upsertEntityRelationElectionVotes(
-      voter.id,
-      [{ entityId: row!.id, score: 1 }],
-      undefined,
-      relation,
-      { enqueueVoteStats: false },
-    )
+    await upsertEntityRelationElectionVotes(voter.id, [{ entityId: row!.id, score: 1 }], relation, {
+      enqueueVoteStats: false,
+    })
     await updateEntityRelationElectionVoteStatsFromPrimary(target)
     const entered = await getTestPostPublicationDirtyWorkForScope({ type: 'post', id: post.id })
     expect(entered).toBeDefined()
     await expect(listTestPostPublicationImpactTopicIds(entered!.id)).resolves.toEqual([topic.id])
 
-    await upsertEntityRelationElectionVotes(
-      voter.id,
-      [{ entityId: row!.id, score: 0 }],
-      undefined,
-      relation,
-      { enqueueVoteStats: false },
-    )
+    await upsertEntityRelationElectionVotes(voter.id, [{ entityId: row!.id, score: 0 }], relation, {
+      enqueueVoteStats: false,
+    })
     await updateEntityRelationElectionVoteStatsFromPrimary(target)
     const exited = await getTestPostPublicationDirtyWorkForScope({ type: 'post', id: post.id })
     expect(Number(exited!.generation)).toBeGreaterThan(Number(entered!.generation))
@@ -201,26 +185,18 @@ describe('post topic election publication capture', () => {
     }>
     const target = createEntityRelationElectionTarget(row!.id, relation.table_name)
 
-    await upsertEntityRelationElectionVotes(
-      voter.id,
-      [{ entityId: row!.id, score: 1 }],
-      undefined,
-      relation,
-      { enqueueVoteStats: false },
-    )
+    await upsertEntityRelationElectionVotes(voter.id, [{ entityId: row!.id, score: 1 }], relation, {
+      enqueueVoteStats: false,
+    })
     await updateEntityRelationElectionVoteStatsFromPrimary(target)
     const entered = await getTestPostPublicationDirtyWorkForScope({ type: 'post', id: post.id })
     expect(entered).toBeDefined()
     await expect(listTestPostPublicationImpactPostIds(entered!.id)).resolves.toEqual([post.id])
     await expect(listTestPostPublicationImpactTopicIds(entered!.id)).resolves.toEqual([])
 
-    await upsertEntityRelationElectionVotes(
-      voter.id,
-      [{ entityId: row!.id, score: 0 }],
-      undefined,
-      relation,
-      { enqueueVoteStats: false },
-    )
+    await upsertEntityRelationElectionVotes(voter.id, [{ entityId: row!.id, score: 0 }], relation, {
+      enqueueVoteStats: false,
+    })
     await updateEntityRelationElectionVoteStatsFromPrimary(target)
     const exited = await getTestPostPublicationDirtyWorkForScope({ type: 'post', id: post.id })
     expect(Number(exited!.generation)).toBeGreaterThan(Number(entered!.generation))
@@ -247,24 +223,16 @@ describe('post topic election publication capture', () => {
     )) as Array<{ id: string }>
     const target = createEntityRelationElectionTarget(row!.id, relation.table_name)
 
-    await upsertEntityRelationElectionVotes(
-      voter.id,
-      [{ entityId: row!.id, score: 1 }],
-      undefined,
-      relation,
-      { enqueueVoteStats: false },
-    )
+    await upsertEntityRelationElectionVotes(voter.id, [{ entityId: row!.id, score: 1 }], relation, {
+      enqueueVoteStats: false,
+    })
     await updateEntityRelationElectionVoteStatsFromPrimary(target)
     const entered = await getTestPostPublicationDirtyWorkForScope({ type: 'rss_feed', id: feed.id })
     expect(entered).toBeDefined()
 
-    await upsertEntityRelationElectionVotes(
-      voter.id,
-      [{ entityId: row!.id, score: 0 }],
-      undefined,
-      relation,
-      { enqueueVoteStats: false },
-    )
+    await upsertEntityRelationElectionVotes(voter.id, [{ entityId: row!.id, score: 0 }], relation, {
+      enqueueVoteStats: false,
+    })
     await updateEntityRelationElectionVoteStatsFromPrimary(target)
     const exited = await getTestPostPublicationDirtyWorkForScope({ type: 'rss_feed', id: feed.id })
     expect(Number(exited!.generation)).toBeGreaterThan(Number(entered!.generation))

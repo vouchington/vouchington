@@ -224,7 +224,7 @@ async function runIntegrityAuthorityScenario(
       markdown: 'Integrity scenario',
       createdById: subject.id,
     })
-    await insertTestPostVote(postId, subject.id, '127.0.0.1', 1)
+    await insertTestPostVote(postId, subject.id, 1)
     const flagId = await insertTestVoteIntegrityFlag({ postId })
     await applyVoteRingPenalty(flagId, administrator.id)
     const exact = await getVotePenaltiesByFlag({ sourceFlagId: flagId })

@@ -38,7 +38,7 @@ test.beforeAll(async () => {
   })
   const voter = await createTestUser({ username: `vi-voter-${suffix}` })
   if (!voter) throw new Error('Failed to create voter')
-  await insertTestPostVote(penaltyPostId, voter.id, '192.168.200.1', 1)
+  await insertTestPostVote(penaltyPostId, voter.id, 1)
   penaltyFlagId = await insertTestVoteIntegrityFlag({
     postId: penaltyPostId,
     flagType: 'ip_correlation',
