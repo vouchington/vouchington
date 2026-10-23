@@ -129,6 +129,7 @@ export async function syncXFriends(xUserId: string): Promise<void> {
       account.id,
       account.userId,
       (result.data ?? []).map(user => user.id),
+      syncStartTime,
     )
     if (!persisted) return
     nextToken = result.meta?.next_token

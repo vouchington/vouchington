@@ -55,7 +55,11 @@ export async function connectOAuthAccountToActiveUser(
   const { query, userId } = activeUser
   const config = providerTableConfigs[provider]
   const hasFriends = provider === 'facebook' || provider === 'github' || provider === 'x'
-  const { rows, rowCount } = await query<{ id: string; provider_user_id: string }>(
+  const { rows, rowCount } = await query<{
+    id: string
+    provider_user_id: string
+    friend_edges_invalidated_at: string | null
+  }>(
     `/* connectOAuthAccountToUser */
      WITH connected_account AS (
        UPDATE ${config.table} AS account
@@ -65,7 +69,8 @@ export async function connectOAuthAccountToActiveUser(
          AND users.id = $1
          AND users.deleted_at IS NULL
          AND (account.user_id IS NULL OR account.user_id = $1)
-       RETURNING account.id, account.${config.providerUserIdColumn} AS provider_user_id
+       RETURNING account.id, account.${config.providerUserIdColumn} AS provider_user_id,
+         ${hasFriends ? 'account.friend_edges_invalidated_at::text' : 'NULL::text'} AS friend_edges_invalidated_at
      ),
      vote_weight_recovery AS (
        UPDATE users
@@ -75,7 +80,8 @@ export async function connectOAuthAccountToActiveUser(
          AND EXISTS (SELECT 1 FROM connected_account)
        RETURNING id
      )
-     SELECT connected_account.id, connected_account.provider_user_id
+     SELECT connected_account.id, connected_account.provider_user_id,
+       connected_account.friend_edges_invalidated_at
      FROM connected_account
      INNER JOIN vote_weight_recovery ON TRUE`,
     [userId, providerUserId],
@@ -97,6 +103,7 @@ export async function connectOAuthAccountToActiveUser(
       rows[0].id,
       providerUserId,
       getOAuthFriendReferenceConnectBatchSize(),
+      rows[0].friend_edges_invalidated_at,
     )
     if (!page.hasMore) {
       await query(

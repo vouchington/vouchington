@@ -5,13 +5,14 @@ export async function persistGithubFriendPage(
   githubAccountId: string,
   userId: string,
   friendIds: string[],
+  syncStartTime: string,
 ): Promise<boolean> {
   const FRIEND_MUTATION_BATCH_SIZE = getOauthGithubWorkLimit('friend_mutation_batch_size')
   const sortedFriendIds = [...new Set(friendIds)].toSorted()
   for (let offset = 0; offset < sortedFriendIds.length; offset += FRIEND_MUTATION_BATCH_SIZE) {
     const batch = sortedFriendIds.slice(offset, offset + FRIEND_MUTATION_BATCH_SIZE)
     // oxlint-disable-next-line no-await-in-loop -- every bounded chunk commits under a separately reacquired deletion fence.
-    const persisted = await persistGithubFriendBatch(githubAccountId, userId, batch)
+    const persisted = await persistGithubFriendBatch(githubAccountId, userId, batch, syncStartTime)
     if (!persisted) return false
   }
   return true
@@ -30,7 +31,7 @@ export async function finalizeGithubFriendSync(
     options?.onStaleFriendPage?.(staleFriendIds)
     if (staleFriendIds.length === 0) {
       // oxlint-disable-next-line no-await-in-loop -- completion follows the final bounded candidate read.
-      await markGithubFriendSyncComplete(githubAccountId, userId)
+      await markGithubFriendSyncComplete(githubAccountId, userId, syncStartTime)
       return
     }
     // oxlint-disable-next-line no-await-in-loop -- each page reacquires the deletion fence.
@@ -48,22 +49,25 @@ async function persistGithubFriendBatch(
   githubAccountId: string,
   userId: string,
   friendIds: string[],
+  syncStartTime: string,
 ): Promise<boolean> {
   await using transaction = await beginTransaction()
   await lockActiveGithubSyncOwner(transaction, userId)
-  if (!(await githubSyncOwnerExists(transaction, githubAccountId, userId))) return false
+  if (!(await githubSyncOwnerExists(transaction, githubAccountId, userId, syncStartTime)))
+    return false
 
   await transaction(
-    `/* persistGithubFriendBatch */ INSERT INTO github_friends (github_account_id, github_friend_id, friend_github_account_id)
+    `/* persistGithubFriendBatch */ INSERT INTO github_friends (github_account_id, github_friend_id, friend_github_account_id, last_observed_at)
      SELECT $1::uuid, friend_id,
        (SELECT id FROM github_accounts
-        WHERE github_user_id = friend_id AND user_id IS NOT NULL FOR SHARE)
+        WHERE github_user_id = friend_id AND user_id IS NOT NULL FOR SHARE), $3::timestamptz
      FROM UNNEST($2::text[]) AS friend_id
      ORDER BY $1, friend_id
      ON CONFLICT (github_account_id, github_friend_id) DO UPDATE SET
        friend_github_account_id = EXCLUDED.friend_github_account_id,
-       last_observed_at = CURRENT_TIMESTAMP`,
-    [githubAccountId, friendIds],
+       last_observed_at = EXCLUDED.last_observed_at
+     WHERE github_friends.last_observed_at <= EXCLUDED.last_observed_at`,
+    [githubAccountId, friendIds, syncStartTime],
   )
   await transaction.commit()
   return true
@@ -77,7 +81,7 @@ async function getStaleGithubFriendIds(
   const { rows } = await write(
     `/* getStaleGithubFriendIds */ SELECT github_friend_id
      FROM github_friends
-     WHERE github_account_id = $1 AND last_observed_at <= $2::timestamptz
+     WHERE github_account_id = $1 AND last_observed_at < $2::timestamptz
      ORDER BY github_friend_id
      LIMIT $3`,
     [githubAccountId, syncStartTime, batchSize],
@@ -93,13 +97,14 @@ async function deleteGithubFriendBatch(
 ): Promise<boolean> {
   await using transaction = await beginTransaction()
   await lockActiveGithubSyncOwner(transaction, userId)
-  if (!(await githubSyncOwnerExists(transaction, githubAccountId, userId))) return false
+  if (!(await githubSyncOwnerExists(transaction, githubAccountId, userId, syncStartTime)))
+    return false
 
   await transaction(
     `/* deleteGithubFriendBatch */ DELETE FROM github_friends
      WHERE github_account_id = $1
        AND github_friend_id = ANY($2::text[])
-       AND last_observed_at <= $3::timestamptz`,
+       AND last_observed_at < $3::timestamptz`,
     [githubAccountId, friendIds, syncStartTime],
   )
   await transaction.commit()
@@ -109,10 +114,12 @@ async function deleteGithubFriendBatch(
 async function markGithubFriendSyncComplete(
   githubAccountId: string,
   userId: string,
+  syncStartTime: string,
 ): Promise<boolean> {
   await using transaction = await beginTransaction()
   await lockActiveGithubSyncOwner(transaction, userId)
-  if (!(await githubSyncOwnerExists(transaction, githubAccountId, userId))) return false
+  if (!(await githubSyncOwnerExists(transaction, githubAccountId, userId, syncStartTime)))
+    return false
 
   await transaction(
     `/* markGithubFriendSyncComplete */ UPDATE github_accounts
@@ -137,11 +144,14 @@ async function githubSyncOwnerExists(
   query: Awaited<ReturnType<typeof beginTransaction>>,
   githubAccountId: string,
   userId: string,
+  syncStartTime: string,
 ): Promise<boolean> {
   const { rows } = await query(
     `/* githubSyncOwnerExists */ SELECT 1 FROM github_accounts
-     WHERE id = $1 AND user_id = $2 FOR SHARE`,
-    [githubAccountId, userId],
+     WHERE id = $1 AND user_id = $2
+       AND (friend_edges_invalidated_at IS NULL OR friend_edges_invalidated_at < $3::timestamptz)
+     FOR SHARE`,
+    [githubAccountId, userId, syncStartTime],
   )
   return rows.length > 0
 }
