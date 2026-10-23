@@ -1,20 +1,23 @@
+import {
+  parseBilledUsage,
+  describeProviderErrorDetail,
+  readProviderErrorDetail,
+  StructuredDecisionError,
+  type StructuredDecisionRequest,
+  type StructuredDecisionResult,
+  validateRequest,
+} from '@vouchington/ai/structured-decisions'
 import { isAmbiguousBilledHttpStatus, isNetworkError } from '@modules/utils/http'
 import type { Response } from 'undici'
 import { decodeResult } from './decode.mts'
-import { describeProviderErrorDetail, readProviderErrorDetail } from './provider-error-detail.mts'
 import { classifyProviderFailure, classifyProviderResponse } from './retry-classification.mts'
 import { createTransportRequest, fetchStructuredDecisionProvider } from './transport.mts'
-import {
-  StructuredDecisionError,
-  type CreateStructuredDecisionClientOptions,
-  type StructuredDecisionAttemptHooks,
-  type StructuredDecisionClient,
-  type StructuredDecisionFetch,
-  type StructuredDecisionRequest,
-  type StructuredDecisionResult,
-  type StructuredDecisionUsage,
+import type {
+  CreateStructuredDecisionClientOptions,
+  StructuredDecisionAttemptHooks,
+  StructuredDecisionClient,
+  StructuredDecisionFetch,
 } from './types.mts'
-import { validateRequest } from './validation.mts'
 
 export function createStructuredDecisionClient(
   options: CreateStructuredDecisionClientOptions,
@@ -156,27 +159,6 @@ async function latchUnknownBilledAttempt(options: AttemptOptions, error: unknown
     requestStartedAt: options.requestStartedAt,
     error,
   })
-}
-
-// Only `input_tokens`/`output_tokens` gate whether a 2xx is trustworthy enough to record --
-// `cost` is passed through unchecked (including when absent or the wrong type): a missing or
-// malformed cost is a pricing-fallback concern for the ledger writer
-// (`getExplicitCostMicrounits`/`calcCostMicrounits`, `@services/ai-usage/record.mts`), which
-// already fails closed to an unpriced row rather than something this transport-level boundary
-// should reclassify as an uncertain-billing failure.
-function parseBilledUsage(raw: unknown): StructuredDecisionUsage | null {
-  if (!record(raw) || !record(raw.usage)) return null
-  const { input_tokens, output_tokens, cost } = raw.usage
-  if (!isFiniteNonNegative(input_tokens) || !isFiniteNonNegative(output_tokens)) return null
-  return {
-    input_tokens,
-    output_tokens,
-    ...(typeof cost === 'number' ? { cost } : {}),
-  }
-}
-
-function isFiniteNonNegative(value: unknown): value is number {
-  return typeof value === 'number' && Number.isFinite(value) && value >= 0
 }
 
 function record(value: unknown): value is Record<string, unknown> {

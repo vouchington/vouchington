@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { getAnthropicClient, resolveAnthropicCredentials } from './anthropic-client.mts'
-import { ModelProviderError } from './errors.mts'
+import { ModelProviderError } from '@vouchington/ai/providers'
 
 describe('resolveAnthropicCredentials', () => {
   it('prefers the API key over the federated token', () => {

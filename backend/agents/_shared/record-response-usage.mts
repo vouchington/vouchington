@@ -1,5 +1,5 @@
-import { openAIUsageToModelUsage } from '@modules/model-providers/usage'
-import type { OpenAIResponse } from './create-response.mts'
+import { openAIUsageToModelUsage, type OpenAIUsageLike } from '@vouchington/ai/providers'
+
 import {
   recordModelUsage,
   type RecordModelUsageDeps,
@@ -12,7 +12,7 @@ type RecordAgentResponseUsageParams = Omit<
 > & {
   // Pick, not the full OpenAIResponse: also accepts an OpenAIResponseNotCompletedError (failed or
   // incomplete responses still bill tokens), so callers record from the thrown error.
-  response: Pick<OpenAIResponse, 'usage' | 'model' | 'service_tier'> & { id?: string }
+  response: { id?: string; usage?: OpenAIUsageLike; model?: string; service_tier?: string }
   /** Who made the model; every OpenAI-shaped response is OpenAI's unless a caller says otherwise. */
   provider?: RecordModelUsageParams['provider']
 }

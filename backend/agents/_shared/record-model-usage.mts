@@ -1,10 +1,7 @@
 import { latchAccountingUncertainty } from '@services/ai-usage'
 import onError from '@modules/on-error'
-import type {
-  LedgerModelProvider,
-  ModelUsage,
-  ProviderTransport,
-} from '@modules/model-providers/types'
+import type { LedgerModelProvider, ProviderTransport } from '@modules/model-providers/types'
+import type { ModelUsage } from '@vouchington/ai/providers'
 import { getUtcDayFromDate } from '@ts-shared/utils/dates'
 import { addAccumulatedTokens } from './token-accumulator.mts'
 import {

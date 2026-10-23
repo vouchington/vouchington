@@ -1,3 +1,4 @@
+import { truncateEmbeddingText as truncateText } from '@vouchington/utils/bedrock-embeddings'
 // Nova's inline text.value cap; UTF-16 slicing preserves the existing truncation contract.
 // https://docs.aws.amazon.com/nova/latest/userguide/embeddings-schema.html
 export const MAX_EMBEDDING_TEXT_LENGTH = 8_192
@@ -6,20 +7,8 @@ export const MAX_EMBEDDING_TEXT_LENGTH = 8_192
 // replace it only after a captured response establishes a reliable usage source (#2874).
 export const NOVA_EMBEDDING_CHARACTERS_PER_TOKEN = 4
 
-// Slice to the limit, then back up to the last whitespace so we don't cut mid-word.
-// Also strips a trailing high surrogate that would otherwise produce an unpaired surrogate.
-// Falls back to a hard slice when the head has no whitespace (one oversized token).
-export const truncateEmbeddingText = (text: string): string => {
-  if (text.length <= MAX_EMBEDDING_TEXT_LENGTH) return text
-  let sliced = text.slice(0, MAX_EMBEDDING_TEXT_LENGTH)
-  // A high surrogate (U+D800–U+DBFF) at the end means we split a surrogate pair.
-  const lastCharCode = sliced.charCodeAt(sliced.length - 1)
-  if (lastCharCode >= 0xd800 && lastCharCode <= 0xdbff) {
-    sliced = sliced.slice(0, -1)
-  }
-  const lastWhitespace = sliced.search(/\s\S*$/)
-  return lastWhitespace > 0 ? sliced.slice(0, lastWhitespace) : sliced
-}
+export const truncateEmbeddingText = (text: string): string =>
+  truncateText(text, MAX_EMBEDDING_TEXT_LENGTH)
 
 export const EMBEDDINGS_TABLE = 'bedrock_nova_multimodal_v1_embeddings'
 

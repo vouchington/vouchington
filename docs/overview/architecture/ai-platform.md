@@ -5,6 +5,12 @@ classified from the candidates being judged, record decisions before applying ef
 the same receipt when unchanged work is delivered again. Focused recommendation and summary agents
 remain separate from this classifier lifecycle.
 
+Provider calls use the published AI primitives for request codecs, usage normalization and error
+classification. Voucha owns model and transport selection, provider identity checks, spend-cap
+checkpoints, ledger settlement and recovery. A canceled request that was already dispatched can
+still have billed tokens, so the application retains accounting uncertainty until authoritative
+usage or a background-response receipt settles it.
+
 ## Decisions and subjects
 
 [Structured decisions](structured-decisions.md) owns Jev's Noul, Choice and Score primitives and

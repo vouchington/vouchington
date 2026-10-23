@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type {
   StructuredDecisionRequest,
   StructuredDecisionResult,
-} from '@modules/structured-decisions'
+} from '@vouchington/ai/structured-decisions'
 import { prepareSingleCallClassifierDecision } from './prepare-single-call.mts'
 import {
   configuration,

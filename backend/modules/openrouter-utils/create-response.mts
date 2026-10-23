@@ -5,10 +5,10 @@ import type {
 import {
   streamOpenAIResponseEvents,
   getOpenAIResponseAttemptHooks,
-  shouldLatchUnknownBilledOpenAIAttempt,
   type OpenAIResponse,
   type ResponseStreamLike,
 } from '@modules/openai-utils/create-response'
+import { shouldLatchUnknownBilledOpenAIAttempt } from '@vouchington/ai/openai'
 import { withOpenAIFlexFallback } from '@modules/openai-utils/flex-fallback'
 import { createOpenAICompatibleResponseWithRetries } from '@modules/openai-utils/response-retry'
 import client from './client.mts'
@@ -81,9 +81,3 @@ async function drainOpenRouterResponse(stream: ResponseStreamLike): Promise<Open
   }
   return result.value
 }
-
-export function toOpenRouterModel(model: string): string {
-  return model.includes('/') ? model : `openai/${model}`
-}
-
-export type { OpenAIResponse }

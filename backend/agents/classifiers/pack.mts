@@ -1,7 +1,7 @@
 import type {
   StructuredDecisionQuestion,
   StructuredDecisionRequest,
-} from '@modules/structured-decisions'
+} from '@vouchington/ai/structured-decisions'
 import { requestFitsClassifierContext } from './context-policy.mts'
 import type { ClassifierContextPolicy } from './types.mts'
 

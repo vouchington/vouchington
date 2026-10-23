@@ -12,8 +12,8 @@ import {
 } from '@voucha/test-helpers'
 import { reserveSyntheticRunId } from '@voucha/test-helpers/data-stores/psql/classifier-runs/synthetic-run'
 import type { PrivateUser } from '@services/users/types'
-import type { ModelUsage } from '@modules/model-providers/types'
-import { openAIUsageToModelUsage } from '@modules/model-providers/usage'
+import { type ModelUsage, openAIUsageToModelUsage } from '@vouchington/ai/providers'
+
 import { hasRecordedAiUsageResponseId, recordAiUsage } from '../record.mts'
 import { getCommunityAiCostTotals } from '../totals.mts'
 

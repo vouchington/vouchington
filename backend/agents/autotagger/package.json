@@ -35,7 +35,8 @@
     "@services/posts": "workspace:^",
     "@services/rss-feed-items": "workspace:^",
     "@services/topics": "workspace:^",
-    "@voucha/types": "workspace:^"
+    "@voucha/types": "workspace:^",
+    "@vouchington/ai": "^0.1.0"
   },
   "devDependencies": {
     "@services/classifiers": "workspace:^",

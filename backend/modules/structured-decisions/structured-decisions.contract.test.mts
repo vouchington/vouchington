@@ -3,8 +3,8 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   createStructuredDecisionClient,
   type StructuredDecisionFetch,
-  type StructuredDecisionRequest,
 } from './structured-decisions.mts'
+import type { StructuredDecisionRequest } from '@vouchington/ai/structured-decisions'
 import { stringFromUnknown } from '@ts-shared/utils/string-from-unknown'
 
 const request: StructuredDecisionRequest = {
@@ -36,30 +36,6 @@ function openRouterBody(): Record<string, unknown> {
 }
 
 describe('structured-decision transport contracts', () => {
-  it('preserves each validated direct-TypeSafe answer fragment without synthesizing an ID', async () => {
-    const body = openRouterBody()
-    delete body.provider
-    const result = await createStructuredDecisionClient({
-      transport: 'typesafe',
-      apiKey: 'test-key',
-      fetch: vi.fn<StructuredDecisionFetch>().mockResolvedValue(response(body)),
-    }).decide(request)
-
-    expect(result.answers).toMatchObject([
-      { id: 'spam', raw: { type: 'noul', noul: 0.2 } },
-      {
-        id: 'topic',
-        raw: {
-          type: 'choice',
-          choice: 'food',
-          confidence: 0.8,
-          probabilities: { food: 0.8, sports: 0.2 },
-        },
-      },
-    ])
-    expect(result.answers[0]?.raw).not.toHaveProperty('id')
-  })
-
   it('serializes direct TypeSafe questions as an ID-keyed native record and accepts its provider-less response', async () => {
     const body = openRouterBody()
     delete body.provider
@@ -107,80 +83,6 @@ describe('structured-decision transport contracts', () => {
         apiKey: 'test-key',
         fetch,
       }).decide(request),
-    ).rejects.toMatchObject({ code: 'invalid-response' })
-  })
-
-  it('accepts a three-level score above one and rejects a score beyond its last criterion', async () => {
-    const scoreRequest: StructuredDecisionRequest = {
-      state: 'state',
-      questions: [
-        {
-          id: 'score',
-          type: 'score',
-          question: 'score',
-          criteria: [
-            { value: 0, description: 'low' },
-            { value: 1, description: 'medium' },
-            { value: 2, description: 'high' },
-          ],
-        },
-      ],
-    }
-    const score = {
-      type: 'score',
-      score: 1.5,
-      confidence: 0.8,
-      legend: { 0: 'low', 1: 'medium', 2: 'high' },
-      probabilities: { 0: 0.2, 1: 0.3, 2: 0.5 },
-    }
-    const success = { model: 'typesafe/jev-1.13', provider: 'TypeSafe', answers: { score } }
-    const fetch = vi.fn<StructuredDecisionFetch>().mockResolvedValue(response(success))
-    const client = createStructuredDecisionClient({
-      transport: 'openrouter',
-      apiKey: 'test-key',
-      fetch,
-    })
-    await expect(client.decide(scoreRequest)).resolves.toMatchObject({ answers: [{ score: 1.5 }] })
-    fetch.mockResolvedValue(response({ ...success, answers: { score: { ...score, score: 2.1 } } }))
-    await expect(client.decide(scoreRequest)).rejects.toMatchObject({ code: 'invalid-response' })
-  })
-
-  it('rejects extra Score legend keys', async () => {
-    const scoreRequest: StructuredDecisionRequest = {
-      state: 'state',
-      questions: [
-        {
-          id: 'score',
-          type: 'score',
-          question: 'score',
-          criteria: [
-            { value: 0, description: 'low' },
-            { value: 1, description: 'high' },
-          ],
-        },
-      ],
-    }
-    const fetch = vi.fn<StructuredDecisionFetch>().mockResolvedValue(
-      response({
-        model: 'typesafe/jev-1.13',
-        provider: 'TypeSafe',
-        answers: {
-          score: {
-            type: 'score',
-            score: 1,
-            confidence: 0.8,
-            legend: { 0: 'low', 1: 'high', 2: 'extra' },
-            probabilities: { 0: 0.2, 1: 0.8 },
-          },
-        },
-      }),
-    )
-    await expect(
-      createStructuredDecisionClient({
-        transport: 'openrouter',
-        apiKey: 'test-key',
-        fetch,
-      }).decide(scoreRequest),
     ).rejects.toMatchObject({ code: 'invalid-response' })
   })
 })

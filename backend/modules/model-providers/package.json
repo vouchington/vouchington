@@ -28,6 +28,6 @@
     "@modules/openai-utils": "workspace:^",
     "@modules/openrouter-utils": "workspace:^",
     "@modules/utils": "workspace:^",
-    "ajv": "^8.20.0"
+    "@vouchington/ai": "^0.1.0"
   }
 }

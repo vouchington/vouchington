@@ -1,9 +1,10 @@
+import { OpenAIResponseNotCompletedError } from '@vouchington/ai/openai'
 import {
   assertDailySpendCapNotBreached,
   latchAccountingUncertainty,
   SpendCapBreachError,
 } from '@services/ai-usage'
-import { ModelProviderError } from '@modules/model-providers/errors'
+import { ModelProviderError } from '@vouchington/ai/providers'
 import type {
   BilledModelResponse,
   ModelCallResult,
@@ -13,7 +14,6 @@ import type {
 import { recordModelProviderAlarm } from '@modules/on-error'
 import { getUtcDayFromDate } from '@ts-shared/utils/dates'
 import {
-  OpenAIResponseNotCompletedError,
   runWithBackgroundResponseHooks,
   runWithOpenAIResponseAttemptHooks,
 } from './create-response.mts'
@@ -145,12 +145,17 @@ export async function callRecordingModelUsage<T>(
 
 async function settleProviderFailure(
   err: ModelProviderError,
-  { agentSlug, selection }: CallRecordingModelUsageParams,
+  { agentSlug, selection, openaiTransport }: CallRecordingModelUsageParams,
   record: (billed: BilledModelResponse) => Promise<void>,
   requestStartedAt: Date,
   deps: CallRecordingModelUsageDeps,
 ): Promise<void> {
-  if (err.billedResponse) await record(err.billedResponse)
+  if (err.billedResponse)
+    await record({
+      ...err.billedResponse,
+      provider: selection.provider,
+      transport: selection.provider === 'anthropic' ? 'direct' : openaiTransport,
+    })
   if (ALARMED_CODES.has(err.code)) {
     ;(deps.recordModelProviderAlarm ?? recordModelProviderAlarm)({
       kind:

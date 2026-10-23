@@ -1,5 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
-import type { ModelUsage } from '@modules/model-providers/types'
+import type { ModelUsage } from '@vouchington/ai/providers'
 import { recordAiUsage } from '@services/ai-usage'
 import { deleteBackgroundResponseRegistration } from './claim.mts'
 

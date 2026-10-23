@@ -1,4 +1,4 @@
-import { StructuredDecisionError } from '@modules/structured-decisions'
+import { StructuredDecisionError } from '@vouchington/ai/structured-decisions'
 import {
   CLASSIFIER_RUN_BACKOFF,
   CLASSIFIER_RUN_RETRY_AFTER_CEILING_MS,

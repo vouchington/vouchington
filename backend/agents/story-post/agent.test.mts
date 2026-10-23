@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { it, expect, describe } from 'vitest'
-import { OpenAIResponseNotCompletedError } from '@modules/openai-utils/create-response'
+import { OpenAIResponseNotCompletedError } from '@vouchington/ai/openai'
 import { findAiUsageRecordForResponseId, findAiUsageRecordForAgent } from '@voucha/test-helpers'
 import {
   makeAgentModelCaller,

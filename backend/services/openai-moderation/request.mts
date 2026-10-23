@@ -1,4 +1,4 @@
-import type { OpenAI } from '@modules/openai-utils'
+import { buildModerationInput } from '@vouchington/utils/ai-moderation'
 import { requestOpenAIModeration } from '@modules/openai-utils/moderate'
 import { trackAIModerationCall } from '@services/analytics'
 
@@ -23,13 +23,7 @@ export const createOpenAIModeration = async (
   const start = Date.now()
   const model = options?.model || 'omni-moderation-latest'
   try {
-    const input: OpenAI.Moderations.ModerationMultiModalInput[] = [
-      ...texts.map(text => ({ type: 'text' as const, text })),
-      ...(images_urls ?? []).map(url => ({
-        type: 'image_url' as const,
-        image_url: { url },
-      })),
-    ]
+    const input = buildModerationInput(texts, images_urls)
 
     const requestOptions = {
       ...(options?.apiSafetyCheck ? { apiSafetyCheck: true } : {}),

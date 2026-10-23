@@ -1,4 +1,4 @@
-import type { BatchResultItem } from '@services/bedrock-embeddings-batch/orchestrator/shared'
+import { parseBatchResult } from '@vouchington/utils/bedrock-embedding-batches'
 import { streamBatchResults } from '@services/bedrock-embeddings-batch/orchestrator/results'
 import { applyCrawlChunkBatchUpdates } from '@services/bedrock-embeddings-batch/entities/crawl-chunks'
 import { parseCrawlChunkEntityId } from '@services/bedrock-embeddings-batch/entities/crawl-chunk-entity-id'
@@ -17,7 +17,7 @@ export const processBatchResultsInBatches = async (
 
   for await (const result of streamBatchResults(filePath)) {
     if (result.error) continue
-    const embedding = extractBatchEmbedding(result)
+    const embedding = parseBatchResult(result)?.embedding
     if (!embedding) continue
 
     try {
@@ -52,7 +52,7 @@ export const processImageBatchResultsInBatches = async (
 
   for await (const result of streamBatchResults(filePath)) {
     if (result.error) continue
-    const embedding = extractBatchEmbedding(result)
+    const embedding = parseBatchResult(result)?.embedding
     if (!embedding) continue
 
     try {
@@ -75,14 +75,6 @@ export const processImageBatchResultsInBatches = async (
   }
 
   if (updates.length > 0) await applyUpdates(updates)
-}
-
-function extractBatchEmbedding(result: BatchResultItem): number[] | undefined {
-  if (result.modelOutput?.embedding) return result.modelOutput.embedding
-
-  const embedding = result.modelOutput?.embeddings?.[0]
-  if (Array.isArray(embedding)) return embedding
-  return embedding?.embedding
 }
 
 export const processCrawlChunkBatchResults = async (updates: BatchUpdateItem[]): Promise<void> => {

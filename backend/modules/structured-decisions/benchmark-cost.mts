@@ -1,6 +1,9 @@
 import type { BenchmarkConfig } from './benchmark-config.mts'
 import { calculateTokenCostUsd } from './cost-model.mts'
-import type { StructuredDecisionRequest, StructuredDecisionResult } from './types.mts'
+import type {
+  StructuredDecisionRequest,
+  StructuredDecisionResult,
+} from '@vouchington/ai/structured-decisions'
 
 export function observedJevCost(
   config: BenchmarkConfig,

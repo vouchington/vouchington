@@ -5,10 +5,9 @@ import {
   retrieveOpenAIResponse,
   cancelOpenAIResponse,
   validateCompletedResponse,
-  isOpenAINotFoundError,
-  OpenAIResponseNotCompletedError,
 } from '@modules/openai-utils/create-response'
-import { openAIUsageToModelUsage } from '@modules/model-providers/usage'
+import { isOpenAINotFoundError, OpenAIResponseNotCompletedError } from '@vouchington/ai/openai'
+import { openAIUsageToModelUsage } from '@vouchington/ai/providers'
 import { claimExpiredBackgroundResponse, deleteBackgroundResponseRegistration } from './claim.mts'
 import { claimAndRecordBackgroundResponseUsage } from './claim-and-record.mts'
 import type { ExpiredBackgroundResponse } from './expired.mts'

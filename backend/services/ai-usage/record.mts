@@ -1,11 +1,8 @@
 import { write, type QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { calcCostMicrounits, getReportedCostMicrounits } from '@modules/model-providers/pricing'
-import type {
-  LedgerModelProvider,
-  ModelUsage,
-  ProviderTransport,
-} from '@modules/model-providers/types'
+import { calcCostMicrounits } from '@modules/model-providers/pricing'
+import { getReportedCostMicrounits, type ModelUsage } from '@vouchington/ai/providers'
+import type { LedgerModelProvider, ProviderTransport } from '@modules/model-providers/types'
 
 export interface RecordAiUsageOptions {
   /** Provider response or decision id. When present, repeated recording is an idempotent no-op. */

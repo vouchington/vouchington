@@ -1,4 +1,4 @@
-import type { StructuredDecisionRequest } from '@modules/structured-decisions'
+import type { StructuredDecisionRequest } from '@vouchington/ai/structured-decisions'
 import type { ClassifierContextPolicy } from './types.mts'
 
 const TYPESAFE_TOTAL_TOKEN_LIMIT = 64_000

@@ -1,7 +1,5 @@
-import type {
-  StructuredDecisionClient,
-  StructuredDecisionRequest,
-} from '@modules/structured-decisions'
+import type { StructuredDecisionClient } from '@modules/structured-decisions'
+import type { StructuredDecisionRequest } from '@vouchington/ai/structured-decisions'
 import type {
   ActiveClassifierConfiguration,
   ClassifierDecisionScope,

@@ -11,8 +11,10 @@ import {
 } from '@modules/utils'
 import openai from './client.mts'
 import { getOpenAIResponseAttemptHooks } from './response-attempt-context.mts'
-import { isOpenAIFlexResourceUnavailableError } from './rate-limit.mts'
-import { isExplicitClientCancelError } from './response-errors.mts'
+import {
+  isOpenAIFlexResourceUnavailableError,
+  isExplicitClientCancelError,
+} from '@vouchington/ai/openai'
 
 const INITIAL_RETRY_DELAY_MS = 500
 const MAX_RETRY_DELAY_MS = 8_000
@@ -108,7 +110,8 @@ function getRetryAfterMs(error: unknown): number | null {
 }
 
 function isUnknownBilledOpenAIResponseAttempt(error: unknown): boolean {
-  if (isExplicitClientCancelError(error)) return false
+  // Pre-dispatch aborts are checked outside the request. An abort caught here can already bill.
+  if (isExplicitClientCancelError(error)) return true
   if (error instanceof APIConnectionError) return true
   if (!(error instanceof APIError)) return false
   return isAmbiguousBilledHttpStatus(error.status)

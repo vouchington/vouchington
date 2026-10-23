@@ -6,10 +6,10 @@ import {
 } from './structured-decisions-fixtures.mts'
 import {
   createStructuredDecisionClient,
-  StructuredDecisionError,
   type StructuredDecisionAttemptHooks,
   type StructuredDecisionFetch,
 } from './structured-decisions.mts'
+import { StructuredDecisionError } from '@vouchington/ai/structured-decisions'
 
 const FLAGGED_INPUT = 'a private message the user wrote that must never reach a log'
 

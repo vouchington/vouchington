@@ -1,6 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { getLongRunningExternalFetch } from '@modules/utils'
-import { ModelProviderError } from './errors.mts'
+import { ModelProviderError } from '@vouchington/ai/providers'
 
 type Credentials = { apiKey: string; authToken: null } | { apiKey: null; authToken: string }
 

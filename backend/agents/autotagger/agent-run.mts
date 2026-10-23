@@ -1,7 +1,7 @@
 import { callAgentToolTurn, type AgentToolTurnCaller } from '@agents/_shared'
 import type { ClassifierRunExecution } from '@agents/classifier-runs'
 import type { ClassifierSafeText } from '@agents/classifiers/safe-content'
-import { ModelProviderError } from '@modules/model-providers/errors'
+import { ModelProviderError } from '@vouchington/ai/providers'
 import type { ModelSelection } from '@modules/model-providers/types'
 import {
   readAutotaggerAppliedTopicNames,

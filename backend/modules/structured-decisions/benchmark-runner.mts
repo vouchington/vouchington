@@ -4,7 +4,8 @@ import {
 } from '@voucha/types/entities/post-classifier'
 import type { BenchmarkConfig } from './benchmark-config.mts'
 import { modeledCurrentCost, observedJevCost } from './benchmark-cost.mts'
-import type { StructuredDecisionClient, StructuredDecisionRequest } from './types.mts'
+import type { StructuredDecisionClient } from './types.mts'
+import type { StructuredDecisionRequest } from '@vouchington/ai/structured-decisions'
 
 export type BenchmarkObservation = {
   success: boolean

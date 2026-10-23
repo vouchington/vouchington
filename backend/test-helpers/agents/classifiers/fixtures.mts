@@ -1,8 +1,8 @@
+import type { StructuredDecisionClient } from '@modules/structured-decisions'
 import type {
-  StructuredDecisionClient,
   StructuredDecisionRequest,
   StructuredDecisionResult,
-} from '@modules/structured-decisions'
+} from '@vouchington/ai/structured-decisions'
 import type { ActiveClassifierConfiguration } from '../../../services/classifiers/index.mts'
 import { classifierPrompt } from '../../../agents/classifiers/safe-content.mts'
 import type {

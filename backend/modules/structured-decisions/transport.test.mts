@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createTransportRequest } from './transport.mts'
-import type { StructuredDecisionRequest } from './types.mts'
+import type { StructuredDecisionRequest } from '@vouchington/ai/structured-decisions'
 
 const request: StructuredDecisionRequest = {
   state: 'State',

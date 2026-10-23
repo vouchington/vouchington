@@ -1,9 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
-import { ModelProviderError } from './errors.mts'
+import { ModelProviderError, type GenerateJsonRequest } from '@vouchington/ai/providers'
 import { assertSupportedRequest, generateJson } from './generate.mts'
 import type { AnthropicDeps } from './anthropic-generate.mts'
 import type { OpenAIDeps } from './openai-generate.mts'
-import type { GenerateJsonRequest } from './types.mts'
 
 type Answer = { verdict: string }
 type CreateOpenAI = NonNullable<OpenAIDeps['createOpenAIResponse']>
@@ -118,22 +117,6 @@ describe('generateJson', () => {
       { maxRetries: 2 },
     )
     expect(result.transport).toBe('direct')
-  })
-
-  it('keeps the billed usage when an OpenAI answer fails schema validation', async () => {
-    const createOpenAIResponse = vi
-      .fn<CreateOpenAI>()
-      .mockResolvedValue({ ...openAIResponse(), output_text: '{"other":1}' } as never)
-
-    const failure = await generateJson({ provider: 'openai', model: 'gpt-6-luna' }, request, {
-      openaiTransport: 'direct',
-      deps: { createOpenAIResponse },
-    }).catch((err: unknown) => err)
-
-    expect(failure).toMatchObject({
-      code: 'invalid-response',
-      billedResponse: { responseId: 'resp_1', usage: { inputTokens: 100 } },
-    })
   })
 
   it('sends Anthropic calls to the Messages API and ignores the OpenAI transport', async () => {

@@ -2,7 +2,8 @@ import { callAnthropicToolTurn, type AnthropicToolDeps } from './anthropic-tool-
 import { assertSupportedRequest } from './generate.mts'
 import type { OpenAIDeps } from './openai-generate.mts'
 import { callOpenAIToolTurn } from './openai-tool-turn.mts'
-import type { ToolTurnRequest, ToolTurnResult } from './tool-turn-types.mts'
+import type { ToolTurnResult } from './tool-turn-types.mts'
+import type { ToolTurnRequest } from '@vouchington/ai/providers'
 import type { ModelSelection, OpenAITransport } from './types.mts'
 
 export type GenerateToolTurnOptions = {

@@ -1,5 +1,5 @@
 import { recordClassifierRunAlarm } from '@modules/on-error'
-import { StructuredDecisionError } from '@modules/structured-decisions'
+import { StructuredDecisionError } from '@vouchington/ai/structured-decisions'
 import type { ClassifierRunFailureKind } from '@services/classifier-runs'
 
 export type ClassifierRunFailure = {

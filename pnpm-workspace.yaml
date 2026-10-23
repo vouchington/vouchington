@@ -74,6 +74,7 @@ minimumReleaseAgeExclude:
   - '@jongleberry/vurst-markdown-linux-x64-gnu'
   - '@jongleberry/vurst-prompt'
   - '@jongleberry/vurst-runtime'
+  - '@vouchington/ai'
   - '@vouchington/auth'
   - '@vouchington/aws'
   - '@vouchington/csv'

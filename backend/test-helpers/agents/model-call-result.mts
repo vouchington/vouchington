@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import { vi } from 'vitest'
 import type { AgentModelCaller } from '../../agents/_shared/call-agent-model.mts'
-import type { ToolCall, ToolTurnResult } from '../../modules/model-providers/tool-turn-types.mts'
+import type { ToolTurnResult } from '../../modules/model-providers/tool-turn-types.mts'
+import type { ToolCall } from '@vouchington/ai/providers'
 import type { ModelCallResult } from '../../modules/model-providers/types.mts'
 
 /**

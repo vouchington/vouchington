@@ -3,11 +3,8 @@ import {
   claimAndRecordBackgroundResponseUsage,
   type OwnedBackgroundResponseLease,
 } from '@services/openai-background-responses'
-import type {
-  LedgerModelProvider,
-  ModelUsage,
-  ProviderTransport,
-} from '@modules/model-providers/types'
+import type { LedgerModelProvider, ProviderTransport } from '@modules/model-providers/types'
+import type { ModelUsage } from '@vouchington/ai/providers'
 
 export interface BackgroundResponseRegistration {
   responseId: string

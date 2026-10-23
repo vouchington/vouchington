@@ -1,11 +1,11 @@
+import type { ToolTurnResult } from '@modules/model-providers/tool-turn-types'
 import type {
   AgentTurnMessage,
   ToolCall,
   ToolDefinition,
   ToolResultBlock,
   ToolTurnRequest,
-  ToolTurnResult,
-} from '@modules/model-providers/tool-turn-types'
+} from '@vouchington/ai/providers'
 import { AUTOTAGGER_AGENT_INSTRUCTIONS } from './agent-instructions.mts'
 import {
   parseSubmission,

@@ -1,12 +1,10 @@
 import { describe, expect, it } from 'vitest'
+import { calcCostMicrounits, getPricedModels, isPricedModel } from './pricing.mts'
 import {
-  calcCostMicrounits,
-  getPricedModels,
   getReportedCostMicrounits,
-  isPricedModel,
   normalizeModelAlias,
-} from './pricing.mts'
-import type { ModelUsage } from './types.mts'
+  type ModelUsage,
+} from '@vouchington/ai/providers'
 
 function usage(overrides: Partial<ModelUsage>): ModelUsage {
   return {
@@ -120,43 +118,13 @@ describe('calcCostMicrounits', () => {
     expect(calcCostMicrounits('openai', 'gpt-6-luna', 'priority', call)).toBeNull()
     expect(calcCostMicrounits('typesafe', 'typesafe/jev-1.13', 'default', call)).toBeNull()
   })
-
-  it('rounds half up exactly once per request', () => {
-    // 2 output tokens * $0.25 per million = 0.5 microunits, which rounds up to 1.
-    expect(calcCostMicrounits('openai', 'gpt-6-luna', 'flex', usage({ outputTokens: 2 }))).toBe(1)
-  })
-
-  it('rejects costs that cannot be represented as JSON-safe integers', () => {
-    expect(() =>
-      calcCostMicrounits(
-        'anthropic',
-        'claude-haiku-5-5',
-        'standard',
-        usage({
-          inputTokens: Number.MAX_SAFE_INTEGER,
-          outputTokens: Number.MAX_SAFE_INTEGER,
-        }),
-      ),
-    ).toThrow('AI usage cost exceeds the maximum JSON-safe integer')
-  })
 })
 
 describe('getReportedCostMicrounits', () => {
-  it('converts a provider-reported USD cost to microunits', () => {
-    expect(getReportedCostMicrounits(usage({ reportedCostUsd: 0.001_234_5 }))).toBe(1235)
-    expect(getReportedCostMicrounits(usage({}))).toBeNull()
-  })
-
   it.each([-1, Number.NaN, Number.POSITIVE_INFINITY])('rejects reported cost %s', cost => {
     expect(() => getReportedCostMicrounits(usage({ reportedCostUsd: cost }))).toThrow(
       'Provider usage cost must be a non-negative finite USD amount',
     )
-  })
-
-  it('rejects a cost outside the JSON-safe microunit range', () => {
-    expect(() =>
-      getReportedCostMicrounits(usage({ reportedCostUsd: Number.MAX_SAFE_INTEGER })),
-    ).toThrow('Provider usage cost exceeds the maximum JSON-safe integer')
   })
 })
 

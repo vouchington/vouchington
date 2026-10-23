@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { ModelProviderError } from '@modules/model-providers/errors'
+import { ModelProviderError } from '@vouchington/ai/providers'
 import { UnrecoverableError } from '@vouchington/queue-errors'
 import { handleModelProviderError } from './provider-failure.mts'
 

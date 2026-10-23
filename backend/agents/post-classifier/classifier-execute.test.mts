@@ -3,10 +3,10 @@ import { Response } from 'undici'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   StructuredDecisionError,
-  createStructuredDecisionClient,
   type StructuredDecisionRequest,
   type StructuredDecisionResult,
-} from '@modules/structured-decisions'
+} from '@vouchington/ai/structured-decisions'
+import { createStructuredDecisionClient } from '@modules/structured-decisions'
 import { createPostModerationContent } from '@services/posts/content'
 import {
   readClassifierRunOutcomes,

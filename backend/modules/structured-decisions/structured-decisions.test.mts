@@ -4,8 +4,8 @@ import {
   makeOpenRouterStructuredDecisionBody as makeOpenRouterBody,
   makeStructuredDecisionResponse as makeResponse,
 } from './structured-decisions-fixtures.mts'
+import { StructuredDecisionError } from '@vouchington/ai/structured-decisions'
 import {
-  StructuredDecisionError,
   createStructuredDecisionClient,
   type StructuredDecisionFetch,
 } from './structured-decisions.mts'

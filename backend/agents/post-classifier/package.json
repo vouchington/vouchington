@@ -33,7 +33,8 @@
     "@services/post-classifier": "workspace:^",
     "@services/posts": "workspace:^",
     "@ts-shared/utils": "workspace:^",
-    "@voucha/types": "workspace:^"
+    "@voucha/types": "workspace:^",
+    "@vouchington/ai": "^0.1.0"
   },
   "devDependencies": {
     "@voucha/test-helpers": "workspace:^",

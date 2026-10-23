@@ -14,7 +14,7 @@ import { getOpenAIResponseAttemptHooks } from './response-attempt-context.mts'
 import {
   OpenAIResponseNotCompletedError,
   shouldLatchUnknownBilledOpenAIAttempt,
-} from './response-errors.mts'
+} from '@vouchington/ai/openai'
 import { createOpenAIResponseWithRetries } from './response-retry.mts'
 import { iterateOpenAIResponseStream } from './response-stream-iteration.mts'
 import { validateCompletedResponse, type OpenAIResponse } from './validate-completed-response.mts'
@@ -22,7 +22,6 @@ import { validateCompletedResponse, type OpenAIResponse } from './validate-compl
 export * from './background-response-context.mts'
 export * from './background-response-teardown.mts'
 export * from './response-attempt-context.mts'
-export * from './response-errors.mts'
 export * from './validate-completed-response.mts'
 
 type RawCreateParams = Parameters<typeof import('./client.mts').default.responses.create>[0]

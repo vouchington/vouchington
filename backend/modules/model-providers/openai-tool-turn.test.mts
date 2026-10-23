@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { OpenAIDeps } from './openai-generate.mts'
 import { callOpenAIToolTurn } from './openai-tool-turn.mts'
-import type { ToolTurnRequest } from './tool-turn-types.mts'
+import type { ToolTurnRequest } from '@vouchington/ai/providers'
 
 type CreateOpenAI = NonNullable<OpenAIDeps['createOpenAIResponse']>
 type CreateOpenRouter = NonNullable<OpenAIDeps['createOpenRouterResponse']>
@@ -122,30 +122,6 @@ describe('callOpenAIToolTurn', () => {
     expect(params).toMatchObject({ model: 'gpt-6-luna' })
     expect(params).not.toHaveProperty('service_tier')
     expect(result.transport).toBe('direct')
-  })
-
-  it('bills a turn whose tool arguments are not JSON or that made no call', async () => {
-    const malformed = vi
-      .fn<CreateOpenRouter>()
-      .mockResolvedValue(openAIResponse([{ ...functionCall, arguments: '{' }]) as never)
-    const empty = vi.fn<CreateOpenRouter>().mockResolvedValue({
-      ...openAIResponse([]),
-      usage: undefined,
-      service_tier: undefined,
-      model: undefined,
-    } as never)
-
-    await expect(
-      callOpenAIToolTurn('gpt-6-luna', 'openrouter', request, {
-        createOpenRouterResponse: malformed,
-      }),
-    ).rejects.toMatchObject({ code: 'invalid-response', billedResponse: { responseId: 'resp_1' } })
-    await expect(
-      callOpenAIToolTurn('gpt-6-luna', 'openrouter', request, { createOpenRouterResponse: empty }),
-    ).rejects.toMatchObject({
-      code: 'invalid-response',
-      billedResponse: { model: 'gpt-6-luna', serviceTier: 'unknown-tier' },
-    })
   })
 
   it.each([

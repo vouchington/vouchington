@@ -1,6 +1,5 @@
 import { recordOpenAiFlexFallback, type OpenAiFlexFallbackContext } from '@modules/on-error'
-import { isOpenAIFlexResourceUnavailableError } from './rate-limit.mts'
-import { isOpenAIFlexCapacityFailedResponseError } from './response-errors.mts'
+import { getOpenAIFlexFallback } from '@vouchington/ai/openai'
 
 type FlexFallbackParams = { model?: string; service_tier?: string | null }
 
@@ -39,14 +38,12 @@ function getOpenAIFlexFallbackParams<P extends FlexFallbackParams>(
   error: unknown,
   provider: OpenAiFlexFallbackContext['provider'],
 ): P | null {
-  if (params.service_tier !== 'flex') return null
-  const model = params.model ?? 'unknown'
-  if (isOpenAIFlexResourceUnavailableError(error)) {
-    recordOpenAiFlexFallback({ provider, model, trigger: 'http_429' })
-  } else if (isOpenAIFlexCapacityFailedResponseError(error)) {
-    recordOpenAiFlexFallback({ provider, model, trigger: 'stream_failed' })
-  } else {
-    return null
-  }
-  return { ...params, service_tier: 'default' }
+  const fallback = getOpenAIFlexFallback(params, error)
+  if (!fallback) return null
+  recordOpenAiFlexFallback({
+    provider,
+    model: params.model ?? 'unknown',
+    trigger: fallback.trigger,
+  })
+  return { ...params, service_tier: fallback.params.service_tier }
 }

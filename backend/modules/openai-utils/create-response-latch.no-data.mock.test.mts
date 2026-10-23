@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createOpenAIResponse } from './create-response.mts'
 import { runWithOpenAIResponseAttemptHooks } from './response-attempt-context.mts'
-import { OpenAIResponseNotCompletedError } from './response-errors.mts'
+import { OpenAIResponseNotCompletedError } from '@vouchington/ai/openai'
 import {
   makeResponseStream,
   makeSdkResponse,
@@ -78,7 +78,7 @@ describe('OpenAI response stream latch decisions', () => {
     expect(onUnknownBilledAttempt).not.toHaveBeenCalled()
   })
 
-  it('does not latch when the caller aborts an in-flight stream', async () => {
+  it('latches an unknown billed attempt when the caller aborts an in-flight stream', async () => {
     const abort = new Error('This operation was aborted')
     abort.name = 'AbortError'
     const stream: AsyncIterable<ReturnType<typeof makeStreamEvent>> = {
@@ -107,6 +107,9 @@ describe('OpenAI response stream latch decisions', () => {
       ),
     ).rejects.toBe(abort)
 
-    expect(onUnknownBilledAttempt).not.toHaveBeenCalled()
+    expect(onUnknownBilledAttempt).toHaveBeenCalledExactlyOnceWith({
+      requestStartedAt: expect.any(Date),
+      error: abort,
+    })
   })
 })

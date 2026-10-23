@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { PersistClassifierDecisionInput } from '@services/classifiers'
-import { StructuredDecisionError } from '@modules/structured-decisions'
+import { StructuredDecisionError } from '@vouchington/ai/structured-decisions'
 import { executeSingleCallClassifierDecision } from './execute-single-call.mts'
 import { classifierChoiceKey, classifierPrompt } from './safe-content.mts'
 import {

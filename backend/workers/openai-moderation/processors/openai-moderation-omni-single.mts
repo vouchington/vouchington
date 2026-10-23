@@ -18,11 +18,8 @@ import {
 } from '@services/openai-moderation'
 import { getPostByAny } from '@services/posts/get'
 import type { Job } from 'glide-mq'
-import {
-  getOpenAIRateLimitDelayMs,
-  handleOpenAIRateLimit,
-  isOpenAIRateLimitError,
-} from '@modules/openai-utils/rate-limit'
+import { getOpenAIRateLimitDelayMs, handleOpenAIRateLimit } from '@modules/openai-utils/rate-limit'
+import { isOpenAIRateLimitError } from '@vouchington/ai/openai'
 import {
   beginPostModerationAttempt,
   checkPostClearance,
