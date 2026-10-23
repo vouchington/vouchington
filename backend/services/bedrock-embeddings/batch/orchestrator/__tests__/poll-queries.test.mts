@@ -6,6 +6,7 @@ import {
   cleanupTestEmbeddingsBatches,
   insertTestEmbeddingsBatch,
 } from '@voucha/test-helpers/entities/bedrock-embeddings-batches'
+import { withEmbeddingQuotaSnapshot } from '@voucha/test-helpers/embedding-quota-snapshot'
 import {
   getActiveBatchStats,
   getBatchIdByJobArn,
@@ -197,17 +198,37 @@ describe('getBatchInfo', () => {
 
 describe('getBatchRecordsCreatedInLastHour', () => {
   it('counts a current UUIDv7 batch but excludes a batch from two hours ago', async () => {
+    const referenceTime = new Date()
     const recentId = mintUUIDv7()
-    const oldId = getMinUUIDv7ForDate(new Date(Date.now() - 2 * 60 * 60 * 1000))
-    const baseline = await getBatchRecordsCreatedInLastHour()
+    const oldId = getMinUUIDv7ForDate(new Date(referenceTime.getTime() - 2 * 60 * 60 * 1000))
+    await withEmbeddingQuotaSnapshot(async query => {
+      const baseline = await getBatchRecordsCreatedInLastHour(referenceTime, { query })
+      await insertTestEmbeddingsBatch({ id: recentId, records: 7 }, { query })
+      await insertTestEmbeddingsBatch({ id: oldId, records: 11 }, { query })
 
-    try {
-      await insertTestEmbeddingsBatch({ id: recentId, records: 7 })
-      await insertTestEmbeddingsBatch({ id: oldId, records: 11 })
+      await expect(getBatchRecordsCreatedInLastHour(referenceTime, { query })).resolves.toBe(
+        baseline + 7,
+      )
+    })
+  })
 
-      await expect(getBatchRecordsCreatedInLastHour()).resolves.toBe(baseline + 7)
-    } finally {
-      await cleanupTestEmbeddingsBatches([recentId, oldId])
-    }
+  it('uses an inclusive UUIDv7 cutoff at one millisecond after the one-hour boundary', async () => {
+    const referenceTime = new Date(
+      Date.now() + 86_400_000 + Math.floor(Math.random() * 1_000_000_000),
+    )
+    const strictOneHourBoundary = new Date(referenceTime.getTime() - 60 * 60 * 1000)
+    const ids = [0, 1, 2].map(offset =>
+      getMinUUIDv7ForDate(new Date(strictOneHourBoundary.getTime() + offset)),
+    )
+    await withEmbeddingQuotaSnapshot(async query => {
+      const baseline = await getBatchRecordsCreatedInLastHour(referenceTime, { query })
+      await insertTestEmbeddingsBatch({ id: ids[0], records: 3 }, { query })
+      await insertTestEmbeddingsBatch({ id: ids[1], records: 5 }, { query })
+      await insertTestEmbeddingsBatch({ id: ids[2], records: 7 }, { query })
+
+      await expect(getBatchRecordsCreatedInLastHour(referenceTime, { query })).resolves.toBe(
+        baseline + 12,
+      )
+    })
   })
 })

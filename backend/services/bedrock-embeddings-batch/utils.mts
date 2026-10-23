@@ -52,7 +52,7 @@ export async function processBatchCreation<T extends BatchEntity>(
   dependencies: BatchCreationDependencies = defaultBatchCreationDependencies,
 ): Promise<CreateBatchResult> {
   const scanLimits = getPendingEmbeddingScanLimits()
-  const limits = await dependencies.getBatchCreationLimits()
+  const limits = await dependencies.getBatchCreationLimits(new Date())
 
   if (!limits.allowed) {
     await params.reEnqueue(

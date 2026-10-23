@@ -25,7 +25,7 @@ export async function processImageBatchCreation<T extends { id: string }>(
   dependencies: BatchCreationDependencies = { getBatchCreationLimits, createBatch },
 ): Promise<CreateBatchResult> {
   const scanLimits = getPendingEmbeddingScanLimits(true)
-  const limits = await dependencies.getBatchCreationLimits()
+  const limits = await dependencies.getBatchCreationLimits(new Date())
 
   if (!limits.allowed) {
     await params.reEnqueue(
