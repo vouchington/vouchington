@@ -68,6 +68,7 @@ _none_
 - `idx_crawls__lingua_rs_pending`: `CREATE INDEX idx_crawls__lingua_rs_pending ON ONLY public.crawls USING btree (id) WHERE (lingua_rs_input_sha256 IS NULL)`
 - `idx_crawls__oembed_pending`: `CREATE INDEX idx_crawls__oembed_pending ON ONLY public.crawls USING btree (id) WHERE ((embed_metadata IS NOT NULL) AND (embed_oembed_url IS NOT NULL) AND (embed_oembed_resolved_at IS NULL))`
 - `idx_crawls__old_invalid`: `CREATE INDEX idx_crawls__old_invalid ON ONLY public.crawls USING btree (id) WHERE ((network_error IS NOT NULL) OR (completed_at IS NULL))`
+- `idx_crawls__recent_html_completion`: `CREATE INDEX idx_crawls__recent_html_completion ON ONLY public.crawls USING btree (completed_at, url_id, id) WHERE ((response_status_code = 200) AND (html_sha256 IS NOT NULL))`
 - `idx_crawls__redirect_url_id`: `CREATE INDEX idx_crawls__redirect_url_id ON ONLY public.crawls USING btree (redirect_url_id) WHERE (redirect_url_id IS NOT NULL)`
 - `idx_crawls__unfinished`: `CREATE INDEX idx_crawls__unfinished ON ONLY public.crawls USING btree (id) WHERE (completed_at IS NULL)`
 - `idx_crawls__url_id__completed_at_desc`: `CREATE INDEX idx_crawls__url_id__completed_at_desc ON ONLY public.crawls USING btree (url_id, completed_at DESC, id DESC) WHERE (completed_at IS NOT NULL)`

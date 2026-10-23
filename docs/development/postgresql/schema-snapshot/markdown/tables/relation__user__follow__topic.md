@@ -39,3 +39,4 @@ _none_
 **Triggers:**
 
 - `trigger_active_topic_references`: `CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE OF object_id ON public.relation__user__follow__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')`
+- `trigger_follow_topics_engagement_email_candidates`: `CREATE TRIGGER trigger_follow_topics_engagement_email_candidates AFTER INSERT OR DELETE OR UPDATE OF subject_id, deleted_at ON public.relation__user__follow__topic FOR EACH ROW EXECUTE FUNCTION fn_update_user_engagement_email_candidates_trigger()`

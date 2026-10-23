@@ -44,6 +44,7 @@ Not partitioned — growth: unbounded.
 **Indexes:**
 
 - `copyright_notice_email_intake_parses_pkey`: `CREATE UNIQUE INDEX copyright_notice_email_intake_parses_pkey ON public.copyright_notice_email_intake_parses USING btree (id)`
+- `idx_copyright_notice_email_intake_parses__succeeded_intake`: `CREATE INDEX idx_copyright_notice_email_intake_parses__succeeded_intake ON public.copyright_notice_email_intake_parses USING btree (copyright_notice_email_intake_id) WHERE (status = 'succeeded'::copyright_notice_email_intake_parse_statuses)`
 - `uq_copyright_notice_email_intake_parses__intake_id`: `CREATE UNIQUE INDEX uq_copyright_notice_email_intake_parses__intake_id ON public.copyright_notice_email_intake_parses USING btree (copyright_notice_email_intake_id)`
 
 **Triggers:**

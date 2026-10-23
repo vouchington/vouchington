@@ -540,6 +540,14 @@ CREATE OR REPLACE FUNCTION public.fn_project_user_profile_link_image_placement()
  LANGUAGE plpgsql
 ```
 
+## `fn_refresh_user_engagement_email_candidates(p_user_id uuid)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_refresh_user_engagement_email_candidates(p_user_id uuid)
+ RETURNS void
+ LANGUAGE plpgsql
+```
+
 ## `fn_register_retained_identity`
 
 ```sql
@@ -1404,6 +1412,14 @@ CREATE OR REPLACE FUNCTION public.fn_update_url_hostname_crawl_policy_changed_at
 CREATE OR REPLACE FUNCTION public.fn_update_user_bookmark_stats_for_user_id(target_user_id uuid)
  RETURNS void
  LANGUAGE sql
+```
+
+## `fn_update_user_engagement_email_candidates_trigger`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_user_engagement_email_candidates_trigger()
+ RETURNS trigger
+ LANGUAGE plpgsql
 ```
 
 ## `fn_upsert_membership_provider_context_id(context_provider membership_provider_kinds, context_environment membership_provider_environments, context_application_id text)`

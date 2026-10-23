@@ -135,5 +135,6 @@ _none_
 - `trigger_retire_deleted_user_image_surfaces`: `CREATE TRIGGER trigger_retire_deleted_user_image_surfaces AFTER UPDATE OF deleted_at ON public.users FOR EACH ROW EXECUTE FUNCTION fn_project_retire_deleted_user_image_surfaces()`
 - `trigger_sync_user_profile_image_placement`: `CREATE TRIGGER trigger_sync_user_profile_image_placement AFTER INSERT OR UPDATE OF profile_image_id ON public.users FOR EACH ROW EXECUTE FUNCTION fn_project_user_profile_image_placement()`
 - `trigger_users_create_individual_household`: `CREATE TRIGGER trigger_users_create_individual_household AFTER INSERT ON public.users FOR EACH ROW EXECUTE FUNCTION fn_create_user_individual_household()`
+- `trigger_users_engagement_email_candidates`: `CREATE TRIGGER trigger_users_engagement_email_candidates AFTER DELETE OR UPDATE OF deleted_at, is_engagement_emails_enabled, processing_restricted_at ON public.users FOR EACH ROW EXECUTE FUNCTION fn_update_user_engagement_email_candidates_trigger()`
 - `trigger_users_platform_account_kind`: `CREATE TRIGGER trigger_users_platform_account_kind BEFORE UPDATE OF platform_account_kind ON public.users FOR EACH ROW EXECUTE FUNCTION fn_reject_platform_account_kind_change()`
 - `trigger_users_updated_at`: `CREATE TRIGGER trigger_users_updated_at BEFORE UPDATE ON public.users FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
