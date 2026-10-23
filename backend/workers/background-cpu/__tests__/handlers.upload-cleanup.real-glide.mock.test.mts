@@ -18,6 +18,7 @@ import {
 import { BACKGROUND_CPU_QUEUE_NAME } from '@queues/background-cpu/config'
 import { requireBackgroundCpuJob } from '@queues/background-cpu/enqueues/registry'
 import { imageUploadsQueue } from '@queues/image-uploads/queues'
+import { waitForRealGlideEvent } from '@voucha/test-helpers/real-glide-terminal-deadline'
 import {
   createTestUser,
   backdateImageUploadStagedAt,
@@ -126,7 +127,10 @@ describe('background CPU abandoned upload cleanup', () => {
     try {
       await Promise.all([worker.waitUntilReady(), events.waitUntilReady()])
       context.signal.throwIfAborted()
-      const completion = once(events, 'completed', { signal: context.signal })
+      const completion = waitForRealGlideEvent(
+        once(events, 'completed', { signal: context.signal }),
+        'abandoned upload cleanup CPU completion',
+      )
       void completion.catch(() => {})
       const definition = requireBackgroundCpuJob('content-analysis.cleanup-abandoned-uploads')
       context.signal.throwIfAborted()
