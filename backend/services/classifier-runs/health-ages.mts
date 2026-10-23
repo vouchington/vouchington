@@ -1,4 +1,4 @@
-import { write } from '@data-stores/psql'
+import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 /** The oldest unfinished item of one classifier and how many there are in all. */
@@ -20,7 +20,9 @@ export async function readOldestIncompleteClassifierRun(
   classifier: string,
   now: Date,
 ): Promise<OldestOpenClassifierItem | null> {
-  const { rows } = await write<OldestRow>(sql`/* readOldestIncompleteClassifierRun */
+  // Replica lag delays this alarm by at most one reconcile tick and never hides a run that is
+  // already terminal on the writer.
+  const { rows } = await read<OldestRow>(sql`/* readOldestIncompleteClassifierRun */
     SELECT run.id, run.created_at, count(*) OVER ()::int AS total
     FROM classifier_runs run
     JOIN classifiers classifier ON classifier.id = run.classifier_id
@@ -41,7 +43,9 @@ export async function readOldestPendingClassifierRequest(
   classifier: string,
   now: Date,
 ): Promise<OldestOpenClassifierItem | null> {
-  const { rows } = await write<OldestRow>(sql`/* readOldestPendingClassifierRequest */
+  // Replica lag delays this alarm by at most one reconcile tick and never hides a run that is
+  // already terminal on the writer.
+  const { rows } = await read<OldestRow>(sql`/* readOldestPendingClassifierRequest */
     SELECT request.id, request.created_at, count(*) OVER ()::int AS total
     FROM classifier_run_requests request
     JOIN classifiers classifier ON classifier.id = request.classifier_id
