@@ -44,11 +44,17 @@ RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   IF NEW.user_id IS DISTINCT FROM OLD.user_id THEN
     NEW.unlinked_at := CASE WHEN NEW.user_id IS NULL THEN CURRENT_TIMESTAMP ELSE NULL END;
+    IF NEW.user_id IS NULL AND TG_TABLE_NAME IN ('facebook_accounts', 'github_accounts', 'x_accounts') THEN
+      NEW.friend_edges_invalidated_at := CURRENT_TIMESTAMP;
+      NEW.friend_edges_cleanup_completed_at := NULL;
+      NEW.friend_references_resolve_pending_at := NULL;
+      NEW.friends_synced_at := NULL;
+    END IF;
   END IF;
   RETURN NEW;
 END;
 $$;
-COMMENT ON FUNCTION fn_update_oauth_account_linkage() IS 'Sets the orphan cleanup clock when a provider account loses its user and clears it on relink.';
+COMMENT ON FUNCTION fn_update_oauth_account_linkage() IS 'Tracks account unlink/relink and invalidates friend observations when a friend-capable account loses its user.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_project_latest_change()

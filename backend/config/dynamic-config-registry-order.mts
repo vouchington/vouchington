@@ -65,6 +65,7 @@ export const REGISTRY_ORDER = [
   'admin-imports-work-config',
   'follower-distributions-work-config',
   'oauth-facebook-work-config',
+  'oauth-account-friend-work-config',
   'oauth-github-work-config',
   'oauth-x-work-config',
   'ses-inbound-work-config',

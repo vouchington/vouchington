@@ -6,7 +6,6 @@ import { invalidateVerifiedEmailCache } from '@services/contribution-gating/emai
 import { providerTableConfigs, type OAuthProvider, type OAuthAccount } from './providers.mts'
 import { completeOAuthAuthorizationExchange } from './authorization-exchange-completion.mts'
 import { resolveEmailDomainHostnameId } from '@services/email-address-validator/email-domain-context'
-import { resolveFriendAccountReferences } from './resolve-friend-account-references.mts'
 
 export async function upsertOAuthAccount(
   provider: OAuthProvider,
@@ -159,7 +158,6 @@ export async function upsertOAuthAccount(
   const { rows } = await transactionQuery<OAuthAccount>(query, values)
   const account = rows[0]
   if (!account) throw createHttpError(500, 'Failed to upsert OAuth account')
-  await resolveFriendAccountReferences(provider, account, providerUserId, transactionQuery)
   if (options.authorizationId) {
     if (!options.authorizationClaimId) {
       throw new Error('authorizationClaimId is required with authorizationId')

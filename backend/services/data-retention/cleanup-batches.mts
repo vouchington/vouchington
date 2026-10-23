@@ -171,6 +171,24 @@ export async function deleteOrphanedOAuthAccountBatch(
           AND active_authorization.expires_at > CURRENT_TIMESTAMP
       )`)
   }
+  const friendProvider =
+    validatedTable === 'facebook_accounts'
+      ? 'facebook'
+      : validatedTable === 'github_accounts'
+        ? 'github'
+        : validatedTable === 'x_accounts'
+          ? 'x'
+          : null
+  if (friendProvider) {
+    for (const edgeColumn of [
+      `${friendProvider}_account_id`,
+      `friend_${friendProvider}_account_id`,
+    ]) {
+      query.append(
+        ` AND NOT EXISTS (SELECT 1 FROM ${friendProvider}_friends edge WHERE edge.${edgeColumn} = ${validatedTable}.id)`,
+      )
+    }
+  }
   query.append(sql`
       ORDER BY unlinked_at ASC, id ASC
       LIMIT ${batchSize}

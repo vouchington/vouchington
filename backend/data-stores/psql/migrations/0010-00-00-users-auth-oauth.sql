@@ -739,6 +739,9 @@ CREATE TABLE IF NOT EXISTS facebook_accounts (
   -- NOTE: this is nullable because a user can be created after this facebook account data is saved
   user_id UUID REFERENCES users ON DELETE SET NULL,
   unlinked_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  friend_edges_invalidated_at TIMESTAMPTZ,
+  friend_edges_cleanup_completed_at TIMESTAMPTZ,
+  friend_references_resolve_pending_at TIMESTAMPTZ,
 
   -- facebook user ID
   facebook_user_id TEXT NOT NULL UNIQUE,
@@ -791,6 +794,9 @@ COMMENT ON TABLE facebook_accounts IS 'Facebook OAuth accounts linked to users. 
 COMMENT ON COLUMN facebook_accounts.id IS 'Internal UUIDv7 identity of the Facebook account.';
 COMMENT ON COLUMN facebook_accounts.user_id IS 'The linked user. NULL if the user account has not been created yet.';
 COMMENT ON COLUMN facebook_accounts.unlinked_at IS 'Time this account last became unlinked, or was first saved before a user linked it; NULL while linked. Orphan cleanup uses this clock.';
+COMMENT ON COLUMN facebook_accounts.friend_edges_invalidated_at IS 'Durable friend-visibility boundary advanced at unlink; relink does not revive earlier observations.';
+COMMENT ON COLUMN facebook_accounts.friend_edges_cleanup_completed_at IS 'Last invalidation boundary fully drained by bounded friend-edge cleanup.';
+COMMENT ON COLUMN facebook_accounts.friend_references_resolve_pending_at IS 'Connection work marker for bounded resolution of existing incoming friend references.';
 COMMENT ON COLUMN facebook_accounts.facebook_user_id IS 'Facebook''s unique external user ID.';
 COMMENT ON COLUMN facebook_accounts.facebook_user_email_address IS 'Email address from the Facebook profile.';
 COMMENT ON COLUMN facebook_accounts.facebook_user_data IS 'Raw JSONB profile data from Facebook''s /api/me endpoint.';
@@ -812,15 +818,27 @@ CREATE TABLE IF NOT EXISTS facebook_friends (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE INDEX idx_facebook_accounts__friend_edges_pending
+ON facebook_accounts (friend_edges_invalidated_at, id)
+WHERE friend_edges_invalidated_at IS NOT NULL
+  AND friend_edges_cleanup_completed_at IS DISTINCT FROM friend_edges_invalidated_at;
+CREATE INDEX idx_facebook_accounts__friend_resolution_pending
+ON facebook_accounts (friend_references_resolve_pending_at, id)
+WHERE friend_references_resolve_pending_at IS NOT NULL;
+CREATE INDEX idx_facebook_friends__source_observed
+ON facebook_friends (facebook_account_id, last_observed_at, id);
+CREATE INDEX idx_facebook_friends__target_observed
+ON facebook_friends (friend_facebook_account_id, last_observed_at, id)
+WHERE friend_facebook_account_id IS NOT NULL;
+CREATE INDEX idx_facebook_friends__unresolved_reference
+ON facebook_friends (facebook_friend_id, id)
+WHERE friend_facebook_account_id IS NULL;
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_facebook_friends_updated_at
 BEFORE UPDATE ON facebook_friends
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
-
-CREATE INDEX IF NOT EXISTS idx_facebook_friends__friend_facebook_account_id
-ON facebook_friends (friend_facebook_account_id)
-WHERE friend_facebook_account_id IS NOT NULL;
 
 CREATE INDEX IF NOT EXISTS idx_facebook_friends__facebook_friend_id
 ON facebook_friends (facebook_friend_id);
@@ -1070,6 +1088,9 @@ CREATE TABLE IF NOT EXISTS x_accounts (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   user_id UUID REFERENCES users ON DELETE SET NULL,
   unlinked_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  friend_edges_invalidated_at TIMESTAMPTZ,
+  friend_edges_cleanup_completed_at TIMESTAMPTZ,
+  friend_references_resolve_pending_at TIMESTAMPTZ,
   x_user_id TEXT NOT NULL UNIQUE,
   x_user_email_address TEXT,
   x_user_data JSONB NOT NULL,
@@ -1080,6 +1101,14 @@ CREATE TABLE IF NOT EXISTS x_accounts (
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) STORED,
   updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE INDEX idx_x_accounts__friend_edges_pending
+ON x_accounts (friend_edges_invalidated_at, id)
+WHERE friend_edges_invalidated_at IS NOT NULL
+  AND friend_edges_cleanup_completed_at IS DISTINCT FROM friend_edges_invalidated_at;
+CREATE INDEX idx_x_accounts__friend_resolution_pending
+ON x_accounts (friend_references_resolve_pending_at, id)
+WHERE friend_references_resolve_pending_at IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_x_accounts_updated_at
@@ -1113,6 +1142,9 @@ COMMENT ON TABLE x_accounts IS 'X (Twitter) OAuth accounts linked to users. Stor
 COMMENT ON COLUMN x_accounts.id IS 'Internal UUIDv7 identity of the X account.';
 COMMENT ON COLUMN x_accounts.user_id IS 'The linked user. NULL if the user account has not been created yet.';
 COMMENT ON COLUMN x_accounts.unlinked_at IS 'Time this account last became unlinked, or was first saved before a user linked it; NULL while linked. Orphan cleanup uses this clock.';
+COMMENT ON COLUMN x_accounts.friend_edges_invalidated_at IS 'Durable friend-visibility boundary advanced at unlink; relink does not revive earlier observations.';
+COMMENT ON COLUMN x_accounts.friend_edges_cleanup_completed_at IS 'Last invalidation boundary fully drained by bounded friend-edge cleanup.';
+COMMENT ON COLUMN x_accounts.friend_references_resolve_pending_at IS 'Connection work marker for bounded resolution of existing incoming friend references.';
 COMMENT ON COLUMN x_accounts.x_user_id IS 'X''s unique external user identifier.';
 COMMENT ON COLUMN x_accounts.x_user_email_address IS 'Email address from the X profile.';
 COMMENT ON COLUMN x_accounts.x_user_data IS 'Raw JSONB profile data from X OAuth.';

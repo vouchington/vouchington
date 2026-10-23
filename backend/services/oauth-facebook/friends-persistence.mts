@@ -60,7 +60,8 @@ async function persistFacebookFriendBatch(
   await transaction(
     `/* persistFacebookFriendBatch */ INSERT INTO facebook_friends (facebook_account_id, facebook_friend_id, friend_facebook_account_id)
      SELECT $1::uuid, friend_id,
-       (SELECT id FROM facebook_accounts WHERE facebook_user_id = friend_id)
+       (SELECT id FROM facebook_accounts
+        WHERE facebook_user_id = friend_id AND user_id IS NOT NULL FOR SHARE)
      FROM UNNEST($2::text[]) AS friend_id
      ORDER BY $1, friend_id
      ON CONFLICT (facebook_account_id, facebook_friend_id) DO UPDATE SET
@@ -146,7 +147,7 @@ async function facebookSyncOwnerExists(
 ): Promise<boolean> {
   const { rows } = await query(
     `/* facebookSyncOwnerExists */ SELECT 1 FROM facebook_accounts
-     WHERE id = $1 AND user_id = $2 FOR UPDATE`,
+     WHERE id = $1 AND user_id = $2 FOR SHARE`,
     [facebookAccountId, userId],
   )
   return rows.length > 0

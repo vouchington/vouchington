@@ -6,6 +6,8 @@ import {
   createTestUser,
   deleteTestOAuthAuthorizationFixtures,
   getTestOAuthAccountRaw,
+  getOAuthAccountUnlinkedAt,
+  insertTestOAuthAccount,
   lockTestUserMutation,
   restoreUser,
   softDeleteTestUserAndWaitBeforeCommit,
@@ -20,6 +22,20 @@ import {
 import { upsertOAuthAccount } from './upsert.mts'
 
 describe('connectOAuthAccountToUser', () => {
+  it.each(['apple', 'google', 'linkedin', 'microsoft'] as const)(
+    'keeps the generic %s linkage trigger valid without friend-work columns',
+    async provider => {
+      const user = await createTestUser()
+      const providerUserId = `${provider}-link-${randomUUID()}`
+      await insertTestOAuthAccount(provider, providerUserId)
+      await connectOAuthAccountToUser(provider, user.id, providerUserId)
+      expect(await getTestOAuthAccountRaw(provider, providerUserId)).toMatchObject({
+        user_id: user.id,
+      })
+      expect(await getOAuthAccountUnlinkedAt(provider, providerUserId)).toBeNull()
+    },
+  )
+
   it('rechecks suspension after provider work and leaves the account unlinked', async () => {
     const user = await createTestUser()
     const providerUserId = `github-suspended-${randomUUID()}`

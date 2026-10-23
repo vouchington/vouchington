@@ -5840,6 +5840,9 @@ importers:
       '@services/oauth':
         specifier: workspace:^
         version: link:../oauth
+      '@services/oauth-accounts':
+        specifier: workspace:^
+        version: link:../oauth-accounts
       '@services/oauth-authorization-server':
         specifier: workspace:^
         version: link:../oauth-authorization-server
@@ -5865,9 +5868,6 @@ importers:
         specifier: ^0.11.1
         version: 0.11.1
     devDependencies:
-      '@services/oauth-accounts':
-        specifier: workspace:^
-        version: link:../oauth-accounts
       '@services/user-deletions':
         specifier: workspace:^
         version: link:../user-deletions
@@ -6058,6 +6058,9 @@ importers:
       '@services/oauth':
         specifier: workspace:^
         version: link:../oauth
+      '@services/oauth-accounts':
+        specifier: workspace:^
+        version: link:../oauth-accounts
       '@services/oauth-facebook':
         specifier: workspace:^
         version: link:../oauth-facebook
@@ -8472,6 +8475,9 @@ importers:
       '@data-stores/psql':
         specifier: workspace:^
         version: link:../../data-stores/psql
+      '@data-stores/valkey':
+        specifier: workspace:^
+        version: link:../../data-stores/valkey
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
@@ -8490,6 +8496,9 @@ importers:
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
+      valkyries:
+        specifier: ^0.10.0
+        version: 0.10.0
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5

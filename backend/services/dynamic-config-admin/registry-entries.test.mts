@@ -45,6 +45,11 @@ describe('dynamic config registry entry ordering', () => {
       max_batches_per_run: { integer: true, minValue: 1 },
     })
   })
+  it('registers the bounded OAuth friend connection page', () => {
+    expect(dynamicConfigRegistry.get('oauth-account-friend-work-config')?.fields).toMatchObject({
+      friend_reference_connect_batch_size: { integer: true, minValue: 1, maxValue: 1_000 },
+    })
+  })
   it.each([
     'crawl-dispatch-work-config',
     'referral-crawl-dispatch-work-config',

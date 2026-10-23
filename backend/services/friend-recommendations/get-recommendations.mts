@@ -64,6 +64,8 @@ WITH friends AS (
       JOIN users u ON u.id = fa.user_id
       WHERE my_fa.user_id = $1
         AND ff.last_observed_at >= $2
+        AND ff.last_observed_at > COALESCE(my_fa.friend_edges_invalidated_at, '-infinity'::timestamptz)
+        AND ff.last_observed_at > COALESCE(fa.friend_edges_invalidated_at, '-infinity'::timestamptz)
         AND u.deleted_at IS NULL
         AND u.processing_restricted_at IS NULL
         AND u.id != $1
@@ -81,6 +83,8 @@ WITH friends AS (
       JOIN users u ON u.id = xa.user_id
       WHERE my_xa.user_id = $1
         AND xf.last_observed_at >= $2
+        AND xf.last_observed_at > COALESCE(my_xa.friend_edges_invalidated_at, '-infinity'::timestamptz)
+        AND xf.last_observed_at > COALESCE(xa.friend_edges_invalidated_at, '-infinity'::timestamptz)
         AND u.deleted_at IS NULL
         AND u.processing_restricted_at IS NULL
         AND u.id != $1
@@ -98,6 +102,8 @@ WITH friends AS (
       JOIN users u ON u.id = ga.user_id
       WHERE my_ga.user_id = $1
         AND gf.last_observed_at >= $2
+        AND gf.last_observed_at > COALESCE(my_ga.friend_edges_invalidated_at, '-infinity'::timestamptz)
+        AND gf.last_observed_at > COALESCE(ga.friend_edges_invalidated_at, '-infinity'::timestamptz)
         AND u.deleted_at IS NULL
         AND u.processing_restricted_at IS NULL
         AND u.id != $1

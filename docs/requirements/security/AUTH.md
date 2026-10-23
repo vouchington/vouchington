@@ -117,6 +117,11 @@ first caller's completion credential.
 2. The provider section shows the connected identity and disconnect action
 3. Disconnect the provider and confirm the section returns to its connection action
 
+Disconnect immediately removes the account's authority and private provider data. Friend
+recommendations stop using its earlier observations at the same boundary. Graph cleanup proceeds
+in bounded background pages so a large friend list cannot prolong or roll back the disconnect;
+reconnecting permits only newly observed friendships to appear.
+
 ### Already logged in redirect
 
 1. Log in successfully

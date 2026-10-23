@@ -106,6 +106,14 @@ export function buildUnboundedUnpartitionedTables(
       },
     ],
     entries: [
+      [
+        'copyright_decision_rationales',
+        'Admitted legal decision attempts grow with case and review activity; preservation holds can extend the 1095-day erasure window, while target and retention indexes keep reads selective.',
+      ],
+      [
+        'oauth_grant_retention_anchors',
+        'One non-authorizing retained identity per OAuth grant; live grants persist, and ended anchors remain until consent evidence expires.',
+      ],
       ...entityRelationMetadatum.flatMap(({ table_name }) =>
         partitionedTables.has(table_name)
           ? []

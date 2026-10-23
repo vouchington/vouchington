@@ -11,6 +11,8 @@ import { invalidateVerifiedEmailCache } from '@services/contribution-gating/emai
 import onError from '@modules/on-error'
 import { createCodedError } from '@modules/on-error/create-coded-error'
 import { ACCOUNT_SUSPENDED } from '@modules/on-error/error-codes'
+import { resolveFriendReferencePage } from './resolve-friend-reference-page.mts'
+import { getOAuthFriendReferenceConnectBatchSize } from './work-limits.mts'
 
 type OAuthAccountConnectionPostCommitDependencies = {
   enqueueVoteWeightRecalculation: typeof enqueueRecalculateUserVoteWeight
@@ -52,17 +54,18 @@ export async function connectOAuthAccountToActiveUser(
 ): Promise<void> {
   const { query, userId } = activeUser
   const config = providerTableConfigs[provider]
-  const { rows, rowCount } = await query<{ provider_user_id: string }>(
+  const hasFriends = provider === 'facebook' || provider === 'github' || provider === 'x'
+  const { rows, rowCount } = await query<{ id: string; provider_user_id: string }>(
     `/* connectOAuthAccountToUser */
      WITH connected_account AS (
        UPDATE ${config.table} AS account
-       SET user_id = $1
+       SET user_id = $1${hasFriends ? ', friend_references_resolve_pending_at = CURRENT_TIMESTAMP' : ''}
        FROM users
        WHERE account.${config.providerUserIdColumn} = $2
          AND users.id = $1
          AND users.deleted_at IS NULL
          AND (account.user_id IS NULL OR account.user_id = $1)
-       RETURNING account.${config.providerUserIdColumn} AS provider_user_id
+       RETURNING account.id, account.${config.providerUserIdColumn} AS provider_user_id
      ),
      vote_weight_recovery AS (
        UPDATE users
@@ -72,7 +75,7 @@ export async function connectOAuthAccountToActiveUser(
          AND EXISTS (SELECT 1 FROM connected_account)
        RETURNING id
      )
-     SELECT connected_account.provider_user_id
+     SELECT connected_account.id, connected_account.provider_user_id
      FROM connected_account
      INNER JOIN vote_weight_recovery ON TRUE`,
     [userId, providerUserId],
@@ -86,6 +89,22 @@ export async function connectOAuthAccountToActiveUser(
       throw createHttpError(409, `${provider} account already connected to another account`)
     }
     throw createHttpError(404, `${provider} account not found`)
+  }
+  if (hasFriends) {
+    const page = await resolveFriendReferencePage(
+      query,
+      provider,
+      rows[0].id,
+      providerUserId,
+      getOAuthFriendReferenceConnectBatchSize(),
+    )
+    if (!page.hasMore) {
+      await query(
+        `/* completeConnectedFriendResolution */ UPDATE ${config.table}
+         SET friend_references_resolve_pending_at = NULL WHERE id = $1::uuid`,
+        [rows[0].id],
+      )
+    }
   }
 }
 

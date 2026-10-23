@@ -73,6 +73,7 @@
     "@services/moderation-reports": "workspace:^",
     "@services/notifications": "workspace:^",
     "@services/oauth": "workspace:^",
+    "@services/oauth-accounts": "workspace:^",
     "@services/oauth-facebook": "workspace:^",
     "@services/oauth-github": "workspace:^",
     "@services/oauth-x": "workspace:^",

@@ -32,14 +32,6 @@ export async function disconnectOAuthAccount(
     sql`/* disconnectOAuthAccount */ UPDATE users SET use_display_name_from = 'username' WHERE id = ${userId} AND use_display_name_from = ${provider}`,
   )
   const accountId = rows[0]!.id
-  if (provider === 'facebook' || provider === 'github' || provider === 'x') {
-    const friendTable = `${provider}_friends`
-    await query(
-      `/* disconnectOAuthAccount:friends */ DELETE FROM ${friendTable}
-       WHERE ${provider}_account_id = $1 OR friend_${provider}_account_id = $1`,
-      [accountId],
-    )
-  }
   const tokenColumns = config.hasTokenColumns
     ? `access_token_ciphertext = NULL, access_token_expires_at = NULL,
        ${config.hasRefreshToken ? 'refresh_token_ciphertext = NULL,' : ''}`
@@ -49,7 +41,6 @@ export async function disconnectOAuthAccount(
      SET user_id = NULL, ${config.emailColumn} = NULL, ${config.dataColumn} = '{}'::jsonb,
        ${provider === 'x' ? '' : 'email_domain_hostname_id = NULL,'}
        ${tokenColumns}
-       ${provider === 'facebook' || provider === 'github' || provider === 'x' ? 'friends_synced_at = NULL,' : ''}
        unlinked_at = CURRENT_TIMESTAMP
      WHERE id = $1 AND user_id = $2`,
     [accountId, userId],
