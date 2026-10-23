@@ -40,6 +40,8 @@ export const backgroundWorkRegistryEntries8 = {
       processing_timeout_minutes: 'Processing timeout minutes before background recovery.',
       delivery_transition_recovery_batch_size:
         'Delivery transition recovery batch size for ap inbox activities processing.',
+      cleanup_batch_size: 'Maximum inbox deliveries deleted per cleanup batch.',
+      cleanup_maximum_batches: 'Maximum nonempty batches per inbox cleanup run.',
     },
   }),
   'engagement-emails-work-config': defineBoundedWorkNamespace({
