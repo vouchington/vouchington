@@ -49,6 +49,7 @@ describe('oauth-authorization-exchange through real GlideMQ', () => {
       createProcessor: createBackgroundProcessor,
       workers: 2,
       concurrency: 4,
+      workerOptions: { blockTimeout: 100 },
       bodies: {
         [OAUTH_AUTHORIZATION_EXCHANGE_JOB.name]: async () => {
           exchangesActive += 1

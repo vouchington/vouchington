@@ -31,6 +31,8 @@ async function run(scenario: ReplayScenario, userId: string): Promise<ReplayResu
     connection: workerQueueConnection,
     prefix: workerQueuePrefix,
     blockTimeout: 1000,
+    // Poll fixture priority work promptly; production scheduling defaults remain unchanged.
+    promotionInterval: 1000,
   })
   try {
     await worker.waitUntilReady()

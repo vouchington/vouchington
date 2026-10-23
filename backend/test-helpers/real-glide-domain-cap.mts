@@ -43,6 +43,8 @@ export async function measureDomainCap(options: {
     connection: options.connection,
     createProcessor: options.createProcessor,
     concurrency: cap + SPARE_SLOTS,
+    // Ranked jobs become visible between blocking reads during the serial cap fill.
+    workerOptions: { blockTimeout: 100 },
     bodies: {
       ...Object.fromEntries(jobs.map(job => [job.name, hold])),
       [SES_INBOUND_PROCESS_JOB.name]: () => otherRan.resolve(),
