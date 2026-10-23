@@ -14,14 +14,13 @@ export type MembershipDiffPaths = {
   removedPath: string
 }
 
-/** Copy reader membership, comm it with the sorted download, and stage both sides. */
-export async function stageMembershipDiff(
-  client: PoolClient,
+/** Copy reader membership and compute both diff files before taking the source lock. */
+export async function prepareMembershipDiff(
   sourceId: DomainBlacklistSourceId,
   paths: MembershipDiffPaths,
 ): Promise<void> {
-  await prepareMembershipDiff(sourceId, paths)
-  await stageBothDiffFiles(client, paths.addedPath, paths.removedPath)
+  await copySourceMembership(sourceId, paths.membershipPath)
+  await writeCommDiff(paths)
 }
 
 export async function stageBothDiffFiles(
@@ -31,14 +30,6 @@ export async function stageBothDiffFiles(
 ): Promise<void> {
   await stageDiffFile(client, ADDED_DOMAINS_TABLE, addedPath)
   await stageDiffFile(client, REMOVED_DOMAINS_TABLE, removedPath)
-}
-
-async function prepareMembershipDiff(
-  sourceId: DomainBlacklistSourceId,
-  paths: MembershipDiffPaths,
-): Promise<void> {
-  await copySourceMembership(sourceId, paths.membershipPath)
-  await writeCommDiff(paths)
 }
 
 async function stageDiffFile(client: PoolClient, table: string, path: string): Promise<void> {

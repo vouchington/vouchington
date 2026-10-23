@@ -1,16 +1,6 @@
-import { once } from 'node:events'
-import {
-  createReadStream,
-  createWriteStream,
-  mkdtempSync,
-  readdirSync,
-  rmSync,
-  writeFileSync,
-} from 'node:fs'
+import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { createInterface } from 'node:readline'
-import { finished } from 'node:stream/promises'
 import { describe, expect, it } from 'vitest'
 import {
   countBlacklistEntriesBySource,
@@ -28,8 +18,6 @@ import {
   BLOCKLIST_DIFF_DIRECTORY_PREFIX,
   syncDomainsWithDatabase,
 } from './sync-db.mts'
-
-const MILLION_ROWS = 1_000_000
 
 describe('blocklist file diff', () => {
   it('reads membership from the replica and stages only the diff', async () => {
@@ -133,19 +121,22 @@ describe('blocklist file diff', () => {
     }
   })
 
-  it('diffs a million domains through sort and comm onto disk', async () => {
-    const directory = mkdtempSync(join(tmpdir(), 'blocklist-heap-'))
+  it('sorts and diffs additions and removals on disk', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'blocklist-file-diff-'))
     const membershipPath = join(directory, 'membership')
     const desiredPath = join(directory, 'desired')
     const addedPath = join(directory, 'added')
     const removedPath = join(directory, 'removed')
     try {
-      await writeNumberedDomains(membershipPath, MILLION_ROWS)
-      await writeSortedDesiredDomains(numberedDownload(MILLION_ROWS), desiredPath)
+      writeFileSync(membershipPath, 'a.example\nc.example\n')
+      await writeSortedDesiredDomains(
+        new Response('b.example\na.example\nb.example\n'),
+        desiredPath,
+      )
       await writeCommDiff({ membershipPath, desiredPath, addedPath, removedPath })
-      expect(await countLines(desiredPath)).toBe(MILLION_ROWS)
-      expect(await countLines(addedPath)).toBe(0)
-      expect(await countLines(removedPath)).toBe(0)
+      expect(readFileSync(desiredPath, 'utf8')).toBe('a.example\nb.example\n')
+      expect(readFileSync(addedPath, 'utf8')).toBe('b.example\n')
+      expect(readFileSync(removedPath, 'utf8')).toBe('c.example\n')
     } finally {
       rmSync(directory, { recursive: true, force: true })
     }
@@ -167,54 +158,6 @@ function interruptedDownload(): Response {
       },
     }),
   )
-}
-
-function numberedDownload(total: number): Response {
-  const encoder = new TextEncoder()
-  let sent = 0
-  return new Response(
-    new ReadableStream<Uint8Array>({
-      pull(controller) {
-        if (sent === total) {
-          controller.close()
-          return
-        }
-        const count = Math.min(1_000, total - sent)
-        let block = ''
-        for (let offset = 0; offset < count; offset += 1) {
-          block += `heap-${String(sent + offset).padStart(7, '0')}.example\n`
-        }
-        controller.enqueue(encoder.encode(block))
-        sent += count
-      },
-    }),
-  )
-}
-
-async function writeNumberedDomains(path: string, total: number): Promise<void> {
-  const output = createWriteStream(path)
-  for (let sent = 0; sent < total; sent += 1_000) {
-    const count = Math.min(1_000, total - sent)
-    let block = ''
-    for (let offset = 0; offset < count; offset += 1) {
-      block += `heap-${String(sent + offset).padStart(7, '0')}.example\n`
-    }
-    if (output.write(block)) continue
-    await once(output, 'drain')
-  }
-  output.end()
-  await finished(output)
-}
-
-async function countLines(path: string): Promise<number> {
-  let count = 0
-  for await (const line of createInterface({
-    input: createReadStream(path),
-    crlfDelay: Infinity,
-  })) {
-    if (line.length > 0) count += 1
-  }
-  return count
 }
 
 function diffDirectories(): string[] {

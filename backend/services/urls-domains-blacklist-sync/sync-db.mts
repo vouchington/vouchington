@@ -25,8 +25,8 @@ import { drainHostnameCacheInvalidationWork } from '@services/entity-cache/hostn
 import { entityCacheWorkConfig } from '@services/entity-cache/work-limits'
 import { writeSortedDesiredDomains } from './diff-files.mts'
 import {
+  prepareMembershipDiff,
   stageBothDiffFiles,
-  stageMembershipDiff,
   type MembershipDiffPaths,
 } from './membership-diff-stage.mts'
 
@@ -49,14 +49,18 @@ export async function syncDomainsWithDatabase(
   const removedPath = join(directory, 'removed')
   try {
     await writeSortedDesiredDomains(response, desiredPath)
-    // Copy membership only after the source lock, so a concurrent sync of this
-    // source cannot diff against a snapshot that predates the previous commit.
-    return await diffLockedMembership(sourceId, sourceType, bloomRebuildDependencies, {
+    const paths: MembershipDiffPaths = {
       membershipPath,
       desiredPath,
       addedPath,
       removedPath,
-    })
+    }
+    // The reader snapshot may lag the writer or another sync. The lock covers
+    // only the writer apply; ON CONFLICT absorbs repeated additions.
+    await prepareMembershipDiff(sourceId, paths)
+    const result = await applyDomainDiffFiles(sourceId, sourceType, addedPath, removedPath)
+    await rebuildBloomForSource(sourceType, bloomRebuildDependencies)
+    return result
   } finally {
     rmSync(directory, { recursive: true, force: true })
   }
@@ -77,19 +81,6 @@ export async function applyDomainDiffFiles(
   return applyLockedDomainDiff(sourceId, sourceType, client =>
     stageBothDiffFiles(client, addedPath, removedPath),
   )
-}
-
-async function diffLockedMembership(
-  sourceId: DomainBlacklistSourceId,
-  sourceType: 'url' | 'email',
-  bloomRebuildDependencies: BloomRebuildDependencies,
-  paths: MembershipDiffPaths,
-): Promise<SyncBlacklistSourceResult> {
-  const result = await applyLockedDomainDiff(sourceId, sourceType, client =>
-    stageMembershipDiff(client, sourceId, paths),
-  )
-  await rebuildBloomForSource(sourceType, bloomRebuildDependencies)
-  return result
 }
 
 async function applyLockedDomainDiff(
@@ -120,8 +111,8 @@ async function stageLockedDiff(
   sourceType: 'url' | 'email',
   stage: (client: PoolClient) => Promise<void>,
 ): Promise<AppliedDomainDiff> {
-  await lockSourceForDiff(transaction, sourceId, sourceType)
   await stage(client)
+  await lockSourceForDiff(transaction, sourceId, sourceType)
   return applyPreparedDomainDiff(transaction, sourceId, sourceType)
 }
 

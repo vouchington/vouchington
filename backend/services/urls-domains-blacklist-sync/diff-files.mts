@@ -1,7 +1,8 @@
-import { createWriteStream } from 'node:fs'
+import { createReadStream, createWriteStream } from 'node:fs'
+import { rm } from 'node:fs/promises'
 import { dirname } from 'node:path'
 import { Readable } from 'node:stream'
-import { finished } from 'node:stream/promises'
+import { finished, pipeline } from 'node:stream/promises'
 import { runCommand } from '@modules/child-process'
 import { readNormalizedDomains } from './sync-utils.mts'
 
@@ -14,12 +15,18 @@ export async function writeSortedDesiredDomains(
   response: Response,
   destination: string,
 ): Promise<void> {
-  await writeCommandOutput(
-    SORT_BIN,
-    ['-S', '32M', '-T', dirname(destination), '-u'],
-    destination,
-    Readable.from(normalizedDomainLines(response)),
-  )
+  const download = `${destination}.download`
+  try {
+    await pipeline(Readable.from(normalizedDomainLines(response)), createWriteStream(download))
+    await writeCommandOutput(
+      SORT_BIN,
+      ['-S', '32M', '-T', dirname(destination), '-u'],
+      destination,
+      createReadStream(download),
+    )
+  } finally {
+    await rm(download, { force: true })
+  }
 }
 
 /**
