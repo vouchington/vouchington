@@ -7,8 +7,7 @@ FROM mirror.gcr.io/library/node:26-slim AS builder
 WORKDIR /app
 
 # Install pnpm with npm so the build does not depend on what the base Node image
-# bundles. pnpm-activation.test.mts keeps this major equal to CI's pnpm/action-setup
-# `latest-<major>`.
+# bundles. pnpm-activation.test.mts keeps this major equal to CI's Renovate-managed pin.
 ARG PNPM_VERSION=12
 RUN npm install -g pnpm@${PNPM_VERSION}
 

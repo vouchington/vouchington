@@ -14,16 +14,14 @@ run with the existing CI credential policy. Review the PR before placing it in t
 
 All configured release delays match: Dependabot's cooldown and pnpm's `minimumReleaseAge`.
 
-pnpm itself is not pinned. The root `package.json` has no `packageManager` field, so local installs
-run whatever pnpm is installed. CI (`pnpm/action-setup` `version: latest-12`) and the Docker builds
-(`PNPM_VERSION`) name only a pnpm major, so new releases in that major reach them without a PR.
-CI self-updates to the newest release that pnpm's default `minimumReleaseAge` admits: the
-action runs `pnpm self-update` outside this workspace, so the setting above does not apply
-to pnpm itself. Docker builds run `npm install -g pnpm@<major>`, which has no release delay. Moving to
-the next major is a manual edit that `.github/workflows/pnpm-activation.test.mts` keeps consistent.
-An enforced pin would make pnpm write `pnpm-lock.yaml` as two YAML documents, which
-single-document lockfile readers and GitHub's dependency graph (dependabot/dependabot-core#15904) do
-not fully read.
+The root `package.json` still has no `packageManager` field, so local installs run whichever pnpm is
+installed and the lockfile remains a single YAML document for existing readers. CI uses the
+supported `pnpm/setup` action to install pnpm directly, without a temporary npm project or `npm ci`
+bootstrap. Its workflow input is pinned to an exact pnpm 12 release and Renovate updates all CI
+consumers together only after the same two-day release delay used by the workspace. The action is
+configured not to install Node or workspace dependencies: `actions/setup-node` remains the Node
+owner, and each caller retains its own cache/install order. Docker builds continue to install the
+pnpm 12 major independently; this CI-only pin does not change their policy.
 
 <a id="no-mistakes-releases"></a>A `no-mistakes` release can change more than rule behavior: the package also generates
 `backend/data-stores/psql/schema-snapshot/no-mistakes-catalog.json`, which `db:snapshot:check` compares

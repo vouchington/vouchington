@@ -11,7 +11,7 @@
   "customManagers": [
     {
       "customType": "regex",
-      "description": "Workflow env vars annotated with `# renovate: datasource=… depName=…`",
+      "description": "Workflow/action inputs and env vars annotated with `# renovate: datasource=… depName=…`",
       "managerFilePatterns": [".github/workflows/*.yml", ".github/actions/*/action.yml"],
       "matchStrings": [
         "# renovate: datasource=(?<datasource>[a-z-]+) depName=(?<depName>[^\\s]+?)(?: extractVersion=(?<extractVersion>[^\\s]+))?(?: versioning=(?<versioning>[a-z-]+))?\\s*\\n\\s*[A-Za-z_][A-Za-z0-9_]*:\\s*['\"]?(?<currentValue>[^'\"\\s]+)['\"]?"
@@ -55,6 +55,16 @@
       ],
       "datasourceTemplate": "docker",
       "depNameTemplate": "valkey/valkey-bundle"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "Keep the pnpm CI action on major 12 after the workspace release delay",
+      "matchManagers": ["custom.regex"],
+      "matchPackageNames": ["pnpm"],
+      "allowedVersions": "12.x",
+      "minimumReleaseAge": "2 days",
+      "groupName": "pnpm CI toolchain"
     }
   ]
 }
