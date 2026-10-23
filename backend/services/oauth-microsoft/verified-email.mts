@@ -1,11 +1,16 @@
-import { createPublicKey, createVerify, type JsonWebKey } from 'node:crypto'
+import { createPublicKey, createVerify, type JsonWebKeyInput } from 'node:crypto'
 import createHttpError from 'http-errors'
 import { MICROSOFT_CLIENT_ID, MICROSOFT_TENANT_ID } from '@voucha/config'
 import { decodeJwtPart } from '@services/oauth-accounts/jwt'
 import { fetch } from 'undici'
 import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
 
-type MicrosoftKey = JsonWebKey & { kid?: string; alg?: string; use?: string; issuer?: string }
+type MicrosoftKey = JsonWebKeyInput['key'] & {
+  kid?: string
+  alg?: string
+  use?: string
+  issuer?: string
+}
 type MicrosoftClaims = {
   aud?: string
   iss?: string

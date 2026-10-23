@@ -1,11 +1,28 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import { v7 } from 'uuid'
 import { createRandomEmailAddress, insertTestOAuthAccount } from '@voucha/test-helpers'
 import { getOAuthAccountByProviderUserId } from '@services/oauth-accounts'
+import { deleteTestOAuthAccount } from '@voucha/test-helpers/entities/oauth-accounts'
 import { upsertUser } from './create.mts'
 import { getPrivateUserByAny } from './get.mts'
 
 describe('provider sign-in identities', () => {
+  it('concurrent sign-ins for one provider identity converge on its connected user', async () => {
+    const providerUserId = `test-github-race-${v7()}`
+    const account = await insertTestOAuthAccount('github', providerUserId)
+    onTestFinished(() => deleteTestOAuthAccount('github', providerUserId))
+
+    const users = await Promise.all([
+      upsertUser({ oauthAccount: { provider: 'github', account } }),
+      upsertUser({ oauthAccount: { provider: 'github', account } }),
+    ])
+
+    expect(new Set(users.map(user => user.id)).size).toBe(1)
+    expect(await getOAuthAccountByProviderUserId('github', providerUserId)).toMatchObject({
+      user_id: users[0]!.id,
+    })
+  })
+
   it('requires an existing sign-in method before connecting an OAuth account with the same email', async () => {
     const emailAddress = createRandomEmailAddress()
     const existingUser = await upsertUser({ emailAddress })
