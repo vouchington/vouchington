@@ -47,8 +47,6 @@ type CreateSourceWithRetryArgs = {
   attempt: number
 }
 
-export { generateSourceDetails } from './generate-source-details.mts'
-
 /** Creates a topic (type=rss_feed) and rss_feeds row in a transaction; returns null on unique violation. */
 export async function createSourceInTransaction(
   provenance: ContentProvenance,

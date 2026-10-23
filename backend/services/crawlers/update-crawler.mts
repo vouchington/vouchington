@@ -9,6 +9,7 @@ import createError from 'http-errors'
 import type { UpdateCrawlerUpdates, Crawler } from './types.mts'
 import sql from 'sql-template-strings'
 import { lockTopicRssFeedAttachmentLifecycles } from '@services/post-publication/lock'
+import { validateCrawlerUpdates } from './update-crawler-validation.mts'
 
 export { updateCrawlerCssSelectorsByHostname } from './update-crawler-css-selectors.mts'
 
@@ -40,7 +41,6 @@ export const updateCrawler = async (
   }
 
   return runWithTransaction(options.query, async (transaction: TransactionQuery) => {
-    await validateCrawlerUpdates(updates, transaction)
     let priorReferralProgramId: string | null = null
     if (updates.referral_program_id !== undefined) {
       const prior = await transaction<{ referral_program_topic_id: string | null }>(
@@ -48,6 +48,8 @@ export const updateCrawler = async (
           SELECT referral_program_topic_id FROM hostname_crawler_configurations
           WHERE id = ${crawlerId} AND deleted_at IS NULL`,
       )
+      if (prior.rows.length === 0) throw createError(404, `Crawler not found: ${crawlerId}`)
+      await validateCrawlerUpdates(updates, transaction)
       priorReferralProgramId = prior.rows[0]?.referral_program_topic_id ?? null
       await lockTopicRssFeedAttachmentLifecycles(
         transaction,
@@ -61,6 +63,8 @@ export const updateCrawler = async (
     )
     const previous = await getCrawlerById(crawlerId, { query: transaction })
     if (!previous) throw createError(404, `Crawler not found: ${crawlerId}`)
+    if (updates.referral_program_id === undefined)
+      await validateCrawlerUpdates(updates, transaction)
     if (
       updates.referral_program_id !== undefined &&
       previous.referral_program_id !== priorReferralProgramId &&
@@ -114,33 +118,6 @@ export const updateCrawler = async (
     )
     return crawler
   })
-}
-
-async function validateCrawlerUpdates(
-  updates: UpdateCrawlerUpdates,
-  query: TransactionQuery,
-): Promise<void> {
-  if (updates.hostname_id && !isUUID(updates.hostname_id)) {
-    throw createError(422, `Invalid hostname ID: ${updates.hostname_id}`)
-  }
-  if (updates.crawler_type) {
-    assert(
-      ['fetch', 'automation'].includes(updates.crawler_type),
-      422,
-      `Invalid crawler type: ${updates.crawler_type}`,
-    )
-  }
-  if (updates.referral_program_id && !isUUID(updates.referral_program_id)) {
-    throw createError(422, `Invalid referral program ID: ${updates.referral_program_id}`)
-  }
-  if (updates.referral_program_id) {
-    const { rows } = await query<{ id: string }>(sql`
-      /* validateCrawlerUpdateTopicReference */ SELECT id
-      -- no-mistakes-disable-next-line postgres-required-predicates: keep merged rows so the existing update trigger preserves REST's 409; deleted topics still fail this lookup
-      FROM topics WHERE id = ${updates.referral_program_id}::uuid AND deleted_at IS NULL
-    `)
-    if (rows.length === 0) throw createError(404, 'Topic not found')
-  }
 }
 
 function resolveUpdateHostnameId(updates: UpdateCrawlerUpdates): string | undefined {
