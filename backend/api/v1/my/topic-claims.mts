@@ -22,7 +22,7 @@ app.route('/api/v1/my/topic-claims').get(async (ctx: Context) => {
   const page = await listTopicClaimsForUser(currentUser.id, {
     ...options,
     topicIds,
-    verifiedOnly: ctx.query.verified_only === 'true',
+    verifiedOnly: query.verified_only === true,
   })
   ctx.json({
     results: page.results.map(claim => ({ ...claim, state: getTopicClaimState(claim) })),

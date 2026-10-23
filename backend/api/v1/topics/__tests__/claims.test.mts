@@ -3,7 +3,7 @@ import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, insertTestTopic } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import { createTopicClaim } from '@services/topic-claims/create'
-import { adminVerifyTopicClaim } from '@services/topic-claims/admin-verify'
+import { adminVerifyTopicClaim, rejectTopicClaim } from '@services/topic-claims/admin-verify'
 
 describe('POST /api/v1/topics/:idOrSlug/claims', () => {
   let regularUser: PrivateUser
@@ -237,7 +237,7 @@ describe('GET /api/v1/topics/:idOrSlug/claims', () => {
     await request.authenticateAs(staffUser)
     const mine = await request
       .get(`/api/v1/topics/${topicSlug}/claims`)
-      .query({ limit: 1, mine_only: true, active_only: true })
+      .query({ limit: 1, mine_only: '1', active_only: 'TRUE' })
       .expect(200)
     expect(mine.body.results.map((claim: { id: string }) => claim.id)).toEqual([own.id])
     const all = await request
@@ -245,5 +245,31 @@ describe('GET /api/v1/topics/:idOrSlug/claims', () => {
       .query({ limit: 1 })
       .expect(200)
     expect(all.body.page_info.has_next_page).toBe(true)
+  })
+
+  it('filters rejected claims for normalized active_only values', async () => {
+    const activeUser = await createTestUser()
+    const rejectedUser = await createTestUser()
+    const { claim: active } = await createTopicClaim(activeUser.id, {
+      topicId,
+      claimedRole: 'Issuer',
+      evidence: '',
+    })
+    const { claim: rejected } = await createTopicClaim(rejectedUser.id, {
+      topicId,
+      claimedRole: 'Operator',
+      evidence: '',
+    })
+    await rejectTopicClaim(staffUser.id, rejected.id, 'Insufficient evidence')
+
+    const request = createRequest()
+    await request.authenticateAs(staffUser)
+    const filtered = await request
+      .get(`/api/v1/topics/${topicSlug}/claims`)
+      .query({ active_only: 'TRUE' })
+      .expect(200)
+    const ids = filtered.body.results.map((claim: { id: string }) => claim.id)
+    expect(ids).toContain(active.id)
+    expect(ids).not.toContain(rejected.id)
   })
 })

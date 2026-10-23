@@ -168,11 +168,11 @@ app.route('/api/v1/topics/:idOrSlug/claims').get(async (ctx: Context) => {
   ctx.assert(topic, 404, 'Topic not found')
 
   const isStaff = isModerationStaff(currentUser)
-  const mineOnly = ctx.query.mine_only === 'true'
+  const mineOnly = query.mine_only === true
   const page = await listTopicClaimsForTopic(topic.id, {
     ...options,
     claimantUserId: isStaff && !mineOnly ? undefined : currentUser.id,
-    activeOnly: ctx.query.active_only === 'true',
+    activeOnly: query.active_only === true,
   })
   ctx.json({ results: page.results.map(claimBody), page_info: page.page_info })
 })
