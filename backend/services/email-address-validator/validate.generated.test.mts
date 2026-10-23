@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { installEmailDomainDnsMock } from '@voucha/test-helpers/email-domain-dns'
 import { validateEmailAddress } from './validate.mts'
 import { EmailFormatInvalidError, EmailDomainInvalidError } from './errors.mts'
 import {
@@ -55,6 +56,7 @@ describe('format validation', () => {
 
 // Tests for normalization using gmail.com (shares DNS cache)
 describe('email normalization', () => {
+  installEmailDomainDnsMock()
   it('succeeds for valid email with valid domain', async () => {
     const result = await validateEmailAddress('user@gmail.com')
     expect(result).toBe('user@gmail.com')
@@ -102,6 +104,7 @@ describe('email normalization', () => {
 
 // Tests for domain validation - uses a single invalid domain
 describe('domain validation', () => {
+  installEmailDomainDnsMock()
   it('fails for domain without MX records', async () => {
     await expect(validateEmailAddress('user@invalid-domain-12345.test')).rejects.toThrow(
       EmailDomainInvalidError,
@@ -129,6 +132,7 @@ describe('domain validation', () => {
 
 // Tests requiring database setup - isolated with fresh cache
 describe('database integration', () => {
+  installEmailDomainDnsMock()
   it('skips domain validation for an address associated with a user', async () => {
     const email = `test-verified-${Date.now()}@invalid-but-verified.test`
     const user = await createTestUser()

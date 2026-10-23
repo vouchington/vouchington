@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 import { createRequest, request } from '@voucha/test-helpers/api/server'
 import { TEST_CAPTCHA_TOKEN } from '@voucha/test-helpers/captcha/test-captcha-token'
+import { installEmailDomainDnsMock } from '@voucha/test-helpers/email-domain-dns'
 import {
   createUniqueTestEmail,
   overrideDynamicConfigFieldsForTest,
@@ -19,6 +20,8 @@ function testForwardedIp(index: number): string {
 }
 
 describe('Email Address Authentication Routes', () => {
+  installEmailDomainDnsMock()
+
   let deviceToken: string
   let sessionToken: string
   let originalRouteRateLimitConfig: ReturnType<typeof routeRateLimitConfig.getFields>

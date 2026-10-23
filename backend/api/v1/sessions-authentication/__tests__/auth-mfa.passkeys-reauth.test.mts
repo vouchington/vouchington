@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
+import { installEmailDomainDnsMock } from '@voucha/test-helpers/email-domain-dns'
 import {
   createTestUser,
   generateTestTotpCode,
@@ -11,6 +12,8 @@ import type { PrivateUser } from '@services/users/types'
 import { v7 } from 'uuid'
 
 describe('MFA API Routes', () => {
+  installEmailDomainDnsMock()
+
   let user: PrivateUser
 
   beforeAll(async () => {

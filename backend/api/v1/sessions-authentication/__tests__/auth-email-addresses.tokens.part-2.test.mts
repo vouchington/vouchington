@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 import { createRequest, nextTestRequestIp, request } from '@voucha/test-helpers/api/server'
 import { TEST_CAPTCHA_TOKEN } from '@voucha/test-helpers/captcha/test-captcha-token'
+import { installEmailDomainDnsMock } from '@voucha/test-helpers/email-domain-dns'
 import {
   createUniqueTestEmail,
   createAppAttestAssertionHeaders,
@@ -14,6 +15,8 @@ import { routeRateLimitConfig } from '@services/route-rate-limits/config'
 import { v7 } from 'uuid'
 
 describe('Email Address Authentication Routes', () => {
+  installEmailDomainDnsMock()
+
   let originalRouteRateLimitConfig: ReturnType<typeof routeRateLimitConfig.getFields>
 
   beforeEach(async () => {

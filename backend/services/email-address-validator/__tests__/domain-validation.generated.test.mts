@@ -1,4 +1,5 @@
 import { describe, it, expect, afterAll } from 'vitest'
+import { installEmailDomainDnsMock } from '@voucha/test-helpers/email-domain-dns'
 import { validateEmailDomain } from '../domain-validation.mts'
 import { EmailDomainInvalidError } from '../errors.mts'
 import {
@@ -14,6 +15,7 @@ import {
 
 // Tests for valid domains with MX records - shares cache
 describe('valid domain validation', () => {
+  installEmailDomainDnsMock()
   it('succeeds for gmail.com', async () => {
     await expect(validateEmailDomain('gmail.com')).resolves.toBeUndefined()
   })
@@ -30,6 +32,7 @@ describe('valid domain validation', () => {
 
 // Tests for invalid domains - shares cache for the invalid domain
 describe('invalid domain validation', () => {
+  installEmailDomainDnsMock()
   const invalidDomain = 'invalid-domain-12345.test'
 
   it('fails for domain without MX records', async () => {
@@ -56,6 +59,7 @@ describe('invalid domain validation', () => {
 
 // Tests for database emailable flag - needs fresh cache
 describe('database emailable flag', () => {
+  installEmailDomainDnsMock()
   it('fails for domain marked as not emailable', async () => {
     const hostname = `test-not-emailable-${Date.now()}.com`
     await insertUrlHostname(hostname, { is_emailable: false })
@@ -78,6 +82,7 @@ describe('database emailable flag', () => {
 
 // Tests for blacklist functionality - needs fresh cache
 describe('blacklist validation', () => {
+  installEmailDomainDnsMock()
   it('fails for domain in email blacklist', async () => {
     await createTestBlacklistSource({
       type: 'email',
@@ -156,6 +161,7 @@ describe('blacklist validation', () => {
 
 // Tests that disposable email domains throw with reason='disposable'
 describe('disposable email blocking', () => {
+  installEmailDomainDnsMock()
   it('throws EmailDomainInvalidError with reason=disposable for blacklisted domain', async () => {
     await createTestBlacklistSource({
       type: 'email',
@@ -176,6 +182,7 @@ describe('disposable email blocking', () => {
 
 // Tests for bloom filter integration in domain validation
 describe('bloom filter integration', () => {
+  installEmailDomainDnsMock()
   afterAll(async () => {
     await deleteEmailBloomFilter()
   })

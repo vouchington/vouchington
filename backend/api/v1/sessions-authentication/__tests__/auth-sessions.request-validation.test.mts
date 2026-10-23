@@ -2,6 +2,7 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import { v7 } from 'uuid'
 import { createUniqueTestEmail, insertEmailAddressLoginToken } from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
+import { installEmailDomainDnsMock } from '@voucha/test-helpers/email-domain-dns'
 import {
   deleteTestUserSession,
   getActiveTestUserSessions,
@@ -16,6 +17,8 @@ import '../index.mts'
 // keeps its 400 and its limit clamping; the generated contract then validates the values it
 // settled on, all before the current session row is repaired.
 describe('Auth sessions routes - request contract validation', () => {
+  installEmailDomainDnsMock()
+
   let authCookies: string[]
   let currentSessionId: string
   let userId: string

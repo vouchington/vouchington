@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { installEmailDomainDnsMock } from '@voucha/test-helpers/email-domain-dns'
 import { createRequest, nextTestRequestIp, request } from '@voucha/test-helpers/api/server'
 import {
   createUniqueTestEmail,
@@ -27,6 +28,8 @@ import { RateLimiter } from '@data-stores/valkey-rate-limiter'
 import { v7 } from 'uuid'
 
 describe('Email Address Authentication Routes', () => {
+  installEmailDomainDnsMock()
+
   let deviceToken: string
   let sessionToken: string
   let anonymousSessionId: string

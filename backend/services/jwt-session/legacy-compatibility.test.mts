@@ -1,4 +1,5 @@
 import { beforeAll, beforeEach, afterEach, describe, expect, it } from 'vitest'
+import { installEmailDomainDnsMock } from '@voucha/test-helpers/email-domain-dns'
 import { isUuidv7 as isUUIDv7 } from '@vouchington/session-jwt'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
@@ -19,6 +20,8 @@ import {
 import '../../api/v1/sessions-authentication/index.mts'
 
 describe('signed UUIDv4 session identifiers are rejected', () => {
+  installEmailDomainDnsMock()
+
   let originalRouteRateLimitConfig: ReturnType<typeof routeRateLimitConfig.getFields>
 
   beforeAll(async () => {
