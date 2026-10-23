@@ -12,10 +12,15 @@ import {
   setTestBanEvasionFlag,
 } from '@voucha/test-helpers'
 import crypto from 'node:crypto'
-import { getModerationAnalytics } from './get-moderation-analytics.mts'
+import { getModerationAnalytics, getRangeStart } from './get-moderation-analytics.mts'
 import { MODERATION_SYSTEM_USERNAME } from '@services/users/constants'
 
 describe('getModerationAnalytics', () => {
+  it('bounds the all range to the raw moderation retention window', () => {
+    const now = new Date('2026-10-23T12:00:00.000Z')
+    expect(getRangeStart('all', now).toISOString()).toBe('2026-07-25T12:00:00.000Z')
+  })
+
   it('excludes operational audit phases from daily moderation actions and workload', async () => {
     const actor = await createTestUser()
     const suffix = crypto.randomUUID()

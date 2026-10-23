@@ -33,6 +33,7 @@ export async function resolveAppealTarget(
       SELECT id, user_id, community_id, case_id, reason, issued_by_id, created_at
       FROM user_warnings
       WHERE id = ${targetId!} AND revoked_at IS NULL
+        AND id >= fn_min_uuidv7(CURRENT_TIMESTAMP - interval '12 months')
       LIMIT 1
     `,
       queryOptions,

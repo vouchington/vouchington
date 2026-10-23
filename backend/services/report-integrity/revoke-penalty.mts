@@ -37,6 +37,9 @@ export async function revokeReportAbusePenalty(
         created_by_id,
         revoked_at,
         revoked_by_id,
+        reviewed_at,
+        reviewed_by_id,
+        review_due_at,
         created_at,
         updated_at
     `)

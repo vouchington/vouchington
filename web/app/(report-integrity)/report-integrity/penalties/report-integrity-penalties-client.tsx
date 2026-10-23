@@ -4,6 +4,8 @@ import { IntegrityPenaltiesClient } from '@/components/admin/integrity-penalties
 import {
   getReportIntegrityPenaltyClient,
   revokeReportAbusePenalty,
+  getReportAbusePenaltyReviewsDue,
+  reviewReportAbusePenalty,
 } from '@/lib/api/client/report-integrity'
 import type {
   IntegrityPenaltyStatusFilter,
@@ -32,6 +34,7 @@ export function ReportIntegrityPenaltiesClient({
       penaltiesPath='/report-integrity/penalties'
       getById={getReportIntegrityPenaltyClient}
       revoke={revokeReportAbusePenalty}
+      annualReviews={{ getDue: getReportAbusePenaltyReviewsDue, review: reviewReportAbusePenalty }}
     />
   )
 }

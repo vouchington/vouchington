@@ -11,6 +11,8 @@ import {
   getReportAbusePenalties,
   getReportAbusePenaltyByIdFromPrimary,
   revokeReportAbusePenalty,
+  getReportAbusePenaltyReviewsDue,
+  reviewReportAbusePenalty,
 } from '@services/report-integrity'
 import {
   requireAuthAndRateLimit,
@@ -26,6 +28,17 @@ const penaltiesQuery = defineQueryContract({
   status: queryEnum(['active', 'revoked']),
   user_id: queryUuid(),
   source_flag_id: queryUuid(),
+})
+
+// GET /api/v1/report-integrity/penalties/review-due
+app.route('/api/v1/report-integrity/penalties/review-due').get(async (ctx: Context) => {
+  await requireAuthAndRateLimit(
+    ctx,
+    currentUserCanApplyReportAbusePenalty,
+    'GET:/api/v1/report-integrity/penalties/review-due',
+  )
+  validateRequestContract(ctx, 'GET:/api/v1/report-integrity/penalties/review-due', {})
+  ctx.json(await getReportAbusePenaltyReviewsDue())
 })
 
 // GET /api/v1/report-integrity/penalties
@@ -96,4 +109,19 @@ app.route('/api/v1/report-integrity/penalties/:id').delete(async (ctx: Context) 
   })
   const result = await revokeReportAbusePenalty(currentUser.id, id)
   ctx.json(result)
+})
+
+// POST /api/v1/report-integrity/penalties/:id/reviews
+app.route('/api/v1/report-integrity/penalties/:id/reviews').post(async (ctx: Context) => {
+  const currentUser = await requireAuthAndRateLimit(
+    ctx,
+    currentUserCanApplyReportAbusePenalty,
+    'POST:/api/v1/report-integrity/penalties/:id/reviews',
+  )
+  const id = validateUUIDParam(ctx, 'id')
+  validateRequestContract(ctx, 'POST:/api/v1/report-integrity/penalties/:id/reviews', {
+    path: ctx.params,
+  })
+  const penalty = await reviewReportAbusePenalty(id, currentUser.id)
+  ctx.json({ penalty })
 })

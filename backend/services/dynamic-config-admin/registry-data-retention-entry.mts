@@ -14,6 +14,18 @@ export const dataRetentionRegistryEntry = defineDynamicConfigNamespace({
       maxValue: 250,
       integer: true,
     },
+    moderation_batch_size: {
+      description: 'Moderation source rows examined per retention page.',
+      minValue: 1,
+      maxValue: DATA_RETENTION_MAX_VALUES.moderation_batch_size,
+      integer: true,
+    },
+    moderation_max_batches_per_run: {
+      description: 'Maximum keyset pages each moderation record family examines per daily run.',
+      minValue: 1,
+      maxValue: DATA_RETENTION_MAX_VALUES.moderation_max_batches_per_run,
+      integer: true,
+    },
     batch_size: {
       description: 'Rows each data retention cleanup deletes per batch.',
       minValue: 1,

@@ -56,6 +56,9 @@ export const ALLOWED_NONRELATION_UUID = new Set([
   // Deletion-stable keyset positions are values, not references to retained source rows.
   'moderation_media_reveal_cleanup_cursors.cursor_reveal_id',
   'moderation_queue_claim_cleanup_cursors.cursor_claim_id',
+  // Deleted moderation rows cannot remain FK targets; the frozen sweep bound is a UUIDv7 timestamp.
+  'moderation_record_cleanup_cursors.cursor_id',
+  'moderation_record_cleanup_cursors.sweep_upper_bound_id',
   'oauth_authorizations.exchange_claim_id',
   'oauth_authorization_exchange_attempts.exchange_claim_id',
   'oauth_authorizations.login_attempt_id',

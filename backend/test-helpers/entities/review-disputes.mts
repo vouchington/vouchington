@@ -61,6 +61,12 @@ export async function insertTestReviewDispute(input: {
   return disputeId
 }
 
+export async function hardDeleteTestReviewDispute(id: string): Promise<void> {
+  await write(sql`/* hardDeleteTestReviewDispute */
+    DELETE FROM review_disputes WHERE id = ${id}::uuid
+  `)
+}
+
 export async function updateTestReviewDisputeSubject(
   input: ReviewDisputeSubjectMutation,
 ): Promise<void> {
