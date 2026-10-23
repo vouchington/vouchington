@@ -2,6 +2,7 @@ import { DSA_SUBMISSION_UUID_COLUMNS_WITHOUT_KEYS } from './dsa-submission-uuid-
 /* v8 ignore start -- declarative schema-test allowlists have no executable branches */
 import { POST_PUBLICATION_UUID_COLUMNS_WITHOUT_KEYS } from './post-publication-allowlists.mts'
 import { ALLOWED_MEMBERSHIP_UUID_COLUMNS_WITHOUT_KEYS } from './membership-uuid-allowlists.mts'
+import { NOTIFICATION_PUSH_RETENTION_UUID_COLUMNS_WITHOUT_KEYS } from './notification-push-retention-allowlists.mts'
 import { OAUTH_AUTHORIZATION_UUID_COLUMNS_WITHOUT_KEYS } from './oauth-authorization-allowlists.mts'
 import { STORY_POST_RELATED_URL_PROJECTION_UUID_COLUMNS_WITHOUT_KEYS } from './story-post-related-url-projection-uuid-allowlists.mts'
 import { USER_DELETION_UUID_COLUMNS_WITHOUT_KEYS } from './user-deletion-uuid-allowlists.mts'
@@ -60,14 +61,7 @@ export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
     'retained_relation_identity_cleanup_cursors.cursor_relation_id',
     'Operational composite keyset scan position can outlive its prior owner; it is not a relationship.',
   ],
-  [
-    'notification_push_intent_retention_cursors.cursor_notification_push_intent_id',
-    'Operational UUIDv7 keyset position survives deletion of the scanned push intent; it is not a relationship.',
-  ],
-  [
-    'notification_push_intent_retention_cursors.sweep_upper_bound_notification_push_intent_id',
-    'Frozen UUIDv7 age bound for the current sweep; it does not identify a persisted push intent.',
-  ],
+  ...NOTIFICATION_PUSH_RETENTION_UUID_COLUMNS_WITHOUT_KEYS,
   ...POST_PUBLICATION_UUID_COLUMNS_WITHOUT_KEYS,
   ...ALLOWED_MEMBERSHIP_UUID_COLUMNS_WITHOUT_KEYS,
   ...OAUTH_AUTHORIZATION_UUID_COLUMNS_WITHOUT_KEYS,
