@@ -1,10 +1,7 @@
 import { randomBytes } from 'node:crypto'
 import { DeleteObjectCommand, S3Client } from '@aws-sdk/client-s3'
 import { vi } from 'vitest'
-import { CACHE_PURGE_TAGS_JOB } from '@queues/background/enqueues/cache-purge-jobs'
-import { Job } from 'glide-mq'
 import { userTag } from '../../ts-shared/cache/cache-tags.mts'
-import type { EnqueueAdmission } from '../data-stores/valkey-glide-mq/glide-mq-admission.mts'
 import { write } from '@data-stores/psql'
 import { createTestUser } from './entities/users.mts'
 import { setUserMarkdown } from './entities/users-lifecycle.mts'
@@ -84,49 +81,6 @@ export async function createContentAnalysisCleanupFixtures() {
     foreignLanguageBefore: await readContentAnalysisUserLanguage(foreignUser.id),
     scope: { imageIds: [ownedRecovery, ownedPending], entityIds: [ownedUser.id], now },
   }
-}
-
-/** Read the exact public job before assertions/removal; foreign or mixed payloads fail closed. */
-export async function readOwnedContentAnalysisJob(
-  event: EnqueueAdmission,
-  admitted: unknown,
-  imageIds: readonly string[],
-  userTags: readonly string[],
-) {
-  if (!(admitted instanceof Job) || !admitted.id) throw new Error('Missing native admitted job')
-  if (event.queue === imageUploadsQueue && event.jobName === 'extract-metadata') {
-    const job = await imageUploadsQueue.getJob(admitted.id)
-    const data: unknown = job?.data
-    if (
-      job?.name !== 'extract-metadata' ||
-      typeof data !== 'object' ||
-      data === null ||
-      !('id' in data) ||
-      typeof data.id !== 'string' ||
-      !imageIds.includes(data.id)
-    ) {
-      throw new Error('Refusing unowned image recovery job')
-    }
-    return job
-  }
-  if (event.queue === cachePurge && event.jobName === CACHE_PURGE_TAGS_JOB.name) {
-    const job = await cachePurge.getJob(admitted.id)
-    const data: unknown = job?.data
-    if (
-      job?.name !== CACHE_PURGE_TAGS_JOB.name ||
-      typeof data !== 'object' ||
-      data === null ||
-      !('tags' in data) ||
-      !Array.isArray(data.tags) ||
-      data.tags.length !== userTags.length ||
-      new Set(data.tags).size !== userTags.length ||
-      !data.tags.every(tag => typeof tag === 'string' && userTags.includes(tag))
-    ) {
-      throw new Error('Refusing foreign or mixed cache purge job')
-    }
-    return job
-  }
-  throw new Error('Refusing unowned admission queue or job name')
 }
 
 /** Answer only owned deletes at the external SDK edge; record attempted foreign work too. */
