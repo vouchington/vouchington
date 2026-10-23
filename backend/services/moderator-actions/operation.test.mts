@@ -1,30 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
-import { rejectStaffActionHistoryWrite } from '@voucha/test-helpers/staff-action-history'
-import { createTestUser } from '@voucha/test-helpers'
-import { withPostgresTransactionForTest } from '@voucha/test-helpers/postgres-transaction'
+import { createTestUser, hardDeleteTestCommunity, insertTestCommunity } from '@voucha/test-helpers'
 import { sentryCaptureExceptionMock } from '@voucha/test-helpers/vitest.setup.sentry-mock'
 import { recordStaffOperation } from './operation.mts'
 import { searchModeratorActions } from './search.mts'
 
 describe('staff external-operation history', () => {
-  it('rejects an uncommitted intent writer before running the external action', async () => {
-    const execute = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
-    await withPostgresTransactionForTest(async query => {
-      await expect(
-        recordStaffOperation(
-          crypto.randomUUID(),
-          { actionType: 'queue_pause' },
-          execute,
-          undefined,
-          {
-            query,
-          },
-        ),
-      ).rejects.toThrow('Staff operation history writer must autocommit')
-    })
-    expect(execute).not.toHaveBeenCalled()
-  })
-
   it('commits intent before execution and links the successful outcome', async () => {
     const actor = await createTestUser()
     const queueName = `audit-${crypto.randomUUID()}`
@@ -90,42 +70,60 @@ describe('staff external-operation history', () => {
   })
   it('keeps an unresolved request when the outcome cannot be persisted', async () => {
     const actor = await createTestUser()
-    const execute = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
-    await expect(
-      recordStaffOperation(
-        actor.id,
-        { actionType: 'queue_pause', queueName: `audit-${crypto.randomUUID()}` },
-        execute,
-        undefined,
-        { query: rejectStaffActionHistoryWrite('finished') },
-      ),
-    ).resolves.toBeUndefined()
-    expect(execute).toHaveBeenCalledTimes(1)
-    const { results } = await searchModeratorActions({ actorId: actor.id })
-    expect(results).toHaveLength(1)
-    expect(results[0]!.metadata).toEqual({ phase: 'requested' })
-    expect(sentryCaptureExceptionMock).toHaveBeenCalledWith(
-      expect.objectContaining({ message: 'Staff operation outcome could not be recorded' }),
-      expect.anything(),
-    )
+    const community = await insertTestCommunity({ createdById: actor.id })
+    const execute = vi.fn<() => Promise<void>>(async () => {
+      await hardDeleteTestCommunity(community.id)
+    })
+    try {
+      await expect(
+        recordStaffOperation(
+          actor.id,
+          {
+            actionType: 'queue_pause',
+            communityId: community.id,
+            queueName: `audit-${crypto.randomUUID()}`,
+          },
+          execute,
+        ),
+      ).resolves.toBeUndefined()
+      expect(execute).toHaveBeenCalledOnce()
+      const { results } = await searchModeratorActions({ actorId: actor.id })
+      expect(results).toHaveLength(1)
+      expect(results[0]).toMatchObject({
+        community_id: null,
+        metadata: { phase: 'requested' },
+      })
+      expect(sentryCaptureExceptionMock).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'Staff operation outcome could not be recorded' }),
+        expect.anything(),
+      )
+    } finally {
+      await hardDeleteTestCommunity(community.id)
+    }
   })
 
   it('preserves the execution failure when its outcome cannot be persisted', async () => {
     const actor = await createTestUser()
+    const community = await insertTestCommunity({ createdById: actor.id })
     const failure = new Error('original execution failure')
-    await expect(
-      recordStaffOperation(
-        actor.id,
-        { actionType: 'queue_pause' },
-        () => Promise.reject(failure),
-        undefined,
-        { query: rejectStaffActionHistoryWrite('finished') },
-      ),
-    ).rejects.toBe(failure)
-    expect(sentryCaptureExceptionMock).toHaveBeenCalledOnce()
-    const { results } = await searchModeratorActions({ actorId: actor.id })
-    expect(results).toHaveLength(1)
-    expect(results[0]!.metadata).toEqual({ phase: 'requested' })
+    try {
+      await expect(
+        recordStaffOperation(
+          actor.id,
+          { actionType: 'queue_pause', communityId: community.id },
+          async () => {
+            await hardDeleteTestCommunity(community.id)
+            throw failure
+          },
+        ),
+      ).rejects.toBe(failure)
+      expect(sentryCaptureExceptionMock).toHaveBeenCalledOnce()
+      const { results } = await searchModeratorActions({ actorId: actor.id })
+      expect(results).toHaveLength(1)
+      expect(results[0]!.metadata).toEqual({ phase: 'requested' })
+    } finally {
+      await hardDeleteTestCommunity(community.id)
+    }
   })
 
   it('returns the successful result even when outcome summarization or reporting fails', async () => {
