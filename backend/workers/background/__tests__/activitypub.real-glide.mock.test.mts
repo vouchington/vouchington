@@ -4,6 +4,7 @@ import type { Job } from 'glide-mq'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
 import { getActorUri } from '@modules/activitypub-uris'
+import { mintUUIDv7 } from '@modules/utils/ids'
 import { generateRsaSha256KeyPair, verifySignature } from '@modules/http-signatures'
 import {
   ACTIVITYPUB_DELIVER_ACTIVITY_JOB,
@@ -137,7 +138,7 @@ describe('activitypub through the production background processor', () => {
     const source = await createFederatedUser()
     const target = await createFederatedUser()
     const remote = await createRemoteFollower(source.id)
-    const activityId = randomUUID()
+    const activityId = mintUUIDv7()
     const captured: CapturedRequest[] = []
     const started = await startWith(job =>
       processDeliverActivityJob(job, {
@@ -192,7 +193,7 @@ describe('activitypub through the production background processor', () => {
   it('delays a distribution job while its durable page lease is held', async () => {
     const source = await createFederatedUser()
     const target = await createFederatedUser()
-    const activityId = randomUUID()
+    const activityId = mintUUIDv7()
     const page = await prepareActivityDistributionPage(activityId, source.id)
     if (page.status !== 'ready') throw new Error('Expected to claim a distribution page')
     try {
