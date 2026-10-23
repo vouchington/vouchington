@@ -144,6 +144,10 @@ CREATE INDEX IF NOT EXISTS idx_classifier_runs__community_identity
 CREATE INDEX IF NOT EXISTS idx_classifier_runs__recoverable
   ON classifier_runs (id)
   WHERE completed_at IS NULL AND superseded_at IS NULL AND terminal_failed_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_classifier_runs__pending_batch_retirement
+  ON classifier_runs (decision_batch_id)
+  WHERE decision_batch_id IS NOT NULL AND completed_at IS NULL
+    AND superseded_at IS NULL AND terminal_failed_at IS NULL;
 
 -- The usage ledger (0490) is created earlier, so add and validate its run attribution FK here. A
 -- deleted run payload leaves its cost rows and run identity in place: the ledger is a financial record.

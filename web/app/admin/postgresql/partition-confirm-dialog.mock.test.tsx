@@ -53,6 +53,7 @@ describe('PartitionConfirmDialog', () => {
       <PartitionConfirmDialog
         confirmPartitionAction={confirmPartitionAction}
         pendingAction='cleanupPartitions'
+        pendingClassifierRange={null}
         setPendingAction={setPendingAction}
       />,
     )
@@ -87,6 +88,7 @@ describe('PartitionConfirmDialog', () => {
       <PartitionConfirmDialog
         confirmPartitionAction={confirmPartitionAction}
         pendingAction='cleanupPartitions'
+        pendingClassifierRange={null}
         setPendingAction={setPendingAction}
       />,
     )
@@ -107,6 +109,7 @@ describe('PartitionConfirmDialog', () => {
       <PartitionConfirmDialog
         confirmPartitionAction={confirmPartitionAction}
         pendingAction='createPartitions'
+        pendingClassifierRange={null}
         setPendingAction={vi.fn<
           (action: 'createPartitions' | 'cleanupPartitions' | null) => void
         >()}

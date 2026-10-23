@@ -8,9 +8,13 @@ export function classifierRetentionCutoff(now = new Date()): Date {
 }
 
 export function assertClassifierBatchWithinRetention(batchId: string, now = new Date()): void {
-  if (batchId.toLowerCase() < getMinUUIDv7ForDate(classifierRetentionCutoff(now))) {
+  if (!isClassifierBatchWithinRetention(batchId, now)) {
     throw new RangeError('Classifier decision batch is outside the retention window')
   }
+}
+
+export function isClassifierBatchWithinRetention(batchId: string, now = new Date()): boolean {
+  return batchId.toLowerCase() >= getMinUUIDv7ForDate(classifierRetentionCutoff(now))
 }
 
 export function assertClassifierWindowWithinRetention(from: Date, now = new Date()): void {

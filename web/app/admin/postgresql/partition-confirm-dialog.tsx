@@ -62,10 +62,13 @@ export function PartitionConfirmDialog({
     }
   }, [pendingAction])
 
+  const classifierSuffix = pendingClassifierRange
+    ? `__r_${pendingClassifierRange.fromDate.replaceAll('-', '')}_${pendingClassifierRange.toDate.replaceAll('-', '')}`
+    : null
   const refusals =
     partitionStatus?.tables.flatMap(table =>
       table.partitions.flatMap(partition =>
-        partition.drop_refusal
+        partition.drop_refusal && (!classifierSuffix || partition.name.endsWith(classifierSuffix))
           ? [{ table: table.name, partition: partition.name, reason: partition.drop_refusal }]
           : [],
       ),

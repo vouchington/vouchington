@@ -4,6 +4,7 @@ import {
   assertClassifierBatchWithinRetention,
   assertClassifierWindowWithinRetention,
   classifierRetentionCutoff,
+  isClassifierBatchWithinRetention,
 } from './retention-window.mts'
 
 describe('classifier retention boundary', () => {
@@ -23,5 +24,7 @@ describe('classifier retention boundary', () => {
       assertClassifierBatchWithinRetention(getMinUUIDv7ForDate(cutoff).toUpperCase(), now),
     ).not.toThrow()
     expect(() => assertClassifierWindowWithinRetention(cutoff, now)).not.toThrow()
+    expect(isClassifierBatchWithinRetention(getMinUUIDv7ForDate(before), now)).toBe(false)
+    expect(isClassifierBatchWithinRetention(getMinUUIDv7ForDate(cutoff), now)).toBe(true)
   })
 })

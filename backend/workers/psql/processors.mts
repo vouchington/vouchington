@@ -6,9 +6,16 @@ import {
   cleanupPartitions,
   refreshMaterializedView,
 } from '@data-stores/psql/migrate'
-import { createClassifierResultRange } from '@data-stores/psql/migration-runner/operator-classifier-partitions'
+import {
+  createClassifierResultRange,
+  retireClassifierResultRange,
+} from '@data-stores/psql/migration-runner/operator-classifier-partitions'
 import { runDataRetentionCleanup } from '@services/data-retention'
-import { dataRetentionConfig, getDataRetentionLimits } from '@services/data-retention/config'
+import {
+  dataRetentionConfig,
+  getClassifierRetentionDays,
+  getDataRetentionLimits,
+} from '@services/data-retention/config'
 import { reconcilePostVoteDrift } from '@services/elections-votes/shared'
 import type {
   PsqlJobs,
@@ -45,7 +52,8 @@ export default async function processPsql(
         : (dependencies?.createPartitions ?? createMonthlyPartitions)()
     case 'cleanupPartitions':
       if (data?.classifierRange) {
-        throw new Error('Classifier range retirement requires the guarded operator path')
+        await dataRetentionConfig.waitForInitialization()
+        return retireClassifierResultRange(data.classifierRange, getClassifierRetentionDays())
       }
       return (dependencies?.cleanupPartitions ?? cleanupPartitions)()
     case 'dataRetentionCleanup': {
