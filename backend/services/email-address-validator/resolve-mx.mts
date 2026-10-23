@@ -10,17 +10,42 @@ export class DnsTimeoutError extends Error {
   }
 }
 
-function resolveMxWithTimeout(domain: string): Promise<{ exchange: string; priority: number }[]> {
+/** Cancels one scheduled DNS lookup timeout. */
+export type DnsLookupTimeoutCancellation = () => void
+
+/**
+ * Schedules the lookup timeout. Production uses `setTimeout`. A caller can pass its own
+ * scheduler when it needs the timeout to fire without replacing process-wide timers.
+ */
+export type DnsLookupTimeoutScheduler = (
+  onTimeout: () => void,
+  timeoutMs: number,
+) => DnsLookupTimeoutCancellation
+
+function scheduleDnsLookupTimeout(
+  onTimeout: () => void,
+  timeoutMs: number,
+): DnsLookupTimeoutCancellation {
+  const timer = setTimeout(onTimeout, timeoutMs)
+  return () => {
+    clearTimeout(timer)
+  }
+}
+
+function resolveMxWithTimeout(
+  domain: string,
+  scheduleTimeout: DnsLookupTimeoutScheduler,
+): Promise<{ exchange: string; priority: number }[]> {
   return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new DnsTimeoutError()), DNS_TIMEOUT_MS)
+    const cancelTimeout = scheduleTimeout(() => reject(new DnsTimeoutError()), DNS_TIMEOUT_MS)
     dnsPromises
       .resolveMx(domain)
       .then(result => {
-        clearTimeout(timer)
+        cancelTimeout()
         resolve(result)
       })
       .catch(err => {
-        clearTimeout(timer)
+        cancelTimeout()
         reject(err instanceof Error ? err : new Error('DNS lookup failed', { cause: err }))
       })
   })
@@ -29,12 +54,13 @@ function resolveMxWithTimeout(domain: string): Promise<{ exchange: string; prior
 /* no-mistakes: integration=http */
 export async function resolveMxRecords(
   domain: string,
+  scheduleTimeout: DnsLookupTimeoutScheduler = scheduleDnsLookupTimeout,
 ): Promise<{ exchange: string; priority: number }[]> {
   let lastError: Error = new Error('DNS lookup failed')
   for (let attempt = 0; attempt <= DNS_MAX_RETRIES; attempt++) {
     try {
       // oxlint-disable-next-line no-await-in-loop -- a DNS timeout must settle before the retry budget advances
-      return await resolveMxWithTimeout(domain)
+      return await resolveMxWithTimeout(domain, scheduleTimeout)
     } catch (err) {
       lastError = err instanceof Error ? err : new Error(String(err))
       // Only retry on timeout; other DNS errors (NXDOMAIN, NODATA) are definitive

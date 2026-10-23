@@ -12,7 +12,7 @@ import {
   validateEmailDomain,
 } from '../domain-validation.mts'
 import { EmailDomainInvalidError } from '../errors.mts'
-import { resolveMxRecords } from '../resolve-mx.mts'
+import { resolveMxRecords, type DnsLookupTimeoutCancellation } from '../resolve-mx.mts'
 
 describe('domain-validation', () => {
   const ownedDomains: string[] = []
@@ -46,18 +46,20 @@ describe('domain-validation', () => {
     const domain = ownDomain('timeout-test')
     const lookups: ReturnType<typeof Promise.withResolvers<MxRecord[]>>[] = []
     const validations: Promise<unknown>[] = []
-    let nextResolveStarted = Promise.withResolvers<void>()
     let disposed = false
     mockResolveMx.mockImplementation(requestedDomain => {
       if (requestedDomain !== domain) throw new Error('Unexpected DNS fixture domain')
       const lookup = Promise.withResolvers<MxRecord[]>()
       lookups.push(lookup)
-      nextResolveStarted.resolve()
       if (disposed) lookup.resolve([])
       return lookup.promise
     })
-    // Leave Date, intervals and native I/O real. Advance only after the real reads reach DNS.
-    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    // beforeEach installed the real resolver. Replace only this case so its timeout fires
+    // on a microtask. Process-wide fake timers also capture the fork's GlideMQ worker wakes.
+    restoreMxRecordsForValidation?.()
+    restoreMxRecordsForValidation = setResolveMxRecordsForDomainValidationTest(requestedDomain =>
+      resolveMxRecords(requestedDomain, scheduleImmediateDnsLookupTimeout),
+    )
     try {
       await validateWithTimeout(3)
       await validateWithTimeout(6)
@@ -66,20 +68,17 @@ describe('domain-validation', () => {
       for (const lookup of lookups) lookup.resolve([])
       await Promise.allSettled(validations)
       await Promise.allSettled(lookups.map(lookup => lookup.promise))
-      vi.useRealTimers()
     }
 
     async function validateWithTimeout(expectedCalls: number): Promise<void> {
-      nextResolveStarted = Promise.withResolvers<void>()
       const outcome = validateEmailDomain(domain).catch((err: unknown) => err)
       validations.push(outcome)
-      await nextResolveStarted.promise
-      await vi.advanceTimersByTimeAsync(15_000)
       await expect(outcome).resolves.toBeInstanceOf(EmailDomainInvalidError)
       await expect(outcome).resolves.toMatchObject({
         domain,
         reason: 'DNS error: DNS lookup timeout',
       })
+      expect(vi.isFakeTimers()).toBe(false)
       expect(mockResolveMx).toHaveBeenCalledTimes(expectedCalls)
       await expect(readTestEmailDomainValidationCache(domain)).resolves.toBeNull()
     }
@@ -118,3 +117,14 @@ describe('domain-validation', () => {
     }
   })
 })
+
+// Fires the lookup timeout on the next microtask so the case does not install fake timers.
+function scheduleImmediateDnsLookupTimeout(onTimeout: () => void): DnsLookupTimeoutCancellation {
+  let cancelled = false
+  queueMicrotask(() => {
+    if (!cancelled) onTimeout()
+  })
+  return () => {
+    cancelled = true
+  }
+}
