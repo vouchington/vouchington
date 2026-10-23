@@ -6,14 +6,15 @@ One row per user and one-time engagement email type, used to claim and mark send
 
 Not partitioned — growth: unbounded.
 
-| Column                  | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                |
-| ----------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ------------------------------------------------------ |
-| `user_id`               | `uuid`                     | no       |                     |          |           |           | The recipient user.                                    |
-| `email_type`            | `engagement_email_types`   | no       |                     |          |           |           | The one-time engagement email type.                    |
-| `claimed_at`            | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           | When the send was first claimed by the dispatcher.     |
-| `delivery_attempted_at` | `timestamp with time zone` | yes      |                     |          |           |           | When delivery of the engagement email was attempted.   |
-| `sent_at`               | `timestamp with time zone` | yes      |                     |          |           |           | When the email processor marked the send as delivered. |
-| `updated_at`            | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                        |
+| Column                  | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                                 |
+| ----------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------- |
+| `user_id`               | `uuid`                     | no       |                     |          |           |           | The recipient user.                                                                                     |
+| `email_type`            | `engagement_email_types`   | no       |                     |          |           |           | The one-time engagement email type.                                                                     |
+| `claimed_at`            | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           | When the send was first claimed by the dispatcher.                                                      |
+| `claim_owner_job_id`    | `text`                     | yes      |                     |          |           |           | The dispatcher page that owns a nonterminal queue admission; the same page may safely replay its claim. |
+| `delivery_attempted_at` | `timestamp with time zone` | yes      |                     |          |           |           | When delivery of the engagement email was attempted.                                                    |
+| `sent_at`               | `timestamp with time zone` | yes      |                     |          |           |           | When the email processor marked the send as delivered.                                                  |
+| `updated_at`            | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                         |
 
 **Primary key:** `PRIMARY KEY (user_id, email_type)`
 
@@ -33,4 +34,5 @@ _none_
 
 **Triggers:**
 
+- `trigger_engagement_email_sends_candidates`: `CREATE TRIGGER trigger_engagement_email_sends_candidates AFTER INSERT OR DELETE OR UPDATE OF user_id, email_type, claimed_at, delivery_attempted_at, sent_at ON public.user_engagement_email_sends FOR EACH ROW EXECUTE FUNCTION fn_update_user_engagement_email_candidates_trigger()`
 - `trigger_user_engagement_email_sends_updated_at`: `CREATE TRIGGER trigger_user_engagement_email_sends_updated_at BEFORE UPDATE ON public.user_engagement_email_sends FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

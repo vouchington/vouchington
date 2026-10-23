@@ -1479,6 +1479,9 @@
     "fn_project_user_profile_link_image_placement": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_user_profile_link_image_placement()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'INSERT' OR NEW.image_id IS DISTINCT FROM OLD.image_id THEN\n    PERFORM fn_sync_image_surface_placement('user-profile-link-image', NEW.image_id, NULL, NULL, NULL, NEW.id);\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
+    "fn_refresh_user_engagement_email_candidates(p_user_id uuid)": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_refresh_user_engagement_email_candidates(p_user_id uuid)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  candidate_type engagement_email_types;\n  receipt_claimed_at TIMESTAMPTZ;\n  receipt_terminal BOOLEAN;\n  common_eligible BOOLEAN;\n  eligible BOOLEAN;\nBEGIN\n  -- Serialize refreshes for different producer tables that affect one user.\n  -- A concurrent transaction cannot commit a stale eligibility projection.\n  -- Child inserts already hold FK KEY SHARE on the user. NO KEY UPDATE\n  -- serializes refreshes without a lock-upgrade deadlock against that share.\n  PERFORM 1 FROM users WHERE id = p_user_id FOR NO KEY UPDATE;\n  IF NOT FOUND THEN\n    DELETE FROM user_engagement_email_candidates WHERE user_id = p_user_id;\n    RETURN;\n  END IF;\n\n  SELECT EXISTS (\n    SELECT 1 FROM users recipient\n    JOIN user_email_addresses address\n      ON address.user_id = recipient.id AND address.is_primary = TRUE\n    WHERE recipient.id = p_user_id\n      AND recipient.deleted_at IS NULL\n      AND recipient.is_engagement_emails_enabled = TRUE\n      AND recipient.processing_restricted_at IS NULL\n      AND NOT EXISTS (\n        SELECT 1 FROM user_suspensions suspension\n        WHERE suspension.user_id = recipient.id AND suspension.lifted_at IS NULL\n      )\n  ) INTO common_eligible;\n\n  FOR candidate_type IN SELECT UNNEST(enum_range(NULL::engagement_email_types)) LOOP\n    SELECT send.claimed_at,\n           send.sent_at IS NOT NULL OR send.delivery_attempted_at IS NOT NULL\n    INTO receipt_claimed_at, receipt_terminal\n    FROM user_engagement_email_sends send\n    WHERE send.user_id = p_user_id AND send.email_type = candidate_type;\n\n    eligible := common_eligible AND NOT COALESCE(receipt_terminal, FALSE);\n\n    IF candidate_type = 'follow_topics' THEN\n      eligible := eligible AND NOT EXISTS (\n        SELECT 1 FROM relation__user__follow__topic followed\n        WHERE followed.subject_id = p_user_id AND followed.deleted_at IS NULL\n      );\n    ELSIF candidate_type = 'follow_news_sources' THEN\n      eligible := eligible AND NOT EXISTS (\n        SELECT 1 FROM relation__user__follow__rss_feed followed\n        WHERE followed.subject_id = p_user_id AND followed.deleted_at IS NULL\n      );\n    ELSE\n      eligible := eligible AND NOT EXISTS (\n        SELECT 1 FROM user_referral_program_links link\n        WHERE link.user_id = p_user_id\n          AND link.deleted_at IS NULL AND link.activated_at IS NOT NULL\n      );\n    END IF;\n\n    IF eligible THEN\n      INSERT INTO user_engagement_email_candidates (user_id, email_type, claimed_at)\n      VALUES (p_user_id, candidate_type, receipt_claimed_at)\n      ON CONFLICT (email_type, user_id) DO UPDATE\n        SET claimed_at = EXCLUDED.claimed_at\n        WHERE user_engagement_email_candidates.claimed_at IS DISTINCT FROM EXCLUDED.claimed_at;\n    ELSE\n      DELETE FROM user_engagement_email_candidates\n      WHERE user_id = p_user_id AND email_type = candidate_type;\n    END IF;\n  END LOOP;\nEND $function$\n"
+    },
     "fn_register_retained_identity": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_register_retained_identity()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  PERFORM fn_ensure_retained_identity(TG_ARGV[0]::retained_identity_families, NEW.id);\n  RETURN NEW;\nEND;\n$function$\n"
     },
@@ -1802,6 +1805,9 @@
     },
     "fn_update_user_bookmark_stats_for_user_id(target_user_id uuid)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_user_bookmark_stats_for_user_id(target_user_id uuid)\n RETURNS void\n LANGUAGE sql\nAS $function$\n  UPDATE user_metrics\n  SET\n    bookmarks__updated_at = CURRENT_TIMESTAMP,\n    bookmarks__follow__topics_count = (\n      SELECT COUNT(*) FROM relation__user__follow__topic\n      WHERE subject_id = target_user_id AND deleted_at IS NULL\n    ),\n    bookmarks__follow__posts_count = (\n      SELECT COUNT(*) FROM relation__user__follow__post\n      WHERE subject_id = target_user_id AND deleted_at IS NULL\n    ),\n    bookmarks__follow__users_count = (\n      SELECT COUNT(*) FROM relation__user__follow__user\n      WHERE subject_id = target_user_id AND deleted_at IS NULL\n    ),\n    bookmarkers__follow_count = (\n      SELECT COUNT(*) FROM relation__user__follow__user\n      WHERE object_id = target_user_id AND deleted_at IS NULL\n    )\n  WHERE id = target_user_id;\n$function$\n"
+    },
+    "fn_update_user_engagement_email_candidates_trigger": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_user_engagement_email_candidates_trigger()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  prior_user_id UUID;\n  current_user_id UUID;\nBEGIN\n  IF TG_TABLE_NAME = 'users' THEN\n    prior_user_id := CASE WHEN TG_OP <> 'INSERT' THEN OLD.id ELSE NULL END;\n    current_user_id := CASE WHEN TG_OP <> 'DELETE' THEN NEW.id ELSE NULL END;\n  ELSIF TG_TABLE_NAME LIKE 'relation__user__follow__topic%'\n     OR TG_TABLE_NAME LIKE 'relation__user__follow__rss_feed%' THEN\n    prior_user_id := CASE WHEN TG_OP <> 'INSERT' THEN OLD.subject_id ELSE NULL END;\n    current_user_id := CASE WHEN TG_OP <> 'DELETE' THEN NEW.subject_id ELSE NULL END;\n  ELSE\n    prior_user_id := CASE WHEN TG_OP <> 'INSERT' THEN OLD.user_id ELSE NULL END;\n    current_user_id := CASE WHEN TG_OP <> 'DELETE' THEN NEW.user_id ELSE NULL END;\n  END IF;\n  IF prior_user_id IS NOT NULL THEN\n    PERFORM fn_refresh_user_engagement_email_candidates(prior_user_id);\n  END IF;\n  IF current_user_id IS NOT NULL AND current_user_id IS DISTINCT FROM prior_user_id THEN\n    PERFORM fn_refresh_user_engagement_email_candidates(current_user_id);\n  END IF;\n  RETURN NULL;\nEND $function$\n"
     },
     "fn_upsert_membership_provider_context_id(context_provider membership_provider_kinds, context_environment membership_provider_environments, context_application_id text)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_upsert_membership_provider_context_id(context_provider membership_provider_kinds, context_environment membership_provider_environments, context_application_id text)\n RETURNS uuid\n LANGUAGE plpgsql\nAS $function$\nDECLARE context_id UUID;\nBEGIN\n  INSERT INTO membership_provider_contexts (provider, environment, application_id)\n  VALUES (context_provider, context_environment, context_application_id)\n  ON CONFLICT (provider, environment, application_id) DO NOTHING\n  RETURNING id INTO context_id;\n  IF context_id IS NULL THEN\n    SELECT id INTO STRICT context_id FROM membership_provider_contexts\n    WHERE provider = context_provider AND environment = context_environment\n      AND application_id = context_application_id;\n  END IF;\n  RETURN context_id;\nEND $function$\n"
@@ -8250,6 +8256,33 @@
           "primary": false,
           "ready": true,
           "unique": true,
+          "valid": true
+        },
+        "idx_bedrock_embedding_batches__stale_due": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_bedrock_embedding_batches__stale_due ON public.bedrock_embedding_batches USING btree (COALESCE(in_progress_at, submitted_at), id) WHERE ((submitted_at IS NOT NULL) AND (completed_at IS NULL) AND (failed_at IS NULL) AND (cancelled_at IS NULL) AND (job_arn IS NOT NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": null,
+              "descending": false,
+              "expression": "COALESCE(in_progress_at, submitted_at)",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((submitted_at IS NOT NULL) AND (completed_at IS NULL) AND (failed_at IS NULL) AND (cancelled_at IS NULL) AND (job_arn IS NOT NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
           "valid": true
         },
         "idx_bedrock_embedding_batches__url_id": {
@@ -29663,6 +29696,26 @@
           "unique": true,
           "valid": true
         },
+        "idx_copyright_notice_email_intake_parses__succeeded_intake": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_notice_email_intake_parses__succeeded_intake ON public.copyright_notice_email_intake_parses USING btree (copyright_notice_email_intake_id) WHERE (status = 'succeeded'::copyright_notice_email_intake_parse_statuses)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_email_intake_id",
+              "descending": false,
+              "expression": "copyright_notice_email_intake_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(status = 'succeeded'::copyright_notice_email_intake_parse_statuses)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "uq_copyright_notice_email_intake_parses__intake_id": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -41633,6 +41686,40 @@
             }
           ],
           "predicate": "((network_error IS NOT NULL) OR (completed_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_crawls__recent_html_completion": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_crawls__recent_html_completion ON ONLY public.crawls USING btree (completed_at, url_id, id) WHERE ((response_status_code = 200) AND (html_sha256 IS NOT NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "completed_at",
+              "descending": false,
+              "expression": "completed_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "url_id",
+              "descending": false,
+              "expression": "url_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((response_status_code = 200) AND (html_sha256 IS NOT NULL))",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -55770,6 +55857,40 @@
           "unique": true,
           "valid": true
         },
+        "idx_mmbrshp_mcrsft_str_crdntls__unexpired_collections": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_mmbrshp_mcrsft_str_crdntls__unexpired_collections ON public.membership_microsoft_store_credentials USING btree (collections_expires_at, user_id, membership_provider_context_id) INCLUDE (purchase_expires_at)",
+          "includedColumns": ["purchase_expires_at"],
+          "keys": [
+            {
+              "column": "collections_expires_at",
+              "descending": false,
+              "expression": "collections_expires_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "membership_provider_context_id",
+              "descending": false,
+              "expression": "membership_provider_context_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "membership_microsoft_store_credentials_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -57449,6 +57570,40 @@
             }
           ],
           "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_membership_provider_evidence_records__pending_notification": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_membership_provider_evidence_records__pending_notification ON public.membership_provider_evidence_records USING btree (membership_provider_context_id, received_at, id) WHERE ((provider_event_id IS NOT NULL) AND (verified_at IS NULL) AND (rejected_at IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "membership_provider_context_id",
+              "descending": false,
+              "expression": "membership_provider_context_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "received_at",
+              "descending": false,
+              "expression": "received_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((provider_event_id IS NOT NULL) AND (verified_at IS NULL) AND (rejected_at IS NULL))",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -60445,6 +60600,26 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_membership_source_states__active_direct_recovery": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_membership_source_states__active_direct_recovery ON public.membership_source_states USING btree (membership_source_id) WHERE ((source_kind = 'direct'::membership_source_kinds) AND (cancelled_at IS NULL) AND (expired_at IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "membership_source_id",
+              "descending": false,
+              "expression": "membership_source_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((source_kind = 'direct'::membership_source_kinds) AND (cancelled_at IS NULL) AND (expired_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_membership_source_states__family_effective_at": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -78970,6 +79145,7 @@
         "post_publication_dirty_work_check": "CHECK ((num_nonnulls(post_identity_id, author_identity_id, community_identity_id, rss_feed_identity_id, topic_alias_identity_id, story_identity_id) = 1))",
         "post_publication_dirty_work_check1": "CHECK (((lease_token IS NULL) = (leased_at IS NULL)))",
         "post_publication_dirty_work_check2": "CHECK (((lease_token IS NULL) = (lease_expires_at IS NULL)))",
+        "post_publication_dirty_work_check3": "CHECK (((pending_post_identity_id IS NULL) = (pending_ancestor_post_identity_id IS NULL)))",
         "post_publication_dirty_work_generation_check": "CHECK ((generation > 0))",
         "post_publication_dirty_work_reasons_check": "CHECK ((cardinality(reasons) > 0))"
       },
@@ -79004,7 +79180,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17,
+          "ordinalPosition": 19,
           "type": "timestamp with time zone"
         },
         "cursor_advanced_at": {
@@ -79015,7 +79191,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16,
+          "ordinalPosition": 18,
           "type": "timestamp with time zone"
         },
         "cursor_key_id": {
@@ -79026,7 +79202,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12,
+          "ordinalPosition": 14,
           "type": "uuid"
         },
         "cursor_post_id": {
@@ -79048,7 +79224,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11,
+          "ordinalPosition": 13,
           "type": "uuid"
         },
         "generation": {
@@ -79081,7 +79257,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15,
+          "ordinalPosition": 17,
           "type": "timestamp with time zone"
         },
         "lease_token": {
@@ -79092,7 +79268,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 15,
           "type": "uuid"
         },
         "leased_at": {
@@ -79103,8 +79279,30 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 16,
           "type": "timestamp with time zone"
+        },
+        "pending_ancestor_post_identity_id": {
+          "collation": null,
+          "comment": "Retained identity of the next ancestor to inspect; deletion clears only its live link.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 12,
+          "type": "uuid"
+        },
+        "pending_post_identity_id": {
+          "collation": null,
+          "comment": "Retained identity of a live candidate whose ancestor walk continues across bounded pages; deletion clears only its live link.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 11,
+          "type": "uuid"
         },
         "post_identity_id": {
           "collation": null,
@@ -79169,7 +79367,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 18,
+          "ordinalPosition": 20,
           "type": "timestamp with time zone"
         }
       },
@@ -79191,6 +79389,24 @@
           "onUpdate": "no action",
           "referencedColumns": ["id"],
           "referencedTable": "post_publication_community_identities",
+          "validated": true
+        },
+        "fk_post_publication_dirty_work__pending_ancestor_post_identity": {
+          "columns": ["pending_ancestor_post_identity_id"],
+          "definition": "FOREIGN KEY (pending_ancestor_post_identity_id) REFERENCES post_publication_post_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "post_publication_post_identities",
+          "validated": true
+        },
+        "fk_post_publication_dirty_work__pending_post_identity": {
+          "columns": ["pending_post_identity_id"],
+          "definition": "FOREIGN KEY (pending_post_identity_id) REFERENCES post_publication_post_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "post_publication_post_identities",
           "validated": true
         },
         "fk_post_publication_dirty_work__post_identity": {
@@ -79254,6 +79470,46 @@
             }
           ],
           "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_post_publication_dirty_work__pending_post_identity_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_post_publication_dirty_work__pending_post_identity_id ON public.post_publication_dirty_work USING btree (pending_post_identity_id) WHERE (pending_post_identity_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "pending_post_identity_id",
+              "descending": false,
+              "expression": "pending_post_identity_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(pending_post_identity_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_pst_pblctn_drty_wrk__pending_ancestor_post_identity_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_pst_pblctn_drty_wrk__pending_ancestor_post_identity_id ON public.post_publication_dirty_work USING btree (pending_ancestor_post_identity_id) WHERE (pending_ancestor_post_identity_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "pending_ancestor_post_identity_id",
+              "descending": false,
+              "expression": "pending_ancestor_post_identity_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(pending_ancestor_post_identity_id IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -103224,7 +103480,9 @@
         "definition": "PRIMARY KEY (subject_id, object_id)"
       },
       "relationKind": "table",
-      "triggers": {},
+      "triggers": {
+        "trigger_follow_rss_feeds_engagement_email_candidates": "CREATE TRIGGER trigger_follow_rss_feeds_engagement_email_candidates AFTER INSERT OR DELETE OR UPDATE OF subject_id, deleted_at ON public.relation__user__follow__rss_feed FOR EACH ROW EXECUTE FUNCTION fn_update_user_engagement_email_candidates_trigger()"
+      },
       "uniqueConstraints": {}
     },
     "relation__user__follow__topic": {
@@ -103435,7 +103693,8 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE OF object_id ON public.relation__user__follow__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')"
+        "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE OF object_id ON public.relation__user__follow__topic FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('object_id')",
+        "trigger_follow_topics_engagement_email_candidates": "CREATE TRIGGER trigger_follow_topics_engagement_email_candidates AFTER INSERT OR DELETE OR UPDATE OF subject_id, deleted_at ON public.relation__user__follow__topic FOR EACH ROW EXECUTE FUNCTION fn_update_user_engagement_email_candidates_trigger()"
       },
       "uniqueConstraints": {}
     },
@@ -125555,6 +125814,33 @@
           "unique": true,
           "valid": true
         },
+        "idx_user_data_requests__dispatch_recovery_due": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_user_data_requests__dispatch_recovery_due ON public.user_data_requests USING btree (dispatched_at, id) WHERE ((user_id IS NOT NULL) AND (completed_at IS NULL) AND (failed_at IS NULL) AND (processing_started_at IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "dispatched_at",
+              "descending": false,
+              "expression": "dispatched_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((user_id IS NOT NULL) AND (completed_at IS NULL) AND (failed_at IS NULL) AND (processing_started_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_user_data_requests__download_expiry": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -125582,6 +125868,33 @@
           "unique": false,
           "valid": true
         },
+        "idx_user_data_requests__expiry_due": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_user_data_requests__expiry_due ON public.user_data_requests USING btree (expires_at, id) WHERE ((completed_at IS NOT NULL) AND (failed_at IS NULL) AND (s3_key IS NOT NULL) AND (expires_at IS NOT NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "expires_at",
+              "descending": false,
+              "expression": "expires_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((completed_at IS NOT NULL) AND (failed_at IS NULL) AND (s3_key IS NOT NULL) AND (expires_at IS NOT NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_user_data_requests__processing_attempt_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -125600,6 +125913,33 @@
           "primary": false,
           "ready": true,
           "unique": true,
+          "valid": true
+        },
+        "idx_user_data_requests__processing_recovery_due": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_user_data_requests__processing_recovery_due ON public.user_data_requests USING btree (processing_started_at, id) WHERE ((user_id IS NOT NULL) AND (completed_at IS NULL) AND (failed_at IS NULL) AND (processing_started_at IS NOT NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "processing_started_at",
+              "descending": false,
+              "expression": "processing_started_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((user_id IS NOT NULL) AND (completed_at IS NULL) AND (failed_at IS NULL) AND (processing_started_at IS NOT NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
           "valid": true
         },
         "idx_user_data_requests__requested_by_id": {
@@ -127846,6 +128186,7 @@
       },
       "relationKind": "table",
       "triggers": {
+        "trigger_user_email_addresses_engagement_email_candidates": "CREATE TRIGGER trigger_user_email_addresses_engagement_email_candidates AFTER INSERT OR DELETE OR UPDATE OF user_id, is_primary ON public.user_email_addresses FOR EACH ROW EXECUTE FUNCTION fn_update_user_engagement_email_candidates_trigger()",
         "trigger_user_email_addresses_updated_at": "CREATE TRIGGER trigger_user_email_addresses_updated_at BEFORE UPDATE ON public.user_email_addresses FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {
@@ -127855,9 +128196,190 @@
         }
       }
     },
+    "user_engagement_email_candidates": {
+      "checkConstraints": {},
+      "columns": {
+        "claimed_at": {
+          "collation": null,
+          "comment": "Exact claimed_at of the authoritative send receipt, or NULL before the first claim or after release; hourly eligibility is checked at read time.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "timestamp with time zone"
+        },
+        "email_type": {
+          "collation": null,
+          "comment": "One-time email type whose static eligibility currently holds.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "engagement_email_types"
+        },
+        "user_id": {
+          "collation": null,
+          "comment": "Live recipient; deletion cascades this admission state.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        }
+      },
+      "comment": "Transactionally maintained admission projection for one-time engagement mail; a row exists only while the recipient passes static eligibility and has no terminal send receipt.",
+      "foreignKeys": {
+        "user_engagement_email_candidates_user_id_fkey": {
+          "columns": ["user_id"],
+          "definition": "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        }
+      },
+      "growth": "bounded",
+      "indexes": {
+        "idx_user_engagement_email_candidates__claimed": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_user_engagement_email_candidates__claimed ON public.user_engagement_email_candidates USING btree (email_type, claimed_at, user_id) WHERE (claimed_at IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "email_type",
+              "descending": false,
+              "expression": "email_type",
+              "nullsFirst": false,
+              "opclass": "enum_ops"
+            },
+            {
+              "column": "claimed_at",
+              "descending": false,
+              "expression": "claimed_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(claimed_at IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_user_engagement_email_candidates__unclaimed": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_user_engagement_email_candidates__unclaimed ON public.user_engagement_email_candidates USING btree (email_type, user_id) WHERE (claimed_at IS NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "email_type",
+              "descending": false,
+              "expression": "email_type",
+              "nullsFirst": false,
+              "opclass": "enum_ops"
+            },
+            {
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(claimed_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_user_engagement_email_candidates__user_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_user_engagement_email_candidates__user_id ON public.user_engagement_email_candidates USING btree (user_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "user_engagement_email_candidates_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX user_engagement_email_candidates_pkey ON public.user_engagement_email_candidates USING btree (email_type, user_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "email_type",
+              "descending": false,
+              "expression": "email_type",
+              "nullsFirst": false,
+              "opclass": "enum_ops"
+            },
+            {
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["email_type", "user_id"],
+        "definition": "PRIMARY KEY (email_type, user_id)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
     "user_engagement_email_sends": {
       "checkConstraints": {},
       "columns": {
+        "claim_owner_job_id": {
+          "collation": null,
+          "comment": "The dispatcher page that owns a nonterminal queue admission; the same page may safely replay its claim.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "text"
+        },
         "claimed_at": {
           "collation": null,
           "comment": "When the send was first claimed by the dispatcher.",
@@ -127877,7 +128399,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4,
+          "ordinalPosition": 5,
           "type": "timestamp with time zone"
         },
         "email_type": {
@@ -127899,7 +128421,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "timestamp with time zone"
         },
         "updated_at": {
@@ -127910,7 +128432,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "timestamp with time zone"
         },
         "user_id": {
@@ -127975,6 +128497,7 @@
       },
       "relationKind": "table",
       "triggers": {
+        "trigger_engagement_email_sends_candidates": "CREATE TRIGGER trigger_engagement_email_sends_candidates AFTER INSERT OR DELETE OR UPDATE OF user_id, email_type, claimed_at, delivery_attempted_at, sent_at ON public.user_engagement_email_sends FOR EACH ROW EXECUTE FUNCTION fn_update_user_engagement_email_candidates_trigger()",
         "trigger_user_engagement_email_sends_updated_at": "CREATE TRIGGER trigger_user_engagement_email_sends_updated_at BEFORE UPDATE ON public.user_engagement_email_sends FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
@@ -132298,6 +132821,7 @@
       "relationKind": "table",
       "triggers": {
         "trigger_active_topic_references": "CREATE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE OF referral_program_topic_id ON public.user_referral_program_links FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references('referral_program_topic_id')",
+        "trigger_referral_links_engagement_email_candidates": "CREATE TRIGGER trigger_referral_links_engagement_email_candidates AFTER INSERT OR DELETE OR UPDATE OF user_id, deleted_at, activated_at ON public.user_referral_program_links FOR EACH ROW EXECUTE FUNCTION fn_update_user_engagement_email_candidates_trigger()",
         "trigger_user_referra_program_links_content_provenance_immutable": "CREATE TRIGGER trigger_user_referra_program_links_content_provenance_immutable AFTER UPDATE ON public.user_referral_program_links FOR EACH ROW WHEN (((old.created_via IS DISTINCT FROM new.created_via) OR (old.created_via_oauth_client_id IS DISTINCT FROM new.created_via_oauth_client_id))) EXECUTE FUNCTION fn_reject_mutation()",
         "trigger_user_referral_program_links_updated_at": "CREATE TRIGGER trigger_user_referral_program_links_updated_at BEFORE UPDATE ON public.user_referral_program_links FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
@@ -133912,6 +134436,7 @@
       },
       "relationKind": "table",
       "triggers": {
+        "trigger_user_suspensions_engagement_email_candidates": "CREATE TRIGGER trigger_user_suspensions_engagement_email_candidates AFTER INSERT OR DELETE OR UPDATE OF user_id, lifted_at ON public.user_suspensions FOR EACH ROW EXECUTE FUNCTION fn_update_user_engagement_email_candidates_trigger()",
         "trigger_user_suspensions_updated_at": "CREATE TRIGGER trigger_user_suspensions_updated_at BEFORE UPDATE ON public.user_suspensions FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
@@ -136001,6 +136526,7 @@
         "trigger_retire_deleted_user_image_surfaces": "CREATE TRIGGER trigger_retire_deleted_user_image_surfaces AFTER UPDATE OF deleted_at ON public.users FOR EACH ROW EXECUTE FUNCTION fn_project_retire_deleted_user_image_surfaces()",
         "trigger_sync_user_profile_image_placement": "CREATE TRIGGER trigger_sync_user_profile_image_placement AFTER INSERT OR UPDATE OF profile_image_id ON public.users FOR EACH ROW EXECUTE FUNCTION fn_project_user_profile_image_placement()",
         "trigger_users_create_individual_household": "CREATE TRIGGER trigger_users_create_individual_household AFTER INSERT ON public.users FOR EACH ROW EXECUTE FUNCTION fn_create_user_individual_household()",
+        "trigger_users_engagement_email_candidates": "CREATE TRIGGER trigger_users_engagement_email_candidates AFTER DELETE OR UPDATE OF deleted_at, is_engagement_emails_enabled, processing_restricted_at ON public.users FOR EACH ROW EXECUTE FUNCTION fn_update_user_engagement_email_candidates_trigger()",
         "trigger_users_platform_account_kind": "CREATE TRIGGER trigger_users_platform_account_kind BEFORE UPDATE OF platform_account_kind ON public.users FOR EACH ROW EXECUTE FUNCTION fn_reject_platform_account_kind_change()",
         "trigger_users_updated_at": "CREATE TRIGGER trigger_users_updated_at BEFORE UPDATE ON public.users FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },

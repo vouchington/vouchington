@@ -44,6 +44,7 @@ _none_
 - `idx_bedrock_embedding_batches__active`: `CREATE INDEX idx_bedrock_embedding_batches__active ON public.bedrock_embedding_batches USING btree (id) WHERE ((submitted_at IS NOT NULL) AND (completed_at IS NULL) AND (failed_at IS NULL) AND (cancelled_at IS NULL))`
 - `idx_bedrock_embedding_batches__crawl_id`: `CREATE INDEX idx_bedrock_embedding_batches__crawl_id ON public.bedrock_embedding_batches USING btree (crawl_id) WHERE (crawl_id IS NOT NULL)`
 - `idx_bedrock_embedding_batches__job_arn`: `CREATE UNIQUE INDEX idx_bedrock_embedding_batches__job_arn ON public.bedrock_embedding_batches USING btree (job_arn) WHERE (job_arn IS NOT NULL)`
+- `idx_bedrock_embedding_batches__stale_due`: `CREATE INDEX idx_bedrock_embedding_batches__stale_due ON public.bedrock_embedding_batches USING btree (COALESCE(in_progress_at, submitted_at), id) WHERE ((submitted_at IS NOT NULL) AND (completed_at IS NULL) AND (failed_at IS NULL) AND (cancelled_at IS NULL) AND (job_arn IS NOT NULL))`
 - `idx_bedrock_embedding_batches__url_id`: `CREATE INDEX idx_bedrock_embedding_batches__url_id ON public.bedrock_embedding_batches USING btree (url_id) WHERE (url_id IS NOT NULL)`
 
 **Triggers:**

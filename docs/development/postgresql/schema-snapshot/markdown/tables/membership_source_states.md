@@ -48,6 +48,7 @@ _none_
 
 **Indexes:**
 
+- `idx_membership_source_states__active_direct_recovery`: `CREATE INDEX idx_membership_source_states__active_direct_recovery ON public.membership_source_states USING btree (membership_source_id) WHERE ((source_kind = 'direct'::membership_source_kinds) AND (cancelled_at IS NULL) AND (expired_at IS NULL))`
 - `idx_membership_source_states__family_effective_at`: `CREATE INDEX idx_membership_source_states__family_effective_at ON public.membership_source_states USING btree (effective_at, membership_source_id) WHERE (source_kind = 'family'::membership_source_kinds)`
 - `idx_membership_source_states__family_expires_at`: `CREATE INDEX idx_membership_source_states__family_expires_at ON public.membership_source_states USING btree (expires_at, membership_source_id) WHERE ((source_kind = 'family'::membership_source_kinds) AND (expires_at IS NOT NULL))`
 - `idx_membership_source_states__family_updated_at`: `CREATE INDEX idx_membership_source_states__family_updated_at ON public.membership_source_states USING btree (updated_at, membership_source_id) WHERE (source_kind = 'family'::membership_source_kinds)`

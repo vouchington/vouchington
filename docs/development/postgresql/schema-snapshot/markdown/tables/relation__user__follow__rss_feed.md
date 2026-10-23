@@ -38,4 +38,5 @@ _none_
 - `relation__user__follow__rss_feed_pkey`: `CREATE UNIQUE INDEX relation__user__follow__rss_feed_pkey ON public.relation__user__follow__rss_feed USING btree (subject_id, object_id)`
 
 **Triggers:**
-_none_
+
+- `trigger_follow_rss_feeds_engagement_email_candidates`: `CREATE TRIGGER trigger_follow_rss_feeds_engagement_email_candidates AFTER INSERT OR DELETE OR UPDATE OF subject_id, deleted_at ON public.relation__user__follow__rss_feed FOR EACH ROW EXECUTE FUNCTION fn_update_user_engagement_email_candidates_trigger()`

@@ -45,4 +45,5 @@ Not partitioned — growth: unbounded.
 
 **Triggers:**
 
+- `trigger_user_email_addresses_engagement_email_candidates`: `CREATE TRIGGER trigger_user_email_addresses_engagement_email_candidates AFTER INSERT OR DELETE OR UPDATE OF user_id, is_primary ON public.user_email_addresses FOR EACH ROW EXECUTE FUNCTION fn_update_user_engagement_email_candidates_trigger()`
 - `trigger_user_email_addresses_updated_at`: `CREATE TRIGGER trigger_user_email_addresses_updated_at BEFORE UPDATE ON public.user_email_addresses FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
