@@ -84,7 +84,9 @@ export function ReferralClicksPage({ initialData }: { initialData: ReferralClick
                       className='border-b last:border-b-0'
                     >
                       <td className='px-4 py-3'>
-                        {/^https?:\/\//i.test(click.landing_url) ? (
+                        {click.landing_url === null ? (
+                          <span>—</span>
+                        ) : /^https?:\/\//i.test(click.landing_url) ? (
                           <a
                             href={click.landing_url}
                             target='_blank'

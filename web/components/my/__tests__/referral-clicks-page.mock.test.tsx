@@ -101,6 +101,18 @@ describe('ReferralClicksPage', () => {
     expect(screen.getByText('example.com/landing')).toBeInTheDocument()
   })
 
+  it('keeps the click row when its landing URL has expired', () => {
+    const data: ReferralClickLogResponseBody = {
+      ...dataWithResults,
+      clicks: {
+        [clickId]: { ...dataWithResults.clicks[clickId]!, landing_url: null },
+      },
+    }
+    render(<ReferralClicksPage initialData={data} />)
+    expect(screen.getByText('—')).toBeInTheDocument()
+    expect(screen.queryByText('example.com/landing')).not.toBeInTheDocument()
+  })
+
   it('renders username link when user has a username', () => {
     render(<ReferralClicksPage initialData={dataWithResults} />)
     const link = screen.getByRole('link', { name: '@johndoe' })

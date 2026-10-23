@@ -63,6 +63,10 @@
   ],
   "excluded_writers": [
     {
+      "path": "backend/services/data-retention/cleanup-histories-queries.mts",
+      "reason": "deletes superseded RSS setting history while retaining each current feed decision; it does not change projected feed publication state"
+    },
+    {
       "path": "backend/services/data-retention/cleanup-batches.mts",
       "reason": "delegates each selected user to the captured transactional cleanup writer"
     },

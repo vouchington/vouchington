@@ -69,7 +69,7 @@ export async function getReferralClickLog(
     clicks[id] = {
       __entity_type: 'referral_click_log',
       id,
-      landing_url: row.landing_url as string,
+      landing_url: (row.landing_url as string | null) ?? null,
       signed_up_at: (row.signed_up_at as Date | null) ?? null,
       user_id: (row.user_id as string | null) ?? null,
       created_at: row.created_at as Date,
