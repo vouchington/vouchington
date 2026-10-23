@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { PutMetricDataCommandInput } from '@modules/aws/cloudwatch'
-import { policyManagedGlideQueueNames } from '@modules/worker-queue-inventory'
+import { policyManagedGlideQueueNames } from '@voucha/test-helpers/worker-queue-policy'
 import {
   GLIDE_MQ_QUEUE_NAMES_BY_CLASS,
   GLIDE_MQ_OLDEST_WAITING_AGE_METRIC,

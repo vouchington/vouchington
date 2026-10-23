@@ -1,7 +1,5 @@
 import { RateLimiter } from '@data-stores/valkey-rate-limiter'
 import { getDateFromUUIDv7 } from '@modules/utils/ids'
-import { createCodedError } from '@modules/on-error/create-coded-error'
-import { INVALID_INPUT } from '@modules/on-error/error-codes'
 import type { BasicUser } from '@voucha/types/entities/user'
 import { CONTRIBUTION_GATE_ACCOUNT_AGE_MS } from './config.mts'
 import { getContributionLimitValue, getContributionLimitWindowSeconds } from './limits-config.mts'
@@ -70,24 +68,6 @@ export function getContributionActionLimitStatus(
   action: ContributionLimitAction,
 ): Promise<ContributionActionLimitStatus> {
   return checkContributionActionLimit(currentUser, membershipPlan, action, false)
-}
-
-/**
- * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
- * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
- */
-export function getContributionLimitActionForPostType(
-  postType: string | undefined,
-): ContributionLimitAction {
-  if (postType === undefined) return 'discussion'
-  if (postType === 'review') return 'review'
-  if (postType === 'comment') return 'comment'
-  if (postType === 'data_point') return 'data_point'
-  if (postType === 'article') return 'article'
-  if (postType === 'blog_post') return 'blog_post'
-  if (postType === 'discussion') return 'discussion'
-  if (postType === 'link') return 'discussion'
-  throw createCodedError(422, 'Unsupported post_type', INVALID_INPUT)
 }
 
 async function checkContributionActionLimit(

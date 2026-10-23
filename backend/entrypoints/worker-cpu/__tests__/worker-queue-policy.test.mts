@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { allWorkerQueueNames, workerQueuePolicy } from '@backend/worker-runtime'
-import { allLiveWorkerQueueNames, SQS_CONSUMER_QUEUE_NAMES } from '@modules/worker-queue-inventory'
+import { allLiveWorkerQueueNames } from '@modules/worker-queue-inventory'
 import { WORKER_DEFINITIONS as IO_WORKER_DEFINITIONS } from '@entrypoints/worker-io/worker-definitions'
 import { SQS_CONSUMER_DEFINITIONS as IO_SQS_CONSUMER_DEFINITIONS } from '@entrypoints/worker-io/sqs-consumer-definitions'
 import { SCHEDULE_DEFINITIONS as IO_SCHEDULE_DEFINITIONS } from '@entrypoints/worker-io/definitions'
+import { sqsConsumerQueueNames } from '@voucha/test-helpers/worker-queue-policy'
 import { WORKER_DEFINITIONS } from '../worker-definitions.mts'
 import { SQS_CONSUMER_DEFINITIONS } from '../sqs-consumer-definitions.mts'
 import { SCHEDULE_DEFINITIONS as CPU_SCHEDULE_DEFINITIONS } from '../schedule-definitions.mts'
@@ -16,7 +17,7 @@ describe('worker queue policy', () => {
         .toSorted(),
     ).toEqual(allWorkerQueueNames().toSorted())
     expect(SQS_CONSUMER_DEFINITIONS.map(definition => definition.queueName).toSorted()).toEqual(
-      SQS_CONSUMER_QUEUE_NAMES.toSorted(),
+      sqsConsumerQueueNames().toSorted(),
     )
   })
 
@@ -27,7 +28,7 @@ describe('worker queue policy', () => {
         .toSorted(),
     ).toEqual(workerQueuePolicy.ioCapableQueues.toSorted())
     expect(IO_SQS_CONSUMER_DEFINITIONS.map(definition => definition.queueName).toSorted()).toEqual(
-      SQS_CONSUMER_QUEUE_NAMES.toSorted(),
+      sqsConsumerQueueNames().toSorted(),
     )
     expect(
       WORKER_DEFINITIONS.filter(definition =>

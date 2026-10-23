@@ -32,7 +32,9 @@ status.
 
 ## Error Code Registry
 
-All common error codes are defined in `backend/modules/on-error/error-codes.mts`:
+Common response codes are emitted by the backend. Shared constants live in
+`backend/modules/on-error/error-codes.mts`; this table documents the response protocol and does
+not imply that every code has an exported constant:
 
 | Code                   | HTTP Status | Meaning                          |
 | ---------------------- | ----------- | -------------------------------- |
