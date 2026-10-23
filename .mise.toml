@@ -13,12 +13,13 @@ zizmor = "1.26.1"
 # renovate: datasource=github-releases depName=boyter/scc extractVersion=^v(?<version>.*)$
 "github:boyter/scc" = "3.7.0"
 # lychee is not in mise's default registry; use the aqua backend (built into mise).
-# CI keeps its own pin in .github/actions/setup-lychee/action.yml (a checksum-verified
-# RUNNER_TEMP install) — keep both pins in sync (enforced by mise-version-pin-guard).
+# CI passes its own pin as lychee-version in .github/workflows/lint-links.yml (a
+# checksum-verified RUNNER_TEMP install) — keep both pins in sync (enforced by
+# mise-version-pin-guard).
 # renovate: datasource=github-releases depName=lycheeverse/lychee extractVersion=^lychee-v(?<version>.*)$
 "aqua:lycheeverse/lychee" = "0.24.2"
 # Gitleaks is not in mise's default registry; use the aqua backend (built into mise).
-# CI keeps an isolated pin in .github/workflows/gitleaks.yml — keep both pins in sync
+# CI passes an isolated version pin in .github/workflows/gitleaks.yml — keep both pins in sync
 # (enforced by mise-version-pin-guard).
 # renovate: datasource=github-releases depName=gitleaks/gitleaks extractVersion=^v(?<version>.*)$
 "aqua:gitleaks/gitleaks" = "8.30.1"

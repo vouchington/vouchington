@@ -21,7 +21,7 @@ const assertionFailureLog = matchingLog
   )
   .replace('##[error]The operation was canceled.', '##[error]Process completed with exit code 1.')
 const aptLockLog = [
-  'playwright-tests / playwright-tests (1)\tUNKNOWN STEP\t2026-06-19T04:20:44.7031854Z ##[group]Run ./.github/actions/setup-playwright',
+  'playwright-tests / playwright-tests (1)\tUNKNOWN STEP\t2026-06-19T04:20:44.7031854Z ##[group]Run vouchington/vouchington-tooling/.github/actions/setup-playwright@fixture',
   'playwright-tests / playwright-tests (1)\tUNKNOWN STEP\t2026-06-19T04:20:44.8031854Z echo "$$" > "$lock_dir/owner.pid"',
   'playwright-tests / playwright-tests (1)\tUNKNOWN STEP\t2026-06-19T04:20:45.3928465Z Switching to root user to install dependencies...',
   'playwright-tests / playwright-tests (1)\tUNKNOWN STEP\t2026-06-19T04:20:45.9351067Z E: Could not get lock /var/lib/apt/lists/lock. It is held by process 3788239 (apt)',
@@ -33,12 +33,12 @@ const aptLockLog = [
 ].join('\n')
 const dependencyAptLockLog = aptLockLog.replace('browsers', 'browser dependencies')
 const aptWaitTimeoutLog = [
-  'test-playwright / playwright-tests (1)\tUNKNOWN STEP\t2026-06-19T04:20:44.7031854Z ##[group]Run ./.github/actions/setup-playwright',
+  'test-playwright / playwright-tests (1)\tUNKNOWN STEP\t2026-06-19T04:20:44.7031854Z ##[group]Run vouchington/vouchington-tooling/.github/actions/setup-playwright@fixture',
   'test-playwright / playwright-tests (1)\tUNKNOWN STEP\t2026-06-19T04:25:45.9351067Z ::error::Timed out waiting for apt/dpkg locks after 120s: /var/lib/dpkg/lock-frontend',
   'test-playwright / playwright-tests (1)\tUNKNOWN STEP\t2026-06-19T04:25:45.9595126Z ##[error]Process completed with exit code 1.',
 ].join('\n')
 const echoedTimeoutSourceLog = [
-  'test-playwright / playwright-tests (1)\tUNKNOWN STEP\t2026-06-19T04:20:44.7031854Z ##[group]Run ./.github/actions/setup-playwright',
+  'test-playwright / playwright-tests (1)\tUNKNOWN STEP\t2026-06-19T04:20:44.7031854Z ##[group]Run vouchington/vouchington-tooling/.github/actions/setup-playwright@fixture',
   'test-playwright / playwright-tests (1)\tUNKNOWN STEP\t2026-06-19T04:20:44.8031854Z echo "::error::Timed out waiting for apt/dpkg locks after ${timeout_seconds}s: ${busy_paths[*]}"; exit 1',
   'test-playwright / playwright-tests (1)\tUNKNOWN STEP\t2026-06-19T04:22:45.9595126Z ##[error]Process completed with exit code 1.',
 ].join('\n')

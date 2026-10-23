@@ -8,8 +8,8 @@ name: Cleanup Artifacts
 #     sweep-eligible once their `created_at` is over 6 hours old
 #   - intermediates such as playwright-otel output
 #
-# See ci/cleanup-artifacts-patterns.json for the shared classification policy,
-# and ci/cleanup-artifacts.mts for scheduled sweep logic. See also
+# See ci/cleanup-artifacts-patterns.json for the shared classification policy; the sweep logic
+# lives in the vouchington-tooling reusable workflow. See also
 # AUTHORING.md's "Artifact Rerun Safety" section for why cancelled artifacts wait for a later
 # 6-hourly sweep after that eligibility threshold, while `failure`, `timed_out`, and
 # `action_required` artifacts remain until GitHub expiration. An unavailable run lookup skips that
@@ -21,33 +21,14 @@ on:
     - cron: '0 */6 * * *'
   workflow_dispatch:
 
-concurrency:
-  group: cleanup-artifacts-sweep
-  cancel-in-progress: false
-
 permissions:
   contents: read
 
 jobs:
   cleanup-sweep:
-    name: Sweep stale artifacts
-    runs-on: ubuntu-latest
-    # Job ceiling stays below the sum of step budgets (checkout 1 + setup-node-pnpm 5 + the sweep
-    # engine 20 = 26 min) and above the largest step.
-    timeout-minutes: 25
     permissions:
       actions: write
       contents: read
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
-        with:
-          persist-credentials: false
-      - uses: ./.github/actions/setup-node-pnpm
-        timeout-minutes: 5
-      - name: Sweep artifacts older than 6 hours
-        timeout-minutes: 20
-        continue-on-error: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: node ci/cleanup-artifacts.mts sweep --older-than-hours 6
+    uses: vouchington/vouchington-tooling/.github/workflows/cleanup-artifacts.yml@4f206c4ea9fc28003c896b1cf1b77ab6f7130242 # v0.55.0
+    with:
+      patterns-file: ci/cleanup-artifacts-patterns.json

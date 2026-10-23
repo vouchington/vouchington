@@ -151,7 +151,9 @@ describe('trusted/credentialed CI job path-filter wiring', () => {
   })
 
   it('uses the shared Playwright setup action for browser installs', () => {
-    expect(credentialedWorkflowText).toContain('uses: ./.github/actions/setup-playwright')
+    expect(credentialedWorkflowText).toContain(
+      'vouchington/vouchington-tooling/.github/actions/setup-playwright@',
+    )
     expect(credentialedWorkflowText).not.toContain("ubicloud: 'true'")
     expect(credentialedWorkflowText).not.toContain('name: Install Playwright browsers on Ubicloud')
   })

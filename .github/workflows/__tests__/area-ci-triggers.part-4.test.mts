@@ -95,7 +95,6 @@ describe('Area CI Docker triggers', () => {
       'cloudflare-worker/package.json',
       'backend/agents/foo/bar/package.json',
       '.github/actions/build-web-targets/action.yml',
-      '.github/actions/setup-aws/index.mts',
       'backend/services/foo.mts',
     ])
   })
@@ -116,7 +115,6 @@ describe('Area CI Docker triggers', () => {
       'email-templates/package.json',
       'cloudflare-worker/package.json',
       '.github/actions/build-web-targets/action.yml',
-      '.github/actions/setup-aws/index.mts',
       'web/app/page.tsx',
     ])
   })

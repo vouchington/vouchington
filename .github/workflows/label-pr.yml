@@ -6,16 +6,11 @@ on:
 
 permissions:
   contents: read
+  issues: write
   pull-requests: write
 
 jobs:
   label:
-    runs-on: ubuntu-slim
-    timeout-minutes: 5
-    steps:
-      - uses: actions/labeler@bf12e9b00b37c5c0ca2b87b79b2daf7891dbda13 # v7.0.0
-        timeout-minutes: 1
-        continue-on-error: true
-        with:
-          repo-token: '${{ secrets.GITHUB_TOKEN }}'
-          configuration-path: .github/labeler.yml
+    uses: vouchington/vouchington-tooling/.github/workflows/label-pr.yml@4f206c4ea9fc28003c896b1cf1b77ab6f7130242 # v0.55.0
+    with:
+      configuration-path: .github/labeler.yml

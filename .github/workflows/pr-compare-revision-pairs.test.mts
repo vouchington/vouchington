@@ -14,7 +14,6 @@ import {
 } from '../test-helpers/workflow-fixtures.mts'
 
 const PR_BASE_SHA = '${{ github.event.pull_request.base.sha }}'
-const PR_HEAD_SHA = '${{ github.event.pull_request.head.sha }}'
 const MERGE_SHA = '${{ github.sha }}'
 
 type WorkflowFile = {
@@ -123,13 +122,5 @@ describe('PR compare revision pairs', () => {
         ref: '${{ steps.merge-queue-range.outputs.head }}',
       })
     }
-  })
-
-  it('keeps gitleaks PR scans on pair 1', () => {
-    const workflow = load(readFileSync('.github/workflows/gitleaks.yml', 'utf8')) as WorkflowFile
-    const step = requiredNamedStep(workflow.jobs?.['gitleaks'], 'Determine Gitleaks scan range')
-    expect(step.env?.['PR_BASE_SHA']).toBe(PR_BASE_SHA)
-    expect(step.env?.['PR_HEAD_SHA']).toBe(PR_HEAD_SHA)
-    expect(step.run).toContain('git merge-base "$PR_BASE_SHA" "$PR_HEAD_SHA"')
   })
 })

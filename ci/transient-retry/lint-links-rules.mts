@@ -8,7 +8,8 @@ import {
 } from './github-releases-download-fingerprint.mts'
 import type { TransientRetryRule } from './types.mts'
 
-const lintLinksJobName = 'lint-links'
+// A reusable-workflow job reports as `<caller job> / <callee job>`.
+const lintLinksJobName = 'lint-links / lint-links'
 const githubHostPattern = /^https:\/\/github\.com\//
 const lycheeFailureLinePattern = /(?:^|\s)\[(?<marker>[^\s\]]+)\] (?<url>\S+)/
 const github5xxMarkerPattern = /^5\d{2}$/
@@ -128,7 +129,7 @@ export const lintLinksSetupLycheeDownloadFlakeRule: TransientRetryRule = {
   consumerKey: 'setup-lychee',
   rootCauseKey: 'github-release-download-failure',
   description:
-    'Lint Links fails before link checking because setup-lychee cannot download the pinned Lychee release asset from GitHub Releases, including when DNS cannot resolve github.com.',
+    'Lint Links fails before link checking because the Install lychee step cannot download the pinned Lychee release asset from GitHub Releases, including when DNS cannot resolve github.com.',
   rationale:
     'The Markdown link checker never starts; the only failed job is lint-links and the stable fingerprint is an external GitHub Releases download or github.com DNS failure, not a broken repository link.',
   exampleRunIds: ['29263881027'],

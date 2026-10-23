@@ -22,22 +22,4 @@ concurrency:
 
 jobs:
   actionlint:
-    runs-on: ubuntu-slim
-    timeout-minutes: 8
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 1
-      - name: Install CI tools via mise
-        uses: jdx/mise-action@fc42bcc7ddbf51124c30f95a877a0c5168a3bfde # v5.2.1
-        # Repository cache policy permits only the pnpm store and Playwright browsers.
-        with:
-          cache: false
-        timeout-minutes: 3
-
-      - name: Run actionlint
-        timeout-minutes: 5
-        run: actionlint
-
-      - name: Audit GitHub Actions security
-        run: zizmor --offline --min-severity high --min-confidence high .
-        timeout-minutes: 2
+    uses: vouchington/vouchington-tooling/.github/workflows/actionlint.yml@4f206c4ea9fc28003c896b1cf1b77ab6f7130242 # v0.55.0

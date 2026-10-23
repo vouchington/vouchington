@@ -5,7 +5,9 @@ import {
 } from './github-releases-download-fingerprint.mts'
 import type { TransientRetryRule } from './types.mts'
 
-const gitleaksJobName = 'gitleaks'
+// The reusable scan reports as `<caller job> / <callee job>`; the local `gitleaks` gate job fails with it.
+const gitleaksJobName = 'gitleaks-scan / gitleaks'
+const gitleaksGateJobName = 'gitleaks'
 
 function hasGitleaksInstallReleasesDownloadFlake(log: string): boolean {
   const installLog = terminalFailedGithubActionsStepLog(log)
@@ -39,8 +41,9 @@ function isOnlyFailedGitleaksJob(ctx: {
   return (
     ctx.workflowName === 'Gitleaks' &&
     ctx.conclusion === 'failure' &&
-    ctx.failedJobNames.length === 1 &&
-    ctx.failedJobNames[0] === gitleaksJobName
+    ctx.failedJobNames.length === 2 &&
+    ctx.failedJobNames.includes(gitleaksJobName) &&
+    ctx.failedJobNames.includes(gitleaksGateJobName)
   )
 }
 

@@ -11,82 +11,8 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: pnpm-dedupe
-  cancel-in-progress: false
-
 jobs:
   dedupe:
-    runs-on: ubuntu-latest
-    timeout-minutes: 8
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 2
-        with:
-          persist-credentials: false
-          fetch-depth: 0
-
-      - uses: ./.github/actions/setup-node-pnpm
-        timeout-minutes: 5
-
-      - name: Run pnpm dedupe
-        timeout-minutes: 3
-        run: pnpm dedupe
-
-      - name: Detect lockfile changes
-        timeout-minutes: 2
-        id: diff
-        run: |
-          if git diff --quiet -- pnpm-lock.yaml; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-            echo "No dedupe changes"
-          else
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-            git diff --stat -- pnpm-lock.yaml
-          fi
-
-      - if: steps.diff.outputs.changed == 'true'
-        timeout-minutes: 2
-        name: Commit and push
-        env:
-          BRANCH: chore/pnpm-dedupe
-          GIT_AUTHOR_NAME: github-actions[bot]
-          GIT_AUTHOR_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
-          GIT_COMMITTER_NAME: github-actions[bot]
-          GIT_COMMITTER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
-          TOKEN: ${{ secrets.DEPENDABOT_AUTOMERGE_TOKEN }}
-        run: |
-          git checkout -B "$BRANCH"
-          git add -- pnpm-lock.yaml
-          git -c core.hooksPath=/dev/null commit -m "chore(deps): pnpm dedupe"
-          # Inject the token via GIT_CONFIG_* env vars — keeps it out of argv (/proc/PID/cmdline is
-          # world-readable; /proc/PID/environ is owner-only).  Token is never written to .git/config.
-          TOKEN_B64="$(printf 'x-access-token:%s' "$TOKEN" | base64 | tr -d '\n')"
-          GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=http.extraheader GIT_CONFIG_VALUE_0="AUTHORIZATION: Basic $TOKEN_B64" git -c core.hooksPath=/dev/null push --force-with-lease origin "$BRANCH"
-
-      - if: steps.diff.outputs.changed == 'true'
-        timeout-minutes: 2
-        name: Open PR if missing
-        env:
-          GH_TOKEN: ${{ secrets.DEPENDABOT_AUTOMERGE_TOKEN }}
-          BRANCH: chore/pnpm-dedupe
-          OWNER: ${{ github.repository_owner }}
-        run: |
-          # Filter by headRepositoryOwner.login so a fork PR with the same branch name is
-          # never matched. gh pr list --head does not support "owner:branch" syntax; we use
-          # --head "$BRANCH" and rely on the jq select to verify ownership.
-          if gh pr list --state open --head "$BRANCH" \
-              --json number,headRepositoryOwner,headRefName \
-              --jq "map(select(.headRepositoryOwner.login == \"$OWNER\" and .headRefName == \"$BRANCH\")) | .[0].number" \
-              2>/dev/null | grep -qE '^[0-9]+$'; then
-            echo "PR already open for $BRANCH; force-push updated it in place"
-            exit 0
-          fi
-          gh pr create \
-            --base main \
-            --head "$BRANCH" \
-            --title "chore(deps): pnpm dedupe" \
-            --label github_actions \
-            --body "Automated weekly \`pnpm dedupe\` for the shared workspace lockfile.
-
-          Created by \`.github/workflows/pnpm-dedupe.yml\` on its Sunday schedule. The branch is force-pushed on subsequent runs, so re-review only when the diff changes."
+    uses: vouchington/vouchington-tooling/.github/workflows/pnpm-dedupe.yml@4f206c4ea9fc28003c896b1cf1b77ab6f7130242 # v0.55.0
+    secrets:
+      PUSH_TOKEN: ${{ secrets.DEPENDABOT_AUTOMERGE_TOKEN }}
