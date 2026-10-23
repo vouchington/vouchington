@@ -1,0 +1,146 @@
+{
+  "services": [
+    {
+      "name": "backend",
+      "match": ["backend/"]
+    },
+    {
+      "name": "web",
+      "match": ["web/", "integration-tests/", "playwright/"]
+    },
+    {
+      "name": "cloudflare-worker",
+      "match": ["cloudflare-worker/"]
+    },
+    {
+      "name": "lambdas",
+      "match": ["lambdas/"]
+    },
+    {
+      "name": "email-templates",
+      "match": ["email-templates/"]
+    },
+    {
+      "name": "ts-shared",
+      "match": ["ts-shared/"]
+    },
+    {
+      "name": "infra",
+      "match": ["monitors/"]
+    },
+    {
+      "name": "tooling",
+      "match": []
+    },
+    {
+      "name": "docs",
+      "match": ["docs/", "./README.md", "./AGENTS.md"]
+    }
+  ],
+  "defaultService": "tooling",
+  "categories": {
+    "source": "source",
+    "tests": "tests",
+    "tooling": "tooling"
+  },
+  "testPatterns": [
+    "{test,spec}.?(c|m)[jt]s?(x)",
+    "*[.-]{test,spec}.?(c|m)[jt]s?(x)",
+    "*/**/__tests__/**",
+    "*/**/__snapshots__/**",
+    "*/**/tests/**",
+    "*/**/test/**",
+    "playwright/",
+    "integration-tests/"
+  ],
+  "toolingPatterns": [
+    ".github/",
+    ".husky/",
+    ".agents/",
+    ".codex/",
+    ".grok/",
+    ".opencode/",
+    "ast-grep-rules/",
+    "ci/",
+    "dev/",
+    "monitors/",
+    "seed/",
+    "static-code-analysis/",
+    "**/*test-helpers/**",
+    "test-helpers/",
+    "backend/scripts/",
+    "web/scripts/",
+    "docs/",
+    "commitlint.config.mts",
+    "AGENTS.md",
+    "package.json",
+    "README.md",
+    "tsconfig.json",
+    ".*",
+    "components.json",
+    "renovate.json",
+    "pnpm-workspace.yaml",
+    "selene.toml",
+    "vitest.config.mts",
+    "*.config.{mts,ts,js}",
+    "*.jsonc",
+    "*.toml",
+    "*.yml",
+    "*.yaml"
+  ],
+  "countedRoots": [
+    ".agents",
+    ".codex",
+    ".github",
+    ".husky",
+    "ast-grep-rules",
+    "backend",
+    "ci",
+    "cloudflare-worker",
+    "dev",
+    "docs",
+    "email-templates",
+    "integration-tests",
+    "lambdas",
+    "monitors",
+    "playwright",
+    "seed",
+    "static-code-analysis",
+    "test-helpers",
+    "ts-shared",
+    "web"
+  ],
+  "countedRootFiles": [
+    ".jscpd.json",
+    "AGENTS.md",
+    "README.md",
+    "commitlint.config.mts",
+    "knip.jsonc",
+    "package.json",
+    "playwright.config.mts",
+    "playwright.credentialed.config.mts",
+    "pnpm-workspace.yaml",
+    "redis.yml",
+    "renovate.json",
+    "selene.toml",
+    "sgconfig.yml",
+    "sonar-project.properties",
+    "tsconfig.json",
+    "vitest.config.mts"
+  ],
+  "excludedDirs": [
+    ".git",
+    ".hg",
+    ".svn",
+    ".next",
+    ".turbo",
+    ".wrangler",
+    "build",
+    "coverage",
+    "dist",
+    "node_modules",
+    "out"
+  ],
+  "ignoredDirs": ["fixtures", "__fixtures__", "__snapshots__", ".wrangler"],
+  "missingSccHint": "Run mise install; if mise is unavailable, provision the host from https://github.com/vouchington/vouchington-machines. See docs/development/system-dependencies.md."
+}

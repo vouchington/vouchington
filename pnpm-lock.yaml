@@ -88,9 +88,6 @@ importers:
       coverage-check:
         specifier: ^0.18.0
         version: 0.18.0(@vitest/coverage-v8@5.0.5)(vitest@5.0.5)
-      csv-parse:
-        specifier: ^7.0.3
-        version: 7.0.3
       dependency-cruiser:
         specifier: ^18.7.0
         version: 18.7.0
