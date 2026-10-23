@@ -3,16 +3,19 @@ import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
 import type { Tool } from '@services/openai-agents/tool-types'
 import { format } from 'oxfmt'
-import { renderCatalogTable, spliceCatalogTable } from './agent-tool-catalog.mts'
-import { buildMcpCatalog } from './build-mcp-catalog.mts'
-import { buildMcpResultFixtures } from './mcp-result-cases.mts'
+import {
+  renderCatalogTable,
+  spliceCatalogTable,
+} from '@services/mcp-tools/catalog/agent-tool-catalog'
+import { buildMcpCatalog } from '@services/mcp-tools/catalog/build-mcp-catalog'
+import { buildMcpResultFixtures } from './mcp-result-fixtures.mts'
 import { mcpDateTimeFixtures } from '@voucha/test-helpers/mcp-date-time-cases'
 import {
   nativeMcpResultCases,
   type McpResultFixtureCase,
 } from '@voucha/test-helpers/native-mcp-result-cases'
 
-const repoRoot = fileURLToPath(new URL('../../../../', import.meta.url))
+const repoRoot = fileURLToPath(new URL('../../', import.meta.url))
 const toJson = (value: unknown): string => `${JSON.stringify(value, null, 2)}\n`
 
 async function generate(

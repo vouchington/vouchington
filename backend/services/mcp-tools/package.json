@@ -10,6 +10,16 @@
       "types": "./index.mts",
       "import": "./index.mts",
       "default": "./index.mts"
+    },
+    "./catalog/agent-tool-catalog": {
+      "types": "./catalog/agent-tool-catalog.mts",
+      "import": "./catalog/agent-tool-catalog.mts",
+      "default": "./catalog/agent-tool-catalog.mts"
+    },
+    "./catalog/build-mcp-catalog": {
+      "types": "./catalog/build-mcp-catalog.mts",
+      "import": "./catalog/build-mcp-catalog.mts",
+      "default": "./catalog/build-mcp-catalog.mts"
     }
   },
   "dependencies": {
@@ -42,7 +52,6 @@
     "@services/stories": "workspace:^",
     "@types/http-errors": "^2.0.5",
     "@voucha/test-helpers": "workspace:^",
-    "@vouchington/rate-limit": "^0.2.0",
-    "oxfmt": "^0.74.0"
+    "@vouchington/rate-limit": "^0.2.0"
   }
 }

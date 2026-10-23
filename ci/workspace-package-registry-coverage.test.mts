@@ -8,7 +8,7 @@ import {
   primaryPathFilters as ciPathFilters,
   runtimePathFilters as ciRuntimeFilters,
 } from '../.github/test-helpers/path-filter-test-fixtures.mts'
-import { trackedFiles } from './test-helpers/tracked-files.mts'
+import { trackedFiles } from './tracked-files.mts'
 
 /**
  * Every top-level package is hand-registered in four places: `.syncpackrc.json` `source`,

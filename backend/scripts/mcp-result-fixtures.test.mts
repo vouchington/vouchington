@@ -6,10 +6,10 @@ import { financialMcpResultCases } from '@voucha/test-helpers/native-mcp-result-
 import { optionMcpResultCases } from '@voucha/test-helpers/native-mcp-option-result-cases'
 import { ALL_TOOLS } from '@voucha/mcp/registry/index'
 import type { Tool } from '@services/openai-agents/tool-types'
-import getMyFinancialProfileTool from '../../../mcp/get-my-financial-profile.mts'
-import { buildMcpCatalog } from './build-mcp-catalog.mts'
-import { runCatalogGeneration } from './generate-catalog.mts'
-import { buildMcpResultFixtures } from './mcp-result-cases.mts'
+import getMyFinancialProfileTool from '../mcp/get-my-financial-profile.mts'
+import { buildMcpCatalog } from '@services/mcp-tools/catalog/build-mcp-catalog'
+import { runCatalogGeneration } from './mcp-catalog-generation.mts'
+import { buildMcpResultFixtures } from './mcp-result-fixtures.mts'
 
 describe('MCP result catalog generation', () => {
   const catalog = buildMcpCatalog([getMyFinancialProfileTool as unknown as Tool])

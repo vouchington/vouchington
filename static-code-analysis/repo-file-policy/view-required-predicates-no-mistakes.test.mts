@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { parse, stringify } from 'yaml'
-import { createAnalyzerFixtureBudget } from '../test-helpers/analyzer-fixture-budget.mts'
+import { createAnalyzerFixtureBudget } from '../../ci/analyzer-fixture-budget.mts'
 
 const repository = fileURLToPath(new URL('../..', import.meta.url))
 const cli = join(repository, 'node_modules/no-mistakes/bin/no-mistakes.js')

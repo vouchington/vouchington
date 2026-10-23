@@ -26,6 +26,7 @@ module.exports = [
         '^backend/scripts/rss-crawl-tier-contract\\.mts$',
         '^backend/scripts/check-materialized-view-contracts\\.mts$',
         '^backend/scripts/native-mv-contracts/',
+        '^backend/scripts/generate-mcp-catalog\\.mts$',
         '^backend/scripts/seed/',
         '^backend/scripts/seeds/',
       ],
@@ -33,6 +34,21 @@ module.exports = [
     to: {
       path: '^backend/data-stores/',
       pathNot: '^backend/data-stores/graceful-shutdown',
+    },
+  },
+
+  {
+    name: 'mcp-catalog-cli-datastore-lifecycle-only',
+    comment:
+      'The catalog CLI awaits Valkey configuration and closes registered stores through the canonical lifecycle owner.',
+    severity: 'error',
+    from: { path: '^backend/scripts/generate-mcp-catalog\\.mts$' },
+    to: {
+      path: '^backend/data-stores/',
+      pathNot: [
+        '^backend/data-stores/graceful-shutdown(?:/|$)',
+        '^backend/data-stores/valkey-core(?:/|$)',
+      ],
     },
   },
 

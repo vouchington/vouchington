@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict'
 import { readFile, rm, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
-import { observeFixtureExit } from './test-helpers/run-bounded-exit-observer.mts'
-import { createAnalyzerFixtureBudget } from '../static-code-analysis/test-helpers/analyzer-fixture-budget.mts'
+import { observeFixtureExit } from './bounded-exit-observer.mts'
+import { createAnalyzerFixtureBudget } from './analyzer-fixture-budget.mts'
 
 // Deliberately holds NoMist's machine-wide lock: run once before other analyzers, not in Vitest.
 async function main(): Promise<void> {

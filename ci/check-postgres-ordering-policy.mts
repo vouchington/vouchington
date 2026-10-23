@@ -13,7 +13,7 @@ import {
   uncoveredOrderingPaths,
   type RuleOptions,
 } from './postgres-ordering-policy.mts'
-import { trackedFiles } from './test-helpers/tracked-files.mts'
+import { trackedFiles } from './tracked-files.mts'
 
 type Rule = { name: string; options?: Record<string, unknown>; rule: string; scope: string }
 
