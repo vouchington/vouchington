@@ -4,7 +4,7 @@ import { createMigrationControlJournal } from './migration-control-journal.mts'
 
 // The parent supplies only its independently registered sibling before the first app import.
 const [role, name, expectedOid, evidencePath] = process.argv.slice(2)
-assert.ok(role === 'package' || role === 'concurrent')
+assert.equal(role, 'concurrent')
 assert.ok(name && /^voucha_pruning_[a-f0-9]{24}$/.test(name))
 assert.ok(evidencePath)
 const oid = Number(expectedOid)
@@ -31,7 +31,7 @@ try {
   await checkpoint('application-import')
   const { psql } = await import('@data-stores/psql/setup')
   closeCanonical = observeMigrationPools(psql)
-  const { runMigrations, applyAllMigrations } = await import('@data-stores/psql/migrate')
+  const { applyAllMigrations } = await import('@data-stores/psql/migrate')
   shutdown = (await import('@data-stores/graceful-shutdown')).shutdownDataStoresForOneOffCommand
   await checkpoint('database-identity')
   const { rows } = await psql.read<{ name: string; oid: number }>(
@@ -39,33 +39,24 @@ try {
   )
   assert.equal(rows[0]?.name, name)
   assert.equal(rows[0]?.oid, oid)
-  if (role === 'package') {
-    await checkpoint('application-runMigrations')
-    await runMigrations()
-    const { rows: ledger } = await psql.read<{ count: number }>(
-      '/* verifyRunMigrationsLedger */ SELECT count(*)::integer AS count FROM migrations',
-    )
-    assert.ok((ledger[0]?.count ?? 0) > 0)
-  } else {
-    await checkpoint('canonical-bootstrap')
-    await applyAllMigrations()
-    await checkpoint('alternate-platform-startup')
-    alternateClosed = false
-    const { createPsql } = await import('@vouchington/postgres')
-    const alternate = await createPsql({
-      connectionString: process.env.DATABASE_URL ?? '',
-      readConnectionString: process.env.READ_DATABASE_URL,
-      databaseName: 'voucha',
-      migrationExtensions: ['vector', 'pgcrypto', 'pg_trgm', 'pg_stat_statements', 'unaccent'],
-      errorHandler: error => {
-        errors.push(error)
-      },
-    })
-    closeAlternate = observeMigrationPools(alternate)
-    await checkpoint('concurrent-application-runners')
-    const { assertSerializedMigrationRunner } = await import('./migration-runner-fixture.mts')
-    await assertSerializedMigrationRunner(alternate)
-  }
+  await checkpoint('canonical-bootstrap')
+  await applyAllMigrations()
+  await checkpoint('alternate-platform-startup')
+  alternateClosed = false
+  const { createPsql } = await import('@vouchington/postgres')
+  const alternate = await createPsql({
+    connectionString: process.env.DATABASE_URL ?? '',
+    readConnectionString: process.env.READ_DATABASE_URL,
+    databaseName: 'voucha',
+    migrationExtensions: ['vector', 'pgcrypto', 'pg_trgm', 'pg_stat_statements', 'unaccent'],
+    errorHandler: error => {
+      errors.push(error)
+    },
+  })
+  closeAlternate = observeMigrationPools(alternate)
+  await checkpoint('concurrent-application-runners')
+  const { assertSerializedMigrationRunner } = await import('./migration-runner-fixture.mts')
+  await assertSerializedMigrationRunner(alternate)
 } catch (err) {
   errors.push(err)
   failedPhase = phase

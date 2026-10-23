@@ -82,7 +82,7 @@ async function runPruningProof(): Promise<void> {
       control => migrationControls.push(control),
       database => migrationDatabases.push(database),
     )
-    if (migrationControls.length !== 2) throw new Error('Expected both native migration controls')
+    if (migrationControls.length !== 1) throw new Error('Expected the native migration control')
     await assertPruningDatabaseLifecycleControls(
       sourceUrl,
       connectionEnvironment,

@@ -25,7 +25,7 @@ const root = resolve(import.meta.dirname, '../../../..')
 const wrapper = join(root, 'ci/run-bounded.py')
 
 export async function withOwnedMigrationControl(
-  role: 'package' | 'concurrent',
+  role: 'concurrent',
   sourceUrl: string,
   environment: NodeJS.ProcessEnv,
   recordReserved: (name: string) => void,
