@@ -1,6 +1,7 @@
 import { randomBytes } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { v7 as uuidv7 } from 'uuid'
+import { getMinUUIDv7ForDate } from '@modules/utils'
 import { beginTransaction, createTestUser } from '@voucha/test-helpers'
 import {
   insertTestAccountCopyrightRationale,
@@ -10,7 +11,14 @@ import {
 import { withPostgresTransactionForTest } from '@voucha/test-helpers/postgres-transaction'
 import { lockCopyrightRationaleRetentionPage } from '@services/copyright-notices/retention-erasure-preservation'
 import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
-import { issueTestOAuthTokensForClient } from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
+import {
+  createTestPendingOAuthAuthorization,
+  issueTestOAuthTokensForClient,
+} from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
+import {
+  getTestOAuthRetentionRowCounts,
+  prepareTestOAuthRetentionRows,
+} from '@voucha/test-helpers/entities/oauth-retention'
 import {
   deleteTestNativeMintAudit,
   deleteTestNativeMintAuditForRetention,
@@ -25,6 +33,53 @@ import { cleanupSecuritySourcePage } from './cleanup-security-records.mts'
 import { SOURCES, sourcePlan } from './security-record-plans.mts'
 
 describe('security record cleanup', () => {
+  it('does not cascade a never-granted client into pending consent requests', async () => {
+    const user = await createTestUser()
+    const pending = await createTestPendingOAuthAuthorization(user, {
+      ageNeverGrantedClient: true,
+    })
+    await prepareTestOAuthRetentionRows(pending.client.client_id, {
+      expiresAt: new Date(Date.now() + 86_400_000),
+      extraRequests: 2,
+      only: 'requests',
+    })
+    await using query = await beginTransaction()
+    const plan = sourcePlan('oauth_clients', new Date())
+    const client = await query<{ id: string; first_granted_at: Date | null; aged: boolean }>(
+      `/* testNeverGrantedClientWithRequests:lock */ SELECT id, first_granted_at,
+         id < $2::uuid AS aged
+       FROM oauth_clients WHERE client_id = $1::text FOR UPDATE`,
+      [pending.client.client_id, getMinUUIDv7ForDate(plan.cutoffAt)],
+    )
+    expect(client.rows[0]?.first_granted_at).toBeNull()
+    expect(client.rows[0]?.aged).toBe(true)
+    const deletion = await query(
+      `/* testNeverGrantedClientWithRequests:delete */ DELETE FROM oauth_clients target
+       WHERE target.id = $1::uuid AND target.id < $2::uuid
+         AND target.first_granted_at IS NULL
+         AND ${plan.deletePredicate}`,
+      [client.rows[0]!.id, getMinUUIDv7ForDate(plan.cutoffAt)],
+    )
+    expect(deletion.rowCount).toBe(0)
+    expect((await getTestOAuthRetentionRowCounts(pending.client.client_id)).requests).toBe(3)
+    // The existing OAuth artifact worker retires expired requests in capped pages. Once that
+    // child family is drained, the same otherwise eligible client may be removed.
+    const drained = await query(
+      `/* testNeverGrantedClientWithRequests:drainFixture */
+       DELETE FROM oauth_authorization_requests WHERE client_id = $1::uuid`,
+      [client.rows[0]!.id],
+    )
+    expect(drained.rowCount).toBe(3)
+    const retired = await query(
+      `/* testNeverGrantedClientWithRequests:retire */ DELETE FROM oauth_clients target
+       WHERE target.id = $1::uuid AND target.id < $2::uuid
+         AND target.first_granted_at IS NULL
+         AND ${plan.deletePredicate}`,
+      [client.rows[0]!.id, getMinUUIDv7ForDate(plan.cutoffAt)],
+    )
+    expect(retired.rowCount).toBe(1)
+  })
+
   it('rechecks a noncase rationale after a concurrent account hold commits', async () => {
     const actor = await createTestUserDirect({ administrator: true })
     const subject = await createTestUserDirect()
