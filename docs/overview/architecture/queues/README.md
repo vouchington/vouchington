@@ -68,6 +68,23 @@ The data-retention schedule runs in deployed environments so staging exposes ret
 before production. Staging assigns the job lower queue priority to keep interactive and recovery
 work ahead of housekeeping.
 
+Google Play active-source recovery scans a bounded raw source page under one fixed high-water mark,
+then checks eligibility within that page. The persisted cursor advances by scanned identity only
+after child admission succeeds, including pages with no eligible sources. Each continuation has a
+fresh queue identity; an hourly scheduled run resumes a cursor left by a failed or lost continuation.
+The shared ordering key serializes recovery jobs, while cursor compare-and-swap rejects a stale
+reader. Child reconciliation keeps its source-and-hour identity, so a later sweep can admit it again.
+
+Engagement email dispatch reads an indexed eligibility projection in global unclaimed-then-oldest-
+claim order. Claim-age expiry is evaluated at read time so an unchanged receipt becomes due without
+a refresh job. Each dispatcher page saves its selected user IDs before claiming them; a failed or
+uncertain queue admission replays that same page under a stable send-job identity and a durable
+page fence. The claim records its owning dispatcher page, and the send processor checks that owner
+before an attempt or release. The dispatcher uses a singleton ordering key alongside the shared
+email domain limit; send jobs keep the domain's existing concurrency. RSS feed dispatch likewise
+carries a fixed selection time through indexed raw-feed pages and advances its lane cursor even
+when a page contains no due feed.
+
 - **PostgreSQL is the source of truth; the queue is a delivery hint.** Deduplication reduces
   duplicate enqueues but is never the correctness boundary, so every processor is idempotent against
   durable state. There is no dead-letter queue: each queue needs a backfill, a self-healing

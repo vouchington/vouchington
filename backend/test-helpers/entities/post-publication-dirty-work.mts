@@ -14,6 +14,8 @@ export type TestPostPublicationDirtyWork = {
   reasons: PostPublicationReason[]
   generation: string
   cursor_post_id: string | null
+  pending_post_identity_id: string | null
+  pending_ancestor_post_identity_id: string | null
   cursor_topic_id: string | null
   cursor_key_id: string | null
   lease_token: string | null
@@ -35,7 +37,7 @@ export async function getTestPostPublicationDirtyWork(
     sql`
     /* getTestPostPublicationDirtyWork */
     SELECT id, post_identity_id, author_identity_id, community_identity_id, rss_feed_identity_id, topic_alias_identity_id, story_identity_id, reasons::text[] AS reasons,
-      generation, cursor_post_id, cursor_topic_id, cursor_key_id, lease_token, leased_at, lease_expires_at
+      generation, cursor_post_id, pending_post_identity_id, pending_ancestor_post_identity_id, cursor_topic_id, cursor_key_id, lease_token, leased_at, lease_expires_at
     FROM post_publication_dirty_work
     WHERE id = ${dirtyWorkId}
   `,
@@ -62,7 +64,7 @@ export async function getTestPostPublicationDirtyWorkForScope(
   const statement = sql`
     /* getTestPostPublicationDirtyWorkForScope */
     SELECT id, post_identity_id, author_identity_id, community_identity_id, rss_feed_identity_id, topic_alias_identity_id, story_identity_id, reasons::text[] AS reasons,
-      generation, cursor_post_id, cursor_topic_id, cursor_key_id, lease_token, leased_at, lease_expires_at
+      generation, cursor_post_id, pending_post_identity_id, pending_ancestor_post_identity_id, cursor_topic_id, cursor_key_id, lease_token, leased_at, lease_expires_at
     FROM post_publication_dirty_work
     WHERE `
   statement.append(condition)

@@ -29,12 +29,17 @@ export async function stageImagePlacementDeliveryRecordPage(
   const upperId = timestampToUuidv7LowerBound(new Date(scanBefore).getTime() + 1)
   const imageIds = input.imageIds ? [...input.imageIds] : null
   const after = input.after
+  // A plain tuple comparison behind the nullable-cursor OR becomes a residual filter in
+  // generic plans. This redundant leading-key bound lets the placement indexes seek to the
+  // current page while the full tuple comparison preserves same-placement continuations.
+  const afterPlacementId = after?.placement_id ?? '00000000-0000-0000-0000-000000000000'
   const statement = sql`/* stageImagePlacementDeliveryRecordPage */
     WITH candidates AS MATERIALIZED (
       SELECT placement_id, placement_revision, image_id FROM (
         (SELECT record.placement_id, record.placement_revision, record.image_id
         FROM media_delivery_registry_records record
         WHERE record.id < ${upperId}::uuid
+          AND record.placement_id >= ${afterPlacementId}::uuid
           AND (${imageIds}::uuid[] IS NULL OR record.image_id = ANY(${imageIds}::uuid[]))
           AND (${after?.placement_id ?? null}::uuid IS NULL OR
             (record.placement_id, record.placement_revision, record.image_id) >
@@ -44,9 +49,12 @@ export async function stageImagePlacementDeliveryRecordPage(
         (SELECT placement.id, placement.revision, binding.image_id
         FROM media_placements placement
         JOIN (SELECT placement_id, image_id FROM image_placements
-          UNION ALL SELECT placement_id, image_id FROM image_surface_placements) binding
+          WHERE placement_id >= ${afterPlacementId}::uuid
+          UNION ALL SELECT placement_id, image_id FROM image_surface_placements
+          WHERE placement_id >= ${afterPlacementId}::uuid) binding
           ON binding.placement_id = placement.id
         WHERE placement.id < ${upperId}::uuid AND placement.retired_at IS NULL
+          AND placement.id >= ${afterPlacementId}::uuid
           AND (${imageIds}::uuid[] IS NULL OR binding.image_id = ANY(${imageIds}::uuid[]))
           AND (${after?.placement_id ?? null}::uuid IS NULL OR
             (placement.id, placement.revision, binding.image_id) >

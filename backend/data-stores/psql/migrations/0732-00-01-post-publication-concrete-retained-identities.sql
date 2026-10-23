@@ -123,6 +123,13 @@ CREATE INDEX IF NOT EXISTS idx_post_publ_dirty_work_keys__impact_rss_feed_item_i
 
 ALTER TABLE post_publication_dirty_work ADD CONSTRAINT fk_post_publication_dirty_work__post_identity FOREIGN KEY (post_identity_id) REFERENCES post_publication_post_identities (id) ON DELETE RESTRICT NOT VALID;
 ALTER TABLE post_publication_dirty_work VALIDATE CONSTRAINT fk_post_publication_dirty_work__post_identity;
+ALTER TABLE post_publication_dirty_work ADD CONSTRAINT fk_post_publication_dirty_work__pending_post_identity FOREIGN KEY (pending_post_identity_id) REFERENCES post_publication_post_identities (id) ON DELETE RESTRICT NOT VALID;
+ALTER TABLE post_publication_dirty_work VALIDATE CONSTRAINT fk_post_publication_dirty_work__pending_post_identity;
+ALTER TABLE post_publication_dirty_work ADD CONSTRAINT fk_post_publication_dirty_work__pending_ancestor_post_identity FOREIGN KEY (pending_ancestor_post_identity_id) REFERENCES post_publication_post_identities (id) ON DELETE RESTRICT NOT VALID;
+ALTER TABLE post_publication_dirty_work VALIDATE CONSTRAINT fk_post_publication_dirty_work__pending_ancestor_post_identity;
+-- A bounded bridge sweep checks either exact resume pointer by identity.
+CREATE INDEX IF NOT EXISTS idx_post_publication_dirty_work__pending_post_identity_id ON post_publication_dirty_work (pending_post_identity_id) WHERE pending_post_identity_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_pst_pblctn_drty_wrk__pending_ancestor_post_identity_id ON post_publication_dirty_work (pending_ancestor_post_identity_id) WHERE pending_ancestor_post_identity_id IS NOT NULL;
 ALTER TABLE post_publication_dirty_work ADD CONSTRAINT fk_post_publication_dirty_work__community_identity FOREIGN KEY (community_identity_id) REFERENCES post_publication_community_identities (id) ON DELETE RESTRICT NOT VALID;
 ALTER TABLE post_publication_dirty_work VALIDATE CONSTRAINT fk_post_publication_dirty_work__community_identity;
 ALTER TABLE post_publication_dirty_work ADD CONSTRAINT fk_post_publication_dirty_work__author_identity FOREIGN KEY (author_identity_id) REFERENCES post_publication_author_identities (id) ON DELETE RESTRICT NOT VALID;

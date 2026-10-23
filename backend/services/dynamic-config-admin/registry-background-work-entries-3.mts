@@ -23,6 +23,8 @@ export const backgroundWorkEntries3 = [
     descriptions: {
       backfill_batch_size: 'Backfill batch size for moderation reports processing.',
       dispatch_batch_size: 'Dispatch batch size for moderation reports processing.',
+      dispatch_older_than_seconds: 'Oldest age of AI auto-dispatch candidates.',
+      dispatch_newer_than_seconds: 'Youngest age of AI auto-dispatch candidates.',
     },
   }),
   defineBoundedWorkNamespace({

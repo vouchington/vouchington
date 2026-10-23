@@ -8,13 +8,11 @@ import {
   setTestPostClearanceStatus,
 } from '@voucha/test-helpers'
 import { describe, expect, it } from 'vitest'
-import { iterateSitemapFamilyEntries } from './family-queries.mts'
+import { readSitemapFamilyPage } from './family-queries.mts'
 
-async function hasLandingPage(path: string): Promise<boolean> {
-  for await (const entry of iterateSitemapFamilyEntries('landing-pages')) {
-    if (entry.path === path) return true
-  }
-  return false
+async function hasLandingPage(path: string, id: string): Promise<boolean> {
+  const page = await readSitemapFamilyPage('landing-pages', { highWaterId: id, limit: 1 })
+  return page.some(entry => entry.path === path)
 }
 
 describe('landing-pages sitemap review eligibility', () => {
@@ -32,11 +30,11 @@ describe('landing-pages sitemap review eligibility', () => {
       }
       const path = `/@${user.username}/${page.slug}`
 
-      expect(await hasLandingPage(path)).toBe(true)
+      expect(await hasLandingPage(path, page.landingPageId)).toBe(true)
       await setTestPostClearanceStatus(review.id, 'pending', user.id)
-      expect(await hasLandingPage(path)).toBe(false)
+      expect(await hasLandingPage(path, page.landingPageId)).toBe(false)
       await setTestPostClearanceStatus(review.id, 'approved', user.id)
-      expect(await hasLandingPage(path)).toBe(true)
+      expect(await hasLandingPage(path, page.landingPageId)).toBe(true)
     },
   )
 })

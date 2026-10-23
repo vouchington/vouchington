@@ -32,7 +32,7 @@ export async function cleanupPostPublicationIdentityBridges(limit = 100): Promis
   )
   if (!progress[0]) return { scanned: 0, deleted: 0, family: null, candidates: [] }
   const { family, cursor_identity_id: cursor } = progress[0]!
-  const { table, keyColumn, workColumn } = PUBLICATION_IDENTITY_BRIDGES[family]
+  const { table, keyColumn, workColumn, resumeColumns } = PUBLICATION_IDENTITY_BRIDGES[family]
   const { rows: candidates } = await query<{ id: string }>(
     `/* listPublicationIdentityBridgeCleanupCandidates */ SELECT id FROM ${table} ${cursor === null ? '' : 'WHERE id > $1::uuid'} ORDER BY id LIMIT ${budget}`,
     cursor === null ? [] : [cursor],
@@ -46,6 +46,10 @@ export async function cleanupPostPublicationIdentityBridges(limit = 100): Promis
     ...(workColumn === null
       ? []
       : [`NOT EXISTS (SELECT 1 FROM post_publication_dirty_work WHERE ${workColumn} = locked.id)`]),
+    ...resumeColumns.map(
+      column =>
+        `NOT EXISTS (SELECT 1 FROM post_publication_dirty_work WHERE ${column} = locked.id)`,
+    ),
     ...(family === 'community'
       ? ['NOT EXISTS (SELECT 1 FROM classifier_runs WHERE community_identity_id = locked.id)']
       : []),

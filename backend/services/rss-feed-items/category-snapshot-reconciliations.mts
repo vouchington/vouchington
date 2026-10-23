@@ -6,7 +6,6 @@ import { upsertRssFeedItemCategories, type RssFeedItemCategoryInput } from './ca
 export type RssFeedItemCategorySnapshotReconciliation = RssFeedItemCategoryInput & {
   generation: string
 }
-
 /** Persist desired complete snapshots in the caller's item/source transaction. */
 export async function persistRssFeedItemCategorySnapshotReconciliations(
   query: QueryExecutor,
@@ -98,6 +97,17 @@ export async function reconcileRssFeedItemCategorySnapshots(
   rssFeedItemIds?: readonly string[],
 ): Promise<{ reconciled: number }> {
   if (rssFeedItemIds?.length === 0) return { reconciled: 0 }
+  const rows = await listRssFeedItemCategorySnapshotReconciliations(
+    CATEGORY_SNAPSHOT_RECONCILIATION_BATCH_SIZE,
+    rssFeedItemIds,
+  )
+  return reconcileRssFeedItemCategorySnapshotRows(rows)
+}
+
+export async function listRssFeedItemCategorySnapshotReconciliations(
+  limit: number,
+  rssFeedItemIds?: readonly string[],
+): Promise<RssFeedItemCategorySnapshotReconciliation[]> {
   const { rows } = await write<RssFeedItemCategorySnapshotReconciliation>(
     `/* reconcileRssFeedItemCategorySnapshots */
       SELECT rss_feed_item_id, categories, generation
@@ -105,13 +115,10 @@ export async function reconcileRssFeedItemCategorySnapshots(
       ${rssFeedItemIds ? 'WHERE rss_feed_item_id = ANY($2::uuid[])' : ''}
       ORDER BY updated_at, rss_feed_item_id
       LIMIT $1`,
-    rssFeedItemIds
-      ? [CATEGORY_SNAPSHOT_RECONCILIATION_BATCH_SIZE, rssFeedItemIds]
-      : [CATEGORY_SNAPSHOT_RECONCILIATION_BATCH_SIZE],
+    rssFeedItemIds ? [limit, rssFeedItemIds] : [limit],
   )
-  return reconcileRssFeedItemCategorySnapshotRows(rows)
+  return rows
 }
-
 /** Applies selected rows independently so one poison snapshot does not starve its batch peers. */
 export async function reconcileRssFeedItemCategorySnapshotRows(
   rows: readonly RssFeedItemCategorySnapshotReconciliation[],
@@ -157,7 +164,7 @@ function assertCategorySnapshot(snapshot: RssFeedItemCategorySnapshotReconciliat
   }
 }
 
-async function getRssFeedItemCategorySnapshots(
+export async function getRssFeedItemCategorySnapshots(
   rssFeedItemIds: readonly string[],
 ): Promise<Map<string, string[]>> {
   if (rssFeedItemIds.length === 0) return new Map()

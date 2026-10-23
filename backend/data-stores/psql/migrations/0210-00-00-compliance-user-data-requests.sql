@@ -69,6 +69,22 @@ ON user_data_requests (processing_attempt_id);
 
 CREATE INDEX IF NOT EXISTS idx_user_data_requests__download_expiry
 ON user_data_requests (expires_at, id) WHERE s3_key IS NOT NULL;
+-- Cleanup reads the earliest expired downloadable exports, not every completed request.
+CREATE INDEX IF NOT EXISTS idx_user_data_requests__expiry_due
+ON user_data_requests (expires_at, id)
+WHERE completed_at IS NOT NULL AND failed_at IS NULL
+  AND s3_key IS NOT NULL AND expires_at IS NOT NULL;
+
+-- Recovery selects the oldest timed-out attempt from each disjoint lifecycle lane.
+CREATE INDEX IF NOT EXISTS idx_user_data_requests__dispatch_recovery_due
+ON user_data_requests (dispatched_at, id)
+WHERE user_id IS NOT NULL AND completed_at IS NULL AND failed_at IS NULL
+  AND processing_started_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_user_data_requests__processing_recovery_due
+ON user_data_requests (processing_started_at, id)
+WHERE user_id IS NOT NULL AND completed_at IS NULL AND failed_at IS NULL
+  AND processing_started_at IS NOT NULL;
 
 -- Enforce at most one active (pending or processing) request per subject and requester. The
 -- requester is part of the key so an administrator-run export never blocks, or is revealed by a

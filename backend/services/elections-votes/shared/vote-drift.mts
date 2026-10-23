@@ -1,8 +1,8 @@
 import { read } from '@data-stores/psql'
 import { trackVoteDrift } from '@services/analytics'
 import sql from 'sql-template-strings'
+import { getElectionsVotesWorkLimit } from '../work-limits.mts'
 
-const DEFAULT_SAMPLE_SIZE = 500
 const SCORE_EPSILON = 0.001
 
 export interface VoteDriftResult {
@@ -31,7 +31,7 @@ interface ReconcilePostVoteDriftOptions {
  * Vouch/Disavow rows. Idempotent: a read-only reconciliation that writes no state.
  */
 export async function reconcilePostVoteDrift(
-  sampleSize: number = DEFAULT_SAMPLE_SIZE,
+  sampleSize: number = getElectionsVotesWorkLimit('vote_drift_sample_size'),
   options: ReconcilePostVoteDriftOptions = {},
 ): Promise<VoteDriftResult> {
   const samplePostIds = options.samplePostIds ? [...options.samplePostIds] : null

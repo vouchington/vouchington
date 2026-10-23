@@ -56,9 +56,8 @@ describe('sitemap storage', () => {
   it('loads family manifests from the family meta key as JSON', async () => {
     const manifest = {
       active_page_count: 3,
-      highest_written_page: 3,
+      generation_id: '11111111-1111-4111-8111-111111111111',
       generated_at: '2026-06-10T12:00:00.000Z',
-      content_hashes: { '1.xml': 'hash-1', 'index.xml': 'hash-index' },
     }
     mocks.mockSend.mockResolvedValueOnce({
       Body: {
@@ -79,9 +78,8 @@ describe('sitemap storage', () => {
   it('writes family manifests back to the family meta key as JSON', async () => {
     const manifest = {
       active_page_count: 4,
-      highest_written_page: 4,
+      generation_id: '11111111-1111-4111-8111-111111111111',
       generated_at: '2026-06-10T12:00:00.000Z',
-      content_hashes: { '1.xml': 'hash-1', '2.xml': 'hash-2', 'index.xml': 'hash-index' },
     }
     mocks.mockSend.mockResolvedValueOnce({} as never)
 

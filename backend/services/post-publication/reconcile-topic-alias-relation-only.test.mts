@@ -13,6 +13,7 @@ import { claimPostPublicationDirtyWork } from './dirty-work.mts'
 import {
   reconcileTestPublicationUntilSnapshotsComplete as reconcilePostPublicationDirtyWork,
   getTestPublicationProjectionIdentity,
+  testPublicationWorkAtPost,
 } from '@voucha/test-helpers/post-publication-fixtures'
 import { recordPostPublicationChange } from './capture.mts'
 
@@ -36,7 +37,10 @@ describe('topic alias publication reconciliation: relation-only membership', () 
     const claimed = await claimPostPublicationDirtyWork(work, 60)
     if (!claimed) throw new Error('Expected topic alias publication work lease')
 
-    const page = await reconcilePostPublicationDirtyWork(claimed, 10)
+    const page = await reconcilePostPublicationDirtyWork(
+      testPublicationWorkAtPost(claimed, post.id),
+      1,
+    )
 
     expect(page.posts.map(candidate => candidate.id)).toEqual([post.id])
   })
@@ -66,7 +70,10 @@ describe('topic alias publication reconciliation: relation-only membership', () 
     const claimed = await claimPostPublicationDirtyWork(work, 60)
     if (!claimed) throw new Error('Expected post publication work lease')
 
-    const initialPage = await reconcilePostPublicationDirtyWork(claimed, 10)
+    const initialPage = await reconcilePostPublicationDirtyWork(
+      testPublicationWorkAtPost(claimed, post.id),
+      10,
+    )
 
     expect(initialPage.posts.map(candidate => candidate.id)).toContain(post.id)
     expect((await getTestPublicationProjectionIdentity(initialPage.posts[0]!)).topicIds).toEqual([
@@ -86,10 +93,16 @@ describe('topic alias publication reconciliation: relation-only membership', () 
     await aliasChangeQuery.commit()
     const claimedAliasWork = await claimPostPublicationDirtyWork(aliasWork, 60)
     if (!claimedAliasWork) throw new Error('Expected topic alias publication work lease')
-    const aliasPage = await reconcilePostPublicationDirtyWork(claimedAliasWork, 10)
+    const aliasPage = await reconcilePostPublicationDirtyWork(
+      testPublicationWorkAtPost(claimedAliasWork, post.id),
+      1,
+    )
     expect(aliasPage.posts.map(candidate => candidate.id)).toContain(post.id)
 
-    const relinkedPage = await reconcilePostPublicationDirtyWork(claimed, 10)
+    const relinkedPage = await reconcilePostPublicationDirtyWork(
+      testPublicationWorkAtPost(claimed, post.id),
+      10,
+    )
 
     expect(relinkedPage.posts.map(candidate => candidate.id)).toContain(post.id)
     expect((await getTestPublicationProjectionIdentity(relinkedPage.posts[0]!)).topicIds).toEqual([

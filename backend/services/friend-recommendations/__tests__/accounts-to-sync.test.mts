@@ -1,4 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest'
+import { randomUUID } from 'node:crypto'
+import { createTestOAuthAccountSweepWindow } from '@voucha/test-helpers/oauth-account-sweep-window'
 import {
   createTestUser,
   insertTestOAuthAccount,
@@ -6,6 +8,7 @@ import {
   setTestOAuthAccountTokens,
   setTestOAuthAccountFriendsSyncedAt,
   setTestOAuthAccountTokenExpiry,
+  readTestDatabaseTimestamp,
 } from '@voucha/test-helpers'
 import {
   streamFacebookAccountsToSync,
@@ -51,6 +54,91 @@ describe('streamFacebookAccountsToSync', () => {
     const results = await collectStream(streamFacebookAccountsToSync())
     const ids = results.map(r => r.id)
     expect(ids).not.toContain(accountId)
+  })
+
+  it('advances the retained scan cursor across an ineligible page', async () => {
+    const window = createTestOAuthAccountSweepWindow()
+    const firstProviderId = `sparse-first-${randomUUID()}`
+    const secondProviderId = `sparse-second-${randomUUID()}`
+    for (const [providerId, accountId] of [
+      [firstProviderId, window.firstId],
+      [secondProviderId, window.secondId],
+    ] as const) {
+      const owner = await createTestUser()
+      await insertTestOAuthAccount('facebook', providerId, null, accountId)
+      await connectTestOAuthAccount('facebook', owner.id, providerId)
+      await setTestOAuthAccountTokens('facebook', providerId, { accessToken: 'synthetic-token' })
+    }
+    await setTestOAuthAccountFriendsSyncedAt('facebook', firstProviderId, 'now')
+    const sweepStartedAt = await readTestDatabaseTimestamp()
+    let firstProgress: { rowsRead: number; hasMore: boolean; lastRow?: { id: string } } | undefined
+    const firstPage = await collectStream(
+      streamFacebookAccountsToSync({
+        sweepStartedAt,
+        upperId: window.secondId,
+        afterId: window.afterId,
+        limits: { batchSize: 1, maxRows: 1 },
+        onComplete: result => {
+          firstProgress = result
+        },
+      }),
+    )
+    expect(firstPage).toEqual([])
+    expect(firstProgress).toMatchObject({
+      rowsRead: 1,
+      hasMore: true,
+      lastRow: { id: window.firstId },
+    })
+    const resumed = await collectStream(
+      streamFacebookAccountsToSync({
+        sweepStartedAt,
+        upperId: window.secondId,
+        afterId: firstProgress?.lastRow?.id,
+        limits: { batchSize: 1, maxRows: 1 },
+      }),
+    )
+    expect(resumed).toEqual([{ id: window.secondId }])
+  })
+
+  it('charges a lookahead row against the physical read budget and resumes it', async () => {
+    const window = createTestOAuthAccountSweepWindow()
+    for (const [providerId, accountId] of [
+      [`budget-first-${randomUUID()}`, window.firstId],
+      [`budget-second-${randomUUID()}`, window.secondId],
+    ] as const) {
+      const owner = await createTestUser()
+      await insertTestOAuthAccount('facebook', providerId, null, accountId)
+      await connectTestOAuthAccount('facebook', owner.id, providerId)
+      await setTestOAuthAccountTokens('facebook', providerId, { accessToken: 'synthetic-token' })
+    }
+    const sweepStartedAt = await readTestDatabaseTimestamp()
+    let progress: { rowsRead: number; hasMore: boolean; lastRow?: { id: string } } | undefined
+    const first = await collectStream(
+      streamFacebookAccountsToSync({
+        sweepStartedAt,
+        upperId: window.secondId,
+        afterId: window.afterId,
+        limits: { batchSize: 1, maxRows: 2 },
+        onComplete: result => {
+          progress = result
+        },
+      }),
+    )
+    expect(first).toEqual([{ id: window.firstId }])
+    expect(progress).toMatchObject({
+      rowsRead: 2,
+      hasMore: true,
+      lastRow: { id: window.firstId },
+    })
+    const resumed = await collectStream(
+      streamFacebookAccountsToSync({
+        sweepStartedAt,
+        upperId: window.secondId,
+        afterId: progress?.lastRow?.id,
+        limits: { batchSize: 1, maxRows: 1 },
+      }),
+    )
+    expect(resumed).toEqual([{ id: window.secondId }])
   })
 })
 

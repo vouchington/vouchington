@@ -2,6 +2,7 @@ import {
   enqueueBulkAcknowledgeGooglePlayPurchases,
   enqueueBulkProcessGooglePlayNotifications,
   enqueueBulkReconcileGooglePlayActiveSources,
+  enqueueContinueRecoverGooglePlayActiveSources,
 } from '@queues/memberships/enqueues'
 import {
   acknowledgeGooglePlayPurchase,
@@ -35,7 +36,8 @@ export async function recoverGooglePlayActiveSources(): Promise<void> {
   // ast-grep-ignore: no-three-sequential-awaits -- the durable recovery cursor advances only after the awaited bulk fan-out succeeds
   const batch = await findRecoverableGooglePlayActiveSourceJobs()
   await enqueueBulkReconcileGooglePlayActiveSources(batch.sourceIds.map(sourceId => ({ sourceId })))
-  await advanceGooglePlayActiveSourceRecoveryCursor(batch)
+  const advanced = await advanceGooglePlayActiveSourceRecoveryCursor(batch)
+  if (advanced && !batch.completesSweep) await enqueueContinueRecoverGooglePlayActiveSources()
 }
 
 export async function processGooglePlayActiveSource(data: { sourceId: string }): Promise<void> {

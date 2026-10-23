@@ -1,9 +1,11 @@
 import { PRIORITY_DISPATCH, PRIORITY_TASK } from '../config.mts'
+import { pagedDispatchJobOptions } from '@data-stores/valkey-glide-mq/paged-dispatcher'
 import { defineBackgroundJob } from './define-job.mts'
 import {
   EMAIL_DIGESTS_DOMAIN as DOMAIN,
   type DispatchApiKeyExpiryRemindersData,
   type EmptyEmailDigestsJobData as EmptyData,
+  type EngagementDispatchData,
   type SendApiKeyExpiryReminderData,
   type SendCommunityModerationSummaryEmailData,
   type SendFollowNewsSourcesEmailData,
@@ -17,10 +19,15 @@ const RETRY = { attempts: 3, backoff: BACKOFF, removeOnComplete: 100, removeOnFa
 const TASK = { priority: PRIORITY_TASK } as const
 const DISPATCH = { priority: PRIORITY_DISPATCH, ...RETRY } as const
 
-export const EMAIL_DIGESTS_DISPATCH_ENGAGEMENT_JOB = defineBackgroundJob<EmptyData>(DOMAIN, {
-  name: 'dispatchEngagementEmails',
-  ...DISPATCH,
-})
+export const EMAIL_DIGESTS_DISPATCH_ENGAGEMENT_JOB = defineBackgroundJob<EngagementDispatchData>(
+  DOMAIN,
+  {
+    name: 'dispatchEngagementEmails',
+    ...DISPATCH,
+    ...pagedDispatchJobOptions('engagement'),
+    sensitive: true,
+  },
+)
 export const EMAIL_DIGESTS_DISPATCH_MODERATION_SUMMARY_JOB = defineBackgroundJob<EmptyData>(
   DOMAIN,
   { name: 'dispatchCommunityModerationSummaryEmails', ...DISPATCH },

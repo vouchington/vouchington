@@ -166,6 +166,11 @@ CREATE INDEX IF NOT EXISTS idx_membership_provider_evidence_records__lineage_id 
 CREATE INDEX IF NOT EXISTS idx_membership_provider_evidence_records__rejected_at
   ON membership_provider_evidence_records (rejected_at, id)
   WHERE rejected_at IS NOT NULL;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_membership_provider_evidence_records__pending_notification
+  ON membership_provider_evidence_records (membership_provider_context_id, received_at, id)
+  WHERE provider_event_id IS NOT NULL AND verified_at IS NULL AND rejected_at IS NULL;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_provider_observations (
@@ -419,6 +424,10 @@ CREATE INDEX IF NOT EXISTS idx_membership_source_states__product_id ON membershi
 CREATE INDEX IF NOT EXISTS idx_membership_source_states__lineage_id ON membership_source_states (membership_provider_lineage_id) WHERE membership_provider_lineage_id IS NOT NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_source_states__observation_id ON membership_source_states (membership_provider_observation_id) WHERE membership_provider_observation_id IS NOT NULL;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_membership_source_states__active_direct_recovery
+  ON membership_source_states (membership_source_id)
+  WHERE source_kind = 'direct' AND cancelled_at IS NULL AND expired_at IS NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_source_states__family_updated_at
   ON membership_source_states (updated_at, membership_source_id) WHERE source_kind = 'family';

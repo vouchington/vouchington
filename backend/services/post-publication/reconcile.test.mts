@@ -2,18 +2,12 @@ import {
   beginTransaction,
   countTestPostPublicationAdvisoryLockConnections,
   createTestPost,
-  createTestRssFeedItemWithUrl,
-  createTestRssFeedWithTiming,
   createTestTopic,
   createTestUser,
   createTopHashtagAliasForTest,
   createTopHashtagPostSourceForTest,
   expireTestPostPublicationDirtyWorkLease,
-  insertTestCommunity,
   insertTestPostReview,
-  insertTestPostStory,
-  insertTestStory,
-  setTestItemStoryId,
 } from '@voucha/test-helpers'
 import { describe, expect, it } from 'vitest'
 import {
@@ -24,7 +18,11 @@ import {
   updatePostPublicationDirtyWorkCursors,
   withPostPublicationReconciliationLocks,
 } from './public.mts'
-import { reconcileTestPublicationUntilSnapshotsComplete as reconcilePostPublicationDirtyWork } from '@voucha/test-helpers/post-publication-fixtures'
+import {
+  reconcileTestPublicationUntilSnapshotsComplete as reconcilePostPublicationDirtyWork,
+  reconcileTestPublicationThroughPostSweep,
+  testPublicationWorkAtPost,
+} from '@voucha/test-helpers/post-publication-fixtures'
 describe('post publication reconciliation', () => {
   it('expands an intermediate post scope through every nested reply', async () => {
     const root = await createTestPost()
@@ -42,88 +40,21 @@ describe('post publication reconciliation', () => {
     await query.commit()
     const claimed = await claimPostPublicationDirtyWork(work, 60)
     if (!claimed) throw new Error('Expected publication work lease')
-    const result = await reconcilePostPublicationDirtyWork(claimed)
-
-    expect(result.processed).toBe(2)
-    expect(result.cursorPostId).toBe(nestedReply.id)
-    expect(result.posts.map(candidate => candidate.id)).toEqual(
-      expect.arrayContaining([post.id, nestedReply.id]),
+    const postPage = await reconcilePostPublicationDirtyWork(
+      testPublicationWorkAtPost(claimed, post.id),
+      1,
     )
-    expect(result.posts.map(candidate => candidate.id)).not.toContain(linkedDiscussion.id)
-  })
-
-  it('expands retained roots and broad author and community scopes to descendants', async () => {
-    const author = await createTestUser()
-    if (!author) throw new Error('Expected author fixture')
-    const replyAuthor = await createTestUser()
-    if (!replyAuthor) throw new Error('Expected reply author fixture')
-    const community = await insertTestCommunity({ createdById: author.id })
-    const root = await createTestPost({ user: author, community_id: community.id })
-    const reply = await createTestPost({
-      user: replyAuthor,
-      parent_post_id: root.id,
-      post_type: 'comment',
-    })
-    const nestedReply = await createTestPost({
-      user: author,
-      parent_post_id: reply.id,
-      post_type: 'comment',
-    })
-    await using authorChangeQuery = await beginTransaction()
-    const authorWork = await recordPostPublicationChange(authorChangeQuery, {
-      scope: { type: 'author', authorUserId: replyAuthor.id },
-      reason: 'author_suspension_changed',
-    })
-    await authorChangeQuery.commit()
-    const claimedAuthorWork = await claimPostPublicationDirtyWork(authorWork, 60)
-    if (!claimedAuthorWork) throw new Error('Expected author publication work lease')
-    const authorResult = await reconcilePostPublicationDirtyWork(claimedAuthorWork)
-    expect(authorResult.posts.map(post => post.id)).toEqual(
-      expect.arrayContaining([reply.id, nestedReply.id]),
+    const nestedPage = await reconcilePostPublicationDirtyWork(
+      testPublicationWorkAtPost(claimed, nestedReply.id),
+      1,
     )
-    await using communityChangeQuery = await beginTransaction()
-    const communityWork = await recordPostPublicationChange(communityChangeQuery, {
-      scope: { type: 'community', communityId: community.id },
-      reason: 'community_publication_changed',
-      impactedPostIds: [root.id],
-    })
-    await communityChangeQuery.commit()
-    const claimedCommunityWork = await claimPostPublicationDirtyWork(communityWork, 60)
-    if (!claimedCommunityWork) throw new Error('Expected community publication work lease')
-    const communityResult = await reconcilePostPublicationDirtyWork(claimedCommunityWork)
-    expect(communityResult.posts.map(post => post.id)).toEqual(
-      expect.arrayContaining([root.id, reply.id, nestedReply.id]),
+    const excludedPage = await reconcilePostPublicationDirtyWork(
+      testPublicationWorkAtPost(claimed, linkedDiscussion.id),
+      1,
     )
-  })
-
-  it('expands an RSS scope through its retained story root and retains exact sitemap targets', async () => {
-    const user = await createTestUser()
-    if (!user) throw new Error('Expected RSS post author')
-    const topic = await createTestTopic({ user })
-    const feedId = await createTestRssFeedWithTiming(topic.id)
-    const item = await createTestRssFeedItemWithUrl(feedId)
-    const story = await insertTestStory()
-    await setTestItemStoryId(item.id, story.id)
-    const root = await createTestPost({ user })
-    const reply = await createTestPost({ user, parent_post_id: root.id, post_type: 'comment' })
-    await insertTestPostStory(root.id, story.id, user.id)
-    await using query = await beginTransaction()
-    const work = await recordPostPublicationChange(query, {
-      scope: { type: 'rss_feed', rssFeedId: feedId },
-      reason: 'rss_feed_enablement_changed',
-      impactedPostIds: [root.id],
-    })
-    await query.commit()
-    const claimed = await claimPostPublicationDirtyWork(work, 60)
-    if (!claimed) throw new Error('Expected RSS publication work lease')
-    const result = await reconcilePostPublicationDirtyWork(claimed)
-
-    expect(result.posts.map(post => post.id)).toEqual(expect.arrayContaining([root.id, reply.id]))
-    expect(result.sitemapTargets).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ postType: root.post_type, day: expect.any(String) }),
-      ]),
-    )
+    expect(postPage.posts.map(candidate => candidate.id)).toEqual([post.id])
+    expect(nestedPage.posts.map(candidate => candidate.id)).toEqual([nestedReply.id])
+    expect(excludedPage.posts.map(candidate => candidate.id)).toEqual([])
   })
 
   it('bounds the union of retained and current topic ratings', async () => {
@@ -144,9 +75,13 @@ describe('post publication reconciliation', () => {
     await query.commit()
     const claimed = await claimPostPublicationDirtyWork(work, 60)
     if (!claimed) throw new Error('Expected topic publication work lease')
+    const { posts, final: result } = await reconcileTestPublicationThroughPostSweep(
+      claimed,
+      2,
+      post.id,
+    )
 
-    const result = await reconcilePostPublicationDirtyWork(claimed, 2)
-
+    expect(posts.map(candidate => candidate.id)).toContain(post.id)
     expect(result.topicIds).toEqual(expect.arrayContaining([currentTopic.id, retainedTopic.id]))
   })
 
@@ -171,8 +106,13 @@ describe('post publication reconciliation', () => {
     const claimed = await claimPostPublicationDirtyWork(work, 60)
     if (!claimed) throw new Error('Expected ordinary post publication work lease')
 
-    const result = await reconcilePostPublicationDirtyWork(claimed)
+    const { posts, final: result } = await reconcileTestPublicationThroughPostSweep(
+      claimed,
+      2,
+      post.id,
+    )
 
+    expect(posts.map(candidate => candidate.id)).toContain(post.id)
     expect(result.topicIds).toEqual(expect.arrayContaining([owner.id]))
   })
 

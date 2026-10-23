@@ -14,13 +14,11 @@ import { findTrackedDayRangeFromS3 } from './tracked-range-discovery.mts'
 const TRACKED_RANGE_STORAGE_KEY = 'sitemaps/meta/posts-tracked-range.json'
 export type PostDayManifest = {
   active_page_count: number
-  highest_written_page: number
+  generation_id: string
   generated_at: string
-  content_hashes: Record<string, string>
 }
 export type SitemapFamilyManifest = PostDayManifest
-
-async function putSitemapObject(
+export async function putSitemapObject(
   key: string,
   body: string | Uint8Array,
   options: {
@@ -143,7 +141,7 @@ async function persistTrackedDayRange(range: TrackedDayRange): Promise<void> {
   })
 }
 
-async function getJsonObject<T>(key: string): Promise<T | null> {
+export async function getJsonObject<T>(key: string): Promise<T | null> {
   try {
     const response = await S3ImagesClient.send(
       new GetObjectCommand({

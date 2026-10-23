@@ -14,11 +14,13 @@ import {
   recordPostPublicationChange,
 } from './public.mts'
 import { retainPostPublicationImpactKeys } from './capture-keys.mts'
+import { listPostPublicationIdentityKeys } from './identity-keys.mts'
 import {
   retainPostPublicationKeys,
   type PostPublicationRetainedKey,
 } from './retained-key-writes.mts'
 import { postPublicationWorkConfig } from './work-limits.mts'
+import { reconcileTestPublicationThroughPostSweep } from '@voucha/test-helpers/post-publication-fixtures'
 
 import type { TransactionQuery } from '@data-stores/psql'
 
@@ -62,7 +64,8 @@ describe('post publication orphan-receipt reconciliation', () => {
     const claimed = await claimPostPublicationDirtyWork(deleted, 60)
     if (!claimed) throw new Error('Expected deleted-post publication work lease')
 
-    await expect(reconcilePostPublicationDirtyWork(claimed)).resolves.toMatchObject({
+    const { final } = await reconcileTestPublicationThroughPostSweep(claimed, undefined, post.id)
+    expect(final).toMatchObject({
       posts: [],
       orphanReceiptPostIds: [],
       missingPostIds: [post.id],
@@ -103,7 +106,7 @@ describe('post publication orphan-receipt reconciliation', () => {
 
       const claimed = await claimPostPublicationDirtyWork(work, 60)
       if (!claimed) throw new Error('Expected retained-key publication work lease')
-      const page = await reconcilePostPublicationDirtyWork(claimed)
+      const page = await listPostPublicationIdentityKeys(claimed, 100)
 
       expect(page.missingPostIds).toHaveLength(keyCount)
       expect(page.identityKeys).toContainEqual(
@@ -152,7 +155,7 @@ describe('post publication orphan-receipt reconciliation', () => {
 
       const claimed = await claimPostPublicationDirtyWork(work, 60)
       if (!claimed) throw new Error('Expected reverse-overlap publication work lease')
-      const page = await reconcilePostPublicationDirtyWork(claimed)
+      const page = await listPostPublicationIdentityKeys(claimed, 100)
       expect(page.missingPostIds).toHaveLength(shared.length + 2)
       expect(page.missingPostIds).toEqual(
         expect.arrayContaining([firstOnly, secondOnly, ...shared]),

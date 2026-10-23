@@ -23,25 +23,38 @@ export async function claimRecoverableDataRequests(
     'processing_timeout_minutes',
   )
   await using transaction = await beginTransaction()
-  // Both mutation streams consume one shared, globally ordered candidate page.
+  // Each due lane takes one indexed page before the shared claim allowance. A
+  // completed claim moves the row out of the lane until its next timeout.
   const { rows: candidateRows } = await transaction<{ id: string; user_id: string | null }>(sql`
     /* claimRecoverableDataRequests:candidates */
     WITH orphan_ids AS (
-      SELECT id, user_id FROM user_data_requests
+      SELECT id, user_id, '-infinity'::timestamptz AS due_at FROM user_data_requests
       WHERE user_id IS NULL AND completed_at IS NULL AND failed_at IS NULL
         AND (${requestIds ?? null}::uuid[] IS NULL OR id = ANY(${requestIds ?? null}::uuid[]))
       ORDER BY id LIMIT ${batchSize}
-    ), active_ids AS (
-      SELECT request.id, request.user_id FROM user_data_requests request
+    ), unstarted_ids AS (
+      SELECT request.id, request.user_id, request.dispatched_at AS due_at
+      FROM user_data_requests request
       JOIN users active_user ON active_user.id = request.user_id AND active_user.deleted_at IS NULL
       WHERE (${requestIds ?? null}::uuid[] IS NULL OR request.id = ANY(${requestIds ?? null}::uuid[]))
         AND request.completed_at IS NULL AND request.failed_at IS NULL
-        AND ((request.processing_started_at IS NULL AND request.dispatched_at < NOW() - ${ACCOUNT_DATA_REQUESTS_DISPATCH_TIMEOUT_MINUTES}::integer * INTERVAL '1 minute')
-          OR request.processing_started_at < NOW() - ${ACCOUNT_DATA_REQUESTS_PROCESSING_TIMEOUT_MINUTES}::integer * INTERVAL '1 minute')
-      ORDER BY request.id LIMIT ${batchSize}
+        AND request.processing_started_at IS NULL
+        AND request.dispatched_at < NOW() - ${ACCOUNT_DATA_REQUESTS_DISPATCH_TIMEOUT_MINUTES}::integer * INTERVAL '1 minute'
+      ORDER BY request.dispatched_at, request.id LIMIT ${batchSize}
+    ), processing_ids AS (
+      SELECT request.id, request.user_id, request.processing_started_at AS due_at
+      FROM user_data_requests request
+      JOIN users active_user ON active_user.id = request.user_id AND active_user.deleted_at IS NULL
+      WHERE (${requestIds ?? null}::uuid[] IS NULL OR request.id = ANY(${requestIds ?? null}::uuid[]))
+        AND request.completed_at IS NULL AND request.failed_at IS NULL
+        AND request.processing_started_at < NOW() - ${ACCOUNT_DATA_REQUESTS_PROCESSING_TIMEOUT_MINUTES}::integer * INTERVAL '1 minute'
+      ORDER BY request.processing_started_at, request.id LIMIT ${batchSize}
     )
-    SELECT id, user_id FROM (SELECT * FROM orphan_ids UNION ALL SELECT * FROM active_ids) candidates
-    ORDER BY id LIMIT ${batchSize}
+    SELECT id, user_id FROM (
+      SELECT * FROM orphan_ids UNION ALL SELECT * FROM unstarted_ids
+      UNION ALL SELECT * FROM processing_ids
+    ) candidates
+    ORDER BY due_at, id LIMIT ${batchSize}
   `)
   const selectedIds = candidateRows.map(row => row.id)
   const { rowCount: deletedCount } =

@@ -3,7 +3,7 @@ import { write } from '@data-stores/psql'
 import { SITEMAP_CONFIG } from '@voucha/config/sitemaps'
 import type { ClaimedPostPublicationDirtyWork } from './types.mts'
 import { listPostPublicationIdentityKeys } from './identity-keys.mts'
-import { listPublicationCandidates, type ReconciliationPost } from './publication-candidates.mts'
+import { listPublicationCandidatePage, type ReconciliationPost } from './publication-candidates.mts'
 import { retainRssFeedNotificationImpacts } from './retain-rss-feed-notification-impacts.mts'
 import { retainOrphanPublicationIdentities } from './orphan-identities.mts'
 import { materializePostPublicationIdentitySnapshot } from './identity-snapshots.mts'
@@ -31,6 +31,8 @@ export async function reconcilePostPublicationDirtyWork(
   orphanReceiptPostIds: string[]
   hasMoreOrphanReceipts: boolean
   cursorPostId: string | null
+  pendingPostId: string | null
+  pendingAncestorId: string | null
   topicIds: string[]
   hasMoreTopics: boolean
   sitemapTargets: PublicationSitemapTarget[]
@@ -44,10 +46,11 @@ export async function reconcilePostPublicationDirtyWork(
   if (!Number.isSafeInteger(limit) || limit < 1)
     throw new TypeError('Publication page limit must be positive')
 
-  const [posts, orphanReceiptPage] = await Promise.all([
-    listPublicationCandidates(work, limit, selectedPostIds),
+  const [postPage, orphanReceiptPage] = await Promise.all([
+    listPublicationCandidatePage(work, limit, selectedPostIds),
     listOrphanReceiptPostIds(work, limit),
   ])
+  const { posts } = postPage
   const snapshots = await posts.reduce(
     async (pending, post) => {
       const result = await pending
@@ -65,7 +68,7 @@ export async function reconcilePostPublicationDirtyWork(
   )
   // Topic UUID order is independent of post UUID order. First retain topics from every post page;
   // only then drain the single generation-fenced topic cursor.
-  const hasMorePosts = (selectedPostIds ?? posts).length === limit
+  const hasMorePosts = postPage.hasMore
   const hasIncompleteSnapshots =
     snapshots.some(snapshot => !snapshot.complete) || !orphanIdentitiesComplete
   const topicPage =
@@ -108,7 +111,9 @@ export async function reconcilePostPublicationDirtyWork(
     posts,
     orphanReceiptPostIds: orphanReceiptPage.ids,
     hasMoreOrphanReceipts: orphanReceiptPage.hasMore,
-    cursorPostId: selectedPostIds?.at(-1) ?? posts.at(-1)?.id ?? work.cursor_post_id,
+    cursorPostId: postPage.cursorPostId,
+    pendingPostId: postPage.pendingPostId,
+    pendingAncestorId: postPage.pendingAncestorId,
     topicIds: topicPage.ids,
     hasMoreTopics: topicPage.hasMore,
     sitemapTargets: uniqueSitemapTargets(sitemapTargets),

@@ -68,8 +68,14 @@ registerScenarioContract('mv-rss-feed-crawl-tiers-refresh', {
 })
 registerScenarioContract('rss-feeds-to-fetch-tiered', {
   expectations: [
-    { kind: 'maxProcessedRows', relation: 'mv_rss_feed_crawl_tiers', max: 3089 },
-    { kind: 'maxProcessedRows', relation: 'rss_feeds', max: 3089 },
+    { kind: 'maxProcessedRows', relation: 'mv_rss_feed_crawl_tiers', max: 1001 },
+    { kind: 'maxProcessedRows', relation: 'rss_feeds', max: 1001 },
+    { kind: 'maxProcessedRows', relation: 'urls', max: 1001 },
+    { kind: 'maxProcessedRows', relation: 'url_hostnames', max: 1001 },
+    {
+      kind: 'usesIndexes',
+      indexes: ['rss_feeds_pkey', 'urls_pkey', 'idx_mv_rss_feed_crawl_tiers__rss_feed_id'],
+    },
   ],
 })
 registerScenarioContract('mv-platform-stats-refresh', {

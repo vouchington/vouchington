@@ -1,152 +1,95 @@
 import { readFile } from 'node:fs/promises'
 import { gunzipSync } from 'node:zlib'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { buildSitemapFamilyIndexEntry, generateSitemapFamilyFiles } from './family-generation.mts'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { buildSitemapFamilyIndexEntry } from './family-generation.mts'
+import { generateSitemapPage, type GenerationPageDependencies } from './generation-page.mts'
+import type { SitemapGenerationProgress } from './generation-storage.mts'
+import type { PostDayManifest } from './storage.mts'
+import type { SitemapFamilyEntry } from './types.mts'
 
-async function* familyEntries() {
-  yield { path: '/@testuser', updated_at: new Date('2026-04-01T00:00:00.000Z') }
-  yield { path: '/@testuser/gear', updated_at: new Date('2026-04-02T00:00:00.000Z') }
-}
+describe('sitemap generation publication', () => {
+  afterEach(() => vi.unstubAllEnvs())
 
-describe('family sitemap generation', () => {
-  const getSitemapFamilyManifest = vi.fn<VitestLooseMock>()
-  const iterateSitemapFamilyEntries = vi.fn<VitestLooseMock>()
-  const putSitemapFamilyManifest = vi.fn<VitestLooseMock>()
-  const putSitemapObjectFile = vi.fn<VitestLooseMock>()
-
-  beforeEach(() => {
+  it('keeps the previous index live across a cap and a failed staged upload', async () => {
     vi.stubEnv('SITEMAP_BASE_URL', 'https://test.com')
-    getSitemapFamilyManifest.mockReset()
-    iterateSitemapFamilyEntries.mockReset()
-    putSitemapFamilyManifest.mockReset()
-    putSitemapObjectFile.mockReset()
-    getSitemapFamilyManifest.mockResolvedValue(null)
-    iterateSitemapFamilyEntries.mockReturnValue(familyEntries())
-  })
-
-  afterEach(() => {
-    vi.unstubAllEnvs()
-  })
-
-  it('writes family page, index, and manifest files', async () => {
-    const uploadedXml = new Map<string, string>()
-    putSitemapObjectFile.mockImplementation(async (key: string, filePath: string) => {
-      uploadedXml.set(key, gunzipSync(await readFile(filePath)).toString())
-    })
-
-    const manifest = await generateSitemapFamilyFiles('landing-pages', {
-      getSitemapFamilyManifest,
-      iterateSitemapFamilyEntries,
-      putSitemapFamilyManifest,
-      putSitemapObjectFile,
-    })
-
-    expect(manifest.active_page_count).toBe(1)
-    expect(manifest.highest_written_page).toBe(1)
-    expect(putSitemapObjectFile).toHaveBeenCalledTimes(2)
-    expect(uploadedXml.get('families/landing-pages/1.xml')).toContain(
-      '<loc>https://test.com/@testuser/gear</loc>',
-    )
-    expect(uploadedXml.get('sitemaps/families/landing-pages.xml')).toContain(
-      '<loc>https://test.com/sitemaps/landing-pages/1.xml</loc>',
-    )
-    expect(putSitemapFamilyManifest).toHaveBeenCalledWith(
-      'landing-pages',
-      expect.objectContaining({
-        active_page_count: 1,
-        highest_written_page: 1,
-        content_hashes: expect.objectContaining({
-          '1.xml': expect.any(String),
-          'index.xml': expect.any(String),
-        }),
-      }),
-    )
-  })
-
-  it('rewrites stale family pages when the active page count shrinks', async () => {
-    const uploadedXml = new Map<string, string>()
-    putSitemapObjectFile.mockImplementation(async (key: string, filePath: string) => {
-      uploadedXml.set(key, gunzipSync(await readFile(filePath)).toString())
-    })
-    getSitemapFamilyManifest.mockResolvedValue({
-      active_page_count: 3,
-      highest_written_page: 3,
+    const entries: SitemapFamilyEntry[] = [
+      {
+        id: '0199a000-0000-7000-8000-000000000003',
+        path: '/first',
+        updated_at: new Date('2026-04-01'),
+      },
+      {
+        id: '0199a000-0000-7000-8000-000000000002',
+        path: '/second',
+        updated_at: new Date('2026-04-01'),
+      },
+    ]
+    let progress: SitemapGenerationProgress | null = null
+    const currentProgress = (): SitemapGenerationProgress | null => progress
+    let manifest: PostDayManifest | null = {
+      active_page_count: 1,
+      generation_id: '11111111-1111-4111-8111-111111111111',
       generated_at: '2026-03-01T00:00:00.000Z',
-      content_hashes: {
-        '1.xml': 'old-page-hash',
-        '2.xml': 'old-stale-page-hash',
-        '3.xml': 'old-stale-page-hash',
-        'index.xml': 'old-index-hash',
-      },
-    })
-    iterateSitemapFamilyEntries.mockReturnValue(iterateSingleTopicEntry())
-
-    const manifest = await generateSitemapFamilyFiles('topics', {
-      getSitemapFamilyManifest,
-      iterateSitemapFamilyEntries,
-      putSitemapFamilyManifest,
-      putSitemapObjectFile,
-    })
-
-    expect(manifest.active_page_count).toBe(1)
-
-    async function* iterateSingleTopicEntry() {
-      yield { path: '/topics/test/posts', updated_at: new Date('2026-04-01T00:00:00.000Z') }
     }
-    expect(manifest.highest_written_page).toBe(3)
-    expect(uploadedXml.get('families/topics/2.xml')).toBe(
-      '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>',
-    )
-    expect(uploadedXml.get('families/topics/3.xml')).toBe(
-      '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>',
-    )
-    expect(putSitemapFamilyManifest).toHaveBeenCalledWith(
-      'topics',
-      expect.objectContaining({
-        active_page_count: 1,
-        highest_written_page: 3,
-        content_hashes: expect.objectContaining({
-          '2.xml': expect.any(String),
-          '3.xml': expect.any(String),
-        }),
+    const objects = new Map<string, string>([['sitemaps/families/topics.xml', 'previous-index']])
+    let failNextPage = true
+    const dependencies: GenerationPageDependencies<SitemapFamilyEntry> = {
+      getProgress: async () => progress,
+      getManifest: async () => manifest,
+      putProgress: async value => {
+        progress = value
+      },
+      deleteProgress: async () => {
+        progress = null
+      },
+      readPage: async options => {
+        const eligible = entries.filter(
+          entry =>
+            (!options.highWaterId || entry.id <= options.highWaterId) &&
+            (!options.afterId ||
+              entry.id < options.afterId ||
+              (entry.id === options.afterId && entry.path > (options.afterPath ?? ''))),
+        )
+        return eligible.slice(0, options.limit)
+      },
+      pageStorageKey: (generationId, page) => `families/topics/${generationId}/${page}.xml`,
+      pageRoutePath: (generationId, page) => `sitemaps/topics/${generationId}/${page}.xml`,
+      indexStorageKey: 'sitemaps/families/topics.xml',
+      putManifest: async value => {
+        manifest = value
+      },
+      retireGeneration: async () => {},
+      toUrl: entry => ({
+        loc: `https://test.com${entry.path}`,
+        lastmod: entry.updated_at.toISOString(),
       }),
-    )
-  })
-
-  it('closes the family entry iterator when page publication fails', async () => {
-    const returnIterator = vi.fn<VitestLooseMock>().mockResolvedValue({ done: true })
-    const iterator = {
-      next: vi
-        .fn<VitestLooseMock>()
-        .mockResolvedValueOnce({
-          done: false,
-          value: {
-            path: '/topics/test/posts',
-            updated_at: new Date('2026-04-01T00:00:00.000Z'),
-          },
-        })
-        .mockResolvedValue({ done: true }),
-      return: returnIterator,
-      [Symbol.asyncIterator]() {
-        return this
+      putObjectFile: async (key, filePath) => {
+        if (key.endsWith('/2.xml') && failNextPage) throw new Error('staged upload failed')
+        objects.set(key, gunzipSync(await readFile(filePath)).toString())
       },
     }
-    iterateSitemapFamilyEntries.mockReturnValue(iterator)
-    putSitemapObjectFile.mockRejectedValueOnce(new Error('upload failed'))
 
-    await expect(
-      generateSitemapFamilyFiles('topics', {
-        getSitemapFamilyManifest,
-        iterateSitemapFamilyEntries,
-        putSitemapFamilyManifest,
-        putSitemapObjectFile,
-      }),
-    ).rejects.toThrow('upload failed')
+    const first = await generateSitemapPage(1, dependencies)
+    expect(first).toMatchObject({ manifest: null, hasMore: true })
+    expect(objects.get('sitemaps/families/topics.xml')).toBe('previous-index')
+    expect(manifest?.generation_id).toBe('11111111-1111-4111-8111-111111111111')
+    const stagedGenerationId = currentProgress()?.generation_id
 
-    expect(returnIterator).toHaveBeenCalledOnce()
+    await expect(generateSitemapPage(1, dependencies)).rejects.toThrow('staged upload failed')
+    expect(objects.get('sitemaps/families/topics.xml')).toBe('previous-index')
+    expect(currentProgress()?.page_count).toBe(1)
+
+    failNextPage = false
+    const final = await generateSitemapPage(1, dependencies)
+    expect(final).toMatchObject({ hasMore: false, manifest: { active_page_count: 2 } })
+    expect(objects.get('sitemaps/families/topics.xml')).toContain(
+      `https://test.com/sitemaps/topics/${stagedGenerationId}/2.xml`,
+    )
+    expect(progress).toBeNull()
   })
 
   it('builds root-index entries for family indexes', () => {
+    vi.stubEnv('SITEMAP_BASE_URL', 'https://test.com')
     expect(buildSitemapFamilyIndexEntry('domains')).toEqual({
       loc: 'https://test.com/sitemaps/domains.xml',
     })

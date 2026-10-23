@@ -4,6 +4,7 @@ import { IDEMPOTENCY_KEY_REUSED } from '@modules/on-error/error-codes'
 import { hashAdmissionIntent } from '@services/contribution-gating/admission'
 import sql from 'sql-template-strings'
 import type { ImportTopicResult } from './import-topics-types.mts'
+import { getUserImportExportConfig } from './config.mts'
 
 const TOPIC_IMPORT_REPLAY_RETENTION_HOURS = 48
 
@@ -140,7 +141,7 @@ function topicImportIntentSha256(names: readonly string[]): string {
 /** Deletes one bounded, lock-safe page of completed replays or abandoned pending attempts. */
 export async function pruneExpiredTopicImportAttempts(
   now?: Date,
-  batchSize = 100,
+  batchSize = getUserImportExportConfig().topic_attempt_prune_batch_size,
   lowerBoundDate?: Date,
 ): Promise<number> {
   if (!Number.isInteger(batchSize) || batchSize < 1) throw new Error('batchSize must be positive')

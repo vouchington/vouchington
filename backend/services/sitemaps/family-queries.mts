@@ -1,8 +1,15 @@
-import { createAsyncGeneratorFromCursor } from '@data-stores/psql'
+import { read } from '@data-stores/psql'
 import { getTopicTypeSlug, topicTypes } from '@voucha/types/entities/topic'
 import sql from 'sql-template-strings'
 import { buildLandingPagesQuery } from './family-landing-pages-query.mts'
 import type { SitemapFamilyEntry, SitemapFamilyType } from './types.mts'
+
+type FamilyPageOptions = {
+  highWaterId?: string
+  afterId?: string
+  afterPath?: string
+  limit: number
+}
 
 function buildTopicSlugCaseSql() {
   const caseSql = sql`CASE topic_type`
@@ -13,32 +20,40 @@ function buildTopicSlugCaseSql() {
   return caseSql
 }
 
-export function iterateSitemapFamilyEntries(
+export async function readSitemapFamilyPage(
   family: SitemapFamilyType,
-): AsyncIterable<SitemapFamilyEntry> {
-  const statement = sql`/* iterateSitemapFamilyEntries */`
-  statement.append(buildSitemapFamilyQuery(family))
-  return createAsyncGeneratorFromCursor<SitemapFamilyEntry>(statement)
+  options: FamilyPageOptions,
+): Promise<SitemapFamilyEntry[]> {
+  const statement = sql`/* readSitemapFamilyPage */ SELECT id, path, updated_at FROM (`
+  statement.append(buildSitemapFamilyQuery(family, options)).append(sql`) AS entries WHERE TRUE`)
+  if (options.afterId && options.afterPath) {
+    statement.append(
+      sql` AND (id < ${options.afterId} OR (id = ${options.afterId} AND path > ${options.afterPath}))`,
+    )
+  }
+  statement.append(sql` ORDER BY id DESC, path ASC LIMIT ${options.limit}`)
+  const { rows } = await read(statement)
+  return rows as SitemapFamilyEntry[]
 }
 
-export function buildSitemapFamilyQuery(family: SitemapFamilyType) {
+export function buildSitemapFamilyQuery(family: SitemapFamilyType, options?: FamilyPageOptions) {
   switch (family) {
     case 'users':
-      return buildUsersQuery()
+      return buildUsersQuery(options)
     case 'topics':
-      return buildTopicsQuery()
+      return buildTopicsQuery(options)
     case 'communities':
-      return buildCommunitiesQuery()
+      return buildCommunitiesQuery(options)
     case 'domains':
-      return buildDomainsQuery()
+      return buildDomainsQuery(options)
     case 'landing-pages':
-      return buildLandingPagesQuery()
+      return buildLandingPagesQuery(options)
   }
 }
 
-function buildUsersQuery() {
-  return sql`/* buildSitemapUsersQuery */
-    SELECT CONCAT('/user/', username) AS path, updated_at
+function buildUsersQuery(options?: FamilyPageOptions) {
+  const query = sql`/* buildSitemapUsersQuery */
+    SELECT id, CONCAT('/user/', username) AS path, updated_at
     FROM users
     WHERE deleted_at IS NULL
       AND username IS NOT NULL
@@ -48,11 +63,11 @@ function buildUsersQuery() {
         WHERE us.user_id = users.id
           AND us.lifted_at IS NULL
       )
-    ORDER BY id DESC
   `
+  return appendFamilyBounds(query, options, false)
 }
 
-function buildTopicsQuery() {
+function buildTopicsQuery(options?: FamilyPageOptions) {
   const query = sql`/* buildSitemapTopicsQuery */
     WITH eligible_topics AS (
       SELECT
@@ -68,10 +83,12 @@ function buildTopicsQuery() {
         AND is_noindexed IS NOT TRUE
         AND slug IS NOT NULL
         AND topic_type = ANY(${Object.keys(topicTypes)})
-    )
-    SELECT CONCAT('/', slug_path, '/', slug, '/', subpage) AS path, updated_at
+  `
+  appendFamilyBounds(query, options, true)
+  query.append(sql`)
+    SELECT id, CONCAT('/', slug_path, '/', slug, '/', subpage) AS path, updated_at
     FROM (
-      SELECT `
+      SELECT `)
   query.append(buildTopicSlugCaseSql())
   query.append(sql` AS slug_path, slug, updated_at, 'posts' AS subpage, id
       FROM eligible_topics
@@ -113,28 +130,44 @@ function buildTopicsQuery() {
       FROM eligible_topics
       WHERE topic_type = 'referral_program' OR referral_program_topic_id IS NOT NULL
     ) entries
-    ORDER BY id DESC, subpage ASC
   `)
   return query
 }
 
-function buildCommunitiesQuery() {
-  return sql`/* buildSitemapCommunitiesQuery */
-    SELECT CONCAT('/communities/', slug) AS path, updated_at
+function buildCommunitiesQuery(options?: FamilyPageOptions) {
+  const query = sql`/* buildSitemapCommunitiesQuery */
+    SELECT id, CONCAT('/communities/', slug) AS path, updated_at
     FROM communities
     WHERE deleted_at IS NULL
       AND visibility = 'public'
-    ORDER BY id DESC
   `
+  return appendFamilyBounds(query, options, false)
 }
 
-function buildDomainsQuery() {
-  return sql`/* buildSitemapDomainsQuery */
-    SELECT CONCAT('/domain/', hostname) AS path, updated_at
+function buildDomainsQuery(options?: FamilyPageOptions) {
+  const query = sql`/* buildSitemapDomainsQuery */
+    SELECT id, CONCAT('/domain/', hostname) AS path, updated_at
     FROM url_hostnames
     WHERE NOT is_blocked
       AND publicly_introduced_at IS NOT NULL
       AND votes_count_up > 0
-    ORDER BY votes_score_net DESC, id DESC
   `
+  return appendFamilyBounds(query, options, false)
+}
+
+function appendFamilyBounds<T extends ReturnType<typeof sql>>(
+  query: T,
+  options: FamilyPageOptions | undefined,
+  includeSameId: boolean,
+): T {
+  if (!options) return query
+  if (options.highWaterId) query.append(sql` AND id <= ${options.highWaterId}`)
+  if (options.afterId) {
+    if (includeSameId) query.append(sql` AND id <= ${options.afterId}`)
+    else query.append(sql` AND id < ${options.afterId}`)
+  }
+  query.append(
+    sql` ORDER BY id DESC LIMIT ${options.limit + (includeSameId && options.afterId ? 1 : 0)}`,
+  )
+  return query
 }

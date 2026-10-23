@@ -20,6 +20,8 @@ import {
 import {
   reconcileTestPublicationUntilSnapshotsComplete as reconcilePostPublicationDirtyWork,
   getTestPublicationProjectionIdentity,
+  testPublicationWorkAtPost,
+  testUuidPredecessor,
 } from '@voucha/test-helpers/post-publication-fixtures'
 import { recordPostPublicationChange } from './capture.mts'
 
@@ -52,12 +54,14 @@ describe('topic alias publication reconciliation', () => {
     const claimed = await claimPostPublicationDirtyWork(work, 60)
     if (!claimed) throw new Error('Expected topic alias publication work lease')
 
-    const firstPage = await reconcilePostPublicationDirtyWork(claimed, 2)
+    const sortedPostIds = posts.map(post => post.id).toSorted()
+    const firstPage = await reconcilePostPublicationDirtyWork(
+      testPublicationWorkAtPost(claimed, sortedPostIds[0]!),
+      2,
+    )
 
     expect(firstPage).toMatchObject({ hasMorePosts: true, topicIds: [] })
-    expect(firstPage.posts.map(post => post.id)).toEqual(
-      [...posts.map(post => post.id)].toSorted().slice(0, 2),
-    )
+    expect(firstPage.posts.map(post => post.id)).toEqual(sortedPostIds.slice(0, 2))
     expect((await getTestPublicationProjectionIdentity(firstPage.posts[0]!)).topicIds).toEqual([
       owner.id,
     ])
@@ -70,16 +74,17 @@ describe('topic alias publication reconciliation', () => {
       updatePostPublicationDirtyWorkCursors(fence, { postId: firstPage.cursorPostId }),
     ).resolves.toBe(true)
 
-    const finalPage = await reconcilePostPublicationDirtyWork(
-      { ...claimed, cursor_post_id: firstPage.cursorPostId },
+    const finalPostPage = await reconcilePostPublicationDirtyWork(
+      testPublicationWorkAtPost(claimed, sortedPostIds[2]!),
+      1,
+    )
+    expect(finalPostPage.posts.map(post => post.id)).toEqual(sortedPostIds.slice(2))
+    const terminalPage = await reconcilePostPublicationDirtyWork(
+      { ...claimed, cursor_post_id: 'ffffffff-ffff-ffff-ffff-ffffffffffff' },
       2,
     )
-
-    expect(finalPage).toMatchObject({ hasMorePosts: false, hasMoreTopics: false })
-    expect(finalPage.posts.map(post => post.id)).toEqual(
-      [...posts.map(post => post.id)].toSorted().slice(2),
-    )
-    expect(finalPage.topicIds).toEqual(expect.arrayContaining([owner.id, priorOwner.id]))
+    expect(terminalPage).toMatchObject({ posts: [], hasMorePosts: false, hasMoreTopics: false })
+    expect(terminalPage.topicIds).toEqual(expect.arrayContaining([owner.id, priorOwner.id]))
   })
 
   it('restarts topic alias source pagination from the first page on a replacement generation', async () => {
@@ -112,7 +117,11 @@ describe('topic alias publication reconciliation', () => {
     await query.commit()
     const claimed = await claimPostPublicationDirtyWork(work, 60)
     if (!claimed) throw new Error('Expected topic alias publication work lease')
-    const firstPage = await reconcilePostPublicationDirtyWork(claimed, 1)
+    const firstPostId = posts.map(post => post.id).toSorted()[0]!
+    const firstPage = await reconcilePostPublicationDirtyWork(
+      testPublicationWorkAtPost(claimed, firstPostId),
+      1,
+    )
     await expect(
       updatePostPublicationDirtyWorkCursors(
         { id: claimed.id, generation: claimed.generation, leaseToken: claimed.lease_token },
@@ -130,7 +139,11 @@ describe('topic alias publication reconciliation', () => {
     const replacementClaim = await claimPostPublicationDirtyWork(replacement, 60)
     if (!replacementClaim) throw new Error('Expected replacement topic alias work lease')
 
-    const restarted = await reconcilePostPublicationDirtyWork(replacementClaim, 1)
+    expect(replacement.cursor_post_id).toBeNull()
+    const restarted = await reconcilePostPublicationDirtyWork(
+      testPublicationWorkAtPost(replacementClaim, firstPostId),
+      1,
+    )
 
     expect(Number(replacement.generation)).toBeGreaterThan(Number(claimed.generation))
     expect(restarted).toMatchObject({ hasMorePosts: true, cursorPostId: firstPage.cursorPostId })
@@ -156,7 +169,10 @@ describe('topic alias publication reconciliation', () => {
     await query.commit()
     const claimed = await claimPostPublicationDirtyWork(work, 60)
     if (!claimed) throw new Error('Expected topic alias publication work lease')
-    const selected = await reconcilePostPublicationDirtyWork(claimed, 1)
+    const selected = await reconcilePostPublicationDirtyWork(
+      { ...claimed, cursor_post_id: testUuidPredecessor(selectedPost.id) },
+      1,
+    )
 
     const replacementPost = await createTestPost({ user })
     await using sourceDeletionQuery = await beginTransaction()
@@ -187,9 +203,17 @@ describe('topic alias publication reconciliation', () => {
       1,
       selected.posts.map(post => post.id),
     )
-    const newSelection = await reconcilePostPublicationDirtyWork(claimed, 1)
+    const withoutOld = await reconcilePostPublicationDirtyWork(
+      testPublicationWorkAtPost(claimed, selectedPost.id),
+      1,
+    )
+    const newSelection = await reconcilePostPublicationDirtyWork(
+      testPublicationWorkAtPost(claimed, replacementPost.id),
+      1,
+    )
 
     expect(reread.posts.map(post => post.id)).toEqual([selectedPost.id])
+    expect(withoutOld.posts.map(post => post.id)).not.toContain(selectedPost.id)
     expect(newSelection.posts.map(post => post.id)).toEqual([replacementPost.id])
   })
 
@@ -216,19 +240,21 @@ describe('topic alias publication reconciliation', () => {
     await query.commit()
     const claimed = await claimPostPublicationDirtyWork(work, 60)
     if (!claimed) throw new Error('Expected topic alias publication work lease')
-    const selected = await reconcilePostPublicationDirtyWork(claimed, 1)
+    const selected = await reconcilePostPublicationDirtyWork(
+      testPublicationWorkAtPost(claimed, posts.map(post => post.id).toSorted()[0]!),
+      1,
+    )
     const selectedPostId = selected.posts[0]!.id
     await hardDeleteTestPost(selectedPostId)
 
     const reread = await reconcilePostPublicationDirtyWork(claimed, 1, [selectedPostId])
+    const remainingId = posts.map(post => post.id).find(postId => postId !== selectedPostId)!
     const nextPage = await reconcilePostPublicationDirtyWork(
-      { ...claimed, cursor_post_id: reread.cursorPostId },
+      testPublicationWorkAtPost(claimed, remainingId),
       1,
     )
 
     expect(reread).toMatchObject({ posts: [], hasMorePosts: true, cursorPostId: selectedPostId })
-    expect(nextPage.posts.map(post => post.id)).toEqual(
-      posts.map(post => post.id).filter(postId => postId !== selectedPostId),
-    )
+    expect(nextPage.posts.map(post => post.id)).toEqual([remainingId])
   })
 })

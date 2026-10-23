@@ -6,6 +6,7 @@ import {
   enqueueProcessGooglePlayNotification,
   enqueueRecoverGooglePlayAcknowledgements,
   enqueueRecoverGooglePlayActiveSources,
+  enqueueContinueRecoverGooglePlayActiveSources,
   enqueueRecoverGooglePlayNotifications,
   enqueueRefreshGooglePlayOidcTrust,
 } from './google-play.mts'
@@ -21,6 +22,44 @@ const queuedJobs = async () =>
 
 describe('Google Play membership enqueues', () => {
   afterEach(() => memberships.obliterate({ force: true }))
+
+  it('gives every page continuation a fresh identity while retaining scheduled recovery dedup', async () => {
+    await enqueueRecoverGooglePlayActiveSources()
+    await enqueueContinueRecoverGooglePlayActiveSources()
+    await enqueueContinueRecoverGooglePlayActiveSources()
+    const jobs = (await queuedJobs()).filter(job => job.name === 'recoverGooglePlayActiveSources')
+    expect(jobs).toHaveLength(3)
+    expect(new Set(jobs.map(job => job.id)).size).toBe(3)
+    expect(jobs.map(job => job.opts.ordering)).toEqual([
+      { key: 'google-play-active-source-recovery', concurrency: 1 },
+      { key: 'google-play-active-source-recovery', concurrency: 1 },
+      { key: 'google-play-active-source-recovery', concurrency: 1 },
+    ])
+  })
+
+  it('admits the same source in a later recovery hour', async () => {
+    const sourceId = randomUUID()
+    const now = 1_800_000_000_123
+    const dateNow = vi.spyOn(Date, 'now')
+    try {
+      dateNow.mockReturnValue(now)
+      await enqueueBulkReconcileGooglePlayActiveSources([{ sourceId }])
+      dateNow.mockReturnValue(now + 3_600_000)
+      await enqueueBulkReconcileGooglePlayActiveSources([{ sourceId }])
+    } finally {
+      dateNow.mockRestore()
+    }
+    const sourceJobs = (await queuedJobs()).filter(
+      job =>
+        job.name === 'reconcileGooglePlayActiveSource' &&
+        typeof job.data === 'object' &&
+        job.data !== null &&
+        'sourceId' in job.data &&
+        job.data.sourceId === sourceId,
+    )
+    expect(sourceJobs).toHaveLength(2)
+    expect(new Set(sourceJobs.map(job => job.id)).size).toBe(2)
+  })
 
   it('keeps purchase tokens out of jobs and serializes notification work by token digest', async () => {
     const evidenceId = randomUUID()

@@ -178,6 +178,11 @@ CREATE INDEX IF NOT EXISTS idx_copyright_notice_email_intakes__received_id
   ON copyright_notice_email_intakes (received_at, id);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_copyright_notice_email_intake_parses__succeeded_intake
+  ON copyright_notice_email_intake_parses (copyright_notice_email_intake_id)
+  WHERE status = 'succeeded';
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_email_intakes__raw_media_type_id ON copyright_notice_email_intakes (raw_media_type_id);
 CREATE INDEX idx_copyright_notice_email_intakes__raw_storage_object_id
   ON copyright_notice_email_intakes (raw_storage_object_id)

@@ -1,417 +1,137 @@
-import { getUsersWorkLimit } from '@services/users/work-limits'
-import { getEngagementEmailsWorkLimit } from './work-limits.mts'
-/* oxlint-disable max-lines -- Engagement email query and formatting helpers are kept with their dispatcher. */
-import { read } from '@data-stores/psql'
-import sql from 'sql-template-strings'
-import { getMarketingPostalAddress, getSiteUrl } from '@modules/utils'
-import onError from '@modules/on-error'
-import { getRecommendedRssFeeds } from '@services/recommended-rss-feeds/get-recommendations'
-import { getRecommendedTopics } from '@services/recommended-topics/get-recommendations'
-import { getRssFeedsByIdBatch } from '@services/rss-feeds/get-batch'
-import { getTopicsByAnyBatch } from '@services/topics/get-batch'
-import { getTrendingReferralPrograms } from '@services/trending-referral-programs/get-trending-referral-programs'
-import {
-  claimEngagementEmailSend,
-  releaseUnsentEngagementEmailClaim,
-} from '@services/users/engagement-emails'
-import type { PrivateUser } from '@services/users/types'
-import {
-  enqueueSendFollowNewsSourcesEmail,
-  enqueueSendFollowTopicsEmail,
-  enqueueSendPostReferralLinkEmail,
-} from '@queues/email-digests/enqueues'
-import type {
-  FollowNewsSourcesEmailProps,
-  FollowTopicsEmailProps,
-  PostReferralLinkEmailProps,
-} from '@email-templates/core'
 import pMap from 'p-map'
+import { getEngagementEmailsWorkLimit } from './work-limits.mts'
+import {
+  readEngagementRecipientPage,
+  readPreparedEngagementRecipients,
+  type EngagementEmailType,
+  type EngagementRecipient as EngagementRecipientRow,
+  type EngagementRecipientCursor,
+  type PreparedEngagementRecipientPage,
+} from './recipient-page.mts'
+import { dispatchFollowTopicsEmail } from './dispatch-follow-topics.mts'
+import { dispatchPostReferralLinkRecipients } from './dispatch-post-referral.mts'
+import { dispatchFollowNewsSourcesEmail } from './dispatch-follow-news.mts'
 
-type EngagementRecipientRow = {
-  id: string
-  email_address: string
-  username: string | null
-  ui_locale: string | null
-}
-
-type TopicRecommendationInput = {
-  id: string
-  reason?: string | null
-}
-
-type TopicInput = {
-  name: string
-  slug: string
-}
-
-type ReferralProgramInput = {
-  id: string
-  link_count: number
-}
-
-type RssFeedInput = {
-  id: string
-  title: string
-  home_page_url?: { url: string } | null
-  rss_feed_url: { url: string }
-  topic: {
-    slug?: string | null
-    markdown?: string | null
-  }
-}
+export {
+  buildFollowTopicsItems,
+  buildReferralProgramItems,
+  buildFollowNewsSourceItems,
+} from './recommendation-items.mts'
 
 export async function dispatchEngagementEmails(userIds?: readonly string[]): Promise<void> {
   if (userIds?.length === 0) return
   const dispatchStartedAt = new Date()
-  await dispatchFollowTopicsEmails(userIds)
-  await dispatchReferralAndNewsSourceEmails(dispatchStartedAt, userIds)
-}
-
-async function dispatchReferralAndNewsSourceEmails(
-  dispatchStartedAt: Date,
-  userIds?: readonly string[],
-): Promise<void> {
-  await dispatchPostReferralLinkEmails(dispatchStartedAt, userIds)
-  await dispatchFollowNewsSourcesEmails(dispatchStartedAt, userIds)
-}
-
-async function dispatchFollowTopicsEmails(userIds?: readonly string[]): Promise<void> {
-  const recipients = await getFollowTopicsRecipients(userIds)
-  await pMap(recipients, dispatchFollowTopicsEmail, { concurrency: 1, stopOnError: false })
-}
-
-async function dispatchFollowTopicsEmail(recipient: EngagementRecipientRow): Promise<void> {
-  let claimed = false
-  try {
-    if (!(await claimEngagementEmailSend(recipient.id, 'follow_topics'))) return
-    claimed = true
-
-    const currentUser = { id: recipient.id } as PrivateUser
-    const recommendations = await getRecommendedTopics(currentUser, { limit: 5 })
-    if (recommendations.results.length === 0) return
-
-    const topics = await getTopicsByAnyBatch(recommendations.results.map(result => result.id))
-    const items = buildFollowTopicsItems(recommendations.results, topics)
-
-    if (items.length === 0) return
-
-    const props: FollowTopicsEmailProps = {
-      userName: recipient.username ?? undefined,
-      topics: items,
-      settingsUrl: getSiteUrl('/my/topics/following'),
-      unsubscribeUrl: getSiteUrl('/my/notification-settings'),
-      physicalAddress: getMarketingPostalAddress(),
-    }
-    await enqueueSendFollowTopicsEmail(
-      {
-        userId: recipient.id,
-        uiLocale: recipient.ui_locale ?? null,
-      },
-      props,
-    )
-  } catch (err) {
-    /* c8 ignore start -- Defensive cleanup/observability for per-recipient recommendation or enqueue failures. */
-    if (claimed) await releaseEngagementClaim(recipient.id, 'follow_topics')
-    reportEngagementDispatchError(err, 'follow_topics', recipient.id)
-    /* c8 ignore stop */
+  for (const type of ['follow_topics', 'post_referral_link', 'follow_news_sources'] as const) {
+    // oxlint-disable-next-line eslint/no-await-in-loop -- Later email phases must observe prior-phase claims.
+    await dispatchEngagementRecipientPage({ type, dispatchStartedAt, userIds }) // no-mistakes-disable-line query-reached-per-item: three fixed phases each read one capped raw page and must observe the prior phase's committed claims.
   }
 }
 
-async function dispatchPostReferralLinkEmails(
-  dispatchStartedAt: Date,
-  userIds?: readonly string[],
-): Promise<void> {
-  const recipients = await getPostReferralLinkRecipients(dispatchStartedAt, userIds)
-  if (recipients.length === 0) return
-
-  const programs = await getTrendingReferralPrograms({ limit: 5 })
-  if (programs.referral_programs.length === 0) return
-
-  const topics = await getTopicsByAnyBatch(programs.referral_programs.map(program => program.id))
-  const referralPrograms = buildReferralProgramItems(programs.referral_programs, topics)
-
-  if (referralPrograms.length === 0) return
-
-  await pMap(recipients, recipient => dispatchPostReferralLinkEmail(recipient, referralPrograms), {
-    concurrency: 1,
-    stopOnError: false,
+export async function dispatchEngagementRecipientPage(input: {
+  type: EngagementEmailType
+  dispatchStartedAt: Date
+  userIds?: readonly string[]
+  cursor?: EngagementRecipientCursor
+  rawLimit?: number
+  remainingBudget?: number
+  ownerJobId?: string
+  preparedPage?: PreparedEngagementRecipientPage
+}): Promise<{ count: number; scannedCount: number; nextCursor?: EngagementRecipientCursor }> {
+  const page = input.preparedPage ?? (await prepareEngagementRecipientPage(input))
+  const recipients = await readPreparedEngagementRecipients({
+    type: input.type,
+    dispatchStartedAt: input.dispatchStartedAt,
+    recipientIds: page.recipientIds,
   })
-}
-
-async function dispatchPostReferralLinkEmail(
-  recipient: EngagementRecipientRow,
-  referralPrograms: PostReferralLinkEmailProps['referralPrograms'],
-): Promise<void> {
-  let claimed = false
-  try {
-    if (!(await claimEngagementEmailSend(recipient.id, 'post_referral_link'))) return
-    claimed = true
-
-    const props: PostReferralLinkEmailProps = {
-      userName: recipient.username ?? undefined,
-      referralPrograms,
-      settingsUrl: getSiteUrl('/my/referral-links'),
-      unsubscribeUrl: getSiteUrl('/my/notification-settings'),
-      physicalAddress: getMarketingPostalAddress(),
-    }
-    await enqueueSendPostReferralLinkEmail(
+  if (input.type === 'follow_topics')
+    await pMap(recipients, recipient => dispatchFollowTopicsEmail(recipient, input.ownerJobId), {
+      concurrency: 1,
+      stopOnError: false,
+    })
+  else if (input.type === 'post_referral_link')
+    await dispatchPostReferralLinkRecipients(recipients, input.ownerJobId)
+  else
+    await pMap(
+      recipients,
+      recipient => dispatchFollowNewsSourcesEmail(recipient, input.ownerJobId),
       {
-        userId: recipient.id,
-        uiLocale: recipient.ui_locale ?? null,
+        concurrency: 1,
+        stopOnError: false,
       },
-      props,
     )
-  } catch (err) {
-    /* c8 ignore start -- Defensive cleanup/observability for per-recipient enqueue failures. */
-    if (claimed) await releaseEngagementClaim(recipient.id, 'post_referral_link')
-    reportEngagementDispatchError(err, 'post_referral_link', recipient.id)
-    /* c8 ignore stop */
+  return {
+    // A replay may find an already-sent recipient absent from the live projection. The
+    // original selected page still consumed this sweep's admission budget.
+    count: page.recipientIds.length,
+    scannedCount: page.scannedCount,
+    ...(page.nextCursor && { nextCursor: page.nextCursor }),
   }
 }
 
-async function dispatchFollowNewsSourcesEmails(
-  dispatchStartedAt: Date,
-  userIds?: readonly string[],
-): Promise<void> {
-  const recipients = await getFollowNewsSourcesRecipients(dispatchStartedAt, userIds)
-  await pMap(recipients, dispatchFollowNewsSourcesEmail, {
-    concurrency: 1,
-    stopOnError: false,
+export async function prepareEngagementRecipientPage(input: {
+  type: EngagementEmailType
+  dispatchStartedAt: Date
+  userIds?: readonly string[]
+  cursor?: EngagementRecipientCursor
+  rawLimit?: number
+  remainingBudget?: number
+}): Promise<PreparedEngagementRecipientPage> {
+  const page = await readEngagementRecipientPage({
+    ...input,
+    eligibleLimit: input.remainingBudget ?? getEngagementEmailsWorkLimit('dispatch_batch_size'),
   })
-}
-
-async function dispatchFollowNewsSourcesEmail(recipient: EngagementRecipientRow): Promise<void> {
-  let claimed = false
-  try {
-    if (!(await claimEngagementEmailSend(recipient.id, 'follow_news_sources'))) return
-    claimed = true
-
-    const recommendations = await getRecommendedRssFeeds(recipient.id, {
-      limit: 5,
-      source: 'all',
-    })
-    if (recommendations.results.length === 0) return
-
-    const feeds = await getRssFeedsByIdBatch(recommendations.results.map(result => result.id))
-    const sources = buildFollowNewsSourceItems(feeds)
-
-    if (sources.length === 0) return
-
-    const props: FollowNewsSourcesEmailProps = {
-      userName: recipient.username ?? undefined,
-      sources,
-      settingsUrl: getSiteUrl('/my/news-sources'),
-      unsubscribeUrl: getSiteUrl('/my/notification-settings'),
-      physicalAddress: getMarketingPostalAddress(),
-    }
-    await enqueueSendFollowNewsSourcesEmail(
-      {
-        userId: recipient.id,
-        uiLocale: recipient.ui_locale ?? null,
-      },
-      props,
-    )
-  } catch (err) {
-    /* c8 ignore start -- Defensive cleanup/observability for per-recipient enqueue failures. */
-    if (claimed) await releaseEngagementClaim(recipient.id, 'follow_news_sources')
-    reportEngagementDispatchError(err, 'follow_news_sources', recipient.id)
-    /* c8 ignore stop */
+  return {
+    recipientIds: page.recipients.map(recipient => recipient.id),
+    scannedCount: page.scannedCount,
+    ...(page.nextCursor && { nextCursor: page.nextCursor }),
   }
 }
 
-/* c8 ignore start -- Only called from defensive dispatch cleanup paths. */
-async function releaseEngagementClaim(
-  userId: string,
-  emailType: 'follow_topics' | 'post_referral_link' | 'follow_news_sources',
-): Promise<void> {
-  try {
-    await releaseUnsentEngagementEmailClaim(userId, emailType)
-  } catch (err) {
-    /* c8 ignore next 2 -- Defensive observability for rare cleanup failures after enqueue errors. */
-    reportEngagementDispatchError(err, emailType, userId)
-  }
+export async function getFollowTopicsRecipients(
+  userIds?: readonly string[],
+  asOf?: Date,
+): Promise<EngagementRecipientRow[]> {
+  return readDirectRecipients('follow_topics', new Date(), userIds, asOf)
 }
 
-function reportEngagementDispatchError(error: unknown, emailType: string, userId: string): void {
-  const reportableError = error instanceof Error ? error : new Error(String(error))
-  Object.assign(reportableError, {
-    tags: { worker: 'engagement-email-dispatch', emailType },
-    extra: { userId },
+export async function getPostReferralLinkRecipients(
+  dispatchStartedAt: Date,
+  userIds?: readonly string[],
+  asOf?: Date,
+): Promise<EngagementRecipientRow[]> {
+  return readDirectRecipients('post_referral_link', dispatchStartedAt, userIds, asOf)
+}
+
+export async function getFollowNewsSourcesRecipients(
+  dispatchStartedAt: Date,
+  userIds?: readonly string[],
+  asOf?: Date,
+): Promise<EngagementRecipientRow[]> {
+  return readDirectRecipients('follow_news_sources', dispatchStartedAt, userIds, asOf)
+}
+
+async function readDirectRecipients(
+  type: EngagementEmailType,
+  dispatchStartedAt: Date,
+  userIds?: readonly string[],
+  asOf?: Date,
+): Promise<EngagementRecipientRow[]> {
+  const page = await readEngagementRecipientPage({
+    type,
+    dispatchStartedAt,
+    userIds,
+    asOf,
   })
-  onError(reportableError)
-}
-/* c8 ignore stop */
-
-export function buildFollowTopicsItems(
-  recommendations: TopicRecommendationInput[],
-  topics: Array<TopicInput | null | undefined>,
-): FollowTopicsEmailProps['topics'] {
-  return recommendations
-    .map((result, index) => {
-      const topic = topics[index]
-      if (!topic) return null
-      return {
-        name: topic.name,
-        url: getSiteUrl(`/topic/${topic.slug}`),
-        reason: result.reason ?? undefined,
-      }
-    })
-    .filter((item): item is NonNullable<typeof item> => item != null)
-}
-
-export function buildReferralProgramItems(
-  programs: ReferralProgramInput[],
-  topics: Array<TopicInput | null | undefined>,
-): PostReferralLinkEmailProps['referralPrograms'] {
-  return programs
-    .map((program, index) => {
-      const topic = topics[index]
-      if (!topic) return null
-      return {
-        name: topic.name,
-        url: getSiteUrl(`/referral-program/${topic.slug}`),
-        linkCount: program.link_count,
-      }
-    })
-    .filter((item): item is NonNullable<typeof item> => item != null)
-}
-
-export function buildFollowNewsSourceItems(
-  feeds: Array<RssFeedInput | null | undefined>,
-): FollowNewsSourcesEmailProps['sources'] {
-  return feeds
-    .map(feed => {
-      if (!feed) return null
-      return {
-        name: feed.title,
-        url: getSiteUrl(`/source/${feed.topic.slug ?? feed.id}`),
-        description: feed.topic.markdown || undefined,
-      }
-    })
-    .filter((item): item is NonNullable<typeof item> => item != null)
-}
-
-type EngagementRecipientEmailType = 'follow_topics' | 'post_referral_link' | 'follow_news_sources'
-
-function engagementEmailTypeLiteral(emailType: EngagementRecipientEmailType) {
-  if (emailType === 'follow_topics') return sql`'follow_topics'`
-  if (emailType === 'post_referral_link') return sql`'post_referral_link'`
-  return sql`'follow_news_sources'`
-}
-
-async function readEngagementRecipients(
-  label: string,
-  emailType: EngagementRecipientEmailType,
-  userIds: readonly string[] | undefined,
-  eligibility: ReturnType<typeof sql>,
-): Promise<EngagementRecipientRow[]> {
-  const claimHours = getUsersWorkLimit('engagement_claim_hours')
-  const pageSize = getEngagementEmailsWorkLimit('dispatch_batch_size')
-  const query = sql`/* `.append(label).append(sql` */
-    SELECT u.id, uea.email_address, u.username, u.ui_locale
-    FROM users u
-    JOIN user_email_addresses uea
-      ON uea.user_id = u.id
-      AND uea.is_primary = TRUE
-    WHERE u.deleted_at IS NULL
-      AND u.is_engagement_emails_enabled = TRUE
-      AND u.processing_restricted_at IS NULL
-      AND NOT EXISTS (
-        SELECT 1 FROM user_suspensions us WHERE us.user_id = u.id AND us.lifted_at IS NULL
-      )
-      AND `)
-  query.append(eligibility)
-  query
-    .append(
-      sql`
-      AND NOT EXISTS (
-        SELECT 1
-        FROM user_engagement_email_sends s
-        WHERE s.user_id = u.id
-          AND s.email_type = `,
-    )
-    .append(engagementEmailTypeLiteral(emailType))
-    .append(
-      sql`
-          AND (
-            s.sent_at IS NOT NULL
-            OR s.delivery_attempted_at IS NOT NULL
-            OR s.claimed_at >= CURRENT_TIMESTAMP - ${claimHours}::integer * INTERVAL '1 hour'
-          )
-      )
-      AND (${userIds ?? null}::uuid[] IS NULL OR u.id = ANY(${userIds ?? null}::uuid[]))
-    ORDER BY (
-      SELECT s.claimed_at
-      FROM user_engagement_email_sends s
-      WHERE s.user_id = u.id AND s.email_type = `,
-    )
-    .append(engagementEmailTypeLiteral(emailType)).append(sql` ) ASC NULLS FIRST, u.id ASC
-    LIMIT ${pageSize}`)
-  const { rows } = await read(query)
-  return rows as EngagementRecipientRow[]
-}
-
-async function getFollowTopicsRecipients(
-  userIds?: readonly string[],
-): Promise<EngagementRecipientRow[]> {
-  return readEngagementRecipients(
-    'getFollowTopicsRecipients',
-    'follow_topics',
+  if (page.nextCursor?.lane !== 'claimed') return page.recipients
+  const remaining = getEngagementEmailsWorkLimit('dispatch_batch_size') - page.recipients.length
+  if (remaining === 0) return page.recipients
+  const due = await readEngagementRecipientPage({
+    type,
+    dispatchStartedAt,
     userIds,
-    sql`NOT EXISTS (
-      SELECT 1
-      FROM relation__user__follow__topic r
-      WHERE r.subject_id = u.id
-        AND r.deleted_at IS NULL
-    )`,
-  )
-}
-
-async function getPostReferralLinkRecipients(
-  dispatchStartedAt: Date,
-  userIds?: readonly string[],
-): Promise<EngagementRecipientRow[]> {
-  return readEngagementRecipients(
-    'getPostReferralLinkRecipients',
-    'post_referral_link',
-    userIds,
-    sql`NOT EXISTS (
-      SELECT 1
-      FROM user_referral_program_links urpl
-      WHERE urpl.user_id = u.id
-        AND urpl.deleted_at IS NULL
-        AND urpl.activated_at IS NOT NULL
-    )
-    AND NOT EXISTS (
-      SELECT 1
-      FROM user_engagement_email_sends s
-      WHERE s.user_id = u.id
-        AND s.email_type = 'follow_topics'
-        AND s.claimed_at >= ${dispatchStartedAt}
-    )`,
-  )
-}
-
-async function getFollowNewsSourcesRecipients(
-  dispatchStartedAt: Date,
-  userIds?: readonly string[],
-): Promise<EngagementRecipientRow[]> {
-  return readEngagementRecipients(
-    'getFollowNewsSourcesRecipients',
-    'follow_news_sources',
-    userIds,
-    sql`NOT EXISTS (
-      SELECT 1
-      FROM relation__user__follow__rss_feed r
-      WHERE r.subject_id = u.id
-        AND r.deleted_at IS NULL
-    )
-    AND NOT EXISTS (
-      SELECT 1
-      FROM user_engagement_email_sends s
-      WHERE s.user_id = u.id
-        AND s.email_type IN ('follow_topics', 'post_referral_link')
-        AND s.claimed_at >= ${dispatchStartedAt}
-    )`,
-  )
+    asOf,
+    cursor: page.nextCursor,
+    eligibleLimit: remaining,
+  })
+  return [...page.recipients, ...due.recipients]
 }

@@ -1,9 +1,21 @@
 import { describe, expect, it } from 'vitest'
-import { buildSitemapFamilyQuery, iterateSitemapFamilyEntries } from './family-queries.mts'
+import { buildSitemapFamilyQuery, readSitemapFamilyPage } from './family-queries.mts'
 
 describe('sitemap family queries', () => {
-  it('creates async iterables for family entries', () => {
-    expect(iterateSitemapFamilyEntries('topics')[Symbol.asyncIterator]).toBeTypeOf('function')
+  it('resumes within a multi-page topic using the id and path keyset', async () => {
+    const first = await readSitemapFamilyPage('topics', { limit: 1 })
+    expect(first).toHaveLength(1)
+    const entry = first[0]!
+    const second = await readSitemapFamilyPage('topics', {
+      highWaterId: entry.id,
+      afterId: entry.id,
+      afterPath: entry.path,
+      limit: 1,
+    })
+    expect(second).toHaveLength(1)
+    expect(
+      second[0]!.id === entry.id ? second[0]!.path > entry.path : second[0]!.id < entry.id,
+    ).toBe(true)
   })
 
   it('excludes deleted and actively suspended users', () => {

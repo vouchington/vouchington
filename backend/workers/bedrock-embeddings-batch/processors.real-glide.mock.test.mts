@@ -186,7 +186,9 @@ describe('bounded Bedrock batch dispatcher continuations', () => {
     const ids = [0, 1, 2].map(offset => getMinUUIDv7ForDate(new Date(timestamp + offset)))
     const cursor = {
       afterId: getMinUUIDv7ForDate(new Date(timestamp - 1)),
+      afterStaleAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
       throughId: ids[2]!,
+      cutoffAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
     }
     const continuationId = `bedrock-embeddings__stale_cleanup_dispatcher__${cursor.throughId}__${ids[0]}`
     const terminalContinuationId = `bedrock-embeddings__stale_cleanup_dispatcher__${cursor.throughId}__${ids[1]}`
@@ -218,7 +220,9 @@ describe('bounded Bedrock batch dispatcher continuations', () => {
       hasMore: true,
     })
     const continuation = await backgroundCpu.getJob(continuationId)
-    expect(continuation?.data).toEqual({ cursor: { afterId: ids[0], throughId: cursor.throughId } })
+    expect(continuation?.data).toEqual({
+      cursor: expect.objectContaining({ afterId: ids[0], throughId: cursor.throughId }),
+    })
     expect(BedrockControlClient.send).toHaveBeenCalledTimes(1)
     expect(BedrockControlClient.send).toHaveBeenNthCalledWith(
       1,

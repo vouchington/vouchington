@@ -41,7 +41,7 @@ describe('post publication reconciliation processor', () => {
 
     expect(dependencies.updatePostPublicationDirtyWorkCursors).toHaveBeenCalledWith(
       expect.objectContaining({ id: work.id, generation: work.generation }),
-      { postId: post.id },
+      { postId: post.id, pendingPostId: null, pendingAncestorId: null },
     )
     expect(dependencies.acknowledgePostPublicationDirtyWork).not.toHaveBeenCalled()
     expect(dependencies.enqueueContinuePostPublicationReconciliation).toHaveBeenCalledOnce()
