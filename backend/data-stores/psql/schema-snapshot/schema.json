@@ -140,6 +140,14 @@
     "app_attestation_environments": {
       "values": ["production", "development"]
     },
+    "auth_session_retention_cleanup_names": {
+      "values": [
+        "email_address_login_tokens",
+        "phone_number_login_tokens",
+        "user_sessions",
+        "web_push_subscriptions"
+      ]
+    },
     "bedrock_embedding_batch_job_types": {
       "values": ["topics", "posts", "rss_feed_items", "crawl_chunks", "images"]
     },
@@ -7386,6 +7394,117 @@
           "definition": "UNIQUE (apple_user_id)"
         }
       }
+    },
+    "auth_session_retention_cleanup_cursors": {
+      "checkConstraints": {
+        "auth_session_retention_cleanup_cursors_check": "CHECK (((cursor_at IS NULL) OR (cursor_id IS NOT NULL)))",
+        "auth_session_retention_cleanup_cursors_check1": "CHECK (((cursor_id IS NULL) = (sweep_cutoff_at IS NULL)))",
+        "auth_session_retention_cleanup_cursors_check2": "CHECK ((((cleanup_name = 'web_push_subscriptions'::auth_session_retention_cleanup_names) AND ((cursor_id IS NULL) = (cursor_partition_key IS NULL))) OR ((cleanup_name <> 'web_push_subscriptions'::auth_session_retention_cleanup_names) AND (cursor_partition_key IS NULL))))"
+      },
+      "columns": {
+        "cleanup_name": {
+          "collation": null,
+          "comment": "Finite cleanup family with an independent keyset position.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "auth_session_retention_cleanup_names"
+        },
+        "cursor_at": {
+          "collation": null,
+          "comment": "Last scanned expiry or tombstone timestamp, where that family orders by a timestamp.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2,
+          "type": "timestamp with time zone"
+        },
+        "cursor_id": {
+          "collation": null,
+          "comment": "Last scanned UUIDv7 id; no foreign key preserves progress after deletion.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "cursor_partition_key": {
+          "collation": null,
+          "comment": "Partition-key tie-breaker, not a user relationship; no foreign key preserves sweep progress after user deletion.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "sweep_cutoff_at": {
+          "collation": null,
+          "comment": "Fixed retention cutoff for an unfinished sweep.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "timestamp with time zone"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": "Most recent committed checkpoint.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Durable bounded cleanup progress for short-lived authentication and session rows.",
+      "foreignKeys": {},
+      "growth": "bounded",
+      "indexes": {
+        "auth_session_retention_cleanup_cursors_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX auth_session_retention_cleanup_cursors_pkey ON public.auth_session_retention_cleanup_cursors USING btree (cleanup_name)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "cleanup_name",
+              "descending": false,
+              "expression": "cleanup_name",
+              "nullsFirst": false,
+              "opclass": "enum_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["cleanup_name"],
+        "definition": "PRIMARY KEY (cleanup_name)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_auth_session_retention_cleanup_cursors_updated_at": "CREATE TRIGGER trigger_auth_session_retention_cleanup_cursors_updated_at BEFORE UPDATE ON public.auth_session_retention_cleanup_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {}
     },
     "autotagger_agent_run_topics": {
       "checkConstraints": {},
@@ -42308,7 +42427,7 @@
           "validated": true
         }
       },
-      "growth": "unbounded",
+      "growth": "bounded",
       "indexes": {
         "email_address_login_tokens_email_address_token_key": {
           "accessMethod": "btree",
@@ -42402,26 +42521,6 @@
           "primary": false,
           "ready": true,
           "unique": true,
-          "valid": true
-        },
-        "idx_email_address_login_tokens__logged_in": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_email_address_login_tokens__logged_in ON public.email_address_login_tokens USING btree (email_address) WHERE (logged_in_at IS NOT NULL)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "email_address",
-              "descending": false,
-              "expression": "email_address",
-              "nullsFirst": false,
-              "opclass": "text_ops"
-            }
-          ],
-          "predicate": "(logged_in_at IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
           "valid": true
         },
         "idx_email_address_login_tokens__user_email_verify": {
@@ -73345,7 +73444,7 @@
       },
       "comment": "Short-lived tokens for phone-number-based login via SMS/voice.",
       "foreignKeys": {},
-      "growth": "unbounded",
+      "growth": "bounded",
       "indexes": {
         "idx_phone_number_login_tokens__active": {
           "accessMethod": "btree",
@@ -132624,7 +132723,7 @@
           "type": "uuid"
         }
       },
-      "comment": "Active user session registry keyed by UUIDv7 JWT sid. RANGE-partitioned by id with a default partition only; split later by adding explicit range partitions. Rows are inserted on login and refreshed on session updates so the API can list, revoke, and audit active sessions without touching the hot auth-request path.",
+      "comment": "User session registry keyed by UUIDv7 JWT sid. RANGE-partitioned by id with a default partition; bounded retention removes expired rows after the audit window.",
       "foreignKeys": {
         "user_sessions_user_agent_string_id_fkey": {
           "columns": ["user_agent_string_id"],
@@ -132647,10 +132746,10 @@
       },
       "growth": "unbounded",
       "indexes": {
-        "idx_user_sessions__expires_at_active": {
+        "idx_user_sessions__expires_at_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_user_sessions__expires_at_active ON ONLY public.user_sessions USING btree (expires_at) WHERE (revoked_at IS NULL)",
+          "definition": "CREATE INDEX idx_user_sessions__expires_at_id ON ONLY public.user_sessions USING btree (expires_at, id)",
           "includedColumns": [],
           "keys": [
             {
@@ -132659,9 +132758,16 @@
               "expression": "expires_at",
               "nullsFirst": false,
               "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
             }
           ],
-          "predicate": "(revoked_at IS NULL)",
+          "predicate": null,
           "primary": false,
           "ready": true,
           "unique": false,
@@ -132763,10 +132869,10 @@
         }
       },
       "partition": {
-        "accessClass": "target-scoped",
+        "accessClass": "retention-window",
         "children": "default",
         "key": "id",
-        "retentionOwner": null,
+        "retentionOwner": "runDataRetentionCleanup",
         "strategy": "RANGE"
       },
       "physicalPartition": {
@@ -138056,6 +138162,40 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_web_push_subs__deleted_at_id_user_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_web_push_subs__deleted_at_id_user_id ON ONLY public.web_push_subscriptions USING btree (deleted_at, id, user_id) WHERE (deleted_at IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "deleted_at",
+              "descending": false,
+              "expression": "deleted_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(deleted_at IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_web_push_subs__user_id__endpoint": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -138139,10 +138279,10 @@
         }
       },
       "partition": {
-        "accessClass": "target-scoped",
+        "accessClass": "retention-window",
         "children": "default",
         "key": "user_id",
-        "retentionOwner": null,
+        "retentionOwner": "runDataRetentionCleanup",
         "strategy": "RANGE"
       },
       "physicalPartition": {
