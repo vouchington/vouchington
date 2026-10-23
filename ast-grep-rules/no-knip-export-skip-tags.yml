@@ -1,0 +1,155 @@
+id: no-knip-export-skip-tags
+language: Tsx
+severity: error
+message: >-
+  Do not suppress Knip's production export analysis with comment tags. Remove @public, @beta, @alias,
+  or @internal; model runtime-loaded entrypoints in knip.jsonc and remove or relocate unused exports.
+files:
+  - '**/*'
+  - '.github/**'
+ignores:
+  - '**/*.test.*'
+  - '**/*.spec.*'
+  - '**/__tests__/**'
+  # Mirrors the repository's test-helper placement policy; nested package helper dirs are banned.
+  - 'test-helpers/**'
+  - '.github/test-helpers/**'
+  - 'backend/test-helpers/**'
+  - 'ci/test-helpers/**'
+  - 'dev/test-helpers/**'
+  - 'integration-tests/test-helpers/**'
+  - 'lambdas/test-helpers/**'
+  - 'static-code-analysis/test-helpers/**'
+  - 'ts-shared/test-helpers/**'
+  - 'playwright/test-helpers/**'
+  - 'web/test-helpers/**'
+  - 'email-templates/test-helpers/**'
+  - 'cloudflare-worker/test-helpers/**'
+rule:
+  kind: comment
+  regex: '(?s)@(?:public|beta|alias|internal)\b'
+examples:
+  - code: |
+      /** @public Makes this export appear used even when production has no caller. */
+      export function unusedBoundary() {}
+    isValid: false
+    file: 'backend/services/example/unused-boundary.mts'
+  - code: |
+      /** @beta This export is always ignored by Knip. */
+      export function betaBoundary() {}
+    isValid: false
+    file: 'lambdas/image-resize/worker.mts'
+  - code: |
+      /** @alias This export is always ignored by Knip. */
+      export function aliasBoundary() {}
+    isValid: false
+    file: 'web/lib/example.ts'
+  - code: |
+      /** @internal This export is ignored by Knip in production mode. */
+      export function internalBoundary() {}
+    isValid: false
+    file: 'ts-shared/example/index.mts'
+  - code: |
+      // @public A standalone line comment suppresses exports in Knip.
+      export const publicApi = true
+    isValid: false
+    file: 'backend/services/example/public-api.mts'
+  - code: |
+      /* @internal A regular block comment also suppresses production exports. */
+      export const internalApi = true
+    isValid: false
+    file: 'ci/check.mts'
+  - code: |
+      // @beta A standalone line comment is a Knip skip tag.
+      export const betaApi = true
+    isValid: false
+    file: 'dev/agent-policy.mts'
+  - code: |
+      export const documented = true // @public This token is banned by repository policy.
+    isValid: false
+    file: 'ci/agent-workflow-doc-policy.mts'
+  - code: |
+      /** The malformed tag @publicly does not match a Knip skip tag. */
+      export const publicApi = true
+    isValid: true
+    file: 'backend/services/example/public-api.mts'
+  - code: |
+      const documentation = '@public is data, not a source comment'
+      export { documentation }
+    isValid: true
+    file: 'cloudflare-worker/src/example.mts'
+  - code: |
+      /** @public Test fixtures may describe a public export. */
+      export function fixtureBoundary() {}
+    isValid: true
+    file: 'backend/services/example/__tests__/fixture.mts'
+  - code: |
+      /** @public Test helpers are outside production export analysis. */
+      export function helperBoundary() {}
+    isValid: true
+    file: 'backend/test-helpers/example.mts'
+  - code: |
+      /** @public Root test helpers are outside production export analysis. */
+      export function helperBoundary() {}
+    isValid: true
+    file: 'test-helpers/example.mts'
+  - code: |
+      /** @public Tooling helpers are outside production export analysis. */
+      export function helperBoundary() {}
+    isValid: true
+    file: 'ci/test-helpers/example.mts'
+  - code: |
+      /** @public Analysis helpers are outside production export analysis. */
+      export function helperBoundary() {}
+    isValid: true
+    file: 'static-code-analysis/test-helpers/example.mts'
+  - code: |
+      /** @public Dev helpers are outside production export analysis. */
+      export function helperBoundary() {}
+    isValid: true
+    file: 'dev/test-helpers/example.mts'
+  - code: |
+      /** @public Playwright test helpers are outside production export analysis. */
+      export function helperBoundary() {}
+    isValid: true
+    file: 'playwright/test-helpers/example.mts'
+  - code: |
+      /** @public Nested helpers are not an allowed test-helper location. */
+      export function nestedHelperBoundary() {}
+    isValid: false
+    file: 'backend/services/example/test-helpers/helper.mts'
+  - code: |
+      /** @public A test-support directory name does not make production code a test. */
+      export function testSupportBoundary() {}
+    isValid: false
+    file: 'backend/services/example/test-support/helper.mts'
+  - code: |
+      /** @public A test-helper filename does not make production code a test. */
+      export function testHelperNameBoundary() {}
+    isValid: false
+    file: 'backend/services/example/worker-test-helper.mts'
+  - code: |
+      /** @public Production tooling is included in the guard. */
+      export function toolingBoundary() {}
+    isValid: false
+    file: 'static-code-analysis/run-node-checks.mts'
+  - code: |
+      /** @public Workflow scripts are included in the guard. */
+      export function workflowBoundary() {}
+    isValid: false
+    file: '.github/workflows/area-ci-triggers.mts'
+  - code: |
+      /** @public Playwright runtime setup is included in the guard. */
+      export function playwrightSetupBoundary() {}
+    isValid: false
+    file: 'playwright/global-setup.mts'
+  - code: |
+      /** @public Root Playwright config is included in the guard. */
+      export function rootConfigBoundary() {}
+    isValid: false
+    file: 'playwright.credentialed.config.mts'
+  - code: |
+      /** @public Playwright specs are recognized tests. */
+      export function playwrightTestBoundary() {}
+    isValid: true
+    file: 'playwright/tests/example.spec.mts'
