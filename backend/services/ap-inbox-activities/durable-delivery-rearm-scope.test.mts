@@ -1,38 +1,21 @@
-import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
+import { createActivityPubInboxEnvelope } from '@voucha/test-helpers/activitypub-inbox-contract-fixtures'
 import { activityPubInboxDeliveryTransitions } from './durable-delivery-transitions.mts'
-import type { ActivityPubInboxEnvelope } from './durable-delivery-transition-contract.mts'
 import {
+  registerActivityPubInboxAdmission,
   acceptTestDelivery,
   claimTestDelivery,
   exhaustTestDelivery,
   rejectTestDelivery,
-} from '@voucha/test-helpers/services/ap-inbox-activities/durable-delivery-transitions.test-support'
+} from '@voucha/test-helpers/activitypub-inbox-transitions'
 
-function makeEnvelope(): ActivityPubInboxEnvelope {
-  const suffix = randomUUID()
-  const actor = `https://${suffix}.example/users/alice`
-  return {
-    requestMethod: 'POST',
-    requestTarget: `/ap/inbox?delivery=${suffix}`,
-    expectedHost: 'voucha.example',
-    signatureHeader: `keyId="${actor}#main-key",headers="(request-target) host date digest",signature="bytes"`,
-    digestHeader: 'SHA-256=exact-digest',
-    dateHeader: 'Thu, 01 Jan 2026 00:00:00 GMT',
-    contentTypeHeader: 'application/activity+json',
-    rawBody: Buffer.from([0, 1, 2, 255]),
-    claimedActivityId: `${actor}/activities/${suffix}`,
-    claimedActivityType: 'Create',
-    claimedActorUri: actor,
-    senderHostname: `${suffix}.example`,
-  }
-}
+registerActivityPubInboxAdmission()
 
 describe('ActivityPub rearm scope', () => {
   it('re-arms only an owned failed delivery while another eligible failure keeps its token', async () => {
     const [selected, unrelated] = await Promise.all([
-      acceptTestDelivery(makeEnvelope()),
-      acceptTestDelivery(makeEnvelope()),
+      acceptTestDelivery(createActivityPubInboxEnvelope()),
+      acceptTestDelivery(createActivityPubInboxEnvelope()),
     ])
     await Promise.all(
       [selected, unrelated].map(delivery =>

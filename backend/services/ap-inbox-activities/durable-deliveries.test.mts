@@ -8,14 +8,17 @@ import {
 import { activityPubInboxDeliveryTransitions } from './durable-delivery-transitions.mts'
 import type { ActivityPubInboxEnvelope } from './durable-delivery-transition-contract.mts'
 import {
+  registerActivityPubInboxAdmission,
   acceptTestDelivery as createActivityPubInboxDelivery,
   claimTestDelivery as claimActivityPubInboxDelivery,
   deferTestDelivery as deferActivityPubInboxDelivery,
   rejectTestDelivery as deleteActivityPubInboxDelivery,
   releaseTestDelivery as releaseActivityPubInboxDeliveryForRetry,
   verifyTestDelivery as markActivityPubInboxDeliveryVerified,
-} from '@voucha/test-helpers/services/ap-inbox-activities/durable-delivery-transitions.test-support'
+} from '@voucha/test-helpers/activitypub-inbox-transitions'
 import { createRemoteActorFixture } from '@voucha/test-helpers/ap-inbox-activity-fixtures'
+
+registerActivityPubInboxAdmission()
 
 const claimRecoverableActivityPubInboxDeliveries = activityPubInboxDeliveryTransitions.recover
 

@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { getActorUri } from '@modules/activitypub-uris'
 import { generateRsaSha256KeyPair } from '@modules/http-signatures'
 import { getEntityRelation, readAllQueueJobs, readEnqueuedJob } from '@voucha/test-helpers'
@@ -14,6 +14,12 @@ import { activitypub } from '@queues/activitypub/queues'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations'
 import type { RemoteActorRow } from '@services/remote-actors'
 import { activityPubInboxDeliveryTransitions } from './durable-delivery-transitions.mts'
+import {
+  acceptTestDelivery,
+  registerActivityPubInboxAdmission,
+} from '@voucha/test-helpers/activitypub-inbox-transitions'
+
+registerActivityPubInboxAdmission()
 
 const randomSuffix = () => Math.random().toString(36).slice(2, 10)
 
@@ -88,7 +94,7 @@ describe('recordAndDispatchInboundActivity', () => {
       object: getActorUri(user.id),
     }
     expect(await recordInboxActivity(activity.id, activity.type, activity.actor)).toBe(true)
-    const accepted = await activityPubInboxDeliveryTransitions.accept({
+    const delivery = await acceptTestDelivery({
       requestMethod: 'POST',
       requestTarget: '/ap/inbox',
       expectedHost: 'voucha.test',
@@ -101,10 +107,8 @@ describe('recordAndDispatchInboundActivity', () => {
       claimedActorUri: remoteActor.actor_uri,
       senderHostname: 'remote.example',
     })
-    if (accepted.outcome !== 'applied')
-      throw new Error('Test delivery unexpectedly exceeded capacity')
 
-    const result = await recordAndDispatchInboundActivity(remoteActor, activity, accepted.value)
+    const result = await recordAndDispatchInboundActivity(remoteActor, activity, delivery)
 
     expect(result).toEqual({ outcome: 'stale', duplicate: false })
     const followRelation = getEntityRelationMetadataOrThrow({
@@ -117,14 +121,8 @@ describe('recordAndDispatchInboundActivity', () => {
     const jobs = await readAllQueueJobs(activitypub)
     expect(acceptJobsFor(jobs, activityId)).toHaveLength(0)
 
-    await activityPubInboxDeliveryTransitions.claim(
-      accepted.value.deliveryId,
-      accepted.value.leaseToken,
-    )
-    await activityPubInboxDeliveryTransitions.reject(
-      accepted.value.deliveryId,
-      accepted.value.leaseToken,
-    )
+    await activityPubInboxDeliveryTransitions.claim(delivery.deliveryId, delivery.leaseToken)
+    await activityPubInboxDeliveryTransitions.reject(delivery.deliveryId, delivery.leaseToken)
   })
 })
 

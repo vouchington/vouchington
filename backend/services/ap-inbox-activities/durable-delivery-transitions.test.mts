@@ -1,16 +1,22 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
+import { createActivityPubInboxEnvelope } from '@voucha/test-helpers/activitypub-inbox-contract-fixtures'
+import {
+  acceptTestDelivery,
+  registerActivityPubInboxAdmission,
+} from '@voucha/test-helpers/activitypub-inbox-transitions'
 import {
   ACTIVITYPUB_INBOX_DELIVERY_TRANSITION_CONTRACT,
   activityPubInboxDeliveryTransitions,
   type ActivityPubInboxDeliveryTransitionName,
-  type ActivityPubInboxEnvelope,
 } from './durable-delivery-transitions.mts'
 
 type TransitionDimensions = Pick<
   (typeof ACTIVITYPUB_INBOX_DELIVERY_TRANSITION_CONTRACT)[ActivityPubInboxDeliveryTransitionName],
   'fence' | 'consistency' | 'atomicBoundary' | 'postCommitEffects'
 >
+
+registerActivityPubInboxAdmission()
 
 describe('ActivityPub inbox durable-delivery transition facade', () => {
   it('exposes exactly one implementation for every named transition', () => {
@@ -173,10 +179,7 @@ describe('ActivityPub inbox durable-delivery transition facade', () => {
   })
 
   it('returns stale for every fencing-token mutation when the token is stale', async () => {
-    const accepted = await activityPubInboxDeliveryTransitions.accept(makeEnvelope())
-    if (accepted.outcome !== 'applied')
-      throw new Error('Test delivery unexpectedly exceeded capacity')
-    const delivery = accepted.value
+    const delivery = await acceptTestDelivery(createActivityPubInboxEnvelope())
     const staleToken = randomUUID()
 
     expect(
@@ -228,10 +231,7 @@ describe('ActivityPub inbox durable-delivery transition facade', () => {
   })
 
   it('does not reject an exhausted failed delivery', async () => {
-    const accepted = await activityPubInboxDeliveryTransitions.accept(makeEnvelope())
-    if (accepted.outcome !== 'applied')
-      throw new Error('Test delivery unexpectedly exceeded capacity')
-    const delivery = accepted.value
+    const delivery = await acceptTestDelivery(createActivityPubInboxEnvelope())
     expect(
       await activityPubInboxDeliveryTransitions.claim(delivery.deliveryId, delivery.leaseToken),
     ).toMatchObject({ outcome: 'applied' })
@@ -256,22 +256,3 @@ describe('ActivityPub inbox durable-delivery transition facade', () => {
     await activityPubInboxDeliveryTransitions.reject(rearmed.deliveryId, rearmed.leaseToken)
   })
 })
-
-function makeEnvelope(): ActivityPubInboxEnvelope {
-  const suffix = randomUUID()
-  const actor = `https://${suffix}.example/users/alice`
-  return {
-    requestMethod: 'POST',
-    requestTarget: `/ap/inbox?delivery=${suffix}`,
-    expectedHost: 'voucha.example',
-    signatureHeader: `keyId="${actor}#main-key",headers="(request-target) host date digest",signature="bytes"`,
-    digestHeader: 'SHA-256=exact-digest',
-    dateHeader: 'Thu, 01 Jan 2026 00:00:00 GMT',
-    contentTypeHeader: 'application/activity+json',
-    rawBody: Buffer.from([0, 1, 2, 255]),
-    claimedActivityId: `${actor}/activities/${suffix}`,
-    claimedActivityType: 'Create',
-    claimedActorUri: actor,
-    senderHostname: `${suffix}.example`,
-  }
-}

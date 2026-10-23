@@ -1,9 +1,12 @@
-import { randomUUID } from 'node:crypto'
-import { afterEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
+import { createActivityPubInboxEnvelope } from '@voucha/test-helpers/activitypub-inbox-contract-fixtures'
+import {
+  acceptTestDelivery,
+  registerActivityPubInboxAdmission,
+} from '@voucha/test-helpers/activitypub-inbox-transitions'
 import { ACTIVITYPUB_INBOX_STORAGE_POLICY } from '@modules/activitypub-inbox-storage-policy'
 import {
   ageActivityPubInboxCleanupFixturesForTest,
-  cleanupActivityPubInboxStorageFixturesForTest,
   expireActivityPubInboxDeliveryForTest,
   getActivityPubInboxRetentionStateForTest,
   getActivityPubInboxStorageTriggerDefinitionsForTest,
@@ -11,21 +14,12 @@ import {
   makeActivityPubInboxFailureExpiredForTest,
   measureActivityPubInboxOwnedStorageCounterForTest,
 } from '@voucha/test-helpers'
-import {
-  activityPubInboxDeliveryTransitions,
-  expireActivityPubInboxDeliveries,
-  type ActivityPubInboxEnvelope,
-} from './index.mts'
+import { activityPubInboxDeliveryTransitions, expireActivityPubInboxDeliveries } from './index.mts'
 import { createRemoteActorFixture } from '@voucha/test-helpers/ap-inbox-activity-fixtures'
-const ownedActivityIds = new Set<string>()
+
+registerActivityPubInboxAdmission()
 
 describe('ActivityPub inbox durable storage bounds', () => {
-  afterEach(async () => {
-    if (ownedActivityIds.size === 0) return
-    await cleanupActivityPubInboxStorageFixturesForTest([...ownedActivityIds])
-    ownedActivityIds.clear()
-  })
-
   it('adds owned raw-body bytes to the storage counter and removes them on delete', async () => {
     const firstBody = Buffer.from('one')
     const secondBody = Buffer.from('second')
@@ -65,8 +59,8 @@ describe('ActivityPub inbox durable storage bounds', () => {
   })
 
   it('assigns one-hour retention to never-failed unverified intake and clears it on verification', async () => {
-    const envelope = makeEnvelope()
-    const delivery = await accept(envelope)
+    const envelope = createActivityPubInboxEnvelope()
+    const delivery = await acceptTestDelivery(envelope)
     const initial = await getActivityPubInboxRetentionStateForTest(delivery.deliveryId)
     if (!initial.retention_expires_at) throw new Error('Expected unverified retention deadline')
     expect(initial.retention_expires_at.getTime() - initial.received_at.getTime()).toBe(
@@ -106,7 +100,7 @@ describe('ActivityPub inbox durable storage bounds', () => {
 
   it('records the first operational failure and preserves its sticky deadline through rearm', async () => {
     const actor = await createRemoteActorFixture()
-    const delivery = await accept(makeEnvelope(), actor.id)
+    const delivery = await acceptTestDelivery(createActivityPubInboxEnvelope(), actor.id)
     await activityPubInboxDeliveryTransitions.claim(delivery.deliveryId, delivery.leaseToken)
     await activityPubInboxDeliveryTransitions.exhaust(
       delivery.deliveryId,
@@ -125,7 +119,7 @@ describe('ActivityPub inbox durable storage bounds', () => {
   })
 
   it('prevents expired deliveries from claim, recovery, and rearm', async () => {
-    const delivery = await accept(makeEnvelope())
+    const delivery = await acceptTestDelivery(createActivityPubInboxEnvelope())
     await expireActivityPubInboxDeliveryForTest(delivery.deliveryId)
 
     expect(
@@ -142,10 +136,10 @@ describe('ActivityPub inbox durable storage bounds', () => {
   })
 
   it('deletes expired rows in deterministic lease-aware locked batches', async () => {
-    const active = await accept(makeEnvelope())
-    const stale = await accept(makeEnvelope())
-    const idle = await accept(makeEnvelope())
-    const foreign = await accept(makeEnvelope())
+    const active = await acceptTestDelivery(createActivityPubInboxEnvelope())
+    const stale = await acceptTestDelivery(createActivityPubInboxEnvelope())
+    const idle = await acceptTestDelivery(createActivityPubInboxEnvelope())
+    const foreign = await acceptTestDelivery(createActivityPubInboxEnvelope())
     await ageActivityPubInboxCleanupFixturesForTest(
       active.deliveryId,
       stale.deliveryId,
@@ -176,28 +170,3 @@ describe('ActivityPub inbox durable storage bounds', () => {
     expect(measured.afterScenario).toEqual(measured.before)
   })
 })
-
-async function accept(envelope: ActivityPubInboxEnvelope, remoteActorId?: string) {
-  ownedActivityIds.add(envelope.claimedActivityId)
-  const result = await activityPubInboxDeliveryTransitions.accept(envelope, remoteActorId)
-  if (result.outcome !== 'applied') throw new Error('Test delivery unexpectedly exceeded capacity')
-  return result.value
-}
-
-function makeEnvelope(rawBody = Buffer.from('body')): ActivityPubInboxEnvelope {
-  const suffix = randomUUID()
-  const actor = `https://${suffix}.example/users/alice`
-  return {
-    requestMethod: 'POST',
-    requestTarget: `/ap/inbox?delivery=${suffix}`,
-    expectedHost: 'voucha.example',
-    signatureHeader: 'signature',
-    digestHeader: 'digest',
-    dateHeader: new Date().toUTCString(),
-    rawBody,
-    claimedActivityId: `${actor}/activities/${suffix}`,
-    claimedActivityType: 'Create',
-    claimedActorUri: actor,
-    senderHostname: `${suffix}.example`,
-  }
-}
