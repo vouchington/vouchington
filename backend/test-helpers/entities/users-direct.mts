@@ -166,17 +166,6 @@ export async function addTestUserRole(userId: string, roleSlug: string): Promise
   `)
 }
 
-// Raw-primitive substitute for @services/users/get's getPrivateUserByAny, restricted to the
-// ID-only lookup this file always performs (a fresh user's own id, never an email/username/phone
-// identifier) — a pure read with no side effects, so the simplification is safe. view_users_private
-// already filters deleted_at IS NULL.
-export async function getTestPrivateUserById(userId: string): Promise<PrivateUser | null> {
-  const { rows } = await read(sql`/* getTestPrivateUserById */
-    SELECT * FROM view_users_private WHERE id = ${userId} LIMIT 1
-  `)
-  return (rows[0] as PrivateUser | undefined) ?? null
-}
-
 // Attach a verified phone number directly to a test user. This fixture helper does not exercise
 // phone-login-token verification or user-update listeners.
 export async function attachTestPhoneNumber(userId: string, phoneNumber: string): Promise<void> {
