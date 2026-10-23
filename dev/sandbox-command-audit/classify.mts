@@ -53,8 +53,9 @@ export type ClassifyOptions = {
 }
 
 // Section 1's Claude side comes from claudeSandboxFailures (real permission/access
-// failures). Codex `with_escalated_permissions` uses are not scanned here: the agent journals them
-// as `sandbox-escalation` blocks, which the retrospective composer reports.
+// failures). Codex escalations (`sandbox_permissions: "require_escalated"`) are not scanned here: they
+// appear in retrospective-transcript facts as `escalations`, supplementing the agent's
+// `sandbox-escalation` journal blocks, which the retrospective composer reports.
 function classifyGenuineBypassCandidates(
   scan: ScanResult,
   policy: SandboxPolicy,
