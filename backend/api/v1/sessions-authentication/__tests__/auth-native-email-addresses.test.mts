@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { v7 } from 'uuid'
 import { createRequest } from '@voucha/test-helpers/api/server'
+import { installEmailDomainDnsMock } from '@voucha/test-helpers/email-domain-dns'
 import { createTestUser, overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers'
 import { getTestUserSessionById } from '@voucha/test-helpers/entities/user-sessions'
 import { createEmailAddressLoginToken } from '@services/users/authentication'
@@ -13,6 +14,8 @@ import { routeRateLimitConfig } from '@services/route-rate-limits/config'
 import { createDeviceAndSessionTokens } from '@services/jwt-session'
 
 describe('native email OTP session provenance', () => {
+  installEmailDomainDnsMock()
+
   let oldRateLimitConfig: ReturnType<typeof routeRateLimitConfig.getFields>
 
   beforeEach(() => {
