@@ -73,7 +73,11 @@ flowchart LR
 | Session id    | `CLAUDE_CODE_SESSION_ID`                                     | `CODEX_THREAD_ID`                                             | Shell and hook `GROK_SESSION_ID`                                  |
 | Merge confirm | Silent allow for one plain merge when attended               | Empty hook output (best-effort)                               | Empty confirm (best-effort)                                       |
 | Folder trust  | Always loads project settings                                | Loads project hooks                                           | Project Claude hooks need `/hooks-trust`                          |
-| CI            | Local agent only                                             | Scheduled / dispatch / shepherd                               | Out of scope while CI is being redone                             |
+| CI            | When the route selects it                                    | When the route selects it                                     | When the route selects it                                         |
+
+Scheduled prompts, fix and plan dispatch, and Shepherd are Auto Harness sessions. Organization
+variables select the Command and its fallbacks. See
+[Auto Harness automation](ci/workflows/reference-harness-automation.md).
 
 Ambient Blackboard identity is owned by
 `agent-blackboard`; transcript discovery
