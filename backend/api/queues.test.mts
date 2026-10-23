@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import queues from '@services/queue-monitoring/queue-inventory'
-import { policyManagedGlideQueueNames } from '@modules/worker-queue-inventory'
+import { policyManagedGlideQueueNames } from '@voucha/test-helpers/worker-queue-policy'
 
 describe('API queue monitoring inventory', () => {
   it('contains every policy-managed GlideMQ queue exactly once', () => {

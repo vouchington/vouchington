@@ -1,9 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import {
-  getImageOrigin,
-  getSideloadImageUrlPrefix,
-  validateRuntimeImageOrigin,
-} from './image-origin.mts'
+import { getImageOrigin, validateRuntimeImageOrigin } from './image-origin.mts'
 
 describe('image origin', () => {
   afterEach(() => vi.unstubAllEnvs())
@@ -11,7 +7,6 @@ describe('image origin', () => {
   it('normalizes IMAGE_ORIGIN to a pure URL origin', () => {
     vi.stubEnv('IMAGE_ORIGIN', 'https://images.example.com:8443/')
     expect(getImageOrigin()).toBe('https://images.example.com:8443')
-    expect(getSideloadImageUrlPrefix()).toBe('https://images.example.com:8443/sideload/v2/')
   })
 
   it.each([
