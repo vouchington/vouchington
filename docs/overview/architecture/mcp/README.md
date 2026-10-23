@@ -41,6 +41,11 @@ An agent's actions on an account must be answerable. Every server with `auditCal
 `mcp_call_audit_events` before the call runs and fails closed: if the rows cannot be stored, the
 request returns 503 and the call never runs.
 
+Owner-controlled partition drops retire the security audit after its 12-month window. Validated copyright decision rationale is encrypted in
+a separate legal record linked to its case, intake, or account review, so case evidence can follow its
+own retention and erasure window. An invalid case reference remains visible as a security attempt
+without creating a legal case.
+
 ## JSON-RPC batches
 
 A batch has a bounded number of JSON-RPC messages so one request cannot consume unbounded audit

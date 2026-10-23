@@ -43,9 +43,12 @@ export async function getFriendRecommendations(
     cursorId = cursor.id
   }
 
-  const cursorFilter = cursorId ? 'AND deduped.id > $2' : ''
-  const limitParameter = cursorId ? '$3' : '$2'
-  const values = cursorId ? [currentUser.id, cursorId, limit + 1] : [currentUser.id, limit + 1]
+  const cursorFilter = cursorId ? 'AND deduped.id > $3' : ''
+  const limitParameter = cursorId ? '$4' : '$3'
+  const observedAfter = new Date(Date.now() - 90 * 86_400_000)
+  const values = cursorId
+    ? [currentUser.id, observedAfter, cursorId, limit + 1]
+    : [currentUser.id, observedAfter, limit + 1]
 
   const { rows } = await read(
     `/* getFriendRecommendations */
@@ -60,6 +63,7 @@ WITH friends AS (
       JOIN facebook_accounts fa ON fa.id = ff.friend_facebook_account_id
       JOIN users u ON u.id = fa.user_id
       WHERE my_fa.user_id = $1
+        AND ff.last_observed_at >= $2
         AND u.deleted_at IS NULL
         AND u.processing_restricted_at IS NULL
         AND u.id != $1
@@ -76,6 +80,7 @@ WITH friends AS (
       JOIN x_accounts xa ON xa.id = xf.friend_x_account_id
       JOIN users u ON u.id = xa.user_id
       WHERE my_xa.user_id = $1
+        AND xf.last_observed_at >= $2
         AND u.deleted_at IS NULL
         AND u.processing_restricted_at IS NULL
         AND u.id != $1
@@ -92,6 +97,7 @@ WITH friends AS (
       JOIN github_accounts ga ON ga.id = gf.friend_github_account_id
       JOIN users u ON u.id = ga.user_id
       WHERE my_ga.user_id = $1
+        AND gf.last_observed_at >= $2
         AND u.deleted_at IS NULL
         AND u.processing_restricted_at IS NULL
         AND u.id != $1

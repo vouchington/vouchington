@@ -43,10 +43,10 @@ coverage may authorize a new request but does not enlarge an existing token gran
 - Refresh tokens rotate on every use. Reuse of a consumed token revokes its entire family and every
   access token derived from that family.
 - Consent requests are bound to the signed-in user, device, and session and are not cacheable.
-- Consent decisions, explicit revocations, and refresh-token reuse detection produce immutable
+- Consent decisions, explicit revocations, and refresh-token reuse detection produce retention-bound
   lifecycle evidence that survives short-lived credential retention and identity deletion. Each event
   references the grant owner's retained user identity with `ON DELETE RESTRICT`, so the identity root
-  stays for as long as the append-only events do.
+  stays for as long as the events do.
 - Protocol and consent responses use `no-store`; the edge never caches these routes.
 - Cross-site `POST /register`, `POST /token`, and `POST /revoke` requests pass the listener CSRF
   guard only after the Worker-secret boundary; those endpoints ignore browser cookies and enforce
@@ -131,12 +131,13 @@ durable session record without repeating push-subscription cleanup.
 
 ## Persistence and retention
 
-Durable clients, grants, and append-only authorization lifecycle events are kept separately from
-short-lived consent requests, codes, and tokens, so retention can prune expired protocol artifacts
-while preserving consent and revocation evidence. Clients are retired through `revoked_at` and
-never deleted, because [content provenance](../content/content-provenance.md) references the
-client that created each row. A client's verification decides whether a public provenance label may
-name it.
+Clients, grants, and authorization lifecycle events are kept separately from short-lived consent
+requests, codes, and tokens. The latest consent event survives while its grant is live and for a year
+after that grant ends; other lifecycle events retire a year after they occur. Revoked grants retire
+after 90 days, while a retained grant identity keeps the event relationship without authorizing
+access. Clients that never held a grant and have no provenance or audit references may retire after
+90 days. Clients with [content provenance](../content/content-provenance.md) remain linked to the
+content they created. A client's verification decides whether a public provenance label may name it.
 
 ## Account deletion
 

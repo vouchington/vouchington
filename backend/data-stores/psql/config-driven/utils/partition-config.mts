@@ -153,3 +153,10 @@ for (const table of CLASSIFIER_RESULT_PARTITION_TABLES) {
     legalBasis: 'docs/overview/architecture/partitioning-strategy.md',
   }
 }
+
+// Security call audits may be retired only after the privacy-policy window. The legal
+// decision rationale lives with its copyright case and is not retained by this partition.
+PARTITION_DROP_POLICIES['mcp_call_audit_events'] = {
+  minimumRetentionDays: 366,
+  legalBasis: 'articles/privacy-policy.md',
+}

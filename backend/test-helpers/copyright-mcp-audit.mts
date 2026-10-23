@@ -8,14 +8,12 @@ export type TestCopyrightMcpAuditRow = {
   jsonrpc_method: string | null
   tool_name: string | null
   outcome: string
-  copyright_rationale_ciphertext: string | null
 }
 
 /** Reads the persisted audit identity needed to verify its authenticated ciphertext. */
 export async function readTestCopyrightMcpAuditRows(actorUserId: string) {
   const { rows } = await read<TestCopyrightMcpAuditRow>(sql`/* readTestCopyrightMcpAuditRows */
-    SELECT id, correlation_id, jsonrpc_method, tool_name, outcome,
-      copyright_rationale_ciphertext
+    SELECT id, correlation_id, jsonrpc_method, tool_name, outcome
     FROM mcp_call_audit_events
     WHERE actor_user_id = ${actorUserId}
     ORDER BY id
@@ -23,13 +21,28 @@ export async function readTestCopyrightMcpAuditRows(actorUserId: string) {
   return rows
 }
 
-export function decryptTestCopyrightMcpRationale(
-  row: Pick<TestCopyrightMcpAuditRow, 'id' | 'copyright_rationale_ciphertext'>,
-  auditRowId = row.id,
+export type TestCopyrightDecisionRationale = {
+  id: string
+  copyright_notice_id: string | null
+  tool_name: string
+  rationale_ciphertext: string
+}
+
+export async function readTestCopyrightDecisionRationales(recordedById: string) {
+  const { rows } =
+    await read<TestCopyrightDecisionRationale>(sql`/* readTestCopyrightDecisionRationales */
+    SELECT id, copyright_notice_id, tool_name, rationale_ciphertext
+    FROM copyright_decision_rationales
+    WHERE recorded_by_id = ${recordedById}
+    ORDER BY id
+  `)
+  return rows
+}
+
+export function decryptTestCopyrightDecisionRationale(
+  row: Pick<TestCopyrightDecisionRationale, 'id' | 'rationale_ciphertext'>,
+  rationaleRowId = row.id,
 ): string {
-  if (!row.copyright_rationale_ciphertext) throw new Error('Audit rationale missing')
-  return decryptSecret(
-    row.copyright_rationale_ciphertext,
-    `mcp-copyright-decision-rationale:${auditRowId}`,
-  )
+  if (!row.rationale_ciphertext) throw new Error('Decision rationale missing')
+  return decryptSecret(row.rationale_ciphertext, `copyright-decision-rationale:${rationaleRowId}`)
 }
