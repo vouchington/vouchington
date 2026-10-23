@@ -1,6 +1,7 @@
 import type { Context } from '@jongleberry/api-server'
 import createHttpError from 'http-errors'
 import { getTrustedCloudflareBotScore } from '@modules/request-client-info/cloudflare-bot-score'
+import { hasVerifiedSessionCredential } from '@modules/request-client-info/session-credential'
 import { getOptionalRequestOrigin } from '@modules/request-client-info'
 import { BOT_CHALLENGE_REQUIRED } from '@modules/on-error/error-codes'
 import { verifyCaptchaOrAttestation } from '@services/captcha'
@@ -24,7 +25,9 @@ type BotChallengeRequiredError = Error & {
 }
 
 export async function enforceLowScoreBotChallenge(ctx: Context): Promise<void> {
-  if (getOptionalRequestOrigin()?.credential !== 'session') return
+  const origin = getOptionalRequestOrigin()
+  if (origin && origin.credential !== 'session') return
+  if (!hasVerifiedSessionCredential(ctx.req)) return
   const score = getTrustedCloudflareBotScore(ctx.req)
   if (score === undefined || score > LOW_BOT_SCORE_MAX) return
   if (!MUTATING_METHODS.has(ctx.req.method?.toUpperCase() ?? 'GET')) return

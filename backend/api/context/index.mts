@@ -3,6 +3,7 @@ import {
   getCachedBootstrapDeviceId,
   getCachedVerifiedDeviceToken,
 } from '@modules/request-client-info'
+import { markVerifiedSessionCredential } from '@modules/request-client-info/session-credential'
 import type { Application, Context } from '@jongleberry/api-server'
 import {
   createDeviceAndSessionTokens,
@@ -100,6 +101,7 @@ const extensions = {
 
       const result = await verifyDeviceAndSessionTokens({ deviceToken, sessionToken })
       if (result) {
+        markVerifiedSessionCredential(this.req)
         if (result.uid && result.mpe !== undefined && Math.floor(Date.now() / 1000) >= result.mpe) {
           const refreshed = await refreshSessionState({
             deviceToken,

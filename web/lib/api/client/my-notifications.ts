@@ -1,6 +1,5 @@
 'use client'
 import { clientApi } from './instance'
-import { clientFetch } from './raw-fetch'
 import type {
   NotificationsUnreadSummaryResponseBody,
   WebPushSubscriptionResponseBody,
@@ -12,15 +11,6 @@ export function getMyUnreadNotificationsSummaryClient(): Promise<NotificationsUn
 }
 export function markMyNotificationRead(notificationId: string): Promise<void> {
   return clientApi.patch(`/api/v1/my/notifications/${notificationId}`, { is_read: true })
-}
-export function markMyNotificationReadKeepalive(notificationId: string): Promise<Response> {
-  return clientFetch(`/api/v1/my/notifications/${notificationId}`, {
-    method: 'PATCH',
-    body: JSON.stringify({ is_read: true }),
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'same-origin',
-    keepalive: true,
-  })
 }
 export function markAllMyNotificationsRead(): Promise<void> {
   return clientApi.post('/api/v1/my/notifications/read-all', {})

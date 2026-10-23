@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { BOT_CHALLENGE_REQUIRED } from '@modules/on-error/error-codes'
 import { runWithSessionRequestContext } from '@modules/request-client-info'
 import { markAuthenticatedOriginRequest } from '@modules/request-client-info/authenticated-origin'
+import { markVerifiedSessionCredential } from '@modules/request-client-info/session-credential'
 import { createVoteHandler } from './election-vote-handler.mts'
 
 describe('election vote bot challenge admission', () => {
@@ -28,6 +29,7 @@ describe('election vote bot challenge admission', () => {
       headers: { 'x-voucha-bot-score': '7' },
     } as unknown as Context['req']
     markAuthenticatedOriginRequest(req)
+    markVerifiedSessionCredential(req)
     const ctx = {
       req,
       params: { id: crypto.randomUUID() },
