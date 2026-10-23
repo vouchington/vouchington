@@ -103,6 +103,32 @@ describe('browser bot challenge', () => {
     expect(reset).toHaveBeenCalledWith('loaded-widget')
   })
 
+  it('rejects when Turnstile reports a verification error', async () => {
+    window.turnstile = turnstile({
+      render: vi.fn<TurnstileApi['render']>((_container, options) => {
+        queueMicrotask(() => options['error-callback']?.())
+        return 'error-widget'
+      }),
+    })
+
+    await expect(requestBotChallengeToken('bot-challenge.mutation')).rejects.toThrow(
+      'Security verification failed',
+    )
+  })
+
+  it('propagates an Error supplied as the abort reason', async () => {
+    const controller = new AbortController()
+    const abortReason = new Error('navigation interrupted')
+    window.turnstile = turnstile({})
+    const result = requestBotChallengeToken('bot-challenge.mutation', controller.signal)
+    const rejection = result.catch(err => err as unknown)
+    await nextDialog()
+
+    controller.abort(abortReason)
+
+    await expect(rejection).resolves.toBe(abortReason)
+  })
+
   it('rejects without rendering when the request is already aborted', async () => {
     const render = vi.fn<TurnstileApi['render']>()
     window.turnstile = turnstile({ render })
