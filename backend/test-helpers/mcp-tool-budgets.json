@@ -1211,7 +1211,7 @@
       },
       "read_report_integrity": {
         "measured": {
-          "list": 3186,
+          "list": 3342,
           "core": 1020
         },
         "max": {
@@ -1241,7 +1241,7 @@
       },
       "lift_integrity_penalty": {
         "measured": {
-          "list": 2271,
+          "list": 2583,
           "core": 646
         },
         "max": {
@@ -1251,7 +1251,7 @@
       },
       "read_vote_integrity": {
         "measured": {
-          "list": 3449,
+          "list": 3605,
           "core": 1061
         },
         "max": {

@@ -24,6 +24,10 @@ export const directStaffExclusions = [
     'DELETE /official-referral-links/:linkId',
   ]),
   ...admin('currentUserCanCreateTopic', ['POST /topics']),
+  ...admin('currentUserCanApplyReportAbusePenalty', [
+    'POST /report-integrity/penalties/:id/reviews',
+  ]),
+  ...admin('currentUserCanApplyVoteRingPenalty', ['POST /vote-integrity/penalties/:id/reviews']),
   ...admin('currentUserCanUpdateTopic', [
     'PATCH /topics/:idOrSlug',
     'PATCH /topics/:idOrSlug/card',
