@@ -74594,6 +74594,14 @@
     },
     "oauth_authorizations": {
       "checkConstraints": {
+        "oauth_authorizations_callback_code_hash_check": {
+          "definition": "CHECK (((callback_code_hash IS NULL) OR (char_length(callback_code_hash) = 64)))",
+          "validated": true
+        },
+        "oauth_authorizations_callback_error_hash_check": {
+          "definition": "CHECK (((callback_error_hash IS NULL) OR (char_length(callback_error_hash) = 64)))",
+          "validated": true
+        },
         "oauth_authorizations_callback_mode_check": {
           "definition": "CHECK ((callback_mode = ANY (ARRAY['web'::oauth_callback_modes, 'native'::oauth_callback_modes])))",
           "validated": true
@@ -74662,6 +74670,16 @@
           "nullable": true,
           "ordinalPosition": 13
         },
+        "callback_code_hash": {
+          "comment": "Purpose-bound HMAC-SHA256 of the original provider code; retained for exact callback replay after code ciphertext is cleared.",
+          "dataType": "text",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 14
+        },
         "callback_error": {
           "comment": "Bounded provider callback or terminal exchange error code; never contains provider credentials.",
           "dataType": "text",
@@ -74670,7 +74688,17 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14
+          "ordinalPosition": 15
+        },
+        "callback_error_hash": {
+          "comment": "Purpose-bound HMAC-SHA256 of the original unnormalized provider callback error for exact replay.",
+          "dataType": "text",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 16
         },
         "callback_mode": {
           "comment": "web uses an HttpOnly completion cookie; native uses a bearer token plus the app-held proof verifier.",
@@ -74690,7 +74718,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 30
+          "ordinalPosition": 32
         },
         "completed_at": {
           "comment": "When a caller first consumed and finalized the durable completion result.",
@@ -74700,7 +74728,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 33
+          "ordinalPosition": 35
         },
         "completion_proof_challenge": {
           "comment": "Native-only base64url SHA-256 challenge for the app-held completion verifier.",
@@ -74720,7 +74748,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 32
+          "ordinalPosition": 34
         },
         "completion_token_ciphertext": {
           "comment": "Authenticated ciphertext of the completion token retained only so a repeated provider callback converges on the same handoff.",
@@ -74730,7 +74758,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 16
+          "ordinalPosition": 18
         },
         "completion_token_hash": {
           "comment": "Purpose-bound HMAC-SHA256 of the web cookie or native callback bearer token.",
@@ -74740,7 +74768,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15
+          "ordinalPosition": 17
         },
         "created_at": {
           "comment": null,
@@ -74750,7 +74778,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 36
+          "ordinalPosition": 38
         },
         "exchange_claim_id": {
           "comment": "Fencing token for one worker exchange attempt; atomic provider-account completion must present the current claim.",
@@ -74760,7 +74788,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 28
+          "ordinalPosition": 30
         },
         "exchange_started_at": {
           "comment": "When the first provider exchange began; current attempt age belongs to the exchange attempt ledger.",
@@ -74770,7 +74798,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 31
+          "ordinalPosition": 33
         },
         "expired_at": {
           "comment": "When the unconsumed authorization deadline was enforced.",
@@ -74780,7 +74808,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 35
+          "ordinalPosition": 37
         },
         "expires_at": {
           "comment": "Authorization deadline; cleanup and recovery use this timestamp rather than UUID ordering.",
@@ -74790,7 +74818,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 29
+          "ordinalPosition": 31
         },
         "facebook_account_id": {
           "comment": "Facebook account produced by a successful exchange; parent deletion cascades the authorization.",
@@ -74800,7 +74828,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 17
+          "ordinalPosition": 19
         },
         "github_account_id": {
           "comment": "GitHub account produced by a successful exchange; parent deletion cascades the authorization.",
@@ -74810,7 +74838,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 19
+          "ordinalPosition": 21
         },
         "google_account_id": {
           "comment": "Internal Google account row produced by a successful exchange; parent deletion cascades the authorization.",
@@ -74820,7 +74848,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 22
+          "ordinalPosition": 24
         },
         "id": {
           "comment": null,
@@ -74870,7 +74898,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 20
+          "ordinalPosition": 22
         },
         "login_attempt_id": {
           "comment": "UUIDv7 MFA attempt identifier returned only for an mfa_required result.",
@@ -74880,7 +74908,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 27
+          "ordinalPosition": 29
         },
         "microsoft_account_id": {
           "comment": "Internal Microsoft account row produced by a successful exchange; parent deletion cascades the authorization.",
@@ -74890,7 +74918,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 21
+          "ordinalPosition": 23
         },
         "pkce_verifier_ciphertext": {
           "comment": "Authenticated ciphertext of the server-generated provider PKCE verifier.",
@@ -74940,7 +74968,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 34
+          "ordinalPosition": 36
         },
         "result_device_id": {
           "comment": "Authenticated result device UUIDv7 allocated while the completion row is locked and reused by every issuance or replay.",
@@ -74950,7 +74978,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 25
+          "ordinalPosition": 27
         },
         "result_kind": {
           "comment": "Durable completion outcome: authenticated, MFA required, or connected.",
@@ -74960,7 +74988,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 23
+          "ordinalPosition": 25
         },
         "result_session_id": {
           "comment": "Authenticated result session UUIDv7 allocated while the completion row is locked and reused by every issuance or replay.",
@@ -74970,7 +74998,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 26
+          "ordinalPosition": 28
         },
         "result_user_id": {
           "comment": "Voucha user receiving the completion result; parent deletion cascades the authorization.",
@@ -74980,7 +75008,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 24
+          "ordinalPosition": 26
         },
         "state_hash": {
           "comment": "Purpose-bound HMAC-SHA256 of the provider state; plaintext state is returned once and never persisted.",
@@ -75010,7 +75038,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 37
+          "ordinalPosition": 39
         },
         "x_account_id": {
           "comment": "X account produced by a successful exchange; parent deletion cascades the authorization.",
@@ -75020,7 +75048,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 18
+          "ordinalPosition": 20
         }
       },
       "comment": "Durable server-begun OAuth state machine shared by web and native Facebook, X, GitHub, LinkedIn, Microsoft, and Google authentication and account connection.",
@@ -145531,7 +145559,7 @@
     },
     "view_oauth_authorization_current_records": {
       "comment": "Current OAuth lifecycle and active exchange projected from timestamp facts and immutable exchange history; outer row restrictions reach the authorization directly.",
-      "definition": " SELECT id,\n    provider,\n    purpose,\n    callback_mode,\n        CASE\n            WHEN status = 'callback_received'::oauth_authorization_statuses AND exchange_claim_id IS NOT NULL AND (EXISTS ( SELECT 1\n               FROM oauth_authorization_exchange_attempts attempt\n              WHERE attempt.oauth_authorization_id = flow.id AND attempt.exchange_claim_id = flow.exchange_claim_id AND NOT (EXISTS ( SELECT 1\n                       FROM oauth_authorization_exchange_attempt_results result\n                      WHERE result.oauth_authorization_exchange_attempt_id = attempt.id)))) THEN 'exchanging'::oauth_authorization_statuses\n            ELSE status\n        END AS status,\n    initiating_user_id,\n    initiating_device_id,\n    initiating_session_id,\n    redirect_uri,\n    state_hash,\n    pkce_verifier_ciphertext,\n    completion_proof_challenge,\n    callback_code_ciphertext,\n    callback_error,\n    completion_token_hash,\n    completion_token_ciphertext,\n    facebook_account_id,\n    x_account_id,\n    github_account_id,\n    result_kind,\n    result_user_id,\n    result_device_id,\n    result_session_id,\n    login_attempt_id,\n    exchange_claim_id,\n    expires_at,\n    callback_received_at,\n    ( SELECT attempt.started_at\n           FROM oauth_authorization_exchange_attempts attempt\n          WHERE attempt.oauth_authorization_id = flow.id\n          ORDER BY attempt.attempt_number DESC\n         LIMIT 1) AS exchange_started_at,\n    completion_ready_at,\n    completed_at,\n    created_at,\n    updated_at,\n    rejected_at,\n    expired_at,\n    COALESCE((( SELECT max(attempt.attempt_number) AS max\n           FROM oauth_authorization_exchange_attempts attempt\n          WHERE attempt.oauth_authorization_id = flow.id))::integer, 0)::smallint AS exchange_attempts,\n    linkedin_account_id,\n    microsoft_account_id,\n    google_account_id\n   FROM oauth_authorizations flow;",
+      "definition": " SELECT id,\n    provider,\n    purpose,\n    callback_mode,\n        CASE\n            WHEN status = 'callback_received'::oauth_authorization_statuses AND exchange_claim_id IS NOT NULL AND (EXISTS ( SELECT 1\n               FROM oauth_authorization_exchange_attempts attempt\n              WHERE attempt.oauth_authorization_id = flow.id AND attempt.exchange_claim_id = flow.exchange_claim_id AND NOT (EXISTS ( SELECT 1\n                       FROM oauth_authorization_exchange_attempt_results result\n                      WHERE result.oauth_authorization_exchange_attempt_id = attempt.id)))) THEN 'exchanging'::oauth_authorization_statuses\n            ELSE status\n        END AS status,\n    initiating_user_id,\n    initiating_device_id,\n    initiating_session_id,\n    redirect_uri,\n    state_hash,\n    pkce_verifier_ciphertext,\n    completion_proof_challenge,\n    callback_code_ciphertext,\n    callback_error,\n    completion_token_hash,\n    completion_token_ciphertext,\n    facebook_account_id,\n    x_account_id,\n    github_account_id,\n    result_kind,\n    result_user_id,\n    result_device_id,\n    result_session_id,\n    login_attempt_id,\n    exchange_claim_id,\n    expires_at,\n    callback_received_at,\n    ( SELECT attempt.started_at\n           FROM oauth_authorization_exchange_attempts attempt\n          WHERE attempt.oauth_authorization_id = flow.id\n          ORDER BY attempt.attempt_number DESC\n         LIMIT 1) AS exchange_started_at,\n    completion_ready_at,\n    completed_at,\n    created_at,\n    updated_at,\n    rejected_at,\n    expired_at,\n    COALESCE((( SELECT max(attempt.attempt_number) AS max\n           FROM oauth_authorization_exchange_attempts attempt\n          WHERE attempt.oauth_authorization_id = flow.id))::integer, 0)::smallint AS exchange_attempts,\n    linkedin_account_id,\n    microsoft_account_id,\n    google_account_id,\n    callback_code_hash,\n    callback_error_hash\n   FROM oauth_authorizations flow;",
       "materialized": false
     },
     "view_post_clearance_status": {

@@ -24,6 +24,11 @@ Prerequisites:
 
 ### Brokered provider login flow
 
+A repeated provider callback may receive the existing completion handoff only when it carries the
+same provider code or denial as the first callback. State alone does not authorize a handoff. This
+preserves same-device double delivery while preventing a different callback from claiming the
+first caller's completion credential.
+
 1. Visit `/login` (logged out)
 2. Click **Continue with Facebook**, **Continue with X**, **Continue with GitHub**, or **Continue with LinkedIn**
 3. Confirm a blank popup opens synchronously, then navigates to the provider

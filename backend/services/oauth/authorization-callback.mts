@@ -2,39 +2,25 @@ import { randomBytes } from 'node:crypto'
 import { beginTransaction } from '@data-stores/psql'
 import { decryptSecret, encryptSecret } from '@modules/token-secrets'
 import createHttpError from 'http-errors'
-import type { BrokerCallbackMode, BrokerOAuthProvider, BrokerPurpose } from './broker-config.mts'
+import type { BrokerOAuthProvider } from './broker-config.mts'
+import {
+  getExistingCallbackHandoff,
+  handoff,
+  normalizeCallbackError,
+  type OAuthAuthorizationRow,
+  type ReceiveOAuthAuthorizationCallbackResult,
+} from './authorization-callback-handoff.mts'
 import {
   getCallbackCodePurpose,
   getCompletionTokenPurpose,
   getPkceVerifierPurpose,
   hashOAuthAuthorizationState,
+  hashOAuthCallbackCode,
+  hashOAuthCallbackError,
   hashOAuthCompletionToken,
 } from './authorization-secrets.mts'
 
-type OAuthAuthorizationRow = {
-  id: string
-  provider: BrokerOAuthProvider
-  purpose: BrokerPurpose
-  callback_mode: BrokerCallbackMode
-  status:
-    | 'pending'
-    | 'callback_received'
-    | 'exchanging'
-    | 'completion_ready'
-    | 'completed'
-    | 'rejected'
-    | 'expired'
-  completion_token_ciphertext: string | null
-  expires_at: Date
-}
-
-export type ReceiveOAuthAuthorizationCallbackResult = {
-  flowId: string
-  callbackMode: BrokerCallbackMode
-  completionToken: string
-  exchangeRequired: boolean
-  expiresAt: Date
-}
+export type { ReceiveOAuthAuthorizationCallbackResult } from './authorization-callback-handoff.mts'
 
 type ReceiveOAuthAuthorizationCallbackTransactionResult =
   | ReceiveOAuthAuthorizationCallbackResult
@@ -50,7 +36,10 @@ export async function receiveOAuthAuthorizationCallback(
   now: () => Date,
 ): Promise<ReceiveOAuthAuthorizationCallbackResult> {
   if (!options.state) throw createHttpError(400, 'OAuth callback is invalid')
-  if (!options.code && !options.error) throw createHttpError(400, 'OAuth callback is invalid')
+  // A provider result is either a code or an error. Rejecting mixed payloads keeps first receipt
+  // and replay bound to exactly one stored callback value.
+  if (Boolean(options.code) === Boolean(options.error))
+    throw createHttpError(400, 'OAuth callback is invalid')
 
   await using query = await beginTransaction()
   const result = await receiveCallbackInTransaction()
@@ -91,7 +80,8 @@ export async function receiveOAuthAuthorizationCallback(
       return { expired: true }
     }
 
-    if (authorization.status !== 'pending') return getExistingCallbackHandoff(authorization)
+    if (authorization.status !== 'pending')
+      return getExistingCallbackHandoff(authorization, options)
 
     const completionToken = randomBytes(32).toString('base64url')
     if (options.error) {
@@ -99,13 +89,15 @@ export async function receiveOAuthAuthorizationCallback(
         `/* receiveOAuthAuthorizationCallback */ UPDATE oauth_authorizations
          SET rejected_at = COALESCE(rejected_at, clock_timestamp()),
              callback_error = $2,
-             completion_token_hash = $3,
-             completion_token_ciphertext = $4,
+             callback_error_hash = $3,
+             completion_token_hash = $4,
+             completion_token_ciphertext = $5,
              callback_received_at = CURRENT_TIMESTAMP
          WHERE id = $1`,
         [
           authorization.id,
           normalizeCallbackError(options.error),
+          hashOAuthCallbackError(authorization.id, options.error),
           hashOAuthCompletionToken(authorization.id, completionToken),
           encryptSecret(completionToken, getCompletionTokenPurpose(authorization.id)),
         ],
@@ -115,14 +107,16 @@ export async function receiveOAuthAuthorizationCallback(
 
     await query(
       `/* receiveOAuthAuthorizationCallback */ UPDATE oauth_authorizations
-       SET            callback_code_ciphertext = $2,
-           completion_token_hash = $3,
-           completion_token_ciphertext = $4,
+       SET callback_code_ciphertext = $2,
+           callback_code_hash = $3,
+           completion_token_hash = $4,
+           completion_token_ciphertext = $5,
            callback_received_at = CURRENT_TIMESTAMP
        WHERE id = $1`,
       [
         authorization.id,
         encryptSecret(options.code!, getCallbackCodePurpose(authorization.id)),
+        hashOAuthCallbackCode(authorization.id, options.code!),
         hashOAuthCompletionToken(authorization.id, completionToken),
         encryptSecret(completionToken, getCompletionTokenPurpose(authorization.id)),
       ],
@@ -137,44 +131,4 @@ export function decryptOAuthAuthorizationCode(flowId: string, ciphertext: string
 
 export function decryptOAuthAuthorizationPkceVerifier(flowId: string, ciphertext: string): string {
   return decryptSecret(ciphertext, getPkceVerifierPurpose(flowId))
-}
-
-function handoff(
-  authorization: OAuthAuthorizationRow,
-  completionToken: string,
-  exchangeRequired: boolean,
-): ReceiveOAuthAuthorizationCallbackResult {
-  return {
-    flowId: authorization.id,
-    callbackMode: authorization.callback_mode,
-    completionToken,
-    exchangeRequired,
-    expiresAt: authorization.expires_at,
-  }
-}
-
-function getExistingCallbackHandoff(
-  authorization: OAuthAuthorizationRow,
-): ReceiveOAuthAuthorizationCallbackResult {
-  if (
-    !['callback_received', 'exchanging', 'completion_ready', 'rejected'].includes(
-      authorization.status,
-    ) ||
-    !authorization.completion_token_ciphertext
-  ) {
-    throw createHttpError(409, 'OAuth authorization cannot be resumed')
-  }
-  return handoff(
-    authorization,
-    decryptSecret(
-      authorization.completion_token_ciphertext,
-      getCompletionTokenPurpose(authorization.id),
-    ),
-    authorization.status !== 'rejected',
-  )
-}
-
-function normalizeCallbackError(error: string): string {
-  const normalized = error.replaceAll(/[^A-Za-z0-9_.:-]/g, '_').slice(0, 128)
-  return normalized || 'provider_rejected'
 }
