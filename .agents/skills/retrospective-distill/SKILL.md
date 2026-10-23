@@ -30,7 +30,7 @@ retained record would never be distilled. Then call `snapshot_export` with the r
 `sessionId`; it always exports only non-archived sessions and returns a private local snapshot
 path, counts, checksum, and terminal manifest, never the records. If the server is not connected,
 stop and report it rather than falling back to a CLI command or paginated session reads.
-Export unfiltered (canonical rule: never `selection.inactiveForHours`). Full records come only
+Export unfiltered (canonical rule). Full records come only
 from the exported file's partitions, never from `journal_entries`, which reads one session at a
 time with no checksum or manifest.
 Before delegation, the root verifies the snapshot against the returned checksum, counts, and
