@@ -36,7 +36,6 @@ export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
   ],
   [
     'retained_identity_cleanup_cursors.cursor_identity_id',
-
     'Operational keyset scan position can outlive its prior root row; it is not a relationship.',
   ],
   [
