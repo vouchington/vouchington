@@ -152,13 +152,19 @@ export async function getMembershipRenewalNotificationIdentity(): Promise<
     foreign_column_name: string
     foreign_table_name: string
   }>(`/* getMembershipRenewalNotificationIdentity */
-    SELECT ccu.table_name AS foreign_table_name, ccu.column_name AS foreign_column_name
-    FROM information_schema.table_constraints tc
-    INNER JOIN information_schema.key_column_usage kcu
-      ON kcu.constraint_schema = tc.constraint_schema AND kcu.constraint_name = tc.constraint_name
-    INNER JOIN information_schema.constraint_column_usage ccu
-      ON ccu.constraint_schema = tc.constraint_schema AND ccu.constraint_name = tc.constraint_name
-    WHERE tc.constraint_schema = 'public' AND tc.table_name = 'membership_renewal_price_increase_notification_work_items' AND tc.constraint_type = 'FOREIGN KEY'
-      AND kcu.column_name = 'membership_provider_observation_id'`)
+    SELECT foreign_table.relname::text AS foreign_table_name,
+      foreign_attribute.attname::text AS foreign_column_name
+    FROM pg_constraint constraint_row
+    JOIN pg_class foreign_table ON foreign_table.oid = constraint_row.confrelid
+    JOIN LATERAL generate_subscripts(constraint_row.conkey, 1) AS key_index(index_number) ON true
+    JOIN pg_attribute local_attribute
+      ON local_attribute.attrelid = constraint_row.conrelid
+      AND local_attribute.attnum = constraint_row.conkey[key_index.index_number]
+    JOIN pg_attribute foreign_attribute
+      ON foreign_attribute.attrelid = constraint_row.confrelid
+      AND foreign_attribute.attnum = constraint_row.confkey[key_index.index_number]
+    WHERE constraint_row.contype = 'f'
+      AND constraint_row.conrelid = 'public.membership_renewal_price_increase_notification_work_items'::regclass
+      AND local_attribute.attname = 'membership_provider_observation_id'`)
   return rows
 }
