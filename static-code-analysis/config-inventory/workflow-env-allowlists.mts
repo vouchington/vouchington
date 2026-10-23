@@ -58,6 +58,9 @@ const EXTERNAL_WORKFLOW_ENV_ALLOWLIST = new Set([
   'POSTGRES_USER',
   'PUSH',
   'RUN_NUMBER',
+  // Read by vouchington-tooling/storybook-browser-runner to conditionally append coverage argv;
+  // the published runner implementation is outside the repository source inventory.
+  'STORYBOOK_BROWSER_COVERAGE',
   // Read by vouchington-tooling/vitest-diagnostics ciReporters() and ciOutputFile(); the
   // published reporter implementations are outside the repository source inventory.
   'VITEST_FILE_PROGRESS_FILE',

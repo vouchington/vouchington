@@ -96,8 +96,6 @@ web:
   - 'web/**'
 storybook:
   - '.github/ci-path-filters.yml'
-  - 'ci/run-storybook-browser-tests.mts'
-  - 'ci/storybook-browser-runner*.mts'
   - 'ci/storybook-pages*.mts'
   - 'cloudflare-worker/package.json'
   - 'cloudflare-worker/src/basic-auth-credentials.mts'
@@ -107,6 +105,7 @@ storybook:
   - 'vitest.config.mts'
   - 'test-helpers/vitest-config/environment.mts'
   - 'test-helpers/vitest-config/storybook-browser-project.mts'
+  - 'test-helpers/vitest-config/storybook-browser-optimize-deps.mts'
   - 'test-helpers/vitest-config/web-projects.mts'
   - 'pnpm-lock.yaml'
 playwright:
@@ -409,7 +408,7 @@ portability:
 runtime-web:
   - '{.github/ci-path-filters.yml,ci/setup-web-integration.mts,ci/run-pnpm-command.mts,ci/stale-test-cache-cleanup.mts,api-fixtures/**,vitest.config.mts,test-helpers/vitest-config/web-projects.mts,package.json,pnpm-lock.yaml,pnpm-workspace.yaml,backend/types/**,ts-shared/**,web/**}'
 runtime-storybook:
-  - '{.github/ci-path-filters.yml,ci/run-storybook-browser-tests.mts,ci/storybook-browser-runner*.mts,ci/storybook-pages*.mts,cloudflare-worker/package.json,cloudflare-worker/src/basic-auth-credentials.mts,cloudflare-worker/src/storybook-pages-auth.mts,cloudflare-worker/src/timing-safe-credential-match.mts,web/**,vitest.config.mts,test-helpers/vitest-config/environment.mts,test-helpers/vitest-config/storybook-browser-project.mts,test-helpers/vitest-config/web-projects.mts,pnpm-lock.yaml}'
+  - '{.github/ci-path-filters.yml,ci/storybook-pages*.mts,cloudflare-worker/package.json,cloudflare-worker/src/basic-auth-credentials.mts,cloudflare-worker/src/storybook-pages-auth.mts,cloudflare-worker/src/timing-safe-credential-match.mts,web/**,vitest.config.mts,test-helpers/vitest-config/environment.mts,test-helpers/vitest-config/storybook-browser-project.mts,test-helpers/vitest-config/storybook-browser-optimize-deps.mts,test-helpers/vitest-config/web-projects.mts,pnpm-lock.yaml}'
   - '!web/.dependency-cruiser.cjs'
   - '!**/*.md'
   - '!**/*.mdx'

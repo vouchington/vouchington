@@ -10,8 +10,6 @@ on:
       - '.github/workflows/main-storybook.yml'
       - '.github/workflows/storybook.yml'
       - '.github/actions/**'
-      - 'ci/run-storybook-browser-tests.mts'
-      - 'ci/storybook-browser-runner*.mts'
       - 'ci/storybook-pages*.mts'
       - 'cloudflare-worker/package.json'
       - 'cloudflare-worker/src/basic-auth-credentials.mts'
@@ -21,6 +19,7 @@ on:
       - 'vitest.config.mts'
       - 'test-helpers/vitest-config/environment.mts'
       - 'test-helpers/vitest-config/storybook-browser-project.mts'
+      - 'test-helpers/vitest-config/storybook-browser-optimize-deps.mts'
       - 'test-helpers/vitest-config/web-projects.mts'
       - 'pnpm-lock.yaml'
 

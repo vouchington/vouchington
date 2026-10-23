@@ -4,8 +4,6 @@ import { isAreaGateJob } from './ci-aggregate-jobs.mts'
 export const ciStorybookJobName = 'storybook / storybook'
 export const storybookBrowserAttemptMarker = '[storybook-browser] starting attempt'
 
-const ansiEscapePattern = new RegExp(String.raw`\u001B\[[0-?]*[ -/]*[@-~]`, 'g')
-
 export const matchesStorybookSingleJob = (ctx: WorkflowRunContext): boolean =>
   ctx.conclusion === 'failure' &&
   ctx.workflowName === 'Web' &&
@@ -22,8 +20,6 @@ export const failedStorybookJobName = (ctx: WorkflowRunContext): string | undefi
   }
   return ctx.conclusion === 'failure' && ctx.failedJobNames.includes(jobName) ? jobName : undefined
 }
-
-export const stripAnsi = (log: string): string => log.replace(ansiEscapePattern, '')
 
 export const hasStorybookBrowserViteDependencyReady = (plainLog: string): boolean =>
   plainLog.includes('dependencies optimized') || /\bhash is consistent\b/i.test(plainLog)
@@ -43,17 +39,3 @@ export const hasStorybookViteOptimizerReload = (plainLog: string): boolean =>
 
 export const hasStorybookViteOptimizerNewDepsReload = (plainLog: string): boolean =>
   hasStorybookViteNewDependenciesFound(plainLog) && hasStorybookViteOptimizerReload(plainLog)
-
-export const parseStorybookViteNewDependencies = (plainLog: string): string[] => {
-  const names = new Set<string>()
-  const pattern = /new dependencies found:\s*([^\n]+)/g
-  for (const match of plainLog.matchAll(pattern)) {
-    const listed = match[1]
-    if (!listed) continue
-    for (const name of listed.split(',')) {
-      const trimmed = name.trim()
-      if (trimmed) names.add(trimmed)
-    }
-  }
-  return [...names]
-}

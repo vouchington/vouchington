@@ -1,3 +1,4 @@
+import { stripVTControlCharacters as stripAnsi } from 'node:util'
 import type { TransientRetryRule } from './types.mts'
 import {
   hasExplicitOomEvidence,
@@ -13,7 +14,6 @@ import {
   hasStorybookViteOptimizerNewDepsReload,
   matchesStorybookSingleJob,
   storybookBrowserAttemptMarker,
-  stripAnsi,
 } from './storybook-shared.mts'
 
 // `Test Files` is intentionally broad: bootstrap timeouts must precede any test output.
@@ -92,7 +92,7 @@ const hasStorybookBrowserWatchdogExit = (terminalTail: string, plainLog: string)
   )
 }
 
-// The watchdog (ci/storybook-browser-runner.mts) terminates a hung attempt on either of two
+// The tooling Storybook browser watchdog terminates a hung attempt on either of two
 // branches, sharing the `[storybook-browser] ` prefix but with distinct terminal phrases: no test
 // output ever appeared after Vite finished starting, or semantic test progress appeared and then
 // stalled mid-suite. Both are the same transient bootstrap/session hang from the caller's

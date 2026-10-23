@@ -66,7 +66,6 @@ describe('dependency update configuration', () => {
     const playwrightVersions = [
       rootPackage.devDependencies?.['@playwright/test'],
       rootPackage.devDependencies?.playwright,
-      rootPackage.devDependencies?.['playwright-core'],
       webPackage.devDependencies?.['@playwright/test'],
       browserCrawlPackage.dependencies?.playwright,
       browserCrawlPackage.dependencies?.['playwright-core'],

@@ -159,7 +159,7 @@ jobs:
         run: |
           VITEST_STORYBOOK_BROWSER_API_PORT=$(python3 node_modules/vouchington-tooling/scripts/allocate-browser-safe-ports.py 1)
           export VITEST_STORYBOOK_BROWSER_API_PORT
-          pnpm exec ./ci/run-storybook-browser-tests.mts
+          pnpm exec vouchington storybook-browser-runner --project web-storybook-browser --result-file .vitest-reports/web-storybook-browser.json --result-file coverage/lcov.info --result-file storybook-browser-test-report.junit.xml --completion-file .vitest-reports/web-storybook-browser.json --optimize-deps-config test-helpers/vitest-config/storybook-browser-optimize-deps.mts --progress-prefix '[storybook-browser-progress]' -- exec ./ci/with-node-test-options vitest run --bail=3 --project web-storybook-browser
         # The runner owns one monotonic 300-second session budget across at most three startup
         # attempts. Semantic module progress disables retry and distinguishes active browser work
         # from a pre-test startup failure. Leave one workflow minute for process-group cleanup.

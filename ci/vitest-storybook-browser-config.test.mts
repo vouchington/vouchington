@@ -21,12 +21,16 @@ describe('Storybook browser Vitest environment overrides', () => {
       ...originalEnv,
       CI: 'true',
       STORYBOOK_BROWSER_HANG_MS: '150000',
+      VITEST_STORYBOOK_BROWSER: '1',
+      VITEST_COVERAGE_SCOPE: 'web-storybook-browser',
       VITEST_STORYBOOK_BROWSER_API_PORT: '49231',
       VITEST_STORYBOOK_BROWSER_CACHE_DIR: '/tmp/storybook-browser-cache',
     }
 
     const envConfig = await importEnvironmentModule('storybook-browser-overrides')
 
+    expect(envConfig.isStorybookBrowserEnabled).toBe(true)
+    expect(envConfig.coverageFlags.isWebStorybookBrowserCoverage).toBe(true)
     expect(envConfig.storybookBrowserCacheDir).toBe('/tmp/storybook-browser-cache')
     expect(envConfig.parseStorybookBrowserApiPort()).toBe(49_231)
     expect(envConfig.parseStorybookBrowserConnectTimeout()).toBe(150_000)

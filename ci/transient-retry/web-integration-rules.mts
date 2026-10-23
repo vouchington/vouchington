@@ -1,5 +1,5 @@
+import { stripVTControlCharacters as stripAnsi } from 'node:util'
 import { isAreaGateJob } from './ci-aggregate-jobs.mts'
-import { stripAnsi } from './storybook-shared.mts'
 import type { TransientRetryRule } from './types.mts'
 import {
   hasUndiciConnectionRefused,
