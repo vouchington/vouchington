@@ -71,8 +71,9 @@ export async function markTestCopyrightNoticeErased(
     SELECT id FROM copyright_notices WHERE id = ${noticeId} FOR UPDATE`)
   await transaction(sql`/* markTestCopyrightNoticeErased:marker */
     INSERT INTO copyright_notice_retention_erasures
-      (copyright_notice_id, retention_days, erased_object_count)
-    VALUES (${noticeId}, 1, 0)`)
+      (copyright_notice_id, retention_days, erased_object_count, legal_clock_at)
+    VALUES (${noticeId}, 1, 0,
+      fn_project_copyright_minimal_record_legal_clock(${noticeId}))`)
 }
 
 /** Commit the retained erasure marker before a new inbound reply is parsed. */

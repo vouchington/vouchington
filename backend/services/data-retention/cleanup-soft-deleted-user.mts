@@ -1,6 +1,7 @@
 import type { RetentionWorkBudget } from './work-budget.mts'
 import { getDataRetentionLimits } from './config.mts'
 import { beginTransaction, type QueryExecutor, type TransactionQuery } from '@data-stores/psql'
+import { FINAL_USER_PURGE_LOCK_KEY } from '@modules/utils/final-user-purge-lock'
 import {
   lockAuthorPublicationLifecycle,
   processAuthorDeletionPublicationBatch,
@@ -8,8 +9,6 @@ import {
 } from '@services/post-publication'
 import sql from 'sql-template-strings'
 import { cleanupUserPreservedRows } from './cleanup-user-preserved-rows.mts'
-
-export const FINAL_USER_PURGE_LOCK_KEY = 'data-retention:final-user-purge'
 
 export async function cleanupSoftDeletedUser(
   targetId: string,
@@ -55,6 +54,10 @@ async function deletePurgedUser(query: TransactionQuery, targetId: string): Prom
   await retainUserCascadeHardDeletedPosts(query, targetId)
   const { rowCount } = await query(sql`/* cleanupSoftDeletedUserBatch:delete */
       DELETE FROM users WHERE id = ${targetId}`)
+  if (rowCount)
+    await query(sql`/* recordFinalUserPurgeTime */
+    UPDATE retained_user_identities SET purged_at = CURRENT_TIMESTAMP
+    WHERE id = ${targetId} AND purged_at IS NULL`)
   return rowCount ?? 0
 }
 

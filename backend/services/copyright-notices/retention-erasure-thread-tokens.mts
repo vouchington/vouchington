@@ -26,11 +26,32 @@ export function caseThreadTokenDigestsSql(noticeId: string): SQLStatement {
     .append(sql`) ORDER BY token.lookup_digest`)
 }
 
+function caseEmailMessageIdsSql(noticeId: string): SQLStatement {
+  return sql`/* caseEmailMessageIds */
+    SELECT intake.amazon_ses_message_id
+    FROM copyright_notice_email_intake_notice_links link
+    JOIN copyright_notice_email_intakes intake
+      ON intake.id = link.copyright_notice_email_intake_id
+    WHERE link.copyright_notice_id = ${noticeId}
+    ORDER BY intake.amazon_ses_message_id`
+}
+
 /** Keep ingestion's token-before-parent order; abort before erasure if the case grew meanwhile. */
 export async function lockCopyrightRetentionCaseThreadTokens(
   transaction: TransactionQuery,
   noticeId: string,
 ): Promise<boolean> {
+  const { rows: candidateMessages } = await transaction<{ amazon_ses_message_id: string }>(
+    caseEmailMessageIdsSql(noticeId),
+  )
+  const lockedMessages = new Set(candidateMessages.map(row => row.amazon_ses_message_id))
+  // oxlint-disable no-await-in-loop -- identical order as ingestion's single-message lock.
+  for (const messageId of lockedMessages) {
+    // no-mistakes-disable-next-line query-reached-per-item: bounded case message locks serialize each SES replay before erasure of that exact identity.
+    await transaction(sql`/* lockCopyrightRetentionEmailIdentity */
+      SELECT pg_advisory_xact_lock(hashtextextended(${`copyright-email:${messageId}`}, 0))`)
+  }
+  // oxlint-enable no-await-in-loop
   const { rows: candidateTokens } = await transaction<{ lookup_digest: string }>(
     caseThreadTokenDigestsSql(noticeId),
   )
@@ -43,7 +64,13 @@ export async function lockCopyrightRetentionCaseThreadTokens(
   const { rows: currentTokens } = await transaction<{ lookup_digest: string }>(
     caseThreadTokenDigestsSql(noticeId),
   )
-  return currentTokens.every(row => lockedDigests.has(row.lookup_digest))
+  const { rows: currentMessages } = await transaction<{ amazon_ses_message_id: string }>(
+    caseEmailMessageIdsSql(noticeId),
+  )
+  return (
+    currentTokens.every(row => lockedDigests.has(row.lookup_digest)) &&
+    currentMessages.every(row => lockedMessages.has(row.amazon_ses_message_id))
+  )
 }
 
 /** Keep a shared digest while any reference or notice link outside this case still owns it. */

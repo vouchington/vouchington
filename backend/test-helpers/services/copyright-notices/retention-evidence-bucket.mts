@@ -16,6 +16,8 @@ export type FakeEvidenceBucket = {
   allow(key: string): void
   /** Number of `DeleteObjects` requests the sweep has sent. */
   deleteRequests(): number
+  /** One-shot barrier for a deterministic ingress-versus-erasure test. */
+  beforeNextDelete(effect: () => Promise<void>): void
 }
 
 /**
@@ -28,15 +30,22 @@ export function useFakeCopyrightEvidenceBucket(): FakeEvidenceBucket {
   const refused = new Set<string>()
   let deleteCalls = 0
   let nextVersion = 0
+  let beforeDelete: (() => Promise<void>) | null = null
 
   beforeEach(() => {
     objects.clear()
     refused.clear()
     deleteCalls = 0
+    beforeDelete = null
     vi.stubEnv('S3_BUCKET_COPYRIGHT_EVIDENCE', BUCKET)
     vi.spyOn(S3Client.prototype, 'send').mockImplementation((async (command: unknown) => {
       if (command instanceof ListObjectVersionsCommand) return list(command.input)
-      if (command instanceof DeleteObjectsCommand) return remove(command.input)
+      if (command instanceof DeleteObjectsCommand) {
+        const effect = beforeDelete
+        beforeDelete = null
+        if (effect) await effect()
+        return remove(command.input)
+      }
       throw new Error('Unexpected S3 command in the retention sweep')
     }) as never)
   })
@@ -105,6 +114,9 @@ export function useFakeCopyrightEvidenceBucket(): FakeEvidenceBucket {
     refuse: key => void refused.add(key),
     allow: key => void refused.delete(key),
     deleteRequests: () => deleteCalls,
+    beforeNextDelete(effect) {
+      beforeDelete = effect
+    },
   }
 }
 

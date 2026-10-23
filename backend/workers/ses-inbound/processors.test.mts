@@ -5,6 +5,7 @@ import {
   SES_INBOUND_RECONCILE_JOB,
 } from '@queues/background/enqueues/ses-inbound-jobs'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { withCopyrightEmailIntakeIdentityLock } from '@services/copyright-notices'
 import { sesInboundWorkConfig } from './work-limits.mts'
 import { processSesInboundEmail, reconcileSesInboundEmails } from './processors.mts'
 import { listCopyrightSesInboundObjects } from './processors/s3.mts'
@@ -201,6 +202,11 @@ function createDependencySpies() {
     copySesInboundObjectToCopyrightEvidence:
       vi.fn<ProcessDependencies['copySesInboundObjectToCopyrightEvidence']>(),
     createCopyrightEmailIntake: vi.fn<ProcessDependencies['createCopyrightEmailIntake']>(),
+    withCopyrightEmailIntakeIdentityLock: vi.fn<
+      ProcessDependencies['withCopyrightEmailIntakeIdentityLock']
+    >(
+      withCopyrightEmailIntakeIdentityLock,
+    ) as unknown as ProcessDependencies['withCopyrightEmailIntakeIdentityLock'],
     deleteSesInboundObject: vi.fn<ProcessDependencies['deleteSesInboundObject']>(),
     enqueueCopyrightEmailIntake: vi.fn<ProcessDependencies['enqueueCopyrightEmailIntake']>(),
     loadSesInboundObject: vi.fn<ProcessDependencies['loadSesInboundObject']>(),

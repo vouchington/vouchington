@@ -52,7 +52,7 @@ CREATE TRIGGER trigger_copyright_trusted_flagger_changes_immutable
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_trusted_flagger_matches (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  copyright_notice_id uuid NOT NULL UNIQUE REFERENCES copyright_notices(id) ON DELETE RESTRICT,
+  copyright_notice_id uuid NOT NULL UNIQUE REFERENCES copyright_notices(id) ON DELETE CASCADE,
   copyright_trusted_flagger_id uuid NOT NULL CONSTRAINT fk_copyright_trusted_flagger_matches__flagger REFERENCES copyright_trusted_flaggers(id) ON DELETE RESTRICT,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL);
 

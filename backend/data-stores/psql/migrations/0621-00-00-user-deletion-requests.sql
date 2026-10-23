@@ -50,6 +50,24 @@ CREATE TABLE IF NOT EXISTS user_deletion_requests (
   UNIQUE (user_id)
 );
 
+CREATE TYPE legal_record_retention_families AS ENUM (
+  'identity_verification_attempt', 'user_deletion_request', 'user_legal_preservation_hold'
+);
+COMMENT ON TYPE legal_record_retention_families IS 'Finite legal-record families with independent cyclic cleanup progress.';
+
+CREATE TABLE IF NOT EXISTS legal_record_retention_cursors (
+  family legal_record_retention_families PRIMARY KEY,
+  cursor_record_id UUID,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TRIGGER trigger_legal_record_retention_cursors_updated_at
+BEFORE UPDATE ON legal_record_retention_cursors
+FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+COMMENT ON TABLE legal_record_retention_cursors IS 'Independent deletion-stable keyset progress for each finite legal-record family.';
+COMMENT ON COLUMN legal_record_retention_cursors.family IS 'The concrete legal-record family being scanned.';
+COMMENT ON COLUMN legal_record_retention_cursors.cursor_record_id IS 'Last scanned UUIDv7 row identity; no foreign key because the row can be deleted.';
+COMMENT ON COLUMN legal_record_retention_cursors.updated_at IS 'Last committed progress change.';
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_user_deletion_requests_updated_at
 BEFORE UPDATE ON user_deletion_requests

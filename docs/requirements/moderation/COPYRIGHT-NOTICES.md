@@ -162,25 +162,35 @@ export. See [account data export](../users/ACCOUNT-DATA-EXPORT.md#copyright-reco
 GDPR and UK GDPR need a retention period and real deletion or anonymisation when it ends. The US
 side must keep records for the repeat-infringer policy (17 USC 512(i)), restoration (512(g)), the
 three-year limitation period (17 USC 507(b)), and litigation holds. A sweep reconciles the two. It
-is off by default and deletes nothing until the owner approves a period.
+uses the owner-approved three-year period.
 
-- Only `us_dmca` cases are swept; EU and UK records are kept.
+- US, EU, and UK cases use the same closed-case retention period.
 - A case is never swept while any blocker exists: open queue work, an open deadline, an active
   restriction, an operative incident, a pending delivery, a live guest capability, an unresolved
   hold, a pending thread-linked email reply, or a preservation hold on a party account. Resolving
   the reply restarts the retention period from its receipt or review.
 - Personal data and statements are overwritten and evidence object versions are deleted. The
-  minimal record survives: the notice, targets, dates, states, hashes, restrictions, deadlines,
-  hold and review outcomes, and repeat-infringer incidents, because the 512(i) count must not change.
+  minimal record survives while a repeat-infringer incident counts. Final deletion waits three
+  calendar years after the latest case activity, incident cessation, account purge, or released
+  preservation hold, and still requires all live legal work to end.
 - Erasure fails closed: the database is overwritten only after every object version is confirmed
   gone, and any failure rolls the case back for the next run. Agent results completed after erasure
   cannot recreate case evidence.
-- Legal-record tables refuse UPDATE and DELETE except through one allowlisted erasure function. A
-  new copyright column holding ciphertext, a storage key, or a lookup token must be added to the
-  erasure list or recorded as kept; a test fails until it is.
+- Legal-record tables refuse changes outside the scoped evidence erasure, raw-key retention, and
+  eligible case-purge paths. A new copyright column holding ciphertext, a storage key, or a lookup
+  token must be added to the erasure list or recorded as kept; a test fails until it is.
 
-Enabling it needs an owner-approved period, the evidence-bucket delete permission, and a check that
-the account data export of an erased case completes. See the
+Authenticated submission requests clear the key from the raw legal row after 30 days. A compact
+requester fingerprint, key, request fingerprint, and public receipt snapshot survives for exact
+replay. Retained receipt identities do not authorize a deleted case or a new action.
+
+Final deletion drains case-owned rows in bounded pages and resumes from a durable checkpoint. Each
+page rechecks legal holds and eligibility before it deletes data. A newly placed hold stops remaining
+pages; data already erased under the prior eligible decision cannot be restored. Cases with DSA
+statement submissions remain preserved until their separate legal-record lifecycle is approved.
+
+Operating it needs evidence-bucket delete permission and a check that the account data export of an
+erased case completes. See the
 [runbook](../../runbooks/copyright-notices.md#evidence-retention-deletion).
 
 ## Activation gates

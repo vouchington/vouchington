@@ -6,7 +6,7 @@
 ALTER TABLE notifications
   ADD CONSTRAINT fk_notifications__copyright_notice
   FOREIGN KEY (copyright_notice_id)
-  REFERENCES copyright_notices(id) ON DELETE RESTRICT NOT VALID;
+  REFERENCES copyright_notices(id) ON DELETE CASCADE NOT VALID;
 ALTER TABLE notifications
   VALIDATE CONSTRAINT fk_notifications__copyright_notice;
 CREATE INDEX idx_notifications__copyright_notice

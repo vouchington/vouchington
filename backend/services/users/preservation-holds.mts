@@ -5,6 +5,7 @@ import { v7 as uuidv7 } from 'uuid'
 import { createCodedError } from '@modules/on-error/create-coded-error'
 import { CONFLICT } from '@modules/on-error/error-codes'
 import { decryptSecret, encryptSecret } from '@modules/token-secrets'
+import { FINAL_USER_PURGE_LOCK_KEY } from '@modules/utils/final-user-purge-lock'
 import { recordModeratorAction } from '@services/moderator-actions'
 import { isAdminUser } from './authorization.mts'
 import type { PrivateUser } from './types.mts'
@@ -63,6 +64,9 @@ async function lockPreservationHoldUser(
   query: QueryExecutor,
   userId: string,
 ): Promise<{ deleted_at: Date | null } | undefined> {
+  // Match final account purge and copyright case pages before any user or hold row lock.
+  await query(sql`/* lockPreservationHoldFinalUserClock */
+    SELECT pg_advisory_xact_lock(hashtextextended(${FINAL_USER_PURGE_LOCK_KEY}, 0))`)
   await query(sql`/* lockPreservationHoldUser:advisoryLock */
     SELECT pg_advisory_xact_lock(hashtextextended(${userId.toLowerCase()}, 0))
   `)

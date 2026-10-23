@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import createHttpError from 'http-errors'
 import { STRIPE_PROVIDER_ENVIRONMENT } from '@voucha/config'
 import { write } from '@data-stores/psql'
@@ -17,9 +18,11 @@ import {
   claimAdministratorRefundRequest,
   getAdministratorRefundRequestByKey,
 } from './administrator-request.mts'
+import { getRetainedAdministratorRefundRequestByKey } from './administrator-retained-request.mts'
 import { leaseDueRefundReconciliation } from './ledger.mts'
 import { reconcileMembershipRefundOperation } from './reconcile.mts'
 import type { RefundReconciliationResult } from './types.mts'
+import { decodeAdministratorRetainedResponse } from './administrator-retained-response.mts'
 
 export async function startAdministratorRefundReconciliation(
   currentUserId: string,
@@ -27,10 +30,39 @@ export async function startAdministratorRefundReconciliation(
   stripeOperations: Pick<MembershipStripeOperations, 'listSubscriptionInvoices'>,
 ): Promise<{ id: string; result: RefundReconciliationResult }> {
   const idempotencyKey = createStripeRefundIdempotencyKey(currentUserId, request.idempotencyToken)
-  const existingRequest = await getAdministratorRefundRequestByKey(idempotencyKey, {
+  const scope = {
     provider: 'stripe',
     providerApplicationId: 'voucha-web',
     providerEnvironment: STRIPE_PROVIDER_ENVIRONMENT,
+  }
+  const retainedRequest = await getRetainedAdministratorRefundRequestByKey(idempotencyKey, scope)
+  if (retainedRequest) {
+    const fingerprint = createRefundRequestFingerprint(retainedRequest.membershipId, request)
+    if (
+      !retainedRequest.issuerSha256.equals(createHash('sha256').update(currentUserId).digest()) ||
+      retainedRequest.requestFingerprint !== fingerprint
+    )
+      throw createHttpError(
+        409,
+        'Administrator refund idempotency key was reused for a different request',
+      )
+    // A retained result proves historical replay only; it cannot authorize a purged membership.
+    const { rows: liveMembership } = await write<{ id: string }>(sql`
+      /* authorizeRetainedAdministratorRefundMembership */
+      SELECT id FROM memberships WHERE id = ${retainedRequest.membershipId}
+        AND user_id = ${request.targetUserId}`)
+    if (!liveMembership[0]) throw createHttpError(404, 'Membership not found')
+    return {
+      id: retainedRequest.id,
+      result: {
+        outcome: 'completed',
+        refundId: retainedRequest.refundId,
+        cancellationStatus: retainedRequest.cancellationStatus,
+      },
+    }
+  }
+  const existingRequest = await getAdministratorRefundRequestByKey(idempotencyKey, {
+    ...scope,
   })
   if (existingRequest) {
     const requestFingerprint = createRefundRequestFingerprint(existingRequest.membershipId, request)
@@ -117,7 +149,19 @@ export async function getAdministratorRefundReconciliationResult(
         completed: boolean
       }
     | undefined
-  if (!row || !row.refundId) return { outcome: 'reconciling' }
+  if (!row) {
+    const { rows: retained } = await write<{ responseSnapshot: unknown }>(sql`
+      /* getRetainedAdministratorRefundReconciliationResult */
+      SELECT administrator_response_snapshot AS "responseSnapshot"
+      FROM membership_operation_retained_identities
+      WHERE id = ${operationId} AND operation_kind = 'administrator_refund'`)
+    if (!retained[0]) return { outcome: 'reconciling' }
+    return {
+      outcome: 'completed',
+      ...decodeAdministratorRetainedResponse(retained[0].responseSnapshot),
+    }
+  }
+  if (!row.refundId) return { outcome: 'reconciling' }
   return {
     outcome: 'completed',
     refundId: row.refundId,

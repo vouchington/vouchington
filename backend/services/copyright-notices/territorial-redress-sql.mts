@@ -90,8 +90,14 @@ export function insertTerritorialRedressDecision(
 ) {
   return sql`/* recordTerritorialCopyrightRedressDecision */
     INSERT INTO copyright_territorial_redress_decisions (
-      copyright_territorial_redress_request_id, decided_by_id, staff_disposition,
-      rationale_ciphertext
-    ) VALUES (${redressId}, ${actorId}, ${disposition}, ${rationaleCiphertext})
+      copyright_territorial_redress_request_id, revoked_assessment_id,
+      decided_by_id, staff_disposition, rationale_ciphertext
+    ) SELECT request.id,
+      CASE WHEN ${disposition} = 'revoke' THEN decision.copyright_notice_submission_assessment_id END,
+      ${actorId}, ${disposition}, ${rationaleCiphertext}
+    FROM copyright_territorial_redress_requests request
+    JOIN copyright_territorial_decisions decision
+      ON decision.id = request.copyright_territorial_decision_id
+    WHERE request.id = ${redressId}
     RETURNING id, decided_at, staff_disposition`
 }

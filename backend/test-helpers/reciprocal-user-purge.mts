@@ -1,5 +1,5 @@
 import { beginTransaction, write } from '@data-stores/psql'
-import { FINAL_USER_PURGE_LOCK_KEY } from '../services/data-retention/cleanup-soft-deleted-user.mts'
+import { FINAL_USER_PURGE_LOCK_KEY } from '@modules/utils/final-user-purge-lock'
 import {
   getTestPostgresAdvisoryLockHolderProcessId,
   getTestPostgresBackendProcessId,

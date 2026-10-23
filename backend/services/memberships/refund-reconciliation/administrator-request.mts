@@ -1,6 +1,9 @@
+import { createHash } from 'node:crypto'
 import { beginTransaction, write, type QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import createHttpError from 'http-errors'
 import type { AdministratorRefundRequest } from './types.mts'
+import { getRetainedAdministratorRefundRequestForMembershipKey } from './administrator-retained-request.mts'
 import {
   assertAdministratorRefundRequestMatches,
   type AdministratorRefundOperation,
@@ -15,6 +18,23 @@ export async function claimAdministratorRefundRequest(
   await query(sql`/* serializeAdministratorRefundRequestClaim */
     SELECT pg_advisory_xact_lock(hashtextextended(${request.idempotencyKey}, 1950614898))
   `)
+  const retained = await getRetainedAdministratorRefundRequestForMembershipKey(
+    request.idempotencyKey,
+    request.membershipId,
+    query,
+  )
+  if (retained) {
+    if (
+      !retained.issuerSha256.equals(createHash('sha256').update(request.issuedById).digest()) ||
+      retained.requestFingerprint !== request.requestFingerprint
+    )
+      throw createHttpError(
+        409,
+        'Administrator refund idempotency key was reused for a different request',
+      )
+    await query.commit()
+    return { id: retained.id, completed: true }
+  }
   const existingRequest = await getAdministratorRefundRequestForMembershipKey(
     request.idempotencyKey,
     request.membershipId,

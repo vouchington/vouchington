@@ -201,9 +201,10 @@ Each of these providers has their own privacy policy. We select providers who ma
 - **Billing records** — retained as required by financial regulations (typically 7 years); the email address associated with your Stripe customer record is redacted when you delete your account
 - **Security logs** — retained for up to 12 months
 - **Vote integrity flags** — retained for the life of the account; anonymized upon account deletion
-- **Copyright case records and evidence** — we keep US copyright notices, appeals, counter-notices,
-  correspondence, evidence, and case decisions for three years after the case's last activity. This
-  follows the general limit for civil copyright claims (17 U.S.C. §507(b)). The three years do not
+- **Copyright case records and evidence** — we keep US, EU, and UK copyright notices, appeals,
+  counter-notices, correspondence, evidence, and case decisions for three years after the case's last
+  activity. The US period follows the general limit for civil copyright claims (17 U.S.C. §507(b)).
+  The three years do not
   start while any of these is open:
   - the case, a staff review, or a statutory deadline, such as a counter-notice restoration window;
   - a restriction that is still in force;
@@ -211,10 +212,11 @@ Each of these providers has their own privacy policy. We select providers who ma
   - an incident that still counts under our repeat-infringer policy under 17 U.S.C. §512(i).
 
   After that, we delete the evidence and the personal data in the case, such as names, contact
-  details, signatures, and message text. We keep a minimal record for the repeat-infringer policy:
-  that we received the notice, our decisions, the dates, and the repeat-infringer facts. Deleting
-  your account does not delete copyright case records. We do not publish private evidence or
-  correspondence.
+  details, signatures, and message text. A minimal record of receipt, decisions, dates, and
+  repeat-infringer facts remains while needed for the repeat-infringer policy. We delete that
+  record three years after the later of the incident ceasing to count or final account deletion.
+  Deleting your account does not immediately delete copyright case records. We do not publish
+  private evidence or correspondence.
 
 ---
 

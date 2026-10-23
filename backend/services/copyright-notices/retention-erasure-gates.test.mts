@@ -128,18 +128,23 @@ describe('copyright evidence retention gates', () => {
   })
 
   it.each(['eu_dsa', 'uk'] as const)(
-    'keeps a %s case: only US DMCA cases are covered',
+    'erases a %s case after the retention window',
     async jurisdiction => {
       await configure({ evidenceRetentionDeletion: true, evidenceRetentionDays: 30 })
-      const { noticeId } = await createRetentionTerritorialCase(jurisdiction)
+      const { noticeId } = await createRetentionTerritorialCase(jurisdiction, true)
       const columns = await readCopyrightRetentionColumns(noticeId)
 
       await expect(
         sweepCopyrightEvidenceRetention({ now: daysFromNow(400), noticeIds: [noticeId] }),
-      ).resolves.toEqual(nothing)
+      ).resolves.toEqual({ erased: 1, ineligible: 0, failed: [] })
 
-      await expect(readCopyrightRetentionColumns(noticeId)).resolves.toEqual(columns)
-      await expect(readCopyrightRetentionMarker(noticeId)).resolves.toBeNull()
+      const erased = await readCopyrightRetentionColumns(noticeId)
+      expect(erased.copyright_territorial_notice_receipts).not.toEqual(
+        columns.copyright_territorial_notice_receipts,
+      )
+      await expect(readCopyrightRetentionMarker(noticeId)).resolves.toMatchObject({
+        retention_days: 30,
+      })
     },
   )
 

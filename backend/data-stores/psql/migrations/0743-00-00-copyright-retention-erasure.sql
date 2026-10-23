@@ -9,12 +9,40 @@
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_retention_erasures (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
-  copyright_notice_id UUID NOT NULL UNIQUE REFERENCES copyright_notices (id) ON DELETE RESTRICT,
+  copyright_notice_id UUID NOT NULL UNIQUE REFERENCES copyright_notices (id) ON DELETE CASCADE,
   retention_days INTEGER NOT NULL CHECK (retention_days > 0),
   erased_object_count INTEGER NOT NULL CHECK (erased_object_count >= 0),
+  legal_clock_at TIMESTAMPTZ NOT NULL,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL);
 
 CREATE TRIGGER trigger_copyright_retention_erasures_immutable BEFORE UPDATE OR DELETE ON copyright_notice_retention_erasures FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence();
+
+CREATE FUNCTION fn_project_copyright_minimal_record_legal_clock(target_notice_id uuid)
+RETURNS timestamptz LANGUAGE sql STABLE AS $$
+  SELECT GREATEST(
+    notice.created_at,
+    (SELECT erased.legal_clock_at FROM copyright_notice_retention_erasures erased
+      WHERE erased.copyright_notice_id = notice.id),
+    (SELECT event.created_at FROM copyright_notice_lifecycle_changes event
+      WHERE event.copyright_notice_id = notice.id ORDER BY event.id DESC LIMIT 1),
+    (SELECT work.updated_at FROM copyright_notice_delivery_work_items work
+      WHERE work.copyright_notice_id = notice.id ORDER BY work.updated_at DESC LIMIT 1),
+    (SELECT incident.updated_at FROM copyright_repeat_infringer_incidents incident
+      WHERE incident.copyright_notice_id = notice.id ORDER BY incident.updated_at DESC LIMIT 1),
+    (SELECT capability.updated_at FROM copyright_notice_guest_capabilities capability
+      WHERE capability.copyright_notice_id = notice.id
+      ORDER BY capability.updated_at DESC LIMIT 1),
+    (SELECT capability.expires_at FROM copyright_notice_guest_capabilities capability
+      WHERE capability.copyright_notice_id = notice.id AND capability.revoked_at IS NULL
+      ORDER BY capability.expires_at DESC LIMIT 1),
+    identity.email_activity_at,
+    (SELECT review.reviewed_at FROM copyright_notice_email_correspondence_reviews review
+      WHERE review.copyright_notice_id = notice.id AND review.reviewed_at IS NOT NULL
+      ORDER BY review.reviewed_at DESC LIMIT 1)
+  ) FROM copyright_notices notice
+  JOIN copyright_notice_retained_identities identity ON identity.id = notice.id
+  WHERE notice.id = target_notice_id
+$$;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_copyright_retention_erasable_columns(table_name text)
@@ -47,6 +75,11 @@ RETURNS text[] LANGUAGE sql IMMUTABLE PARALLEL SAFE AS $$
     WHEN 'copyright_notice_delivery_work_items' THEN ARRAY['body_ciphertext', 'failure_ciphertext']
     WHEN 'copyright_notice_delivery_recipients' THEN ARRAY['email_ciphertext']
     WHEN 'copyright_notice_lifecycle_change_rationales' THEN ARRAY['review_rationale_ciphertext']
+    WHEN 'copyright_territorial_notice_receipts' THEN ARRAY['requester_user_id', 'hosted_use_url', 'grounds_ciphertext', 'notifier_email_ciphertext']
+    WHEN 'copyright_territorial_decisions' THEN ARRAY['rationale_ciphertext', 'public_explanation_ciphertext']
+    WHEN 'copyright_territorial_redress_requests' THEN ARRAY['submitted_by_id', 'explanation_ciphertext']
+    WHEN 'copyright_territorial_redress_decisions' THEN ARRAY['rationale_ciphertext']
+    WHEN 'copyright_eu_supervised_complaints' THEN ARRAY['explanation_ciphertext']
   END
 $$;
 
@@ -62,6 +95,7 @@ COMMENT ON TABLE copyright_notice_retention_erasures IS 'Append-only record that
 COMMENT ON COLUMN copyright_notice_retention_erasures.copyright_notice_id IS 'The erased case; one row per case, so the sweep is idempotent.';
 COMMENT ON COLUMN copyright_notice_retention_erasures.retention_days IS 'Owner-approved retention period, in days, that was in force when the case was erased.';
 COMMENT ON COLUMN copyright_notice_retention_erasures.erased_object_count IS 'Count of exclusively owned storage objects whose every evidence-bucket version was removed before this row was written.';
+COMMENT ON COLUMN copyright_notice_retention_erasures.legal_clock_at IS 'Latest substantive case activity captured before erasure rewrites updated_at values; the minimal-record window does not restart at erasure.';
 COMMENT ON COLUMN copyright_notice_retention_erasures.created_at IS 'Time the case was erased, derived from the UUIDv7 id; the row is append-only.';
 COMMENT ON FUNCTION fn_copyright_retention_erasable_columns(text) IS 'Columns, per table, that a retention-erasure transaction may overwrite in place; NULL for any table that is never erased. The TypeScript erasure spec must list exactly these columns.';
 COMMENT ON FUNCTION fn_copyright_retention_erasure_permitted(text, jsonb, jsonb) IS 'True only inside a transaction that set app.copyright_retention_erasure to on and only when the update changes nothing outside the table''s erasable columns; legal-record guards call it before rejecting an update.';

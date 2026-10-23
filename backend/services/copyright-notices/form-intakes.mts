@@ -6,6 +6,10 @@ import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { createCopyrightNoticeAggregateInTransaction } from './create.mts'
 import { createCopyrightFormReceiptInTransaction } from './form-intake-receipt.mts'
+import {
+  decodeFormReceiptSnapshot,
+  type CopyrightFormIntakeRecord,
+} from './form-retained-receipt.mts'
 import type { CopyrightJurisdiction, CopyrightNoticeTargetInput } from './types.mts'
 import {
   resolveCopyrightImagePlacements,
@@ -31,13 +35,6 @@ export type CreateCopyrightFormIntakeInput = {
   }
 }
 
-export type CopyrightFormIntakeRecord = {
-  id: string
-  copyright_notice_id: string
-  copyright_notice_submission_id: string
-  requester_user_id: string | null
-}
-
 export async function createCopyrightFormIntake(
   input: CreateCopyrightFormIntakeInput,
   options: { now?: Date } = {},
@@ -49,12 +46,13 @@ export async function createCopyrightFormIntake(
   await transaction(sql`/* createCopyrightFormIntake:identityLock */
     SELECT pg_advisory_xact_lock(hashtextextended(${requesterIdentitySha256.toString('hex')}, 0))
   `)
-  const { rows: existingRows } = await transaction<
-    CopyrightFormIntakeRecord & { request_sha256: Buffer }
-  >(
+  const { rows: existingRows } = await transaction<{
+    response_snapshot: unknown
+    request_sha256: Buffer
+  }>(
     sql`/* createCopyrightFormIntake:findDuplicate */
-      SELECT id, copyright_notice_id, copyright_notice_submission_id, requester_user_id, request_sha256
-      FROM copyright_notice_form_intakes
+      SELECT response_snapshot, request_sha256
+      FROM copyright_notice_form_retained_identities
       WHERE requester_identity_sha256 = ${requesterIdentitySha256} AND idempotency_key = ${input.idempotencyKey}
   `,
   )
@@ -66,7 +64,7 @@ export async function createCopyrightFormIntake(
       'Idempotency-Key was reused for a different request',
     )
     await transaction.commit()
-    return { intake: existing, isDuplicate: true }
+    return { intake: decodeFormReceiptSnapshot(existing.response_snapshot), isDuplicate: true }
   }
   const purpose = copyrightFormSecretPurpose(input.idempotencyKey)
   const now = options.now ?? new Date()
@@ -129,10 +127,11 @@ export async function createCopyrightFormIntake(
       ${input.request.accuracyAuthorityUnderPenaltyOfPerjury},
       ${encryptSecret(input.request.electronicSignature, purpose)}
     )
-    RETURNING id, copyright_notice_id, copyright_notice_submission_id, requester_user_id
+    RETURNING id, copyright_notice_id, copyright_notice_submission_id
   `)
   const intake = rows[0]
   assert(intake, 500, 'Copyright form intake was not created')
+  // ast-grep-ignore: no-three-sequential-awaits -- screening admission precedes its claimant receipt, and both must succeed before the immutable exact-replay identity is stored in this transaction.
   await transaction(sql`/* createCopyrightFormIntake:screeningExecution */
     INSERT INTO copyright_notice_form_screening_attempts (
       copyright_notice_form_intake_id, attempt_number, started_at
@@ -147,6 +146,13 @@ export async function createCopyrightFormIntake(
     },
     transaction,
   )
+  await transaction(sql`/* retainCopyrightFormReceiptIdentity */
+    INSERT INTO copyright_notice_form_retained_identities (
+      requester_identity_sha256, idempotency_key, request_sha256, response_snapshot
+    ) VALUES (${requesterIdentitySha256}, ${input.idempotencyKey}, ${requestSha256},
+      jsonb_build_object('id', ${intake.id}::text,
+        'copyright_notice_id', ${intake.copyright_notice_id}::text,
+        'copyright_notice_submission_id', ${intake.copyright_notice_submission_id}::text))`)
   await transaction.commit()
   return { intake, isDuplicate: false }
 }

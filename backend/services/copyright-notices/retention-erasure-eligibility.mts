@@ -4,7 +4,7 @@ import { COPYRIGHT_PRESERVATION_PARTIES_SQL } from './retention-erasure-preserva
 import { copyrightEmailIntakeAwaitingReviewSql } from './read-models-staff-email-intakes-sql.mts'
 
 /**
- * Opens the `queue_key`, `preservation`, `blocked` and `eligible` CTEs that decide which US DMCA
+ * Opens the `queue_key`, `preservation`, `blocked` and `eligible` CTEs that decide which copyright
  * cases the retention sweep may erase; callers append their own `SELECT ... FROM eligible`.
  *
  * `blocked` collects every case with: open staff work (the staff queue's own rule, so an
@@ -21,8 +21,8 @@ import { copyrightEmailIntakeAwaitingReviewSql } from './read-models-staff-email
  * `eligible` also needs the case's retention clock to have run out. The clock restarts at the
  * latest of the case's last lifecycle event and the last change to a delivery, incident, guest
  * capability, preservation hold or thread-linked email, not all of which write a lifecycle event, so a blocker that has
- * just cleared never makes a case instantly erasable. Cases already erased are never offered again. Only `us_dmca`
- * cases are covered until the owner decides the EU and UK records.
+ * just cleared never makes a case instantly erasable. Cases already erased are never offered again.
+ * The same closed-case rule applies to US, EU, and UK jurisdiction records.
  */
 export function copyrightRetentionEligibleSql(now: Date, cutoff: Date): SQLStatement {
   return copyrightStaffQueueKeysSql()
@@ -67,7 +67,7 @@ export function copyrightRetentionEligibleSql(now: Date, cutoff: Date): SQLState
       WHERE revoked_at IS NULL AND expires_at > ${now}
     ), eligible AS (
       SELECT notice.id FROM copyright_notices notice
-      WHERE notice.jurisdiction = 'us_dmca'
+      WHERE notice.jurisdiction IN ('us_dmca', 'eu_dsa', 'uk')
         AND NOT EXISTS (
           SELECT 1 FROM copyright_notice_retention_erasures erased
           WHERE erased.copyright_notice_id = notice.id

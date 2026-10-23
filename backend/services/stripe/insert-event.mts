@@ -1,4 +1,4 @@
-import { write } from '@data-stores/psql'
+import { write, type QueryExecutor } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import type Stripe from 'stripe'
@@ -10,11 +10,12 @@ import { normalizeStripeEvent } from './normalize-event.mts'
 export async function insertStripeEvent(
   event: Stripe.Event,
   receivedAt = new Date(),
+  query: QueryExecutor = write,
 ): Promise<InsertStripeEventResult> {
   const normalized = normalizeStripeEvent(event)
   const payload = JSON.stringify(event)
 
-  const inserted = await write(
+  const inserted = await query(
     sql`/* insertStripeEvent */
       WITH registered_type AS (
         INSERT INTO stripe_event_types (stripe_event_type) VALUES (${event.type})
@@ -75,7 +76,7 @@ export async function insertStripeEvent(
   // start -- a fallback SELECT folded into the same statement as the INSERT (e.g. a CTE) can
   // still miss the winner's just-committed row and return zero rows. Running the fallback as
   // its own statement gives it a fresh snapshot that is guaranteed to see the committed winner.
-  const existing = await write(
+  const existing = await query(
     sql`/* insertStripeEvent (conflict fallback) */
       SELECT
     `.append(stripeEventColumns()).append(sql`

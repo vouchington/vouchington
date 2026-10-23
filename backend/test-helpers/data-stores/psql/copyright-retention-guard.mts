@@ -1,10 +1,8 @@
 import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { beginTransaction, read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import {
-  eraseCopyrightRetentionTableSql,
-  type CopyrightRetentionErasureTable,
-} from '../../../services/copyright-notices/retention-erasure-spec.mts'
+import type { CopyrightRetentionErasureTable } from '../../../services/copyright-notices/retention-erasure-spec.mts'
+import { eraseCopyrightRetentionTableSql } from '../../../services/copyright-notices/retention-erasure-update-sql.mts'
 
 /** Every table the database lets a retention-erasure transaction touch, with its erasable columns. */
 export async function readCopyrightRetentionAllowlist(): Promise<Record<string, string[]>> {

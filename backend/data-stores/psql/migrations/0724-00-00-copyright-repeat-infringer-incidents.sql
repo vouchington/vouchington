@@ -7,7 +7,7 @@
 CREATE TABLE copyright_repeat_infringer_incidents (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   account_user_id uuid NOT NULL,
-  copyright_notice_id uuid NOT NULL REFERENCES copyright_notices(id) ON DELETE RESTRICT,
+  copyright_notice_id uuid NOT NULL REFERENCES copyright_notices(id) ON DELETE CASCADE,
   is_operative boolean NOT NULL,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -23,6 +23,22 @@ ALTER TABLE copyright_repeat_infringer_incidents
 ALTER TABLE copyright_repeat_infringer_incidents
   VALIDATE CONSTRAINT copyright_repeat_infringer_incidents_account_user_id_fkey;
 
+CREATE FUNCTION fn_register_copyright_repeat_infringer_retained_party()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  INSERT INTO copyright_notice_retained_parties AS party
+    (copyright_notice_id, account_user_id, is_repeat_infringer_account)
+  VALUES (NEW.copyright_notice_id, NEW.account_user_id, true)
+  ON CONFLICT (copyright_notice_id, account_user_id) DO UPDATE
+    SET is_repeat_infringer_account = true
+    WHERE NOT party.is_repeat_infringer_account;
+  RETURN NEW;
+END;
+$$;
+CREATE TRIGGER trigger_register_copyright_repeat_infringer_retained_party
+AFTER INSERT ON copyright_repeat_infringer_incidents FOR EACH ROW
+EXECUTE FUNCTION fn_register_copyright_repeat_infringer_retained_party();
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_copyright_repeat_infringer_incidents_updated_at
 BEFORE UPDATE ON copyright_repeat_infringer_incidents
@@ -33,8 +49,8 @@ CREATE INDEX idx_copyright_repeat_infringer_incidents__operative_account
   ON copyright_repeat_infringer_incidents (account_user_id)
   WHERE is_operative;
 
-CREATE INDEX idx_copyright_repeat_infringer_incidents__notice
-  ON copyright_repeat_infringer_incidents (copyright_notice_id);
+CREATE INDEX idx_copyright_repeat_infringer_incidents__legal_clock
+  ON copyright_repeat_infringer_incidents (copyright_notice_id, updated_at DESC);
 
 -- Durable target provenance is required after privacy erasure removes the live placement owner.
 CREATE TABLE copyright_repeat_infringer_incident_targets (
@@ -45,13 +61,13 @@ CREATE TABLE copyright_repeat_infringer_incident_targets (
   PRIMARY KEY (copyright_repeat_infringer_incident_id, copyright_notice_target_id),
   CONSTRAINT fk_copyr_repeat_infringe_incident_targets__incident
     FOREIGN KEY (copyright_repeat_infringer_incident_id, copyright_notice_id)
-    REFERENCES copyright_repeat_infringer_incidents(id, copyright_notice_id) ON DELETE RESTRICT
+    REFERENCES copyright_repeat_infringer_incidents(id, copyright_notice_id) ON DELETE CASCADE
 );
 
 ALTER TABLE copyright_repeat_infringer_incident_targets
   ADD CONSTRAINT fk_copyr_repeat_infringe_incident_targets__target
   FOREIGN KEY (copyright_notice_id, copyright_notice_target_id)
-  REFERENCES copyright_notice_targets(copyright_notice_id, id) ON DELETE RESTRICT NOT VALID;
+  REFERENCES copyright_notice_targets(copyright_notice_id, id) ON DELETE CASCADE NOT VALID;
 
 ALTER TABLE copyright_repeat_infringer_incident_targets
   VALIDATE CONSTRAINT fk_copyr_repeat_infringe_incident_targets__target;
@@ -65,7 +81,7 @@ CREATE INDEX idx_copyright_repeat_infringer_incident_targets__notice
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_repeat_infringer_dispositions (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  copyright_repeat_infringer_incident_id uuid NOT NULL CONSTRAINT uq_copyright_repeat_infringer_dispositions__incident_id UNIQUE CONSTRAINT fk_copyright_repeat_infringer_dispositions__incident REFERENCES copyright_repeat_infringer_incidents(id) ON DELETE RESTRICT,
+  copyright_repeat_infringer_incident_id uuid NOT NULL CONSTRAINT uq_copyright_repeat_infringer_dispositions__incident_id UNIQUE CONSTRAINT fk_copyright_repeat_infringer_dispositions__incident REFERENCES copyright_repeat_infringer_incidents(id) ON DELETE CASCADE,
   disposition copyright_repeat_infringer_disposition_kinds NOT NULL CHECK (disposition IN ('withdrawn', 'duplicate', 'abusive')),
   rationale_ciphertext text NOT NULL CONSTRAINT chk_copyright_repeat_infringer_dispositio__rationale_ciphertext CHECK (char_length(rationale_ciphertext) BETWEEN 1 AND 65536),
   recorded_at timestamptz NOT NULL,
@@ -119,6 +135,7 @@ CREATE FUNCTION fn_reject_copyright_repeat_infringer_incident()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'DELETE' THEN
+    IF fn_project_copyright_minimal_purge_child_allowed(TG_TABLE_NAME, to_jsonb(OLD)) THEN RETURN OLD; END IF;
     RAISE EXCEPTION 'copyright repeat-infringer incidents are retained' USING ERRCODE = 'check_violation';
   END IF;
   IF NEW.account_user_id IS DISTINCT FROM OLD.account_user_id
@@ -133,6 +150,7 @@ CREATE FUNCTION fn_reject_copyright_repeat_infringer_review()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'DELETE' THEN
+    IF fn_project_copyright_minimal_purge_child_allowed(TG_TABLE_NAME, to_jsonb(OLD)) THEN RETURN OLD; END IF;
     RAISE EXCEPTION 'copyright repeat-infringer reviews are retained' USING ERRCODE = 'check_violation';
   END IF;
   IF NEW.account_user_id IS DISTINCT FROM OLD.account_user_id

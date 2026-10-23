@@ -9,14 +9,16 @@ import {
   deleteTestRefundOperationAttempt,
   enrichTestRefundOperationAttemptProviderId,
   getTestAdministratorRefundRetryState,
-  hasExpectedTestMembershipOperationReconciliationDueIndex,
-  getTestMembershipRefundOperationLinkNullable,
   insertTestLegacyUnlinkedRefundReceipt,
   insertTestLinkedOperationRefundReceipt,
   mutateTestAdministratorRefundRequest,
   mutateTestRefundOperationAttemptAmount,
   scheduleTestAdministratorRefundRetry,
 } from '../../../test-helpers/entities/membership-refund-reconciliation-schema.mts'
+import {
+  getTestMembershipRefundOperationLinkNullable,
+  hasExpectedTestMembershipOperationReconciliationDueIndex,
+} from '../../../test-helpers/entities/membership-refund-schema-assertions.mts'
 import { onGracefulShutdown } from '../index.mts'
 
 describe('membership refund reconciliation schema', () => {
@@ -43,7 +45,7 @@ describe('membership refund reconciliation schema', () => {
     const operation = await createTestAdministratorRefundOperation()
     const requestId = await createTestAdministratorRefundRequest(operation)
     await expect(mutateTestAdministratorRefundRequest(requestId)).rejects.toThrow(
-      'membership_administrator_refund_operation_requests rows are append-only',
+      'administrator refund request is immutable',
     )
 
     const attemptId = await createTestRefundOperationAttempt(operation)

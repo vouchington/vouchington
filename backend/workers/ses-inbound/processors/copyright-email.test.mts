@@ -36,6 +36,8 @@ describe('processCopyrightInboundEmail', () => {
       }),
       copySesInboundObjectToCopyrightEvidence: async () => intake.raw_storage_key,
       createCopyrightEmailIntake: async () => ({ intake, isNew: true }),
+      withCopyrightEmailIntakeIdentityLock: async (_messageId, effect) =>
+        effect(undefined as never, null),
       loadSesInboundObjectVersion: async () => Readable.from([Buffer.from('raw')]),
       parseSesInboundMime: async () => {
         throw Object.assign(new Error('untrusted MIME'), { status: 422 })

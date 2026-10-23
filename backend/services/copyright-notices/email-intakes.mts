@@ -1,5 +1,5 @@
 import { upsertMediaTypes } from '@services/urls/media-types'
-import { beginTransaction } from '@data-stores/psql'
+import { beginBoundedTransaction, beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import type { CopyrightEmailSesVerdicts } from './email-ses-verdicts.mts'
@@ -34,7 +34,7 @@ export type CopyrightEmailIntakeForAgent = CopyrightEmailIntake & {
   attachments: CopyrightEmailAttachmentInput[]
 }
 
-export async function createCopyrightEmailIntake(input: {
+export type CreateCopyrightEmailIntakeInput = {
   sesMessageId: string
   receivedAt: Date
   rawStorageKey: string
@@ -42,14 +42,67 @@ export async function createCopyrightEmailIntake(input: {
   rawMimeType: string
   rawByteSize: number
   sesVerdicts: CopyrightEmailSesVerdicts
-}): Promise<{ intake: CopyrightEmailIntake; isNew: boolean }> {
+}
+
+/** Validate a provider replay after the original MIME and intake have expired. */
+export function assertCopyrightEmailRetainedDigest(
+  erased: { raw_sha256: Buffer; raw_byte_size: number },
+  raw: { sha256: Buffer; byteSize: number },
+): void {
+  assert(
+    erased.raw_sha256.equals(raw.sha256) && erased.raw_byte_size === raw.byteSize,
+    409,
+    'SES message ID was reused for different copyright evidence',
+  )
+}
+
+export async function createCopyrightEmailIntake(
+  input: CreateCopyrightEmailIntakeInput,
+  existingTransaction?: TransactionQuery,
+): Promise<{ intake: CopyrightEmailIntake; isNew: boolean }> {
+  if (existingTransaction)
+    return createCopyrightEmailIntakeInTransaction(input, existingTransaction)
+  await using transaction = await beginTransaction()
+  const result = await createCopyrightEmailIntakeInTransaction(input, transaction)
+  await transaction.commit()
+  return result
+}
+
+export async function withCopyrightEmailIntakeIdentityLock<T>(
+  sesMessageId: string,
+  effect: (
+    transaction: TransactionQuery,
+    erased: { raw_sha256: Buffer; raw_byte_size: number } | null,
+  ) => Promise<T>,
+): Promise<T> {
+  await using transaction = await beginBoundedTransaction({
+    connectionTimeoutMs: 5_000,
+    statementTimeoutMs: 20_000,
+  })
+  await transaction(sql`/* setCopyrightEmailIngressTimeouts */
+    SELECT set_config('lock_timeout', '5s', true),
+      set_config('idle_in_transaction_session_timeout', '120s', true)`)
+  await transaction(sql`/* lockCopyrightEmailIntakeIdentity */
+    SELECT pg_advisory_xact_lock(hashtextextended(${`copyright-email:${sesMessageId}`}, 0))`)
+  const { rows } = await transaction<{ raw_sha256: Buffer; raw_byte_size: number }>(sql`
+    /* getErasedCopyrightEmailIdentity */
+    SELECT raw_sha256, raw_byte_size FROM copyright_notice_email_retained_identities
+    WHERE amazon_ses_message_id = ${sesMessageId}`)
+  const result = await effect(transaction, rows[0] ?? null)
+  await transaction.commit()
+  return result
+}
+
+export async function createCopyrightEmailIntakeInTransaction(
+  input: CreateCopyrightEmailIntakeInput,
+  transaction: TransactionQuery,
+): Promise<{ intake: CopyrightEmailIntake; isNew: boolean }> {
   assert(input.rawSha256.length === 32, 422, 'Raw email SHA-256 must be 32 bytes')
   assert(
     Number.isSafeInteger(input.rawByteSize) && input.rawByteSize >= 0,
     422,
     'Invalid raw email size',
   )
-  await using transaction = await beginTransaction()
   const rawMediaTypeId = await upsertMediaTypes(input.rawMimeType, { query: transaction })
   const rawStorageObjectId = await upsertCopyrightStorageObjectId(input.rawStorageKey, transaction)
   const { sesVerdicts } = input
@@ -69,7 +122,6 @@ export async function createCopyrightEmailIntake(input: {
   `)
   const intake = rows[0]
   if (intake) {
-    await transaction.commit()
     return { intake, isNew: true }
   }
   const { rows: existingRows } = await transaction<CopyrightEmailIntake>(
@@ -92,7 +144,6 @@ export async function createCopyrightEmailIntake(input: {
     409,
     'SES message ID was reused for different copyright evidence',
   )
-  await transaction.commit()
   return { intake: existing, isNew: false }
 }
 

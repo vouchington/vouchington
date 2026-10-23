@@ -8,6 +8,10 @@ import { v7 as uuidv7 } from 'uuid'
 import type { PrivateUser } from '@services/users/types'
 import type { CopyrightNoticeSubmissionRecord } from './types.mts'
 import { createCopyrightDeliveryIntent } from './delivery-intents.mts'
+import {
+  decodeSubmissionReceiptSnapshot,
+  type CopyrightSubmissionReceipt,
+} from './submission-retained-receipt.mts'
 
 export type CopyrightAppealInput = {
   reason: string
@@ -30,7 +34,7 @@ export async function createCopyrightAppeal(
   noticeId: string,
   idempotencyKey: string,
   input: CopyrightAppealInput,
-): Promise<{ submission: CopyrightNoticeSubmissionRecord; isDuplicate: boolean }> {
+): Promise<{ submission: CopyrightSubmissionReceipt; isDuplicate: boolean }> {
   assert(input.reason.trim(), 422, 'Appeal reason is required')
   return createAuthenticatedCopyrightSubmission(
     currentUser,
@@ -46,7 +50,7 @@ export async function createCopyrightCounterNotice(
   noticeId: string,
   idempotencyKey: string,
   input: CopyrightCounterNoticeInput,
-): Promise<{ submission: CopyrightNoticeSubmissionRecord; isDuplicate: boolean }> {
+): Promise<{ submission: CopyrightSubmissionReceipt; isDuplicate: boolean }> {
   assert(input.name.trim(), 422, 'name is required')
   assert(input.address.trim(), 422, 'address is required')
   assert(input.telephone.trim(), 422, 'telephone is required')
@@ -77,28 +81,25 @@ async function createAuthenticatedCopyrightSubmission(
   idempotencyKey: string,
   kind: 'appeal' | 'counter_notice',
   input: CopyrightAppealInput | CopyrightCounterNoticeInput,
-): Promise<{ submission: CopyrightNoticeSubmissionRecord; isDuplicate: boolean }> {
+): Promise<{ submission: CopyrightSubmissionReceipt; isDuplicate: boolean }> {
   assert(input.targetIds.length > 0, 422, 'At least one target is required')
   assert(new Set(input.targetIds).size === input.targetIds.length, 422, 'Targets must be unique')
   const requestSha256 = createHash('sha256').update(JSON.stringify({ kind, input })).digest()
+  const requesterIdentitySha256 = createHash('sha256').update(currentUser.id).digest()
   await using transaction = await beginTransaction()
   await transaction(sql`/* createCopyrightSubmission:idempotencyLock */
     SELECT pg_advisory_xact_lock(
       hashtextextended(${`copyright-submission:${currentUser.id}:${idempotencyKey}`}, 0)
     )
   `)
-  const { rows: existingRows } = await transaction<
-    CopyrightNoticeSubmissionRecord & {
-      request_sha256: Buffer
-    }
-  >(sql`/* createCopyrightSubmission:existing */
-    SELECT submission.id, submission.copyright_notice_id, submission.kind, submission.received_at,
-      submission.source_kind, submission.submitted_by_id, submission.body_ciphertext,
-      request.request_sha256
-    FROM copyright_notice_submission_requests request
-    JOIN copyright_notice_submissions submission ON submission.id = request.copyright_notice_submission_id
-    WHERE request.requester_user_id = ${currentUser.id} AND request.idempotency_key = ${idempotencyKey}
-    FOR UPDATE OF request
+  const { rows: existingRows } = await transaction<{
+    response_snapshot: unknown
+    request_sha256: Buffer
+  }>(sql`/* createCopyrightSubmission:existing */
+    SELECT response_snapshot, request_sha256
+    FROM copyright_notice_submission_retained_identities
+    WHERE requester_identity_sha256 = ${requesterIdentitySha256}
+      AND idempotency_key = ${idempotencyKey}
   `)
   const existing = existingRows[0]
   if (existing) {
@@ -108,7 +109,10 @@ async function createAuthenticatedCopyrightSubmission(
       'Idempotency-Key was reused for a different request',
     )
     await transaction.commit()
-    return { submission: existing, isDuplicate: true }
+    return {
+      submission: decodeSubmissionReceiptSnapshot(existing.response_snapshot),
+      isDuplicate: true,
+    }
   }
   const { rows: notices } = await transaction<{ jurisdiction: string }>(sql`
     /* createCopyrightSubmission:jurisdiction */
@@ -145,6 +149,7 @@ async function createAuthenticatedCopyrightSubmission(
   `)
   const submission = rows[0]
   assert(submission, 500, 'Copyright submission was not created')
+  // ast-grep-ignore: no-three-sequential-awaits -- target/request/lifecycle facts must exist before the delivery intent, and the exact-replay identity follows the receipt obligation in this transaction.
   await transaction(sql`/* createCopyrightSubmission:scopeAndReceipt */
     WITH inserted_targets AS (
       INSERT INTO copyright_notice_submission_targets (
@@ -174,8 +179,17 @@ async function createAuthenticatedCopyrightSubmission(
     },
     transaction,
   )
+  await transaction(sql`/* retainCopyrightSubmissionReceiptIdentity */
+    INSERT INTO copyright_notice_submission_retained_identities (
+      requester_identity_sha256, idempotency_key, request_sha256, response_snapshot
+    ) VALUES (${requesterIdentitySha256}, ${idempotencyKey}, ${requestSha256},
+      jsonb_build_object('id', ${submission.id}::text,
+        'received_at', ${submission.received_at}::timestamptz))`)
   await transaction.commit()
-  return { submission, isDuplicate: false }
+  return {
+    submission: { id: submission.id, received_at: submission.received_at },
+    isDuplicate: false,
+  }
 }
 
 export function copyrightSubmissionPurpose(submissionId: string): string {
