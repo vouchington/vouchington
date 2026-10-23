@@ -5296,6 +5296,12 @@ rules:
         - pattern: _(history|change_logs|audit_logs)$
           message: 'use the R4 shapes: _revisions, _changes, _work_items or _cursors'
       allow:
+        - object: table:oauth_authorization_server_events
+          reason: >-
+            Consent and revocation events reject every UPDATE and ordinary DELETE. Their
+            dedicated trigger permits only bounded retention DELETE after the configured
+            cutoff, while preserving the latest consent for a live grant and its approved
+            post-revocation window; the generic mutation trigger would block that cleanup.
         - object: table:agent_moderation_votes
           reason: Binary moderation ballots intentionally do not model neutral or semantic
             score provenance;

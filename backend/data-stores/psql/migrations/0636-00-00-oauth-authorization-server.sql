@@ -177,7 +177,7 @@ AFTER INSERT ON oauth_grants
 FOR EACH ROW EXECUTE FUNCTION fn_register_oauth_grant_retention_anchor();
 COMMENT ON FUNCTION fn_register_oauth_grant_retention_anchor() IS 'Registers a non-authorizing grant identity only for an inserted grant; the deferred live grant FK is checked at commit.';
 
-CREATE OR REPLACE FUNCTION fn_end_oauth_grant_retention_anchor()
+CREATE OR REPLACE FUNCTION fn_update_oauth_grant_retention_anchor()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'DELETE' THEN
@@ -195,18 +195,18 @@ $$;
 CREATE OR REPLACE TRIGGER trigger_oauth_grants_end_retention_on_revoke
 AFTER UPDATE OF revoked_at ON oauth_grants
 FOR EACH ROW WHEN (NEW.revoked_at IS NOT NULL AND OLD.revoked_at IS DISTINCT FROM NEW.revoked_at)
-EXECUTE FUNCTION fn_end_oauth_grant_retention_anchor();
+EXECUTE FUNCTION fn_update_oauth_grant_retention_anchor();
 CREATE OR REPLACE TRIGGER trigger_oauth_grants_end_retention_on_delete
 BEFORE DELETE ON oauth_grants
-FOR EACH ROW EXECUTE FUNCTION fn_end_oauth_grant_retention_anchor();
-COMMENT ON FUNCTION fn_end_oauth_grant_retention_anchor() IS 'Moves the consent-evidence retention anchor to the latest grant revocation or deletion time.';
+FOR EACH ROW EXECUTE FUNCTION fn_update_oauth_grant_retention_anchor();
+COMMENT ON FUNCTION fn_update_oauth_grant_retention_anchor() IS 'Moves the consent-evidence retention anchor to the latest grant revocation or deletion time.';
 
 CREATE OR REPLACE TRIGGER trigger_oauth_grants_updated_at
 BEFORE UPDATE ON oauth_grants
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
-CREATE OR REPLACE FUNCTION fn_stamp_oauth_client_first_grant()
+CREATE OR REPLACE FUNCTION fn_update_oauth_client_first_grant()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   UPDATE oauth_clients
@@ -217,8 +217,8 @@ END;
 $$;
 CREATE OR REPLACE TRIGGER trigger_oauth_grants_stamp_client
 AFTER INSERT ON oauth_grants
-FOR EACH ROW EXECUTE FUNCTION fn_stamp_oauth_client_first_grant();
-COMMENT ON FUNCTION fn_stamp_oauth_client_first_grant() IS 'Permanently marks an OAuth client that has held a grant so client retention cannot treat it as unused.';
+FOR EACH ROW EXECUTE FUNCTION fn_update_oauth_client_first_grant();
+COMMENT ON FUNCTION fn_update_oauth_client_first_grant() IS 'Permanently marks an OAuth client that has held a grant so client retention cannot treat it as unused.';
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_oauth_grants__active_subject
 ON oauth_grants (user_id, client_id, resource)

@@ -764,7 +764,7 @@ EXECUTE FUNCTION fn_update_updated_at();
 
 CREATE OR REPLACE TRIGGER trigger_facebook_accounts_linkage
 BEFORE UPDATE OF user_id ON facebook_accounts
-FOR EACH ROW EXECUTE FUNCTION fn_oauth_account_linkage();
+FOR EACH ROW EXECUTE FUNCTION fn_update_oauth_account_linkage();
 
 -- user ID gets added afterwards
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -998,7 +998,7 @@ EXECUTE FUNCTION fn_update_updated_at();
 
 CREATE OR REPLACE TRIGGER trigger_apple_accounts_linkage
 BEFORE UPDATE OF user_id ON apple_accounts
-FOR EACH ROW EXECUTE FUNCTION fn_oauth_account_linkage();
+FOR EACH ROW EXECUTE FUNCTION fn_update_oauth_account_linkage();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_apple_accounts__user_id
@@ -1042,7 +1042,7 @@ EXECUTE FUNCTION fn_update_updated_at();
 
 CREATE OR REPLACE TRIGGER trigger_google_accounts_linkage
 BEFORE UPDATE OF user_id ON google_accounts
-FOR EACH ROW EXECUTE FUNCTION fn_oauth_account_linkage();
+FOR EACH ROW EXECUTE FUNCTION fn_update_oauth_account_linkage();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_google_accounts__user_id
@@ -1089,7 +1089,7 @@ EXECUTE FUNCTION fn_update_updated_at();
 
 CREATE OR REPLACE TRIGGER trigger_x_accounts_linkage
 BEFORE UPDATE OF user_id ON x_accounts
-FOR EACH ROW EXECUTE FUNCTION fn_oauth_account_linkage();
+FOR EACH ROW EXECUTE FUNCTION fn_update_oauth_account_linkage();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_x_accounts__user_id
@@ -1145,7 +1145,7 @@ EXECUTE FUNCTION fn_update_updated_at();
 
 CREATE OR REPLACE TRIGGER trigger_linkedin_accounts_linkage
 BEFORE UPDATE OF user_id ON linkedin_accounts
-FOR EACH ROW EXECUTE FUNCTION fn_oauth_account_linkage();
+FOR EACH ROW EXECUTE FUNCTION fn_update_oauth_account_linkage();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_linkedin_accounts__user_id
@@ -1200,7 +1200,7 @@ EXECUTE FUNCTION fn_update_updated_at();
 
 CREATE OR REPLACE TRIGGER trigger_microsoft_accounts_linkage
 BEFORE UPDATE OF user_id ON microsoft_accounts
-FOR EACH ROW EXECUTE FUNCTION fn_oauth_account_linkage();
+FOR EACH ROW EXECUTE FUNCTION fn_update_oauth_account_linkage();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_microsoft_accounts__user_id

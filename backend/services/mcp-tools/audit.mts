@@ -120,6 +120,30 @@ export async function recordMcpCallAudit(
     ]
   })
   if (rationales.length > 0) {
+    // Lock cases in stable order against the erasure worker's FOR UPDATE, then read fresh markers.
+    await query(
+      `/* recordMcpCallAudit:lockLegalCases */
+       WITH target AS (
+         SELECT * FROM unnest($1::text[], $2::uuid[]) AS target(kind, target_id)
+       )
+       SELECT notice.id FROM copyright_notices notice
+       WHERE notice.id IN (
+         SELECT target_id FROM target WHERE kind = 'notice'
+         UNION ALL SELECT form_intake.copyright_notice_id FROM copyright_notice_form_intakes form_intake JOIN target
+             ON target.kind = 'form_intake' AND target.target_id = form_intake.id
+         UNION ALL SELECT submission.copyright_notice_id FROM copyright_notice_submissions submission JOIN target
+             ON target.kind = 'submission' AND target.target_id = submission.id
+         UNION ALL SELECT assessment.copyright_notice_id FROM copyright_notice_legal_hold_assessments assessment JOIN target
+             ON target.kind = 'hold_assessment' AND target.target_id = assessment.id
+         UNION ALL SELECT incident.copyright_notice_id FROM copyright_repeat_infringer_incidents incident JOIN target
+             ON target.kind = 'repeat_incident' AND target.target_id = incident.id
+         UNION ALL SELECT link.copyright_notice_id FROM copyright_notice_email_intake_notice_links link JOIN target
+             ON target.kind = 'email_intake'
+               AND target.target_id = link.copyright_notice_email_intake_id
+       )
+       ORDER BY notice.id FOR KEY SHARE OF notice`,
+      [rationales.map(row => row.kind), rationales.map(row => row.targetId)],
+    )
     await query(
       `/* recordMcpCallAudit:legalRationales */
        INSERT INTO copyright_decision_rationales
@@ -152,7 +176,15 @@ export async function recordMcpCallAudit(
          COALESCE(notice.id, form_intake.copyright_notice_id, submission.copyright_notice_id,
            hold_assessment.copyright_notice_id, repeat_incident.copyright_notice_id),
          email_intake.id, repeat_review.id, account_user.id
-       ) = 1`,
+       ) = 1
+         AND NOT EXISTS (SELECT 1 FROM copyright_notice_retention_erasures erased
+           WHERE erased.copyright_notice_id = COALESCE(
+             notice.id, form_intake.copyright_notice_id, submission.copyright_notice_id,
+             hold_assessment.copyright_notice_id, repeat_incident.copyright_notice_id))
+         AND NOT EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links link
+           JOIN copyright_notice_retention_erasures erased
+             ON erased.copyright_notice_id = link.copyright_notice_id
+           WHERE link.copyright_notice_email_intake_id = email_intake.id)`,
       [
         context.actorUserId,
         rationales.map(row => row.id),

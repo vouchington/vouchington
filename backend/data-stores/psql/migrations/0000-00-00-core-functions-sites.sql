@@ -39,7 +39,7 @@ END;
 $$;
 
 -- Preserve the cleanup clock for both explicit unlink and user-deletion FK SET NULL.
-CREATE OR REPLACE FUNCTION fn_oauth_account_linkage()
+CREATE OR REPLACE FUNCTION fn_update_oauth_account_linkage()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   IF NEW.user_id IS DISTINCT FROM OLD.user_id THEN
@@ -48,7 +48,7 @@ BEGIN
   RETURN NEW;
 END;
 $$;
-COMMENT ON FUNCTION fn_oauth_account_linkage() IS 'Sets the orphan cleanup clock when a provider account loses its user and clears it on relink.';
+COMMENT ON FUNCTION fn_update_oauth_account_linkage() IS 'Sets the orphan cleanup clock when a provider account loses its user and clears it on relink.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_project_latest_change()

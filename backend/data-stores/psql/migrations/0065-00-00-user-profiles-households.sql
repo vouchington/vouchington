@@ -471,7 +471,7 @@ EXECUTE FUNCTION fn_update_updated_at();
 
 CREATE OR REPLACE TRIGGER trigger_github_accounts_linkage
 BEFORE UPDATE OF user_id ON github_accounts
-FOR EACH ROW EXECUTE FUNCTION fn_oauth_account_linkage();
+FOR EACH ROW EXECUTE FUNCTION fn_update_oauth_account_linkage();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_github_accounts__user_id
