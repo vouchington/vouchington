@@ -21,6 +21,26 @@ import { cleanupFederationRetention } from '../cleanup-federation.mts'
 import { cleanupActivityPubReplayLedger } from '../cleanup-activitypub-replay.mts'
 
 describe('federation retention', () => {
+  it('requires a bounded sweep and matching transaction ownership for source scopes', async () => {
+    await expect(
+      cleanupFederationRetention({
+        batchSize: 1,
+        maxBatches: 1,
+        scope: { followerDistributionIds: [] },
+      }),
+    ).rejects.toThrow('A scoped federation retention sweep requires a borrowed transaction')
+
+    await withPostgresTransactionForTest(async query => {
+      await expect(
+        cleanupFederationRetention({ batchSize: 1, maxBatches: 1, borrowedQuery: query }),
+      ).rejects.toThrow('A borrowed federation retention sweep requires a source-row scope')
+    })
+
+    await expect(cleanupFederationRetention({ batchSize: 0, maxBatches: 1 })).rejects.toThrow(
+      'batchSize must be a positive safe integer',
+    )
+  })
+
   it('preserves replay identities while continuing capped terminal-follower cleanup', async () => {
     const sender = await createTestUserDirect()
     const recipient = await createTestUserDirect()
