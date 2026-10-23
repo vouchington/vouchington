@@ -172,7 +172,7 @@ describe('executeAutotaggerRun (real PG)', () => {
       ])
       expect(
         await getSubjectClassifierRunRequestFacts(fixture.subject, TAGGING_CLASSIFIER_SLUG),
-      ).toMatchObject([{ run_id: first.runId, no_work_at: null, stale_at: null }])
+      ).toMatchObject([{ run_identity_id: first.runId, no_work_at: null, stale_at: null }])
       const incomplete: string[] = []
       let after: string | null = null
       do {

@@ -4,10 +4,11 @@ import { readClassifierUsageReport } from './usage-report.mts'
 
 describe('classifier usage report reader', () => {
   it('reads the closed window from the replica and does not query the writer', async () => {
+    const from = new Date(Date.now() - 89 * 24 * 60 * 60 * 1000)
     const observed = await observeTestPostgresQueryPools('readClassifier', () =>
       readClassifierUsageReport({
-        from: new Date('2026-01-01T00:00:00.000Z'),
-        to: new Date('2026-01-02T00:00:00.000Z'),
+        from,
+        to: new Date(from.getTime() + 60 * 60 * 1000),
       }),
     )
 

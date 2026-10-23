@@ -133,6 +133,22 @@ export function buildUnboundedUnpartitionedTables(
         'ai_agent_call_receipts',
         'Permanent paid-call idempotency receipts require global operation-key uniqueness; the unique-key lookup remains selective.',
       ],
+      [
+        'classifier_run_identities',
+        'Minimal classifier, subject, content and configuration identity survives payload retirement to preserve exact deduplication; unique-key lookups remain selective.',
+      ],
+      [
+        'classifier_run_requests',
+        'Minimal subject and content request identity survives run payload retirement so pending recovery and exact follow-on deduplication remain durable.',
+      ],
+      [
+        'notification_push_intents',
+        'Pending delivery work is retained until terminal and can grow without a time bound; terminal intents are deleted after 90 days, while the composite notification key and pending-work index keep recovery selective.',
+      ],
+      [
+        'notification_push_intent_subscription_receipts',
+        'Generation receipts retained with pending push intents; terminal intents expire after 90 days. Tombstone cleanup preserves subscriptions while any receipt survives.',
+      ],
       ['web_push_endpoint_owners', 'Global claim key preserves cross-user endpoint uniqueness.'],
     ],
   })

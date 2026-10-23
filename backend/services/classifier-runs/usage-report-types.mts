@@ -3,7 +3,7 @@ export type ClassifierUsageWindow = { from: Date; to: Date }
 
 /**
  * What one classifier run cost and how it fanned out. Provider figures come from the ai-usage
- * ledger rows attributed to the run (`ai_usage_records.classifier_run_id`), so a response that
+ * ledger rows attributed to the run (`ai_usage_records.classifier_run_identity_id`), so a response that
  * failed strict decoding but was billed is counted. A provider call that returned no 2xx response
  * (a network or 5xx failure) writes no ledger row, so it shows up only as
  * `attemptsWithoutRecordedResponse`. That does not mean it was free: an ambiguous failure may have

@@ -2,7 +2,6 @@ import { beginTransaction } from '@data-stores/psql'
 import { observeSharedDbScope } from '@data-stores/psql/shared-db-scope-observer'
 import { sharedDbIdsScope } from '@vouchington/postgres/query-telemetry'
 import { electedRelationMetadata } from '@services/users/relation-impact-targets'
-
 function retainedRelationReferences(subjectType: string): [string, string][] {
   return electedRelationMetadata.flatMap(metadata =>
     metadata.subject_type === subjectType
@@ -10,7 +9,6 @@ function retainedRelationReferences(subjectType: string): [string, string][] {
       : [],
   )
 }
-
 export const ROOT_FAMILIES = {
   user: {
     table: 'retained_user_identities',
@@ -89,6 +87,8 @@ export const ROOT_FAMILIES = {
       ['post_publication_post_identities', 'id'],
       ['notifications', 'publication_post_id'],
       ['post_admission_reservations', 'committed_post_id'],
+      ['classifier_run_identities', 'post_id'],
+      ['classifier_run_requests', 'post_id'],
       ...retainedRelationReferences('post'),
     ],
   },
@@ -98,6 +98,8 @@ export const ROOT_FAMILIES = {
       ['rss_feed_items', 'id'],
       ['post_publication_rss_feed_item_identities', 'id'],
       ['notifications', 'publication_rss_feed_item_id'],
+      ['classifier_run_identities', 'rss_feed_item_id'],
+      ['classifier_run_requests', 'rss_feed_item_id'],
       ...retainedRelationReferences('rss_feed_item'),
     ],
   },
@@ -112,7 +114,6 @@ export const ROOT_FAMILIES = {
     ],
   },
 } as const
-
 export type RetainedIdentityFamily = keyof typeof ROOT_FAMILIES
 export type RetainedIdentityCleanupPage = {
   family: RetainedIdentityFamily

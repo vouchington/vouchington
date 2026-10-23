@@ -158,7 +158,7 @@ describe('classifier result storage', () => {
       {
         parent: 'topic_classifier_results',
         child: 'topic_classifier_results__default',
-        strategy: 'RANGE (topic_id)',
+        strategy: 'RANGE (batch_id)',
         bound: 'DEFAULT',
       },
     ])

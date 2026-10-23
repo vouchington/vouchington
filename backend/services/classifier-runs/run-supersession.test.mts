@@ -54,7 +54,7 @@ describe('classifier run supersession (real PG)', () => {
     expect(old!.superseded_at).not.toBeNull()
     expect(current).toMatchObject({ id: replacement?.runId, superseded_at: null })
     const requests = await getClassifierRunRequestFacts(setup.post.id, setup.slug)
-    expect(requests.find(request => request.input_sha256.equals(revised))?.run_id).toBe(
+    expect(requests.find(request => request.input_sha256.equals(revised))?.run_identity_id).toBe(
       replacement?.runId,
     )
   })
@@ -82,7 +82,7 @@ describe('classifier run supersession (real PG)', () => {
     const [facts] = await getClassifierRunFacts(setup.post.id, setup.slug)
     expect(facts!.superseded_at).not.toBeNull()
     const [request] = await getClassifierRunRequestFacts(setup.post.id, setup.slug)
-    expect(request!.run_id).toBeNull()
+    expect(request!.run_identity_id).toBeNull()
   })
 
   it('rejects a stale job and never produces effects for superseded content', async () => {

@@ -1,12 +1,8 @@
 import { beginTransaction, type OwnedTransaction } from '@data-stores/psql'
-import { reserveClassifierDecisionBatch } from '@services/classifiers/write-decision-lineage'
-import { retainPublicationIdentityBridges } from '@services/post-publication/identity-bridges'
-import sql, { type SQLStatement } from 'sql-template-strings'
 import {
   insertClassifierRunCandidates,
   insertClassifierRunStoryCandidates,
 } from './run-candidates.mts'
-import { pinnedStoredCandidateIds } from './remote-plan.mts'
 import {
   PREPARE_AGAIN,
   attemptWithPreparedCandidates,
@@ -14,11 +10,11 @@ import {
   type PreparedClassifierCandidates,
 } from './run-capture.mts'
 import { settleClassifierRunRequest } from './run-requests.mts'
+import { insertClassifierRun } from './run-create.mts'
 import type {
   ClassifierRunAdapter,
   ClassifierRunSubject,
   CurrentClassifierRunInput,
-  ResolvedClassifierRun,
 } from './types.mts'
 
 export type ReservedClassifierRun = {
@@ -103,13 +99,21 @@ export async function reserveLockedClassifierRun<C, L, E>(
     })
     return { kind: 'no-work' }
   }
-  const { inserted, ...run } = await insertClassifierRun(
+  const { inserted, retired, ...run } = await insertClassifierRun(
     query,
     adapter.slug,
     subject,
     current,
     resolved,
   )
+  if (retired) {
+    await settleClassifierRunRequest(query, adapter.slug, subject, {
+      kind: 'run',
+      runId: run.runId,
+      inputSha256: current.inputSha256,
+    })
+    return { kind: 'no-work' }
+  }
   if (inserted && captured.topicIds.length > 0) {
     await insertClassifierRunCandidates(query, run.runId, captured.topicIds)
   }
@@ -122,79 +126,4 @@ export async function reserveLockedClassifierRun<C, L, E>(
     inputSha256: current.inputSha256,
   })
   return { kind: 'reserved', run }
-}
-
-async function insertClassifierRun<C>(
-  query: OwnedTransaction,
-  slug: string,
-  subject: ClassifierRunSubject,
-  current: CurrentClassifierRunInput,
-  resolved: ResolvedClassifierRun<C>,
-): Promise<ReservedClassifierRun & { inserted: boolean }> {
-  if (current.communityId) {
-    await retainPublicationIdentityBridges(query, 'community', [current.communityId])
-  }
-  const remote = resolved.remote
-  const proposedBatchId = remote ? await generateBatchId(query) : null
-  const conflict: SQLStatement =
-    subject.postId !== null
-      ? sql`(classifier_id, post_id, input_sha256, configuration_sha256) WHERE post_id IS NOT NULL`
-      : sql`(classifier_id, rss_feed_item_id, input_sha256, configuration_sha256)
-        WHERE rss_feed_item_id IS NOT NULL`
-  const { rows } = await query<{
-    id: string
-    decision_batch_id: string | null
-    was_inserted: boolean
-  }>(
-    sql`/* reserveClassifierRun.insert */
-    INSERT INTO classifier_runs (
-      classifier_id, post_id, rss_feed_item_id, input_sha256, configuration_json,
-      configuration_sha256, shared_actor_user_id, decision_batch_id
-    ) VALUES (
-      (SELECT id FROM classifiers WHERE slug = ${slug}), ${subject.postId}, ${subject.rssFeedItemId},
-      ${current.inputSha256}, ${resolved.configurationJson}::jsonb, ${resolved.configurationSha256},
-      ${resolved.actorId}, ${proposedBatchId}
-    ) ON CONFLICT `
-      .append(conflict)
-      .append(
-        ' DO UPDATE SET superseded_at = NULL RETURNING id, decision_batch_id, (xmax = 0) AS was_inserted',
-      ),
-  )
-  const inserted = rows[0]
-  if (!inserted) throw new Error('classifier run reservation did not return a receipt')
-  // A remote run is new exactly when its proposed batch id won; a run without a batch (local-only,
-  // or an agent) has no id to compare, so the insert itself says whether this call created it.
-  const isNew =
-    remote === null
-      ? inserted.was_inserted
-      : proposedBatchId !== null && inserted.decision_batch_id === proposedBatchId
-  if (remote && isNew && proposedBatchId !== null) {
-    const reserved = await reserveClassifierDecisionBatch(query, {
-      batchId: proposedBatchId,
-      classifierId: remote.classifierId,
-      promptVersionId: remote.promptVersionId,
-      subject,
-      scope: remote.scope,
-      candidateKind: remote.candidateKind,
-      storedCandidateIds: pinnedStoredCandidateIds(remote),
-    })
-    if (!reserved) throw new Error('classifier run decision batch reservation was not inserted')
-  }
-  return {
-    runId: inserted.id,
-    subject,
-    inputSha256: current.inputSha256,
-    configurationSha256: resolved.configurationSha256,
-    decisionBatchId: inserted.decision_batch_id,
-    inserted: isNew,
-  }
-}
-
-async function generateBatchId(query: OwnedTransaction): Promise<string> {
-  const { rows } = await query<{ id: string }>(sql`/* generateClassifierRunBatchId */
-    SELECT uuidv7() AS id
-  `)
-  const id = rows[0]?.id
-  if (!id) throw new Error('classifier run decision batch ID was not generated')
-  return id
 }

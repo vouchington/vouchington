@@ -13,7 +13,15 @@ import {
   deleteOldReferralAttributionBatch,
   deleteOrphanedOAuthAccountBatch,
 } from './cleanup-batches.mts'
-import { getTopicImportAttemptDeletionBatchSize, type DataRetentionLimits } from './config.mts'
+import {
+  getClassifierRetentionDays,
+  getTopicImportAttemptDeletionBatchSize,
+  type DataRetentionLimits,
+} from './config.mts'
+import {
+  cleanupClassifierRecords,
+  type ClassifierCleanupResult,
+} from './cleanup-classifier-records.mts'
 import {
   cleanupAbandonedBlueskyLinkSessions,
   cleanupExpiredBlueskyLinkCompletions,
@@ -132,6 +140,7 @@ type DataRetentionCleanupOptions = {
   }>
   oldModerationQueueClaims?: OptionalRetentionLimits<CleanupOptions>
   oldModerationMediaReveals?: OptionalRetentionLimits<CleanupOptions>
+  classifierRecords?: OptionalRetentionLimits<Omit<CleanupOptions, 'retentionDays'>>
 }
 
 type DataRetentionCleanupResult = {
@@ -158,6 +167,7 @@ type DataRetentionCleanupResult = {
   oldPendingNotificationPushIntents: PendingNotificationPushIntentCleanupResult
   oldModerationQueueClaims: CleanupResult & { cursorId: string | null }
   oldModerationMediaReveals: CleanupResult & { cursorId: string | null }
+  classifierRecords: ClassifierCleanupResult
 }
 
 export async function runDataRetentionCleanup(
@@ -238,6 +248,10 @@ export async function runDataRetentionCleanup(
   const oldModerationMediaReveals = await cleanupOldModerationMediaReveals(
     withLimits(options.oldModerationMediaReveals),
   )
+  const classifierRecords = await cleanupClassifierRecords({
+    ...withLimits(options.classifierRecords),
+    retentionDays: getClassifierRetentionDays(),
+  })
   const retainedRelationIdentities = await cleanupRetainedRelationIdentities(
     retainedPageSize,
     options.retainedRelationIdentityKeys,
@@ -276,6 +290,7 @@ export async function runDataRetentionCleanup(
     oldPendingNotificationPushIntents,
     oldModerationQueueClaims,
     oldModerationMediaReveals,
+    classifierRecords,
   }
 }
 
