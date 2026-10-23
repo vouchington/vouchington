@@ -417,6 +417,10 @@ checks:
         - config-inventory-policy,repo-file-policy,scc-complexity,targeted-guardrails,dependency-license-policy
       fileArgs: none
       always: true
+    - name: live-repository-policies
+      command: [node, ci/check-repository-policy-scans.mts]
+      fileArgs: none
+      always: true
     - name: backend-dependency-boundaries
       command: [pnpm, run, dep-cruise:backend]
       fileArgs: none
