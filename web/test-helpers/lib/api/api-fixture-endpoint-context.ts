@@ -72,6 +72,7 @@ import * as serverOAuthApps from '../../../lib/api/server/oauth-apps'
 import * as serverOAuthGrants from '../../../lib/api/server/oauth-grants'
 import * as serverScopes from '../../../lib/api/server/scopes'
 import * as serverTopicRecommendations from '../../../lib/api/server/topic-recommendations'
+import * as serverTopicClaims from '../../../lib/api/server/topic-claims'
 import * as serverTopics from '../../../lib/api/server/topics'
 import * as serverTrendingCommunities from '../../../lib/api/server/trending-communities'
 import * as serverTrendingReferralPrograms from '../../../lib/api/server/trending-referral-programs'
@@ -155,6 +156,7 @@ export const WEB_FIXTURE_ENDPOINT_CONTEXT = {
     rssFeedItems: serverRssFeedItems,
     scopes: serverScopes,
     topicRecommendations: serverTopicRecommendations,
+    topicClaims: serverTopicClaims,
     topics: serverTopics,
     trendingCommunities: serverTrendingCommunities,
     trendingReferralPrograms: serverTrendingReferralPrograms,

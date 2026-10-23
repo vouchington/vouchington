@@ -50,7 +50,10 @@ describe('POST /api/v1/brand/mcp', () => {
         arguments: { option: 'list', arguments: {} },
       },
     }).expect(200)
-    expect(called.body.result.structuredContent).toEqual({ claims: [] })
+    expect(called.body.result.structuredContent).toEqual({
+      results: [],
+      page_info: { has_next_page: false, start_cursor: null, end_cursor: null },
+    })
   })
 
   it('rejects a suspended brand caller at authentication', async () => {

@@ -37,10 +37,12 @@ export const getTopicClaims = cache(
     topicIdOrSlug: string,
     activeOnly?: boolean,
     mineOnly?: boolean,
+    limit?: number,
   ): Promise<TopicClaimsResponse> => {
     const query = new URLSearchParams()
     if (activeOnly) query.set('active_only', 'true')
     if (mineOnly) query.set('mine_only', 'true')
+    if (limit) query.set('limit', String(limit))
     return serverApi.get<TopicClaimsResponse>(
       `/api/v1/topics/${encodeURIComponent(topicIdOrSlug)}/claims${query.size ? `?${query}` : ''}`,
     )

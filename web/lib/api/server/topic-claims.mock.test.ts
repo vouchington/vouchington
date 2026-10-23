@@ -70,4 +70,13 @@ describe('topic-claims server api helpers', () => {
       expectedArgs: ['/api/v1/topics/my-topic/claims?active_only=true&mine_only=true'],
     })
   })
+
+  it('passes a bounded limit for a topic claim page', async () => {
+    await expectApiWrapperCall({
+      mock: mockGet,
+      response: emptyPage,
+      call: () => getTopicClaims('my-topic', true, true, 1),
+      expectedArgs: ['/api/v1/topics/my-topic/claims?active_only=true&mine_only=true&limit=1'],
+    })
+  })
 })

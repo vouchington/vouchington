@@ -117,6 +117,10 @@ export interface WebFixtureServerEndpointContext {
     typeof import('@/lib/api/server/topic-recommendations'),
     'getTopicRecommendation' | 'getTopHashtags'
   >
+  readonly topicClaims: Pick<
+    typeof import('@/lib/api/server/topic-claims'),
+    'getMyTopicClaims' | 'getTopicClaims'
+  >
   readonly topics: Pick<
     typeof import('@/lib/api/server/topics'),
     'getPublisherTypes' | 'getTopic' | 'getTopics' | 'getUserTags'
