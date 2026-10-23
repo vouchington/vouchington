@@ -90,9 +90,14 @@ async function copyExistingFeedUrls(destination: string): Promise<void> {
         ) TO STDOUT`,
     ),
   )
+  // release(error) destroys a client that is still inside COPY. pg then emits
+  // "Connection terminated" on this stream, after pipeline has dropped its listeners.
+  const onDiscardedCopyError = () => {}
+  copy.on('error', onDiscardedCopyError)
   let failure: Error | undefined
   try {
     await pipeline(Readable.from(decodedMembershipLines(copy)), createWriteStream(destination))
+    copy.removeListener('error', onDiscardedCopyError)
   } catch (err) {
     // An unfinished COPY leaves the connection mid-stream: end it and discard the client.
     failure = err instanceof Error ? err : new Error(String(err))
