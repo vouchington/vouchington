@@ -126,13 +126,14 @@ export async function changeImagePlacementsCopyrightWithholding(
   options: QueryOptions = {},
 ): Promise<CopyrightImagePlacementMutation[]> {
   if (inputs.length === 0) return []
-  if (new Set(inputs.map(input => input.placementId)).size !== inputs.length) {
+  const placementIds = inputs.map(input => input.placementId.toLowerCase())
+  if (new Set(placementIds).size !== inputs.length) {
     throw new Error('changeImagePlacementsCopyrightWithholding: duplicate placementId')
   }
   const query = options.query ?? write
   const { rows } = await query<CopyrightImagePlacementRow>(
     buildCopyrightPlacementsMutationSql(
-      inputs.map(input => input.placementId),
+      placementIds,
       inputs.map(input => input.expectedRevision),
       withhold,
     ),
@@ -140,9 +141,7 @@ export async function changeImagePlacementsCopyrightWithholding(
   const applied = new Map(
     rows.map(row => [row.placement_id.toLowerCase(), toCopyrightImagePlacement(row)]),
   )
-  const missingIds = inputs.flatMap(input =>
-    applied.has(input.placementId.toLowerCase()) ? [] : [input.placementId],
-  )
+  const missingIds = placementIds.filter(placementId => !applied.has(placementId))
   const current =
     missingIds.length === 0
       ? new Map<string, CopyrightImagePlacement>()
@@ -156,9 +155,10 @@ function copyrightPlacementMutationResult(
   applied: ReadonlyMap<string, CopyrightImagePlacement>,
   current: ReadonlyMap<string, CopyrightImagePlacement>,
 ): CopyrightImagePlacementMutation {
-  const updated = applied.get(input.placementId.toLowerCase())
+  const placementId = input.placementId.toLowerCase()
+  const updated = applied.get(placementId)
   if (updated) return { status: 'applied', placement: updated }
-  const found = current.get(input.placementId)
+  const found = current.get(placementId)
   if (!found) return { status: 'not_found' }
   if (found.deleted) return { status: 'deleted', placement: found }
   const desiredApplied = withhold ? found.withheld : !found.withheld
