@@ -116,19 +116,8 @@ export async function createUserDataRequest(
   userId: string,
 ): Promise<CreateOrConflictDataRequestResponse> {
   const safeId = assertPathIdentifier(userId)
-  const response = await clientFetch(`/api/v1/users/${encodeURIComponent(safeId)}/data-request`, {
-    method: 'POST',
-  })
-  if (!response.ok) {
-    throw new ApiError(
-      'Failed to request export',
-      response.status,
-      await parseErrorResponseBody(response),
-    )
-  }
-  return parseRequiredJsonBody<CreateOrConflictDataRequestResponse>(
-    response,
-    'Invalid export request response',
+  return clientApi.post<CreateOrConflictDataRequestResponse>(
+    `/api/v1/users/${encodeURIComponent(safeId)}/data-request`,
   )
 }
 
