@@ -20,12 +20,7 @@ describe('platform-stats', () => {
     const lifecycle = await createPlatformStatsLifecycle()
     await lifecycle.withServer(async (address, _cache, serverLifecycle) => {
       const expected = await serverLifecycle.trackWork(() => getPlatformStatsCached({}))
-      const response = await serverLifecycle.trackWork(() =>
-        createRequest(address)
-          .get('/api/v1/platform-stats')
-          .expect(200)
-          .then(result => result),
-      )
+      const response = await createRequest(address).get('/api/v1/platform-stats').expect(200)
       expect(response.body).toEqual(expected)
     })
   })
@@ -41,12 +36,7 @@ describe('platform-stats', () => {
     const responses: Response[] = []
     await lifecycle.withServer(async (address, _cache, serverLifecycle) => {
       const requestStats = (request: ReturnType<typeof createRequest>) =>
-        serverLifecycle.trackWork(() =>
-          request
-            .get('/api/v1/platform-stats')
-            .expect(200)
-            .then(result => result),
-        )
+        request.get('/api/v1/platform-stats').expect(200)
       const anonymous = createRequest(address)
       const authenticated = [createRequest(address), createRequest(address)]
       await serverLifecycle.trackWork(async () => {
@@ -104,19 +94,17 @@ describe('platform-stats', () => {
       expect(response.headers['cache-control'] ?? '').not.toContain('public')
   })
 
-  it('drains a request admitted before identity dispatch when cleanup starts before its handler', async () => {
+  it('drains a request admitted before identity dispatch when cleanup starts before its response', async () => {
     const lifecycle = await createPlatformStatsLifecycle()
     await lifecycle.withServer(async (address, _cache, serverLifecycle) => {
       const admitted = serverLifecycle.nextAdmission()
       const requestId = randomUUID()
       lifecycle.captureQueries()
-      const response = serverLifecycle.trackWork(() =>
-        createRequest(address)
-          .get('/api/v1/platform-stats')
-          .set('x-request-id', requestId)
-          .expect(200)
-          .then(result => result),
-      )
+      const response = createRequest(address)
+        .get('/api/v1/platform-stats')
+        .set('x-request-id', requestId)
+        .expect(200)
+        .then(result => result)
       const receipt = await admitted
       // This direct continuation runs before the anonymous identity await resumes.
       const drained = serverLifecycle.closeAndDrain()
@@ -127,12 +115,12 @@ describe('platform-stats', () => {
         path: '/api/v1/platform-stats',
         requestId,
         hasCookie: false,
-        handlers: 0,
+        aggregateQueriesAtAdmission: 0,
       })
       await completed
       expect(serverLifecycle.observations()).toEqual({
         cleanupStarted: true,
-        handlerStartedAfterCleanup: [true],
+        responsesFinishedAfterCleanup: [true],
       })
     })
     expect(countCapturedQueriesByAnnotation(lifecycle.stopQueries(), 'getPlatformStats')).toBe(1)
@@ -147,12 +135,7 @@ describe('platform-stats', () => {
     let finiteWorkSettled = false
     lifecycle.captureQueries()
     const running = lifecycle.withServer(async (address, _cache, serverLifecycle) => {
-      await serverLifecycle.trackWork(() =>
-        createRequest(address)
-          .get('/api/v1/platform-stats')
-          .expect(200)
-          .then(result => result),
-      )
+      await createRequest(address).get('/api/v1/platform-stats').expect(200)
       const finiteWork = serverLifecycle.trackWork(async () => {
         finiteWorkStarted = true
         await createTestUser()
@@ -195,13 +178,8 @@ describe('platform-stats', () => {
   it('fences a real detached cache write after HTTP completion and permits the next cold fill', async () => {
     const lifecycle = await createPlatformStatsLifecycle()
     lifecycle.captureQueries()
-    const observed = await lifecycle.withServer(async (address, cache, serverLifecycle) => {
-      await serverLifecycle.trackWork(() =>
-        createRequest(address)
-          .get('/api/v1/platform-stats')
-          .expect(200)
-          .then(result => result),
-      )
+    const observed = await lifecycle.withServer(async (address, cache) => {
+      await createRequest(address).get('/api/v1/platform-stats').expect(200)
       await cache.entered
       // HTTP has completed while the actual conditional cache write is still held.
       // Cleanup installs its exact-key marker before releasing that write.
@@ -209,13 +187,8 @@ describe('platform-stats', () => {
     }, true)
     expect(observed.observations()).toEqual({ held: true, skipped: 1 })
     await observed.assertMarkerRemoved()
-    await lifecycle.withServer(async (address, _cache, serverLifecycle) => {
-      await serverLifecycle.trackWork(() =>
-        createRequest(address)
-          .get('/api/v1/platform-stats')
-          .expect(200)
-          .then(result => result),
-      )
+    await lifecycle.withServer(async address => {
+      await createRequest(address).get('/api/v1/platform-stats').expect(200)
     })
     expect(countCapturedQueriesByAnnotation(lifecycle.stopQueries(), 'getPlatformStats')).toBe(2)
   })

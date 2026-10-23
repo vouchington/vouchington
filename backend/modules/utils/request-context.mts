@@ -1,7 +1,7 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 
-type HttpListener<Result> = (request: IncomingMessage, response: ServerResponse) => Result
+type HttpListener = (request: IncomingMessage, response: ServerResponse) => void
 
 /**
  * Per-request store. The only field today is the acting user. Tracing fields can be added later.
@@ -13,10 +13,12 @@ export type RequestContextStore = {
 
 const requestContext = new AsyncLocalStorage<RequestContextStore>()
 
-export function createRequestContextListener<Result>(
-  listener: HttpListener<Result>,
-): HttpListener<Result> {
-  return (request, response) => requestContext.run({}, () => listener(request, response))
+export function createRequestContextListener(listener: HttpListener): HttpListener {
+  return (request, response) => {
+    requestContext.run({}, () => {
+      listener(request, response)
+    })
+  }
 }
 
 /** Runs `fn` inside an empty request store. Workers and scripts stay outside it. */

@@ -1,22 +1,18 @@
-import { streamJsonObject, type Application } from '@jongleberry/api-server'
+import { streamJsonObject } from '@jongleberry/api-server'
 import app from '../../app.mts'
 import { getOptionalAuthAndRateLimit } from '../../response-helpers.mts'
 import { getPlatformStatsCached } from '@services/entity-fetch/search-caches'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 
-export function registerPlatformStatsRoute(target: Application): void {
-  target.route('/api/v1/platform-stats').get(async ctx => {
-    const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/platform-stats')
+app.route('/api/v1/platform-stats').get(async ctx => {
+  const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/api/v1/platform-stats')
 
-    const stats = await getPlatformStatsCached({})
+  const stats = await getPlatformStatsCached({})
 
-    if (!currentUser) {
-      ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)
-    }
+  if (!currentUser) {
+    ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)
+  }
 
-    ctx.setType('json')
-    await ctx.pipeline(streamJsonObject(stats))
-  })
-}
-
-registerPlatformStatsRoute(app)
+  ctx.setType('json')
+  await ctx.pipeline(streamJsonObject(stats))
+})

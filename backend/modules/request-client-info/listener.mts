@@ -54,8 +54,10 @@ export function createRequestClientInfoListener(
     mintDeviceId: mintUUIDv7,
     verifyDeviceIdentity: deviceToken => verifyDeviceJwt(deviceToken),
   },
-): (req: IncomingMessage, res: ServerResponse) => Promise<void> {
-  return (req, res) => handleRequest(req, res, listener, dependencies)
+): HttpListener {
+  return (req, res) => {
+    void handleRequest(req, res, listener, dependencies)
+  }
 }
 
 async function handleRequest(

@@ -48,44 +48,43 @@ type ListenerCallResult = {
 }
 
 async function callListener(options: CallOptions): Promise<ListenerCallResult> {
-  const ended = Promise.withResolvers<void>()
-  let status = 200
-  let body = ''
-  const response = {
-    headersSent: false,
-    setHeader: vi.fn<ServerResponse['setHeader']>(),
-    writeHead(statusCode: number) {
-      status = statusCode
-      return response
-    },
-    end(chunk?: unknown) {
-      body = typeof chunk === 'string' ? chunk : ''
-      ended.resolve()
-      return response
-    },
-  }
-  const listener = createRequestClientInfoListener(
-    (_req, res) => {
-      res.setHeader('content-type', 'application/json')
-      res.end(JSON.stringify(getOptionalRequestClientInfo() ?? null))
-    },
-    {
-      isEnforced: options.isEnforced ?? (() => true),
-      mintDeviceId: mintUUIDv7,
-      verifyDeviceIdentity: options.verifyDeviceIdentity ?? (async () => null),
-    },
-  )
-  await listener(
-    {
-      method: options.method,
-      url: options.path ?? '/api/v1/posts',
-      headers: options.headers,
-      socket: { remoteAddress: '127.0.0.1' },
-    } as IncomingMessage,
-    response as unknown as ServerResponse,
-  )
-  await ended.promise
-  return { status, body }
+  return new Promise(resolve => {
+    let status = 200
+    let body = ''
+    const response = {
+      headersSent: false,
+      setHeader: vi.fn<ServerResponse['setHeader']>(),
+      writeHead(statusCode: number) {
+        status = statusCode
+        return response
+      },
+      end(chunk?: unknown) {
+        body = typeof chunk === 'string' ? chunk : ''
+        resolve({ status, body })
+        return response
+      },
+    }
+    const listener = createRequestClientInfoListener(
+      (_req, res) => {
+        res.setHeader('content-type', 'application/json')
+        res.end(JSON.stringify(getOptionalRequestClientInfo() ?? null))
+      },
+      {
+        isEnforced: options.isEnforced ?? (() => true),
+        mintDeviceId: mintUUIDv7,
+        verifyDeviceIdentity: options.verifyDeviceIdentity ?? (async () => null),
+      },
+    )
+    listener(
+      {
+        method: options.method,
+        url: options.path ?? '/api/v1/posts',
+        headers: options.headers,
+        socket: { remoteAddress: '127.0.0.1' },
+      } as IncomingMessage,
+      response as unknown as ServerResponse,
+    )
+  })
 }
 
 function validHeaders(overrides: IncomingMessage['headers'] = {}): IncomingMessage['headers'] {

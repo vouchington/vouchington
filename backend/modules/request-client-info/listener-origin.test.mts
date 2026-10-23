@@ -44,25 +44,20 @@ type OriginOptions = {
 async function originOf(
   options: OriginOptions,
 ): Promise<ReturnType<typeof getOptionalRequestOrigin>> {
-  const origin = Promise.withResolvers<ReturnType<typeof getOptionalRequestOrigin>>()
-  const listener = createRequestClientInfoListener(
-    () => {
-      origin.resolve(getOptionalRequestOrigin())
-    },
-    {
+  return new Promise(resolve => {
+    const listener = createRequestClientInfoListener(() => resolve(getOptionalRequestOrigin()), {
       isEnforced: options.isEnforced,
       mintDeviceId: mintUUIDv7,
       verifyDeviceIdentity: async () => ({ did: mintUUIDv7() }) as DeviceTokenPayload,
-    },
-  )
-  await listener(
-    {
-      method: 'POST',
-      url: options.path ?? '/api/v1/posts',
-      headers: options.headers,
-      socket: { remoteAddress: '127.0.0.1' },
-    } as IncomingMessage,
-    {} as ServerResponse,
-  )
-  return origin.promise
+    })
+    listener(
+      {
+        method: 'POST',
+        url: options.path ?? '/api/v1/posts',
+        headers: options.headers,
+        socket: { remoteAddress: '127.0.0.1' },
+      } as IncomingMessage,
+      {} as ServerResponse,
+    )
+  })
 }

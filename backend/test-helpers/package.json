@@ -81,7 +81,6 @@
     "vouchington-tooling": "^0.66.1"
   },
   "devDependencies": {
-    "@jongleberry/api-server": "^3.0.1",
     "@ts-shared/utils": "workspace:^",
     "@types/pg": "^8.23.1",
     "@types/supertest": "^7.2.1",
