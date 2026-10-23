@@ -1,4 +1,4 @@
-import { beginTransaction } from '@data-stores/psql'
+import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
 import { getMinUUIDv7ForDate } from '@modules/utils'
 import sql from 'sql-template-strings'
 import { getRetentionCutoffDate, normalizeRetentionDays } from './cleanup-options.mts'
@@ -20,6 +20,50 @@ export type PaymentOperationCleanupResult = {
   cursorId: string | null
 }
 
+type PaymentCleanupKind = 'stripe_event_work' | 'purchase_intent'
+
+function getPaymentCleanupPageBounds(options: PaymentOperationCleanupOptions) {
+  const batchSize = normalizePositiveInteger(options.batchSize, DEFAULT_BATCH_SIZE, 'batchSize')
+  const cutoff = getRetentionCutoffDate(
+    normalizeRetentionDays(options.retentionDays, 30),
+    options.now,
+  )
+  const idCutoff = getMinUUIDv7ForDate(
+    options.upperBoundDate && options.upperBoundDate < cutoff ? options.upperBoundDate : cutoff,
+  )
+  const idLowerBound = options.lowerBoundDate ? getMinUUIDv7ForDate(options.lowerBoundDate) : null
+  return { batchSize, cutoff, idCutoff, idLowerBound }
+}
+
+async function lockPaymentCleanupCursor(
+  query: QueryExecutor,
+  kind: PaymentCleanupKind,
+): Promise<string | null> {
+  await query(sql`/* lockPaymentCleanupCursor.ensure */
+    INSERT INTO payment_operational_cleanup_cursors (kind) VALUES (${kind})
+    ON CONFLICT (kind) DO NOTHING
+  `)
+  const { rows } = await query<{ cursor_id: string | null }>(sql`
+    /* lockPaymentCleanupCursor */
+    SELECT cursor_id FROM payment_operational_cleanup_cursors
+    WHERE kind = ${kind} FOR UPDATE
+  `)
+  if (!rows[0]) throw new Error(`${kind} cleanup cursor is missing`)
+  return rows[0].cursor_id
+}
+
+async function savePaymentCleanupCursor(
+  query: QueryExecutor,
+  kind: PaymentCleanupKind,
+  cursorId: string | null,
+): Promise<void> {
+  const { rowCount } = await query(sql`/* savePaymentCleanupCursor */
+    UPDATE payment_operational_cleanup_cursors SET cursor_id = ${cursorId}::uuid
+    WHERE kind = ${kind}
+  `)
+  if (rowCount !== 1) throw new Error(`${kind} cleanup checkpoint was not saved`)
+}
+
 /** One bounded UUIDv7 page. A completed pass resets its cursor so later terminal transitions are revisited. */
 export async function cleanupTerminalStripeEventWork(
   options: PaymentOperationCleanupOptions,
@@ -30,29 +74,16 @@ export async function cleanupTerminalStripeEventWork(
 async function cleanupTerminalStripeEventWorkPage(
   options: PaymentOperationCleanupOptions,
 ): Promise<PaymentOperationCleanupResult> {
-  const batchSize = normalizePositiveInteger(options.batchSize, DEFAULT_BATCH_SIZE, 'batchSize')
-  const cutoff = getRetentionCutoffDate(
-    normalizeRetentionDays(options.retentionDays, 30),
-    options.now,
-  )
-  const idCutoff = getMinUUIDv7ForDate(
-    options.upperBoundDate && options.upperBoundDate < cutoff ? options.upperBoundDate : cutoff,
-  )
-  const idLowerBound = options.lowerBoundDate ? getMinUUIDv7ForDate(options.lowerBoundDate) : null
+  const { batchSize, cutoff, idCutoff, idLowerBound } = getPaymentCleanupPageBounds(options)
   await using transaction = await beginTransaction()
-  const { rows: progress } = await transaction<{ cursor_id: string | null }>(sql`
-    /* cleanupTerminalStripeEventWork.lockCursor */
-    SELECT cursor_id FROM payment_operational_cleanup_cursors
-    WHERE kind = 'stripe_event_work' FOR UPDATE
-  `)
-  const cursorId = progress[0]?.cursor_id ?? null
+  const cursorId = await lockPaymentCleanupCursor(transaction, 'stripe_event_work')
   const { rows } = await transaction<{ stripe_event_id: string }>(sql`
     /* cleanupTerminalStripeEventWork.candidates */
     SELECT stripe_event_id FROM stripe_event_processing_work_items
     WHERE stripe_event_id < ${idCutoff}
       AND (${cursorId}::uuid IS NULL OR stripe_event_id > ${cursorId}::uuid)
       AND (${idLowerBound}::uuid IS NULL OR stripe_event_id >= ${idLowerBound}::uuid)
-      AND (processed_at IS NOT NULL OR ignored_at IS NOT NULL)
+      AND (processed_at < ${cutoff} OR ignored_at < ${cutoff})
     ORDER BY stripe_event_id LIMIT ${batchSize + 1}
     FOR UPDATE SKIP LOCKED
   `)
@@ -68,15 +99,12 @@ async function cleanupTerminalStripeEventWorkPage(
     `)
   const hasMore = rows.length > batchSize
   const nextCursorId = hasMore ? ids.at(-1)! : null
-  await transaction(sql`/* cleanupTerminalStripeEventWork.checkpoint */
-    UPDATE payment_operational_cleanup_cursors SET cursor_id = ${nextCursorId}::uuid
-    WHERE kind = 'stripe_event_work'
-  `)
+  await savePaymentCleanupCursor(transaction, 'stripe_event_work', nextCursorId)
   await transaction.commit()
   return { deleted: rowCount ?? 0, hasMore, cursorId: nextCursorId }
 }
 
-/** Expired failed or unlaunched intents are disposable only when no verification references them. */
+/** Expired abandoned, failed, or ownerless intents are disposable only without verification references. */
 export async function cleanupAbandonedMembershipPurchaseIntents(
   options: PaymentOperationCleanupOptions,
 ): Promise<PaymentOperationCleanupResult> {
@@ -86,29 +114,18 @@ export async function cleanupAbandonedMembershipPurchaseIntents(
 async function cleanupAbandonedMembershipPurchaseIntentsPage(
   options: PaymentOperationCleanupOptions,
 ): Promise<PaymentOperationCleanupResult> {
-  const batchSize = normalizePositiveInteger(options.batchSize, DEFAULT_BATCH_SIZE, 'batchSize')
-  const cutoff = getRetentionCutoffDate(
-    normalizeRetentionDays(options.retentionDays, 30),
-    options.now,
-  )
-  const idCutoff = getMinUUIDv7ForDate(
-    options.upperBoundDate && options.upperBoundDate < cutoff ? options.upperBoundDate : cutoff,
-  )
-  const idLowerBound = options.lowerBoundDate ? getMinUUIDv7ForDate(options.lowerBoundDate) : null
+  const { batchSize, cutoff, idCutoff, idLowerBound } = getPaymentCleanupPageBounds(options)
   await using transaction = await beginTransaction()
-  const { rows: progress } = await transaction<{ cursor_id: string | null }>(sql`
-    /* cleanupAbandonedMembershipPurchaseIntents.lockCursor */
-    SELECT cursor_id FROM payment_operational_cleanup_cursors
-    WHERE kind = 'purchase_intent' FOR UPDATE
-  `)
-  const cursorId = progress[0]?.cursor_id ?? null
+  const cursorId = await lockPaymentCleanupCursor(transaction, 'purchase_intent')
   const { rows } = await transaction<{ id: string }>(sql`
     /* cleanupAbandonedMembershipPurchaseIntents.candidates */
     SELECT intent.id FROM membership_purchase_intents intent
     WHERE intent.id < ${idCutoff}
       AND (${cursorId}::uuid IS NULL OR intent.id > ${cursorId}::uuid)
       AND (${idLowerBound}::uuid IS NULL OR intent.id >= ${idLowerBound}::uuid)
-      AND (intent.launched_at IS NULL OR intent.failed_at IS NOT NULL)
+      AND intent.expires_at < ${cutoff}
+      AND (intent.launched_at IS NULL OR intent.failed_at IS NOT NULL
+        OR intent.user_id IS NULL OR intent.expired_at IS NOT NULL)
     ORDER BY intent.id LIMIT ${batchSize + 1}
     FOR UPDATE OF intent SKIP LOCKED
   `)
@@ -121,7 +138,8 @@ async function cleanupAbandonedMembershipPurchaseIntentsPage(
       DELETE FROM membership_purchase_intents intent
       WHERE intent.id = ANY(${ids}::uuid[])
         AND intent.expires_at < ${cutoff}
-        AND (intent.launched_at IS NULL OR intent.failed_at IS NOT NULL)
+        AND (intent.launched_at IS NULL OR intent.failed_at IS NOT NULL
+          OR intent.user_id IS NULL OR intent.expired_at IS NOT NULL)
         AND NOT EXISTS (
           SELECT 1 FROM membership_verifications verification
           WHERE verification.membership_purchase_intent_id = intent.id
@@ -129,10 +147,7 @@ async function cleanupAbandonedMembershipPurchaseIntentsPage(
     `)
   const hasMore = rows.length > batchSize
   const nextCursorId = hasMore ? ids.at(-1)! : null
-  await transaction(sql`/* cleanupAbandonedMembershipPurchaseIntents.checkpoint */
-    UPDATE payment_operational_cleanup_cursors SET cursor_id = ${nextCursorId}::uuid
-    WHERE kind = 'purchase_intent'
-  `)
+  await savePaymentCleanupCursor(transaction, 'purchase_intent', nextCursorId)
   await transaction.commit()
   return { deleted: rowCount ?? 0, hasMore, cursorId: nextCursorId }
 }

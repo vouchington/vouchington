@@ -18,7 +18,7 @@ amazon_eventbridge --enabled-events ...`; see `opentofu/stripe-eventbridge.tf` i
 - [ ] `checkout.session.completed` — persist checkout completion, correlate session
 - [ ] `checkout.session.async_payment_succeeded` — treat async success like paid checkout
 - [ ] `checkout.session.async_payment_failed` — mark related membership `past_due` if present
-- [ ] `checkout.session.expired` — abort pending Stripe Identity verification session if attached
+- [ ] `checkout.session.expired` — mark the matching membership Checkout launch terminal, or abort a pending Stripe Identity verification session
 
 ### Invoice
 

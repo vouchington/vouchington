@@ -6,23 +6,24 @@ Owner-scoped, replayable provider purchase launches selected from a provider pro
 
 Not partitioned — growth: bounded.
 
-| Column                           | Type                       | Nullable | Default                                      | Identity | Generated | Collation | Comment                                                                                       |
-| -------------------------------- | -------------------------- | -------- | -------------------------------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------------- |
-| `id`                             | `uuid`                     | no       | `uuidv7()`                                   |          |           |           |                                                                                               |
-| `user_id`                        | `uuid`                     | yes      |                                              |          |           |           | Voucha account that requested the purchase launch; cleared after final account deletion.      |
-| `idempotency_key`                | `uuid`                     | no       |                                              |          |           |           | Client-supplied UUID replay identity, unique per owner.                                       |
-| `request_fingerprint`            | `text`                     | no       |                                              |          |           |           | SHA-256 digest of the canonical launch request for exact replay validation.                   |
-| `membership_provider_product_id` | `uuid`                     | no       |                                              |          |           |           | Provider mapping selected for the launch.                                                     |
-| `membership_product_id`          | `uuid`                     | no       |                                              |          |           |           | Canonical product constrained to the selected provider mapping.                               |
-| `membership_provider_context_id` | `uuid`                     | no       |                                              |          |           |           | Provider context constrained to the selected product mapping.                                 |
-| `provider_checkout_id`           | `text`                     | yes      |                                              |          |           |           | Provider checkout identity retained for an exact launch replay.                               |
-| `provider_checkout_url`          | `text`                     | yes      |                                              |          |           |           | Provider checkout URL retained for an exact launch replay.                                    |
-| `expires_at`                     | `timestamp with time zone` | no       | `(CURRENT_TIMESTAMP + '00:30:00'::interval)` |          |           |           | End of the bounded launch-admission window that prevents concurrent provider purchase starts. |
-| `launched_at`                    | `timestamp with time zone` | yes      |                                              |          |           |           | When the launch payload was durably produced.                                                 |
-| `failed_at`                      | `timestamp with time zone` | yes      |                                              |          |           |           | When launch creation reached a terminal failure.                                              |
-| `failure_code`                   | `text`                     | yes      |                                              |          |           |           | Stable provider launch failure code.                                                          |
-| `created_at`                     | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)`                 |          | virtual   |           |                                                                                               |
-| `updated_at`                     | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`                          |          |           |           |                                                                                               |
+| Column                           | Type                       | Nullable | Default                                      | Identity | Generated | Collation | Comment                                                                                             |
+| -------------------------------- | -------------------------- | -------- | -------------------------------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------------------- |
+| `id`                             | `uuid`                     | no       | `uuidv7()`                                   |          |           |           |                                                                                                     |
+| `user_id`                        | `uuid`                     | yes      |                                              |          |           |           | Voucha account that requested the purchase launch; cleared after final account deletion.            |
+| `idempotency_key`                | `uuid`                     | no       |                                              |          |           |           | Client-supplied UUID replay identity, unique per owner.                                             |
+| `request_fingerprint`            | `text`                     | no       |                                              |          |           |           | SHA-256 digest of the canonical launch request for exact replay validation.                         |
+| `membership_provider_product_id` | `uuid`                     | no       |                                              |          |           |           | Provider mapping selected for the launch.                                                           |
+| `membership_product_id`          | `uuid`                     | no       |                                              |          |           |           | Canonical product constrained to the selected provider mapping.                                     |
+| `membership_provider_context_id` | `uuid`                     | no       |                                              |          |           |           | Provider context constrained to the selected product mapping.                                       |
+| `provider_checkout_id`           | `text`                     | yes      |                                              |          |           |           | Provider checkout identity retained for an exact launch replay.                                     |
+| `provider_checkout_url`          | `text`                     | yes      |                                              |          |           |           | Provider checkout URL retained for an exact launch replay.                                          |
+| `expires_at`                     | `timestamp with time zone` | no       | `(CURRENT_TIMESTAMP + '00:30:00'::interval)` |          |           |           | End of the bounded launch-admission window that prevents concurrent provider purchase starts.       |
+| `launched_at`                    | `timestamp with time zone` | yes      |                                              |          |           |           | When the launch payload was durably produced.                                                       |
+| `failed_at`                      | `timestamp with time zone` | yes      |                                              |          |           |           | When launch creation reached a terminal failure.                                                    |
+| `expired_at`                     | `timestamp with time zone` | yes      |                                              |          |           |           | When Stripe reported that a launched Checkout session expired without becoming a live subscription. |
+| `failure_code`                   | `text`                     | yes      |                                              |          |           |           | Stable provider launch failure code.                                                                |
+| `created_at`                     | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)`                 |          | virtual   |           |                                                                                                     |
+| `updated_at`                     | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`                          |          |           |           |                                                                                                     |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -34,7 +35,8 @@ _none_
 - `membership_purchase_intents_check`: `CHECK (((provider_checkout_id IS NULL) = (provider_checkout_url IS NULL)))`
 - `membership_purchase_intents_check1`: `CHECK ((expires_at > uuid_extract_timestamp(id)))`
 - `membership_purchase_intents_check2`: `CHECK ((num_nonnulls(launched_at, failed_at) <= 1))`
-- `membership_purchase_intents_check3`: `CHECK (((failed_at IS NULL) = (failure_code IS NULL)))`
+- `membership_purchase_intents_check3`: `CHECK (((expired_at IS NULL) OR ((launched_at IS NOT NULL) AND (failed_at IS NULL) AND (provider_checkout_id IS NOT NULL) AND (expired_at >= launched_at))))`
+- `membership_purchase_intents_check4`: `CHECK (((failed_at IS NULL) = (failure_code IS NULL)))`
 - `membership_purchase_intents_failure_code_check`: `CHECK (((failure_code IS NULL) OR (((char_length(failure_code) >= 1) AND (char_length(failure_code) <= 255)) AND (failure_code = TRIM(BOTH FROM failure_code)))))`
 - `membership_purchase_intents_provider_checkout_id_check`: `CHECK (((provider_checkout_id IS NULL) OR (((char_length(provider_checkout_id) >= 1) AND (char_length(provider_checkout_id) <= 255)) AND (provider_checkout_id = TRIM(BOTH FROM provider_checkout_id)))))`
 - `membership_purchase_intents_provider_checkout_url_check`: `CHECK (((provider_checkout_url IS NULL) OR ((char_length(provider_checkout_url) >= 1) AND (char_length(provider_checkout_url) <= 2048))))`
@@ -50,10 +52,11 @@ _none_
 - `idx_membership_purchase_intents__active_user`: `CREATE INDEX idx_membership_purchase_intents__active_user ON public.membership_purchase_intents USING btree (user_id, expires_at DESC) WHERE (failed_at IS NULL)`
 - `idx_membership_purchase_intents__id_user_context`: `CREATE UNIQUE INDEX idx_membership_purchase_intents__id_user_context ON public.membership_purchase_intents USING btree (id, user_id, membership_provider_context_id)`
 - `idx_membership_purchase_intents__provider_product_id`: `CREATE INDEX idx_membership_purchase_intents__provider_product_id ON public.membership_purchase_intents USING btree (membership_provider_product_id, id DESC)`
-- `idx_membership_purchase_intents__retention`: `CREATE INDEX idx_membership_purchase_intents__retention ON public.membership_purchase_intents USING btree (id) INCLUDE (expires_at) WHERE ((launched_at IS NULL) OR (failed_at IS NOT NULL))`
+- `idx_membership_purchase_intents__retention`: `CREATE INDEX idx_membership_purchase_intents__retention ON public.membership_purchase_intents USING btree (id) INCLUDE (expires_at) WHERE ((launched_at IS NULL) OR (failed_at IS NOT NULL) OR (user_id IS NULL) OR (expired_at IS NOT NULL))`
 - `idx_membership_purchase_intents__user_id`: `CREATE INDEX idx_membership_purchase_intents__user_id ON public.membership_purchase_intents USING btree (user_id, id DESC)`
 - `idx_membership_purchase_intents__user_idempotency`: `CREATE UNIQUE INDEX idx_membership_purchase_intents__user_idempotency ON public.membership_purchase_intents USING btree (user_id, idempotency_key)`
 - `membership_purchase_intents_pkey`: `CREATE UNIQUE INDEX membership_purchase_intents_pkey ON public.membership_purchase_intents USING btree (id)`
+- `uq_membership_purchase_intents__checkout_context`: `CREATE UNIQUE INDEX uq_membership_purchase_intents__checkout_context ON public.membership_purchase_intents USING btree (provider_checkout_id, membership_provider_context_id) WHERE (provider_checkout_id IS NOT NULL)`
 
 **Triggers:**
 

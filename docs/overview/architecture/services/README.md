@@ -53,11 +53,13 @@ from being copied into a personal list. A shared runtime bound caps post and fee
 sources, including the combined feed-item result across source feeds; feed items stay readable only
 while a live enabled source feed still supplies them.
 
-Payment operational retention removes finished Stripe event processing work and expired abandoned
-purchase launches in bounded, persisted keyset passes. The immutable Stripe event ledger remains
-the deduplication authority after work is removed; verification-linked purchase intents remain
-because their accounting evidence must keep a valid reference. Failed Stripe processing work
-remains recoverable until it reaches a completed or ignored outcome.
+Payment operational retention removes finished Stripe event processing work and expired abandoned,
+failed, ownerless, or provider-expired purchase launches in bounded, persisted keyset passes.
+Launched subscriptions and native purchase tokens remain available to resolve later provider
+events. The immutable Stripe event ledger remains the deduplication authority after work is
+removed; verification-linked purchase intents remain because their accounting evidence must keep
+a valid reference. Failed Stripe processing work remains recoverable until it reaches a completed
+or ignored outcome.
 
 Moderation reconciliation admits expired and retryable work through the same bounded candidate
 page. Terminal dispositions are written only for that admitted page; lease and disposition updates

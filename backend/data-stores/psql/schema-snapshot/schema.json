@@ -58509,7 +58509,8 @@
         "membership_purchase_intents_check": "CHECK (((provider_checkout_id IS NULL) = (provider_checkout_url IS NULL)))",
         "membership_purchase_intents_check1": "CHECK ((expires_at > uuid_extract_timestamp(id)))",
         "membership_purchase_intents_check2": "CHECK ((num_nonnulls(launched_at, failed_at) <= 1))",
-        "membership_purchase_intents_check3": "CHECK (((failed_at IS NULL) = (failure_code IS NULL)))",
+        "membership_purchase_intents_check3": "CHECK (((expired_at IS NULL) OR ((launched_at IS NOT NULL) AND (failed_at IS NULL) AND (provider_checkout_id IS NOT NULL) AND (expired_at >= launched_at))))",
+        "membership_purchase_intents_check4": "CHECK (((failed_at IS NULL) = (failure_code IS NULL)))",
         "membership_purchase_intents_failure_code_check": "CHECK (((failure_code IS NULL) OR (((char_length(failure_code) >= 1) AND (char_length(failure_code) <= 255)) AND (failure_code = TRIM(BOTH FROM failure_code)))))",
         "membership_purchase_intents_provider_checkout_id_check": "CHECK (((provider_checkout_id IS NULL) OR (((char_length(provider_checkout_id) >= 1) AND (char_length(provider_checkout_id) <= 255)) AND (provider_checkout_id = TRIM(BOTH FROM provider_checkout_id)))))",
         "membership_purchase_intents_provider_checkout_url_check": "CHECK (((provider_checkout_url IS NULL) OR ((char_length(provider_checkout_url) >= 1) AND (char_length(provider_checkout_url) <= 2048))))",
@@ -58524,7 +58525,18 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14,
+          "ordinalPosition": 15,
+          "type": "timestamp with time zone"
+        },
+        "expired_at": {
+          "collation": null,
+          "comment": "When Stripe reported that a launched Checkout session expired without becoming a live subscription.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 13,
           "type": "timestamp with time zone"
         },
         "expires_at": {
@@ -58557,7 +58569,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13,
+          "ordinalPosition": 14,
           "type": "text"
         },
         "id": {
@@ -58667,7 +58679,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 15,
+          "ordinalPosition": 16,
           "type": "timestamp with time zone"
         },
         "user_id": {
@@ -58800,7 +58812,7 @@
         "idx_membership_purchase_intents__retention": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_membership_purchase_intents__retention ON public.membership_purchase_intents USING btree (id) INCLUDE (expires_at) WHERE ((launched_at IS NULL) OR (failed_at IS NOT NULL))",
+          "definition": "CREATE INDEX idx_membership_purchase_intents__retention ON public.membership_purchase_intents USING btree (id) INCLUDE (expires_at) WHERE ((launched_at IS NULL) OR (failed_at IS NOT NULL) OR (user_id IS NULL) OR (expired_at IS NOT NULL))",
           "includedColumns": ["expires_at"],
           "keys": [
             {
@@ -58811,7 +58823,7 @@
               "opclass": "uuid_ops"
             }
           ],
-          "predicate": "((launched_at IS NULL) OR (failed_at IS NOT NULL))",
+          "predicate": "((launched_at IS NULL) OR (failed_at IS NOT NULL) OR (user_id IS NULL) OR (expired_at IS NOT NULL))",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -58887,6 +58899,33 @@
           ],
           "predicate": null,
           "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "uq_membership_purchase_intents__checkout_context": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX uq_membership_purchase_intents__checkout_context ON public.membership_purchase_intents USING btree (provider_checkout_id, membership_provider_context_id) WHERE (provider_checkout_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "provider_checkout_id",
+              "descending": false,
+              "expression": "provider_checkout_id",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            },
+            {
+              "column": "membership_provider_context_id",
+              "descending": false,
+              "expression": "membership_provider_context_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(provider_checkout_id IS NOT NULL)",
+          "primary": false,
           "ready": true,
           "unique": true,
           "valid": true

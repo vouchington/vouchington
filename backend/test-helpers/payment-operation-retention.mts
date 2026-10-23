@@ -14,6 +14,40 @@ export function acquirePaymentOperationRetentionTestLock() {
   })
 }
 
+type PaymentCleanupKind = 'stripe_event_work' | 'purchase_intent'
+
+export async function resetPaymentOperationRetentionCursors(): Promise<void> {
+  await write(sql`/* resetPaymentOperationRetentionCursors.stripe */
+    INSERT INTO payment_operational_cleanup_cursors (kind, cursor_id)
+    VALUES ('stripe_event_work', NULL)
+    ON CONFLICT (kind) DO UPDATE SET cursor_id = NULL
+  `)
+  await write(sql`/* resetPaymentOperationRetentionCursors.purchase */
+    INSERT INTO payment_operational_cleanup_cursors (kind, cursor_id)
+    VALUES ('purchase_intent', NULL)
+    ON CONFLICT (kind) DO UPDATE SET cursor_id = NULL
+  `)
+}
+
+export async function deletePaymentOperationRetentionCursor(
+  kind: PaymentCleanupKind,
+): Promise<void> {
+  await write(sql`/* deletePaymentOperationRetentionCursor */
+    DELETE FROM payment_operational_cleanup_cursors WHERE kind = ${kind}
+  `)
+}
+
+export async function getPaymentOperationRetentionCursorId(
+  kind: PaymentCleanupKind,
+): Promise<string | null | undefined> {
+  const { rows } = await read<{
+    cursor_id: string | null
+  }>(sql`/* getPaymentOperationRetentionCursorId */
+    SELECT cursor_id FROM payment_operational_cleanup_cursors WHERE kind = ${kind}
+  `)
+  return rows[0]?.cursor_id
+}
+
 export async function seedStripeEventRetentionWork(
   event: Stripe.Event,
   createdAt: Date,
@@ -48,21 +82,34 @@ export async function seedMembershipPurchaseIntentForRetention(
   createdAt: Date,
   expiresAt: Date,
   state: 'unlaunched' | 'failed' | 'launched',
+  options: { checkoutId?: string; ownerless?: boolean } = {},
 ): Promise<string> {
   const id = v7({ msecs: createdAt.getTime() })
   await write(sql`/* seedMembershipPurchaseIntentForRetention */
     INSERT INTO membership_purchase_intents (
       id, user_id, idempotency_key, request_fingerprint, membership_provider_product_id,
-      membership_product_id, membership_provider_context_id, expires_at, launched_at,
-      failed_at, failure_code
+      membership_product_id, membership_provider_context_id, provider_checkout_id,
+      provider_checkout_url, expires_at, launched_at, failed_at, failure_code
     ) VALUES (
-      ${id}, ${fixture.userId}, ${randomUUID()}, ${fixture.requestFingerprint}, ${fixture.mappingId},
+      ${id}, ${options.ownerless ? null : fixture.userId}, ${randomUUID()}, ${fixture.requestFingerprint}, ${fixture.mappingId},
       ${fixture.productId}, fn_upsert_membership_provider_context_id('stripe', 'test', ${fixture.applicationId}),
+      ${options.checkoutId ?? null}, ${options.checkoutId ? 'https://checkout.stripe.com/test' : null},
       ${expiresAt}, ${state === 'launched' ? createdAt : null},
       ${state === 'failed' ? createdAt : null}, ${state === 'failed' ? 'test_failure' : null}
     )
   `)
   return id
+}
+
+export async function getMembershipPurchaseIntentExpiredAt(
+  id: string,
+): Promise<Date | null | undefined> {
+  const { rows } = await read<{
+    expired_at: Date | null
+  }>(sql`/* getMembershipPurchaseIntentExpiredAt */
+    SELECT expired_at FROM membership_purchase_intents WHERE id = ${id}
+  `)
+  return rows[0]?.expired_at
 }
 
 export async function membershipPurchaseIntentExists(id: string): Promise<boolean> {
