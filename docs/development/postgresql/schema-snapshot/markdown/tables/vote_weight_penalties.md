@@ -15,7 +15,7 @@ Not partitioned — growth: unbounded.
 | `source_flag_id`     | `uuid`                     | yes      |                              |          |           |           | The integrity flag that triggered this penalty, if auto-generated.                                                   |
 | `source_hostname_id` | `uuid`                     | yes      |                              |          |           |           | The blocked hostname that triggered this penalty (for initial block penalties). NULL for stacking attempt penalties. |
 | `source_post_id`     | `uuid`                     | yes      |                              |          |           |           | The post that triggered this penalty (for referral_link_in_post penalties). NULL for other penalty types.            |
-| `created_by_id`      | `uuid`                     | no       |                              |          |           |           |                                                                                                                      |
+| `created_by_id`      | `uuid`                     | yes      |                              |          |           |           | User who created the penalty, or NULL after that account is purged.                                                  |
 | `revoked_at`         | `timestamp with time zone` | yes      |                              |          |           |           | When the penalty was revoked.                                                                                        |
 | `revoked_by_id`      | `uuid`                     | yes      |                              |          |           |           | Moderator who revoked the penalty.                                                                                   |
 | `created_at`         | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                      |
@@ -32,7 +32,7 @@ _none_
 
 **Foreign keys:**
 
-- `vote_weight_penalties_created_by_id_fkey`: `FOREIGN KEY (created_by_id) REFERENCES users(id) ON DELETE CASCADE`
+- `vote_weight_penalties_created_by_id_fkey`: `FOREIGN KEY (created_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `vote_weight_penalties_revoked_by_id_fkey`: `FOREIGN KEY (revoked_by_id) REFERENCES users(id) ON DELETE SET NULL`
 - `vote_weight_penalties_source_flag_id_fkey`: `FOREIGN KEY (source_flag_id) REFERENCES vote_integrity_flags(id) ON DELETE SET NULL`
 - `vote_weight_penalties_source_hostname_id_fkey`: `FOREIGN KEY (source_hostname_id) REFERENCES url_hostnames(id) ON DELETE SET NULL`

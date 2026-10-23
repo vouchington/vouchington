@@ -144107,13 +144107,13 @@
           "ordinalPosition": 11
         },
         "created_by_id": {
-          "comment": null,
+          "comment": "User who created the penalty, or NULL after that account is purged.",
           "dataType": "uuid",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
-          "nullable": false,
+          "nullable": true,
           "ordinalPosition": 8
         },
         "id": {
@@ -144221,7 +144221,7 @@
       "foreignKeys": {
         "vote_weight_penalties_created_by_id_fkey": {
           "columns": ["created_by_id"],
-          "onDelete": "CASCADE",
+          "onDelete": "SET NULL",
           "onUpdate": "NO ACTION",
           "referencedColumns": ["id"],
           "referencedTable": "users",

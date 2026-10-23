@@ -183,7 +183,7 @@ CREATE TABLE IF NOT EXISTS vote_weight_penalties (
   source_flag_id UUID REFERENCES vote_integrity_flags ON DELETE SET NULL,
   source_hostname_id UUID REFERENCES url_hostnames ON DELETE SET NULL,
   source_post_id UUID REFERENCES posts ON DELETE SET NULL,
-  created_by_id UUID NOT NULL REFERENCES users ON DELETE CASCADE,
+  created_by_id UUID REFERENCES users ON DELETE SET NULL,
   revoked_at TIMESTAMPTZ,
   revoked_by_id UUID REFERENCES users ON DELETE SET NULL,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
@@ -236,6 +236,7 @@ COMMENT ON COLUMN vote_weight_penalties.reason IS 'Human-readable explanation of
 COMMENT ON COLUMN vote_weight_penalties.source_flag_id IS 'The integrity flag that triggered this penalty, if auto-generated.';
 COMMENT ON COLUMN vote_weight_penalties.source_hostname_id IS 'The blocked hostname that triggered this penalty (for initial block penalties). NULL for stacking attempt penalties.';
 COMMENT ON COLUMN vote_weight_penalties.source_post_id IS 'The post that triggered this penalty (for referral_link_in_post penalties). NULL for other penalty types.';
+COMMENT ON COLUMN vote_weight_penalties.created_by_id IS 'User who created the penalty, or NULL after that account is purged.';
 COMMENT ON COLUMN vote_weight_penalties.revoked_at IS 'When the penalty was revoked.';
 COMMENT ON COLUMN vote_weight_penalties.revoked_by_id IS 'Moderator who revoked the penalty.';
 
