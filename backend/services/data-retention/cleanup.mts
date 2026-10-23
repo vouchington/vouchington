@@ -50,6 +50,12 @@ import {
 } from './cleanup-options.mts'
 import { assertPositiveInteger, normalizePositiveInteger } from './normalize-positive-integer.mts'
 import { runBoundedBatches } from './run-bounded-batches.mts'
+import {
+  cleanupHistories,
+  type HistoryCleanupOptions,
+  type HistoryCleanupResult,
+  type HistoryKind,
+} from './cleanup-histories.mts'
 import { pruneExpiredContributionAdmissions } from '@services/contribution-gating/admission'
 import { pruneExpiredContributionAdmissionConsumptions } from '@services/contribution-gating/admission-quota'
 import { pruneExpiredTopicImportAttempts } from '@services/user-import-export/topic-import-attempts'
@@ -108,6 +114,7 @@ type DataRetentionCleanupOptions = {
   retainedMediaBindingIds?: readonly string[]
   softDeletedUsers?: OptionalRetentionLimits<CleanupOptions>
   oldReferralAttributions?: OptionalRetentionLimits<CleanupOptions>
+  histories?: OptionalRetentionLimits<HistoryCleanupOptions>
   orphanedOAuthAccounts?: OptionalRetentionLimits<CleanupOptions>
   expiredOAuthAuthorizations?: OptionalRetentionLimits<ExpiryCleanupOptions> & {
     authorizationIds?: readonly string[]
@@ -140,6 +147,7 @@ type DataRetentionCleanupResult = {
   retainedIdentityRoots: RetainedIdentityCleanupPage[]
   softDeletedUsers: CleanupResult
   oldReferralAttributions: CleanupResult
+  histories: Record<HistoryKind, HistoryCleanupResult>
   orphanedOAuthAccounts: CleanupResult
   expiredOAuthAuthorizations: CleanupResult
   expiredOAuthServerArtifacts: CleanupResult
@@ -187,6 +195,7 @@ export async function runDataRetentionCleanup(
   const oldReferralAttributions = await cleanupOldReferralAttributions(
     withLimits(options.oldReferralAttributions),
   )
+  const histories = await cleanupHistories(withLimits(options.histories))
   const orphanedOAuthAccounts = await cleanupOrphanedOAuthAccounts(
     withLimits(options.orphanedOAuthAccounts),
   )
@@ -258,6 +267,7 @@ export async function runDataRetentionCleanup(
     retainedIdentityRoots,
     softDeletedUsers,
     oldReferralAttributions,
+    histories,
     orphanedOAuthAccounts,
     expiredOAuthAuthorizations,
     expiredOAuthServerArtifacts,
