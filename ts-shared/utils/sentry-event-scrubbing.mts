@@ -2,9 +2,7 @@ import {
   composeBeforeSend,
   type ObservableEvent,
   scrubEvent,
-  scrubRequestCredentialFields as scrubRequestCredentials,
   scrubSpanAttributes as scrubSpans,
-  scrubSpanCredentialAttributes as scrubSpanCredentials,
 } from '@vouchington/utils/observability'
 import { redactObservabilityUrl } from './observability-scrubbing.mts'
 
@@ -32,16 +30,8 @@ const SENTRY_SCRUB_OPTIONS = {
   dropRequestBody: true,
 } as const
 
-export function scrubSpanCredentialAttributes<T extends Record<string, unknown>>(data: T): T {
-  return scrubSpanCredentials(data, CREDENTIAL_HEADER_NAMES)
-}
 export function scrubSpanAttributes<T extends Record<string, unknown>>(data: T): T {
   return scrubSpans(data, SENTRY_SCRUB_OPTIONS)
-}
-export function scrubRequestCredentialFields<T extends object>(
-  request: T | undefined,
-): T | undefined {
-  return scrubRequestCredentials(request, CREDENTIAL_HEADER_NAMES)
 }
 export interface SentryEventLike {
   breadcrumbs?: Array<{ data?: Record<string, unknown> }>

@@ -1,11 +1,11 @@
 import { Buffer } from 'node:buffer'
 import type { Page } from '@playwright/test'
 import {
-  FF_COOKIE,
   encodeFeatureFlagCookie,
   type FeatureFlagCookieCodec,
   type FeatureFlags,
-} from '../../ts-shared/feature-flags/index.mts'
+} from '@vouchington/utils/feature-flags'
+import { FF_COOKIE } from '../../ts-shared/feature-flags/index.mts'
 import { retryOnConnectionLost } from 'vouchington-tooling/playwright'
 
 const featureFlagCookieCodec: FeatureFlagCookieCodec = {
