@@ -33,8 +33,8 @@ describe('reconcilePostVoteDrift', () => {
     const downvoter = await createTestUserDirect({
       username: `test-vd-dn-${randomBytes(4).toString('hex')}`,
     })
-    await insertTestPostVote(postId, upvoter.id, '1.2.3.4', 1)
-    await insertTestPostVote(postId, downvoter.id, '1.2.3.5', -1)
+    await insertTestPostVote(postId, upvoter.id, 1)
+    await insertTestPostVote(postId, downvoter.id, -1)
 
     const result = await reconcilePostVoteDrift(50)
 
@@ -59,7 +59,7 @@ describe('reconcilePostVoteDrift', () => {
     })
     // A vote exists in post_votes but posts.votes_count_* was never synced (the async
     // election-stats job does not run in tests), so the post is genuinely drifted.
-    await insertTestPostVote(postId, voter.id, '1.2.3.6', 1)
+    await insertTestPostVote(postId, voter.id, 1)
 
     await expect(
       isTestPostVoteFixtureVisibleFromReplica({

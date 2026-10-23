@@ -186,7 +186,6 @@ export async function castHumanTopicRelationVote(
   await upsertEntityRelationElectionVotes(
     userId,
     [{ entityId: relationId, score }],
-    undefined,
     relationMetadata(subject),
   )
   await refreshEntityRelationVoteStatsById(relationId)

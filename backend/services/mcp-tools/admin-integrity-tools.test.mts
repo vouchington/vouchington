@@ -113,7 +113,7 @@ describe('registered account and integrity writes', () => {
     const author = await createTestUser()
     const voter = await createTestUser()
     const postId = await makeFlagPost(author.id)
-    await insertTestPostVote(postId, voter.id, '127.0.0.1', 1)
+    await insertTestPostVote(postId, voter.id, 1)
     const id = await insertTestVoteIntegrityFlag({ postId })
     const result = await invoke(admin, 'apply_integrity_penalty', {
       option: 'vote_ring',

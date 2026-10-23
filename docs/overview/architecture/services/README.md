@@ -78,6 +78,14 @@ scheduled run.
 An active delivery lease is preserved until a later sweep. Endpoint receipts follow their intent's
 deletion through the foreign key.
 
+Vote ballots retain the current vote and a short history of superseded choices without persisting
+request network or device metadata. The integrity worker keeps only a short-lived, hashed-IP
+distinct-voter window in Valkey. A ballot event keys its own retryable check so closely spaced votes
+are each observed; raw IP evidence lives separately in Valkey for at most two hours and never enters
+the job payload. Daily retention cycles through ballot and user-agent UUIDv7 keys; a later vote or
+ended session can make a previously scanned row eligible on the next cycle. Integrity flags keep
+moderation findings while their identifying details are time-limited by the privacy policy.
+
 - **Authorization lives in `authorization.mts` as `currentUserCan*`.** One file per service means
   the REST route, the MCP tool and the worker ask the same question. SQL visibility filters belong
   there too. Branch on `error.name`, `code` or `status`, never `error.message`.

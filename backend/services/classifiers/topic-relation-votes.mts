@@ -25,7 +25,6 @@ export async function castSubjectTopicRelationVotes(
   await upsertEntityRelationElectionVotes(
     actorId,
     votes.map(vote => ({ entityId: vote.relationId, score: vote.score })),
-    undefined,
     relation,
     { query, enqueueVoteStats: false },
   )

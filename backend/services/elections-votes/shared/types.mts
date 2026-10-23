@@ -20,5 +20,4 @@ export type {
   ElectionVoteEvent,
   AggregatedElectionStats,
   EntityElectionConfig,
-  VoteEventContext,
 } from '@voucha/types/entities/election'

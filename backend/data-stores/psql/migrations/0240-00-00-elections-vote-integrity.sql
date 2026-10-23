@@ -37,8 +37,34 @@ CREATE TABLE IF NOT EXISTS user_agent_strings (
   CHECK (LENGTH(user_agent) <= 1024)
 );
 
-COMMENT ON TABLE user_agent_strings IS 'Insert-only deduplicated lookup table for browser user-agent strings shared by sessions and votes. Empty string represents an unknown session user agent.';
+COMMENT ON TABLE user_agent_strings IS 'Deduplicated lookup table for browser user-agent strings used by sessions. Empty string represents an unknown session user agent.';
 COMMENT ON COLUMN user_agent_strings.user_agent IS 'The full user agent string, unique and trimmed.';
+
+-- Each ballot family has its own cyclic UUIDv7 cleanup position. A cycle must revisit
+-- older ballots because a current ballot can become superseded long after it was cast.
+CREATE TABLE IF NOT EXISTS vote_ballot_cleanup_cursors (
+  vote_table TEXT PRIMARY KEY,
+  cursor_vote_id UUID,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE OR REPLACE TRIGGER trigger_vote_ballot_cleanup_cursors_updated_at
+  BEFORE UPDATE ON vote_ballot_cleanup_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+COMMENT ON TABLE vote_ballot_cleanup_cursors IS 'One bounded cyclic UUIDv7 cleanup position per concrete ballot table.';
+COMMENT ON COLUMN vote_ballot_cleanup_cursors.vote_table IS 'Whitelisted concrete ballot table selected by the cleanup worker.';
+COMMENT ON COLUMN vote_ballot_cleanup_cursors.cursor_vote_id IS 'Last scanned ballot ID; not a durable relationship to a ballot.';
+COMMENT ON COLUMN vote_ballot_cleanup_cursors.updated_at IS 'Last committed ballot sweep progress.';
+
+CREATE TABLE IF NOT EXISTS user_agent_string_cleanup_cursors (
+  is_singleton BOOLEAN PRIMARY KEY DEFAULT TRUE CHECK (is_singleton),
+  cursor_user_agent_string_id UUID,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE OR REPLACE TRIGGER trigger_user_agent_string_cleanup_cursors_updated_at
+  BEFORE UPDATE ON user_agent_string_cleanup_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+COMMENT ON TABLE user_agent_string_cleanup_cursors IS 'Bounded cyclic UUIDv7 sweep of user-agent strings that may become orphaned after a session ends.';
+COMMENT ON COLUMN user_agent_string_cleanup_cursors.is_singleton IS 'Checked singleton key serializes the sweep.';
+COMMENT ON COLUMN user_agent_string_cleanup_cursors.cursor_user_agent_string_id IS 'Last examined user-agent row; not a relationship to the row.';
+COMMENT ON COLUMN user_agent_string_cleanup_cursors.updated_at IS 'Last committed user-agent sweep progress.';
 
 -- ============================================================================
 -- Vote Integrity Flags
@@ -169,6 +195,25 @@ COMMENT ON COLUMN vote_integrity_flags.details IS 'JSON details about the detect
 COMMENT ON COLUMN vote_integrity_flags.resolved_at IS 'When a moderator resolved this flag.';
 COMMENT ON COLUMN vote_integrity_flags.resolved_by_id IS 'Moderator who resolved this flag.';
 COMMENT ON COLUMN vote_integrity_flags.resolution IS 'Outcome: dismissed, penalized, or suspended.';
+
+-- The flag itself remains for moderation; only identifying detail is time-limited.
+CREATE INDEX IF NOT EXISTS idx_vote_integrity_flags__identifying_details__id
+  ON vote_integrity_flags (id)
+  WHERE details ?| ARRAY['correlated_ips', 'ip_address', 'ipAddress', 'device_id', 'deviceId',
+                         'session_id', 'sessionId', 'user_agent', 'userAgent', 'user_agent_string_id'];
+
+CREATE TABLE IF NOT EXISTS vote_integrity_flag_detail_cleanup_cursors (
+  is_singleton BOOLEAN PRIMARY KEY DEFAULT TRUE CHECK (is_singleton),
+  cursor_flag_id UUID,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE OR REPLACE TRIGGER trigger_vote_integrity_flag_detail_cleanup_cursors_updated_at
+  BEFORE UPDATE ON vote_integrity_flag_detail_cleanup_cursors
+  FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+COMMENT ON TABLE vote_integrity_flag_detail_cleanup_cursors IS 'Bounded cyclic UUIDv7 sweep that strips aged identifying details while retaining moderation flags.';
+COMMENT ON COLUMN vote_integrity_flag_detail_cleanup_cursors.is_singleton IS 'Checked singleton key serializes the sweep.';
+COMMENT ON COLUMN vote_integrity_flag_detail_cleanup_cursors.cursor_flag_id IS 'Last examined flag ID; not a relationship to the flag.';
+COMMENT ON COLUMN vote_integrity_flag_detail_cleanup_cursors.updated_at IS 'Last committed flag-detail sweep progress.';
 
 -- ============================================================================
 -- Vote Weight Penalties

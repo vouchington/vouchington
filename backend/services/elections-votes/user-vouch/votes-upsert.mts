@@ -1,9 +1,5 @@
 import { beginTransaction } from '@data-stores/psql'
-import type {
-  ElectionVoteMutationResult,
-  ElectionVoteScore,
-  VoteEventContext,
-} from '../shared/index.mts'
+import type { ElectionVoteMutationResult, ElectionVoteScore } from '../shared/index.mts'
 import { upsertElectionVotesShared } from '../shared/vote-upsert.mts'
 import { enqueueBulkUpdateUserVouchElectionVoteStats } from '@queues/vote-aggregation/enqueues/elections'
 import { softDeleteUserFollowRelations, upsertUserMuteRelations } from '@services/entity-relations'
@@ -11,17 +7,9 @@ import { enqueueUndoFollowSideEffects } from '@services/entity-relations/enqueue
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
 import { USER_VOUCH_ELECTION_CONFIG } from './config.mts'
 
-const NULL_VOTE_CONTEXT: VoteEventContext = {
-  ipAddress: null,
-  deviceId: null,
-  sessionId: null,
-  userAgent: null,
-}
-
 export async function upsertUserVouchElectionVotes(
   userId: string,
   votes: Array<{ entityId: string; score: ElectionVoteScore }>,
-  context: VoteEventContext = NULL_VOTE_CONTEXT,
 ): Promise<ElectionVoteMutationResult[]> {
   if (votes.length === 0) return []
 
@@ -31,7 +19,6 @@ export async function upsertUserVouchElectionVotes(
     USER_VOUCH_ELECTION_CONFIG,
     userId,
     votes,
-    context,
     { query },
   )
   const disengageTargetIds = insertedVotesInTransaction.flatMap(vote =>

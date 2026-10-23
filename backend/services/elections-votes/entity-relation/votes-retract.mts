@@ -32,7 +32,7 @@ export async function retractEntityRelationVote(
       refreshVoteStatsAfterNoop(id)
       return []
     }
-    return upsertEntityRelationVotesById(userId, [{ entityId: id, score: null }], undefined, target)
+    return upsertEntityRelationVotesById(userId, [{ entityId: id, score: null }], target)
   })
   if (cleared[0]) await refreshUserTagVoteStats(id)
 }

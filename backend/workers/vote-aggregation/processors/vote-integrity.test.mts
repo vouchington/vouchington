@@ -1,29 +1,25 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { sentryCaptureExceptionMock } from '../../../test-helpers/vitest.setup.sentry-mock.mts'
-import { randomInt, randomUUID } from 'node:crypto'
+import { randomUUID } from 'node:crypto'
 import assert from 'node:assert/strict'
 import { v7 as uuidv7 } from 'uuid'
-import { getMinUUIDv7ForDate } from '@modules/utils'
 import {
   createTestUserWithId,
   getTestVoteIntegrityFlagTypesByPostId,
   insertTestPost,
-  insertTestPostVote,
 } from '@voucha/test-helpers'
 import type { ProcessVoteIntegrityCheckData } from '@queues/vote-aggregation/enqueues/types-vote-integrity'
 import {
   IP_CORRELATION_THRESHOLD,
   IP_CORRELATION_WINDOW_MINUTES,
 } from '@services/vote-integrity/config'
+import { recordVoteIp } from '@services/vote-integrity/ip-window'
+import { storeVoteIpEvidence } from '@services/elections-votes/vote-ip-evidence'
 import { processVoteIntegrityCheck } from './vote-integrity.mts'
 
-const AS_OF_MS = Date.UTC(2026, 1, 1, 0, 2)
-
 describe('vote integrity worker failures', () => {
-  afterEach(() => vi.useRealTimers())
-
-  it('creates an IP correlation flag from votes at the time-window boundary', async () => {
-    const asOfMs = AS_OF_MS + randomInt(0, 58 * 60_000)
+  it('creates an IP correlation flag from short-lived ballot evidence', async () => {
+    const asOfMs = Date.now()
     const creatorId = uuidv7({ msecs: Date.UTC(2025, 10, 30) })
     await createTestUserWithId(creatorId, `vote-worker-creator-${randomUUID().slice(0, 8)}`)
     const postId = await insertTestPost({
@@ -34,28 +30,25 @@ describe('vote integrity worker failures', () => {
       markdown: 'body',
     })
     const sharedIp = '203.0.113.27'
-    const cutoff = asOfMs - IP_CORRELATION_WINDOW_MINUTES * 60_000
-    let voterId = ''
-    for (let index = 0; index < IP_CORRELATION_THRESHOLD; index++) {
-      voterId = uuidv7({ msecs: asOfMs - 86_400_000, seq: index })
-      await createTestUserWithId(voterId, `vote-worker-voter-${randomUUID().slice(0, 8)}`)
-      await insertTestPostVote(
+    const voteId = uuidv7({ msecs: asOfMs })
+    const insideWindow = asOfMs - (IP_CORRELATION_WINDOW_MINUTES - 1) * 60_000
+    for (let index = 0; index < IP_CORRELATION_THRESHOLD - 1; index++) {
+      await recordVoteIp(
+        'post',
         postId,
-        voterId,
+        randomUUID(),
         sharedIp,
-        1,
-        index === 0 ? getMinUUIDv7ForDate(new Date(cutoff)) : uuidv7({ msecs: cutoff, seq: index }),
+        new Date(insideWindow + index),
+        new Date(asOfMs),
       )
     }
-
-    vi.useFakeTimers({ toFake: ['Date'] })
-    vi.setSystemTime(asOfMs)
+    await storeVoteIpEvidence(voteId, sharedIp)
     await processVoteIntegrityCheck({
       entityType: 'post',
       entityId: postId,
-      userId: voterId,
-      ipAddress: sharedIp,
+      userId: randomUUID(),
       score: 1,
+      voteId,
     })
 
     assert.ok(
@@ -64,13 +57,36 @@ describe('vote integrity worker failures', () => {
     )
   })
 
+  it('runs other integrity checks when delayed ballot IP evidence has expired', async () => {
+    const creatorId = uuidv7({ msecs: Date.UTC(2025, 10, 30) })
+    await createTestUserWithId(creatorId, `vote-worker-expired-${randomUUID().slice(0, 8)}`)
+    const postId = await insertTestPost({
+      createdById: creatorId,
+      createdAt: new Date(Date.UTC(2025, 11, 1)),
+      slug: `vote-worker-expired-${randomUUID()}`,
+      title: 'Vote worker expired IP',
+      markdown: 'body',
+    })
+    const voteId = uuidv7({ msecs: Date.now() - 3 * 60 * 60_000 })
+    await storeVoteIpEvidence(voteId, '203.0.113.90')
+
+    await processVoteIntegrityCheck({
+      entityType: 'post',
+      entityId: postId,
+      userId: randomUUID(),
+      score: 1,
+      voteId,
+    })
+    expect(await getTestVoteIntegrityFlagTypesByPostId(postId)).toEqual([])
+  })
+
   it('reports and rethrows the same database error so the queue can retry', async () => {
     const data: ProcessVoteIntegrityCheckData = {
       entityType: 'post',
       entityId: 'not-a-uuid',
       userId: randomUUID(),
-      ipAddress: null,
       score: 1,
+      voteId: uuidv7(),
     }
 
     const failure: unknown = await processVoteIntegrityCheck(data).catch((err: unknown) => err)

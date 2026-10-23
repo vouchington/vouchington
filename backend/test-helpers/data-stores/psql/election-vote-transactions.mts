@@ -3,13 +3,11 @@ import type { QueryOptions } from '@data-stores/psql/types'
 import type {
   ElectionVoteMutationResult,
   ElectionVoteScore,
-  VoteEventContext,
 } from '../../../services/elections-votes/shared/types.mts'
 
 type VotesUpsert = (
   userId: string,
   votes: Array<{ entityId: string; score: ElectionVoteScore }>,
-  context?: VoteEventContext,
   queryOptions?: QueryOptions,
 ) => Promise<ElectionVoteMutationResult[]>
 
@@ -20,7 +18,7 @@ export async function commitTestElectionVoteTransaction(
   beforeCommit: () => void,
 ): Promise<void> {
   await using transaction = await beginTransaction()
-  await upsertVotes(userId, [{ entityId, score: 1 }], undefined, { query: transaction })
+  await upsertVotes(userId, [{ entityId, score: 1 }], { query: transaction })
   beforeCommit()
   await transaction.commit()
 }
@@ -31,6 +29,6 @@ export async function rollbackTestElectionVoteTransaction(
   entityId: string,
 ): Promise<void> {
   await using transaction = await beginTransaction()
-  await upsertVotes(userId, [{ entityId, score: 1 }], undefined, { query: transaction })
+  await upsertVotes(userId, [{ entityId, score: 1 }], { query: transaction })
   await transaction.rollback()
 }

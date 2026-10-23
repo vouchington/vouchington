@@ -159,13 +159,11 @@ describe('RSS feed item category relation retries', () => {
       upsertEntityRelationElectionVotes(
         categorizer!.id,
         [{ entityId: topicRelationId!, score: 0 }],
-        undefined,
         topicMetadata,
       ),
       upsertEntityRelationElectionVotes(
         categorizer!.id,
         [{ entityId: hashtagRelationId!, score: 0 }],
-        undefined,
         hashtagMetadata,
       ),
     ])

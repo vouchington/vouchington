@@ -8,15 +8,15 @@ export function enqueueVoteIntegrityCheck(
   entityType: string,
   entityId: string,
   userId: string,
-  ipAddress: string | null,
   score: number,
+  voteId: string,
 ): EnqueueReturnType {
   return enqueueVoteIntegrityCheckJob(
-    { entityType, entityId, userId, ipAddress, score },
+    { entityType, entityId, userId, score, voteId },
     {
       deduplication: {
-        id: `processVoteIntegrityCheck__${entityType}__${entityId}`,
-        mode: 'debounce',
+        id: `processVoteIntegrityCheck__${voteId}`,
+        mode: 'simple',
       },
     },
   )

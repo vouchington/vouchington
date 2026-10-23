@@ -6,19 +6,7 @@ import {
 } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { enqueueBulkUpdateAgentModerationElectionVoteStats } from '@queues/vote-aggregation/enqueues/elections'
-import type {
-  ElectionVoteMutationResult,
-  ElectionVoteScore,
-  VoteEventContext,
-} from '../shared/index.mts'
-import { upsertUserAgentString } from '@data-stores/psql/upsert-user-agent-string'
-
-const NULL_VOTE_CONTEXT: VoteEventContext = {
-  ipAddress: null,
-  deviceId: null,
-  sessionId: null,
-  userAgent: null,
-}
+import type { ElectionVoteMutationResult, ElectionVoteScore } from '../shared/index.mts'
 
 async function lockAgentModerationVoteMutation(
   query: TransactionQuery,
@@ -42,7 +30,6 @@ async function lockAgentModerationVoteMutation(
 export async function upsertAgentModerationElectionVotes(
   userId: string,
   votes: Array<{ entityId: string; score: ElectionVoteScore }>,
-  context: VoteEventContext = NULL_VOTE_CONTEXT,
   onVote?: (vote: ElectionVoteMutationResult, query: TransactionQuery) => Promise<void>,
   options: { query?: TransactionQuery } = {},
 ): Promise<ElectionVoteMutationResult[]> {
@@ -62,9 +49,6 @@ export async function upsertAgentModerationElectionVotes(
   const values = [...valuesByEntityId.values()]
   // Sort by agentModerationId for deterministic index-lock acquisition order (prevents ABBA deadlocks).
   values.sort((a, b) => a.agentModerationId.localeCompare(b.agentModerationId))
-
-  // Upsert user agent into lookup table if provided (counts as the 1st of 2 allowed DB calls)
-  const userAgentId = await upsertUserAgentString(context.userAgent?.trim() || null, options)
 
   return runWithTransaction(options.query, async (query: TransactionQuery) => {
     await lockAgentModerationVoteMutation(
@@ -100,16 +84,15 @@ export async function upsertAgentModerationElectionVotes(
       AND agent_moderation_id = ANY(${values.map(vote => vote.agentModerationId)}::uuid[])
     ORDER BY agent_moderation_id, id DESC
   )
-  INSERT INTO agent_moderation_votes (user_id, agent_moderation_id, post_id, score, ip_address, device_id, session_id, user_agent_string_id)
-  SELECT input_votes.user_id, am.id, am.post_id, input_votes.score,
-    ${context.ipAddress}::inet, ${context.deviceId}::uuid, ${context.sessionId}::uuid, ${userAgentId}::uuid
+  INSERT INTO agent_moderation_votes (user_id, agent_moderation_id, post_id, score)
+  SELECT input_votes.user_id, am.id, am.post_id, input_votes.score
   FROM input_votes
   -- no-mistakes-disable-next-line postgres-required-predicates: vote input carries moderation IDs but no post IDs; use the indexed ID lookup across post partitions to obtain each ballot's post_id
   JOIN agent_moderations am ON am.id = input_votes.agent_moderation_id AND am.deleted_at IS NULL
   LEFT JOIN previous_votes ON previous_votes.agent_moderation_id = input_votes.agent_moderation_id
   WHERE input_votes.score IS DISTINCT FROM previous_votes.score
   ORDER BY input_votes.agent_moderation_id
-  RETURNING agent_moderation_id AS entity_id, post_id, user_id, score, created_at
+  RETURNING agent_moderation_id AS entity_id, id, post_id, user_id, score, created_at
   `)
     const inserted = result.rows as (ElectionVoteMutationResult & { post_id: string })[]
     if (onVote) {

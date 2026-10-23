@@ -23,7 +23,6 @@ describe('upsert.generated (votes)', () => {
       upsertEntityRelationElectionVotes(
         '00000000-0000-0000-0000-000000000001',
         [{ entityId: '00000000-0000-0000-0000-000000000002', score: 1 }],
-        undefined,
         metadata,
       ),
     ).rejects.toThrow(`Entity relation ${metadata.table_name} does not support election votes`)
@@ -68,12 +67,7 @@ describe('upsert.generated (votes)', () => {
     const relationId = relation!.id!
 
     await expect(
-      upsertEntityRelationElectionVotes(
-        user.id,
-        [{ entityId: relationId, score: 1 }],
-        undefined,
-        metadata,
-      ),
+      upsertEntityRelationElectionVotes(user.id, [{ entityId: relationId, score: 1 }], metadata),
     ).resolves.toEqual([])
     await flushPendingTasks()
 
@@ -225,6 +219,7 @@ describe('upsert.generated (votes)', () => {
     ])
 
     expect(votes).toHaveLength(2)
+    expect(votes.every(vote => typeof vote.id === 'string' && vote.id.length === 36)).toBe(true)
     await expect(
       getEntityRelationElectionVote(user.id, topicPostRelation.id!),
     ).resolves.toMatchObject({ entity_id: topicPostRelation.id, choice: 'confirm' })

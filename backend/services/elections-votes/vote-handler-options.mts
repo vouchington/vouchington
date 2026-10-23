@@ -1,9 +1,5 @@
 import type { Context } from '@jongleberry/api-server'
-import type {
-  ElectionVote,
-  ElectionVotePolicy,
-  VoteEventContext,
-} from '@voucha/types/entities/election'
+import type { ElectionVote, ElectionVotePolicy } from '@voucha/types/entities/election'
 import type {
   ElectionVoteMutationResult,
   ElectionVoteScore,
@@ -25,7 +21,6 @@ export type CreateVoteHandlerOptions<
   upsertVotes: (
     userId: string,
     votes: Array<{ entityId: string; score: ElectionVoteScore }>,
-    context: VoteEventContext,
   ) => Promise<VoteResult[]>
   getEntity: (id: string) => Promise<unknown>
   entityNotFoundMessage: string

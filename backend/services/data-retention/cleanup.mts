@@ -67,6 +67,18 @@ import {
   cleanupRetainedMediaBindings,
   type RetainedMediaBindingCleanupPage,
 } from './cleanup-retained-media-bindings.mts'
+import {
+  cleanupSupersededVoteBallots,
+  type VoteBallotCleanupPage,
+} from './cleanup-vote-ballots.mts'
+import {
+  cleanupOrphanedUserAgentStrings,
+  type UserAgentStringCleanupPage,
+} from './cleanup-user-agent-strings.mts'
+import {
+  cleanupVoteIntegrityDetails,
+  type VoteIntegrityDetailCleanupPage,
+} from './cleanup-vote-integrity-details.mts'
 
 export { cleanupAbandonedBlueskyLinkSessions, cleanupExpiredBlueskyLinkCompletions }
 export { cleanupExpiredOAuthAuthorizations }
@@ -158,6 +170,9 @@ type DataRetentionCleanupResult = {
   oldPendingNotificationPushIntents: PendingNotificationPushIntentCleanupResult
   oldModerationQueueClaims: CleanupResult & { cursorId: string | null }
   oldModerationMediaReveals: CleanupResult & { cursorId: string | null }
+  supersededVoteBallots: VoteBallotCleanupPage[]
+  orphanedUserAgentStrings: UserAgentStringCleanupPage
+  voteIntegrityDetails: VoteIntegrityDetailCleanupPage
 }
 
 export async function runDataRetentionCleanup(
@@ -238,6 +253,9 @@ export async function runDataRetentionCleanup(
   const oldModerationMediaReveals = await cleanupOldModerationMediaReveals(
     withLimits(options.oldModerationMediaReveals),
   )
+  const supersededVoteBallots = await cleanupSupersededVoteBallots(limits.batchSize)
+  const orphanedUserAgentStrings = await cleanupOrphanedUserAgentStrings(limits.batchSize)
+  const voteIntegrityDetails = await cleanupVoteIntegrityDetails(limits.batchSize)
   const retainedRelationIdentities = await cleanupRetainedRelationIdentities(
     retainedPageSize,
     options.retainedRelationIdentityKeys,
@@ -276,6 +294,9 @@ export async function runDataRetentionCleanup(
     oldPendingNotificationPushIntents,
     oldModerationQueueClaims,
     oldModerationMediaReveals,
+    supersededVoteBallots,
+    orphanedUserAgentStrings,
+    voteIntegrityDetails,
   }
 }
 

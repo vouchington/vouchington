@@ -98,7 +98,6 @@ export async function clearCategorizerVotesInTransaction(
   await upsertEntityRelationElectionVotes(
     categorizer.id,
     result.rows.map(row => ({ entityId: row.id, score: 0 as const })),
-    undefined,
     relation,
     { query, enqueueVoteStats: false },
   )

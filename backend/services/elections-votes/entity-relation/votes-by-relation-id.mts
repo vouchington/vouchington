@@ -2,11 +2,7 @@ import type { EntityRelationElectionTarget } from '@queues/vote-aggregation/enqu
 import { entityRelationMetadatum } from '@voucha/types/entities/entity-relations-metadata'
 import onError from '@modules/on-error'
 import { getUserTagRelationById } from '@services/entity-relations/user-tags'
-import type {
-  ElectionVoteMutationResult,
-  ElectionVoteScore,
-  VoteEventContext,
-} from '../shared/types.mts'
+import type { ElectionVoteMutationResult, ElectionVoteScore } from '../shared/types.mts'
 import {
   refreshEntityRelationVoteStatsById,
   refreshEntityRelationVoteStatsFromPrimaryWithFallback,
@@ -23,7 +19,6 @@ import { upsertEntityRelationElectionVotes } from './votes-upsert.mts'
 export async function upsertEntityRelationVotesById(
   userId: string,
   votes: Array<{ entityId: string; score: ElectionVoteScore }>,
-  context?: VoteEventContext,
   resolvedTarget?: EntityRelationElectionTarget | null,
 ): Promise<ElectionVoteMutationResult[]> {
   const entityId = votes[0]!.entityId
@@ -35,7 +30,7 @@ export async function upsertEntityRelationVotesById(
   if (!metadata) return []
   const isUserTagVote =
     votes.length === 1 && target?.relationTable === 'relation__user__category__topic'
-  return upsertEntityRelationElectionVotes(userId, votes, context, metadata, {
+  return upsertEntityRelationElectionVotes(userId, votes, metadata, {
     enqueueVoteStats: !isUserTagVote,
   })
 }

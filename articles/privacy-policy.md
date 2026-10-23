@@ -6,7 +6,7 @@ post_type: article
 
 # Privacy Policy
 
-**Effective Date:** April 27, 2026
+**Effective Date:** October 23, 2026
 **Company:** Voucha, Inc.
 **Contact:** team@voucha.ai
 
@@ -51,11 +51,11 @@ We collect information about how you use the platform:
 - Operating system
 - Referring URL
 - Session identifiers
-- User agent strings associated with votes (used for fraud and integrity analysis)
+- Short-lived IP correlation data associated with votes (used for fraud and integrity analysis)
 
 ### Vote Integrity Data
 
-To protect the integrity of the platform's trust scoring, we analyze voting patterns for anomalies. This analysis may involve correlating IP addresses across votes to detect coordinated or inauthentic behavior. Results are stored as integrity flags and are retained for the life of the account.
+To protect the integrity of the platform's trust scoring, we analyze voting patterns for anomalies. This analysis may involve correlating IP addresses across votes to detect coordinated or inauthentic behavior. Results are stored as integrity flags and are retained up to the life of the account. Network and device details in those flags are removed after 180 days.
 
 ### Recently Viewed
 
@@ -200,7 +200,7 @@ Each of these providers has their own privacy policy. We select providers who ma
 - **Vote and activity data** — retained in aggregate form for trust scoring even after individual user deletion
 - **Billing records** — retained as required by financial regulations (typically 7 years); the email address associated with your Stripe customer record is redacted when you delete your account
 - **Security logs** — retained for up to 12 months
-- **Vote integrity flags** — retained for the life of the account; anonymized upon account deletion
+- **Vote integrity flags** — retained up to the life of the account; network and device details removed after 180 days; anonymized upon account deletion
 - **Copyright case records and evidence** — we keep US copyright notices, appeals, counter-notices,
   correspondence, evidence, and case decisions for three years after the case's last activity. This
   follows the general limit for civil copyright claims (17 U.S.C. §507(b)). The three years do not

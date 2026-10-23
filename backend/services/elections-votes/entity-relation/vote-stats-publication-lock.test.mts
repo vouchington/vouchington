@@ -50,13 +50,9 @@ describe('single entity relation vote stats publication locking', () => {
     if (!row) throw new Error('Expected RSS item hashtag relation')
     const target = createEntityRelationElectionTarget(row.id, relation.table_name)
     const voter = await createTestUser({ administrator: true })
-    await upsertEntityRelationElectionVotes(
-      voter.id,
-      [{ entityId: row.id, score: 1 }],
-      undefined,
-      relation,
-      { enqueueVoteStats: false },
-    )
+    await upsertEntityRelationElectionVotes(voter.id, [{ entityId: row.id, score: 1 }], relation, {
+      enqueueVoteStats: false,
+    })
     const relationLocked = Promise.withResolvers<void>()
     const releaseRelation = Promise.withResolvers<void>()
     const holder = holdRelationRowLock()

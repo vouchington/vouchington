@@ -23,7 +23,11 @@ ON ${voteTable} (${entityIdColumn}, id);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS ${getElectionIndexName(voteTable, `${actor}__${key}__id`)}
-ON ${voteTable} (user_id, ${entityIdColumn}, id DESC);`
+ON ${voteTable} (user_id, ${entityIdColumn}, id DESC);
+
+-- UUIDv7 keyset scan for the bounded cyclic superseded-ballot cleanup.
+CREATE INDEX IF NOT EXISTS ${getElectionIndexName(voteTable, 'cleanup__id')}
+ON ${voteTable} (id);`
 }
 
 export function createEntityRelationComments(metadata: EntityRelationMetadata): string {
@@ -60,10 +64,6 @@ export function createEntityVoteComments(config: VoteSchemaConfig): string {
     user_id: 'User who cast this ballot event.',
     [config.entityIdColumn]: `Concrete ballot target in ${config.entityTable}.`,
     score: 'Ballot score; nullable events clear the current ballot.',
-    ip_address: 'Audit IP address captured with the ballot event.',
-    device_id: 'Opaque client device token with no durable owner row.',
-    session_id: 'Opaque client session token with no durable owner row.',
-    user_agent_string_id: 'Shared bounded user-agent string captured with the ballot event.',
     ...config.voteAdditionalColumnComments,
   }
   if (config.tracksNeutralScore) columns.score_is_neutral = 'Explicit neutral ballot provenance.'

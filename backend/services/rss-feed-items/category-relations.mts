@@ -134,7 +134,6 @@ export async function createCategoryTopicRelationsInTransaction(
   await upsertEntityRelationElectionVotes(
     ctx.mapper.id,
     relationIds.map(entityId => ({ entityId, score: 1 as const })),
-    undefined,
     ctx.topicRelation,
     { query, enqueueVoteStats: false },
   )

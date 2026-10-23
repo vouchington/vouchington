@@ -43,7 +43,7 @@ describe('detect-velocity-spike', () => {
   ): Promise<void> {
     const userId = uuidv7({ msecs: userAt })
     await createTestUserWithId(userId, randomUsername())
-    await insertTestPostVote(postId, userId, '1.2.3.4', 1, voteId)
+    await insertTestPostVote(postId, userId, 1, voteId)
   }
 
   describe('detectVelocitySpike', () => {
@@ -121,7 +121,7 @@ describe('detect-velocity-spike', () => {
         const userId =
           offset === 0 ? getMinUUIDv7ForDate(new Date(accountCutoff)) : uuidv7({ msecs: userAt })
         await createTestUserWithId(userId, randomUsername())
-        await insertTestPostVote(postId, userId, '1.2.3.4', 1, uuidv7({ msecs: asOfMs - 60_000 }))
+        await insertTestPostVote(postId, userId, 1, uuidv7({ msecs: asOfMs - 60_000 }))
       }
 
       const atCutoff = await detectVelocitySpike('post', postId, new Date(asOfMs))

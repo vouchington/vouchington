@@ -4,7 +4,6 @@ import type {
   ElectionVoteMutationResult,
   ElectionVoteScore,
   EntityElectionConfig,
-  VoteEventContext,
 } from './types.mts'
 
 export async function insertElectionVoteRows(
@@ -17,8 +16,6 @@ export async function insertElectionVoteRows(
     scoreIsNeutral: boolean
     scoreIsSemantic: boolean
   }>,
-  context: VoteEventContext,
-  userAgentId: string | null,
   run: QueryExecutor,
 ): Promise<ElectionVoteMutationResult[]> {
   // previous_votes reads the pre-statement snapshot (PostgreSQL evaluates every WITH branch
@@ -31,13 +28,9 @@ export async function insertElectionVoteRows(
         ${values.map(v => v.userId)}::uuid[],
         ${values.map(v => v.entityId)}::uuid[],
         ${values.map(v => v.score)}::smallint[],
-        ${values.map(() => context.ipAddress)}::inet[],
-        ${values.map(() => context.deviceId)}::uuid[],
-        ${values.map(() => context.sessionId)}::uuid[],
-        ${values.map(() => userAgentId)}::uuid[],
         ${values.map(v => v.scoreIsNeutral)}::boolean[],
         ${values.map(v => v.scoreIsSemantic)}::boolean[]
-      ) AS raw(user_id, entity_id, score, ip_address, device_id, session_id, user_agent_string_id, score_is_neutral, score_is_semantic)
+      ) AS raw(user_id, entity_id, score, score_is_neutral, score_is_semantic)
     ), previous_votes AS (
       SELECT DISTINCT ON (`
 
@@ -78,16 +71,14 @@ export async function insertElectionVoteRows(
   query.append(config.voteTable)
   query.append(sql` (user_id, `)
   query.append(config.entityIdColumn)
-  query.append(sql`, id, score, ip_address, device_id, session_id, user_agent_string_id`)
+  query.append(sql`, id, score`)
   if (config.tracksNeutralScore) query.append(sql`, score_is_neutral`)
   if (config.tracksSemanticScore) query.append(sql`, score_is_semantic`)
   if (config.tracksOutboundActivityPubLike) {
     query.append(sql`, outbound_activitypub_like_activity_id`)
   }
   query.append(sql`)
-      SELECT input_data.user_id, input_data.entity_id, input_data.id, input_data.score,
-             input_data.ip_address, input_data.device_id, input_data.session_id,
-             input_data.user_agent_string_id`)
+      SELECT input_data.user_id, input_data.entity_id, input_data.id, input_data.score`)
   if (config.tracksNeutralScore) query.append(sql`, input_data.score_is_neutral`)
   if (config.tracksSemanticScore) query.append(sql`, input_data.score_is_semantic`)
   if (config.tracksOutboundActivityPubLike) {

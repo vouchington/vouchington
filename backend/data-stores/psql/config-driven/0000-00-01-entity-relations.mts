@@ -117,10 +117,6 @@ CREATE TABLE IF NOT EXISTS ${voteTable} (
   score SMALLINT ${getElectionConstraintClause(voteTable, ['score'], 'chk')}CHECK (score IS NULL OR score IN (-1, 0, 1)),
   score_is_neutral BOOLEAN NOT NULL DEFAULT FALSE CHECK (NOT score_is_neutral OR score IS NOT DISTINCT FROM 0),
   score_is_semantic BOOLEAN NOT NULL DEFAULT FALSE CHECK (NOT score_is_semantic OR score IS NOT NULL),
-  ip_address INET,
-  device_id UUID,
-  session_id UUID,
-  user_agent_string_id UUID ${getElectionConstraintClause(voteTable, ['user_agent_string_id'], 'fk')}REFERENCES user_agent_strings ON DELETE SET NULL,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   PRIMARY KEY (entity_relation_id, id),
   CONSTRAINT ${getElectionForeignKeyName(voteTable, 'subject_entity_relation')} FOREIGN KEY (subject_id, entity_relation_id) REFERENCES ${metadata.table_name} (subject_id, id) ON DELETE CASCADE
@@ -138,10 +134,6 @@ COMMENT ON TABLE ${voteTable} IS 'Append-only votes for the concrete ${metadata.
 COMMENT ON COLUMN ${voteTable}.score_is_neutral IS 'Explicit neutral provenance; binary relation vote producers leave this false.';
 COMMENT ON COLUMN ${voteTable}.score_is_semantic IS 'Explicit semantic score provenance; binary relation vote producers leave this false.';
 COMMENT ON COLUMN ${voteTable}.score IS 'Binary relation ballot or retained clear event; nullable events clear the current ballot.';
-COMMENT ON COLUMN ${voteTable}.ip_address IS 'Audit IP address captured with this ballot event.';
-COMMENT ON COLUMN ${voteTable}.device_id IS 'Opaque client device token with no durable owner row.';
-COMMENT ON COLUMN ${voteTable}.session_id IS 'Opaque client session token with no durable owner row.';
-COMMENT ON COLUMN ${voteTable}.user_agent_string_id IS 'Shared bounded user-agent string captured with this ballot event.';
 COMMENT ON COLUMN ${voteTable}.subject_id IS 'Authoritative subject paired with the concrete elected relation identifier.';
 COMMENT ON COLUMN ${voteTable}.entity_relation_id IS 'Concrete elected relation identifier and UUIDv7 partition key.';`
 }

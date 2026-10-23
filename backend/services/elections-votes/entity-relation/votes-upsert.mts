@@ -5,12 +5,7 @@ import {
   type QueryOptions,
   type TransactionQuery,
 } from '@data-stores/psql'
-import { upsertUserAgentString } from '@data-stores/psql/upsert-user-agent-string'
-import type {
-  ElectionVoteMutationResult,
-  ElectionVoteScore,
-  VoteEventContext,
-} from '../shared/types.mts'
+import type { ElectionVoteMutationResult, ElectionVoteScore } from '../shared/types.mts'
 import { enqueueBulkUpdateEntityRelationElectionVoteStats } from '@queues/vote-aggregation/enqueues/elections'
 import {
   entityRelationMetadatum,
@@ -24,17 +19,9 @@ const electionRelations = entityRelationMetadatum.filter(metadata => metadata.el
 const relationTables = new Set(electionRelations.map(metadata => metadata.table_name))
 const relationVoteTables = new Set(electionRelations.map(getEntityRelationVoteTableName))
 
-const NULL_VOTE_CONTEXT: VoteEventContext = {
-  ipAddress: null,
-  deviceId: null,
-  sessionId: null,
-  userAgent: null,
-}
-
 export async function upsertEntityRelationElectionVotes(
   userId: string,
   votes: Array<{ entityId: string; score: ElectionVoteScore }>,
-  context: VoteEventContext = NULL_VOTE_CONTEXT,
   relationMetadata?: EntityRelationMetadata | readonly EntityRelationMetadata[],
   options: QueryOptions & { enqueueVoteStats?: boolean } = {},
 ): Promise<ElectionVoteMutationResult[]> {
@@ -48,19 +35,14 @@ export async function upsertEntityRelationElectionVotes(
     .map(([entityId, score]) => ({ entityId, score }))
     .toSorted((left, right) => left.entityId.localeCompare(right.entityId))
   const { enqueueVoteStats = true, ...queryOptions } = options
-  const userAgentId = await upsertUserAgentString(context.userAgent?.trim() || null, queryOptions)
 
   const query = sql`/* upsertEntityRelationElectionVotes */
     WITH input_data AS (
       SELECT * FROM UNNEST(
         ${values.map(() => normalizedUserId)}::uuid[],
         ${values.map(value => value.entityId)}::uuid[],
-        ${values.map(value => value.score)}::smallint[],
-        ${values.map(() => context.ipAddress)}::inet[],
-        ${values.map(() => context.deviceId)}::uuid[],
-        ${values.map(() => context.sessionId)}::uuid[],
-        ${values.map(() => userAgentId)}::uuid[]
-      ) AS input(user_id, entity_relation_id, score, ip_address, device_id, session_id, user_agent_string_id)
+        ${values.map(value => value.score)}::smallint[]
+      ) AS input(user_id, entity_relation_id, score)
     ), matched_relations AS (`
 
   targetRelations.forEach((metadata, index) => {
@@ -90,11 +72,9 @@ export async function upsertEntityRelationElectionVotes(
       ),
     )
     query.append(sql` (
-        user_id, subject_id, entity_relation_id, score,
-        ip_address, device_id, session_id, user_agent_string_id
+        user_id, subject_id, entity_relation_id, score
       )
-      SELECT user_id, subject_id, entity_relation_id, score,
-        ip_address, device_id, session_id, user_agent_string_id
+      SELECT user_id, subject_id, entity_relation_id, score
       FROM matched_relations
       WHERE relation_index = `)
     query.append(String(index))
@@ -115,7 +95,7 @@ export async function upsertEntityRelationElectionVotes(
           ORDER BY previous.id DESC
           LIMIT 1
         )
-      RETURNING entity_relation_id AS entity_id, user_id, score, created_at
+      RETURNING entity_relation_id AS entity_id, id, user_id, score, created_at
     )`)
   })
 
@@ -123,7 +103,7 @@ export async function upsertEntityRelationElectionVotes(
   targetRelations.forEach((_metadata, index) => {
     if (index > 0) query.append(sql` UNION ALL `)
     query.append(
-      `SELECT entity_id, user_id, score, created_at, '${targetRelations[index]!.table_name}'::text AS entity_relation FROM inserted_${index}`,
+      `SELECT entity_id, id, user_id, score, created_at, '${targetRelations[index]!.table_name}'::text AS entity_relation FROM inserted_${index}`,
     )
   })
 

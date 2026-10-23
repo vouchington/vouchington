@@ -1,5 +1,6 @@
 import { pagedDispatchConfig } from '@data-stores/valkey-glide-mq/paged-dispatcher-config'
 import { randomUUID } from 'node:crypto'
+import { v7 as uuidv7 } from 'uuid'
 import { Queue, type Job, type JobOptions } from 'glide-mq'
 import { describe, expect, it, vi } from 'vitest'
 import {
@@ -196,14 +197,14 @@ describe('vote-aggregation domain through the production background worker', () 
     const voters = await Promise.all(
       Array.from({ length: VELOCITY_SPIKE_THRESHOLD + 1 }, () => createTestUser()),
     )
-    await Promise.all(voters.map(voter => insertTestPostVote(post.id, voter.id, '5.6.7.8', 1)))
+    await Promise.all(voters.map(voter => insertTestPostVote(post.id, voter.id, 1)))
     await runJobs([
       job(VOTE_AGGREGATION_VOTE_INTEGRITY_JOB, {
         entityType: 'post',
         entityId: post.id,
         userId: author.id,
-        ipAddress: '5.6.7.8',
         score: 1,
+        voteId: uuidv7(),
       }),
     ])
     const flags = await getVoteIntegrityFlags({ limit: 100 })

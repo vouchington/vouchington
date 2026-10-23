@@ -59,7 +59,6 @@ describe('relation vote normalized concrete identity', () => {
           { entityId: relationId.toUpperCase(), score: 1 },
           { entityId: relationId, score: 1 },
         ],
-        undefined,
         metadata,
         { enqueueVoteStats: false },
       )
@@ -67,7 +66,6 @@ describe('relation vote normalized concrete identity', () => {
       await upsertEntityRelationElectionVotes(
         user.id,
         [{ entityId: relationId, score: 1 }],
-        undefined,
         metadata,
         { enqueueVoteStats: false },
       )
