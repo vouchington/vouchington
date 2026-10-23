@@ -35,7 +35,8 @@ describe('onVerificationSessionVerified', () => {
             ]),
           ) // guard
           .mockResolvedValueOnce(makeQueryResult([])) // collision → none
-          .mockResolvedValueOnce(makeQueryResult([{ user_id: 'user-1' }])) // INSERT succeeds
+          .mockResolvedValueOnce(makeQueryResult([{ identity_fingerprint: 'fingerprint' }])) // permanent hash inserted
+          .mockResolvedValueOnce(makeQueryResult()) // live account link inserted
           .mockResolvedValueOnce(makeQueryResult([])) // UPDATE users → 0 rows (concurrent race)
           .mockResolvedValue(makeQueryResult()) // revoke verified_identities
         return createTransactionResource(query as never)

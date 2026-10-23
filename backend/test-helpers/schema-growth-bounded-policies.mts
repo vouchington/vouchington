@@ -17,7 +17,6 @@ const providerLookups = [
   ['stripe_event_types', 'Stripe event types'],
   ['amazon_ses_bounce_subtypes', 'SES bounce subtypes'],
   ['ai_service_tiers', 'model provider service tiers'],
-  ['identity_document_types', 'Identity provider document types'],
 ] as const
 
 export const PROVIDER_LOOKUP_BOUNDS = new Map<string, string>(

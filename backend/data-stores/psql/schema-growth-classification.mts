@@ -27,7 +27,6 @@ const INDEFINITE_AUDIT_AND_WORKFLOW_TABLES = [
   'follower_distribution_deliveries',
   'follower_distributions',
   'membership_changes',
-  'membership_entitlement_effects',
   'membership_ineligible_purchase_reversal_refund_scans',
   'membership_ineligible_purchase_reversal_refund_observations',
   'membership_refund_operation_attempts',

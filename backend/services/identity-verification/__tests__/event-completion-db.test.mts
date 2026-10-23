@@ -4,7 +4,11 @@ import {
   setUserVerificationFields,
   getUserVerificationState,
   countVerifiedIdentities,
+  getVerifiedIdentityByFingerprint,
+  getStoredVerifiedIdentityHash,
+  insertTestVerifiedIdentity,
 } from '@voucha/test-helpers'
+import { deleteUserAndDrainForTest } from '@voucha/test-helpers/services/users/delete-test-support'
 import { v7 } from 'uuid'
 import { onVerificationSessionVerified } from '../event-completion.mts'
 
@@ -71,6 +75,9 @@ describe('onVerificationSessionVerified', () => {
     expect(state?.verification_status).toBe('verified')
     expect(state?.pending_verification_session_id).toBeNull()
     expect(await countVerifiedIdentities(user.id)).toBe(1)
+    expect(await getStoredVerifiedIdentityHash(fingerprint)).toEqual(
+      Buffer.from(fingerprint, 'hex'),
+    )
   })
 
   it('persists verified name fields', async () => {
@@ -155,6 +162,37 @@ describe('onVerificationSessionVerified', () => {
     expect(state2?.verification_status).toBe('duplicate_id')
     expect(state2?.pending_verification_session_id).toBeNull()
     expect(await countVerifiedIdentities(user2.id)).toBe(0)
+  })
+
+  it('rejects a document after its first account was deleted while retaining only the hash', async () => {
+    const priorUser = await createTestUser()
+    const fingerprint = makeFingerprint()
+    await insertTestVerifiedIdentity(priorUser.id, fingerprint, `vs_${v7()}`)
+    await setUserVerificationFields(priorUser.id, { verificationStatus: 'verified' })
+    await deleteUserAndDrainForTest(priorUser, priorUser)
+    expect(await getVerifiedIdentityByFingerprint(fingerprint)).toMatchObject({
+      user_id: null,
+      status: 'revoked',
+    })
+
+    const nextUser = await createTestUser()
+    const sessionId = `vs_${v7()}`
+    await setUserVerificationFields(nextUser.id, {
+      verificationStatus: 'identity_pending',
+      pendingVerificationSessionId: sessionId,
+    })
+    mockFingerprint.mockReturnValue(fingerprint)
+    await onVerificationSessionVerified(
+      'evt_reuse',
+      { id: sessionId, metadata: { user_id: nextUser.id } },
+      {
+        computeIdentityFingerprint: mockFingerprint as never,
+        getVerificationResult: mockGetVerificationResult as never,
+        invalidateUsers: mockInvalidateUsers as never,
+      },
+    )
+    expect((await getUserVerificationState(nextUser.id))?.verification_status).toBe('duplicate_id')
+    expect(await countVerifiedIdentities(nextUser.id)).toBe(0)
   })
 
   it('is idempotent on re-delivery with the same session ID', async () => {

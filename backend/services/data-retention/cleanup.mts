@@ -22,6 +22,12 @@ import { cleanupExpiredOAuthAuthorizations } from './cleanup-oauth-authorization
 import { cleanupExpiredOAuthAuthorizationServerArtifacts } from './cleanup-oauth-authorization-server.mts'
 import { cleanupTerminalNotificationPushIntents } from './cleanup-notification-push-intents.mts'
 import {
+  cleanupDeliveredMembershipEntitlementEffects,
+  cleanupEndedMembershipRenewalNotices,
+  cleanupTerminalGooglePlayAcknowledgments,
+  type MembershipOperationalCleanupOptions,
+} from './cleanup-membership-operational.mts'
+import {
   cleanupTerminalStripeEventWork,
   cleanupAbandonedMembershipPurchaseIntents,
   type PaymentOperationCleanupOptions,
@@ -64,6 +70,11 @@ export { cleanupAbandonedBlueskyLinkSessions, cleanupExpiredBlueskyLinkCompletio
 export { cleanupExpiredOAuthAuthorizations }
 export { cleanupExpiredOAuthAuthorizationServerArtifacts }
 export { cleanupTerminalNotificationPushIntents }
+export {
+  cleanupDeliveredMembershipEntitlementEffects,
+  cleanupEndedMembershipRenewalNotices,
+  cleanupTerminalGooglePlayAcknowledgments,
+}
 export { cleanupTerminalStripeEventWork, cleanupAbandonedMembershipPurchaseIntents }
 
 export async function cleanupAnalyticsLocalFiles(): Promise<void> {
@@ -109,6 +120,9 @@ type DataRetentionCleanupOptions = {
   expiredContributionQuotaConsumptions?: OptionalRetentionLimits<ExpiryCleanupOptions>
   expiredTopicImportAttempts?: OptionalRetentionLimits<ExpiryCleanupOptions>
   terminalNotificationPushIntents?: OptionalRetentionLimits<CleanupOptions>
+  deliveredMembershipEntitlementEffects?: OptionalRetentionLimits<MembershipOperationalCleanupOptions>
+  endedMembershipRenewalNotices?: OptionalRetentionLimits<MembershipOperationalCleanupOptions>
+  terminalGooglePlayAcknowledgments?: OptionalRetentionLimits<MembershipOperationalCleanupOptions>
   terminalStripeEventWork?: OptionalRetentionLimits<PaymentOperationCleanupOptions>
   abandonedMembershipPurchaseIntents?: OptionalRetentionLimits<PaymentOperationCleanupOptions>
   emailAddressLoginTokens?: OptionalRetentionLimits<ExpiryCleanupOptions>
@@ -132,6 +146,9 @@ type DataRetentionCleanupResult = {
   expiredContributionQuotaConsumptions: CleanupResult
   expiredTopicImportAttempts: CleanupResult
   terminalNotificationPushIntents: CleanupResult
+  deliveredMembershipEntitlementEffects: CleanupResult
+  endedMembershipRenewalNotices: CleanupResult
+  terminalGooglePlayAcknowledgments: CleanupResult
   terminalStripeEventWork: PaymentOperationCleanupResult
   abandonedMembershipPurchaseIntents: PaymentOperationCleanupResult
   emailAddressLoginTokens: AuthSessionCleanupResult
@@ -188,6 +205,15 @@ export async function runDataRetentionCleanup(
   const terminalNotificationPushIntents = await cleanupTerminalNotificationPushIntents(
     withLimits(options.terminalNotificationPushIntents),
   )
+  const deliveredMembershipEntitlementEffects = await cleanupDeliveredMembershipEntitlementEffects(
+    withLimits(options.deliveredMembershipEntitlementEffects),
+  )
+  const endedMembershipRenewalNotices = await cleanupEndedMembershipRenewalNotices(
+    withLimits(options.endedMembershipRenewalNotices),
+  )
+  const terminalGooglePlayAcknowledgments = await cleanupTerminalGooglePlayAcknowledgments(
+    withLimits(options.terminalGooglePlayAcknowledgments),
+  )
   const terminalStripeEventWork = await cleanupTerminalStripeEventWork(
     withLimits(options.terminalStripeEventWork),
   )
@@ -238,6 +264,9 @@ export async function runDataRetentionCleanup(
     expiredContributionQuotaConsumptions,
     expiredTopicImportAttempts,
     terminalNotificationPushIntents,
+    deliveredMembershipEntitlementEffects,
+    endedMembershipRenewalNotices,
+    terminalGooglePlayAcknowledgments,
     terminalStripeEventWork,
     abandonedMembershipPurchaseIntents,
     emailAddressLoginTokens,

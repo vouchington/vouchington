@@ -572,6 +572,7 @@ $$;
 -- A membership change owns exactly one replayable handoff to its derived entitlement consumers.
 CREATE TABLE membership_renewal_price_increase_notification_work_items (
   membership_id UUID PRIMARY KEY REFERENCES memberships ON DELETE CASCADE,
+  projection_ended_at TIMESTAMPTZ,
   generation BIGINT NOT NULL DEFAULT 1 CHECK (generation >= 1),
   membership_provider_observation_id UUID NOT NULL REFERENCES membership_provider_observations(id) ON DELETE RESTRICT,
   lease_token UUID, leased_at TIMESTAMPTZ, lease_expires_at TIMESTAMPTZ,
@@ -594,8 +595,23 @@ ON membership_renewal_price_increase_notification_work_items (lease_token) WHERE
 CREATE INDEX idx_mmbrshp_rnwl_prc_incrs_ntfctn_wrk_itms__available
 ON membership_renewal_price_increase_notification_work_items (available_at, membership_id)
 WHERE completed_at IS NULL AND delivery_attempted_at IS NULL;
-COMMENT ON TABLE membership_renewal_price_increase_notification_work_items IS 'Generation-fenced renewal price notices; exact delivered or ambiguously attempted snapshots remain for duplicate suppression until membership retention removes them.';
+CREATE INDEX idx_mmbrshp_rnwl_prc_incrs_ntfctn_wrk_itms__ended
+ON membership_renewal_price_increase_notification_work_items (projection_ended_at, membership_id)
+WHERE projection_ended_at IS NOT NULL;
+CREATE FUNCTION fn_update_membership_renewal_notice_end() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  UPDATE membership_renewal_price_increase_notification_work_items
+  SET projection_ended_at = NEW.projection_ended_at
+  WHERE membership_id = NEW.id;
+  RETURN NEW;
+END $$;
+CREATE TRIGGER trigger_sync_membership_renewal_notice_end
+AFTER UPDATE OF projection_ended_at ON memberships
+FOR EACH ROW WHEN (OLD.projection_ended_at IS DISTINCT FROM NEW.projection_ended_at)
+EXECUTE FUNCTION fn_update_membership_renewal_notice_end();
+COMMENT ON TABLE membership_renewal_price_increase_notification_work_items IS 'Generation-fenced renewal price notices; current work prevents duplicate sends, and ended projection work is deleted after its retention window.';
 COMMENT ON COLUMN membership_renewal_price_increase_notification_work_items.membership_id IS 'Membership projection that currently owns the notice; fallback restoration transfers the entire work row atomically.';
+COMMENT ON COLUMN membership_renewal_price_increase_notification_work_items.projection_ended_at IS 'Due date copied from the projection so ended work can be pruned through an indexed bounded page.';
 COMMENT ON COLUMN membership_renewal_price_increase_notification_work_items.generation IS 'Monotone snapshot generation; retries and fallback transfer preserve it, while a changed provider snapshot advances it.';
 COMMENT ON COLUMN membership_renewal_price_increase_notification_work_items.membership_provider_observation_id IS 'Immutable authoritative observation that supplied this notice snapshot.';
 COMMENT ON COLUMN membership_renewal_price_increase_notification_work_items.lease_token IS 'Opaque UUID fence for the current notice delivery owner.';
@@ -623,6 +639,8 @@ CREATE TABLE IF NOT EXISTS membership_entitlement_effects (
 CREATE OR REPLACE TRIGGER trigger_membership_entitlement_effects_updated_at BEFORE UPDATE ON membership_entitlement_effects FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_entitlement_effects__change_id ON membership_entitlement_effects (membership_change_id);
+CREATE INDEX idx_membership_entitlement_effects__delivered_at
+ON membership_entitlement_effects (delivered_at, id) WHERE delivered_at IS NOT NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_entitlement_effects__user_id ON membership_entitlement_effects (user_id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

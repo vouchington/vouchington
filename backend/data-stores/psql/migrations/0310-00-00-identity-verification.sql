@@ -1,8 +1,8 @@
 --
 -- Identity Verification: paid government-ID check via Stripe Identity.
 -- edited-in-place: pre-launch, never deployed to production
--- A government ID may verify only one active account at a time (partial unique index).
--- Raw document numbers are never stored; only a 64-char HMAC fingerprint.
+-- A government ID may verify only one account. The keyed fingerprint is retained for anti-reuse.
+-- Raw document numbers are never stored; only the 32-byte HMAC-SHA256 fingerprint.
 
 CREATE TYPE identity_verification_attempt_sources AS ENUM (
   'self_paid', 'membership_included', 'support_grant'
@@ -13,62 +13,31 @@ CREATE TYPE identity_verification_attempt_sources AS ENUM (
 -- ============================================================================
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TABLE IF NOT EXISTS identity_document_types (
-  id UUID PRIMARY KEY DEFAULT uuidv7(),
-  identity_document_type TEXT NOT NULL UNIQUE,
-  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
-);
-COMMENT ON TABLE identity_document_types IS 'Identity provider document type names registered on first sight; the provider owns this open set and exact spelling.';
-COMMENT ON COLUMN identity_document_types.id IS 'Stable identifier for this identity document type.';
-COMMENT ON COLUMN identity_document_types.identity_document_type IS 'Exact provider value; never normalized.';
-COMMENT ON COLUMN identity_document_types.created_at IS 'When this provider value was first observed.';
-
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS verified_identities (
-  id UUID PRIMARY KEY DEFAULT uuidv7(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-  provider identity_verification_providers NOT NULL,
-  provider_session_id TEXT NOT NULL,
-  identity_fingerprint TEXT NOT NULL CHECK (char_length(identity_fingerprint) = 64),
-  issuing_country TEXT NOT NULL,
-  identity_document_type_id UUID NOT NULL REFERENCES identity_document_types(id) ON DELETE RESTRICT,
-  verified_at TIMESTAMPTZ NOT NULL,
-  checkout_session_id TEXT NOT NULL,
+  identity_fingerprint BYTEA PRIMARY KEY CHECK (octet_length(identity_fingerprint) = 32),
+  first_verified_at TIMESTAMPTZ NOT NULL,
+  last_verified_at TIMESTAMPTZ NOT NULL,
   revoked_at TIMESTAMPTZ,
-  transferred_to_user_id UUID REFERENCES users(id) ON DELETE RESTRICT,
-  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  transferred_at TIMESTAMPTZ,
+  CHECK (last_verified_at >= first_verified_at)
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE TRIGGER trigger_verified_identities_updated_at
-  BEFORE UPDATE ON verified_identities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+COMMENT ON TABLE verified_identities IS 'Permanent minimum anti-reuse record: a keyed document hash and verification lifecycle dates only, with no account or provider identity.';
+COMMENT ON COLUMN verified_identities.identity_fingerprint IS '32-byte HMAC-SHA256 hash of (country:type:document_number). Never store the raw document number.';
+COMMENT ON COLUMN verified_identities.first_verified_at IS 'First successful verification time.';
+COMMENT ON COLUMN verified_identities.last_verified_at IS 'Most recent successful verification time.';
+COMMENT ON COLUMN verified_identities.revoked_at IS 'When the document verification was revoked, if applicable.';
+COMMENT ON COLUMN verified_identities.transferred_at IS 'When the document verification was transferred, if applicable.';
 
-COMMENT ON TABLE verified_identities IS 'Records of successfully verified identities. Raw document numbers are never stored; only a 64-char HMAC fingerprint.';
-COMMENT ON COLUMN verified_identities.user_id IS 'The account that completed the verification.';
-COMMENT ON COLUMN verified_identities.provider IS 'Provider that performed the verification.';
-COMMENT ON COLUMN verified_identities.provider_session_id IS 'Provider-specific session or report ID.';
-COMMENT ON COLUMN verified_identities.identity_fingerprint IS '64-char hex HMAC-SHA256 fingerprint of (country:type:document_number). Never store the raw document number.';
-COMMENT ON COLUMN verified_identities.issuing_country IS 'ISO country code of the issuing authority.';
-COMMENT ON COLUMN verified_identities.identity_document_type_id IS 'Identifier of the document type (passport, id_card, driving_license, etc.).';
-COMMENT ON COLUMN verified_identities.verified_at IS 'When the provider confirmed the identity.';
-COMMENT ON COLUMN verified_identities.checkout_session_id IS 'Stripe Checkout Session that collected payment for this verification.';
-COMMENT ON COLUMN verified_identities.revoked_at IS 'Set when the record is revoked by an admin.';
-COMMENT ON COLUMN verified_identities.transferred_to_user_id IS 'When transferred, the account that now holds the active record.';
-COMMENT ON COLUMN verified_identities.created_at IS 'Row creation timestamp.';
-COMMENT ON COLUMN verified_identities.updated_at IS 'Row last-updated timestamp.';
-
--- One active verified identity per fingerprint (one document = one active account)
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE UNIQUE INDEX IF NOT EXISTS uq_verified_identities__fingerprint_active
-  ON verified_identities (identity_fingerprint)
-  WHERE revoked_at IS NULL AND transferred_to_user_id IS NULL;
-
--- One active verified identity per user (a user can hold only one active identity)
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE UNIQUE INDEX IF NOT EXISTS uq_verified_identities__user_active
-  ON verified_identities (user_id)
-  WHERE revoked_at IS NULL AND transferred_to_user_id IS NULL;
+CREATE TABLE IF NOT EXISTS verified_identity_account_links (
+  user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  identity_fingerprint BYTEA NOT NULL UNIQUE REFERENCES verified_identities(identity_fingerprint) ON DELETE RESTRICT,
+  provider_session_id TEXT NOT NULL UNIQUE
+);
+COMMENT ON TABLE verified_identity_account_links IS 'Live account and provider-session link for exact verification replay; removed on account deletion or revocation.';
+COMMENT ON COLUMN verified_identity_account_links.user_id IS 'Live verified account.';
+COMMENT ON COLUMN verified_identity_account_links.identity_fingerprint IS 'Keyed document fingerprint associated with this live account; the retained fingerprint row has no account link.';
+COMMENT ON COLUMN verified_identity_account_links.provider_session_id IS 'Provider session retained only while the account link remains live for replay.';
 
 -- Support grants are durable entitlements. Each funded Checkout uses a separate
 -- child row so releasing it preserves the original Checkout audit record.
@@ -149,18 +118,3 @@ COMMENT ON COLUMN identity_verification_attempts.released_at IS 'When an unused 
 COMMENT ON COLUMN identity_verification_attempts.consumed_at IS 'When this entitlement or attempt was consumed to create a provider verification session.';
 COMMENT ON COLUMN identity_verification_attempts.granted_by_id IS 'Administrator who issued a parent support-grant entitlement.';
 COMMENT ON COLUMN identity_verification_attempts.grant_note IS 'Required support rationale recorded on a parent support-grant entitlement.';
-
--- Current indexes for fresh schema bootstrap.
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_verified_identities__transferred_to_user_id
-  ON verified_identities (transferred_to_user_id)
-  WHERE transferred_to_user_id IS NOT NULL;
-
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_verified_identities__user_id
-  ON verified_identities (user_id)
-  WHERE user_id IS NOT NULL;
-
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_verified_identities__identity_document_type_id
-  ON verified_identities (identity_document_type_id);

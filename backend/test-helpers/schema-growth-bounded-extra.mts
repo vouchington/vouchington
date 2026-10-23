@@ -39,7 +39,23 @@ export const EXTRA_BOUNDED_TABLES = new Map<string, string>([
   ],
   [
     'membership_renewal_price_increase_notification_work_items',
-    'One latest notification snapshot per membership projection; completed or ambiguous outcomes prevent duplicates and membership retention cascades their removal.',
+    'One latest notification snapshot per membership projection; ended projection work is deleted after 90 days by the bounded operational cleanup.',
+  ],
+  [
+    'membership_entitlement_effects',
+    'Delivered effects are deleted after 30 days by the bounded operational cleanup; pending effects remain for replay.',
+  ],
+  [
+    'membership_google_play_acknowledgments',
+    'Terminal acknowledgements and their encrypted purchase tokens are deleted after 90 days by the bounded operational cleanup.',
+  ],
+  [
+    'membership_operational_cleanup_cursors',
+    'Three fixed keyset positions bound membership operational retention scans.',
+  ],
+  [
+    'verified_identity_account_links',
+    'One live provider-session link per verified account; revocation or account deletion removes it while the minimum fingerprint is retained.',
   ],
   [
     'membership_operation_execution_work_items',
@@ -63,7 +79,7 @@ export const EXTRA_BOUNDED_TABLES = new Map<string, string>([
   ],
   [
     'membership_google_play_acknowledgment_work_items',
-    'One provider acknowledgement task per retained purchase obligation; deletion cascades from its parent.',
+    'One provider acknowledgement task per retained purchase obligation; terminal parent deletion after 90 days cascades its work.',
   ],
   [
     'membership_verification_processing_work_items',
