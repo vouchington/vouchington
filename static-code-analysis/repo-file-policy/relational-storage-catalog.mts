@@ -53,6 +53,9 @@ export const ALLOWED_NONRELATION_UUID = new Set([
   'membership_google_play_recovery_cursors.sweep_upper_bound_evidence_id',
   'membership_microsoft_store_recovery_cursors.cursor_source_id',
   'membership_microsoft_store_recovery_cursors.sweep_upper_bound_source_id',
+  // Deletion-stable keyset positions are values, not references to retained source rows.
+  'moderation_media_reveal_cleanup_cursors.cursor_reveal_id',
+  'moderation_queue_claim_cleanup_cursors.cursor_claim_id',
   'oauth_authorizations.exchange_claim_id',
   'oauth_authorization_exchange_attempts.exchange_claim_id',
   'oauth_authorizations.login_attempt_id',
