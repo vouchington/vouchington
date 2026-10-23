@@ -3,6 +3,7 @@ import { AsyncLocalStorage } from 'node:async_hooks'
 import { once } from 'node:events'
 import { readPool, writePool } from '@data-stores/psql'
 import { getOptionalRequestClientInfo } from '../modules/request-client-info/index.mts'
+import { getActivityPubInboxTestRequestId } from './api/request-query-profile.mts'
 import { runPoolObservationExclusively } from './postgres-pool-observation-queue.mts'
 
 type PoolLease = { pool: pg.Pool; client: pg.PoolClient; active: boolean; handedOff: boolean }
@@ -117,7 +118,8 @@ export async function withPostgresPoolQueryFailureForTest<Result>(
         const ownsContext =
           failureContext.getStore() === context ||
           (options.requestId !== undefined &&
-            getOptionalRequestClientInfo()?.requestId === options.requestId)
+            (getOptionalRequestClientInfo()?.requestId ?? getActivityPubInboxTestRequestId()) ===
+              options.requestId)
         if (
           !ownsContext ||
           !context.active ||
@@ -180,7 +182,6 @@ export async function withPostgresPoolQueryFailureForTest<Result>(
     }
   })
 }
-
 function installProperty(object: object, key: string, value: unknown): void {
   Object.defineProperty(object, key, {
     configurable: true,
@@ -189,7 +190,6 @@ function installProperty(object: object, key: string, value: unknown): void {
     value,
   })
 }
-
 function restoreProperty(
   object: object,
   key: string,

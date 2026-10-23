@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { AsyncLocalStorage } from 'node:async_hooks'
+import { validate as isUuid } from 'uuid'
 import type http from 'node:http'
 import {
   findUnbaselinedRepeats,
@@ -13,7 +14,7 @@ import { recordRequestQueryProfileViolation } from './request-query-profile-viol
 const UUID_SEGMENT = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi
 
 // State lives on globalThis because `vi.resetModules()` re-evaluates this module for server.mts.
-type RequestScope = { route: string; splitToolCalls: boolean }
+type RequestScope = { route: string; splitToolCalls: boolean; inboxRequestId?: string }
 const SCOPES_KEY = Symbol.for('voucha.apiTestRequestScopes')
 const scopesGlobal = globalThis as typeof globalThis & {
   [SCOPES_KEY]?: AsyncLocalStorage<RequestScope>
@@ -55,7 +56,17 @@ export function profileRequestQueries(
   }
   res.once('finish', finalize)
   res.once('close', finalize)
-  requestScopes.run({ route, splitToolCalls: false }, () => profile.run(handle))
+  const requestId = req.headers['x-request-id']
+  const inboxRequestId =
+    route === 'POST /ap/inbox' && typeof requestId === 'string' && isUuid(requestId)
+      ? requestId
+      : undefined
+  requestScopes.run({ route, splitToolCalls: false, inboxRequestId }, () => profile.run(handle))
+}
+
+/** Actual test-server ingress identity for the exempt federation route, never client-side ALS. */
+export function getActivityPubInboxTestRequestId(): string | undefined {
+  return requestScopes.getStore()?.inboxRequestId
 }
 
 function reportRequestQueryProfile(route: string, profile: RequestQueryProfile): void {

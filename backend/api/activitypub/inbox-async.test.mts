@@ -1,3 +1,10 @@
+import { failNextOwnedActivityPubInboxEnqueue } from '@voucha/test-helpers/activitypub-inbox-enqueue-failure'
+import {
+  observeActivityPubInboxRequestEnqueues,
+  registerActivityPubInboxRequestCleanup,
+} from '@voucha/test-helpers/activitypub-inbox-request-enqueues'
+import { getActivityPubInboxDeliveryIdForTest } from '@voucha/test-helpers/entities/activitypub-inbox'
+import { randomUUID } from 'node:crypto'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import { buildSignatureHeaders } from '@modules/http-signatures'
 import { computeDigest } from '@vouchington/utils/http-signatures'
@@ -5,6 +12,7 @@ import { activitypub } from '@queues/activitypub/queues'
 import { activityPubInboxConfig } from '@services/ap-inbox-activities'
 import {
   claimTestDelivery,
+  registerActivityPubInboxAdmission,
   rejectTestDelivery,
 } from '@voucha/test-helpers/activitypub-inbox-transitions'
 import { createRequest } from '@voucha/test-helpers/api/server'
@@ -17,6 +25,8 @@ import {
 
 const INBOX_HOST = 'inbox-async-test.example'
 const INBOX_URL = `http://${INBOX_HOST}/ap/inbox`
+
+registerActivityPubInboxAdmission()
 
 describe('POST /ap/inbox durable worker path', () => {
   it('verifies the signature before durable persistence', async () => {
@@ -62,25 +72,23 @@ describe('POST /ap/inbox durable worker path', () => {
       digest: computeDigest(body),
       date: new Date().toUTCString(),
     }
-    const existingJobIds = new Set(
-      (await getInboxJobs()).map(job => job.id).filter((id): id is string => id !== undefined),
+    registerActivityPubInboxRequestCleanup(activityId)
+    const requestId = randomUUID()
+
+    const { enqueueCalls } = await observeActivityPubInboxRequestEnqueues(requestId, () =>
+      createRequest()
+        .post('/ap/inbox')
+        .set('x-request-id', requestId)
+        .set('Host', INBOX_HOST)
+        .set('Signature', headers.signature)
+        .set('Digest', headers.digest)
+        .set('Date', headers.date)
+        .set('Content-Type', 'application/activity+json')
+        .send(body)
+        .expect(401),
     )
 
-    await createRequest()
-      .post('/ap/inbox')
-      .set('Host', INBOX_HOST)
-      .set('Signature', headers.signature)
-      .set('Digest', headers.digest)
-      .set('Date', headers.date)
-      .set('Content-Type', 'application/activity+json')
-      .send(body)
-      .expect(401)
-
-    const unexpectedJob = (await getInboxJobs()).find(
-      candidate =>
-        candidate.name === 'activitypub.processDelivery' && !existingJobIds.has(candidate.id ?? ''),
-    )
-    expect(unexpectedJob).toBeUndefined()
+    expect(enqueueCalls).toBe(0)
     expect(await activityPubInboxDeliveryExistsOnPrimaryForTest(activityId)).toBe(false)
   })
 
@@ -99,25 +107,23 @@ describe('POST /ap/inbox durable worker path', () => {
       object: { type: 'Note', content: 'digest mismatch' },
     })
     const headers = buildSignatureHeaders('POST', INBOX_URL, body, keyId, privateKeyPem)
-    const existingJobIds = new Set(
-      (await getInboxJobs()).map(job => job.id).filter((id): id is string => id !== undefined),
+    registerActivityPubInboxRequestCleanup(activityId)
+    const requestId = randomUUID()
+
+    const { enqueueCalls } = await observeActivityPubInboxRequestEnqueues(requestId, () =>
+      createRequest()
+        .post('/ap/inbox')
+        .set('x-request-id', requestId)
+        .set('Host', INBOX_HOST)
+        .set('Signature', headers.signature)
+        .set('Digest', headers.digest)
+        .set('Date', headers.date)
+        .set('Content-Type', 'application/activity+json')
+        .send(`${body} `)
+        .expect(401),
     )
 
-    await createRequest()
-      .post('/ap/inbox')
-      .set('Host', INBOX_HOST)
-      .set('Signature', headers.signature)
-      .set('Digest', headers.digest)
-      .set('Date', headers.date)
-      .set('Content-Type', 'application/activity+json')
-      .send(`${body} `)
-      .expect(401)
-
-    const unexpectedJob = (await getInboxJobs()).find(
-      candidate =>
-        candidate.name === 'activitypub.processDelivery' && !existingJobIds.has(candidate.id ?? ''),
-    )
-    expect(unexpectedJob).toBeUndefined()
+    expect(enqueueCalls).toBe(0)
     expect(await activityPubInboxDeliveryExistsOnPrimaryForTest(activityId)).toBe(false)
   })
 
@@ -136,16 +142,13 @@ describe('POST /ap/inbox durable worker path', () => {
       object: { type: 'Note', content: 'persist despite queue outage' },
     })
     const headers = buildSignatureHeaders('POST', INBOX_URL, body, keyId, privateKeyPem)
-    const originalAdd = activitypub.add
-    activitypub.add = async () => {
-      throw new Error('simulated initial ActivityPub inbox enqueue failure')
-    }
-    onTestFinished(() => {
-      activitypub.add = originalAdd
-    })
+    registerActivityPubInboxRequestCleanup(activityId)
+    const requestId = randomUUID()
+    failNextOwnedActivityPubInboxEnqueue(requestId)
 
     const response = await createRequest()
       .post('/ap/inbox')
+      .set('x-request-id', requestId)
       .set('Host', INBOX_HOST)
       .set('Signature', headers.signature)
       .set('Digest', headers.digest)
@@ -178,10 +181,7 @@ async function postSignedCreateAndClaimDelivery(input: {
     object: { type: 'Note', content: input.noteContent },
   })
   const headers = buildSignatureHeaders('POST', INBOX_URL, body, signatureKeyId, privateKeyPem)
-  const existingJobIds = new Set(
-    (await getInboxJobs()).map(job => job.id).filter((id): id is string => id !== undefined),
-  )
-
+  const { captureDeliveryId } = registerActivityPubInboxRequestCleanup(activityId)
   await createRequest()
     .post('/ap/inbox')
     .set('Host', INBOX_HOST)
@@ -192,10 +192,19 @@ async function postSignedCreateAndClaimDelivery(input: {
     .send(body)
     .expect(202)
 
-  const job = (await getInboxJobs()).find(
-    candidate =>
-      candidate.name === 'activitypub.processDelivery' && !existingJobIds.has(candidate.id ?? ''),
-  )
+  const deliveryId = await getActivityPubInboxDeliveryIdForTest(activityId)
+  expect(deliveryId).toBeDefined()
+  if (deliveryId) captureDeliveryId(deliveryId)
+  const job = (await getInboxJobs()).find(candidate => {
+    const data: unknown = candidate.data
+    return (
+      candidate.name === 'activitypub.processDelivery' &&
+      typeof data === 'object' &&
+      data !== null &&
+      'deliveryId' in data &&
+      data.deliveryId === deliveryId
+    )
+  })
   expect(job).toBeDefined()
   const payload = job?.data as { deliveryId: string; leaseToken: string } | undefined
   expect(payload).toEqual({

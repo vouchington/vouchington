@@ -90,12 +90,22 @@ export async function activityPubInboxDeliveryExistsOnPrimaryForTest(
 export async function getActivityPubInboxDeliveryIdForTest(
   claimedActivityId: string,
 ): Promise<string | undefined> {
-  const { rows } = await write<{ id: string }>(sql`/* getActivityPubInboxDeliveryIdForTest */
-    SELECT id
+  return (await getActivityPubInboxDeliveryIdentityForTest(claimedActivityId))?.deliveryId
+}
+
+export async function getActivityPubInboxDeliveryIdentityForTest(
+  claimedActivityId: string,
+): Promise<{ deliveryId: string; leaseToken: string } | undefined> {
+  const { rows } = await write<{
+    id: string
+    lease_token: string
+  }>(sql`/* getActivityPubInboxDeliveryIdentityForTest */
+    SELECT id, lease_token
     FROM activitypub_inbox_delivery_work_items
     WHERE claimed_activity_id = ${claimedActivityId}
   `)
-  return rows[0]?.id
+  const row = rows[0]
+  return row ? { deliveryId: row.id, leaseToken: row.lease_token } : undefined
 }
 
 export async function softDeleteRemoteActorForInboxTest(remoteActorId: string): Promise<void> {
