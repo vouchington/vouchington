@@ -100,6 +100,7 @@ import {
   type RetainedMediaBindingCleanupPage,
 } from './cleanup-retained-media-bindings.mts'
 import { cleanupSecurityRecords } from './cleanup-security-records.mts'
+import { cleanupOAuthFriendEdgeWork } from './cleanup-oauth-friend-edges.mts'
 
 export { cleanupAbandonedBlueskyLinkSessions, cleanupExpiredBlueskyLinkCompletions }
 export { cleanupExpiredOAuthAuthorizations }
@@ -154,6 +155,7 @@ type DataRetentionCleanupOptions = {
   oldReferralAttributions?: OptionalRetentionLimits<CleanupOptions>
   histories?: OptionalRetentionLimits<HistoryCleanupOptions>
   orphanedOAuthAccounts?: OptionalRetentionLimits<CleanupOptions>
+  oauthFriendEdges?: Partial<DataRetentionLimits> & { now?: Date }
   securityRecords?: Partial<DataRetentionLimits> & { now?: Date }
   expiredOAuthAuthorizations?: OptionalRetentionLimits<ExpiryCleanupOptions> & {
     authorizationIds?: readonly string[]
@@ -206,6 +208,7 @@ type DataRetentionCleanupResult = {
   oldReferralAttributions: CleanupResult
   histories: Record<HistoryKind, HistoryCleanupResult>
   orphanedOAuthAccounts: CleanupResult
+  oauthFriendEdges: CleanupResult & { resolved: number }
   securityRecords: CleanupResult
   expiredOAuthAuthorizations: CleanupResult
   expiredOAuthServerArtifacts: CleanupResult
@@ -267,6 +270,10 @@ export async function runDataRetentionCleanup(
     withLimits(options.oldReferralAttributions),
   )
   const histories = await cleanupHistories(withLimits(options.histories))
+  const oauthFriendEdges = await cleanupOAuthFriendEdgeWork(
+    withLimits(options.oauthFriendEdges),
+    options.oauthFriendEdges?.now,
+  )
   const orphanedOAuthAccounts = await cleanupOrphanedOAuthAccounts(
     withLimits(options.orphanedOAuthAccounts),
   )
@@ -386,6 +393,7 @@ export async function runDataRetentionCleanup(
     oldReferralAttributions,
     histories,
     orphanedOAuthAccounts,
+    oauthFriendEdges,
     securityRecords,
     expiredOAuthAuthorizations,
     expiredOAuthServerArtifacts,

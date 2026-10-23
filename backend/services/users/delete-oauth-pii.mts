@@ -6,7 +6,7 @@ export async function sanitizeOAuthAccountPii(
   query: TransactionQuery,
 ): Promise<void> {
   // ast-grep-ignore: no-three-sequential-awaits -- service workflow has dependent validation, mutation, and follow-up side effects
-  const { rows: facebookRows } = await query(sql`/* sanitizeOAuthAccountPii */
+  await query(sql`/* sanitizeOAuthAccountPii */
     UPDATE facebook_accounts
     SET user_id = NULL,
         facebook_user_email_address = NULL,
@@ -15,7 +15,6 @@ export async function sanitizeOAuthAccountPii(
         access_token_ciphertext = NULL,
         access_token_expires_at = NULL
     WHERE user_id = ${userId}
-    RETURNING id
   `)
 
   await query(sql`/* sanitizeOAuthAccountPii */
@@ -36,7 +35,7 @@ export async function sanitizeOAuthAccountPii(
     WHERE user_id = ${userId}
   `)
 
-  const { rows: xRows } = await query(sql`/* sanitizeOAuthAccountPii */
+  await query(sql`/* sanitizeOAuthAccountPii */
     UPDATE x_accounts
     SET user_id = NULL,
         x_user_email_address = NULL,
@@ -45,7 +44,6 @@ export async function sanitizeOAuthAccountPii(
         refresh_token_ciphertext = NULL,
         access_token_expires_at = NULL
     WHERE user_id = ${userId}
-    RETURNING id
   `)
 
   await query(sql`/* sanitizeOAuthAccountPii */
@@ -72,7 +70,7 @@ export async function sanitizeOAuthAccountPii(
     WHERE user_id = ${userId}
   `)
 
-  const { rows: githubRows } = await query(sql`/* sanitizeOAuthAccountPii */
+  await query(sql`/* sanitizeOAuthAccountPii */
     UPDATE github_accounts
     SET user_id = NULL,
         github_user_email_address = NULL,
@@ -82,31 +80,5 @@ export async function sanitizeOAuthAccountPii(
         refresh_token_ciphertext = NULL,
         access_token_expires_at = NULL
     WHERE user_id = ${userId}
-    RETURNING id
   `)
-
-  const facebookAccountIds = (facebookRows as { id: string }[]).map(r => r.id)
-  const xAccountIds = (xRows as { id: string }[]).map(r => r.id)
-  const githubAccountIds = (githubRows as { id: string }[]).map(r => r.id)
-
-  if (facebookAccountIds.length > 0) {
-    await query(sql`/* sanitizeOAuthAccountPii */
-      DELETE FROM facebook_friends
-      WHERE facebook_account_id = ANY(${facebookAccountIds}::uuid[])
-    `)
-  }
-
-  if (xAccountIds.length > 0) {
-    await query(sql`/* sanitizeOAuthAccountPii */
-      DELETE FROM x_friends
-      WHERE x_account_id = ANY(${xAccountIds}::uuid[])
-    `)
-  }
-
-  if (githubAccountIds.length > 0) {
-    await query(sql`/* sanitizeOAuthAccountPii */
-      DELETE FROM github_friends
-      WHERE github_account_id = ANY(${githubAccountIds}::uuid[])
-    `)
-  }
 }

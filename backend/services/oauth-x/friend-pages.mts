@@ -48,7 +48,9 @@ async function persistXFriendBatch(
 
   await transaction(
     `/* persistXFriendBatch */ INSERT INTO x_friends (x_account_id, x_friend_id, friend_x_account_id)
-     SELECT $1::uuid, friend_id, (SELECT id FROM x_accounts WHERE x_user_id = friend_id)
+     SELECT $1::uuid, friend_id,
+       (SELECT id FROM x_accounts
+        WHERE x_user_id = friend_id AND user_id IS NOT NULL FOR SHARE)
      FROM UNNEST($2::text[]) AS friend_id
      ORDER BY $1, friend_id
      ON CONFLICT (x_account_id, x_friend_id) DO UPDATE SET
@@ -128,7 +130,7 @@ async function xSyncOwnerExists(
 ): Promise<boolean> {
   const { rows } = await query(
     `/* xSyncOwnerExists */ SELECT 1 FROM x_accounts
-     WHERE id = $1 AND user_id = $2 FOR UPDATE`,
+     WHERE id = $1 AND user_id = $2 FOR SHARE`,
     [xAccountId, userId],
   )
   return rows.length > 0

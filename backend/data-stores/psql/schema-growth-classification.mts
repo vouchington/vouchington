@@ -124,6 +124,14 @@ export function buildUnboundedUnpartitionedTables(
         'amazon_ses_address_suppressions',
         'One durable row per normalized address with a permanent bounce or complaint; address-key reads remain selective.',
       ],
+      [
+        'copyright_decision_rationales',
+        'Admitted legal decision attempts grow with case and review activity; preservation holds can extend the six-calendar-year retention window, while target and retention indexes keep reads selective.',
+      ],
+      [
+        'oauth_grant_retention_anchors',
+        'One non-authorizing retained identity per OAuth grant; live grants persist, and ended anchors remain until consent evidence expires.',
+      ],
       ...entityRelationMetadatum.flatMap(({ table_name }) =>
         partitionedTables.has(table_name)
           ? []

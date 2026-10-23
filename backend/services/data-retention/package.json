@@ -31,6 +31,7 @@
     "@services/media-delivery-safety": "workspace:^",
     "@services/moderation-appeals": "workspace:^",
     "@services/oauth": "workspace:^",
+    "@services/oauth-accounts": "workspace:^",
     "@services/oauth-authorization-server": "workspace:^",
     "@services/post-publication": "workspace:^",
     "@services/user-import-export": "workspace:^",
@@ -44,7 +45,6 @@
   "devDependencies": {
     "@modules/activitypub-uris": "workspace:^",
     "@services/notifications": "workspace:^",
-    "@services/oauth-accounts": "workspace:^",
     "@services/ses-bounce-events": "workspace:^",
     "@services/user-deletions": "workspace:^",
     "@voucha/test-helpers": "workspace:^"

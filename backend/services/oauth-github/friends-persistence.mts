@@ -55,7 +55,9 @@ async function persistGithubFriendBatch(
 
   await transaction(
     `/* persistGithubFriendBatch */ INSERT INTO github_friends (github_account_id, github_friend_id, friend_github_account_id)
-     SELECT $1::uuid, friend_id, (SELECT id FROM github_accounts WHERE github_user_id = friend_id)
+     SELECT $1::uuid, friend_id,
+       (SELECT id FROM github_accounts
+        WHERE github_user_id = friend_id AND user_id IS NOT NULL FOR SHARE)
      FROM UNNEST($2::text[]) AS friend_id
      ORDER BY $1, friend_id
      ON CONFLICT (github_account_id, github_friend_id) DO UPDATE SET
@@ -138,7 +140,7 @@ async function githubSyncOwnerExists(
 ): Promise<boolean> {
   const { rows } = await query(
     `/* githubSyncOwnerExists */ SELECT 1 FROM github_accounts
-     WHERE id = $1 AND user_id = $2 FOR UPDATE`,
+     WHERE id = $1 AND user_id = $2 FOR SHARE`,
     [githubAccountId, userId],
   )
   return rows.length > 0

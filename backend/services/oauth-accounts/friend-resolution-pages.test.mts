@@ -1,0 +1,72 @@
+import { afterEach, describe, expect, it } from 'vitest'
+import {
+  connectTestOAuthAccount,
+  createTestUser,
+  getTestFriend,
+  insertTestGithubFriend,
+  insertTestOAuthAccount,
+} from '@voucha/test-helpers'
+import {
+  closeScopedDynamicConfigContext,
+  overrideDynamicConfigFieldsForTest,
+} from '@voucha/test-helpers/dynamic-config'
+import { cleanupOAuthFriendEdgePage } from '../data-retention/cleanup-oauth-friend-edges.mts'
+import { connectOAuthAccountToUser } from './connect.mts'
+import { oauthAccountFriendWorkConfig } from './work-limits.mts'
+
+describe('bounded incoming friend resolution', () => {
+  afterEach(() => closeScopedDynamicConfigContext([oauthAccountFriendWorkConfig]))
+
+  it('resolves one edge on connect and resumes the rest from the durable marker', async () => {
+    overrideDynamicConfigFieldsForTest(oauthAccountFriendWorkConfig, {
+      friend_reference_connect_batch_size: 1,
+    })
+    const targetUser = await createTestUser()
+    const targetProviderId = `github-resolution-target-${targetUser.id}`
+    const targetAccount = await insertTestOAuthAccount('github', targetProviderId)
+    if (!targetAccount.account_id) throw new Error('Target account id missing')
+    const sourceIds: string[] = []
+    for (const index of [0, 1]) {
+      const sourceUser = await createTestUser()
+      const providerId = `github-resolution-source-${index}-${sourceUser.id}`
+      const sourceAccount = await insertTestOAuthAccount('github', providerId)
+      if (!sourceAccount.account_id) throw new Error('Source account id missing')
+      await connectTestOAuthAccount('github', sourceUser.id, providerId)
+      await insertTestGithubFriend(sourceAccount.account_id, targetProviderId, new Date())
+      sourceIds.push(providerId)
+    }
+
+    await connectOAuthAccountToUser('github', targetUser.id, targetProviderId)
+    const firstPass = await Promise.all(
+      sourceIds.map(
+        async sourceId =>
+          (await getTestFriend('github', sourceId, targetProviderId))[0] as {
+            friend_github_account_id: string | null
+          },
+      ),
+    )
+    expect(
+      firstPass.filter(row => row.friend_github_account_id === targetAccount.account_id),
+    ).toHaveLength(1)
+    expect(
+      await cleanupOAuthFriendEdgePage(
+        'github',
+        'resolve',
+        1,
+        new Date('2100-01-01'),
+        targetAccount.account_id,
+      ),
+    ).toMatchObject({ resolved: 1, hasMore: false })
+    const completed = await Promise.all(
+      sourceIds.map(
+        async sourceId =>
+          (await getTestFriend('github', sourceId, targetProviderId))[0] as {
+            friend_github_account_id: string | null
+          },
+      ),
+    )
+    expect(completed.every(row => row.friend_github_account_id === targetAccount.account_id)).toBe(
+      true,
+    )
+  })
+})

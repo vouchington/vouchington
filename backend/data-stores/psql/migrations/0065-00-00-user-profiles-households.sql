@@ -447,6 +447,9 @@ CREATE TABLE IF NOT EXISTS github_accounts (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   user_id UUID REFERENCES users ON DELETE SET NULL,
   unlinked_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  friend_edges_invalidated_at TIMESTAMPTZ,
+  friend_edges_cleanup_completed_at TIMESTAMPTZ,
+  friend_references_resolve_pending_at TIMESTAMPTZ,
   github_user_id TEXT NOT NULL UNIQUE,
   github_user_email_address TEXT,
   email_domain_hostname_id UUID,
@@ -458,6 +461,14 @@ CREATE TABLE IF NOT EXISTS github_accounts (
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) STORED,
   updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE INDEX idx_github_accounts__friend_edges_pending
+ON github_accounts (friend_edges_invalidated_at, id)
+WHERE friend_edges_invalidated_at IS NOT NULL
+  AND friend_edges_cleanup_completed_at IS DISTINCT FROM friend_edges_invalidated_at;
+CREATE INDEX idx_github_accounts__friend_resolution_pending
+ON github_accounts (friend_references_resolve_pending_at, id)
+WHERE friend_references_resolve_pending_at IS NOT NULL;
 ALTER TABLE github_accounts
   ADD CONSTRAINT fk_github_accounts__email_domain_hostname
   FOREIGN KEY (email_domain_hostname_id) REFERENCES url_hostnames(id) ON DELETE RESTRICT NOT VALID;
@@ -499,6 +510,9 @@ COMMENT ON TABLE github_accounts IS 'Linked GitHub accounts for OAuth authentica
 COMMENT ON COLUMN github_accounts.id IS 'Internal UUIDv7 identity of the GitHub account.';
 COMMENT ON COLUMN github_accounts.user_id IS 'The Voucha user linked to this GitHub account.';
 COMMENT ON COLUMN github_accounts.unlinked_at IS 'Time this account last became unlinked, or was first saved before a user linked it; NULL while linked. Orphan cleanup uses this clock.';
+COMMENT ON COLUMN github_accounts.friend_edges_invalidated_at IS 'Durable friend-visibility boundary advanced at unlink; relink does not revive earlier observations.';
+COMMENT ON COLUMN github_accounts.friend_edges_cleanup_completed_at IS 'Last invalidation boundary fully drained by bounded friend-edge cleanup.';
+COMMENT ON COLUMN github_accounts.friend_references_resolve_pending_at IS 'Connection work marker for bounded resolution of existing incoming friend references.';
 COMMENT ON COLUMN github_accounts.github_user_id IS 'GitHub''s unique external user ID.';
 COMMENT ON COLUMN github_accounts.github_user_email_address IS 'Email address from the GitHub profile.';
 COMMENT ON COLUMN github_accounts.email_domain_hostname_id IS 'Resolved provider email domain hostname identity for policy reads.';
@@ -521,6 +535,15 @@ CREATE TABLE IF NOT EXISTS github_friends (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE INDEX idx_github_friends__source_observed
+ON github_friends (github_account_id, last_observed_at, id);
+CREATE INDEX idx_github_friends__target_observed
+ON github_friends (friend_github_account_id, last_observed_at, id)
+WHERE friend_github_account_id IS NOT NULL;
+CREATE INDEX idx_github_friends__unresolved_reference
+ON github_friends (github_friend_id, id)
+WHERE friend_github_account_id IS NULL;
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_github_friends_updated_at
 BEFORE UPDATE ON github_friends
@@ -534,10 +557,6 @@ ON github_friends (github_friend_id);
 -- Proposed default: remove friend observations not refreshed for 90 days.
 CREATE INDEX IF NOT EXISTS idx_github_friends__retention
 ON github_friends (last_observed_at, id);
-
-CREATE INDEX IF NOT EXISTS idx_github_friends__friend_github_account_id
-ON github_friends (friend_github_account_id)
-WHERE friend_github_account_id IS NOT NULL;
 
 COMMENT ON TABLE github_friends IS 'GitHub follower/following relationships for friend recommendations.';
 COMMENT ON COLUMN github_friends.id IS 'Internal UUIDv7 identity of the observed friend relation.';
@@ -558,6 +577,15 @@ CREATE TABLE IF NOT EXISTS x_friends (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE INDEX idx_x_friends__source_observed
+ON x_friends (x_account_id, last_observed_at, id);
+CREATE INDEX idx_x_friends__target_observed
+ON x_friends (friend_x_account_id, last_observed_at, id)
+WHERE friend_x_account_id IS NOT NULL;
+CREATE INDEX idx_x_friends__unresolved_reference
+ON x_friends (x_friend_id, id)
+WHERE friend_x_account_id IS NULL;
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_x_friends_updated_at
 BEFORE UPDATE ON x_friends
@@ -571,10 +599,6 @@ ON x_friends (x_friend_id);
 -- Proposed default: remove friend observations not refreshed for 90 days.
 CREATE INDEX IF NOT EXISTS idx_x_friends__retention
 ON x_friends (last_observed_at, id);
-
-CREATE INDEX IF NOT EXISTS idx_x_friends__friend_x_account_id
-ON x_friends (friend_x_account_id)
-WHERE friend_x_account_id IS NOT NULL;
 
 COMMENT ON TABLE x_friends IS 'X (Twitter) follower/following relationships for friend recommendations.';
 COMMENT ON COLUMN x_friends.id IS 'Internal UUIDv7 identity of the observed friend relation.';
