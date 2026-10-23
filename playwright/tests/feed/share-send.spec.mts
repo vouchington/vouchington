@@ -10,7 +10,7 @@ import { createDeviceAndSessionTokens } from '../../../backend/services/jwt-sess
 import { processFollowerDistributionChunk } from '../../../backend/services/follower-distributions/index.mts'
 import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 import { read } from '../../../backend/data-stores/psql/clients.mts'
-import { mintUUIDv7 } from '../../../ts-shared/session-jwt/index.mts'
+import { mintUuidv7 as mintUUIDv7 } from '@vouchington/session-jwt'
 
 let sharerId = ''
 let followerId = ''

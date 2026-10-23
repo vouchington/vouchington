@@ -6,9 +6,9 @@ import { createDeviceAndSessionTokens } from '@services/jwt-session'
 import { routeRateLimitConfig } from '@services/route-rate-limits/config'
 import {
   ATTESTED_SESSION_EXPIRATION_SECONDS,
-  isUUIDv7,
   SESSION_EXPIRATION_SECONDS,
 } from '@ts-shared/session-jwt'
+import { isUuidv7 as isUUIDv7 } from '@vouchington/session-jwt'
 import {
   legacyUuidV4,
   signLegacyDeviceJwt,

@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test'
 import { createDeviceAndSessionTokens } from '../../backend/services/jwt-session/index.mts'
-import { mintUUIDv7 } from '../../ts-shared/session-jwt/index.mts'
+import { mintUuidv7 as mintUUIDv7 } from '@vouchington/session-jwt'
 import type { createTestUser } from '../../backend/test-helpers/index.mts'
 import type { PrivateUser } from '../../backend/services/users/types.mts'
 import { TEST_USER_ID } from '../../integration-tests/web/helpers/constants.mts'

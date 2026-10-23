@@ -1,7 +1,7 @@
 import { verifyDeviceJwt, verifySessionJwt, signDeviceJwt, signSessionJwt } from './jwt.mts'
 import { DEVICE_EXPIRATION_STRING, sessionExpiryFor } from './constants.mts'
 import type { DeviceClass, JwtRuntimeOptions, SessionTokenPayload } from './types.mts'
-import { mintUUIDv7 } from './uuidv7.mts'
+import { mintUuidv7 as mintUUIDv7 } from '@vouchington/session-jwt'
 
 export type EnsureAnonResult = {
   did: string

@@ -1,7 +1,14 @@
-import { decodeJwt, signJwt, verifyJwt, type JwtKeySet } from '@vouchington/session-jwt'
-import { decodeProtectedHeader, type JWK, type JWTPayload } from 'jose'
+import {
+  decodeJwt,
+  signJwt,
+  verifyJwt,
+  type JwtKeySet,
+  isUuidv7 as isUUIDv7,
+  validateUuidv7 as validateUUIDv7,
+} from '@vouchington/session-jwt'
+import { decodeProtectedHeader, type JWTPayload } from 'jose'
 import { validate as isUUID } from 'uuid'
-import { getResolvedKeySet, type ResolvedKeySet } from './keys.mts'
+import { getResolvedKeySet } from './keys.mts'
 import {
   SESSION_JWT_ISSUER,
   SESSION_JWT_PRIVATE_KEYS_ENV,
@@ -13,27 +20,8 @@ import {
   type DeviceTokenPayload,
   type SessionTokenPayload,
 } from './types.mts'
-import { isUUIDv7, validateUUIDv7 } from './uuidv7.mts'
-type BufferLike = {
-  from(
-    value: string,
-    encoding: string,
-  ): {
-    toString(encoding: string): string
-  }
-}
-
-function getBuffer(): BufferLike | undefined {
-  return (globalThis as typeof globalThis & { Buffer?: BufferLike }).Buffer
-}
-async function signingKeySet(key: ResolvedKeySet['privateKeys'][number]): Promise<JwtKeySet> {
-  return {
-    privateKeys: [{ cryptoKey: await key.cryptoKey, jwk: key.jwk }],
-    publicKeys: [],
-  }
-}
 async function verificationKeySet(
-  keySet: ResolvedKeySet,
+  keySet: JwtKeySet,
   kid: string | undefined,
 ): Promise<JwtKeySet | null> {
   const candidates =
@@ -41,35 +29,16 @@ async function verificationKeySet(
       ? keySet.publicKeys.filter(key => key.jwk.kid === kid)
       : keySet.publicKeys
   if (candidates.length === 0) return null
-  const imported = await Promise.allSettled(
-    candidates.map(async key => ({
-      cryptoKey: await key.cryptoKey,
-      // Upstream filters even an empty kid; normalize candidates to preserve legacy wildcard rotation.
-      jwk: kid === '' ? { ...key.jwk, kid: '' } : key.jwk,
-    })),
-  )
-  const publicKeys = imported.flatMap(result =>
-    result.status === 'fulfilled' ? [result.value] : [],
-  )
+  const publicKeys = candidates.map(key => ({
+    ...key,
+    // Empty legacy kid values used every configured key before key rotation gained kids.
+    jwk: kid === '' ? { ...key.jwk, kid: '' } : key.jwk,
+  }))
   if (publicKeys.length === 0) return null
   return {
     privateKeys: [],
     publicKeys,
   }
-}
-export function encodeJwkSetForEnv(jwks: JWK[]): string {
-  const json = JSON.stringify(jwks)
-  const buffer = getBuffer()
-  if (buffer) {
-    return buffer.from(json, 'utf8').toString('base64')
-  }
-
-  const btoaFn = (globalThis as typeof globalThis & { btoa?: (value: string) => string }).btoa
-  if (!btoaFn) {
-    throw new Error('base64 encoding is unavailable in this runtime')
-  }
-
-  return btoaFn(json)
 }
 export function decodeSessionJwt(token: string): SessionTokenPayload | null {
   const payload = decodeJwt(token)
@@ -111,7 +80,7 @@ export async function signDeviceJwt(
   const signingKey = keySet.privateKeys[0]
   if (!signingKey) throw new Error(`${SESSION_JWT_PRIVATE_KEYS_ENV} must be configured for signing`)
   return signJwt(payload, {
-    keySet: await signingKeySet(signingKey),
+    keySet,
     issuer: options.issuer ?? SESSION_JWT_ISSUER,
     audience: DEVICE_TOKEN_AUDIENCE,
     expiresIn: options.expiresIn,
@@ -130,7 +99,7 @@ export async function signSessionJwt(
   const signingKey = keySet.privateKeys[0]
   if (!signingKey) throw new Error(`${SESSION_JWT_PRIVATE_KEYS_ENV} must be configured for signing`)
   return signJwt(payload, {
-    keySet: await signingKeySet(signingKey),
+    keySet,
     issuer: options.issuer ?? SESSION_JWT_ISSUER,
     audience: SESSION_TOKEN_AUDIENCE,
     expiresIn: options.expiresIn,

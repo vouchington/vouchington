@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import * as jose from 'jose'
 import { v7 as uuidv7 } from 'uuid'
-import { encodeJwkSetForEnv, verifyDeviceJwt, verifySessionJwt } from '../jwt.mts'
-import { derivePublicJwk } from '../keys.mts'
+import { verifyDeviceJwt, verifySessionJwt } from '../jwt.mts'
+import { encodeJwkSet as encodeJwkSetForEnv, derivePublicJwk } from '@vouchington/session-jwt'
 
 const fixedNow = process.env.VOUCH_PROOF_NOW
   ? Date.parse(process.env.VOUCH_PROOF_NOW)

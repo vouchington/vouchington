@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import * as jose from 'jose'
 import { v7 as uuidv7 } from 'uuid'
-import { derivePublicJwk, encodeJwkSetForEnv, signSessionJwt, verifySessionJwt } from '../index.mts'
+import { signSessionJwt, verifySessionJwt } from '../index.mts'
+import { encodeJwkSet as encodeJwkSetForEnv, derivePublicJwk } from '@vouchington/session-jwt'
 
 const fixedNow = process.env.VOUCH_PROOF_NOW
   ? Date.parse(process.env.VOUCH_PROOF_NOW)
@@ -72,25 +73,6 @@ describe('index', () => {
     })
 
     expect(payload?.sid).toBe(sid)
-  })
-
-  it('throws error when base64 decoding is unavailable', async () => {
-    vi.stubGlobal('Buffer', undefined)
-    vi.stubGlobal('atob', undefined)
-    const { did, sid, uid } = makeIds()
-
-    await expect(
-      signSessionJwt(
-        { did, sid, uid },
-        {
-          env: {
-            VOUCHA_SESSION_JWT_PRIVATE_KEYS_B64: 'abc',
-          },
-          mode: 'production',
-          expiresIn: '2 days',
-        },
-      ),
-    ).rejects.toThrow('base64 decoding is unavailable in this runtime')
   })
 
   describe('getDefaultMode branches', () => {

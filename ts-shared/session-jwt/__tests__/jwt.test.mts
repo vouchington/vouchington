@@ -1,14 +1,14 @@
-import { describe, expect, it, vi, afterEach } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import * as jose from 'jose'
 import { v7 as uuidv7 } from 'uuid'
 import {
-  encodeJwkSetForEnv,
   decodeSessionJwt,
   signDeviceJwt,
   signSessionJwt,
   verifyDeviceJwt,
   verifySessionJwt,
 } from '../jwt.mts'
+import { encodeJwkSet as encodeJwkSetForEnv } from '@vouchington/session-jwt'
 import { DEVICE_TOKEN_AUDIENCE, SESSION_JWT_ISSUER, SESSION_TOKEN_AUDIENCE } from '../types.mts'
 
 async function generatePrivateJwk(kid: string): Promise<jose.JWK> {
@@ -37,57 +37,6 @@ async function signRawJwt({
 
 describe('jwt.mts', () => {
   const makeIds = () => ({ did: uuidv7(), sid: uuidv7(), uid: uuidv7() })
-
-  describe('encodeJwkSetForEnv', () => {
-    const mockJwk: jose.JWK = { kty: 'RSA', e: 'AQAB', n: 'mock-n' }
-    const jsonString = JSON.stringify([mockJwk])
-    const expectedBase64 = Buffer.from(jsonString).toString('base64')
-
-    afterEach(() => {
-      vi.unstubAllGlobals()
-      vi.restoreAllMocks()
-    })
-
-    it('uses Buffer if available', () => {
-      const toString = vi.fn<(encoding: string) => string>().mockReturnValue('buffer-encoded')
-      const from = vi
-        .fn<(value: string, encoding: string) => { toString: typeof toString }>()
-        .mockReturnValue({ toString })
-      const btoa = vi.fn<(value: string) => string>().mockReturnValue('btoa-encoded')
-      vi.stubGlobal('Buffer', { from })
-      vi.stubGlobal('btoa', btoa)
-
-      const result = encodeJwkSetForEnv([mockJwk])
-
-      expect(from).toHaveBeenCalledWith(jsonString, 'utf8')
-      expect(toString).toHaveBeenCalledWith('base64')
-      expect(btoa).not.toHaveBeenCalled()
-      expect(result).toBe('buffer-encoded')
-    })
-
-    it('uses btoa if Buffer is not available', () => {
-      const nodeBuffer = Buffer
-      const btoa = vi.fn<(value: string) => string>(value =>
-        nodeBuffer.from(value, 'utf8').toString('base64'),
-      )
-      vi.stubGlobal('Buffer', undefined)
-      vi.stubGlobal('btoa', btoa)
-
-      const result = encodeJwkSetForEnv([mockJwk])
-
-      expect(btoa).toHaveBeenCalledWith(jsonString)
-      expect(result).toBe(expectedBase64)
-    })
-
-    it('throws error if neither Buffer nor btoa is available', () => {
-      vi.stubGlobal('Buffer', undefined)
-      vi.stubGlobal('btoa', undefined)
-
-      expect(() => encodeJwkSetForEnv([mockJwk])).toThrow(
-        'base64 encoding is unavailable in this runtime',
-      )
-    })
-  })
 
   describe('decodeSessionJwt', () => {
     it('returns decoded payload for valid token', async () => {

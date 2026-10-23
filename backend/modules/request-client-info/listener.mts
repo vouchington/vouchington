@@ -6,7 +6,8 @@ import {
   VOUCHA_REQUEST_KIND_HEADER,
   type RequestClientInfo,
 } from '@ts-shared/request-client-info'
-import { mintUUIDv7, verifyDeviceJwt } from '@ts-shared/session-jwt'
+import { verifyDeviceJwt } from '@ts-shared/session-jwt'
+import { mintUuidv7 as mintUUIDv7 } from '@vouchington/session-jwt'
 import {
   cacheBootstrapDeviceId,
   cacheVerifiedDeviceToken,

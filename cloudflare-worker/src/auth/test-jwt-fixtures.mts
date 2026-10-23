@@ -1,6 +1,4 @@
 import {
-  derivePublicJwk,
-  encodeJwkSetForEnv,
   signDeviceJwt,
   signSessionJwt,
   DEVICE_EXPIRATION_STRING,
@@ -8,6 +6,7 @@ import {
   type DeviceTokenPayload,
   type SessionTokenPayload,
 } from '@ts-shared/session-jwt'
+import { encodeJwkSet as encodeJwkSetForEnv, derivePublicJwk } from '@vouchington/session-jwt'
 import testPrivateKey from '@ts-shared/session-jwt/test-jwt-private-key'
 
 export const TEST_SESSION_JWT_PUBLIC_KEYS_B64 = encodeJwkSetForEnv([

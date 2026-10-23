@@ -8,7 +8,7 @@ import {
   createRandomString,
   createTestMembership,
 } from '@voucha/test-helpers'
-import { isUUIDv7 } from '@ts-shared/session-jwt'
+import { isUuidv7 as isUUIDv7 } from '@vouchington/session-jwt'
 import { bookmarkEntity } from '@services/bookmarks/upsert'
 import { createCommunityPostFixture } from '@voucha/test-helpers/services/posts/test-support'
 

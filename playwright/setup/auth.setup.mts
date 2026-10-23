@@ -23,7 +23,7 @@ import { TEST_USER_EMAIL, TEST_USER_ID } from '../../integration-tests/web/helpe
 import { createLoginToken } from '../../backend/services/users/login-token.mts'
 import { insertEmailAddressLoginToken } from '../../backend/test-helpers/entities/email-addresses.mts'
 import { createDeviceAndSessionTokens } from '../../backend/services/jwt-session/index.mts'
-import { mintUUIDv7 } from '../../ts-shared/session-jwt/index.mts'
+import { mintUuidv7 as mintUUIDv7 } from '@vouchington/session-jwt'
 import { navigateTo, waitForBelowFoldHydration } from 'vouchington-tooling/playwright'
 import { AUTH_STATE } from '../helpers/auth-state.mts'
 

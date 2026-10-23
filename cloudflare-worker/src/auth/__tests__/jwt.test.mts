@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import * as sessionJwt from '@ts-shared/session-jwt'
-import { DEVICE_EXPIRATION_STRING, mintUUIDv7, signDeviceJwt } from '@ts-shared/session-jwt'
+import { DEVICE_EXPIRATION_STRING, signDeviceJwt } from '@ts-shared/session-jwt'
+import { mintUuidv7 as mintUUIDv7 } from '@vouchington/session-jwt'
 import { verifyBackendSessionTokens } from '../jwt.mts'
 import {
   createSignedDeviceJwt,

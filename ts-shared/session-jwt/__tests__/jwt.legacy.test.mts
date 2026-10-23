@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import * as jose from 'jose'
 import { v4 as uuidv4, v7 as uuidv7 } from 'uuid'
-import { encodeJwkSetForEnv, signSessionJwt, verifyDeviceJwt, verifySessionJwt } from '../jwt.mts'
+import { signSessionJwt, verifyDeviceJwt, verifySessionJwt } from '../jwt.mts'
+import { encodeJwkSet as encodeJwkSetForEnv } from '@vouchington/session-jwt'
 import { DEVICE_TOKEN_AUDIENCE, SESSION_JWT_ISSUER, SESSION_TOKEN_AUDIENCE } from '../types.mts'
 
 async function generatePrivateJwk(kid: string): Promise<jose.JWK> {

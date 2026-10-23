@@ -6,7 +6,7 @@ import { createWebApiTestServer, listenOnFetchSafeLoopback } from './routes.mts'
 import { refreshProxySession, recordProxyReferralAttribution } from '@/lib/api/server/proxy'
 import { createTestUser } from '../../backend/test-helpers/index.mts'
 import { createDeviceAndSessionTokens } from '../../backend/services/jwt-session/index.mts'
-import { mintUUIDv7 } from '../../ts-shared/session-jwt/index.mts'
+import { mintUuidv7 as mintUUIDv7 } from '@vouchington/session-jwt'
 
 describe('web/lib/api/server/proxy — integration', () => {
   let backendServer: http.Server

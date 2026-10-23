@@ -6,7 +6,8 @@ import {
 } from 'node:http'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { listenOnEphemeralPort } from '@ts-shared/utils/ephemeral-ports'
-import { mintUUIDv7, type DeviceTokenPayload } from '@ts-shared/session-jwt'
+import type { DeviceTokenPayload } from '@ts-shared/session-jwt'
+import { mintUuidv7 as mintUUIDv7 } from '@vouchington/session-jwt'
 import { getOptionalRequestClientInfo } from './index.mts'
 import { createRequestClientInfoListener } from './listener.mts'
 describe('request client information listener', () => {

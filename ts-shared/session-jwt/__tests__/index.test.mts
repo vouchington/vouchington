@@ -1,13 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import * as jose from 'jose'
 import { v7 as uuidv7 } from 'uuid'
-import {
-  SESSION_JWT_ISSUER,
-  encodeJwkSetForEnv,
-  derivePublicJwk,
-  signSessionJwt,
-  verifySessionJwt,
-} from '../index.mts'
+import { SESSION_JWT_ISSUER, signSessionJwt, verifySessionJwt } from '../index.mts'
+import { encodeJwkSet as encodeJwkSetForEnv, derivePublicJwk } from '@vouchington/session-jwt'
 
 async function generatePrivateJwk(kid: string): Promise<jose.JWK> {
   const { privateKey } = await jose.generateKeyPair('RS512', { extractable: true })
@@ -105,83 +100,6 @@ describe('@ts-shared/session-jwt', () => {
     expect(payload?.uid).toBeNull()
   })
 
-  it('rejects configured keys with the wrong algorithm', async () => {
-    const privateKey = await generatePrivateJwk('wrong-alg')
-    const { did, sid } = makeIds()
-
-    await expect(
-      signSessionJwt(
-        { did, sid, uid: null },
-        {
-          env: {
-            VOUCHA_SESSION_JWT_PRIVATE_KEYS_B64: encodeJwkSetForEnv([
-              { ...privateKey, alg: 'RS256' },
-            ]),
-          },
-          mode: 'production',
-          expiresIn: '2 days',
-        },
-      ),
-    ).rejects.toThrow('must use RS512')
-  })
-
-  it('rejects configured keys with the wrong key type', async () => {
-    const { did, sid } = makeIds()
-    await expect(
-      signSessionJwt(
-        { did, sid, uid: null },
-        {
-          env: {
-            VOUCHA_SESSION_JWT_PRIVATE_KEYS_B64: encodeJwkSetForEnv([
-              { kty: 'oct', alg: 'RS512', kid: 'wrong-kty', k: 'abc' },
-            ]),
-          },
-          mode: 'production',
-          expiresIn: '2 days',
-        },
-      ),
-    ).rejects.toThrow('must be an RSA JWK')
-  })
-
-  it('rejects configured keys with the wrong key use', async () => {
-    const privateKey = await generatePrivateJwk('wrong-use')
-    const { did, sid } = makeIds()
-
-    await expect(
-      signSessionJwt(
-        { did, sid, uid: null },
-        {
-          env: {
-            VOUCHA_SESSION_JWT_PRIVATE_KEYS_B64: encodeJwkSetForEnv([
-              { ...privateKey, use: 'enc' },
-            ]),
-          },
-          mode: 'production',
-          expiresIn: '2 days',
-        },
-      ),
-    ).rejects.toThrow('must be a signature key')
-  })
-
-  it('rejects duplicate configured key ids', async () => {
-    const key1 = await generatePrivateJwk('duplicate-kid')
-    const key2 = await generatePrivateJwk('duplicate-kid')
-    const { did, sid } = makeIds()
-
-    await expect(
-      signSessionJwt(
-        { did, sid, uid: null },
-        {
-          env: {
-            VOUCHA_SESSION_JWT_PRIVATE_KEYS_B64: encodeJwkSetForEnv([key1, key2]),
-          },
-          mode: 'production',
-          expiresIn: '2 days',
-        },
-      ),
-    ).rejects.toThrow('contains duplicate kid values')
-  })
-
   it('throws in production mode if no keys are configured', async () => {
     const { did, sid } = makeIds()
     await expect(
@@ -201,54 +119,68 @@ describe('@ts-shared/session-jwt', () => {
     )
   })
 
-  it('rejects configured keys with missing kid', async () => {
-    const privateKey = await generatePrivateJwk('missing-kid')
-    const { kid: _, ...keyWithoutKid } = privateKey
+  it('rejects an empty configured production verification key set', async () => {
     const { did, sid } = makeIds()
-
+    const privateKey = await generatePrivateJwk('empty-public-policy')
+    const token = await signSessionJwt(
+      { did, sid, uid: null },
+      {
+        mode: 'production',
+        env: { VOUCHA_SESSION_JWT_PRIVATE_KEYS_B64: encodeJwkSetForEnv([privateKey]) },
+        expiresIn: '2 days',
+      },
+    )
     await expect(
-      signSessionJwt(
-        { did, sid, uid: null },
-        {
-          env: {
-            VOUCHA_SESSION_JWT_PRIVATE_KEYS_B64: encodeJwkSetForEnv([keyWithoutKid]),
-          },
-          mode: 'production',
-          expiresIn: '2 days',
-        },
-      ),
-    ).rejects.toThrow('is missing kid')
+      verifySessionJwt(token, {
+        mode: 'production',
+        env: { VOUCHA_SESSION_JWT_PUBLIC_KEYS_B64: encodeJwkSetForEnv([]) },
+      }),
+    ).rejects.toThrow('VOUCHA_SESSION_JWT_PUBLIC_KEYS_B64 must contain at least one JWK')
   })
 
-  it('rejects configured keys when array contains a non-object', async () => {
+  it('rejects ambiguous public key identities across rotation candidates', async () => {
+    const signingKey = await generatePrivateJwk('ambiguous-public-kid')
+    const otherKey = await generatePrivateJwk('ambiguous-public-kid')
     const { did, sid } = makeIds()
+    const token = await signSessionJwt(
+      { did, sid, uid: null },
+      {
+        mode: 'production',
+        env: { VOUCHA_SESSION_JWT_PRIVATE_KEYS_B64: encodeJwkSetForEnv([signingKey]) },
+        expiresIn: '2 days',
+      },
+    )
     await expect(
-      signSessionJwt(
-        { did, sid, uid: null },
-        {
-          env: {
-            VOUCHA_SESSION_JWT_PRIVATE_KEYS_B64: Buffer.from('[123]', 'utf8').toString('base64'),
-          },
-          mode: 'production',
-          expiresIn: '2 days',
+      verifySessionJwt(token, {
+        mode: 'production',
+        env: {
+          VOUCHA_SESSION_JWT_PUBLIC_KEYS_B64: encodeJwkSetForEnv([
+            derivePublicJwk(signingKey),
+            derivePublicJwk(otherKey),
+          ]),
         },
-      ),
-    ).rejects.toThrow('must be a JSON object')
+      }),
+    ).rejects.toThrow('contains duplicate kid values: ambiguous-public-kid')
   })
 
-  it('rejects configured keys when array is empty', async () => {
+  it('preserves Unicode rotation key identities from public environment bindings', async () => {
+    const signingKey = await generatePrivateJwk('clé-🔑')
     const { did, sid } = makeIds()
+    const token = await signSessionJwt(
+      { did, sid, uid: null },
+      {
+        mode: 'production',
+        env: { VOUCHA_SESSION_JWT_PRIVATE_KEYS_B64: encodeJwkSetForEnv([signingKey]) },
+        expiresIn: '2 days',
+      },
+    )
     await expect(
-      signSessionJwt(
-        { did, sid, uid: null },
-        {
-          env: {
-            VOUCHA_SESSION_JWT_PRIVATE_KEYS_B64: Buffer.from('[]', 'utf8').toString('base64'),
-          },
-          mode: 'production',
-          expiresIn: '2 days',
+      verifySessionJwt(token, {
+        mode: 'production',
+        env: {
+          VOUCHA_SESSION_JWT_PUBLIC_KEYS_B64: encodeJwkSetForEnv([derivePublicJwk(signingKey)]),
         },
-      ),
-    ).rejects.toThrow('must contain at least one JWK')
+      }),
+    ).resolves.toMatchObject({ did, sid, uid: null })
   })
 })
