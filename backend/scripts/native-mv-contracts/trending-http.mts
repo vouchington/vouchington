@@ -4,6 +4,7 @@ import { refreshMaterializedView } from '@data-stores/psql/migrate'
 import { getExternalFetch } from '@modules/utils/http-dispatchers'
 import { encodeCursor } from '@modules/pagination'
 import { createDeviceAndSessionTokens } from '@services/jwt-session'
+import { getRssFeedsByIdBatch } from '@services/rss-feeds/get-batch'
 import { updateRssFeedById } from '@services/rss-feeds/update'
 import app, { createApiRequestGuardedListener } from '../../api/app.mts'
 import '../../api/index.mts'
@@ -31,6 +32,46 @@ function boundaryAfter(feedId: string): string {
   return encodeCursor({ id, score: 3 })
 }
 
+async function verifyOrdinaryReadProfileThreshold(
+  feedId: string,
+  requestFetch: ReturnType<typeof getExternalFetch>,
+): Promise<void> {
+  async function requestWithBatchReads(count: number): Promise<void> {
+    await withRequestQueryProfileGuard(() =>
+      withOwnedApiServer(
+        (_request, response) => {
+          void (async () => {
+            const readAndAssertSeededFeed = async () => {
+              const [feed] = await getRssFeedsByIdBatch([feedId])
+              assert.equal(feed?.id, feedId)
+            }
+            await readAndAssertSeededFeed()
+            await readAndAssertSeededFeed()
+            if (count === 3) await readAndAssertSeededFeed()
+          })().then(
+            () => response.end(),
+            err => {
+              response.statusCode = 500
+              response.end(err instanceof Error ? err.message : String(err))
+            },
+          )
+        },
+        async address => {
+          const host = address.host === '::1' ? '[::1]' : address.host
+          const response = await requestFetch(
+            `http://${host}:${address.port}/api/v1/rss-feeds/trending`,
+          )
+          const body = await response.text()
+          assert.equal(response.status, 200, body)
+        },
+      ),
+    )
+  }
+
+  await requestWithBatchReads(2)
+  await assert.rejects(requestWithBatchReads(3), /getRssFeedsByIdBatch \(x3\)/)
+}
+
 /** Real HTTP route and populated MV assertions moved from backend-data-stores Vitest. */
 export async function checkTrendingHttpContracts(): Promise<void> {
   const admin = await createTestUserDirect({ administrator: true, withEmail: true })
@@ -41,6 +82,8 @@ export async function checkTrendingHttpContracts(): Promise<void> {
   ])
   const [trendingId, hiddenId, secondaryId] = feedIds.toSorted().toReversed()
   assert.ok(trendingId && hiddenId && secondaryId)
+  const requestFetch = getExternalFetch()
+  await verifyOrdinaryReadProfileThreshold(trendingId, requestFetch)
   await updateRssFeedById(hiddenId, { discoverable: false })
   for (const feedId of [trendingId, hiddenId, secondaryId]) {
     await insertEntityRelation('relation__user__follow__rss_feed', admin.id, feedId)
@@ -54,7 +97,6 @@ export async function checkTrendingHttpContracts(): Promise<void> {
     deviceContext: { user_agent: userAgent },
   })
   const cookie = `dt=${deviceToken.token}; st=${sessionToken.token}`
-  const requestFetch = getExternalFetch()
   let requestCounter = 0
 
   await withRequestQueryProfileGuard(() =>

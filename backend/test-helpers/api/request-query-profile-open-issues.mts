@@ -8,7 +8,7 @@ import {
   formatClosedBaselineIssues,
   parseRepeatBaseline,
   temporaryBaselineEntries,
-} from './request-query-profile-baseline.mts'
+} from '../request-query-profile-baseline.mts'
 
 const run = promisify(execFile)
 

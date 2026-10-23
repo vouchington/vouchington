@@ -106,7 +106,7 @@ describe('createWorker stall budget', () => {
     const [{ wrapRequestQueryProfileProcessor }, { createRequestQueryProfile }] = await Promise.all(
       [
         import('../../../../test-helpers/request-query-profile-worker.mts'),
-        import('../../../test-helpers/api/request-query-profile-state.mts'),
+        import('../../../test-helpers/request-query-profile-state.mts'),
       ],
     )
     setTestWorkerProcessorDecorator(wrapRequestQueryProfileProcessor)
