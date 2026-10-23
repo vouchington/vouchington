@@ -11,6 +11,7 @@ import { getActiveLandingPageHostnameClaims } from '@voucha/test-helpers/hostnam
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
 import { writeEntityRelations } from '@services/entity-relations/write-relations'
 import { softDeleteEntityRelation } from '@services/entity-relations/delete'
+import { getEntityRelations } from '@services/entity-relations/query'
 import { upsertUrlHostnames } from '@services/urls-hostnames/upsert'
 import { addUrl } from '@services/urls/upsert'
 import '@voucha/test-helpers/entity-url-guard-registrations'
@@ -90,6 +91,10 @@ describe('topic merge hostname ownership', () => {
       )
       if (kind === 'deleted destination') {
         await softDeleteEntityRelation(admin, landing, landingTopic, [{ id: url.id }])
+        // Merge restores the destination pair from the live source claim, preserving main's winner rules.
+        await writeEntityRelations(landing, admin, [{ subject: source, object: { id: url.id } }], {
+          vote: false,
+        })
       }
 
       await using holder = await beginTransaction()
@@ -107,9 +112,20 @@ describe('topic merge hostname ownership', () => {
       }
       expect(await merging).toBeNull()
       expect(await getUrlHostnameTopicId(hostnameId)).toBe(claimant.id)
-      expect(await getActiveLandingPageHostnameClaims([hostnameId])).toEqual(
-        kind === 'source' ? [destination.id] : [],
+      expect(await getActiveLandingPageHostnameClaims([hostnameId])).toEqual([destination.id])
+      const destinationRelations = await getEntityRelations(
+        'topic',
+        destination.id,
+        'landing_page',
+        'url',
+        { viewer: { kind: 'system' } },
       )
+      expect(destinationRelations).toEqual([
+        expect.objectContaining({
+          object_id: url.id,
+          deleted_at: null,
+        }),
+      ])
     },
   )
 })

@@ -17,6 +17,7 @@ import { finalizeTopicAliasMerge } from './merge-aliases-finalize.mts'
 import {
   assertTopicMergeReferenceCompatibility,
   assertLockedTopicMergeTypes,
+  lockTopicMergeLifecycles,
   rethrowTopicMergeError,
 } from './merge-preflight.mts'
 import { repointTopicReferences } from './merge-references.mts'
@@ -38,7 +39,7 @@ export async function mergeTopicAliases(
 
 async function executeTopicMerge(merger: PrivateUser, sourceTopic: Topic, destinationTopic: Topic) {
   await using query = await beginTransaction()
-  // ast-grep-ignore: no-three-sequential-awaits -- topic/fence and hostname ownership precede alias publication and RSS attachment scopes.
+  // ast-grep-ignore: no-three-sequential-awaits -- topic and hostname ownership precede alias publication and RSS attachment scopes.
   await lockTopicMergeHostnameOwnership(query, [sourceTopic.id, destinationTopic.id])
   const aliasScopes = await lockTopicMergeAliasPublicationScopes(
     query,
@@ -46,7 +47,8 @@ async function executeTopicMerge(merger: PrivateUser, sourceTopic: Topic, destin
     sourceTopic.slug,
   )
   await lockTopicRssFeedAttachmentLifecycles(query, [sourceTopic.id, destinationTopic.id])
-  // ast-grep-ignore: no-three-sequential-awaits -- reject conflicts before publication writes; capture and external denials precede topic row locks.
+  // ast-grep-ignore: no-three-sequential-awaits -- publication waits precede the lifecycle fence; preflight under that fence precedes capture writes.
+  await lockTopicMergeLifecycles(query, [sourceTopic.id, destinationTopic.id])
   await assertTopicMergeReferenceCompatibility(query, sourceTopic.id, destinationTopic.id)
   await recordTopicMergePublicationChanges(
     query,
@@ -61,7 +63,6 @@ async function executeTopicMerge(merger: PrivateUser, sourceTopic: Topic, destin
     ],
     query,
   )
-
   const { rows: topicRows } = await query<MergeRow>(
     // no-mistakes-disable-next-line postgres-required-predicates: lifecycle output enables precise 404/409 assertions below
     `/* mergeTopicAliases lockTopics */ SELECT id, slug, topic_type, deleted_at IS NOT NULL AS is_deleted, merged_into_topic_id IS NOT NULL AS is_merged FROM topics WHERE id = ANY($1::uuid[]) ORDER BY id FOR UPDATE`,

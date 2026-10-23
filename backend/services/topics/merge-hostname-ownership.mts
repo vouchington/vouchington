@@ -3,7 +3,6 @@ import {
   lockHostnameOwnership,
   lockTopicHostnameMutations,
 } from '@services/urls-hostnames/ownership-lock'
-import { lockTopicMergeLifecycles } from './merge-preflight.mts'
 import sql from 'sql-template-strings'
 
 /** Merge owns both topic identities before discovering every claim it moves or revives. */
@@ -11,9 +10,8 @@ export async function lockTopicMergeHostnameOwnership(
   query: TransactionQuery,
   topicIds: readonly string[],
 ): Promise<void> {
-  // ast-grep-ignore: no-three-sequential-awaits -- topic ownership precedes the merge fence; both stabilize hostname discovery before publication locks.
+  // ast-grep-ignore: no-three-sequential-awaits -- topic ownership stabilizes discovery before the complete hostname set can be locked.
   await lockTopicHostnameMutations(query, topicIds)
-  await lockTopicMergeLifecycles(query, topicIds)
   // no-mistakes-disable-next-line postgres-required-predicates: merge repoints retained claims and can revive a deleted destination landing-page relation.
   const { rows } = await query<{
     hostname_id: string | null

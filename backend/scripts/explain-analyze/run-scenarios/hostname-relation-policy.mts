@@ -65,7 +65,7 @@ export async function runHostnameOwnershipSnapshotScenario(): Promise<void> {
       { kind: 'maxProcessedRows', relation: 'topics', max: 3 },
       { kind: 'maxProcessedRows', relation: 'url_hostnames', max: 4 },
       { kind: 'maxProcessedRows', relation: 'relation__topic__landing_page__url', max: 3 },
-      { kind: 'maxProcessedRows', relation: 'urls', max: 3 },
+      { kind: 'maxProcessedRows', relation: 'urls', max: 2 },
     ],
   })
   await runAndCapture(
@@ -75,7 +75,7 @@ export async function runHostnameOwnershipSnapshotScenario(): Promise<void> {
       await lockTopicMergeHostnameOwnership(query, [topicId, seedTopicId])
     },
     undefined,
-    ['getTopicMergeHostnameOwnershipIds', 'lockTopicMergeLifecycles'],
+    'getTopicMergeHostnameOwnershipIds',
   )
 }
 
