@@ -3,7 +3,7 @@ import {
   isGhCommandSeparator,
   optionValueFromLongToken,
 } from './github-options.mts'
-import { isShellRedirectionOperatorToken } from './shell-redirections.mts'
+import { isShellRedirectionOperatorToken } from 'vouchington-tooling/shell-parse'
 
 export type GhInvocation = {
   action: string

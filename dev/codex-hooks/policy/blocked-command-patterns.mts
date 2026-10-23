@@ -1,9 +1,12 @@
 import {
+  type GitInvocation,
   readBacktickSubstitution,
   readParenthesizedSubstitution,
-} from './shell-command-substitutions.mts'
+} from 'vouchington-tooling/shell-parse'
 
 export const PLAIN_FORCE_PUSH_REASON = 'Force pushes are banned by repository policy.'
+export const HOOKS_PATH_REASON =
+  'Overriding core.hooksPath disables git hooks. Fix the underlying failure instead.'
 
 const blockedGitPatterns: Array<{ pattern: RegExp; reason: string }> = [
   {
@@ -41,7 +44,7 @@ const blockedGitPatterns: Array<{ pattern: RegExp; reason: string }> = [
   },
   {
     pattern: /\bgit\b[^|;&\n]*-c\s+core\.hooksPath\s*=/,
-    reason: 'Overriding core.hooksPath disables git hooks. Fix the underlying failure instead.',
+    reason: HOOKS_PATH_REASON,
   },
 ]
 
@@ -51,6 +54,16 @@ const blockedGitPatterns: Array<{ pattern: RegExp; reason: string }> = [
  * (`git commit -F msg | tail -n 20`) is not a git flag. A command substitution's own separators are
  * blanked first, so `git push origin $(git branch --show-current | head -1) --force` is one command.
  */
+/**
+ * Matches the blocked patterns against one parsed invocation. The parser removes global options
+ * (including `-c core.hooksPath=...`, whose quoted value blanks out in policy text), and an
+ * argument with whitespace becomes one placeholder so its words cannot match a flag.
+ */
+export function findBlockedGitInvocationReason(invocation: GitInvocation): string | null {
+  const args = invocation.args.map(arg => (/\s/.test(arg) ? '_' : arg))
+  return findBlockedGitReason(['git', invocation.subcommand ?? '', ...args].join(' '))
+}
+
 export function findBlockedGitReason(command: string): string | null {
   const text = blankSubstitutionSeparators(command)
   return blockedGitPatterns.find(({ pattern }) => pattern.test(text))?.reason ?? null

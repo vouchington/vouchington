@@ -2,8 +2,7 @@ import type { BlockDecision } from './core.mts'
 import { commandsToInspectForGitHubPolicy } from './github-command-context.mts'
 import { parseGhOrGhStackInvocation } from './github-invocation.mts'
 import { hasNumericPrSelector } from './github-option-flags.mts'
-import { plainShellAssignment } from './shell-token-utils.mts'
-import { tokenizeShellWords } from './shell-tokenizer.mts'
+import { plainShellAssignment, tokenizeShellWords } from 'vouchington-tooling/shell-parse'
 
 const AUTOMATION_MERGE_REASON =
   'Merge authority is never delegated to an agent in automation. This command names gh together with a merge (`gh pr merge`, `gh stack merge`, or a `gh api` merge endpoint or mutation), so it is blocked in GitHub Actions; a human performs the merge. If the merge text is only prose, split the command or move the prose into a --body-file. See docs/development/merge-authority.md.'

@@ -145,6 +145,8 @@ describe('Codex hook coarse automation merge rule — accepted overmatches', () 
     'gh pr merge --help',
     'gh api repos/owner/repo/pulls/123/merge',
     'gh api repos/owner/repo/pulls/123/merge -X GET',
+    // A heredoc feeds a shell behind an unmodeled wrapper.
+    "timeout 5 bash <<'EOF'\ngh pr merge 1\nEOF",
   ])(
     'blocks in automation and leaves it to the harness interactively: %s',
     expectAutomationOnlyMergeBlock,
@@ -163,11 +165,9 @@ describe('Codex hook coarse automation merge rule — known misses', () => {
     'gh pr merg? 1',
     // The mutation comes from a file.
     'gh api graphql -F query=@merge.graphql',
-    // Quotes split gh, env -S escapes join the words, or an unmodeled wrapper hides the shell a
-    // heredoc feeds.
+    // Quotes split gh, or env -S escapes join the words.
     `bash -c g'h pr merge 1'`,
     String.raw`env -S 'gh\_pr\_merge\_1'`,
-    "timeout 5 bash <<'EOF'\ngh pr merge 1\nEOF",
   ])('does not block: %s', command => {
     expect(automationBlock(command)).toBeNull()
   })

@@ -1,6 +1,6 @@
 import type { HookPayload } from '../types.mts'
 import { isRecord } from './core.mts'
-import { tokenizeShellWords } from './shell-tokenizer.mts'
+import { tokenizeShellWords } from 'vouchington-tooling/shell-parse'
 
 const KEY_PATH_LIKE_RE = /(?:^|_)(?:cwd|file|filename|path|workdir|workspace)(?:_|$)/i
 export function keyLooksPathLike(key: string): boolean {

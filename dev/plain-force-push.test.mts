@@ -22,6 +22,8 @@ const rejected = [
   'git push origin +HEAD:main',
   'git -C /repo push --force origin main',
   '/usr/bin/git push --force origin main',
+  'git -c "core.hooksPath=/tmp/hooks" push --force',
+  "git -c 'core.hooksPath=/tmp/hooks' -C /repo push -f origin main",
 ]
 
 const allowed = [

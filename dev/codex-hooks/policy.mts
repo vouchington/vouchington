@@ -1,17 +1,26 @@
 import {
   commandsToInspectForGitPolicy,
+  commandsToInspectPreservingQuotes,
+  extractShellCommandSubstitutions,
+  gitInvocations,
+  isInteractiveRebaseContinue,
+  overridesConfig,
+} from 'vouchington-tooling/shell-parse'
+
+import {
   findGitHubWorkflowBlock,
   type GitHubWorkflowPolicyOptions,
   hookCwd,
   hookPayloadReferencesClairePath,
   hookPayloadReferencesProtectedHookPath,
-  isInteractiveRebaseContinue,
   type BlockDecision,
 } from './policy-helpers.mts'
 import {
   blockedDevServerPatterns,
   blockedHookBypassPatterns,
+  findBlockedGitInvocationReason,
   findBlockedGitReason,
+  HOOKS_PATH_REASON,
 } from './policy/blocked-command-patterns.mts'
 import { DEFAULT_AUTOMATION_CONTEXT } from './policy/core.mts'
 import { findInteractiveMergeConfirm } from './policy/github-merge-authority.mts'
@@ -93,6 +102,19 @@ export function findPreToolUseBlock(
       const reason = findBlockedGitReason(commandToInspect)
       if (reason !== null) {
         return { reason }
+      }
+    }
+    for (const commandToInspect of commandsToInspectPreservingQuotes(command)) {
+      for (const text of [
+        commandToInspect,
+        ...extractShellCommandSubstitutions(commandToInspect),
+      ]) {
+        for (const invocation of gitInvocations(text)) {
+          if (overridesConfig(invocation, 'core.hooksPath')) return { reason: HOOKS_PATH_REASON }
+          if (invocation.configOverrides.length === 0) continue
+          const reason = findBlockedGitInvocationReason(invocation)
+          if (reason !== null) return { reason }
+        }
       }
     }
   }
