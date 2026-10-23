@@ -446,6 +446,7 @@ COMMENT ON COLUMN user_profile_links.image_id IS 'Optional custom image/icon for
 CREATE TABLE IF NOT EXISTS github_accounts (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   user_id UUID REFERENCES users ON DELETE SET NULL,
+  unlinked_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
   github_user_id TEXT NOT NULL UNIQUE,
   github_user_email_address TEXT,
   email_domain_hostname_id UUID,
@@ -468,10 +469,17 @@ BEFORE UPDATE ON github_accounts
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
+CREATE OR REPLACE TRIGGER trigger_github_accounts_linkage
+BEFORE UPDATE OF user_id ON github_accounts
+FOR EACH ROW EXECUTE FUNCTION fn_oauth_account_linkage();
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_github_accounts__user_id
 ON github_accounts (user_id)
 WHERE user_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_github_accounts__unlinked_at
+ON github_accounts (unlinked_at, id) WHERE user_id IS NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_github_accounts__email
@@ -490,6 +498,7 @@ WHERE access_token_expires_at IS NOT NULL;
 COMMENT ON TABLE github_accounts IS 'Linked GitHub accounts for OAuth authentication and friend-finding. Stores encrypted OAuth token ciphertext.';
 COMMENT ON COLUMN github_accounts.id IS 'Internal UUIDv7 identity of the GitHub account.';
 COMMENT ON COLUMN github_accounts.user_id IS 'The Voucha user linked to this GitHub account.';
+COMMENT ON COLUMN github_accounts.unlinked_at IS 'Time this account last became unlinked, or was first saved before a user linked it; NULL while linked. Orphan cleanup uses this clock.';
 COMMENT ON COLUMN github_accounts.github_user_id IS 'GitHub''s unique external user ID.';
 COMMENT ON COLUMN github_accounts.github_user_email_address IS 'Email address from the GitHub profile.';
 COMMENT ON COLUMN github_accounts.email_domain_hostname_id IS 'Resolved provider email domain hostname identity for policy reads.';
@@ -521,6 +530,10 @@ EXECUTE FUNCTION fn_update_updated_at();
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_github_friends__friend_id
 ON github_friends (github_friend_id);
+
+-- Proposed default: remove friend observations not refreshed for 90 days.
+CREATE INDEX IF NOT EXISTS idx_github_friends__retention
+ON github_friends (last_observed_at, id);
 
 CREATE INDEX IF NOT EXISTS idx_github_friends__friend_github_account_id
 ON github_friends (friend_github_account_id)
@@ -554,6 +567,10 @@ EXECUTE FUNCTION fn_update_updated_at();
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_x_friends__friend_id
 ON x_friends (x_friend_id);
+
+-- Proposed default: remove friend observations not refreshed for 90 days.
+CREATE INDEX IF NOT EXISTS idx_x_friends__retention
+ON x_friends (last_observed_at, id);
 
 CREATE INDEX IF NOT EXISTS idx_x_friends__friend_x_account_id
 ON x_friends (friend_x_account_id)

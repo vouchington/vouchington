@@ -67,6 +67,7 @@ import {
   cleanupRetainedMediaBindings,
   type RetainedMediaBindingCleanupPage,
 } from './cleanup-retained-media-bindings.mts'
+import { cleanupSecurityRecords } from './cleanup-security-records.mts'
 
 export { cleanupAbandonedBlueskyLinkSessions, cleanupExpiredBlueskyLinkCompletions }
 export { cleanupExpiredOAuthAuthorizations }
@@ -109,6 +110,7 @@ type DataRetentionCleanupOptions = {
   softDeletedUsers?: OptionalRetentionLimits<CleanupOptions>
   oldReferralAttributions?: OptionalRetentionLimits<CleanupOptions>
   orphanedOAuthAccounts?: OptionalRetentionLimits<CleanupOptions>
+  securityRecords?: Partial<DataRetentionLimits> & { now?: Date }
   expiredOAuthAuthorizations?: OptionalRetentionLimits<ExpiryCleanupOptions> & {
     authorizationIds?: readonly string[]
   }
@@ -141,6 +143,7 @@ type DataRetentionCleanupResult = {
   softDeletedUsers: CleanupResult
   oldReferralAttributions: CleanupResult
   orphanedOAuthAccounts: CleanupResult
+  securityRecords: CleanupResult
   expiredOAuthAuthorizations: CleanupResult
   expiredOAuthServerArtifacts: CleanupResult
   expiredBlueskyLinkCompletions: CleanupResult
@@ -189,6 +192,10 @@ export async function runDataRetentionCleanup(
   )
   const orphanedOAuthAccounts = await cleanupOrphanedOAuthAccounts(
     withLimits(options.orphanedOAuthAccounts),
+  )
+  const securityRecords = await cleanupSecurityRecords(
+    withLimits(options.securityRecords),
+    options.securityRecords?.now,
   )
   const expiredBlueskyLinkCompletions = await cleanupExpiredBlueskyLinkCompletions(
     withLimits(options.expiredBlueskyLinkCompletions),
@@ -259,6 +266,7 @@ export async function runDataRetentionCleanup(
     softDeletedUsers,
     oldReferralAttributions,
     orphanedOAuthAccounts,
+    securityRecords,
     expiredOAuthAuthorizations,
     expiredOAuthServerArtifacts,
     expiredBlueskyLinkCompletions,

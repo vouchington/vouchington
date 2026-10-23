@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
 import {
-  decryptTestCopyrightMcpRationale,
+  decryptTestCopyrightDecisionRationale,
+  readTestCopyrightDecisionRationales,
   readTestCopyrightMcpAuditRows,
 } from '@voucha/test-helpers/copyright-mcp-audit'
 import { readTestMcpCallAuditRowText } from '@voucha/test-helpers/entities/mcp-call-audit'
@@ -65,11 +66,9 @@ describe('copyright decision tools on POST /api/v1/legal/mcp', () => {
     expect(off.body.error?.code).toBe(-32601)
     expect(off.headers['www-authenticate']).toBeUndefined()
     let audit = await readTestCopyrightMcpAuditRows(user.id)
-    expect(
-      audit.map(row => [row.outcome, row.tool_name, row.copyright_rationale_ciphertext]),
-    ).toEqual([
-      ['accepted', null, null],
-      ['not_found', null, null],
+    expect(audit.map(row => [row.outcome, row.tool_name])).toEqual([
+      ['accepted', null],
+      ['not_found', null],
     ])
 
     const restoreEnabled = overrideDynamicConfigFieldsForTest(copyrightConfig, {
@@ -95,7 +94,6 @@ describe('copyright decision tools on POST /api/v1/legal/mcp', () => {
       expect(audit.at(-1)).toMatchObject({
         outcome: 'insufficient_scope',
         tool_name: TOOL,
-        copyright_rationale_ciphertext: null,
       })
     } finally {
       restoreEnabled()
@@ -107,7 +105,7 @@ describe('copyright decision tools on POST /api/v1/legal/mcp', () => {
     expect(disabledAgain.body.error?.code).toBe(-32601)
   })
 
-  it('encrypts only validated admitted rationale, binding each batch call to its own persisted row id', async () => {
+  it('writes validated legal rationale with the case, independently of the security audit', async () => {
     const { user, token } = await issueAdmin('copyright-notices:read copyright-notices:write')
     const fixture = await createCopyrightReplayFixture()
     await exhaustCopyrightActionIntent(fixture.intentId)
@@ -136,20 +134,50 @@ describe('copyright decision tools on POST /api/v1/legal/mcp', () => {
       expect(rows.every(row => row.correlation_id === response.headers['x-correlation-id'])).toBe(
         true,
       )
-      expect(rows[0]?.copyright_rationale_ciphertext).toEqual(expect.any(String))
-      expect(rows[1]?.copyright_rationale_ciphertext).toEqual(expect.any(String))
-      expect(rows[0]?.copyright_rationale_ciphertext).not.toBe(
-        rows[1]?.copyright_rationale_ciphertext,
-      )
-      expect(decryptTestCopyrightMcpRationale(rows[0]!)).toBe(RATIONALE_A)
-      expect(decryptTestCopyrightMcpRationale(rows[1]!)).toBe(RATIONALE_B)
-      expect(() => decryptTestCopyrightMcpRationale(rows[0]!, rows[1]!.id)).toThrow(/./)
-      expect(rows.slice(2).every(row => row.copyright_rationale_ciphertext === null)).toBe(true)
+      const rationales = await readTestCopyrightDecisionRationales(user.id)
+      expect(rationales).toHaveLength(2)
+      expect(rationales.map(row => row.copyright_notice_id)).toEqual([
+        fixture.noticeId,
+        fixture.noticeId,
+      ])
+      expect(rationales[0]?.rationale_ciphertext).not.toBe(rationales[1]?.rationale_ciphertext)
+      expect(decryptTestCopyrightDecisionRationale(rationales[0]!)).toBe(RATIONALE_A)
+      expect(decryptTestCopyrightDecisionRationale(rationales[1]!)).toBe(RATIONALE_B)
+      expect(() =>
+        decryptTestCopyrightDecisionRationale(rationales[0]!, rationales[1]!.id),
+      ).toThrow(/./)
       for (const text of await readTestMcpCallAuditRowText(user.id)) {
         expect(text).not.toContain(RATIONALE_A)
         expect(text).not.toContain(RATIONALE_B)
         expect(text).not.toContain('private-extra')
       }
+    } finally {
+      restoreEnabled()
+    }
+  })
+
+  it('keeps an invalid target attempt in the security audit without inventing a legal case', async () => {
+    const { user, token } = await issueAdmin('copyright-notices:read copyright-notices:write')
+    const restoreEnabled = overrideDynamicConfigFieldsForTest(copyrightConfig, {
+      mcpDecisionTools: true,
+    })
+    try {
+      const response = await postAdminMcp(
+        token,
+        toolCall({ ...pathArgs, rationale: RATIONALE_A }),
+      ).expect(200)
+      expect(response.body.result?.isError).not.toBe(true)
+      expect(JSON.stringify(response.body)).toContain('replayed')
+      await postAdminMcp(
+        token,
+        toolCall(
+          { ...pathArgs, id: '------------------------------------', rationale: RATIONALE_A },
+          2,
+        ),
+      ).expect(200)
+      const rows = await readTestCopyrightMcpAuditRows(user.id)
+      expect(rows.map(row => row.outcome)).toContain('accepted')
+      expect(await readTestCopyrightDecisionRationales(user.id)).toHaveLength(0)
     } finally {
       restoreEnabled()
     }

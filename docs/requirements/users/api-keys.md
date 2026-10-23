@@ -16,7 +16,8 @@ and access token remains bound to one protected resource.
 - **RSS works without a key.** Unkeyed requests rate-limit by client IP; a keyed request is
   validated and rate-limits by key identity.
 - **Raw keys are never stored.** Only hashes are persisted, a checksum is verified before any
-  database lookup, and revocation is immediate. Revoked rows keep an audit trail.
+  database lookup, and revocation is immediate. Revoked and expired keys are deleted after 90 days;
+  retained key identities preserve references from the bounded MCP security audit.
 - **RSS keys are bearer credentials in URLs.** Keyed RSS responses are `Cache-Control: private` with
   `Referrer-Policy: no-referrer`, and users should revoke keys that appear in logs or shared URLs.
 - **MCP calls are audited before they run**, under the key id, owner, tool and outcome, never the

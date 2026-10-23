@@ -5,7 +5,7 @@ import {
   createTestRetentionWindow,
   insertTestOAuthAccount,
   oauthAccountExistsByProviderUserId,
-  setOAuthAccountCreatedAt,
+  setOAuthAccountRetentionTime,
 } from '@voucha/test-helpers'
 import {
   deleteTestOAuthAuthorizationFixtures,
@@ -21,12 +21,12 @@ describe('GitHub orphan account cleanup', () => {
     const unrelatedProviderId = `unrelated-github-${createRandomString(12)}`
     await insertTestOAuthAccount('github', activeProviderId)
     await insertTestOAuthAccount('github', unrelatedProviderId)
-    const activeAccountId = await setOAuthAccountCreatedAt(
+    const activeAccountId = await setOAuthAccountRetentionTime(
       'github',
       activeProviderId,
       window.firstEligibleDate,
     )
-    await setOAuthAccountCreatedAt('github', unrelatedProviderId, window.secondEligibleDate)
+    await setOAuthAccountRetentionTime('github', unrelatedProviderId, window.secondEligibleDate)
     if (!activeAccountId) throw new Error('Retained GitHub account fixture is missing')
     const authorizationId = v7()
     onTestFinished(async () => {

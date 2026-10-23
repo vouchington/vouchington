@@ -2,11 +2,12 @@ import { describe, expect, it, onTestFinished } from 'vitest'
 import { v7 } from 'uuid'
 import { insertTestLinkedInOAuthAccount } from '@voucha/test-helpers/entities/linkedin-oauth-accounts'
 import {
+  backdateOAuthAccountUnlinkedAt,
   createRandomString,
   createTestRetentionWindow,
   insertTestOAuthAccount,
   oauthAccountExistsByProviderUserId,
-  setOAuthAccountCreatedAt,
+  setOAuthAccountRetentionTime,
 } from '@voucha/test-helpers'
 import { oauthProviders, providerTableConfigs } from '@services/oauth/providers'
 import { insertTestMicrosoftOAuthAccount } from '@voucha/test-helpers/entities/microsoft-oauth-accounts'
@@ -34,8 +35,8 @@ describe('orphaned OAuth account cleanup', () => {
     const recentId = `recent-${createRandomString(12)}`
     await insertTestOAuthAccount('github', oldId)
     await insertTestOAuthAccount('github', recentId)
-    await setOAuthAccountCreatedAt('github', oldId, window.firstEligibleDate)
-    await setOAuthAccountCreatedAt('github', recentId, window.afterUpperBoundDate)
+    await setOAuthAccountRetentionTime('github', oldId, window.firstEligibleDate)
+    await setOAuthAccountRetentionTime('github', recentId, window.afterUpperBoundDate)
 
     await expect(cleanupOrphanedOAuthAccounts(window)).resolves.toMatchObject({ deleted: 1 })
     expect(await oauthAccountExistsByProviderUserId('github', oldId)).toBe(false)
@@ -48,8 +49,8 @@ describe('orphaned OAuth account cleanup', () => {
     const secondId = `batch-second-${createRandomString(12)}`
     await insertTestOAuthAccount('facebook', firstId)
     await insertTestOAuthAccount('facebook', secondId)
-    await setOAuthAccountCreatedAt('facebook', firstId, window.firstEligibleDate)
-    await setOAuthAccountCreatedAt('facebook', secondId, window.secondEligibleDate)
+    await setOAuthAccountRetentionTime('facebook', firstId, window.firstEligibleDate)
+    await setOAuthAccountRetentionTime('facebook', secondId, window.secondEligibleDate)
 
     const result = await cleanupOrphanedOAuthAccounts({
       ...window,
@@ -76,10 +77,10 @@ describe('orphaned OAuth account cleanup', () => {
     const laterId = createRandomString(12)
     for (const id of firstIds) {
       await insertTestOAuthAccount(firstProvider, id)
-      await setOAuthAccountCreatedAt(firstProvider, id, window.firstEligibleDate)
+      await setOAuthAccountRetentionTime(firstProvider, id, window.firstEligibleDate)
     }
     await insertTestOAuthAccount(laterProvider, laterId)
-    await setOAuthAccountCreatedAt(laterProvider, laterId, window.firstEligibleDate)
+    await setOAuthAccountRetentionTime(laterProvider, laterId, window.firstEligibleDate)
 
     const options = {
       lowerBoundDate: window.lowerBoundDate,
@@ -125,6 +126,8 @@ describe('orphaned OAuth account cleanup', () => {
       unrelatedAccountId,
       v7({ msecs: window.secondEligibleDate.getTime() }),
     )
+    await backdateOAuthAccountUnlinkedAt('linkedin', activeAccountId, window.firstEligibleDate)
+    await backdateOAuthAccountUnlinkedAt('linkedin', unrelatedAccountId, window.secondEligibleDate)
     const now = new Date()
     await insertTestOAuthAuthorization({
       id: authorizationId,
@@ -162,12 +165,12 @@ describe('orphaned OAuth account cleanup', () => {
     const unrelatedProviderId = `unrelated-facebook-${createRandomString(12)}`
     await insertTestOAuthAccount('facebook', activeProviderId)
     await insertTestOAuthAccount('facebook', unrelatedProviderId)
-    const activeAccountId = await setOAuthAccountCreatedAt(
+    const activeAccountId = await setOAuthAccountRetentionTime(
       'facebook',
       activeProviderId,
       window.firstEligibleDate,
     )
-    await setOAuthAccountCreatedAt('facebook', unrelatedProviderId, window.secondEligibleDate)
+    await setOAuthAccountRetentionTime('facebook', unrelatedProviderId, window.secondEligibleDate)
     if (!activeAccountId) throw new Error('Retained Facebook account fixture is missing')
     const authorizationId = v7()
     onTestFinished(async () => {
@@ -218,6 +221,12 @@ describe('orphaned OAuth account cleanup', () => {
     const unrelatedAccount = await insertTestMicrosoftOAuthAccount(
       unrelatedProviderId,
       v7({ msecs: window.secondEligibleDate.getTime() }),
+    )
+    await backdateOAuthAccountUnlinkedAt('microsoft', activeProviderId, window.firstEligibleDate)
+    await backdateOAuthAccountUnlinkedAt(
+      'microsoft',
+      unrelatedProviderId,
+      window.secondEligibleDate,
     )
     if (!activeAccount.account_id || !unrelatedAccount.account_id) {
       throw new Error('Microsoft test accounts must return their internal IDs')
