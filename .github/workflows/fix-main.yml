@@ -123,7 +123,7 @@ jobs:
       issues: read
       pull-requests: read
     outputs:
-      related-candidates: ${{ steps.prompt-context.outputs.related-candidates }}
+      related-candidates: ${{ steps.authorized-candidates.outputs.related-candidates }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: 1
@@ -139,7 +139,16 @@ jobs:
           check-prs: 'true'
           related-title-key: 'Automation fix: ${{ github.event.workflow_run.name }}'
           related-extra-labels: ''
+          related-limit: '5'
           github-token: ${{ github.token }}
+
+      - name: Authorize related issues
+        timeout-minutes: 2
+        id: authorized-candidates
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELATED_CANDIDATES: ${{ steps.prompt-context.outputs.related-candidates }}
+        run: node ci/fix-main-candidates.mts
 
   render-prompt:
     name: Render automation prompt

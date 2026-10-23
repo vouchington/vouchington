@@ -89,6 +89,11 @@ the terminal-status authority.
 
 ## Completion-specific safeguards
 
+Plan completion ignores issues whose current author association does not authorize repository work.
+Fix Main revalidates discovered issue identities and author authorization through the live API before
+including them as prompt or publication candidates. Public issue creation alone grants no automation
+authority; the dispatched agent repeats live authorization before mutation.
+
 - Fix Main and Merge Queue Ejection share one
   [CI failure core](../../../prompts/automation/ci-failure-core.md) so both classify and fix
   failures by the same rules: every group ends in an outcome, and a fix never raises a timeout, adds

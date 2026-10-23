@@ -8,7 +8,7 @@ const STRANDED =
 const RECOVERED =
   '<!-- plan-completion-advisory -->\n## Plan completion advisory\n\nPlan #726 has no current completion advisory. This is a current snapshot only; audit planned-but-unopened work before closing the Plan.'
 
-const OPEN_PLAN = { number: 726, state: 'open', title: 'Plan: test' }
+const OPEN_PLAN = { number: 726, state: 'open', author_association: 'MEMBER', title: 'Plan: test' }
 const MERGED_PULL = {
   body: '## Related issues\nRefs #726',
   merged_at: '2026-01-01',
@@ -96,6 +96,32 @@ describe('plan completion snapshot', () => {
     })
   })
 
+  it.each([1, 2])(
+    'suppresses writes when live author authorization disappears at read %s',
+    async lossAt => {
+      const { calls, runGh } = strandedSiblingGh({
+        commentId: 99,
+        commentPages: [[]],
+        duplicateOpenSibling: false,
+        fallback: { id: 99 },
+      })
+      let reads = 0
+      await runPlanCompletionSnapshot({
+        repository: 'vouchington/vouchington',
+        runGh: async args => {
+          if (args.includes('repos/vouchington/vouchington/issues/726')) {
+            reads += 1
+            if (reads >= lossAt)
+              return JSON.stringify({ ...OPEN_PLAN, author_association: 'CONTRIBUTOR' })
+          }
+          return runGh(args)
+        },
+      })
+      expect(reads).toBe(lossAt)
+      expect(calls.some(call => call.includes('POST') || call.includes('PATCH'))).toBe(false)
+    },
+  )
+
   it('reads complete pages before mutating its own advisory comment', async () => {
     const { calls, runGh } = strandedSiblingGh({
       commentId: 99,
@@ -143,9 +169,16 @@ describe('plan completion snapshot', () => {
     const runGh = async (args: string[]): Promise<string> => {
       calls.push(args)
       if (args.some(arg => arg.endsWith('/issues')))
-        return JSON.stringify([[{ number: 726, state: 'open', title: 'Plan: test' }]])
+        return JSON.stringify([
+          [{ number: 726, state: 'open', author_association: 'MEMBER', title: 'Plan: test' }],
+        ])
       if (args.some(arg => arg.endsWith('/issues/726')))
-        return JSON.stringify({ number: 726, state: 'open', title: 'Plan: test' })
+        return JSON.stringify({
+          number: 726,
+          state: 'open',
+          author_association: 'MEMBER',
+          title: 'Plan: test',
+        })
       if (args.some(arg => arg.endsWith('/timeline'))) return JSON.stringify([[]])
       return JSON.stringify([[]])
     }
@@ -161,9 +194,16 @@ describe('plan completion snapshot', () => {
       calls.push(args)
       if (args.includes('POST') || args.includes('PATCH')) return JSON.stringify({ id: 50 })
       if (args.some(arg => arg.endsWith('/issues')))
-        return JSON.stringify([[{ number: 726, state: 'open', title: 'Plan: test' }]])
+        return JSON.stringify([
+          [{ number: 726, state: 'open', author_association: 'MEMBER', title: 'Plan: test' }],
+        ])
       if (args.some(arg => arg.endsWith('/issues/726')))
-        return JSON.stringify({ number: 726, state: 'open', title: 'Plan: test' })
+        return JSON.stringify({
+          number: 726,
+          state: 'open',
+          author_association: 'MEMBER',
+          title: 'Plan: test',
+        })
       if (args.some(arg => arg.endsWith('/timeline'))) return JSON.stringify([[]])
       if (args.some(arg => arg.endsWith('/comments/50')))
         return JSON.stringify({ body: RECOVERED, id: 50, user: { login: 'github-actions[bot]' } })
@@ -191,7 +231,9 @@ describe('plan completion snapshot', () => {
     const runGh = async (args: string[]): Promise<string> => {
       calls.push(args)
       if (args.some(arg => arg.endsWith('/issues')))
-        return JSON.stringify([[{ number: 726, state: 'open', title: 'Plan: test' }]])
+        return JSON.stringify([
+          [{ number: 726, state: 'open', author_association: 'MEMBER', title: 'Plan: test' }],
+        ])
       if (args.some(arg => arg.endsWith('/timeline')))
         return JSON.stringify([
           [
