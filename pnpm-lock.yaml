@@ -1460,9 +1460,6 @@ importers:
       '@ts-shared/utils':
         specifier: workspace:^
         version: link:../../../ts-shared/utils
-      '@voucha/config':
-        specifier: workspace:^
-        version: link:../../config
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types

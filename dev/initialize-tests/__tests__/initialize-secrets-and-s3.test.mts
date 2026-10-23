@@ -58,11 +58,10 @@ describe('initialize secrets and S3 helpers', () => {
 
   it('reuses existing CF_WORKER_SECRET from .env when shared env is absent', async () => {
     const cwd = await makeWorktreeDir('feature-cf-secret-reuse')
-    const existingSecret = 'x'.repeat(40)
 
     await writeFile(
       join(cwd, '.env'),
-      ['export CF_WORKER_', 'SECRET', '=', existingSecret, '\n  '].join(''),
+      ['export CF_WORKER_', 'SECRET', '=existing-test-secret-at-least-32-chars\n  '].join(''),
     )
 
     const output = await runHelper({
@@ -74,7 +73,7 @@ describe('initialize secrets and S3 helpers', () => {
       `,
     })
 
-    expect(output).toBe(existingSecret)
+    expect(output).toBe('existing-test-secret-at-least-32-chars')
   })
 
   it('generates a new CF_WORKER_SECRET when none exists', async () => {

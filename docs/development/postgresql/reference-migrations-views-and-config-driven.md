@@ -21,11 +21,6 @@ the database unit suite keeps DML and non-DDL validation checks. This preserves 
 without introducing schema mutation into shared unit fixtures. A failed snapshot contract is a
 projection or eligibility failure to diagnose, not a reason to reset unit resources.
 
-Administrator bootstrap authority requires an explicitly configured email identity. Without it,
-bootstrap reserves the official identity without attaching a sign-in address or granting an
-administrator role. This keeps a fresh environment from assigning privileged access to an
-implicit personal address.
-
 See [prelaunch relational storage](../postgres-schema-rules.md#prelaunch-relational-storage).
 
 ## View composition and the eligibility-view pull-up rule

@@ -30,7 +30,6 @@
     "@modules/utils": "workspace:^",
     "@ts-shared/money": "workspace:^",
     "@ts-shared/utils": "workspace:^",
-    "@voucha/config": "workspace:^",
     "@voucha/types": "workspace:^",
     "@vouchington/postgres": "^0.0.16",
     "@vouchington/utils": "^0.7.5",

@@ -51,29 +51,9 @@ ON CONFLICT (user_id, role_type_id) DO NOTHING;`
     expect(systemRoleCount).toBe(1)
   })
 
-  it('does not grant administrator authority when the bootstrap email is unset', async () => {
-    const before = await getLocalTestUserRawByUsername('jong')
-    const previousRoles = before
-      ? await countLocalUserRoleAssignments(before.id, 'administrator')
-      : 0
-    await runConfigDrivenStatementsInTransaction(
-      generateSeedAdminUserSQL({ emailAddress: '' }),
-      undefined,
-    )
-    const reserved = await getLocalTestUserRawByUsername('jong')
-    expect(reserved?.platform_account_kind).toBe('official')
-    expect(await countLocalUserRoleAssignments(reserved!.id, 'administrator')).toBe(previousRoles)
-  })
-
   it('runs the real jong admin generator to a stable end state across reruns', async () => {
-    await runConfigDrivenStatementsInTransaction(
-      generateSeedAdminUserSQL({ emailAddress: "tests+seed-admin-o'hara@example.test" }),
-      undefined,
-    )
-    await runConfigDrivenStatementsInTransaction(
-      generateSeedAdminUserSQL({ emailAddress: "tests+seed-admin-o'hara@example.test" }),
-      undefined,
-    )
+    await runConfigDrivenStatementsInTransaction(generateSeedAdminUserSQL(), undefined)
+    await runConfigDrivenStatementsInTransaction(generateSeedAdminUserSQL(), undefined)
 
     const jong = await getLocalTestUserRawByUsername('jong')
     expect(jong?.platform_account_kind).toBe('official')
@@ -81,10 +61,7 @@ ON CONFLICT (user_id, role_type_id) DO NOTHING;`
     const roleCount = await countLocalUserRoleAssignments(jong!.id, 'administrator')
     expect(roleCount).toBe(1)
 
-    const hasPrimaryEmail = await isLocalPrimaryEmailForUser(
-      jong!.id,
-      "tests+seed-admin-o'hara@example.test",
-    )
+    const hasPrimaryEmail = await isLocalPrimaryEmailForUser(jong!.id, 'jong@voucha.ai')
     expect(hasPrimaryEmail).toBe(true)
   })
 
