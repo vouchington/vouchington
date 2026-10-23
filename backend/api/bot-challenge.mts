@@ -24,10 +24,10 @@ type BotChallengeRequiredError = Error & {
 }
 
 export async function enforceLowScoreBotChallenge(ctx: Context): Promise<void> {
-  if (!MUTATING_METHODS.has(ctx.req.method?.toUpperCase() ?? 'GET')) return
   if (getOptionalRequestOrigin()?.credential !== 'session') return
   const score = getTrustedCloudflareBotScore(ctx.req)
   if (score === undefined || score > LOW_BOT_SCORE_MAX) return
+  if (!MUTATING_METHODS.has(ctx.req.method?.toUpperCase() ?? 'GET')) return
 
   const existing = verificationByRequest.get(ctx.req)
   if (existing) return existing
