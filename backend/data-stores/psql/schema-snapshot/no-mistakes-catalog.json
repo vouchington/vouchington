@@ -61396,6 +61396,10 @@
           "validated": true
         },
         "membership_purchase_intents_check3": {
+          "definition": "CHECK (((expired_at IS NULL) OR ((launched_at IS NOT NULL) AND (failed_at IS NULL) AND (provider_checkout_id IS NOT NULL) AND (expired_at >= launched_at))))",
+          "validated": true
+        },
+        "membership_purchase_intents_check4": {
           "definition": "CHECK (((failed_at IS NULL) = (failure_code IS NULL)))",
           "validated": true
         },
@@ -61425,7 +61429,17 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 14
+          "ordinalPosition": 15
+        },
+        "expired_at": {
+          "comment": "When Stripe reported that a launched Checkout session expired without becoming a live subscription.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 13
         },
         "expires_at": {
           "comment": "End of the bounded launch-admission window that prevents concurrent provider purchase starts.",
@@ -61455,7 +61469,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13
+          "ordinalPosition": 14
         },
         "id": {
           "comment": null,
@@ -61555,7 +61569,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 15
+          "ordinalPosition": 16
         },
         "user_id": {
           "comment": "Voucha account that requested the purchase launch; cleared after final account deletion.",
@@ -61700,7 +61714,7 @@
         "idx_membership_purchase_intents__retention": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_membership_purchase_intents__retention ON public.membership_purchase_intents USING btree (id) INCLUDE (expires_at) WHERE ((launched_at IS NULL) OR (failed_at IS NOT NULL))",
+          "definition": "CREATE INDEX idx_membership_purchase_intents__retention ON public.membership_purchase_intents USING btree (id) INCLUDE (expires_at) WHERE ((launched_at IS NULL) OR (failed_at IS NOT NULL) OR (user_id IS NULL) OR (expired_at IS NOT NULL))",
           "immediate": true,
           "keys": [
             {
@@ -61714,7 +61728,7 @@
             }
           ],
           "live": true,
-          "predicate": "((launched_at IS NULL) OR (failed_at IS NOT NULL))",
+          "predicate": "((launched_at IS NULL) OR (failed_at IS NOT NULL) OR (user_id IS NULL) OR (expired_at IS NOT NULL))",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -61803,6 +61817,38 @@
           "live": true,
           "predicate": null,
           "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "uq_membership_purchase_intents__checkout_context": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX uq_membership_purchase_intents__checkout_context ON public.membership_purchase_intents USING btree (provider_checkout_id, membership_provider_context_id) WHERE (provider_checkout_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": "pg_catalog.\"default\"",
+              "column": "provider_checkout_id",
+              "descending": false,
+              "expression": "provider_checkout_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.text_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "membership_provider_context_id",
+              "descending": false,
+              "expression": "membership_provider_context_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(provider_checkout_id IS NOT NULL)",
+          "primary": false,
           "ready": true,
           "unique": true,
           "valid": true
