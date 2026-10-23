@@ -82,6 +82,31 @@ describe('dispatchInboundActivity', () => {
     expect(await hasFollowRelation(remoteActor, user.id)).toBe(true)
   })
 
+  it('does not let another actor reuse an existing Follow activity id', async () => {
+    const firstActor = await createRemoteActorFixture()
+    const secondActor = await createRemoteActorFixture()
+    const user = await createFederatedUser()
+    const id = `https://remote.example/activities/${randomSuffix()}`
+
+    await dispatchInboundActivity(firstActor, {
+      id,
+      type: 'Follow',
+      actor: firstActor.actor_uri,
+      object: getActorUri(user.id),
+    })
+    await expect(
+      dispatchInboundActivity(secondActor, {
+        id,
+        type: 'Follow',
+        actor: secondActor.actor_uri,
+        object: getActorUri(user.id),
+      }),
+    ).rejects.toThrow('ActivityPub Follow id belongs to another actor or target')
+
+    expect(await hasFollowRelation(firstActor, user.id)).toBe(true)
+    expect(await hasFollowRelation(secondActor, user.id)).toBe(false)
+  })
+
   it('does not create a follow relation when the target user has not enabled federation', async () => {
     const remoteActor = await createRemoteActorFixture()
     const user = await createTestUserDirect()
