@@ -2,18 +2,13 @@ import { beginTransaction, withTransactionOptions, type TransactionQuery } from 
 import {
   listNotificationEmailCandidates,
   type Cursor,
+  type NotificationEmailCleanupName,
 } from './cleanup-notification-email-candidates.mts'
 import { deleteNotificationEmailPage } from './cleanup-notification-email-deletions.mts'
 import { getRetentionCutoffDate } from './cleanup-options.mts'
 import { MODERATION_EMAIL_SEND_RETENTION_DAYS } from '@services/communities/moderation-summary-retention'
 import { assertPositiveInteger, normalizePositiveInteger } from './normalize-positive-integer.mts'
 import { getSesBounceRetentionDays } from './config.mts'
-
-export type NotificationEmailCleanupName =
-  | 'ses_bounce_events'
-  | 'system_pruned_notifications'
-  | 'user_deleted_notifications'
-  | 'moderation_email_sends'
 
 type Position = { at: string | null; id: string; userId?: string }
 export type NotificationEmailCleanupResult = {
