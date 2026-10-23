@@ -62,10 +62,10 @@ export async function cleanupOAuthFriendEdgePage(
   const accountParameters = accountId ? [now, accountId] : [now]
   await using query = await beginTransaction()
   if (phase === 'erase') {
-    const { rows } = await query<{ id: string; cutoff: Date }>(
+    const { rows } = await query<{ id: string; cutoff: string }>(
       `/* lockUnlinkedFriendEdgeAccount */
        /* deadlock-safe: one account lock by invalidation clock and id; child edge pages use SKIP LOCKED. */
-       SELECT id, friend_edges_invalidated_at AS cutoff
+       SELECT id, friend_edges_invalidated_at::text AS cutoff
        FROM ${accountTable}
        WHERE friend_edges_invalidated_at IS NOT NULL
          AND friend_edges_invalidated_at < $1::timestamptz

@@ -1,5 +1,8 @@
+import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { beginTransaction, createTestUser } from '@voucha/test-helpers'
+import { updateUserUsername } from '@voucha/test-helpers/entities/users'
+import { canonicalEntityId } from '../../mcp/resolve-entity-reference.mts'
 import { createApiKey } from '@services/api-keys'
 import {
   deleteTestMcpCallAuditEvents,
@@ -12,7 +15,8 @@ import { createCopyrightReplayFixture } from '@voucha/test-helpers/copyright-rou
 import { markTestCopyrightNoticeErased } from '@voucha/test-helpers/copyright-email-manual-association'
 import { readTestCopyrightDecisionRationales } from '@voucha/test-helpers/copyright-mcp-audit'
 import { runWithCapturedQueries } from '../../data-stores/psql/query-capture.mts'
-import { createMcpCallAuditContext, recordMcpCallAudit } from './audit.mts'
+import { createMcpCallAuditContext, recordMcpCallAudit, type McpCallAuditEvent } from './audit.mts'
+import { resolveCopyrightUserTargetsForAudit } from './copyright-audit-target.mts'
 import { ADMIN_MCP_SERVER_CONFIG, USER_MCP_SERVER_CONFIG } from './config.mts'
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
@@ -71,6 +75,53 @@ describe('createMcpCallAuditContext', () => {
 })
 
 describe('recordMcpCallAudit', () => {
+  it('binds a reinstatement username to the same account for audit and dispatch', async () => {
+    const { user: actor, clientId } = await registerActor()
+    const target = await createTestUser()
+    if (!target.username) throw new Error('Test target username missing')
+    const originalUsername = target.username
+    const missingUsername = `missing-${randomUUID().slice(0, 8)}`
+    const messages = [originalUsername, missingUsername].map((accountUserId, index) => ({
+      jsonrpc: '2.0',
+      id: index + 1,
+      method: 'tools/call',
+      params: {
+        name: 'reinstate_copyright_repeat_infringer',
+        arguments: { accountUserId, rationale: 'Reviewed reinstatement request' },
+      },
+    }))
+    const events: McpCallAuditEvent[] = messages.map(() => ({
+      jsonrpcMethod: 'tools/call',
+      toolName: 'reinstate_copyright_repeat_infringer',
+      outcome: 'accepted',
+      copyrightRationale: 'Reviewed reinstatement request',
+    }))
+
+    await resolveCopyrightUserTargetsForAudit(messages, events)
+    expect(messages[0]!.params.arguments.accountUserId).toBe(target.id)
+    expect(events[0]!.copyrightTarget).toEqual({ kind: 'account_user', id: target.id })
+    expect(messages[1]!.params.arguments.accountUserId).toBe(missingUsername)
+    expect(events[1]!.copyrightTarget).toBeUndefined()
+
+    // A username reassigned after admission cannot redirect the already canonicalized dispatch.
+    await updateUserUsername(target.id, `renamed-${randomUUID().slice(0, 8)}`)
+    await createTestUser({ username: originalUsername })
+    expect(await canonicalEntityId('user', messages[0]!.params.arguments.accountUserId)).toBe(
+      target.id,
+    )
+    await recordMcpCallAudit(
+      createMcpCallAuditContext(ADMIN_MCP_SERVER_CONFIG, actor.id, oauth(clientId)),
+      events,
+    )
+    expect((await readTestMcpCallAuditEvents(actor.id)).map(row => row.outcome)).toEqual([
+      'accepted',
+      'accepted',
+    ])
+    expect(
+      (await readTestCopyrightDecisionRationales(actor.id)).map(row => row.account_user_id),
+    ).toEqual([target.id])
+  })
+
   it('waits for a concurrent case erasure and keeps only the security attempt', async () => {
     const { user, clientId } = await registerActor()
     const fixture = await createCopyrightReplayFixture()

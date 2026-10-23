@@ -5837,6 +5837,9 @@ importers:
       '@services/contribution-gating':
         specifier: workspace:^
         version: link:../contribution-gating
+      '@services/copyright-notices':
+        specifier: workspace:^
+        version: link:../copyright-notices
       '@services/oauth':
         specifier: workspace:^
         version: link:../oauth

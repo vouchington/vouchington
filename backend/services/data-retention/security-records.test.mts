@@ -1,6 +1,16 @@
-import { randomUUID } from 'node:crypto'
-import { describe, expect, it, onTestFinished } from 'vitest'
+import { randomBytes } from 'node:crypto'
+import { describe, expect, it } from 'vitest'
+import { v7 as uuidv7 } from 'uuid'
+import { beginTransaction, createTestUser } from '@voucha/test-helpers'
+import {
+  insertTestAccountCopyrightRationale,
+  placeTestAccountPreservationHold,
+  readTestCopyrightDecisionRationales,
+} from '@voucha/test-helpers/copyright-mcp-audit'
+import { withPostgresTransactionForTest } from '@voucha/test-helpers/postgres-transaction'
+import { lockCopyrightRationaleRetentionPage } from '@services/copyright-notices/retention-erasure-preservation'
 import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
+import { issueTestOAuthTokensForClient } from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
 import {
   deleteTestNativeMintAudit,
   deleteTestNativeMintAuditForRetention,
@@ -11,16 +21,118 @@ import {
   insertPreservationHoldForTest,
   releasePreservationHoldForTest,
 } from '@voucha/test-helpers/entities/user-legal-preservation-holds'
-import {
-  deleteTestOAuthAuthorizationFixtures,
-  insertTestGithubFriend,
-  insertTestOAuthAccount,
-  testGithubFriendExists,
-} from '@voucha/test-helpers'
 import { cleanupSecuritySourcePage } from './cleanup-security-records.mts'
 import { SOURCES, sourcePlan } from './security-record-plans.mts'
 
 describe('security record cleanup', () => {
+  it('rechecks a noncase rationale after a concurrent account hold commits', async () => {
+    const actor = await createTestUserDirect({ administrator: true })
+    const subject = await createTestUserDirect()
+    const rationaleId = await insertTestAccountCopyrightRationale(subject.id, actor.id)
+    const cutoff = sourcePlan('copyright_rationales_noncase', new Date('2032-01-01')).cutoffAt
+    const listed = Promise.withResolvers<void>()
+    await using hold = await beginTransaction()
+    await placeTestAccountPreservationHold(hold, subject.id, actor.id)
+
+    const deletion = withPostgresTransactionForTest(
+      async query => {
+        const locked = await lockCopyrightRationaleRetentionPage(query, [rationaleId])
+        expect(locked.has(rationaleId)).toBe(true)
+        await query(
+          `/* testCopyrightRationaleHoldRace:cutoff */
+           SELECT set_config('app.copyright_rationale_retention_cutoff', $1::text, true)`,
+          [cutoff.toISOString()],
+        )
+        return query(
+          `/* testCopyrightRationaleHoldRace:delete */
+           DELETE FROM copyright_decision_rationales target
+           WHERE target.id = $1::uuid AND
+             fn_copyright_decision_rationale_retention_eligible(target, $2::timestamptz)`,
+          [rationaleId, cutoff],
+        )
+      },
+      { marker: 'listCopyrightRationaleRetentionAccounts', complete: listed.resolve },
+    )
+    // The page has read its candidate before this hold commits. Its account lock must wait,
+    // then the fresh DELETE predicate observes the hold and retains the ciphertext.
+    await listed.promise
+    await hold.commit()
+    expect((await deletion).rowCount).toBe(0)
+    expect((await readTestCopyrightDecisionRationales(actor.id)).map(row => row.id)).toContain(
+      rationaleId,
+    )
+  })
+
+  it('does not cascade a revoked grant into younger authorization artifacts', async () => {
+    const user = await createTestUser()
+    const { clientId } = await issueTestOAuthTokensForClient(user, {
+      audience: 'user',
+      scope: 'mcp.user:read',
+    })
+    const grantId = uuidv7()
+    const familyId = uuidv7()
+    const now = new Date()
+    const futureExpiry = new Date(now.getTime() + 30 * 86_400_000)
+    const revokedAt = new Date(now.getTime() - 120 * 86_400_000)
+    await using query = await beginTransaction()
+    await query(
+      `/* testRevokedGrantWithChildren:grant */ INSERT INTO oauth_grants
+         (id, user_id, client_id, resource, scopes, revoked_at)
+       SELECT $1::uuid, $2::uuid, client.id, 'https://test.voucha.ai/mcp',
+         ARRAY['mcp.user:read']::api_scopes[], $4::timestamptz
+       FROM oauth_clients client WHERE client.client_id = $3::text`,
+      [grantId, user.id, clientId, revokedAt],
+    )
+    await query(
+      `/* testRevokedGrantWithChildren:code */ INSERT INTO oauth_authorization_codes
+         (grant_id, code_hash, redirect_uri, resource, scopes, code_challenge, expires_at)
+       VALUES ($1::uuid, $2::text, 'https://test.voucha.ai/callback',
+         'https://test.voucha.ai/mcp', ARRAY['mcp.user:read']::api_scopes[], $3::text, $4::timestamptz)`,
+      [grantId, randomBytes(32).toString('hex'), 'A'.repeat(43), futureExpiry],
+    )
+    await query(
+      `/* testRevokedGrantWithChildren:family */ INSERT INTO oauth_refresh_token_families
+         (id, grant_id, resource, scopes, expires_at)
+       VALUES ($1::uuid, $2::uuid, 'https://test.voucha.ai/mcp',
+         ARRAY['mcp.user:read']::api_scopes[], $3::timestamptz)`,
+      [familyId, grantId, futureExpiry],
+    )
+    await query(
+      `/* testRevokedGrantWithChildren:refresh */ INSERT INTO oauth_refresh_tokens
+         (family_id, token_hash, scopes, generation, expires_at)
+       VALUES ($1::uuid, $2::text, ARRAY['mcp.user:read']::api_scopes[], 0, $3::timestamptz)`,
+      [familyId, randomBytes(32).toString('hex'), futureExpiry],
+    )
+    await query(
+      `/* testRevokedGrantWithChildren:access */ INSERT INTO oauth_access_tokens
+         (grant_id, refresh_family_id, token_hash, resource, scopes, expires_at)
+       VALUES ($1::uuid, $2::uuid, $3::text, 'https://test.voucha.ai/mcp',
+         ARRAY['mcp.user:read']::api_scopes[], $4::timestamptz)`,
+      [grantId, familyId, randomBytes(32).toString('hex'), futureExpiry],
+    )
+    await query(
+      '/* testRevokedGrantWithChildren:lock */ SELECT id FROM oauth_grants WHERE id = $1::uuid FOR UPDATE',
+      [grantId],
+    )
+    const plan = sourcePlan('oauth_grants', now)
+    const deletion = await query(
+      `/* testRevokedGrantWithChildren:delete */ DELETE FROM oauth_grants target
+       WHERE target.id = $1::uuid AND ${plan.deletePredicate}`,
+      [grantId],
+    )
+    expect(deletion.rowCount).toBe(0)
+    const { rows } = await query<{ children: number }>(
+      `/* testRevokedGrantWithChildren:remaining */ SELECT (
+         (SELECT count(*) FROM oauth_authorization_codes WHERE grant_id = $1::uuid)
+         + (SELECT count(*) FROM oauth_refresh_token_families WHERE grant_id = $1::uuid)
+         + (SELECT count(*) FROM oauth_access_tokens WHERE grant_id = $1::uuid)
+         + (SELECT count(*) FROM oauth_refresh_tokens WHERE family_id = $2::uuid))::integer AS children`,
+      [grantId, familyId],
+    )
+    expect(rows[0]?.children).toBe(4)
+    // The transaction intentionally rolls back its synthetic young artifacts.
+  })
+
   it('retires aged native mint audit only after its account hold is released', async () => {
     const now = new Date()
     const cutoff = sourcePlan('oauth_native_mints', now).cutoffAt
@@ -60,42 +172,5 @@ describe('security record cleanup', () => {
       SOURCES.map(source => cleanupSecuritySourcePage(source, 1, now)),
     )
     expect(pages).toEqual(SOURCES.map(() => ({ deleted: 0, hasMore: false })))
-  })
-
-  it('uses a durable one-row page and reports remaining old friend observations', async () => {
-    const day = 86_400_000
-    const now = new Date()
-    const providerUserId = `github-retention-${randomUUID()}`
-    const account = await insertTestOAuthAccount('github', providerUserId)
-    onTestFinished(() => deleteTestOAuthAuthorizationFixtures({ githubUserIds: [providerUserId] }))
-    if (!account.account_id) throw new Error('GitHub account ID missing')
-    const first = await insertTestGithubFriend(
-      account.account_id,
-      `old-first-${randomUUID()}`,
-      new Date(now.getTime() - 121 * day),
-    )
-    const second = await insertTestGithubFriend(
-      account.account_id,
-      `old-second-${randomUUID()}`,
-      new Date(now.getTime() - 120 * day),
-    )
-    const recent = await insertTestGithubFriend(
-      account.account_id,
-      `recent-${randomUUID()}`,
-      new Date(now.getTime() - 10 * day),
-    )
-
-    expect(await cleanupSecuritySourcePage('github_friends', 1, now)).toEqual({
-      deleted: 1,
-      hasMore: true,
-    })
-    expect(await testGithubFriendExists(first)).toBe(false)
-    expect(await testGithubFriendExists(second)).toBe(true)
-    expect(await cleanupSecuritySourcePage('github_friends', 1, now)).toEqual({
-      deleted: 1,
-      hasMore: false,
-    })
-    expect(await testGithubFriendExists(second)).toBe(false)
-    expect(await testGithubFriendExists(recent)).toBe(true)
   })
 })

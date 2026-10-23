@@ -87,6 +87,29 @@ export async function testGithubFriendExists(id: string): Promise<boolean> {
   return rows.length > 0
 }
 
+export async function setTestGithubFriendInvalidation(
+  accountId: string,
+  invalidatedAt: string,
+): Promise<void> {
+  await write(
+    `/* setTestGithubFriendInvalidation */ UPDATE github_accounts
+     SET friend_edges_invalidated_at = $2::timestamptz,
+       friend_edges_cleanup_completed_at = NULL
+     WHERE id = $1::uuid`,
+    [accountId, invalidatedAt],
+  )
+}
+
+export async function testGithubFriendCleanupComplete(accountId: string): Promise<boolean> {
+  const { rows } = await read<{ complete: boolean }>(
+    `/* testGithubFriendCleanupComplete */
+     SELECT friend_edges_cleanup_completed_at = friend_edges_invalidated_at AS complete
+     FROM github_accounts WHERE id = $1::uuid`,
+    [accountId],
+  )
+  return rows[0]?.complete ?? false
+}
+
 export async function oauthAccountExistsByProviderUserId(
   provider: OAuthProvider,
   providerUserId: string,
