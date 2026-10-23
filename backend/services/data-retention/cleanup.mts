@@ -20,7 +20,11 @@ import {
 } from './cleanup-bluesky.mts'
 import { cleanupExpiredOAuthAuthorizations } from './cleanup-oauth-authorizations.mts'
 import { cleanupExpiredOAuthAuthorizationServerArtifacts } from './cleanup-oauth-authorization-server.mts'
-import { cleanupTerminalNotificationPushIntents } from './cleanup-notification-push-intents.mts'
+import {
+  cleanupOldPendingNotificationPushIntents,
+  cleanupTerminalNotificationPushIntents,
+  type PendingNotificationPushIntentCleanupResult,
+} from './cleanup-notification-push-intents.mts'
 import {
   cleanupTerminalStripeEventWork,
   cleanupAbandonedMembershipPurchaseIntents,
@@ -65,6 +69,7 @@ export { cleanupExpiredOAuthAuthorizations }
 export { cleanupExpiredOAuthAuthorizationServerArtifacts }
 export { cleanupTerminalNotificationPushIntents }
 export { cleanupTerminalStripeEventWork, cleanupAbandonedMembershipPurchaseIntents }
+export { cleanupOldPendingNotificationPushIntents }
 
 export async function cleanupAnalyticsLocalFiles(): Promise<void> {
   if (process.env.ANALYTICS_BACKEND !== 'local') return
@@ -115,6 +120,11 @@ type DataRetentionCleanupOptions = {
   phoneNumberLoginTokens?: OptionalRetentionLimits<ExpiryCleanupOptions>
   expiredUserSessions?: OptionalRetentionLimits<ExpiryCleanupOptions>
   webPushSubscriptionTombstones?: OptionalRetentionLimits<ExpiryCleanupOptions>
+  oldPendingNotificationPushIntents?: OptionalRetentionLimits<{
+    batchSize?: number
+    maxBatches: number
+    now?: Date
+  }>
 }
 
 type DataRetentionCleanupResult = {
@@ -138,6 +148,7 @@ type DataRetentionCleanupResult = {
   phoneNumberLoginTokens: AuthSessionCleanupResult
   expiredUserSessions: AuthSessionCleanupResult
   webPushSubscriptionTombstones: AuthSessionCleanupResult
+  oldPendingNotificationPushIntents: PendingNotificationPushIntentCleanupResult
 }
 
 export async function runDataRetentionCleanup(
@@ -203,6 +214,9 @@ export async function runDataRetentionCleanup(
   const expiredUserSessions = await cleanupExpiredUserSessions(
     withLimits(options.expiredUserSessions),
   )
+  const oldPendingNotificationPushIntents = await cleanupOldPendingNotificationPushIntents(
+    withLimits(options.oldPendingNotificationPushIntents),
+  )
   // Receipts for surviving intents retain their subscription generation. Each page checks them
   // again under the subscription row lock, even after the push-intent cleanup above has run.
   // ast-grep-ignore: no-three-sequential-awaits -- tombstone deletion follows push-intent cleanup before later retention phases
@@ -244,6 +258,7 @@ export async function runDataRetentionCleanup(
     phoneNumberLoginTokens,
     expiredUserSessions,
     webPushSubscriptionTombstones,
+    oldPendingNotificationPushIntents,
   }
 }
 

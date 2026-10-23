@@ -1,31 +1,5 @@
 export const EXTRA_BOUNDED_TABLES = new Map<string, string>([
   [
-    'stripe_event_processing_work_items',
-    'Unfinished Stripe processing state remains while terminal work older than 30 days is deleted by bounded UUIDv7 keyset cleanup; immutable stripe_events retain deduplication.',
-  ],
-  [
-    'membership_purchase_intents',
-    'Live subscription and native launch replays remain; unlaunched, failed, ownerless, or provider-expired intents with expiry over 30 days ago and no verification reference are deleted by bounded UUIDv7 keyset cleanup.',
-  ],
-  [
-    'payment_operational_cleanup_cursors',
-    'One persisted keyset position per payment operational cleanup stream.',
-  ],
-  [
-    'email_address_login_tokens',
-    'Bounded cleanup deletes login and verification tokens older than one day.',
-  ],
-  ['phone_number_login_tokens', 'Bounded cleanup deletes SMS login tokens older than one day.'],
-  [
-    'auth_session_retention_cleanup_cursors',
-    'A finite cleanup-name primary key permits one durable cursor per retention family.',
-  ],
-  ['user_sessions', 'Bounded cleanup deletes expired sessions after the audit retention window.'],
-  [
-    'web_push_subscriptions',
-    'Bounded cleanup deletes aged subscription tombstones after push receipts expire.',
-  ],
-  [
     'url_hostname_cache_invalidation_work_items',
     'At most one current generation per live hostname; successful eviction deletes it, hostname deletion cascades it, and bounded cache-TTL pruning removes abandoned work.',
   ],

@@ -47,6 +47,21 @@ describe('upsertScheduledJobManifest', () => {
     expect(upsertJobScheduler).toHaveBeenCalledTimes(2)
   })
 
+  it('registers deployed jobs in staging and production but not local development', async () => {
+    const upsertJobScheduler = vi.fn<ScheduledJobQueue['upsertJobScheduler']>()
+    upsertJobScheduler.mockResolvedValue(undefined)
+    const queue = makeQueue(upsertJobScheduler)
+    const manifest = defineScheduledJobManifest('example', [
+      { ...job('deployed-scheduler'), environment: 'deployed' },
+    ])
+
+    await upsertScheduledJobManifest(queue, manifest, { env: { ENVIRONMENT: 'development' } })
+    expect(upsertJobScheduler).not.toHaveBeenCalled()
+    await upsertScheduledJobManifest(queue, manifest, { env: { ENVIRONMENT: 'staging' } })
+    await upsertScheduledJobManifest(queue, manifest, { env: { ENVIRONMENT: 'production' } })
+    expect(upsertJobScheduler).toHaveBeenCalledTimes(2)
+  })
+
   it('resolves runtime values at each upsert call', async () => {
     const upsertJobScheduler = vi.fn<ScheduledJobQueue['upsertJobScheduler']>()
     upsertJobScheduler.mockResolvedValue(undefined)

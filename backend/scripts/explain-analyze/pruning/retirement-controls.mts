@@ -38,6 +38,7 @@ export async function assertMonthlyRetirementControls(
       entity_exists: false,
       batch_crawl_id: null,
       referral_crawl_id: null,
+      discovery_crawl_id: null,
     })
   })
   record('clears crawl pointers and cascades remaining chunks before detaching crawls')
@@ -55,6 +56,7 @@ export async function assertMonthlyRetirementControls(
       entity_exists: true,
       batch_crawl_id: '00000000-0000-7000-8000-000000000001',
       referral_crawl_id: '00000000-0000-7000-8000-000000000001',
+      discovery_crawl_id: '00000000-0000-7000-8000-000000000001',
       rss_partition: false,
     })
   })

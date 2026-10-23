@@ -6,6 +6,7 @@ CREATE TYPE notification_push_endpoint_statuses AS ENUM ('pending', 'delivered',
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE notification_push_intents (
+  id UUID NOT NULL DEFAULT uuidv7() UNIQUE,
   user_id UUID NOT NULL,
   notification_id UUID NOT NULL,
   status notification_push_intent_statuses GENERATED ALWAYS AS (
@@ -18,7 +19,7 @@ CREATE TABLE notification_push_intents (
   lease_expires_at TIMESTAMPTZ,
   suppressed_at TIMESTAMPTZ,
   delivered_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (user_id, notification_id),
   FOREIGN KEY (user_id, notification_id)
@@ -32,6 +33,29 @@ CREATE INDEX idx_notification_push_intents__available
   ON notification_push_intents (updated_at, user_id, notification_id)
   WHERE status = 'pending';
 
+CREATE INDEX idx_notification_push_intents__pending_retention
+  ON notification_push_intents (id)
+  WHERE status = 'pending';
+
+CREATE TABLE notification_push_intent_retention_cursors (
+  is_singleton BOOLEAN PRIMARY KEY DEFAULT TRUE CHECK (is_singleton),
+  cursor_notification_push_intent_id UUID,
+  sweep_upper_bound_notification_push_intent_id UUID,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE OR REPLACE TRIGGER trigger_notification_push_intent_retention_cursors_updated_at
+BEFORE UPDATE ON notification_push_intent_retention_cursors
+FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+
+COMMENT ON TABLE notification_push_intent_retention_cursors IS 'Singleton position for the pending push intent age sweep.';
+COMMENT ON COLUMN notification_push_intent_retention_cursors.is_singleton IS 'Restricts the pending intent sweep to one persisted cursor.';
+COMMENT ON COLUMN notification_push_intent_retention_cursors.cursor_notification_push_intent_id IS 'UUIDv7 position of the last scanned pending intent.';
+COMMENT ON COLUMN notification_push_intent_retention_cursors.sweep_upper_bound_notification_push_intent_id IS 'Frozen exclusive UUIDv7 age bound for the current sweep.';
+COMMENT ON COLUMN notification_push_intent_retention_cursors.created_at IS 'Time the retention cursor was created.';
+COMMENT ON COLUMN notification_push_intent_retention_cursors.updated_at IS 'Time the retention cursor last advanced.';
+
 
 CREATE OR REPLACE TRIGGER trigger_notification_push_intents_updated_at
 BEFORE UPDATE ON notification_push_intents
@@ -39,6 +63,7 @@ FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
 
 COMMENT ON TABLE notification_push_intents IS 'One durable browser-push effect per notification. Lease fencing permits recovery after worker loss without changing notification state.';
+COMMENT ON COLUMN notification_push_intents.id IS 'UUIDv7 intent creation identity used for bounded age retention.';
 COMMENT ON COLUMN notification_push_intents.user_id IS 'Notification owner and first half of the durable intent identity.';
 COMMENT ON COLUMN notification_push_intents.notification_id IS 'Notification identifier and second half of the durable intent identity.';
 COMMENT ON COLUMN notification_push_intents.status IS 'Generated enum derived exclusively from mutually exclusive terminal delivery facts.';

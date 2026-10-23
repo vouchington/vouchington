@@ -1,6 +1,6 @@
 import type { JobTemplate } from 'glide-mq'
 
-export type ScheduledJobEnvironment = 'all' | 'production'
+export type ScheduledJobEnvironment = 'all' | 'production' | 'deployed'
 
 export type ScheduledJobRepeat = { pattern: string } | { every: number }
 

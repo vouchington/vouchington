@@ -71207,6 +71207,104 @@
         }
       }
     },
+    "notification_push_intent_retention_cursors": {
+      "checkConstraints": {
+        "notification_push_intent_retention_cursors_is_singleton_check": {
+          "definition": "CHECK (is_singleton)",
+          "validated": true
+        }
+      },
+      "columns": {
+        "created_at": {
+          "comment": "Time the retention cursor was created.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4
+        },
+        "cursor_notification_push_intent_id": {
+          "comment": "UUIDv7 position of the last scanned pending intent.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2
+        },
+        "is_singleton": {
+          "comment": "Restricts the pending intent sweep to one persisted cursor.",
+          "dataType": "boolean",
+          "defaultExpression": "true",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        },
+        "sweep_upper_bound_notification_push_intent_id": {
+          "comment": "Frozen exclusive UUIDv7 age bound for the current sweep.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3
+        },
+        "updated_at": {
+          "comment": "Time the retention cursor last advanced.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5
+        }
+      },
+      "comment": "Singleton position for the pending push intent age sweep.",
+      "foreignKeys": {},
+      "indexes": {
+        "notification_push_intent_retention_cursors_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX notification_push_intent_retention_cursors_pkey ON public.notification_push_intent_retention_cursors USING btree (is_singleton)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "is_singleton",
+              "descending": false,
+              "expression": "is_singleton",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.bool_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["is_singleton"]
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_notification_push_intent_retention_cursors_updated_at": {
+          "definition": "CREATE TRIGGER trigger_notification_push_intent_retention_cursors_updated_at BEFORE UPDATE ON public.notification_push_intent_retention_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        }
+      },
+      "uniqueConstraints": {}
+    },
     "notification_push_intent_subscription_receipts": {
       "checkConstraints": {
         "notification_push_intent_subscription_receipts_check": {
@@ -71421,12 +71519,12 @@
         "created_at": {
           "comment": null,
           "dataType": "timestamp with time zone",
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
-          "nullable": false,
-          "ordinalPosition": 9
+          "nullable": true,
+          "ordinalPosition": 10
         },
         "delivered_at": {
           "comment": "Timestamp when every reachable endpoint reached a terminal outcome.",
@@ -71436,7 +71534,17 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8
+          "ordinalPosition": 9
+        },
+        "id": {
+          "comment": "UUIDv7 intent creation identity used for bounded age retention.",
+          "dataType": "uuid",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
         },
         "lease_expires_at": {
           "comment": "Deadline after which another worker may reclaim pending delivery.",
@@ -71446,7 +71554,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6
+          "ordinalPosition": 7
         },
         "lease_token": {
           "comment": "Unique worker fencing token rotated for each delivery claim.",
@@ -71456,7 +71564,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4
+          "ordinalPosition": 5
         },
         "leased_at": {
           "comment": "Timestamp when the current delivery claim began.",
@@ -71466,7 +71574,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5
+          "ordinalPosition": 6
         },
         "notification_id": {
           "comment": "Notification identifier and second half of the durable intent identity.",
@@ -71476,7 +71584,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 2
+          "ordinalPosition": 3
         },
         "status": {
           "comment": "Generated enum derived exclusively from mutually exclusive terminal delivery facts.",
@@ -71486,7 +71594,7 @@
           "generatedExpression": "\nCASE\n    WHEN (suppressed_at IS NOT NULL) THEN 'suppressed'::notification_push_intent_statuses\n    WHEN (delivered_at IS NOT NULL) THEN 'delivered'::notification_push_intent_statuses\n    ELSE 'pending'::notification_push_intent_statuses\nEND",
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 3
+          "ordinalPosition": 4
         },
         "suppressed_at": {
           "comment": "Timestamp when live eligibility prevented push delivery.",
@@ -71496,7 +71604,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7
+          "ordinalPosition": 8
         },
         "updated_at": {
           "comment": null,
@@ -71506,7 +71614,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 10
+          "ordinalPosition": 11
         },
         "user_id": {
           "comment": "Notification owner and first half of the durable intent identity.",
@@ -71516,7 +71624,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 1
+          "ordinalPosition": 2
         }
       },
       "comment": "One durable browser-push effect per notification. Lease fencing permits recovery after worker loss without changing notification state.",
@@ -71572,6 +71680,29 @@
           "unique": false,
           "valid": true
         },
+        "idx_notification_push_intents__pending_retention": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_notification_push_intents__pending_retention ON public.notification_push_intents USING btree (id) WHERE (status = 'pending'::notification_push_intent_statuses)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(status = 'pending'::notification_push_intent_statuses)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_notification_push_intents__terminal_retention": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -71611,6 +71742,29 @@
           "primary": false,
           "ready": true,
           "unique": false,
+          "valid": true
+        },
+        "notification_push_intents_id_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX notification_push_intents_id_key ON public.notification_push_intents USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
           "valid": true
         },
         "notification_push_intents_lease_token_key": {
@@ -71680,6 +71834,9 @@
         }
       },
       "uniqueConstraints": {
+        "notification_push_intents_id_key": {
+          "columns": ["id"]
+        },
         "notification_push_intents_lease_token_key": {
           "columns": ["lease_token"]
         }
@@ -121978,6 +122135,29 @@
         }
       },
       "indexes": {
+        "idx_session_referral_attributions__anonymous_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_session_referral_attributions__anonymous_id ON ONLY public.session_referral_attributions USING btree (id) WHERE (user_id IS NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(user_id IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_session_referral_attributions__referrer_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -131138,6 +131318,38 @@
           "primary": false,
           "ready": true,
           "unique": true,
+          "valid": true
+        },
+        "idx_user_data_requests__download_expiry": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_user_data_requests__download_expiry ON public.user_data_requests USING btree (expires_at, id) WHERE (s3_key IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "expires_at",
+              "descending": false,
+              "expression": "expires_at",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(s3_key IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
           "valid": true
         },
         "idx_user_data_requests__processing_attempt_id": {

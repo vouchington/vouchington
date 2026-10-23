@@ -1,4 +1,5 @@
 import type { JobOptions } from 'glide-mq'
+import { getDeployEnvironment } from '@ts-shared/deploy-environment'
 import {
   defineScheduledJobManifest,
   upsertScheduledJobManifest,
@@ -53,6 +54,12 @@ const SCHEDULE_OPTS = {
   removeOnFail: 100,
   priority: PRIORITY_DEFAULT,
 } satisfies JobOptions
+
+const DATA_RETENTION_SCHEDULE_OPTS = () =>
+  ({
+    ...SCHEDULE_OPTS,
+    priority: getDeployEnvironment() === 'staging' ? PRIORITY_DEFAULT + 10 : PRIORITY_DEFAULT,
+  }) satisfies JobOptions
 
 const TOP_HASHTAGS_SCHEDULE_OPTS = {
   ...SCHEDULE_OPTS,
@@ -149,13 +156,13 @@ export const scheduledJobManifest = defineScheduledJobManifest(QUEUE_NAME, [
   {
     schedulerId: DATA_RETENTION_SCHEDULER_ID,
     repeat: { pattern: DATA_RETENTION_CRON },
-    template: { name: DATA_RETENTION_JOB_NAME, data: {}, opts: SCHEDULE_OPTS },
-    environment: 'production',
+    template: { name: DATA_RETENTION_JOB_NAME, data: {}, opts: DATA_RETENTION_SCHEDULE_OPTS },
+    environment: 'deployed',
     operatorSurfaces: [
       {
         kind: 'scheduled-jobs',
         id: DATA_RETENTION_SCHEDULER_ID,
-        schedule: `${DATA_RETENTION_CRON} (prod only)`,
+        schedule: DATA_RETENTION_CRON,
         description: 'Enforce database and local analytics retention policies',
         trigger: enqueueDataRetentionCleanup,
       },

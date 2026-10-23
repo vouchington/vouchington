@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { ExpiredMonthlyPartition } from '@vouchington/postgres/partitions'
 import type { QueryExecutor } from '../types.mts'
 import { beforeRetireMonthlyPartition } from './before-retire-monthly-partition.mts'
+import { withTestScopedCrawlRetirementReference } from '@voucha/test-helpers'
 
 function partition(table: string, partitionName: string): ExpiredMonthlyPartition {
   return { table, partitionName, year: 2019, month: 1, dropPriority: 0 }
@@ -15,6 +16,14 @@ function recordStatements(statements: string[]): QueryExecutor {
 }
 
 describe('beforeRetireMonthlyPartition', () => {
+  it('clears an owned discovery FK on the existing crawl partition before retirement', async () => {
+    const state = await withTestScopedCrawlRetirementReference(beforeRetireMonthlyPartition)
+    expect(state).toEqual({
+      discoveryRetained: true,
+      pointerCleared: true,
+      crawlRemovable: true,
+    })
+  })
   it('removes embedding batch entities before a crawl-chunk partition is retired', async () => {
     const statements: string[] = []
     await beforeRetireMonthlyPartition(
@@ -29,22 +38,23 @@ describe('beforeRetireMonthlyPartition', () => {
     ])
   })
 
-  it('clears both crawl pointers and deletes retained chunks in order', async () => {
+  it('clears all crawl pointers and deletes retained chunks in order', async () => {
     const statements: string[] = []
     await beforeRetireMonthlyPartition(
       recordStatements(statements),
       partition('crawls', 'crawls__p_2019_01'),
     )
-    expect(statements.map(statement => statement.trim())).toEqual([
-      `/* retireMonthlyPartition:clearBatchCrawls */
-      UPDATE bedrock_embedding_batches SET crawl_id = NULL
-      WHERE crawl_id IN (SELECT id FROM crawls__p_2019_01)`,
-      `/* retireMonthlyPartition:clearReferralCrawls */
-      UPDATE user_referral_program_links SET last_crawl_id = NULL
-      WHERE last_crawl_id IN (SELECT id FROM crawls__p_2019_01)`,
-      `/* retireMonthlyPartition:deleteCrawlChunks */
-      DELETE FROM crawl_chunks WHERE crawl_id IN (SELECT id FROM crawls__p_2019_01)`,
-    ])
+    const normalize = (statement: string) => statement.replaceAll(/\s+/gu, ' ').trim()
+    expect(statements.slice(0, -1).map(normalize).toSorted()).toEqual(
+      [
+        '/* retireMonthlyPartition:clearBatchCrawls */ UPDATE bedrock_embedding_batches SET crawl_id = NULL WHERE crawl_id IN (SELECT id FROM crawls__p_2019_01)',
+        '/* retireMonthlyPartition:clearReferralCrawls */ UPDATE user_referral_program_links SET last_crawl_id = NULL WHERE last_crawl_id IN (SELECT id FROM crawls__p_2019_01)',
+        '/* retireMonthlyPartition:clearImportDiscoveryCrawls */ UPDATE user_rss_feed_import_row_discoveries SET crawl_id = NULL WHERE crawl_id IN (SELECT id FROM crawls__p_2019_01)',
+      ].toSorted(),
+    )
+    expect(normalize(statements.at(-1)!)).toBe(
+      '/* retireMonthlyPartition:deleteCrawlChunks */ DELETE FROM crawl_chunks WHERE crawl_id IN (SELECT id FROM crawls__p_2019_01)',
+    )
   })
 
   it('leaves independent RSS partitions without app-specific crawl mutations', async () => {

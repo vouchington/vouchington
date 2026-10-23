@@ -44,6 +44,7 @@ _none_
 **Indexes:**
 
 - `idx_user_data_requests__active_per_requester`: `CREATE UNIQUE INDEX idx_user_data_requests__active_per_requester ON public.user_data_requests USING btree (user_id, requested_by_id) WHERE ((completed_at IS NULL) AND (failed_at IS NULL))`
+- `idx_user_data_requests__download_expiry`: `CREATE INDEX idx_user_data_requests__download_expiry ON public.user_data_requests USING btree (expires_at, id) WHERE (s3_key IS NOT NULL)`
 - `idx_user_data_requests__processing_attempt_id`: `CREATE UNIQUE INDEX idx_user_data_requests__processing_attempt_id ON public.user_data_requests USING btree (processing_attempt_id)`
 - `idx_user_data_requests__requested_by_id`: `CREATE INDEX idx_user_data_requests__requested_by_id ON public.user_data_requests USING btree (requested_by_id)`
 - `idx_user_data_requests__user_id_requested_by_id`: `CREATE INDEX idx_user_data_requests__user_id_requested_by_id ON public.user_data_requests USING btree (user_id, requested_by_id, id DESC)`
