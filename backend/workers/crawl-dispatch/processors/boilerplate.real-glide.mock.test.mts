@@ -1,10 +1,10 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { Readable } from 'node:stream'
+import { gzipSync } from 'node:zlib'
 import { Queue, Worker, type Job } from 'glide-mq'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
 import { S3ImagesClient } from '@modules/aws'
-import { gzipBytes } from '@modules/utils/compression'
 import { BACKGROUND_CPU_QUEUE_NAME as QUEUE_NAME } from '@queues/background-cpu/config'
 import { backgroundCpu as crawlDispatchQueue } from '@queues/background-cpu/queues'
 import { getLatestBoilerplateRemovalByHostnameAndPath } from '@services/boilerplate-removals'
@@ -64,7 +64,7 @@ describe('crawl-dispatch boilerplate jobs through real GlideMQ', () => {
 
   it('dispatches a parent path and persists its HTML removal result', async () => {
     const html = '<html><body><header>Nav</header><p>Unique content</p></body></html>'
-    const gzipped = await gzipBytes(Buffer.from(html))
+    const gzipped = gzipSync(Buffer.from(html))
     const mockSend = vi.mocked(S3ImagesClient.send)
     mockSend.mockImplementation(async () => ({ Body: Readable.from([gzipped]) }) as never)
 

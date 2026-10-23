@@ -3,9 +3,8 @@ import * as fsPromises from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { Readable } from 'node:stream'
-import { gunzipSync } from 'node:zlib'
+import { gunzipSync, gzipSync } from 'node:zlib'
 import { describe, it, expect, vi, beforeEach, afterAll } from 'vitest'
-import { gzipBytes } from '@modules/utils/compression'
 import { downloadCrawlHtmlToTempFile, uploadCrawlHtmlFileToS3 } from './s3.mts'
 
 const recordedGzipDirectories = vi.hoisted(() => ({ paths: [] as string[] }))
@@ -114,7 +113,7 @@ describe('s3', () => {
 
     it('should fetch and decompress HTML from S3', async () => {
       const html = '<html><body>Hello</body></html>'
-      const gzipped = await gzipBytes(Buffer.from(html))
+      const gzipped = gzipSync(Buffer.from(html))
 
       mockSend.mockResolvedValueOnce({
         Body: Readable.from([gzipped]),
@@ -136,7 +135,7 @@ describe('s3', () => {
 
     it('should fetch and decompress HTML from S3 when Body is a web ReadableStream', async () => {
       const html = '<html><body>Web stream</body></html>'
-      const gzipped = await gzipBytes(Buffer.from(html))
+      const gzipped = gzipSync(Buffer.from(html))
 
       mockSend.mockResolvedValueOnce({
         Body: Readable.toWeb(Readable.from([gzipped])),
@@ -178,7 +177,7 @@ describe('s3', () => {
     })
 
     it('stops decompression at the caller byte budget without returning a partial file', async () => {
-      const gzipped = await gzipBytes(Buffer.alloc(1025, 'a'))
+      const gzipped = gzipSync(Buffer.alloc(1025, 'a'))
       mockSend.mockResolvedValueOnce({ Body: Readable.from([gzipped]) } as never)
 
       await expect(
