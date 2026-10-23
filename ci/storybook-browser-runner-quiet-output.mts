@@ -1,4 +1,4 @@
-import { STORYBOOK_PROGRESS_MARKER_PREFIX } from '../test-helpers/vitest-storybook-progress-reporter.mts'
+const STORYBOOK_PROGRESS_PREFIX = '[storybook-browser-progress]'
 import {
   hasStorybookBrowserViteDependencyReady,
   hasStorybookViteNewDependenciesFound,
@@ -48,7 +48,7 @@ export class StorybookQuietOutput {
     const plain = stripAnsi(line)
     const inBlock = this.inViteDepsBlock[source]
     this.inViteDepsBlock[source] = false
-    if (plain.includes(STORYBOOK_PROGRESS_MARKER_PREFIX)) return true
+    if (plain.includes(STORYBOOK_PROGRESS_PREFIX)) return true
     if (isOptimizerLifecycleLine(plain)) return false
     if (viteDepsDebugPattern.test(plain)) {
       this.inViteDepsBlock[source] = true

@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
-import { listenOnEphemeralPort } from '../ts-shared/utils/ephemeral-ports.mts'
+import { listenOnRunnerUnreservedEphemeralPort } from 'vouchington-tooling/runner-port-policy'
 
 import { listen, server } from './dev-server.mts'
 import { PLAYWRIGHT_PODCAST_COVER_URL } from './playwright-podcast-cover.mts'
@@ -40,7 +40,7 @@ function request(path: string): Promise<{
 
 describe('Lambda dev server Playwright fixture', () => {
   beforeAll(async () => {
-    const port = await listenOnEphemeralPort(server, '127.0.0.1')
+    const port = await listenOnRunnerUnreservedEphemeralPort(server, '127.0.0.1')
     origin = `http://127.0.0.1:${port}`
   })
 

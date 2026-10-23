@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process'
 import { randomInt } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import net from 'node:net'
-import { listenOnEphemeralPort } from '@ts-shared/utils/ephemeral-ports'
+import { listenOnRunnerUnreservedEphemeralPort } from 'vouchington-tooling/runner-port-policy'
 import { isFetchSafePort } from '@ts-shared/utils/fetch-ports'
 
 const LOWEST_UNPRIVILEGED_PORT = 1024
@@ -57,7 +57,7 @@ export async function listenOnFetchSafeEphemeralPort(
   server: net.Server,
   listen: ListenOnLoopback = listenOnLoopback,
 ): Promise<number> {
-  return listenOnEphemeralPort(server, '127.0.0.1', {
+  return listenOnRunnerUnreservedEphemeralPort(server, '127.0.0.1', {
     isAllowedPort: isFetchSafePort,
     listen: async candidate => listen(candidate, 0),
   })

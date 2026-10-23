@@ -3,7 +3,7 @@ import { FirehoseClient, ListDeliveryStreamsCommand } from '@aws-sdk/client-fire
 import { ListBucketsCommand, S3Client } from '@aws-sdk/client-s3'
 import { ListQueuesCommand, SQSClient } from '@aws-sdk/client-sqs'
 import { afterEach, describe, expect, it } from 'vitest'
-import { listenOnEphemeralPort } from '@ts-shared/utils/ephemeral-ports'
+import { listenOnRunnerUnreservedEphemeralPort } from 'vouchington-tooling/runner-port-policy'
 import { createResponseBodyBoundAwsRequestHandler } from './config.mts'
 
 const TEST_TIMEOUT_MS = 200
@@ -50,7 +50,7 @@ describe('AWS request timeouts', () => {
       response.writeHead(200, { 'content-type': 'application/xml' })
       response.flushHeaders()
     })
-    const port = await listenOnEphemeralPort(server, '127.0.0.1')
+    const port = await listenOnRunnerUnreservedEphemeralPort(server, '127.0.0.1')
     const client = new S3Client({
       credentials: TEST_CREDENTIALS,
       endpoint: `http://127.0.0.1:${port}`,
@@ -117,7 +117,7 @@ describe('AWS request timeouts', () => {
 
   async function startStalledServer(): Promise<string> {
     server = createServer(() => {})
-    const port = await listenOnEphemeralPort(server, '127.0.0.1')
+    const port = await listenOnRunnerUnreservedEphemeralPort(server, '127.0.0.1')
     return `http://127.0.0.1:${port}`
   }
 })

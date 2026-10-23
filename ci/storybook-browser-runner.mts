@@ -41,7 +41,7 @@ import {
   parseStorybookViteNewDependencies,
   stripAnsi,
 } from './transient-retry/storybook-shared.mts'
-import { latestStorybookProgressSequence } from '../test-helpers/vitest-storybook-progress-reporter.mts'
+import { latestStorybookProgressSequence } from 'vouchington-tooling/vitest-diagnostics'
 
 export { makeAttemptEnv } from './storybook-browser-runner-env.mts'
 
@@ -413,7 +413,10 @@ async function runUpstreamAttempt(
       optimizerReadyAt ??= now
       lastHangProgressAt = now
     }
-    const sequence = latestStorybookProgressSequence(plainOutputBuffer)
+    const sequence = latestStorybookProgressSequence(
+      plainOutputBuffer,
+      '[storybook-browser-progress]',
+    )
     if (sequence != null && sequence > lastSemanticSequence) {
       lastSemanticSequence = sequence
       semanticProgressSeen = true

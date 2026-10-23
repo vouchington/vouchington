@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs'
-import { BACKEND_UNIT_FILE_PROGRESS_PREFIX } from '../test-helpers/vitest-file-progress-reporter.mts'
+const FILE_PROGRESS_PREFIX = '[backend-unit-file]'
 
 const EVENT_PATTERN =
   /^event=(start|finish) module=("(?:[^"\\]|\\.)*")(?: state=[a-z]+)?(?: at=(\d+))?$/u
@@ -11,8 +11,8 @@ function readProgress(progress: string): FileProgress {
   const unfinished = new Map<string, number | undefined>()
   const finishedMs: [string, number][] = []
   for (const line of progress.split('\n')) {
-    if (!line.startsWith(`${BACKEND_UNIT_FILE_PROGRESS_PREFIX} `)) continue
-    const match = EVENT_PATTERN.exec(line.slice(BACKEND_UNIT_FILE_PROGRESS_PREFIX.length + 1))
+    if (!line.startsWith(`${FILE_PROGRESS_PREFIX} `)) continue
+    const match = EVENT_PATTERN.exec(line.slice(FILE_PROGRESS_PREFIX.length + 1))
     if (!match) continue
     const moduleId = JSON.parse(match[2] ?? '""') as string
     const at = match[3] === undefined ? undefined : Number(match[3])

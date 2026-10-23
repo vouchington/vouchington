@@ -3,7 +3,8 @@ import { join } from 'node:path'
 import { parse as load } from 'yaml'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { ciOutputFile, ciReporters } from '../../test-helpers/vitest-ci-reporters.mts'
+import { ciReporters } from 'vouchington-tooling/vitest-diagnostics'
+import { vitestCiReporterOptions } from '../../test-helpers/vitest-ci-reporter-options.mts'
 
 const workflowDir = '.github/workflows'
 const workflowFiles = readdirSync(workflowDir).filter(file => /\.(ya?ml)$/.test(file))
@@ -124,32 +125,14 @@ describe('Vitest CI reporters', () => {
     vi.stubEnv('GITHUB_REPOSITORY', 'example/repository')
     vi.stubEnv('GITHUB_SHA', 'a'.repeat(40))
     vi.stubEnv('GITHUB_WORKSPACE', '/workspace')
-    const reporters = ciReporters()
+    const reporters = ciReporters(vitestCiReporterOptions)
 
-    expect(reporters).toEqual(expect.arrayContaining(['minimal', 'junit', 'hanging-process']))
-    expect(reporters).not.toContain('blob')
-    expect(reporters).toEqual(
-      expect.arrayContaining([
-        [
-          'github-actions',
-          expect.objectContaining({
-            onWritePath: expect.any(Function),
-            jobSummary: {
-              enabled: false,
-              fileLinks: {
-                repository: 'example/repository',
-                commitHash: 'a'.repeat(40),
-                workspacePath: '/workspace',
-              },
-            },
-          }),
-        ],
-      ]),
-    )
     expect(reporters).toEqual(
       expect.arrayContaining([expect.objectContaining({ onProcessTimeout: expect.any(Function) })]),
     )
-    expect(reporters).toHaveLength(6)
+    expect(reporters).toEqual(expect.arrayContaining(vitestCiReporterOptions.extraReporters))
+    expect(vitestCiReporterOptions.fileProgressPrefix).toBe('[backend-unit-file]')
+    expect(vitestCiReporterOptions.storybookProgressPrefix).toBe('[storybook-browser-progress]')
   })
 
   it('adds browser progress diagnostics for Storybook runs', () => {
@@ -158,31 +141,8 @@ describe('Vitest CI reporters', () => {
     vi.stubEnv('VITEST_DIAGNOSTICS', undefined)
     vi.stubEnv('VITEST_FILE_PROGRESS_FILE', undefined)
 
-    expect(ciReporters()).toHaveLength(7)
-  })
-
-  it.each([undefined, ''])('leaves local reporter selection alone for %s', configured => {
-    vi.stubEnv('VITEST_CI_REPORTERS', configured)
-    vi.stubEnv('VITEST_DIAGNOSTICS', undefined)
-
-    expect(ciReporters()).toBeUndefined()
-  })
-
-  it.each(['merge', 'unknown'])('rejects unsupported reporter mode %s', configured => {
-    vi.stubEnv('VITEST_CI_REPORTERS', configured)
-
-    expect(() => ciReporters()).toThrow('Accepted value: run.')
-  })
-
-  it('routes the configured JUnit output to its reporter', () => {
-    vi.stubEnv('VITEST_JUNIT_OUTPUT_FILE', 'suite.junit.xml')
-
-    expect(ciOutputFile()).toEqual({ junit: 'suite.junit.xml' })
-  })
-
-  it('leaves output routing unset without a JUnit path', () => {
-    vi.stubEnv('VITEST_JUNIT_OUTPUT_FILE', undefined)
-
-    expect(ciOutputFile()).toBeUndefined()
+    expect(ciReporters(vitestCiReporterOptions)).toEqual(
+      expect.arrayContaining(vitestCiReporterOptions.extraReporters),
+    )
   })
 })

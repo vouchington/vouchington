@@ -3,12 +3,13 @@ import { mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { formatBackendUnitFileProgress } from '../test-helpers/vitest-file-progress-reporter.mts'
+import { formatFileProgress } from 'vouchington-tooling/vitest-diagnostics'
 import { formatDeadlineReport, unfinishedFiles } from './backend-unit-unfinished-files.mts'
 
-const start = (id: string, at?: number) => formatBackendUnitFileProgress('start', id, undefined, at)
+const start = (id: string, at?: number) =>
+  formatFileProgress('start', id, undefined, at, '[backend-unit-file]')
 const finish = (id: string, at?: number) =>
-  formatBackendUnitFileProgress('finish', id, 'passed', at)
+  formatFileProgress('finish', id, 'passed', at, '[backend-unit-file]')
 
 describe('backend-unit deadline report', () => {
   it('lists files that started and never finished, including odd characters', () => {
