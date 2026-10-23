@@ -44,19 +44,17 @@ describe('beforeRetireMonthlyPartition', () => {
       recordStatements(statements),
       partition('crawls', 'crawls__p_2019_01'),
     )
-    expect(statements.map(statement => statement.trim())).toEqual([
-      `/* retireMonthlyPartition:clearBatchCrawls */
-      UPDATE bedrock_embedding_batches SET crawl_id = NULL
-      WHERE crawl_id IN (SELECT id FROM crawls__p_2019_01)`,
-      `/* retireMonthlyPartition:clearReferralCrawls */
-      UPDATE user_referral_program_links SET last_crawl_id = NULL
-      WHERE last_crawl_id IN (SELECT id FROM crawls__p_2019_01)`,
-      `/* retireMonthlyPartition:clearImportDiscoveryCrawls */
-      UPDATE user_rss_feed_import_row_discoveries SET crawl_id = NULL
-      WHERE crawl_id IN (SELECT id FROM crawls__p_2019_01)`,
-      `/* retireMonthlyPartition:deleteCrawlChunks */
-      DELETE FROM crawl_chunks WHERE crawl_id IN (SELECT id FROM crawls__p_2019_01)`,
-    ])
+    const normalize = (statement: string) => statement.replaceAll(/\s+/gu, ' ').trim()
+    expect(statements.slice(0, -1).map(normalize).toSorted()).toEqual(
+      [
+        '/* retireMonthlyPartition:clearBatchCrawls */ UPDATE bedrock_embedding_batches SET crawl_id = NULL WHERE crawl_id IN (SELECT id FROM crawls__p_2019_01)',
+        '/* retireMonthlyPartition:clearReferralCrawls */ UPDATE user_referral_program_links SET last_crawl_id = NULL WHERE last_crawl_id IN (SELECT id FROM crawls__p_2019_01)',
+        '/* retireMonthlyPartition:clearImportDiscoveryCrawls */ UPDATE user_rss_feed_import_row_discoveries SET crawl_id = NULL WHERE crawl_id IN (SELECT id FROM crawls__p_2019_01)',
+      ].toSorted(),
+    )
+    expect(normalize(statements.at(-1)!)).toBe(
+      '/* retireMonthlyPartition:deleteCrawlChunks */ DELETE FROM crawl_chunks WHERE crawl_id IN (SELECT id FROM crawls__p_2019_01)',
+    )
   })
 
   it('leaves independent RSS partitions without app-specific crawl mutations', async () => {

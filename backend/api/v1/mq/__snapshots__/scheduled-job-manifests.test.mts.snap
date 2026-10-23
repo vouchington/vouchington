@@ -2903,13 +2903,13 @@ exports[`scheduled job manifest catalog > pins every runtime scheduler contract 
     },
   },
   {
-    "environment": "production",
+    "environment": "deployed",
     "operatorSurfaces": [
       {
         "description": "Enforce database and local analytics retention policies",
         "id": "data-retention-cleanup-daily",
         "kind": "scheduled-jobs",
-        "schedule": "0 4 * * * (prod only)",
+        "schedule": "0 4 * * *",
         "trigger": "[function]",
       },
     ],
@@ -3284,7 +3284,7 @@ exports[`scheduled job manifest catalog > projects every scheduled API surface 1
     "id": "data-retention-cleanup-daily",
     "job_name": "dataRetentionCleanup",
     "queue_name": "psql",
-    "schedule": "0 4 * * * (prod only)",
+    "schedule": "0 4 * * *",
     "triggerName": "[anonymous]",
   },
   {

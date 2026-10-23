@@ -28,10 +28,6 @@ describe('schema growth classification', () => {
     expect(tables.get('ai_usage_provider_response_keys')).toContain(
       'global response-id idempotency',
     )
-    expect(tables.get('notification_push_intents')).toContain('Pending delivery work')
-    expect(tables.get('notification_push_intent_subscription_receipts')).toContain(
-      'Generation receipts',
-    )
     expect(tables.get('web_push_endpoint_owners')).toContain('cross-user endpoint uniqueness')
     expect(tables.get('community_members')).toContain('Relationship edges')
     expect(tables.get(EXTRA_UNBOUNDED_TABLES[0]!)).toContain('owning entity or workflow')
@@ -58,9 +54,14 @@ describe('schema growth classification', () => {
       expect(EXPLICIT_BOUNDED_TABLES.has(table)).toBe(true)
       expect(UNBOUNDED_UNPARTITIONED_TABLES.has(table)).toBe(false)
     }
-    expect(EXPLICIT_BOUNDED_TABLES.has('notification_push_intents')).toBe(false)
-    expect(EXPLICIT_BOUNDED_TABLES.has('notification_push_intent_subscription_receipts')).toBe(
-      false,
+    expect(EXPLICIT_BOUNDED_TABLES.get('notification_push_intents')).toContain(
+      'capped daily retention sweeps',
+    )
+    expect(EXPLICIT_BOUNDED_TABLES.get('notification_push_intent_subscription_receipts')).toContain(
+      'cascade',
+    )
+    expect(EXPLICIT_BOUNDED_TABLES.get('notification_push_intent_retention_cursors')).toContain(
+      'checked singleton',
     )
     expect(NON_DEFAULT_ID_EXCEPTIONS.get('user_sessions')).toMatchObject({ policy: 'uuidv7' })
   })
