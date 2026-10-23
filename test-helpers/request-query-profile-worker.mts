@@ -152,3 +152,8 @@ function reportWorkerProfile(profile: WorkerQueryProfile): void {
     recordWorkerProfileFailure(profile, 'profile-output', err)
   }
 }
+
+// The published testing entry has named runtime exports; its declarations use .mts paths.
+// oxlint-disable-next-line import/export
+export * from '@vouchington/worker-runtime/testing'
+export { RequestQueryProfileWorker as Worker }

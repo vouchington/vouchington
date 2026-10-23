@@ -102,7 +102,7 @@ export function backendAliases({
   if (useWorkerRuntimeTestAdapter) {
     aliases.push({
       find: /^glide-mq$/,
-      replacement: backendApiRequire.resolve('@vouchington/worker-runtime/testing'),
+      replacement: resolve(process.cwd(), 'test-helpers/request-query-profile-worker.mts'),
     })
   }
 
