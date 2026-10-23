@@ -1,0 +1,95 @@
+id: no-knip-export-skip-tags-javascript
+language: JavaScript
+severity: error
+message: >-
+  Do not suppress Knip's production export analysis with comment tags. Remove @public, @beta, @alias,
+  or @internal; model runtime-loaded entrypoints in knip.jsonc and remove or relocate unused exports.
+files:
+  - '**/*'
+  - '.github/**'
+ignores:
+  - '**/*.test.*'
+  - '**/*.spec.*'
+  - '**/__tests__/**'
+  # Mirrors the repository's test-helper placement policy; nested package helper dirs are banned.
+  - 'test-helpers/**'
+  - '.github/test-helpers/**'
+  - 'backend/test-helpers/**'
+  - 'ci/test-helpers/**'
+  - 'dev/test-helpers/**'
+  - 'integration-tests/test-helpers/**'
+  - 'lambdas/test-helpers/**'
+  - 'static-code-analysis/test-helpers/**'
+  - 'ts-shared/test-helpers/**'
+  - 'playwright/test-helpers/**'
+  - 'web/test-helpers/**'
+  - 'email-templates/test-helpers/**'
+  - 'cloudflare-worker/test-helpers/**'
+rule:
+  kind: comment
+  regex: '(?s)@(?:public|beta|alias|internal)\b'
+examples:
+  - code: |
+      /** @public Makes this export appear used even when production has no caller. */
+      export function unusedBoundary() {}
+    isValid: false
+    file: 'backend/services/example/unused-boundary.mjs'
+  - code: |
+      /** @internal This export is ignored by Knip in production mode. */
+      export const internalBoundary = () => true
+    isValid: false
+    file: 'cloudflare-worker/src/example.js'
+  - code: |
+      /** The malformed tag @publicity does not match a Knip skip tag. */
+      export const publicApi = true
+    isValid: true
+    file: 'web/lib/example.js'
+  - code: |
+      // @public Standalone line comments suppress exports in Knip.
+      export const publicApi = true
+    isValid: false
+    file: 'backend/services/example/public-api.js'
+  - code: |
+      const documentation = '@public is data, not a source comment'
+      export { documentation }
+    isValid: true
+    file: 'lambdas/image-resize/src/example.js'
+  - code: |
+      /** @public Test fixtures may describe a public export. */
+      export function fixtureBoundary() {}
+    isValid: true
+    file: 'backend/services/example/__tests__/fixture.js'
+  - code: |
+      /** @public Test helpers are outside production export analysis. */
+      export function helperBoundary() {}
+    isValid: true
+    file: 'backend/test-helpers/example.js'
+  - code: |
+      /** @public Nested helpers are not an allowed test-helper location. */
+      export function nestedHelperBoundary() {}
+    isValid: false
+    file: 'backend/services/example/test-helpers/helper.js'
+  - code: |
+      /** @public A test-support directory name does not make production code a test. */
+      export function testSupportBoundary() {}
+    isValid: false
+    file: 'backend/services/example/test-support/helper.js'
+  - code: |
+      /** @public A test-helper filename does not make production code a test. */
+      export function testHelperNameBoundary() {}
+    isValid: false
+    file: 'backend/services/example/worker-test-helper.js'
+  - code: |
+      /** @public CI tooling is included in the guard. */
+      export function ciBoundary() {}
+    isValid: false
+    file: 'ci/run-vitest-project-group.mjs'
+  - code: |
+      /** @public Test helpers are outside production export analysis. */
+      export function helperBoundary() {}
+    isValid: true
+    file: 'playwright/test-helpers/example.js'
+  - code: |
+      export const documented = true // @public This token is banned by repository policy.
+    isValid: false
+    file: 'dev/agent-policy.mjs'

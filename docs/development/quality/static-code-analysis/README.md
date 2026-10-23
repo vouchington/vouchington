@@ -65,6 +65,13 @@ Raw PostgreSQL SQL in backend tests belongs in focused first-layer helpers under
 
 Knip entries represent code invoked by a runner, framework, or browser outside ordinary imports. Private implementation files remain traversed project sources so their unused exports are visible; fixture-only imports must not make a production export appear live. The configuration keeps these boundaries explicit rather than treating every source file as an entry.
 
+Knip's export-suppression comment tags are `@public`, `@beta`, `@alias`, and `@internal`. The first
+three suppress exports in every Knip mode; `@internal` suppresses exports in production mode.
+Repository policy rejects these exact tags in source comments, including comments Knip would not
+associate with an export, while allowing recognized test files and first-layer test helpers. Model
+filename-loaded migrations and seed modules as explicit entries in `knip.jsonc`; move test-only
+exports into test helpers or remove them instead of keeping a skip tag.
+
 Production imports of test infrastructure make fixture implementation part of the runtime and can make test-only exports appear production-used. Dependency boundaries preserve that separation while allowing the canonical configuration needed by test runners.
 
 ## Runtime work tunables
