@@ -8,6 +8,7 @@ import { getJwtRevokedKey } from './constants.mts'
 import { revokeSession, isSessionRevoked } from './revocation.mts'
 import { revokeSessionKeys, revokeUserSessionsBefore } from './session-revocation-keys.mts'
 import { withAbortedPostgresTransactionForTest } from '@voucha/test-helpers/postgres-aborted-transaction'
+import { withRejectedPostgresQueryForTest } from '@voucha/test-helpers/injected-failures'
 import { v7 } from 'uuid'
 
 describe('revocation', () => {
@@ -33,15 +34,16 @@ describe('revocation', () => {
     expect(await isSessionRevoked(sid)).toBe(true)
   })
 
-  it('keeps logout revocation available when registry writes fail best-effort', async () => {
+  it('fails closed when the registry write fails after Valkey revocation', async () => {
     const sid = v7()
 
-    await revokeSession(sid, {
-      registryFailureMode: 'ignore',
-      query: async () => {
-        throw new Error('database unavailable')
-      },
-    })
+    await expect(
+      withRejectedPostgresQueryForTest(
+        statement => statement.includes('/* revokeSession */'),
+        'database unavailable',
+        query => revokeSession(sid, { query }),
+      ),
+    ).rejects.toThrow('database unavailable')
 
     await expect(isSessionRevoked(sid)).resolves.toBe(true)
   })

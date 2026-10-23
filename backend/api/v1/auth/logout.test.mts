@@ -2,13 +2,18 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers'
 import { createTestSessionCookies } from '@voucha/test-helpers/services/jwt-session/index'
+import { createTestUser } from '@voucha/test-helpers/entities/users'
+import { withRejectedPostgresQueryForTest } from '@voucha/test-helpers/injected-failures'
 import { postLogoutExpectingRejection } from '@voucha/test-helpers/api/v1/auth/logout-rejection'
 import { getTestUserSessionById } from '../../../test-helpers/entities/user-sessions.mts'
 import {
   createDeviceAndSessionTokens,
   isSessionRevoked,
+  runLogoutPushCleanupAndRevoke,
   verifyDeviceAndSessionTokens,
 } from '@services/jwt-session'
+import { mintNativeSessionMcpToken } from '@services/oauth-authorization-server'
+import { validateOAuthAccessToken } from '@services/oauth-authorization-server/access-tokens'
 import { routeRateLimitConfig } from '@services/route-rate-limits/config'
 import { v7 } from 'uuid'
 import { listWebPushSubscriptionsPage, upsertWebPushSubscription } from '@services/notifications'
@@ -189,6 +194,49 @@ describe('POST /api/v1/auth/logout', () => {
     expect(verified).not.toBe(false)
     const sid = (verified as Exclude<typeof verified, false>).sid
     await expect(isSessionRevoked(sid)).resolves.toBe(true)
+    await expect(getTestUserSessionById(sid)).resolves.toMatchObject({
+      revoked_at: expect.any(Date),
+    })
+  })
+
+  it('denies a native bearer after Valkey revocation even if the registry write fails, then repairs on logout replay', async () => {
+    const user = await createTestUser()
+    const did = v7()
+    const tokens = await createDeviceAndSessionTokens({ did, uid: user.id, authOrigin: 'native' })
+    const sid = tokens.sessionToken.payload.sid
+    const minted = await mintNativeSessionMcpToken(user.id, {
+      did,
+      sid,
+      clientApp: 'ios',
+      attestationStatus: 'unattested',
+    })
+    await expect(validateOAuthAccessToken(minted.access_token, 'user')).resolves.toMatchObject({
+      user_id: user.id,
+    })
+
+    await expect(
+      withRejectedPostgresQueryForTest(
+        statement => statement.includes('/* revokeSession */'),
+        'registry write unavailable',
+        query =>
+          runLogoutPushCleanupAndRevoke(
+            sid,
+            { userId: user.id, issuedAt: Math.floor(Date.now() / 1000) },
+            async () => {},
+            undefined,
+            query,
+          ),
+      ),
+    ).rejects.toThrow('registry write unavailable')
+    await expect(isSessionRevoked(sid)).resolves.toBe(true)
+    await expect(getTestUserSessionById(sid)).resolves.toMatchObject({ revoked_at: null })
+    await expect(validateOAuthAccessToken(minted.access_token, 'user')).resolves.toBeNull()
+
+    await createRequest()
+      .post('/api/v1/auth/logout')
+      .set('Cookie', [`dt=${tokens.deviceToken.token}`, `st=${tokens.sessionToken.token}`])
+      .set('Sec-Fetch-Site', 'same-origin')
+      .expect(204)
     await expect(getTestUserSessionById(sid)).resolves.toMatchObject({
       revoked_at: expect.any(Date),
     })

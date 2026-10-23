@@ -158,9 +158,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_oauth_grants__native_session
 ON oauth_grants (session_id)
 WHERE session_id IS NOT NULL;
 
-CREATE INDEX IF NOT EXISTS idx_oauth_grants__session
-ON oauth_grants (session_id, id);
-
 CREATE INDEX IF NOT EXISTS idx_oauth_grants__client
 ON oauth_grants (client_id, id);
 

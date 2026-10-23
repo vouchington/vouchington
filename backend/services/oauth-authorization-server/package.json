@@ -28,6 +28,7 @@
     "@modules/scopes": "workspace:^",
     "@modules/token-secrets": "workspace:^",
     "@modules/utils": "workspace:^",
+    "@services/jwt-session": "workspace:^",
     "@services/moderator-actions": "workspace:^",
     "@vouchington/oauth-server": "^0.2.0",
     "ssrf-guard": "^1.0.0",

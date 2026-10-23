@@ -2,6 +2,7 @@ import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import { hashToken } from '@modules/token-secrets'
 import { OAUTH_ACCESS_TOKEN_PREFIX, OAUTH_SECRET_PURPOSES } from './constants.mts'
 import { lockOAuthParticipantUsers } from './active-users.mts'
+import { isSessionRevoked } from '@services/jwt-session'
 import { getOAuthResourceUrl, type OAuthResourceAudience } from './resources.mts'
 import type { OAuthAccessPrincipal } from './types.mts'
 
@@ -20,7 +21,9 @@ export async function validateOAuthAccessToken(
     await readAccessTokenParticipants(tokenHash, query),
     query,
   )
-  const result = await query<OAuthAccessPrincipal & { owner_user_id: string | null }>(
+  const result = await query<
+    OAuthAccessPrincipal & { owner_user_id: string | null; session_id: string | null }
+  >(
     `/* validateOAuthAccessToken */ UPDATE oauth_access_tokens AS access
      SET last_used_at = CURRENT_TIMESTAMP
      FROM oauth_grants AS oauth_grant, oauth_clients AS client
@@ -53,12 +56,14 @@ export async function validateOAuthAccessToken(
        )
        AND access.resource = $2
      RETURNING client.id AS oauth_client_id, client.client_id, client.owner_user_id,
-       oauth_grant.id AS grant_id, oauth_grant.user_id, access.resource, access.scopes::text[] AS scopes, access.expires_at`,
+       oauth_grant.id AS grant_id, oauth_grant.user_id, oauth_grant.session_id,
+       access.resource, access.scopes::text[] AS scopes, access.expires_at`,
     [tokenHash, getOAuthResourceUrl(audience)],
   )
   const principal = result.rows[0]
   if (
     !principal ||
+    (principal.session_id !== null && (await isSessionRevoked(principal.session_id))) ||
     !activeParticipantIds.has(principal.user_id) ||
     (principal.owner_user_id && !activeParticipantIds.has(principal.owner_user_id))
   ) {

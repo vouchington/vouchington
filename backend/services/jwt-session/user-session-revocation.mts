@@ -55,10 +55,7 @@ export async function revokeAllAuthenticatedSessions(currentUserId: string): Pro
 
 export async function revokeSession(
   sessionId: string,
-  options?: {
-    registryFailureMode?: 'throw' | 'ignore'
-    query?: QueryExecutor
-  },
+  options?: { query?: QueryExecutor },
 ): Promise<void> {
   await revokeSessionKey(sessionId)
   await updateSessionRevocationRegistry(sessionId, options)
@@ -66,21 +63,13 @@ export async function revokeSession(
 
 async function updateSessionRevocationRegistry(
   sessionId: string,
-  options?: {
-    registryFailureMode?: 'throw' | 'ignore'
-    query?: QueryExecutor
-  },
+  options?: { query?: QueryExecutor },
 ): Promise<void> {
-  try {
-    await (options?.query ?? write)(sql`/* revokeSession */
+  await (options?.query ?? write)(sql`/* revokeSession */
       UPDATE user_sessions
       SET revoked_at = CURRENT_TIMESTAMP,
           last_seen_at = CURRENT_TIMESTAMP
       WHERE id = ${sessionId}
         AND revoked_at IS NULL
     `)
-  } catch (err) {
-    if (options?.registryFailureMode === 'ignore') return
-    throw err
-  }
 }

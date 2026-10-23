@@ -30,10 +30,8 @@ app.route('/api/v1/oauth/native-session-tokens').post(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, ROUTE)
   const session = await ctx.getSessionTokenData()
   ctx.assert(session.uid === currentUser.id, 401, 'Unauthorized')
-  const userLimit = await mintRateLimiter.addAndCheck([`user:${currentUser.id}`], 30)
   const sessionLimit = await mintRateLimiter.addAndCheck([`session:${session.sid}`], 10)
-  if (userLimit.limited || sessionLimit.limited)
-    throw createHttpError(429, 'Too many token requests')
+  if (sessionLimit.limited) throw createHttpError(429, 'Too many token requests')
 
   const hasKey = await hasAttestationKeyForDevice(session.did)
   let attestationStatus: 'attested' | 'unattested'
@@ -77,6 +75,8 @@ app.route('/api/v1/oauth/native-session-tokens').post(async (ctx: Context) => {
     422,
     'Invalid native client app',
   )
+  const userLimit = await mintRateLimiter.addAndCheck([`user:${currentUser.id}`], 30)
+  if (userLimit.limited) throw createHttpError(429, 'Too many token requests')
   const result = await mintNativeSessionMcpToken(currentUser.id, {
     did: session.did,
     sid: session.sid,

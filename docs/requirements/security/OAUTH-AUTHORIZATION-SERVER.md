@@ -90,6 +90,13 @@ for in-app chat in [#1818](https://github.com/vouchington/vouchington/issues/181
 issue a code or redirect through a browser. Third-party clients continue to use authorization code,
 S256 PKCE, and user consent. MCP still accepts bearer tokens only, never session cookies.
 
+Third-party native clients use the authorization-code flow for delegated MCP access, with the same
+scope checks, rate limits, quota, and audit as other MCP clients. Their client IDs and registered
+redirect URIs identify them independently of a signed-in native session. Voucha's published native
+client IDs and redirect URIs live in code, so these first-party metadata clients resolve without a
+self-fetch. Port-less IP loopback registrations accept any port; the token endpoint still requires
+the exact redirect URI used in the authorization request.
+
 Native email login uses a dedicated OTP entry point, and native OAuth broker completion carries its
 own verified completion proof. Both persist server-controlled native-session provenance through MFA.
 The shared web login path cannot create that provenance. Native OTP and token mint reject browser
@@ -116,6 +123,11 @@ under its session with its attestation status and revoke
 that grant without signing out. Mint and MCP calls remain audited and rate limited; plan and scope
 checks still apply on every tool call, including Free members' read-only limit. Native adoption is
 tracked in [clients #210](https://github.com/vouchington/vouchington-clients/issues/210).
+
+Native token validation also honors session revocation markers while PostgreSQL logout persistence
+is incomplete. This closes the cross-store failure window: a failed registry write cannot leave a
+revoked session's MCP token usable. Logout reports persistence failures, and a retry repairs the
+durable session record without repeating push-subscription cleanup.
 
 ## Persistence and retention
 

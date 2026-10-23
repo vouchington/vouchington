@@ -154,7 +154,7 @@ describe('native session MCP token mint', () => {
     await mint(secondCookies, 'windows').expect(200)
   })
 
-  it('requires an assertion whenever this did has an attestation key, even in global off mode', async () => {
+  it('requires App Attest even in global off mode without spending user quota on rejection', async () => {
     const native = await sessionCookies('native')
     const body = JSON.stringify(BODY)
     const headers = await createAppAttestRequestHeaders({
@@ -163,6 +163,9 @@ describe('native session MCP token mint', () => {
       path: PATH,
       body,
     })
+    const limiter = new RateLimiter({ prefix: 'native-session-mcp-mint', ttlSeconds: 60 })
+    for (let seed = 0; seed < 28; seed += 1)
+      await limiter.addAndCheck([`user:${native.user.id}`], 30)
     await mint(native.cookies).expect(403)
     const request = createRequest()
       .post(PATH)
