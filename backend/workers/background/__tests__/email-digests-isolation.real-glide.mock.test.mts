@@ -47,6 +47,7 @@ describe('transactional emails beside a flooded email-digests domain through rea
         },
       },
     })
+    harness.registerBeforeClose(() => release.resolve())
     transactional = await startRealGlideJobLifecycle('emails_login', connection)
     try {
       const digests = await Promise.all(

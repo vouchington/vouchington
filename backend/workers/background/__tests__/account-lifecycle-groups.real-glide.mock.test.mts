@@ -51,6 +51,7 @@ describe('account-lifecycle and article-sync groups through real GlideMQ', () =>
         [OPENAI_MODERATION_POST_JOB.name]: () => otherDomainRan.resolve(),
       },
     })
+    harness.registerBeforeClose(() => release.resolve())
     try {
       const flood = await Promise.all([
         ...Array.from({ length: 3 }, () =>
@@ -107,6 +108,7 @@ describe('account-lifecycle and article-sync groups through real GlideMQ', () =>
         [OPENAI_MODERATION_POST_JOB.name]: () => otherDomainRan.resolve(),
       },
     })
+    harness.registerBeforeClose(() => release.resolve())
     try {
       const flood = await Promise.all(
         Array.from({ length: 4 }, () =>

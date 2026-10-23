@@ -38,6 +38,7 @@ describe('per-job lock through real GlideMQ', () => {
         [OPENAI_MODERATION_IMAGE_JOB.name]: () => heartbeatWindowOver.resolve(),
       },
     })
+    harness.registerBeforeClose(() => heartbeatWindowOver.resolve())
     const sesMessageId = `ses-${randomUUID()}`
     const longJob = await harness.add(
       SES_INBOUND_PROCESS_JOB,

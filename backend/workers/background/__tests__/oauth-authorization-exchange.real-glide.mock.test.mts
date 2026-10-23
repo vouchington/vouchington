@@ -66,6 +66,7 @@ describe('oauth-authorization-exchange through real GlideMQ', () => {
         },
       },
     })
+    harness.registerBeforeClose(() => release.resolve())
     try {
       const exchanges = []
       for (let index = 0; index < 4; index += 1) {

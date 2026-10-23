@@ -44,7 +44,7 @@ async function settleBackgroundQueue(queue: ReturnType<typeof getOrCreateQueue>)
   }
 }
 
-afterEach(async context => {
+afterEach(async ({ task }) => {
   if (detectionDisabled) return
 
   // The worker setup owns this queue, but vi.resetModules() can give a test another module-local
@@ -79,7 +79,7 @@ afterEach(async context => {
   // diagnostic history within this test and must not advance those windows.
   const checkpoint = settlement.coalesced ? settlement.snapshot : settlement.detectorSnapshot
   const counts = countResourcesByType(checkpoint.resources)
-  const findings = detector.record(counts, context.task.file.filepath).map(verdict => ({
+  const findings = detector.record(counts, task.file.filepath).map(verdict => ({
     verdict,
     counts,
     poolMetrics: checkpoint.poolMetrics,

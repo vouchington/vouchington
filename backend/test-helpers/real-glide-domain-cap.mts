@@ -50,6 +50,7 @@ export async function measureDomainCap(options: {
       [SES_INBOUND_PROCESS_JOB.name]: () => otherRan.resolve(),
     },
   })
+  harness.registerBeforeClose(() => release.resolve())
   try {
     const flood = []
     for (let index = 0; index < cap; index += 1) {

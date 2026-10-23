@@ -9,9 +9,9 @@ import {
 // Print the server's 5xx body (message, code, stack) only when a test fails, so an unexpected 500
 // is diagnosable from CI output while passing tests that expect 500s stay silent. onTestFailed runs
 // after afterEach hooks, so the buffer is drained here rather than cleared in afterEach.
-beforeEach(context => {
+beforeEach(({ onTestFailed }) => {
   takeRecordedServerErrorResponses()
-  context.onTestFailed(() => {
+  onTestFailed(() => {
     const responses = takeRecordedServerErrorResponses()
     if (responses.length > 0) console.error(formatRecordedServerErrorResponses(responses))
   })

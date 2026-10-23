@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { Queue } from 'glide-mq'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
 import {
@@ -20,8 +21,11 @@ describe('moderation-signals domain through real GlideMQ', () => {
   let harness: BackgroundHarness | undefined
 
   afterEach(async () => {
-    await harness?.close()
-    harness = undefined
+    try {
+      await harness?.close()
+    } finally {
+      harness = undefined
+    }
   })
 
   it('routes a spam-detection job and a ban-evasion job each to its own handler', async () => {
@@ -103,15 +107,56 @@ describe('moderation-signals domain through real GlideMQ', () => {
         },
       },
     })
+    harness.registerBeforeClose(() => release.resolve())
     const jobs = []
-    for (let index = 0; index < JOBS; index += 1) {
-      const job = await harness.add(MODERATION_SIGNALS_SPAM_DETECTION_JOB, { id: randomUUID() })
-      jobs.push(job)
+    try {
+      for (let index = 0; index < JOBS; index += 1) {
+        const job = await harness.add(MODERATION_SIGNALS_SPAM_DETECTION_JOB, { id: randomUUID() })
+        jobs.push(job)
+      }
+      await allRunning.promise
+      expect(maxActive).toBe(JOBS)
+    } finally {
+      release.resolve()
     }
-    await allRunning.promise
-    expect(maxActive).toBe(JOBS)
-
-    release.resolve()
     await Promise.all(jobs.map(job => harness!.settled(job)))
+  })
+
+  it('releases a held real handler before close joins it and removes its queue', async () => {
+    const release = Promise.withResolvers<void>()
+    const order: string[] = []
+    harness = await startBackgroundHarness({
+      connection,
+      createProcessor: createBackgroundProcessor,
+      concurrency: 2,
+      bodies: {
+        [MODERATION_SIGNALS_SPAM_DETECTION_JOB.name]: async () => {
+          order.push('started')
+          await release.promise
+          order.push('finished')
+        },
+      },
+    })
+    harness.registerBeforeClose(() => {
+      order.push('released')
+      release.resolve()
+    })
+    const held = await harness.add(MODERATION_SIGNALS_SPAM_DETECTION_JOB, { id: randomUUID() })
+    await harness.activated(held, 1)
+    const sibling = await harness.add(MODERATION_SIGNALS_BAN_EVASION_JOB, {
+      communityId: randomUUID(),
+      userId: randomUUID(),
+    })
+    await expect(harness.settled(sibling)).resolves.toBe('completed')
+    await harness.close()
+    order.push('closed')
+    expect(order).toEqual(['started', 'released', 'finished', 'closed'])
+    const probe = new Queue(harness.queue.name, connection)
+    try {
+      expect(await probe.getJob(held.id)).toBeNull()
+      expect(await probe.getJob(sibling.id)).toBeNull()
+    } finally {
+      await probe.close()
+    }
   })
 })

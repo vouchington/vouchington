@@ -45,10 +45,20 @@ describe('RSS feed import row contention on real GlideMQ', () => {
     })
     const acquired = Promise.withResolvers<void>()
     const release = Promise.withResolvers<void>()
-    const holder = withRssFeedImportRowLock(rowId, async () => {
+    let holder: Promise<unknown> = Promise.resolve()
+    harness.registerBeforeClose(async () => {
+      release.resolve()
+      const cleanup = await Promise.allSettled([holder, events.close()])
+      const errors = cleanup.flatMap(result =>
+        result.status === 'rejected' ? [result.reason] : [],
+      )
+      if (errors.length) throw new AggregateError(errors, 'RSS row lock cleanup failed')
+    })
+    holder = withRssFeedImportRowLock(rowId, async () => {
       acquired.resolve()
       await release.promise
     })
+    void holder.catch(() => undefined)
 
     try {
       await Promise.all([events.waitUntilReady(), acquired.promise])

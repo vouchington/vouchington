@@ -49,6 +49,7 @@ describe('bluesky follow propagation group through real GlideMQ', () => {
         [BLUESKY_FOLLOW_PROPAGATION_BACKFILL_FOLLOWS_JOB.name]: track,
       },
     })
+    harness.registerBeforeClose(() => release.resolve())
     try {
       const jobs = await Promise.all([
         harness.add(BLUESKY_FOLLOW_PROPAGATION_RECONCILE_FOLLOW_JOB, {
