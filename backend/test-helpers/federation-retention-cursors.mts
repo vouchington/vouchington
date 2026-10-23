@@ -48,3 +48,25 @@ export async function readFollowerDistributionRetentionCursorForTest(query: Tran
   )
   return rows[0]
 }
+
+/** Isolates a replay sweep from any prior global cursor inside the caller's rollback transaction. */
+export async function resetActivityPubReplayRetentionCursorForTest(
+  query: TransactionQuery,
+  kind: 'inbox' | 'outbound',
+): Promise<void> {
+  const isOutbound = kind === 'outbound'
+  await query(
+    `/* ensureActivityPubReplayRetentionCursorForTest */
+     INSERT INTO activitypub_replay_retention_cursors (is_outbound) VALUES ($1)
+     ON CONFLICT (is_outbound) DO NOTHING`,
+    [isOutbound],
+  )
+  await query(
+    `/* resetActivityPubReplayRetentionCursorForTest */
+     UPDATE activitypub_replay_retention_cursors
+     SET sweep_cutoff_at = NULL, cursor_at = NULL, cursor_position = NULL,
+       upper_bound_at = NULL, upper_bound_position = NULL
+     WHERE is_outbound = $1`,
+    [isOutbound],
+  )
+}

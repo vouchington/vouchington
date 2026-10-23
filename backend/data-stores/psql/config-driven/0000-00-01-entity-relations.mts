@@ -96,15 +96,6 @@ CREATE TABLE IF NOT EXISTS "${metadata.table_name}" (\n`
   query += `,
     PRIMARY KEY (${primary_keys.join(', ')})`
 
-  if (storesInboundFollowActivityRowId) {
-    // Keep a referenced Follow identity until its relation is gone; defer parent actor/user cascades.
-    query += `,
-    CONSTRAINT fk_remote_follow__inbound_follow_activity_row_id
-      FOREIGN KEY (subject_id, object_id, inbound_follow_activity_row_id)
-      REFERENCES activitypub_remote_follow_activities(remote_actor_id, target_user_id, id)
-      ON DELETE NO ACTION DEFERRABLE INITIALLY DEFERRED`
-  }
-
   query += `\n  )`
 
   // Only post-subject tables are partitioned (RANGE by subject_id). User-subject tables are not

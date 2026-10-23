@@ -18,6 +18,7 @@ export type ReplayCleanupPage = {
   hasMore: boolean
   continuationPosition: Key | null
 }
+export type ReplayCleanupScope = { activityIds: readonly string[] }
 
 const SOURCE = {
   inbox: { table: 'activitypub_inbox_activities', date: 'received_at', id: 'id', condition: '' },
@@ -34,20 +35,31 @@ const SOURCE = {
  */
 export async function cleanupActivityPubReplayLedger(
   kind: Kind,
-  options: { batchSize: number; maxBatches: number; now?: Date },
+  options: {
+    batchSize: number
+    maxBatches: number
+    now?: Date
+    borrowedQuery?: TransactionQuery
+    scope?: ReplayCleanupScope
+  },
 ): Promise<ReplayCleanupPage> {
+  if (options.scope && !options.borrowedQuery)
+    throw new TypeError('A scoped replay sweep requires a borrowed transaction')
+  if (options.borrowedQuery && !options.scope)
+    throw new TypeError('A borrowed replay sweep requires a source-row scope')
   const cutoff = new Date(
     (options.now ?? new Date()).getTime() - getMaximumActivityAgeDays() * 86_400_000,
   )
-  await using query = await beginTransaction()
+  await using ownedQuery = options.borrowedQuery ? undefined : await beginTransaction()
+  const query = options.borrowedQuery ?? ownedQuery!
   const result = await cleanupWithQuery(kind, options, cutoff, query)
-  await query.commit()
+  if (ownedQuery) await ownedQuery.commit()
   return result
 }
 
 async function cleanupWithQuery(
   kind: Kind,
-  options: { batchSize: number; maxBatches: number },
+  options: { batchSize: number; maxBatches: number; scope?: ReplayCleanupScope },
   currentCutoff: Date,
   query: TransactionQuery,
 ): Promise<ReplayCleanupPage> {
@@ -89,8 +101,9 @@ async function cleanupWithQuery(
       `/* findActivityPubReplayRetentionUpperBound */
        SELECT ${source.date}::text AS at, ${source.id} AS id FROM ${source.table}
        WHERE ${source.date} < $1 ${source.condition}
+         ${options.scope ? `AND ${source.id} = ANY($2::uuid[])` : ''}
        ORDER BY ${source.date} DESC, ${source.id} DESC LIMIT 1`,
-      [cutoff],
+      options.scope ? [cutoff, options.scope.activityIds] : [cutoff],
     )
     upper = rows[0] ?? null
   }
@@ -109,6 +122,7 @@ async function cleanupWithQuery(
        WHERE ${source.date} < $1 ${source.condition}
          AND ($2::timestamptz IS NULL OR (${source.date}, ${source.id}) > ($2, $3::uuid))
          AND (${source.date}, ${source.id}) <= ($4::timestamptz, $5::uuid)
+         ${options.scope ? `AND ${source.id} = ANY($7::uuid[])` : ''}
        ORDER BY ${source.date}, ${source.id} LIMIT $6`,
       [
         cutoff,
@@ -117,6 +131,7 @@ async function cleanupWithQuery(
         upper.at,
         upper.id,
         options.batchSize + 1,
+        ...(options.scope ? [options.scope.activityIds] : []),
       ],
     )
     const page = rows.slice(0, options.batchSize)
@@ -128,8 +143,9 @@ async function cleanupWithQuery(
     const removed = await query(
       `/* deleteActivityPubReplayRetentionCandidates */
        DELETE FROM ${source.table} WHERE ${source.id} = ANY($1::uuid[])
-         AND ${source.date} < $2 ${source.condition}`,
-      [page.map(item => item.id), cutoff],
+         AND ${source.date} < $2 ${source.condition}
+         ${options.scope ? `AND ${source.id} = ANY($3::uuid[])` : ''}`,
+      [page.map(item => item.id), cutoff, ...(options.scope ? [options.scope.activityIds] : [])],
     )
     deleted += removed.rowCount ?? 0
     position = page.at(-1)!

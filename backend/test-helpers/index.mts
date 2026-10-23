@@ -108,10 +108,13 @@ export {
   prepareFederationDistributionReplayForTest,
   deleteFederationInboxFixturesForTest,
   deleteFederationInboxActivityForTest,
+  insertFederationReplayDecoysForTest,
+  countFederationReplayDecoysForTest,
 } from './federation-retention-replay.mts'
 export {
   resetFollowerDistributionRetentionCursorForTest,
   readFollowerDistributionRetentionCursorForTest,
+  resetActivityPubReplayRetentionCursorForTest,
 } from './federation-retention-cursors.mts'
 export {
   setCommunityLanguageDetectionFieldsForTest,
