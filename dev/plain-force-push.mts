@@ -1,11 +1,12 @@
 import { execFileSync } from 'node:child_process'
 
+import { gitInvocations, stripGitGlobalOptionsForPolicy } from 'vouchington-tooling/shell-parse'
+
 import {
+  findBlockedGitInvocationReason,
   findBlockedGitReason,
   PLAIN_FORCE_PUSH_REASON,
 } from './codex-hooks/policy/blocked-command-patterns.mts'
-import { gitInvocations } from './codex-hooks/policy/git-argv-policy.mts'
-import { stripGitGlobalOptionsForPolicy } from 'vouchington-tooling/shell-parse'
 
 export type ProcessSnapshot = {
   args: (pid: number) => string | undefined
@@ -19,7 +20,7 @@ export function plainForcePushReason(command: string): string | null {
   const reason = findBlockedGitReason(stripGitGlobalOptionsForPolicy(command))
   if (reason === PLAIN_FORCE_PUSH_REASON) return reason
   const viaArgv = gitInvocations(command).some(
-    invocation => findBlockedGitReason(invocation.text) === PLAIN_FORCE_PUSH_REASON,
+    invocation => findBlockedGitInvocationReason(invocation) === PLAIN_FORCE_PUSH_REASON,
   )
   return viaArgv ? PLAIN_FORCE_PUSH_REASON : null
 }
