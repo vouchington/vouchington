@@ -120,7 +120,9 @@ linked session on every bearer call, so sign-out, session revocation, expiry, su
 deletion remove that native grant's MCP authority. Third-party grants retain the existing
 appeal-only access for suspended paying members, matching REST. Users can see each native grant
 under its session with its attestation status and revoke
-that grant without signing out. Mint and MCP calls remain audited and rate limited; plan and scope
+that grant without signing out. Mint audits retain only identifier snapshots and expire after the
+approved security-record window unless an account preservation hold is active. Mint and MCP calls
+remain audited and rate limited; plan and scope
 checks still apply on every tool call, including Free members' read-only limit. Native adoption is
 tracked in [clients #210](https://github.com/vouchington/vouchington-clients/issues/210).
 

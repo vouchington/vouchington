@@ -25,7 +25,7 @@ export async function cleanupSecurityRecords(
   for (let index = 0; index < maxBatches; index++) {
     const source = SOURCES[(start + index) % SOURCES.length]!
     // oxlint-disable-next-line no-await-in-loop -- each source commits its own cursor and bounded deletion page.
-    const page = await cleanupSecuritySourcePage(source, limits.batchSize, now) // no-mistakes-disable-line query-reached-per-item: at most 11 fixed families, each owns a locked cursor and one indexed batchSize+1 page
+    const page = await cleanupSecuritySourcePage(source, limits.batchSize, now) // no-mistakes-disable-line query-reached-per-item: at most 12 fixed families, each owns a locked cursor and one indexed batchSize+1 page
     deleted += page.deleted
     hasMore ||= page.hasMore
   }
@@ -56,6 +56,7 @@ export async function cleanupSecuritySourcePage(
   if (!cursor) throw new Error(`Security retention cursor missing for ${source}`)
   const idKeyed =
     source === 'oauth_events' ||
+    source === 'oauth_native_mints' ||
     source === 'oauth_clients' ||
     source === 'copyright_rationales_erased' ||
     source === 'copyright_rationales_noncase'
@@ -83,6 +84,12 @@ export async function cleanupSecuritySourcePage(
     // The trigger accepts only old, nonessential events inside this transaction.
     await query(
       `/* authorizeOAuthEventRetention */ SELECT set_config('app.oauth_event_retention_cutoff', $1, true)`,
+      [plan.cutoffAt.toISOString()],
+    )
+  }
+  if (source === 'oauth_native_mints') {
+    await query(
+      `/* authorizeNativeMintRetention */ SELECT set_config('app.oauth_native_mint_retention_cutoff', $1, true)`,
       [plan.cutoffAt.toISOString()],
     )
   }

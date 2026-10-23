@@ -125,6 +125,10 @@ export function buildUnboundedUnpartitionedTables(
         'One durable row per normalized address with a permanent bounce or complaint; address-key reads remain selective.',
       ],
       [
+        'oauth_native_session_token_mints',
+        'Native session token issuance audit is retained for at most 12 months, with active account preservation holds extending the window; indexed UUIDv7 pages and a durable cursor bound cleanup work.',
+      ],
+      [
         'copyright_decision_rationales',
         'Admitted legal decision attempts grow with case and review activity; preservation holds can extend the six-calendar-year retention window, while target and retention indexes keep reads selective.',
       ],

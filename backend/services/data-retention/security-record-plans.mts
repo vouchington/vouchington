@@ -1,5 +1,6 @@
 export type Source =
   | 'oauth_events'
+  | 'oauth_native_mints'
   | 'oauth_grants'
   | 'oauth_grant_anchors'
   | 'oauth_clients'
@@ -13,6 +14,7 @@ export type Source =
 
 export const SOURCES: readonly Source[] = [
   'oauth_events',
+  'oauth_native_mints',
   'oauth_grants',
   'oauth_grant_anchors',
   'oauth_clients',
@@ -37,6 +39,18 @@ export type SourcePlan = {
 export function sourcePlan(source: Source, now: Date): SourcePlan {
   const ninetyDaysAgo = new Date(now.getTime() - 90 * 86_400_000)
   switch (source) {
+    case 'oauth_native_mints':
+      return {
+        table: 'oauth_native_session_token_mints',
+        keyAt: 'target.occurred_at',
+        cutoffAt: twelveMonthsAgo(now),
+        predicate: 'target.id < $1::uuid',
+        deletePredicate: `NOT EXISTS (
+          SELECT 1 FROM user_legal_preservation_holds preservation_hold
+          WHERE preservation_hold.account_user_id = target.user_id
+            AND preservation_hold.released_at IS NULL
+        )`,
+      }
     case 'oauth_events':
       return {
         table: 'oauth_authorization_server_events',
