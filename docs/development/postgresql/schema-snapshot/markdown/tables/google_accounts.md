@@ -6,16 +6,17 @@ Google OAuth accounts linked to users. Stores Google profile data.
 
 Not partitioned — growth: unbounded.
 
-| Column                      | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                             |
-| --------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------- |
-| `id`                        | `uuid`                     | no       | `uuidv7()`                   |          |           |           | Internal UUIDv7 identity of the Google account.                     |
-| `user_id`                   | `uuid`                     | yes      |                              |          |           |           | The linked user. NULL if the user account has not been created yet. |
-| `google_user_id`            | `text`                     | no       |                              |          |           |           | Google's unique external user identifier.                           |
-| `google_user_email_address` | `text`                     | yes      |                              |          |           |           | Email address from the Google profile.                              |
-| `email_domain_hostname_id`  | `uuid`                     | yes      |                              |          |           |           | Resolved provider email domain hostname identity for policy reads.  |
-| `google_user_data`          | `jsonb`                    | no       |                              |          |           |           | Raw JSONB profile data from Google OAuth.                           |
-| `created_at`                | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | stored    |           |                                                                     |
-| `updated_at`                | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP`          |          |           |           |                                                                     |
+| Column                      | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                                |
+| --------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                        | `uuid`                     | no       | `uuidv7()`                   |          |           |           | Internal UUIDv7 identity of the Google account.                                                                                        |
+| `user_id`                   | `uuid`                     | yes      |                              |          |           |           | The linked user. NULL if the user account has not been created yet.                                                                    |
+| `unlinked_at`               | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP`          |          |           |           | Time this account last became unlinked, or was first saved before a user linked it; NULL while linked. Orphan cleanup uses this clock. |
+| `google_user_id`            | `text`                     | no       |                              |          |           |           | Google's unique external user identifier.                                                                                              |
+| `google_user_email_address` | `text`                     | yes      |                              |          |           |           | Email address from the Google profile.                                                                                                 |
+| `email_domain_hostname_id`  | `uuid`                     | yes      |                              |          |           |           | Resolved provider email domain hostname identity for policy reads.                                                                     |
+| `google_user_data`          | `jsonb`                    | no       |                              |          |           |           | Raw JSONB profile data from Google OAuth.                                                                                              |
+| `created_at`                | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | stored    |           |                                                                                                                                        |
+| `updated_at`                | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                                        |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -38,8 +39,10 @@ _none_
 - `idx_google_accounts__email`: `CREATE INDEX idx_google_accounts__email ON public.google_accounts USING btree (google_user_email_address) WHERE (google_user_email_address IS NOT NULL)`
 - `idx_google_accounts__email_domain_hostname_id`: `CREATE INDEX idx_google_accounts__email_domain_hostname_id ON public.google_accounts USING btree (email_domain_hostname_id) WHERE (email_domain_hostname_id IS NOT NULL)`
 - `idx_google_accounts__orphan_retention_cleanup`: `CREATE INDEX idx_google_accounts__orphan_retention_cleanup ON public.google_accounts USING btree (created_at, google_user_id) WHERE (user_id IS NULL)`
+- `idx_google_accounts__unlinked_at`: `CREATE INDEX idx_google_accounts__unlinked_at ON public.google_accounts USING btree (unlinked_at, id) WHERE (user_id IS NULL)`
 - `idx_google_accounts__user_id`: `CREATE UNIQUE INDEX idx_google_accounts__user_id ON public.google_accounts USING btree (user_id) WHERE (user_id IS NOT NULL)`
 
 **Triggers:**
 
+- `trigger_google_accounts_linkage`: `CREATE TRIGGER trigger_google_accounts_linkage BEFORE UPDATE OF user_id ON public.google_accounts FOR EACH ROW EXECUTE FUNCTION fn_update_oauth_account_linkage()`
 - `trigger_google_accounts_updated_at`: `CREATE TRIGGER trigger_google_accounts_updated_at BEFORE UPDATE ON public.google_accounts FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

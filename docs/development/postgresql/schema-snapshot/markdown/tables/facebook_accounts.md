@@ -6,19 +6,23 @@ Facebook OAuth accounts linked to users. Stores profile data and encrypted long-
 
 Not partitioned — growth: unbounded.
 
-| Column                        | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                     |
-| ----------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------- |
-| `id`                          | `uuid`                     | no       | `uuidv7()`                   |          |           |           | Internal UUIDv7 identity of the Facebook account.                           |
-| `user_id`                     | `uuid`                     | yes      |                              |          |           |           | The linked user. NULL if the user account has not been created yet.         |
-| `facebook_user_id`            | `text`                     | no       |                              |          |           |           | Facebook's unique external user ID.                                         |
-| `facebook_user_email_address` | `text`                     | yes      |                              |          |           |           | Email address from the Facebook profile.                                    |
-| `email_domain_hostname_id`    | `uuid`                     | yes      |                              |          |           |           | Resolved provider email domain hostname identity for policy reads.          |
-| `facebook_user_data`          | `jsonb`                    | no       |                              |          |           |           | Raw JSONB profile data from Facebook's /api/me endpoint.                    |
-| `access_token_ciphertext`     | `text`                     | yes      |                              |          |           |           | Encrypted long-lived Facebook access token ciphertext for API calls.        |
-| `access_token_expires_at`     | `timestamp with time zone` | yes      |                              |          |           |           | When the long-lived access token expires.                                   |
-| `friends_synced_at`           | `timestamp with time zone` | yes      |                              |          |           |           | When the user's Facebook friends list was last synced for friend discovery. |
-| `created_at`                  | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | stored    |           |                                                                             |
-| `updated_at`                  | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP`          |          |           |           |                                                                             |
+| Column                                 | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                                |
+| -------------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                                   | `uuid`                     | no       | `uuidv7()`                   |          |           |           | Internal UUIDv7 identity of the Facebook account.                                                                                      |
+| `user_id`                              | `uuid`                     | yes      |                              |          |           |           | The linked user. NULL if the user account has not been created yet.                                                                    |
+| `unlinked_at`                          | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP`          |          |           |           | Time this account last became unlinked, or was first saved before a user linked it; NULL while linked. Orphan cleanup uses this clock. |
+| `friend_edges_invalidated_at`          | `timestamp with time zone` | yes      |                              |          |           |           | Durable friend-visibility boundary advanced at unlink; relink does not revive earlier observations.                                    |
+| `friend_edges_cleanup_completed_at`    | `timestamp with time zone` | yes      |                              |          |           |           | Last invalidation boundary fully drained by bounded friend-edge cleanup.                                                               |
+| `friend_references_resolve_pending_at` | `timestamp with time zone` | yes      |                              |          |           |           | Connection work marker for bounded resolution of existing incoming friend references.                                                  |
+| `facebook_user_id`                     | `text`                     | no       |                              |          |           |           | Facebook's unique external user ID.                                                                                                    |
+| `facebook_user_email_address`          | `text`                     | yes      |                              |          |           |           | Email address from the Facebook profile.                                                                                               |
+| `email_domain_hostname_id`             | `uuid`                     | yes      |                              |          |           |           | Resolved provider email domain hostname identity for policy reads.                                                                     |
+| `facebook_user_data`                   | `jsonb`                    | no       |                              |          |           |           | Raw JSONB profile data from Facebook's /api/me endpoint.                                                                               |
+| `access_token_ciphertext`              | `text`                     | yes      |                              |          |           |           | Encrypted long-lived Facebook access token ciphertext for API calls.                                                                   |
+| `access_token_expires_at`              | `timestamp with time zone` | yes      |                              |          |           |           | When the long-lived access token expires.                                                                                              |
+| `friends_synced_at`                    | `timestamp with time zone` | yes      |                              |          |           |           | When the user's Facebook friends list was last synced for friend discovery.                                                            |
+| `created_at`                           | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | stored    |           |                                                                                                                                        |
+| `updated_at`                           | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                                        |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -40,11 +44,15 @@ _none_
 - `facebook_accounts_pkey`: `CREATE UNIQUE INDEX facebook_accounts_pkey ON public.facebook_accounts USING btree (id)`
 - `idx_facebook_accounts__email_domain_hostname_id`: `CREATE INDEX idx_facebook_accounts__email_domain_hostname_id ON public.facebook_accounts USING btree (email_domain_hostname_id) WHERE (email_domain_hostname_id IS NOT NULL)`
 - `idx_facebook_accounts__facebook_user_email_address`: `CREATE INDEX idx_facebook_accounts__facebook_user_email_address ON public.facebook_accounts USING btree (facebook_user_email_address) WHERE (facebook_user_email_address IS NOT NULL)`
+- `idx_facebook_accounts__friend_edges_pending`: `CREATE INDEX idx_facebook_accounts__friend_edges_pending ON public.facebook_accounts USING btree (friend_edges_invalidated_at, id) WHERE ((friend_edges_invalidated_at IS NOT NULL) AND (friend_edges_cleanup_completed_at IS DISTINCT FROM friend_edges_invalidated_at))`
+- `idx_facebook_accounts__friend_resolution_pending`: `CREATE INDEX idx_facebook_accounts__friend_resolution_pending ON public.facebook_accounts USING btree (friend_references_resolve_pending_at, id) WHERE (friend_references_resolve_pending_at IS NOT NULL)`
 - `idx_facebook_accounts__friends_synced_at`: `CREATE INDEX idx_facebook_accounts__friends_synced_at ON public.facebook_accounts USING btree (friends_synced_at) WHERE ((user_id IS NOT NULL) AND (access_token_ciphertext IS NOT NULL))`
 - `idx_facebook_accounts__orphan_retention_cleanup`: `CREATE INDEX idx_facebook_accounts__orphan_retention_cleanup ON public.facebook_accounts USING btree (created_at, id) WHERE (user_id IS NULL)`
 - `idx_facebook_accounts__token_expires_at`: `CREATE INDEX idx_facebook_accounts__token_expires_at ON public.facebook_accounts USING btree (access_token_expires_at) WHERE (access_token_expires_at IS NOT NULL)`
+- `idx_facebook_accounts__unlinked_at`: `CREATE INDEX idx_facebook_accounts__unlinked_at ON public.facebook_accounts USING btree (unlinked_at, id) WHERE (user_id IS NULL)`
 - `idx_facebook_accounts__user_id`: `CREATE UNIQUE INDEX idx_facebook_accounts__user_id ON public.facebook_accounts USING btree (user_id) WHERE (user_id IS NOT NULL)`
 
 **Triggers:**
 
+- `trigger_facebook_accounts_linkage`: `CREATE TRIGGER trigger_facebook_accounts_linkage BEFORE UPDATE OF user_id ON public.facebook_accounts FOR EACH ROW EXECUTE FUNCTION fn_update_oauth_account_linkage()`
 - `trigger_facebook_accounts_updated_at`: `CREATE TRIGGER trigger_facebook_accounts_updated_at BEFORE UPDATE ON public.facebook_accounts FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`
