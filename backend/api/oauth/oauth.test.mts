@@ -134,11 +134,9 @@ describe('OAuth authorization routes', () => {
         state: 'opaque-state',
       })
       .expect(400)
-    expect(response.body).toEqual({
-      error: 'unauthorized_client',
-      error_description: 'client is not registered',
-    })
+    expect(response.headers['content-type']).toContain('text/html')
     expect(response.headers.location).toBeUndefined()
+    expect(response.text).toContain('Authorization unavailable')
   })
 
   it('routes a valid unauthenticated request through login with a local next path', async () => {
@@ -247,10 +245,11 @@ describe('OAuth authorization routes', () => {
       })
       .expect(400)
     expect(response.headers.location).toBeUndefined()
-    expect(response.body).toMatchObject({ error: 'unsupported_response_type' })
+    expect(response.headers['content-type']).toContain('text/html')
+    expect(response.text).toContain('Authorization unavailable')
   })
 
-  it('redirects a protocol error only to the registered callback', async () => {
+  it('renders a local protocol error for a dynamically registered callback', async () => {
     const user = await createTestUserDirect()
     const request = createRequest()
     await request.authenticateAs(user)
@@ -272,14 +271,10 @@ describe('OAuth authorization routes', () => {
         response_type: 'token',
         state: 'registered-error-state',
       })
-      .expect(302)
-
-    const location = response.headers.location
-    if (!location) throw new Error('authorization error redirect was not returned')
-    const callback = new URL(location)
-    expect(callback.origin + callback.pathname).toBe(redirectUri)
-    expect(callback.searchParams.get('error')).toBe('unsupported_response_type')
-    expect(callback.searchParams.get('state')).toBe('registered-error-state')
+      .expect(400)
+    expect(response.headers.location).toBeUndefined()
+    expect(response.headers['content-type']).toContain('text/html')
+    expect(response.text).toContain('Authorization unavailable')
   })
 })
 

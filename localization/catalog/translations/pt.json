@@ -6067,6 +6067,7 @@
 {"id":"copy.oauth.consent.permissionsHeading","value":"Permissões solicitadas"},
 {"id":"copy.oauth.consent.resourceHeading","value":"Recurso"},
 {"id":"copy.oauth.consent.title","value":"{clientName} solicita acesso à Voucha"},
+{"id":"copy.oauth.consent.unverifiedApp","value":"Aplicativo não verificado"},
 {"id":"copy.scopeDescription.communityModerationRead","value":"Ler dados de moderação da comunidade, incluindo os endereços de e-mail de pessoas convidadas, mensagens privadas com a moderação, denúncias, solicitações de ingresso, banimentos, restrições e histórico de moderação."},
 {"id":"copy.scopeDescription.communityModerationWrite","value":"Gerenciar a moderação da comunidade: banir ou remover membros, emitir avisos, analisar solicitações e denúncias, alterar as configurações de moderação e arquivar a comunidade. Algumas ações podem remover publicações fixadas ou despublicar publicações."},
 {"id":"copy.scopeDescription.financialProfileRead","value":"Ler sua faixa de pontuação de crédito, faixa de renda declarada, limite total de crédito e anos de histórico de crédito."},

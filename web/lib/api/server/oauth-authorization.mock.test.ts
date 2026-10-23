@@ -19,7 +19,8 @@ describe('OAuth authorization server helper', () => {
       authorization_request: {
         id: 'request-1',
         client_name: 'Example app',
-        client_hostname: null,
+        client_hostname: 'app.example',
+        client_is_unverified: true,
         resource: 'https://voucha.ai/api/v1/mcp',
         scopes: ['mcp.user:read'],
         sensitive_scopes: [],

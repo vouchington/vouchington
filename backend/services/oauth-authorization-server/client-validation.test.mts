@@ -15,6 +15,7 @@ import {
   beginValidatedOAuthAuthorizationRequest,
   createOwnedOAuthApp,
   parseOAuthScopes,
+  getOAuthResourceUrl,
   registerOAuthClient,
   updateOwnedOAuthApp,
   validateOAuthAuthorizationRequest,
@@ -58,6 +59,42 @@ describe('OAuth client and authorization validation', () => {
         redirect_uris: [randomTestOAuthRedirectUri()],
         scope: TEST_OAUTH_SCOPE,
         ...override,
+      }),
+    ).rejects.toMatchObject({ code: 'invalid_client_metadata' })
+  })
+
+  it.each([
+    'Voucha',
+    ' VOUCHA ',
+    'Ｖｏｕｃｈａ',
+    'Voucha for iOS',
+    'voucha  for macOS',
+    'Voucha for Windows',
+    'Vоucha',
+    'Voucha for Android',
+    'Voucha (iOS)',
+    'Voucha Support',
+    'v-o-u-c-h-a helper',
+  ])('reserves the first-party client name %s', async clientName => {
+    await expect(
+      registerOAuthClient({
+        client_name: clientName,
+        redirect_uris: [randomTestOAuthRedirectUri()],
+        scope: TEST_OAUTH_SCOPE,
+      }),
+    ).rejects.toMatchObject({ code: 'invalid_client_metadata' })
+  })
+
+  it('applies reserved names to owned app renames', async () => {
+    const owner = await createTestUserDirect()
+    const issued = await createOwnedOAuthApp(owner.id, {
+      client_name: 'Independent app',
+      redirect_uris: [randomTestOAuthRedirectUri()],
+      scopes: ['mcp.user:read'],
+    })
+    await expect(
+      updateOwnedOAuthApp(owner.id, issued.oauth_app.id, {
+        client_name: 'Voucha for iOS',
       }),
     ).rejects.toMatchObject({ code: 'invalid_client_metadata' })
   })
@@ -121,6 +158,44 @@ describe('OAuth client and authorization validation', () => {
       }),
     ).rejects.toMatchObject({ code: 'invalid_request' })
   })
+
+  it.each([
+    ['admin', 'mcp.admin:read'],
+    ['legal', 'copyright-notices:read'],
+  ] as const)(
+    'rechecks the registered client boundary for the %s resource before persistence',
+    async (audience, scope) => {
+      const owner = await createTestUserDirect({ administrator: true })
+      const redirectUri = randomTestOAuthRedirectUri()
+      const { oauth_app: client } = await createOwnedOAuthApp(owner.id, {
+        client_name: 'Resource boundary app',
+        redirect_uris: [redirectUri],
+        scopes: ['mcp.user:read', scope],
+      })
+      const validated = await validateOAuthAuthorizationRequest({
+        clientId: client.client_id,
+        codeChallenge: createHash('sha256').update(randomBytes(32)).digest('base64url'),
+        codeChallengeMethod: 'S256',
+        redirectUri,
+        resource: TEST_OAUTH_RESOURCE,
+        responseType: 'code',
+        scope: 'mcp.user:read',
+        state: 'opaque-state',
+      })
+      validated.resource = getOAuthResourceUrl(audience)
+      validated.scopes = [scope]
+      await expect(
+        beginValidatedOAuthAuthorizationRequest(
+          {
+            userId: owner.id,
+            deviceId: crypto.randomUUID(),
+            sessionId: crypto.randomUUID(),
+          },
+          validated,
+        ),
+      ).rejects.toMatchObject({ code: 'unauthorized_client' })
+    },
+  )
 
   it('rechecks a validated redirect URI after its owner removes it', async () => {
     const owner = await createTestUserDirect()

@@ -57,6 +57,10 @@ test.describe('OAuth consent', () => {
     await navigateTo(page, `/oauth/consent?request_id=${requestId}`)
     await expect(page.getByTestId('oauth-consent-card')).toBeVisible()
     await expect(page.getByTestId('oauth-consent-title')).toContainText(client.client_name)
+    await expect(page.getByTestId('oauth-consent-client-hostname')).toHaveText(
+      new URL(redirectUri).hostname,
+    )
+    await expect(page.getByTestId('oauth-consent-unverified')).toBeVisible()
     await expect(page.getByTestId('oauth-consent-resource')).toHaveText(resource)
     await expect(page.getByTestId('oauth-consent-scopes')).toContainText('entity-relations:read')
     await expect(page.getByTestId('oauth-consent-scopes')).toContainText('entity-relations:write')

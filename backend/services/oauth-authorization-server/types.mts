@@ -25,6 +25,17 @@ export type OAuthClient = {
   updated_at: Date
 }
 
+export type OAuthAuthorizationRequestRow = {
+  id: string
+  redirect_uri: string
+  resource: string
+  scopes: OAuthClient['scopes']
+  expires_at: Date
+  client_name: string
+  metadata_url: string | null
+  redirect_uris: string[]
+}
+
 export type RegisterOAuthClientInput = {
   client_name: string
   redirect_uris: string[]
@@ -56,7 +67,8 @@ export type OAuthAccessPrincipal = {
 export type OAuthAuthorizationRequestView = {
   id: string
   client_name: string
-  client_hostname: string | null
+  client_hostname: string
+  client_is_unverified: boolean
   resource: string
   scopes: ApiScope[]
   sensitive_scopes: ApiScope[]
