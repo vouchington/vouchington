@@ -141,7 +141,6 @@ export async function cleanupRetainedIdentityRoots(
   }
   return results
 }
-
 async function cleanupRetainedIdentityFamily(
   family: RetainedIdentityFamily,
   pageSize: number,
