@@ -54,6 +54,8 @@ export const ALLOWED_NONRELATION_UUID = new Set([
   'oauth_authorizations.exchange_claim_id',
   'oauth_authorization_exchange_attempts.exchange_claim_id',
   'oauth_authorizations.login_attempt_id',
+  // Keyset position in deleted operational rows; the target may no longer exist.
+  'payment_operational_cleanup_cursors.cursor_id',
   'follower_distributions.cursor_recipient_id',
   'post_publication_dirty_work.cursor_key_id',
   'post_publication_dirty_work.cursor_post_id',
