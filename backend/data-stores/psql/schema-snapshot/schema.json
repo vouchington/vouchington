@@ -82977,7 +82977,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 2,
+          "ordinalPosition": 3,
           "type": "bigint"
         },
         "day": {
@@ -82988,18 +82988,29 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 1,
+          "ordinalPosition": 2,
           "type": "date"
+        },
+        "id": {
+          "collation": null,
+          "comment": "Identity of this anonymous daily aggregate row.",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
         }
       },
       "comment": "Anonymous daily count of post vote events removed by ballot retention, preserving historical engagement metrics.",
       "foreignKeys": {},
       "growth": "unbounded",
       "indexes": {
-        "post_vote_retained_daily_counts_pkey": {
+        "post_vote_retained_daily_counts_day_key": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX post_vote_retained_daily_counts_pkey ON public.post_vote_retained_daily_counts USING btree (day)",
+          "definition": "CREATE UNIQUE INDEX post_vote_retained_daily_counts_day_key ON public.post_vote_retained_daily_counts USING btree (day)",
           "includedColumns": [],
           "keys": [
             {
@@ -83008,6 +83019,26 @@
               "expression": "day",
               "nullsFirst": false,
               "opclass": "date_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "post_vote_retained_daily_counts_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX post_vote_retained_daily_counts_pkey ON public.post_vote_retained_daily_counts USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
             }
           ],
           "predicate": null,
@@ -83020,12 +83051,17 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["day"],
-        "definition": "PRIMARY KEY (day)"
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
       "triggers": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "post_vote_retained_daily_counts_day_key": {
+          "columns": ["day"],
+          "definition": "UNIQUE (day)"
+        }
+      }
     },
     "post_votes": {
       "checkConstraints": {

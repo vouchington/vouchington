@@ -6,15 +6,17 @@ Anonymous daily count of post vote events removed by ballot retention, preservin
 
 Not partitioned — growth: unbounded.
 
-| Column  | Type     | Nullable | Default | Identity | Generated | Collation | Comment                                                    |
-| ------- | -------- | -------- | ------- | -------- | --------- | --------- | ---------------------------------------------------------- |
-| `day`   | `date`   | no       |         |          |           |           | UTC day of the removed ballot event.                       |
-| `count` | `bigint` | no       |         |          |           |           | Number of qualifying removed post vote events on this day. |
+| Column  | Type     | Nullable | Default    | Identity | Generated | Collation | Comment                                                    |
+| ------- | -------- | -------- | ---------- | -------- | --------- | --------- | ---------------------------------------------------------- |
+| `id`    | `uuid`   | no       | `uuidv7()` |          |           |           | Identity of this anonymous daily aggregate row.            |
+| `day`   | `date`   | no       |            |          |           |           | UTC day of the removed ballot event.                       |
+| `count` | `bigint` | no       |            |          |           |           | Number of qualifying removed post vote events on this day. |
 
-**Primary key:** `PRIMARY KEY (day)`
+**Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
-_none_
+
+- `post_vote_retained_daily_counts_day_key`: `UNIQUE (day)`
 
 **Check constraints:**
 
@@ -25,7 +27,8 @@ _none_
 
 **Indexes:**
 
-- `post_vote_retained_daily_counts_pkey`: `CREATE UNIQUE INDEX post_vote_retained_daily_counts_pkey ON public.post_vote_retained_daily_counts USING btree (day)`
+- `post_vote_retained_daily_counts_day_key`: `CREATE UNIQUE INDEX post_vote_retained_daily_counts_day_key ON public.post_vote_retained_daily_counts USING btree (day)`
+- `post_vote_retained_daily_counts_pkey`: `CREATE UNIQUE INDEX post_vote_retained_daily_counts_pkey ON public.post_vote_retained_daily_counts USING btree (id)`
 
 **Triggers:**
 _none_

@@ -87187,12 +87187,22 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 2
+          "ordinalPosition": 3
         },
         "day": {
           "comment": "UTC day of the removed ballot event.",
           "dataType": "date",
           "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2
+        },
+        "id": {
+          "comment": "Identity of this anonymous daily aggregate row.",
+          "dataType": "uuid",
+          "defaultExpression": "uuidv7()",
           "generated": null,
           "generatedExpression": null,
           "identity": null,
@@ -87203,10 +87213,10 @@
       "comment": "Anonymous daily count of post vote events removed by ballot retention, preserving historical engagement metrics.",
       "foreignKeys": {},
       "indexes": {
-        "post_vote_retained_daily_counts_pkey": {
+        "post_vote_retained_daily_counts_day_key": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX post_vote_retained_daily_counts_pkey ON public.post_vote_retained_daily_counts USING btree (day)",
+          "definition": "CREATE UNIQUE INDEX post_vote_retained_daily_counts_day_key ON public.post_vote_retained_daily_counts USING btree (day)",
           "immediate": true,
           "keys": [
             {
@@ -87221,6 +87231,29 @@
           ],
           "live": true,
           "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "post_vote_retained_daily_counts_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX post_vote_retained_daily_counts_pkey ON public.post_vote_retained_daily_counts USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
           "primary": true,
           "ready": true,
           "unique": true,
@@ -87229,11 +87262,15 @@
       },
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["day"]
+        "columns": ["id"]
       },
       "relationKind": "table",
       "triggers": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "post_vote_retained_daily_counts_day_key": {
+          "columns": ["day"]
+        }
+      }
     },
     "post_votes": {
       "checkConstraints": {
