@@ -117,6 +117,8 @@ describe('cleanupAnalyticsLocalFiles', () => {
       oldModerationMediaReveals: { deleted: 0, hasMore: false, cursorId: null },
       federationRetention: {
         followerDistributions: { deleted: 0, hasMore: false, continuationPosition: null },
+        inboxReplay: { deleted: 0, hasMore: false, continuationPosition: null },
+        outboundReplay: { deleted: 0, hasMore: false, continuationPosition: null },
       },
     })
   })

@@ -17,7 +17,9 @@ export async function cleanupSweepWithQuery(
   options: { batchSize: number; maxBatches: number; now?: Date; scope?: FederationRetentionScope },
   query: TransactionQuery,
 ): Promise<FederationRetentionPage> {
-  const cutoff = new Date((options.now ?? new Date()).getTime() - 7 * DAY_MS)
+  // UUIDv7 timestamps begin at the Unix epoch. A synthetic pre-epoch cutoff has no eligible
+  // UUIDv7 rows and must not be passed to getMinUUIDv7ForDate.
+  const cutoff = new Date(Math.max(0, (options.now ?? new Date()).getTime() - 7 * DAY_MS))
   await query(
     `/* ensureFollowerDistributionRetentionCursor */
      INSERT INTO follower_distribution_retention_cursors (is_singleton) VALUES (TRUE)

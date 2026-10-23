@@ -30,11 +30,11 @@ CREATE INDEX IF NOT EXISTS idx_activitypub_distribution_work_items__retention
   ON activitypub_distribution_work_items (completed_at, activity_id)
   WHERE completed_at IS NOT NULL;
 
-COMMENT ON TABLE activitypub_distribution_work_items IS 'Durable outbound ActivityPub fan-out cursor. A committed cursor means delivery jobs through that remote actor were accepted by Valkey; completed rows are retained until their source user is deleted.';
+COMMENT ON TABLE activitypub_distribution_work_items IS 'Durable outbound ActivityPub fan-out cursor. A committed cursor means delivery jobs through that remote actor were accepted by Valkey; completed rows expire through bounded replay retention after the maximum activity age.';
 COMMENT ON COLUMN activitypub_distribution_work_items.activity_id IS 'Stable UUID ActivityPub activity identity; one durable distribution cursor per activity.';
 COMMENT ON COLUMN activitypub_distribution_work_items.source_user_id IS 'Local actor that owns the outbound activity. Cascading deletion removes all of its durable delivery progress.';
 COMMENT ON COLUMN activitypub_distribution_work_items.cursor_remote_actor_id IS 'Last remote follower whose page was committed. No foreign key: deleting that actor must not rewind a completed cursor.';
-COMMENT ON COLUMN activitypub_distribution_work_items.completed_at IS 'Set after the final follower page commits. Terminal checkpoints intentionally remain for replay protection.';
+COMMENT ON COLUMN activitypub_distribution_work_items.completed_at IS 'Set after the final follower page commits. Terminal checkpoints remain until bounded replay retention removes them after the activity-age limit.';
 
 CREATE INDEX IF NOT EXISTS idx_activitypub_distribution_work_items__claim
   ON activitypub_distribution_work_items (available_at, activity_id)
