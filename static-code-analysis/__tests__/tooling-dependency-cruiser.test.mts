@@ -182,7 +182,7 @@ describe('production test-helper dependency boundary', () => {
         `module.exports = { forbidden: [...require(${JSON.stringify(fileURLToPath(new URL('../production-test-helper-boundary.cjs', import.meta.url)))}), ...require(${JSON.stringify(fileURLToPath(new URL('../../backend/dependency-cruiser-rules/data-stores-primary.cjs', import.meta.url)))})], options: { tsConfig: { fileName: 'tsconfig.json' }, tsPreCompilationDeps: true } }`,
       )
       const result = spawnSync(
-        fileURLToPath(new URL('../../node_modules/.bin/depcruise', import.meta.url)),
+        fileURLToPath(new URL('../../node_modules/.bin/dependency-cruiser', import.meta.url)),
         [
           '--config',
           'dependency-rules.cjs',
@@ -219,7 +219,7 @@ describe('production test-helper dependency boundary', () => {
         `${sources['backend/scripts/generate-mcp-catalog.mts']}; export { value as psql } from '../data-stores/psql/index.mts'`,
       )
       const failing = spawnSync(
-        fileURLToPath(new URL('../../node_modules/.bin/depcruise', import.meta.url)),
+        fileURLToPath(new URL('../../node_modules/.bin/dependency-cruiser', import.meta.url)),
         [
           '--config',
           'dependency-rules.cjs',
