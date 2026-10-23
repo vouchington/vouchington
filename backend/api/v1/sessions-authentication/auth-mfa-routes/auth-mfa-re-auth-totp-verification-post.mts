@@ -12,9 +12,9 @@ app.route('/api/v1/auth/mfa/re-auth/totp/verification').post(async (ctx: Context
 
   const body = (await ctx.request.json('100kb')) as { code?: string }
   ctx.assert(body.code, 422, 'code is required')
+  validateRequestContract(ctx, 'POST:/api/v1/auth/mfa/re-auth/totp/verification', { body })
 
   await countTotpReAuthAttempt(currentUser.id)
-  validateRequestContract(ctx, 'POST:/api/v1/auth/mfa/re-auth/totp/verification', { body })
 
   const valid = await verifyTotpCode(currentUser.id, body.code)
   ctx.assert(valid, 401, 'Invalid verification code')
