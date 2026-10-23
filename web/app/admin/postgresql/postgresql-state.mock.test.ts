@@ -79,9 +79,7 @@ const EMPTY_STATUS = { applied: [], pending: [], total: 0 } as never
 /** Emit the default snapshot so the hook's loading state becomes false. */
 async function emitDefaultSnapshot() {
   const es = MockEventSource.instances.at(-1)!
-  await act(async () => {
-    es.emit('snapshot', EMPTY_STATUS)
-  })
+  await act(async () => es.emit('snapshot', EMPTY_STATUS))
   return es
 }
 
@@ -124,9 +122,7 @@ describe('usePostgreSQLAdminState', () => {
     await emitDefaultSnapshot()
     await waitFor(() => expect(result.current.loading).toBe(false))
 
-    await act(async () => {
-      await result.current.handleAction('runMigrations')
-    })
+    await act(async () => result.current.handleAction('runMigrations'))
 
     expect(toastMock.error).toHaveBeenCalledWith('Failed to run runMigrations')
     expect(result.current.actionLoading.runMigrations).toBe(false)
@@ -137,31 +133,37 @@ describe('usePostgreSQLAdminState', () => {
     await emitDefaultSnapshot()
     await waitFor(() => expect(result.current.loading).toBe(false))
 
+    const range = {
+      table: 'ai_agent_call_receipts',
+      fromId: '01990000-0000-7000-8000-000000000000',
+      toId: '019a0000-0000-7000-8000-000000000000',
+      maxRows: 100,
+    }
     act(() => {
-      result.current.setPartitionRange({
-        table: 'ai_agent_call_receipts',
-        fromId: '01990000-0000-7000-8000-000000000000',
-        toId: '019a0000-0000-7000-8000-000000000000',
-        maxRows: 100,
-      })
+      result.current.setPartitionRange(range)
       result.current.setPendingAction('createPartitions')
     })
 
-    await act(async () => {
-      await result.current.confirmPartitionAction()
-    })
+    await act(async () => result.current.confirmPartitionAction())
 
-    expect(mockedEnqueue).toHaveBeenCalledWith({
-      type: 'createPartitions',
-      range: {
-        table: 'ai_agent_call_receipts',
-        fromId: '01990000-0000-7000-8000-000000000000',
-        toId: '019a0000-0000-7000-8000-000000000000',
-        maxRows: 100,
-      },
-    })
+    expect(mockedEnqueue).toHaveBeenCalledWith({ type: 'createPartitions', range })
     expect(toastMock.success).toHaveBeenCalledWith('createPartitions job queued')
     expect(result.current.pendingAction).toBeNull()
+  })
+
+  it('reports cleanup partition enqueue failures without sending a create range', async () => {
+    mockedEnqueue.mockRejectedValueOnce(new Error('Cleanup enqueue failed'))
+    const { result } = renderHook(() => usePostgreSQLAdminState())
+    await emitDefaultSnapshot()
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    act(() => result.current.setPendingAction('cleanupPartitions'))
+    await act(async () => result.current.confirmPartitionAction())
+
+    expect(mockedEnqueue).toHaveBeenCalledWith({ type: 'cleanupPartitions' })
+    expect(toastMock.error).toHaveBeenCalledWith('Failed to run cleanupPartitions')
+    expect(result.current.pendingAction).toBeNull()
+    expect(result.current.actionLoading.cleanupPartitions).toBe(false)
   })
 
   it('SSE snapshot clears a stale REST fallback error', async () => {
@@ -263,9 +265,7 @@ describe('usePostgreSQLAdminState', () => {
       total: 1,
     } as never)
 
-    await act(async () => {
-      await result.current.loadData(true)
-    })
+    await act(async () => result.current.loadData(true))
 
     // Silent mode — loading must stay false throughout
     expect(result.current.loading).toBe(false)

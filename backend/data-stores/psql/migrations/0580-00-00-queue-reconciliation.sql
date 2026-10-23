@@ -26,9 +26,6 @@ ON blocklisted_domains (updated_at, domain, (source_id::text));
 CREATE INDEX IF NOT EXISTS idx_bedrock_nova_multimodal_v1_embeddings__updated_at_hash
 ON bedrock_nova_multimodal_v1_embeddings (updated_at, encode(content_sha256, 'hex'));
 
-CREATE INDEX IF NOT EXISTS idx_bedrock_nova_multimodal_v1_embeddings__retention
-ON bedrock_nova_multimodal_v1_embeddings (updated_at, content_sha256);
-
 CREATE INDEX IF NOT EXISTS idx_post_slugs__updated_at_post_id_slug
 ON post_slugs (updated_at, (post_id::text), slug);
 

@@ -102,6 +102,7 @@ describe('copyright receipt recovery during a spend-cap breach', () => {
         await expect(getAgentCallReceipt(key)).resolves.toEqual({
           request_sha256: digest,
           result_ciphertext: null,
+          status: 'in_flight',
         })
       } finally {
         restore()

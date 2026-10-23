@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
+import { useState } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { fetchPartitions } from '@/lib/api/client/psql'
+import { fetchPartitions, type ExplicitPartitionRange } from '@/lib/api/client/psql'
 import type { PartitionStatusResponseBody } from '@/types/api-responses'
 import { PartitionConfirmDialog } from './partition-confirm-dialog'
 
@@ -17,6 +18,7 @@ vi.mock(import('@/lib/i18n/use-translations'), () => ({
 }))
 
 const mockedFetchPartitions = vi.mocked(fetchPartitions)
+const emptyRange = { table: '', fromId: '', toId: '', maxRows: 1_000 }
 
 const partitionStatus: PartitionStatusResponseBody = {
   tables: [
@@ -53,6 +55,8 @@ describe('PartitionConfirmDialog', () => {
       <PartitionConfirmDialog
         confirmPartitionAction={confirmPartitionAction}
         pendingAction='cleanupPartitions'
+        partitionRange={emptyRange}
+        setPartitionRange={vi.fn<(range: ExplicitPartitionRange) => void>()}
         setPendingAction={setPendingAction}
       />,
     )
@@ -87,6 +91,8 @@ describe('PartitionConfirmDialog', () => {
       <PartitionConfirmDialog
         confirmPartitionAction={confirmPartitionAction}
         pendingAction='cleanupPartitions'
+        partitionRange={emptyRange}
+        setPartitionRange={vi.fn<(range: ExplicitPartitionRange) => void>()}
         setPendingAction={setPendingAction}
       />,
     )
@@ -100,21 +106,46 @@ describe('PartitionConfirmDialog', () => {
     expect(confirmPartitionAction).not.toHaveBeenCalled()
   })
 
-  it('allows partition creation without a cleanup preview', () => {
+  it('requires a valid bounded UUIDv7 range before creating a partition', () => {
     const confirmPartitionAction = vi.fn<() => void>()
+    function Form() {
+      const [partitionRange, setPartitionRange] = useState(emptyRange)
+      return (
+        <PartitionConfirmDialog
+          confirmPartitionAction={confirmPartitionAction}
+          pendingAction='createPartitions'
+          partitionRange={partitionRange}
+          setPartitionRange={setPartitionRange}
+          setPendingAction={vi.fn<
+            (action: 'createPartitions' | 'cleanupPartitions' | null) => void
+          >()}
+        />
+      )
+    }
 
-    render(
-      <PartitionConfirmDialog
-        confirmPartitionAction={confirmPartitionAction}
-        pendingAction='createPartitions'
-        setPendingAction={vi.fn<
-          (action: 'createPartitions' | 'cleanupPartitions' | null) => void
-        >()}
-      />,
-    )
+    render(<Form />)
 
     expect(mockedFetchPartitions).not.toHaveBeenCalled()
-    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }))
+    const confirm = screen.getByRole('button', { name: 'Confirm' })
+    expect(confirm).toBeDisabled()
+    fireEvent.change(screen.getByLabelText('Table'), {
+      target: { value: 'ai_agent_call_receipts' },
+    })
+    fireEvent.change(screen.getByLabelText('From UUIDv7 (inclusive)'), {
+      target: { value: '019a0000-0000-7000-8000-000000000000' },
+    })
+    fireEvent.change(screen.getByLabelText('To UUIDv7 (exclusive)'), {
+      target: { value: '01990000-0000-7000-8000-000000000000' },
+    })
+    expect(confirm).toBeDisabled()
+    fireEvent.change(screen.getByLabelText('To UUIDv7 (exclusive)'), {
+      target: { value: '019b0000-0000-7000-8000-000000000000' },
+    })
+    fireEvent.change(screen.getByLabelText('Maximum rows to move'), { target: { value: '10001' } })
+    expect(confirm).toBeDisabled()
+    fireEvent.change(screen.getByLabelText('Maximum rows to move'), { target: { value: '10000' } })
+    expect(confirm).toBeEnabled()
+    fireEvent.click(confirm)
     expect(confirmPartitionAction).toHaveBeenCalledOnce()
   })
 })

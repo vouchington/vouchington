@@ -79,12 +79,12 @@ async function deleteTextEmbeddingCachePage(
     SELECT encode(content_sha256, 'hex') AS content_sha256, updated_at::text
     FROM bedrock_nova_multimodal_v1_embeddings cache
     WHERE updated_at < $1::timestamptz
-      AND (updated_at, content_sha256) >
+      AND (updated_at, encode(content_sha256, 'hex')) >
         (COALESCE($2::timestamptz, '-infinity'::timestamptz),
-         COALESCE(decode($3::text, 'hex'), ''::bytea))
+         COALESCE($3::text, ''))
       ${scopedPredicate}
       ${lowerBoundPredicate}
-    ORDER BY cache.updated_at, cache.content_sha256
+    ORDER BY cache.updated_at, encode(cache.content_sha256, 'hex')
     LIMIT $4 FOR UPDATE`,
     [
       upperBound,
