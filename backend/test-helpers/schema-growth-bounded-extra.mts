@@ -15,10 +15,6 @@ export const EXTRA_BOUNDED_TABLES = new Map<string, string>([
     'One unfinished projection per delivery authority; terminal audit outcomes delete work, and explicit replay recreates it.',
   ],
   [
-    'membership_renewal_price_increase_notification_work_items',
-    'One latest notification snapshot per membership projection; completed or ambiguous outcomes prevent duplicates and membership retention cascades their removal.',
-  ],
-  [
     'membership_operation_execution_work_items',
     'One row per unfinished provider operation; completion deletes work while durable refund and attempt ledgers remain.',
   ],
@@ -37,14 +33,6 @@ export const EXTRA_BOUNDED_TABLES = new Map<string, string>([
   [
     'post_admission_attempt_results',
     'One immutable result per execution; cascades with bounded reservation retention.',
-  ],
-  [
-    'membership_google_play_acknowledgment_work_items',
-    'One provider acknowledgement task per retained purchase obligation; deletion cascades from its parent.',
-  ],
-  [
-    'membership_verification_processing_work_items',
-    'One adapter processing task per retained verification; parent retention cascades its work.',
   ],
   [
     'retained_identity_cleanup_cursors',

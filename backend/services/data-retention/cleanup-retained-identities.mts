@@ -120,7 +120,7 @@ export type RetainedIdentityCleanupPage = {
   deleted: number
   hasMore: boolean
 }
-/** One bounded keyset page per concrete family; no retained audit record has an expiry. */
+/** One bounded keyset page per concrete family; this sweep does not determine referenced-row expiry. */
 export async function cleanupRetainedIdentityRoots(
   pageSize = 1_000,
   idsByFamily?: Partial<Record<RetainedIdentityFamily, readonly string[]>>,
