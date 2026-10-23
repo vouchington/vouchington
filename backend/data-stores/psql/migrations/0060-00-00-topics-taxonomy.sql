@@ -67,6 +67,8 @@ CREATE TABLE IF NOT EXISTS topics (
   created_by_id UUID REFERENCES users ON DELETE CASCADE,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_by_id UUID REFERENCES users ON DELETE SET NULL, -- the last person who updated it, used for authorship
+  content_updated_at TIMESTAMPTZ,
+  content_updated_by_id UUID REFERENCES users ON DELETE SET NULL,
   deleted_at TIMESTAMPTZ,
   deleted_by_id UUID REFERENCES users ON DELETE SET NULL,
   merged_into_topic_id UUID REFERENCES topics ON DELETE RESTRICT,
@@ -153,6 +155,13 @@ WHERE hostname_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_topics__merged_into_topic_id
 ON topics(merged_into_topic_id)
 WHERE merged_into_topic_id IS NOT NULL;
+
+COMMENT ON COLUMN topics.content_updated_at IS 'Most recent administrator change to the topic name or markdown, retained after revision expiry.';
+COMMENT ON COLUMN topics.content_updated_by_id IS 'Administrator responsible for the current topic name or markdown; nulled when the user is deleted.';
+
+CREATE INDEX IF NOT EXISTS idx_topics__content_updated_by_id
+ON topics (content_updated_by_id)
+WHERE content_updated_by_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_topics__created_by_id

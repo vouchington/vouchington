@@ -38,7 +38,9 @@ export async function insertSemanticWindowPosts(
       FROM posts WHERE id = ANY(${ids}::uuid[])
       RETURNING id, post_id, created_at
     )
-    UPDATE posts SET latest_clearance_change_id = changes.id, approved_at = changes.created_at
+    UPDATE posts SET latest_clearance_change_id = changes.id,
+      clearance_changed_at = changes.created_at,
+      approved_at = changes.created_at
     FROM changes WHERE posts.id = changes.post_id
   `)
   const { rows: ordered } = await transaction<{ id: string }>(sql`/* insertSemanticWindowPosts */

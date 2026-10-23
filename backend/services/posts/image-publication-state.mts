@@ -33,13 +33,11 @@ export async function getLockedPostImagePublicationState(
       post.approved_at,
       post.rejected_at,
       post.in_review_at,
-      clearance_change.changed_by_id AS clearance_changed_by_id,
-      clearance_change.public_reason_code AS clearance_public_reason_code,
-      clearance_change.private_note AS clearance_private_note,
-      COALESCE(clearance_change.is_platform_override, false) AS clearance_platform_override
+      post.clearance_changed_by_id,
+      post.clearance_public_reason_code,
+      post.clearance_private_note,
+      post.clearance_is_platform_override AS clearance_platform_override
     FROM posts post
-    LEFT JOIN post_clearance_changes clearance_change
-      ON clearance_change.id = post.latest_clearance_change_id
     WHERE post.id = ${postId}
     FOR UPDATE OF post
   `)

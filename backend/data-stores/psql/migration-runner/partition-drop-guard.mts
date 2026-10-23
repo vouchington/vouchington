@@ -29,17 +29,41 @@ export function getPartitionDropAgeRefusal(
   policy: PartitionDropPolicy | undefined,
   referenceDate: Date,
 ): PartitionDropRefusal | null {
-  const minimum = policy?.minimumRetentionDays
+  const months = policy?.minimumRetentionMonths
+  const days = policy?.minimumRetentionDays
+  const validMonths = months !== undefined && Number.isSafeInteger(months) && months > 0
+  const validDays = days !== undefined && days !== null && Number.isFinite(days) && days >= 0
   if (
-    minimum == null ||
-    !Number.isFinite(minimum) ||
-    minimum < 0 ||
+    (!validMonths && !validDays) ||
+    (months !== undefined && days !== null) ||
     !candidate.upperBound ||
-    !Number.isFinite(candidate.upperBound.getTime())
+    !Number.isFinite(candidate.upperBound.getTime()) ||
+    !Number.isFinite(referenceDate.getTime())
   )
     return 'no-declared-retention'
-  const cutoff = referenceDate.getTime() - minimum * 86_400_000
+  const cutoff = validMonths
+    ? subtractUtcCalendarMonths(referenceDate, months!).getTime()
+    : referenceDate.getTime() - days! * 86_400_000
   return candidate.upperBound.getTime() > cutoff ? 'inside-retention' : null
+}
+
+function subtractUtcCalendarMonths(referenceDate: Date, months: number): Date {
+  const target = new Date(
+    Date.UTC(
+      referenceDate.getUTCFullYear(),
+      referenceDate.getUTCMonth() - months,
+      1,
+      referenceDate.getUTCHours(),
+      referenceDate.getUTCMinutes(),
+      referenceDate.getUTCSeconds(),
+      referenceDate.getUTCMilliseconds(),
+    ),
+  )
+  const lastDay = new Date(
+    Date.UTC(target.getUTCFullYear(), target.getUTCMonth() + 1, 0),
+  ).getUTCDate()
+  target.setUTCDate(Math.min(referenceDate.getUTCDate(), lastDay))
+  return target
 }
 
 /** One catalog-status round trip; each child contributes only index-backed LIMIT 1 probes. */
@@ -72,6 +96,17 @@ export async function getPartitionDropStatusRefusals(
         WHERE hold.released_at IS NULL
           AND EXISTS (SELECT 1 FROM ${partition} AS candidate_row
             WHERE candidate_row.${column} = hold.account_user_id LIMIT 1)
+        LIMIT 1
+      ) THEN 'legal-hold'`)
+    }
+    if (policy.legalHoldPostColumn) {
+      const column = assertSafeSqlIdentifier(policy.legalHoldPostColumn)
+      checks.push(`WHEN EXISTS (
+        SELECT 1 FROM user_legal_preservation_holds AS hold
+        WHERE hold.released_at IS NULL
+          AND EXISTS (SELECT 1 FROM posts AS held_post
+            JOIN ${partition} AS candidate_row ON candidate_row.${column} = held_post.id
+            WHERE held_post.created_by_id = hold.account_user_id LIMIT 1)
         LIMIT 1
       ) THEN 'legal-hold'`)
     }
@@ -122,6 +157,21 @@ export async function getPartitionDropRefusal(
         AND EXISTS (
           SELECT 1 FROM ${partition} AS candidate_row
           WHERE candidate_row.${column} = hold.account_user_id
+          LIMIT 1
+        )
+      LIMIT 1`)
+    if (rows.length > 0) return 'legal-hold'
+  }
+  if (policy.legalHoldPostColumn) {
+    const column = assertSafeSqlIdentifier(policy.legalHoldPostColumn)
+    const { rows } = await query(`/* getPartitionDropRefusal:legalHoldPost */
+      SELECT 1
+      FROM user_legal_preservation_holds AS hold
+      WHERE hold.released_at IS NULL
+        AND EXISTS (
+          SELECT 1 FROM posts AS held_post
+          JOIN ${partition} AS candidate_row ON candidate_row.${column} = held_post.id
+          WHERE held_post.created_by_id = hold.account_user_id
           LIMIT 1
         )
       LIMIT 1`)

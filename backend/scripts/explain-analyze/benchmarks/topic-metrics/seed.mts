@@ -46,6 +46,11 @@ export async function seedTopicMetricsBenchmark({
       /* benchmarkTopicMetricsIneligiblePost */
       UPDATE posts
       SET latest_clearance_change_id = NULL,
+          clearance_changed_at = NULL,
+          clearance_changed_by_id = NULL,
+          clearance_public_reason_code = NULL,
+          clearance_private_note = NULL,
+          clearance_is_platform_override = FALSE,
           approved_at = NULL
       WHERE id = (
         SELECT relation.subject_id

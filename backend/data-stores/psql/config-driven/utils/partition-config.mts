@@ -127,11 +127,15 @@ export const ALL_MONTHLY_PARTITION_TABLES: MonthlyPartitionTableConfig[] = [
 ]
 
 export type PartitionDropPolicy = {
-  /** Null refuses every drop until the table owner specifies a minimum. */
+  /** Null refuses every drop unless the table owner declares calendar months instead. */
   minimumRetentionDays: number | null
+  /** Exact calendar-month minimum, with month-end clamping. */
+  minimumRetentionMonths?: number
   legalBasis?: string
   /** A partition-column FK to the held account's retained user identity. */
   legalHoldAccountColumn?: string
+  /** A partition-column FK to posts; a held post author blocks retirement. */
+  legalHoldPostColumn?: string
   /** Each predicate must have a matching partial index on the partition parent. */
   inFlightPredicates?: readonly string[]
 }
@@ -167,4 +171,21 @@ for (const config of ALL_MONTHLY_PARTITION_TABLES) {
 PARTITION_DROP_POLICIES['mcp_call_audit_events'] = {
   minimumRetentionDays: 366,
   legalBasis: 'articles/privacy-policy.md',
+}
+
+// Proposed defaults: history older than these complete UUIDv7 ranges may be retired by the
+// owner. The guard is not an automatic schedule or range creator.
+for (const [table, retention] of [
+  ['post_revisions', { minimumRetentionDays: 90 }],
+  ['post_clearance_changes', { minimumRetentionDays: null, minimumRetentionMonths: 12 }],
+  ['community_post_review_changes', { minimumRetentionDays: null, minimumRetentionMonths: 12 }],
+] as const) {
+  PARTITION_DROP_POLICIES[table] = {
+    ...retention,
+    legalBasis: 'docs/overview/architecture/partitioning-strategy.md',
+    legalHoldPostColumn: 'post_id',
+    ...(table === 'post_revisions' && { legalHoldAccountColumn: 'revised_by_id' }),
+    ...(table === 'post_clearance_changes' && { legalHoldAccountColumn: 'changed_by_id' }),
+    ...(table === 'community_post_review_changes' && { legalHoldAccountColumn: 'changed_by_id' }),
+  }
 }

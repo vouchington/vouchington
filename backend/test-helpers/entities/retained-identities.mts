@@ -11,6 +11,7 @@ const ROOT_TABLES = {
   api_key: 'retained_api_key_identities',
   topic: 'retained_topic_identities',
   post: 'retained_post_identities',
+  post_clearance_change: 'retained_post_clearance_change_identities',
   rss_feed_item: 'retained_rss_feed_item_identities',
   image: 'retained_image_identities',
 } as const

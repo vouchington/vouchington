@@ -36,10 +36,12 @@ export async function insertLocalTestPost(data: {
     WITH inserted_change AS (
       INSERT INTO post_clearance_changes (post_id, change_type, changed_by_id)
       VALUES (${postId}, 'approve', ${data.createdById})
-      RETURNING id, created_at
+      RETURNING id, created_at, changed_by_id
     )
     UPDATE posts
     SET latest_clearance_change_id = inserted_change.id,
+      clearance_changed_at = inserted_change.created_at,
+      clearance_changed_by_id = inserted_change.changed_by_id,
       approved_at = inserted_change.created_at
     FROM inserted_change
     WHERE posts.id = ${postId}

@@ -128,6 +128,24 @@ describe('partition drop guard', () => {
     ).resolves.toBe('inside-retention')
   })
 
+  it('uses an exact 12-calendar-month boundary across leap years', async () => {
+    const query = queryWithResults({})
+    const policy = { minimumRetentionDays: null, minimumRetentionMonths: 12 }
+    const leapDay = new Date('2024-02-29T10:30:00.000Z')
+    const boundary = new Date('2023-02-28T10:30:00.000Z')
+    await expect(
+      getPartitionDropRefusal(query, { ...candidate, upperBound: boundary }, policy, leapDay),
+    ).resolves.toBeNull()
+    await expect(
+      getPartitionDropRefusal(
+        query,
+        { ...candidate, upperBound: new Date(boundary.getTime() + 1) },
+        policy,
+        leapDay,
+      ),
+    ).resolves.toBe('inside-retention')
+  })
+
   it('refuses a held account and unfinished work before detach', async () => {
     const oldCandidate = { ...candidate, upperBound: new Date('2025-01-01T00:00:00.000Z') }
     const policy = {

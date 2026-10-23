@@ -65,9 +65,12 @@ export async function insertTestSavedPostCollection(options: {
     ), clearance AS (
       INSERT INTO post_clearance_changes (post_id, change_type, changed_by_id)
       SELECT id, 'approve', ${options.ownerId}::uuid FROM posts_inserted
-      RETURNING id, post_id, created_at
+      RETURNING id, post_id, created_at, changed_by_id
     ), approved AS (
-      UPDATE posts SET latest_clearance_change_id = clearance.id, approved_at = clearance.created_at
+      UPDATE posts SET latest_clearance_change_id = clearance.id,
+        clearance_changed_at = clearance.created_at,
+        clearance_changed_by_id = clearance.changed_by_id,
+        approved_at = clearance.created_at
       FROM clearance WHERE posts.id = clearance.post_id
     ), inserted_slugs AS (
       INSERT INTO post_slugs (post_id, slug) SELECT id, slug FROM source

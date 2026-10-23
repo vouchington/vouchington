@@ -2249,6 +2249,7 @@
 {"id":"copy.extracted.moderationAnalytics.moderationAnalyticsDashboard.countPending_bc608dfb","value":"{count} en attente"},
 {"id":"copy.extracted.moderationAnalytics.moderationAnalyticsDashboard.countRejectedFirstPosts_0e98bb37","value":"{count} premiers posts rejetés"},
 {"id":"copy.extracted.moderationAnalytics.moderationAnalyticsDashboard.falsePositiveRate_57505f91","value":"Taux de faux positifs"},
+{"id":"copy.extracted.moderationAnalytics.moderationAnalyticsDashboard.last24Months_7c3f8a2d","value":"24 derniers mois"},
 {"id":"copy.extracted.moderationAnalytics.moderationAnalyticsDashboard.moderatorWorkload_8d9381df","value":"Charge de travail du modérateur"},
 {"id":"copy.extracted.moderationAnalytics.moderationAnalyticsDashboard.nA_a683c5c5","value":"n/a"},
 {"id":"copy.extracted.moderationAnalytics.moderationAnalyticsDashboard.newUserRejections_05c50235","value":"Rejets de nouveaux utilisateurs"},

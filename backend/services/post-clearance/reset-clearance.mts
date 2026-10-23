@@ -32,11 +32,16 @@ export async function resetPostClearance(
       INSERT INTO post_clearance_changes (post_id, change_type, changed_by_id)
       SELECT post_id, 'reset_to_pending', $2
       FROM reset_post
-      RETURNING id, post_id
+      RETURNING id, post_id, created_at, changed_by_id
     )
     UPDATE posts
     SET
       latest_clearance_change_id = inserted_change.id,
+      clearance_changed_at = inserted_change.created_at,
+      clearance_changed_by_id = inserted_change.changed_by_id,
+      clearance_public_reason_code = NULL,
+      clearance_private_note = NULL,
+      clearance_is_platform_override = FALSE,
       approved_at = NULL,
       rejected_at = NULL,
       in_review_at = NULL

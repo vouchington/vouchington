@@ -45,7 +45,12 @@ export async function getPostNotificationSnapshot(
       posts.is_anonymous,
       posts.broadcast,
       posts.privacy,
-      clearance.change_type AS clearance_status,
+      CASE
+        WHEN posts.approved_at IS NOT NULL THEN 'approve'
+        WHEN posts.rejected_at IS NOT NULL THEN 'reject'
+        WHEN posts.in_review_at IS NOT NULL THEN 'mark_in_review'
+        ELSE 'reset_to_pending'
+      END AS clearance_status,
       `
   query
     .append(buildNotificationPostEligibilityFilter('posts', 'root_posts'))
@@ -67,8 +72,6 @@ export async function getPostNotificationSnapshot(
     FROM posts
     LEFT JOIN post_slugs ON post_slugs.post_id = posts.id
     LEFT JOIN users ON users.id = posts.created_by_id
-    LEFT JOIN post_clearance_changes clearance
-      ON clearance.id = posts.latest_clearance_change_id
     LEFT JOIN posts root_posts ON root_posts.id = COALESCE(posts.root_post_id, posts.id)
     LEFT JOIN post_slugs root_slugs ON root_slugs.post_id = root_posts.id
     WHERE posts.id = ${postId}

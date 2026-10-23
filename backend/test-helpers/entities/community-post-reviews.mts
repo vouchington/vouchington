@@ -1,5 +1,22 @@
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import { getMinUUIDv7ForParentHistory } from '@modules/utils/ids'
+
+export async function getTestCommunityPostReviewChanges(communityId: string, postId: string) {
+  const minHistoryId = getMinUUIDv7ForParentHistory(postId)
+  const { rows } = await read<{
+    action: 'approve' | 'reject' | 'unpublish' | 'restore'
+    is_platform_override: boolean
+    reason_code: string | null
+    private_note: string | null
+  }>(sql`/* getTestCommunityPostReviewChanges */
+    SELECT change_type AS action, is_platform_override, reason_code, private_note
+    FROM community_post_review_changes
+    WHERE community_id = ${communityId} AND post_id = ${postId}
+      AND id >= ${minHistoryId}::uuid
+    ORDER BY id ASC`)
+  return rows
+}
 
 type InsertTestCommunityPostReviewOptions = {
   communityId: string

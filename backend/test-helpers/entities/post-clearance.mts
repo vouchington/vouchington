@@ -25,6 +25,9 @@ export async function insertTestPostClearanceChange(options: {
   changedById?: string | null
   metadata?: Record<string, unknown>
   moderationTransparencyCategories?: string[]
+  publicReasonCode?: string
+  privateNote?: string
+  platformOverride?: boolean
   occurredAt?: Date
   occurredAtSequence?: number
 }): Promise<{ id: string }> {
@@ -34,14 +37,19 @@ export async function insertTestPostClearanceChange(options: {
     : null
   const { rows } = await write<{ id: string }>(sql`
     /* insertTestPostClearanceChange */
-    INSERT INTO post_clearance_changes (id, post_id, change_type, changed_by_id, metadata, moderation_transparency_categories)
+    INSERT INTO post_clearance_changes (
+      id, post_id, change_type, changed_by_id, metadata,
+      moderation_transparency_categories, public_reason_code, private_note, is_platform_override
+    )
     VALUES (
       COALESCE(${id}::uuid, uuidv7()),
       ${options.postId},
       ${TEST_CLEARANCE_STATUS_TO_CHANGE_TYPE[options.status]},
       ${changedById},
       ${JSON.stringify(options.metadata ?? {})}::jsonb
-      , ${options.moderationTransparencyCategories ?? []}::moderation_transparency_categories[]
+      , ${options.moderationTransparencyCategories ?? []}::moderation_transparency_categories[],
+      ${options.publicReasonCode ?? null}, ${options.privateNote ?? null},
+      ${options.platformOverride ?? false}
     )
     RETURNING id
   `)
@@ -73,11 +81,16 @@ export async function setTestPostClearanceStatus(
     WITH inserted_change AS (
       INSERT INTO post_clearance_changes (post_id, change_type, changed_by_id)
       VALUES (${postId}, ${changeType}, ${updatedById ?? null})
-      RETURNING id, post_id, change_type, created_at
+      RETURNING id, post_id, change_type, created_at, changed_by_id
     )
     UPDATE posts
     SET
       latest_clearance_change_id = inserted_change.id,
+      clearance_changed_at = inserted_change.created_at,
+      clearance_changed_by_id = inserted_change.changed_by_id,
+      clearance_public_reason_code = NULL,
+      clearance_private_note = NULL,
+      clearance_is_platform_override = FALSE,
       approved_at = CASE WHEN inserted_change.change_type = 'approve' THEN inserted_change.created_at ELSE NULL END,
       rejected_at = CASE WHEN inserted_change.change_type = 'reject' THEN inserted_change.created_at ELSE NULL END,
       in_review_at = CASE WHEN inserted_change.change_type = 'mark_in_review' THEN inserted_change.created_at ELSE NULL END,
@@ -107,9 +120,8 @@ export async function setTestPostRejectedAt(postId: string, rejectedAt: Date): P
 export async function appendTestPlatformRejectionNote(postId: string, note: string): Promise<void> {
   await write(sql`/* appendTestPlatformRejectionNote */
     WITH current_change AS (
-      SELECT post.id AS post_id, change.changed_by_id
+      SELECT post.id AS post_id, post.clearance_changed_by_id AS changed_by_id
       FROM posts post
-      JOIN post_clearance_changes change ON change.id = post.latest_clearance_change_id
       WHERE post.id = ${postId}
     ), inserted_change AS (
       INSERT INTO post_clearance_changes (
@@ -120,10 +132,16 @@ export async function appendTestPlatformRejectionNote(postId: string, note: stri
         '{"test_fixture":true}'::jsonb
       FROM current_change
       WHERE changed_by_id IS NOT NULL
-      RETURNING id, post_id, created_at
+      RETURNING id, post_id, created_at, changed_by_id, public_reason_code,
+        private_note, is_platform_override
     )
     UPDATE posts
     SET latest_clearance_change_id = inserted_change.id,
+        clearance_changed_at = inserted_change.created_at,
+        clearance_changed_by_id = inserted_change.changed_by_id,
+        clearance_public_reason_code = inserted_change.public_reason_code,
+        clearance_private_note = inserted_change.private_note,
+        clearance_is_platform_override = inserted_change.is_platform_override,
         approved_at = NULL,
         rejected_at = inserted_change.created_at,
         in_review_at = NULL

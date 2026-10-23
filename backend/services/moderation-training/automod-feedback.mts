@@ -155,10 +155,15 @@ export async function recordAutomodActionFeedback(input: RecordAutomodActionFeed
               ${input.actorUserId},
               ${JSON.stringify({ source_key: input.sourceKey, moderation_training: true })}::jsonb
             FROM target_post
-            RETURNING id, post_id, created_at
+            RETURNING id, post_id, created_at, changed_by_id
           )
           UPDATE posts
           SET latest_clearance_change_id = inserted_change.id,
+              clearance_changed_at = inserted_change.created_at,
+              clearance_changed_by_id = inserted_change.changed_by_id,
+              clearance_public_reason_code = NULL,
+              clearance_private_note = NULL,
+              clearance_is_platform_override = FALSE,
               approved_at = inserted_change.created_at,
               rejected_at = NULL,
               in_review_at = NULL,
@@ -221,10 +226,15 @@ export async function recordAutomodActionFeedback(input: RecordAutomodActionFeed
           FROM posts p
           WHERE p.id = ${context.post_id}
             AND p.in_review_at IS NOT NULL
-          RETURNING id, post_id, created_at
+          RETURNING id, post_id, created_at, changed_by_id
         )
         UPDATE posts
         SET latest_clearance_change_id = inserted_change.id,
+            clearance_changed_at = inserted_change.created_at,
+            clearance_changed_by_id = inserted_change.changed_by_id,
+            clearance_public_reason_code = NULL,
+            clearance_private_note = NULL,
+            clearance_is_platform_override = FALSE,
             approved_at = NULL,
             rejected_at = inserted_change.created_at,
             in_review_at = NULL,

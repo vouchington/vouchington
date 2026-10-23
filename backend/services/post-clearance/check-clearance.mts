@@ -50,14 +50,12 @@ async function applyClearanceDecision(
     `/* checkPostClearance */
       WITH current_version AS (
         SELECT version.id AS version_id, post.id AS post_id,
-          latest_change.is_platform_override
+          post.clearance_is_platform_override AS is_platform_override
         FROM posts post
         JOIN post_moderation_versions version
           ON version.post_id = post.id
          AND version.content_sha256 = post.llm_moderation_content_sha256
          AND version.policy_revision = $3
-        LEFT JOIN post_clearance_changes latest_change
-          ON latest_change.id = post.latest_clearance_change_id
         WHERE post.id = $1
           AND post.deleted_at IS NULL
         FOR UPDATE OF post
@@ -120,10 +118,16 @@ async function applyClearanceDecision(
           CASE WHEN change_type = 'reject'
             THEN COALESCE(signal_sources::moderation_transparency_categories[], '{}'::moderation_transparency_categories[]) ELSE '{}'::moderation_transparency_categories[] END
         FROM changed_decision
-        RETURNING id, post_id, change_type, created_at
+        RETURNING id, post_id, change_type, created_at, changed_by_id,
+          public_reason_code, private_note, is_platform_override
       )
       UPDATE posts
       SET latest_clearance_change_id = inserted_change.id,
+        clearance_changed_at = inserted_change.created_at,
+        clearance_changed_by_id = inserted_change.changed_by_id,
+        clearance_public_reason_code = inserted_change.public_reason_code,
+        clearance_private_note = inserted_change.private_note,
+        clearance_is_platform_override = inserted_change.is_platform_override,
         approved_at = CASE WHEN inserted_change.change_type = 'approve'
           THEN inserted_change.created_at ELSE NULL END,
         rejected_at = CASE WHEN inserted_change.change_type = 'reject'
