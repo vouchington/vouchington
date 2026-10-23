@@ -55,6 +55,9 @@ export function createWorker(
       let botTier: ReturnType<typeof getBotTier> = null
       let isOauthCallback = false
       try {
+        if (typeof env !== 'object' || env === null) {
+          throw new TypeError('Worker bindings must be an object')
+        }
         // The private docs deployment binds DOCS_BUCKET plus required Basic Auth, and nothing else this gateway
         // depends on (CF_WORKER_SECRET, CSP, bot tiers, rate limiters). Branch before them.
         if (env?.DOCS_BUCKET) {
