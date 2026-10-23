@@ -66,3 +66,33 @@ export async function oauthConsentExists(eventId: string): Promise<boolean> {
   )
   return result.rows.length > 0
 }
+
+/** Confirms repeated native mints reuse one live grant without leaving proposed-id anchors. */
+export async function getTestNativeGrantRetentionCounts(userId: string, sessionId: string) {
+  const result = await read<{
+    grant_count: number
+    anchor_count: number
+    mint_count: number
+    distinct_mint_grants: number
+  }>(
+    `/* getTestNativeGrantRetentionCounts */ SELECT
+       (SELECT count(*)::integer FROM oauth_grants WHERE user_id = $1 AND session_id = $2) AS grant_count,
+       (SELECT count(*)::integer FROM oauth_grant_retention_anchors WHERE user_id = $1) AS anchor_count,
+       (SELECT count(*)::integer FROM oauth_native_session_token_mints WHERE user_id = $1 AND session_id = $2) AS mint_count,
+       (SELECT count(DISTINCT grant_id)::integer FROM oauth_native_session_token_mints
+        WHERE user_id = $1 AND session_id = $2) AS distinct_mint_grants`,
+    [userId, sessionId],
+  )
+  return result.rows[0]
+}
+
+export async function getTestNativeGrantRetentionState(userId: string, sessionId: string) {
+  const result = await read<{ id: string; ended_at: Date | null }>(
+    `/* getTestNativeGrantRetentionState */ SELECT oauth_grant.id, anchor.ended_at
+     FROM oauth_grants oauth_grant
+     JOIN oauth_grant_retention_anchors anchor ON anchor.id = oauth_grant.id
+     WHERE oauth_grant.user_id = $1 AND oauth_grant.session_id = $2`,
+    [userId, sessionId],
+  )
+  return result.rows[0]
+}

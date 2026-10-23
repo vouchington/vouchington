@@ -150,7 +150,7 @@ COMMENT ON COLUMN oauth_grant_retention_anchors.ended_at IS 'Latest revoke or de
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS oauth_grants (
-  id UUID PRIMARY KEY DEFAULT uuidv7() REFERENCES oauth_grant_retention_anchors (id) ON DELETE NO ACTION DEFERRABLE INITIALLY DEFERRED,
+  id UUID PRIMARY KEY DEFAULT uuidv7() REFERENCES oauth_grant_retention_anchors (id) ON DELETE RESTRICT DEFERRABLE INITIALLY DEFERRED,
   user_id UUID NOT NULL REFERENCES users ON DELETE CASCADE,
   client_id UUID NOT NULL REFERENCES oauth_clients ON DELETE CASCADE,
   session_id UUID REFERENCES user_sessions(id) ON DELETE CASCADE,
