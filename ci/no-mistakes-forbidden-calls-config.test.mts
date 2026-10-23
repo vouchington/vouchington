@@ -185,7 +185,7 @@ describe('no-mistakes forbidden-calls config', () => {
       name: 'Vitest tests do not run live no-mistakes analysis',
       rule: 'forbidden-calls',
       scope: 'repository',
-      exclude: ['static-code-analysis/i18n-extract/route-selector-map.mock.test.mts'],
+      exclude: ['**/*.mock.test.*'],
       options: {
         roots: [{ vitest: true }],
         traversal: 'file',

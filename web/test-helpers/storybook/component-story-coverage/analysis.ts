@@ -4,7 +4,7 @@ import {
   createSourceModuleGraph,
   type SourceModuleGraph,
 } from 'vouchington-tooling/source-module-graph'
-import { sourceExtensions } from './source.ts'
+import { repoRoot, sourceExtensions } from './source.ts'
 
 export interface StorybookSourceAnalysis {
   graph: SourceModuleGraph
@@ -13,7 +13,7 @@ export interface StorybookSourceAnalysis {
 
 export async function analyzeStorybookSources(
   files: string[],
-  root: string,
+  root = repoRoot,
 ): Promise<StorybookSourceAnalysis> {
   const facts = await analyzeTypeScriptModules({ root, files })
   const graph = createSourceModuleGraph({

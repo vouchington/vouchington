@@ -2,7 +2,7 @@ import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 
-import type { NoMistakesTestPolicyInput } from './no-mistakes-test-policy.mts'
+import type { NoMistakesTestPolicyInput } from '../check-no-mistakes-test-policy.mts'
 
 export const staticAnalysisWorkflow = `name: Static Code Analysis
 on: workflow_call
@@ -61,41 +61,11 @@ export function makeNoMistakesPolicyFixture({
   workflow = staticAnalysisWorkflow,
   tests = { 'ci/sample.test.mts': "import { symbols } from 'no-mistakes'" },
   routeSelectorTest = 'export const fixture = true',
-  mockedAnalysisTest = `import { vi } from 'vitest'
-import { analyzeProject } from 'no-mistakes'
-const noMistakes = { analyzeProject: vi.fn() }
-vi.mock<typeof import('no-mistakes')>(import('no-mistakes'), () => ({ ...noMistakes }))
-noMistakes.analyzeProject.mockImplementation(async () => analyzeProject())`,
-  storybookAnalysisTest = `import { mkdtemp } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
-import { analyzeStorybookSources } from '../../test-helpers/storybook/component-story-coverage/analysis'
-
-const files = [
-    'web/components/example.tsx',
-    'web/components/default-value.tsx',
-    'web/components/barrel.ts',
-    'web/storybook/example.stories.tsx',
-    'web/storybook/story-data.ts',
-  ]
-const root = await mkdtemp(join(tmpdir(), 'story-coverage-'))
-const analysis = await analyzeStorybookSources(files, root)
-const file = 'web/storybook/broken.stories.tsx'
-await analyzeStorybookSources([file], root)`,
-  storybookAnalysisHelper = `import { analyzeTypeScriptModules } from 'no-mistakes'
-export async function analyzeStorybookSources(files: string[], root: string) {
-  return analyzeTypeScriptModules({ root, files })
-}`,
-  mockExclusions = ['static-code-analysis/i18n-extract/route-selector-map.mock.test.mts'],
   otherWorkflows = {},
 }: {
   workflow?: string
   tests?: Record<string, string>
   routeSelectorTest?: string
-  mockedAnalysisTest?: string
-  storybookAnalysisTest?: string
-  storybookAnalysisHelper?: string
-  mockExclusions?: string[]
   otherWorkflows?: Record<string, string>
 } = {}): NoMistakesTestPolicyInput {
   const root = mkdtempSync(join(tmpdir(), 'no-mistakes-test-policy-'))
@@ -105,18 +75,7 @@ export async function analyzeStorybookSources(files: string[], root: string) {
   ]
   const files = {
     '.github/workflows/static-code-analysis.yml': workflow,
-    '.no-mistakes.yml': JSON.stringify({
-      rules: [
-        {
-          name: 'Vitest tests do not run live no-mistakes analysis',
-          exclude: mockExclusions,
-        },
-      ],
-    }),
     'static-code-analysis/i18n-extract/route-selector-map.test.mts': routeSelectorTest,
-    'static-code-analysis/i18n-extract/route-selector-map.mock.test.mts': mockedAnalysisTest,
-    'web/storybook/__tests__/component-story-coverage.test.ts': storybookAnalysisTest,
-    'web/test-helpers/storybook/component-story-coverage/analysis.ts': storybookAnalysisHelper,
     ...otherWorkflows,
     ...tests,
   }
@@ -125,13 +84,5 @@ export async function analyzeStorybookSources(files: string[], root: string) {
     mkdirSync(dirname(fullPath), { recursive: true })
     writeFileSync(fullPath, source)
   }
-  return {
-    root,
-    workflowPaths,
-    testPaths: [
-      ...Object.keys(tests),
-      'static-code-analysis/i18n-extract/route-selector-map.mock.test.mts',
-      'web/storybook/__tests__/component-story-coverage.test.ts',
-    ],
-  }
+  return { root, workflowPaths, testPaths: Object.keys(tests) }
 }

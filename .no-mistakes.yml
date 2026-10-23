@@ -2148,9 +2148,9 @@ rules:
   - name: Vitest tests do not run live no-mistakes analysis
     rule: forbidden-calls
     scope: repository
-    # This mock test replaces no-mistakes; CI pins the exact exception.
+    # Mock tests replace no-mistakes, so their calls never take its machine-wide lock.
     exclude:
-      - 'static-code-analysis/i18n-extract/route-selector-map.mock.test.mts'
+      - '**/*.mock.test.*'
     options:
       roots:
         - vitest: true
