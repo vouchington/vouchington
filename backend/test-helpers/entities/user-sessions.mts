@@ -155,3 +155,13 @@ export async function countTestUserAgentStrings(userAgent: string): Promise<numb
   )
   return (rows[0] as { count: number }).count
 }
+
+export async function invalidateTestUserSession(
+  sessionId: string,
+  reason: 'revoked' | 'expired',
+): Promise<void> {
+  await write(sql`/* invalidateTestUserSession */ UPDATE user_sessions
+    SET revoked_at = CASE WHEN ${reason} = 'revoked' THEN clock_timestamp() ELSE revoked_at END,
+        expires_at = CASE WHEN ${reason} = 'expired' THEN clock_timestamp() ELSE expires_at END
+    WHERE id = ${sessionId}`)
+}

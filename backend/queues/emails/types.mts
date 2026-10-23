@@ -3,6 +3,7 @@ import type {
   CommunityOwnershipTransferEmailProps,
   CommunityRoleChangeEmailProps,
   EmailVerificationEmailProps,
+  ReauthenticationEmailProps,
   WelcomeEmailProps,
 } from '@email-templates/core'
 
@@ -45,6 +46,8 @@ export type ProcessSendDataExportReadyEmailVariables = {
   requestId: string
 }
 
+export type ProcessSendReauthenticationTokenVariables = ReauthenticationEmailProps
+
 export type ProcessSendEmailVerificationTokenVariables = EmailVerificationEmailProps
 
 export type ProcessSendWelcomeEmailVariables = WelcomeEmailProps
@@ -64,6 +67,7 @@ export type EmailSendJobs =
   | 'processSendEmailAddressLoginToken'
   | 'processSendDataExportReadyEmail'
   | 'processSendEmailVerificationToken'
+  | 'processSendReauthenticationToken'
   | 'processSendWelcomeEmail'
   | 'processSendCommunityApplicationDecisionEmail'
   | 'processSendCommunityRoleChangeEmail'
@@ -90,6 +94,7 @@ type EmailTemplateVariables = {
   processSendEmailAddressLoginToken: ProcessSendEmailAddressLoginTokenVariables
   processSendDataExportReadyEmail: ProcessSendDataExportReadyEmailVariables
   processSendEmailVerificationToken: ProcessSendEmailVerificationTokenVariables
+  processSendReauthenticationToken: ProcessSendReauthenticationTokenVariables
   processSendWelcomeEmail: ProcessSendWelcomeEmailVariables
   processSendCommunityApplicationDecisionEmail: ProcessSendCommunityApplicationDecisionEmailVariables
   processSendCommunityRoleChangeEmail: ProcessSendCommunityRoleChangeEmailVariables

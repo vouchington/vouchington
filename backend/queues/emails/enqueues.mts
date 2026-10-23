@@ -14,6 +14,7 @@ import type {
   ProcessSendDataExportReadyEmailVariables,
   ProcessSendEmailAddressLoginTokenVariables,
   ProcessSendEmailVerificationTokenVariables,
+  ProcessSendReauthenticationTokenVariables,
   ProcessSendWelcomeEmailVariables,
   ProcessSendCopyrightNoticeEmailVariables,
 } from './types.mts'
@@ -128,3 +129,8 @@ function createEnqueueFunction<V extends Record<string, unknown>>(jobName: Email
     return enqueue({ input, variables })
   }
 }
+
+export const enqueueSendReauthenticationToken =
+  createEnqueueFunction<ProcessSendReauthenticationTokenVariables>(
+    'processSendReauthenticationToken',
+  )

@@ -101,6 +101,7 @@ work ahead of housekeeping.
   each processor picks one contract: retryable (may duplicate) or at-most-once (a delivery marker is
   committed before the send, and may lose the email). Jobs marked sensitive are removed on either
   successful completion or failure so a credential never outlives the job.
+- **Reauthentication email loss is recoverable by the person requesting a new code.** Its sensitive job may duplicate delivery on a retry, but verification still consumes a purpose-scoped code once.
 - **Spend admission is single-sourced.** Every call that can incur billed model spend goes through
   one spend-cap decision point, and capped jobs park until the daily rollover instead of failing.
   The coordinator that releases them is deliberately not behind the provider limiter.

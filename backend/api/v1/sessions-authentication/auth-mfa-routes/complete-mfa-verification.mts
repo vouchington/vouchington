@@ -3,6 +3,7 @@ import { isNativeClientTransportRequest } from '@modules/request-client-info'
 import type { Context } from '@jongleberry/api-server'
 import { setAuthenticationCookies } from '@modules/api-utils'
 import {
+  clearMfaLoginAttempts,
   completeMfaLoginWithContext,
   getAndDeleteLoginAttempt,
   type CompletedMfaLogin,
@@ -30,7 +31,11 @@ export async function completeMfaVerification(
   const consumedAttempt = await getAndDeleteLoginAttempt(loginAttemptId)
   ctx.assert(consumedAttempt, 401, 'Login attempt expired or invalid')
 
-  const user = await getPrivateUserByAny(consumedAttempt.userId)
+  // The factor has succeeded. Clear its scoped budget while loading the user for session minting.
+  const [user] = await Promise.all([
+    getPrivateUserByAny(consumedAttempt.userId),
+    clearMfaLoginAttempts(loginAttemptId, consumedAttempt),
+  ])
   const login = await completeMfaLoginWithContext(consumedAttempt, user, getDeviceContext(ctx))
   setAuthenticationCookies(ctx, {
     dt: login.deviceToken.token,

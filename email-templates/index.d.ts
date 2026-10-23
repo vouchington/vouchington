@@ -8,6 +8,7 @@ import type {
   CommunityRoleChangeEmailProps,
   DataExportReadyEmailProps,
   EmailVerificationEmailProps,
+  ReauthenticationEmailProps,
   FollowNewsSourcesEmailProps,
   FollowTopicsEmailProps,
   LoginTokenEmailProps,
@@ -24,6 +25,7 @@ export type {
   CommunityRoleChangeEmailProps,
   DataExportReadyEmailProps,
   EmailVerificationEmailProps,
+  ReauthenticationEmailProps,
   FollowNewsSourcesEmailProps,
   FollowTopicsEmailProps,
   LoginTokenEmailProps,
@@ -69,4 +71,8 @@ export declare function renderRenewalPriceIncreaseEmail(
 export declare function renderWelcomeEmail(props: WelcomeEmailProps): EmailRenderResultPromise
 export declare function renderApiKeyExpiryEmail(
   props: import('./types.mts').ApiKeyExpiryEmailProps,
+): EmailRenderResultPromise
+
+export declare function renderReauthenticationEmail(
+  props: ReauthenticationEmailProps,
 ): EmailRenderResultPromise

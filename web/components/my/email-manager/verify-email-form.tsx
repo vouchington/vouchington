@@ -1,5 +1,10 @@
 'use client'
 
+import {
+  LOGIN_CODE_LENGTH,
+  LOGIN_CODE_INPUT_PATTERN,
+  LOGIN_CODE_PATTERN,
+} from '@ts-shared/utils/login-code'
 import { Button } from '@/components/ui/button'
 import { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot } from '@/components/ui/input-otp'
 import { Label } from '@/components/ui/label'
@@ -43,41 +48,45 @@ export function VerifyEmailForm({
         <InputOTP
           id='verify-token'
           name='verification-code'
-          maxLength={8}
+          maxLength={LOGIN_CODE_LENGTH}
           value={token}
           disabled={loading}
           onChange={(value: string) => {
             const upper = value.toUpperCase()
             setToken(upper)
-            if (upper.length === 8 && !submitting.current) submitVerify(upper)
+            if (LOGIN_CODE_PATTERN.test(upper) && !submitting.current) submitVerify(upper)
           }}
-          pattern={/^[0-9A-Fa-f]*$/}
+          pattern={LOGIN_CODE_INPUT_PATTERN}
           inputMode='text'
           autoComplete='one-time-code'
           spellCheck={false}
           autoCorrect='off'
           autoCapitalize='characters'
         >
-          <InputOTPGroup>
-            <InputOTPSlot index={0} />
-            <InputOTPSlot index={1} />
-            <InputOTPSlot index={2} />
-            <InputOTPSlot index={3} />
-          </InputOTPGroup>
-          <InputOTPSeparator />
-          <InputOTPGroup>
-            <InputOTPSlot index={4} />
-            <InputOTPSlot index={5} />
-            <InputOTPSlot index={6} />
-            <InputOTPSlot index={7} />
-          </InputOTPGroup>
+          {[0, 1].map(group => (
+            <span
+              key={group}
+              className='contents'
+            >
+              {group === 1 && <InputOTPSeparator />}
+              <InputOTPGroup>
+                {[0, 1, 2, 3, 4].map(slot => (
+                  <InputOTPSlot
+                    key={slot}
+                    index={group * (LOGIN_CODE_LENGTH / 2) + slot}
+                    className='h-9 w-6 sm:h-10 sm:w-8'
+                  />
+                ))}
+              </InputOTPGroup>
+            </span>
+          ))}
         </InputOTP>
       </div>
       <div className='flex gap-2'>
         <Button
           type='submit'
           loading={loading}
-          disabled={loading || token.length < 8}
+          disabled={loading || !LOGIN_CODE_PATTERN.test(token)}
         >
           {loading
             ? t('extracted.emailManager.verifyEmailForm.verifying_2ec1ac7d')

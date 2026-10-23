@@ -4,6 +4,7 @@ import { createReAuthToken } from '@services/mfa'
 import { getPrimaryEmailAddress } from '@services/my/email-addresses'
 import { verifyEmailAddressLoginToken } from '@services/users/authentication'
 import { assertNotSuspended } from '@services/users/suspension'
+import { assertEmailTokenVerificationAllowed } from '@services/users/email-auth-rate-limits'
 import app from '../../../app.mts'
 import { requireAuth, validateRequestContract } from '../../../response-helpers.mts'
 
@@ -16,11 +17,24 @@ app.route('/api/v1/auth/mfa/re-auth/email/verification').post(async (ctx: Contex
   ctx.assert(body.code, 422, 'code is required')
 
   // Verify against the user's own primary email — never a caller-supplied address.
-  const rawEmail = await getPrimaryEmailAddress(currentUser.id)
+  const [rawEmail, session] = await Promise.all([
+    getPrimaryEmailAddress(currentUser.id),
+    ctx.getSessionTokenData(),
+  ])
   ctx.assert(rawEmail, 422, 'No email address associated with this account')
 
   const emailAddress = sanitizeEmailAddress(rawEmail)
-  const result = await verifyEmailAddressLoginToken(emailAddress, body.code)
+  await assertEmailTokenVerificationAllowed({
+    emailAddress,
+    ip: ctx.ip,
+    deviceId: session.did,
+    sessionId: session.sid,
+  })
+  const result = await verifyEmailAddressLoginToken(emailAddress, body.code, {
+    purpose: 're_auth',
+    currentUserId: currentUser.id,
+    session,
+  })
   if (!result.success) ctx.throw(401, 'Invalid or expired verification code')
 
   const token = await createReAuthToken(currentUser.id)

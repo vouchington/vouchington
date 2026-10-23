@@ -202,7 +202,7 @@ export const ROUTE_SELECTORS = [
   { pattern: "/my/friend-recommendations", selectorId: "web.route.152c17db7413ea00.6c579e73b3a39d3b", hasMembership: true },
   { pattern: "/my/friend-recommendations/dismissed", selectorId: "web.route.60f207314e53a26a.61b9a7012e2fdecb", hasMembership: true },
   { pattern: "/my/household", selectorId: "web.route.e2f822599ce44122.2814365314357c57", hasMembership: true },
-  { pattern: "/my/identity", selectorId: "web.route.040cfd375f74a043.3f0a46bcb18a080b", hasMembership: true },
+  { pattern: "/my/identity", selectorId: "web.route.040cfd375f74a043.c0c065d1ed738c12", hasMembership: true },
   { pattern: "/my/identity-verification", selectorId: "web.route.3fb2cb5869f8593d.70be8089e933beb4", hasMembership: true },
   { pattern: "/my/landing-page/[slug]", selectorId: "web.route.10215e7b127df690.8da980c352943cc2", hasMembership: true },
   { pattern: "/my/landing-page/[slug]/analytics", selectorId: "web.route.a65ef95358e6ac23.7f7f577e1884df86", hasMembership: true },

@@ -20,6 +20,11 @@ export type LoginTokenEmailProps = LocalizedEmailProps & {
   expiration: string
 }
 
+export type ReauthenticationEmailProps = LocalizedEmailProps & {
+  token: string
+  expiresInMinutes: number
+}
+
 export type EmailVerificationEmailProps = LocalizedEmailProps & {
   token: string
 }

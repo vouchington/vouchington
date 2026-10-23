@@ -1,5 +1,10 @@
 'use client'
 
+import {
+  LOGIN_CODE_LENGTH,
+  LOGIN_CODE_INPUT_PATTERN,
+  LOGIN_CODE_PATTERN,
+} from '@ts-shared/utils/login-code'
 import { useId } from 'react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -97,20 +102,34 @@ export function EmailVerificationPane({
         <strong>{sentToEmail}</strong>.
       </p>
       <Label id={labelId}>
-        {t('extracted.mfaReauthDialog.verificationPanes.enterThe6DigitCodeFrom_888a9edc')}
+        {t('extracted.emailManager.verifyEmailForm.verificationCode_3ee75029')}
       </Label>
-      <SixDigitOtp
-        code={emailCode}
-        labelId={labelId}
-        loading={loading}
-        setCode={setEmailCode}
-        onComplete={handleEmailVerify}
-      />
+      <InputOTP
+        maxLength={LOGIN_CODE_LENGTH}
+        value={emailCode}
+        aria-labelledby={labelId}
+        onChange={(value: string) => setEmailCode(value.toUpperCase())}
+        disabled={loading}
+        pattern={LOGIN_CODE_INPUT_PATTERN}
+        inputMode='text'
+        autoComplete='one-time-code'
+        autoCapitalize='characters'
+      >
+        <InputOTPGroup>
+          {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(slot => (
+            <InputOTPSlot
+              key={slot}
+              index={slot}
+              className='h-9 w-6 sm:h-10 sm:w-8'
+            />
+          ))}
+        </InputOTPGroup>
+      </InputOTP>
       <div className='flex gap-2'>
         <Button
           onClick={() => handleEmailVerify(emailCode)}
           loading={loading}
-          disabled={loading || emailCode.length < 6}
+          disabled={loading || !LOGIN_CODE_PATTERN.test(emailCode)}
         >
           {loading
             ? t('extracted.mfaReauthDialog.verificationPanes.verifying_2ec1ac7d')
