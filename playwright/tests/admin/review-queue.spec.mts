@@ -6,10 +6,9 @@ import {
   insertTestPostImage,
 } from '../../../backend/test-helpers/index.mts'
 import { allowTestPostImageDelivery } from '../../../backend/test-helpers/entities/post-images.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo, randomSuffix, waitForBelowFoldHydration } from 'vouchington-tooling/playwright'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
-import { randomSuffix } from '../../helpers/random-id.mts'
-import { waitForBelowFoldHydration } from '../../helpers/wait-for-hydration.mts'
+
 let rejectedTitle = ''
 let inReviewTitle = ''
 let approveTitle = ''

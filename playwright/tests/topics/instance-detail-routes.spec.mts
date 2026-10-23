@@ -1,12 +1,11 @@
 import { allowUnannotatedQuery } from '../../../backend/data-stores/psql/prepared-statement-name.mts'
 import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { setFeatureFlags } from '../../helpers/feature-flags.mts'
 import { insertTestTopic } from '../../helpers/insert-test-topic.mts'
 import { linkTopicHostname } from '../../helpers/link-topic-hostname.mts'
 import { insertTestReferralProgram } from '../../helpers/insert-test-referral-program.mts'
-import { randomSuffix } from '../../helpers/random-id.mts'
 import { write } from '../../../backend/data-stores/psql/clients.mts'
 import { insertTestFediverseInstanceMetadata } from '../../helpers/insert-test-fediverse-instance.mts'
 

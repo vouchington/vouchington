@@ -1,8 +1,7 @@
 import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 import { withCleanUser } from '../../helpers/auth.mts'
 import { insertTestTopic } from '../../helpers/insert-test-topic.mts'
-import { randomSuffix } from '../../helpers/random-id.mts'
 
 test.describe('Topic settings — non-admin boundary', () => {
   let topicId: string

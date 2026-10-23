@@ -1,5 +1,5 @@
 import { test, expect } from '../../helpers/test.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo } from 'vouchington-tooling/playwright'
 import { insertTestLinkPostWithCrawl } from '../../../backend/test-helpers/entities/link-posts.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { PLAYWRIGHT_SIDELOAD_IMAGE_URL } from '../../../lambdas/playwright-podcast-cover.mts'

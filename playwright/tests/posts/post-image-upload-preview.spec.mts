@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test, expect, type Page } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo } from 'vouchington-tooling/playwright'
 
 /** Only the upload transport/processing responses are mocked; browser bytes and CSP are real. */
 async function mockUploads(page: Page) {

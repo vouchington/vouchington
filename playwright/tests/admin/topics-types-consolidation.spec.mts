@@ -1,7 +1,6 @@
 import { test, expect } from '../../helpers/test.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
-import { randomSuffix } from '../../helpers/random-id.mts'
 import { insertTestTopic } from '../../helpers/insert-test-topic.mts'
 
 // The 6 user-selectable topic types in the edit picker (rss_feed is excluded because

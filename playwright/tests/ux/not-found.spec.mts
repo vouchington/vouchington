@@ -1,5 +1,5 @@
 import { test, expect } from '../../helpers/test.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo } from 'vouchington-tooling/playwright'
 
 test.describe('404 Not Found Page', () => {
   test('offline recovery link navigates back to the topics browser', async ({ page }) => {

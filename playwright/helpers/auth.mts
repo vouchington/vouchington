@@ -4,8 +4,7 @@ import { mintUUIDv7 } from '../../ts-shared/session-jwt/index.mts'
 import type { createTestUser } from '../../backend/test-helpers/index.mts'
 import type { PrivateUser } from '../../backend/services/users/types.mts'
 import { TEST_USER_ID } from '../../integration-tests/web/helpers/constants.mts'
-import { randomSuffix } from './random-id.mts'
-import { retryOnConnectionLost } from './retry-on-connection-lost.mts'
+import { randomSuffix, retryOnConnectionLost } from 'vouchington-tooling/playwright'
 
 export const TEST_USER_USERNAME = 'tests'
 

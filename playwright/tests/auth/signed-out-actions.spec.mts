@@ -1,5 +1,5 @@
 import { test, expect } from '../../helpers/test.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo } from 'vouchington-tooling/playwright'
 import { TEST_USER_USERNAME } from '../../helpers/auth.mts'
 
 // Seed IDs from playwright-test-data.mts

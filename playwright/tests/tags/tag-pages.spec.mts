@@ -1,16 +1,14 @@
 import { expect, test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo, randomSuffix, requireTestValue } from 'vouchington-tooling/playwright'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { loginAsUser } from '../../helpers/auth.mts'
 import { insertTestTopic } from '../../helpers/insert-test-topic.mts'
-import { randomSuffix } from '../../helpers/random-id.mts'
 import { voteBinaryChoice } from '../../helpers/semantic-vote.mts'
 import {
   CONTRIBUTING_USER_AGE_MS,
   createTestUserWithAge,
   insertTestPost,
 } from '../../../backend/test-helpers/index.mts'
-import { requireTestValue } from '../../helpers/assertions.mts'
 import { beginTransaction } from '../../../backend/data-stores/psql/index.mts'
 import { seedPlaywrightPublisherTypeTopics } from '../../../backend/scripts/seeds/playwright-test-data/core-publisher-type-topics.mts'
 

@@ -1,6 +1,6 @@
 /* oxlint-disable no-mistakes/playwright-literals -- configured selector wrappers forward literal test ids from each spec */
 import { expect, type Page } from './test.mts'
-import { MOBILE_VIEWPORTS } from './viewport-constants.mts'
+import { MOBILE_VIEWPORTS } from 'vouchington-tooling/playwright'
 
 export async function assertManagerHeading(
   page: Page,

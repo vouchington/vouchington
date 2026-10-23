@@ -1,6 +1,5 @@
 import { test, expect } from '../../helpers/test.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
-import { MOBILE_VIEWPORTS } from '../../helpers/viewport-constants.mts'
+import { MOBILE_VIEWPORTS, navigateTo } from 'vouchington-tooling/playwright'
 
 test.describe('Footer links', () => {
   test('About, Terms, and Privacy links point to article routes', async ({ page }) => {

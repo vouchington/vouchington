@@ -1,5 +1,5 @@
 import { expect, test } from '../../helpers/test.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo } from 'vouchington-tooling/playwright'
 
 // Seed data: Review post '019c64e6-f720-7002-a002-000000000001'
 // Tests run anonymously — AnonymousStructuredDataScript renders JSON-LD only for

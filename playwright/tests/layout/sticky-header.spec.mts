@@ -5,8 +5,7 @@
  * This applies on all viewport sizes.
  */
 import { expect, test } from '../../helpers/test.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
-import { MOBILE_VIEWPORTS, DESKTOP_VIEWPORT } from '../../helpers/viewport-constants.mts'
+import { DESKTOP_VIEWPORT, MOBILE_VIEWPORTS, navigateTo } from 'vouchington-tooling/playwright'
 
 test.describe('Sticky header', () => {
   test('navbar stays visible after scrolling at desktop viewport', async ({ page }) => {

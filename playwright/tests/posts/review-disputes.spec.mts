@@ -1,6 +1,6 @@
 import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo, randomSuffix, requireTestValue } from 'vouchington-tooling/playwright'
 import { createSiteModeratorUser, loginAsUser } from '../../helpers/auth.mts'
 import {
   createTestUser,
@@ -11,8 +11,6 @@ import {
   insertTestTopicClaim,
 } from '../../../backend/test-helpers/index.mts'
 import { SEEDED_IDS } from '../../../integration-tests/web/helpers/constants.mts'
-import { requireTestValue } from '../../helpers/assertions.mts'
-import { randomSuffix } from '../../helpers/random-id.mts'
 
 // Seeded multi-topic review for dispute testing
 let smModeratorId = ''

@@ -1,6 +1,6 @@
 import { test, expect } from '../../helpers/test.mts'
 import { loginAsTestUser } from '../../helpers/auth.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo } from 'vouchington-tooling/playwright'
 
 // The test user seeded in playwright-test-data.mts (username: 'tests')
 const TEST_USER_USERNAME = 'tests'

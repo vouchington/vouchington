@@ -1,5 +1,5 @@
 import { test, expect } from '../../helpers/test.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo } from 'vouchington-tooling/playwright'
 
 test.describe('Rewards Programs Page', () => {
   test('should display rewards programs list page', async ({ page }) => {

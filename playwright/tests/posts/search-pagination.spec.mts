@@ -1,11 +1,11 @@
 import { test, expect } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
-import { waitForBelowFoldHydration } from '../../helpers/wait-for-hydration.mts'
 import {
-  scrollToLoadMore,
   forceMainScrollableBeforeHydration,
-} from '../../helpers/scroll-to-load-more.mts'
+  navigateTo,
+  scrollToLoadMore,
+  waitForBelowFoldHydration,
+} from 'vouchington-tooling/playwright'
 
 test.describe('Post search and pagination', () => {
   test.use({ storageState: AUTH_STATE })

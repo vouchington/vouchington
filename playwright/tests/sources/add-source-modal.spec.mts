@@ -1,7 +1,6 @@
 import { test, expect } from '../../helpers/test.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
-import { randomSuffix } from '../../helpers/random-id.mts'
 import { insertTestTopic } from '../../helpers/insert-test-topic.mts'
 import { insertTestRssFeed } from '../../helpers/insert-test-rss-feed.mts'
 import { completeSourceImport, failSourceImport } from '../../helpers/complete-source-import.mts'

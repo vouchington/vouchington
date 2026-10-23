@@ -1,5 +1,5 @@
 import { expect, test } from '../../helpers/test.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo } from 'vouchington-tooling/playwright'
 
 test.describe('live tmux localization smoke', () => {
   test('anonymous landing renders in English without a browser error', async ({ page }) => {

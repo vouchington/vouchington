@@ -24,8 +24,7 @@ import { createLoginToken } from '../../backend/services/users/login-token.mts'
 import { insertEmailAddressLoginToken } from '../../backend/test-helpers/entities/email-addresses.mts'
 import { createDeviceAndSessionTokens } from '../../backend/services/jwt-session/index.mts'
 import { mintUUIDv7 } from '../../ts-shared/session-jwt/index.mts'
-import { navigateTo } from '../helpers/navigate-to.mts'
-import { waitForBelowFoldHydration } from '../helpers/wait-for-hydration.mts'
+import { navigateTo, waitForBelowFoldHydration } from 'vouchington-tooling/playwright'
 import { AUTH_STATE } from '../helpers/auth-state.mts'
 
 test('authenticate as test user via real /login flow', async ({ page }) => {

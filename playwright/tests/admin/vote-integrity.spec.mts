@@ -1,8 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { test, expect } from '../../helpers/test.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo, requireTestValue } from 'vouchington-tooling/playwright'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
-import { requireTestValue } from '../../helpers/assertions.mts'
 import {
   createTestUser,
   insertTestPost,

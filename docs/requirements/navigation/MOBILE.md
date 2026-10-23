@@ -125,7 +125,7 @@ Images must not overflow their container on narrow viewports.
 
 ## Playwright Testing
 
-Use `MOBILE_VIEWPORTS` constants from `playwright/helpers/viewport-constants.mts` as reference for the five canonical test viewports.
+Use `MOBILE_VIEWPORTS` constants from `vouchington-tooling/playwright` as reference for the five canonical test viewports.
 
 ### Horizontal scroll assertion
 

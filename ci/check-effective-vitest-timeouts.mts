@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
 import { createVitest } from 'vitest/node'
-import { effectiveTimeoutCap } from '../test-helpers/vitest-effective-timeout-cap.mts'
 import {
   assertCanonicalRootVitestConfig,
   checkCanonicalRootVitestConfigControls,
   checkFiniteTimeoutProfiles,
-} from '../test-helpers/vitest-effective-timeout-controls.mts'
+  effectiveTimeoutCap,
+} from 'vouchington-tooling/vitest-effective-timeout'
 
 const root = process.cwd()
 const configFileControls = checkCanonicalRootVitestConfigControls()

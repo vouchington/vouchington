@@ -1,6 +1,6 @@
 import { expect, test } from '../../helpers/test.mts'
 import { resetAnonymousBrowserStateBeforeNavigation } from '../../helpers/browser-state.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo } from 'vouchington-tooling/playwright'
 
 test.describe('Copyright notice authentication', () => {
   test('anonymous visitors can open the notice form', async ({ page }) => {

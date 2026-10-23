@@ -1,6 +1,5 @@
 import { test, expect } from '../../helpers/test.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
-import { waitForBelowFoldHydration } from '../../helpers/wait-for-hydration.mts'
+import { navigateTo, waitForBelowFoldHydration } from 'vouchington-tooling/playwright'
 
 test.describe('All Posts Page', () => {
   test('should display all posts list page with title dropdown default "All"', async ({ page }) => {

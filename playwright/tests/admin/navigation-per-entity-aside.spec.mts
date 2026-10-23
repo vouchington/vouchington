@@ -1,7 +1,6 @@
 import { test, expect } from '../../helpers/test.mts'
 import { insertTestTopic } from '../../helpers/insert-test-topic.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
-import { randomSuffix } from '../../helpers/random-id.mts'
+import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 
 const DESKTOP_VIEWPORT = { width: 1280, height: 720 }

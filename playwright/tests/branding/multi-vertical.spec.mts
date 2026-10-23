@@ -1,5 +1,5 @@
 import { test, expect } from '../../helpers/test.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo } from 'vouchington-tooling/playwright'
 
 test.describe('Multi-vertical branding', () => {
   test.beforeEach(async ({ page }) => {

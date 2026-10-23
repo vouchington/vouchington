@@ -1,12 +1,10 @@
 import { expect, test } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo, randomSuffix, requireTestValue } from 'vouchington-tooling/playwright'
 import { createTestPost } from '../../../backend/test-helpers/entities/create-test-entities.mts'
 import { insertTestPost } from '../../../backend/test-helpers/entities/posts.mts'
 import { createTestUser } from '../../../backend/test-helpers/entities/users.mts'
-import { requireTestValue } from '../../helpers/assertions.mts'
 import { insertTestTopic } from '../../helpers/insert-test-topic.mts'
-import { randomSuffix } from '../../helpers/random-id.mts'
 
 test.describe('Typed post tag management', () => {
   test.use({ storageState: AUTH_STATE })

@@ -1,7 +1,6 @@
 import { expect, test } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
-import { DESKTOP_VIEWPORT } from '../../helpers/viewport-constants.mts'
+import { DESKTOP_VIEWPORT, navigateTo } from 'vouchington-tooling/playwright'
 
 test.describe('Dark mode - no hardcoded colors', () => {
   test.use({ storageState: AUTH_STATE })

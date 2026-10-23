@@ -1,6 +1,6 @@
 import { test, expect } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo } from 'vouchington-tooling/playwright'
 import { TEST_USER_ID } from '../../../integration-tests/web/helpers/constants.mts'
 import { invalidate } from '../../../backend/services/entity-cache/invalidate.mts'
 import { setUserVerificationFields } from '../../../backend/test-helpers/entities/identity-verification.mts'

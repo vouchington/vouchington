@@ -1,12 +1,11 @@
 import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo, requireTestValue } from 'vouchington-tooling/playwright'
 import { loginAsUser } from '../../helpers/auth.mts'
 import { voteChoice, voteTrigger } from '../../helpers/semantic-vote.mts'
 import {
   CONTRIBUTING_USER_AGE_MS,
   createTestUserWithAge,
 } from '../../../backend/test-helpers/index.mts'
-import { requireTestValue } from '../../helpers/assertions.mts'
 
 // After voting on a news item, the user's existing vote must still highlight after reload.
 // The /api/v1/rss-feed-items list response includes an `election_votes` sidecar for logged-in

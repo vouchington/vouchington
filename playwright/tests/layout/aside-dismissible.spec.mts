@@ -1,7 +1,6 @@
 import { expect, test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
-import { DESKTOP_VIEWPORT } from '../../helpers/viewport-constants.mts'
+import { DESKTOP_VIEWPORT, navigateTo } from 'vouchington-tooling/playwright'
 import { loginAsUser } from '../../helpers/auth.mts'
 import { createTestUser } from '../../../backend/test-helpers/index.mts'
 

@@ -1,6 +1,5 @@
 import { expect, test } from '../../helpers/test.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
-import { storybookBundleHasStory } from '../../helpers/storybook.mts'
+import { navigateTo, storybookBundleHasStory } from 'vouchington-tooling/playwright'
 
 const currentBundleSentinelStory = 'design-system-pure-components--shared-badges-and-links'
 

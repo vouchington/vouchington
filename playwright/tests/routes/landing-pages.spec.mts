@@ -1,8 +1,7 @@
 import { expect, test } from '../../helpers/test.mts'
 import { loginAsTestUser, loginAsUser, TEST_USER_USERNAME } from '../../helpers/auth.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo, requireTestValue } from 'vouchington-tooling/playwright'
 import { createTestUser } from '../../../backend/test-helpers/index.mts'
-import { requireTestValue } from '../../helpers/assertions.mts'
 
 test.describe('Landing pages', () => {
   test('renders the default public landing page', async ({ page }) => {

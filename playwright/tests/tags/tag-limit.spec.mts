@@ -1,8 +1,7 @@
 import { expect, test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 import { loginAsUser } from '../../helpers/auth.mts'
 import { insertTestTopic } from '../../helpers/insert-test-topic.mts'
-import { randomSuffix } from '../../helpers/random-id.mts'
 import {
   CONTRIBUTING_USER_AGE_MS,
   createTestUserWithAge,

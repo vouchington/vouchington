@@ -1,9 +1,11 @@
 import { test, expect } from '../../helpers/test.mts'
 import { loginAsTestUser } from '../../helpers/auth.mts'
-import { setupVirtualAuthenticator } from '../../helpers/virtual-authenticator.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
-import { randomSuffix } from '../../helpers/random-id.mts'
-import { waitForBelowFoldHydration } from '../../helpers/wait-for-hydration.mts'
+import {
+  navigateTo,
+  randomSuffix,
+  setupVirtualAuthenticator,
+  waitForBelowFoldHydration,
+} from 'vouchington-tooling/playwright'
 
 test.describe('Passkey management', () => {
   test('adds and removes a passkey from identity page', async ({ page }) => {

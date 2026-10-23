@@ -1,8 +1,7 @@
 import { test, expect, type Page, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { insertTestTopic } from '../../helpers/insert-test-topic.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
-import { randomSuffix } from '../../helpers/random-id.mts'
 
 // Seeded topic for read-only tests
 const SEEDED_TOPIC_ID = '019c64e6-f710-74cb-b36d-130af8ff1067'

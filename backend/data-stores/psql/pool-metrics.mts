@@ -118,9 +118,9 @@ function snapshotPool(pool: pg.Pool): PsqlPoolMetric {
 }
 
 function psqlPoolMetricsKey(): symbol {
-  return Symbol.for('vitest-fork-leak-psql-pool-metrics')
+  return Symbol.for('vitest-fork-leak-pool-metrics')
 }
 
 function psqlPoolSocketHandlesKey(): symbol {
-  return Symbol.for('vitest-fork-leak-psql-pool-socket-handles')
+  return Symbol.for('vitest-fork-leak-pool-socket-handles')
 }

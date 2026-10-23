@@ -11,7 +11,7 @@
  * verify the login-form UI behavior: button visibility, success navigation, and error paths.
  */
 import { test, expect, type Page } from '../../helpers/test.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo } from 'vouchington-tooling/playwright'
 
 const FAKE_OPTIONS = {
   challenge: 'dGVzdC1jaGFsbGVuZ2U',

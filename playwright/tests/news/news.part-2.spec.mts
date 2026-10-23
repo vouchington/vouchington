@@ -1,8 +1,6 @@
 import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo, randomSuffix, requireTestValue } from 'vouchington-tooling/playwright'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
-
-import { randomSuffix } from '../../helpers/random-id.mts'
 
 import { insertTestPost } from '../../../backend/test-helpers/entities/posts.mts'
 
@@ -14,7 +12,6 @@ import { insertTestRssFeed } from '../../helpers/insert-test-rss-feed.mts'
 
 import { write } from '../../../backend/data-stores/psql/clients.mts'
 import { insertTestRssFeedItem } from '../../../backend/test-helpers/entities/rss-feed-items.mts'
-import { requireTestValue } from '../../helpers/assertions.mts'
 
 // Fixed test user ID seeded by playwright-test-data.mts.
 const TEST_USER_ID = '019f0000-0000-7000-8000-000000000000'

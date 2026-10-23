@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '../../helpers/test.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo } from 'vouchington-tooling/playwright'
+
 const MOCK_LOGIN_ATTEMPT_ID = 'playwright-test-login-attempt-id'
 
 /**

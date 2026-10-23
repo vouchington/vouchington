@@ -1,8 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { expect, test, type Page } from '../../helpers/test.mts'
 import { resetAnonymousBrowserStateBeforeNavigation } from '../../helpers/browser-state.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
-import { randomSuffix } from '../../helpers/random-id.mts'
+import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 import { TEST_USER_ID } from '../../../integration-tests/web/helpers/constants.mts'
 import {
   insertTestImage,

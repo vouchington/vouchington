@@ -7,7 +7,7 @@ import {
 } from '../../../backend/test-helpers/index.mts'
 import { createRandomString } from '../../../backend/test-helpers/data.mts'
 import { loginAsUser } from '../../helpers/auth.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo } from 'vouchington-tooling/playwright'
 import { createProfileLink } from '../../../backend/services/my/profile-links.mts'
 import { getAsideLocator } from '../../helpers/aside-locator.mts'
 

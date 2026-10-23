@@ -1,4 +1,4 @@
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo } from 'vouchington-tooling/playwright'
 import { expect, test } from '../../helpers/test.mts'
 
 test.describe('Navigation performance hints', () => {

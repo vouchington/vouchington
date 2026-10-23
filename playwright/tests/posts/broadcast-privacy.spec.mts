@@ -1,8 +1,6 @@
 import { test, expect } from '../../helpers/test.mts'
 import { loginAsTestUser } from '../../helpers/auth.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
-import { waitForBelowFoldHydration } from '../../helpers/wait-for-hydration.mts'
-import { randomSuffix } from '../../helpers/random-id.mts'
+import { navigateTo, randomSuffix, waitForBelowFoldHydration } from 'vouchington-tooling/playwright'
 
 async function logout(page: import('../../helpers/test.mts').Page) {
   await page.evaluate(async () => {

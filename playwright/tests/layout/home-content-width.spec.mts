@@ -11,7 +11,7 @@ import {
   collapseSidebar,
   getNavbarBox,
 } from '../../helpers/layout-collapse.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo } from 'vouchington-tooling/playwright'
 
 test.describe('Home content width matches header when both columns collapsed', () => {
   test('home content wrapper spans the full 1200px column after collapsing sidebar + aside', async ({

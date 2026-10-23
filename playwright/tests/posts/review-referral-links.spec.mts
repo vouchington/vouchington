@@ -1,5 +1,5 @@
 import { test, expect } from '../../helpers/test.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo } from 'vouchington-tooling/playwright'
 
 // Review post that rates Chase Sapphire Preferred (card topic with referral_program_id set)
 const REVIEW_WITH_REFERRAL = {

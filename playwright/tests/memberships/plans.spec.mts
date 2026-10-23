@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '../../helpers/test.mts'
 import { setFeatureFlags } from '../../helpers/feature-flags.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo } from 'vouchington-tooling/playwright'
 
 async function navigateToPlans(page: Page): Promise<void> {
   await navigateTo(page, '/plans')

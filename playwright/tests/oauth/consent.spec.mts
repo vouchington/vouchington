@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo } from 'vouchington-tooling/playwright'
 import { expect, test } from '../../helpers/test.mts'
 
 const USER_MCP_RESOURCE_METADATA_PATH = '/.well-known/oauth-protected-resource/api/v1/mcp'

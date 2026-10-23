@@ -75,7 +75,7 @@ describe('Area CI triggers', () => {
   it('keeps direct Playwright owner changes wired to Playwright', () => {
     expectRefinedRuntimeFilterMatches('playwright', [
       'playwright.config.mts',
-      'playwright/helpers/navigate-to.mts',
+      'playwright/helpers/test.mts',
       'playwright/tests/auth/login.spec.mts',
       'ts-shared/utils/sentry-deployment-gate.mts',
     ])

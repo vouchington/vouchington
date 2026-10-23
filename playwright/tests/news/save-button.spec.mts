@@ -1,5 +1,5 @@
 import { test, expect } from '../../helpers/test.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo } from 'vouchington-tooling/playwright'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { withCleanUser } from '../../helpers/auth.mts'
 import { followRssFeed } from '../../../backend/test-helpers/index.mts'

@@ -1,6 +1,5 @@
 import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
-import { randomSuffix } from '../../helpers/random-id.mts'
+import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 import { insertTestTopic } from '../../../backend/test-helpers/entities/topics.mts'
 import { insertTestCommunity } from '../../../backend/test-helpers/entities/communities.mts'
 import { insertTestCommunityListItem } from '../../../backend/test-helpers/entities/community-list-items.mts'

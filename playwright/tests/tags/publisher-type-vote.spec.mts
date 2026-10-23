@@ -1,11 +1,10 @@
 import { expect, test, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { insertTestTopic } from '../../helpers/insert-test-topic.mts'
 import { addRssFeedTopicPublisherType } from '../../../backend/test-helpers/entities/rss-feeds.mts'
 import { beginTransaction } from '../../../backend/data-stores/psql/index.mts'
 import { seedPlaywrightPublisherTypeTopics } from '../../../backend/scripts/seeds/playwright-test-data/core-publisher-type-topics.mts'
-import { randomSuffix } from '../../helpers/random-id.mts'
 import { getPublisherTypeTopicId } from '../../../backend/services/topics/publisher-type-topics.mts'
 import { voteBinaryChoice } from '../../helpers/semantic-vote.mts'
 

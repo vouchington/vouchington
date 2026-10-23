@@ -1,12 +1,11 @@
 import { test, expect } from '../../helpers/test.mts'
 
-import { navigateTo } from '../../helpers/navigate-to.mts'
-
+import {
+  MOBILE_VIEWPORTS,
+  assertNoHorizontalScroll,
+  navigateTo,
+} from 'vouchington-tooling/playwright'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
-
-import { assertNoHorizontalScroll } from '../../helpers/mobile-assertions.mts'
-
-import { MOBILE_VIEWPORTS } from '../../helpers/viewport-constants.mts'
 
 test.describe('News page modal and layout checks', () => {
   test.use({ storageState: AUTH_STATE })

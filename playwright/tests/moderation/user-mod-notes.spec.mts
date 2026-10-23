@@ -1,9 +1,7 @@
 import { expect, test, type Page, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { createTestUser, insertTestModerationReport } from '../../../backend/test-helpers/index.mts'
 import { createSiteModeratorUser, loginAsUser } from '../../helpers/auth.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
-import { randomSuffix } from '../../helpers/random-id.mts'
-import { requireTestValue } from '../../helpers/assertions.mts'
+import { navigateTo, randomSuffix, requireTestValue } from 'vouchington-tooling/playwright'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { TEST_USER_ID } from '../../../integration-tests/web/helpers/constants.mts'
 

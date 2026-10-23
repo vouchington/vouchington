@@ -1,7 +1,6 @@
 import { expect, test } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
-import { MOBILE_VIEWPORTS, DESKTOP_VIEWPORT } from '../../helpers/viewport-constants.mts'
+import { DESKTOP_VIEWPORT, MOBILE_VIEWPORTS, navigateTo } from 'vouchington-tooling/playwright'
 
 test.describe('My Referral Links', () => {
   test.use({ storageState: AUTH_STATE })

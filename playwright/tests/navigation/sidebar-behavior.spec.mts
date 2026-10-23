@@ -1,7 +1,7 @@
 import { test, expect } from '../../helpers/test.mts'
 
 import { ensureSidebarOpen } from '../../helpers/layout-collapse.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo } from 'vouchington-tooling/playwright'
 import { VIEWPORTS, waitForSidebarTransition } from '../../helpers/sidebar-behavior.mts'
 
 test.describe('Sidebar transition', () => {

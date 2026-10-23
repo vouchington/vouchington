@@ -2,7 +2,7 @@ import { AxeBuilder } from '@axe-core/playwright'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { TEST_USER_USERNAME } from '../../helpers/auth.mts'
 import { expect, test, type Page } from '../../helpers/test.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo } from 'vouchington-tooling/playwright'
 
 const AXE_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22a', 'wcag22aa'] as const
 const CARD_ID = '019c64e6-f710-74cb-b36d-130af8ff1067'

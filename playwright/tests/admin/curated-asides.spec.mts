@@ -4,11 +4,10 @@ import {
   insertTestCuratedAsideItem,
 } from '../../../backend/test-helpers/index.mts'
 import { test, expect, type Page } from '../../helpers/test.mts'
-import { navigateTo } from '../../helpers/navigate-to.mts'
+import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { insertTestRssFeed } from '../../helpers/insert-test-rss-feed.mts'
 import { insertTestTopic } from '../../helpers/insert-test-topic.mts'
-import { randomSuffix } from '../../helpers/random-id.mts'
 
 async function seedCuratedAsideFixtures() {
   const suffix = randomSuffix()
