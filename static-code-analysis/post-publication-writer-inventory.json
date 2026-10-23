@@ -15,7 +15,6 @@
     "backend/services/posts/archive.mts",
     "backend/services/posts/post-ratings.mts",
     "backend/services/posts/post-ratings/delete.mts",
-    "backend/services/post-clearance/approve-pending.mts",
     "backend/services/post-clearance/check-clearance.mts",
     "backend/services/post-clearance/reset-clearance.mts",
     "backend/services/post-clearance/set-status.mts",
