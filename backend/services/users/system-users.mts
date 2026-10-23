@@ -4,7 +4,6 @@ import { isSlug } from '@modules/utils'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import { getPrivateUserByAny } from './get.mts'
-import { resolveEmailDomainHostnameIds } from '@services/email-address-validator/email-domain-context'
 import {
   AUTOTAGGER_AGENT_SYSTEM_USERNAME,
   AUTOTAGGER_CLASSIFIER_SYSTEM_USERNAME,
@@ -18,8 +17,6 @@ type SystemUserRow = {
   username: string
   use_display_name_from: NonNullable<BasicUser['use_display_name_from']> | null
 }
-
-type EmailUserRow = Omit<SystemUserRow, 'username'> & { username: string | null }
 
 const systemUsers = new Map<string, SystemUserRow>()
 
@@ -67,46 +64,6 @@ export const upsertSystemUser = async (
   return result
 }
 
-/**
- * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
- * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
- */
-export const upsertAdminEmailAddresses = async (
-  userId: string,
-  emails: { email: string; isPrimary: boolean }[],
-): Promise<void> => {
-  if (emails.length === 0) return
-  const primaryCount = emails.filter(e => e.isPrimary).length
-  assert(primaryCount <= 1, 422, 'At most one email address can be marked as primary')
-  await using query = await beginTransaction()
-  const emailDomainHostnameIds = await resolveEmailDomainHostnameIds(
-    emails.map(({ email }) => email),
-    { query },
-  )
-  // Clear existing primary flag first to avoid violating the unique partial index
-  // on (user_id) WHERE is_primary = TRUE when primary email changes.
-  await write(
-    sql`/* upsertAdminEmailAddresses */
-        UPDATE user_email_addresses SET is_primary = FALSE WHERE user_id = ${userId}
-      `,
-    { query },
-  )
-  // Batch-upsert all emails in one statement, then restore the correct primary flag.
-  const insert = sql`/* upsertAdminEmailAddresses */
-    INSERT INTO user_email_addresses (user_id, email_address, email_domain_hostname_id, is_primary) VALUES `
-  emails.forEach(({ email, isPrimary }, i) => {
-    if (i > 0) insert.append(sql`, `)
-    insert.append(sql`(${userId}, ${email}, ${emailDomainHostnameIds[i]}, ${isPrimary})`)
-  })
-  insert.append(
-    sql` ON CONFLICT (user_id, email_address) DO UPDATE SET
-      email_domain_hostname_id = EXCLUDED.email_domain_hostname_id,
-      is_primary = EXCLUDED.is_primary`,
-  )
-  await write(insert, { query })
-  await query.commit()
-}
-
 export const getSystemUserByUsername = async (username: string): Promise<SystemUserRow | null> => {
   if (systemUsers.has(username)) return systemUsers.get(username)!
   const { rows } = await read<SystemUserRow>(sql`/* getSystemUserByUsername */
@@ -127,23 +84,6 @@ export async function getSystemUserForAuthorization(username: string) {
   const systemUser = await getSystemUserByUsername(username)
   if (!systemUser) return null
   return getPrivateUserByAny(systemUser.id, { readOnly: false })
-}
-
-/**
- * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
- * export may be made private or removed after intended-use review.
- * Evidence: `docs/overview/architecture/services/README.md`.
- */
-export const getUserByPrimaryEmail = async (email: string): Promise<EmailUserRow | null> => {
-  const normalizedEmail = email.trim().toLowerCase()
-  const { rows } = await read<EmailUserRow>(sql`/* getUserByPrimaryEmail */
-    SELECT u.id, u.username, u.use_display_name_from
-    FROM user_email_addresses uea
-    JOIN users u ON u.id = uea.user_id
-    WHERE uea.email_address = ${normalizedEmail} AND uea.is_primary = TRUE AND u.deleted_at IS NULL
-    LIMIT 1
-  `)
-  return rows[0] ?? null
 }
 
 export async function getRssFeedAutoUpdaterUserId(): Promise<string> {
