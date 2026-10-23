@@ -1,10 +1,13 @@
 import { describe, expect, it, vi } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, updateTestUserUiLocale } from '@voucha/test-helpers'
+import { installEmailDomainDnsMock } from '@voucha/test-helpers/email-domain-dns'
 
 const newAddress = () => `tests+test-${Math.random().toString(36).slice(2, 10)}@voucha.ai`
 
 describe('email address list and verification request', () => {
+  installEmailDomainDnsMock()
+
   it('returns an empty page with null cursors after the last address', async () => {
     const user = await createTestUser()
     const request = createRequest()

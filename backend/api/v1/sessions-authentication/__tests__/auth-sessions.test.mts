@@ -6,6 +6,7 @@ import {
   insertEmailAddressLoginToken,
 } from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
+import { installEmailDomainDnsMock } from '@voucha/test-helpers/email-domain-dns'
 import {
   deleteTestUserSession,
   getActiveTestUserSessions,
@@ -26,6 +27,8 @@ import { v7 } from 'uuid'
 import { decodeJwt } from 'jose'
 
 describe('Auth sessions routes', () => {
+  installEmailDomainDnsMock()
+
   let originalRouteRateLimitConfig: ReturnType<typeof routeRateLimitConfig.getFields>
 
   beforeEach(async () => {

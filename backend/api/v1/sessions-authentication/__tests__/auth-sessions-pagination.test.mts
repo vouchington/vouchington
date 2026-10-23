@@ -2,11 +2,14 @@ import { describe, expect, it } from 'vitest'
 import { v7 } from 'uuid'
 import { createUniqueTestEmail, insertEmailAddressLoginToken } from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
+import { installEmailDomainDnsMock } from '@voucha/test-helpers/email-domain-dns'
 import { insertTestUserSession } from '../../../../test-helpers/entities/user-sessions.mts'
 import { encodeScopedPreciseTimestampCursor } from '@modules/pagination'
 import '../index.mts'
 
 describe('GET /api/v1/auth/sessions pagination', () => {
+  installEmailDomainDnsMock()
+
   it('orders by recent activity and rejects a cursor from another owner scope', async () => {
     const emailAddress = createUniqueTestEmail('session-pagination')
     const loginToken = v7()
