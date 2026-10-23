@@ -1,6 +1,10 @@
 /* v8 ignore start -- declarative schema-test allowlists have no executable branches */
 export const ALLOWED_MEMBERSHIP_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
   [
+    'membership_operational_cleanup_cursors.cursor_id',
+    'Deletion-stable UUIDv7 keyset position across three operational retention streams; the scanned row is deleted before checkpointing.',
+  ],
+  [
     'membership_renewal_price_increase_notification_work_items.lease_token',
     'Opaque notice delivery fence; not a relationship.',
   ],
