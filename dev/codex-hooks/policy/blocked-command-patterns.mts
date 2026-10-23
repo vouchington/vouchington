@@ -4,6 +4,8 @@ import {
 } from 'vouchington-tooling/shell-parse'
 
 export const PLAIN_FORCE_PUSH_REASON = 'Force pushes are banned by repository policy.'
+export const HOOKS_PATH_REASON =
+  'Overriding core.hooksPath disables git hooks. Fix the underlying failure instead.'
 
 const blockedGitPatterns: Array<{ pattern: RegExp; reason: string }> = [
   {
@@ -41,7 +43,7 @@ const blockedGitPatterns: Array<{ pattern: RegExp; reason: string }> = [
   },
   {
     pattern: /\bgit\b[^|;&\n]*-c\s+core\.hooksPath\s*=/,
-    reason: 'Overriding core.hooksPath disables git hooks. Fix the underlying failure instead.',
+    reason: HOOKS_PATH_REASON,
   },
 ]
 

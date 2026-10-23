@@ -4,6 +4,7 @@ import {
   findBlockedGitReason,
   PLAIN_FORCE_PUSH_REASON,
 } from './codex-hooks/policy/blocked-command-patterns.mts'
+import { gitInvocations } from './codex-hooks/policy/git-argv-policy.mts'
 import { stripGitGlobalOptionsForPolicy } from 'vouchington-tooling/shell-parse'
 
 export type ProcessSnapshot = {
@@ -16,7 +17,11 @@ const MAX_ANCESTORS = 12
 /** Why this git argv is a plain force push, or null when the push may proceed. */
 export function plainForcePushReason(command: string): string | null {
   const reason = findBlockedGitReason(stripGitGlobalOptionsForPolicy(command))
-  return reason === PLAIN_FORCE_PUSH_REASON ? reason : null
+  if (reason === PLAIN_FORCE_PUSH_REASON) return reason
+  const viaArgv = gitInvocations(command).some(
+    invocation => findBlockedGitReason(invocation.text) === PLAIN_FORCE_PUSH_REASON,
+  )
+  return viaArgv ? PLAIN_FORCE_PUSH_REASON : null
 }
 
 /**
@@ -39,7 +44,10 @@ export function gitPushAncestorCommand(
 }
 
 function isGitPushCommand(command: string): boolean {
-  return /\bgit\s+push\b/.test(stripGitGlobalOptionsForPolicy(command))
+  return (
+    /\bgit\s+push\b/.test(stripGitGlobalOptionsForPolicy(command)) ||
+    gitInvocations(command).some(({ subcommand }) => subcommand === 'push')
+  )
 }
 
 function readProcessField(pid: number, field: 'args=' | 'ppid='): string | undefined {

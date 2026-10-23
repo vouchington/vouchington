@@ -40,6 +40,15 @@ describe('Codex hook git policy command scope', () => {
     ['git push origin `git branch --show-current | head -1` --force', 'Force pushes'],
     ['git commit -m x --date $(date -u | tr -d Z) -n', '-n bypasses'],
     ["bash -c 'git commit -n -m x'", '-n bypasses'],
+    // A quoted -c value leaves the subcommand unreadable in the policy text; argv still finds it.
+    ['git -c "core.hooksPath=/tmp/hooks" push --force', 'core.hooksPath'],
+    ["git -c 'core.hooksPath=/tmp/hooks' push --force", 'core.hooksPath'],
+    ['git -c "core.hooksPath=/tmp/hooks" commit --amend', 'core.hooksPath'],
+    ['git -c "core.hooksPath=/tmp/hooks" -C /repo commit --amend', 'core.hooksPath'],
+    ['git -c "color.ui=never" push --force', 'Force pushes'],
+    ['git -c "color.ui=never" commit --amend', 'Commit amend'],
+    // A continuation joins the shell word to its flag, so the heredoc body is the shell's script.
+    ["bash \\\n-s <<'EOF'\ngit push --force\nEOF", 'Force pushes'],
   ])('still blocks a banned flag on its own git command: %s', (command, reasonText) => {
     expect(blockReason(command)).toContain(reasonText)
   })

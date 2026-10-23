@@ -1,5 +1,6 @@
 import {
   commandsToInspectForGitPolicy,
+  commandsToInspectPreservingQuotes,
   isInteractiveRebaseContinue,
 } from 'vouchington-tooling/shell-parse'
 
@@ -17,6 +18,7 @@ import {
   findBlockedGitReason,
 } from './policy/blocked-command-patterns.mts'
 import { DEFAULT_AUTOMATION_CONTEXT } from './policy/core.mts'
+import { findBlockedGitArgvReason } from './policy/git-argv-policy.mts'
 import { findInteractiveMergeConfirm } from './policy/github-merge-authority.mts'
 import { extractToolCommand } from './hook-payload.mts'
 import {
@@ -94,6 +96,12 @@ export function findPreToolUseBlock(
       }
 
       const reason = findBlockedGitReason(commandToInspect)
+      if (reason !== null) {
+        return { reason }
+      }
+    }
+    for (const commandToInspect of commandsToInspectPreservingQuotes(command)) {
+      const reason = findBlockedGitArgvReason(commandToInspect)
       if (reason !== null) {
         return { reason }
       }
