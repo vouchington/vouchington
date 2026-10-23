@@ -10,6 +10,7 @@ import {
 } from '@queues/background/enqueues/openai-moderation-jobs'
 import { PRIORITY_TASK } from '@queues/background/config'
 import type { JobOptions } from 'glide-mq'
+import { createHash } from 'node:crypto'
 import {
   IMAGE_QUARANTINE_RECONCILIATION_DEDUPLICATION_ID,
   POST_MODERATION_RECONCILIATION_DEDUPLICATION_ID,
@@ -152,11 +153,15 @@ export function enqueueReconcilePostModeration() {
 
 export function enqueueReconcilePostModerationContinuation(
   cursor: NonNullable<PostModerationReconciliationData['cursor']>,
+  postIds?: readonly string[],
 ) {
+  const scopeId = postIds
+    ? `__${createHash('sha256').update(JSON.stringify(postIds)).digest('hex')}`
+    : ''
   return enqueueReconcilePostModerationJob(
-    { cursor },
+    { cursor, ...(postIds && { postIds }) },
     {
-      jobId: `post_moderation_reconciliation__${cursor.throughId}__${cursor.afterVersionId}__${cursor.afterSource}`,
+      jobId: `post_moderation_reconciliation__${cursor.throughId}__${cursor.afterVersionId}__${cursor.afterSource}${scopeId}`,
       ...CONTINUATION_OPTIONS,
     },
   )

@@ -43,6 +43,7 @@ export const OPENAI_MODERATION_RECONCILE_IMAGE_QUARANTINES_JOB = defineBackgroun
   },
 )
 export type PostModerationReconciliationData = {
+  postIds?: readonly string[]
   cursor?: {
     afterVersionId: string
     afterSource: 'openai_omni' | 'spam_detection'

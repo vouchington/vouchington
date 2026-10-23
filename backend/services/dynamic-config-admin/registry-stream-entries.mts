@@ -15,13 +15,14 @@ export const streamDynamicConfigRegistryEntries = [
     access: { update_roles: ['developer'] },
     fields: {
       cleanup_max_batches_per_run: {
-        description: 'Maximum deletion pages per retained cleanup run.',
+        description:
+          'Maximum deletion pages per retained cleanup run; the run cap is this value times cleanup_batch_size.',
         minValue: 1,
         maxValue: crawlCleanupMaxValues.maxBatches,
         integer: true,
       },
       cleanup_batch_size: {
-        description: 'Maximum invalid crawls deleted per retained cleanup run.',
+        description: 'Maximum invalid crawls deleted per cleanup batch.',
         minValue: 1,
         maxValue: crawlCleanupMaxValues.batchSize,
         integer: true,

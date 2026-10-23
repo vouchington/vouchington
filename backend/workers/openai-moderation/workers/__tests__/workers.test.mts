@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import type { Job } from 'glide-mq'
 import {
   createTestUser,
@@ -23,6 +23,8 @@ import { notifications } from '@queues/notifications/queues'
 import { background } from '@queues/background/queues'
 import { createPostModerationContent } from '@services/posts/content'
 import { ensureCurrentPostModerationVersion } from '@services/post-clearance'
+import { postClearanceWorkConfig } from '@services/post-clearance/work-limits'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { handleOpenAIModerationOmniSingleJob } from '../../processors/openai-moderation-omni-single.mts'
 
 describe('openai moderation single worker', () => {
@@ -181,6 +183,50 @@ describe('openai moderation single worker', () => {
           (job.data as { id?: string }).id === foreignPostId,
       ),
     ).toBe(false)
+  })
+
+  it('keeps a scoped reconciliation confined to its posts on continuation pages', async () => {
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(postClearanceWorkConfig, {
+        reconciliation_batch_size: 1,
+      }),
+    )
+    const creator = await createTestUser()
+    expect(creator).toBeTruthy()
+    const scopedPostId = await insertTestPost({
+      title: `OpenAI scoped reconciliation ${randomUUID()}`,
+      slug: `openai-scoped-reconciliation-${randomUUID()}`,
+      createdById: creator!.id,
+      markdown: 'Scoped reconciliation work.',
+      clearanceStatus: 'pending',
+    })
+    const foreignPostId = await insertTestPost({
+      title: `OpenAI foreign reconciliation ${randomUUID()}`,
+      slug: `openai-foreign-reconciliation-${randomUUID()}`,
+      createdById: creator!.id,
+      markdown: 'Foreign reconciliation work.',
+      clearanceStatus: 'pending',
+    })
+    await ensureCurrentPostModerationVersion(scopedPostId)
+    const foreignVersion = await ensureCurrentPostModerationVersion(foreignPostId)
+    await expireTestPostModerationVersion(foreignVersion.id)
+
+    const first = (await handleOpenAIModerationOmniSingleJob(
+      makeJob('reconcile_post_moderation', randomUUID()),
+      { postIds: [scopedPostId] },
+    )) as { hasMore: boolean }
+    expect(first.hasMore).toBe(true)
+    const continuation = (await readAllQueueJobs(background)).find(
+      job =>
+        job.name === 'openai-moderation.reconcile_post_moderation' &&
+        (job.data as { postIds?: string[] }).postIds?.[0] === scopedPostId,
+    )
+    expect(continuation).toBeDefined()
+    const second = (await handleOpenAIModerationOmniSingleJob(
+      continuation as Job<{ postIds: string[] }>,
+    )) as { hasMore: boolean }
+    expect(second.hasMore).toBe(false)
+    await expect(getPostClearanceStatus(foreignPostId)).resolves.toBe('pending')
   })
 
   it('runs image quarantine reconciliation jobs', async () => {

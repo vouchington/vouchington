@@ -42,6 +42,10 @@ CREATE INDEX IF NOT EXISTS idx_post_moderation_work_items__due
 ON post_moderation_work_items (available_at, version_id, source)
 WHERE completed_at IS NULL;
 
+CREATE INDEX IF NOT EXISTS idx_post_moderation_work_items__incomplete_version_source
+ON post_moderation_work_items (version_id, source)
+WHERE completed_at IS NULL;
+
 CREATE TABLE IF NOT EXISTS post_moderation_attempts (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   version_id UUID NOT NULL,
