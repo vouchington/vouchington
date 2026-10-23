@@ -124,6 +124,7 @@ async function createAuthenticatedCopyrightSubmission(
   ownershipStatement.append(sql` party
     WHERE target.copyright_notice_id = ${noticeId} AND target.id = ANY(${input.targetIds})
       AND party.user_id = ${currentUser.id}
+    ORDER BY target.id
     FOR UPDATE OF target
   `)
   const { rows: ownedTargetRows } = await transaction<{ id: string }>(ownershipStatement)
