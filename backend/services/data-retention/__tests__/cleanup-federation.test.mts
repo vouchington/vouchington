@@ -78,7 +78,7 @@ describe('federation retention', () => {
         continuationPosition: { id: fixtureIds.expiredFollowerDistributionIds[0] },
       })
       expect(await readFollowerDistributionRetentionCursorForTest(retentionQuery)).toMatchObject({
-        cursor_distribution_id: fixtureIds.expiredFollowerDistributionIds[0],
+        cursor_distribution_position: fixtureIds.expiredFollowerDistributionIds[0],
       })
       expect(
         await readFederationRetentionFixtureStateForTest(retentionQuery, fixtureIds),
@@ -119,8 +119,8 @@ describe('federation retention', () => {
       })
       expect(await readFollowerDistributionRetentionCursorForTest(retentionQuery)).toMatchObject({
         sweep_cutoff_at: null,
-        cursor_distribution_id: null,
-        sweep_upper_bound_distribution_id: null,
+        cursor_distribution_position: null,
+        sweep_upper_bound_distribution_position: null,
       })
       expect(await readFederationRetentionFixtureStateForTest(retentionQuery, fixtureIds)).toEqual({
         inboxActivityIds: fixtureIds.expiredInboxActivityIds.concat(

@@ -147,12 +147,12 @@ COMMENT ON COLUMN follower_distribution_selected_recipients.recipient_user_id IS
 CREATE TABLE IF NOT EXISTS follower_distribution_retention_cursors (
   is_singleton BOOLEAN PRIMARY KEY DEFAULT TRUE CHECK (is_singleton),
   sweep_cutoff_at TIMESTAMPTZ,
-  cursor_distribution_id UUID,
-  sweep_upper_bound_distribution_id UUID,
+  cursor_distribution_position UUID,
+  sweep_upper_bound_distribution_position UUID,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CHECK (sweep_cutoff_at IS NOT NULL OR (cursor_distribution_id IS NULL AND sweep_upper_bound_distribution_id IS NULL)),
-  CHECK (sweep_cutoff_at IS NULL OR sweep_upper_bound_distribution_id IS NOT NULL),
-  CHECK (cursor_distribution_id IS NULL OR cursor_distribution_id <= sweep_upper_bound_distribution_id)
+  CHECK (sweep_cutoff_at IS NOT NULL OR (cursor_distribution_position IS NULL AND sweep_upper_bound_distribution_position IS NULL)),
+  CHECK (sweep_cutoff_at IS NULL OR sweep_upper_bound_distribution_position IS NOT NULL),
+  CHECK (cursor_distribution_position IS NULL OR cursor_distribution_position <= sweep_upper_bound_distribution_position)
 );
 CREATE OR REPLACE TRIGGER trigger_follower_distribution_retention_cursors_updated_at
 BEFORE UPDATE ON follower_distribution_retention_cursors
@@ -161,8 +161,8 @@ FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 COMMENT ON TABLE follower_distribution_retention_cursors IS 'One persisted keyset position and fixed cutoff for terminal follower-distribution retention.';
 COMMENT ON COLUMN follower_distribution_retention_cursors.is_singleton IS 'Checked true key permits one cleanup cursor.';
 COMMENT ON COLUMN follower_distribution_retention_cursors.sweep_cutoff_at IS 'Fixed UUIDv7 age cutoff captured when the cleanup pass starts; NULL means idle.';
-COMMENT ON COLUMN follower_distribution_retention_cursors.cursor_distribution_id IS 'Last terminal follower-distribution id processed in the current pass; a position, not a live entity reference.';
-COMMENT ON COLUMN follower_distribution_retention_cursors.sweep_upper_bound_distribution_id IS 'Highest eligible follower-distribution id captured when the pass starts; a position, not a live entity reference.';
+COMMENT ON COLUMN follower_distribution_retention_cursors.cursor_distribution_position IS 'Last terminal follower-distribution id processed in the current pass; a position, not a live entity reference.';
+COMMENT ON COLUMN follower_distribution_retention_cursors.sweep_upper_bound_distribution_position IS 'Highest eligible follower-distribution id captured when the pass starts; a position, not a live entity reference.';
 COMMENT ON COLUMN follower_distribution_retention_cursors.updated_at IS 'Last time the bounded sweep cursor advanced.';
 
 CREATE TABLE IF NOT EXISTS activitypub_replay_retention_cursors (

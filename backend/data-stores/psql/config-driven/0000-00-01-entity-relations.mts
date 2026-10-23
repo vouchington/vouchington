@@ -17,6 +17,7 @@ import {
 } from './utils/election-sql-identifiers.mts'
 import { createEntityRelationVoteIntegrityTargets } from './utils/entity-relation-vote-integrity-targets.mts'
 import { createRetainedEntityRelationImpacts } from './utils/retained-entity-relation-impacts.mts'
+import { createInboundFollowActivityForeignKeySql } from './utils/inbound-follow-activity-fk-sql.mts'
 
 /** loaded by path by the config-driven migration runner */
 export default function generateEntityRelationSchemaSql(): string {
@@ -26,14 +27,7 @@ export default function generateEntityRelationSchemaSql(): string {
   const relationVoteTables = electionRelations.map(createEntityRelationVoteTable).join('\n\n')
   const integrityTargets = createEntityRelationVoteIntegrityTargets(electionRelations)
   const retainedImpacts = createRetainedEntityRelationImpacts(electionRelations)
-  const inboundFollowActivityForeignKey = `ALTER TABLE relation__remote_actor__follow__user
-  ADD CONSTRAINT fk_remote_follow__inbound_follow_activity_row_id
-  FOREIGN KEY (subject_id, object_id, inbound_follow_activity_row_id)
-  REFERENCES activitypub_remote_follow_activities(remote_actor_id, target_user_id, id)
-  ON DELETE SET NULL (inbound_follow_activity_row_id) NOT VALID;
-ALTER TABLE relation__remote_actor__follow__user
-  VALIDATE CONSTRAINT fk_remote_follow__inbound_follow_activity_row_id;
-COMMENT ON COLUMN relation__remote_actor__follow__user.inbound_follow_activity_row_id IS 'Current inbound Follow activity cycle; undone identities remain in the activity table and cannot reauthorize this relation.';`
+  const inboundFollowActivityForeignKey = createInboundFollowActivityForeignKeySql()
   return [
     tableCreation,
     inboundFollowActivityForeignKey,

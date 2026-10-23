@@ -28,11 +28,11 @@ export async function cleanupSweepWithQuery(
   const row = (
     await query<{
       sweep_cutoff_at: Date | null
-      cursor_distribution_id: string | null
-      sweep_upper_bound_distribution_id: string | null
+      cursor_distribution_position: string | null
+      sweep_upper_bound_distribution_position: string | null
     }>(
       `/* lockFollowerDistributionRetentionCursor */
-       SELECT sweep_cutoff_at, cursor_distribution_id, sweep_upper_bound_distribution_id
+       SELECT sweep_cutoff_at, cursor_distribution_position, sweep_upper_bound_distribution_position
        FROM follower_distribution_retention_cursors WHERE is_singleton FOR UPDATE`,
     )
   ).rows[0]
@@ -40,12 +40,12 @@ export async function cleanupSweepWithQuery(
 
   let progress: FederationRetentionCursor | null = null
   if (row.sweep_cutoff_at) {
-    if (!row.sweep_upper_bound_distribution_id)
+    if (!row.sweep_upper_bound_distribution_position)
       throw new Error('Missing follower-distribution retention upper bound')
     progress = {
       cutoffAt: row.sweep_cutoff_at,
-      cursorId: row.cursor_distribution_id,
-      upperBoundId: row.sweep_upper_bound_distribution_id,
+      cursorId: row.cursor_distribution_position,
+      upperBoundId: row.sweep_upper_bound_distribution_position,
     }
   } else {
     const upperBound = await findRetentionUpperBound(query, cutoff, options.scope)
@@ -110,7 +110,7 @@ async function persistProgress(
   await query(
     `/* advanceFollowerDistributionRetentionCursor */
      UPDATE follower_distribution_retention_cursors
-     SET sweep_cutoff_at = $1, cursor_distribution_id = $2, sweep_upper_bound_distribution_id = $3
+     SET sweep_cutoff_at = $1, cursor_distribution_position = $2, sweep_upper_bound_distribution_position = $3
      WHERE is_singleton`,
     [progress?.cutoffAt ?? null, progress?.cursorId ?? null, progress?.upperBoundId ?? null],
   )
