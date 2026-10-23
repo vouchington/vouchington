@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { waitForRealGlideEvent } from '@voucha/test-helpers/real-glide-terminal-deadline'
 import { createQueue, createWorker } from '../glide-mq-factory.mts'
 
 // Keep the real GlideMQ transport in the dedicated integration project.
@@ -132,7 +133,7 @@ describe('GlideMQ runtime guards', () => {
           deduplication: { id: 'dedup-page-1', mode: 'simple' },
         },
       )
-      await completed.promise
+      await waitForRealGlideEvent(completed.promise, `GlideMQ page-3 completion ${name}`)
       expect(seen).toEqual([1, 2, 3])
       expect(completedIds).toEqual(['page-1', 'page-2', 'page-3'])
     } finally {
