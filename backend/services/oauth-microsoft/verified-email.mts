@@ -1,25 +1,18 @@
 import { createPublicKey, createVerify, type JsonWebKeyInput } from 'node:crypto'
 import createHttpError from 'http-errors'
 import { MICROSOFT_CLIENT_ID, MICROSOFT_TENANT_ID } from '@voucha/config'
-import { decodeJwtPart } from '@services/oauth-accounts/jwt'
 import { fetch } from 'undici'
 import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
+import {
+  parseMicrosoftIdentityTokenClaims,
+  parseMicrosoftIdentityTokenParts,
+} from './identity-token-shape.mts'
 
 type MicrosoftKey = JsonWebKeyInput['key'] & {
   kid?: string
   alg?: string
   use?: string
   issuer?: string
-}
-type MicrosoftClaims = {
-  aud?: string
-  iss?: string
-  tid?: string
-  oid?: string
-  exp?: number
-  nbf?: number
-  email?: string
-  xms_edov?: boolean
 }
 
 let keysPromise: Promise<{ keys: MicrosoftKey[] }> | null = null
@@ -53,19 +46,8 @@ export async function getMicrosoftVerifiedEmail(
   signal?: AbortSignal,
 ): Promise<string | null> {
   if (!idToken) return null
-  const parts = idToken.split('.')
-  const [headerPart, payloadPart, signaturePart] = parts
-  if (parts.length !== 3 || !headerPart || !payloadPart || !signaturePart) {
-    throw createHttpError(401, 'Invalid Microsoft identity token')
-  }
-  const decodedHeader = decodeJwtPart(headerPart)
-  if (typeof decodedHeader !== 'object' || decodedHeader === null || Array.isArray(decodedHeader)) {
-    throw createHttpError(401, 'Invalid Microsoft identity token algorithm')
-  }
-  const header = decodedHeader as { alg?: unknown; kid?: unknown }
-  if (header.alg !== 'RS256' || typeof header.kid !== 'string' || !header.kid) {
-    throw createHttpError(401, 'Invalid Microsoft identity token algorithm')
-  }
+  const { headerPart, payloadPart, signaturePart, header } =
+    parseMicrosoftIdentityTokenParts(idToken)
   let keys = await fetchMicrosoftKeys(signal)
   let key = keys.keys.find(candidate => candidate.kid === header.kid)
   if (!key) {
@@ -91,11 +73,7 @@ export async function getMicrosoftVerifiedEmail(
   ) {
     throw createHttpError(401, 'Microsoft identity token signature is invalid')
   }
-  const decodedClaims = decodeJwtPart(payloadPart)
-  if (typeof decodedClaims !== 'object' || decodedClaims === null || Array.isArray(decodedClaims)) {
-    throw createHttpError(401, 'Microsoft identity token claims are invalid')
-  }
-  const claims = decodedClaims as MicrosoftClaims
+  const claims = parseMicrosoftIdentityTokenClaims(payloadPart)
   const now = Math.floor(Date.now() / 1000)
   const tenant = MICROSOFT_TENANT_ID || 'common'
   const tenantIsAlias = ['common', 'organizations', 'consumers'].includes(tenant)
