@@ -1,14 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { createDeviceAndSessionTokens } from '@services/jwt-session'
 import { v7 } from 'uuid'
-import {
-  createTestUser,
-  createRandomEmailAddress,
-} from '@voucha/test-helpers'
-import {
-  createEmailAddressLoginToken,
-  verifyEmailAddressLoginToken,
-} from './authentication.mts'
+import { createTestUser, createRandomEmailAddress } from '@voucha/test-helpers'
+import { createEmailAddressLoginToken, verifyEmailAddressLoginToken } from './authentication.mts'
 
 describe('email authentication code purposes', () => {
   it('accepts only the latest unused code of the requested purpose', async () => {
