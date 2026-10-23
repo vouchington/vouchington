@@ -85,7 +85,10 @@ export async function createTestPendingOAuthAuthorization(
     await write(
       `/* ageTestNeverGrantedOAuthClient */ UPDATE oauth_clients
        SET id = uuidv7(interval '-120 days')
-       WHERE client_id = $1::text AND first_granted_at IS NULL`,
+       WHERE client_id = $1::text AND NOT EXISTS (
+         SELECT 1 FROM oauth_client_grant_markers marker
+         WHERE marker.client_id = oauth_clients.id
+       )`,
       [client.client_id],
     )
   }

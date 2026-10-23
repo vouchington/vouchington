@@ -118,6 +118,10 @@ export function buildUnboundedUnpartitionedTables(
         'oauth_grant_retention_anchors',
         'One non-authorizing retained identity per OAuth grant; live grants persist, and ended anchors remain until consent evidence expires.',
       ],
+      [
+        'oauth_client_grant_markers',
+        'One insert-only usage marker per OAuth client persists with that client so never-used cleanup cannot erase a formerly granted registration.',
+      ],
       ...entityRelationMetadatum.flatMap(({ table_name }) =>
         partitionedTables.has(table_name)
           ? []

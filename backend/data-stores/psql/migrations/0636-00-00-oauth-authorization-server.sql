@@ -37,7 +37,6 @@ CREATE TABLE IF NOT EXISTS oauth_clients (
   response_types oauth_response_types[] NOT NULL CHECK (cardinality(response_types) = 1),
   scopes api_scopes[] NOT NULL CHECK (cardinality(scopes) > 0),
   client_secret_hash TEXT CHECK (client_secret_hash IS NULL OR char_length(client_secret_hash) = 64),
-  first_granted_at TIMESTAMPTZ,
   revoked_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -86,9 +85,13 @@ CREATE INDEX IF NOT EXISTS idx_oauth_clients__verified_active_id
 ON oauth_clients (id DESC)
 WHERE metadata_url IS NULL AND revoked_at IS NULL AND verified_at IS NOT NULL;
 
--- Proposed default: only clients that never held a grant are purged after 90 days.
-CREATE INDEX IF NOT EXISTS idx_oauth_clients__never_granted
-ON oauth_clients (id) WHERE first_granted_at IS NULL;
+-- One insert-only companion row records that a client has ever held a grant. The OAuth client
+-- itself may be held FOR SHARE by parallel issuers, so first use cannot upgrade its row lock.
+CREATE TABLE IF NOT EXISTS oauth_client_grant_markers (
+  client_id UUID PRIMARY KEY REFERENCES oauth_clients(id) ON DELETE CASCADE
+);
+COMMENT ON TABLE oauth_client_grant_markers IS 'One durable marker per OAuth client that has ever held a grant; never-used client cleanup requires its absence.';
+COMMENT ON COLUMN oauth_client_grant_markers.client_id IS 'The live OAuth client whose grant history excludes it from never-used cleanup.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS oauth_authorization_requests (
@@ -206,19 +209,18 @@ BEFORE UPDATE ON oauth_grants
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
-CREATE OR REPLACE FUNCTION fn_update_oauth_client_first_grant()
+CREATE OR REPLACE FUNCTION fn_register_oauth_client_grant_marker()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
-  UPDATE oauth_clients
-  SET first_granted_at = COALESCE(first_granted_at, CURRENT_TIMESTAMP)
-  WHERE id = NEW.client_id AND first_granted_at IS NULL;
+  INSERT INTO oauth_client_grant_markers (client_id)
+  VALUES (NEW.client_id) ON CONFLICT (client_id) DO NOTHING;
   RETURN NEW;
 END;
 $$;
-CREATE OR REPLACE TRIGGER trigger_oauth_grants_stamp_client
+CREATE OR REPLACE TRIGGER trigger_oauth_grants_register_client_marker
 AFTER INSERT ON oauth_grants
-FOR EACH ROW EXECUTE FUNCTION fn_update_oauth_client_first_grant();
-COMMENT ON FUNCTION fn_update_oauth_client_first_grant() IS 'Permanently marks an OAuth client that has held a grant so client retention cannot treat it as unused.';
+FOR EACH ROW EXECUTE FUNCTION fn_register_oauth_client_grant_marker();
+COMMENT ON FUNCTION fn_register_oauth_client_grant_marker() IS 'Permanently records first OAuth client grant use without upgrading a shared client row lock.';
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_oauth_grants__active_subject
 ON oauth_grants (user_id, client_id, resource)
@@ -515,7 +517,6 @@ COMMENT ON TABLE oauth_refresh_tokens IS 'Single-use refresh tokens stored only 
 COMMENT ON TABLE oauth_access_tokens IS 'Opaque access tokens stored only as purpose-bound hashes.';
 
 COMMENT ON COLUMN oauth_clients.client_id IS 'Public OAuth client identifier issued at registration or the exact Client ID Metadata Document URL.';
-COMMENT ON COLUMN oauth_clients.first_granted_at IS 'First grant creation time; non-NULL permanently excludes a client from never-used registration cleanup.';
 COMMENT ON COLUMN oauth_clients.metadata_refresh_generation IS 'Database-ordered generation of the newest Client ID Metadata Document fetch applied to this row; NULL for registered clients.';
 COMMENT ON COLUMN oauth_clients.metadata_refreshed_at IS 'Fetch-start time of the newest Client ID Metadata Document representation applied to this row; NULL for registered clients.';
 COMMENT ON COLUMN oauth_clients.metadata_expires_at IS 'Time after which the stored Client ID Metadata Document must be refreshed for a new authorization; NULL for registered clients.';
