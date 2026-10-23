@@ -2,7 +2,11 @@
    afterEach hook must observe every test in the project's fork to build an accurate per-fork
    growth baseline, so it cannot be wrapped in a describe block. */
 import { afterEach } from 'vitest'
-import { getOrCreateQueue, settleRunnableQueueJobs } from '@vouchington/worker-runtime/testing'
+import {
+  getOrCreateQueue,
+  settleRunnableQueueJobs,
+  TestQueueFlushTimeoutError,
+} from '@vouchington/worker-runtime/testing'
 import { waitForResourceCloseCallbacks } from 'vouchington-tooling/vitest-diagnostics'
 import {
   formatForkLeakDiagnostics,
@@ -24,6 +28,28 @@ const detector = getForkLeakDetector()
   Symbol.for('vitest-fork-leak-resource-close-callback-wait')
 ] = waitForResourceCloseCallbacks
 
+function describePendingQueueJobs(
+  queue: ReturnType<typeof getOrCreateQueue>,
+  pendingJobIds: readonly string[],
+): string {
+  return pendingJobIds
+    .map(id => {
+      const record = queue.jobs.get(id)
+      return record ? `${record.name}#${id}:${record.state}` : id
+    })
+    .join(', ')
+}
+
+async function settleBackgroundQueue(queue: ReturnType<typeof getOrCreateQueue>): Promise<void> {
+  try {
+    await settleRunnableQueueJobs(queue)
+  } catch (err) {
+    if (!(err instanceof TestQueueFlushTimeoutError)) throw err
+    const jobs = describePendingQueueJobs(queue, err.pendingJobIds)
+    throw new Error(`${err.message} [jobs ${jobs}]`, { cause: err })
+  }
+}
+
 afterEach(async context => {
   if (detectionDisabled) return
 
@@ -33,9 +59,9 @@ afterEach(async context => {
   const setupBackgroundQueue = getOrCreateQueue('background')
   const { getOrCreateQueue: getCurrentQueue } = await import('@vouchington/worker-runtime/testing')
   const currentBackgroundQueue = getCurrentQueue('background')
-  await settleRunnableQueueJobs(setupBackgroundQueue)
+  await settleBackgroundQueue(setupBackgroundQueue)
   if (currentBackgroundQueue !== setupBackgroundQueue) {
-    await settleRunnableQueueJobs(currentBackgroundQueue)
+    await settleBackgroundQueue(currentBackgroundQueue)
   }
 
   // Let pending handle-close callbacks run before snapshotting, so a socket already being
