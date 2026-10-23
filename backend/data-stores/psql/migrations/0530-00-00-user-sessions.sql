@@ -81,3 +81,11 @@ COMMENT ON COLUMN user_sessions.device_token_encrypted IS 'Current device creden
 COMMENT ON COLUMN user_sessions.device_token_issued_at IS 'Original authenticated device credential issuance time. Ordinary rotation preserves this revocation epoch.';
 COMMENT ON COLUMN user_sessions.device_token_binding IS 'Original signed client binding document (client family and optional browser User-Agent/JA4 hashes), never joined to other rows. Verified credential replay preserves this document.';
 COMMENT ON COLUMN user_sessions.device_bound_session_binding IS 'Chrome device-bound session public key, canonical origin and binding time; durable structured proof state, never joined to another row. Valkey retains only single-use challenges.';
+
+-- The token creator precedes user_sessions; install the canonical cross-file relation here.
+ALTER TABLE email_address_login_tokens
+  ADD CONSTRAINT email_address_login_tokens_reauthentication_session_id_fkey
+  FOREIGN KEY (reauthentication_session_id) REFERENCES user_sessions(id) ON DELETE CASCADE
+  NOT VALID;
+ALTER TABLE email_address_login_tokens
+  VALIDATE CONSTRAINT email_address_login_tokens_reauthentication_session_id_fkey;

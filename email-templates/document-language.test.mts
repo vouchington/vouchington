@@ -6,6 +6,7 @@ import {
   renderCommunityRoleChangeEmail,
   renderDataExportReadyEmail,
   renderEmailVerificationEmail,
+  renderReauthenticationEmail,
   renderFollowNewsSourcesEmail,
   renderFollowTopicsEmail,
   renderLoginTokenEmail,
@@ -35,6 +36,11 @@ import RenewalPriceIncreaseEmail from './renewal-price-increase.tsx'
 import WelcomeEmail from './welcome.tsx'
 
 const frenchDocuments: ReadonlyArray<readonly [string, () => EmailRenderResultPromise]> = [
+  [
+    'reauthentication',
+    () =>
+      renderReauthenticationEmail({ token: 'ABCDEFG234', expiresInMinutes: 15, uiLocale: 'fr' }),
+  ],
   [
     'api key expiry',
     () =>

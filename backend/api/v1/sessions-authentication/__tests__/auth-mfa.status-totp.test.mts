@@ -10,6 +10,7 @@ import {
   unsuspendTestUser,
 } from '@voucha/test-helpers'
 import { createTotpMfaLoginAttempt } from '@voucha/test-helpers/services/mfa/totp-login-attempt'
+import { countMfaLoginAttempt, peekLoginAttempt } from '@services/mfa/login-attempt'
 import type { PrivateUser } from '@services/users/types'
 import { v7 } from 'uuid'
 import {
@@ -133,7 +134,7 @@ describe('MFA API Routes', () => {
     it('rejects valid TOTP codes after the MFA failure threshold is reached', async () => {
       const { attemptId } = await createTotpMfaLoginAttempt('limited')
 
-      for (const expectedStatus of [401, 401, 401, 401, 401, 429]) {
+      for (const expectedStatus of [401, 401, 401, 401, 401, 401, 429]) {
         await createRequest()
           .post('/api/v1/auth/mfa/totp/verification')
           .send({ login_attempt_id: attemptId, code: '000000' })
@@ -165,8 +166,11 @@ describe('MFA API Routes', () => {
       await unsuspendTestUser(mfaUser.id)
     }, 20_000)
 
-    it('returns 200 and mints tokens for a valid TOTP code', async () => {
+    it('accepts a valid sixth TOTP attempt, mints tokens, and clears its budget', async () => {
       const { mfaUser, attemptId } = await createTotpMfaLoginAttempt('success')
+      const attempt = await peekLoginAttempt(attemptId)
+      expect(attempt).not.toBeNull()
+      for (let i = 0; i < 5; i++) await countMfaLoginAttempt(attemptId, attempt!)
 
       const code = generateTestTotpCode()
       const req = createRequest()
@@ -189,6 +193,10 @@ describe('MFA API Routes', () => {
       ])
       expect(device).toMatchObject({ client: 'web' })
       expect(session).toMatchObject({ ...res.body.session, did: device!.did, uid: mfaUser.id })
+      for (let i = 0; i < 6; i++) {
+        await expect(countMfaLoginAttempt(attemptId, attempt!)).resolves.toBe(false)
+      }
+      await expect(countMfaLoginAttempt(attemptId, attempt!)).resolves.toBe(true)
     }, 20_000)
 
     it('mints a 30-day (not 2-day) st cookie when the login attempt itself carries deviceClass', async () => {

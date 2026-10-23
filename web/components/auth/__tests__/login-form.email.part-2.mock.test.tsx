@@ -68,7 +68,8 @@ describe('LoginForm', () => {
     await renderAtCodeStep()
 
     const otpInput = document.querySelector('[data-input-otp] input')!
-    fireEvent.change(otpInput, { target: { value: 'ABCD1234' } })
+    fireEvent.change(otpInput, { target: { value: 'ABCDEFG234' } })
+    fireEvent.submit(otpInput.closest('form')!)
 
     await waitFor(() => {
       expect(mockNav.replace).toHaveBeenCalledWith('/')
@@ -86,7 +87,8 @@ describe('LoginForm', () => {
     await screen.findByLabelText(/verification code/i)
 
     const otpInput = document.querySelector('[data-input-otp] input')!
-    fireEvent.change(otpInput, { target: { value: 'ABCD1234' } })
+    fireEvent.change(otpInput, { target: { value: 'ABCDEFG234' } })
+    fireEvent.submit(otpInput.closest('form')!)
 
     await waitFor(() => {
       expect(onLoginSuccess).toHaveBeenCalledTimes(1)
@@ -99,7 +101,7 @@ describe('LoginForm', () => {
     render(
       <LoginForm
         initialEmailAddress='tests+prefill@voucha.ai'
-        initialOtp='ABCD1234'
+        initialOtp='ABCDEFG234'
       />,
     )
 
@@ -142,10 +144,11 @@ describe('LoginForm', () => {
     await renderAtCodeStep()
 
     const otpInput = document.querySelector('[data-input-otp] input')!
-    fireEvent.change(otpInput, { target: { value: 'ABCD1234' } })
+    fireEvent.change(otpInput, { target: { value: 'ABCDEFG234' } })
+    fireEvent.submit(otpInput.closest('form')!)
     // submitting.current is now true (set synchronously before the first await in submitCode)
-    // Fire a second change immediately — no await so no React re-render opportunity between them
-    fireEvent.change(otpInput, { target: { value: 'ABCD1235' } })
+    // A second submit while the first promise is pending must not issue another request.
+    fireEvent.submit(otpInput.closest('form')!)
 
     resolveFirst()
 

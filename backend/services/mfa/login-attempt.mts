@@ -54,16 +54,17 @@ export async function peekLoginAttempt(attemptId: string): Promise<LoginAttempt 
   return JSON.parse(result as string) as LoginAttempt
 }
 
-export async function recordFailedMfaLoginAttempt(
+export async function countMfaLoginAttempt(
   attemptId: string,
   attempt: LoginAttempt,
 ): Promise<boolean> {
   if (!isUUID(attemptId)) return false
 
   try {
+    // addAndCheck rejects inclusively; all declared verification attempts remain usable.
     const result = await failedMfaLoginAttemptRateLimiter.addAndCheck(
       getMfaLoginAttemptRateLimitIds(attemptId, attempt),
-      FAILED_ATTEMPT_THRESHOLD,
+      FAILED_ATTEMPT_THRESHOLD + 1,
       LOGIN_ATTEMPT_TTL_SECONDS,
     )
     return result.limited
@@ -73,22 +74,13 @@ export async function recordFailedMfaLoginAttempt(
   }
 }
 
-export async function isMfaLoginAttemptLimited(
+export async function clearMfaLoginAttempts(
   attemptId: string,
   attempt: LoginAttempt,
-): Promise<boolean> {
-  if (!isUUID(attemptId)) return false
-
-  try {
-    return await failedMfaLoginAttemptRateLimiter.isRateLimited(
-      getMfaLoginAttemptRateLimitIds(attemptId, attempt),
-      FAILED_ATTEMPT_THRESHOLD,
-      LOGIN_ATTEMPT_TTL_SECONDS,
-    )
-  } catch (err) /* v8 ignore next 3 */ {
-    onError(err instanceof Error ? err : new Error(String(err)))
-    return false
-  }
+): Promise<void> {
+  await failedMfaLoginAttemptRateLimiter.delete(
+    ...getMfaLoginAttemptRateLimitIds(attemptId, attempt),
+  )
 }
 
 function getMfaLoginAttemptRateLimitIds(attemptId: string, attempt: LoginAttempt): string[] {

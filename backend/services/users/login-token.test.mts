@@ -2,30 +2,26 @@ import { it, expect, describe } from 'vitest'
 import { assertValidLoginToken, createLoginToken, LOGIN_TOKEN_LENGTH } from './login-token.mts'
 
 describe('login-token', () => {
-  it('createLoginToken returns exactly 8 uppercase hex characters', () => {
-    const token = createLoginToken()
-    expect(token).toHaveLength(8)
-    expect(token).toMatch(/^[0-9A-F]{8}$/)
+  it('creates a ten-character uppercase base32 code', () => {
+    expect(createLoginToken()).toMatch(/^[A-Z2-7]{10}$/)
   })
 
-  it('createLoginToken requests enough random bytes for the configured token length', () => {
+  it('maps five unbiased bits from each random byte into the code alphabet', () => {
     const byteLengths: number[] = []
     const token = createLoginToken(byteLength => {
       byteLengths.push(byteLength)
-      return Buffer.from([0xab, 0xcd, 0x12, 0x34])
+      return Buffer.from([0, 25, 26, 31, 32, 57, 58, 63, 64, 255])
     })
-
-    expect(token).toBe('ABCD1234')
-    expect(byteLengths).toEqual([LOGIN_TOKEN_LENGTH / 2])
+    expect(token).toBe('AZ27AZ27A7')
+    expect(byteLengths).toEqual([LOGIN_TOKEN_LENGTH])
   })
 
-  it('assertValidLoginToken rejects tokens that are not 8 uppercase hex characters', () => {
-    expect(() => assertValidLoginToken('ABC12345')).not.toThrow()
-    expect(() => assertValidLoginToken('ABC123456789')).toThrow(
-      'Login token must be 8 uppercase hex characters',
-    )
-    expect(() => assertValidLoginToken('abc12345')).toThrow(
-      'Login token must be 8 uppercase hex characters',
-    )
+  it('rejects the wrong alphabet, casing, or length', () => {
+    expect(() => assertValidLoginToken('ABCDEFG234')).not.toThrow()
+    for (const token of ['abcdefgh23', 'ABCDEFG230', 'ABCDEFG239', 'ABCD2345', 'ABCDEFGHIJK']) {
+      expect(() => assertValidLoginToken(token)).toThrow(
+        'Login token must be 10 uppercase base32 characters',
+      )
+    }
   })
 })

@@ -3,9 +3,9 @@ import { describe, expect, it } from 'vitest'
 import {
   createLoginAttempt,
   getAndDeleteLoginAttempt,
-  isMfaLoginAttemptLimited,
+  clearMfaLoginAttempts,
   peekLoginAttempt,
-  recordFailedMfaLoginAttempt,
+  countMfaLoginAttempt,
   type LoginAttempt,
 } from './login-attempt.mts'
 
@@ -50,17 +50,17 @@ describe('login-attempt', () => {
 
     await expect(peekLoginAttempt('not-a-uuid')).resolves.toBeNull()
     await expect(getAndDeleteLoginAttempt('not-a-uuid')).resolves.toBeNull()
-    await expect(recordFailedMfaLoginAttempt('not-a-uuid', attempt)).resolves.toBe(false)
-    await expect(isMfaLoginAttemptLimited('not-a-uuid', attempt)).resolves.toBe(false)
+    await expect(countMfaLoginAttempt('not-a-uuid', attempt)).resolves.toBe(false)
 
     // The malformed call must not pre-charge the shared uid/did/sid limiter.
     const validAttemptId = randomUUID()
-    await expect(recordFailedMfaLoginAttempt(validAttemptId, attempt)).resolves.toBe(false)
-    await expect(recordFailedMfaLoginAttempt(validAttemptId, attempt)).resolves.toBe(false)
-    await expect(recordFailedMfaLoginAttempt(validAttemptId, attempt)).resolves.toBe(false)
-    await expect(recordFailedMfaLoginAttempt(validAttemptId, attempt)).resolves.toBe(false)
-    await expect(recordFailedMfaLoginAttempt(validAttemptId, attempt)).resolves.toBe(false)
-    await expect(recordFailedMfaLoginAttempt(validAttemptId, attempt)).resolves.toBe(true)
+    await expect(countMfaLoginAttempt(validAttemptId, attempt)).resolves.toBe(false)
+    await expect(countMfaLoginAttempt(validAttemptId, attempt)).resolves.toBe(false)
+    await expect(countMfaLoginAttempt(validAttemptId, attempt)).resolves.toBe(false)
+    await expect(countMfaLoginAttempt(validAttemptId, attempt)).resolves.toBe(false)
+    await expect(countMfaLoginAttempt(validAttemptId, attempt)).resolves.toBe(false)
+    await expect(countMfaLoginAttempt(validAttemptId, attempt)).resolves.toBe(false)
+    await expect(countMfaLoginAttempt(validAttemptId, attempt)).resolves.toBe(true)
     await expect(getAndDeleteLoginAttempt(attemptId)).resolves.toEqual(attempt)
   })
 
@@ -72,13 +72,27 @@ describe('login-attempt', () => {
     }
     const attemptId = randomUUID()
 
-    await expect(recordFailedMfaLoginAttempt(attemptId, attempt)).resolves.toBe(false)
-    await expect(recordFailedMfaLoginAttempt(attemptId, attempt)).resolves.toBe(false)
-    await expect(isMfaLoginAttemptLimited(attemptId, attempt)).resolves.toBe(false)
-    await expect(recordFailedMfaLoginAttempt(attemptId, attempt)).resolves.toBe(false)
-    await expect(recordFailedMfaLoginAttempt(attemptId, attempt)).resolves.toBe(false)
-    await expect(recordFailedMfaLoginAttempt(attemptId, attempt)).resolves.toBe(false)
-    await expect(recordFailedMfaLoginAttempt(attemptId, attempt)).resolves.toBe(true)
-    await expect(isMfaLoginAttemptLimited(attemptId, attempt)).resolves.toBe(true)
+    await expect(countMfaLoginAttempt(attemptId, attempt)).resolves.toBe(false)
+    await expect(countMfaLoginAttempt(attemptId, attempt)).resolves.toBe(false)
+    await expect(countMfaLoginAttempt(attemptId, attempt)).resolves.toBe(false)
+    await expect(countMfaLoginAttempt(attemptId, attempt)).resolves.toBe(false)
+    await expect(countMfaLoginAttempt(attemptId, attempt)).resolves.toBe(false)
+    await expect(countMfaLoginAttempt(attemptId, attempt)).resolves.toBe(false)
+    await expect(countMfaLoginAttempt(attemptId, attempt)).resolves.toBe(true)
+    await clearMfaLoginAttempts(attemptId, attempt)
+    await expect(countMfaLoginAttempt(attemptId, attempt)).resolves.toBe(false)
+  })
+  it('charges concurrent verification attempts atomically', async () => {
+    const attempt: LoginAttempt = {
+      userId: randomUUID(),
+      deviceId: randomUUID(),
+      sessionId: randomUUID(),
+    }
+    const attemptId = randomUUID()
+    const results = await Promise.all(
+      Array.from({ length: 7 }, () => countMfaLoginAttempt(attemptId, attempt)),
+    )
+    expect(results.filter(limited => !limited)).toHaveLength(6)
+    expect(results.filter(Boolean)).toHaveLength(1)
   })
 })
