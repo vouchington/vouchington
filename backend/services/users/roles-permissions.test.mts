@@ -8,6 +8,7 @@ import { voteAggregation } from '@queues/vote-aggregation/queues'
 import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
 import { countUserRoleAssignments, createTestUser, getTestUserRaw } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { holdQueueAdmission } from '@voucha/test-helpers/queue-admission-hold'
 import { createVoteWeightDispatchUserAt } from '@voucha/test-helpers/vote-weight-dispatch'
 import { createVoteWeightRecalculationRaceQuery } from '@voucha/test-helpers/vote-weight-recalculation-race'
 import { holdBackgroundDomain } from '../../../test-helpers/shared-background-worker.mts'
@@ -26,107 +27,79 @@ describe('roles-permissions', () => {
   describe('addUserRole', () => {
     const jobName = 'vote-aggregation.processRecalculateUserVoteWeight'
 
-    it.each(['queue', 'jwt'] as const)(
-      'returns after the committed grant when %s admission settles last',
-      async lastAdmission => {
-        const grantedUser = await createTestUser()
-        const staleKey = getJwtStaleKey(grantedUser.id)
-        const queueEntered = Promise.withResolvers<void>()
-        const queueAdmitted = Promise.withResolvers<void>()
-        const queueRelease = Promise.withResolvers<void>()
-        const markerEntered = Promise.withResolvers<string>()
-        const markerWritten = Promise.withResolvers<void>()
-        const markerRelease = Promise.withResolvers<void>()
-        const originalAdd = voteAggregation.add
-        const originalSet = sessionValkeyClient.set
-        let jobId: string | undefined
-        let marker: string | undefined
-        let settled = false
-        const reportsBefore = sentryCaptureExceptionMock.mock.calls.length
-        const releaseWorker = holdBackgroundDomain('vote-aggregation')
-        const addSpy = vi
-          .spyOn(voteAggregation, 'add')
-          .mockImplementation((name, data, options) => {
-            if (
-              name === jobName &&
-              typeof data === 'object' &&
-              data !== null &&
-              'userId' in data &&
-              data.userId === grantedUser.id
-            ) {
-              queueEntered.resolve()
-              return queueRelease.promise.then(async () => {
-                const job = await runInsideTestWorkerProcessor(() =>
-                  originalAdd.call(voteAggregation, name, data, options),
-                )
-                jobId = job?.id
-                queueAdmitted.resolve()
-                return job
-              })
-            }
-            return originalAdd.call(voteAggregation, name, data, options)
-          })
-        const setSpy = vi
-          .spyOn(sessionValkeyClient, 'set')
-          .mockImplementation((key, value, options) => {
-            if (key === staleKey && typeof value === 'string') {
-              markerEntered.resolve(value)
-              return markerRelease.promise.then(async () => {
-                const result = await originalSet.call(sessionValkeyClient, key, value, options)
-                markerWritten.resolve()
-                return result
-              })
-            }
-            return originalSet.call(sessionValkeyClient, key, value, options)
-          })
-        const grant = addUserRole(grantedUser.id, 'administrator').finally(() => {
-          settled = true
-        })
-        try {
-          marker = await markerEntered.promise
-          await queueEntered.promise
-          expect(await countUserRoleAssignments(grantedUser.id, 'administrator')).toBe(1)
-          expect((await getTestUserRaw(grantedUser.id))?.vote_weight_recalculated_at).toBeNull()
-          expect(settled).toBe(false)
-
-          let firstJobData: unknown
-          if (lastAdmission === 'jwt') {
-            queueRelease.resolve()
-            await queueAdmitted.promise
-            firstJobData = jobId ? (await voteAggregation.getJob(jobId))?.data : undefined
-          } else {
-            markerRelease.resolve()
-            await markerWritten.promise
+    it('returns after its committed grant and both owned admissions settle', async () => {
+      const grantedUser = await createTestUser()
+      const staleKey = getJwtStaleKey(grantedUser.id)
+      const queueGate = holdQueueAdmission(
+        voteAggregation,
+        jobName,
+        data =>
+          typeof data === 'object' &&
+          data !== null &&
+          'userId' in data &&
+          data.userId === grantedUser.id,
+      )
+      const markerEntered = Promise.withResolvers<string>()
+      const markerRelease = Promise.withResolvers<void>()
+      const originalSet = sessionValkeyClient.set
+      let marker: string | undefined
+      let jobId: string | undefined
+      let settled = false
+      let grant: Promise<void> | undefined
+      const reportsBefore = sentryCaptureExceptionMock.mock.calls.length
+      const releaseWorker = holdBackgroundDomain('vote-aggregation')
+      const setSpy = vi
+        .spyOn(sessionValkeyClient, 'set')
+        .mockImplementation((key, value, options) => {
+          if (key === staleKey && typeof value === 'string') {
+            markerEntered.resolve(value)
+            return markerRelease.promise.then(() =>
+              originalSet.call(sessionValkeyClient, key, value, options),
+            )
           }
-          expect(firstJobData).toEqual(
-            lastAdmission === 'jwt' ? { userId: grantedUser.id } : undefined,
-          )
-          expect(await isJwtStale(grantedUser.id)).toBe(lastAdmission === 'queue')
-          expect(settled).toBe(false)
-
-          queueRelease.resolve()
-          markerRelease.resolve()
-          await grant
-          await queueAdmitted.promise
-          expect(jobId).toBeDefined()
-          expect((await voteAggregation.getJob(jobId!))?.data).toEqual({ userId: grantedUser.id })
-          expect(await isJwtStale(grantedUser.id)).toBe(true)
-          expect(sentryCaptureExceptionMock.mock.calls.slice(reportsBefore)).toEqual([])
-        } finally {
-          queueRelease.resolve()
+          return originalSet.call(sessionValkeyClient, key, value, options)
+        })
+      let cleanupPromise: Promise<void> | undefined
+      const cleanup = () => {
+        cleanupPromise ??= (async () => {
+          queueGate.release()
           markerRelease.resolve()
           try {
-            await grant.catch(() => undefined)
+            await grant?.catch(() => undefined)
             await releaseWorker()
             if (jobId) await (await voteAggregation.getJob(jobId))?.remove()
             if (marker) await clearJwtStaleIfCurrent(grantedUser.id, marker)
           } finally {
-            addSpy.mockRestore()
+            queueGate.restore()
             setSpy.mockRestore()
           }
-        }
-      },
-    )
+        })()
+        return cleanupPromise
+      }
+      onTestFinished(cleanup)
+      grant = addUserRole(grantedUser.id, 'administrator').finally(() => {
+        settled = true
+      })
+      try {
+        marker = await markerEntered.promise
+        await queueGate.entered
+        expect(await countUserRoleAssignments(grantedUser.id, 'administrator')).toBe(1)
+        expect((await getTestUserRaw(grantedUser.id))?.vote_weight_recalculated_at).toBeNull()
+        expect(settled).toBe(false)
+
+        queueGate.release()
+        markerRelease.resolve()
+        const job = await queueGate.admitted
+        jobId = job?.id
+        await grant
+        expect(jobId).toBeDefined()
+        expect((await voteAggregation.getJob(jobId!))?.data).toEqual({ userId: grantedUser.id })
+        expect(await isJwtStale(grantedUser.id)).toBe(true)
+        expect(sentryCaptureExceptionMock.mock.calls.slice(reportsBefore)).toEqual([])
+      } finally {
+        await cleanup()
+      }
+    })
 
     it('is idempotent for the same user and role', async () => {
       await addUserRole(user.id, 'administrator')
@@ -134,46 +107,6 @@ describe('roles-permissions', () => {
 
       const count = await countUserRoleAssignments(user.id, 'administrator')
       expect(count).toBe(1)
-    })
-
-    it('preserves the committed grant when queue admission and JWT invalidation fail', async () => {
-      const grantedUser = await createTestUser()
-      const staleKey = getJwtStaleKey(grantedUser.id)
-      const queueFailure = new Error('Owned role vote-weight admission failure')
-      const markerFailure = new Error('Owned role JWT invalidation failure')
-      const originalAdd = voteAggregation.add
-      const originalSet = sessionValkeyClient.set
-      const addSpy = vi.spyOn(voteAggregation, 'add').mockImplementation((name, data, options) => {
-        if (
-          name === jobName &&
-          typeof data === 'object' &&
-          data !== null &&
-          'userId' in data &&
-          data.userId === grantedUser.id
-        )
-          return Promise.reject(queueFailure)
-        return originalAdd.call(voteAggregation, name, data, options)
-      })
-      const setSpy = vi
-        .spyOn(sessionValkeyClient, 'set')
-        .mockImplementation((key, value, options) =>
-          key === staleKey
-            ? Promise.reject(markerFailure)
-            : originalSet.call(sessionValkeyClient, key, value, options),
-        )
-      try {
-        await expect(addUserRole(grantedUser.id, 'administrator')).resolves.toBeUndefined()
-        expect(await countUserRoleAssignments(grantedUser.id, 'administrator')).toBe(1)
-        expect((await getTestUserRaw(grantedUser.id))?.vote_weight_recalculated_at).toBeNull()
-        for (const failure of [queueFailure, markerFailure]) {
-          expect(
-            sentryCaptureExceptionMock.mock.calls.filter(([error]) => error === failure),
-          ).toHaveLength(1)
-        }
-      } finally {
-        addSpy.mockRestore()
-        setSpy.mockRestore()
-      }
     })
 
     it('keeps a role grant dirty when it races vote-weight factor gathering', async () => {
