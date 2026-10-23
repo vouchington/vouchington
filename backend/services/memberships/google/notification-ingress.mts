@@ -68,9 +68,9 @@ export async function ingestGooglePlayRtdnPush(options: {
     id: string
   }>(sql`/* ingestGooglePlayRtdnPush.insertEvidence */
     INSERT INTO membership_provider_evidence_records (
-      membership_provider_context_id, provider_event_id,
+      membership_provider_context_id, provider, provider_event_id,
       evidence_lookup_sha256, encrypted_evidence
-    ) VALUES (${contextId}, ${rtdn.messageId}, ${lookup}, ${encrypted})
+    ) VALUES (${contextId}, 'google_play', ${rtdn.messageId}, ${lookup}, ${encrypted})
     ON CONFLICT (membership_provider_context_id, provider_event_id) WHERE provider_event_id IS NOT NULL
       DO NOTHING RETURNING id`)
   const evidenceId =

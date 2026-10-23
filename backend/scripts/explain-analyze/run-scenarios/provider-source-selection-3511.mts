@@ -6,11 +6,12 @@ import { membershipWorkConfig } from '@services/memberships/work-limits'
 import { findRecoverableMicrosoftStoreSourceJobs } from '@services/memberships/microsoft/source-recovery'
 import { write } from '@data-stores/psql'
 import { registerScenarioContract } from '../plan-expectations.mts'
+import { MEMBERSHIP_CONTEXT_NOISE_COUNT } from '../seed-data/membership-context-noise.mts'
 import { runAndCapture } from '../run-support.mts'
 
 export async function runProviderSourceSelection3511Scenarios(): Promise<void> {
   const seededRows = {
-    membership_provider_contexts: 4,
+    membership_provider_contexts: MEMBERSHIP_CONTEXT_NOISE_COUNT + 4,
     membership_sources: 20000,
     membership_source_states: 20000,
     membership_provider_lineages: 30000,
@@ -101,7 +102,7 @@ export async function runProviderSourceSelection3511Scenarios(): Promise<void> {
   registerScenarioContract('microsoft-source-recovery-due', {
     seededRows,
     expectations: [
-      { kind: 'usesIndexes', indexes: ['idx_microsoft_store_credentials__unexpired_collections'] },
+      { kind: 'usesIndexes', indexes: ['idx_mmbrshp_mcrsft_str_crdntls__unexpired_collections'] },
       { kind: 'maxProcessedRows', relation: 'membership_microsoft_store_credentials', max: 200 },
     ],
   })

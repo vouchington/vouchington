@@ -48,9 +48,9 @@ export async function createTestFamilyMembership({
       RETURNING id
     ), evidence AS (
       INSERT INTO membership_provider_evidence_records (
-        membership_provider_context_id, membership_provider_lineage_id,
+        membership_provider_context_id, provider, membership_provider_lineage_id,
         evidence_lookup_sha256, encrypted_evidence, verified_at
-      ) SELECT provider_context.id, lineage.id,
+      ) SELECT provider_context.id, 'stripe', lineage.id,
         ${evidenceLookupSha256}, '\x01'::bytea, CURRENT_TIMESTAMP
       FROM lineage CROSS JOIN provider_context RETURNING id, membership_provider_lineage_id
     ), observation AS (
@@ -90,8 +90,8 @@ export async function createTestFamilyMembership({
       RETURNING membership_source_id
     )
     INSERT INTO memberships (
-      user_id, membership_source_id, membership_product_id, effective_at, expires_at
-    ) SELECT ${userId}, membership_source_id, ${membershipProductId}, timing.effective_at,
+      user_id, membership_source_id, source_kind, membership_product_id, effective_at, expires_at
+    ) SELECT ${userId}, membership_source_id, 'family', ${membershipProductId}, timing.effective_at,
       ${expiresAt} FROM state CROSS JOIN timing
     RETURNING id`)
   return rows[0] as { id: string }

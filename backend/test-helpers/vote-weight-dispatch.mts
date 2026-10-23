@@ -85,10 +85,10 @@ export async function supersedeVoteWeightFamilyObservation(sourceId: string): Pr
       WHERE source_state.membership_source_id = ${sourceId} AND source_state.source_kind = 'family'
     ), evidence AS (
       INSERT INTO membership_provider_evidence_records (
-        membership_provider_context_id, membership_provider_lineage_id,
+        membership_provider_context_id, provider, membership_provider_lineage_id,
         evidence_lookup_sha256, encrypted_evidence, verified_at
       )
-      SELECT membership_provider_context_id, membership_provider_lineage_id,
+      SELECT membership_provider_context_id, 'stripe', membership_provider_lineage_id,
         ${evidenceLookupSha256}, ${Buffer.from([2])}, CURRENT_TIMESTAMP
       FROM current_observation
       RETURNING id
@@ -131,10 +131,10 @@ export async function addVoteWeightSharedFamilyRecipient(sourceId: string, userI
       SELECT source.id, template.source_kind, template.membership_provider_lineage_id,
         template.membership_provider_observation_id, template.membership_product_id, template.effective_at, template.expires_at
       FROM source CROSS JOIN membership_source_states template WHERE template.membership_source_id = ${sourceId}
-      RETURNING membership_source_id, membership_product_id, effective_at, expires_at
+      RETURNING membership_source_id, source_kind, membership_product_id, effective_at, expires_at
     )
-    INSERT INTO memberships (user_id, membership_source_id, membership_product_id, effective_at, expires_at)
-    SELECT ${userId}, membership_source_id, membership_product_id, effective_at, expires_at FROM state
+    INSERT INTO memberships (user_id, membership_source_id, source_kind, membership_product_id, effective_at, expires_at)
+    SELECT ${userId}, membership_source_id, source_kind, membership_product_id, effective_at, expires_at FROM state
     RETURNING membership_source_id AS id`)
   return rows[0]!.id
 }

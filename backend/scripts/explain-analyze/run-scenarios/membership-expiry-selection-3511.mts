@@ -6,7 +6,7 @@ export async function runMembershipExpirySelection3511Scenario(): Promise<void> 
   registerScenarioContract('membership-grant-expiry-due', {
     seededRows: { memberships: 10000, membership_sources: 10000 },
     expectations: [
-      { kind: 'usesIndexes', indexes: ['idx_memberships__expires_at'] },
+      { kind: 'usesIndexes', indexes: ['idx_memberships__admin_grant_expires_at'] },
       { kind: 'maxProcessedRows', relation: 'memberships', max: 200 },
     ],
   })

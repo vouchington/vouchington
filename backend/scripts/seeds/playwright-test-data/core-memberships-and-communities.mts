@@ -86,10 +86,10 @@ async function seedPlaywrightMembershipsAndCommunities(
      ON CONFLICT (membership_source_id) DO UPDATE SET source_kind = EXCLUDED.source_kind, membership_product_id = EXCLUDED.membership_product_id, effective_at = EXCLUDED.effective_at, expires_at = NULL, cancelled_at = NULL, past_due_at = NULL`,
   )
   await query(
-    `/* seedPlaywrightMembershipsAndCommunities */ INSERT INTO memberships (id, user_id, membership_source_id, membership_product_id, effective_at)
-     SELECT '019c0000-0000-7000-8000-000000000003', '019f0000-0000-7000-8000-000000000000', '019c0000-0000-7000-8000-000000000002', id, CURRENT_TIMESTAMP
+    `/* seedPlaywrightMembershipsAndCommunities */ INSERT INTO memberships (id, user_id, membership_source_id, source_kind, membership_product_id, effective_at)
+     SELECT '019c0000-0000-7000-8000-000000000003', '019f0000-0000-7000-8000-000000000000', '019c0000-0000-7000-8000-000000000002', 'admin_grant', id, CURRENT_TIMESTAMP
      FROM membership_products WHERE plan = 'pro' AND billing_interval = 'monthly' AND retired_at IS NULL
-     ON CONFLICT (user_id) WHERE projection_ended_at IS NULL DO UPDATE SET membership_source_id = EXCLUDED.membership_source_id, membership_product_id = EXCLUDED.membership_product_id, effective_at = EXCLUDED.effective_at, cancelled_at = NULL, expired_at = NULL, past_due_at = NULL, paused_at = NULL, should_cancel_at_period_end = false, projection_ended_at = NULL`,
+     ON CONFLICT (user_id) WHERE projection_ended_at IS NULL DO UPDATE SET membership_source_id = EXCLUDED.membership_source_id, source_kind = EXCLUDED.source_kind, membership_product_id = EXCLUDED.membership_product_id, effective_at = EXCLUDED.effective_at, cancelled_at = NULL, expired_at = NULL, past_due_at = NULL, paused_at = NULL, should_cancel_at_period_end = false, projection_ended_at = NULL`,
   )
   /* v8 ignore start -- exercised by Playwright global setup, not Vitest coverage */
   await query(

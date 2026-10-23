@@ -21,6 +21,13 @@ export async function deleteTestMembershipProviderContext(id: string): Promise<v
     DELETE FROM membership_provider_contexts WHERE id = ${id}`)
 }
 
+export async function rejectTestEvidenceProviderMismatch(contextId: string): Promise<void> {
+  await write(sql`/* rejectTestEvidenceProviderMismatch */
+    INSERT INTO membership_provider_evidence_records
+      (membership_provider_context_id, provider, evidence_lookup_sha256, encrypted_evidence)
+    VALUES (${contextId}, 'google_play', ${randomUUID().replaceAll('-', '').repeat(2)}, '\x01'::bytea)`)
+}
+
 export async function rejectTestGoogleRowsOnStripeContext(contextId: string): Promise<{
   token: () => Promise<void>
   acknowledgment: () => Promise<void>
@@ -32,9 +39,9 @@ export async function rejectTestGoogleRowsOnStripeContext(contextId: string): Pr
       VALUES (${contextId}, ${`lineage-${randomUUID()}`}) RETURNING id
     ), evidence AS (
       INSERT INTO membership_provider_evidence_records (
-        membership_provider_context_id, membership_provider_lineage_id,
+        membership_provider_context_id, provider, membership_provider_lineage_id,
         evidence_lookup_sha256, encrypted_evidence
-      ) SELECT ${contextId}, lineage.id, ${randomUUID().replaceAll('-', '').repeat(2)}, '\x01'::bytea
+      ) SELECT ${contextId}, 'stripe', lineage.id, ${randomUUID().replaceAll('-', '').repeat(2)}, '\x01'::bytea
       FROM lineage RETURNING id, membership_provider_lineage_id
     ) SELECT membership_provider_lineage_id AS lineage_id, id AS evidence_id FROM evidence
   `)

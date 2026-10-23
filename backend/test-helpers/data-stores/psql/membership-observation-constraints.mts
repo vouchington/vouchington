@@ -31,11 +31,11 @@ export async function createMembershipObservationConstraintFixture(): Promise<Me
   const lineageId = lineageRows[0]!.id
   const [{ rows: evidenceRows }, { rows: priceOptionalEvidenceRows }] = await Promise.all([
     write<{ id: string }>(sql`/* createMembershipObservationConstraintEvidence */
-    INSERT INTO membership_provider_evidence_records (membership_provider_context_id, membership_provider_lineage_id, evidence_lookup_sha256, encrypted_evidence, verified_at)
-    VALUES (fn_upsert_membership_provider_context_id('stripe', 'test', ${applicationId}), ${lineageId}, ${suffix.replaceAll('-', '').padEnd(64, 'c')}, '\x01'::bytea, CURRENT_TIMESTAMP) RETURNING id`),
+    INSERT INTO membership_provider_evidence_records (membership_provider_context_id, provider, membership_provider_lineage_id, evidence_lookup_sha256, encrypted_evidence, verified_at)
+    VALUES (fn_upsert_membership_provider_context_id('stripe', 'test', ${applicationId}), 'stripe', ${lineageId}, ${suffix.replaceAll('-', '').padEnd(64, 'c')}, '\x01'::bytea, CURRENT_TIMESTAMP) RETURNING id`),
     write<{ id: string }>(sql`/* createPriceOptionalMembershipObservationEvidence */
-    INSERT INTO membership_provider_evidence_records (membership_provider_context_id, membership_provider_lineage_id, evidence_lookup_sha256, encrypted_evidence, verified_at)
-    VALUES (fn_upsert_membership_provider_context_id('stripe', 'test', ${applicationId}), ${lineageId}, ${randomUUID().replaceAll('-', '').padEnd(64, 'f')}, '\x04'::bytea, CURRENT_TIMESTAMP) RETURNING id`),
+    INSERT INTO membership_provider_evidence_records (membership_provider_context_id, provider, membership_provider_lineage_id, evidence_lookup_sha256, encrypted_evidence, verified_at)
+    VALUES (fn_upsert_membership_provider_context_id('stripe', 'test', ${applicationId}), 'stripe', ${lineageId}, ${randomUUID().replaceAll('-', '').padEnd(64, 'f')}, '\x04'::bytea, CURRENT_TIMESTAMP) RETURNING id`),
   ])
   const evidenceId = evidenceRows[0]!.id
   const mappingId = mappingRows[0]!.id
@@ -92,8 +92,8 @@ export async function createMembershipEvidenceLifecycleFixture(): Promise<Member
   const { rows: evidenceRows } = await write<{
     id: string
   }>(sql`/* createReceivedEvidenceForLifecycle */
-    INSERT INTO membership_provider_evidence_records (membership_provider_context_id, provider_event_id, evidence_lookup_sha256, encrypted_evidence)
-    VALUES (fn_upsert_membership_provider_context_id('stripe', 'test', ${applicationId}), ${`event-${suffix}`}, ${suffix.replaceAll('-', '').padEnd(64, 'd')}, '\x01'::bytea) RETURNING id`)
+    INSERT INTO membership_provider_evidence_records (membership_provider_context_id, provider, provider_event_id, evidence_lookup_sha256, encrypted_evidence)
+    VALUES (fn_upsert_membership_provider_context_id('stripe', 'test', ${applicationId}), 'stripe', ${`event-${suffix}`}, ${suffix.replaceAll('-', '').padEnd(64, 'd')}, '\x01'::bytea) RETURNING id`)
   const evidenceId = evidenceRows[0]!.id
   return {
     rejectMutation() {
@@ -123,8 +123,8 @@ export async function createMembershipEvidenceLifecycleFixture(): Promise<Member
     },
     async rejectReceivedEvidence() {
       const { rows } = await write<{ id: string }>(sql`/* createRejectedEvidence */
-        INSERT INTO membership_provider_evidence_records (membership_provider_context_id, provider_event_id, evidence_lookup_sha256, encrypted_evidence)
-        VALUES (fn_upsert_membership_provider_context_id('stripe', 'test', ${applicationId}), ${`rejected-event-${suffix}`}, ${suffix.replaceAll('-', '').padEnd(64, 'e')}, '\x03'::bytea) RETURNING id`)
+        INSERT INTO membership_provider_evidence_records (membership_provider_context_id, provider, provider_event_id, evidence_lookup_sha256, encrypted_evidence)
+        VALUES (fn_upsert_membership_provider_context_id('stripe', 'test', ${applicationId}), 'stripe', ${`rejected-event-${suffix}`}, ${suffix.replaceAll('-', '').padEnd(64, 'e')}, '\x03'::bytea) RETURNING id`)
       return write(
         sql`/* rejectReceivedEvidence */ UPDATE membership_provider_evidence_records SET rejected_at = CURRENT_TIMESTAMP, rejection_reason = 'invalid signature' WHERE id = ${rows[0]!.id}`,
       )

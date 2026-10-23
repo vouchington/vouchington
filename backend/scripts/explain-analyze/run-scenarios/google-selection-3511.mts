@@ -3,15 +3,19 @@ import {
   findPendingNotificationRows,
 } from '@services/memberships/google/notification-recovery'
 import { registerScenarioContract } from '../plan-expectations.mts'
+import { MEMBERSHIP_CONTEXT_NOISE_COUNT } from '../seed-data/membership-context-noise.mts'
 import { runAndCapture } from '../run-support.mts'
 
 export async function runGoogleSelection3511Scenarios(): Promise<void> {
   registerScenarioContract('google-notification-recovery-upper-bound', {
-    seededRows: { membership_provider_evidence_records: 20000, membership_provider_contexts: 4 },
+    seededRows: {
+      membership_provider_evidence_records: 30000,
+      membership_provider_contexts: MEMBERSHIP_CONTEXT_NOISE_COUNT + 4,
+    },
     expectations: [
       {
         kind: 'usesIndexes',
-        indexes: ['idx_membership_provider_evidence_records__pending_notification'],
+        indexes: ['idx_mbrshp_prvdr_evdnc_rcrds__google_pending_id'],
       },
       { kind: 'maxProcessedRows', relation: 'membership_provider_evidence_records', max: 300 },
     ],
@@ -22,11 +26,14 @@ export async function runGoogleSelection3511Scenarios(): Promise<void> {
   })
 
   registerScenarioContract('google-notification-recovery-page', {
-    seededRows: { membership_provider_evidence_records: 20000, membership_provider_contexts: 4 },
+    seededRows: {
+      membership_provider_evidence_records: 30000,
+      membership_provider_contexts: MEMBERSHIP_CONTEXT_NOISE_COUNT + 4,
+    },
     expectations: [
       {
         kind: 'usesIndexes',
-        indexes: ['idx_membership_provider_evidence_records__pending_notification'],
+        indexes: ['idx_mbrshp_prvdr_evdnc_rcrds__google_pending_id'],
       },
       { kind: 'maxProcessedRows', relation: 'membership_provider_evidence_records', max: 300 },
     ],

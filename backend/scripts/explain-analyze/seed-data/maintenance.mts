@@ -72,7 +72,9 @@ export const SEEDED_ROW_COUNT_TARGETS: readonly TableInfo[] = [
   { table: 'membership_provider_evidence_records', column: 'id', pattern: '019e0000-9800-%' },
   { table: 'membership_provider_lineages', column: 'id', pattern: '019e0000-9700-%' },
   { table: 'membership_provider_contexts', column: 'id', pattern: '019e0000-9600-%' },
+  { table: 'membership_provider_contexts', column: 'id', pattern: '019e0000-9601-%' },
   { table: 'membership_provider_evidence_records', column: 'id', pattern: '019e0000-9a00-%' },
+  { table: 'membership_provider_evidence_records', column: 'id', pattern: '019e0000-99ff-%' },
   { table: 'membership_verifications', column: 'id', pattern: '019e0000-a500-%' },
   {
     table: 'membership_verification_processing_work_items',

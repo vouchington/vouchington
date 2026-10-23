@@ -99,7 +99,7 @@ export async function findPendingNotificationRows(
     SELECT evidence.id, context.environment, context.application_id, evidence.encrypted_evidence, evidence.evidence_lookup_sha256
     FROM membership_provider_evidence_records evidence
     INNER JOIN membership_provider_contexts context ON context.id = evidence.membership_provider_context_id
-    WHERE context.provider = 'google_play' AND evidence.provider_event_id IS NOT NULL
+    WHERE evidence.provider = 'google_play' AND evidence.provider_event_id IS NOT NULL
       AND evidence.verified_at IS NULL AND evidence.rejected_at IS NULL
       AND (${cursor}::UUID IS NULL OR evidence.id > ${cursor}::UUID)
       AND (${upperBound}::UUID IS NULL OR evidence.id <= ${upperBound}::UUID)
@@ -113,7 +113,7 @@ export async function findNotificationSweepUpperBound(): Promise<string | null> 
   }>(sql`/* findGooglePlayNotificationSweepUpperBound */
     SELECT evidence.id FROM membership_provider_evidence_records evidence
     INNER JOIN membership_provider_contexts context ON context.id = evidence.membership_provider_context_id
-    WHERE context.provider = 'google_play' AND evidence.provider_event_id IS NOT NULL
+    WHERE evidence.provider = 'google_play' AND evidence.provider_event_id IS NOT NULL
       AND evidence.verified_at IS NULL AND evidence.rejected_at IS NULL
     ORDER BY evidence.id DESC LIMIT 1`)
   return rows[0]?.id ?? null

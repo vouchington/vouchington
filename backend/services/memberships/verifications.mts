@@ -89,9 +89,9 @@ export async function createMembershipVerificationInTransaction(
     id: string
   }>(sql`/* createMembershipVerification.evidence */
     INSERT INTO membership_provider_evidence_records (
-      membership_provider_context_id, evidence_lookup_sha256, encrypted_evidence
+      membership_provider_context_id, provider, evidence_lookup_sha256, encrypted_evidence
     ) VALUES (
-      ${contextId}, ${evidenceLookupSha256}, ${encryptedEvidence}
+      ${contextId}, ${options.provider}, ${evidenceLookupSha256}, ${encryptedEvidence}
     )
     ON CONFLICT (membership_provider_context_id, evidence_lookup_sha256) DO NOTHING
     RETURNING id`)

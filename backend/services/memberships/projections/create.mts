@@ -117,10 +117,12 @@ export async function insertMembershipProjection(
 ): Promise<CreatedMembership> {
   const { rows } = await query(sql`/* createMembership */
     INSERT INTO memberships (
-      user_id, membership_source_id, membership_product_id, effective_at, expires_at,
+      user_id, membership_source_id, source_kind, membership_product_id, effective_at, expires_at,
       cancelled_at, expired_at, past_due_at, paused_at, should_cancel_at_period_end, projection_ended_at
     ) VALUES (
-      ${userId}, ${sourceId}, ${productId}, ${timing.effectiveAt}, ${timing.expiresAt},
+      ${userId}, ${sourceId},
+      (SELECT source_kind FROM membership_sources WHERE id = ${sourceId}),
+      ${productId}, ${timing.effectiveAt}, ${timing.expiresAt},
       CASE WHEN ${status} = 'cancelled' THEN ${timing.terminalEffectiveAt}::timestamptz ELSE NULL END,
       CASE WHEN ${status} = 'expired' THEN ${timing.terminalEffectiveAt}::timestamptz ELSE NULL END,
       CASE WHEN ${status} = 'past_due' THEN ${timing.transitionEffectiveAt}::timestamptz ELSE NULL END,
