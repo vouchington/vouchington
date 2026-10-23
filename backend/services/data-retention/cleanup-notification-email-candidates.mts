@@ -1,6 +1,11 @@
 import type { TransactionQuery } from '@data-stores/psql'
 import { getMinUUIDv7ForDate } from '@modules/utils'
-import type { NotificationEmailCleanupName } from './cleanup-notification-email.mts'
+
+export type NotificationEmailCleanupName =
+  | 'ses_bounce_events'
+  | 'system_pruned_notifications'
+  | 'user_deleted_notifications'
+  | 'moderation_email_sends'
 
 export type Candidate = { id: string; user_id?: string; position_at: string | null }
 export type Cursor = {

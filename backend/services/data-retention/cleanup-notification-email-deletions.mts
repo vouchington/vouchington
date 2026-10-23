@@ -1,7 +1,9 @@
 import type { TransactionQuery } from '@data-stores/psql'
 import { getMinUUIDv7ForDate } from '@modules/utils'
-import type { Candidate } from './cleanup-notification-email-candidates.mts'
-import type { NotificationEmailCleanupName } from './cleanup-notification-email.mts'
+import type {
+  Candidate,
+  NotificationEmailCleanupName,
+} from './cleanup-notification-email-candidates.mts'
 
 export async function deleteNotificationEmailPage(
   query: TransactionQuery,
