@@ -24,11 +24,8 @@ import {
 import { drainHostnameCacheInvalidationWork } from '@services/entity-cache/hostname-invalidation-drain'
 import { entityCacheWorkConfig } from '@services/entity-cache/work-limits'
 import { writeSortedDesiredDomains } from './diff-files.mts'
-import {
-  prepareMembershipDiff,
-  stageBothDiffFiles,
-  type MembershipDiffPaths,
-} from './membership-diff-stage.mts'
+import { stageBothDiffFiles, type MembershipDiffPaths } from './membership-diff-stage.mts'
+import { applyWithPreparedMembership, lockSourceForDiff } from './membership-version.mts'
 
 type AppliedDomainDiff = { result: SyncBlacklistSourceResult; inlineHostnameIds: string[] }
 
@@ -55,10 +52,17 @@ export async function syncDomainsWithDatabase(
       addedPath,
       removedPath,
     }
-    // The reader snapshot may lag the writer or another sync. The lock covers
-    // only the writer apply; ON CONFLICT absorbs repeated additions.
-    await prepareMembershipDiff(sourceId, paths)
-    const result = await applyDomainDiffFiles(sourceId, sourceType, addedPath, removedPath)
+    // The first preparation uses the reader. A concurrent writer sync changes
+    // the source row's MVCC version; then rebuild from the writer outside the
+    // short apply lock so the second sync replaces, rather than unions, feeds.
+    const result = await applyWithPreparedMembership(sourceId, paths, version =>
+      applyLockedDomainDiff(
+        sourceId,
+        sourceType,
+        client => stageBothDiffFiles(client, addedPath, removedPath),
+        version,
+      ),
+    )
     await rebuildBloomForSource(sourceType, bloomRebuildDependencies)
     return result
   } finally {
@@ -78,21 +82,32 @@ export async function applyDomainDiffFiles(
   addedPath: string,
   removedPath: string,
 ): Promise<SyncBlacklistSourceResult> {
-  return applyLockedDomainDiff(sourceId, sourceType, client =>
+  const result = await applyLockedDomainDiff(sourceId, sourceType, client =>
     stageBothDiffFiles(client, addedPath, removedPath),
   )
+  if (!result) throw new Error('Unexpected domain blacklist membership conflict')
+  return result
 }
 
 async function applyLockedDomainDiff(
   sourceId: DomainBlacklistSourceId,
   sourceType: 'url' | 'email',
   stage: (client: PoolClient) => Promise<void>,
-): Promise<SyncBlacklistSourceResult> {
+  expectedVersion?: string | null,
+): Promise<SyncBlacklistSourceResult | null> {
   await entityCacheWorkConfig.waitForInitialization()
   const client = await writePool.connect()
   try {
     await using transaction = await beginTransaction({ client })
-    const applied = await stageLockedDiff(transaction, client, sourceId, sourceType, stage)
+    const applied = await stageLockedDiff(
+      transaction,
+      client,
+      sourceId,
+      sourceType,
+      stage,
+      expectedVersion,
+    )
+    if (!applied) return null
     await transaction.commit()
     await drainHostnameCacheInvalidationWork({ hostnameIds: applied.inlineHostnameIds }).catch(
       onError,
@@ -110,28 +125,20 @@ async function stageLockedDiff(
   sourceId: DomainBlacklistSourceId,
   sourceType: 'url' | 'email',
   stage: (client: PoolClient) => Promise<void>,
-): Promise<AppliedDomainDiff> {
+  expectedVersion?: string | null,
+): Promise<AppliedDomainDiff | null> {
   await stage(client)
-  await lockSourceForDiff(transaction, sourceId, sourceType)
-  return applyPreparedDomainDiff(transaction, sourceId, sourceType)
-}
-
-async function lockSourceForDiff(
-  query: TransactionQuery,
-  sourceId: DomainBlacklistSourceId,
-  sourceType: 'url' | 'email',
-): Promise<void> {
-  await query(
-    `/* syncDomainsWithDatabase */ SELECT pg_advisory_xact_lock(hashtextextended($1::text, 0))`,
+  const version = await lockSourceForDiff(transaction, sourceId, sourceType)
+  if (expectedVersion !== undefined && version !== expectedVersion) return null
+  const applied = await applyPreparedDomainDiff(transaction, sourceId, sourceType)
+  // Advance the generation atomically with membership writes. Source metadata
+  // updates already change xmin, so they also invalidate in-flight diffs.
+  await transaction(
+    `/* syncDomainsWithDatabase:advanceVersion */
+     UPDATE domain_blocklist_sources SET updated_at = updated_at WHERE id = $1`,
     [sourceId],
   )
-  // A source reclassified during download must not publicly introduce its email-only domains.
-  const { rows } = await query<{ type: 'url' | 'email' }>(
-    `/* syncDomainsWithDatabase:sourceType */ SELECT type FROM domain_blocklist_sources WHERE id = $1 FOR UPDATE`,
-    [sourceId],
-  )
-  if (rows[0]?.type !== sourceType)
-    throw new Error('Domain blacklist source type changed during sync')
+  return applied
 }
 
 async function applyPreparedDomainDiff(

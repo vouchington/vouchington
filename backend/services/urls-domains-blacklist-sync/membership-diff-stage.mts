@@ -1,6 +1,6 @@
 import { createReadStream } from 'node:fs'
 import { pipeline } from 'node:stream/promises'
-import type { PoolClient } from '@data-stores/psql'
+import { readPool, type PoolClient } from '@data-stores/psql'
 import { from as copyFrom } from 'pg-copy-streams'
 import type { DomainBlacklistSourceId } from '@services/urls-domains-blacklist/sources'
 import { ADDED_DOMAINS_TABLE, REMOVED_DOMAINS_TABLE } from './sync-cache.mts'
@@ -18,8 +18,9 @@ export type MembershipDiffPaths = {
 export async function prepareMembershipDiff(
   sourceId: DomainBlacklistSourceId,
   paths: MembershipDiffPaths,
+  pool: typeof readPool = readPool,
 ): Promise<void> {
-  await copySourceMembership(sourceId, paths.membershipPath)
+  await copySourceMembership(sourceId, paths.membershipPath, pool)
   await writeCommDiff(paths)
 }
 

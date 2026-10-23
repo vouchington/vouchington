@@ -5,13 +5,14 @@ import type { DomainBlacklistSourceId } from '@services/urls-domains-blacklist/s
 import { to as copyTo } from 'pg-copy-streams'
 import { parseSourceId } from './sync-utils.mts'
 
-/** Stream one source's membership from the reader, already ordered for `comm`. */
+/** Stream one source's membership, already ordered for `comm`. */
 export async function copySourceMembership(
   sourceId: DomainBlacklistSourceId,
   destination: string,
+  pool: typeof readPool = readPool,
 ): Promise<void> {
   const id = parseSourceId(sourceId)
-  const client = await readPool.connect()
+  const client = await pool.connect()
   try {
     // no-mistakes-disable-next-line postgres-required-predicates: source id is a validated integer literal because COPY TO STDOUT cannot bind parameters
     const copy = client.query(
