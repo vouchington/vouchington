@@ -136,7 +136,7 @@ EOF
     }
   })
 
-  it('post-merge hands finished worktrees to ./dev/cleanup, never the reclaim command', () => {
+  it('post-merge leaves worktree cleanup to explicit maintenance', () => {
     const tmp = mkdtempSync(`${tmpdir()}/voucha-husky-`)
 
     try {
@@ -156,7 +156,7 @@ EOF
       })
 
       expect(result.status).toBe(0)
-      expect(readFileSync(argsFile, 'utf8')).toBe('--yes\n')
+      expect(existsSync(argsFile)).toBe(false)
       expect(readFileSync(hookPath('post-merge'), 'utf8')).not.toContain('worktree reclaim')
     } finally {
       rmSync(tmp, { force: true, recursive: true })
@@ -177,9 +177,9 @@ EOF
     expect(postRewrite).toContain('pnpm-lock\\.yaml|package\\.json|pnpm-workspace\\.yaml')
     expect(postMerge).toContain('pnpm-lock\\.yaml|package\\.json|pnpm-workspace\\.yaml')
     expect(postCheckout).toContain('pnpm-lock\\.yaml|package\\.json|pnpm-workspace\\.yaml')
-    expect(postRewrite).toContain('pnpm install --silent')
-    expect(postMerge).toContain('pnpm install --silent')
-    expect(postCheckout).toContain('pnpm install --silent')
+    expect(postRewrite).toContain('if pnpm install; then')
+    expect(postMerge).toContain('if pnpm install; then')
+    expect(postCheckout).toContain('if pnpm install; then')
     expect(statSync(hookPath('post-checkout')).mode & 0o111).not.toBe(0)
   })
 })

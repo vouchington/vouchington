@@ -133,7 +133,8 @@ describe('post-checkout', () => {
     const result = runHook({ branchCheckout: true, changeWorkspaceYaml: true })
     expect(result.status).toBe(0)
     expect(result.stdout).toContain('post-checkout: dependency manifest changed')
-    expect(result.pnpmLog.trim()).toBe('install --silent')
+    expect(result.stdout).toMatch(/pnpm install completed in \d+s/)
+    expect(result.pnpmLog.trim()).toBe('install')
   })
 
   it('does not install on a file checkout even when manifests changed', () => {
@@ -178,7 +179,7 @@ describe('post-checkout', () => {
       pnpmExit: 19,
     })
     expect(result.status).toBe(0)
-    expect(result.stderr).toContain('pnpm install failed (exit 19)')
-    expect(result.pnpmLog.trim()).toBe('install --silent')
+    expect(result.stderr).toMatch(/pnpm install failed \(exit 19\) after \d+s/)
+    expect(result.pnpmLog.trim()).toBe('install')
   })
 })
