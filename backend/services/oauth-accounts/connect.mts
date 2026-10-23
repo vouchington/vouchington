@@ -55,6 +55,12 @@ export async function connectOAuthAccountToActiveUser(
   const { query, userId } = activeUser
   const config = providerTableConfigs[provider]
   const hasFriends = provider === 'facebook' || provider === 'github' || provider === 'x'
+  if (hasFriends) {
+    await query(
+      `/* lockOAuthFriendTargetConnection */ SELECT fn_lock_oauth_friend_targets($1::text, ARRAY[$2::text], TRUE)`,
+      [provider, providerUserId],
+    )
+  }
   const { rows, rowCount } = await query<{ id: string; provider_user_id: string }>(
     `/* connectOAuthAccountToUser */
      WITH connected_account AS (

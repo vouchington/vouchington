@@ -45,14 +45,15 @@ async function persistXFriendBatch(
   syncStartTime: string,
 ): Promise<boolean> {
   await using transaction = await beginTransaction()
-  await lockActiveXSyncOwner(transaction, userId)
+  await lockXFriendImport(transaction, userId, friendIds)
   if (!(await xSyncOwnerExists(transaction, xAccountId, userId, syncStartTime))) return false
 
+  // Lock an existing unlinked target too, so reconnect cannot clear resolution work before this insert.
   await transaction(
     `/* persistXFriendBatch */ INSERT INTO x_friends (x_account_id, x_friend_id, friend_x_account_id, last_observed_at)
      SELECT $1::uuid, friend_id,
-       (SELECT id FROM x_accounts
-        WHERE x_user_id = friend_id AND user_id IS NOT NULL FOR SHARE), $3::timestamptz
+       (SELECT CASE WHEN user_id IS NOT NULL THEN id END FROM x_accounts
+        WHERE x_user_id = friend_id FOR SHARE), $3::timestamptz
      FROM UNNEST($2::text[]) AS friend_id
      ORDER BY $1, friend_id
      ON CONFLICT (x_account_id, x_friend_id) DO UPDATE SET
@@ -128,6 +129,18 @@ async function lockActiveXSyncOwner(
   await query(`/* lockActiveXSyncOwner */ SELECT fn_lock_active_user_for_mutation($1::uuid)`, [
     userId,
   ])
+}
+
+async function lockXFriendImport(
+  query: Awaited<ReturnType<typeof beginTransaction>>,
+  userId: string,
+  friendIds: string[],
+): Promise<void> {
+  await lockActiveXSyncOwner(query, userId)
+  await query(
+    `/* lockXFriendTargets */ SELECT fn_lock_oauth_friend_targets('x', $1::text[], FALSE)`,
+    [friendIds],
+  )
 }
 
 async function xSyncOwnerExists(

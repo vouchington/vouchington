@@ -19,9 +19,39 @@ import { cleanupOAuthFriendEdgePage } from '../data-retention/cleanup-oauth-frie
 import { connectOAuthAccountToUser } from './connect.mts'
 import { oauthAccountFriendWorkConfig } from './work-limits.mts'
 import { disconnectOAuthAccount } from '../my/oauth-account.mts'
+import { persistGithubFriendPage } from '../oauth-github/friends-persistence.mts'
 
 describe('bounded incoming friend resolution', () => {
   afterEach(() => closeScopedDynamicConfigContext([oauthAccountFriendWorkConfig]))
+
+  it('resolves a friend imported before the target account first exists', async () => {
+    const source = await createTestUser()
+    const target = await createTestUser()
+    const sourceProviderId = `github-preaccount-source-${source.id}`
+    const targetProviderId = `github-preaccount-target-${target.id}`
+    const sourceAccount = await insertTestOAuthAccount('github', sourceProviderId)
+    if (!sourceAccount.account_id) throw new Error('Source GitHub account id missing')
+    await connectTestOAuthAccount('github', source.id, sourceProviderId)
+
+    expect(
+      await persistGithubFriendPage(
+        sourceAccount.account_id,
+        source.id,
+        [targetProviderId],
+        await getTestFriendSyncStartTime(),
+      ),
+    ).toBe(true)
+    expect((await getTestFriend('github', sourceProviderId, targetProviderId))[0]).toMatchObject({
+      friend_github_account_id: null,
+    })
+
+    const targetAccount = await insertTestOAuthAccount('github', targetProviderId)
+    if (!targetAccount.account_id) throw new Error('Target GitHub account id missing')
+    await connectOAuthAccountToUser('github', target.id, targetProviderId)
+    expect((await getTestFriend('github', sourceProviderId, targetProviderId))[0]).toMatchObject({
+      friend_github_account_id: targetAccount.account_id,
+    })
+  })
 
   it('drains a pre-unlink observation within the same millisecond as its marker', async () => {
     const account = await insertTestOAuthAccount('github', `github-microsecond-${randomUUID()}`)

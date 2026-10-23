@@ -2,12 +2,12 @@ import { DynamicConfig } from '@data-stores/valkey'
 import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
 
 const defaultFields = {
-  friend_mutation_batch_size: 1000,
+  friend_mutation_batch_size: 100,
 }
 
 /** Hard ceilings for the current runtime configuration contract. */
 export const oauthXWorkMaxValues = {
-  friend_mutation_batch_size: 10000,
+  friend_mutation_batch_size: 256,
 }
 
 export const oauthXWorkConfig = new DynamicConfig({
