@@ -1,6 +1,13 @@
+import { Readable } from 'node:stream'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { fetchFeedList } from './fetch-feed-list.mts'
 import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
+
+async function readStream(stream: Readable): Promise<string> {
+  const chunks: Buffer[] = []
+  for await (const chunk of stream) chunks.push(Buffer.from(chunk))
+  return Buffer.concat(chunks).toString('utf8')
+}
 
 const fetchSpy = vi.hoisted(() => vi.fn<VitestLooseMock>())
 vi.mock<typeof import('undici')>(import('undici'), async () => {
@@ -12,7 +19,9 @@ const LIST_URL = 'https://example.com/smallweb.txt'
 
 async function readAndCommit(name: string, options?: { conditional?: boolean }) {
   const read = await fetchFeedList(name, LIST_URL, options)
-  await read?.commitValidators()
+  if (!read) return
+  await readStream(read.stream)
+  await read.commitValidators()
 }
 
 describe('fetchFeedList caching behavior', () => {
@@ -30,7 +39,7 @@ describe('fetchFeedList caching behavior', () => {
     )
 
     const result = await fetchFeedList('test-web', 'https://example.com/smallweb.txt')
-    expect(result?.text).toBe('https://a.com/feed\nhttps://b.com/feed')
+    expect(await readStream(result!.stream)).toBe('https://a.com/feed\nhttps://b.com/feed')
     expect(fetchSpy).toHaveBeenCalledWith(
       'https://example.com/smallweb.txt',
       expect.objectContaining({
@@ -66,9 +75,8 @@ describe('fetchFeedList caching behavior', () => {
     const oversizedFeedList = 'x'.repeat(10 * 1024 * 1024 + 1)
     fetchSpy.mockResolvedValueOnce(new Response(oversizedFeedList, { status: 200 }))
 
-    await expect(
-      fetchFeedList('test-oversized', 'https://example.com/smallweb.txt'),
-    ).rejects.toThrow('Response size exceeded limit')
+    const result = await fetchFeedList('test-oversized', 'https://example.com/smallweb.txt')
+    await expect(readStream(result!.stream)).rejects.toThrow('Response size exceeded limit')
   })
 
   it('asks for "not modified" only when the request is conditional', async () => {
@@ -108,11 +116,27 @@ describe('fetchFeedList caching behavior', () => {
     expect(fetchSpy.mock.calls[2]![1].headers).toHaveProperty('If-None-Match', 'W/"root"')
   })
 
+  it('rejects when the body errors after the response headers', async () => {
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode('https://a.example/feed\n'))
+      },
+      pull(controller) {
+        controller.error(new Error('connection reset'))
+      },
+    })
+    fetchSpy.mockResolvedValueOnce(new Response(body, { status: 200 }))
+
+    const result = await fetchFeedList('test-reset', LIST_URL)
+
+    await expect(readStream(result!.stream)).rejects.toThrow('connection reset')
+  })
+
   it('returns an empty string for successful responses without a body', async () => {
     fetchSpy.mockResolvedValueOnce(new Response(null, { status: 200 }))
 
     const result = await fetchFeedList('test-empty', 'https://example.com/smallweb.txt')
 
-    expect(result?.text).toBe('')
+    expect(await readStream(result!.stream)).toBe('')
   })
 })

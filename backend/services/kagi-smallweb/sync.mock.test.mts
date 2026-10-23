@@ -15,9 +15,24 @@ vi.mock<typeof import('undici')>(import('undici'), async () => {
 const randomSuffix = () => Math.random().toString(36).slice(2, 10)
 const [WEB, COMIC, YOUTUBE] = FEED_LIST_SOURCES.map(source => source.url)
 
+/** Buffering the list calls one of these. Streaming the body does not. */
+function unbufferedResponse(body: string): Response {
+  const response = new Response(body)
+  const rejectBuffered = (kind: string) => () => {
+    throw new Error(`feed list buffered as ${kind}`)
+  }
+  Object.defineProperty(response, 'text', { value: rejectBuffered('text') })
+  Object.defineProperty(response, 'arrayBuffer', { value: rejectBuffered('array') })
+  Object.defineProperty(response, 'json', { value: rejectBuffered('json') })
+  return response
+}
+
 describe('dispatchKagiSmallWeb with the import enabled', () => {
-  it('reads every list, then resumes after a cursor from the whole lists again', async () => {
-    overrideDynamicConfigFieldsForTest(kagiSmallWebImportConfig, { enabled: true })
+  it('downloads every list once and resumes later pages from that file', async () => {
+    overrideDynamicConfigFieldsForTest(kagiSmallWebImportConfig, {
+      enabled: true,
+      candidate_batch_size: 1,
+    })
     const suffix = randomSuffix()
     const feedUrl = (letter: string) => `https://kagi-sync-${suffix}-${letter}.example.com/feed.xml`
     const lists = new Map([
@@ -29,15 +44,23 @@ describe('dispatchKagiSmallWeb with the import enabled', () => {
       ],
     ])
     fetchSpy.mockReset()
-    fetchSpy.mockImplementation(async (url: string) => new Response(lists.get(url)))
+    fetchSpy.mockImplementation(async (url: string) => unbufferedResponse(lists.get(url) ?? ''))
 
     const first = await dispatchKagiSmallWeb()
-    expect(first).toMatchObject({ enqueued: 4, total: 4 })
+    expect(first).toMatchObject({ enqueued: 1, hasMore: true, total: 4 })
     expect(fetchSpy).toHaveBeenCalledTimes(3)
+    if (!first.feedListDir)
+      throw new Error('expected the first page to keep the feed list directory')
 
-    const resumed = await dispatchKagiSmallWeb(feedUrl('b'))
-    expect(resumed.total).toBe(2)
-    expect(fetchSpy).toHaveBeenCalledTimes(6)
+    let cursor = first.nextCursor
+    let pages = 0
+    while (cursor !== undefined && pages < 5) {
+      const resumed = await dispatchKagiSmallWeb(cursor, undefined, first.feedListDir)
+      expect(fetchSpy).toHaveBeenCalledTimes(3)
+      cursor = resumed.nextCursor
+      pages += 1
+    }
+    expect(pages).toBe(3)
   })
 
   it('reports a failed list and carries on with the others', async () => {
@@ -75,6 +98,39 @@ describe('dispatchKagiSmallWeb page retries', () => {
       url === COMIC ? new Response(null, { status: 500 }) : new Response(feedUrl('z')),
     )
     await expect(dispatchKagiSmallWeb(feedUrl('a'))).rejects.toThrow('Failed to fetch')
+  })
+
+  it('closes fetched bodies when another list fails before the diff starts', async () => {
+    overrideDynamicConfigFieldsForTest(kagiSmallWebImportConfig, { enabled: true })
+    const canceled = Promise.withResolvers<void>()
+    fetchSpy.mockReset()
+    fetchSpy.mockImplementation(async (url: string) => {
+      if (url === WEB) throw new Error('list unavailable')
+      if (url === COMIC)
+        return new Response(new ReadableStream({ cancel: () => canceled.resolve() }))
+      return new Response('')
+    })
+
+    await expect(dispatchKagiSmallWeb(feedUrl('a'))).rejects.toThrow('list unavailable')
+    await canceled.promise
+  })
+
+  it('closes the remaining fetched bodies when the first body fails', async () => {
+    overrideDynamicConfigFieldsForTest(kagiSmallWebImportConfig, { enabled: true })
+    const canceled = Promise.withResolvers<void>()
+    fetchSpy.mockReset()
+    fetchSpy.mockImplementation(async (url: string) => {
+      if (url === WEB)
+        return new Response(
+          new ReadableStream({ pull: controller => controller.error(new Error('body failed')) }),
+        )
+      if (url === COMIC)
+        return new Response(new ReadableStream({ cancel: () => canceled.resolve() }))
+      return new Response('')
+    })
+
+    await expect(dispatchKagiSmallWeb()).rejects.toThrow('body failed')
+    await canceled.promise
   })
 
   it('retries the first page whole when a list fails and more pages follow', async () => {
@@ -161,5 +217,12 @@ describe('dispatchKagiSmallWeb page retries', () => {
       expect(call[1].headers).toHaveProperty('If-None-Match')
     }
     await forgetFeedListValidators(names)
+    let directory = retried.feedListDir
+    let cursor = retried.nextCursor
+    while (cursor !== undefined) {
+      const page = await dispatchKagiSmallWeb(cursor, undefined, directory)
+      directory = page.feedListDir ?? directory
+      cursor = page.nextCursor
+    }
   })
 })

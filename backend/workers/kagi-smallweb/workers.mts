@@ -17,17 +17,21 @@ export const kagiSmallWebHandlers = [
       target: background,
       targetName: 'background',
       readAndDispatch: async pageSize => {
-        const { commitValidators, ...result } = await dispatchKagiSmallWeb(
+        const { commitValidators, feedListDir, ...result } = await dispatchKagiSmallWeb(
           job.data.cursor,
           pageSize,
+          job.data.feedListDir,
         )
         return {
           result,
           afterDispatch: commitValidators,
-          ...(result.nextCursor ? { next: { cursor: result.nextCursor } } : {}),
+          ...(result.nextCursor
+            ? { next: { cursor: result.nextCursor, ...(feedListDir ? { feedListDir } : {}) } }
+            : {}),
         }
       },
-      enqueueNext: (data, options) => enqueueKagiSmallWebSyncContinuation(data.cursor!, options),
+      enqueueNext: (data, options) =>
+        enqueueKagiSmallWebSyncContinuation(data.cursor!, options, data.feedListDir),
     }),
   ),
   backgroundHandler(KAGI_SMALLWEB_PROCESS_FEED_JOB, job => processFeedEntry(job.data)),

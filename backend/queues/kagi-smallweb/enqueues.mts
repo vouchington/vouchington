@@ -49,15 +49,13 @@ export function enqueueKagiSmallWebSync(options?: KagiSmallWebSyncOptions): Enqu
 export function enqueueKagiSmallWebSyncContinuation(
   cursor: string,
   options: Partial<JobOptions> = {},
+  feedListDir?: string,
 ): EnqueueReturnType {
-  return enqueueKagiSmallWebSyncJob(
-    { cursor },
-    {
-      jobId: `kagi_smallweb_sync__${createHash('sha256').update(cursor).digest('hex')}`,
-      ordering: KAGI_SMALLWEB_ORDERING.dispatcher,
-      removeOnComplete: true,
-      removeOnFail: true,
-      ...options,
-    },
-  )
+  return enqueueKagiSmallWebSyncJob(feedListDir ? { cursor, feedListDir } : { cursor }, {
+    jobId: `kagi_smallweb_sync__${createHash('sha256').update(cursor).digest('hex')}`,
+    ordering: KAGI_SMALLWEB_ORDERING.dispatcher,
+    removeOnComplete: true,
+    removeOnFail: true,
+    ...options,
+  })
 }
