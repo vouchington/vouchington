@@ -39,6 +39,14 @@ export async function writeValidToolingPolicyFixture(
           rule: 'package-json-workspace-coverage',
           options: { requireNamedPackage: true, packageRoots: roots },
         },
+        {
+          rule: 'postgres-no-generated-column-writes',
+          options: { sqlInclude: ['backend/data-stores/psql/migrations/**/*.sql'] },
+        },
+        ...Array.from({ length: 2 }, () => ({
+          rule: 'postgres-generated-column-predicates',
+          options: { requireArgumentIsPrimaryKey: false },
+        })),
       ],
     }),
   )
