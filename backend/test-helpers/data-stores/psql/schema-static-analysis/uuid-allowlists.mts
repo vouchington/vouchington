@@ -62,6 +62,14 @@ export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
     'Operational composite keyset scan position can outlive its prior owner; it is not a relationship.',
   ],
   ...NOTIFICATION_PUSH_RETENTION_UUID_COLUMNS_WITHOUT_KEYS,
+  [
+    'notification_email_retention_cleanup_cursors.cursor_position',
+    'Persisted UUIDv7 keyset position survives deletion of the swept row; it is not a relationship.',
+  ],
+  [
+    'notification_email_retention_cleanup_cursors.cursor_partition_key',
+    'Persisted notification partition-key tie-breaker survives user deletion; it is not a relationship.',
+  ],
   ...POST_PUBLICATION_UUID_COLUMNS_WITHOUT_KEYS,
   ...ALLOWED_MEMBERSHIP_UUID_COLUMNS_WITHOUT_KEYS,
   ...OAUTH_AUTHORIZATION_UUID_COLUMNS_WITHOUT_KEYS,
