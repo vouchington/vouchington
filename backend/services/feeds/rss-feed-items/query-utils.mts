@@ -82,11 +82,14 @@ export function appendRelatedPostsFilter(
   }
 }
 
-export function getCutoffDateForTimeRange(timeRange: TimeRange): {
+export function getCutoffDateForTimeRange(
+  timeRange: TimeRange,
+  now = new Date(),
+): {
   cutoffDate: Date | null
   itemCutoffId: string | null
 } {
-  const cutoffDate = getTimeRangeLowerBoundDate(timeRange)
+  const cutoffDate = getTimeRangeLowerBoundDate(timeRange, now)
   if (!cutoffDate) {
     return { cutoffDate: null, itemCutoffId: null }
   }

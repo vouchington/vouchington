@@ -16,7 +16,11 @@ const DEFAULT_MIN_SCORE_FOLLOW_TOPICS = 0
 export async function getPostFeedIds(
   currentUser: PrivateUser,
   options: PostFeedOptions = {},
+  asOf: Date = new Date(),
 ): Promise<PostFeedResponse> {
+  const decisionInstant = new Date(asOf)
+  if (!Number.isFinite(decisionInstant.getTime()))
+    throw new RangeError('Invalid feed decision instant')
   const { feed_type = 'any', post_types, sort = 'new', limit, time_range = '1w' } = options
   const safeLimit = clampLimit(limit)
   const cursor = parsePostFeedCursor(options.after, sort)
@@ -40,6 +44,7 @@ export async function getPostFeedIds(
   appendEligiblePostsCTE(query, eligibilityOptions)
   appendPostFeedDeliveryCTEs(query, {
     currentUserId: currentUser.id,
+    decisionInstant,
     eligibilityOptions,
     cursor,
     feedType: feed_type,
