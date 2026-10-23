@@ -20,6 +20,10 @@ export const RETENTION_BOUNDED_TABLES = new Map<string, string>([
     'auth_session_retention_cleanup_cursors',
     'A finite cleanup-name primary key permits one durable cursor per retention family.',
   ],
+  [
+    'history_retention_cursors',
+    'The finite eight-value cleanup-name primary key permits one durable cursor per history family.',
+  ],
   ['user_sessions', 'Bounded cleanup deletes expired sessions after the audit retention window.'],
   [
     'web_push_subscriptions',
