@@ -1286,6 +1286,14 @@ CREATE OR REPLACE FUNCTION public.fn_update_membership_operation_work()
  LANGUAGE plpgsql
 ```
 
+## `fn_update_membership_renewal_notice_end`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_membership_renewal_notice_end()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_update_membership_verification_processing_work`
 
 ```sql
