@@ -45,7 +45,9 @@ describe('delayed direct termination with an elapsed queued grant', () => {
     const pendingChildRemoval: Promise<unknown>[] = []
     const enqueueChildRemoval = unfurlEnqueues.enqueueRemoveUnfurledChildrenForUser
     vi.spyOn(unfurlEnqueues, 'enqueueRemoveUnfurledChildrenForUser').mockImplementation(userId => {
-      const job = enqueueChildRemoval(userId)
+      const job = (async () => {
+        return enqueueChildRemoval(userId)
+      })()
       pendingChildRemoval.push(job)
       return job
     })

@@ -80,6 +80,7 @@ async function deletePostRelatedUrls(
     const { rows: postRows } = await query<{ subject_id: string }>(
       `/* blockHostname_findPostRelatedUrlPosts */
       SELECT relation.subject_id
+      -- no-mistakes-disable-next-line postgres-required-predicates: hostname blocking discovers posts by the cited URL hostname; subject_id is the result, not a known partition bound
       FROM "${POST_RELATED_URL_TABLE}" relation
       JOIN urls url ON url.id = relation.object_id
       WHERE url.hostname_id = ANY($1::uuid[])

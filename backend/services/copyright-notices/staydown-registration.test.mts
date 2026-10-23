@@ -28,7 +28,9 @@ async function settledRegistration<T>(run: () => Promise<T>): Promise<T> {
   const spy = vi
     .spyOn(imageEnqueues, 'enqueueStaydownHash')
     .mockImplementation((imageId, source) => {
-      const job = enqueue(imageId, source)
+      const job = (async () => {
+        return enqueue(imageId, source)
+      })()
       pending.push(job)
       return job
     })

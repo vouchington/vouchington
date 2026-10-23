@@ -160,7 +160,9 @@ describe('charge.refunded reconciliation receipt', () => {
       const enqueueSpy = vi
         .spyOn(refundEnqueues, 'enqueueReconcileMembershipRefundOperationBestEffort')
         .mockImplementation(data => {
-          const enqueued = enqueueRefund(data)
+          const enqueued = (async () => {
+            return enqueueRefund(data)
+          })()
           if (data.operationId === operation.id) ownedEnqueues.push(enqueued)
           return enqueued
         })

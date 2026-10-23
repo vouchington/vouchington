@@ -53,7 +53,9 @@ describe('createSessionReferralAttribution', () => {
     const spy = vi
       .spyOn(notificationEnqueues, 'enqueueReferralClickNotification')
       .mockImplementation((referrerId, landingUrl) => {
-        const result = enqueue(referrerId, landingUrl)
+        const result = (async () => {
+          return enqueue(referrerId, landingUrl)
+        })()
         pending.push(result)
         return result
       })

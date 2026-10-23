@@ -52,28 +52,33 @@ export function importCommunityListPostsSourceSql(
 }
 
 export const importCommunityListFeedItemsSourceSql = `/* importCommunityListFeedItemsSource */
-  SELECT $1::uuid, rfi.id
-  FROM (
-    SELECT rss_feed_id
-    FROM community_list_rss_feeds
-    WHERE community_id = $2 AND removed_at IS NULL
-    ORDER BY rss_feed_id
-    LIMIT $5
-  ) item
-  JOIN rss_feeds rf ON rf.id = item.rss_feed_id
-    AND rf.deleted_at IS NULL
-    AND rf.is_enabled = true
-  JOIN LATERAL (
-    SELECT rfis.rss_feed_item_id, rfis.published_at
-    FROM rss_feed_item_sources rfis
-    WHERE rfis.rss_feed_id = item.rss_feed_id
-      AND rfis.published_at IS NOT NULL
-    ORDER BY rfis.published_at DESC, rfis.rss_feed_item_id DESC
-    LIMIT $3
-  ) source ON true
-  JOIN rss_feed_items rfi ON rfi.id = source.rss_feed_item_id AND rfi.deleted_at IS NULL
-  ORDER BY source.published_at DESC, rfi.id DESC
-  LIMIT $4`
+  WITH chosen AS (
+    SELECT rfi.id
+    FROM (
+      SELECT rss_feed_id
+      FROM community_list_rss_feeds
+      WHERE community_id = $2 AND removed_at IS NULL
+      ORDER BY rss_feed_id
+      LIMIT $5
+    ) item
+    JOIN rss_feeds rf ON rf.id = item.rss_feed_id
+      AND rf.deleted_at IS NULL
+      AND rf.is_enabled = true
+    JOIN LATERAL (
+      SELECT rfis.rss_feed_item_id, rfis.published_at
+      FROM rss_feed_item_sources rfis
+      WHERE rfis.rss_feed_id = item.rss_feed_id
+        AND rfis.published_at IS NOT NULL
+      ORDER BY rfis.published_at DESC, rfis.rss_feed_item_id DESC
+      LIMIT $3
+    ) source ON true
+    JOIN rss_feed_items rfi ON rfi.id = source.rss_feed_item_id AND rfi.deleted_at IS NULL
+    ORDER BY source.published_at DESC, rfi.id DESC
+    LIMIT $4
+  )
+  SELECT $1::uuid, chosen.id
+  FROM chosen
+  ORDER BY chosen.id ASC NULLS LAST`
 
 /**
  * Copies a community's posts and feed items into a list the caller already loaded through

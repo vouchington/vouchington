@@ -15,7 +15,9 @@ describe('createMyLandingPage', () => {
     const pending: Promise<unknown>[] = []
     const enqueue = cachePurgeEnqueues.enqueueBulkPurgeCacheTags
     vi.spyOn(cachePurgeEnqueues, 'enqueueBulkPurgeCacheTags').mockImplementation((...args) => {
-      const job = enqueue(...args)
+      const job = (async () => {
+        return enqueue(...args)
+      })()
       pending.push(job)
       return job
     })

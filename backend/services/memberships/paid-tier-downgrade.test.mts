@@ -31,7 +31,9 @@ function captureChildRemovalJobs(): Promise<unknown>[] {
   const pending: Promise<unknown>[] = []
   const enqueue = unfurlEnqueues.enqueueRemoveUnfurledChildrenForUser
   vi.spyOn(unfurlEnqueues, 'enqueueRemoveUnfurledChildrenForUser').mockImplementation(userId => {
-    const job = enqueue(userId)
+    const job = (async () => {
+      return enqueue(userId)
+    })()
     pending.push(job)
     return job
   })

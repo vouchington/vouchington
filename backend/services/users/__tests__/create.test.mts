@@ -29,7 +29,9 @@ async function withAutoFollow<T>(run: () => Promise<T>): Promise<T> {
   const spy = vi
     .spyOn(entityListenerEnqueues, 'enqueueAutoFollowReferrer')
     .mockImplementation((newUserId, referrerId) => {
-      const result = enqueue(newUserId, referrerId)
+      const result = (async () => {
+        return enqueue(newUserId, referrerId)
+      })()
       pending.push(result)
       return result
     })
@@ -47,7 +49,9 @@ function captureWelcomeEmailEnqueues(): CapturedWelcomeEnqueue[] {
   const spy = vi
     .spyOn(emailEnqueues, 'enqueueSendWelcomeEmail')
     .mockImplementation((input, variables) => {
-      const result = enqueue(input, variables)
+      const result = (async () => {
+        return enqueue(input, variables)
+      })()
       const completion = Promise.resolve(result)
       void completion.catch(() => {})
       captured.push({ userId: input.userId, completion })
@@ -143,7 +147,6 @@ describe('create', () => {
     await deleteUserAndDrainForTest(firstUser, firstUser)
 
     expect(await getPrivateUserByAny(firstUser.id)).toBeNull()
-
     const secondAccount = await upsertOAuthAccount('facebook', facebookUserId, emailAddress, {})
     const secondUser = await upsertUser({
       oauthAccount: { provider: 'facebook', account: secondAccount },
@@ -153,7 +156,6 @@ describe('create', () => {
 
     expect(secondUser.id).not.toEqual(firstUser.id)
     expect(secondUser.facebook_account?.id).toEqual(facebookUserId)
-
     const fetchedSecondUser = await getPrivateUserByAny(secondUser.id)
     expect(fetchedSecondUser).not.toBeNull()
     expect(fetchedSecondUser!.facebook_account?.id).toEqual(facebookUserId)

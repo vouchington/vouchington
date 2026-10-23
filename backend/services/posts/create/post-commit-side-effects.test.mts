@@ -180,7 +180,11 @@ describe('applyPostCommitSideEffects', () => {
     try {
       spy = vi.spyOn(purgeEnqueues, 'enqueueBulkPurgeCacheTags')
       spy.mockImplementation((tags, priority) => {
-        if (!tags.includes(postTag(input.post.id))) return original(tags, priority)
+        if (!tags.includes(postTag(input.post.id))) {
+          return (async () => {
+            return original(tags, priority)
+          })()
+        }
         admitted.resolve()
         return release.promise
       })

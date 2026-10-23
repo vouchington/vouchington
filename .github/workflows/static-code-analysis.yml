@@ -158,7 +158,7 @@ jobs:
         timeout-minutes: 1
       - name: Run no-mistakes
         run: pnpm exec no-mistakes --timeout 0 --lock-timeout 0 check
-        timeout-minutes: 6
+        timeout-minutes: 10
       - name: Check Storybook component coverage
         run: >-
           pnpm exec vouchington story-coverage

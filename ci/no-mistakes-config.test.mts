@@ -173,7 +173,10 @@ describe('no-mistakes config', () => {
     ])
     expect(oxlint.rules['no-mistakes/no-global-fetch-outside-helper']).toEqual([
       'error',
-      expect.objectContaining({ checkedPathPatterns: ['web/**'] }),
+      expect.objectContaining({
+        checkedPathPatterns: ['web/**'],
+        allowedPathPatterns: expect.arrayContaining(['web/storybook/mocks/**']),
+      }),
     ])
     // Migrated: ts-no-export-renaming replaces @local/voucha/export-alias (backend-scoped)
     expect(oxlint.rules['no-mistakes/ts-no-export-renaming']).toEqual([

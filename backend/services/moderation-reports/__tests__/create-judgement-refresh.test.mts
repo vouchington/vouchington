@@ -182,9 +182,13 @@ async function awaitReportJudgementSideEffect<T>(run: () => Promise<T>): Promise
   const enqueueSpy = vi
     .spyOn(reportJudgementEnqueue, 'enqueueReportJudgement')
     .mockImplementation((...args) => {
-      const result = Promise.resolve(enqueue(...args)).finally(() => {
-        settled.resolve()
-      })
+      const result = (async () => {
+        try {
+          return await enqueue(...args)
+        } finally {
+          settled.resolve()
+        }
+      })()
       pending.push(result)
       return result
     })

@@ -98,7 +98,9 @@ describe('updateCommunityAndSetArchiveState', () => {
     const purgeSpy = vi
       .spyOn(cachePurgeEnqueues, 'enqueueBulkPurgeCacheTags')
       .mockImplementation((tags, priority) => {
-        const job = enqueuePurge(tags, priority)
+        const job = (async () => {
+          return enqueuePurge(tags, priority)
+        })()
         pendingPurges.push(job)
         return job
       })

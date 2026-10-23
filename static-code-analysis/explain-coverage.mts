@@ -169,7 +169,9 @@ export async function reportCoverage(
         importSpecifier: '@data-stores/psql',
         executorNames: ['query', 'read', 'write', ...cursorNames],
         executorFactoryNames: ['beginTransaction', 'beginBoundedTransaction'],
-        executorTypeNames: ['TransactionQuery', 'QueryExecutor', 'OwnedTransaction'],
+        // writePool.connect() returns a PoolClient. no-mistakes reports .query on that
+        // session client only when the type is named as an executor.
+        executorTypeNames: ['TransactionQuery', 'QueryExecutor', 'OwnedTransaction', 'PoolClient'],
       },
       { sources, importSpecifier: '@data-stores/psql/cursors', executorNames: cursorNames },
       {
