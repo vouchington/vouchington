@@ -43,7 +43,6 @@ _none_
 - `idx_oauth_grants__active_subject`: `CREATE UNIQUE INDEX idx_oauth_grants__active_subject ON public.oauth_grants USING btree (user_id, client_id, resource) WHERE ((revoked_at IS NULL) AND (session_id IS NULL))`
 - `idx_oauth_grants__client`: `CREATE INDEX idx_oauth_grants__client ON public.oauth_grants USING btree (client_id, id)`
 - `idx_oauth_grants__native_session`: `CREATE UNIQUE INDEX idx_oauth_grants__native_session ON public.oauth_grants USING btree (session_id) WHERE (session_id IS NOT NULL)`
-- `idx_oauth_grants__session`: `CREATE INDEX idx_oauth_grants__session ON public.oauth_grants USING btree (session_id, id)`
 - `idx_oauth_grants__user`: `CREATE INDEX idx_oauth_grants__user ON public.oauth_grants USING btree (user_id, id)`
 - `oauth_grants_pkey`: `CREATE UNIQUE INDEX oauth_grants_pkey ON public.oauth_grants USING btree (id)`
 
