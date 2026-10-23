@@ -53,7 +53,6 @@ describe('createSessionReferralAttribution', () => {
     const spy = vi
       .spyOn(notificationEnqueues, 'enqueueReferralClickNotification')
       .mockImplementation((referrerId, landingUrl) => {
-        // oxlint-disable-next-line no-mistakes/async-call-disposition -- the spy returns this promise to the awaiting caller (no-mistakes#2544)
         const result = enqueue(referrerId, landingUrl)
         pending.push(result)
         return result

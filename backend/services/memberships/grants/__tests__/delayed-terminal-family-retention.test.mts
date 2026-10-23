@@ -45,7 +45,6 @@ describe('delayed direct termination with an elapsed queued grant', () => {
     const pendingChildRemoval: Promise<unknown>[] = []
     const enqueueChildRemoval = unfurlEnqueues.enqueueRemoveUnfurledChildrenForUser
     vi.spyOn(unfurlEnqueues, 'enqueueRemoveUnfurledChildrenForUser').mockImplementation(userId => {
-      // oxlint-disable-next-line no-mistakes/async-call-disposition -- the spy returns this promise to the awaiting caller (no-mistakes#2544)
       const job = enqueueChildRemoval(userId)
       pendingChildRemoval.push(job)
       return job

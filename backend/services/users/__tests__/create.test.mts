@@ -29,7 +29,6 @@ async function withAutoFollow<T>(run: () => Promise<T>): Promise<T> {
   const spy = vi
     .spyOn(entityListenerEnqueues, 'enqueueAutoFollowReferrer')
     .mockImplementation((newUserId, referrerId) => {
-      // oxlint-disable-next-line no-mistakes/async-call-disposition -- the spy returns this promise to the awaiting caller (no-mistakes#2544)
       const result = enqueue(newUserId, referrerId)
       pending.push(result)
       return result
@@ -48,7 +47,6 @@ function captureWelcomeEmailEnqueues(): CapturedWelcomeEnqueue[] {
   const spy = vi
     .spyOn(emailEnqueues, 'enqueueSendWelcomeEmail')
     .mockImplementation((input, variables) => {
-      // oxlint-disable-next-line no-mistakes/async-call-disposition -- the spy returns this promise to the awaiting caller (no-mistakes#2544)
       const result = enqueue(input, variables)
       const completion = Promise.resolve(result)
       void completion.catch(() => {})

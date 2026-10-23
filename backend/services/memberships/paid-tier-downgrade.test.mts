@@ -31,7 +31,6 @@ function captureChildRemovalJobs(): Promise<unknown>[] {
   const pending: Promise<unknown>[] = []
   const enqueue = unfurlEnqueues.enqueueRemoveUnfurledChildrenForUser
   vi.spyOn(unfurlEnqueues, 'enqueueRemoveUnfurledChildrenForUser').mockImplementation(userId => {
-    // oxlint-disable-next-line no-mistakes/async-call-disposition -- the spy returns this promise to the awaiting caller (no-mistakes#2544)
     const job = enqueue(userId)
     pending.push(job)
     return job

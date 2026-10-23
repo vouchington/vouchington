@@ -15,7 +15,6 @@ describe('createMyLandingPage', () => {
     const pending: Promise<unknown>[] = []
     const enqueue = cachePurgeEnqueues.enqueueBulkPurgeCacheTags
     vi.spyOn(cachePurgeEnqueues, 'enqueueBulkPurgeCacheTags').mockImplementation((...args) => {
-      // oxlint-disable-next-line no-mistakes/async-call-disposition -- the spy returns this promise to the awaiting caller (no-mistakes#2544)
       const job = enqueue(...args)
       pending.push(job)
       return job
