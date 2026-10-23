@@ -63,7 +63,7 @@
     "http-errors": "^2.0.1",
     "sql-template-strings": "^2.2.2",
     "uuid": "^14.0.3",
-    "valkyries": "^0.10.0"
+    "valkyries": "^0.11.1"
   },
   "devDependencies": {
     "@queues/background": "workspace:^",
