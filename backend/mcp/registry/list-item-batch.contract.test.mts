@@ -6,6 +6,7 @@ import {
   archiveTestCommunity,
   createTestPost,
   createTestUser,
+  deleteForeignKeyTargetDuringInsertForTest,
   insertTestCommunity,
   insertTestCommunityPostReview,
   insertTestCommunityListItem,
@@ -13,11 +14,42 @@ import {
 } from '@voucha/test-helpers'
 import { createOwnedList, searchListItems } from '@services/lists'
 import { archivePost } from '@services/posts/archive'
+import { addVisibleListItems } from '../add-list-items.mts'
 
 const SCOPES = ['lists:read', 'lists:write'] as const
 const PRIVATE_SCOPES = [...SCOPES, 'post-relations.owned-private:write'] as const
 
 describe('add_list_item batch — real DB', () => {
+  it('reports a list deleted during the item insert FK check as not found', async () => {
+    const caller = { ...(await createTestUser()), membership_plan: 'plus' as const }
+    const list = await createOwnedList(caller.id, WEB_PROVENANCE, { name: 'Deleted list race' })
+    const post = await createTestPost({ user: caller })
+    const outcome = await deleteForeignKeyTargetDuringInsertForTest({
+      queryMarker: '/* addListItem */',
+      lockTarget: async query => {
+        await query('/* lockTestUserList */ SELECT id FROM user_lists WHERE id = $1 FOR UPDATE', [
+          list.id,
+        ])
+      },
+      deleteTarget: async query => {
+        await query('/* deleteTestUserList */ DELETE FROM user_lists WHERE id = $1', [list.id])
+      },
+      operation: () =>
+        addVisibleListItems(caller, null, list.id, [{ item_type: 'post', entity: post.id }]),
+    })
+
+    expect(outcome).toMatchObject({
+      value: [
+        {
+          item_type: 'post',
+          entity: post.id,
+          status: 'not_found',
+          error: 'Referenced list or entity does not exist',
+        },
+      ],
+    })
+  })
+
   it('reports an archived-community post as ineligible without writing it', async () => {
     const caller = { ...(await createTestUser()), membership_plan: 'plus' as const }
     const community = await insertTestCommunity({ createdById: caller.id })

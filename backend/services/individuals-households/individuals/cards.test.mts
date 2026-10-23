@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { createTestTopic, createTestUser, insertTestCard } from '@voucha/test-helpers'
+import {
+  createTestTopic,
+  createTestUser,
+  deleteForeignKeyTargetDuringInsertForTest,
+  insertTestCard,
+} from '@voucha/test-helpers'
 import { withPostgresPoolQueryFailureForTest } from '@voucha/test-helpers/postgres-pool-query-failure'
 import { createIndividualCard } from './cards.mts'
 import { getIndividualCards } from './cards-get.mts'
@@ -11,6 +16,48 @@ describe('individual card storage errors', () => {
 
     await expect(createIndividualCard(user, user, topic.id)).resolves.toMatchObject({
       card_topic_id: topic.id,
+    })
+  })
+
+  it('returns not found when a card topic is deleted during the insert FK check', async () => {
+    const user = await createTestUser()
+    const topic = await createTestTopic({ user, topic_type: 'card' })
+    const outcome = await deleteForeignKeyTargetDuringInsertForTest({
+      queryMarker: '/* createIndividualCard */',
+      lockTarget: async query => {
+        await query('/* lockTestCardTopic */ SELECT id FROM topics WHERE id = $1 FOR UPDATE', [
+          topic.id,
+        ])
+      },
+      deleteTarget: async query => {
+        await query('/* deleteTestCardTopic */ DELETE FROM topics WHERE id = $1', [topic.id])
+      },
+      operation: () => createIndividualCard(user, user, topic.id),
+    })
+
+    expect(outcome).toMatchObject({ error: { status: 404, message: 'Topic not found' } })
+  })
+
+  it('preserves the former validation response when the owner FK fails during insert', async () => {
+    const user = await createTestUser()
+    const topic = await createTestTopic({ user, topic_type: 'card' })
+    const outcome = await deleteForeignKeyTargetDuringInsertForTest({
+      queryMarker: '/* createIndividualCard */',
+      lockTarget: async query => {
+        await query('/* lockTestCardOwner */ SELECT id FROM individuals WHERE id = $1 FOR UPDATE', [
+          user.individual_id!,
+        ])
+      },
+      deleteTarget: async query => {
+        await query('/* deleteTestCardOwner */ DELETE FROM individuals WHERE id = $1', [
+          user.individual_id!,
+        ])
+      },
+      operation: () => createIndividualCard(user, user, topic.id),
+    })
+
+    expect(outcome).toMatchObject({
+      error: { status: 422, message: 'Invalid card_topic_id' },
     })
   })
 

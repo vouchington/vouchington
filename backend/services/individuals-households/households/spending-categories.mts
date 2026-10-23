@@ -97,7 +97,7 @@ export async function createHouseholdSpendingCategory(
       if (pgError.constraint === 'spending_entries_spending_category_topic_id_fkey') {
         assert(false, 404, 'Topic not found')
       }
-      throw err
+      assert(false, 422, 'Invalid spending_category_topic_id')
     }
     throw err
   }

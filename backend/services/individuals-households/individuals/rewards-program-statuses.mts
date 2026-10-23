@@ -66,6 +66,7 @@ export async function createIndividualRewardsProgramStatus(
       pgError.constraint === 'fk_individual_rewards_program_statuses__rewards_program_status'
     )
       assert(false, 404, 'Topic not found')
+    if (pgError.code === '23503') assert(false, 422, 'Invalid rewards_program_status_topic_id')
     throw err
   }
   const status = await getIndividualRewardsProgramStatusById(

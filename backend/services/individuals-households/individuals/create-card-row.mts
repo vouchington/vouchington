@@ -68,6 +68,7 @@ export async function createIndividualCardRow(
     if (pgError.code === '23503' && pgError.constraint === 'individual_cards_card_topic_id_fkey') {
       assert(false, 404, 'Topic not found')
     }
+    if (pgError.code === '23503') assert(false, 422, 'Invalid card_topic_id')
     throw err
   }
   return rows[0]!

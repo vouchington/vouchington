@@ -109,6 +109,7 @@ export const createIndividualRewardsProgramPointValuation = async (
     ) {
       assert(false, 404, 'Topic not found')
     }
+    if (pgError.code === '23503') assert(false, 422, 'Invalid rewards_program_id')
     if (pgError.code === '23505' && isDuplicatePointValuationConstraint(pgError.constraint)) {
       assert(false, 409, 'You already have a valuation for this rewards program')
     }
