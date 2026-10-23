@@ -102,7 +102,9 @@ export const BrandServer: Story = {
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    await expect(canvas.getByRole('combobox', { name: 'MCP server' })).toHaveValue('brand')
+    await expect(canvas.getByRole('combobox', { name: 'MCP server' })).toHaveTextContent(
+      'Brand tools',
+    )
     await expect(canvas.getByRole('checkbox', { name: 'topic-claims Read' })).toBeChecked()
   },
 }
