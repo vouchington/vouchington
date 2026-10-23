@@ -8,12 +8,7 @@ import {
   getBookmarksForEntities,
 } from '../get.mts'
 
-import {
-  getUserBookmarkCounts,
-  getTopicBookmarkCounts,
-  getPostBookmarkCounts,
-  getRssFeedBookmarkCounts,
-} from '../counts.mts'
+import { getUserBookmarkCounts } from '../counts.mts'
 
 import type { EntityRelationPredicateType } from '@services/entity-relations/config'
 
@@ -150,25 +145,6 @@ describe('index', () => {
         expect(bookmarks[rssFeedId2]).toBeUndefined()
       })
 
-      it('returns bookmark counts for an RSS feed', async () => {
-        const random = Math.random().toString(36).slice(2, 15)
-        const topicId = await insertTestTopic({
-          name: `Test Topic ${random}`,
-          slug: `test-topic-${random}`,
-          createdById: user!.id,
-        })
-        const rssFeedId = await insertTestRssFeed({
-          topicId,
-          title: `Test RSS Feed ${random}`,
-        })
-        // Follow the RSS feed
-        await bookmarkEntity(user!, 'rss_feed', { id: rssFeedId }, 'follow')
-
-        const counts = await getRssFeedBookmarkCounts(rssFeedId)
-
-        expect(counts.follow).toBeGreaterThanOrEqual(1)
-      })
-
       it('getUserBookmarkCounts includes RSS feed follows', async () => {
         const random = Math.random().toString(36).slice(2, 15)
         const topicId = await insertTestTopic({
@@ -192,7 +168,5 @@ describe('index', () => {
   // keep generated shard bindings live for typecheck
   const keepEntityRelationPredicateType: EntityRelationPredicateType | null = null
   void (0 as unknown as typeof keepEntityRelationPredicateType)
-  void (0 as unknown as typeof getTopicBookmarkCounts)
-  void (0 as unknown as typeof getPostBookmarkCounts)
   void (0 as unknown as typeof insertTestPost)
 })

@@ -54,25 +54,6 @@ function createUnreadyBookmarkBloomCandidates(
   return output
 }
 
-/**
- * @public Documented contract; production use is unconfirmed and this export may be
- * removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
- */
-export async function checkBookmarkBloomCandidates(
-  userId: string,
-  relationTableName: string,
-  objectIds: string[],
-): Promise<BookmarkBloomCandidates> {
-  const resultsByRelation = await checkBookmarkBloomCandidatesByRelations(
-    userId,
-    [relationTableName],
-    objectIds,
-  )
-  return (
-    resultsByRelation[relationTableName] || { ready: false, results: objectIds.map(() => null) }
-  )
-}
-
 export async function checkBookmarkBloomCandidatesByRelations(
   userId: string,
   relationTableNames: string[],

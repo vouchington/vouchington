@@ -7,7 +7,6 @@ import {
   checkBookmarkBloomCandidatesByRelations,
   deleteUserBookmarkBloomFilter,
 } from '@services/bookmarks/bloom-filter'
-import { checkBookmarkBloomCandidates } from '@services/bookmarks/bloom-filter-candidates'
 import { getBookmarkBloomFilter } from '@services/bookmarks/bloom-filter-utils'
 import { overrideDynamicConfigFieldsForTest, insertTestTopic } from '@voucha/test-helpers'
 import { bloomFilterConfig } from '@services/bloom-filter-config'
@@ -31,13 +30,13 @@ describe('bloom-filter.generated (basic)', () => {
     await bookmarkEntity(fixture.user, 'topic', { id: bookmarkedTopicId }, 'follow')
     await backfillUserBookmarkBloomFilter(fixture.user.id)
 
-    const bloomCandidates = await checkBookmarkBloomCandidates(
+    const bloomCandidates = await checkBookmarkBloomCandidatesByRelations(
       fixture.user.id,
-      fixture.topicFollowRelationTableName,
+      [fixture.topicFollowRelationTableName],
       [bookmarkedTopicId, unbookmarkedTopicId],
     )
-    expect(bloomCandidates.ready).toBe(true)
-    expect(bloomCandidates.results[0]).toBe(true)
+    expect(bloomCandidates[fixture.topicFollowRelationTableName]?.ready).toBe(true)
+    expect(bloomCandidates[fixture.topicFollowRelationTableName]?.results[0]).toBe(true)
 
     const bookmarks = await getBookmarksForEntities(fixture.user, 'topic', [
       bookmarkedTopicId,
@@ -56,12 +55,12 @@ describe('bloom-filter.generated (basic)', () => {
     })
     await bookmarkEntity(fixture.user, 'topic', { id: topicId }, 'follow')
 
-    const bloomCandidatesBefore = await checkBookmarkBloomCandidates(
+    const bloomCandidatesBefore = await checkBookmarkBloomCandidatesByRelations(
       fixture.user.id,
-      fixture.topicFollowRelationTableName,
+      [fixture.topicFollowRelationTableName],
       [topicId],
     )
-    expect(bloomCandidatesBefore.ready).toBe(false)
+    expect(bloomCandidatesBefore[fixture.topicFollowRelationTableName]?.ready).toBe(false)
 
     const bookmarks = await getBookmarksForEntities(fixture.user, 'topic', [topicId])
     expect(bookmarks[topicId].follow).toBe(true)
@@ -84,13 +83,13 @@ describe('bloom-filter.generated (basic)', () => {
     })
     await bookmarkEntity(fixture.user, 'topic', { id: newTopicId }, 'follow')
 
-    const bloomCandidates = await checkBookmarkBloomCandidates(
+    const bloomCandidates = await checkBookmarkBloomCandidatesByRelations(
       fixture.user.id,
-      fixture.topicFollowRelationTableName,
+      [fixture.topicFollowRelationTableName],
       [newTopicId],
     )
-    expect(bloomCandidates.ready).toBe(true)
-    expect(bloomCandidates.results[0]).toBe(true)
+    expect(bloomCandidates[fixture.topicFollowRelationTableName]?.ready).toBe(true)
+    expect(bloomCandidates[fixture.topicFollowRelationTableName]?.results[0]).toBe(true)
   })
 
   it('getBookmarksForEntities correctly returns no bookmark after unbookmark despite bloom false positive', async () => {
@@ -110,13 +109,13 @@ describe('bloom-filter.generated (basic)', () => {
     await unbookmarkEntity(fixture.user, 'topic', { id: topicId }, 'follow')
 
     // The bloom filter should still report the topic as a candidate (false positive)
-    const bloomCandidates = await checkBookmarkBloomCandidates(
+    const bloomCandidates = await checkBookmarkBloomCandidatesByRelations(
       fixture.user.id,
-      fixture.topicFollowRelationTableName,
+      [fixture.topicFollowRelationTableName],
       [topicId],
     )
-    expect(bloomCandidates.ready).toBe(true)
-    expect(bloomCandidates.results[0]).toBe(true)
+    expect(bloomCandidates[fixture.topicFollowRelationTableName]?.ready).toBe(true)
+    expect(bloomCandidates[fixture.topicFollowRelationTableName]?.results[0]).toBe(true)
 
     // But the DB lookup should confirm it's actually not bookmarked
     const bookmarks = await getBookmarksForEntities(fixture.user, 'topic', [topicId])
@@ -133,18 +132,18 @@ describe('bloom-filter.generated (basic)', () => {
     overrideDynamicConfigFieldsForTest(bloomFilterConfig, { bookmarkBloomFilterEnabled: false })
     await bookmarkEntity(fixture.user, 'topic', { id: topicId }, 'follow')
 
-    const bloomCandidates = await checkBookmarkBloomCandidates(
+    const bloomCandidates = await checkBookmarkBloomCandidatesByRelations(
       fixture.user.id,
-      fixture.topicFollowRelationTableName,
+      [fixture.topicFollowRelationTableName],
       [topicId],
     )
-    expect(bloomCandidates.ready).toBe(false)
+    expect(bloomCandidates[fixture.topicFollowRelationTableName]?.ready).toBe(false)
 
     const bookmarks = await getBookmarksForEntities(fixture.user, 'topic', [topicId])
     expect(bookmarks[topicId].follow).toBe(true)
   })
 
-  it('deleteUserBookmarkBloomFilter causes checkBookmarkBloomCandidates to return ready: false', async () => {
+  it('deleteUserBookmarkBloomFilter marks the relation unready', async () => {
     const random = Math.random().toString(36).slice(2, 12)
     const topicId = await insertTestTopic({
       name: `Bloom Delete Topic ${random}`,
@@ -154,32 +153,24 @@ describe('bloom-filter.generated (basic)', () => {
     await bookmarkEntity(fixture.user, 'topic', { id: topicId }, 'follow')
     await backfillUserBookmarkBloomFilter(fixture.user.id)
 
-    const beforeDelete = await checkBookmarkBloomCandidates(
-      fixture.user.id,
-      fixture.topicFollowRelationTableName,
-      [topicId],
-    )
-    expect(beforeDelete.ready).toBe(true)
-
-    await deleteUserBookmarkBloomFilter(fixture.user.id)
-
-    const afterDelete = await checkBookmarkBloomCandidates(
-      fixture.user.id,
-      fixture.topicFollowRelationTableName,
-      [topicId],
-    )
-    expect(afterDelete.ready).toBe(false)
-
-    // checkBookmarkBloomCandidatesByRelations should also return not-ready
-    const byRelations = await checkBookmarkBloomCandidatesByRelations(
+    const beforeDelete = await checkBookmarkBloomCandidatesByRelations(
       fixture.user.id,
       [fixture.topicFollowRelationTableName],
       [topicId],
     )
-    expect(byRelations[fixture.topicFollowRelationTableName]?.ready).toBe(false)
+    expect(beforeDelete[fixture.topicFollowRelationTableName]?.ready).toBe(true)
+
+    await deleteUserBookmarkBloomFilter(fixture.user.id)
+
+    const afterDelete = await checkBookmarkBloomCandidatesByRelations(
+      fixture.user.id,
+      [fixture.topicFollowRelationTableName],
+      [topicId],
+    )
+    expect(afterDelete[fixture.topicFollowRelationTableName]?.ready).toBe(false)
   })
 
-  it('live filter key expiring (TTL) causes checkBookmarkBloomCandidates to return ready: false with no false negative', async () => {
+  it('live filter key expiry marks the relation unready without a false negative', async () => {
     const random = Math.random().toString(36).slice(2, 12)
     const topicId = await insertTestTopic({
       name: `Bloom TTL Expiry Topic ${random}`,
@@ -196,13 +187,13 @@ describe('bloom-filter.generated (basic)', () => {
     )
     expect(filterKeyTtl).toBeGreaterThan(0)
 
-    const beforeExpiry = await checkBookmarkBloomCandidates(
+    const beforeExpiry = await checkBookmarkBloomCandidatesByRelations(
       fixture.user.id,
-      fixture.topicFollowRelationTableName,
+      [fixture.topicFollowRelationTableName],
       [topicId],
     )
-    expect(beforeExpiry.ready).toBe(true)
-    expect(beforeExpiry.results[0]).toBe(true)
+    expect(beforeExpiry[fixture.topicFollowRelationTableName]?.ready).toBe(true)
+    expect(beforeExpiry[fixture.topicFollowRelationTableName]?.results[0]).toBe(true)
 
     // Simulate BOOKMARK_BLOOM_FILTER_TTL_SECONDS expiring the live filter key without touching the
     // ready markers (whose own, shorter TTL is not under test here). UNLINK is indistinguishable
@@ -210,24 +201,15 @@ describe('bloom-filter.generated (basic)', () => {
     // waiting out a real TTL.
     await bloomValkeyClient.unlink([getBookmarkBloomFilter(fixture.user.id).getKey()])
 
-    const afterExpiry = await checkBookmarkBloomCandidates(
-      fixture.user.id,
-      fixture.topicFollowRelationTableName,
-      [topicId],
-    )
-    expect(afterExpiry.ready).toBe(false)
-    // Never a false negative: an unready result must be null (unknown), never `false` (definitely
-    // not bookmarked) — callers must fall back to PostgreSQL instead of trusting a stale bloom read.
-    expect(afterExpiry.results[0]).toBeNull()
-
-    // The by-relations entry point degrades the same way, even though its ready marker is untouched.
-    const byRelations = await checkBookmarkBloomCandidatesByRelations(
+    const afterExpiry = await checkBookmarkBloomCandidatesByRelations(
       fixture.user.id,
       [fixture.topicFollowRelationTableName],
       [topicId],
     )
-    expect(byRelations[fixture.topicFollowRelationTableName]?.ready).toBe(false)
-    expect(byRelations[fixture.topicFollowRelationTableName]?.results[0]).toBeNull()
+    expect(afterExpiry[fixture.topicFollowRelationTableName]?.ready).toBe(false)
+    // Never a false negative: an unready result must be null (unknown), never `false` (definitely
+    // not bookmarked) — callers must fall back to PostgreSQL instead of trusting a stale bloom read.
+    expect(afterExpiry[fixture.topicFollowRelationTableName]?.results[0]).toBeNull()
   })
 
   it('backfill sets ready markers for all bookmark relations (validates Batch pipeline)', async () => {

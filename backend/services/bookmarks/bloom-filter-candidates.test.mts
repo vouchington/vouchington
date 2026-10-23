@@ -11,7 +11,6 @@ import {
 } from './bloom-filter.mts'
 import {
   checkBookmarkBloomCandidatesByRelations,
-  checkBookmarkBloomCandidates,
   invokeBookmarkBloomCandidateChunks,
   type BookmarkBloomCandidateChunk,
 } from './bloom-filter-candidates.mts'
@@ -71,24 +70,35 @@ describe('bookmark candidate errors in an owned filter', () => {
     try {
       await backfillUserBookmarkBloomFilter(user.id)
       await backfillUserBookmarkBloomFilter(other.id)
-      const initial = await checkBookmarkBloomCandidates(user.id, relation.table_name, [objectId])
-      expect(initial).toEqual({ ready: true, results: [expect.any(Boolean)] })
-      const otherInitial = await checkBookmarkBloomCandidates(other.id, relation.table_name, [
-        objectId,
-      ])
-      expect(otherInitial).toEqual({ ready: true, results: [expect.any(Boolean)] })
+      const initial = await checkBookmarkBloomCandidatesByRelations(
+        user.id,
+        [relation.table_name],
+        [objectId],
+      )
+      expect(initial[relation.table_name]).toEqual({ ready: true, results: [expect.any(Boolean)] })
+      const otherInitial = await checkBookmarkBloomCandidatesByRelations(
+        other.id,
+        [relation.table_name],
+        [objectId],
+      )
+      expect(otherInitial[relation.table_name]).toEqual({
+        ready: true,
+        results: [expect.any(Boolean)],
+      })
       const before = sentryCaptureExceptionMock.mock.calls.length
       await bloomValkeyClient.set(getBookmarkBloomFilter(user.id).getKey(), 'owned-wrong-type')
 
       await expect(
-        checkBookmarkBloomCandidates(user.id, relation.table_name, [objectId]),
-      ).resolves.toEqual({ ready: false, results: [null] })
+        checkBookmarkBloomCandidatesByRelations(user.id, [relation.table_name], [objectId]),
+      ).resolves.toEqual({
+        [relation.table_name]: { ready: false, results: [null] },
+      })
       const reported = sentryCaptureExceptionMock.mock.calls.slice(before).map(([err]) => err)
       expect(reported.some(err => err instanceof Error && /WRONGTYPE/i.test(err.message))).toBe(
         true,
       )
       await expect(
-        checkBookmarkBloomCandidates(other.id, relation.table_name, [objectId]),
+        checkBookmarkBloomCandidatesByRelations(other.id, [relation.table_name], [objectId]),
       ).resolves.toEqual(otherInitial)
     } finally {
       await Promise.all([
