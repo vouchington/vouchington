@@ -210,7 +210,7 @@ describe('Client ID Metadata Document OAuth flow', () => {
     expect(safeFetch).toHaveBeenCalledOnce()
   })
 
-  it('requires an existing document client before returning an error redirect', async () => {
+  it('keeps errors local even for a cached external document client', async () => {
     const clientId = randomMetadataUrl()
     const redirectUri = 'https://app.example:443/oauth/callback'
     const input = {
@@ -225,12 +225,9 @@ describe('Client ID Metadata Document OAuth flow', () => {
     await resolveClientIdMetadataDocument(clientId, {
       safeFetch: async () => responseFor(clientId, { 'cache-control': 'max-age=600' }),
     })
-    const location = await getOAuthAuthorizationErrorRedirect(input, await getOAuthClient(clientId))
-    const callback = new URL(location!)
-    expect(callback.origin + callback.pathname).toBe('https://app.example/oauth/callback')
-    expect(callback.searchParams.get('error')).toBe('unsupported_response_type')
-    expect(callback.searchParams.get('state')).toBe(input.state)
-    expect(callback.searchParams.get('iss')).toBeTruthy()
+    await expect(
+      getOAuthAuthorizationErrorRedirect(input, await getOAuthClient(clientId)),
+    ).resolves.toBeNull()
     await expect(
       getOAuthAuthorizationErrorRedirect(
         {

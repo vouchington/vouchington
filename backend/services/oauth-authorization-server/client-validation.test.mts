@@ -70,6 +70,11 @@ describe('OAuth client and authorization validation', () => {
     'Voucha for iOS',
     'voucha  for macOS',
     'Voucha for Windows',
+    'Vоucha',
+    'Voucha for Android',
+    'Voucha (iOS)',
+    'Voucha Support',
+    'v-o-u-c-h-a helper',
   ])('reserves the first-party client name %s', async clientName => {
     await expect(
       registerOAuthClient({
@@ -162,10 +167,10 @@ describe('OAuth client and authorization validation', () => {
     async (audience, scope) => {
       const owner = await createTestUserDirect({ administrator: true })
       const redirectUri = randomTestOAuthRedirectUri()
-      const client = await registerOAuthClient({
+      const { oauth_app: client } = await createOwnedOAuthApp(owner.id, {
         client_name: 'Resource boundary app',
         redirect_uris: [redirectUri],
-        scope: `mcp.user:read ${scope}`,
+        scopes: ['mcp.user:read', scope],
       })
       const validated = await validateOAuthAuthorizationRequest({
         clientId: client.client_id,

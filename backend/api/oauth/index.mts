@@ -17,11 +17,11 @@ import {
   createOAuthBrowserBindingHash,
   decideOAuthAuthorizationRequest,
   getOAuthAuthorizationErrorRedirect,
-  getOAuthClient,
   getOAuthAuthorizationRequestForUser,
   registerOAuthClient,
   revokeOAuthToken,
   validateOAuthAuthorizationRequest,
+  type OAuthClient,
 } from '@services/oauth-authorization-server'
 import type { Context } from '@jongleberry/api-server'
 import { assertNotSuspended } from '@services/users'
@@ -42,7 +42,7 @@ const FORM_MEDIA_TYPES = ['application/x-www-form-urlencoded'] as const
 
 app.route('/authorize').get(async (ctx: Context) => {
   setOAuthResponseHeaders(ctx)
-  let errorRedirectClient: Awaited<ReturnType<typeof getOAuthClient>> = null
+  let errorRedirectClient: OAuthClient | null = null
   try {
     const currentUser = await getOptionalAuthAndRateLimit(ctx, 'GET:/authorize')
     const parameters = {
@@ -55,8 +55,9 @@ app.route('/authorize').get(async (ctx: Context) => {
       scope: ctx.query.scope,
       state: ctx.query.state,
     }
-    errorRedirectClient = await getOAuthClient(parameters.clientId)
-    const validated = await validateOAuthAuthorizationRequest(parameters)
+    const validated = await validateOAuthAuthorizationRequest(parameters, {}, client => {
+      errorRedirectClient = client
+    })
     if (!currentUser) {
       redirect(ctx, `/login?next=${encodeURIComponent(ctx.req.url ?? '/authorize')}`)
       return

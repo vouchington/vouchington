@@ -4,39 +4,54 @@ import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers'
 import { routeRateLimitConfig } from '@services/route-rate-limits/config'
-import { getOAuthIssuer, getOAuthResourceUrl } from '@services/oauth-authorization-server'
+import {
+  createOwnedOAuthApp,
+  getOAuthIssuer,
+  getOAuthResourceUrl,
+} from '@services/oauth-authorization-server'
 import {
   createTestApprovedOAuthAuthorization,
   randomTestOAuthRedirectUri,
 } from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
 
-type AuthorizeOptions = { resource: string; scope: string }
+type AuthorizeOptions = { resource: string; scope: string; ownerUserId?: string }
 type TestRequest = ReturnType<typeof createRequest>
 
 let originalRouteRateLimitConfig: ReturnType<typeof routeRateLimitConfig.getFields>
 
-// Registers a client for `scope` and starts /authorize, returning the redirect for inspection.
-async function authorize(request: TestRequest, { resource, scope }: AuthorizeOptions) {
+// Starts authorization for a dynamic or owner-managed app and returns the local error response.
+async function authorize(request: TestRequest, { resource, scope, ownerUserId }: AuthorizeOptions) {
   const redirectUri = randomTestOAuthRedirectUri()
-  const registration = await request
-    .post('/register')
-    .send({ client_name: 'Resource binding client', redirect_uris: [redirectUri], scope })
-    .expect(201)
+  const client = ownerUserId
+    ? (
+        await createOwnedOAuthApp(ownerUserId, {
+          client_name: 'Owner-managed resource app',
+          redirect_uris: [redirectUri],
+          scopes: scope.split(' '),
+        })
+      ).oauth_app
+    : (
+        await request
+          .post('/register')
+          .send({
+            client_name: 'Resource binding client',
+            redirect_uris: [redirectUri],
+            scope,
+          })
+          .expect(201)
+      ).body
   const state = randomBytes(12).toString('base64url')
-  const response = await request
-    .get('/authorize')
-    .query({
-      client_id: registration.body.client_id,
-      code_challenge: createHash('sha256').update(randomBytes(32)).digest('base64url'),
-      code_challenge_method: 'S256',
-      redirect_uri: redirectUri,
-      resource,
-      response_type: 'code',
-      scope,
-      state,
-    })
-    .expect(302)
-  return { location: new URL(response.headers.location, getOAuthIssuer()), redirectUri, state }
+  const response = await request.get('/authorize').query({
+    client_id: client.client_id,
+    code_challenge: createHash('sha256').update(randomBytes(32)).digest('base64url'),
+    code_challenge_method: 'S256',
+    redirect_uri: redirectUri,
+    resource,
+    response_type: 'code',
+    scope,
+    state,
+  })
+  return response
 }
 
 describe('OAuth resource binding routes', () => {
@@ -51,53 +66,36 @@ describe('OAuth resource binding routes', () => {
   it.each([
     ['an unsupported path', () => `${getOAuthIssuer()}/api/v1/users`],
     ['an external origin', () => 'https://attacker.example/api/v1/mcp'],
-  ])('redirects %s back to the client as invalid_target with iss', async (_case, resource) => {
-    const { location, redirectUri, state } = await authorize(createRequest(), {
+  ])('keeps %s authorization errors local', async (_case, resource) => {
+    const response = await authorize(createRequest(), {
       resource: resource(),
       scope: 'mcp.user:read',
     })
-
-    expect(`${location.origin}${location.pathname}`).toBe(redirectUri)
-    expect(Object.fromEntries(location.searchParams)).toEqual({
-      error: 'invalid_target',
-      error_description: expect.any(String),
-      iss: getOAuthIssuer(),
-      state,
-    })
+    expect(response.status).toBe(400)
+    expect(response.headers.location).toBeUndefined()
+    expect(response.headers['content-type']).toContain('text/html')
+    expect(response.text).toContain('Authorization unavailable')
   })
 
   it.each([
-    ['admin', 'mcp.admin:read'],
-    ['legal', 'copyright-notices:read'],
-  ] as const)('denies a non-administrator access to the %s resource', async (audience, scope) => {
-    const request = createRequest()
-    await request.authenticateAs(await createTestUserDirect())
-
-    const { location, state } = await authorize(request, {
-      resource: getOAuthResourceUrl(audience),
-      scope,
-    })
-
-    expect(location.searchParams.get('error')).toBe('unauthorized_client')
-    expect(location.searchParams.get('iss')).toBe(getOAuthIssuer())
-    expect(location.searchParams.get('state')).toBe(state)
-  })
-
-  it.each([
-    ['admin', 'mcp.admin:read'],
-    ['legal', 'copyright-notices:read'],
+    ['admin', 'mcp.admin:read', false],
+    ['legal', 'copyright-notices:read', false],
+    ['admin', 'mcp.admin:read', true],
+    ['legal', 'copyright-notices:read', true],
   ] as const)(
-    'denies a registered client the %s resource even for an administrator',
-    async (audience, scope) => {
+    'denies owned apps the %s resource (administrator=%s)',
+    async (audience, scope, administrator) => {
+      const user = await createTestUserDirect({ administrator })
       const request = createRequest()
-      await request.authenticateAs(await createTestUserDirect({ administrator: true }))
-      const { location, state } = await authorize(request, {
+      await request.authenticateAs(user)
+      const response = await authorize(request, {
         resource: getOAuthResourceUrl(audience),
         scope,
+        ownerUserId: user.id,
       })
-      expect(location.searchParams.get('error')).toBe('unauthorized_client')
-      expect(location.searchParams.get('iss')).toBe(getOAuthIssuer())
-      expect(location.searchParams.get('state')).toBe(state)
+      expect(response.status).toBe(403)
+      expect(response.headers.location).toBeUndefined()
+      expect(response.headers['content-type']).toContain('text/html')
     },
   )
 

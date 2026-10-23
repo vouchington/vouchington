@@ -1,7 +1,8 @@
 import { randomBytes } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { getOAuthAuthorizationErrorRedirect } from './authorization-error-redirect.mts'
-import { getOAuthClient, registerOAuthClient } from './clients.mts'
+import { getOAuthClient, getOAuthClientForAuthorization, registerOAuthClient } from './clients.mts'
+import { getNativeOAuthClientDocument } from './native-clients.mts'
 import { OAuthProtocolError } from '@vouchington/oauth-server'
 
 describe('OAuth authorization error redirects', () => {
@@ -19,7 +20,7 @@ describe('OAuth authorization error redirects', () => {
     ).resolves.toBeNull()
   })
 
-  it('returns errors only to the existing client registered callback', async () => {
+  it('keeps errors local for an existing dynamically registered client', async () => {
     const redirectUri = 'https://app.example/oauth/callback'
     const client = await registerOAuthClient({
       client_name: 'Registered callback app',
@@ -32,11 +33,9 @@ describe('OAuth authorization error redirects', () => {
       state: 'opaque-state',
       error: new OAuthProtocolError('invalid_scope', 'scope rejected'),
     }
-    const location = await getOAuthAuthorizationErrorRedirect(
-      input,
-      await getOAuthClient(client.client_id),
-    )
-    expect(new URL(location!).searchParams.get('error')).toBe('invalid_scope')
+    await expect(
+      getOAuthAuthorizationErrorRedirect(input, await getOAuthClient(client.client_id)),
+    ).resolves.toBeNull()
     await expect(
       getOAuthAuthorizationErrorRedirect(
         {
@@ -46,5 +45,21 @@ describe('OAuth authorization error redirects', () => {
         await getOAuthClient(client.client_id),
       ),
     ).resolves.toBeNull()
+  })
+
+  it('returns errors to the validated first-party native callback', async () => {
+    const document = getNativeOAuthClientDocument('ios')
+    const client = await getOAuthClientForAuthorization(document.client_id)
+    const location = await getOAuthAuthorizationErrorRedirect(
+      {
+        clientId: document.client_id,
+        redirectUri: document.redirect_uris[0]!,
+        state: 'native-state',
+        error: new OAuthProtocolError('invalid_scope', 'scope rejected'),
+      },
+      client,
+    )
+    expect(new URL(location!).searchParams.get('error')).toBe('invalid_scope')
+    expect(new URL(location!).searchParams.get('state')).toBe('native-state')
   })
 })

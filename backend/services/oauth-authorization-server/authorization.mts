@@ -21,22 +21,13 @@ import type {
   OAuthAuthorizationRequestView,
   OAuthClient,
   ValidatedOAuthAuthorizationRequest,
+  OAuthAuthorizationRequestRow,
 } from './types.mts'
 import { getOAuthClientDisplayName } from './known-clients.mts'
 import type { ClientIdMetadataDependencies } from './client-id-metadata-document.mts'
 import { findOAuthProtectedResource } from './resources.mts'
 import { createProtocolClientLookup } from './protocol-client.mts'
-
-type AuthorizationRequestRow = {
-  id: string
-  redirect_uri: string
-  resource: string
-  scopes: OAuthClient['scopes']
-  expires_at: Date
-  client_name: string
-  metadata_url: string | null
-  redirect_uris: string[]
-}
+import { findNativeOAuthClientDocument } from './native-clients.mts'
 
 export async function beginValidatedOAuthAuthorizationRequest(
   input: { deviceId: string; sessionId: string; userId: string },
@@ -106,16 +97,24 @@ export async function beginValidatedOAuthAuthorizationRequest(
 export async function validateOAuthAuthorizationRequest(
   input: AuthorizationParameters,
   clientIdMetadataDependencies: Partial<ClientIdMetadataDependencies> = {},
+  onClientLoaded?: (client: OAuthClient) => void,
 ): Promise<ValidatedOAuthAuthorizationRequest> {
   const foundClients: OAuthClient[] = []
+  let clientLookup: Promise<OAuthClient | null> | undefined
   const findClient = createProtocolClientLookup(
     async (clientId, dependencies: Partial<ClientIdMetadataDependencies>) => {
-      const client = await getOAuthClientForAuthorization(clientId, dependencies)
-      if (client) foundClients.push(client)
+      const client = await (clientLookup ??= getOAuthClientForAuthorization(clientId, dependencies))
+      if (client && foundClients.length === 0) {
+        foundClients.push(client)
+        onClientLoaded?.(client)
+      }
       return client
     },
     clientIdMetadataDependencies,
   )
+  // Native callback handling also applies to errors parsed before scope validation reaches
+  // client lookup. Share this promise with validation so successful requests still load once.
+  if (findNativeOAuthClientDocument(input.clientId)) await findClient(input.clientId)
   const validated = await validateAuthorizationRequest(input, {
     scopes: OAUTH_SCOPE_POLICY,
     resolveResource: findOAuthProtectedResource,
@@ -141,7 +140,7 @@ export async function getOAuthAuthorizationRequestForUser(
   requestId: string,
   browserBindingHash: string,
 ): Promise<OAuthAuthorizationRequestView | null> {
-  const result = await write<AuthorizationRequestRow>(
+  const result = await write<OAuthAuthorizationRequestRow>(
     `/* getOAuthAuthorizationRequestForUser */ SELECT
        request.id,
        request.redirect_uri,
