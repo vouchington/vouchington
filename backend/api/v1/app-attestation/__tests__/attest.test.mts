@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { v7 } from 'uuid'
+import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
   enableQueryCapture,
@@ -87,11 +88,11 @@ describe('POST /api/v1/app-attestation/attest', () => {
     await closeScopedDynamicConfigContext([routeRateLimitConfig])
   })
 
-  it('re-mints cookies with dc:attested + 30-day st expiry, preserving uid/sid/enrichment', async () => {
+  it('upgrades authenticated browser authority to a new attested session', async () => {
     const req = createRequest()
     const did = v7()
     const sid = v7()
-    const uid = v7()
+    const { id: uid } = await createTestUserDirect()
     const roles = ['member']
     const membershipPlan = 'free'
     const trustTier = 2
@@ -134,15 +135,11 @@ describe('POST /api/v1/app-attestation/attest', () => {
       newDt && newSt
         ? await verifyDeviceAndSessionTokens({ deviceToken: newDt, sessionToken: newSt })
         : false
+    expect(verified).not.toMatchObject({ sid })
     expect(verified).toMatchObject({
       did,
-      sid,
       uid,
       dc: 'attested',
-      rol: roles,
-      mpl: membershipPlan,
-      tt: trustTier,
-      uil: uiLocale,
     })
   })
 

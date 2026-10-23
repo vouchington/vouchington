@@ -4,6 +4,7 @@ import {
   createNativeRequest as createRequest,
   nextTestRequestIp,
 } from '@voucha/test-helpers/api/server'
+import { createTestUser } from '@voucha/test-helpers'
 
 import {
   createDeviceAndSessionTokens,
@@ -14,6 +15,7 @@ import { routeRateLimitConfig } from '@services/route-rate-limits/config'
 import {
   ATTESTED_SESSION_EXPIRATION_SECONDS,
   SESSION_EXPIRATION_SECONDS,
+  verifyDeviceJwt,
 } from '@ts-shared/session-jwt'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { useRouteRateLimitConfigSnapshot } from '@voucha/test-helpers/api/route-rate-limit-config-snapshot'
@@ -25,12 +27,13 @@ describe('Session Routes', () => {
 
   describe('PATCH /api/v1/session', () => {
     it('rotates a revoked authenticated session even when its refresh check is still hot', async () => {
+      const user = await createTestUser()
       const [did, sid] = [v7(), v7()]
       const { deviceToken, sessionToken } = await createDeviceAndSessionTokens({
         did,
         sid,
-        uid: v7(),
-        deviceContext: { isNativeClient: true },
+        uid: user.id,
+        deviceClass: 'attested',
       })
       await revokeSession(sid)
 
@@ -43,7 +46,8 @@ describe('Session Routes', () => {
         .expect(200)
 
       expect(response.body.session.did).toBe(did)
-      expect(response.body.session.dt).toBe(deviceToken.token)
+      expect(response.body.session.dt).not.toBe(deviceToken.token)
+      expect(await verifyDeviceJwt(response.body.session.dt)).not.toHaveProperty('refresh_uid')
       expect(response.body.session.sid).not.toBe(sid)
       expect(response.body.session.st).not.toBe(sessionToken.token)
       expect(response.body.session.uid).toBeNull()
@@ -201,12 +205,13 @@ describe('Session Routes', () => {
 
     it('should revoke the session when dt and st are a uid-bearing valid pair', async () => {
       const request = createRequest()
+      const user = await createTestUser()
       const authenticatedSid = v7()
       const authenticatedTokens = await createDeviceAndSessionTokens({
         did: v7(),
         sid: authenticatedSid,
-        uid: v7(),
-        deviceContext: { isNativeClient: true },
+        uid: user.id,
+        deviceClass: 'attested',
       })
 
       await request
@@ -258,15 +263,18 @@ describe('Session Routes', () => {
 
     it('should return the attested session max-age when re-using an attested device token', async () => {
       const request = createRequest()
+      const user = await createTestUser()
       const attestedDid = v7()
-      const { deviceToken: attestedDeviceToken } = await createDeviceAndSessionTokens({
-        did: attestedDid,
-        deviceClass: 'attested',
-      })
+      const { deviceToken: attestedDeviceToken, sessionToken: attestedSessionToken } =
+        await createDeviceAndSessionTokens({
+          did: attestedDid,
+          uid: user.id,
+          deviceClass: 'attested',
+        })
 
       const response = await request
         .delete('/api/v1/session')
-        .send({ dt: attestedDeviceToken.token })
+        .send({ dt: attestedDeviceToken.token, st: attestedSessionToken.token })
         .expect(200)
 
       expect(response.body.session.ste).toBe(ATTESTED_SESSION_EXPIRATION_SECONDS)

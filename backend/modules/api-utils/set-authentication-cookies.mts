@@ -2,6 +2,7 @@ import type { Context } from '@jongleberry/api-server'
 import {
   DEVICE_EXPIRATION_SECONDS,
   decodeSessionJwt,
+  decodeDeviceJwt,
   assertSafeSessionCookieValue,
   sessionExpirySecondsFor,
   type DeviceClass,
@@ -26,10 +27,26 @@ export function setAuthenticationCookies(
 
   ctx.cookies.set('dt', dt, {
     ...COOKIE_OPTIONS,
-    maxAge: DEVICE_EXPIRATION_SECONDS,
+    maxAge: getDeviceTokenCookieMaxAge(dt),
   })
   ctx.cookies.set('st', st, {
     ...COOKIE_OPTIONS,
     maxAge: sessionExpirySecondsFor(deviceClass, decodeSessionJwt(st)?.client),
   })
+}
+
+export function clearAuthenticationCookies(ctx: Context): void {
+  ctx.cookies.set('dt', '', { ...COOKIE_OPTIONS, maxAge: 0 })
+  ctx.cookies.set('st', '', { ...COOKIE_OPTIONS, maxAge: 0 })
+}
+
+/** The cookie and response metadata must retain the signed credential's original expiry. */
+export function getDeviceTokenCookieMaxAge(deviceToken: string): number {
+  return Math.max(
+    0,
+    Math.min(
+      DEVICE_EXPIRATION_SECONDS,
+      (decodeDeviceJwt(deviceToken)?.exp ?? 0) - Math.floor(Date.now() / 1000),
+    ),
+  )
 }

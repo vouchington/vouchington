@@ -1,22 +1,19 @@
 import { mintUuidv7 as mintUUIDv7 } from '@vouchington/session-jwt'
 import { verifyDeviceJwt } from '@ts-shared/session-jwt'
 import { createDeviceAndSessionTokens, createSessionToken } from './create.mts'
-import { revokeSession } from './revocation.mts'
-import { getSessionForLogout } from './web-refresh.mts'
+import { revokeSessionForLogout } from './web-refresh.mts'
 import type { RefreshedSessionState } from './types.mts'
 import { resolveDeviceState } from './session-state-helpers.mts'
 
 export async function resetSessionState(options: {
   deviceToken?: string
   sessionToken?: string
-  userAgent?: string
 }): Promise<RefreshedSessionState> {
   const deviceState = await resolveDeviceState(options.deviceToken)
 
   // A signed web refresh credential may end its own session after the access cookie expires.
   // An unpaired access token alone never authorizes revocation.
-  const principal = await getSessionForLogout(options)
-  if (principal) await revokeSession(principal.sid)
+  await revokeSessionForLogout(options)
 
   const did = deviceState.valid ? deviceState.did : mintUUIDv7()
 
@@ -43,5 +40,6 @@ export async function resetSessionState(options: {
     sid: tokens.sessionToken.payload.sid,
     uid: null,
     session: tokens.sessionToken.payload,
+    deviceClass: tokens.deviceToken.payload.dc,
   }
 }

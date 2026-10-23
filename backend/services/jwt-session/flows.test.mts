@@ -1,12 +1,12 @@
+import { expectAuthSessionEvent } from '@voucha/test-helpers/auth-session-events'
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import path from 'node:path'
 import os from 'node:os'
 import fs from 'node:fs'
 import { v7 } from 'uuid'
-import { signDeviceJwt, signSessionJwt } from '@ts-shared/session-jwt'
 import { isUuidv7 as isUUIDv7 } from '@vouchington/session-jwt'
-import { flush } from '@data-stores/analytics/backend-local'
-import { getTestPrivateUserById } from '@voucha/test-helpers'
+import { createTestUser, getTestPrivateUserById } from '@voucha/test-helpers'
+import { createDeviceAndSessionTokens } from './create.mts'
 import { refreshSessionState } from './flows.mts'
 import {
   legacyUuidV4,
@@ -42,55 +42,22 @@ describe('flows', () => {
     }
   })
 
-  async function readAuthSessionRows(): Promise<Record<string, unknown>[]> {
-    const tableDir = path.join(testDir, 'auth_sessions')
-    const fileNames = await fs.promises.readdir(tableDir).catch((err: unknown) => {
-      if (err instanceof Error && 'code' in err && err.code === 'ENOENT') return []
-      throw err
-    })
-
-    return (
-      await Promise.all(
-        fileNames.map(async fileName => {
-          const raw = await fs.promises.readFile(path.join(tableDir, fileName), 'utf8')
-          return raw
-            .trim()
-            .split('\n')
-            .flatMap(line => (line ? [JSON.parse(line) as Record<string, unknown>] : []))
-        }),
-      )
-    ).flat()
-  }
-
-  async function expectAuthSessionEvent(
-    did: string,
-    sid: string,
-    eventType: string,
-  ): Promise<void> {
-    await flush()
-    const rows = await readAuthSessionRows()
-    const matchingRows = rows.filter(row => row.device_id === did && row.session_id === sid)
-    expect(matchingRows.length).toBeGreaterThanOrEqual(1)
-    expect(matchingRows[0]!.event_type).toBe(eventType)
-  }
-
   describe('refreshSessionState', () => {
     it('records valid anonymous sessions as refreshed anonymous events', async () => {
-      const did = v7()
-      const sid = v7()
-      const deviceToken = await signDeviceJwt({ did, client: 'native' }, { expiresIn: '30 days' })
-      const sessionToken = await signSessionJwt({ did, sid, uid: null }, { expiresIn: '2 days' })
+      const { deviceToken, sessionToken } = await createDeviceAndSessionTokens({ did: v7() })
+      const did = deviceToken.payload.did
+      const sid = sessionToken.payload.sid
 
       const result = await refreshSessionState({
         fetchUser: getTestPrivateUserById,
-        deviceToken,
-        sessionToken,
+        deviceToken: deviceToken.token,
+        sessionToken: sessionToken.token,
       })
 
       expect(result.uid).toBeNull()
       expect(result.sid).toBe(sid)
-      expect(result.st).toBe(sessionToken)
-      await expectAuthSessionEvent(did, sid, 'refreshed_anonymous')
+      expect(result.st).toBe(sessionToken.token)
+      await expectAuthSessionEvent(testDir, did, sid, 'refreshed_anonymous')
     })
 
     it('records first-time anonymous fallback as a created event', async () => {
@@ -99,27 +66,27 @@ describe('flows', () => {
       })
 
       expect(result.uid).toBeNull()
-      await expectAuthSessionEvent(result.did, result.sid, 'created')
+      await expectAuthSessionEvent(testDir, result.did, result.sid, 'created')
     })
 
-    it('hot path: returns existing session token unchanged when sca not yet expired', async () => {
-      const did = v7()
-      const sid = v7()
-      const uid = v7()
-      const now = Math.floor(Date.now() / 1000)
-      const deviceToken = await signDeviceJwt({ did, client: 'native' }, { expiresIn: '30 days' })
-      const sessionToken = await signSessionJwt(
-        { did, sid, uid, client: 'native', sca: now + 3600, rca: now + 3600 },
-        { expiresIn: '2 days' },
-      )
+    it('rotates an authenticated web session using its registered authority', async () => {
+      const user = await createTestUser()
+      const { deviceToken, sessionToken } = await createDeviceAndSessionTokens({
+        did: v7(),
+        uid: user.id,
+        deviceContext: {
+          user_agent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/126.0',
+        },
+      })
       const result = await refreshSessionState({
         fetchUser: getTestPrivateUserById,
-        deviceToken,
-        sessionToken,
+        deviceToken: deviceToken.token,
+        sessionToken: sessionToken.token,
+        userAgent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/126.0',
       })
-      expect(result.st).toBe(sessionToken)
-      expect(result.uid).toBe(uid)
-      expect(result.sid).toBe(sid)
+      expect(result.dt).not.toBe(deviceToken.token)
+      expect(result.uid).toBe(user.id)
+      expect(result.sid).toBe(sessionToken.payload.sid)
     })
 
     it('hot path: rejects signed UUIDv4 anonymous ids before returning tokens', async () => {

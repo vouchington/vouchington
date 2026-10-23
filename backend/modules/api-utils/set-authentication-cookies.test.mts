@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest'
 import { setAuthenticationCookies, COOKIE_OPTIONS } from './set-authentication-cookies.mts'
 import {
   ATTESTED_SESSION_EXPIRATION_SECONDS,
-  DEVICE_EXPIRATION_SECONDS,
   SESSION_EXPIRATION_SECONDS,
+  signDeviceJwt,
 } from '@ts-shared/session-jwt'
 
 function makeCookiesSpy() {
@@ -79,11 +79,17 @@ describe('setAuthenticationCookies', () => {
     expect(stOptions.path).toBe(COOKIE_OPTIONS.path)
   })
 
-  it('dt cookie uses maxAge of DEVICE_EXPIRATION_SECONDS', () => {
+  it('dt cookie retains the signed device token expiry', async () => {
     const { ctx, calls } = makeCookiesSpy()
-    setAuthenticationCookies(ctx, { dt: 'device-token', st: 'session-token' })
+    const remainingSeconds = 120
+    const dt = await signDeviceJwt(
+      { did: '0194a541-7b19-7ccf-9afa-7087b692841c' },
+      { expiresIn: new Date(Date.now() + remainingSeconds * 1000) },
+    )
+    setAuthenticationCookies(ctx, { dt, st: 'session-token' })
     const dtOptions = calls.find(c => c[0] === 'dt')![2]
-    expect(dtOptions.maxAge).toBe(DEVICE_EXPIRATION_SECONDS)
+    expect(dtOptions.maxAge).toBeGreaterThanOrEqual(remainingSeconds - 1)
+    expect(dtOptions.maxAge).toBeLessThanOrEqual(remainingSeconds)
   })
 
   it('st cookie uses maxAge of SESSION_EXPIRATION_SECONDS', () => {
@@ -105,14 +111,19 @@ describe('setAuthenticationCookies', () => {
     expect(stOptions.maxAge).not.toBe(SESSION_EXPIRATION_SECONDS)
   })
 
-  it('dt cookie maxAge is unaffected by deviceClass', () => {
+  it('dt cookie lifetime cannot be extended by deviceClass', async () => {
     const { ctx, calls } = makeCookiesSpy()
+    const dt = await signDeviceJwt(
+      { did: '0194a541-7b19-7ccf-9afa-7087b692841c' },
+      { expiresIn: new Date(Date.now() + 120_000) },
+    )
     setAuthenticationCookies(ctx, {
-      dt: 'device-token',
+      dt,
       st: 'session-token',
       deviceClass: 'attested',
     })
     const dtOptions = calls.find(c => c[0] === 'dt')![2]
-    expect(dtOptions.maxAge).toBe(DEVICE_EXPIRATION_SECONDS)
+    expect(dtOptions.maxAge).toBeLessThanOrEqual(120)
+    expect(dtOptions.maxAge).toBeGreaterThanOrEqual(119)
   })
 })

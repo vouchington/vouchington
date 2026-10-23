@@ -4,7 +4,7 @@ import { parseCookie as parseCookieHeader } from 'cookie'
 import {
   isSessionRevoked,
   verifyDeviceAndSessionTokens,
-  assertSessionUserAgent,
+  assertSessionClientBinding,
 } from '@services/jwt-session'
 import { getPrivateUserByAny } from '@services/users/get'
 import { currentUserCanAccessQueueStats } from '@services/queue-monitoring'
@@ -34,14 +34,14 @@ export async function isAdminDashboardRequest(req: http.IncomingMessage): Promis
   })
   if (!sessionData || !sessionData.uid) return false
   try {
-    assertSessionUserAgent(sessionData, req.headers['user-agent'])
+    assertSessionClientBinding(sessionData, req.headers['user-agent'])
   } catch {
     return false
   }
   if (
     await isSessionRevoked(sessionData.sid, {
       userId: sessionData.uid,
-      issuedAt: sessionData.client === 'web' ? sessionData.device_iat : sessionData.iat,
+      issuedAt: sessionData.device_iat,
     })
   ) {
     return false

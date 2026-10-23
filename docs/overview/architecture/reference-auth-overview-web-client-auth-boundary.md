@@ -19,19 +19,33 @@ form-specific initial fields to client forms. Server components should continue 
 Browser authentication separates request authority from refresh authority. The short-lived `st`
 credential authenticates API requests; the longer-lived `dt` can refresh the same web session after
 its access cookie expires. The refresh credential carries identity and binding, never role or
-membership authority. Refresh checks revocation and reloads the current user before issuing access.
+membership authority. Refresh checks durable revocation and updates current claims under the
+service’s staleness and deadline policy.
 
-Authenticated tokens carry a signed client classification. Web tokens also bind to the original
-user-agent string. Refresh and request authentication enforce that binding independently of the
-client headers a caller declares. A changed user agent requires sign-in again. This is a consistency
-check, not cryptographic proof of a browser or protection against a caller copying the same user
-agent. Device-bound proof is a separate capability.
+Authenticated tokens carry a signed client classification. Browser credentials bind to browser
+family and platform, preserving normal version updates. Optional JA4 binding uses only authenticated
+Worker metadata and is skipped when that metadata is absent. A mismatch clears cookies and makes
+the request anonymous; renewal failures lead to login. These checks constrain copied credentials
+without proving the browser's identity. Only verified App Attest devices receive native lifetimes;
+declared native metadata selects JSON transport alone.
 
-Web login and refresh deliver credentials through HTTP-only cookies. Browser JSON contains session
-metadata without raw tokens. The Next.js proxy forwards the original browser user agent and uses
-the backend's `Set-Cookie` response to renew cookies. Browser API calls may refresh once after an
-`AUTH_REQUIRED` rejection; user-agent mismatch errors are not retried. Native clients retain their
-native token transport and lifetime. Declared native client metadata alone is not attestation.
+PostgreSQL stores the current device credential digest, encrypted replay credential, original
+issuance time, binding, expiry and revocation. Ordinary renewal rotates the credential under a row
+lock while preserving its original expiry and identity. Reusing an old credential revokes the
+session. Authentication checks durable state after a revocation-cache miss so cache loss cannot
+restore a revoked session.
+
+Web login delivers credentials through HTTP-only cookies and returns metadata in JSON. The Next.js
+proxy forwards the original user agent but never rotates authenticated credentials during SSR.
+Request-local enrichment preserves claim invalidation while leaving signed identity, assurance and
+credential expiry unchanged.
+Expired navigation hands off to browser renewal; browser callers serialize renewal across tabs
+with Web Locks and share one pending request in each tab. A browser that cannot acquire this lock
+recovers through login. This avoids racing old credentials against strict reuse detection.
+
+Hardware attestation alone does not authenticate a user. The first native upgrade must retain the
+caller's live session authority through its replacement: if logout or another revocation wins
+while hardware proof is being checked, the caller must sign in again.
 
 Cookie attributes and token audiences remain centralized in the shared session package. Device and
 session token audiences differ, and API authentication requires matching device/session identity.

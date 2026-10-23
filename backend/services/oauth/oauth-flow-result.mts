@@ -81,6 +81,7 @@ export async function issuePreparedOAuthFlowResult(options: {
     sid: options.authenticatedSessionId,
     uid: options.user.id,
     eventType: options.refreshAuthenticatedSession ? 'refreshed_authenticated' : 'created',
+    credentialReplay: options.refreshAuthenticatedSession === true,
     roles: options.claims?.roles,
     membershipPlan: options.claims?.membershipPlan,
     membershipExpiresAt: options.claims?.membershipExpiresAt,

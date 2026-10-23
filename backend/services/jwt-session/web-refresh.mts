@@ -1,7 +1,7 @@
 import { verifyDeviceAndSessionTokens } from './verify.mts'
 import { verifyDeviceJwt } from '@ts-shared/session-jwt'
-import { assertSessionUserAgent } from './client-binding.mts'
-import { isSessionRevoked } from './revocation.mts'
+import { assertSessionClientBinding } from './client-binding.mts'
+import { isSessionRevoked, revokeSession } from './revocation.mts'
 import { getEnrichedSessionClaims } from './enrich.mts'
 import { createRefreshedAuthenticatedSession, issueAnonSession } from './refresh-token-rotation.mts'
 import type { FetchUserForSession, RefreshedSessionState } from './types.mts'
@@ -11,6 +11,7 @@ export async function refreshWebSessionFromDeviceToken(
   dt: string,
   userAgent: string | undefined,
   fetchUser: FetchUserForSession,
+  ja4?: string,
 ): Promise<RefreshedSessionState | null> {
   const device = await verifyDeviceJwt(dt)
   if (
@@ -23,7 +24,7 @@ export async function refreshWebSessionFromDeviceToken(
     !device.refresh_sid
   )
     return null
-  assertSessionUserAgent(device, userAgent)
+  assertSessionClientBinding(device, userAgent, ja4)
   if (
     await isSessionRevoked(device.refresh_sid, { userId: device.refresh_uid, issuedAt: device.iat })
   ) {
@@ -40,7 +41,7 @@ export async function refreshWebSessionFromDeviceToken(
     ...claims,
     deviceClass: device.dc,
     deviceExpiresAt: device.exp,
-    clientBinding: { client: 'web', ua_hash: device.ua_hash },
+    clientBinding: { client: 'web', ua_hash: device.ua_hash, ja4_hash: device.ja4_hash },
     freshness: { type: 'reset' },
   })
   return {
@@ -50,11 +51,10 @@ export async function refreshWebSessionFromDeviceToken(
   }
 }
 
-/** Logout may revoke web refresh authority even after its access cookie expires. */
+/** A signed device credential may revoke its own authority after access-token expiry. */
 export async function getSessionForLogout(options: {
   deviceToken?: string
   sessionToken?: string
-  userAgent?: string
 }): Promise<{ uid: string; sid: string; iat?: number } | null> {
   if (!options.deviceToken) return null
   const paired = options.sessionToken
@@ -64,24 +64,32 @@ export async function getSessionForLogout(options: {
       })
     : false
   if (paired && paired.uid) {
-    assertSessionUserAgent(paired, options.userAgent)
     return {
       uid: paired.uid,
       sid: paired.sid,
-      iat: paired.client === 'web' ? paired.device_iat : paired.iat,
+      iat: paired.device_iat,
     }
   }
   const device = await verifyDeviceJwt(options.deviceToken)
   if (
     !device ||
-    device.client !== 'web' ||
+    (device.client !== 'web' && device.client !== 'native') ||
+    (device.client === 'native' && device.dc !== 'attested') ||
     typeof device.exp !== 'number' ||
     typeof device.iat !== 'number' ||
-    !device.ua_hash ||
+    (device.client === 'web' && !device.ua_hash) ||
     !device.refresh_uid ||
     !device.refresh_sid
   )
     return null
-  assertSessionUserAgent(device, options.userAgent)
   return { uid: device.refresh_uid, sid: device.refresh_sid, iat: device.iat }
+}
+
+/** Logout revocation is permitted by a signed device principal, independent of UA or access expiry. */
+export async function revokeSessionForLogout(options: {
+  deviceToken?: string
+  sessionToken?: string
+}): Promise<void> {
+  const principal = await getSessionForLogout(options)
+  if (principal) await revokeSession(principal.sid)
 }

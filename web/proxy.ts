@@ -1,23 +1,14 @@
+import { getSessionRenewalNext, SESSION_RENEWAL_PATH } from '@/lib/auth/session-renewal-url'
 import { NextResponse, type NextRequest, after } from 'next/server'
 import { isbot } from 'isbot'
 import { decodeSessionJwt, decodeDeviceJwt } from '@ts-shared/session-jwt'
 import { isBackendPath, shouldBypassProxyPath } from '@/lib/utils/routes'
 import { safeFeatureFlagCookiePart } from '@/lib/feature-flags/shared'
-import {
-  recordProxyReferralAttribution,
-  refreshProxySession,
-  getProxyClientHeaders,
-} from '@/lib/api/server/proxy'
+import { recordProxyReferralAttribution, getProxyClientHeaders } from '@/lib/api/server/proxy'
 import { tagPostDetailCacheFill } from '@/lib/api/server/post-detail-cache-tags'
 import { LANDING_PAGE_HANDLE_RE } from '@/lib/utils/path'
 import { hasGlobalPrivacyControlHeader } from '@/lib/privacy/global-privacy-control'
 import { VOUCHA_BOT_SCORE_HEADER } from '@ts-shared/utils/bot-challenge'
-
-function shouldRefreshSession(stPayload: ReturnType<typeof decodeSessionJwt>): boolean {
-  if (!stPayload || typeof stPayload.sca !== 'number') return true
-  const now = Math.floor(Date.now() / 1000)
-  return now >= stPayload.sca || (typeof stPayload.exp === 'number' && now >= stPayload.exp)
-}
 
 async function proxy(request: NextRequest) {
   const backendUrl =
@@ -47,50 +38,39 @@ async function proxy(request: NextRequest) {
     !isBotRequest &&
     ((typeof stPayload?.uid === 'string' && stPayload.uid.length > 0) ||
       (refreshIdentity?.client === 'web' && typeof refreshIdentity.refresh_uid === 'string'))
-  const shouldRefreshAuthenticatedSession = isAuthenticated && shouldRefreshSession(stPayload)
-
-  let sessionData: {
-    uid?: string | null
-    dt?: string
-    st?: string
-    dte: number
-    ste: number
-    secure: boolean
-  } | null = null
-
-  // Authenticated path: call the backend only when the session freshness window
-  // requires a warm/cold refresh. Hot sessions keep using the edge-verified
-  // inbound cookies, avoiding a backend hit on every page request.
-  // Anonymous visitors are handled at the edge by the Cloudflare Worker — no backend call.
-  if (shouldRefreshAuthenticatedSession) {
-    try {
-      sessionData = await refreshProxySession(
-        backendUrl,
-        { dt, st },
-        getProxyClientHeaders(request),
-      )
-    } catch (err) {
-      // Session validation error - continue without session
-      console.error('Session validation failed:', err)
-    }
+  const accessExpired =
+    !stPayload ||
+    typeof stPayload.exp !== 'number' ||
+    Math.floor(Date.now() / 1000) >= stPayload.exp
+  const isRenewalOrLogin = [SESSION_RENEWAL_PATH, '/login'].includes(
+    request.nextUrl.pathname.replace(/\/+$/u, ''),
+  )
+  if (
+    isAuthenticated &&
+    accessExpired &&
+    isPageRequest &&
+    !isRenewalOrLogin &&
+    ['GET', 'HEAD'].includes(request.method)
+  ) {
+    // Prefetch must not rotate cookies or cache a login/renewal redirect for a later navigation.
+    if (
+      request.headers.get('next-router-prefetch') === '1' ||
+      request.headers.get('purpose') === 'prefetch'
+    )
+      return new NextResponse(null, { status: 204 })
+    const destination = new URL(SESSION_RENEWAL_PATH, request.nextUrl.toString())
+    const currentUrl = new URL(request.nextUrl.toString())
+    destination.searchParams.set(
+      'next',
+      getSessionRenewalNext(`${currentUrl.pathname}${currentUrl.search}`),
+    )
+    return NextResponse.redirect(destination)
   }
 
-  // When a refresh is due, only use backend-verified tokens. While the session
-  // is still hot, use the inbound cookies that the Cloudflare Worker verified.
-  // For anonymous sessions, use inbound cookies only if the session token decodes
-  // to the expected payload shape; malformed cookies are dropped instead of
-  // being forwarded to the app.
-  const hasStructurallyValidInboundSession = Boolean(dt && st && stPayload)
-  const sessionDt = shouldRefreshAuthenticatedSession
-    ? sessionData?.dt
-    : hasStructurallyValidInboundSession
-      ? dt
-      : undefined
-  const sessionSt = shouldRefreshAuthenticatedSession
-    ? sessionData?.st
-    : hasStructurallyValidInboundSession
-      ? st
-      : undefined
+  // SSR forwards only still-valid access credentials; renewal is serialized in the browser.
+  const hasStructurallyValidInboundSession = Boolean(dt && st && stPayload && !accessExpired)
+  const sessionDt = hasStructurallyValidInboundSession ? dt : undefined
+  const sessionSt = hasStructurallyValidInboundSession ? st : undefined
 
   // Record referral attribution after the response is sent. after() extends the edge
   // runtime lifetime so the promise isn't dropped before it resolves.
@@ -133,6 +113,7 @@ async function proxy(request: NextRequest) {
   // Strip auth headers unconditionally so clients cannot inject them.
   // They are re-set below only when the session is valid.
   const requestHeaders = new Headers(request.headers)
+  requestHeaders.delete('x-voucha-client-ja4')
   requestHeaders.delete('x-user-id')
   requestHeaders.delete('x-device-token')
   requestHeaders.delete('x-session-token')
@@ -169,25 +150,6 @@ async function proxy(request: NextRequest) {
     : NextResponse.next({ request: { headers: requestHeaders } })
 
   await tagPostDetailCacheFill(response, request, backendUrl, getProxyClientHeaders(request))
-
-  // Set validated session cookies for authenticated sessions refreshed by the backend.
-  // Anonymous sessions are handled by the Cloudflare Worker (Set-Cookie already sent).
-  if (sessionData?.dt && sessionData?.st) {
-    response.cookies.set('dt', sessionData.dt, {
-      httpOnly: true,
-      secure: sessionData.secure,
-      sameSite: 'lax',
-      path: '/',
-      maxAge: sessionData.dte,
-    })
-    response.cookies.set('st', sessionData.st, {
-      httpOnly: true,
-      secure: sessionData.secure,
-      sameSite: 'lax',
-      path: '/',
-      maxAge: sessionData.ste,
-    })
-  }
 
   return response
 }

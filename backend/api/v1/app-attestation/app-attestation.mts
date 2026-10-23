@@ -1,18 +1,24 @@
+import { upgradeVerifiedNativeSession } from '@services/jwt-session/native-upgrade'
+import { getPrivateUserByAny } from '@services/users/get'
 import { randomBytes } from 'node:crypto'
 import { v7 } from 'uuid'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { parseJsonBody, validateRequestContract } from '../../response-helpers.mts'
 import { setAuthenticationCookies } from '@modules/api-utils'
-import { BYPASS_DISABLED } from '@modules/on-error/error-codes'
-import { createDeviceAndSessionTokens, refreshSessionState } from '@services/jwt-session'
+import { AUTH_REQUIRED, BYPASS_DISABLED } from '@modules/on-error/error-codes'
+import {
+  createDeviceAndSessionTokens,
+  getEnrichedSessionClaims,
+  getSessionForLogout,
+  isSessionRevoked,
+} from '@services/jwt-session'
 import {
   isAppAttestationEnabled,
   storeAppAttestChallenge,
   verifyAndStoreAttestation,
   type AppAttestChallengeType,
 } from '@services/app-attestation'
-import { getPrivateUserByAny } from '@services/users/get'
 
 /** Closed request body for `POST /api/v1/app-attestation/challenge`. */
 type AppAttestChallengeBody = { type: 'attestation' | 'assertion' }
@@ -51,38 +57,56 @@ app.route('/api/v1/app-attestation/attest').post(async (ctx: Context) => {
   ctx.assert(body.attestation.length > 0, 422, 'attestation is required')
   ctx.assert(body.challengeId.length > 0, 422, 'challengeId is required')
 
-  // Revalidate freshness/suspension via the same hot/warm/cold check used everywhere else
-  // session state is trusted, and use its `did` (rather than blindly trusting the request's
-  // `dt` cookie) to bind the newly-attested key. Assertion verification later rejects a key
-  // whose bound `did` doesn't match the caller, so this binding must happen before storage.
-  const refreshed = await refreshSessionState({
-    deviceToken: ctx.cookies.get('dt'),
-    sessionToken: ctx.cookies.get('st'),
-    fetchUser: getPrivateUserByAny,
-    userAgent: ctx.req.headers['user-agent'],
-    verifyRevocationOnHotPath: true,
-  })
+  // Inspect authority without rotating it: a rejected attestation must leave the caller's
+  // current device credential usable. Only a verified proof admits the renewal below.
+  const previous = await ctx.getSessionTokenData()
+  const user = await ctx.getCurrentUser()
+  const claims = user ? await getEnrichedSessionClaims(user) : null
+  if (!user) {
+    const principal = await getSessionForLogout({
+      deviceToken: ctx.cookies.get('dt'),
+      sessionToken: ctx.cookies.get('st'),
+    })
+    if (
+      principal &&
+      !(await isSessionRevoked(principal.sid, { userId: principal.uid, issuedAt: principal.iat }))
+    ) {
+      ctx.throw(401, 'Unauthorized', AUTH_REQUIRED)
+    }
+  }
 
   const result = await verifyAndStoreAttestation({
     challengeKey: body.challengeId,
     keyId: body.keyId,
-    did: refreshed.did,
+    did: previous.did,
     attestation: Buffer.from(body.attestation, 'base64'),
   })
 
-  // Always re-mint on successful attest — the whole point is the upgrade.
-  const { deviceToken, sessionToken } = await createDeviceAndSessionTokens({
-    did: refreshed.did,
-    sid: refreshed.sid,
-    uid: refreshed.uid,
-    roles: refreshed.session.rol,
-    membershipPlan: refreshed.session.mpl,
-    membershipExpiresAt:
-      refreshed.session.mpe === undefined ? undefined : new Date(refreshed.session.mpe * 1000),
-    trustTier: refreshed.session.tt,
-    uiLocale: refreshed.session.uil,
-    deviceClass: 'attested',
-  })
+  const renewingNative = 'client' in previous && previous.client === 'native'
+  // A first verified native upgrade uses a fresh SID; an existing browser binding is never cleared.
+  const { deviceToken, sessionToken } =
+    user && !renewingNative
+      ? await upgradeVerifiedNativeSession({
+          deviceToken: ctx.cookies.get('dt')!,
+          uid: user.id,
+          did: previous.did,
+          sid: previous.sid,
+          fetchUser: (uid, query) => getPrivateUserByAny(uid, { query, readOnly: false }),
+        })
+      : await createDeviceAndSessionTokens({
+          did: previous.did,
+          ...(renewingNative && {
+            sid: previous.sid,
+            deviceRenewal: 'verified-native-attestation' as const,
+          }),
+          uid: user?.id ?? null,
+          roles: claims?.roles,
+          membershipPlan: claims?.membershipPlan,
+          membershipExpiresAt: claims?.membershipExpiresAt,
+          trustTier: claims?.trustTier,
+          uiLocale: claims?.uiLocale,
+          deviceClass: 'attested',
+        })
   setAuthenticationCookies(ctx, {
     dt: deviceToken.token,
     st: sessionToken.token,

@@ -219,10 +219,10 @@ producer landing first.
 
 ## Browser session refresh
 
-Web login and credential completion use httpOnly cookies and omit raw tokens from browser JSON.
-Web session refresh accepts the cookies and returns session metadata, while native callers retain
-native token JSON transport and lifetimes. Signed web session identity retains its user-agent
-binding when clients change their declared headers. Browser page and API clients refresh silently
-through the device credential. A changed user agent returns `SESSION_USER_AGENT_MISMATCH` and
-requires sign-in; native clients should surface this factual code if handling a web-issued token.
+Browser credentials use cookies, stable browser-family/platform binding, and optional trusted
+Cloudflare fingerprint binding. Renewal rotates the device credential while retaining its original
+expiry; replay requires signing in again. Only verified App Attest devices receive native session
+lifetimes. Swift and .NET retain JSON transport and must coordinate refresh across callers and
+recover through login when renewal fails. Native adoption is tracked in
+[vouchington-clients#487](https://github.com/vouchington/vouchington-clients/issues/487).
 The producer lands first. Device-bound session proof is a separate browser capability.

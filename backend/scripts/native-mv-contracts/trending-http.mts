@@ -94,7 +94,7 @@ export async function checkTrendingHttpContracts(): Promise<void> {
   const { deviceToken, sessionToken } = await createDeviceAndSessionTokens({
     did: v7(),
     uid: admin.id,
-    deviceContext: { user_agent: userAgent, isNativeClient: true },
+    deviceContext: { user_agent: userAgent },
   })
   const cookie = `dt=${deviceToken.token}; st=${sessionToken.token}`
   let requestCounter = 0

@@ -19,7 +19,7 @@ describe('Session route rate-limit identity', () => {
       anon_read_ttl: 60,
     })
 
-    const tokens = await createDeviceAndSessionTokens({ did: v7(), uid: v7() })
+    const tokens = await createDeviceAndSessionTokens({ did: v7() })
     const cookieHeader = [`dt=${tokens.deviceToken.token}`, `st=${tokens.sessionToken.token}`].join(
       '; ',
     )
@@ -48,7 +48,7 @@ describe('Session route rate-limit identity', () => {
     })
 
     const sid = v7()
-    const tokens = await createDeviceAndSessionTokens({ did: v7(), sid, uid: v7() })
+    const tokens = await createDeviceAndSessionTokens({ did: v7(), sid })
     await revokeSession(sid)
 
     await createRequest()

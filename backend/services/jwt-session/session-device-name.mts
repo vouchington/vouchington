@@ -1,3 +1,13 @@
+/** Stable browser family and platform, excluding browser and operating-system versions. */
+export function getSessionUserAgentFingerprint(userAgent: string): string {
+  const browser = detectBrowserFamily(userAgent)
+  const family =
+    browser === 'Unknown browser'
+      ? userAgent.split(/[\s/]/u, 1)[0]?.toLowerCase() || 'unknown'
+      : browser
+  return `${family}:${detectDeviceFamily(userAgent)}`
+}
+
 export function normalizeDeviceName(deviceName?: string | null, userAgent?: string | null): string {
   const trimmed = deviceName?.trim()
   if (trimmed) return trimmed.slice(0, 255).trim()
@@ -28,9 +38,9 @@ function deriveDeviceName(userAgent?: string | null): string {
 }
 
 function detectBrowserFamily(userAgent: string): string {
-  if (userAgent.includes('Edg/')) return 'Edge'
+  if (/Edg(?:A|iOS)?\//u.test(userAgent)) return 'Edge'
   if (userAgent.includes('OPR/') || userAgent.includes('Opera')) return 'Opera'
-  if (userAgent.includes('Firefox/')) return 'Firefox'
+  if (userAgent.includes('Firefox/') || userAgent.includes('FxiOS/')) return 'Firefox'
   if (
     (userAgent.includes('Chrome/') || userAgent.includes('CriOS/')) &&
     !userAgent.includes('Chromium') &&

@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import { v7 } from 'uuid'
 import {
   createTestMembership,
@@ -12,28 +12,28 @@ import { refreshSessionState } from './flows.mts'
 import { verifyDeviceAndSessionTokens } from './verify.mts'
 
 describe('membership expiry', () => {
-  afterEach(() => vi.useRealTimers())
-
   it('removes paid session claims when a finite grant elapses without replacement', async () => {
     const user = await createTestUser()
-    const expiresAt = new Date(Date.now() + 60_000)
+    const expiresAt = new Date(Date.now() - 60_000)
     const membership = await createTestMembership({
       user_id: user.id,
       plan: 'plus',
     })
-    await updateTestMembershipExpiresAt(membership.id, expiresAt)
+    await updateTestMembershipExpiresAt(membership.id, new Date(Date.now() + 60_000))
     const context = await getUserRateLimitContext(user.id)
     const tokens = await createDeviceAndSessionTokens({
       did: v7(),
       uid: user.id,
       membershipPlan: context.membershipPlan,
-      membershipExpiresAt: context.membershipExpiresAt,
+      membershipExpiresAt: expiresAt,
       trustTier: 4,
     })
 
-    await updateTestMembershipExpiresAt(membership.id, new Date(Date.now() - 60_000))
-    vi.useFakeTimers()
-    vi.setSystemTime(new Date(expiresAt.getTime() + 1_000))
+    await updateTestMembershipExpiresAt(membership.id, expiresAt)
+    await rateLimitContextCache.set(
+      user.id,
+      JSON.stringify({ membershipPlan: 'plus', membershipExpiresAt: expiresAt.toISOString() }),
+    )
 
     await expect(
       verifyDeviceAndSessionTokens({

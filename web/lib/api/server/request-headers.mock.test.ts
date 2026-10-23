@@ -61,6 +61,23 @@ describe('request', () => {
       expect((init.headers as Record<string, string>)['x-request-id']).toBeUndefined()
     })
 
+    it('strips caller JA4 while preserving the original user agent for SSR binding', async () => {
+      mockHeaders.mockResolvedValue(
+        new Headers({
+          'user-agent': 'Original browser',
+          'x-voucha-client-ja4': 'forged-from-page',
+        }),
+      )
+      await new ServerRequest().request('/api/v1/auth/me', {
+        headers: { 'X-Voucha-Client-Ja4': 'forged-override' },
+      })
+      const [, init] = mockFetch.mock.calls[0] as [string, RequestInit]
+      const forwarded = new Headers(init.headers)
+      expect(forwarded.get('user-agent')).toBe('Original browser')
+      expect(forwarded.get('x-voucha-client-ja4')).toBeNull()
+      expect(forwarded.get('x-cf-worker-secret')).toBe('test-worker-secret')
+    })
+
     it('disables fetch caching when auth cookies are forwarded', async () => {
       const request = serverApi
 

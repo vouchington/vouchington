@@ -553,6 +553,22 @@
     "routes": ["DELETE /api/v1/rss-feeds/:id"]
   },
   {
+    "annotation": "lockSessionDeviceAuthority:sessionFence",
+    "route": "POST /api/v1/app-attestation/attest",
+    "maxCount": 2,
+    "reason": "Atomic first-native upgrade locks the old browser SID before revocation and the replacement native SID before minting, so exactly two distinct session admissions share one transaction.",
+    "permanent": true,
+    "code": "backend/services/jwt-session/native-upgrade.mts:20"
+  },
+  {
+    "annotation": "lockSessionDeviceAuthority:userFence",
+    "route": "POST /api/v1/app-attestation/attest",
+    "maxCount": 2,
+    "reason": "Atomic first-native upgrade admits the old browser authority and the replacement native SID in one transaction. Each canonical mint guard takes the same user fence; the second acquisition is reentrant and bounded to these two admissions.",
+    "permanent": true,
+    "code": "backend/services/jwt-session/native-upgrade.mts:20"
+  },
+  {
     "annotation": "lockSurfaceOwnerDomains",
     "maxCount": null,
     "reason": "User deletion locks the user image-owner domain first (users/delete.mts:77), then locks the profile-link domains it discovers by reading user_profile_links under that lock (users/delete.mts:86-89); the second lock needs ids only readable after the first",
@@ -643,6 +659,14 @@
       "POST /api/v1/copyright-form-intakes/:id/reviews",
       "POST /api/v1/copyright-uk-notices/:id/reviews"
     ]
+  },
+  {
+    "annotation": "readSessionDeviceAuthority",
+    "route": "POST /api/v1/app-attestation/attest",
+    "maxCount": 2,
+    "reason": "Atomic first-native upgrade reads and locks the current old browser authority, then the replacement SID row created by the joined native mint. These are two distinct rows required by the revocation-safe handoff.",
+    "permanent": true,
+    "code": "backend/services/jwt-session/native-upgrade.mts:20"
   },
   {
     "annotation": "receiveOAuthAuthorizationCallback",

@@ -1,6 +1,13 @@
+import {
+  withBlockedAppAttestationInsert,
+  getActiveTestSessionId,
+  createTestAttestationProof,
+} from '@voucha/test-helpers/app-attestation-session'
 import { generateKeyPairSync, randomBytes, randomUUID } from 'node:crypto'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { v7 } from 'uuid'
+import { createTestUserDirect, getTestPrivateUserById } from '@voucha/test-helpers/entities/users'
+import { readSessionDeviceAuthority } from '@services/jwt-session/device-authority'
 import { createRequest, nextTestRequestIp } from '@voucha/test-helpers/api/server'
 import {
   deleteDynamicConfigFieldsForTest,
@@ -15,6 +22,7 @@ import { loadAttestationKeyByKeyId } from '@services/app-attestation/store'
 import {
   createDeviceAndSessionTokens,
   revokeSession,
+  refreshSessionState,
   verifyDeviceAndSessionTokens,
 } from '@services/jwt-session'
 import { ATTESTED_SESSION_EXPIRATION_SECONDS } from '@ts-shared/session-jwt'
@@ -29,12 +37,12 @@ vi.mock<typeof import('node-app-attest')>(import('node-app-attest'), async impor
 }))
 
 function cookieValueOf(cookieHeader: string[] | undefined, name: string): string | undefined {
-  const cookie = cookieHeader?.find(value => value.startsWith(`${name}=`))
+  const cookie = cookieHeader?.findLast(value => value.startsWith(`${name}=`))
   return cookie?.split(';')[0]?.slice(name.length + 1)
 }
 
 function maxAgeOf(cookieHeader: string[] | undefined, name: string): number | undefined {
-  const cookie = cookieHeader?.find(value => value.startsWith(`${name}=`))
+  const cookie = cookieHeader?.findLast(value => value.startsWith(`${name}=`))
   const match = cookie?.match(/Max-Age=(\d+)/)
   return match ? Number(match[1]) : undefined
 }
@@ -70,7 +78,7 @@ describe('POST /api/v1/app-attestation/attest', () => {
 
     const did = v7()
     const sid = v7()
-    const uid = v7()
+    const { id: uid } = await createTestUserDirect()
     const tokens = await createDeviceAndSessionTokens({ did, sid, uid })
     expect(tokens.sessionToken.payload.sca).toBeGreaterThan(Math.floor(Date.now() / 1000))
     await revokeSession(sid)
@@ -106,5 +114,133 @@ describe('POST /api/v1/app-attestation/attest', () => {
         : false
     expect(verified).toMatchObject({ did, uid: null, dc: 'attested' })
     expect(verified).not.toMatchObject({ sid })
+  })
+  it('does not rotate device authority before a failed proof and still permits normal renewal', async () => {
+    const user = await createTestUserDirect()
+    const userAgent = 'Synthetic browser/1.0'
+    const tokens = await createDeviceAndSessionTokens({
+      did: v7(),
+      uid: user.id,
+      deviceContext: { user_agent: userAgent },
+    })
+    const before = await readSessionDeviceAuthority(tokens.sessionToken.payload.sid)
+    verifyAttestationMock.mockImplementation(() => {
+      throw new Error('Invalid external attestation')
+    })
+    const challengeId = randomUUID()
+    await storeAppAttestChallenge('attestation', challengeId, randomBytes(32).toString('base64url'))
+    await createRequest()
+      .post('/api/v1/app-attestation/attest')
+      .set('Cookie', `dt=${tokens.deviceToken.token}; st=${tokens.sessionToken.token}`)
+      .set('User-Agent', userAgent)
+      .send({
+        keyId: randomBytes(32).toString('base64'),
+        attestation: Buffer.from('invalid-proof').toString('base64'),
+        challengeId,
+      })
+      .expect(401)
+    const after = await readSessionDeviceAuthority(tokens.sessionToken.payload.sid)
+    expect(after).toMatchObject({
+      device_token_digest: before!.device_token_digest,
+      device_token_issued_at: before!.device_token_issued_at,
+      expires_at: before!.expires_at,
+      device_token_binding: before!.device_token_binding,
+    })
+    const refreshed = await refreshSessionState({
+      deviceToken: tokens.deviceToken.token,
+      userAgent,
+      fetchUser: getTestPrivateUserById,
+    })
+    expect(refreshed.uid).toBe(user.id)
+  })
+
+  it('atomically replaces an active browser session after verified hardware proof', async () => {
+    const user = await createTestUserDirect()
+    const tokens = await createDeviceAndSessionTokens({ did: v7(), uid: user.id })
+    const proof = createTestAttestationProof()
+    verifyAttestationMock.mockReturnValue(proof.result)
+    const challengeId = randomUUID()
+    await storeAppAttestChallenge('attestation', challengeId, randomBytes(32).toString('base64url'))
+    const response = await createRequest()
+      .post('/api/v1/app-attestation/attest')
+      .set('Cookie', `dt=${tokens.deviceToken.token}; st=${tokens.sessionToken.token}`)
+      .send({
+        keyId: proof.result.keyId,
+        attestation: Buffer.from('verified-proof').toString('base64'),
+        challengeId,
+      })
+      .expect(200)
+    const cookies = response.headers['set-cookie'] as unknown as string[]
+    const verified = await verifyDeviceAndSessionTokens({
+      deviceToken: cookieValueOf(cookies, 'dt')!,
+      sessionToken: cookieValueOf(cookies, 'st')!,
+    })
+    expect(verified).toMatchObject({
+      uid: user.id,
+      did: tokens.deviceToken.payload.did,
+      dc: 'attested',
+      client: 'native',
+    })
+    expect(verified).not.toMatchObject({ sid: tokens.sessionToken.payload.sid })
+    expect(
+      (await readSessionDeviceAuthority(tokens.sessionToken.payload.sid))!.revoked_at,
+    ).toBeInstanceOf(Date)
+  })
+
+  it('does not resurrect a signed-in session when logout wins during hardware verification', async () => {
+    const user = await createTestUserDirect()
+    const userAgent = 'Synthetic browser/1.0'
+    const tokens = await createDeviceAndSessionTokens({
+      did: v7(),
+      uid: user.id,
+      deviceContext: { user_agent: userAgent },
+    })
+    const proof = createTestAttestationProof()
+    const keyId = proof.keyId
+    let verificationReached: () => void = () => {
+      throw new Error('Verification signal not initialized')
+    }
+    const verified = new Promise<void>(resolve => {
+      verificationReached = resolve
+    })
+    verifyAttestationMock.mockImplementation(() => {
+      verificationReached()
+      return proof.result
+    })
+    const challengeId = randomUUID()
+    await storeAppAttestChallenge('attestation', challengeId, randomBytes(32).toString('base64url'))
+    await withBlockedAppAttestationInsert(
+      {
+        keyId,
+        did: tokens.deviceToken.payload.did,
+        publicKey: proof.publicKey,
+        bundleId: TEST_APP_ATTEST_BUNDLE_ID,
+      },
+      async release => {
+        const response = createRequest()
+          .post('/api/v1/app-attestation/attest')
+          .set('Cookie', `dt=${tokens.deviceToken.token}; st=${tokens.sessionToken.token}`)
+          .set('User-Agent', userAgent)
+          .send({
+            keyId: keyId.toString('base64'),
+            attestation: Buffer.from('verified-proof').toString('base64'),
+            challengeId,
+          })
+          .then(result => result)
+        await Promise.race([
+          verified,
+          response.then(() => {
+            throw new Error('Attestation request finished before verification barrier')
+          }),
+        ])
+        await revokeSession(tokens.sessionToken.payload.sid)
+        await release()
+        expect((await response).status).toBe(401)
+      },
+    )
+    expect(
+      (await readSessionDeviceAuthority(tokens.sessionToken.payload.sid))!.revoked_at,
+    ).toBeInstanceOf(Date)
+    await expect(getActiveTestSessionId(user.id)).resolves.toBeNull()
   })
 })
