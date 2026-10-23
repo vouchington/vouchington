@@ -9,6 +9,7 @@ import type { PrivateUser } from '@services/users/types'
 import { isMoney, type Money } from '@ts-shared/money'
 import { mapIndividualCardConstraintError } from './card-errors.mts'
 import { createIndividualCardRow } from './create-card-row.mts'
+import { assertUserReferenceTopicExists } from '@services/topics/user-reference-topic-validation'
 
 type UpdateIndividualCardData = {
   opened_on?: string | Date | null
@@ -51,8 +52,9 @@ export async function createIndividualCard(
 ) {
   assert(currentUser, 401, 'User not logged in')
   assert(currentUserCanAccessUser(currentUser, user.id), 403, 'Forbidden')
+  await assertUserReferenceTopicExists(cardId, 'card', 'Invalid card_topic_id')
   const row = await createIndividualCardRow(user.id, cardId)
-  assert(row?.topic_exists, 422, 'Invalid card_topic_id')
+  assert(row?.topic_exists, 404, 'Topic not found')
   assert(row.card_id && row.individual_id, 500, 'Created card could not be loaded')
   const card = await getIndividualCardById(
     currentUser,

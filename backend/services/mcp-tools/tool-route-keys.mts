@@ -9,10 +9,6 @@ export function toRouteKey(endpoint: ToolApiEndpoint): string {
 // The REST route buckets a validated call exercises, each once: the endpoints `selectApi` narrows to
 // when the tool has one, otherwise every route `meta.api` lists. A tool with no REST twin exercises
 // none, so only the transport bucket applies to it.
-export function toolRouteKeys(meta: ToolMeta | undefined, args: Record<string, unknown>): string[] {
-  return [...new Set(toolRouteCharges(meta, args).flatMap(({ routeKeys }) => routeKeys))]
-}
-
 export type ToolRouteCharge = {
   routeKeys: readonly string[]
   weight: number

@@ -115,7 +115,7 @@ describe('weighted add_list_item route charging', () => {
     expect((await searchListItems(list.id, { currentUserId: user.id })).results).toHaveLength(2)
   })
 
-  it('rejects a batch whose full target weight exceeds remaining capacity before writing', async () => {
+  it('refuses an over-budget weighted batch without consuming any units', async () => {
     admitWriteCalls(2)
     const { user, token } = await callerWithToken()
     const rest = createRequest()
@@ -142,13 +142,59 @@ describe('weighted add_list_item route charging', () => {
     const refusal = JSON.parse(result.content[0]!.text) as {
       error: typeof RATE_LIMIT_REFUSAL & { retryAfterSeconds: number }
     }
-    expect(refusal.error).toMatchObject(RATE_LIMIT_REFUSAL)
-    const limitedRest = await rest
+    expect(refusal.error).toMatchObject({
+      status: RATE_LIMIT_REFUSAL.status,
+      code: RATE_LIMIT_REFUSAL.code,
+      retryable: RATE_LIMIT_REFUSAL.retryable,
+    })
+    await rest
       .post(`/api/v1/lists/${list.id}/items/posts`)
       .set('Content-Type', 'application/json')
       .send({ post_id: postIds[2] })
+      .expect(201)
+    const limitedRest = await rest
+      .post(`/api/v1/lists/${list.id}/items/posts`)
+      .set('Content-Type', 'application/json')
+      .send({ post_id: await newPostId() })
       .expect(429)
     expect(refusal.error.retryAfterSeconds).toBe(Number(limitedRest.headers['retry-after']))
+    expect(refusal.error).toHaveProperty('message', RATE_LIMIT_REFUSAL.message)
+    expect((await searchListItems(list.id, { currentUserId: user.id })).results).toHaveLength(2)
+  })
+
+  it('tells clients to split a batch that can never fit the route limit', async () => {
+    admitWriteCalls(2)
+    const { user, token } = await callerWithToken()
+    const rest = createRequest()
+    await rest.authenticateAs(user)
+    const list = await createOwnedList(user.id, WEB_PROVENANCE, {
+      name: 'Impossible weighted MCP list',
+    })
+    const postIds = [await newPostId(), await newPostId(), await newPostId()]
+
+    const response = await mcpPost(
+      token,
+      toolCall({
+        list_id: list.id,
+        items: postIds.map(entity => ({ item_type: 'post', entity })),
+      }),
+    ).expect(200)
+    const result = (response.body as ToolResponse).result
+    expect(result.isError).toBe(true)
+    const refusal = JSON.parse(result.content[0]!.text) as {
+      error: typeof RATE_LIMIT_REFUSAL & { retryAfterSeconds: number }
+    }
+    expect(refusal.error).toMatchObject({
+      status: RATE_LIMIT_REFUSAL.status,
+      code: RATE_LIMIT_REFUSAL.code,
+      retryable: RATE_LIMIT_REFUSAL.retryable,
+    })
+    expect(refusal.error).toMatchObject({ message: expect.stringMatching(/split the batch/i) })
+    await rest
+      .post(`/api/v1/lists/${list.id}/items/posts`)
+      .set('Content-Type', 'application/json')
+      .send({ post_id: postIds[0] })
+      .expect(201)
     expect((await searchListItems(list.id, { currentUserId: user.id })).results).toHaveLength(1)
   })
 })

@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 import type { ToolApiEndpoint, ToolMeta } from '@services/openai-agents/tool-types'
 import addListItemTool from '../../mcp/add-list-item.mts'
 import setBookmarkTool from '../../mcp/set-bookmark.mts'
-import { toolRouteCharges, toolRouteKeys, toRouteKey } from './tool-route-keys.mts'
+import { toolRouteKeys } from '@voucha/test-helpers/mcp-route-keys'
+import { toolRouteCharges, toRouteKey } from './tool-route-keys.mts'
 
 const CREATE: ToolApiEndpoint = { method: 'POST', path: '/api/v1/things' }
 const REMOVE: ToolApiEndpoint = { method: 'DELETE', path: '/api/v1/things/:id' }

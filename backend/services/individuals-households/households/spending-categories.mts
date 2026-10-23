@@ -12,6 +12,7 @@ import { write } from '@data-stores/psql'
 import assert from 'http-assert'
 import type { PrivateUser } from '@services/users/types'
 import { isMoney, type Money } from '@ts-shared/money'
+import { assertUserReferenceTopicExists } from '@services/topics/user-reference-topic-validation'
 type SpendingCategoryData = {
   amount: Money
   spending_frequency?: 'monthly' | 'annually'
@@ -35,10 +36,20 @@ export async function createHouseholdSpendingCategory(
   let ownerValue: string
   if (householdId) {
     assert(await currentUserCanUpdateHousehold(currentUser, householdId), 403)
+    await assertUserReferenceTopicExists(
+      spendingCategoryId,
+      'spending_category',
+      'Invalid spending_category_topic_id',
+    )
     ownerField = 'household_id'
     ownerValue = householdId
   } else {
     assert(currentUserCanEditUsersSpendingCategories(currentUser, user.id), 403)
+    await assertUserReferenceTopicExists(
+      spendingCategoryId,
+      'spending_category',
+      'Invalid spending_category_topic_id',
+    )
     const individual = await getOrCreateIndividual(user)
     ownerField = 'individual_id'
     ownerValue = individual.id
@@ -83,7 +94,10 @@ export async function createHouseholdSpendingCategory(
       if (pgError.constraint?.includes('household_id')) {
         assert(false, 422, 'Invalid household_id')
       }
-      assert(false, 422, 'Invalid spending_category_topic_id')
+      if (pgError.constraint === 'spending_entries_spending_category_topic_id_fkey') {
+        assert(false, 404, 'Topic not found')
+      }
+      throw err
     }
     throw err
   }

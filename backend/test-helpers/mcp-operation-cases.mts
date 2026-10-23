@@ -12,7 +12,7 @@ import { userMergedParticipationGroups } from '../mcp/registry/user-merged-parti
 import { userMergedAccountGroups } from '../mcp/registry/user-merged-account-tools.mts'
 import { adminMergedGroups } from '../mcp/registry/admin-merged-tools.mts'
 import { listToolsForAudience, isToolMcpEligible } from '../mcp/registry/select.mts'
-import { toolRouteKeys } from '../services/mcp-tools/tool-route-keys.mts'
+import { toolRouteKeys } from './mcp-route-keys.mts'
 import { validateToolArguments } from '../services/mcp-tools/validate-tool-arguments.mts'
 import type { Tool } from '../services/openai-agents/tool-types.mts'
 

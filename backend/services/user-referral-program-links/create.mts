@@ -9,6 +9,7 @@ import { addUrl } from '@services/urls/upsert'
 import { assertCurrentUserCanCreateUserReferralLink } from './authorization.mts'
 import type { UserReferralLink } from './types.mts'
 import { userReferralLinkColumns } from './columns.mts'
+import { assertUserReferenceTopicExists } from '@services/topics/user-reference-topic-validation'
 
 export async function createUserReferralLink(
   currentUser: PrivateUser | null,
@@ -25,6 +26,11 @@ export async function createUserReferralLink(
   validateUUID(data.referral_program_id)
 
   assertCurrentUserCanCreateUserReferralLink(currentUser, data.user_id)
+  await assertUserReferenceTopicExists(
+    data.referral_program_id,
+    'referral_program',
+    'Invalid referral_program_id',
+  )
 
   const validationResult = await isUrlReferralLink(data.url, {
     referral_program_id: data.referral_program_id,

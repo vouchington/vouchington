@@ -11,6 +11,7 @@ import { parseUtcDay } from '@modules/utils'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { PrivateUser } from '@services/users/types'
+import { assertUserReferenceTopicExists } from '@services/topics/user-reference-topic-validation'
 
 type UpdateIndividualRewardsProgramStatusData = {
   started_on?: string | null
@@ -47,6 +48,11 @@ export async function createIndividualRewardsProgramStatus(
   assert(currentUser, 401, 'User not logged in')
   assert(currentUserCanAccessUser(currentUser, user.id), 403, 'Forbidden')
   assertNotSuspended(currentUser)
+  await assertUserReferenceTopicExists(
+    rewardsProgramStatusId,
+    'rewards_program_status',
+    'Invalid rewards_program_status_topic_id',
+  )
   const individual = await getOrCreateIndividual(user)
   let rows: { id: string }[]
   try {
@@ -54,8 +60,12 @@ export async function createIndividualRewardsProgramStatus(
       sql`/* createIndividualRewardsProgramStatus */ INSERT INTO individual_rewards_program_statuses (individual_id, rewards_program_status_topic_id) VALUES (${individual.id}, ${rewardsProgramStatusId}) RETURNING id`,
     ))
   } catch (err) {
-    if ((err as { code?: string }).code === '23503')
-      assert(false, 422, 'Invalid rewards_program_status_topic_id')
+    const pgError = err as { code?: string; constraint?: string }
+    if (
+      pgError.code === '23503' &&
+      pgError.constraint === 'fk_individual_rewards_program_statuses__rewards_program_status'
+    )
+      assert(false, 404, 'Topic not found')
     throw err
   }
   const status = await getIndividualRewardsProgramStatusById(
