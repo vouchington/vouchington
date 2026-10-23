@@ -46,8 +46,8 @@ both gates.
 
 Grok applies its OS sandbox process-wide at startup, and every sandboxed profile denies the macOS
 keychain. Inside it `gh` reports the token as invalid, reads fall back to anonymous, and a private
-org member's comment reads as `CONTRIBUTOR`, so `/shepherd` refuses the request. The production
-`grok-print` and `grok-print-plan` Commands therefore pass `--sandbox off`; the fix is the Command
+org member's comment reads as `CONTRIBUTOR`, so `/shepherd` refuses the request. When the route
+selects Grok, `grok-print` and `grok-print-plan` pass `--sandbox off`; the fix is the Command
 flag, not `gh auth login`. With the sandbox off, plan mode gates Grok's edit tools only, so treat it
 as a behavioral guardrail rather than read-only enforcement and grant no Bash allow rules on plan
 Commands.
