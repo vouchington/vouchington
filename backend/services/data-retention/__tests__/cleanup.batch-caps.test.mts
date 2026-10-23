@@ -66,6 +66,10 @@ function emptyScopedOptions(now: Date) {
     webPushSubscriptionTombstones: emptyWindow,
     oldModerationQueueClaims: emptyWindow,
     oldModerationMediaReveals: emptyWindow,
+    sesBounceEvents: emptyWindow,
+    systemPrunedNotifications: emptyWindow,
+    userDeletedNotifications: emptyWindow,
+    moderationEmailSends: emptyWindow,
   }
 }
 

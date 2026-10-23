@@ -9,7 +9,6 @@ import {
   getCommunityModerationSummaryCommunities,
   getModerationActivityWindowStart,
   getModerationEmailCadence,
-  getModerationEmailTimezone,
   hasModerationEmailSent,
   isModerationEmailsEnabled,
   formatLocalDate,
@@ -18,6 +17,7 @@ import {
   releaseUnsentModerationEmailClaim,
 } from '@services/communities/moderation-summary-emails'
 import { resolveEmailRecipient } from '@workers/emails/processors/recipient'
+import { isModerationSummaryJobCurrent } from '@services/communities/moderation-summary-retention'
 
 export const processSendCommunityModerationSummaryEmail = async (
   input: EmailTemplateInput,
@@ -34,6 +34,13 @@ export const processSendCommunityModerationSummaryEmail = async (
   const emailAddress = recipient.emailAddress
   if (input.userId) {
     if (!(await isModerationEmailsEnabled(input.userId))) return null
+    const timeZone = variables.dispatchTimeZone
+    if (
+      input.trackingKey &&
+      (!input.windowEnd ||
+        !isModerationSummaryJobCurrent(input.trackingKey, input.windowEnd, timeZone, new Date()))
+    )
+      return null
     if (input.trackingKey && (await hasModerationEmailSent(input.userId, input.trackingKey))) {
       return null
     }
@@ -47,7 +54,6 @@ export const processSendCommunityModerationSummaryEmail = async (
       windowEnd,
     )
     if (communities.length === 0) return null
-    const timeZone = await getModerationEmailTimezone(input.userId)
     renderVariables = {
       ...variables,
       communities,

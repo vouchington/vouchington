@@ -41,10 +41,17 @@ export function parseEmailDigestJob(name: string, data: unknown): ParsedEmailDig
   if (!isTemplate(name)) throw new JobPayloadError(`unknown job ${name}`)
   const record = asRecord(data, 'payload')
   assertExactKeys(record, ['input', 'variables'])
+  const input = parseEmailInput(record.input)
+  if (name === 'processSendCommunityModerationSummaryEmail') {
+    if (!input.userId || !input.trackingKey || !input.windowStart || !input.windowEnd)
+      throw new JobPayloadError(
+        'moderation summary requires userId, trackingKey, windowStart, and windowEnd',
+      )
+  }
   return {
     kind: 'template',
     name,
-    input: parseEmailInput(record.input),
+    input,
     variables: parseEngagementVariables[name](record.variables),
   }
 }

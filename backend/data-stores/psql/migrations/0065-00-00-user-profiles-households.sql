@@ -583,7 +583,7 @@ WHERE user_id IS NOT NULL AND access_token_ciphertext IS NOT NULL;
 
 -- SES Bounce Events
 DO $$ BEGIN
-  CREATE TYPE amazon_ses_notification_types AS ENUM ('bounce', 'complaint', 'delivery');
+  CREATE TYPE amazon_ses_notification_types AS ENUM ('bounce', 'complaint');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 DO $$ BEGIN
@@ -625,6 +625,25 @@ CREATE TABLE IF NOT EXISTS amazon_ses_bounce_events (
   CHECK (dedup_key IS NULL OR char_length(dedup_key) = 64)
 );
 
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE TABLE IF NOT EXISTS amazon_ses_address_suppressions (
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
+  email_address TEXT NOT NULL UNIQUE,
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
+  first_event_at TIMESTAMPTZ NOT NULL,
+  first_notification_type amazon_ses_notification_types NOT NULL,
+  latest_event_at TIMESTAMPTZ NOT NULL,
+  latest_notification_type amazon_ses_notification_types NOT NULL,
+  CHECK (email_address <> '' AND email_address = lower(trim(email_address))),
+  CHECK (first_event_at <= latest_event_at)
+);
+COMMENT ON TABLE amazon_ses_address_suppressions IS 'Durable suppression identity for each address with a permanent bounce or complaint.';
+COMMENT ON COLUMN amazon_ses_address_suppressions.email_address IS 'Normalized address suppressed from outbound email.';
+COMMENT ON COLUMN amazon_ses_address_suppressions.first_event_at IS 'Earliest provider occurrence time of a permanent bounce or complaint.';
+COMMENT ON COLUMN amazon_ses_address_suppressions.first_notification_type IS 'SES type of the earliest suppression event.';
+COMMENT ON COLUMN amazon_ses_address_suppressions.latest_event_at IS 'Latest provider occurrence time of a permanent bounce or complaint.';
+COMMENT ON COLUMN amazon_ses_address_suppressions.latest_notification_type IS 'SES type of the latest suppression event.';
+
 -- GIN index for querying bounced email addresses in recipients array
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_amazon_ses_bounce_events__recipients
@@ -653,8 +672,8 @@ CREATE OR REPLACE TRIGGER trigger_amazon_ses_bounce_events_append_only
 BEFORE UPDATE OR DELETE ON amazon_ses_bounce_events
 FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
 
-COMMENT ON TABLE amazon_ses_bounce_events IS 'Records email bounce, complaint, and delivery notifications received from AWS SES.';
-COMMENT ON COLUMN amazon_ses_bounce_events.notification_type IS 'SES notification type: bounce, complaint, or delivery.';
+COMMENT ON TABLE amazon_ses_bounce_events IS 'Records email bounce and complaint notifications received from AWS SES.';
+COMMENT ON COLUMN amazon_ses_bounce_events.notification_type IS 'Stored SES notification type: bounce or complaint.';
 COMMENT ON COLUMN amazon_ses_bounce_events.bounce_type IS 'Bounce classification: permanent, transient, or undetermined.';
 COMMENT ON COLUMN amazon_ses_bounce_events.amazon_ses_bounce_subtype_id IS 'Identifier of the detailed SES bounce subtype (e.g. General, NoEmail).';
 COMMENT ON COLUMN amazon_ses_bounce_events.recipients IS 'JSONB array of recipient email addresses affected by this event.';

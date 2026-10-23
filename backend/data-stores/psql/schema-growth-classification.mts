@@ -43,12 +43,10 @@ const INDEFINITE_AUDIT_AND_WORKFLOW_TABLES = [
   'report_integrity_flags',
   'review_dispute_lifecycle_changes',
   'review_disputes',
-  'amazon_ses_bounce_events',
   'stripe_events',
   'user_data_requests',
   'user_engagement_email_sends',
   'user_import_requests',
-  'user_moderation_email_sends',
   'user_rss_feed_import_batches',
   'user_rss_feed_import_rows',
   'user_rss_feed_import_row_discoveries',
@@ -106,6 +104,10 @@ export function buildUnboundedUnpartitionedTables(
       },
     ],
     entries: [
+      [
+        'amazon_ses_address_suppressions',
+        'One durable row per normalized address with a permanent bounce or complaint; address-key reads remain selective.',
+      ],
       ...entityRelationMetadatum.flatMap(({ table_name }) =>
         partitionedTables.has(table_name)
           ? []

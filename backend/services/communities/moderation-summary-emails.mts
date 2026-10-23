@@ -48,14 +48,15 @@ async function dispatchModerationSummary(
     sendKey = buildModerationSendKey(recipient, now)
     if (!(await claimModerationEmailSend(recipient.id, sendKey))) return
 
-    const props: CommunityModerationSummaryEmailProps = {
+    const props = {
       userName: recipient.username ?? undefined,
       generatedForDate: formatLocalDate(now, recipient.moderation_email_timezone),
+      dispatchTimeZone: recipient.moderation_email_timezone,
       settingsUrl: getSiteUrl('/my/notification-settings'),
       unsubscribeUrl: createEmailUnsubscribeUrl(recipient.id, 'community_digest'),
       physicalAddress: getMarketingPostalAddress(),
       communities,
-    }
+    } satisfies CommunityModerationSummaryEmailProps & { dispatchTimeZone: string }
     await enqueueSendCommunityModerationSummaryEmail(
       {
         userId: recipient.id,
@@ -107,18 +108,6 @@ export async function isModerationEmailsEnabled(userId: string): Promise<boolean
     `,
   )
   return rows.at(0)?.is_moderation_emails_enabled ?? false
-}
-
-export async function getModerationEmailTimezone(userId: string): Promise<string> {
-  const { rows } = await read<{ moderation_email_timezone: string }>(
-    sql`/* getModerationEmailTimezone */
-      SELECT COALESCE(moderation_email_timezone, 'America/Los_Angeles') AS moderation_email_timezone
-      FROM view_users_private
-      WHERE id = ${userId}
-      LIMIT 1
-    `,
-  )
-  return rows[0]?.moderation_email_timezone ?? 'America/Los_Angeles'
 }
 
 export async function getModerationEmailCadence(
@@ -625,7 +614,7 @@ function getIsoDayOfWeekForLocalDate(localDate: string): number {
   return day === 0 ? 7 : day
 }
 
-function getIsoWeekKey(localDate: string): string {
+export function getIsoWeekKey(localDate: string): string {
   const date = new Date(`${localDate}T00:00:00.000Z`)
   const utcDate = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()))
   const dayNumber = utcDate.getUTCDay() || 7

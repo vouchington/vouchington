@@ -90,6 +90,18 @@ describe('claimModerationEmailSend', () => {
 
     await dispatchCommunityModerationSummaryEmails(now)
 
+    const jobs = await readAllQueueJobs(emailDigests)
+    const queuedSummary = jobs.find(job => {
+      const data = job.data as { input?: { userId?: string } }
+      return (
+        job.name === EMAIL_DIGESTS_SEND_MODERATION_SUMMARY_JOB.name &&
+        data.input?.userId === user!.id
+      )
+    })
+    expect(queuedSummary?.data).toMatchObject({
+      variables: { dispatchTimeZone: 'UTC' },
+    })
+
     await expect(
       claimModerationEmailSend(
         user!.id,

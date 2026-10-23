@@ -44,6 +44,15 @@ flowchart TD
   leases remain independent so one unfinished window does not restart completed delivery.
 - **No raw external URLs.** RSS item notifications carry only an internal redirect id; the server
   resolves the destination.
+- **Tombstone retention follows reconciliation.** Daily bounded sweeps remove old dismissed
+  post and RSS notifications only when they have no event key, their source is gone, and no push
+  intent survives. Copyright and other event-key notifications retain durable replay suppression;
+  a surviving source can still be restored or must continue to suppress re-notification, so its
+  tombstone remains regardless of age. Moderator-summary send keys expire after their deduplication
+  window; the worker rejects queued windows older than that same horizon so a delayed retry cannot
+  send again after its claim expires. SES delivery callbacks are acknowledged without storing their
+  payloads. Permanent bounces and complaints fold into one durable suppression row per address;
+  old raw SES events are deleted after that suppression state is recorded.
 
 Post-publication owns subscription reconciliation and notification dispatch; the notifications
 domain owns push delivery and recovery.

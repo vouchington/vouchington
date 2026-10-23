@@ -77,6 +77,8 @@ Prefer fewer, shared queues: each queue costs a blocking connection, timers, and
   the mark for a queue retry; an unknown send outcome keeps it to prevent duplicate mail.
   The mark-first contract accepts a lost summary if execution stops or the mark acknowledgement
   is lost before dispatch. An unconfirmed mark cannot safely be cleared without proving ownership.
+  Keep the queued period's timezone with the job so a later preference change cannot invalidate
+  its send key or relabel its summary.
 - **When merging,** namespace job names, deduplication IDs, job IDs, scheduler IDs, and ordering
   keys by domain, and size the worker for the combined load. A job that already needs an ordering
   key keeps it, namespaced, and gives up any domain-wide group cap.

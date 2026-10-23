@@ -43,6 +43,14 @@ import {
   cleanupOldModerationMediaReveals,
 } from './cleanup-moderation-operations.mts'
 import {
+  cleanupSesBounceEvents,
+  cleanupSystemPrunedNotifications,
+  cleanupUserDeletedNotifications,
+  cleanupModerationEmailSends,
+  type NotificationEmailCleanupOptions,
+  type NotificationEmailCleanupResult,
+} from './cleanup-notification-email.mts'
+import {
   applyRetentionLimits,
   getRetentionCutoffDate,
   normalizeRetentionDays,
@@ -75,6 +83,12 @@ export { cleanupTerminalNotificationPushIntents }
 export { cleanupTerminalStripeEventWork, cleanupAbandonedMembershipPurchaseIntents }
 export { cleanupOldPendingNotificationPushIntents }
 export { cleanupOldModerationQueueClaims, cleanupOldModerationMediaReveals }
+export {
+  cleanupSesBounceEvents,
+  cleanupSystemPrunedNotifications,
+  cleanupUserDeletedNotifications,
+  cleanupModerationEmailSends,
+}
 
 export async function cleanupAnalyticsLocalFiles(): Promise<void> {
   if (process.env.ANALYTICS_BACKEND !== 'local') return
@@ -132,6 +146,10 @@ type DataRetentionCleanupOptions = {
   }>
   oldModerationQueueClaims?: OptionalRetentionLimits<CleanupOptions>
   oldModerationMediaReveals?: OptionalRetentionLimits<CleanupOptions>
+  sesBounceEvents?: OptionalRetentionLimits<NotificationEmailCleanupOptions>
+  systemPrunedNotifications?: OptionalRetentionLimits<NotificationEmailCleanupOptions>
+  userDeletedNotifications?: OptionalRetentionLimits<NotificationEmailCleanupOptions>
+  moderationEmailSends?: OptionalRetentionLimits<NotificationEmailCleanupOptions>
 }
 
 type DataRetentionCleanupResult = {
@@ -158,6 +176,10 @@ type DataRetentionCleanupResult = {
   oldPendingNotificationPushIntents: PendingNotificationPushIntentCleanupResult
   oldModerationQueueClaims: CleanupResult & { cursorId: string | null }
   oldModerationMediaReveals: CleanupResult & { cursorId: string | null }
+  sesBounceEvents: NotificationEmailCleanupResult
+  systemPrunedNotifications: NotificationEmailCleanupResult
+  userDeletedNotifications: NotificationEmailCleanupResult
+  moderationEmailSends: NotificationEmailCleanupResult
 }
 
 export async function runDataRetentionCleanup(
@@ -238,6 +260,16 @@ export async function runDataRetentionCleanup(
   const oldModerationMediaReveals = await cleanupOldModerationMediaReveals(
     withLimits(options.oldModerationMediaReveals),
   )
+  const sesBounceEvents = await cleanupSesBounceEvents(withLimits(options.sesBounceEvents))
+  // Tombstone deletion checks for surviving intents, so interrupted intent cleanup cannot
+  // discard delivery state; running it first only makes already-terminal rows eligible sooner.
+  const [systemPrunedNotifications, userDeletedNotifications, moderationEmailSends] =
+    await Promise.all([
+      cleanupSystemPrunedNotifications(withLimits(options.systemPrunedNotifications)),
+      cleanupUserDeletedNotifications(withLimits(options.userDeletedNotifications)),
+      cleanupModerationEmailSends(withLimits(options.moderationEmailSends)),
+    ])
+  // ast-grep-ignore: no-three-sequential-awaits -- retained relation and media bindings must be pruned before their identity roots
   const retainedRelationIdentities = await cleanupRetainedRelationIdentities(
     retainedPageSize,
     options.retainedRelationIdentityKeys,
@@ -276,6 +308,10 @@ export async function runDataRetentionCleanup(
     oldPendingNotificationPushIntents,
     oldModerationQueueClaims,
     oldModerationMediaReveals,
+    sesBounceEvents,
+    systemPrunedNotifications,
+    userDeletedNotifications,
+    moderationEmailSends,
   }
 }
 

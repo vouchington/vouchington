@@ -6,6 +6,7 @@ import {
   dataRetentionConfig,
   getDataRetentionLimits,
   getPartitionStatusProbeLimit,
+  getSesBounceRetentionDays,
 } from '../config.mts'
 
 describe('getDataRetentionLimits', () => {
@@ -61,12 +62,24 @@ describe('getDataRetentionLimits', () => {
   })
 
   it('keeps every default finite, positive and within its hard maximum', () => {
-    for (const field of ['batch_size', 'max_batches_per_run'] as const) {
+    for (const field of [
+      'batch_size',
+      'max_batches_per_run',
+      'ses_bounce_retention_days',
+    ] as const) {
       expect(Number.isInteger(DEFAULT_DATA_RETENTION_CONFIG[field])).toBe(true)
       expect(DEFAULT_DATA_RETENTION_CONFIG[field]).toBeGreaterThan(0)
       expect(DEFAULT_DATA_RETENTION_CONFIG[field]).toBeLessThanOrEqual(
         DATA_RETENTION_MAX_VALUES[field],
       )
     }
+  })
+
+  it('reads the bounded raw SES event window from DynamicConfig', () => {
+    expect(getSesBounceRetentionDays()).toBe(
+      DEFAULT_DATA_RETENTION_CONFIG.ses_bounce_retention_days,
+    )
+    overrideDynamicConfigFieldsForTest(dataRetentionConfig, { ses_bounce_retention_days: 30 })
+    expect(getSesBounceRetentionDays()).toBe(30)
   })
 })

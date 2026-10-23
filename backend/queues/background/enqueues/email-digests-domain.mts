@@ -55,7 +55,7 @@ export type ProcessSendFollowNewsSourcesEmailVariables = Omit<
 export type ProcessSendCommunityModerationSummaryEmailVariables = Omit<
   CommunityModerationSummaryEmailProps,
   'unsubscribeUrl' | 'physicalAddress'
-> & { unsubscribeUrl?: string; physicalAddress?: string }
+> & { dispatchTimeZone: string; unsubscribeUrl?: string; physicalAddress?: string }
 
 /** A digest email rendered at send time: the recipient plus the template's own variables. */
 export type EmailDigestSendData<TVariables> = { input: EmailDigestInput; variables: TVariables }
@@ -64,5 +64,11 @@ export type SendPostReferralLinkEmailData =
   EmailDigestSendData<ProcessSendPostReferralLinkEmailVariables>
 export type SendFollowNewsSourcesEmailData =
   EmailDigestSendData<ProcessSendFollowNewsSourcesEmailVariables>
-export type SendCommunityModerationSummaryEmailData =
-  EmailDigestSendData<ProcessSendCommunityModerationSummaryEmailVariables>
+export type SendCommunityModerationSummaryEmailData = {
+  input: Extract<EmailDigestInput, { userId: string }> & {
+    trackingKey: string
+    windowStart: string
+    windowEnd: string
+  }
+  variables: ProcessSendCommunityModerationSummaryEmailVariables
+}
