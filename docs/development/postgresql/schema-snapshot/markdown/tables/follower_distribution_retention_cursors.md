@@ -6,13 +6,13 @@ One persisted keyset position and fixed cutoff for terminal follower-distributio
 
 Not partitioned — growth: bounded.
 
-| Column                              | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                                           |
-| ----------------------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------------- |
-| `is_singleton`                      | `boolean`                  | no       | `true`              |          |           |           | Checked true key permits one cleanup cursor.                                                                      |
-| `sweep_cutoff_at`                   | `timestamp with time zone` | yes      |                     |          |           |           | Fixed UUIDv7 age cutoff captured when the cleanup pass starts; NULL means idle.                                   |
-| `cursor_distribution_id`            | `uuid`                     | yes      |                     |          |           |           | Last terminal follower-distribution id processed in the current pass; a position, not a live entity reference.    |
-| `sweep_upper_bound_distribution_id` | `uuid`                     | yes      |                     |          |           |           | Highest eligible follower-distribution id captured when the pass starts; a position, not a live entity reference. |
-| `updated_at`                        | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           | Last time the bounded sweep cursor advanced.                                                                      |
+| Column                                    | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                                           |
+| ----------------------------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------------- |
+| `is_singleton`                            | `boolean`                  | no       | `true`              |          |           |           | Checked true key permits one cleanup cursor.                                                                      |
+| `sweep_cutoff_at`                         | `timestamp with time zone` | yes      |                     |          |           |           | Fixed UUIDv7 age cutoff captured when the cleanup pass starts; NULL means idle.                                   |
+| `cursor_distribution_position`            | `uuid`                     | yes      |                     |          |           |           | Last terminal follower-distribution id processed in the current pass; a position, not a live entity reference.    |
+| `sweep_upper_bound_distribution_position` | `uuid`                     | yes      |                     |          |           |           | Highest eligible follower-distribution id captured when the pass starts; a position, not a live entity reference. |
+| `updated_at`                              | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           | Last time the bounded sweep cursor advanced.                                                                      |
 
 **Primary key:** `PRIMARY KEY (is_singleton)`
 
@@ -21,9 +21,9 @@ _none_
 
 **Check constraints:**
 
-- `follower_distribution_retention_cursors_check`: `CHECK (((sweep_cutoff_at IS NOT NULL) OR ((cursor_distribution_id IS NULL) AND (sweep_upper_bound_distribution_id IS NULL))))`
-- `follower_distribution_retention_cursors_check1`: `CHECK (((sweep_cutoff_at IS NULL) OR (sweep_upper_bound_distribution_id IS NOT NULL)))`
-- `follower_distribution_retention_cursors_check2`: `CHECK (((cursor_distribution_id IS NULL) OR (cursor_distribution_id <= sweep_upper_bound_distribution_id)))`
+- `follower_distribution_retention_cursors_check`: `CHECK (((sweep_cutoff_at IS NOT NULL) OR ((cursor_distribution_position IS NULL) AND (sweep_upper_bound_distribution_position IS NULL))))`
+- `follower_distribution_retention_cursors_check1`: `CHECK (((sweep_cutoff_at IS NULL) OR (sweep_upper_bound_distribution_position IS NOT NULL)))`
+- `follower_distribution_retention_cursors_check2`: `CHECK (((cursor_distribution_position IS NULL) OR (cursor_distribution_position <= sweep_upper_bound_distribution_position)))`
 - `follower_distribution_retention_cursors_is_singleton_check`: `CHECK (is_singleton)`
 
 **Foreign keys:**

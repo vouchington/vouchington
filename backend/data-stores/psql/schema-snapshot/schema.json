@@ -3245,8 +3245,19 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 2,
+          "ordinalPosition": 3,
           "type": "text"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": "Virtual UUIDv7 creation time for per-activity Follow identity; the identity and Undo state remain durable.",
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2,
+          "type": "timestamp with time zone"
         },
         "id": {
           "collation": null,
@@ -3267,7 +3278,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 3,
+          "ordinalPosition": 4,
           "type": "uuid"
         },
         "target_user_id": {
@@ -3278,7 +3289,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4,
+          "ordinalPosition": 5,
           "type": "uuid"
         },
         "undone_at": {
@@ -3289,7 +3300,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "timestamp with time zone"
         }
       },
@@ -44151,13 +44162,13 @@
     },
     "follower_distribution_retention_cursors": {
       "checkConstraints": {
-        "follower_distribution_retention_cursors_check": "CHECK (((sweep_cutoff_at IS NOT NULL) OR ((cursor_distribution_id IS NULL) AND (sweep_upper_bound_distribution_id IS NULL))))",
-        "follower_distribution_retention_cursors_check1": "CHECK (((sweep_cutoff_at IS NULL) OR (sweep_upper_bound_distribution_id IS NOT NULL)))",
-        "follower_distribution_retention_cursors_check2": "CHECK (((cursor_distribution_id IS NULL) OR (cursor_distribution_id <= sweep_upper_bound_distribution_id)))",
+        "follower_distribution_retention_cursors_check": "CHECK (((sweep_cutoff_at IS NOT NULL) OR ((cursor_distribution_position IS NULL) AND (sweep_upper_bound_distribution_position IS NULL))))",
+        "follower_distribution_retention_cursors_check1": "CHECK (((sweep_cutoff_at IS NULL) OR (sweep_upper_bound_distribution_position IS NOT NULL)))",
+        "follower_distribution_retention_cursors_check2": "CHECK (((cursor_distribution_position IS NULL) OR (cursor_distribution_position <= sweep_upper_bound_distribution_position)))",
         "follower_distribution_retention_cursors_is_singleton_check": "CHECK (is_singleton)"
       },
       "columns": {
-        "cursor_distribution_id": {
+        "cursor_distribution_position": {
           "collation": null,
           "comment": "Last terminal follower-distribution id processed in the current pass; a position, not a live entity reference.",
           "defaultExpression": null,
@@ -44190,7 +44201,7 @@
           "ordinalPosition": 2,
           "type": "timestamp with time zone"
         },
-        "sweep_upper_bound_distribution_id": {
+        "sweep_upper_bound_distribution_position": {
           "collation": null,
           "comment": "Highest eligible follower-distribution id captured when the pass starts; a position, not a live entity reference.",
           "defaultExpression": null,
