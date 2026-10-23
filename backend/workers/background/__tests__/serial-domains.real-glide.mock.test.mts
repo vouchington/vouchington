@@ -54,6 +54,7 @@ describe('serial background domains through real GlideMQ', () => {
         ),
       },
     })
+    harness.registerBeforeClose(() => release.resolve())
     try {
       const jobs = await Promise.all([
         harness.add(POST_PUBLICATION_RECONCILE_JOB, {}),

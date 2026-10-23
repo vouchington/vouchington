@@ -13,12 +13,10 @@ networkAllowlist?.installTestNetworkAllowlist({ isExempt: isLiveProviderProject 
 // Escape hatch for a run where the heuristic misfires — see docs/development/tests.md.
 const guardDisabled = process.env.VITEST_FAKE_TIMER_GUARD === 'off'
 
-afterEach(context => {
+afterEach(({ task }) => {
   // Consume even when the timer guard is off so a violation cannot leak into the next test.
   const networkMessage = networkAllowlist?.consumeTestNetworkAllowlistViolation()
-  const timerMessage = guardDisabled
-    ? null
-    : checkAndRestoreFakeTimers(vi, context.task.fullTestName)
+  const timerMessage = guardDisabled ? null : checkAndRestoreFakeTimers(vi, task.fullTestName)
   if (timerMessage) throw new Error(timerMessage)
   if (networkMessage) throw new Error(networkMessage)
 })

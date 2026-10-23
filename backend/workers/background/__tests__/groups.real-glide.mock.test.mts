@@ -51,6 +51,7 @@ describe('background domain groups through real GlideMQ', () => {
         [OPENAI_MODERATION_POST_JOB.name]: () => otherDomainRan.resolve(),
       },
     })
+    harness.registerBeforeClose(() => release.resolve())
     try {
       const flood = await Promise.all(
         Array.from({ length: 6 }, () => harness!.add(SES_INBOUND_PROCESS_JOB, sesData())),

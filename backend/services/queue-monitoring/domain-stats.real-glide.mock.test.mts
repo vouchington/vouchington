@@ -62,6 +62,7 @@ describe('capped per-domain job counts through real GlideMQ', () => {
         }
       },
     })
+    harness.registerBeforeClose(() => release.resolve())
     try {
       const done = await Promise.all([
         harness.add(SES_INBOUND_PROCESS_JOB, sesData(), UNGROUPED),
