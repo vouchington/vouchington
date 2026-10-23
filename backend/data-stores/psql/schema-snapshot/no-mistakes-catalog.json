@@ -1003,6 +1003,9 @@
     "oauth_grant_types": {
       "values": ["authorization_code", "refresh_token"]
     },
+    "oauth_native_attestation_statuses": {
+      "values": ["attested", "unattested"]
+    },
     "oauth_response_types": {
       "values": ["code"]
     },
@@ -1247,6 +1250,9 @@
     },
     "user_rss_feed_import_row_outcomes": {
       "values": ["followed", "imported", "source_created", "already_following", "error"]
+    },
+    "user_session_authentication_origins": {
+      "values": ["web", "native"]
     },
     "vote_integrity_flag_types": {
       "values": ["velocity_spike", "ip_correlation"]
@@ -7383,6 +7389,29 @@
           "primary": true,
           "ready": true,
           "unique": true,
+          "valid": true
+        },
+        "idx_app_attestation_keys__did": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_app_attestation_keys__did ON public.app_attestation_keys USING btree (did)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "did",
+              "descending": false,
+              "expression": "did",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
           "valid": true
         }
       },
@@ -73618,7 +73647,7 @@
           "generated": null,
           "generatedExpression": null,
           "identity": null,
-          "nullable": false,
+          "nullable": true,
           "ordinalPosition": 3
         },
         "resource": {
@@ -76493,6 +76522,10 @@
     },
     "oauth_grants": {
       "checkConstraints": {
+        "oauth_grants_check": {
+          "definition": "CHECK (((session_id IS NULL) = (attestation_status IS NULL)))",
+          "validated": true
+        },
         "oauth_grants_resource_check": {
           "definition": "CHECK (((char_length(resource) >= 1) AND (char_length(resource) <= 2048)))",
           "validated": true
@@ -76503,6 +76536,16 @@
         }
       },
       "columns": {
+        "attestation_status": {
+          "comment": "Attestation status of the most recent native-session mint.",
+          "dataType": "oauth_native_attestation_statuses",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5
+        },
         "client_id": {
           "comment": "Client receiving the delegated grant.",
           "dataType": "uuid",
@@ -76521,7 +76564,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6
+          "ordinalPosition": 8
         },
         "created_at": {
           "comment": null,
@@ -76531,7 +76574,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9
+          "ordinalPosition": 11
         },
         "id": {
           "comment": null,
@@ -76551,7 +76594,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7
+          "ordinalPosition": 9
         },
         "resource": {
           "comment": "Protected resource audience covered by the grant.",
@@ -76561,7 +76604,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4
+          "ordinalPosition": 6
         },
         "revoked_at": {
           "comment": "Time at which the complete grant was revoked.",
@@ -76571,7 +76614,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8
+          "ordinalPosition": 10
         },
         "scopes": {
           "comment": "Latest canonical scope set consented for this client and resource.",
@@ -76581,7 +76624,17 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5
+          "ordinalPosition": 7
+        },
+        "session_id": {
+          "comment": "Native app session that may silently mint member MCP access; deletion cascades to this grant.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4
         },
         "updated_at": {
           "comment": null,
@@ -76591,7 +76644,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 10
+          "ordinalPosition": 12
         },
         "user_id": {
           "comment": "User who consented to the delegated grant.",
@@ -76614,6 +76667,14 @@
           "referencedTable": "oauth_clients",
           "validated": true
         },
+        "oauth_grants_session_id_fkey": {
+          "columns": ["session_id"],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "user_sessions",
+          "validated": true
+        },
         "oauth_grants_user_id_fkey": {
           "columns": ["user_id"],
           "onDelete": "CASCADE",
@@ -76627,7 +76688,7 @@
         "idx_oauth_grants__active_subject": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX idx_oauth_grants__active_subject ON public.oauth_grants USING btree (user_id, client_id, resource) WHERE (revoked_at IS NULL)",
+          "definition": "CREATE UNIQUE INDEX idx_oauth_grants__active_subject ON public.oauth_grants USING btree (user_id, client_id, resource) WHERE ((revoked_at IS NULL) AND (session_id IS NULL))",
           "immediate": true,
           "keys": [
             {
@@ -76659,7 +76720,7 @@
             }
           ],
           "live": true,
-          "predicate": "(revoked_at IS NULL)",
+          "predicate": "((revoked_at IS NULL) AND (session_id IS NULL))",
           "primary": false,
           "ready": true,
           "unique": true,
@@ -76676,6 +76737,61 @@
               "column": "client_id",
               "descending": false,
               "expression": "client_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_oauth_grants__native_session": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_oauth_grants__native_session ON public.oauth_grants USING btree (session_id) WHERE (session_id IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "session_id",
+              "descending": false,
+              "expression": "session_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(session_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_oauth_grants__session": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_oauth_grants__session ON public.oauth_grants USING btree (session_id, id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "session_id",
+              "descending": false,
+              "expression": "session_id",
               "nullsFirst": false,
               "opclass": "pg_catalog.uuid_ops",
               "orderingSupported": true
@@ -76764,6 +76880,197 @@
         }
       },
       "uniqueConstraints": {}
+    },
+    "oauth_native_session_token_mints": {
+      "checkConstraints": {},
+      "columns": {
+        "access_token_id": {
+          "comment": "Snapshot of issued access token identifier, never the bearer secret.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6
+        },
+        "attestation_status": {
+          "comment": "Whether this mint verified an App Attest request signature.",
+          "dataType": "oauth_native_attestation_statuses",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7
+        },
+        "client_id": {
+          "comment": "Snapshot of native OAuth client identifier at mint time.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3
+        },
+        "grant_id": {
+          "comment": "Snapshot of session-scoped grant identifier at mint time.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4
+        },
+        "id": {
+          "comment": null,
+          "dataType": "uuid",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        },
+        "occurred_at": {
+          "comment": "UUIDv7-derived mint time.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8
+        },
+        "session_id": {
+          "comment": "Snapshot of authenticating session identifier at mint time.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5
+        },
+        "user_id": {
+          "comment": "Retained user identity at mint time.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2
+        }
+      },
+      "comment": "Append-only record of native-session MCP token issuance, preserved after grant or session deletion.",
+      "foreignKeys": {
+        "oauth_native_session_token_mints_user_id_fkey": {
+          "columns": ["user_id"],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_user_identities",
+          "validated": true
+        }
+      },
+      "indexes": {
+        "idx_oauth_native_session_token_mints__user": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_oauth_native_session_token_mints__user ON public.oauth_native_session_token_mints USING btree (user_id, id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "oauth_native_session_token_mints_access_token_id_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX oauth_native_session_token_mints_access_token_id_key ON public.oauth_native_session_token_mints USING btree (access_token_id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "access_token_id",
+              "descending": false,
+              "expression": "access_token_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "oauth_native_session_token_mints_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX oauth_native_session_token_mints_pkey ON public.oauth_native_session_token_mints USING btree (id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"]
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_oauth_native_session_token_mints_append_only": {
+          "definition": "CREATE TRIGGER trigger_oauth_native_session_token_mints_append_only BEFORE DELETE OR UPDATE ON public.oauth_native_session_token_mints FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()"
+        }
+      },
+      "uniqueConstraints": {
+        "oauth_native_session_token_mints_access_token_id_key": {
+          "columns": ["access_token_id"]
+        }
+      }
     },
     "oauth_refresh_token_families": {
       "checkConstraints": {
@@ -139818,6 +140125,16 @@
         }
       },
       "columns": {
+        "authentication_origin": {
+          "comment": "Server-controlled sign-in provenance; native is set only by native OTP or verified native OAuth broker completion.",
+          "dataType": "user_session_authentication_origins",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4
+        },
         "created_at": {
           "comment": null,
           "dataType": "timestamp with time zone",
@@ -139826,7 +140143,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10
+          "ordinalPosition": 11
         },
         "device_id": {
           "comment": "JWT device ID (dt.did) associated with this session.",
@@ -139846,7 +140163,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4
+          "ordinalPosition": 5
         },
         "expires_at": {
           "comment": "JWT session expiration timestamp.",
@@ -139856,7 +140173,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 8
+          "ordinalPosition": 9
         },
         "id": {
           "comment": null,
@@ -139876,7 +140193,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6
+          "ordinalPosition": 7
         },
         "last_seen_at": {
           "comment": "Most recent login/list/logout/revoke/refresh touch time for this session.",
@@ -139886,7 +140203,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7
+          "ordinalPosition": 8
         },
         "revoked_at": {
           "comment": "When the session was revoked. NULL means active.",
@@ -139896,7 +140213,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9
+          "ordinalPosition": 10
         },
         "updated_at": {
           "comment": null,
@@ -139906,7 +140223,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 11
+          "ordinalPosition": 12
         },
         "user_agent_string_id": {
           "comment": "Normalized user-agent row for the raw browser user-agent captured for this session.",
@@ -139916,7 +140233,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5
+          "ordinalPosition": 6
         },
         "user_id": {
           "comment": "Owning user for this session row.",

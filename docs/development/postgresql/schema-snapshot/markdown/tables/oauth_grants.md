@@ -6,18 +6,20 @@ Durable user consent for one client, resource, and canonical scope set.
 
 Not partitioned — growth: unbounded.
 
-| Column         | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                            |
-| -------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------ |
-| `id`           | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                    |
-| `user_id`      | `uuid`                     | no       |                              |          |           |           | User who consented to the delegated grant.                         |
-| `client_id`    | `uuid`                     | no       |                              |          |           |           | Client receiving the delegated grant.                              |
-| `resource`     | `text`                     | no       |                              |          |           |           | Protected resource audience covered by the grant.                  |
-| `scopes`       | `api_scopes[]`             | no       |                              |          |           |           | Latest canonical scope set consented for this client and resource. |
-| `consented_at` | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           | Time of the latest affirmative consent decision.                   |
-| `last_used_at` | `timestamp with time zone` | yes      |                              |          |           |           | Time at which the grant most recently issued or refreshed tokens.  |
-| `revoked_at`   | `timestamp with time zone` | yes      |                              |          |           |           | Time at which the complete grant was revoked.                      |
-| `created_at`   | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                    |
-| `updated_at`   | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                    |
+| Column               | Type                                | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                       |
+| -------------------- | ----------------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------------- |
+| `id`                 | `uuid`                              | no       | `uuidv7()`                   |          |           |           |                                                                                               |
+| `user_id`            | `uuid`                              | no       |                              |          |           |           | User who consented to the delegated grant.                                                    |
+| `client_id`          | `uuid`                              | no       |                              |          |           |           | Client receiving the delegated grant.                                                         |
+| `session_id`         | `uuid`                              | yes      |                              |          |           |           | Native app session that may silently mint member MCP access; deletion cascades to this grant. |
+| `attestation_status` | `oauth_native_attestation_statuses` | yes      |                              |          |           |           | Attestation status of the most recent native-session mint.                                    |
+| `resource`           | `text`                              | no       |                              |          |           |           | Protected resource audience covered by the grant.                                             |
+| `scopes`             | `api_scopes[]`                      | no       |                              |          |           |           | Latest canonical scope set consented for this client and resource.                            |
+| `consented_at`       | `timestamp with time zone`          | no       | `CURRENT_TIMESTAMP`          |          |           |           | Time of the latest affirmative consent decision.                                              |
+| `last_used_at`       | `timestamp with time zone`          | yes      |                              |          |           |           | Time at which the grant most recently issued or refreshed tokens.                             |
+| `revoked_at`         | `timestamp with time zone`          | yes      |                              |          |           |           | Time at which the complete grant was revoked.                                                 |
+| `created_at`         | `timestamp with time zone`          | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                               |
+| `updated_at`         | `timestamp with time zone`          | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                               |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -26,18 +28,22 @@ _none_
 
 **Check constraints:**
 
+- `oauth_grants_check`: `CHECK (((session_id IS NULL) = (attestation_status IS NULL)))`
 - `oauth_grants_resource_check`: `CHECK (((char_length(resource) >= 1) AND (char_length(resource) <= 2048)))`
 - `oauth_grants_scopes_check`: `CHECK ((cardinality(scopes) > 0))`
 
 **Foreign keys:**
 
 - `oauth_grants_client_id_fkey`: `FOREIGN KEY (client_id) REFERENCES oauth_clients(id) ON DELETE CASCADE`
+- `oauth_grants_session_id_fkey`: `FOREIGN KEY (session_id) REFERENCES user_sessions(id) ON DELETE CASCADE`
 - `oauth_grants_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
 
 **Indexes:**
 
-- `idx_oauth_grants__active_subject`: `CREATE UNIQUE INDEX idx_oauth_grants__active_subject ON public.oauth_grants USING btree (user_id, client_id, resource) WHERE (revoked_at IS NULL)`
+- `idx_oauth_grants__active_subject`: `CREATE UNIQUE INDEX idx_oauth_grants__active_subject ON public.oauth_grants USING btree (user_id, client_id, resource) WHERE ((revoked_at IS NULL) AND (session_id IS NULL))`
 - `idx_oauth_grants__client`: `CREATE INDEX idx_oauth_grants__client ON public.oauth_grants USING btree (client_id, id)`
+- `idx_oauth_grants__native_session`: `CREATE UNIQUE INDEX idx_oauth_grants__native_session ON public.oauth_grants USING btree (session_id) WHERE (session_id IS NOT NULL)`
+- `idx_oauth_grants__session`: `CREATE INDEX idx_oauth_grants__session ON public.oauth_grants USING btree (session_id, id)`
 - `idx_oauth_grants__user`: `CREATE INDEX idx_oauth_grants__user ON public.oauth_grants USING btree (user_id, id)`
 - `oauth_grants_pkey`: `CREATE UNIQUE INDEX oauth_grants_pkey ON public.oauth_grants USING btree (id)`
 
