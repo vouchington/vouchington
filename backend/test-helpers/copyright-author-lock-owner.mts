@@ -141,14 +141,22 @@ export async function withTestCopyrightAuthorLock<T>(
           settled,
           async wait() {
             await observer.wait(settled)
+            // PostgreSQL logs the notice outside the latch wait, so wait_event_type is briefly
+            // empty after delivery. The ungranted lock entry stays queued and proves the wait.
             await holder!(sql`/* copyrightAuthorLockOwner.clearActivitySnapshot */
                 SELECT pg_stat_clear_snapshot()`)
             const { rows: proof } = await holder!<{ waiting: boolean }>(sql`
                 /* copyrightAuthorLockOwner.validateNotice */
                 SELECT EXISTS (SELECT 1 FROM pg_stat_activity
                   WHERE pid = ${session.processId} AND application_name = ${session.applicationName}
-                    AND state = 'active' AND wait_event_type = 'Lock'
+                    AND state = 'active'
                     AND query LIKE '%lockPostPublicationScope%'
+                    AND EXISTS (SELECT 1 FROM pg_locks queued
+                      WHERE queued.pid = pg_stat_activity.pid AND queued.locktype = 'advisory'
+                        AND NOT queued.granted
+                        AND 'advisory lock [' || queued.database::text || ',' ||
+                          queued.classid::text || ',' || queued.objid::text || ',' ||
+                          queued.objsubid::text || ']' = ${lockIdentity.lock_tag})
                     AND ${lockIdentity.holder_pid} = ANY(pg_blocking_pids(pid))) AS waiting
               `)
             if (!proof[0]?.waiting) throw new Error('Owned notice did not retain its exact blocker')
