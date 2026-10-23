@@ -1,0 +1,61 @@
+name: CI dependency mirror
+
+on:
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: ci-dependency-mirror
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  mirror:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 29
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 2
+        with:
+          ref: main
+          persist-credentials: false
+
+      - name: Install checksum-verified regctl
+        timeout-minutes: 2
+        env:
+          REGCTL_PATH: ${{ runner.temp }}/regctl-v0.11.7-linux-amd64
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --connect-timeout 10 --max-time 90 \
+            https://github.com/regclient/regclient/releases/download/v0.11.7/regctl-linux-amd64 \
+            --output "$REGCTL_PATH"
+          printf '%s  %s\n' \
+            '3737fbbdd791e04e7a831640b681f3397a376498e80e2ad9b1b2d27296f239bc' \
+            "$REGCTL_PATH" | sha256sum --check
+          chmod 755 "$REGCTL_PATH"
+
+      - name: Stage and publish reviewed image digests
+        timeout-minutes: 26
+        env:
+          REGCTL: ${{ runner.temp }}/regctl-v0.11.7-linux-amd64
+          GHCR_TOKEN: ${{ github.token }}
+          GHCR_OWNER: ${{ github.repository_owner }}
+        run: |
+          set -euo pipefail
+          : "${REGCTL:?Missing checksum-verified regctl path}"
+          : "${GHCR_TOKEN:?Missing GHCR write token}"
+          bash ci/dependency-mirror/sync.sh ci/dependency-mirror/images.json
+
+      - name: Report mirror failure
+        if: failure()
+        timeout-minutes: 1
+        run: |
+          echo '::error::CI dependency mirror failed; inspect the failed stage before adopting or changing any consumed digest.'
+          echo 'CI dependency mirror failed. The approved digest tags were not advanced for any failed image.' >> "$GITHUB_STEP_SUMMARY"

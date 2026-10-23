@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "images": [
+    {
+      "package": "dependency-pgvector",
+      "source": "docker.io/pgvector/pgvector",
+      "tag": "pg18",
+      "digest": "sha256:691673308c99d2161ba298736f3147f1f22d79de2fb7ec93ae9b4afcab870b62"
+    },
+    {
+      "package": "dependency-valkey",
+      "source": "docker.io/valkey/valkey-bundle",
+      "tag": "9.1.0",
+      "digest": "sha256:16004aceeb7a1246e2d1bb85d353e38120eb440951cb7d0c971b6d63fda5b3d7"
+    },
+    {
+      "package": "dependency-dockerfile",
+      "source": "docker.io/docker/dockerfile",
+      "tag": "1-labs",
+      "digest": "sha256:ad43eec41369d9ef94412c0d1eb3203d12218d01da225afc92a3aeba3a0e7796"
+    },
+    {
+      "package": "dependency-buildkit",
+      "source": "docker.io/moby/buildkit",
+      "tag": "buildx-stable-1",
+      "digest": "sha256:cec9f139f45e93c5c69c60f8b07cfad9f43f4ef6b6a6cd917527fea5ff2e3dea"
+    },
+    {
+      "package": "dependency-node",
+      "source": "docker.io/library/node",
+      "tag": "26-slim",
+      "digest": "sha256:36793bcbb160a6a16cede1e62b93f84e26b78a972a8a4c0b879c1c12f22761ec"
+    },
+    {
+      "package": "dependency-node",
+      "source": "docker.io/library/node",
+      "tag": "26-trixie-slim",
+      "digest": "sha256:36793bcbb160a6a16cede1e62b93f84e26b78a972a8a4c0b879c1c12f22761ec"
+    },
+    {
+      "package": "dependency-node",
+      "source": "docker.io/library/node",
+      "tag": "26-alpine",
+      "digest": "sha256:40cd011b55415bc894e45b02fdd5a5dfde056921b7d23a64c74f80497af48797"
+    },
+    {
+      "package": "dependency-otel",
+      "source": "docker.io/otel/opentelemetry-collector-contrib",
+      "tag": "0.153.0",
+      "digest": "sha256:93aad750175cbf1a973ae1c5886c3371f4d800f61be25cdd26870b8441ffe9fa"
+    }
+  ]
+}

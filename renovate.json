@@ -8,7 +8,25 @@
   "timezone": "America/Los_Angeles",
   "prHourlyLimit": 4,
   "prConcurrentLimit": 8,
+  "packageRules": [
+    {
+      "description": "Propose Docker Hub dependency mirror digest updates as reviewable PRs whenever Renovate runs",
+      "matchFileNames": ["ci/dependency-mirror/images.json"],
+      "matchManagers": ["custom.regex"],
+      "schedule": ["at any time"],
+      "groupName": "CI dependency mirror digests"
+    }
+  ],
   "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Reviewed Docker Hub image indexes copied to GHCR",
+      "managerFilePatterns": ["ci/dependency-mirror/images.json"],
+      "matchStrings": [
+        "\"source\": \"docker\\.io/(?<depName>[^\"]+)\",\\s*\"tag\": \"(?<currentValue>[^\"]+)\",\\s*\"digest\": \"(?<currentDigest>sha256:[0-9a-f]{64})\""
+      ],
+      "datasourceTemplate": "docker"
+    },
     {
       "customType": "regex",
       "description": "Workflow env vars annotated with `# renovate: datasource=… depName=…`",

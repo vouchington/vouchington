@@ -8,5 +8,6 @@ The [CI reference](../ci.md) is canonical for the CI design rationale and gates.
 - [Artifact rerun safety](workflows/reference-artifact-rerun-safety.md)
 - [Auto Harness automation](workflows/reference-harness-automation.md)
 - [Merge queue run cancellation](workflows/reference-merge-queue-run-cancellation.md)
+- [CI dependency images](workflows/reference-dependency-image-mirror.md)
 - [Sharding](workflows/reference-sharding.md)
 - [Workflow trust boundary checklist](workflows/reference-pr-triggered-workflow-trust-boundary-checklist.md)
