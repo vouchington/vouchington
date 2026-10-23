@@ -10,12 +10,60 @@ import {
   closeScopedDynamicConfigContext,
   overrideDynamicConfigFieldsForTest,
 } from '@voucha/test-helpers/dynamic-config'
+import { getTestFriendSyncStartTime } from '@voucha/test-helpers/entities/oauth-friend-edge-locks'
 import { cleanupOAuthFriendEdgePage } from '../data-retention/cleanup-oauth-friend-edges.mts'
 import { connectOAuthAccountToUser } from './connect.mts'
 import { oauthAccountFriendWorkConfig } from './work-limits.mts'
+import { disconnectOAuthAccount } from '../my/oauth-account.mts'
 
 describe('bounded incoming friend resolution', () => {
   afterEach(() => closeScopedDynamicConfigContext([oauthAccountFriendWorkConfig]))
+
+  it('skips an old unresolved edge and completes the fresh target page', async () => {
+    overrideDynamicConfigFieldsForTest(oauthAccountFriendWorkConfig, {
+      friend_reference_connect_batch_size: 1,
+    })
+    const target = await createTestUser()
+    const targetProviderId = `github-resolution-clock-target-${target.id}`
+    const targetAccount = await insertTestOAuthAccount('github', targetProviderId)
+    if (!targetAccount.account_id) throw new Error('Target GitHub account id missing')
+    await connectTestOAuthAccount('github', target.id, targetProviderId)
+
+    const staleProviderId = `github-resolution-clock-stale-${target.id}`
+    const staleAccount = await insertTestOAuthAccount('github', staleProviderId)
+    if (!staleAccount.account_id) throw new Error('Stale GitHub source id missing')
+    const freshProviderId = `github-resolution-clock-fresh-${target.id}`
+    const freshAccount = await insertTestOAuthAccount('github', freshProviderId)
+    if (!freshAccount.account_id) throw new Error('Fresh GitHub source id missing')
+
+    const oldObservation = await getTestFriendSyncStartTime()
+    await disconnectOAuthAccount(target.id, 'github')
+    await insertTestGithubFriend(staleAccount.account_id, targetProviderId, oldObservation)
+    await insertTestGithubFriend(
+      freshAccount.account_id,
+      targetProviderId,
+      await getTestFriendSyncStartTime(),
+    )
+    await connectOAuthAccountToUser('github', target.id, targetProviderId)
+
+    const stale = (await getTestFriend('github', staleProviderId, targetProviderId))[0] as {
+      friend_github_account_id: string | null
+    }
+    const fresh = (await getTestFriend('github', freshProviderId, targetProviderId))[0] as {
+      friend_github_account_id: string | null
+    }
+    expect(stale.friend_github_account_id).toBeNull()
+    expect(fresh.friend_github_account_id).toBe(targetAccount.account_id)
+    expect(
+      await cleanupOAuthFriendEdgePage(
+        'github',
+        'resolve',
+        1,
+        new Date('2100-01-01'),
+        targetAccount.account_id,
+      ),
+    ).toMatchObject({ worked: false, hasMore: false })
+  })
 
   it('resolves one edge on connect and resumes the rest from the durable marker', async () => {
     overrideDynamicConfigFieldsForTest(oauthAccountFriendWorkConfig, {

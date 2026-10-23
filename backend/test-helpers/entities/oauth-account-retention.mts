@@ -67,7 +67,7 @@ export async function backdateOAuthAccountUnlinkedAt(
 export async function insertTestGithubFriend(
   accountId: string,
   friendId: string,
-  lastObservedAt: Date,
+  lastObservedAt: Date | string,
   friendAccountId?: string,
 ): Promise<string> {
   const { rows } = await write<{ id: string }>(

@@ -831,7 +831,7 @@ CREATE INDEX idx_facebook_friends__target_observed
 ON facebook_friends (friend_facebook_account_id, last_observed_at, id)
 WHERE friend_facebook_account_id IS NOT NULL;
 CREATE INDEX idx_facebook_friends__unresolved_reference
-ON facebook_friends (facebook_friend_id, id)
+ON facebook_friends (facebook_friend_id, last_observed_at, id)
 WHERE friend_facebook_account_id IS NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
