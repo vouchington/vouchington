@@ -1,5 +1,7 @@
 import assert from 'http-assert'
 
+export const MAX_APPLICATION_QUESTION_OPTIONS = 32_768
+
 const VALID_FIELD_TYPES = [
   'short_text',
   'long_text',
@@ -45,9 +47,9 @@ export function assertApplicationQuestionInputs(questions: ApplicationQuestionIn
         'select field types require options',
       )
       assert(
-        question.options.length <= 32_768,
+        question.options.length <= MAX_APPLICATION_QUESTION_OPTIONS,
         422,
-        'Select questions must have no more than 32768 options',
+        `Select questions must have no more than ${MAX_APPLICATION_QUESTION_OPTIONS} options`,
       )
       for (const label of question.options) {
         assert(
