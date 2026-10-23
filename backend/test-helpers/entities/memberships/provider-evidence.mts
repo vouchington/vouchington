@@ -55,9 +55,9 @@ export async function createTestPendingMembershipVerification(userId: string): P
   const { rows: evidenceRows } = await write<{ id: string }>(
     allowUnannotatedQuery(sql`
     INSERT INTO membership_provider_evidence_records (
-      membership_provider_context_id, evidence_lookup_sha256, encrypted_evidence
+      membership_provider_context_id, provider, evidence_lookup_sha256, encrypted_evidence
     ) VALUES (
-      fn_upsert_membership_provider_context_id('apple_app_store', 'test', ${applicationId}), ${'a'.repeat(64)}, ${Buffer.from('test')}
+      fn_upsert_membership_provider_context_id('apple_app_store', 'test', ${applicationId}), 'apple_app_store', ${'a'.repeat(64)}, ${Buffer.from('test')}
     ) RETURNING id`),
   )
   const evidenceId = evidenceRows[0]?.id

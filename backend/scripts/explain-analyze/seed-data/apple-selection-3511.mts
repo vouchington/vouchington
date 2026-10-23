@@ -16,11 +16,12 @@ export async function seedAppleSelection3511(): Promise<void> {
     FROM generate_series(1, 10000) ordinal ON CONFLICT DO NOTHING`)
   await write(`/* seedAppleSelection3511:evidence */
     INSERT INTO membership_provider_evidence_records
-      (id, membership_provider_context_id, membership_provider_lineage_id,
+      (id, membership_provider_context_id, provider, membership_provider_lineage_id,
        provider_event_id, evidence_lookup_sha256, encrypted_evidence,
        received_at, verified_at)
     SELECT ('019e0000-9800-7000-8000-' || lpad(to_hex(ordinal), 12, '0'))::uuid,
       '019e0000-9600-7000-8000-000000000001'::uuid,
+      'apple_app_store',
       ('019e0000-9700-7000-8000-' || lpad(to_hex(ordinal), 12, '0'))::uuid,
       'explain-apple-event-' || ordinal, lpad(to_hex(ordinal), 64, '0'),
       convert_to('synthetic-evidence', 'UTF8'), NOW() - INTERVAL '2 days',

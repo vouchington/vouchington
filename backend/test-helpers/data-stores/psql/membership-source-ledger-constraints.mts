@@ -11,6 +11,7 @@ export type MembershipSourceLedgerConstraintFixture = {
   rejectFamilyRenewalTarget(): ReturnType<typeof write>
   rejectMismatchedGrantActivationUser(): ReturnType<typeof write>
   rejectMismatchedGrantUser(): ReturnType<typeof write>
+  rejectMismatchedMembershipSourceKind(): ReturnType<typeof write>
   rejectObservationDeletion(): ReturnType<typeof write>
   rejectObservationUpdate(): ReturnType<typeof write>
 }
@@ -44,8 +45,8 @@ export async function createMembershipSourceLedgerConstraintFixture(): Promise<M
   const { rows: evidenceRows } = await write<{
     id: string
   }>(sql`/* createMembershipLedgerNegativeTestEvidence */
-    INSERT INTO membership_provider_evidence_records (membership_provider_context_id, membership_provider_lineage_id, evidence_lookup_sha256, encrypted_evidence, verified_at)
-    VALUES (fn_upsert_membership_provider_context_id('stripe', 'test', ${applicationId}), ${firstLineage!.id}, ${suffix.replaceAll('-', '').padEnd(64, '0')}, '\x01'::bytea, CURRENT_TIMESTAMP) RETURNING id`)
+    INSERT INTO membership_provider_evidence_records (membership_provider_context_id, provider, membership_provider_lineage_id, evidence_lookup_sha256, encrypted_evidence, verified_at)
+    VALUES (fn_upsert_membership_provider_context_id('stripe', 'test', ${applicationId}), 'stripe', ${firstLineage!.id}, ${suffix.replaceAll('-', '').padEnd(64, '0')}, '\x01'::bytea, CURRENT_TIMESTAMP) RETURNING id`)
   const evidenceId = evidenceRows[0]!.id
   const { rows: otherMappings } = await write<{
     id: string
@@ -66,6 +67,12 @@ export async function createMembershipSourceLedgerConstraintFixture(): Promise<M
   }
 
   return {
+    rejectMismatchedMembershipSourceKind() {
+      return write(sql`/* rejectMismatchedMembershipSourceKind */
+        INSERT INTO memberships
+          (user_id, membership_source_id, source_kind, membership_product_id, effective_at)
+        VALUES (${firstUserId}, ${sources[0]!.id}, 'admin_grant', ${productId}, CURRENT_TIMESTAMP)`)
+    },
     rejectCrossSourceState() {
       return write(
         sql`/* rejectCrossSourceMembershipState */ INSERT INTO membership_source_states (membership_source_id, source_kind, membership_provider_lineage_id, membership_product_id, effective_at) VALUES (${sources[0]!.id}, 'direct', ${secondLineage!.id}, ${productId}, CURRENT_TIMESTAMP)`,
@@ -145,8 +152,8 @@ export async function createUnverifiedMembershipObservationFixture(): Promise<Un
   const { rows: evidence } = await write<{
     id: string
   }>(sql`/* createUnverifiedMembershipObservationEvidence */
-    INSERT INTO membership_provider_evidence_records (membership_provider_context_id, membership_provider_lineage_id, evidence_lookup_sha256, encrypted_evidence, rejected_at, rejection_reason)
-    VALUES (fn_upsert_membership_provider_context_id('stripe', 'test', ${applicationId}), ${lineageId}, ${suffix.replaceAll('-', '').padEnd(64, 'a')}, '\x01'::bytea, NULL, NULL), (fn_upsert_membership_provider_context_id('stripe', 'test', ${applicationId}), ${lineageId}, ${suffix.replaceAll('-', '').padEnd(64, 'b')}, '\x02'::bytea, CURRENT_TIMESTAMP, 'invalid signature') RETURNING id`)
+    INSERT INTO membership_provider_evidence_records (membership_provider_context_id, provider, membership_provider_lineage_id, evidence_lookup_sha256, encrypted_evidence, rejected_at, rejection_reason)
+    VALUES (fn_upsert_membership_provider_context_id('stripe', 'test', ${applicationId}), 'stripe', ${lineageId}, ${suffix.replaceAll('-', '').padEnd(64, 'a')}, '\x01'::bytea, NULL, NULL), (fn_upsert_membership_provider_context_id('stripe', 'test', ${applicationId}), 'stripe', ${lineageId}, ${suffix.replaceAll('-', '').padEnd(64, 'b')}, '\x02'::bytea, CURRENT_TIMESTAMP, 'invalid signature') RETURNING id`)
   return {
     rejectObservation(providerRevision) {
       return write(sql`/* rejectUnverifiedMembershipObservation */

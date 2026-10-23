@@ -132,9 +132,9 @@ export async function createLocalTestMembership(
   await write(
     allowUnannotatedQuery(sql`
     INSERT INTO memberships (
-      user_id, membership_source_id, membership_product_id, effective_at, expires_at, projection_ended_at, cancelled_at, expired_at, past_due_at, paused_at
+      user_id, membership_source_id, source_kind, membership_product_id, effective_at, expires_at, projection_ended_at, cancelled_at, expired_at, past_due_at, paused_at
     ) VALUES (
-      ${userId}, ${sourceId}, ${productId}, ${effectiveAt}, ${expiresAt},
+      ${userId}, ${sourceId}, 'admin_grant', ${productId}, ${effectiveAt}, ${expiresAt},
       ${projectionEndedAt},
       ${status === 'cancelled' ? lifecycleTimestamp : null},
       ${status === 'expired' ? lifecycleTimestamp : null},

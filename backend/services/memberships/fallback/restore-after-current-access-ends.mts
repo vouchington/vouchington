@@ -79,10 +79,11 @@ export async function restoreFallbackAfterCurrentAccessEndsInTransaction(
     WHERE id = ${current.id} AND projection_ended_at IS NULL`)
   const { rows } = await query(sql`/* restoreFallbackAfterCurrentAccessEnds: project fallback */
     INSERT INTO memberships (
-      user_id, membership_source_id, membership_product_id, effective_at, expires_at,
+      user_id, membership_source_id, source_kind, membership_product_id, effective_at, expires_at,
       cancelled_at, expired_at, past_due_at, paused_at, should_cancel_at_period_end
     ) VALUES (
-      ${userId}, ${fallback.membership_source_id}, ${fallback.membership_product_id},
+      ${userId}, ${fallback.membership_source_id}, ${fallback.source_kind},
+      ${fallback.membership_product_id},
       ${fallback.effective_at}, ${fallback.expires_at}, NULL, NULL,
       ${fallback.source_kind === 'direct' ? fallback.past_due_at : null}, NULL,
       ${fallback.source_kind === 'direct' && !fallback.should_auto_renew}

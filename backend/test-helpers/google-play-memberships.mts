@@ -92,10 +92,10 @@ export async function createTestGooglePlayRtdnEvidence(options: {
   const { rows } = await write<{ id: string }>(sql`
     /* createTestGooglePlayRtdnEvidence */
     INSERT INTO membership_provider_evidence_records (
-      membership_provider_context_id, provider_event_id,
+      membership_provider_context_id, provider, provider_event_id,
       evidence_lookup_sha256, encrypted_evidence
     ) VALUES (
-      fn_upsert_membership_provider_context_id('google_play', 'test', ${options.applicationId}), ${`test-rtdn-${randomUUID()}`},
+      fn_upsert_membership_provider_context_id('google_play', 'test', ${options.applicationId}), 'google_play', ${`test-rtdn-${randomUUID()}`},
       ${lookup}, ${encryptedEvidence}
     ) RETURNING id
   `)
@@ -112,9 +112,9 @@ export async function createTestCorruptGooglePlayMembershipVerification(options:
     /* createTestCorruptGooglePlayMembershipVerification */
     WITH evidence AS (
       INSERT INTO membership_provider_evidence_records (
-        membership_provider_context_id, evidence_lookup_sha256, encrypted_evidence
+        membership_provider_context_id, provider, evidence_lookup_sha256, encrypted_evidence
       ) VALUES (
-        fn_upsert_membership_provider_context_id('google_play', 'test', ${options.applicationId}), ${evidenceLookupSha256}, ${Buffer.from('corrupt')}
+        fn_upsert_membership_provider_context_id('google_play', 'test', ${options.applicationId}), 'google_play', ${evidenceLookupSha256}, ${Buffer.from('corrupt')}
       ) RETURNING id
     )
     INSERT INTO membership_verifications (

@@ -74,10 +74,10 @@ export async function activateOldestQueuedGrant(
     WHERE id = ${closedMembership.id} AND projection_ended_at IS NULL`)
   const { rows: memberships } = await query(sql`/* activateOldestQueuedGrant: project grant */
     INSERT INTO memberships (
-      user_id, membership_source_id, membership_product_id, effective_at, expires_at,
+      user_id, membership_source_id, source_kind, membership_product_id, effective_at, expires_at,
       cancelled_at, expired_at, past_due_at, paused_at, should_cancel_at_period_end
     ) VALUES (
-      ${userId}, ${grant.membership_source_id}, ${grant.membership_product_id},
+      ${userId}, ${grant.membership_source_id}, 'admin_grant', ${grant.membership_product_id},
       ${grant.effective_at}, ${grant.expires_at}, NULL, NULL, NULL, NULL, false
     ) RETURNING id`)
   await recordMembershipChange({

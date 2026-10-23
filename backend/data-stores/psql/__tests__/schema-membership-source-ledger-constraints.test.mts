@@ -13,6 +13,10 @@ describe('membership source-ledger schema constraints', () => {
   it('rejects cross-source state, provider grant observations, and mismatched grant users', async () => {
     const fixture = await createMembershipSourceLedgerConstraintFixture()
     await expect(fixture.rejectCrossSourceState()).rejects.toMatchObject({ code: '23503' })
+    await expect(fixture.rejectMismatchedMembershipSourceKind()).rejects.toMatchObject({
+      code: '23503',
+      constraint: 'fk_memberships__source_kind',
+    })
     await expect(fixture.rejectCrossLineageObservationEvidence()).rejects.toMatchObject({
       code: '23503',
     })

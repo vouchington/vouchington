@@ -14,6 +14,7 @@ import { detectRssFeedItemLanguageBatch } from '@services/language-detection/bat
 import { runAndCapture, seedPostId, seedUser } from '../run-support.mts'
 import { seedUuid } from '../seed-data/common.mts'
 import { registerScenarioContract } from '../plan-expectations.mts'
+import { MEMBERSHIP_CONTEXT_NOISE_COUNT } from '../seed-data/membership-context-noise.mts'
 
 export async function runViewDrivenReadScenarios(): Promise<void> {
   const { rows: rssItems } = await read<{ id: string }>(
@@ -109,16 +110,29 @@ export async function runViewDrivenReadScenarios(): Promise<void> {
   })
 
   registerScenarioContract('active-community-agent-prompts', {
-    expectations: [{ kind: 'maxProcessedRows', relation: 'memberships', max: 50 }],
-    seededRows: { community_agent_prompts: 4, agent_prompts: 4 },
+    expectations: [
+      { kind: 'maxProcessedRows', relation: 'memberships', max: 50 },
+      { kind: 'maxProcessedRows', relation: 'membership_provider_contexts', max: 100 },
+    ],
+    seededRows: {
+      community_agent_prompts: 4,
+      agent_prompts: 4,
+      membership_provider_contexts: MEMBERSHIP_CONTEXT_NOISE_COUNT + 1,
+    },
   })
   await runAndCapture('active-community-agent-prompts', () =>
     getActiveCommunityAgentPrompts(seedUuid(0, '14')),
   )
 
   registerScenarioContract('identity-verification-attempt-membership-gate', {
-    expectations: [{ kind: 'maxProcessedRows', relation: 'memberships', max: 25 }],
-    seededRows: { memberships: 300 },
+    expectations: [
+      { kind: 'maxProcessedRows', relation: 'memberships', max: 25 },
+      { kind: 'maxProcessedRows', relation: 'membership_provider_contexts', max: 100 },
+    ],
+    seededRows: {
+      memberships: 300,
+      membership_provider_contexts: MEMBERSHIP_CONTEXT_NOISE_COUNT + 1,
+    },
   })
   await runAndCapture('identity-verification-attempt-membership-gate', async () => {
     const { rows } = await read(buildIdentityVerificationPaidMembershipGate(seedUser.id))

@@ -36,8 +36,8 @@ export async function createStaleProviderMembershipSource(
     source AS (INSERT INTO membership_sources (user_id, source_kind, membership_provider_lineage_id) SELECT ${userId}, ${sourceKind}, id FROM lineage RETURNING id, membership_provider_lineage_id),
     state AS (INSERT INTO membership_source_states (membership_source_id, source_kind, membership_provider_lineage_id, membership_product_id, effective_at, expires_at, past_due_at)
       SELECT id, ${sourceKind}, membership_provider_lineage_id, ${productId}, ${expiresAt}::timestamptz - INTERVAL '30 days', ${expiresAt}, CASE WHEN ${pastDue} THEN CURRENT_TIMESTAMP END FROM source)
-    INSERT INTO memberships (user_id, membership_source_id, membership_product_id, effective_at, expires_at, past_due_at)
-    SELECT ${userId}, id, ${productId}, ${expiresAt}::timestamptz - INTERVAL '30 days', ${expiresAt}, CASE WHEN ${pastDue} THEN CURRENT_TIMESTAMP END FROM source`)
+    INSERT INTO memberships (user_id, membership_source_id, source_kind, membership_product_id, effective_at, expires_at, past_due_at)
+    SELECT ${userId}, id, ${sourceKind}, ${productId}, ${expiresAt}::timestamptz - INTERVAL '30 days', ${expiresAt}, CASE WHEN ${pastDue} THEN CURRENT_TIMESTAMP END FROM source`)
 }
 
 export async function createElapsedAdminGrantForCurrentPaidMembershipView(
@@ -54,8 +54,8 @@ export async function createElapsedAdminGrantForCurrentPaidMembershipView(
       SELECT id, ${userId}, ${productId}, 30, 'current paid membership view test' FROM source RETURNING id),
     activation AS (INSERT INTO membership_grant_activation_periods (membership_grant_id, user_id, started_at)
       SELECT id, ${userId}, ${expiresAt}::timestamptz - INTERVAL '30 days' FROM grant_row)
-    INSERT INTO memberships (user_id, membership_source_id, membership_product_id, effective_at, expires_at, past_due_at)
-    SELECT ${userId}, id, ${productId}, ${expiresAt}::timestamptz - INTERVAL '30 days', ${expiresAt}, CASE WHEN ${pastDue} THEN CURRENT_TIMESTAMP END FROM source`)
+    INSERT INTO memberships (user_id, membership_source_id, source_kind, membership_product_id, effective_at, expires_at, past_due_at)
+    SELECT ${userId}, id, 'admin_grant', ${productId}, ${expiresAt}::timestamptz - INTERVAL '30 days', ${expiresAt}, CASE WHEN ${pastDue} THEN CURRENT_TIMESTAMP END FROM source`)
 }
 
 export async function getCurrentPaidMemberships(

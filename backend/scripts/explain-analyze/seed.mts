@@ -88,6 +88,7 @@ import {
   seedMemberships,
   seedMembershipProducts,
 } from './seed-data/memberships.mts'
+import { seedMembershipProviderContextNoise } from './seed-data/membership-context-noise.mts'
 import { seedMembershipChange } from './seed-data/membership-changes.mts'
 import { seedSharedLoaders } from './seed-data/shared-loaders.mts'
 import { seedModerationReportContexts } from './seed-data/moderation-report-contexts.mts'
@@ -100,6 +101,7 @@ async function main() {
   await seedTopicImportAttempts()
   await seedMembershipProducts()
   await seedMemberships()
+  await seedMembershipProviderContextNoise()
   await seedMembershipChange()
   await seedMembershipRefunds()
   await checkpointSeed('memberships')

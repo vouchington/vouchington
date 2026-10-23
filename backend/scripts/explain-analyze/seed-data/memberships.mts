@@ -117,8 +117,8 @@ export async function seedMemberships(count = MEMBERSHIP_SEED_COUNT): Promise<vo
            SELECT source_id, 'admin_grant', product_id, CURRENT_TIMESTAMP FROM source_rows
            ON CONFLICT (membership_source_id) DO NOTHING
          )
-         INSERT INTO memberships (id, user_id, membership_source_id, membership_product_id, effective_at)
-         SELECT membership_id, user_id, source_id, product_id, CURRENT_TIMESTAMP FROM source_rows
+         INSERT INTO memberships (id, user_id, membership_source_id, source_kind, membership_product_id, effective_at)
+         SELECT membership_id, user_id, source_id, 'admin_grant', product_id, CURRENT_TIMESTAMP FROM source_rows
          ON CONFLICT DO NOTHING`,
       values,
     )

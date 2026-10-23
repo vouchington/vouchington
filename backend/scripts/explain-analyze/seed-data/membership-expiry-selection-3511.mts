@@ -38,9 +38,9 @@ export async function seedMembershipExpirySelection3511(): Promise<void> {
     ON CONFLICT DO NOTHING`)
   await write(`/* seedMembershipExpirySelection3511:memberships */
     INSERT INTO memberships
-      (id, user_id, membership_source_id, membership_product_id, effective_at, expires_at)
+      (id, user_id, membership_source_id, source_kind, membership_product_id, effective_at, expires_at)
     SELECT ('019e0000-b700-7000-8000-' || right(source.id::text, 12))::uuid,
-      source.user_id, source.id,
+      source.user_id, source.id, 'admin_grant',
       (SELECT id FROM membership_products ORDER BY id LIMIT 1),
       NOW() - INTERVAL '100 days',
       CASE WHEN (('x' || right(source.id::text, 12))::bit(48)::bigint % 100) = 0
