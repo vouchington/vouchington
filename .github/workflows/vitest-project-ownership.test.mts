@@ -7,7 +7,6 @@ import {
   dedicatedToolingWorkflowProjectNames,
   toolingWorkflowProjectNames,
 } from '../../test-helpers/vitest-config/tooling-project-registry.mts'
-import { vitestArgs } from '../../ci/storybook-browser-runner-env.mts'
 import { shellLogicalLines } from '../test-helpers/workflow-fixtures.mts'
 
 // Validates the model in ci/vitest/project-ownership.mts against the real `--project` commands in
@@ -60,25 +59,11 @@ describe('Vitest project ownership <-> workflow --project commands', () => {
     },
   )
 
-  it("storybook: literal --project tokens match the model's non-browser-runner projects", () => {
+  it("storybook: literal --project tokens match the model's projects", () => {
     const job = requireJob('storybook')
-    const literalProjects = new Set(
-      job.projects.filter(project => !project.browserRunner).map(project => project.project),
-    )
+    const literalProjects = modelProjectNames(job)
     const actual = [...literalProjectsInvokedBy(job.workflow)].toSorted()
     expect(actual).toEqual([...literalProjects].toSorted())
-  })
-
-  it('storybook: the browser-runner project is assembled at runtime, never literal workflow text', () => {
-    const job = requireJob('storybook')
-    const browserProject = job.projects.find(project => project.browserRunner)
-    expect(browserProject).toBeDefined()
-
-    // Resolved through the script that actually assembles its vitest invocation, since it never
-    // appears as literal `--project` text in the workflow YAML — see storybook-browser-runner-env.mts.
-    expect(vitestArgs({})).toEqual(expect.arrayContaining(['--project', browserProject?.project]))
-    expect(workflowFile(job.workflow)).not.toContain(`--project ${browserProject?.project}`)
-    expect(workflowFile(job.workflow)).toContain('run-storybook-browser-tests.mts')
   })
 
   it('tooling: routes regular projects through the central registry and isolates route bounds', () => {

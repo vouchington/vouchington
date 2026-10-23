@@ -92,9 +92,9 @@ describe('Area CI triggers', () => {
 
   it('runs Storybook for every browser-runtime input', () => {
     const runtimeInputs = [
-      'ci/run-storybook-browser-tests.mts',
-      'ci/storybook-browser-runner.mts',
-      'ci/storybook-browser-runner-env.mts',
+      'pnpm-lock.yaml',
+      'test-helpers/vitest-config/storybook-browser-project.mts',
+      'test-helpers/vitest-config/storybook-browser-optimize-deps.mts',
       'test-helpers/vitest-config/environment.mts',
     ]
 

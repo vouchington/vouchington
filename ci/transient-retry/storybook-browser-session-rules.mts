@@ -1,8 +1,5 @@
-import {
-  hasStorybookBrowserViteReady,
-  storybookBrowserAttemptMarker,
-  stripAnsi,
-} from './storybook-shared.mts'
+import { stripVTControlCharacters as stripAnsi } from 'node:util'
+import { hasStorybookBrowserViteReady, storybookBrowserAttemptMarker } from './storybook-shared.mts'
 const storybookBrowserSessionTimeoutMarker = 'Failed to connect to the browser session'
 
 const terminalStorybookBrowserSessionAttempt = (plainLog: string): string => {

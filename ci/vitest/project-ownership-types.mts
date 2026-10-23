@@ -11,10 +11,7 @@ export interface VitestProjectOwnership {
   readonly project: string
   // The credential requirement text, e.g. 'None', 'OPENAI_API_KEY'.
   readonly credential: string
-  // Only web-storybook-browser sets this today: it is the one project whose --project token is
-  // never literal text in a workflow YAML `run:` line — it's assembled at runtime by
-  // ci/storybook-browser-runner-env.mts's vitestArgs(), so the workflow-command parity test
-  // must resolve it through that script instead of scanning `storybook.yml`.
+  // Marks the project supervised by the published Storybook browser runner.
   readonly browserRunner?: true
 }
 

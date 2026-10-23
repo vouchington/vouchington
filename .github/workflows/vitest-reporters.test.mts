@@ -78,7 +78,7 @@ describe('Vitest CI reporters', () => {
               line =>
                 line.includes('vitest run') ||
                 line.includes('ci/tooling-test-runner.mts') ||
-                line.includes('run-storybook-browser-tests.mts') ||
+                line.includes('vouchington storybook-browser-runner') ||
                 /pnpm run test:[^\s]+/.test(line),
             )
             .map(line => ({ command: `${path}: ${line.trim()}`, env: step.env ?? {} })),
@@ -88,9 +88,7 @@ describe('Vitest CI reporters', () => {
 
     expect(commands.length).toBeGreaterThan(0)
 
-    for (const { command } of commands.filter(
-      ({ command: rawCommand }) => !rawCommand.includes('run-storybook-browser-tests.mts'),
-    )) {
+    for (const { command } of commands) {
       expect(command).toContain('--bail=3')
     }
 

@@ -45,6 +45,8 @@ describe('workflow env policy', () => {
         '          VITEST_REPORT_EXPECTATIONS: context',
         '          VITEST_FILE_PROGRESS_FILE: progress.log',
         '          VITEST_JUNIT_OUTPUT_FILE: report.xml',
+        '          STORYBOOK_BROWSER_COVERAGE: 0',
+        '          STORYBOOK_BROWSER_COVERAGE_CUSTOM: stale',
         '          VITEST_FILE_PROGRESS_FILE_CUSTOM: stale',
         '          VITEST_JUNIT_OUTPUT_FILE_CUSTOM: stale',
         '          NODE_DISABLE_COMPILE_CACHE: "1"',
@@ -79,6 +81,7 @@ describe('workflow env policy', () => {
       'GHCR_KEEP_STALE',
       'VITEST_FILE_PROGRESS_FILE_CUSTOM',
       'VITEST_JUNIT_OUTPUT_FILE_CUSTOM',
+      'STORYBOOK_BROWSER_COVERAGE_CUSTOM',
     ]) {
       expect(errors).toContain(
         `workflow env ${name} in .github/workflows/ci.yml is not referenced by repo code; remove it or add an explicit config-inventory allowlist reason`,
@@ -96,6 +99,7 @@ describe('workflow env policy', () => {
       'VITEST_REPORT_EXPECTATIONS',
       'VITEST_FILE_PROGRESS_FILE',
       'VITEST_JUNIT_OUTPUT_FILE',
+      'STORYBOOK_BROWSER_COVERAGE',
       'NODE_DISABLE_COMPILE_CACHE',
       'GHCR_KEEP_MAIN',
       'GHCR_OWNER',

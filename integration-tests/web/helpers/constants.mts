@@ -1,4 +1,4 @@
-import { devices } from 'playwright-core'
+import { devices } from 'playwright'
 
 export const TEST_USER_EMAIL = process.env.WEB_INTEGRATION_TEST_USER_EMAIL ?? 'tests@voucha.ai'
 export const TEST_USER_ID = '019f0000-0000-7000-8000-000000000000'

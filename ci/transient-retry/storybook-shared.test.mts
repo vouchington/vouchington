@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import {
-  hasStorybookViteOptimizerNewDepsReload,
-  parseStorybookViteNewDependencies,
-} from './storybook-shared.mts'
+import { hasStorybookViteOptimizerNewDepsReload } from './storybook-shared.mts'
 
 describe('Storybook Vite new-deps optimizer reload fingerprint', () => {
   it('requires both the new-deps line and the optimizer reload marker', () => {
@@ -16,11 +13,5 @@ describe('Storybook Vite new-deps optimizer reload fingerprint', () => {
         'new dependencies found: @vouchington/session-jwt\noptimized dependencies changed. reloading',
       ),
     ).toBe(true)
-  })
-
-  it('parses package names from a local regex so matchAll cannot leak lastIndex', () => {
-    const log = 'vite:deps new dependencies found: @vouchington/session-jwt, jose\n'
-    expect(parseStorybookViteNewDependencies(log)).toEqual(['@vouchington/session-jwt', 'jose'])
-    expect(parseStorybookViteNewDependencies(log)).toEqual(['@vouchington/session-jwt', 'jose'])
   })
 })

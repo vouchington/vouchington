@@ -42,7 +42,7 @@ describe('Storybook optimizer timeout live topology', () => {
   it('anchors the classifier to the current browser step, not upload output', () => {
     expect(browserSteps).toHaveLength(1)
     expect(browserStep?.env?.VITEST_STORYBOOK_BROWSER).toBe('1')
-    expect(browserStep?.run).toContain('pnpm exec ./ci/run-storybook-browser-tests.mts')
+    expect(browserStep?.run).toContain('pnpm exec vouchington storybook-browser-runner')
     expect(browserStep?.['timeout-minutes']).toBeGreaterThan(0)
     const browserIndex = steps.findIndex(step => step.name === storybookBrowserTestStepName)
     const browserUploads = steps
