@@ -5,7 +5,6 @@ import {
   type QueryValues,
   type TransactionQuery,
 } from '@data-stores/psql'
-import { invalidateMembershipProductCaches } from '@services/memberships/get'
 import { upsertRecentlyViewed } from '@services/recently-viewed'
 import { seedPlaywrightCoreData } from './playwright-test-data/core.mts'
 import { seedPlaywrightPostData } from './playwright-test-data/posts.mts'
@@ -54,7 +53,6 @@ export async function seedPlaywrightTestData() {
 
       await transaction.commit()
     }
-    await invalidateMembershipProductCaches()
     /* v8 ignore next */
     const testUserId = '019f0000-0000-7000-8000-000000000000'
     /* v8 ignore next */

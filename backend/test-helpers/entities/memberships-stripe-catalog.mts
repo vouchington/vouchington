@@ -1,11 +1,20 @@
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
+import type {
+  MembershipBillingInterval,
+  MembershipPlanSlug,
+} from '@voucha/types/entities/membership'
 
 export type TestStripeCatalogMapping = {
   membership_product_id: string
   provider_product_id: string
   retired_at: Date | null
+  product_retired_at: Date | null
   sku_id: string | null
+  plan: MembershipPlanSlug
+  billing_interval: MembershipBillingInterval
+  price_minor_units: string
+  currency_code: string
 }
 
 export async function clearTestStripeCatalogMappings(applicationId: string): Promise<void> {
@@ -21,9 +30,12 @@ export async function getTestStripeCatalogMappings(
   environment: 'test' | 'production',
 ): Promise<TestStripeCatalogMapping[]> {
   const { rows } = await read<TestStripeCatalogMapping>(sql`/* getTestStripeCatalogMappings */
-    SELECT product.membership_product_id, product.provider_product_id, product.sku_id, product.retired_at
+    SELECT product.membership_product_id, product.provider_product_id, product.sku_id, product.retired_at,
+      canonical_product.plan, canonical_product.billing_interval, canonical_product.retired_at AS product_retired_at,
+      product.price_minor_units::text AS price_minor_units, product.currency_code
     FROM membership_provider_products product
     JOIN membership_provider_contexts context ON context.id = product.membership_provider_context_id
+    JOIN membership_products canonical_product ON canonical_product.id = product.membership_product_id
     WHERE context.provider = 'stripe' AND context.environment = ${environment}
       AND context.application_id = ${applicationId}
     ORDER BY product.sku_id, product.provider_product_id`)

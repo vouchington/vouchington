@@ -8,10 +8,7 @@ import type {
   MembershipStatus,
 } from './types.mts'
 import type { StripeMembershipSourceIdentity } from './create-types.mts'
-export {
-  getSkuByStripePriceIdForLifecycle,
-  invalidateMembershipProductCaches,
-} from './get-catalog.mts'
+export { getSkuByStripePriceIdForLifecycle } from './get-catalog.mts'
 export {
   getMembershipRefundTargetByStripeSubscriptionId,
   getMembershipSourceCancelledAt,

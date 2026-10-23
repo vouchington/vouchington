@@ -9,22 +9,72 @@ import {
   getTestStripeCatalogMappings,
   runTestStripeCatalogReconciliationWhileProductReferenced,
 } from '@voucha/test-helpers'
-import { getActivePlansCached, getSkuByStripePriceIdForLifecycle } from './get-catalog.mts'
-import {
-  isStripeMembershipCatalogReady,
-  reconcileStripeMembershipCatalog,
-} from './stripe-catalog.mts'
+import { getSkuByStripePriceIdForLifecycle } from './get-catalog.mts'
+import { reconcileStripeMembershipCatalog } from './stripe-catalog.mts'
 
 const context = {
   applicationId: `stripe-catalog-test-${randomUUID()}`,
   environment: STRIPE_PROVIDER_ENVIRONMENT,
 }
 const expected = [
-  'voucha_membership_v1_plus_monthly_usd',
-  'voucha_membership_v1_plus_yearly_usd',
-  'voucha_membership_v1_pro_monthly_usd',
-  'voucha_membership_v1_pro_yearly_usd',
+  {
+    plan: 'plus',
+    billing_interval: 'monthly',
+    sku_id: 'voucha_membership_v1_plus_monthly_usd',
+    price_minor_units: '500',
+    currency_code: 'usd',
+  },
+  {
+    plan: 'plus',
+    billing_interval: 'yearly',
+    sku_id: 'voucha_membership_v1_plus_yearly_usd',
+    price_minor_units: '5000',
+    currency_code: 'usd',
+  },
+  {
+    plan: 'pro',
+    billing_interval: 'monthly',
+    sku_id: 'voucha_membership_v1_pro_monthly_usd',
+    price_minor_units: '1000',
+    currency_code: 'usd',
+  },
+  {
+    plan: 'pro',
+    billing_interval: 'yearly',
+    sku_id: 'voucha_membership_v1_pro_yearly_usd',
+    price_minor_units: '10000',
+    currency_code: 'usd',
+  },
 ]
+
+function canonicalMappings(
+  mappings: Awaited<ReturnType<typeof getTestStripeCatalogMappings>>,
+): Array<
+  (typeof expected)[number] & { provider_product_id: string; product_retired_at: Date | null }
+> {
+  return mappings
+    .filter(mapping => mapping.retired_at === null)
+    .map(mapping => {
+      if (mapping.sku_id === null) throw new Error('Active Stripe catalog mapping has no SKU id')
+      return {
+        plan: mapping.plan,
+        billing_interval: mapping.billing_interval,
+        sku_id: mapping.sku_id,
+        price_minor_units: mapping.price_minor_units,
+        currency_code: mapping.currency_code,
+        provider_product_id: mapping.provider_product_id,
+        product_retired_at: mapping.product_retired_at,
+      }
+    })
+}
+
+function expectedCanonicalMappings(revision: string) {
+  return expected.map(mapping => ({
+    ...mapping,
+    provider_product_id: `price_catalog_${revision}_${mapping.sku_id}`,
+    product_retired_at: null,
+  }))
+}
 
 function resolvePrice(revision: string) {
   return async ({ lookupKey }: { lookupKey: string }) =>
@@ -38,14 +88,13 @@ describe('Stripe membership catalog reconciliation', () => {
     await clearTestStripeCatalogMappings(context.applicationId)
   })
 
-  it('atomically publishes exact mappings, refreshes the cache, and retains lifecycle lookup for replacements', async () => {
-    await expect(isStripeMembershipCatalogReady(context)).resolves.toBe(false)
-
+  it('atomically publishes exact mappings and retains lifecycle lookup for replacements', async () => {
+    await expect(
+      getTestStripeCatalogMappings(context.applicationId, context.environment),
+    ).resolves.toEqual([])
     await reconcileStripeMembershipCatalog({ context, resolvePrice: resolvePrice('first') })
-    await expect(isStripeMembershipCatalogReady(context)).resolves.toBe(true)
-    await expect(getActivePlansCached(context)).resolves.toSatisfy(plans =>
-      [...plans.values()].flat().every(sku => sku.stripe_price_id.includes('_first_')),
-    )
+    const first = await getTestStripeCatalogMappings(context.applicationId, context.environment)
+    expect(canonicalMappings(first)).toEqual(expectedCanonicalMappings('first'))
 
     await reconcileStripeMembershipCatalog({ context, resolvePrice: resolvePrice('second') })
 
@@ -53,14 +102,10 @@ describe('Stripe membership catalog reconciliation', () => {
     const active = mappings.filter(mapping => mapping.retired_at === null)
     const retired = mappings.filter(mapping => mapping.retired_at !== null)
     expect(active).toHaveLength(4)
-    expect(active.map(mapping => mapping.sku_id).toSorted()).toEqual(expected)
-    expect(active.every(mapping => mapping.provider_product_id.includes('_second_'))).toBe(true)
+    expect(canonicalMappings(mappings)).toEqual(expectedCanonicalMappings('second'))
     expect(retired).toHaveLength(4)
-    await expect(getActivePlansCached(context)).resolves.toSatisfy(plans =>
-      [...plans.values()].flat().every(sku => sku.stripe_price_id.includes('_second_')),
-    )
 
-    const replaced = retired.find(mapping => mapping.sku_id === expected[0])
+    const replaced = retired.find(mapping => mapping.sku_id === expected[0]?.sku_id)
     if (!replaced) throw new Error('Expected retired plus monthly Stripe mapping')
     const user = await createTestUser()
     const membership = await createTestMembership({
@@ -82,7 +127,6 @@ describe('Stripe membership catalog reconciliation', () => {
 
   it('fails closed after provider validation fails, then republishes on retry', async () => {
     await reconcileStripeMembershipCatalog({ context, resolvePrice: resolvePrice('ready') })
-    await getActivePlansCached(context)
     const failedResolver = async (): Promise<never> => {
       throw new Error('Stripe unavailable')
     }
@@ -90,17 +134,18 @@ describe('Stripe membership catalog reconciliation', () => {
     await expect(
       reconcileStripeMembershipCatalog({ context, resolvePrice: failedResolver }),
     ).rejects.toThrow('Stripe unavailable')
-    await expect(isStripeMembershipCatalogReady(context)).resolves.toBe(false)
-    await expect(getActivePlansCached(context)).resolves.toEqual(new Map())
+    const afterFailure = await getTestStripeCatalogMappings(
+      context.applicationId,
+      context.environment,
+    )
+    expect(afterFailure.filter(mapping => mapping.retired_at === null)).toEqual([])
 
     await reconcileStripeMembershipCatalog({ context, resolvePrice: resolvePrice('retry') })
-    await expect(isStripeMembershipCatalogReady(context)).resolves.toBe(true)
-    await expect(getActivePlansCached(context)).resolves.toSatisfy(plans =>
-      [...plans.values()].flat().every(sku => sku.stripe_price_id.includes('_retry_')),
-    )
+    const retried = await getTestStripeCatalogMappings(context.applicationId, context.environment)
+    expect(canonicalMappings(retried)).toEqual(expectedCanonicalMappings('retry'))
   })
 
-  it('keeps publication, replacement, readiness, and fail-closed retirement in the supplied environment', async () => {
+  it('keeps publication, replacement, and fail-closed retirement in the supplied environment', async () => {
     const oppositeContext = {
       ...context,
       environment: context.environment === 'test' ? ('production' as const) : ('test' as const),
@@ -113,8 +158,16 @@ describe('Stripe membership catalog reconciliation', () => {
       context: oppositeContext,
       resolvePrice: resolvePrice('opposite-first'),
     })
-    await expect(isStripeMembershipCatalogReady(oppositeContext)).resolves.toBe(true)
-    await expect(isStripeMembershipCatalogReady(context)).resolves.toBe(false)
+    const firstContextMappings = await getTestStripeCatalogMappings(
+      oppositeContext.applicationId,
+      oppositeContext.environment,
+    )
+    expect(canonicalMappings(firstContextMappings)).toEqual(
+      expectedCanonicalMappings('opposite-first'),
+    )
+    await expect(
+      getTestStripeCatalogMappings(context.applicationId, context.environment),
+    ).resolves.toEqual([])
 
     await reconcileStripeMembershipCatalog({
       context: oppositeContext,
@@ -124,13 +177,17 @@ describe('Stripe membership catalog reconciliation', () => {
       oppositeContext.applicationId,
       oppositeContext.environment,
     )
-    expect(replaced.filter(mapping => mapping.retired_at === null)).toHaveLength(4)
+    expect(canonicalMappings(replaced)).toEqual(expectedCanonicalMappings('opposite-second'))
     expect(replaced.filter(mapping => mapping.retired_at !== null)).toHaveLength(4)
 
     await expect(
       reconcileStripeMembershipCatalog({ context: oppositeContext, resolvePrice: unavailable }),
     ).rejects.toThrow('Stripe unavailable')
-    await expect(isStripeMembershipCatalogReady(oppositeContext)).resolves.toBe(false)
+    const afterFailure = await getTestStripeCatalogMappings(
+      oppositeContext.applicationId,
+      oppositeContext.environment,
+    )
+    expect(afterFailure.filter(mapping => mapping.retired_at === null)).toEqual([])
     await expect(
       getTestStripeCatalogMappings(context.applicationId, context.environment),
     ).resolves.toEqual([])
@@ -140,7 +197,8 @@ describe('Stripe membership catalog reconciliation', () => {
     await runTestStripeCatalogReconciliationWhileProductReferenced(() =>
       reconcileStripeMembershipCatalog({ context, resolvePrice: resolvePrice('fk-hold') }),
     )
-    await expect(isStripeMembershipCatalogReady(context)).resolves.toBe(true)
+    const mappings = await getTestStripeCatalogMappings(context.applicationId, context.environment)
+    expect(canonicalMappings(mappings)).toEqual(expectedCanonicalMappings('fk-hold'))
   })
 
   it('serializes concurrent repeat reconciliations into one active catalog', async () => {
@@ -153,7 +211,11 @@ describe('Stripe membership catalog reconciliation', () => {
       await getTestStripeCatalogMappings(context.applicationId, context.environment)
     ).filter(mapping => mapping.retired_at === null)
     expect(active).toHaveLength(4)
-    expect(active.map(mapping => mapping.sku_id).toSorted()).toEqual(expected)
+    expect(
+      canonicalMappings(
+        await getTestStripeCatalogMappings(context.applicationId, context.environment),
+      ),
+    ).toEqual(expectedCanonicalMappings('same'))
   })
 
   it('serializes a failed run before a later successful run', async () => {
@@ -188,59 +250,14 @@ describe('Stripe membership catalog reconciliation', () => {
 
     await expect(failureOutcome).resolves.toMatchObject({ message: 'older provider failure' })
     await success
-    await expect(isStripeMembershipCatalogReady(context)).resolves.toBe(true)
-  })
-
-  it('retries a post-commit cache invalidation failure without republishing stale prices', async () => {
-    await reconcileStripeMembershipCatalog({ context, resolvePrice: resolvePrice('first') })
-    await getActivePlansCached(context)
-    let invalidationAttempts = 0
-    const failFirstInvalidation = async (): Promise<void> => {
-      invalidationAttempts += 1
-      if (invalidationAttempts === 1) throw new Error('Valkey unavailable')
-    }
-
-    await expect(
-      reconcileStripeMembershipCatalog({
-        context,
-        resolvePrice: resolvePrice('second'),
-        invalidateCaches: failFirstInvalidation,
-      }),
-    ).rejects.toThrow('Valkey unavailable')
-    await expect(isStripeMembershipCatalogReady(context)).resolves.toBe(false)
-    await reconcileStripeMembershipCatalog({ context, resolvePrice: resolvePrice('second') })
-    await expect(getActivePlansCached(context)).resolves.toSatisfy(plans =>
-      [...plans.values()].flat().every(sku => sku.stripe_price_id.includes('_second_')),
-    )
-  })
-
-  it('preserves provider and disable failures when cache invalidation cannot complete', async () => {
-    const providerError = new Error('provider failed')
-    const cacheError = new Error('cache failed')
-    const failedResolver = async (): Promise<never> => {
-      throw providerError
-    }
-    const failedInvalidation = async (): Promise<never> => {
-      throw cacheError
-    }
-
-    const outcome = reconcileStripeMembershipCatalog({
-      context,
-      resolvePrice: failedResolver,
-      invalidateCaches: failedInvalidation,
-    }).catch(err => err as AggregateError)
-
-    await expect(outcome).resolves.toMatchObject({
-      errors: [providerError, cacheError],
-      cause: cacheError,
-    })
-    await expect(isStripeMembershipCatalogReady(context)).resolves.toBe(false)
+    const mappings = await getTestStripeCatalogMappings(context.applicationId, context.environment)
+    expect(canonicalMappings(mappings)).toEqual(expectedCanonicalMappings('later-success'))
   })
 
   it('rolls back every mapping when an existing catalog key points at another canonical product', async () => {
     await createConflictingTestStripeCatalogMapping(
       context.applicationId,
-      expected[0]!,
+      expected[0]!.sku_id,
       STRIPE_PROVIDER_ENVIRONMENT,
     )
 

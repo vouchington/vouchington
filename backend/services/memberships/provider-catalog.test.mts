@@ -2,7 +2,11 @@ import { randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { STRIPE_PROVIDER_ENVIRONMENT } from '@voucha/config'
 import { getMembershipProviderContext } from '@voucha/config/membership-providers'
-import { createTestNativeMembershipProviderProduct, createTestSku } from '@voucha/test-helpers'
+import {
+  createTestNativeMembershipProviderProduct,
+  createTestSku,
+  observeTestPostgresQueryPools,
+} from '@voucha/test-helpers'
 import { getActiveMembershipCatalogFromPrimary } from './provider-catalog.mts'
 
 describe('membership provider catalog', () => {
@@ -46,9 +50,12 @@ describe('membership provider catalog', () => {
       }),
     ])
 
-    const product = (await getActiveMembershipCatalogFromPrimary()).find(
-      candidate => candidate.id === stripe.id,
+    const catalog = await observeTestPostgresQueryPools(
+      '/* getActiveMembershipCatalogFromPrimary */',
+      getActiveMembershipCatalogFromPrimary,
     )
+    expect(catalog.pools).toEqual(['write'])
+    const product = catalog.result.find(candidate => candidate.id === stripe.id)
 
     expect(product).toMatchObject({ id: stripe.id, plan: stripe.plan, interval: stripe.interval })
     expect(product?.providers).toEqual(
