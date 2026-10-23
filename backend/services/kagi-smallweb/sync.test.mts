@@ -1,8 +1,7 @@
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { kagiSmallWebImportConfig } from './import-config.mts'
-import { mkdir, writeFile } from 'node:fs/promises'
+import { mkdir, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { readPool } from '@data-stores/psql'
 import { describe, it, expect } from 'vitest'
 import { numberedLine } from './feed-list-lines.mts'
 import { sortAndDiff } from './feed-list-sort.mts'
@@ -195,7 +194,9 @@ describe('dispatchKagiSmallWebPage', () => {
       // A directory at the membership path makes the file write fail after the COPY starts.
       await mkdir(join(directory, 'membership'))
       await expect(sortAndDiff(numbered, directory)).rejects.toMatchObject({ code: 'EISDIR' })
-      await expect(readPool.query('SELECT 1 AS ok')).resolves.toMatchObject({ rows: [{ ok: 1 }] })
+      // The reader pool still serves the next membership COPY.
+      await rm(join(directory, 'membership'), { recursive: true })
+      await expect(sortAndDiff(numbered, directory)).resolves.toBeUndefined()
     } finally {
       await removeFeedListDirectory(directory)
     }
