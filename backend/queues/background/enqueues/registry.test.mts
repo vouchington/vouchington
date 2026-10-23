@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { SITEMAPS_ORDERING } from '@queues/sitemaps/config'
+import { SITEMAPS_ORDERING } from '../../sitemaps/config.mts'
 import { defineBackgroundDomain, defineBackgroundJob } from './define-job.mts'
 import { BACKGROUND_DOMAINS, isBackgroundDomain } from '../config.mts'
 import {
