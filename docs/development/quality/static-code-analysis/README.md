@@ -63,12 +63,13 @@ Raw PostgreSQL SQL in backend tests belongs in focused first-layer helpers under
 
 `pnpm run knip:production-exports` finds backend exports kept alive only by tests. Backend packages with a wildcard `"./*"` manifest export also declare `"./*.test.mts": null` and `"./*/__tests__/*": null`, because Node honors the single-star key and ignores the multi-star one while nothing imports a test file by specifier. An AST-grep rule requires both keys as direct siblings of the wildcard.
 
-Knip's export-suppression comment tags are `@public`, `@beta`, `@alias`, and `@internal`. The first
-three suppress exports in every Knip mode; `@internal` suppresses exports in production mode.
+Knip's export-suppression comment tags are `@public`, `@beta`, `@alias`, and `@internal`. `@public`
+and `@beta` suppress unused-export reports in every mode; `@alias` suppresses duplicate-export
+reports; `@internal` suppresses unused-export reports in production mode.
 Repository policy rejects these exact tags in source comments, including comments Knip would not
 associate with an export, while allowing recognized test files and first-layer test helpers. Model
-filename-loaded migrations and seed modules as explicit entries in `knip.jsonc`; move test-only
-exports into test helpers or remove them instead of keeping a skip tag.
+runtime-loaded modules explicitly in `knip.jsonc`; move test-only exports into test helpers or remove
+them instead of keeping a skip tag.
 
 Production imports of test infrastructure make fixture implementation part of the runtime and can make test-only exports appear production-used. Dependency boundaries preserve that separation while allowing the canonical configuration needed by test runners.
 
