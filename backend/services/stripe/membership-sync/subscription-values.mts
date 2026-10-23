@@ -2,7 +2,8 @@ import { getSkuByStripePriceIdForLifecycle } from '@services/memberships'
 import type { StripeMembershipSourceIdentity } from '@services/memberships/create-types'
 import type { Membership, MembershipStatus } from '@services/memberships/types'
 import { getStripeSubscription } from '@modules/stripe/subscriptions'
-import { getStripeObjectNumber, mapStripeSubscriptionStatus } from '../event-utils.mts'
+import { getStripeObjectNumber } from '@vouchington/stripe'
+import { mapStripeSubscriptionStatus } from '../event-utils.mts'
 import { getStripeTerminalTimestamp, getStripeTimestamp } from './clocks.mts'
 
 export type StripeSubscriptionMembershipValues = {

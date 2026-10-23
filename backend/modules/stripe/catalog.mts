@@ -1,4 +1,11 @@
-import Stripe from 'stripe'
+import type Stripe from 'stripe'
+import {
+  buildRecurringCatalogPriceParams,
+  buildCatalogPriceLookupParams,
+  pickCatalogPrice,
+  validateRecurringCatalogPrice as validateCatalogPrice,
+  isStripeResourceExistsError,
+} from '@vouchington/stripe'
 import { getStripeClient } from './client.mts'
 
 const CATALOG_VERSION = 'v1'
@@ -19,24 +26,12 @@ export async function resolveRecurringCatalogPrice(
   if (existing) return validateRecurringCatalogPrice(stripe, existing, expected)
   try {
     const created = await stripe.prices.create(
-      {
-        currency: 'usd',
-        unit_amount: expected.unitAmount,
-        recurring: { interval: expected.interval, interval_count: 1 },
-        lookup_key: expected.lookupKey,
-        product_data: {
-          name: expected.productName,
-          metadata: {
-            voucha_catalog_lookup_key: expected.lookupKey,
-            voucha_catalog_version: CATALOG_VERSION,
-          },
-        },
-      },
+      buildRecurringCatalogPriceParams(catalogDescriptor(expected)),
       { idempotencyKey: `voucha-membership-${expected.lookupKey}` },
     )
     return await validateRecurringCatalogPrice(stripe, created, expected)
   } catch (err) {
-    if (!isLookupKeyCreateRace(err)) throw err
+    if (!isStripeResourceExistsError(err, 'lookup_key')) throw err
     const raced = await findRecurringCatalogPrice(stripe, expected.lookupKey)
     if (!raced) throw err
     return validateRecurringCatalogPrice(stripe, raced, expected)
@@ -47,14 +42,8 @@ async function findRecurringCatalogPrice(
   stripe: Stripe,
   lookupKey: string,
 ): Promise<Stripe.Price | null> {
-  const listed = await stripe.prices.list({
-    lookup_keys: [lookupKey],
-    expand: ['data.product'],
-    limit: 2,
-  })
-  if (listed.data.length > 1)
-    throw new Error(`Stripe catalog lookup key ${lookupKey} resolves to multiple prices`)
-  return listed.data[0] ?? null
+  const listed = await stripe.prices.list(buildCatalogPriceLookupParams(lookupKey))
+  return pickCatalogPrice(listed.data, lookupKey)
 }
 
 async function validateRecurringCatalogPrice(
@@ -66,33 +55,16 @@ async function validateRecurringCatalogPrice(
     typeof price.product === 'string'
       ? await stripe.products.retrieve(price.product)
       : price.product
-  if (!product || product.deleted || !price.active || !product.active)
-    throw new Error(
-      `Stripe catalog price ${expected.lookupKey} is inactive; create a new catalog version`,
-    )
-  if (
-    price.lookup_key !== expected.lookupKey ||
-    price.currency !== 'usd' ||
-    price.unit_amount !== expected.unitAmount ||
-    price.recurring?.interval !== expected.interval ||
-    price.recurring.interval_count !== 1 ||
-    price.recurring.usage_type !== 'licensed' ||
-    price.billing_scheme !== 'per_unit' ||
-    price.transform_quantity !== null ||
-    product.name !== expected.productName ||
-    product.metadata.voucha_catalog_version !== CATALOG_VERSION ||
-    product.metadata.voucha_catalog_lookup_key !== expected.lookupKey
-  )
-    throw new Error(
-      `Stripe catalog price ${expected.lookupKey} does not match the immutable v1 descriptor`,
-    )
-  return price
+  return validateCatalogPrice(price, product, catalogDescriptor(expected))
 }
 
-function isLookupKeyCreateRace(error: unknown): error is Stripe.errors.StripeInvalidRequestError {
-  return (
-    error instanceof Stripe.errors.StripeInvalidRequestError &&
-    error.code === 'resource_already_exists' &&
-    error.param === 'lookup_key'
-  )
+function catalogDescriptor(expected: StripeRecurringCatalogPrice) {
+  return {
+    ...expected,
+    currency: 'usd',
+    productMetadata: {
+      voucha_catalog_lookup_key: expected.lookupKey,
+      voucha_catalog_version: CATALOG_VERSION,
+    },
+  }
 }

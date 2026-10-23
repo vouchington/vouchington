@@ -1,4 +1,9 @@
 import type Stripe from 'stripe'
+import {
+  buildCustomerSearchParams,
+  buildCustomerCreateParams,
+  idempotencyOptions,
+} from '@vouchington/stripe'
 import { getStripeClient } from './client.mts'
 
 type StripeCustomerDeps = {
@@ -27,15 +32,14 @@ export async function getOrCreateStripeCustomer(
 ): Promise<Stripe.Customer> {
   const stripe = getStripe(deps)
 
-  const existing = await stripe.customers.search({
-    query: `metadata["userId"]:"${userId}"`,
-  })
+  const existing = await stripe.customers.search(buildCustomerSearchParams('userId', userId))
 
   if (existing.data.length > 0) return existing.data[0]
 
-  const params = { email, metadata: { userId } }
-  if (!idempotencyKey) return stripe.customers.create(params)
-  return stripe.customers.create(params, { idempotencyKey })
+  return stripe.customers.create(
+    buildCustomerCreateParams({ userId }, email),
+    idempotencyOptions(idempotencyKey),
+  )
 }
 
 /* no-mistakes: integration=stripe */

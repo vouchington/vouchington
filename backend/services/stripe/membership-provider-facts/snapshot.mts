@@ -1,7 +1,8 @@
 import type { QueryExecutor } from '@data-stores/psql'
 import type Stripe from 'stripe'
 import sql from 'sql-template-strings'
-import { getStripeObjectNumber, mapStripeSubscriptionStatus } from '../event-utils.mts'
+import { getStripeObjectNumber } from '@vouchington/stripe'
+import { mapStripeSubscriptionStatus } from '../event-utils.mts'
 
 export class StripeProviderFactVerdictError extends Error {
   constructor(message: string) {

@@ -1,4 +1,4 @@
-import { getStripeObjectNumber, getStripeObjectString } from './event-utils.mts'
+import { getStripeObjectNumber, getStripeObjectString } from '@vouchington/stripe'
 import { getStripeInvoice, listStripeRefundsForCharge } from '@modules/stripe'
 import {
   DEFAULT_STRIPE_MEMBERSHIP_APPLICATION_CONTEXT,

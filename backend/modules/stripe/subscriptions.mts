@@ -1,11 +1,12 @@
 import type Stripe from 'stripe'
+import { buildPauseCollectionParams, SUBSCRIPTION_SCHEDULE_EXPAND } from '@vouchington/stripe'
 import { getStripeClient } from './client.mts'
 
 /* no-mistakes: integration=stripe */
 export function getStripeSubscription(id: string): Promise<Stripe.Response<Stripe.Subscription>> {
   const stripe = getStripeClient()
   return stripe.subscriptions.retrieve(id, {
-    expand: ['schedule.phases.items.price'],
+    expand: SUBSCRIPTION_SCHEDULE_EXPAND,
   })
 }
 
@@ -16,8 +17,7 @@ export function updateStripeSubscriptionPauseCollection(
   idempotencyKey: string,
 ): Promise<Stripe.Response<Stripe.Subscription>> {
   const stripe = getStripeClient()
-  const params: Stripe.SubscriptionUpdateParams =
-    behavior === 'void' ? { pause_collection: { behavior: 'void' } } : { pause_collection: '' }
+  const params = buildPauseCollectionParams(behavior)
   return stripe.subscriptions.update(id, params, { idempotencyKey })
 }
 

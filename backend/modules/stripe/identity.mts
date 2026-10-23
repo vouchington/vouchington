@@ -1,3 +1,4 @@
+import { buildIdentityVerificationParams, parseVerificationSession } from '@vouchington/stripe'
 import { getStripeClient } from './client.mts'
 
 export type VerificationResult =
@@ -54,7 +55,7 @@ export async function stripeCreateVerificationSession(
 ): Promise<{ id: string; url: string | null }> {
   const stripe = getStripeClient()
   const session = await stripe.identity.verificationSessions.create(
-    {
+    buildIdentityVerificationParams({
       type: 'document',
       metadata: { user_id: userId, checkout_session_id: checkoutSessionId },
       options: {
@@ -63,8 +64,8 @@ export async function stripeCreateVerificationSession(
           require_live_capture: true,
         },
       },
-      return_url: returnUrl,
-    },
+      returnUrl,
+    }),
     idempotencyKey ? { idempotencyKey } : undefined,
   )
   return { id: session.id, url: session.url ?? null }
@@ -116,33 +117,24 @@ export const stripeIdentityProvider: IdentityVerificationProvider = {
   async getVerificationResult(sessionId: string): Promise<VerificationResult> {
     const session = await stripeGetVerificationSession(sessionId)
 
-    if (session.status === 'canceled') return { outcome: 'canceled' }
-    if (session.status === 'requires_input') return { outcome: 'requires_input' }
-    if (session.status !== 'verified') return { outcome: 'failed' }
-
-    const doc = session.last_verification_report?.document
+    const document = session.last_verification_report?.document
     const outputs = session.verified_outputs
-
-    const firstName = outputs?.first_name ?? doc?.first_name?.value ?? null
-    const lastName = outputs?.last_name ?? doc?.last_name?.value ?? null
-    const fullName =
-      firstName && lastName ? `${firstName} ${lastName}` : (firstName ?? lastName ?? null)
-    const documentNumber = outputs?.id_number ?? doc?.number?.value ?? null
-    const issuingCountry = doc?.issuing_country ?? outputs?.address?.country ?? null
-    const documentType = doc?.type ?? outputs?.id_number_type ?? null
-
-    if (!documentNumber || !issuingCountry || !documentType) {
-      return { outcome: 'requires_input' }
-    }
-
-    return {
-      outcome: 'verified',
-      firstName,
-      lastName,
-      fullName,
-      documentNumber,
-      issuingCountry,
-      documentType,
-    }
+    // Voucha accepts the verified-output identity fields as fallback evidence and retains
+    // its current nonterminal-result policy. The package owns document result parsing.
+    const result = parseVerificationSession({
+      status: session.status,
+      verified_outputs: outputs,
+      last_verification_report: {
+        document: {
+          first_name: document?.first_name?.value,
+          last_name: document?.last_name?.value,
+          number: outputs?.id_number ?? document?.number?.value,
+          issuing_country: document?.issuing_country ?? outputs?.address?.country,
+          type: document?.type ?? outputs?.id_number_type,
+        },
+      },
+    })
+    if (result.outcome === 'verified') return result
+    return { outcome: result.outcome === 'processing' ? 'failed' : result.outcome }
   },
 }

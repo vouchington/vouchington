@@ -1,4 +1,9 @@
 import type Stripe from 'stripe'
+import {
+  buildSubscriptionCheckoutParams,
+  buildOneTimeCheckoutParams,
+  idempotencyOptions,
+} from '@vouchington/stripe'
 import { getStripeClient } from './client.mts'
 
 /* no-mistakes: integration=stripe */
@@ -18,17 +23,10 @@ export function createCheckoutSession({
   idempotencyKey?: string
 }): Promise<Stripe.Response<Stripe.Checkout.Session>> {
   const stripe = getStripeClient()
-  const params: Stripe.Checkout.SessionCreateParams = {
-    customer: customerId,
-    mode: 'subscription',
-    line_items: [{ price: priceId, quantity: 1 }],
-    success_url: successUrl,
-    cancel_url: cancelUrl,
-    metadata,
-    subscription_data: { metadata },
-  }
-  if (!idempotencyKey) return stripe.checkout.sessions.create(params)
-  return stripe.checkout.sessions.create(params, { idempotencyKey })
+  return stripe.checkout.sessions.create(
+    buildSubscriptionCheckoutParams({ customerId, priceId, successUrl, cancelUrl, metadata }),
+    idempotencyOptions(idempotencyKey),
+  )
 }
 
 /* no-mistakes: integration=stripe */
@@ -52,23 +50,16 @@ export function createOneTimeCheckoutSession({
   idempotencyKey?: string
 }): Promise<Stripe.Response<Stripe.Checkout.Session>> {
   const stripe = getStripeClient()
-  const params: Stripe.Checkout.SessionCreateParams = {
-    customer: customerId,
-    mode: 'payment',
-    line_items: [
-      {
-        price_data: {
-          currency,
-          unit_amount: priceAmountMinorUnits,
-          product_data: { name: productName },
-        },
-        quantity: 1,
-      },
-    ],
-    success_url: successUrl,
-    cancel_url: cancelUrl,
-    metadata,
-  }
-  if (!idempotencyKey) return stripe.checkout.sessions.create(params)
-  return stripe.checkout.sessions.create(params, { idempotencyKey })
+  return stripe.checkout.sessions.create(
+    buildOneTimeCheckoutParams({
+      customerId,
+      priceAmountMinorUnits,
+      currency,
+      productName,
+      successUrl,
+      cancelUrl,
+      metadata,
+    }),
+    idempotencyOptions(idempotencyKey),
+  )
 }

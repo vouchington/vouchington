@@ -48,4 +48,73 @@ describe('getStripeClient against recorded Stripe responses', () => {
     expect(getProviderFetch).toHaveBeenCalledOnce()
     replay.assertDrained()
   })
+
+  it('routes checkout and billing portal operations through the configured egress client', async () => {
+    const apiEgressProxy = await import('@modules/api-egress-proxy')
+    const getProviderFetch = vi
+      .spyOn(apiEgressProxy, 'getProviderFetch')
+      .mockReturnValue(replay.fetch)
+    const { createCheckoutSession, createOneTimeCheckoutSession } = await import('./checkout.mts')
+    const { createBillingPortalSession } = await import('./portal.mts')
+    const providerError = loadStripeFixture('price-create-parameter-missing-400.http')
+    replay.respondWith(providerError, providerError, providerError)
+
+    // A recorded provider rejection exercises our transport and error propagation without
+    // duplicating the published package's request-builder or response-parser test matrix.
+    await expect(
+      createCheckoutSession({
+        customerId: 'cus_replay',
+        priceId: 'price_replay',
+        successUrl: 'https://voucha.ai/my/membership',
+        cancelUrl: 'https://voucha.ai/my/membership',
+        metadata: { user_id: 'user_replay' },
+        idempotencyKey: 'subscription-checkout',
+      }),
+    ).rejects.toMatchObject({ code: 'parameter_missing', requestId: 'req_replay_fixture' })
+    await expect(
+      createOneTimeCheckoutSession({
+        customerId: 'cus_replay',
+        priceAmountMinorUnits: 500,
+        currency: 'usd',
+        productName: 'Voucha Plus',
+        successUrl: 'https://voucha.ai/my/membership',
+        cancelUrl: 'https://voucha.ai/my/membership',
+        metadata: { user_id: 'user_replay' },
+        idempotencyKey: 'one-time-checkout',
+      }),
+    ).rejects.toMatchObject({ code: 'parameter_missing', requestId: 'req_replay_fixture' })
+    await expect(
+      createBillingPortalSession('cus_replay', 'https://voucha.ai/my/membership', 'billing-portal'),
+    ).rejects.toMatchObject({ code: 'parameter_missing', requestId: 'req_replay_fixture' })
+
+    expect(
+      replay.requests.map(request => ({
+        method: request.method,
+        path: new URL(request.url).pathname,
+        key: request.headers['idempotency-key'],
+        authorization: request.headers.authorization,
+      })),
+    ).toEqual([
+      {
+        method: 'POST',
+        path: '/v1/checkout/sessions',
+        key: 'subscription-checkout',
+        authorization: `Bearer ${STRIPE_REPLAY_SECRET_KEY}`,
+      },
+      {
+        method: 'POST',
+        path: '/v1/checkout/sessions',
+        key: 'one-time-checkout',
+        authorization: `Bearer ${STRIPE_REPLAY_SECRET_KEY}`,
+      },
+      {
+        method: 'POST',
+        path: '/v1/billing_portal/sessions',
+        key: 'billing-portal',
+        authorization: `Bearer ${STRIPE_REPLAY_SECRET_KEY}`,
+      },
+    ])
+    expect(getProviderFetch).toHaveBeenCalledExactlyOnceWith('stripe_enabled')
+    replay.assertDrained()
+  })
 })

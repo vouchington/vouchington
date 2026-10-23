@@ -1,4 +1,4 @@
-import { getStripeObjectNumber } from '../event-utils.mts'
+import { getStripeObjectNumber } from '@vouchington/stripe'
 
 export function getStripeTimestamp(subscription: unknown, field: string): Date | undefined {
   const timestamp = getStripeObjectNumber((subscription as Record<string, unknown>)[field])

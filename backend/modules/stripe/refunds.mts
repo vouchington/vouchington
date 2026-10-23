@@ -1,4 +1,5 @@
 import type Stripe from 'stripe'
+import { buildRefundParams, buildRefundListParams, parseStripePage } from '@vouchington/stripe'
 import { getStripeClient } from './client.mts'
 
 const STRIPE_REFUND_PAGE_LIMIT = 100
@@ -18,15 +19,9 @@ export function createStripeRefund(options: {
   metadata?: Record<string, string>
 }): Promise<Stripe.Response<Stripe.Refund>> {
   const stripe = getStripeClient()
-  return stripe.refunds.create(
-    {
-      ...(options.chargeId ? { charge: options.chargeId } : {}),
-      ...(options.paymentIntentId ? { payment_intent: options.paymentIntentId } : {}),
-      ...(options.amountMinorUnits !== undefined ? { amount: options.amountMinorUnits } : {}),
-      ...(options.metadata ? { metadata: options.metadata } : {}),
-    },
-    { idempotencyKey: options.idempotencyKey },
-  )
+  return stripe.refunds.create(buildRefundParams(options), {
+    idempotencyKey: options.idempotencyKey,
+  })
 }
 
 /* no-mistakes: integration=stripe */
@@ -48,22 +43,9 @@ export async function listStripeRefundsForPaymentPage(options: {
   paymentIntentId: string | null
   startingAfter?: string
 }): Promise<StripeRefundPage> {
-  if (!options.chargeId && !options.paymentIntentId)
-    throw new Error('Stripe refund lookup requires a charge or payment intent')
-  if (options.chargeId && options.paymentIntentId)
-    throw new Error('Stripe refund lookup cannot use both charge and payment intent')
-  const page = await getStripeClient().refunds.list({
-    ...(options.chargeId ? { charge: options.chargeId } : {}),
-    ...(options.paymentIntentId ? { payment_intent: options.paymentIntentId } : {}),
-    limit: STRIPE_REFUND_PAGE_LIMIT,
-    ...(options.startingAfter ? { starting_after: options.startingAfter } : {}),
-  })
-  if (!page.has_more) {
-    return { refunds: page.data, hasMore: false, nextCursor: undefined }
-  }
-  const lastRefund = page.data.at(-1)
-  if (!lastRefund?.id) throw new Error('Stripe returned has_more without a refund cursor')
-  if (lastRefund.id === options.startingAfter)
-    throw new Error('Stripe returned has_more without advancing the refund cursor')
-  return { refunds: page.data, hasMore: true, nextCursor: lastRefund.id }
+  const page = await getStripeClient().refunds.list(
+    buildRefundListParams({ ...options, limit: STRIPE_REFUND_PAGE_LIMIT }),
+  )
+  const parsed = parseStripePage(page, options.startingAfter, 'refund')
+  return { refunds: parsed.items, hasMore: parsed.hasMore, nextCursor: parsed.nextCursor }
 }

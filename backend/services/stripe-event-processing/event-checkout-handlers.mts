@@ -10,7 +10,7 @@ import {
   DEFAULT_STRIPE_MEMBERSHIP_APPLICATION_CONTEXT,
   type StripeMembershipApplicationContext,
 } from '@services/memberships/create-types'
-import { getStripeObjectString } from '@services/stripe/event-utils'
+import { getStripeObjectString } from '@vouchington/stripe'
 import {
   handleCheckoutSessionPaymentFailure,
   handleInvoicePaid,
