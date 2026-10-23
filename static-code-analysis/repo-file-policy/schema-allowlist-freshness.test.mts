@@ -37,4 +37,24 @@ describe('schema allowlist freshness', () => {
       await rm(dir, { force: true, recursive: true })
     }
   })
+
+  it('checks extracted retention cursor exceptions for stale schema entries', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'voucha-retention-allowlist-'))
+    try {
+      const file =
+        'backend/test-helpers/data-stores/psql/schema-static-analysis/retention-cursor-uuid-allowlists.mts'
+      await mkdir(dirname(join(dir, file)), { recursive: true })
+      await writeFile(
+        join(dir, file),
+        `export const RETENTION = [['removed_cursor.id', 'reason']]\n`,
+      )
+      const errors: string[] = []
+      checkStaleSchemaAllowlistEntries(dir, [file], { tables: {} }, errors)
+      expect(errors).toEqual([
+        expect.stringContaining('stale PostgreSQL schema allowlist entry: removed_cursor.id'),
+      ])
+    } finally {
+      await rm(dir, { force: true, recursive: true })
+    }
+  })
 })

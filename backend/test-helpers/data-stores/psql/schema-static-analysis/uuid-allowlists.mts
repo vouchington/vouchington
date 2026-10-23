@@ -5,6 +5,7 @@ import { POST_PUBLICATION_UUID_COLUMNS_WITHOUT_KEYS } from './post-publication-a
 import { ALLOWED_MEMBERSHIP_UUID_COLUMNS_WITHOUT_KEYS } from './membership-uuid-allowlists.mts'
 import { MODERATION_CLEANUP_UUID_COLUMNS_WITHOUT_KEYS } from './moderation-cleanup-uuid-allowlists.mts'
 import { NOTIFICATION_PUSH_RETENTION_UUID_COLUMNS_WITHOUT_KEYS } from './notification-push-retention-allowlists.mts'
+import { RETENTION_CURSOR_UUID_COLUMNS_WITHOUT_KEYS } from './retention-cursor-uuid-allowlists.mts'
 import { OAUTH_AUTHORIZATION_UUID_COLUMNS_WITHOUT_KEYS } from './oauth-authorization-allowlists.mts'
 import { STORY_POST_RELATED_URL_PROJECTION_UUID_COLUMNS_WITHOUT_KEYS } from './story-post-related-url-projection-uuid-allowlists.mts'
 import { USER_DELETION_UUID_COLUMNS_WITHOUT_KEYS } from './user-deletion-uuid-allowlists.mts'
@@ -49,27 +50,8 @@ export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
     'auth_session_retention_cleanup_cursors.cursor_partition_key',
     'Subscription partition tie-breaker survives deletion of its user and subscription rows.',
   ],
-  [
-    'retained_image_placement_binding_cleanup_cursors.cursor_placement_id',
-    'Operational placement UUIDv7 position survives deletion of the swept binding; it is not a relationship.',
-  ],
-  [
-    'retained_relation_identity_cleanup_cursors.cursor_subject_id',
-    'Operational composite keyset scan position can outlive its prior owner; it is not a relationship.',
-  ],
-  [
-    'retained_relation_identity_cleanup_cursors.cursor_relation_id',
-    'Operational composite keyset scan position can outlive its prior owner; it is not a relationship.',
-  ],
+  ...RETENTION_CURSOR_UUID_COLUMNS_WITHOUT_KEYS,
   ...NOTIFICATION_PUSH_RETENTION_UUID_COLUMNS_WITHOUT_KEYS,
-  [
-    'notification_email_retention_cleanup_cursors.cursor_position',
-    'Persisted UUIDv7 keyset position survives deletion of the swept row; it is not a relationship.',
-  ],
-  [
-    'notification_email_retention_cleanup_cursors.cursor_partition_key',
-    'Persisted notification partition-key tie-breaker survives user deletion; it is not a relationship.',
-  ],
   ...POST_PUBLICATION_UUID_COLUMNS_WITHOUT_KEYS,
   ...ALLOWED_MEMBERSHIP_UUID_COLUMNS_WITHOUT_KEYS,
   ...OAUTH_AUTHORIZATION_UUID_COLUMNS_WITHOUT_KEYS,
