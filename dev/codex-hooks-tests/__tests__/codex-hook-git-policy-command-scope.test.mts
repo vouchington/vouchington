@@ -45,6 +45,8 @@ describe('Codex hook git policy command scope', () => {
     ["git -c 'core.hooksPath=/tmp/hooks' push --force", 'core.hooksPath'],
     ['git -c "core.hooksPath=/tmp/hooks" commit --amend', 'core.hooksPath'],
     ['git -c "core.hooksPath=/tmp/hooks" -C /repo commit --amend', 'core.hooksPath'],
+    ['git -c Core.HooksPath=/tmp/hooks push --force', 'core.hooksPath'],
+    ['git -c "CORE.hookspath=/tmp/hooks" status', 'core.hooksPath'],
     ['git -c "color.ui=never" push --force', 'Force pushes'],
     ['git -c "color.ui=never" commit --amend', 'Commit amend'],
     // A continuation joins the shell word to its flag, so the heredoc body is the shell's script.
