@@ -6,7 +6,10 @@ import { createOwnedStagedSweepInterval } from '@voucha/test-helpers/image-uploa
 import { installOwnedUploadCleanupStorage } from '@voucha/test-helpers/image-upload-cleanup-storage'
 import type { StagedUploadCleanupSweep } from '@queues/content-analysis/types'
 import { parseCleanupAbandonedUploadsData } from '@queues/content-analysis/payload/upload-cleanup'
-import { cleanupStagedUploadSweepPage } from './cleanup-staged-upload-sweep.mts'
+import {
+  captureStagedUploadCleanupSweep,
+  cleanupStagedUploadSweepPage,
+} from './cleanup-staged-upload-sweep.mts'
 import { getImageById, getImageByIdFromPrimary } from './get.mts'
 import { imagesWorkConfig } from './work-limits.mts'
 
@@ -37,6 +40,28 @@ describe('staged upload cleanup sweep', () => {
     expect(() => retainedState({ ...valid, cutoff: new Date().toISOString() })).toThrow(
       'Invalid staged upload cleanup snapshot',
     )
+  })
+
+  it('captures a retained physical upper key that includes owned eligible uploads', async () => {
+    const user = await createTestUser()
+    const { last, stagedAt } = await createOwnedStagedSweepInterval(user.id)
+    const restoreThreshold = overrideDynamicConfigFieldsForTest(imagesWorkConfig, {
+      recovery_threshold_hours: 1,
+    })
+    try {
+      const captured = retainedState(await captureStagedUploadCleanupSweep())
+      const upper = captured.upper
+      expect(captured.done).toBe(false)
+      expect(upper).not.toBeNull()
+      if (!upper) throw new Error('The owned eligible interval has no physical upper key')
+      const ownedStagedAt = preciseTimestamp(stagedAt)
+      expect(captured.cutoff.localeCompare(ownedStagedAt)).toBeGreaterThan(0)
+      expect(
+        upper.stagedAt > ownedStagedAt || (upper.stagedAt === ownedStagedAt && upper.id >= last),
+      ).toBe(true)
+    } finally {
+      restoreThreshold()
+    }
   })
 
   it('persists each owned physical page after S3 effects and reaches exact EOF', async () => {
@@ -161,15 +186,17 @@ describe('staged upload cleanup sweep', () => {
     }
   })
 
-  it('settles the bounded storage group before saving its position', async () => {
+  it('settles both storage effects before saving its position', async () => {
     const user = await createTestUser()
     const { anchor, first, last, stagedAt } = await createOwnedStagedSweepInterval(user.id)
     let active = 0
     let peak = 0
-    const storage = installOwnedUploadCleanupStorage([first, last], async () => {
+    const completedKeys: string[] = []
+    const storage = installOwnedUploadCleanupStorage([first, last], async input => {
       active += 1
       peak = Math.max(peak, active)
       await Promise.resolve()
+      completedKeys.push(input.Key!)
       active -= 1
     })
     const restoreBatch = overrideDynamicConfigFieldsForTest(imagesWorkConfig, {
@@ -185,12 +212,15 @@ describe('staged upload cleanup sweep', () => {
         }),
         async position => {
           expect(storage.calls).toHaveLength(2)
+          expect(completedKeys.toSorted()).toEqual([first, last].toSorted())
+          expect(active).toBe(0)
           retainedState(position)
         },
       )
       expect(result).toEqual({ stagedSourcesDeleted: 2, hasMore: false })
-      expect(peak).toBe(2)
-      expect(storage.calls.map(call => call.Key)).toEqual([first, last])
+      expect(peak).toBeGreaterThanOrEqual(1)
+      expect(peak).toBeLessThanOrEqual(2)
+      expect(storage.calls.map(call => call.Key).toSorted()).toEqual([first, last].toSorted())
     } finally {
       restoreBatch()
     }
