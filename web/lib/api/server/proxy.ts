@@ -34,61 +34,6 @@ export async function getPostAuthorCacheTag(
   }
 }
 
-export interface ProxySessionResponse {
-  uid?: string | null
-  dt?: string
-  st?: string
-  dte: number
-  ste: number
-  secure: boolean
-}
-
-export async function refreshProxySession(
-  backendUrl: string,
-  body: { dt?: string; st?: string },
-  forwardedIpHeaders: Record<string, string>,
-): Promise<ProxySessionResponse | null> {
-  const sessionUrl = buildBackendApiUrl(backendUrl, '/api/v1/session')
-  const backendOriginHeaders = buildBackendOriginHeaders(backendUrl)
-  const cookie = [body.dt ? `dt=${body.dt}` : '', body.st ? `st=${body.st}` : '']
-    .filter(Boolean)
-    .join('; ')
-  // backendUrl is trusted deployment configuration and is normalized before use.
-  const response = await fetch(sessionUrl, {
-    method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-      ...buildWorkerSecretHeader(),
-      ...buildWebClientInfoHeaders(),
-      ...backendOriginHeaders,
-      ...forwardedIpHeaders,
-      ...(cookie ? { cookie } : {}),
-    },
-    body: JSON.stringify(body),
-  })
-
-  if (!response.ok) return null
-
-  const data = (await response.json()) as { session?: ProxySessionResponse }
-  const session = data.session
-  if (
-    session &&
-    typeof session.dte === 'number' &&
-    typeof session.ste === 'number' &&
-    typeof session.secure === 'boolean'
-  ) {
-    const cookieValues = new Map(
-      response.headers.getSetCookie().map(cookie => {
-        const first = cookie.split(';', 1)[0] ?? ''
-        const separator = first.indexOf('=')
-        return [first.slice(0, separator), first.slice(separator + 1)]
-      }),
-    )
-    return { ...session, dt: cookieValues.get('dt'), st: cookieValues.get('st') }
-  }
-  return null
-}
-
 export async function recordProxyReferralAttribution(
   backendUrl: string,
   body: {
