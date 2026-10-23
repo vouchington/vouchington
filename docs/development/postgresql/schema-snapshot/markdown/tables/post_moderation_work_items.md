@@ -39,6 +39,7 @@ Not partitioned — growth: unbounded.
 **Indexes:**
 
 - `idx_post_moderation_work_items__due`: `CREATE INDEX idx_post_moderation_work_items__due ON public.post_moderation_work_items USING btree (available_at, version_id, source) WHERE (completed_at IS NULL)`
+- `idx_post_moderation_work_items__incomplete_version_source`: `CREATE INDEX idx_post_moderation_work_items__incomplete_version_source ON public.post_moderation_work_items USING btree (version_id, source) WHERE (completed_at IS NULL)`
 - `post_moderation_work_items_lease_token_key`: `CREATE UNIQUE INDEX post_moderation_work_items_lease_token_key ON public.post_moderation_work_items USING btree (lease_token)`
 - `post_moderation_work_items_pkey`: `CREATE UNIQUE INDEX post_moderation_work_items_pkey ON public.post_moderation_work_items USING btree (version_id, source)`
 
