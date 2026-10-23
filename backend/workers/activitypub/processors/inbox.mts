@@ -9,7 +9,6 @@ import {
   getActivityPubInboxStorageSnapshot,
   processDurableActivityPubInboxDelivery,
 } from '@services/ap-inbox-activities'
-import { ACTIVITYPUB_INBOX_STORAGE_POLICY } from '@modules/activitypub-inbox-storage-policy'
 import { getApInboxActivitiesWorkLimit } from '@services/ap-inbox-activities/work-limits'
 import type { ActivityPubInboxDeliveryJob } from '@queues/activitypub/types'
 
@@ -114,6 +113,8 @@ export async function cleanupExpiredDeliveries(
   deletedRawBodyBytes: number
   budgetExhausted: boolean
 }> {
+  const batchSize = getApInboxActivitiesWorkLimit('cleanup_batch_size')
+  const maximumBatches = getApInboxActivitiesWorkLimit('cleanup_maximum_batches')
   let batches = 0
   let deletedRows = 0
   let deletedRawBodyBytes = 0
@@ -122,13 +123,10 @@ export async function cleanupExpiredDeliveries(
   const categories = ['unverified', 'verified-operational'] as const
 
   for (const [categoryIndex, category] of categories.entries()) {
-    while (batches < ACTIVITYPUB_INBOX_STORAGE_POLICY.maximumCleanupBatches) {
+    while (batches < maximumBatches) {
       // oxlint-disable-next-line no-await-in-loop -- each committed batch determines whether the bounded cleanup should continue
-      const batch = await dependencies.expire(
-        category,
-        ACTIVITYPUB_INBOX_STORAGE_POLICY.cleanupBatchSize,
-      )
-      lastBatchWasFull = batch.deletedRows === ACTIVITYPUB_INBOX_STORAGE_POLICY.cleanupBatchSize
+      const batch = await dependencies.expire(category, batchSize)
+      lastBatchWasFull = batch.deletedRows === batchSize
       if (batch.deletedRows > 0) {
         batches += 1
         deletedRows += batch.deletedRows
@@ -142,7 +140,7 @@ export async function cleanupExpiredDeliveries(
       }
       if (!lastBatchWasFull) break
     }
-    if (batches >= ACTIVITYPUB_INBOX_STORAGE_POLICY.maximumCleanupBatches) {
+    if (batches >= maximumBatches) {
       budgetExhausted = lastBatchWasFull || categoryIndex < categories.length - 1
       break
     }
