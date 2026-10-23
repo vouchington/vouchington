@@ -15,15 +15,10 @@ import type {
   ClassifierRunAdapter,
   ClassifierRunSubject,
   CurrentClassifierRunInput,
+  ReservedClassifierRun,
 } from './types.mts'
 
-export type ReservedClassifierRun = {
-  runId: string
-  subject: ClassifierRunSubject
-  inputSha256: Buffer
-  configurationSha256: Buffer
-  decisionBatchId: string | null
-}
+export type { ReservedClassifierRun } from './types.mts'
 
 export type ReserveClassifierRunResult =
   | { kind: 'reserved'; run: ReservedClassifierRun }

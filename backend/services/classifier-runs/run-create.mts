@@ -6,10 +6,10 @@ import { retainPublicationIdentityBridges } from '@services/post-publication/ide
 import sql from 'sql-template-strings'
 import { pinnedStoredCandidateIds } from './remote-plan.mts'
 import { claimClassifierRunIdentity } from './run-identity.mts'
-import type { ReservedClassifierRun } from './run-reservation.mts'
 import type {
   ClassifierRunSubject,
   CurrentClassifierRunInput,
+  ReservedClassifierRun,
   ResolvedClassifierRun,
 } from './types.mts'
 
