@@ -17,6 +17,7 @@ export {
 export { handleMcpHttpRequest } from './handle-request.mts'
 export { buildMcpContextUser } from './list-tools.mts'
 export { findMcpStepUpScopes } from './resolve-tool-call.mts'
+export { listScopeAudiencePolicies } from './scope-audience-policies.mts'
 export {
   USER_MCP_SERVER_CONFIG,
   COMMUNITY_MODERATION_MCP_SERVER_CONFIG,
