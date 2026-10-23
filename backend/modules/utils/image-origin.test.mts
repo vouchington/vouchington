@@ -1,7 +1,8 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { getImageOrigin, validateRuntimeImageOrigin } from './image-origin.mts'
 
 describe('image origin', () => {
+  beforeEach(() => vi.stubEnv('ENVIRONMENT', undefined))
   afterEach(() => vi.unstubAllEnvs())
 
   it('normalizes IMAGE_ORIGIN to a pure URL origin', () => {
