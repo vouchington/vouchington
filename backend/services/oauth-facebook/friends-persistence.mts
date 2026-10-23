@@ -60,15 +60,16 @@ async function persistFacebookFriendBatch(
   syncStartTime: string,
 ): Promise<boolean> {
   await using transaction = await beginTransaction()
-  await lockActiveFacebookSyncOwner(transaction, userId)
+  await lockFacebookFriendImport(transaction, userId, friendIds)
   const owner = await facebookSyncOwnerExists(transaction, facebookAccountId, userId, syncStartTime)
   if (!owner) return false
 
+  // Lock an existing unlinked target too, so reconnect cannot clear resolution work before this insert.
   await transaction(
     `/* persistFacebookFriendBatch */ INSERT INTO facebook_friends (facebook_account_id, facebook_friend_id, friend_facebook_account_id, last_observed_at)
      SELECT $1::uuid, friend_id,
-       (SELECT id FROM facebook_accounts
-        WHERE facebook_user_id = friend_id AND user_id IS NOT NULL FOR SHARE), $3::timestamptz
+       (SELECT CASE WHEN user_id IS NOT NULL THEN id END FROM facebook_accounts
+        WHERE facebook_user_id = friend_id FOR SHARE), $3::timestamptz
      FROM UNNEST($2::text[]) AS friend_id
      ORDER BY $1, friend_id
      ON CONFLICT (facebook_account_id, facebook_friend_id) DO UPDATE SET
@@ -146,6 +147,18 @@ async function lockActiveFacebookSyncOwner(
   await query(
     `/* lockActiveFacebookSyncOwner */ SELECT fn_lock_active_user_for_mutation($1::uuid)`,
     [userId],
+  )
+}
+
+async function lockFacebookFriendImport(
+  query: Awaited<ReturnType<typeof beginTransaction>>,
+  userId: string,
+  friendIds: string[],
+): Promise<void> {
+  await lockActiveFacebookSyncOwner(query, userId)
+  await query(
+    `/* lockFacebookFriendTargets */ SELECT fn_lock_oauth_friend_targets('facebook', $1::text[], FALSE)`,
+    [friendIds],
   )
 }
 
