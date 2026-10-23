@@ -8,6 +8,8 @@ import { ValkeyBloomFilter } from '@data-stores/valkey'
 import { entityCacheBloomFilters } from '@services/entity-cache/backfill-bloom-filter'
 import { normalizeKey } from '@ts-shared/utils/strings'
 import { mergeTopicForTest } from '@voucha/test-helpers/entities/topics/deletion'
+import { mergeTopicAliases } from './merge-aliases.mts'
+import { runTopicImageMergeLockRace } from '@voucha/test-helpers/entities/topic-image-merge-lock-order'
 describe('updateTopic', () => {
   it('rejects image placement changes when a read topic was merged before the update', async () => {
     const user = await createTestUser({ administrator: true })
@@ -28,6 +30,31 @@ describe('updateTopic', () => {
     await expect(updateTopic(user!, staleTopic!, { logo_image_id: null })).rejects.toMatchObject({
       status: 409,
     })
+  })
+
+  it('waits for a same-topic merge image lock before locking the topic row', async () => {
+    const user = await createTestUser({ administrator: true })
+    const suffix = randomUUID()
+    const destinationId = await insertTestTopic({
+      name: `Concurrent destination ${suffix}`,
+      slug: `concurrent-destination-${suffix}`,
+      createdById: user!.id,
+    })
+    const sourceId = await insertTestTopic({
+      name: `Concurrent source ${suffix}`,
+      slug: `concurrent-source-${suffix}`,
+      createdById: user!.id,
+    })
+    const source = await getTopicByAny(sourceId)
+    const destination = await getTopicByAny(destinationId)
+    const { mergeResult, updateResult } = await runTopicImageMergeLockRace(
+      sourceId,
+      destinationId,
+      () => mergeTopicAliases(user!, source!, destination!),
+      query => updateTopic(user!, source!, { logo_image_id: null }, { query }),
+    )
+    expect(mergeResult.status).toBe('fulfilled')
+    expect(updateResult).toMatchObject({ status: 'rejected', reason: { status: 409 } })
   })
 
   it('updates topic name', async () => {
