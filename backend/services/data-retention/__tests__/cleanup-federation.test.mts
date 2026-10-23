@@ -11,9 +11,12 @@ import {
   resetFollowerDistributionRetentionCursorForTest,
   type FederationRetentionFixtureIds,
 } from '@voucha/test-helpers'
+import {
+  withCommittedPostgresTransactionForTest,
+  withPostgresTransactionForTest,
+} from '@voucha/test-helpers/postgres-transaction'
 import { deleteTestUser } from '@voucha/test-helpers/data-stores/psql/moderation-admission-relations'
 import { deleteTestPost } from '@voucha/test-helpers/entities/posts'
-import { beginTransaction } from '@data-stores/psql'
 import { cleanupFederationRetention } from '../cleanup-federation.mts'
 import { cleanupActivityPubReplayLedger } from '../cleanup-activitypub-replay.mts'
 
@@ -27,16 +30,13 @@ describe('federation retention', () => {
       createdById: sender.id,
       markdown: '',
     })
-    let fixtureQuery: Awaited<ReturnType<typeof beginTransaction>> | undefined
-    let retentionQuery: Awaited<ReturnType<typeof beginTransaction>> | undefined
     let fixtureIds: FederationRetentionFixtureIds | undefined
     onTestFinished(async () => {
-      await retentionQuery?.rollback()
-      await fixtureQuery?.rollback()
       if (fixtureIds) {
-        await using cleanup = await beginTransaction()
-        await deleteFederationInboxFixturesForTest(cleanup, fixtureIds)
-        await cleanup.commit()
+        const ownedIds = fixtureIds
+        await withCommittedPostgresTransactionForTest(query =>
+          deleteFederationInboxFixturesForTest(query, ownedIds),
+        )
       }
       await deleteTestPost(postId)
       await deleteTestUser(recipient.id)
@@ -44,106 +44,105 @@ describe('federation retention', () => {
     })
 
     const now = new Date()
-    const setupQuery = await beginTransaction()
-    fixtureQuery = setupQuery
-    fixtureIds = await insertFederationRetentionFixturesForTest({
-      senderUserId: sender.id,
-      recipientUserId: recipient.id,
-      postId,
-      now,
-      query: setupQuery,
-    })
-    await setupQuery.commit()
-    fixtureQuery = undefined
-    retentionQuery = await beginTransaction()
-    expect(await resetFollowerDistributionRetentionCursorForTest(retentionQuery, now)).toBe(
-      'ffffffff-ffff-7fff-ffff-ffffffffffff',
+    fixtureIds = await withCommittedPostgresTransactionForTest(query =>
+      insertFederationRetentionFixturesForTest({
+        senderUserId: sender.id,
+        recipientUserId: recipient.id,
+        postId,
+        now,
+        query,
+      }),
     )
-    const scope = {
-      followerDistributionIds: [
-        ...fixtureIds.expiredFollowerDistributionIds,
-        fixtureIds.activeFollowerDistributionId,
-        fixtureIds.currentFollowerDistributionId,
-      ],
-    }
+    await withPostgresTransactionForTest(async retentionQuery => {
+      expect(await resetFollowerDistributionRetentionCursorForTest(retentionQuery, now)).toBe(
+        'ffffffff-ffff-7fff-ffff-ffffffffffff',
+      )
+      const scope = {
+        followerDistributionIds: [
+          ...fixtureIds.expiredFollowerDistributionIds,
+          fixtureIds.activeFollowerDistributionId,
+          fixtureIds.currentFollowerDistributionId,
+        ],
+      }
 
-    const first = await cleanupFederationRetention({
-      batchSize: 1,
-      maxBatches: 1,
-      now,
-      borrowedQuery: retentionQuery,
-      scope,
-    })
-    expect(first.followerDistributions).toEqual({
-      deleted: 1,
-      hasMore: true,
-      continuationPosition: { id: fixtureIds.expiredFollowerDistributionIds[0] },
-    })
-    expect(await readFollowerDistributionRetentionCursorForTest(retentionQuery)).toMatchObject({
-      cursor_distribution_id: fixtureIds.expiredFollowerDistributionIds[0],
-    })
-    expect(
-      await readFederationRetentionFixtureStateForTest(retentionQuery, fixtureIds),
-    ).toMatchObject({
-      inboxActivityIds: fixtureIds.expiredInboxActivityIds.concat(
-        fixtureIds.currentInboxActivityId,
-      ),
-      distributionActivityIds: [
-        ...fixtureIds.expiredDistributionActivityIds,
-        fixtureIds.unfinishedDistributionActivityId,
-      ],
-      followerDistributionIds: [
-        fixtureIds.expiredFollowerDistributionIds[1],
-        fixtureIds.activeFollowerDistributionId,
-        fixtureIds.currentFollowerDistributionId,
-      ],
-      childRowCount: 2,
-    })
+      const first = await cleanupFederationRetention({
+        batchSize: 1,
+        maxBatches: 1,
+        now,
+        borrowedQuery: retentionQuery,
+        scope,
+      })
+      expect(first.followerDistributions).toEqual({
+        deleted: 1,
+        hasMore: true,
+        continuationPosition: { id: fixtureIds.expiredFollowerDistributionIds[0] },
+      })
+      expect(await readFollowerDistributionRetentionCursorForTest(retentionQuery)).toMatchObject({
+        cursor_distribution_id: fixtureIds.expiredFollowerDistributionIds[0],
+      })
+      expect(
+        await readFederationRetentionFixtureStateForTest(retentionQuery, fixtureIds),
+      ).toMatchObject({
+        inboxActivityIds: fixtureIds.expiredInboxActivityIds.concat(
+          fixtureIds.currentInboxActivityId,
+        ),
+        distributionActivityIds: [
+          ...fixtureIds.expiredDistributionActivityIds,
+          fixtureIds.unfinishedDistributionActivityId,
+        ],
+        followerDistributionIds: [
+          fixtureIds.expiredFollowerDistributionIds[1],
+          fixtureIds.activeFollowerDistributionId,
+          fixtureIds.currentFollowerDistributionId,
+        ],
+        childRowCount: 2,
+      })
 
-    await expect(
-      prepareFederationDistributionReplayForTest(
-        fixtureIds.expiredDistributionActivityIds[0]!,
-        sender.id,
-      ),
-    ).resolves.toEqual({ status: 'completed' })
+      await expect(
+        prepareFederationDistributionReplayForTest(
+          fixtureIds.expiredDistributionActivityIds[0]!,
+          sender.id,
+        ),
+      ).resolves.toEqual({ status: 'completed' })
 
-    const second = await cleanupFederationRetention({
-      batchSize: 1,
-      maxBatches: 1,
-      now,
-      borrowedQuery: retentionQuery,
-      scope,
+      const second = await cleanupFederationRetention({
+        batchSize: 1,
+        maxBatches: 1,
+        now,
+        borrowedQuery: retentionQuery,
+        scope,
+      })
+      expect(second.followerDistributions).toEqual({
+        deleted: 1,
+        hasMore: false,
+        continuationPosition: null,
+      })
+      expect(await readFollowerDistributionRetentionCursorForTest(retentionQuery)).toMatchObject({
+        sweep_cutoff_at: null,
+        cursor_distribution_id: null,
+        sweep_upper_bound_distribution_id: null,
+      })
+      expect(await readFederationRetentionFixtureStateForTest(retentionQuery, fixtureIds)).toEqual({
+        inboxActivityIds: fixtureIds.expiredInboxActivityIds.concat(
+          fixtureIds.currentInboxActivityId,
+        ),
+        distributionActivityIds: [
+          ...fixtureIds.expiredDistributionActivityIds,
+          fixtureIds.unfinishedDistributionActivityId,
+        ],
+        followerDistributionIds: [
+          fixtureIds.activeFollowerDistributionId,
+          fixtureIds.currentFollowerDistributionId,
+        ].toSorted(),
+        childRowCount: 0,
+      })
+      expect(
+        await recordFederationInboxActivityReplayForTest(
+          retentionQuery,
+          `https://retention-test.invalid/activity/0/${fixtureIds.expiredInboxActivityIds[0]}`,
+        ),
+      ).toBe(false)
     })
-    expect(second.followerDistributions).toEqual({
-      deleted: 1,
-      hasMore: false,
-      continuationPosition: null,
-    })
-    expect(await readFollowerDistributionRetentionCursorForTest(retentionQuery)).toMatchObject({
-      sweep_cutoff_at: null,
-      cursor_distribution_id: null,
-      sweep_upper_bound_distribution_id: null,
-    })
-    expect(await readFederationRetentionFixtureStateForTest(retentionQuery, fixtureIds)).toEqual({
-      inboxActivityIds: fixtureIds.expiredInboxActivityIds.concat(
-        fixtureIds.currentInboxActivityId,
-      ),
-      distributionActivityIds: [
-        ...fixtureIds.expiredDistributionActivityIds,
-        fixtureIds.unfinishedDistributionActivityId,
-      ],
-      followerDistributionIds: [
-        fixtureIds.activeFollowerDistributionId,
-        fixtureIds.currentFollowerDistributionId,
-      ].toSorted(),
-      childRowCount: 0,
-    })
-    expect(
-      await recordFederationInboxActivityReplayForTest(
-        retentionQuery,
-        `https://retention-test.invalid/activity/0/${fixtureIds.expiredInboxActivityIds[0]}`,
-      ),
-    ).toBe(false)
   })
 
   it('deletes only aged inbox and completed outbound identities in capped pages', async () => {
@@ -159,23 +158,24 @@ describe('federation retention', () => {
     let ids: FederationRetentionFixtureIds | undefined
     onTestFinished(async () => {
       if (ids) {
-        await using cleanup = await beginTransaction()
-        await deleteFederationInboxFixturesForTest(cleanup, ids)
-        await cleanup.commit()
+        const ownedIds = ids
+        await withCommittedPostgresTransactionForTest(query =>
+          deleteFederationInboxFixturesForTest(query, ownedIds),
+        )
       }
       await deleteTestPost(postId)
       await deleteTestUser(recipient.id)
       await deleteTestUser(sender.id)
     })
-    await using setup = await beginTransaction()
-    ids = await insertFederationRetentionFixturesForTest({
-      senderUserId: sender.id,
-      recipientUserId: recipient.id,
-      postId,
-      now,
-      query: setup,
-    })
-    await setup.commit()
+    ids = await withCommittedPostgresTransactionForTest(query =>
+      insertFederationRetentionFixturesForTest({
+        senderUserId: sender.id,
+        recipientUserId: recipient.id,
+        postId,
+        now,
+        query,
+      }),
+    )
 
     const firstInbox = await cleanupActivityPubReplayLedger('inbox', {
       batchSize: 1,
@@ -201,10 +201,11 @@ describe('federation retention', () => {
     })
     expect(secondInbox).toMatchObject({ deleted: 1, hasMore: false })
     expect(secondOutbound).toMatchObject({ deleted: 1, hasMore: false })
-    await using inspect = await beginTransaction()
-    expect(await readFederationRetentionFixtureStateForTest(inspect, ids)).toMatchObject({
-      inboxActivityIds: [ids.currentInboxActivityId],
-      distributionActivityIds: [ids.unfinishedDistributionActivityId],
+    await withPostgresTransactionForTest(async inspect => {
+      expect(await readFederationRetentionFixtureStateForTest(inspect, ids)).toMatchObject({
+        inboxActivityIds: [ids.currentInboxActivityId],
+        distributionActivityIds: [ids.unfinishedDistributionActivityId],
+      })
     })
   })
 })

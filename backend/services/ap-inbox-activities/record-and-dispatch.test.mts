@@ -8,7 +8,7 @@ import {
   readAllQueueJobs,
   readEnqueuedJob,
 } from '@voucha/test-helpers'
-import { beginTransaction } from '@data-stores/psql'
+import { withCommittedPostgresTransactionForTest } from '@voucha/test-helpers/postgres-transaction'
 import { recordAndDispatchInboundActivity } from './record-and-dispatch.mts'
 import { recordInboxActivity } from './record-activity.mts'
 import {
@@ -78,9 +78,9 @@ describe('recordAndDispatchInboundActivity', () => {
     expect(await recordAndDispatchInboundActivity(remoteActor, activity)).toMatchObject({
       duplicate: true,
     })
-    await using expiredLedger = await beginTransaction()
-    await deleteFederationInboxActivityForTest(expiredLedger, activity.id)
-    await expiredLedger.commit()
+    await withCommittedPostgresTransactionForTest(query =>
+      deleteFederationInboxActivityForTest(query, activity.id),
+    )
     await expect(
       recordAndDispatchInboundActivity(remoteActor, {
         ...activity,
@@ -256,9 +256,9 @@ describe('recordAndDispatchInboundActivity duplicate Follow Accept resend', () =
 
     // The 30-day sweep removes the generic dedup row. A freshly signed delivery of the exact
     // old Follow still cannot reauthorize its durable, undone activity identity.
-    await using expiredLedger = await beginTransaction()
-    await deleteFederationInboxActivityForTest(expiredLedger, followActivityId)
-    await expiredLedger.commit()
+    await withCommittedPostgresTransactionForTest(query =>
+      deleteFederationInboxActivityForTest(query, followActivityId),
+    )
     const freshSignatureReplay = await recordAndDispatchInboundActivity(remoteActor, {
       ...followActivity,
       signedAt: new Date(),
