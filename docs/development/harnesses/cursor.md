@@ -29,12 +29,9 @@ in this repository. It does **not** get copied skills or `AGENTS.md` files.
   `The "path" argument must be of type string. Received an instance of Array`.
   Full `./dev/initialize web` stays agent-driven.
 - Capability map: [agent-harness-parity.md](../agent-harness-parity.md).
-- Session id: Cursor does not inject a session-id env into the agent Shell. Claude-compat
-  SessionStart/PreToolUse persist `.local/cursor-session-id` (gitignored) so the retro CLIs
-  resolve without `--session-id`, and the SessionStart check prints the payload id for the MCP
-  tools. When that line is absent, the persisted file is the agent's only fallback for the MCP
-  tools (the [`blackboard` skill](../../../.agents/skills/blackboard/SKILL.md)); with no id it stops
+- Session id: Cursor does not inject a session-id env into the agent Shell. The SessionStart
+  check prints the payload id for the MCP tools (the
+  [`blackboard` skill](../../../.agents/skills/blackboard/SKILL.md)); with no line the agent stops
   journaling and reports it. Pass `--session-id` or `--jsonl` for transcript facts.
-  `./dev/reset-worktree` deletes the persist file.
 
 `worktrees/` is gitignored runtime state.

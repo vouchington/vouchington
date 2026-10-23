@@ -29,9 +29,8 @@ The SessionStart hook prints `Blackboard sessionId: <id>`. Pass it as the explic
 every tool. An id that the user or task assigns explicitly (for
 example a child id its assignment names) wins over the printed line. When the line is absent, take the id from your own
 harness only. Claude Code exports `CLAUDE_CODE_SESSION_ID` and Codex exports `CODEX_THREAD_ID`.
-Cursor and Grok shells export no session id, so read the worktree-local file their SessionStart
-hook persisted: `.local/cursor-session-id` for
-Cursor, `.local/grok-session-id` for Grok. If none of these resolves, do not journal: stop and
+Cursor's SessionStart line is its only source. Grok's shell exports `GROK_SESSION_ID`, so use
+that when the line is absent. If none of these resolves, do not journal: stop and
 report that no session id is available (an automated run continues its primary work and reports
 it, see Automated runs). Never guess, derive, or synthesize an id, and never read another
 harness's variable or file.

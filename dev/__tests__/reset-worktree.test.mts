@@ -90,10 +90,6 @@ async function makeCheckout() {
     await mkdir(dirname(join(checkout, path)), { recursive: true })
     await writeFile(join(checkout, path), 'generated')
   }
-  await mkdir(join(checkout, '.local'), { recursive: true })
-  for (const file of ['codex', 'cursor', 'grok']) {
-    await writeFile(join(checkout, '.local', `${file}-session-id`), 'old\n')
-  }
   return { checkout: await realpath(checkout), commandLog }
 }
 
@@ -138,9 +134,6 @@ describe('reset-worktree product hooks', () => {
     expect(log).toContain('tmux-name []')
     for (const path of generatedPaths) expect(await exists(join(checkout, path))).toBe(false)
     expect(await exists(join(checkout, '.env'))).toBe(true)
-    expect(await exists(join(checkout, '.local/codex-session-id'))).toBe(true)
-    expect(await exists(join(checkout, '.local/cursor-session-id'))).toBe(false)
-    expect(await exists(join(checkout, '.local/grok-session-id'))).toBe(false)
     expect((await git(checkout, 'branch', '--show-current')).trim()).toMatch(/^reset-[0-9a-f]{8}$/)
     expect(stdout).toContain('Worktree reset complete')
   })

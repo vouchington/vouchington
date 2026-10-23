@@ -8,13 +8,11 @@ policy. Cursor and Grok run the `.claude/settings.json` hooks through Claude-com
 reader maps Cursor's dialect to Claude's ([harness parity](../agent-harness-parity.md)).
 
 - **SessionStart** (`dev/check-fresh-base`, `dev/check-web-init`,
-  `vouchington agent-blackboard session-start`,
-  `persist-session-id.mts`): advisory context only. They report whether the branch is fresh against
+  `vouchington agent-blackboard session-start`): advisory context only. They report whether the branch is fresh against
   `origin/main` (unknown freshness is reported, never silently trusted, and the reset-or-rebase
   decision is made after Plan Mode), nudge `./dev/initialize web` before UI work, print the
   `Blackboard sessionId:` line and probe the hosted deployment
-  ([availability check](../agent-blackboard.md#sessionstart-availability-check)), and persist the
-  session id Cursor and Grok do not export.
+  ([availability check](../agent-blackboard.md#sessionstart-availability-check)).
 - **PreToolUse** (`pre-tool-use.mts`): the policy hook. A block exits 2 with its reason on stderr. It
   is a guardrail, not a security boundary ([hook threat model](../agent-sandbox.md#hook-threat-model)).
   It enforces merge authority and native stack workflow. Use the structured `pr_create` and
@@ -24,7 +22,3 @@ reader maps Cursor's dialect to Claude's ([harness parity](../agent-harness-pari
   in-process and is fail-open (any error is swallowed). No hook records session evidence or appends
   Blackboard journal entries; agents write their own
   ([blackboard skill](../../../.agents/skills/blackboard/SKILL.md)).
-
-Codex hooks consume their explicit payload `session_id` and never write the root-only
-`.local/codex-session-id`, because hook metadata cannot distinguish an interactive root from a
-spawned child.
