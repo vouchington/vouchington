@@ -17,7 +17,6 @@ import {
 } from './utils/election-sql-identifiers.mts'
 import { createEntityRelationVoteIntegrityTargets } from './utils/entity-relation-vote-integrity-targets.mts'
 import { createRetainedEntityRelationImpacts } from './utils/retained-entity-relation-impacts.mts'
-import { createInboundFollowActivityForeignKeySql } from './utils/inbound-follow-activity-fk-sql.mts'
 
 /** loaded by path by the config-driven migration runner */
 export default function generateEntityRelationSchemaSql(): string {
@@ -27,15 +26,9 @@ export default function generateEntityRelationSchemaSql(): string {
   const relationVoteTables = electionRelations.map(createEntityRelationVoteTable).join('\n\n')
   const integrityTargets = createEntityRelationVoteIntegrityTargets(electionRelations)
   const retainedImpacts = createRetainedEntityRelationImpacts(electionRelations)
-  const inboundFollowActivityForeignKey = createInboundFollowActivityForeignKeySql()
-  return [
-    tableCreation,
-    inboundFollowActivityForeignKey,
-    relationVoteTables,
-    relationType,
-    integrityTargets,
-    retainedImpacts,
-  ].join('\n\n')
+  return [tableCreation, relationVoteTables, relationType, integrityTargets, retainedImpacts].join(
+    '\n\n',
+  )
 }
 
 function createEntityRelationTable(metadata: EntityRelationMetadata) {
@@ -57,7 +50,9 @@ CREATE TABLE IF NOT EXISTS "${metadata.table_name}" (\n`
     outbound_activitypub_follow_activity_id UUID DEFAULT uuidv7()`
   }
 
-  if (metadata.table_name === 'relation__remote_actor__follow__user') {
+  const storesInboundFollowActivityRowId =
+    metadata.table_name === 'relation__remote_actor__follow__user'
+  if (storesInboundFollowActivityRowId) {
     query += `,\n    inbound_follow_activity_row_id UUID`
   }
 
@@ -100,6 +95,15 @@ CREATE TABLE IF NOT EXISTS "${metadata.table_name}" (\n`
 
   query += `,
     PRIMARY KEY (${primary_keys.join(', ')})`
+
+  if (storesInboundFollowActivityRowId) {
+    // Keep a referenced Follow identity until its relation is gone; defer parent actor/user cascades.
+    query += `,
+    CONSTRAINT fk_remote_follow__inbound_follow_activity_row_id
+      FOREIGN KEY (subject_id, object_id, inbound_follow_activity_row_id)
+      REFERENCES activitypub_remote_follow_activities(remote_actor_id, target_user_id, id)
+      ON DELETE NO ACTION DEFERRABLE INITIALLY DEFERRED`
+  }
 
   query += `\n  )`
 
