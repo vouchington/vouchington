@@ -36,6 +36,12 @@
 - `copyright-submission-guidance`
 - `copyright-appeal-recommendation`
 
+## `ai_agent_call_receipt_statuses`
+
+- `in_flight`
+- `done`
+- `erased`
+
 ## `ai_model_providers`
 
 - `anthropic`
