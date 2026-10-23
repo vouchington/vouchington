@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser } from '@voucha/test-helpers'
-import { getMembershipRefunds } from '@services/memberships/refunds/read'
+import { getTestMembershipRefunds } from '@voucha/test-helpers/entities/membership-refund-event-state'
 import type { PrivateUser } from '@services/users/types'
 
 describe('POST /api/v1/memberships/refunds validation', () => {
@@ -155,7 +155,7 @@ describe('POST /api/v1/memberships/refunds validation', () => {
 
   it('rejects scaled money without creating a refund receipt', async () => {
     const receiptTarget = await createTestUser()
-    expect(await getMembershipRefunds(receiptTarget.id)).toEqual([])
+    expect(await getTestMembershipRefunds(receiptTarget.id)).toEqual([])
     const request = createRequest()
     await request.authenticateAs(admin)
     const response = await request
@@ -171,7 +171,7 @@ describe('POST /api/v1/memberships/refunds validation', () => {
       .expect(422)
 
     expect(response.body).not.toHaveProperty('refund')
-    expect(await getMembershipRefunds(receiptTarget.id)).toEqual([])
+    expect(await getTestMembershipRefunds(receiptTarget.id)).toEqual([])
   })
 
   it.each([

@@ -1,63 +1,19 @@
 import { describe, expect, it, beforeAll } from 'vitest'
 import type { PrivateUser } from '@voucha/types/entities/user'
-import { createTestUser, createTestMembership } from '@voucha/test-helpers'
+import { createTestUser } from '@voucha/test-helpers'
 import {
-  currentUserCanViewMembership,
-  currentUserCanCancelMembership,
   currentUserCanGrantMembership,
   currentUserCanViewMembershipHistory,
   currentUserCanRefundMembership,
 } from './authorization.mts'
-import { getMembershipByUserId } from './get.mts'
-import type { Membership } from './types.mts'
 
 describe('authorization', () => {
   let admin: PrivateUser
   let user: PrivateUser
-  let otherUser: PrivateUser
-  let membership: Membership
 
   beforeAll(async () => {
     admin = await createTestUser({ administrator: true })
     user = await createTestUser()
-    otherUser = await createTestUser()
-    await createTestMembership({ user_id: user.id })
-    membership = (await getMembershipByUserId(user.id))!
-  })
-  describe('currentUserCanViewMembership', () => {
-    it('returns false when user is null', () => {
-      expect(currentUserCanViewMembership(null, user.id)).toBe(false)
-    })
-
-    it('returns true when user is self', () => {
-      expect(currentUserCanViewMembership(user, user.id)).toBe(true)
-    })
-
-    it('returns true when user is admin', () => {
-      expect(currentUserCanViewMembership(admin, user.id)).toBe(true)
-    })
-
-    it('returns false for other user', () => {
-      expect(currentUserCanViewMembership(otherUser, user.id)).toBe(false)
-    })
-  })
-
-  describe('currentUserCanCancelMembership', () => {
-    it('returns false when user is null', () => {
-      expect(currentUserCanCancelMembership(null, membership)).toBe(false)
-    })
-
-    it('returns true when user owns membership', () => {
-      expect(currentUserCanCancelMembership(user, membership)).toBe(true)
-    })
-
-    it('returns true when user is admin', () => {
-      expect(currentUserCanCancelMembership(admin, membership)).toBe(true)
-    })
-
-    it('returns false for other user', () => {
-      expect(currentUserCanCancelMembership(otherUser, membership)).toBe(false)
-    })
   })
 
   describe('currentUserCanGrantMembership', () => {

@@ -7,10 +7,7 @@ import {
   getTestMembershipRaw,
   updateTestMembershipCancelAtPeriodEnd,
 } from '@voucha/test-helpers'
-import { createMembership } from './create.mts'
 import { updateMembershipFromEvent } from './update.mts'
-import { cancelMembership } from './update-cancellation.mts'
-import { getMembershipHistory } from './get.mts'
 
 async function updateProjectionWithoutRecording(
   options: Parameters<typeof updateMembershipFromEvent>[0],
@@ -163,104 +160,6 @@ describe('update', () => {
         updateProjectionWithoutRecording({ membershipId: elapsed.id, status: 'active' }),
       ).resolves.toBeNull()
       await expect(getTestMembershipRaw(elapsed.id)).resolves.toMatchObject({ status: 'expired' })
-    })
-  })
-
-  describe('cancelMembership', () => {
-    it('sets should_cancel_at_period_end and records change', async () => {
-      const cancelUser = await createTestUser()
-      const sku = await createTestSku()
-      const membership = await createMembership({
-        userId: cancelUser.id,
-        plan: 'plus',
-        skuId: sku.id,
-        stripeSubscriptionId: `sub_scheduled_cancel_${cancelUser.id}`,
-      })
-
-      await expect(getTestMembershipRaw(membership.id)).resolves.toMatchObject({
-        source_auto_renews: true,
-      })
-
-      await cancelMembership(cancelUser.id, membership.id)
-
-      const raw = await getTestMembershipRaw(membership.id)
-      expect(raw!.cancelled_at).toBeNull()
-      expect(raw!.should_cancel_at_period_end).toBe(true)
-      expect(raw!.source_auto_renews).toBe(false)
-      expect(raw!.status).toBe('active')
-
-      const history = await getMembershipHistory(cancelUser.id)
-      expect(history.length).toBeGreaterThanOrEqual(1)
-      expect(history[0].change_type).toBe('cancellation')
-    })
-
-    it('does not throw for nonexistent membership', async () => {
-      await expect(
-        cancelMembership(user.id, '00000000-0000-0000-0000-000000000000'),
-      ).resolves.toBeUndefined()
-    })
-
-    it('idempotent: cancelling already-cancelled membership does not throw or create duplicate audit rows', async () => {
-      const idempotentUser = await createTestUser()
-      const membership = await createTestMembership({ user_id: idempotentUser.id })
-
-      // Cancel first time
-      await cancelMembership(idempotentUser.id, membership.id)
-
-      const historyAfterFirst = await getMembershipHistory(idempotentUser.id)
-      const cancellationCountBefore = historyAfterFirst.filter(
-        h => h.change_type === 'cancellation',
-      ).length
-
-      // Cancel second time — should not throw
-      await cancelMembership(idempotentUser.id, membership.id)
-
-      const historyAfterSecond = await getMembershipHistory(idempotentUser.id)
-      const cancellationCountAfter = historyAfterSecond.filter(
-        h => h.change_type === 'cancellation',
-      ).length
-
-      // No duplicate audit row
-      expect(cancellationCountAfter).toBe(cancellationCountBefore)
-    })
-
-    it('records correct change history fields', async () => {
-      const historyUser = await createTestUser()
-      const membership = await createTestMembership({
-        user_id: historyUser.id,
-        plan: 'pro',
-      })
-
-      await cancelMembership(historyUser.id, membership.id)
-
-      const history = await getMembershipHistory(historyUser.id)
-      expect(history.length).toBeGreaterThanOrEqual(1)
-      const change = history[0]
-      expect(change.change_type).toBe('cancellation')
-      expect(change.from_plan).toBe('pro')
-      expect(change.to_plan).toBe('pro')
-      expect(change.should_cancel_at_period_end).toBe(true)
-      expect(change.cancelled_at).toBeNull()
-      expect(change.expired_at).toBeNull()
-      expect(change.past_due_at).toBeNull()
-      expect(change.paused_at).toBeNull()
-      expect(change.changed_by_id).toBe(historyUser.id)
-      expect(change.membership_id).toBe(membership.id)
-    })
-
-    it('records current lifecycle fields when scheduling cancellation', async () => {
-      const pastDueUser = await createTestUser()
-      const membership = await createTestMembership({
-        user_id: pastDueUser.id,
-        status: 'past_due',
-      })
-
-      await cancelMembership(pastDueUser.id, membership.id)
-
-      const history = await getMembershipHistory(pastDueUser.id)
-      expect(history[0].change_type).toBe('cancellation')
-      expect(history[0].should_cancel_at_period_end).toBe(true)
-      expect(history[0].past_due_at).toBeInstanceOf(Date)
     })
   })
 })

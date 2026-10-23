@@ -1,29 +1,12 @@
 import { getMembershipWorkLimits } from '../work-limits.mts'
 import createError from 'http-errors'
-import { beginTransaction, registerPostCommitAction, type QueryExecutor } from '@data-stores/psql'
-import { enqueueDeliverMembershipEntitlementEffectsBestEffort } from '@queues/memberships/enqueues'
+import type { QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { recordMembershipChange } from '../changes.mts'
 import { restoreFallbackAfterCurrentAccessEndsInTransaction } from '../fallback/restore-after-current-access-ends.mts'
 import { activateOldestQueuedGrant } from './activate-queued.mts'
 
 export type MembershipExpiryResult = { expired: number; hasMore: boolean }
-
-/**
- * @public Documented contract; production use is unconfirmed and this export may be
- * removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
- */
-export async function expireElapsedMembershipsForUser(userId: string): Promise<number> {
-  await using query = await beginTransaction()
-  const { expired } = await expireElapsedMemberships(userId, query)
-  if (expired > 0) {
-    registerPostCommitAction(query, async () => {
-      await enqueueDeliverMembershipEntitlementEffectsBestEffort()
-    })
-  }
-  await query.commit()
-  return expired
-}
 
 export async function expireElapsedMemberships(
   userId: string,
