@@ -205,14 +205,14 @@ describe('Email Address Authentication Routes', () => {
       await req.post('/api/v1/auth/email-address/login').send('not json').expect(415)
     })
 
-    it('treats a literal JSON null body as empty instead of crashing', async () => {
+    it('rejects a literal JSON null body', async () => {
       const response = await createRequest()
         .post('/api/v1/auth/email-address/login')
         .set('Content-Type', 'application/json')
         .send('null')
         .expect(422)
 
-      expect(response.body.message).toContain('emailAddress is required')
+      expect(response.body.message).toBe('Invalid request body')
     })
 
     it('returns 400 for malformed JSON and exercises the rate-limit-before-rethrow path', async () => {
