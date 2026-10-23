@@ -43,6 +43,7 @@ export function useTurnstileAction({
   const widgetIdRef = useRef<string | null>(null)
   const callbacksRef = useRef({ onError, onExpire, onSuccess })
   const [container, setContainer] = useState<HTMLDivElement | null>(null)
+  const [widgetError, setWidgetError] = useState(false)
 
   useEffect(() => {
     callbacksRef.current = { onError, onExpire, onSuccess }
@@ -61,12 +62,19 @@ export function useTurnstileAction({
       sitekey: siteKey,
       action: toTurnstileAction(actionTag),
       ...(appearance ? { appearance } : {}),
-      callback: token => callbacksRef.current.onSuccess(token),
+      callback: token => {
+        setWidgetError(false)
+        callbacksRef.current.onSuccess(token)
+      },
       'expired-callback': () => callbacksRef.current.onExpire?.(),
-      'error-callback': () => callbacksRef.current.onError?.(),
+      'error-callback': () => {
+        setWidgetError(true)
+        callbacksRef.current.onError?.()
+      },
     }
     const widgetId = turnstile.render(container, options)
     if (widgetId === undefined) {
+      queueMicrotask(() => setWidgetError(true))
       callbacksRef.current.onError?.()
       return
     }
@@ -80,8 +88,9 @@ export function useTurnstileAction({
   const reset = useCallback(() => {
     const widgetId = widgetIdRef.current
     if (!widgetId) return
+    setWidgetError(false)
     window.turnstile?.reset(widgetId)
   }, [])
 
-  return { ref, reset, isError }
+  return { ref, reset, isError: isError || widgetError }
 }
