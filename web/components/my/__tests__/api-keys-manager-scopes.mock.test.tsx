@@ -12,11 +12,12 @@ import { ApiKeysManager } from '../api-keys-manager'
 import scopeCatalogFixture from '../../../../api-fixtures/v1/responses/shared.scopes.catalog.json'
 
 let translate!: (key: MessageKey, params?: Record<string, unknown>) => string
-
 vi.mock(import('@/lib/i18n/use-translations'), () => ({
   useTranslations: () => translate,
 }))
-
+vi.mock(import('@/components/ui/select'), async () =>
+  (await import('@/test-helpers/native-select-mock')).nativeSelectMock(),
+)
 vi.mock(
   import('sonner'),
   () =>

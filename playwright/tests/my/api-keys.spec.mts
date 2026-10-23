@@ -189,8 +189,9 @@ test.describe('My API Keys Page', () => {
 
     await picker.getByTestId('scope-checkbox-mcp.user:read').click()
     await expect(picker.getByTestId('scope-checkbox-mcp.user:read')).toBeChecked()
-    await audienceSelect.selectOption('brand')
-    await expect(audienceSelect).toHaveValue('brand')
+    await audienceSelect.click()
+    await page.getByRole('listbox').getByRole('option', { name: 'Brand tools' }).click()
+    await expect(audienceSelect).toContainText('Brand tools')
     await expect(picker.getByTestId('scope-checkbox-mcp.user:read')).toHaveCount(0)
     await page.getByTestId('api-keys-create-label-input').pressSequentially(label)
     await expect(page.getByTestId('api-keys-create-confirm-button')).toBeDisabled()

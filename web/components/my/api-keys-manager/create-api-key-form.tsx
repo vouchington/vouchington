@@ -3,6 +3,13 @@
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { ChoiceRadioGroup } from './choice-radio-group'
 import { ScopePicker } from './scope-picker'
@@ -67,26 +74,29 @@ export function CreateApiKeyForm({
         <div className='space-y-3'>
           <div className='space-y-1'>
             <Label htmlFor='api-key-audience'>{t('settings.apiKeys.audience.server')}</Label>
-            <select
-              id='api-key-audience'
-              className='flex h-10 w-full rounded-md border bg-background px-3 text-sm'
+            <Select
               value={selection.audience ?? ''}
-              onChange={event =>
-                selection.handleAudienceChange(
-                  event.target.value as typeof selection.audience & string,
-                )
+              onValueChange={value =>
+                selection.handleAudienceChange(value as typeof selection.audience & string)
               }
-              data-pw='api-keys-create-audience-select'
             >
-              {selection.audiences.map(audience => (
-                <option
-                  key={audience}
-                  value={audience}
-                >
-                  {t(scopeAudienceLabelKey(audience))}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger
+                id='api-key-audience'
+                data-pw='api-keys-create-audience-select'
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {selection.audiences.map(audience => (
+                  <SelectItem
+                    key={audience}
+                    value={audience}
+                  >
+                    {t(scopeAudienceLabelKey(audience))}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <ScopePicker
             idPrefix='api-key'
