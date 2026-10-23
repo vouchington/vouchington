@@ -14,7 +14,7 @@ export type VoteWeightPenalty = {
   penalty_multiplier: number
   reason: string
   source_flag_id: string | null
-  created_by_id: string
+  created_by_id: string | null
   revoked_at: Date | null
   revoked_by_id: string | null
   created_at: Date
