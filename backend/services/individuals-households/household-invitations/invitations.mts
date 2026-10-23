@@ -92,7 +92,8 @@ export async function createHouseholdInvitation(
       ON CONFLICT (household_id, invited_user_id)
         WHERE accepted_at IS NULL AND declined_at IS NULL AND revoked_at IS NULL
         DO NOTHING
-      RETURNING *
+      RETURNING id, household_id, invited_user_id, invited_by_id, relationship,
+        accepted_at, declined_at, revoked_at, created_at, updated_at
     )
     SELECT `
   insert.append(invitationColumns)
