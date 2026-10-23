@@ -3,8 +3,8 @@ import { readFileSync } from 'node:fs'
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
 
-import { decide } from './decide.mts'
-import { RULES, type WorkflowRunContext } from './rules.mts'
+import { evaluateWorkflow as decide } from './decide.mts'
+import { rules, type WorkflowRunContext } from './rules.mts'
 
 const staticAnalysisJobName = 'static-code-analysis / static-code-analysis'
 
@@ -18,6 +18,12 @@ const cloudflareWorkerCrashLog = [
 ].join('\n')
 
 const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContext => ({
+  jobNames: overrides.jobNames ?? overrides.failedJobNames ?? [],
+  jobConclusions: new Map((overrides.failedJobNames ?? []).map(name => [name, 'failure'])),
+  jobSteps: new Map(),
+  failedJobLogFetchFailures: () => Promise.resolve(new Set()),
+  jobLogs: () => overrides.failedJobLogs?.() ?? Promise.resolve(new Map()),
+  failedJobAnnotationFetchFailures: () => Promise.resolve(new Set()),
   workflowName: 'Static',
   conclusion: 'failure',
   runAttempt: 1,
@@ -30,7 +36,7 @@ const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContex
 
 describe('cloudflare-worker-tsc-runtime-unknown-caller-pc', () => {
   it('matches the unconditional Static job that owns the Cloudflare Worker compiler gate', async () => {
-    const result = await decide(makeCtx(), RULES)
+    const result = await decide(makeCtx(), rules)
     expect(result.decision).toBe('rerun')
     expect(result.matchedRule).toBe('cloudflare-worker-tsc-runtime-unknown-caller-pc')
   })
@@ -40,7 +46,7 @@ describe('cloudflare-worker-tsc-runtime-unknown-caller-pc', () => {
       makeCtx({
         failedJobNames: [staticAnalysisJobName, 'coverage / Patch Coverage', 'static'],
       }),
-      RULES,
+      rules,
     )
     expect(result.decision).toBe('dispatch')
   })
@@ -62,7 +68,7 @@ describe('cloudflare-worker-tsc-runtime-unknown-caller-pc', () => {
             ]),
           ),
       }),
-      RULES,
+      rules,
     )
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
@@ -80,20 +86,20 @@ describe('cloudflare-worker-tsc-runtime-unknown-caller-pc', () => {
     ].join('\n')
     const result = await decide(
       makeCtx({ failedJobLogs: () => Promise.resolve(new Map([[staticAnalysisJobName, log]])) }),
-      RULES,
+      rules,
     )
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
   })
 
   it('does not match the same runtime crash from another workflow', async () => {
-    const result = await decide(makeCtx({ workflowName: 'Cloudflare Worker' }), RULES)
+    const result = await decide(makeCtx({ workflowName: 'Cloudflare Worker' }), rules)
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
   })
 
   it('does not match after the retry cap is exhausted', async () => {
-    const result = await decide(makeCtx({ runAttempt: 2 }), RULES)
+    const result = await decide(makeCtx({ runAttempt: 2 }), rules)
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
   })

@@ -7,7 +7,13 @@ import {
   pullRequestState,
   type DependabotRerunInputs as Inputs,
 } from './revalidate-dependabot-rerun-identity.mts'
-import { ghApi, LOG_MAX_BUFFER_BYTES, type GhApiExecFile } from './transient-retry/gh-api.mts'
+import { createGhApi, API_MAX_BUFFER_BYTES } from 'vouchington-tooling/transient-retry'
+
+export type GhApiExecFile = (
+  command: string,
+  args: string[],
+  options: { maxBuffer: number },
+) => Promise<{ stdout: string; stderr: string }>
 
 const execFile = promisify(execFileCallback) as GhApiExecFile
 
@@ -74,10 +80,9 @@ export async function runDependabotRerun(
 
   let source: unknown
   try {
-    const { stdout } = await ghApi(
-      [`repos/${inputs.repository}/actions/runs/${inputs.sourceRunId}`],
-      { execFile: ghExecFile, maxBuffer: LOG_MAX_BUFFER_BYTES },
-    )
+    const stdout = await createGhApi({
+      run: async args => (await ghExecFile('gh', args, { maxBuffer: API_MAX_BUFFER_BYTES })).stdout,
+    }).call([`repos/${inputs.repository}/actions/runs/${inputs.sourceRunId}`])
     source = JSON.parse(stdout) as unknown
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
@@ -112,10 +117,9 @@ export async function runDependabotRerun(
 
   let pullRequest: unknown
   try {
-    const { stdout } = await ghApi([`repos/${inputs.repository}/pulls/${inputs.prNumber}`], {
-      execFile: ghExecFile,
-      maxBuffer: LOG_MAX_BUFFER_BYTES,
-    })
+    const stdout = await createGhApi({
+      run: async args => (await ghExecFile('gh', args, { maxBuffer: API_MAX_BUFFER_BYTES })).stdout,
+    }).call([`repos/${inputs.repository}/pulls/${inputs.prNumber}`])
     pullRequest = JSON.parse(stdout) as unknown
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
@@ -142,7 +146,7 @@ export async function runDependabotRerun(
       'gh',
       ['run', 'rerun', '--repo', inputs.repository, String(inputs.sourceRunId)],
       {
-        maxBuffer: LOG_MAX_BUFFER_BYTES,
+        maxBuffer: API_MAX_BUFFER_BYTES,
       },
     )
     return 0

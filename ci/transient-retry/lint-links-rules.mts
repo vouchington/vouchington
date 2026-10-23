@@ -1,7 +1,7 @@
 import {
   getGithubActionsStepGroupSlices,
   terminalFailedGithubActionsStepLog,
-} from './github-actions-log.mts'
+} from 'vouchington-tooling/transient-retry'
 import {
   hasCurlGithubReleaseTransportFailure,
   isGithubReleasesDownloadFlake,
@@ -96,7 +96,7 @@ function hasSetupLycheeReleasesDownloadFlake(log: string): boolean {
 function isOnlyFailedLintLinksJob(ctx: {
   workflowName: string
   conclusion: string
-  failedJobNames: string[]
+  failedJobNames: readonly string[]
 }): boolean {
   return (
     ctx.workflowName === 'Lint Links' &&

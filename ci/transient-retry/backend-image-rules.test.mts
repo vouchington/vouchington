@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import { decide } from './decide.mts'
+import { evaluateWorkflow as decide } from './decide.mts'
 
-import { RULES, type WorkflowRunContext } from './rules.mts'
+import { rules, type WorkflowRunContext } from './rules.mts'
 
 const publishJobName = 'publish-backend-images / build'
 const ruleId = 'main-backend-image-registry-layer-blob-not-found'
@@ -15,6 +15,12 @@ const imageDigest = '0'.repeat(64)
 const missingBlob = '1'.repeat(64)
 
 const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContext => ({
+  jobNames: overrides.jobNames ?? overrides.failedJobNames ?? [],
+  jobConclusions: new Map((overrides.failedJobNames ?? []).map(name => [name, 'failure'])),
+  jobSteps: new Map(),
+  failedJobLogFetchFailures: () => Promise.resolve(new Set()),
+  jobLogs: () => overrides.failedJobLogs?.() ?? Promise.resolve(new Map()),
+  failedJobAnnotationFetchFailures: () => Promise.resolve(new Set()),
   workflowName: 'CI',
   conclusion: 'failure',
   runAttempt: 1,
@@ -60,7 +66,7 @@ function publishContext(log: string, overrides: Partial<WorkflowRunContext> = {}
 
 describe('Main CI backend image registry layer blob not found', () => {
   it('reruns the observed registry layer blob 404 once', async () => {
-    const result = await decide(publishContext(registryLayerBlobNotFoundLog), RULES)
+    const result = await decide(publishContext(registryLayerBlobNotFoundLog), rules)
     expect(result.decision).toBe('rerun')
     expect(result.matchedRule).toBe(ruleId)
   })
@@ -68,7 +74,7 @@ describe('Main CI backend image registry layer blob not found', () => {
   it('does not match the same log on a different workflow', async () => {
     const result = await decide(
       publishContext(registryLayerBlobNotFoundLog, { workflowName: 'Backend' }),
-      RULES,
+      rules,
     )
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
@@ -79,7 +85,7 @@ describe('Main CI backend image registry layer blob not found', () => {
       publishContext(registryLayerBlobNotFoundLog, {
         failedJobNames: [publishJobName, 'test-backend-unit / backend-tests (1)'],
       }),
-      RULES,
+      rules,
     )
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
@@ -88,7 +94,7 @@ describe('Main CI backend image registry layer blob not found', () => {
   it('does not match a cancelled run', async () => {
     const result = await decide(
       publishContext(registryLayerBlobNotFoundLog, { conclusion: 'cancelled' }),
-      RULES,
+      rules,
     )
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
@@ -104,7 +110,7 @@ describe('Main CI backend image registry layer blob not found', () => {
         '##[error]buildx bake failed with: ERROR: target api: failed to solve: process "/bin/sh -c apt-get update" did not complete successfully: exit code: 100',
       ),
     ].join('\n')
-    const result = await decide(publishContext(log), RULES)
+    const result = await decide(publishContext(log), rules)
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
   })
@@ -119,7 +125,7 @@ describe('Main CI backend image registry layer blob not found', () => {
         '##[error]buildx bake failed with: ERROR: target api: failed to solve: failed to compute cache key: "/app/missing": not found',
       ),
     ].join('\n')
-    const result = await decide(publishContext(log), RULES)
+    const result = await decide(publishContext(log), rules)
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
   })
@@ -134,7 +140,7 @@ describe('Main CI backend image registry layer blob not found', () => {
         '##[error]buildx bake failed with: ERROR: target api: failed to solve: mirror.gcr.io/library/node:missing: not found',
       ),
     ].join('\n')
-    const result = await decide(publishContext(log), RULES)
+    const result = await decide(publishContext(log), rules)
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
   })
@@ -149,7 +155,7 @@ describe('Main CI backend image registry layer blob not found', () => {
         '##[error]buildx bake failed with: ERROR: target worker-cpu: failed to solve: failed to copy: httpReadSeeker: failed open: read tcp: connection reset by peer',
       ),
     ].join('\n')
-    const result = await decide(publishContext(log), RULES)
+    const result = await decide(publishContext(log), rules)
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
   })
@@ -159,7 +165,7 @@ describe('Main CI backend image registry layer blob not found', () => {
       publishLine(`##[group]Run docker/bake-action@${bakeActionSha}`),
       blobNotFoundAnnotation(),
     ].join('\n')
-    const result = await decide(publishContext(log), RULES)
+    const result = await decide(publishContext(log), rules)
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
   })
@@ -171,7 +177,7 @@ describe('Main CI backend image registry layer blob not found', () => {
       ),
       blobNotFoundAnnotation(),
     ].join('\n')
-    const result = await decide(publishContext(log), RULES)
+    const result = await decide(publishContext(log), rules)
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
   })
@@ -185,7 +191,7 @@ describe('Main CI backend image registry layer blob not found', () => {
       blobNotFoundAnnotation(),
       publishLine('##[error]Process completed with exit code 1.'),
     ].join('\n')
-    const result = await decide(publishContext(log), RULES)
+    const result = await decide(publishContext(log), rules)
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
   })
@@ -194,9 +200,9 @@ describe('Main CI backend image registry layer blob not found', () => {
     const result = await decide(
       publishContext(registryLayerBlobNotFoundLog, {
         runAttempt: 2,
-        ruleAttempts: new Map([[ruleId, 2]]),
+        retryAttempts: new Map([[ruleId, 2]]),
       }),
-      RULES,
+      rules,
     )
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')

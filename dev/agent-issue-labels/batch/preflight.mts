@@ -1,5 +1,5 @@
 import { join } from 'node:path'
-import { labelsFromPaths } from '../labels-from-paths.mts'
+import { labelsFromPaths } from 'vouchington-tooling/agent-issue-labels'
 import { findIntraBatchCollisions, type IntraBatchCollision } from './intra-dedup.mts'
 import type { BatchEntry, BatchManifest } from './manifest.mts'
 import { evaluateEntry, type EntryReport } from './resolve-entry.mts'

@@ -5,10 +5,7 @@ import { dirname, join, resolve } from 'node:path'
 import { parse as parseJsonc } from 'jsonc-parser'
 import { describe, expect, it } from 'vitest'
 import config from '../vitest.config.mts'
-import {
-  ChildCommandCleanupError,
-  runChildCommand,
-} from '../static-code-analysis/child-command.mts'
+import { ChildCommandCleanupError, runChildCommand } from 'vouchington-tooling/dead-code'
 import { createFixtureDeadline } from '../static-code-analysis/test-helpers/fixture-deadline.mts'
 import { fixtures } from './test-helpers/vitest-timeout-policy-fixtures.mts'
 

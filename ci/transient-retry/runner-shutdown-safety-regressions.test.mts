@@ -12,7 +12,7 @@ import {
 } from './runner-shutdown-fingerprints.mts'
 import type { WorkflowRunContext } from './types.mts'
 
-// Production registration and retry accounting are covered through decide()/RULES in
+// Production registration and retry accounting are covered through decide()/rules in
 // runner-shutdown-production-rule.test.mts. These direct matcher cases protect the OOM safety
 // boundary reused by the coverage-artifact rules.
 
@@ -37,10 +37,16 @@ const cgroupOom = [
 ].join('\n')
 
 const makeCtx = (
-  failedJobNames: string[],
+  failedJobNames: readonly string[],
   logs: Map<string, string>,
   overrides: Partial<WorkflowRunContext> = {},
 ): WorkflowRunContext => ({
+  jobNames: overrides.jobNames ?? overrides.failedJobNames ?? [],
+  jobConclusions: new Map((overrides.failedJobNames ?? []).map(name => [name, 'failure'])),
+  jobSteps: new Map(),
+  failedJobLogFetchFailures: () => Promise.resolve(new Set()),
+  jobLogs: () => overrides.failedJobLogs?.() ?? Promise.resolve(new Map()),
+  failedJobAnnotationFetchFailures: () => Promise.resolve(new Set()),
   workflowName: 'Web',
   conclusion: 'failure',
   runAttempt: 1,

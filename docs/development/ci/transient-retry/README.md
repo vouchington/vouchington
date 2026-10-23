@@ -35,7 +35,7 @@ always works.
 
 1. Read the rules before writing a code fix. A failure with the same conclusion, failing jobs, and
    log fingerprint as an existing rule is known-transient.
-2. Confirm and rerun with `node ci/transient-retry/rerun-known-transient.mts <run-id>` instead of
+2. Confirm and rerun with `pnpm exec vouchington transient-retry --rules ci/transient-retry/rules.mts <run-id>` instead of
    matching by hand and calling `gh run rerun`. An unmatched failure is a real failure until a rule
    with a real-log fixture says otherwise.
 3. For a new transient pattern, add a rule in your PR.

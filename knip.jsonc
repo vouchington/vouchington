@@ -12,6 +12,8 @@
         "dev/agent-policy.mts",
         "dev/agent-issue-labels/**/*.mts",
         "dev/otel-register.mts",
+        "dev/launch-services.mts",
+        "dev/sandbox-command-audit/rules.mts",
         "test-helpers/vitest.runner.backend-data-guards.mts",
       ],
       "project": [

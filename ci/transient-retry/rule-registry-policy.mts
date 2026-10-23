@@ -16,7 +16,7 @@ export function unregisteredRules(
   if (rules.length === 0) return ['No exported retry rules discovered']
   return rules.flatMap(rule =>
     !registry.includes(rule)
-      ? [`rule "${rule.id}" is exported but missing from the RULES array`]
+      ? [`rule "${rule.id}" is exported but missing from the rules array`]
       : [],
   )
 }

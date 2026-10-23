@@ -1,6 +1,6 @@
 /* oxlint-disable no-mistakes/playwright-consistent-attribute -- moved test support preserves existing Testing Library selectors */
 import { createUserPathname } from '@/lib/links/entity-href'
-import { createNavMock, navMockModule } from '@/test-helpers/next-navigation-mock'
+import { createNavMock, navMockModule } from 'vouchington-tooling/next-navigation-mock'
 import { createNextDynamicMock } from '@/test-helpers/components/topics/next-link-dynamic-mocks'
 import { vi } from 'vitest'
 

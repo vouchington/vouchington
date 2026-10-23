@@ -4,7 +4,7 @@ import { hasWebVitestSegfault } from './web-vitest-log-fingerprints.mts'
 
 import { isAreaGateJob } from './ci-aggregate-jobs.mts'
 
-function singleFailedWebShard(failedJobNames: string[]): string | undefined {
+function singleFailedWebShard(failedJobNames: readonly string[]): string | undefined {
   const shards = failedJobNames.filter(name => webTestsShardPattern.test(name))
   return shards.length === 1 ? shards[0] : undefined
 }

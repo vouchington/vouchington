@@ -1,34 +1,54 @@
 import { appendFileSync } from 'node:fs'
 
-import { decide, type DecisionResult } from './decision-evaluator.mts'
+import {
+  buildWorkflowRunContext,
+  createGhApi,
+  createGhLogStreamer,
+  decide,
+  DEFAULT_LOG_LIMITS,
+  type DecisionResult,
+} from 'vouchington-tooling/transient-retry'
 import { readDecisionEnv } from './env.mts'
-import { buildWorkflowRunContext } from './run-context.mts'
-import { RULES } from './rules.mts'
+import { rules } from './rules.mts'
+import type { TransientRetryRule, WorkflowRunContext } from './types.mts'
 
-export type { DecisionResult } from './decision-evaluator.mts'
-export { decide }
+// Voucha's workflow dispatch protocol falls through to automation when no retry rule matches.
+export async function evaluateWorkflow(context: WorkflowRunContext, catalog: TransientRetryRule[]) {
+  const result = await decide(context, catalog, { unmatchedDecision: 'dispatch' })
+  return { decision: result.decision, matchedRule: result.matchedRule }
+}
 
-export function formatDecisionOutput(result: DecisionResult): string {
+export function formatDecisionOutput(result: {
+  decision: DecisionResult['decision']
+  matchedRule: string
+}): string {
   return `decision=${result.decision}\nmatched_rule=${result.matchedRule}\n`
 }
 
 if (import.meta.main) {
   const { conclusion, githubOutput, repository, runAttempt, runId, workflowName } =
     readDecisionEnv()
-  const ctx = await buildWorkflowRunContext({
-    conclusion,
-    repository,
-    runAttempt,
-    runId,
-    rules: RULES,
-    workflowName,
-  })
+  const ctx = await buildWorkflowRunContext(
+    {
+      api: createGhApi(),
+      streamLog: createGhLogStreamer(),
+      limits: DEFAULT_LOG_LIMITS,
+      repository,
+      runId,
+    },
+    {
+      conclusion,
+      runAttempt,
+      rules,
+      workflowName,
+    },
+  )
 
-  const result = await decide(ctx, RULES)
+  const result = await evaluateWorkflow(ctx, rules)
 
   console.log(`Workflow: ${workflowName}`)
   console.log(`Conclusion: ${conclusion}`)
-  console.log(`Run attempt: ${runAttempt} (rule attempt: ${ctx.ruleAttempt ?? runAttempt})`)
+  console.log(`Run attempt: ${runAttempt} (rule attempt: ${ctx.retryAttempt ?? runAttempt})`)
   console.log(`Failed jobs: ${ctx.failedJobNames.join(', ') || '(none)'}`)
   console.log(`Decision: ${result.decision}`)
   if (result.matchedRule) console.log(`Matched rule: ${result.matchedRule}`)

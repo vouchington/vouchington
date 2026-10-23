@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { createNavMock, navMockModule } from '@/test-helpers/next-navigation-mock'
+import { createNavMock, navMockModule } from 'vouchington-tooling/next-navigation-mock'
 import type { ReportIntegrityFlagsClient } from '@/app/(report-integrity)/report-integrity/flags/report-integrity-flags-client'
 import { vi } from 'vitest'
 

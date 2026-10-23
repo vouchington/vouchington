@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { navMockModule, createNavMock } from '@/test-helpers/next-navigation-mock'
+import { navMockModule, createNavMock } from 'vouchington-tooling/next-navigation-mock'
 import { HouseholdInvitations } from '../household-invitations'
 import * as api from '@/lib/api/client/household-invitations'
 import onError from '@/lib/on-error'

@@ -4,7 +4,7 @@ import { render } from '@testing-library/react'
 import { vi } from 'vitest'
 import { createUserPathname } from '@/lib/links/entity-href'
 import { makeRssFeedItem, makeRssFeedItemTopic } from '@/test-helpers/api-responses'
-import { navMockModule } from '@/test-helpers/next-navigation-mock'
+import { navMockModule } from 'vouchington-tooling/next-navigation-mock'
 import type { RssFeedItemsFeedResponseBody } from '@/types/rss-feed-items'
 // Imported after the mock helpers above so the mock factories can reference them.
 import { NewsItemClusterList } from '@/components/news/news-item-cluster-list'

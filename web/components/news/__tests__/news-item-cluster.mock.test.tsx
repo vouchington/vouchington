@@ -1,6 +1,6 @@
 import { mockLucideReact } from '@/test-helpers/lucide-icons'
 import { describe, expect, it, vi } from 'vitest'
-import { navMockModule, createNavMock } from '@/test-helpers/next-navigation-mock'
+import { navMockModule, createNavMock } from 'vouchington-tooling/next-navigation-mock'
 import { makeRssFeedItem, makeRssFeedItemTopic } from '@/test-helpers/api-responses'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { NewsItemCluster } from '../news-item-cluster'

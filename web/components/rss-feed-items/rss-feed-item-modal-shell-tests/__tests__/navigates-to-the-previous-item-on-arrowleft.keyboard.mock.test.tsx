@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
-import { navMockModule, createNavMock } from '@/test-helpers/next-navigation-mock'
+import { navMockModule, createNavMock } from 'vouchington-tooling/next-navigation-mock'
 // Imported after the nav mock so its vi.mock factory can reference navMockModule.
 import { focusRssFeedItemModalButtonAfterKey } from '@/test-helpers/components/rss-feed-items/modal-keyboard-focus'
 import { RssFeedItemModalShell } from '../../rss-feed-item-modal-shell'

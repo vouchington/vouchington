@@ -1,6 +1,6 @@
 import { render } from '@testing-library/react'
 import { vi } from 'vitest'
-import { createNavMock, navMockModule } from '@/test-helpers/next-navigation-mock'
+import { createNavMock, navMockModule } from 'vouchington-tooling/next-navigation-mock'
 import { MembershipRefundForm } from '@/app/(user)/user/[idOrUsername]/admin/membership-refund-form'
 import type { MembershipRefundResponseBody, RefundableCharge } from '@/types/api-responses'
 

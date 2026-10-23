@@ -1,7 +1,7 @@
 /* oxlint-disable no-mistakes/playwright-consistent-attribute -- moved test support preserves existing Testing Library selectors */
 import type { ReactNode } from 'react'
 import { vi } from 'vitest'
-import { navMockModule } from '@/test-helpers/next-navigation-mock'
+import { navMockModule } from 'vouchington-tooling/next-navigation-mock'
 import type { ViewRssFeed } from '@/types/rss-feeds'
 import type { User } from '@/types/user'
 

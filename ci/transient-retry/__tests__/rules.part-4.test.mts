@@ -1,10 +1,16 @@
 import { describe, expect, it } from 'vitest'
 
-import { decide } from '../decide.mts'
+import { evaluateWorkflow as decide } from '../decide.mts'
 
-import { RULES, type WorkflowRunContext } from '../rules.mts'
+import { rules, type WorkflowRunContext } from '../rules.mts'
 
 const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContext => ({
+  jobNames: overrides.jobNames ?? overrides.failedJobNames ?? [],
+  jobConclusions: new Map((overrides.failedJobNames ?? []).map(name => [name, 'failure'])),
+  jobSteps: new Map(),
+  failedJobLogFetchFailures: () => Promise.resolve(new Set()),
+  jobLogs: () => overrides.failedJobLogs?.() ?? Promise.resolve(new Map()),
+  failedJobAnnotationFetchFailures: () => Promise.resolve(new Set()),
   workflowName: 'Web',
   conclusion: 'failure',
   runAttempt: 1,
@@ -88,7 +94,7 @@ const staticAnalysisProducerFailedRetry = {
   failedJobNames: ['static-code-analysis / static-code-analysis', 'test-web / web-tests (1)'],
 }
 
-describe('RULES catalogue', () => {
+describe('rules catalogue', () => {
   describe('storybook-browser-vite-optimizer-timeout', () => {
     const storybookJobName = 'storybook / storybook'
     const matchingLog = [
@@ -104,7 +110,7 @@ describe('RULES catalogue', () => {
         failedJobNames: [storybookJobName],
         failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, matchingLog]])),
       })
-      const result = await decide(ctx, RULES)
+      const result = await decide(ctx, rules)
       expect(result.decision).toBe('rerun')
       expect(result.matchedRule).toBe('storybook-browser-startup-transient')
     })
@@ -130,7 +136,7 @@ describe('RULES catalogue', () => {
         failedJobNames: [storybookJobName],
         failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, matchingLog]])),
       })
-      const result = await decide(ctx, RULES)
+      const result = await decide(ctx, rules)
       expect(result.decision).toBe('rerun')
       expect(result.matchedRule).toBe('storybook-browser-startup-transient')
     })
@@ -141,7 +147,7 @@ describe('RULES catalogue', () => {
         failedJobNames: [ciStorybookJobName, 'web'],
         failedJobLogs: () => Promise.resolve(new Map([[ciStorybookJobName, matchingLog]])),
       })
-      const result = await decide(ctx, RULES)
+      const result = await decide(ctx, rules)
       expect(result.decision).toBe('rerun')
       expect(result.matchedRule).toBe('storybook-browser-startup-transient')
     })
@@ -153,7 +159,7 @@ describe('RULES catalogue', () => {
         failedJobNames: [storybookJobName],
         failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, matchingLog]])),
       })
-      const result = await decide(ctx, RULES)
+      const result = await decide(ctx, rules)
       expect(result.decision).toBe('dispatch')
       expect(result.matchedRule).toBe('')
     })
@@ -172,7 +178,7 @@ describe('RULES catalogue', () => {
             ]),
           ),
       })
-      const result = await decide(ctx, RULES)
+      const result = await decide(ctx, rules)
       expect(result.decision).toBe('dispatch')
       expect(result.matchedRule).toBe('')
     })
@@ -180,19 +186,19 @@ describe('RULES catalogue', () => {
 
   describe('workflow-cancelled-without-failure-signal (detect-changes variant)', () => {
     it('ignores a cancelled CI retry with only detect-changes and fan-in jobs cancelled', async () => {
-      const result = await decide(cancelledWebRetry(detectChangesFanInCancelledRetry), RULES)
+      const result = await decide(cancelledWebRetry(detectChangesFanInCancelledRetry), rules)
       expect(result.decision).toBe('ignore')
       expect(result.matchedRule).toBe('workflow-cancelled-without-failure-signal')
     })
 
     it('does not ignore a cancelled CI retry when a listed job failed', async () => {
-      const result = await decide(cancelledWebRetry(detectChangesListedJobFailedRetry), RULES)
+      const result = await decide(cancelledWebRetry(detectChangesListedJobFailedRetry), rules)
       expect(result.decision).toBe('dispatch')
       expect(result.matchedRule).toBe('')
     })
 
     it('does not ignore a cancelled CI retry when a producer job also failed', async () => {
-      const result = await decide(cancelledWebRetry(detectChangesProducerFailedRetry), RULES)
+      const result = await decide(cancelledWebRetry(detectChangesProducerFailedRetry), rules)
       expect(result.decision).toBe('dispatch')
       expect(result.matchedRule).toBe('')
     })
@@ -201,19 +207,19 @@ describe('RULES catalogue', () => {
 
 describe('workflow-cancelled-without-failure-signal (static-analysis variant)', () => {
   it('ignores a cancelled CI retry with only static analysis setup and fan-in jobs cancelled', async () => {
-    const result = await decide(cancelledWebRetry(staticAnalysisFanInCancelledRetry), RULES)
+    const result = await decide(cancelledWebRetry(staticAnalysisFanInCancelledRetry), rules)
     expect(result.decision).toBe('ignore')
     expect(result.matchedRule).toBe('workflow-cancelled-without-failure-signal')
   })
 
   it('does not ignore a cancelled CI retry when static analysis failed after setup', async () => {
-    const result = await decide(cancelledWebRetry(staticAnalysisListedJobFailedRetry), RULES)
+    const result = await decide(cancelledWebRetry(staticAnalysisListedJobFailedRetry), rules)
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
   })
 
   it('does not ignore a cancelled CI retry when a producer job also failed', async () => {
-    const result = await decide(cancelledWebRetry(staticAnalysisProducerFailedRetry), RULES)
+    const result = await decide(cancelledWebRetry(staticAnalysisProducerFailedRetry), rules)
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
   })
@@ -243,7 +249,7 @@ describe('workflow-cancelled-without-failure-signal (producer jobs started)', ()
       failedJobNames: cancelledJobNames,
     })
 
-    const result = await decide(ctx, RULES)
+    const result = await decide(ctx, rules)
 
     expect(result.decision).toBe('ignore')
     expect(result.matchedRule).toBe('workflow-cancelled-without-failure-signal')
@@ -261,7 +267,7 @@ describe('workflow-cancelled-without-failure-signal (producer jobs started)', ()
       failedJobNames: ['test-web / web-tests (1)', 'test-tooling / tooling'],
     })
 
-    const result = await decide(ctx, RULES)
+    const result = await decide(ctx, rules)
 
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')

@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createNavMock, navMockModule } from '@/test-helpers/next-navigation-mock'
+import { createNavMock, navMockModule } from 'vouchington-tooling/next-navigation-mock'
 import { UserPreservationHoldCard } from '../user-preservation-hold-card'
 import type { UserPreservationHold } from '@/types/api-responses'
 

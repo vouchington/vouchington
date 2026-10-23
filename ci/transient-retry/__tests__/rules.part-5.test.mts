@@ -3,9 +3,10 @@ import { readFileSync } from 'node:fs'
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'
 
-import { decide } from '../decide.mts'
+import { evaluateWorkflow as decide } from '../decide.mts'
 
-import { RULES, type WorkflowRunContext } from '../rules.mts'
+import { rules } from '../rules.mts'
+import { makeCtx } from '../../test-helpers/transient-retry/helpers.mts'
 
 type WorkflowStep = {
   name?: string
@@ -17,15 +18,6 @@ type WorkflowJob = {
 type Workflow = {
   jobs?: Record<string, WorkflowJob>
 }
-const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContext => ({
-  workflowName: 'Web',
-  conclusion: 'failure',
-  runAttempt: 1,
-  failedJobNames: [],
-  failedJobLogs: () => Promise.resolve(new Map()),
-  failedJobAnnotations: () => Promise.resolve([]),
-  ...overrides,
-})
 
 function storybookBrowserEnv(): Record<string, unknown> {
   const workflow = load(
@@ -37,7 +29,7 @@ function storybookBrowserEnv(): Record<string, unknown> {
   return step?.env ?? {}
 }
 
-describe('RULES catalogue', () => {
+describe('rules catalogue', () => {
   describe('storybook-browser-startup-transient warm-cache variant', () => {
     const storybookJobName = 'storybook / storybook'
 
@@ -59,7 +51,7 @@ describe('RULES catalogue', () => {
         failedJobNames: [storybookJobName],
         failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, log]])),
       })
-      const result = await decide(ctx, RULES)
+      const result = await decide(ctx, rules)
       expect(result.decision).toBe('rerun')
       expect(result.matchedRule).toBe('storybook-browser-startup-transient')
     })
@@ -78,7 +70,7 @@ describe('RULES catalogue', () => {
         failedJobNames: [storybookJobName],
         failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, warmCacheLog]])),
       })
-      const result = await decide(ctx, RULES)
+      const result = await decide(ctx, rules)
       expect(result.decision).toBe('rerun')
       expect(result.matchedRule).toBe('storybook-browser-startup-transient')
     })
@@ -95,11 +87,11 @@ describe('RULES catalogue', () => {
       const ctx = makeCtx({
         workflowName: 'Web',
         runAttempt: 2,
-        ruleAttempts: new Map([['storybook-browser-startup-transient', 1]]),
+        retryAttempts: new Map([['storybook-browser-startup-transient', 1]]),
         failedJobNames: [storybookJobName],
         failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, log]])),
       })
-      const result = await decide(ctx, RULES)
+      const result = await decide(ctx, rules)
       expect(result.decision).toBe('rerun')
       expect(result.matchedRule).toBe('storybook-browser-startup-transient')
     })
@@ -116,11 +108,11 @@ describe('RULES catalogue', () => {
       const ctx = makeCtx({
         workflowName: 'Web',
         runAttempt: 2,
-        ruleAttempts: new Map([['storybook-browser-startup-transient', 1]]),
+        retryAttempts: new Map([['storybook-browser-startup-transient', 1]]),
         failedJobNames: [storybookJobName],
         failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, log]])),
       })
-      const result = await decide(ctx, RULES)
+      const result = await decide(ctx, rules)
       expect(result.decision).toBe('rerun')
       expect(result.matchedRule).toBe('storybook-browser-startup-transient')
     })
@@ -141,7 +133,7 @@ describe('RULES catalogue', () => {
         failedJobNames: [storybookJobName],
         failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, log]])),
       })
-      const result = await decide(ctx, RULES)
+      const result = await decide(ctx, rules)
       expect(result.decision).toBe('dispatch')
       expect(result.matchedRule).toBe('')
     })
@@ -164,7 +156,7 @@ describe('RULES catalogue', () => {
             ]),
           ),
       })
-      const result = await decide(ctx, RULES)
+      const result = await decide(ctx, rules)
       expect(result.decision).toBe('dispatch')
       expect(result.matchedRule).toBe('')
     })
@@ -192,7 +184,7 @@ describe('RULES catalogue', () => {
             ]),
           ),
       })
-      const result = await decide(ctx, RULES)
+      const result = await decide(ctx, rules)
       expect(result.decision).toBe('rerun')
       expect(result.matchedRule).toBe('storybook-browser-startup-transient')
     })
@@ -217,7 +209,7 @@ describe('RULES catalogue', () => {
             ]),
           ),
       })
-      const result = await decide(ctx, RULES)
+      const result = await decide(ctx, rules)
       expect(result.decision).toBe('rerun')
       expect(result.matchedRule).toBe('storybook-browser-startup-transient')
     })
@@ -243,7 +235,7 @@ describe('RULES catalogue', () => {
             ]),
           ),
       })
-      const result = await decide(ctx, RULES)
+      const result = await decide(ctx, rules)
       expect(result.decision).toBe('dispatch')
       expect(result.matchedRule).toBe('')
     })
@@ -266,7 +258,7 @@ describe('RULES catalogue', () => {
             ]),
           ),
       })
-      const result = await decide(ctx, RULES)
+      const result = await decide(ctx, rules)
       expect(result.decision).toBe('rerun')
       expect(result.matchedRule).toBe('storybook-browser-startup-transient')
     })
@@ -291,7 +283,7 @@ describe('RULES catalogue', () => {
             ]),
           ),
       })
-      const result = await decide(ctx, RULES)
+      const result = await decide(ctx, rules)
       expect(result.decision).toBe('dispatch')
       expect(result.matchedRule).toBe('')
     })

@@ -1,4 +1,4 @@
-import { terminalFailedGithubActionsStepLog } from './github-actions-log.mts'
+import { terminalFailedGithubActionsStepLog } from 'vouchington-tooling/transient-retry'
 import type { TransientRetryRule } from './types.mts'
 
 const auditJobName = 'audit'
@@ -21,7 +21,7 @@ function hasPlanCompletionSetupNodeToolCacheTimeout(log: string): boolean {
 function isOnlyFailedPlanCompletionAudit(ctx: {
   workflowName: string
   conclusion: string
-  failedJobNames: string[]
+  failedJobNames: readonly string[]
 }): boolean {
   return (
     ctx.workflowName === 'Plan completion advisory' &&

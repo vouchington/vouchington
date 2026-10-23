@@ -27,7 +27,7 @@ import { webVitestSigsegvRule } from './web-vitest-rules.mts'
 
 export type { TransientRetryRule, WorkflowRunContext } from './types.mts'
 
-export const RULES: TransientRetryRule[] = [
+export const rules: TransientRetryRule[] = [
   cloudflareWorkerCancelledBeforeJobSignalRule,
   workflowCancelledWithoutFailureSignalRule,
   lintLinksGithub5xxRule,

@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { vi } from 'vitest'
 import { Button } from '@/components/ui/button'
-import { navMockModule } from '@/test-helpers/next-navigation-mock'
+import { navMockModule } from 'vouchington-tooling/next-navigation-mock'
 import type { OAuthProvider } from '@/types/user'
 import type { OAuthLoginToken } from '@/lib/auth/oauth-login-token'
 

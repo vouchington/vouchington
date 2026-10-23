@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import { createNavMock, navMockModule } from '@/test-helpers/next-navigation-mock'
+import { createNavMock, navMockModule } from 'vouchington-tooling/next-navigation-mock'
 import { LoginForm } from '../login-form'
 import type { OAuthProvider } from '@/types/user'
 import {

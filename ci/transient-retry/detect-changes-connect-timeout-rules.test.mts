@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { decide } from './decide.mts'
-import { RULES, type WorkflowRunContext } from './rules.mts'
+import { evaluateWorkflow as decide } from './decide.mts'
+import { rules, type WorkflowRunContext } from './rules.mts'
 
 const detectChangesJobName = 'changes / detect-changes'
 const connectTimeoutAnnotation = 'Connect Timeout Error'
@@ -33,6 +33,12 @@ const pathsFilterConnectTimeoutLog = [
 const filterConfigError = '##[error]Error: Invalid filter configuration: unknown filter type'
 
 const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContext => ({
+  jobNames: overrides.jobNames ?? overrides.failedJobNames ?? [],
+  jobConclusions: new Map((overrides.failedJobNames ?? []).map(name => [name, 'failure'])),
+  jobSteps: new Map(),
+  failedJobLogFetchFailures: () => Promise.resolve(new Set()),
+  jobLogs: () => overrides.failedJobLogs?.() ?? Promise.resolve(new Map()),
+  failedJobAnnotationFetchFailures: () => Promise.resolve(new Set()),
   workflowName: 'Cloudflare Worker',
   conclusion: 'failure',
   runAttempt: 1,
@@ -59,7 +65,7 @@ describe('detect-changes-paths-filter-github-connect-timeout', () => {
           workflowName,
           failedJobNames: [detectChangesJobName, gate],
         }),
-        RULES,
+        rules,
       ),
     ).resolves.toMatchObject({ decision: 'rerun', matchedRule: ruleId })
   })
@@ -69,14 +75,14 @@ describe('detect-changes-paths-filter-github-connect-timeout', () => {
       pathsFilterActionSha,
       otherPathsFilterActionSha,
     )
-    await expect(decide(makeCtx({ failedJobLogs: logsFor(log) }), RULES)).resolves.toMatchObject({
+    await expect(decide(makeCtx({ failedJobLogs: logsFor(log) }), rules)).resolves.toMatchObject({
       decision: 'rerun',
       matchedRule: ruleId,
     })
   })
 
   it('does not match the GitHub 5xx annotation rule', async () => {
-    const result = await decide(makeCtx(), RULES)
+    const result = await decide(makeCtx(), rules)
     expect(result.matchedRule).not.toBe('detect-changes-paths-filter-github-5xx')
   })
 
@@ -90,7 +96,7 @@ describe('detect-changes-paths-filter-github-connect-timeout', () => {
           failedJobAnnotations: () => Promise.resolve([github5xxAnnotation]),
           failedJobLogs: () => Promise.resolve(new Map()),
         }),
-        RULES,
+        rules,
       ),
     ).resolves.toMatchObject({
       decision: 'rerun',
@@ -110,7 +116,7 @@ describe('detect-changes-paths-filter-github-connect-timeout', () => {
           failedJobAnnotations: () =>
             Promise.resolve([filterConfigError.slice('##[error]'.length)]),
         }),
-        RULES,
+        rules,
       ),
     ).resolves.toEqual({ decision: 'dispatch', matchedRule: '' })
   })
@@ -120,7 +126,7 @@ describe('detect-changes-paths-filter-github-connect-timeout', () => {
       pathsFilterStepHeader(pathsFilterActionSha),
       '##[error]Connect Timeout Error',
     ].join('\n')
-    await expect(decide(makeCtx({ failedJobLogs: logsFor(log) }), RULES)).resolves.toEqual({
+    await expect(decide(makeCtx({ failedJobLogs: logsFor(log) }), rules)).resolves.toEqual({
       decision: 'dispatch',
       matchedRule: '',
     })
@@ -135,7 +141,7 @@ describe('detect-changes-paths-filter-github-connect-timeout', () => {
         'changed files listed',
       ),
     ].join('\n')
-    await expect(decide(makeCtx({ failedJobLogs: logsFor(log) }), RULES)).resolves.toEqual({
+    await expect(decide(makeCtx({ failedJobLogs: logsFor(log) }), rules)).resolves.toEqual({
       decision: 'dispatch',
       matchedRule: '',
     })
@@ -146,7 +152,7 @@ describe('detect-changes-paths-filter-github-connect-timeout', () => {
       '##[error]Connect Timeout Error',
       '##[error]Connect Timeout Error while reading filter config',
     )
-    await expect(decide(makeCtx({ failedJobLogs: logsFor(log) }), RULES)).resolves.toEqual({
+    await expect(decide(makeCtx({ failedJobLogs: logsFor(log) }), rules)).resolves.toEqual({
       decision: 'dispatch',
       matchedRule: '',
     })
@@ -154,7 +160,7 @@ describe('detect-changes-paths-filter-github-connect-timeout', () => {
 
   it('does not match a second error line', async () => {
     const log = `${pathsFilterConnectTimeoutLog}\n##[error]Process completed with exit code 1.`
-    await expect(decide(makeCtx({ failedJobLogs: logsFor(log) }), RULES)).resolves.toEqual({
+    await expect(decide(makeCtx({ failedJobLogs: logsFor(log) }), rules)).resolves.toEqual({
       decision: 'dispatch',
       matchedRule: '',
     })
@@ -167,14 +173,14 @@ describe('detect-changes-paths-filter-github-connect-timeout', () => {
           failedJobAnnotations: () =>
             Promise.resolve([connectTimeoutAnnotation, 'Process completed with exit code 1.']),
         }),
-        RULES,
+        rules,
       ),
     ).resolves.toEqual({ decision: 'dispatch', matchedRule: '' })
   })
 
   it('does not match when annotations are missing', async () => {
     await expect(
-      decide(makeCtx({ failedJobAnnotations: () => Promise.resolve([]) }), RULES),
+      decide(makeCtx({ failedJobAnnotations: () => Promise.resolve([]) }), rules),
     ).resolves.toEqual({ decision: 'dispatch', matchedRule: '' })
   })
 
@@ -188,7 +194,7 @@ describe('detect-changes-paths-filter-github-connect-timeout', () => {
             ['test-cloudflare-worker', 'failure'],
           ]),
         }),
-        RULES,
+        rules,
       ),
     ).resolves.toEqual({ decision: 'dispatch', matchedRule: '' })
   })
@@ -199,19 +205,19 @@ describe('detect-changes-paths-filter-github-connect-timeout', () => {
         makeCtx({
           jobConclusions: new Map([[detectChangesJobName, 'cancelled']]),
         }),
-        RULES,
+        rules,
       ),
     ).resolves.toEqual({ decision: 'dispatch', matchedRule: '' })
   })
 
   it('does not match a non-area workflow', async () => {
     await expect(
-      decide(makeCtx({ workflowName: 'Main CI (cloudflare-worker)' }), RULES),
+      decide(makeCtx({ workflowName: 'Main CI (cloudflare-worker)' }), rules),
     ).resolves.toEqual({ decision: 'dispatch', matchedRule: '' })
   })
 
   it('does not match after the retry cap is exhausted', async () => {
-    await expect(decide(makeCtx({ runAttempt: 2 }), RULES)).resolves.toEqual({
+    await expect(decide(makeCtx({ runAttempt: 2 }), rules)).resolves.toEqual({
       decision: 'dispatch',
       matchedRule: '',
     })

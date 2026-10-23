@@ -5,7 +5,7 @@ import {
   expectInputEnterSubmits,
   expectTextareaCmdEnterSubmits,
 } from '@/test-helpers/form-keyboard'
-import { navMockModule, createNavMock } from '@/test-helpers/next-navigation-mock'
+import { navMockModule, createNavMock } from 'vouchington-tooling/next-navigation-mock'
 import CreateTopicPage from '../create-topic-client'
 import { createTopic } from '@/lib/api/client/topics'
 

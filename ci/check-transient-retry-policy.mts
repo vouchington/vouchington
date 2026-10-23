@@ -12,7 +12,7 @@ import {
   uncoveredMarkers,
 } from './transient-retry/step-group-marker-policy.mts'
 import { unregisteredRules } from './transient-retry/rule-registry-policy.mts'
-import { RULES } from './transient-retry/rules.mts'
+import { rules } from './transient-retry/rules.mts'
 
 /** Live repository inventory belongs to the dedicated static job, never a unit-test root. */
 export async function checkTransientRetryPolicy(root: string): Promise<string[]> {
@@ -61,7 +61,7 @@ export async function checkTransientRetryPolicy(root: string): Promise<string[]>
         : [],
     ),
   )
-  errors.push(...unregisteredRules(modules, RULES))
+  errors.push(...unregisteredRules(modules, rules))
   return errors
 }
 if (import.meta.main) {

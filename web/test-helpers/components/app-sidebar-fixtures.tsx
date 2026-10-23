@@ -5,7 +5,7 @@ import { vi } from 'vitest'
 import { SidebarProvider } from '@/components/ui/sidebar'
 import { AuthProvider } from '@/lib/auth/auth-provider'
 import { toClientAuthUser } from '@/lib/auth/client-auth-user'
-import { createNavMock, navMockModule } from '@/test-helpers/next-navigation-mock'
+import { createNavMock, navMockModule } from 'vouchington-tooling/next-navigation-mock'
 import type { User } from '@/types/user'
 
 vi.mock(import('next/navigation'), () => navMockModule)

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { decide } from './decide.mts'
-import { RULES, type WorkflowRunContext } from './rules.mts'
+import { evaluateWorkflow as decide } from './decide.mts'
+import { rules, type WorkflowRunContext } from './rules.mts'
 
 const staticAnalysisJobName = 'static-code-analysis / static-code-analysis'
 
@@ -52,6 +52,12 @@ const oxlintTsgolintVendoredCheckoutShapeLog = [
 ].join('\n')
 
 const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContext => ({
+  jobNames: overrides.jobNames ?? overrides.failedJobNames ?? [],
+  jobConclusions: new Map((overrides.failedJobNames ?? []).map(name => [name, 'failure'])),
+  jobSteps: new Map(),
+  failedJobLogFetchFailures: () => Promise.resolve(new Set()),
+  jobLogs: () => overrides.failedJobLogs?.() ?? Promise.resolve(new Map()),
+  failedJobAnnotationFetchFailures: () => Promise.resolve(new Set()),
   workflowName: 'Static',
   conclusion: 'failure',
   runAttempt: 1,
@@ -72,13 +78,13 @@ describe('static-analysis-oxlint-tsgolint-runtime-fault', () => {
               [staticAnalysisJobName, 'ordinary lint diagnostic'],
             ]),
         }),
-        RULES,
+        rules,
       ),
     ).resolves.toEqual({ decision: 'dispatch', matchedRule: '' })
   })
 
   it('matches an oxlint tsgolint runtime fault on attempt 1', async () => {
-    const result = await decide(makeCtx(), RULES)
+    const result = await decide(makeCtx(), rules)
     expect(result.decision).toBe('rerun')
     expect(result.matchedRule).toBe('static-analysis-oxlint-tsgolint-runtime-fault')
   })
@@ -89,7 +95,7 @@ describe('static-analysis-oxlint-tsgolint-runtime-fault', () => {
         failedJobLogs: () =>
           Promise.resolve(new Map([[staticAnalysisJobName, oxlintTsgolintParserFaultLog]])),
       }),
-      RULES,
+      rules,
     )
     expect(result.decision).toBe('rerun')
     expect(result.matchedRule).toBe('static-analysis-oxlint-tsgolint-runtime-fault')
@@ -113,7 +119,7 @@ describe('static-analysis-oxlint-tsgolint-runtime-fault', () => {
             ]),
           ),
       }),
-      RULES,
+      rules,
     )
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
@@ -127,14 +133,14 @@ describe('static-analysis-oxlint-tsgolint-runtime-fault', () => {
             new Map([[staticAnalysisJobName, oxlintTsgolintVendoredCheckoutShapeLog]]),
           ),
       }),
-      RULES,
+      rules,
     )
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
   })
 
   it('does not match the same tsgolint runtime fault after the retry cap is exhausted', async () => {
-    const result = await decide(makeCtx({ runAttempt: 2 }), RULES)
+    const result = await decide(makeCtx({ runAttempt: 2 }), rules)
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
   })

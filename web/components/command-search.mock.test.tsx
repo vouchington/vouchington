@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, act } from '@testing-library/react'
 import { describe, expect, it, vi, afterEach, beforeEach } from 'vitest'
-import { createNavMock, navMockModule } from '@/test-helpers/next-navigation-mock'
+import { createNavMock, navMockModule } from 'vouchington-tooling/next-navigation-mock'
 import { CommandSearch } from './command-search'
 
 vi.mock(import('next/navigation'), () => navMockModule)

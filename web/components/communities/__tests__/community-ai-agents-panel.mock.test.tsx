@@ -1,6 +1,6 @@
 import { fireEvent, render, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { createNavMock, navMockModule } from '@/test-helpers/next-navigation-mock'
+import { createNavMock, navMockModule } from 'vouchington-tooling/next-navigation-mock'
 import { makeCommunityAiAgentResponse } from '@/test-helpers/api-responses'
 import { CommunityAiAgentsPanel } from '../community-ai-agents-panel'
 import type { CommunityAiAgent } from '@/types/api-responses'

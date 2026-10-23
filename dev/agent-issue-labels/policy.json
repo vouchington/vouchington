@@ -1,0 +1,21 @@
+{
+  "labels": {
+    "priority: critical": {
+      "color": "b60205",
+      "description": "Immediate incident, exploitable vulnerability, or release blocker."
+    },
+    "priority: high": {
+      "color": "d93f0b",
+      "description": "Material risk or user impact; schedule next."
+    },
+    "priority: medium": {
+      "color": "fbca04",
+      "description": "Normal actionable priority and default."
+    },
+    "priority: low": {
+      "color": "0e8a16",
+      "description": "Useful but not time-sensitive."
+    }
+  },
+  "strictPrefixes": ["priority:"]
+}

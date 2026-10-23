@@ -1,12 +1,18 @@
 import { describe, expect, it } from 'vitest'
 
-import { decide } from './decide.mts'
+import { evaluateWorkflow as decide } from './decide.mts'
 
-import { RULES, type WorkflowRunContext } from './rules.mts'
+import { rules, type WorkflowRunContext } from './rules.mts'
 
 const gitleaksJobName = 'gitleaks-scan / gitleaks'
 const gitleaksGateJobName = 'gitleaks'
 const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContext => ({
+  jobNames: overrides.jobNames ?? overrides.failedJobNames ?? [],
+  jobConclusions: new Map((overrides.failedJobNames ?? []).map(name => [name, 'failure'])),
+  jobSteps: new Map(),
+  failedJobLogFetchFailures: () => Promise.resolve(new Set()),
+  jobLogs: () => overrides.failedJobLogs?.() ?? Promise.resolve(new Map()),
+  failedJobAnnotationFetchFailures: () => Promise.resolve(new Set()),
   workflowName: 'Gitleaks',
   conclusion: 'failure',
   runAttempt: 1,
@@ -53,7 +59,7 @@ describe('Gitleaks transient retry rules', () => {
       failedJobNames: [gitleaksJobName, gitleaksGateJobName],
       failedJobLogs: () => Promise.resolve(new Map([[gitleaksJobName, installTimeoutLog]])),
     })
-    const result = await decide(ctx, RULES)
+    const result = await decide(ctx, rules)
     expect(result.decision).toBe('rerun')
     expect(result.matchedRule).toBe('gitleaks-install-releases-download-flake')
   })
@@ -64,7 +70,7 @@ describe('Gitleaks transient retry rules', () => {
       failedJobNames: [gitleaksJobName, gitleaksGateJobName],
       failedJobLogs: () => Promise.resolve(new Map([[gitleaksJobName, installHttp504Log]])),
     })
-    const result = await decide(ctx, RULES)
+    const result = await decide(ctx, rules)
     expect(result.decision).toBe('rerun')
     expect(result.matchedRule).toBe('gitleaks-install-releases-download-flake')
   })
@@ -75,7 +81,7 @@ describe('Gitleaks transient retry rules', () => {
       failedJobNames: [gitleaksJobName, gitleaksGateJobName],
       failedJobLogs: () => Promise.resolve(new Map([[gitleaksJobName, installChecksumTimeoutLog]])),
     })
-    const result = await decide(ctx, RULES)
+    const result = await decide(ctx, rules)
     expect(result.decision).toBe('rerun')
     expect(result.matchedRule).toBe('gitleaks-install-releases-download-flake')
   })
@@ -86,7 +92,7 @@ describe('Gitleaks transient retry rules', () => {
       failedJobNames: [gitleaksJobName, gitleaksGateJobName],
       failedJobLogs: () => Promise.resolve(new Map([[gitleaksJobName, installChecksumHttp504Log]])),
     })
-    const result = await decide(ctx, RULES)
+    const result = await decide(ctx, rules)
     expect(result.decision).toBe('rerun')
     expect(result.matchedRule).toBe('gitleaks-install-releases-download-flake')
   })
@@ -97,7 +103,7 @@ describe('Gitleaks transient retry rules', () => {
       failedJobNames: [gitleaksJobName, gitleaksGateJobName],
       failedJobLogs: () => Promise.resolve(new Map([[gitleaksJobName, installHttp000Log]])),
     })
-    const result = await decide(ctx, RULES)
+    const result = await decide(ctx, rules)
     expect(result.decision).toBe('rerun')
     expect(result.matchedRule).toBe('gitleaks-install-releases-download-flake')
   })
@@ -108,7 +114,7 @@ describe('Gitleaks transient retry rules', () => {
       failedJobNames: [gitleaksJobName, gitleaksGateJobName],
       failedJobLogs: () => Promise.resolve(new Map([[gitleaksJobName, installChecksumHttp000Log]])),
     })
-    const result = await decide(ctx, RULES)
+    const result = await decide(ctx, rules)
     expect(result.decision).toBe('rerun')
     expect(result.matchedRule).toBe('gitleaks-install-releases-download-flake')
   })
@@ -133,7 +139,7 @@ describe('Gitleaks transient retry rules', () => {
           ]),
         ),
     })
-    const result = await decide(ctx, RULES)
+    const result = await decide(ctx, rules)
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
   })
@@ -155,7 +161,7 @@ describe('Gitleaks transient retry rules', () => {
           ]),
         ),
     })
-    const result = await decide(ctx, RULES)
+    const result = await decide(ctx, rules)
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
   })
@@ -166,7 +172,7 @@ describe('Gitleaks transient retry rules', () => {
       failedJobNames: [gitleaksJobName, 'build'],
       failedJobLogs: () => Promise.resolve(new Map([[gitleaksJobName, installTimeoutLog]])),
     })
-    const result = await decide(ctx, RULES)
+    const result = await decide(ctx, rules)
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
   })
@@ -178,7 +184,7 @@ describe('Gitleaks transient retry rules', () => {
       failedJobNames: [gitleaksJobName, gitleaksGateJobName],
       failedJobLogs: () => Promise.resolve(new Map([[gitleaksJobName, installHttp504Log]])),
     })
-    const result = await decide(ctx, RULES)
+    const result = await decide(ctx, rules)
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
   })

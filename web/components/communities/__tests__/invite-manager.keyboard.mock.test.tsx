@@ -2,7 +2,7 @@ import { makeCommunityInvite as makeInvite } from '@/test-helpers/api-responses/
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { expectInputEnterSubmits } from '@/test-helpers/form-keyboard'
-import { createNavMock, navMockModule } from '@/test-helpers/next-navigation-mock'
+import { createNavMock, navMockModule } from 'vouchington-tooling/next-navigation-mock'
 
 vi.mock(
   import('next/navigation'),

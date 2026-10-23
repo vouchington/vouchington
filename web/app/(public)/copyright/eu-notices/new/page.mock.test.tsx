@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { navMockModule, createNavMock } from '@/test-helpers/next-navigation-mock'
+import { navMockModule, createNavMock } from 'vouchington-tooling/next-navigation-mock'
 import { makeCopyrightJurisdictionAvailability } from '@/test-helpers/api-responses/copyright'
 import { getCopyrightJurisdictionAvailabilityServer } from '@/lib/api/server/copyright-notices'
 

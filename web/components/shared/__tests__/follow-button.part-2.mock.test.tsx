@@ -1,4 +1,4 @@
-import { navMockModule, createNavMock } from '@/test-helpers/next-navigation-mock'
+import { navMockModule, createNavMock } from 'vouchington-tooling/next-navigation-mock'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, act } from '@testing-library/react'
 import type { ReactNode } from 'react'

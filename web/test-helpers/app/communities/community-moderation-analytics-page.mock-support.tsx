@@ -1,6 +1,6 @@
 /* oxlint-disable no-mistakes/playwright-consistent-attribute -- moved test support preserves existing Testing Library selectors */
 import { vi } from 'vitest'
-import { navMockModule } from '@/test-helpers/next-navigation-mock'
+import { navMockModule } from 'vouchington-tooling/next-navigation-mock'
 import CommunityModerationAnalyticsPage from '@/app/(communities)/communities/[slug]/settings/moderation/analytics/page'
 import type { ModerationAnalytics, ModerationTransparency } from '@/types/moderation-analytics'
 

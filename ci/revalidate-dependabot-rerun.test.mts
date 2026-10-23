@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { runDependabotRerun } from './revalidate-dependabot-rerun.mts'
-import type { GhApiExecFile } from './transient-retry/gh-api.mts'
+import { runDependabotRerun, type GhApiExecFile } from './revalidate-dependabot-rerun.mts'
 
 const REPOSITORY = 'vouchington/vouchington'
 const RUN_ID = 33_307_398_209

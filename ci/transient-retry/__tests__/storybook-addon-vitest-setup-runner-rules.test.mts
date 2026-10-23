@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { decide } from '../decide.mts'
-import { RULES } from '../rules.mts'
+import { evaluateWorkflow as decide } from '../decide.mts'
+import { rules } from '../rules.mts'
 import { makeCtx } from '../../test-helpers/transient-retry/helpers.mts'
 
 describe('storybook-browser-startup-transient', () => {
@@ -22,7 +22,7 @@ ${runnerMissingAttempt}
       failedJobNames: [storybookJobName],
       failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, matchingLog]])),
     })
-    const result = await decide(ctx, RULES)
+    const result = await decide(ctx, rules)
     expect(result.decision).toBe('rerun')
     expect(result.matchedRule).toBe('storybook-browser-startup-transient')
   })
@@ -38,7 +38,7 @@ ${runnerMissingAttempt}
       ]),
       jobLogs: names => Promise.resolve(new Map(names.map(name => [name, matchingLog]))),
     })
-    await expect(decide(ctx, RULES)).resolves.toEqual({
+    await expect(decide(ctx, rules)).resolves.toEqual({
       decision: 'rerun',
       matchedRule: 'storybook-browser-startup-transient',
     })
@@ -52,7 +52,7 @@ ${runnerMissingAttempt}
       jobConclusions: new Map([[ciStorybookJobName, 'cancelled']]),
       jobLogs: () => Promise.resolve(new Map([[ciStorybookJobName, matchingLog]])),
     })
-    expect((await decide(ctx, RULES)).matchedRule).not.toBe('storybook-browser-startup-transient')
+    expect((await decide(ctx, rules)).matchedRule).not.toBe('storybook-browser-startup-transient')
   })
 
   it('matches the PR CI Storybook add-on setup failure with aggregate gates', async () => {
@@ -61,7 +61,7 @@ ${runnerMissingAttempt}
       failedJobNames: [ciStorybookJobName, 'web'],
       failedJobLogs: () => Promise.resolve(new Map([[ciStorybookJobName, matchingLog]])),
     })
-    const result = await decide(ctx, RULES)
+    const result = await decide(ctx, rules)
     expect(result.decision).toBe('rerun')
     expect(result.matchedRule).toBe('storybook-browser-startup-transient')
   })
@@ -77,7 +77,7 @@ ${runnerMissingAttempt}
           ]),
         ),
     })
-    const result = await decide(ctx, RULES)
+    const result = await decide(ctx, rules)
     expect(result.decision).toBe('rerun')
     expect(result.matchedRule).toBe('storybook-browser-startup-transient')
   })
@@ -89,7 +89,7 @@ ${runnerMissingAttempt}
       failedJobNames: [storybookJobName],
       failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, matchingLog]])),
     })
-    const result = await decide(ctx, RULES)
+    const result = await decide(ctx, rules)
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
   })
@@ -101,7 +101,7 @@ ${runnerMissingAttempt}
       failedJobNames: [storybookJobName],
       failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, matchingLog]])),
     })
-    const result = await decide(ctx, RULES)
+    const result = await decide(ctx, rules)
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
   })
@@ -123,7 +123,7 @@ ${runnerMissingAttempt}
           ]),
         ),
     })
-    const result = await decide(ctx, RULES)
+    const result = await decide(ctx, rules)
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
   })
@@ -143,7 +143,7 @@ vite:deps new dependencies found: @vouchington/session-jwt
       failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, log]])),
     })
 
-    const result = await decide(ctx, RULES)
+    const result = await decide(ctx, rules)
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
   })
@@ -161,7 +161,7 @@ vite:deps new dependencies found: @vouchington/session-jwt
       failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, log]])),
     })
 
-    const result = await decide(ctx, RULES)
+    const result = await decide(ctx, rules)
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
   })
@@ -178,7 +178,7 @@ vite:deps new dependencies found: @vouchington/session-jwt
       failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, log]])),
     })
 
-    const result = await decide(ctx, RULES)
+    const result = await decide(ctx, rules)
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
   })
@@ -198,7 +198,7 @@ ${runnerMissingAttempt}
       failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, log]])),
     })
 
-    const result = await decide(ctx, RULES)
+    const result = await decide(ctx, rules)
     expect(result.decision).toBe('rerun')
     expect(result.matchedRule).toBe('storybook-browser-startup-transient')
   })
@@ -209,7 +209,7 @@ ${runnerMissingAttempt}
       failedJobNames: [storybookJobName, 'publish'],
       failedJobLogs: () => Promise.resolve(new Map([[storybookJobName, matchingLog]])),
     })
-    const result = await decide(ctx, RULES)
+    const result = await decide(ctx, rules)
     expect(result.decision).toBe('rerun')
     expect(result.matchedRule).toBe('storybook-browser-startup-transient')
   })

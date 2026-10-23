@@ -6,8 +6,8 @@ import {
   sourceStateExitCode,
   type ExpectedSourceRun,
   type SourceRunState,
+  type GhApiExecFile,
 } from './source-run-state.mts'
-import type { GhApiExecFile } from './transient-retry/gh-api.mts'
 
 const expected: ExpectedSourceRun = {
   conclusion: 'failure',

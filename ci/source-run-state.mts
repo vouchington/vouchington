@@ -8,7 +8,13 @@ import {
   type ExpectedSourceRun,
   type SourceRunState,
 } from './source-run-assessment.mts'
-import { ghApi, LOG_MAX_BUFFER_BYTES, type GhApiExecFile } from './transient-retry/gh-api.mts'
+import { createGhApi, API_MAX_BUFFER_BYTES } from 'vouchington-tooling/transient-retry'
+
+export type GhApiExecFile = (
+  command: string,
+  args: string[],
+  options: { maxBuffer: number },
+) => Promise<{ stdout: string; stderr: string }>
 
 export type { ExpectedSourceRun, SourceRunState }
 
@@ -32,10 +38,9 @@ export async function fetchSourceRunState(
   { execFile: ghExecFile = execFile, now = Date.now }: FetchSourceRunStateDependencies = {},
 ): Promise<SourceRunState> {
   try {
-    const { stdout } = await ghApi(
-      [`repos/${expected.repository}/actions/runs/${expected.runId}`],
-      { execFile: ghExecFile, maxBuffer: LOG_MAX_BUFFER_BYTES },
-    )
+    const stdout = await createGhApi({
+      run: async args => (await ghExecFile('gh', args, { maxBuffer: API_MAX_BUFFER_BYTES })).stdout,
+    }).call([`repos/${expected.repository}/actions/runs/${expected.runId}`])
     try {
       return assessSourceRunState(JSON.parse(stdout) as unknown, expected, now())
     } catch {

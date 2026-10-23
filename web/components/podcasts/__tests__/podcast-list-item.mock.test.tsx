@@ -1,4 +1,4 @@
-import { navMockModule } from '@/test-helpers/next-navigation-mock'
+import { navMockModule } from 'vouchington-tooling/next-navigation-mock'
 import '@/test-helpers/components/podcast.mock-support'
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'

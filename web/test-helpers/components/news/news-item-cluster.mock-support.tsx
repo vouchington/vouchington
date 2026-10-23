@@ -2,7 +2,7 @@
 import type { ReactNode } from 'react'
 import { vi } from 'vitest'
 import { makeRssFeedItem, makeRssFeedItemTopic } from '@/test-helpers/api-responses'
-import { navMockModule } from '@/test-helpers/next-navigation-mock'
+import { navMockModule } from 'vouchington-tooling/next-navigation-mock'
 import type { Post } from '@/types/posts'
 import type { RssFeedItem, Story } from '@/types/rss-feed-items'
 

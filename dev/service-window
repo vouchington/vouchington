@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+set -euo pipefail
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+set -a
+# shellcheck source=/dev/null
+source "$REPO_ROOT/.env"
+set +a
+export LOG_LEVEL="${TMUX_LOG_LEVEL:-error}"
+case " ${NODE_OPTIONS:-} " in
+  *' --disable-warning=DEP0205 '*) ;;
+  *) export NODE_OPTIONS="${NODE_OPTIONS:+$NODE_OPTIONS }--disable-warning=DEP0205" ;;
+esac
+if [ "${OTEL_ENABLED:-}" = 1 ]; then
+  export NODE_OPTIONS="${NODE_OPTIONS:+$NODE_OPTIONS }--import \"$REPO_ROOT/dev/otel-register.mts\""
+fi
+case "$1" in
+  nextjs)
+    export OTEL_SERVICE_NAME=voucha-web
+    cd "$REPO_ROOT/web"
+    exec pnpm run dev
+    ;;
+  backend|worker)
+    export LOCALIZATION_SQLITE_PATH="$REPO_ROOT/.local/localization/catalog.sqlite"
+    if [ "$1" = worker ]; then
+      export OTEL_SERVICE_NAME=voucha-worker-cpu WORKER_QUEUE_CLASS=all UV_THREADPOOL_SIZE="${UV_THREADPOOL_SIZE:-8}"
+      case " ${NODE_OPTIONS:-} " in
+        *' --max-old-space-size='*) ;;
+        *) export NODE_OPTIONS="${NODE_OPTIONS:+$NODE_OPTIONS }--max-old-space-size=3072" ;;
+      esac
+      exec node --watch "$REPO_ROOT/backend/entrypoints/worker-cpu/serve.mts"
+    fi
+    export OTEL_SERVICE_NAME=voucha-api
+    exec node --watch "$REPO_ROOT/backend/entrypoints/api/serve.mts"
+    ;;
+  cloudflare)
+    cd "$REPO_ROOT/cloudflare-worker"
+    protocol_args=()
+    if [ -f "$REPO_ROOT/dev/certs/localhost.pem" ] && [ -f "$REPO_ROOT/dev/certs/localhost-key.pem" ]; then
+      protocol_args=(--local-protocol https --https-cert-path ../dev/certs/localhost.pem --https-key-path ../dev/certs/localhost-key.pem)
+    fi
+    exec node scripts/wrangler/dev.mts --local --port "${WORKER_PORT:?}" --ip 127.0.0.1 --log-level="$LOG_LEVEL" "${protocol_args[@]+"${protocol_args[@]}"}"
+    ;;
+  lambdas)
+    export OTEL_SERVICE_NAME=voucha-lambdas
+    exec node --watch "$REPO_ROOT/lambdas/dev-server.mts"
+    ;;
+  *) echo "Unknown service: $1" >&2; exit 2 ;;
+esac

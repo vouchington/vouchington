@@ -1930,7 +1930,6 @@ rules:
       - 'ci/__tests__/web-integration-processes.test.mts'
       - 'ci/tooling-test-hang-watchdog.test.mts'
       - 'ci/tooling-test-runner.test.mts'
-      - 'ci/transient-retry/run-context-logs.test.mts'
       - 'cloudflare-worker/scripts/wrangler/start.mock.test.mts'
       - 'dev/__tests__/cloc-child-process.test.mts'
       - 'dev/__tests__/stop-services.process.part-2.test.mts'

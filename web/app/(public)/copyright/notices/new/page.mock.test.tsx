@@ -1,6 +1,6 @@
 import { configure, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { navMockModule, createNavMock } from '@/test-helpers/next-navigation-mock'
+import { navMockModule, createNavMock } from 'vouchington-tooling/next-navigation-mock'
 import { createCopyrightNotice } from '@/lib/api/client/copyright-notices'
 import { resolveCopyrightNoticeTargets } from '@/lib/api/client/copyright-notice-targets'
 

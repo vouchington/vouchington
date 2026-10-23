@@ -1,6 +1,6 @@
 import type { CommunityAgentPrompt } from '@/types/api-responses'
 import { vi } from 'vitest'
-import { createNavMock, navMockModule } from '@/test-helpers/next-navigation-mock'
+import { createNavMock, navMockModule } from 'vouchington-tooling/next-navigation-mock'
 
 const mocks = vi.hoisted(() => ({
   updateCommunityAgentPrompt: vi.fn<VitestLooseMock>(),

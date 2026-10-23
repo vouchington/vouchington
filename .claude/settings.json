@@ -26,10 +26,6 @@
       "Bash(no-mistakes *)",
       "Bash(./dev/*)",
       "Bash(node dev/*)",
-      "Bash(./dev/tmux-name)",
-      "Bash(./dev/tmux-name *)",
-      "Bash(./dev/tmux-agent-reminder)",
-      "Bash(./dev/tmux-agent-reminder *)",
       "Bash(./dev/initialize)",
       "Bash(./dev/initialize *)",
       "Bash(./dev/tmux)",
@@ -280,7 +276,7 @@
           },
           {
             "type": "command",
-            "command": "\"$(git rev-parse --show-toplevel)/dev/tmux-agent-reminder\" session-start"
+            "command": "pnpm exec vouchington tmux agent-reminder session-start"
           },
           {
             "type": "command",
@@ -362,7 +358,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"$(git rev-parse --show-toplevel)/dev/tmux-agent-reminder\" user-prompt"
+            "command": "pnpm exec vouchington tmux agent-reminder user-prompt"
           }
         ]
       }
@@ -370,10 +366,6 @@
   },
   "sandbox": {
     "excludedCommands": [
-      "./dev/tmux-name",
-      "./dev/tmux-name *",
-      "./dev/tmux-agent-reminder",
-      "./dev/tmux-agent-reminder *",
       "./dev/initialize",
       "./dev/initialize *",
       "./dev/tmux",

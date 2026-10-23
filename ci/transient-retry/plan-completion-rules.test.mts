@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import { decide } from './decide.mts'
+import { evaluateWorkflow as decide } from './decide.mts'
 
-import { RULES, type WorkflowRunContext } from './rules.mts'
+import { rules, type WorkflowRunContext } from './rules.mts'
 
 const auditJobName = 'audit'
 const ruleId = 'plan-completion-setup-node-tool-cache-timeout'
@@ -13,6 +13,12 @@ const setupNodeSha = '0'.repeat(40)
 const nodeVersionsDownloadMarker = 'github.com/actions/node-versions/releases/download/'
 
 const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContext => ({
+  jobNames: overrides.jobNames ?? overrides.failedJobNames ?? [],
+  jobConclusions: new Map((overrides.failedJobNames ?? []).map(name => [name, 'failure'])),
+  jobSteps: new Map(),
+  failedJobLogFetchFailures: () => Promise.resolve(new Set()),
+  jobLogs: () => overrides.failedJobLogs?.() ?? Promise.resolve(new Map()),
+  failedJobAnnotationFetchFailures: () => Promise.resolve(new Set()),
   workflowName: 'CI',
   conclusion: 'failure',
   runAttempt: 1,
@@ -59,13 +65,13 @@ function auditContext(log: string, overrides: Partial<WorkflowRunContext> = {}) 
 
 describe('Plan completion advisory setup-node tool-cache timeout', () => {
   it('reruns the observed tool-cache timeout once', async () => {
-    const result = await decide(auditContext(toolCacheTimeoutLog), RULES)
+    const result = await decide(auditContext(toolCacheTimeoutLog), rules)
     expect(result.decision).toBe('rerun')
     expect(result.matchedRule).toBe(ruleId)
   })
 
   it('does not match the same log on a different workflow', async () => {
-    const result = await decide(auditContext(toolCacheTimeoutLog, { workflowName: 'CI' }), RULES)
+    const result = await decide(auditContext(toolCacheTimeoutLog, { workflowName: 'CI' }), rules)
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
   })
@@ -73,7 +79,7 @@ describe('Plan completion advisory setup-node tool-cache timeout', () => {
   it('does not match when another job failed', async () => {
     const result = await decide(
       auditContext(toolCacheTimeoutLog, { failedJobNames: [auditJobName, 'publish'] }),
-      RULES,
+      rules,
     )
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
@@ -82,7 +88,7 @@ describe('Plan completion advisory setup-node tool-cache timeout', () => {
   it('does not match a cancelled run', async () => {
     const result = await decide(
       auditContext(toolCacheTimeoutLog, { conclusion: 'cancelled' }),
-      RULES,
+      rules,
     )
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
@@ -96,7 +102,7 @@ describe('Plan completion advisory setup-node tool-cache timeout', () => {
       'audit\tAudit open Plans\t##[group]Run node ci/plan-completion.mts',
       'audit\tAudit open Plans\t##[error]Process completed with exit code 1.',
     ].join('\n')
-    const result = await decide(auditContext(log), RULES)
+    const result = await decide(auditContext(log), rules)
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
   })
@@ -110,7 +116,7 @@ describe('Plan completion advisory setup-node tool-cache timeout', () => {
         `##[error]The action 'Run actions/setup-node@${setupNodeSha}' has timed out after 1 minutes.`,
       ),
     ].join('\n')
-    const result = await decide(auditContext(log), RULES)
+    const result = await decide(auditContext(log), rules)
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
   })
@@ -121,7 +127,7 @@ describe('Plan completion advisory setup-node tool-cache timeout', () => {
       setupNodeLine('##[error]Unable to locate executable file: node'),
       setupNodeLine('##[error]Process completed with exit code 1.'),
     ].join('\n')
-    const result = await decide(auditContext(log), RULES)
+    const result = await decide(auditContext(log), rules)
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
   })
@@ -136,7 +142,7 @@ describe('Plan completion advisory setup-node tool-cache timeout', () => {
         `##[error]The action 'Run actions/setup-node@${setupNodeSha}' has timed out after 1 minutes.`,
       ),
     ].join('\n')
-    const result = await decide(auditContext(log), RULES)
+    const result = await decide(auditContext(log), rules)
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
   })
@@ -145,9 +151,9 @@ describe('Plan completion advisory setup-node tool-cache timeout', () => {
     const result = await decide(
       auditContext(toolCacheTimeoutLog, {
         runAttempt: 2,
-        ruleAttempts: new Map([[ruleId, 2]]),
+        retryAttempts: new Map([[ruleId, 2]]),
       }),
-      RULES,
+      rules,
     )
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')

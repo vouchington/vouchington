@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { ReactNode } from 'react'
-import { navMockModule, createNavMock } from '@/test-helpers/next-navigation-mock'
+import { navMockModule, createNavMock } from 'vouchington-tooling/next-navigation-mock'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { ReferralCtaAside } from '../referral-cta-aside'
 import type { User } from '@/types/user'

@@ -4,8 +4,8 @@ import { parse as parseYaml } from 'yaml'
 import { describe, expect, it } from 'vitest'
 
 import { makeCtx } from '../test-helpers/transient-retry/helpers.mts'
-import { decide } from './decide.mts'
-import { RULES } from './rules.mts'
+import { evaluateWorkflow as decide } from './decide.mts'
+import { rules } from './rules.mts'
 import { storybookBrowserTestStepName } from './storybook-rules.mts'
 
 interface Step {
@@ -35,7 +35,7 @@ const classify = (log: string) =>
       failedJobNames: [jobName, 'web'],
       failedJobLogs: async () => new Map([[jobName, log]]),
     }),
-    RULES,
+    rules,
   )
 
 describe('Storybook optimizer timeout live topology', () => {

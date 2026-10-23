@@ -41,7 +41,7 @@ function hasNoCreatedJobs(ctx: WorkflowRunContext): boolean {
 }
 
 function hasKnownCloudflareWorkerNoJobRerunExhaustion(ctx: WorkflowRunContext): boolean {
-  const attempts = ctx.ruleAttempts?.get(cloudflareWorkerCancelledBeforeJobSignalRuleId)
+  const attempts = ctx.retryAttempts?.get(cloudflareWorkerCancelledBeforeJobSignalRuleId)
   return attempts !== undefined && attempts > cloudflareWorkerCancelledBeforeJobSignalMaxAttempts
 }
 

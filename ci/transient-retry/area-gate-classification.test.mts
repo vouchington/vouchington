@@ -3,8 +3,8 @@ import { areaGateViolations } from './area-gate-policy.mts'
 
 import { makeCtx } from '../test-helpers/transient-retry/helpers.mts'
 import { isAreaGateJob } from './ci-aggregate-jobs.mts'
-import { decide } from './decide.mts'
-import { RULES } from './rules.mts'
+import { evaluateWorkflow as decide } from './decide.mts'
+import { rules } from './rules.mts'
 
 const areaGates = [
   ['Static', 'static'],
@@ -71,7 +71,7 @@ describe('area gate classification', () => {
           failedJobNames: [backendJob, companion],
           failedJobLogs: async () => new Map([[backendJob, shutdownLog]]),
         }),
-        RULES,
+        rules,
       ),
     ).resolves.toMatchObject({ decision })
   })

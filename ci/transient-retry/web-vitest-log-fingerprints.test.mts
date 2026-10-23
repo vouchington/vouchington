@@ -3,9 +3,9 @@ import { readFileSync } from 'node:fs'
 import { parse as parseYaml } from 'yaml'
 import { describe, expect, it } from 'vitest'
 
-import { decide } from './decide.mts'
+import { evaluateWorkflow as decide } from './decide.mts'
 
-import { RULES, type WorkflowRunContext } from './rules.mts'
+import { rules, type WorkflowRunContext } from './rules.mts'
 import { hasWebVitestSegfault } from './web-vitest-log-fingerprints.mts'
 
 // pnpm quotes arguments that contain '='. The credentialed SIGKILL fixture records that shape.
@@ -45,6 +45,12 @@ const matchingLog = [
 ].join('\n')
 
 const makeCtx = (overrides: Partial<WorkflowRunContext> = {}): WorkflowRunContext => ({
+  jobNames: overrides.jobNames ?? overrides.failedJobNames ?? [],
+  jobConclusions: new Map((overrides.failedJobNames ?? []).map(name => [name, 'failure'])),
+  jobSteps: new Map(),
+  failedJobLogFetchFailures: () => Promise.resolve(new Set()),
+  jobLogs: () => overrides.failedJobLogs?.() ?? Promise.resolve(new Map()),
+  failedJobAnnotationFetchFailures: () => Promise.resolve(new Set()),
   workflowName: 'Web',
   conclusion: 'failure',
   runAttempt: 1,
@@ -61,7 +67,7 @@ describe('web-vitest-sigsegv', () => {
       failedJobLogs: () => Promise.resolve(new Map([[webTestsJobName, matchingLog]])),
     })
 
-    const result = await decide(ctx, RULES)
+    const result = await decide(ctx, rules)
     expect(result.decision).toBe('rerun')
     expect(result.matchedRule).toBe('web-vitest-sigsegv')
   })
@@ -73,7 +79,7 @@ describe('web-vitest-sigsegv', () => {
         Promise.resolve(new Map([[webTestsJobName, sigsegvLog(webTestsKilledCommand())]])),
     })
 
-    const result = await decide(ctx, RULES)
+    const result = await decide(ctx, rules)
     expect(webTestsKilledCommand()).toContain('./ci/with-node-test-options vitest run')
     expect(webTestsKilledCommand()).not.toContain('--passWithNoTests')
     expect(result.decision).toBe('rerun')
@@ -128,7 +134,7 @@ describe('web-vitest-sigsegv', () => {
         ),
     })
 
-    const result = await decide(ctx, RULES)
+    const result = await decide(ctx, rules)
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
   })
@@ -139,7 +145,7 @@ describe('web-vitest-sigsegv', () => {
       failedJobLogs: () => Promise.resolve(new Map([[webTestsJobName, matchingLog]])),
     })
 
-    const result = await decide(ctx, RULES)
+    const result = await decide(ctx, rules)
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
   })
@@ -150,7 +156,7 @@ describe('web-vitest-sigsegv', () => {
       failedJobLogs: () => Promise.resolve(new Map([[webTestsJobName, matchingLog]])),
     })
 
-    const result = await decide(ctx, RULES)
+    const result = await decide(ctx, rules)
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
   })
@@ -162,7 +168,7 @@ describe('web-vitest-sigsegv', () => {
       failedJobLogs: () => Promise.resolve(new Map([[webTestsJobName, matchingLog]])),
     })
 
-    const result = await decide(ctx, RULES)
+    const result = await decide(ctx, rules)
     expect(result.decision).toBe('dispatch')
     expect(result.matchedRule).toBe('')
   })

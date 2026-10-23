@@ -23,7 +23,7 @@ for the full policy.
    import(...)`) only when TypeScript rejects an intentional partial implementation. Do not add
    file-level suppressions for `vitest/prefer-import-in-mock` or `jest/no-untyped-mock-factory`.
 2. Mock `next/navigation` hooks only through the shared singleton —
-   `navMockModule`/`createNavMock()` from `web/test-helpers/next-navigation-mock.ts` — imported
+   `navMockModule`/`createNavMock()` from `vouchington-tooling/next-navigation-mock` — imported
    before the component under test. Never hand-roll `vi.mock('next/navigation', ...)`. Components
    that read `window.location` directly in an event handler (not a hook) use
    `window.history.pushState()` and skip the hook mock.
