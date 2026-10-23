@@ -143,4 +143,8 @@ CREATE INDEX IF NOT EXISTS idx_images__created_by_id
 CREATE INDEX IF NOT EXISTS idx_images__staged_source_cleanup
   ON images (upload_staged_at, id)
   WHERE upload_staged_at IS NOT NULL
-    AND upload_source_deleted_at IS NULL;
+    AND upload_source_deleted_at IS NULL
+    AND (deleted_at IS NOT NULL OR upload_failed_at IS NOT NULL
+      OR upload_completed_at IS NOT NULL
+      OR (upload_started_at IS NOT NULL AND sha_256 IS NOT NULL
+        AND s3_key = encode(sha_256, 'hex')));
