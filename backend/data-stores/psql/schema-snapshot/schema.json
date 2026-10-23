@@ -5632,6 +5632,328 @@
         }
       }
     },
+    "ai_usage_community_monthly_rollups": {
+      "checkConstraints": {
+        "ai_usage_community_monthly_rollups_cost_microunits_check": "CHECK ((cost_microunits >= 0))",
+        "ai_usage_community_monthly_rollups_input_tokens_check": "CHECK ((input_tokens >= 0))",
+        "ai_usage_community_monthly_rollups_output_tokens_check": "CHECK ((output_tokens >= 0))",
+        "ai_usage_community_monthly_rollups_request_count_check": "CHECK ((request_count >= 0))",
+        "ai_usage_community_monthly_rollups_unpriced_request_count_check": "CHECK ((unpriced_request_count >= 0))"
+      },
+      "columns": {
+        "community_id": {
+          "collation": null,
+          "comment": "Live community whose calls contributed to this month; removal follows community deletion.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "cost_microunits": {
+          "collation": null,
+          "comment": "Exact sum of priced costs in millionths of a currency unit.",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 8,
+          "type": "bigint"
+        },
+        "id": {
+          "collation": null,
+          "comment": "Stable identifier of this community-month total.",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "input_tokens": {
+          "collation": null,
+          "comment": "Sum of folded input tokens.",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "bigint"
+        },
+        "month_start_on": {
+          "collation": null,
+          "comment": "UTC first day of the call month.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "date"
+        },
+        "output_tokens": {
+          "collation": null,
+          "comment": "Sum of folded output tokens.",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "bigint"
+        },
+        "request_count": {
+          "collation": null,
+          "comment": "Count of folded provider calls.",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "bigint"
+        },
+        "unpriced_request_count": {
+          "collation": null,
+          "comment": "Count of folded calls without known pricing.",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7,
+          "type": "bigint"
+        }
+      },
+      "comment": "All-time cost facts for live communities, folded from old per-call usage in bounded atomic pages.",
+      "foreignKeys": {
+        "ai_usage_community_monthly_rollups_community_id_fkey": {
+          "columns": ["community_id"],
+          "definition": "FOREIGN KEY (community_id) REFERENCES communities(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "communities",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "ai_usage_community_monthly_roll_community_id_month_start_on_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX ai_usage_community_monthly_roll_community_id_month_start_on_key ON public.ai_usage_community_monthly_rollups USING btree (community_id, month_start_on)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "community_id",
+              "descending": false,
+              "expression": "community_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "month_start_on",
+              "descending": false,
+              "expression": "month_start_on",
+              "nullsFirst": false,
+              "opclass": "date_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "ai_usage_community_monthly_rollups_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX ai_usage_community_monthly_rollups_pkey ON public.ai_usage_community_monthly_rollups USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {
+        "ai_usage_community_monthly_roll_community_id_month_start_on_key": {
+          "columns": ["community_id", "month_start_on"],
+          "definition": "UNIQUE (community_id, month_start_on)"
+        }
+      }
+    },
+    "ai_usage_global_monthly_rollups": {
+      "checkConstraints": {
+        "ai_usage_global_monthly_rollups_cost_microunits_check": "CHECK ((cost_microunits >= 0))",
+        "ai_usage_global_monthly_rollups_input_tokens_check": "CHECK ((input_tokens >= 0))",
+        "ai_usage_global_monthly_rollups_output_tokens_check": "CHECK ((output_tokens >= 0))",
+        "ai_usage_global_monthly_rollups_request_count_check": "CHECK ((request_count >= 0))",
+        "ai_usage_global_monthly_rollups_unpriced_request_count_check": "CHECK ((unpriced_request_count >= 0))"
+      },
+      "columns": {
+        "cost_microunits": {
+          "collation": null,
+          "comment": "Exact sum of priced costs in millionths of a currency unit.",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7,
+          "type": "bigint"
+        },
+        "id": {
+          "collation": null,
+          "comment": "Stable identifier of this platform-month total.",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "input_tokens": {
+          "collation": null,
+          "comment": "Sum of folded input tokens.",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "bigint"
+        },
+        "month_start_on": {
+          "collation": null,
+          "comment": "UTC first day of the call month.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "date"
+        },
+        "output_tokens": {
+          "collation": null,
+          "comment": "Sum of folded output tokens.",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
+          "type": "bigint"
+        },
+        "request_count": {
+          "collation": null,
+          "comment": "Count of folded provider calls.",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "bigint"
+        },
+        "unpriced_request_count": {
+          "collation": null,
+          "comment": "Count of folded calls without known pricing.",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "bigint"
+        }
+      },
+      "comment": "All provider calls, including calls without a community, after per-call usage expires.",
+      "foreignKeys": {},
+      "growth": "unbounded",
+      "indexes": {
+        "ai_usage_global_monthly_rollups_month_start_on_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX ai_usage_global_monthly_rollups_month_start_on_key ON public.ai_usage_global_monthly_rollups USING btree (month_start_on)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "month_start_on",
+              "descending": false,
+              "expression": "month_start_on",
+              "nullsFirst": false,
+              "opclass": "date_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "ai_usage_global_monthly_rollups_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX ai_usage_global_monthly_rollups_pkey ON public.ai_usage_global_monthly_rollups USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {
+        "ai_usage_global_monthly_rollups_month_start_on_key": {
+          "columns": ["month_start_on"],
+          "definition": "UNIQUE (month_start_on)"
+        }
+      }
+    },
     "ai_usage_provider_response_keys": {
       "checkConstraints": {
         "ai_usage_provider_response_keys_response_id_check": "CHECK (((response_id = TRIM(BOTH FROM response_id)) AND ((char_length(response_id) >= 1) AND (char_length(response_id) <= 100))))"
@@ -6013,7 +6335,7 @@
           "type": "uuid"
         }
       },
-      "comment": "Append-only per-call LLM usage and cost ledger for every agent that calls a model provider (Anthropic or OpenAI), not only community moderation.",
+      "comment": "Per-call LLM usage and cost for every model-calling agent, retained as raw evidence until a bounded atomic monthly fold retires it.",
       "foreignKeys": {
         "ai_usage_records_community_id_fkey": {
           "columns": ["community_id"],
@@ -6192,10 +6514,10 @@
         }
       },
       "partition": {
-        "accessClass": "target-scoped",
+        "accessClass": "retention-window",
         "children": "default",
         "key": "id",
-        "retentionOwner": null,
+        "retentionOwner": "runDataRetentionCleanup",
         "strategy": "RANGE"
       },
       "physicalPartition": {
@@ -6208,6 +6530,93 @@
       },
       "relationKind": "partitioned table",
       "triggers": {},
+      "uniqueConstraints": {}
+    },
+    "ai_usage_retention_cursors": {
+      "checkConstraints": {
+        "ai_usage_retention_cursors_is_singleton_check": "CHECK (is_singleton)"
+      },
+      "columns": {
+        "cursor_id": {
+          "collation": null,
+          "comment": "Last examined raw usage id; cleared after a complete pass so late backdated calls are revisited.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "is_singleton": {
+          "collation": null,
+          "comment": "The one AI usage retention sweep.",
+          "defaultExpression": "true",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "boolean"
+        },
+        "sweep_upper_bound_id": {
+          "collation": null,
+          "comment": "Fixed exclusive UUIDv7 cutoff for the active scan; cleared when that pass completes.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": "Last checkpoint change time.",
+          "defaultExpression": "now()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Persistent UUIDv7 position of the bounded AI usage fold and delete sweep.",
+      "foreignKeys": {},
+      "growth": "bounded",
+      "indexes": {
+        "ai_usage_retention_cursors_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX ai_usage_retention_cursors_pkey ON public.ai_usage_retention_cursors USING btree (is_singleton)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "is_singleton",
+              "descending": false,
+              "expression": "is_singleton",
+              "nullsFirst": false,
+              "opclass": "bool_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["is_singleton"],
+        "definition": "PRIMARY KEY (is_singleton)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_ai_usage_retention_cursors_updated_at": "CREATE TRIGGER trigger_ai_usage_retention_cursors_updated_at BEFORE UPDATE ON public.ai_usage_retention_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
       "uniqueConstraints": {}
     },
     "amazon_ses_bounce_events": {
