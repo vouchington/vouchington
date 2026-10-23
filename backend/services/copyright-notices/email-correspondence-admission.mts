@@ -77,6 +77,16 @@ export async function admitCopyrightEmailCorrespondence(input: {
     'Review rationale is required',
   )
   await using transaction = await beginTransaction()
+  // The immutable thread link identifies the parent before any intake lock. Agent
+  // completion and retention take that same parent-to-child order.
+  const { rows: notices } = await transaction<{ jurisdiction: string }>(sql`
+    /* admitCopyrightEmailCorrespondence:lockNotice */
+    SELECT notice.jurisdiction FROM copyright_notice_email_intake_notice_links link
+    JOIN copyright_notices notice ON notice.id = link.copyright_notice_id
+    WHERE link.copyright_notice_email_intake_id = ${input.intakeId} AND link.link_kind = 'thread'
+    FOR UPDATE OF notice
+  `)
+  assert(notices[0], 404, 'Matched copyright email correspondence not found')
   const { rows } =
     await transaction<PendingCorrespondence>(sql`/* admitCopyrightEmailCorrespondence:lock */
     SELECT intake.id, intake.amazon_ses_message_id, intake.received_at,
@@ -117,10 +127,6 @@ export async function admitCopyrightEmailCorrespondence(input: {
       isDuplicate: true,
     }
   }
-  const { rows: notices } = await transaction<{ jurisdiction: string }>(sql`
-    /* admitCopyrightEmailCorrespondence:lockNotice */
-    SELECT jurisdiction FROM copyright_notices WHERE id = ${pending.notice_id} FOR UPDATE
-  `)
   assert(
     input.kind === 'complaint'
       ? notices[0]?.jurisdiction === 'eu_dsa'
@@ -239,6 +245,16 @@ export async function rejectCopyrightEmailCorrespondence(input: {
   )
   assertRecommendationOrFallback(input.recommendationId, input.manualFallbackReason)
   await using transaction = await beginTransaction()
+  // Rejection also writes case-linked review/event rows; fence retention before
+  // locking the intake rather than obtaining the parent FK lock afterward.
+  const { rows: notices } = await transaction<{ id: string }>(sql`
+    /* rejectCopyrightEmailCorrespondence:lockNotice */
+    SELECT notice.id FROM copyright_notice_email_intake_notice_links link
+    JOIN copyright_notices notice ON notice.id = link.copyright_notice_id
+    WHERE link.copyright_notice_email_intake_id = ${input.intakeId} AND link.link_kind = 'thread'
+    FOR KEY SHARE OF notice
+  `)
+  assert(notices[0], 404, 'Matched copyright email correspondence not found')
   const { rows } = await transaction<{
     notice_id: string
     amazon_ses_message_id: string
