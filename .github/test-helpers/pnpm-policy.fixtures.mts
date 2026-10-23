@@ -7,6 +7,7 @@ export type PolicyStep = {
   name?: string
   run?: string
   uses?: string
+  if?: string
   with?: Record<string, unknown>
   env?: Record<string, unknown>
 }

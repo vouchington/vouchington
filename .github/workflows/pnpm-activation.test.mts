@@ -66,7 +66,13 @@ describe('pnpm activation via pnpm/action-setup', () => {
   it('sets up pnpm at most once per job or composite action', () => {
     // setup-backend wraps setup-node-pnpm, so calling both in one job repeats the whole Node,
     // pnpm, store-cache, and install setup; one setup owner per job must cover every later step.
-    const counts = Map.groupBy(pnpmSetups, setup => setup.owner)
+    // The one allowed repeat is the retry step that only runs after the first setup failed.
+    const isRetry = (step: PolicyStep) =>
+      /^steps\.[\w-]+\.outcome == 'failure'$/.test(step.if ?? '')
+    const counts = Map.groupBy(
+      pnpmSetups.filter(setup => !isRetry(setup.step)),
+      setup => setup.owner,
+    )
     const repeated = [...counts].flatMap(([owner, setups]) =>
       setups.length > 1 ? [`${owner}: ${setups.length}`] : [],
     )
