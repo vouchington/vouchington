@@ -504,7 +504,7 @@ CREATE TABLE IF NOT EXISTS classifier_decision_batch_candidates (
       batch_id, candidate_id, classifier_id, prompt_version_id, threshold_id,
       effective_lower_threshold, effective_upper_threshold
     )
-) PARTITION BY RANGE (batch_id);
+);
 
 CREATE INDEX IF NOT EXISTS idx_classifier_decision_batch_candidates__classifier
   ON classifier_decision_batch_candidates (classifier_id);
@@ -568,8 +568,31 @@ CREATE OR REPLACE FUNCTION fn_reject_classifier_batch_candidate_owner_delete()
 RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF EXISTS (SELECT 1 FROM classifier_decision_batches WHERE id = OLD.batch_id)
-    AND EXISTS (SELECT 1 FROM classifier_candidates WHERE id = OLD.candidate_id) THEN
-    RAISE EXCEPTION 'classifier batch candidate snapshots can only be deleted with their batch or candidate' USING ERRCODE = '23503';
+    AND EXISTS (SELECT 1 FROM classifier_candidates WHERE id = OLD.candidate_id)
+    AND NOT (
+      uuid_extract_timestamp(OLD.batch_id) < CURRENT_TIMESTAMP - INTERVAL '90 days'
+      AND EXISTS (
+        SELECT 1 FROM classifier_decision_batches AS batch
+        WHERE batch.id = OLD.batch_id AND batch.completed_at IS NOT NULL
+      )
+      AND NOT EXISTS (
+        SELECT 1 FROM classifier_runs AS run
+        WHERE run.decision_batch_id = OLD.batch_id
+      )
+      AND NOT EXISTS (
+        SELECT 1 FROM classifier_decision_calls AS call
+        WHERE call.batch_id = OLD.batch_id
+      )
+      AND NOT EXISTS (
+        SELECT 1 FROM topic_classifier_results AS result
+        WHERE result.batch_id = OLD.batch_id AND result.candidate_id = OLD.candidate_id
+      )
+      AND NOT EXISTS (
+        SELECT 1 FROM story_classifier_results AS result
+        WHERE result.batch_id = OLD.batch_id AND result.candidate_id = OLD.candidate_id
+      )
+    ) THEN
+    RAISE EXCEPTION 'classifier batch candidate snapshots require terminal, expired, unreferenced decisions before deletion' USING ERRCODE = '23503';
   END IF;
   RETURN OLD;
 END $$;
@@ -665,6 +688,8 @@ CREATE INDEX IF NOT EXISTS idx_topic_classifier_results__candidate_probability
   ON topic_classifier_results (candidate_id, probability, topic_id DESC);
 CREATE INDEX IF NOT EXISTS idx_topic_classifier_results__batch
   ON topic_classifier_results (batch_id, topic_id DESC);
+CREATE INDEX IF NOT EXISTS idx_topic_classifier_results__batch_candidate
+  ON topic_classifier_results (batch_id, candidate_id) WHERE candidate_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_topic_classifier_results__call_batch
   ON topic_classifier_results (decision_call_id, batch_id);
 CREATE INDEX IF NOT EXISTS idx_topic_classifier_results__classifier_kind
@@ -752,6 +777,8 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_story_classifier_results__rss_feed_item_ba
 CREATE INDEX IF NOT EXISTS idx_story_classifier_results__candidate_probability
   ON story_classifier_results (candidate_id, probability, story_id DESC)
   WHERE candidate_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_story_classifier_results__batch_candidate
+  ON story_classifier_results (batch_id, candidate_id) WHERE candidate_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_story_classifier_results__call_batch
   ON story_classifier_results (decision_call_id, batch_id);
 CREATE INDEX IF NOT EXISTS idx_story_classifier_results__classifier_kind
@@ -1027,7 +1054,8 @@ COMMENT ON COLUMN community_prompt_classifier_results.scope_community_id IS 'Com
 -- UUIDv7 keys before checking eligibility, so old batches waiting for operator partition retirement
 -- cannot make a daily run inspect an unbounded number of rows.
 CREATE TYPE classifier_retention_sweeps AS ENUM (
-  'run_candidates', 'agent_topics', 'local_outcomes', 'runs', 'calls', 'batches'
+  'run_candidates', 'agent_topics', 'local_outcomes', 'runs', 'calls',
+  'batch_candidates', 'batches'
 );
 
 CREATE TABLE IF NOT EXISTS classifier_retention_cursors (
@@ -1047,6 +1075,6 @@ COMMENT ON TABLE classifier_retention_cursors IS 'One independent cyclic keyset 
 COMMENT ON COLUMN classifier_retention_cursors.sweep IS 'The classifier record family whose daily sweep owns this position.';
 COMMENT ON COLUMN classifier_retention_cursors.cursor_id IS 'Last raw UUIDv7 row examined; no FK so deletion preserves progress.';
 COMMENT ON COLUMN classifier_retention_cursors.cursor_ordinal IS 'Last candidate ordinal examined within cursor_id when sweeping run candidates.';
-COMMENT ON COLUMN classifier_retention_cursors.cursor_child_id IS 'Last topic ID examined within cursor_id when sweeping agent topics.';
+COMMENT ON COLUMN classifier_retention_cursors.cursor_child_id IS 'Last topic or decision candidate ID examined within cursor_id for composite-key child sweeps.';
 COMMENT ON COLUMN classifier_retention_cursors.sweep_end_key IS 'Fixed exclusive UUIDv7 cutoff captured when a sweep cycle begins.';
 COMMENT ON COLUMN classifier_retention_cursors.updated_at IS 'Last committed sweep progress.';

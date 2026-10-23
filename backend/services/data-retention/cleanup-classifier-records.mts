@@ -9,6 +9,7 @@ import {
   deleteOldClassifierCalls,
 } from './cleanup-classifier-decisions.mts'
 import { sweepClassifierPages } from './cleanup-classifier-pages.mts'
+import { sweepClassifierBatchCandidates } from './cleanup-classifier-batch-candidates.mts'
 
 type CleanupCount = { deleted: number; hasMore: boolean; scanned: number }
 type ClassifierCleanupOptions = {
@@ -25,6 +26,7 @@ export type ClassifierCleanupResult = {
   localOutcomes: CleanupCount
   runs: CleanupCount
   calls: CleanupCount
+  batchCandidates: CleanupCount
   batches: CleanupCount
 }
 
@@ -60,6 +62,12 @@ export async function cleanupClassifierRecords(
     maxBatches,
     deleteOldClassifierCalls,
   )
+  const batchCandidates = await sweepClassifierBatchCandidates(
+    cutoffId,
+    lowerBoundId,
+    batchSize,
+    maxBatches,
+  )
   const batches = await sweepClassifierPages(
     'batches',
     cutoffId,
@@ -68,7 +76,7 @@ export async function cleanupClassifierRecords(
     maxBatches,
     deleteOldClassifierBatches,
   )
-  return { runCandidates, agentTopics, localOutcomes, runs, calls, batches }
+  return { runCandidates, agentTopics, localOutcomes, runs, calls, batchCandidates, batches }
 }
 
 async function deleteOldClassifierRuns(
