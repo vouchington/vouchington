@@ -9,9 +9,9 @@
  */
 import { describe, expect, it, beforeAll } from 'vitest'
 import { createTestUser, insertTestModerationReport } from '@voucha/test-helpers'
+import { getTestModerationCaseById } from '@voucha/test-helpers/entities/moderation-case-reads'
 import type { PrivateUser } from '@services/users/types'
 import { openOrGetOpenCase, findOpenCaseForEntity } from '@services/moderation-cases'
-import { getCaseById } from '@services/moderation-cases/get'
 import { resolveModerationReport } from '../resolve.mts'
 
 describe('moderation case chain (report resolution)', () => {
@@ -77,7 +77,7 @@ describe('moderation case chain (report resolution)', () => {
     })
 
     // First case should now be closed
-    const firstCase = await getCaseById(firstCaseId)
+    const firstCase = await getTestModerationCaseById(firstCaseId)
     expect(firstCase?.resolved_at).not.toBeNull()
 
     // Opening a new case should create a fresh one

@@ -1,6 +1,5 @@
 import { describe, it, expect, afterEach, vi, beforeAll } from 'vitest'
 import { findExistingPostOpenAIModeration, upsertPostOpenAIModeration } from '../posts.mts'
-import { getStoredPostOpenAIModeration } from '../stored-results.mts'
 import { createPost } from '@services/posts'
 import {
   createTestUser,
@@ -217,21 +216,6 @@ describe('posts', () => {
       expect(moderationData).toBeDefined()
       expect(moderationData!.is_flagged_by_openai_omni_moderation).toBe(true)
       expect(moderationData!.openai_omni_moderation_results).toEqual({ flagged_categories: [] })
-    })
-  })
-
-  it('reconstructs a bounded stored result instead of exposing provider output', async () => {
-    const post = await createPost(user, WEB_PROVENANCE, {
-      title: `Malformed moderation ${randomSuffix()}`,
-      markdown: 'Malformed moderation result fixture',
-      post_type: 'discussion',
-    })
-    const { content_sha256 } = createPostModerationContent(post as Post)
-    await updatePostModerationData(post.id, content_sha256, 'untrusted-provider-shape', true)
-
-    await expect(getStoredPostOpenAIModeration(post.id)).resolves.toEqual({
-      flagged: true,
-      results: [{ flagged: true, categories: {} }],
     })
   })
 

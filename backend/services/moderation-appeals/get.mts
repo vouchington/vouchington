@@ -2,7 +2,6 @@ import { query as executeQuery, read, type QueryOptions } from '@data-stores/psq
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import { APPEAL_SLA_HOURS, type ModerationAppealStatus } from './config.mts'
-import { getCaseTrace, type ModerationCaseTrace } from '@services/moderation-cases'
 import type { ModerationAppealResponse } from './types.mts'
 import { APPEAL_JOINS, APPEAL_SELECT } from './get-query.mts'
 
@@ -94,22 +93,6 @@ export async function listModerationAppeals(
   const appeals = (rows as ModerationAppealResponse[]).map(addIsOverdue)
   const hasNextPage = appeals.length > limit
   return { appeals: appeals.slice(0, limit), hasNextPage }
-}
-
-/**
- * Retrieve the full moderation case trace for a given appeal, restoring the
- * appeal → originating report hop that was previously broken.
- *
- * @public Documented contract; production use is unconfirmed and this export may be
- * removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
- */
-export async function getAppealCaseTrace(appealId: string): Promise<ModerationCaseTrace | null> {
-  const { rows } = await read<{ case_id: string }>(sql`/* getAppealCaseTrace */
-    SELECT case_id FROM moderation_appeals WHERE id = ${appealId} LIMIT 1
-  `)
-  const row = rows[0]
-  if (!row) return null
-  return getCaseTrace(row.case_id)
 }
 
 function appendModerationAppealStatusPredicate(

@@ -8,8 +8,8 @@ import {
   insertTestPost,
   withFailingTransactionQueryOptionsForTest,
 } from '@voucha/test-helpers'
+import { getTestModerationCaseById } from '@voucha/test-helpers/entities/moderation-case-reads'
 import { findOpenCaseForEntity } from '@services/moderation-cases'
-import { getCaseById } from '@services/moderation-cases/get'
 import { listNotifications } from '@services/notifications'
 import { getModerationSystemUserId } from '@services/users/system-users'
 import { getModerationReportById } from '../get-by-id.mts'
@@ -96,7 +96,7 @@ describe('dismissPendingReportsForDeletedEntity', () => {
     await expect(getModerationReportById(reportId2)).resolves.toEqual(
       expect.objectContaining({ status: 'dismissed', resolved_by_id: automodUserId }),
     )
-    await expect(getCaseById(openCase!.id)).resolves.toEqual(
+    await expect(getTestModerationCaseById(openCase!.id)).resolves.toEqual(
       expect.objectContaining({ resolved_by_id: automodUserId }),
     )
 

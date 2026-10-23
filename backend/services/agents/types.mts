@@ -3,20 +3,3 @@ import type { AgentModel, AgentModelProvider } from '@voucha/types/entities/agen
 export type AgentType = 'moderator' | 'autotagger' | 'storyteller' | 'classifier'
 
 export type { AgentModel, AgentModelProvider }
-
-export type Agent = {
-  id: string
-  system_user_id: string
-  agent_type: AgentType
-  activated_at: Date | null
-  deactivated_at: Date | null
-  created_at: Date
-  updated_at: Date
-  deleted_at: Date | null
-}
-
-export type AgentModerator = {
-  agent_id: string
-  created_at: Date
-  updated_at: Date
-}
