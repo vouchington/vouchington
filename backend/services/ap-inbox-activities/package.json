@@ -37,10 +37,10 @@
     "@services/remote-actors": "workspace:^",
     "@services/route-rate-limits": "workspace:^",
     "@services/users": "workspace:^",
-    "@vouchington/postgres": "^0.0.16",
+    "@vouchington/postgres": "^0.0.17",
     "http-errors": "^2.0.1",
     "sql-template-strings": "^2.2.2",
-    "valkyries": "^0.10.0"
+    "valkyries": "^0.11.1"
   },
   "devDependencies": {
     "@types/http-errors": "^2.0.5",

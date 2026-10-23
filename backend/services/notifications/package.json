@@ -33,7 +33,7 @@
     "@services/users": "workspace:^",
     "@voucha/types": "workspace:^",
     "sql-template-strings": "^2.2.2",
-    "valkyries": "^0.10.0"
+    "valkyries": "^0.11.1"
   },
   "devDependencies": {
     "@services/bookmarks": "workspace:^",

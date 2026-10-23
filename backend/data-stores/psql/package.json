@@ -31,14 +31,14 @@
     "@ts-shared/money": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/types": "workspace:^",
-    "@vouchington/postgres": "^0.0.16",
+    "@vouchington/postgres": "^0.0.17",
     "@vouchington/utils": "^0.7.5",
     "pg": "^8.23.1",
     "sql-template-strings": "^2.2.2",
-    "vouchington-tooling": "^0.65.1"
+    "vouchington-tooling": "^0.66.0"
   },
   "devDependencies": {
-    "no-mistakes": "^0.93.0",
+    "no-mistakes": "^0.95.0",
     "oxfmt": "^0.74.0",
     "typescript": "npm:@typescript/typescript6@^6.0.2"
   }

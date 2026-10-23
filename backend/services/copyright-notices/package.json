@@ -48,12 +48,12 @@
     "@ts-shared/utils": "workspace:^",
     "@voucha/config": "workspace:^",
     "@voucha/types": "workspace:^",
-    "@vouchington/postgres": "^0.0.16",
+    "@vouchington/postgres": "^0.0.17",
     "http-assert": "^1.5.0",
     "http-errors": "^2.0.1",
     "sql-template-strings": "^2.2.2",
     "uuid": "^14.0.3",
-    "valkyries": "^0.10.0"
+    "valkyries": "^0.11.1"
   },
   "devDependencies": {
     "@services/ai-usage": "workspace:^",

@@ -30,7 +30,7 @@
     "@services/urls-hostnames": "workspace:^",
     "@voucha/types": "workspace:^",
     "undici": "^8.11.2",
-    "valkyries": "^0.10.0"
+    "valkyries": "^0.11.1"
   },
   "devDependencies": {
     "@services/topics": "workspace:^",
