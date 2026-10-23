@@ -8,7 +8,9 @@ import {
   insertTestTopic,
   insertTestRssFeed,
   createRandomString,
+  overrideDynamicConfigFieldsForTest,
 } from '@voucha/test-helpers'
+import { listImportConfig } from '@services/lists/import-config'
 import type { PrivateUser } from '@services/users/types'
 import type { Community } from '@services/communities/types'
 import { updateRssFeedById } from '@services/rss-feeds/update'
@@ -130,6 +132,48 @@ describe('add', () => {
       await expect(
         addCommunityListItem(owner.id, community.id, 'rss_feed', feedId),
       ).rejects.toMatchObject({ status: 404 })
+    })
+
+    it('serializes concurrent feed adds against the configured cap', async () => {
+      const ownerForList = await createTestUser()
+      const cappedCommunity = await insertTestCommunity({ createdById: ownerForList.id })
+      const feedIds = await Promise.all(
+        Array.from({ length: 3 }, async () => {
+          const suffix = createRandomString(8)
+          const topicId = await insertTestTopic({
+            name: `Capped RSS topic ${suffix}`,
+            slug: `capped-rss-topic-${suffix}`,
+            createdById: ownerForList.id,
+          })
+          return insertTestRssFeed({ topicId, title: `Capped RSS feed ${suffix}` })
+        }),
+      )
+      const restore = overrideDynamicConfigFieldsForTest(listImportConfig, {
+        max_community_list_feeds: 2,
+      })
+      try {
+        await addCommunityListItem(ownerForList.id, cappedCommunity.id, 'rss_feed', feedIds[0]!)
+        const results = await Promise.allSettled(
+          feedIds
+            .slice(1)
+            .map(feedId =>
+              addCommunityListItem(ownerForList.id, cappedCommunity.id, 'rss_feed', feedId),
+            ),
+        )
+        expect(results.filter(result => result.status === 'fulfilled')).toHaveLength(1)
+        expect(results.filter(result => result.status === 'rejected')).toEqual([
+          expect.objectContaining({
+            status: 'rejected',
+            reason: expect.objectContaining({
+              status: 422,
+              code: 'community_list_feed_limit_reached',
+              limit: 2,
+            }),
+          }),
+        ])
+      } finally {
+        restore()
+      }
     })
   })
 })

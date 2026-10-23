@@ -12320,6 +12320,7 @@
 {"alias":"shared.provenance.viaMcp","consumer":"web","pattern":"/communities/[slug]/lists"},
 {"alias":"extracted.communities.addCommunityListItemForm.addLabel_511a3a5d","consumer":"web","pattern":"/communities/[slug]/lists/[itemType]"},
 {"alias":"extracted.communities.addCommunityListItemForm.failedToAddLabel_22332393","consumer":"web","pattern":"/communities/[slug]/lists/[itemType]"},
+{"alias":"extracted.communities.addCommunityListItemForm.feedLimitReached_f93c20b1","consumer":"web","pattern":"/communities/[slug]/lists/[itemType]"},
 {"alias":"extracted.communities.addCommunityListItemForm.labelAddedToList_6fb6fe6e","consumer":"web","pattern":"/communities/[slug]/lists/[itemType]"},
 {"alias":"extracted.communities.addCommunityListItemForm.searchAndSelectAnItemTo_70e3aeeb","consumer":"web","pattern":"/communities/[slug]/lists/[itemType]"},
 {"alias":"extracted.communities.communityHeader.membercountPostcount_008daebc","consumer":"web","pattern":"/communities/[slug]/lists/[itemType]"},

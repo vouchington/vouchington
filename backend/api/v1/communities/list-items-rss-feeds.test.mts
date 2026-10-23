@@ -8,7 +8,9 @@ import {
   insertTestTopic,
   insertTestRssFeed,
   createRandomString,
+  overrideDynamicConfigFieldsForTest,
 } from '@voucha/test-helpers'
+import { listImportConfig } from '@services/lists/import-config'
 import type { PrivateUser } from '@services/users/types'
 import type { Community } from '@services/communities/types'
 
@@ -144,6 +146,41 @@ describe('list-items-rss-feeds', () => {
         .set('Content-Type', 'application/json')
         .send({})
         .expect(422)
+    })
+
+    it('returns the configured limit when a third feed is added', async () => {
+      const cappedCommunity = await insertTestCommunity({ createdById: owner.id })
+      await insertTestCommunityMember({
+        communityId: cappedCommunity.id,
+        userId: owner.id,
+        role: 'owner',
+      })
+      const feedIds = await Promise.all(
+        Array.from({ length: 3 }, () => createTestFeed(createRandomString(8))),
+      )
+      const restore = overrideDynamicConfigFieldsForTest(listImportConfig, {
+        max_community_list_feeds: 2,
+      })
+      try {
+        const request = createRequest()
+        await request.authenticateAs(owner)
+        for (const feedId of feedIds.slice(0, 2)) {
+          await request
+            .post(`/api/v1/communities/${cappedCommunity.slug}/list-items/rss-feeds`)
+            .send({ rss_feed_id: feedId })
+            .expect(201)
+        }
+        const response = await request
+          .post(`/api/v1/communities/${cappedCommunity.slug}/list-items/rss-feeds`)
+          .send({ rss_feed_id: feedIds[2] })
+          .expect(422)
+        expect(response.body).toMatchObject({
+          code: 'community_list_feed_limit_reached',
+          limit: 2,
+        })
+      } finally {
+        restore()
+      }
     })
   })
 

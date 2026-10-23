@@ -105,7 +105,17 @@ app.errorHandler((ctx, error: unknown) => {
     requestId,
   })
   ctx.setStatus(status)
-  ctx.json(body)
+  if (
+    status === 422 &&
+    body.code === 'community_list_feed_limit_reached' &&
+    error instanceof Error &&
+    'limit' in error &&
+    typeof error.limit === 'number'
+  ) {
+    ctx.json({ ...body, limit: error.limit })
+  } else {
+    ctx.json(body)
+  }
 })
 
 app.notFoundHandler(ctx => {

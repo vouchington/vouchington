@@ -4,7 +4,7 @@ import type { EntityRelationViewer } from '@services/entity-relations/viewer'
 import { invalidate } from '@services/entity-cache/invalidate'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import type { ManageableList } from './manage.mts'
-import { getListImportLimit } from './import-config.mts'
+import { getCommunityListFeedLimit, getListImportLimit } from './import-config.mts'
 
 const IMPORT_FEED_ITEM_LIMIT = 20
 
@@ -49,21 +49,26 @@ export function importCommunityListPostsSourceSql(
 
 export const importCommunityListFeedItemsSourceSql = `/* importCommunityListFeedItemsSource */
   SELECT $1::uuid, rfi.id
-  FROM community_list_rss_feeds item
+  FROM (
+    SELECT rss_feed_id
+    FROM community_list_rss_feeds
+    WHERE community_id = $2 AND removed_at IS NULL
+    ORDER BY rss_feed_id
+    LIMIT $5
+  ) item
   JOIN rss_feeds rf ON rf.id = item.rss_feed_id
     AND rf.deleted_at IS NULL
     AND rf.is_enabled = true
   JOIN LATERAL (
-    SELECT rfi2.id, rfi2.published_at
+    SELECT rfis.rss_feed_item_id, rfis.published_at
     FROM rss_feed_item_sources rfis
-    JOIN rss_feed_items rfi2 ON rfi2.id = rfis.rss_feed_item_id AND rfi2.deleted_at IS NULL
     WHERE rfis.rss_feed_id = item.rss_feed_id
-    ORDER BY rfi2.published_at DESC
+      AND rfis.published_at IS NOT NULL
+    ORDER BY rfis.published_at DESC, rfis.rss_feed_item_id DESC
     LIMIT $3
-  ) rfi ON true
-  WHERE item.community_id = $2
-    AND item.removed_at IS NULL
-  ORDER BY rfi.published_at DESC, rfi.id DESC
+  ) source ON true
+  JOIN rss_feed_items rfi ON rfi.id = source.rss_feed_item_id AND rfi.deleted_at IS NULL
+  ORDER BY source.published_at DESC, rfi.id DESC
   LIMIT $4`
 
 /**
@@ -107,7 +112,7 @@ export async function importCommunityList(
     ${importCommunityListFeedItemsSourceSql}
     ON CONFLICT (user_list_id, rss_feed_item_id) WHERE removed_at IS NULL
     DO NOTHING`,
-    [targetListId, communityId, IMPORT_FEED_ITEM_LIMIT, limit],
+    [targetListId, communityId, IMPORT_FEED_ITEM_LIMIT, limit, getCommunityListFeedLimit()],
   )
 
   const imported = { posts: postsCount ?? 0, items: itemsCount ?? 0 }

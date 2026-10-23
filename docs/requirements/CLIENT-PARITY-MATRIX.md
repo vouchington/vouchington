@@ -48,6 +48,12 @@ and member modmail, is tracked in
 first. The [scope module](../overview/architecture/backend/README.md) and
 [MCP catalog](../overview/architecture/mcp/catalog.md) own the current contract.
 
+Community-list RSS feed additions return HTTP 422 with
+`community_list_feed_limit_reached` and a numeric `limit` through REST. The community moderation
+MCP write shares the service's 422 error. Web shows localized guidance using that limit. Native
+presentation of this failure is unverified; clients should use the same code and fact when they
+adopt it.
+
 ## MCP audience selection
 
 MCP API keys choose one eligible server audience, and switching servers clears the prior scope

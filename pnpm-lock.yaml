@@ -4936,6 +4936,9 @@ importers:
       '@services/entity-relations':
         specifier: workspace:^
         version: link:../entity-relations
+      '@services/lists':
+        specifier: workspace:^
+        version: link:../lists
       '@services/media-delivery-safety':
         specifier: workspace:^
         version: link:../media-delivery-safety

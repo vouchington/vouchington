@@ -678,6 +678,7 @@
 {"id":"copy.extracted.comments.deleteCommentButton.failedToDeleteComment_c65a5314","value":"Falha ao excluir comentário"},
 {"id":"copy.extracted.communities.addCommunityListItemForm.addLabel_511a3a5d","value":"Adicionar {label}"},
 {"id":"copy.extracted.communities.addCommunityListItemForm.failedToAddLabel_22332393","value":"Falha ao adicionar {label}"},
+{"id":"copy.extracted.communities.addCommunityListItemForm.feedLimitReached_f93c20b1","value":"Esta lista da comunidade pode ter até {limit} feeds. Remova um feed antes de adicionar outro."},
 {"id":"copy.extracted.communities.addCommunityListItemForm.labelAddedToList_6fb6fe6e","value":"{label} adicionado à lista"},
 {"id":"copy.extracted.communities.addCommunityListItemForm.searchAndSelectAnItemTo_70e3aeeb","value":"Procure e selecione um item para adicioná-lo a esta lista da comunidade."},
 {"id":"copy.extracted.communities.applicationForm.anythingElseYouWouldLikeTo_b7565a0d","value":"Mais algo que você gostaria de compartilhar..."},

@@ -213,6 +213,27 @@ describe('AddCommunityListItemForm', () => {
     })
   })
 
+  it('shows the configured feed limit when the community list is full', async () => {
+    mockAddCommunityListItemByType.mockRejectedValueOnce(
+      new ApiError('Community list feed limit reached', 422, {
+        code: 'community_list_feed_limit_reached',
+        limit: 2,
+      }),
+    )
+    render(
+      <AddCommunityListItemForm
+        communitySlug='test-community'
+        itemType='rss_feed'
+      />,
+    )
+    fireEvent.click(screen.getByTestId('select-item'))
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith(
+        'This community list can have up to 2 feeds. Remove a feed before adding another.',
+      )
+    })
+  })
+
   it('shows fallback error message for non-ApiError', async () => {
     mockAddCommunityListItemByType.mockRejectedValueOnce(new Error('Network error'))
 

@@ -105,7 +105,7 @@ export async function runViewDrivenReadScenarios(): Promise<void> {
         50,
       ),
     )
-    await read(importCommunityListFeedItemsSourceSql, [...params, 20, 50])
+    await read(importCommunityListFeedItemsSourceSql, [...params, 20, 50, 50])
   })
 
   registerScenarioContract('active-community-agent-prompts', {

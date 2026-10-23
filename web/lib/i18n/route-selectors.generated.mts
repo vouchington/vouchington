@@ -74,7 +74,7 @@ export const ROUTE_SELECTORS = [
   { pattern: "/communities/[slug]", selectorId: "web.route.ad335debd5c79789.0dc1d1705ef5dca1", hasMembership: true },
   { pattern: "/communities/[slug]/apply", selectorId: "web.route.4cdd4f0dcf4df49a.0981acbc6eaa7a40", hasMembership: true },
   { pattern: "/communities/[slug]/lists", selectorId: "web.route.92b4b662bd1782c7.719f1c74d79246dd", hasMembership: true },
-  { pattern: "/communities/[slug]/lists/[itemType]", selectorId: "web.route.923d1b662084cbed.54ece922c0e252c6", hasMembership: true },
+  { pattern: "/communities/[slug]/lists/[itemType]", selectorId: "web.route.923d1b662084cbed.b6894d4035ca31f0", hasMembership: true },
   { pattern: "/communities/[slug]/members", selectorId: "web.route.016c355eb18e910d.60c78c03a911fa49", hasMembership: true },
   { pattern: "/communities/[slug]/news", selectorId: "web.route.859a3d0c6c49e9bd.a05c397b650f2437", hasMembership: true },
   { pattern: "/communities/[slug]/news/sources", selectorId: "web.route.b5f1c230d68b4e18.a05c397b650f2437", hasMembership: true },
