@@ -1,6 +1,7 @@
 import { createWriteStream } from 'node:fs'
 import { rm } from 'node:fs/promises'
 import { join } from 'node:path'
+import { createInterface } from 'node:readline'
 import { Readable } from 'node:stream'
 import { finished, pipeline } from 'node:stream/promises'
 import { runCommand } from '@modules/child-process'
@@ -81,7 +82,7 @@ async function copyExistingFeedUrls(destination: string): Promise<void> {
       copyTo(
         `/* copyExistingFeedUrls */
         COPY (
-          SELECT urls.url FROM urls
+          SELECT encode(convert_to(urls.url, 'UTF8'), 'hex') AS url_hex FROM urls
           WHERE EXISTS (
             SELECT 1 FROM rss_feeds
             WHERE rss_feeds.rss_feed_url_id = urls.id AND rss_feeds.deleted_at IS NULL
@@ -90,9 +91,20 @@ async function copyExistingFeedUrls(destination: string): Promise<void> {
         ) TO STDOUT`,
       ),
     )
-    await pipeline(copy, createWriteStream(destination))
+    await pipeline(Readable.from(decodedMembershipLines(copy)), createWriteStream(destination))
   } finally {
     client.release()
+  }
+}
+
+async function* decodedMembershipLines(copy: Readable): AsyncGenerator<string> {
+  // Text COPY escapes backslashes; hex contains only COPY-safe characters and
+  // preserves the C-ordered UTF-8 bytes when decoded before comm.
+  const rows = createInterface({ input: copy, crlfDelay: Infinity })
+  try {
+    for await (const hex of rows) yield `${Buffer.from(hex, 'hex').toString('utf8')}\n`
+  } finally {
+    rows.close()
   }
 }
 

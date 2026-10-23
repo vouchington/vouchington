@@ -169,4 +169,31 @@ describe('dispatchKagiSmallWebPage', () => {
     const membership = observed.queries.filter(query => query.text.includes('copyExistingFeedUrls'))
     expect(membership.map(query => query.pool)).toEqual(['read'])
   })
+
+  it('distinguishes a new URL from an existing URL with one fewer query backslash', async () => {
+    const suffix = randomSuffix()
+    const prefix = `https://kagi-copy-${suffix}.example.com/feed.xml?q=`
+    const existing: ParsedFeedEntry = {
+      feedUrl: `${prefix}\\a`,
+      name: 'Existing backslash feed',
+      slug: `kagi-copy-${suffix}-existing`,
+      sourceType: 'web',
+    }
+    const candidate: ParsedFeedEntry = {
+      ...existing,
+      feedUrl: `${prefix}\\\\a`,
+      name: 'New backslash feed',
+      slug: `kagi-copy-${suffix}-candidate`,
+    }
+    await processFeedEntry(existing)
+
+    const result = await dispatchKagiSmallWebPage([existing, candidate])
+    expect(result).toEqual({ enqueued: 1, total: 2 })
+    const urls = new Set([existing.feedUrl, candidate.feedUrl])
+    const jobs = (await readAllQueueJobs(kagiSmallWeb))
+      .filter(job => job.name === KAGI_SMALLWEB_PROCESS_FEED_JOB.name)
+      .map(job => (job.data as KagiFeedJobData).feedUrl)
+      .filter(url => urls.has(url))
+    expect(jobs).toEqual([candidate.feedUrl])
+  })
 })
