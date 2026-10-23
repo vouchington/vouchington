@@ -138,17 +138,13 @@ export async function deleteOrphanedOAuthAccountBatch(
     DELETE FROM `
     .append(validatedTable)
     .append(sql`
-    WHERE `)
-    .append(validatedProviderUserIdColumn)
-    .append(sql` IN (
-      SELECT `)
-    .append(validatedProviderUserIdColumn)
-    .append(sql` FROM `)
+    WHERE id IN (
+      SELECT id FROM `)
     .append(validatedTable).append(sql`
       WHERE user_id IS NULL
-        AND created_at < ${cutoffDate}
+        AND unlinked_at < ${cutoffDate}
   `)
-  if (lowerBoundDate !== undefined) query.append(sql` AND created_at >= ${lowerBoundDate}`)
+  if (lowerBoundDate !== undefined) query.append(sql` AND unlinked_at >= ${lowerBoundDate}`)
   const authorizationProviderUserIdColumn =
     oauthAuthorizationProviderUserIdColumnByAccountTable.get(validatedTable)
   if (authorizationProviderUserIdColumn) {
@@ -175,10 +171,26 @@ export async function deleteOrphanedOAuthAccountBatch(
           AND active_authorization.expires_at > CURRENT_TIMESTAMP
       )`)
   }
+  const friendProvider =
+    validatedTable === 'facebook_accounts'
+      ? 'facebook'
+      : validatedTable === 'github_accounts'
+        ? 'github'
+        : validatedTable === 'x_accounts'
+          ? 'x'
+          : null
+  if (friendProvider) {
+    for (const edgeColumn of [
+      `${friendProvider}_account_id`,
+      `friend_${friendProvider}_account_id`,
+    ]) {
+      query.append(
+        ` AND NOT EXISTS (SELECT 1 FROM ${friendProvider}_friends edge WHERE edge.${edgeColumn} = ${validatedTable}.id)`,
+      )
+    }
+  }
   query.append(sql`
-      ORDER BY created_at ASC, `)
-  query.append(validatedProviderUserIdColumn)
-  query.append(sql` ASC
+      ORDER BY unlinked_at ASC, id ASC
       LIMIT ${batchSize}
       FOR UPDATE SKIP LOCKED
     )`)

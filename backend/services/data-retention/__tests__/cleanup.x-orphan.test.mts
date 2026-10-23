@@ -5,7 +5,7 @@ import {
   createTestRetentionWindow,
   insertTestOAuthAccount,
   oauthAccountExistsByProviderUserId,
-  setOAuthAccountCreatedAt,
+  setOAuthAccountRetentionTime,
 } from '@voucha/test-helpers'
 import {
   deleteTestOAuthAuthorizationFixtures,
@@ -22,8 +22,8 @@ describe('X orphan account cleanup', () => {
     const unrelatedProviderId = `unrelated-x-${createRandomString(12)}`
     await insertTestOAuthAccount('x', activeProviderId)
     await insertTestOAuthAccount('x', unrelatedProviderId)
-    await setOAuthAccountCreatedAt('x', activeProviderId, window.firstEligibleDate)
-    await setOAuthAccountCreatedAt('x', unrelatedProviderId, window.secondEligibleDate)
+    await setOAuthAccountRetentionTime('x', activeProviderId, window.firstEligibleDate)
+    await setOAuthAccountRetentionTime('x', unrelatedProviderId, window.secondEligibleDate)
     const activeAccountId = await getTestAuthorizationAccountId('x', activeProviderId)
     const authorizationId = v7()
     onTestFinished(async () => {

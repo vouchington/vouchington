@@ -35,7 +35,10 @@ _none_
 - `facebook_friends_facebook_account_id_facebook_friend_id_key`: `CREATE UNIQUE INDEX facebook_friends_facebook_account_id_facebook_friend_id_key ON public.facebook_friends USING btree (facebook_account_id, facebook_friend_id)`
 - `facebook_friends_pkey`: `CREATE UNIQUE INDEX facebook_friends_pkey ON public.facebook_friends USING btree (id)`
 - `idx_facebook_friends__facebook_friend_id`: `CREATE INDEX idx_facebook_friends__facebook_friend_id ON public.facebook_friends USING btree (facebook_friend_id)`
-- `idx_facebook_friends__friend_facebook_account_id`: `CREATE INDEX idx_facebook_friends__friend_facebook_account_id ON public.facebook_friends USING btree (friend_facebook_account_id) WHERE (friend_facebook_account_id IS NOT NULL)`
+- `idx_facebook_friends__retention`: `CREATE INDEX idx_facebook_friends__retention ON public.facebook_friends USING btree (last_observed_at, id)`
+- `idx_facebook_friends__source_observed`: `CREATE INDEX idx_facebook_friends__source_observed ON public.facebook_friends USING btree (facebook_account_id, last_observed_at, id)`
+- `idx_facebook_friends__target_observed`: `CREATE INDEX idx_facebook_friends__target_observed ON public.facebook_friends USING btree (friend_facebook_account_id, last_observed_at, id) WHERE (friend_facebook_account_id IS NOT NULL)`
+- `idx_facebook_friends__unresolved_reference`: `CREATE INDEX idx_facebook_friends__unresolved_reference ON public.facebook_friends USING btree (facebook_friend_id, last_observed_at, id) WHERE (friend_facebook_account_id IS NULL)`
 
 **Triggers:**
 

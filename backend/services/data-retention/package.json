@@ -25,7 +25,9 @@
     "@data-stores/valkey": "workspace:^",
     "@modules/utils": "workspace:^",
     "@services/contribution-gating": "workspace:^",
+    "@services/copyright-notices": "workspace:^",
     "@services/oauth": "workspace:^",
+    "@services/oauth-accounts": "workspace:^",
     "@services/oauth-authorization-server": "workspace:^",
     "@services/post-publication": "workspace:^",
     "@services/user-import-export": "workspace:^",
@@ -36,7 +38,6 @@
     "valkyries": "^0.11.1"
   },
   "devDependencies": {
-    "@services/oauth-accounts": "workspace:^",
     "@services/user-deletions": "workspace:^",
     "@voucha/test-helpers": "workspace:^"
   }

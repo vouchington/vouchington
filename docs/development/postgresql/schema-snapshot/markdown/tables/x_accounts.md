@@ -6,19 +6,23 @@ X (Twitter) OAuth accounts linked to users. Stores profile data and encrypted OA
 
 Not partitioned — growth: unbounded.
 
-| Column                     | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                        |
-| -------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------ |
-| `id`                       | `uuid`                     | no       | `uuidv7()`                   |          |           |           | Internal UUIDv7 identity of the X account.                                     |
-| `user_id`                  | `uuid`                     | yes      |                              |          |           |           | The linked user. NULL if the user account has not been created yet.            |
-| `x_user_id`                | `text`                     | no       |                              |          |           |           | X's unique external user identifier.                                           |
-| `x_user_email_address`     | `text`                     | yes      |                              |          |           |           | Email address from the X profile.                                              |
-| `x_user_data`              | `jsonb`                    | no       |                              |          |           |           | Raw JSONB profile data from X OAuth.                                           |
-| `access_token_ciphertext`  | `text`                     | yes      |                              |          |           |           | Encrypted OAuth 2.0 access token ciphertext for X API calls.                   |
-| `refresh_token_ciphertext` | `text`                     | yes      |                              |          |           |           | Encrypted OAuth 2.0 refresh token ciphertext for renewing access.              |
-| `access_token_expires_at`  | `timestamp with time zone` | yes      |                              |          |           |           | When the access token expires.                                                 |
-| `friends_synced_at`        | `timestamp with time zone` | yes      |                              |          |           |           | When the user's X (Twitter) friends list was last synced for friend discovery. |
-| `created_at`               | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | stored    |           |                                                                                |
-| `updated_at`               | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                |
+| Column                                 | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                                |
+| -------------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                                   | `uuid`                     | no       | `uuidv7()`                   |          |           |           | Internal UUIDv7 identity of the X account.                                                                                             |
+| `user_id`                              | `uuid`                     | yes      |                              |          |           |           | The linked user. NULL if the user account has not been created yet.                                                                    |
+| `unlinked_at`                          | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP`          |          |           |           | Time this account last became unlinked, or was first saved before a user linked it; NULL while linked. Orphan cleanup uses this clock. |
+| `friend_edges_invalidated_at`          | `timestamp with time zone` | yes      |                              |          |           |           | Durable friend-visibility boundary advanced at unlink; relink does not revive earlier observations.                                    |
+| `friend_edges_cleanup_completed_at`    | `timestamp with time zone` | yes      |                              |          |           |           | Last invalidation boundary fully drained by bounded friend-edge cleanup.                                                               |
+| `friend_references_resolve_pending_at` | `timestamp with time zone` | yes      |                              |          |           |           | Connection work marker for bounded resolution of existing incoming friend references.                                                  |
+| `x_user_id`                            | `text`                     | no       |                              |          |           |           | X's unique external user identifier.                                                                                                   |
+| `x_user_email_address`                 | `text`                     | yes      |                              |          |           |           | Email address from the X profile.                                                                                                      |
+| `x_user_data`                          | `jsonb`                    | no       |                              |          |           |           | Raw JSONB profile data from X OAuth.                                                                                                   |
+| `access_token_ciphertext`              | `text`                     | yes      |                              |          |           |           | Encrypted OAuth 2.0 access token ciphertext for X API calls.                                                                           |
+| `refresh_token_ciphertext`             | `text`                     | yes      |                              |          |           |           | Encrypted OAuth 2.0 refresh token ciphertext for renewing access.                                                                      |
+| `access_token_expires_at`              | `timestamp with time zone` | yes      |                              |          |           |           | When the access token expires.                                                                                                         |
+| `friends_synced_at`                    | `timestamp with time zone` | yes      |                              |          |           |           | When the user's X (Twitter) friends list was last synced for friend discovery.                                                         |
+| `created_at`                           | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | stored    |           |                                                                                                                                        |
+| `updated_at`                           | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                                        |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -35,13 +39,17 @@ _none_
 
 **Indexes:**
 
+- `idx_x_accounts__friend_edges_pending`: `CREATE INDEX idx_x_accounts__friend_edges_pending ON public.x_accounts USING btree (friend_edges_invalidated_at, id) WHERE ((friend_edges_invalidated_at IS NOT NULL) AND (friend_edges_cleanup_completed_at IS DISTINCT FROM friend_edges_invalidated_at))`
+- `idx_x_accounts__friend_resolution_pending`: `CREATE INDEX idx_x_accounts__friend_resolution_pending ON public.x_accounts USING btree (friend_references_resolve_pending_at, id) WHERE (friend_references_resolve_pending_at IS NOT NULL)`
 - `idx_x_accounts__friends_synced_at`: `CREATE INDEX idx_x_accounts__friends_synced_at ON public.x_accounts USING btree (friends_synced_at) WHERE ((user_id IS NOT NULL) AND (access_token_ciphertext IS NOT NULL))`
 - `idx_x_accounts__orphan_retention_cleanup`: `CREATE INDEX idx_x_accounts__orphan_retention_cleanup ON public.x_accounts USING btree (created_at, id) WHERE (user_id IS NULL)`
 - `idx_x_accounts__token_expires_at`: `CREATE INDEX idx_x_accounts__token_expires_at ON public.x_accounts USING btree (access_token_expires_at) WHERE (access_token_expires_at IS NOT NULL)`
+- `idx_x_accounts__unlinked_at`: `CREATE INDEX idx_x_accounts__unlinked_at ON public.x_accounts USING btree (unlinked_at, id) WHERE (user_id IS NULL)`
 - `idx_x_accounts__user_id`: `CREATE UNIQUE INDEX idx_x_accounts__user_id ON public.x_accounts USING btree (user_id) WHERE (user_id IS NOT NULL)`
 - `x_accounts_pkey`: `CREATE UNIQUE INDEX x_accounts_pkey ON public.x_accounts USING btree (id)`
 - `x_accounts_x_user_id_key`: `CREATE UNIQUE INDEX x_accounts_x_user_id_key ON public.x_accounts USING btree (x_user_id)`
 
 **Triggers:**
 
+- `trigger_x_accounts_linkage`: `CREATE TRIGGER trigger_x_accounts_linkage BEFORE UPDATE OF user_id ON public.x_accounts FOR EACH ROW EXECUTE FUNCTION fn_update_oauth_account_linkage()`
 - `trigger_x_accounts_updated_at`: `CREATE TRIGGER trigger_x_accounts_updated_at BEFORE UPDATE ON public.x_accounts FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

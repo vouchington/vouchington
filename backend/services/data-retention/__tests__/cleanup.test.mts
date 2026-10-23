@@ -6,7 +6,7 @@ import {
   softDeleteUserAt,
   getTestUserRaw,
   insertTestOAuthAccount,
-  setOAuthAccountCreatedAt,
+  setOAuthAccountRetentionTime,
   oauthAccountExistsByProviderUserId,
   createRandomString,
   createTestRetentionWindow,
@@ -288,7 +288,7 @@ describe('cleanupSoftDeletedUsers', () => {
 
   // keep generated shard bindings live for typecheck
   void (0 as unknown as typeof insertTestOAuthAccount)
-  void (0 as unknown as typeof setOAuthAccountCreatedAt)
+  void (0 as unknown as typeof setOAuthAccountRetentionTime)
   void (0 as unknown as typeof oauthAccountExistsByProviderUserId)
   void (0 as unknown as typeof createRandomString)
   void (0 as unknown as typeof providerTableConfigs)

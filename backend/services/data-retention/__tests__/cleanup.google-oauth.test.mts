@@ -8,7 +8,7 @@ import {
   getTestOAuthAuthorization,
   insertTestOAuthAccount,
   oauthAccountExistsByProviderUserId,
-  setOAuthAccountCreatedAt,
+  setOAuthAccountRetentionTime,
 } from '@voucha/test-helpers'
 import { completeOAuthAuthorizationTransaction } from '@services/oauth/authorization-completion-transaction'
 import {
@@ -26,12 +26,12 @@ describe('Google broker account retention', () => {
     cleanup.googleUserIds.push(activeProviderId, unrelatedProviderId)
     await insertTestOAuthAccount('google', activeProviderId)
     await insertTestOAuthAccount('google', unrelatedProviderId)
-    const activeAccountId = await setOAuthAccountCreatedAt(
+    const activeAccountId = await setOAuthAccountRetentionTime(
       'google',
       activeProviderId,
       window.firstEligibleDate,
     )
-    await setOAuthAccountCreatedAt('google', unrelatedProviderId, window.secondEligibleDate)
+    await setOAuthAccountRetentionTime('google', unrelatedProviderId, window.secondEligibleDate)
     const user = await createTestUserDirect()
     cleanup.userIds.push(user.id)
     const deviceId = randomUUID()

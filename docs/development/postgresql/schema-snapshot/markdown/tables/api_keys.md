@@ -45,9 +45,11 @@ _none_
 **Indexes:**
 
 - `api_keys_pkey`: `CREATE UNIQUE INDEX api_keys_pkey ON public.api_keys USING btree (id)`
+- `idx_api_keys__expired_retention`: `CREATE INDEX idx_api_keys__expired_retention ON public.api_keys USING btree (expires_at, id) WHERE (expires_at IS NOT NULL)`
 - `idx_api_keys__expiry_reminder`: `CREATE INDEX idx_api_keys__expiry_reminder ON public.api_keys USING btree (expires_at, id) WHERE ((revoked_at IS NULL) AND (replaced_by_api_key_id IS NULL) AND (expiry_reminder_sent_at IS NULL))`
 - `idx_api_keys__key_hash`: `CREATE UNIQUE INDEX idx_api_keys__key_hash ON public.api_keys USING btree (key_hash) WHERE (revoked_at IS NULL)`
 - `idx_api_keys__replaced_by_api_key_id__foreign_key`: `CREATE INDEX idx_api_keys__replaced_by_api_key_id__foreign_key ON public.api_keys USING btree (replaced_by_api_key_id) WHERE (replaced_by_api_key_id IS NOT NULL)`
+- `idx_api_keys__revoked_retention`: `CREATE INDEX idx_api_keys__revoked_retention ON public.api_keys USING btree (revoked_at, id) WHERE (revoked_at IS NOT NULL)`
 - `idx_api_keys__updated_at_id_active`: `CREATE INDEX idx_api_keys__updated_at_id_active ON public.api_keys USING btree (updated_at, ((id)::text)) INCLUDE (key_hash) WHERE (revoked_at IS NULL)`
 - `idx_api_keys__user_id`: `CREATE INDEX idx_api_keys__user_id ON public.api_keys USING btree (user_id, id DESC) WHERE (revoked_at IS NULL)`
 - `idx_api_keys__user_id__foreign_key`: `CREATE INDEX idx_api_keys__user_id__foreign_key ON public.api_keys USING btree (user_id) WHERE (user_id IS NOT NULL)`

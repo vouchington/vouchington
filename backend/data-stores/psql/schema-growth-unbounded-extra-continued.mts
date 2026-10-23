@@ -6,7 +6,6 @@ export const EXTRA_UNBOUNDED_TABLES_CONTINUED = [
   'copyright_notice_delivery_attempt_results',
   'oauth_clients',
   'oauth_authorization_server_events',
-  'oauth_native_session_token_mints',
   'oauth_grants',
   'podcast_playback_positions',
   'story_posts',

@@ -2,6 +2,7 @@ import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprot
 import { getRegisteredToolByName } from '@voucha/mcp/registry/index'
 import type { ApiScope } from '@modules/scopes'
 import type { McpCallAuditEvent } from './audit.mts'
+import { readCopyrightTarget } from './copyright-audit-target.mts'
 import type { McpServerConfig } from './config.mts'
 import { resolveMcpToolCall } from './resolve-tool-call.mts'
 import { toolRouteCharges } from './tool-route-keys.mts'
@@ -135,6 +136,13 @@ function classifyMessage(
   const copyrightRationale = invalidArguments
     ? undefined
     : readCopyrightRationale(resolution.tool.meta, callArguments)
+  const copyrightTarget =
+    copyrightRationale === undefined
+      ? undefined
+      : readCopyrightTarget(
+          name,
+          resolution.tool.meta?.auditOption ? callArguments['arguments'] : callArguments,
+        )
   // Without an id the request is a notification, which the server never answers or runs.
   const requestId = invalidArguments ? null : readRequestId(message)
   const routeCharges =
@@ -146,6 +154,7 @@ function classifyMessage(
       outcome: invalidArguments ? 'invalid_arguments' : 'accepted',
       ...(selectedOption === null ? {} : { option: selectedOption }),
       ...(copyrightRationale === undefined ? {} : { copyrightRationale }),
+      ...(copyrightTarget === undefined ? {} : { copyrightTarget }),
     },
     charge: requestId !== null && routeCharges.length > 0 ? { requestId, routeCharges } : null,
   }

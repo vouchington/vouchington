@@ -18,6 +18,15 @@ CREATE OR REPLACE FUNCTION public.fn_classifier_audit_actor_was_deleted(actor_us
  LANGUAGE sql
 ```
 
+## `fn_copyright_decision_rationale_retention_eligible(rationale copyright_decision_rationales, cutoff_at timestamp with time zone)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_copyright_decision_rationale_retention_eligible(rationale copyright_decision_rationales, cutoff_at timestamp with time zone)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE
+```
+
 ## `fn_copyright_retention_erasable_columns(table_name text)`
 
 ```sql
@@ -221,6 +230,14 @@ CREATE OR REPLACE FUNCTION public.fn_lock_bluesky_follow_receipt_active_users()
 CREATE OR REPLACE FUNCTION public.fn_lock_moderation_transparency_projection(p_domain text, p_id uuid)
  RETURNS void
  LANGUAGE sql
+```
+
+## `fn_lock_oauth_friend_targets(target_provider text, target_external_ids text[], exclusive_lock boolean)`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_lock_oauth_friend_targets(target_provider text, target_external_ids text[], exclusive_lock boolean)
+ RETURNS void
+ LANGUAGE plpgsql
 ```
 
 ## `fn_membership_grant_remaining_duration(grant_id uuid)`
@@ -540,6 +557,22 @@ CREATE OR REPLACE FUNCTION public.fn_project_user_profile_link_image_placement()
  LANGUAGE plpgsql
 ```
 
+## `fn_register_oauth_client_grant_marker`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_register_oauth_client_grant_marker()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_register_oauth_grant_retention_anchor`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_register_oauth_grant_retention_anchor()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_register_retained_identity`
 
 ```sql
@@ -708,6 +741,14 @@ CREATE OR REPLACE FUNCTION public.fn_reject_copyright_deadline()
  LANGUAGE plpgsql
 ```
 
+## `fn_reject_copyright_decision_rationale_mutation`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_copyright_decision_rationale_mutation()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_reject_copyright_delivery_intent_transition`
 
 ```sql
@@ -840,6 +881,14 @@ CREATE OR REPLACE FUNCTION public.fn_reject_copyright_territorial_acknowledgment
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_reject_copyright_territorial_escalation()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_erased_copyright_decision_rationale`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_erased_copyright_decision_rationale()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
@@ -1036,6 +1085,14 @@ CREATE OR REPLACE FUNCTION public.fn_reject_mutation()
  LANGUAGE plpgsql
 ```
 
+## `fn_reject_native_session_mint_mutation`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_native_session_mint_mutation()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_reject_non_stripe_membership_purchase_intent_checkout`
 
 ```sql
@@ -1048,6 +1105,14 @@ CREATE OR REPLACE FUNCTION public.fn_reject_non_stripe_membership_purchase_inten
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_reject_non_stripe_user_deletion_external_work()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_reject_oauth_event_mutation`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_oauth_event_mutation()
  RETURNS trigger
  LANGUAGE plpgsql
 ```
@@ -1306,6 +1371,22 @@ CREATE OR REPLACE FUNCTION public.fn_update_moderation_report_transparency_scope
 
 ```sql
 CREATE OR REPLACE FUNCTION public.fn_update_notification_publication_target()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_update_oauth_account_linkage`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_oauth_account_linkage()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
+## `fn_update_oauth_grant_retention_anchor`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_update_oauth_grant_retention_anchor()
  RETURNS trigger
  LANGUAGE plpgsql
 ```

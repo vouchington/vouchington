@@ -15,6 +15,7 @@ export {
   type McpCallPlan,
 } from './classify-calls.mts'
 export { handleMcpHttpRequest } from './handle-request.mts'
+export { resolveCopyrightUserTargetsForAudit } from './copyright-audit-target.mts'
 export { buildMcpContextUser } from './list-tools.mts'
 export { findMcpStepUpScopes } from './resolve-tool-call.mts'
 export { listScopeAudiencePolicies } from './scope-audience-policies.mts'

@@ -38,6 +38,73 @@ BEGIN
 END;
 $$;
 
+-- Preserve the cleanup clock for both explicit unlink and user-deletion FK SET NULL.
+CREATE OR REPLACE FUNCTION fn_update_oauth_account_linkage()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+DECLARE
+  transition_at TIMESTAMPTZ;
+BEGIN
+  IF NEW.user_id IS DISTINCT FROM OLD.user_id THEN
+    IF NEW.user_id IS NULL THEN
+      -- BEFORE UPDATE runs after the account row lock is acquired. Transaction start can
+      -- precede a committed friend observation while this mutation waits for that lock.
+      transition_at := clock_timestamp();
+      IF TG_TABLE_NAME IN ('facebook_accounts', 'github_accounts', 'x_accounts') THEN
+        transition_at := GREATEST(
+          transition_at, COALESCE(OLD.friend_edges_invalidated_at, '-infinity'::timestamptz)
+        );
+        NEW.friend_edges_invalidated_at := transition_at;
+        NEW.friend_edges_cleanup_completed_at := NULL;
+        NEW.friend_references_resolve_pending_at := NULL;
+        NEW.friends_synced_at := NULL;
+      END IF;
+      NEW.unlinked_at := transition_at;
+    ELSE
+      NEW.unlinked_at := NULL;
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+COMMENT ON FUNCTION fn_update_oauth_account_linkage() IS 'Tracks account unlink/relink and invalidates friend observations when a friend-capable account loses its user.';
+
+-- Serialize friend imports with first connection as well as reconnection. A missing account has
+-- no row to lock, so the external identity key must be held until the edge insert commits.
+CREATE OR REPLACE FUNCTION fn_lock_oauth_friend_targets(
+  target_provider TEXT,
+  target_external_ids TEXT[],
+  exclusive_lock BOOLEAN
+)
+RETURNS VOID LANGUAGE plpgsql AS $$
+DECLARE
+  external_id TEXT;
+  lock_key BIGINT;
+BEGIN
+  IF target_provider IS NULL OR target_provider NOT IN ('facebook', 'github', 'x')
+    OR exclusive_lock IS NULL
+    OR target_external_ids IS NULL OR cardinality(target_external_ids) > 256 THEN
+    RAISE EXCEPTION 'Invalid OAuth friend target lock request' USING ERRCODE = 'invalid_parameter_value';
+  END IF;
+  IF array_position(target_external_ids, NULL) IS NOT NULL THEN
+    RAISE EXCEPTION 'Invalid OAuth friend target lock request' USING ERRCODE = 'invalid_parameter_value';
+  END IF;
+
+  FOR external_id IN
+    SELECT DISTINCT target_id FROM unnest(target_external_ids) AS targets(target_id)
+    ORDER BY target_id
+  LOOP
+    lock_key := hashtextextended('oauth-friend-target:' || target_provider || ':' || external_id, 0);
+    IF exclusive_lock THEN
+      PERFORM pg_advisory_xact_lock(lock_key);
+    ELSE
+      PERFORM pg_advisory_xact_lock_shared(lock_key);
+    END IF;
+  END LOOP;
+END;
+$$;
+COMMENT ON FUNCTION fn_lock_oauth_friend_targets(TEXT, TEXT[], BOOLEAN) IS
+  'Locks at most 256 sorted provider identities per transaction before friend account row access; connection uses an exclusive key and imports use shared keys.';
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE FUNCTION fn_project_latest_change()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$

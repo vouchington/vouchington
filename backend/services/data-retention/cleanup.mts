@@ -67,6 +67,8 @@ import {
   cleanupRetainedMediaBindings,
   type RetainedMediaBindingCleanupPage,
 } from './cleanup-retained-media-bindings.mts'
+import { cleanupSecurityRecords } from './cleanup-security-records.mts'
+import { cleanupOAuthFriendEdgeWork } from './cleanup-oauth-friend-edges.mts'
 
 export { cleanupAbandonedBlueskyLinkSessions, cleanupExpiredBlueskyLinkCompletions }
 export { cleanupExpiredOAuthAuthorizations }
@@ -109,6 +111,8 @@ type DataRetentionCleanupOptions = {
   softDeletedUsers?: OptionalRetentionLimits<CleanupOptions>
   oldReferralAttributions?: OptionalRetentionLimits<CleanupOptions>
   orphanedOAuthAccounts?: OptionalRetentionLimits<CleanupOptions>
+  oauthFriendEdges?: Partial<DataRetentionLimits> & { now?: Date }
+  securityRecords?: Partial<DataRetentionLimits> & { now?: Date }
   expiredOAuthAuthorizations?: OptionalRetentionLimits<ExpiryCleanupOptions> & {
     authorizationIds?: readonly string[]
   }
@@ -141,6 +145,8 @@ type DataRetentionCleanupResult = {
   softDeletedUsers: CleanupResult
   oldReferralAttributions: CleanupResult
   orphanedOAuthAccounts: CleanupResult
+  oauthFriendEdges: CleanupResult & { resolved: number }
+  securityRecords: CleanupResult
   expiredOAuthAuthorizations: CleanupResult
   expiredOAuthServerArtifacts: CleanupResult
   expiredBlueskyLinkCompletions: CleanupResult
@@ -187,8 +193,16 @@ export async function runDataRetentionCleanup(
   const oldReferralAttributions = await cleanupOldReferralAttributions(
     withLimits(options.oldReferralAttributions),
   )
+  const oauthFriendEdges = await cleanupOAuthFriendEdgeWork(
+    withLimits(options.oauthFriendEdges),
+    options.oauthFriendEdges?.now,
+  )
   const orphanedOAuthAccounts = await cleanupOrphanedOAuthAccounts(
     withLimits(options.orphanedOAuthAccounts),
+  )
+  const securityRecords = await cleanupSecurityRecords(
+    withLimits(options.securityRecords),
+    options.securityRecords?.now,
   )
   const expiredBlueskyLinkCompletions = await cleanupExpiredBlueskyLinkCompletions(
     withLimits(options.expiredBlueskyLinkCompletions),
@@ -259,6 +273,8 @@ export async function runDataRetentionCleanup(
     softDeletedUsers,
     oldReferralAttributions,
     orphanedOAuthAccounts,
+    oauthFriendEdges,
+    securityRecords,
     expiredOAuthAuthorizations,
     expiredOAuthServerArtifacts,
     expiredBlueskyLinkCompletions,

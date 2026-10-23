@@ -50,6 +50,7 @@ function emptyScopedOptions(now: Date) {
     retainedMediaBindingIds: [],
     softDeletedUsers: emptyWindow,
     orphanedOAuthAccounts: emptyWindow,
+    oauthFriendEdges: { now: new Date('1970-01-02T00:00:00.000Z') },
     expiredOAuthAuthorizations: { ...emptyWindow, authorizationIds: [] },
     expiredOAuthServerArtifacts: emptyWindow,
     expiredBlueskyLinkCompletions: emptyWindow,

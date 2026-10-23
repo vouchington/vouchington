@@ -6,16 +6,17 @@ Apple Sign In accounts linked to users. Stores Apple profile data.
 
 Not partitioned — growth: unbounded.
 
-| Column                     | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                             |
-| -------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------- |
-| `id`                       | `uuid`                     | no       | `uuidv7()`                   |          |           |           | Internal UUIDv7 identity of the Apple account.                      |
-| `user_id`                  | `uuid`                     | yes      |                              |          |           |           | The linked user. NULL if the user account has not been created yet. |
-| `apple_user_id`            | `text`                     | no       |                              |          |           |           | Apple's unique external user identifier.                            |
-| `apple_user_email_address` | `text`                     | yes      |                              |          |           |           | Email address from the Apple profile.                               |
-| `email_domain_hostname_id` | `uuid`                     | yes      |                              |          |           |           | Resolved provider email domain hostname identity for policy reads.  |
-| `apple_user_data`          | `jsonb`                    | no       |                              |          |           |           | Raw JSONB profile data from Apple Sign In.                          |
-| `created_at`               | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | stored    |           |                                                                     |
-| `updated_at`               | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP`          |          |           |           |                                                                     |
+| Column                     | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                                |
+| -------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                       | `uuid`                     | no       | `uuidv7()`                   |          |           |           | Internal UUIDv7 identity of the Apple account.                                                                                         |
+| `user_id`                  | `uuid`                     | yes      |                              |          |           |           | The linked user. NULL if the user account has not been created yet.                                                                    |
+| `unlinked_at`              | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP`          |          |           |           | Time this account last became unlinked, or was first saved before a user linked it; NULL while linked. Orphan cleanup uses this clock. |
+| `apple_user_id`            | `text`                     | no       |                              |          |           |           | Apple's unique external user identifier.                                                                                               |
+| `apple_user_email_address` | `text`                     | yes      |                              |          |           |           | Email address from the Apple profile.                                                                                                  |
+| `email_domain_hostname_id` | `uuid`                     | yes      |                              |          |           |           | Resolved provider email domain hostname identity for policy reads.                                                                     |
+| `apple_user_data`          | `jsonb`                    | no       |                              |          |           |           | Raw JSONB profile data from Apple Sign In.                                                                                             |
+| `created_at`               | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | stored    |           |                                                                                                                                        |
+| `updated_at`               | `timestamp with time zone` | yes      | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                                        |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -38,8 +39,10 @@ _none_
 - `idx_apple_accounts__email`: `CREATE INDEX idx_apple_accounts__email ON public.apple_accounts USING btree (apple_user_email_address) WHERE (apple_user_email_address IS NOT NULL)`
 - `idx_apple_accounts__email_domain_hostname_id`: `CREATE INDEX idx_apple_accounts__email_domain_hostname_id ON public.apple_accounts USING btree (email_domain_hostname_id) WHERE (email_domain_hostname_id IS NOT NULL)`
 - `idx_apple_accounts__orphan_retention_cleanup`: `CREATE INDEX idx_apple_accounts__orphan_retention_cleanup ON public.apple_accounts USING btree (created_at, apple_user_id) WHERE (user_id IS NULL)`
+- `idx_apple_accounts__unlinked_at`: `CREATE INDEX idx_apple_accounts__unlinked_at ON public.apple_accounts USING btree (unlinked_at, id) WHERE (user_id IS NULL)`
 - `idx_apple_accounts__user_id`: `CREATE UNIQUE INDEX idx_apple_accounts__user_id ON public.apple_accounts USING btree (user_id) WHERE (user_id IS NOT NULL)`
 
 **Triggers:**
 
+- `trigger_apple_accounts_linkage`: `CREATE TRIGGER trigger_apple_accounts_linkage BEFORE UPDATE OF user_id ON public.apple_accounts FOR EACH ROW EXECUTE FUNCTION fn_update_oauth_account_linkage()`
 - `trigger_apple_accounts_updated_at`: `CREATE TRIGGER trigger_apple_accounts_updated_at BEFORE UPDATE ON public.apple_accounts FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

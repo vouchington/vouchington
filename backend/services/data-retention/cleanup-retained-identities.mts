@@ -2,7 +2,6 @@ import { beginTransaction } from '@data-stores/psql'
 import { observeSharedDbScope } from '@data-stores/psql/shared-db-scope-observer'
 import { sharedDbIdsScope } from '@vouchington/postgres/query-telemetry'
 import { electedRelationMetadata } from '@services/users/relation-impact-targets'
-
 function retainedRelationReferences(subjectType: string): [string, string][] {
   return electedRelationMetadata.flatMap(metadata =>
     metadata.subject_type === subjectType
@@ -10,7 +9,6 @@ function retainedRelationReferences(subjectType: string): [string, string][] {
       : [],
   )
 }
-
 export const ROOT_FAMILIES = {
   user: {
     table: 'retained_user_identities',
@@ -33,6 +31,9 @@ export const ROOT_FAMILIES = {
       ['membership_sources', 'user_id'],
       ['oauth_authorization_server_events', 'user_id'],
       ['oauth_native_session_token_mints', 'user_id'],
+      ['oauth_grant_retention_anchors', 'user_id'],
+      ['copyright_decision_rationales', 'account_user_id'],
+      ['copyright_decision_rationales', 'recorded_by_id'],
       ['post_moderation_dispositions', 'actor_user_id'],
       ['post_clearance_changes', 'changed_by_id'],
       ['community_post_review_changes', 'changed_by_id'],
@@ -112,7 +113,6 @@ export const ROOT_FAMILIES = {
     ],
   },
 } as const
-
 export type RetainedIdentityFamily = keyof typeof ROOT_FAMILIES
 export type RetainedIdentityCleanupPage = {
   family: RetainedIdentityFamily

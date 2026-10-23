@@ -88,6 +88,12 @@ CREATE INDEX IF NOT EXISTS idx_api_keys__replaced_by_api_key_id__foreign_key ON 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_api_keys__expiry_reminder ON api_keys (expires_at, id) WHERE revoked_at IS NULL AND replaced_by_api_key_id IS NULL AND expiry_reminder_sent_at IS NULL;
 
+-- Proposed default: revoked or expired keys are deleted after 90 days.
+CREATE INDEX IF NOT EXISTS idx_api_keys__revoked_retention
+  ON api_keys (revoked_at, id) WHERE revoked_at IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_api_keys__expired_retention
+  ON api_keys (expires_at, id) WHERE expires_at IS NOT NULL;
+
 COMMENT ON TABLE api_keys IS 'User-issued API keys for programmatic access (format: voucha_<type>_<32 hex random>_<16 hex checksum>), stored as SHA-256 hashes.';
 COMMENT ON COLUMN api_keys.user_id IS 'The user who owns this API key.';
 COMMENT ON COLUMN api_keys.prefix IS 'Visible prefix of the API key for identification (e.g. voucha_rss_XXXX, 8-16 chars).';

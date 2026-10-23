@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { v7 as uuidv7 } from 'uuid'
+import { write } from '@data-stores/psql'
 import type { createTestUserDirect } from '@voucha/test-helpers/entities/users'
 import {
   beginOAuthAuthorizationRequest,
@@ -17,6 +18,7 @@ type TestOAuthAuthorizationOptions = {
   audience?: OAuthResourceAudience
   scope?: string
   tokenEndpointAuthMethod?: 'none' | 'client_secret_basic'
+  ageNeverGrantedClient?: boolean
 }
 
 export const TEST_OAUTH_RESOURCE = getOAuthResourceUrl('user')
@@ -68,6 +70,7 @@ export async function createTestPendingOAuthAuthorization(
     audience = 'user',
     scope = TEST_OAUTH_SCOPE,
     tokenEndpointAuthMethod = 'none',
+    ageNeverGrantedClient = false,
   }: TestOAuthAuthorizationOptions = {},
 ) {
   const redirectUri = randomTestOAuthRedirectUri()
@@ -77,6 +80,18 @@ export async function createTestPendingOAuthAuthorization(
     scope,
     token_endpoint_auth_method: tokenEndpointAuthMethod,
   })
+  if (ageNeverGrantedClient) {
+    // Set the UUIDv7 creation clock before the first request references the client.
+    await write(
+      `/* ageTestNeverGrantedOAuthClient */ UPDATE oauth_clients
+       SET id = uuidv7(interval '-120 days')
+       WHERE client_id = $1::text AND NOT EXISTS (
+         SELECT 1 FROM oauth_client_grant_markers marker
+         WHERE marker.client_id = oauth_clients.id
+       )`,
+      [client.client_id],
+    )
+  }
   const verifier = randomBytes(32).toString('base64url')
   const deviceId = uuidv7()
   const sessionId = uuidv7()

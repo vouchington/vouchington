@@ -33,10 +33,6 @@ export const OAUTH_AUTHORIZATION_UUID_COLUMNS_WITHOUT_KEYS = [
     'Immutable audit snapshot intentionally survives OAuth client deletion.',
   ],
   [
-    'oauth_authorization_server_events.grant_id',
-    'Immutable audit snapshot intentionally survives OAuth grant deletion.',
-  ],
-  [
     'oauth_native_session_token_mints.client_id',
     'Immutable mint audit snapshot intentionally survives OAuth client deletion.',
   ],
@@ -55,6 +51,10 @@ export const OAUTH_AUTHORIZATION_UUID_COLUMNS_WITHOUT_KEYS = [
   [
     'mcp_call_audit_events.correlation_id',
     'Server-minted request correlation identifier shared by the rows of one MCP request and echoed in X-Correlation-Id; it identifies no relation.',
+  ],
+  [
+    'security_retention_cleanup_cursors.cursor_id',
+    'Deletion-stable keyset position; the scanned source row can be deleted before the next pass.',
   ],
 ] as const
 

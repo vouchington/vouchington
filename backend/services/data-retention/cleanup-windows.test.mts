@@ -12,7 +12,7 @@ import {
   insertTestOAuthAccount,
   oauthAccountExistsByProviderUserId,
   referralAttributionExistsById,
-  setOAuthAccountCreatedAt,
+  setOAuthAccountRetentionTime,
   softDeleteUserAt,
 } from '@voucha/test-helpers'
 import {
@@ -116,19 +116,23 @@ describe('cleanup retention windows', () => {
     await insertTestOAuthAccount('github', secondEligibleProviderUserId)
     await insertTestOAuthAccount('github', atUpperBoundProviderUserId)
     await insertTestOAuthAccount('github', afterUpperBoundProviderUserId)
-    await setOAuthAccountCreatedAt(
+    await setOAuthAccountRetentionTime(
       'github',
       beforeLowerBoundProviderUserId,
       window.beforeLowerBoundDate,
     )
-    await setOAuthAccountCreatedAt('github', firstEligibleProviderUserId, window.firstEligibleDate)
-    await setOAuthAccountCreatedAt(
+    await setOAuthAccountRetentionTime(
+      'github',
+      firstEligibleProviderUserId,
+      window.firstEligibleDate,
+    )
+    await setOAuthAccountRetentionTime(
       'github',
       secondEligibleProviderUserId,
       window.secondEligibleDate,
     )
-    await setOAuthAccountCreatedAt('github', atUpperBoundProviderUserId, window.upperBoundDate)
-    await setOAuthAccountCreatedAt(
+    await setOAuthAccountRetentionTime('github', atUpperBoundProviderUserId, window.upperBoundDate)
+    await setOAuthAccountRetentionTime(
       'github',
       afterUpperBoundProviderUserId,
       window.afterUpperBoundDate,

@@ -738,6 +738,10 @@ CREATE TABLE IF NOT EXISTS facebook_accounts (
   -- which user this facebook account is connected to
   -- NOTE: this is nullable because a user can be created after this facebook account data is saved
   user_id UUID REFERENCES users ON DELETE SET NULL,
+  unlinked_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  friend_edges_invalidated_at TIMESTAMPTZ,
+  friend_edges_cleanup_completed_at TIMESTAMPTZ,
+  friend_references_resolve_pending_at TIMESTAMPTZ,
 
   -- facebook user ID
   facebook_user_id TEXT NOT NULL UNIQUE,
@@ -761,11 +765,18 @@ BEFORE UPDATE ON facebook_accounts
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
+CREATE OR REPLACE TRIGGER trigger_facebook_accounts_linkage
+BEFORE UPDATE OF user_id ON facebook_accounts
+FOR EACH ROW EXECUTE FUNCTION fn_update_oauth_account_linkage();
+
 -- user ID gets added afterwards
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_facebook_accounts__user_id
 ON facebook_accounts (user_id)
 WHERE user_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_facebook_accounts__unlinked_at
+ON facebook_accounts (unlinked_at, id) WHERE user_id IS NULL;
 
 -- no idea if facebook email addresses are unique per account
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -782,6 +793,10 @@ WHERE access_token_expires_at IS NOT NULL;
 COMMENT ON TABLE facebook_accounts IS 'Facebook OAuth accounts linked to users. Stores profile data and encrypted long-lived access token ciphertext.';
 COMMENT ON COLUMN facebook_accounts.id IS 'Internal UUIDv7 identity of the Facebook account.';
 COMMENT ON COLUMN facebook_accounts.user_id IS 'The linked user. NULL if the user account has not been created yet.';
+COMMENT ON COLUMN facebook_accounts.unlinked_at IS 'Time this account last became unlinked, or was first saved before a user linked it; NULL while linked. Orphan cleanup uses this clock.';
+COMMENT ON COLUMN facebook_accounts.friend_edges_invalidated_at IS 'Durable friend-visibility boundary advanced at unlink; relink does not revive earlier observations.';
+COMMENT ON COLUMN facebook_accounts.friend_edges_cleanup_completed_at IS 'Last invalidation boundary fully drained by bounded friend-edge cleanup.';
+COMMENT ON COLUMN facebook_accounts.friend_references_resolve_pending_at IS 'Connection work marker for bounded resolution of existing incoming friend references.';
 COMMENT ON COLUMN facebook_accounts.facebook_user_id IS 'Facebook''s unique external user ID.';
 COMMENT ON COLUMN facebook_accounts.facebook_user_email_address IS 'Email address from the Facebook profile.';
 COMMENT ON COLUMN facebook_accounts.facebook_user_data IS 'Raw JSONB profile data from Facebook''s /api/me endpoint.';
@@ -803,18 +818,34 @@ CREATE TABLE IF NOT EXISTS facebook_friends (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE INDEX idx_facebook_accounts__friend_edges_pending
+ON facebook_accounts (friend_edges_invalidated_at, id)
+WHERE friend_edges_invalidated_at IS NOT NULL
+  AND friend_edges_cleanup_completed_at IS DISTINCT FROM friend_edges_invalidated_at;
+CREATE INDEX idx_facebook_accounts__friend_resolution_pending
+ON facebook_accounts (friend_references_resolve_pending_at, id)
+WHERE friend_references_resolve_pending_at IS NOT NULL;
+CREATE INDEX idx_facebook_friends__source_observed
+ON facebook_friends (facebook_account_id, last_observed_at, id);
+CREATE INDEX idx_facebook_friends__target_observed
+ON facebook_friends (friend_facebook_account_id, last_observed_at, id)
+WHERE friend_facebook_account_id IS NOT NULL;
+CREATE INDEX idx_facebook_friends__unresolved_reference
+ON facebook_friends (facebook_friend_id, last_observed_at, id)
+WHERE friend_facebook_account_id IS NULL;
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_facebook_friends_updated_at
 BEFORE UPDATE ON facebook_friends
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
-CREATE INDEX IF NOT EXISTS idx_facebook_friends__friend_facebook_account_id
-ON facebook_friends (friend_facebook_account_id)
-WHERE friend_facebook_account_id IS NOT NULL;
-
 CREATE INDEX IF NOT EXISTS idx_facebook_friends__facebook_friend_id
 ON facebook_friends (facebook_friend_id);
+
+-- Proposed default: remove friend observations not refreshed for 90 days.
+CREATE INDEX IF NOT EXISTS idx_facebook_friends__retention
+ON facebook_friends (last_observed_at, id);
 
 COMMENT ON TABLE facebook_friends IS 'Facebook friend relationships from linked accounts to provider friends.';
 COMMENT ON COLUMN facebook_friends.id IS 'Internal UUIDv7 identity of the observed friend relation.';
@@ -968,6 +999,7 @@ COMMENT ON COLUMN user_consents.revoked_at IS 'When the user revoked this consen
 CREATE TABLE IF NOT EXISTS apple_accounts (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   user_id UUID REFERENCES users ON DELETE SET NULL,
+  unlinked_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
   apple_user_id TEXT NOT NULL UNIQUE,
   apple_user_email_address TEXT,
   email_domain_hostname_id UUID,
@@ -982,10 +1014,17 @@ BEFORE UPDATE ON apple_accounts
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
+CREATE OR REPLACE TRIGGER trigger_apple_accounts_linkage
+BEFORE UPDATE OF user_id ON apple_accounts
+FOR EACH ROW EXECUTE FUNCTION fn_update_oauth_account_linkage();
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_apple_accounts__user_id
 ON apple_accounts (user_id)
 WHERE user_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_apple_accounts__unlinked_at
+ON apple_accounts (unlinked_at, id) WHERE user_id IS NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_apple_accounts__email
@@ -995,6 +1034,7 @@ WHERE apple_user_email_address IS NOT NULL;
 COMMENT ON TABLE apple_accounts IS 'Apple Sign In accounts linked to users. Stores Apple profile data.';
 COMMENT ON COLUMN apple_accounts.id IS 'Internal UUIDv7 identity of the Apple account.';
 COMMENT ON COLUMN apple_accounts.user_id IS 'The linked user. NULL if the user account has not been created yet.';
+COMMENT ON COLUMN apple_accounts.unlinked_at IS 'Time this account last became unlinked, or was first saved before a user linked it; NULL while linked. Orphan cleanup uses this clock.';
 COMMENT ON COLUMN apple_accounts.apple_user_id IS 'Apple''s unique external user identifier.';
 COMMENT ON COLUMN apple_accounts.apple_user_email_address IS 'Email address from the Apple profile.';
 COMMENT ON COLUMN apple_accounts.apple_user_data IS 'Raw JSONB profile data from Apple Sign In.';
@@ -1003,6 +1043,7 @@ COMMENT ON COLUMN apple_accounts.apple_user_data IS 'Raw JSONB profile data from
 CREATE TABLE IF NOT EXISTS google_accounts (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   user_id UUID REFERENCES users ON DELETE SET NULL,
+  unlinked_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
   google_user_id TEXT NOT NULL UNIQUE,
   google_user_email_address TEXT,
   email_domain_hostname_id UUID,
@@ -1017,10 +1058,17 @@ BEFORE UPDATE ON google_accounts
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
+CREATE OR REPLACE TRIGGER trigger_google_accounts_linkage
+BEFORE UPDATE OF user_id ON google_accounts
+FOR EACH ROW EXECUTE FUNCTION fn_update_oauth_account_linkage();
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_google_accounts__user_id
 ON google_accounts (user_id)
 WHERE user_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_google_accounts__unlinked_at
+ON google_accounts (unlinked_at, id) WHERE user_id IS NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_google_accounts__email
@@ -1030,6 +1078,7 @@ WHERE google_user_email_address IS NOT NULL;
 COMMENT ON TABLE google_accounts IS 'Google OAuth accounts linked to users. Stores Google profile data.';
 COMMENT ON COLUMN google_accounts.id IS 'Internal UUIDv7 identity of the Google account.';
 COMMENT ON COLUMN google_accounts.user_id IS 'The linked user. NULL if the user account has not been created yet.';
+COMMENT ON COLUMN google_accounts.unlinked_at IS 'Time this account last became unlinked, or was first saved before a user linked it; NULL while linked. Orphan cleanup uses this clock.';
 COMMENT ON COLUMN google_accounts.google_user_id IS 'Google''s unique external user identifier.';
 COMMENT ON COLUMN google_accounts.google_user_email_address IS 'Email address from the Google profile.';
 COMMENT ON COLUMN google_accounts.google_user_data IS 'Raw JSONB profile data from Google OAuth.';
@@ -1038,6 +1087,10 @@ COMMENT ON COLUMN google_accounts.google_user_data IS 'Raw JSONB profile data fr
 CREATE TABLE IF NOT EXISTS x_accounts (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   user_id UUID REFERENCES users ON DELETE SET NULL,
+  unlinked_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  friend_edges_invalidated_at TIMESTAMPTZ,
+  friend_edges_cleanup_completed_at TIMESTAMPTZ,
+  friend_references_resolve_pending_at TIMESTAMPTZ,
   x_user_id TEXT NOT NULL UNIQUE,
   x_user_email_address TEXT,
   x_user_data JSONB NOT NULL,
@@ -1049,16 +1102,31 @@ CREATE TABLE IF NOT EXISTS x_accounts (
   updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE INDEX idx_x_accounts__friend_edges_pending
+ON x_accounts (friend_edges_invalidated_at, id)
+WHERE friend_edges_invalidated_at IS NOT NULL
+  AND friend_edges_cleanup_completed_at IS DISTINCT FROM friend_edges_invalidated_at;
+CREATE INDEX idx_x_accounts__friend_resolution_pending
+ON x_accounts (friend_references_resolve_pending_at, id)
+WHERE friend_references_resolve_pending_at IS NOT NULL;
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_x_accounts_updated_at
 BEFORE UPDATE ON x_accounts
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
+CREATE OR REPLACE TRIGGER trigger_x_accounts_linkage
+BEFORE UPDATE OF user_id ON x_accounts
+FOR EACH ROW EXECUTE FUNCTION fn_update_oauth_account_linkage();
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_x_accounts__user_id
 ON x_accounts (user_id)
 WHERE user_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_x_accounts__unlinked_at
+ON x_accounts (unlinked_at, id) WHERE user_id IS NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_x_accounts__token_expires_at
@@ -1073,6 +1141,10 @@ WHERE user_id IS NOT NULL AND access_token_ciphertext IS NOT NULL;
 COMMENT ON TABLE x_accounts IS 'X (Twitter) OAuth accounts linked to users. Stores profile data and encrypted OAuth token ciphertext.';
 COMMENT ON COLUMN x_accounts.id IS 'Internal UUIDv7 identity of the X account.';
 COMMENT ON COLUMN x_accounts.user_id IS 'The linked user. NULL if the user account has not been created yet.';
+COMMENT ON COLUMN x_accounts.unlinked_at IS 'Time this account last became unlinked, or was first saved before a user linked it; NULL while linked. Orphan cleanup uses this clock.';
+COMMENT ON COLUMN x_accounts.friend_edges_invalidated_at IS 'Durable friend-visibility boundary advanced at unlink; relink does not revive earlier observations.';
+COMMENT ON COLUMN x_accounts.friend_edges_cleanup_completed_at IS 'Last invalidation boundary fully drained by bounded friend-edge cleanup.';
+COMMENT ON COLUMN x_accounts.friend_references_resolve_pending_at IS 'Connection work marker for bounded resolution of existing incoming friend references.';
 COMMENT ON COLUMN x_accounts.x_user_id IS 'X''s unique external user identifier.';
 COMMENT ON COLUMN x_accounts.x_user_email_address IS 'Email address from the X profile.';
 COMMENT ON COLUMN x_accounts.x_user_data IS 'Raw JSONB profile data from X OAuth.';
@@ -1085,6 +1157,7 @@ COMMENT ON COLUMN x_accounts.friends_synced_at IS 'When the user''s X (Twitter) 
 CREATE TABLE IF NOT EXISTS linkedin_accounts (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   user_id UUID REFERENCES users ON DELETE SET NULL,
+  unlinked_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
   linkedin_user_id TEXT NOT NULL UNIQUE,
   linkedin_user_email_address TEXT,
   email_domain_hostname_id UUID,
@@ -1102,10 +1175,17 @@ BEFORE UPDATE ON linkedin_accounts
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
+CREATE OR REPLACE TRIGGER trigger_linkedin_accounts_linkage
+BEFORE UPDATE OF user_id ON linkedin_accounts
+FOR EACH ROW EXECUTE FUNCTION fn_update_oauth_account_linkage();
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_linkedin_accounts__user_id
 ON linkedin_accounts (user_id)
 WHERE user_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_linkedin_accounts__unlinked_at
+ON linkedin_accounts (unlinked_at, id) WHERE user_id IS NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_linkedin_accounts__email
@@ -1120,6 +1200,7 @@ WHERE access_token_expires_at IS NOT NULL;
 COMMENT ON TABLE linkedin_accounts IS 'LinkedIn OAuth accounts linked to users. Stores profile data and encrypted OAuth token ciphertext.';
 COMMENT ON COLUMN linkedin_accounts.id IS 'Internal UUIDv7 identity used by durable OAuth authorization references.';
 COMMENT ON COLUMN linkedin_accounts.user_id IS 'The linked user. NULL if the user account has not been created yet.';
+COMMENT ON COLUMN linkedin_accounts.unlinked_at IS 'Time this account last became unlinked, or was first saved before a user linked it; NULL while linked. Orphan cleanup uses this clock.';
 COMMENT ON COLUMN linkedin_accounts.linkedin_user_id IS 'LinkedIn''s unique external user identifier.';
 COMMENT ON COLUMN linkedin_accounts.linkedin_user_email_address IS 'Email address from the LinkedIn profile.';
 COMMENT ON COLUMN linkedin_accounts.linkedin_user_data IS 'Raw JSONB profile data from LinkedIn OAuth.';
@@ -1131,6 +1212,7 @@ COMMENT ON COLUMN linkedin_accounts.access_token_expires_at IS 'When the access 
 CREATE TABLE IF NOT EXISTS microsoft_accounts (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   user_id UUID REFERENCES users ON DELETE SET NULL,
+  unlinked_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
   microsoft_user_id TEXT NOT NULL UNIQUE,
   microsoft_user_email_address TEXT,
   email_domain_hostname_id UUID,
@@ -1148,10 +1230,17 @@ BEFORE UPDATE ON microsoft_accounts
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
+CREATE OR REPLACE TRIGGER trigger_microsoft_accounts_linkage
+BEFORE UPDATE OF user_id ON microsoft_accounts
+FOR EACH ROW EXECUTE FUNCTION fn_update_oauth_account_linkage();
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_microsoft_accounts__user_id
 ON microsoft_accounts (user_id)
 WHERE user_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_microsoft_accounts__unlinked_at
+ON microsoft_accounts (unlinked_at, id) WHERE user_id IS NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_microsoft_accounts__email
@@ -1166,6 +1255,7 @@ WHERE access_token_expires_at IS NOT NULL;
 COMMENT ON TABLE microsoft_accounts IS 'Microsoft OAuth accounts linked to users. Stores profile data and encrypted OAuth token ciphertext.';
 COMMENT ON COLUMN microsoft_accounts.id IS 'Internal UUIDv7 identity used by durable OAuth authorization references.';
 COMMENT ON COLUMN microsoft_accounts.user_id IS 'The linked user. NULL if the user account has not been created yet.';
+COMMENT ON COLUMN microsoft_accounts.unlinked_at IS 'Time this account last became unlinked, or was first saved before a user linked it; NULL while linked. Orphan cleanup uses this clock.';
 COMMENT ON COLUMN microsoft_accounts.microsoft_user_id IS 'Microsoft''s unique external user identifier.';
 COMMENT ON COLUMN microsoft_accounts.microsoft_user_email_address IS 'Email address from the Microsoft profile.';
 COMMENT ON COLUMN microsoft_accounts.microsoft_user_data IS 'Raw JSONB profile data from Microsoft OAuth.';

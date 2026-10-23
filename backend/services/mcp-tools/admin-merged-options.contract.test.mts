@@ -9,6 +9,11 @@ import { toRouteKey } from './tool-route-keys.mts'
 import { validateToolArguments } from './validate-tool-arguments.mts'
 
 const UUID = '00000000-0000-4000-8000-000000000001'
+const copyrightTargetContracts = {
+  review_copyright_email_intake: { kind: 'email_intake', field: 'intake_id' },
+  review_copyright_email_correspondence: { kind: 'email_intake', field: 'intake_id' },
+  replay_copyright_intent: { kind: 'notice', field: 'id' },
+} as const
 
 function sampleString(schema: Record<string, unknown>): string {
   if (schema['format'] === 'uuid') return UUID
@@ -159,14 +164,20 @@ describe('all merged admin MCP options', () => {
     const tool = getRegisteredToolByName(target)
     expect(validateToolArguments(tool!.schema.parameters, { option, arguments: args })).toBeNull()
     const plan = planned(target, option, args)
+    const targetContract = copyrightTargetContracts[target as keyof typeof copyrightTargetContracts]
+    const rationale =
+      typeof args['rationale'] === 'string' && tool!.meta?.auditRationale
+        ? args['rationale']
+        : undefined
     expect(plan.events).toEqual([
       {
         jsonrpcMethod: 'tools/call',
         toolName: target,
         option,
         outcome: 'accepted',
-        ...(typeof args['rationale'] === 'string' && tool!.meta?.auditRationale
-          ? { copyrightRationale: args['rationale'] }
+        ...(rationale === undefined ? {} : { copyrightRationale: rationale }),
+        ...(rationale !== undefined && targetContract
+          ? { copyrightTarget: { kind: targetContract.kind, id: args[targetContract.field] } }
           : {}),
       },
     ])

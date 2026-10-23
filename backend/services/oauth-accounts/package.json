@@ -24,12 +24,14 @@
   "scripts": {},
   "dependencies": {
     "@data-stores/psql": "workspace:^",
+    "@data-stores/valkey": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/token-secrets": "workspace:^",
     "@queues/vote-aggregation": "workspace:^",
     "@services/contribution-gating": "workspace:^",
     "@services/email-address-validator": "workspace:^",
-    "http-errors": "^2.0.1"
+    "http-errors": "^2.0.1",
+    "valkyries": "^0.11.1"
   },
   "devDependencies": {
     "@types/http-errors": "^2.0.5",
