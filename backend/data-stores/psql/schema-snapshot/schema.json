@@ -63693,6 +63693,93 @@
       },
       "uniqueConstraints": {}
     },
+    "moderation_media_reveal_cleanup_cursors": {
+      "checkConstraints": {
+        "moderation_media_reveal_cleanup_cursors_is_singleton_check": "CHECK (is_singleton)"
+      },
+      "columns": {
+        "cursor_reveal_id": {
+          "collation": null,
+          "comment": "Last examined reveal id; no foreign key because cleanup deletes examined reveals.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "is_singleton": {
+          "collation": null,
+          "comment": "Checked singleton serializes media reveal retention runs.",
+          "defaultExpression": "true",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "boolean"
+        },
+        "sweep_cutoff_at": {
+          "collation": null,
+          "comment": "Fixed age boundary for the current cyclic sweep; cleared with its cursor at completion.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "timestamp with time zone"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": "Last committed media reveal sweep progress.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Singleton keyset position for the daily bounded media reveal retention sweep.",
+      "foreignKeys": {},
+      "growth": "bounded",
+      "indexes": {
+        "moderation_media_reveal_cleanup_cursors_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX moderation_media_reveal_cleanup_cursors_pkey ON public.moderation_media_reveal_cleanup_cursors USING btree (is_singleton)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "is_singleton",
+              "descending": false,
+              "expression": "is_singleton",
+              "nullsFirst": false,
+              "opclass": "bool_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["is_singleton"],
+        "definition": "PRIMARY KEY (is_singleton)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_moderation_media_reveal_cleanup_cursors_updated_at": "CREATE TRIGGER trigger_moderation_media_reveal_cleanup_cursors_updated_at BEFORE UPDATE ON public.moderation_media_reveal_cleanup_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {}
+    },
     "moderation_media_reveals": {
       "checkConstraints": {
         "moderation_media_reveals_metadata_check": "CHECK ((jsonb_typeof(metadata) = 'object'::text))"
@@ -63787,7 +63874,7 @@
           "type": "moderation_media_reveal_surfaces"
         }
       },
-      "comment": "Append-only log of disturbing-media reveals by moderators. Used to count session exposure and trigger cooldown prompts.",
+      "comment": "Log of disturbing-media reveals by moderators. Used to count session exposure and trigger cooldown prompts; old rows are removed by daily retention.",
       "foreignKeys": {
         "moderation_media_reveals_moderator_user_id_fkey": {
           "columns": ["moderator_user_id"],
@@ -63817,7 +63904,7 @@
           "validated": true
         }
       },
-      "growth": "unbounded",
+      "growth": "bounded",
       "indexes": {
         "idx_moderation_media_reveals__moderator_revealed": {
           "accessMethod": "btree",
@@ -63917,6 +64004,93 @@
       "triggers": {},
       "uniqueConstraints": {}
     },
+    "moderation_queue_claim_cleanup_cursors": {
+      "checkConstraints": {
+        "moderation_queue_claim_cleanup_cursors_is_singleton_check": "CHECK (is_singleton)"
+      },
+      "columns": {
+        "cursor_claim_id": {
+          "collation": null,
+          "comment": "Last examined claim id; no foreign key because cleanup deletes examined claims.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "is_singleton": {
+          "collation": null,
+          "comment": "Checked singleton serializes claim retention runs.",
+          "defaultExpression": "true",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "boolean"
+        },
+        "sweep_cutoff_at": {
+          "collation": null,
+          "comment": "Fixed age boundary for the current cyclic sweep; cleared with its cursor at completion.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "timestamp with time zone"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": "Last committed claim sweep progress.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Singleton keyset position for the daily bounded claim retention sweep.",
+      "foreignKeys": {},
+      "growth": "bounded",
+      "indexes": {
+        "moderation_queue_claim_cleanup_cursors_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX moderation_queue_claim_cleanup_cursors_pkey ON public.moderation_queue_claim_cleanup_cursors USING btree (is_singleton)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "is_singleton",
+              "descending": false,
+              "expression": "is_singleton",
+              "nullsFirst": false,
+              "opclass": "bool_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["is_singleton"],
+        "definition": "PRIMARY KEY (is_singleton)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_moderation_queue_claim_cleanup_cursors_updated_at": "CREATE TRIGGER trigger_moderation_queue_claim_cleanup_cursors_updated_at BEFORE UPDATE ON public.moderation_queue_claim_cleanup_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {}
+    },
     "moderation_queue_claims": {
       "checkConstraints": {
         "moderation_queue_claims_check": "CHECK ((num_nonnulls(report_id, post_id) = 1))"
@@ -64011,7 +64185,7 @@
           "type": "uuid"
         }
       },
-      "comment": "Advisory claims on community moderation queue items. One live (un-released) claim per report or post-review; auto-expires after 15 minutes of inactivity (evaluated lazily at read time).",
+      "comment": "Advisory claims on community moderation queue items. One live (un-released) claim per report or post-review; auto-expires after 15 minutes of inactivity (evaluated lazily at read time), with old inactive rows removed by daily retention.",
       "foreignKeys": {
         "moderation_queue_claims_claimed_by_id_fkey": {
           "columns": ["claimed_by_id"],
@@ -64050,7 +64224,7 @@
           "validated": true
         }
       },
-      "growth": "unbounded",
+      "growth": "bounded",
       "indexes": {
         "idx_moderation_queue_claims__claimed_by_id": {
           "accessMethod": "btree",
