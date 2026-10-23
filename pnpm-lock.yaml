@@ -5868,6 +5868,9 @@ importers:
         specifier: ^0.11.1
         version: 0.11.1
     devDependencies:
+      '@services/growth-metrics':
+        specifier: workspace:^
+        version: link:../growth-metrics
       '@services/oauth-accounts':
         specifier: workspace:^
         version: link:../oauth-accounts

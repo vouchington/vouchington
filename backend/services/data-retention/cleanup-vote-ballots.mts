@@ -40,15 +40,10 @@ export async function cleanupSupersededVoteBallots(
 ): Promise<VoteBallotCleanupPage[]> {
   const results: VoteBallotCleanupPage[] = []
   for (const config of voteTables) {
-    results.push(
-      // oxlint-disable-next-line no-await-in-loop -- each ballot table owns an independent bounded cursor transaction.
-      await cleanupSupersededVoteBallotTable(
-        config.table,
-        batchSize,
-        now,
-        voteIdsByTable ? (voteIdsByTable[config.table] ?? []) : undefined,
-      ),
-    ) // no-mistakes-disable-line query-reached-per-item: fixed schema-declared ballot tables each require one independent capped cursor transaction
+    const voteIds = voteIdsByTable ? (voteIdsByTable[config.table] ?? []) : undefined
+    // oxlint-disable-next-line no-await-in-loop -- each ballot table owns an independent bounded cursor transaction.
+    const page = await cleanupSupersededVoteBallotTable(config.table, batchSize, now, voteIds) // no-mistakes-disable-line query-reached-per-item: fixed schema-declared ballot tables each require one independent capped cursor transaction
+    results.push(page)
   }
   return results
 }
@@ -107,6 +102,7 @@ export async function cleanupSupersededVoteBallotTable(
          FROM deleted
          WHERE score IS NOT NULL AND NOT (score IN (-2, 2) AND NOT score_is_semantic)
          GROUP BY 1
+         ORDER BY 1
          ON CONFLICT (day) DO UPDATE
            SET count = post_vote_retained_daily_counts.count + EXCLUDED.count
          RETURNING day
@@ -114,6 +110,7 @@ export async function cleanupSupersededVoteBallotTable(
       : ''
   const { rows: deletedRows } = await query<{ deleted: number }>(
     `/* deleteSupersededVoteBallots */
+     /* no-mistakes: deadlock-safe -- each production table sweep holds its own cursor row; scoped pages lock ballot rows in entity/id order, and daily aggregate keys are inserted in day order. */
      WITH locked AS MATERIALIZED (
        SELECT old.${entityColumn} AS entity_id, old.id, old.user_id
        FROM ${table} old
