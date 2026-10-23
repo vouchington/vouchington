@@ -65,7 +65,7 @@ export async function recoverTestRetainedOAuthClaim(
               throw err
             }
           },
-          { ...options, blockTimeout: 1000 },
+          { ...options, blockTimeout: 100, promotionInterval: 1000 },
         ),
     )
     firstWorker.on('error', err => {
@@ -120,7 +120,7 @@ export async function recoverTestRetainedOAuthClaim(
             name,
             (job: Job<OAuthAuthorizationExchangeJobData>) =>
               owner.run(() => processOAuthAuthorizationExchangeJob(job)),
-            { ...options, blockTimeout: 1000 },
+            { ...options, blockTimeout: 100, promotionInterval: 1000 },
           ),
       )
       secondWorker.on('error', err => {

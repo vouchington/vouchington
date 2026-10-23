@@ -120,7 +120,7 @@ export async function runTestOAuthExchangeContinuation(
               ],
             ]),
           ),
-          { ...connection, blockTimeout: 1000 },
+          { ...connection, blockTimeout: 100, promotionInterval: 1000 },
         ),
     )
     worker.on('error', err => {

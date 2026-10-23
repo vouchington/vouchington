@@ -77,7 +77,7 @@ async function runHtmlImport(options: {
           }
         },
       }),
-    { ...connection, blockTimeout: 1000, promotionInterval: 50 },
+    { ...connection, blockTimeout: 100, promotionInterval: 50 },
   )
   const background = new Worker(
     BACKGROUND_QUEUE_NAME,
@@ -110,7 +110,7 @@ async function runHtmlImport(options: {
         })
       throw new Error(`Unexpected background job ${job.name}`)
     },
-    { ...connection, blockTimeout: 1000, promotionInterval: 50 },
+    { ...connection, blockTimeout: 100, promotionInterval: 50 },
   )
   crawler.on('error', error => crawlsSettled.reject(error))
   crawler.on('failed', (job, error) => {

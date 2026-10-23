@@ -187,7 +187,7 @@ describe('scheduled run lease recovery', () => {
             oldCompleted.resolve()
           }
         },
-        { concurrency: 2 },
+        { concurrency: 2, blockTimeout: 100, promotionInterval: 1000 },
       )
       await newWorker.waitUntilReady()
       await newStarted.promise

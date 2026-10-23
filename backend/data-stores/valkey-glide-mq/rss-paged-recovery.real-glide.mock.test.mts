@@ -28,7 +28,7 @@ describe('real-queue recovery for paged RSS rows', () => {
         retryEntered.resolve()
         await releaseRetry.promise
       },
-      { connection: workerQueueConnection, prefix, blockTimeout: 1000 },
+      { connection: workerQueueConnection, prefix, blockTimeout: 100, promotionInterval: 1000 },
     )
     worker.on('failed', () => failed.resolve())
     worker.on('error', failed.reject)
