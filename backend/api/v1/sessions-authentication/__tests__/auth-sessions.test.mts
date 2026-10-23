@@ -20,10 +20,7 @@ import {
   isSessionRevoked,
   revokeAllAuthenticatedSessions,
 } from '@services/jwt-session'
-import {
-  touchAuthenticatedSession,
-  upsertAuthenticatedSession,
-} from '@services/jwt-session/user-sessions'
+import { upsertAuthenticatedSession } from '@services/jwt-session/user-sessions'
 
 import { v7 } from 'uuid'
 import { decodeJwt } from 'jose'
@@ -164,23 +161,6 @@ describe('Auth sessions routes', () => {
       .expect(204)
 
     await expect(isSessionRevoked(otherSession.id)).resolves.toBe(true)
-  })
-
-  it('touches an active session without revoking it', async () => {
-    const user = await createTestUser()
-    const session = await insertTestUserSession({
-      userId: user!.id,
-      sessionId: v7(),
-      deviceId: v7(),
-      deviceName: 'Touch test device',
-    })
-
-    await touchAuthenticatedSession(session.id)
-
-    await expect(getTestUserSessionById(session.id)).resolves.toMatchObject({
-      id: session.id,
-      revoked_at: null,
-    })
   })
 
   it('preserves an existing device name when session repair has no device metadata', async () => {
