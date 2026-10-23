@@ -10,17 +10,10 @@ import { upsertUser } from '../create.mts'
 import { getPrivateUserByAny } from '../get.mts'
 import { v7 } from 'uuid'
 import { withPostgresQueryFailureForTest } from '@voucha/test-helpers/postgres-query-failure'
+import { verifyPhoneNumber } from '@modules/utils'
 import { getOAuthAccountByProviderUserId } from '@services/oauth-accounts'
-import {
-  setTestEmailAddressLoginTokenId,
-  setTestPhoneNumberLoginTokenId,
-} from '@voucha/test-helpers/entities/login-tokens'
-import {
-  createEmailAddressLoginToken,
-  createPhoneNumberLoginToken,
-  verifyEmailAddressLoginToken,
-  verifyPhoneNumberLoginToken,
-} from '../authentication.mts'
+import { setTestEmailAddressLoginTokenId } from '@voucha/test-helpers/entities/login-tokens'
+import { createEmailAddressLoginToken, verifyEmailAddressLoginToken } from '../authentication.mts'
 
 describe('create.generated', () => {
   it('preserves an unlinked OAuth identity when connecting an existing user fails', async () => {
@@ -111,15 +104,7 @@ describe('create.generated', () => {
   })
 
   it('Sign up with Phone Number', async () => {
-    const phone_number = createRandomPhoneNumber()
-    const { phoneNumber, token } = await createPhoneNumberLoginToken(phone_number)
-    // phoneNumber is normalized by verifyPhoneNumber, so it may differ from input
-    expect(phoneNumber).toBeDefined()
-    expect(typeof phoneNumber).toBe('string')
-
-    const result = await verifyPhoneNumberLoginToken(phone_number, token)
-    expect(result.success).toBe(true)
-    expect(result.phoneNumber).toEqual(phoneNumber)
+    const phoneNumber = verifyPhoneNumber(createRandomPhoneNumber())
 
     const user = await upsertUser({
       phoneNumber,
@@ -138,19 +123,5 @@ describe('create.generated', () => {
     const user3 = await getPrivateUserByAny(phoneNumber)
     expect(user3).not.toBeNull()
     expect(user3!.phone_number).toEqual(phoneNumber)
-  })
-
-  it('rejects a phone login token whose UUIDv7 is past its lifetime', async () => {
-    const phoneNumber = createRandomPhoneNumber()
-    const { token, phoneNumber: normalizedPhoneNumber } =
-      await createPhoneNumberLoginToken(phoneNumber)
-    const rowCount = await setTestPhoneNumberLoginTokenId(
-      normalizedPhoneNumber,
-      v7({ msecs: Date.now() - 16 * 60_000 }),
-    )
-    expect(rowCount).toBe(1)
-    await expect(verifyPhoneNumberLoginToken(phoneNumber, token)).resolves.toMatchObject({
-      success: false,
-    })
   })
 })

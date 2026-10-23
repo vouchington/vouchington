@@ -95,19 +95,6 @@ export async function registerAuthenticatedSession({
   })
 }
 
-/**
- * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
- * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
- */
-export async function touchAuthenticatedSession(sessionId: string): Promise<void> {
-  await write(sql`/* touchAuthenticatedSession */
-    UPDATE user_sessions
-    SET last_seen_at = CURRENT_TIMESTAMP
-    WHERE id = ${sessionId}
-      AND revoked_at IS NULL
-  `)
-}
-
 export async function listActiveUserSessions(
   currentUserId: string,
   currentSessionId: string,

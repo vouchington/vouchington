@@ -1,20 +1,8 @@
-import { createEmailAddressLoginToken, createPhoneNumberLoginToken } from '../authentication.mts'
-
 import { updateUserFields } from '../update-fields.mts'
 
-import { updateUserEmailAddress, updateUserPhoneNumber } from '../update-contact-info.mts'
-
-import {
-  createRandomEmailAddress,
-  createRandomPhoneNumber,
-  createRandomString,
-  createTestUser,
-  safeUsername,
-} from '@voucha/test-helpers'
+import { createRandomString, createTestUser, safeUsername } from '@voucha/test-helpers'
 
 import { getPrivateUserByAny } from '../get.mts'
-
-import { verifyPhoneNumber } from '@modules/utils'
 
 import assert from 'node:assert'
 
@@ -33,24 +21,6 @@ describe('update.generated', () => {
 
   beforeAll(async () => {
     user = await createTestUser()
-  })
-
-  it('Update Email Address', async () => {
-    const email_address = createRandomEmailAddress()
-    const token = await createEmailAddressLoginToken(email_address)
-    await updateUserEmailAddress(user.id, email_address, token.token)
-    const updatedUser = await getPrivateUserByAny(email_address)
-    assert(updatedUser)
-    assert.strictEqual(updatedUser.id, user.id)
-  })
-
-  it('Update Phone Number', async () => {
-    const phone_number = createRandomPhoneNumber()
-    const token = await createPhoneNumberLoginToken(phone_number)
-    await updateUserPhoneNumber(user.id, phone_number, token.token)
-    const updatedUser = await getPrivateUserByAny(verifyPhoneNumber(phone_number))
-    assert(updatedUser)
-    assert.strictEqual(updatedUser.id, user.id)
   })
 
   it('Update User should_receive_third_party_marketing to true', async () => {

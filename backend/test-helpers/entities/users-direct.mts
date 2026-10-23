@@ -177,13 +177,10 @@ export async function getTestPrivateUserById(userId: string): Promise<PrivateUse
   return (rows[0] as PrivateUser | undefined) ?? null
 }
 
-// The real updateUserPhoneNumber (@services/users/update-contact-info) also verifies a login
-// token and fires enqueueOnUserUpdated. Test fixtures already have a fresh, valid phone number
-// with no token to verify, so this raw-primitive duplicate mirrors only the is_primary swap —
-// see addTestUserRole above for why this package cannot import the real service function.
+// Attach a verified phone number directly to a test user. This fixture helper does not exercise
+// phone-login-token verification or user-update listeners.
 export async function attachTestPhoneNumber(userId: string, phoneNumber: string): Promise<void> {
-  // Store the E.164-normalized number like the real updateUserPhoneNumber does — phone
-  // lookups normalize their input, so a raw fixture format would never match.
+  // Phone lookups normalize their input, so store the fixture number in E.164 form.
   const normalizedPhoneNumber = verifyPhoneNumber(phoneNumber)
   await write(sql`/* attachTestPhoneNumber */
     UPDATE user_phone_numbers
