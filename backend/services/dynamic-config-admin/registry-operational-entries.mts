@@ -1,8 +1,4 @@
 import {
-  activityPubInboxConfig,
-  MAXIMUM_ACTIVITY_AGE_DAYS_LIMIT,
-} from '@services/ap-inbox-activities/config'
-import {
   listImportConfig,
   LIST_IMPORT_MAX_ITEMS,
   COMMUNITY_LIST_MAX_FEEDS,
@@ -17,6 +13,7 @@ import { rssFeedDiscoverabilityConfig } from '@services/rss-feeds/discoverabilit
 import { webRiskConfig } from '@services/web-risk/config'
 import { defineDynamicConfigNamespace } from 'valkyries/dynamic-config'
 import { scoreField } from './registry-entry-utils.mts'
+import { activityPubInboxRegistryEntry } from './registry-activitypub-entry.mts'
 import { membershipBillingRegistryEntry } from './registry-membership-billing-entry.mts'
 import { dataRetentionRegistryEntry } from './registry-data-retention-entry.mts'
 import { postRelatedUrlDisplayRegistryEntries } from './registry-post-related-url-entries.mts'
@@ -54,24 +51,7 @@ export const operationalDynamicConfigRegistryEntries = [
   storyRelatedItemsRegistryEntry,
   membershipBillingRegistryEntry,
   userImportExportRegistryEntry,
-  defineDynamicConfigNamespace({
-    namespace: 'activitypub-inbox',
-    label: 'ActivityPub Inbox',
-    description: 'Rollout control for durable asynchronous ActivityPub inbox delivery.',
-    config: activityPubInboxConfig,
-    access: { update_roles: ['developer'] },
-    fields: {
-      async_delivery_enabled: {
-        description: 'Persist accepted inbox requests and deliver them through the I/O worker.',
-      },
-      maximum_activity_age_days: {
-        description: 'Maximum age of a signed inbound activity and its short-lived replay ledger.',
-        minValue: 1,
-        maxValue: MAXIMUM_ACTIVITY_AGE_DAYS_LIMIT,
-        integer: true,
-      },
-    },
-  }),
+  activityPubInboxRegistryEntry,
   defineDynamicConfigNamespace({
     namespace: 'rss-feed-discoverability-config',
     label: 'RSS Feed Discoverability',
