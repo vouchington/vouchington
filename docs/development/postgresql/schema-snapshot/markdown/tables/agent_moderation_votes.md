@@ -6,18 +6,14 @@ Append-only ballot events for agent_moderations.
 
 RANGE partitioned on `agent_moderation_id` (children: default, no retention owner, access class: target-scoped, growth: unbounded).
 
-| Column                 | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                             |
-| ---------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------- |
-| `user_id`              | `uuid`                     | no       |                              |          |           |           | User who cast this ballot event.                                    |
-| `post_id`              | `uuid`                     | no       |                              |          |           |           | Post scope paired with the concrete agent moderation ballot target. |
-| `agent_moderation_id`  | `uuid`                     | no       |                              |          |           |           | Concrete ballot target in agent_moderations.                        |
-| `id`                   | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                     |
-| `score`                | `smallint`                 | yes      |                              |          |           |           | Ballot score; nullable events clear the current ballot.             |
-| `ip_address`           | `inet`                     | yes      |                              |          |           |           | Audit IP address captured with the ballot event.                    |
-| `device_id`            | `uuid`                     | yes      |                              |          |           |           | Opaque client device token with no durable owner row.               |
-| `session_id`           | `uuid`                     | yes      |                              |          |           |           | Opaque client session token with no durable owner row.              |
-| `user_agent_string_id` | `uuid`                     | yes      |                              |          |           |           | Shared bounded user-agent string captured with the ballot event.    |
-| `created_at`           | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                     |
+| Column                | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                             |
+| --------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------- |
+| `user_id`             | `uuid`                     | no       |                              |          |           |           | User who cast this ballot event.                                    |
+| `post_id`             | `uuid`                     | no       |                              |          |           |           | Post scope paired with the concrete agent moderation ballot target. |
+| `agent_moderation_id` | `uuid`                     | no       |                              |          |           |           | Concrete ballot target in agent_moderations.                        |
+| `id`                  | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                     |
+| `score`               | `smallint`                 | yes      |                              |          |           |           | Ballot score; nullable events clear the current ballot.             |
+| `created_at`          | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                     |
 
 **Primary key:** `PRIMARY KEY (agent_moderation_id, id)`
 
@@ -32,7 +28,6 @@ _none_
 **Foreign keys:**
 
 - `agent_moderation_votes_post_id_agent_moderation_id_fkey`: `FOREIGN KEY (post_id, agent_moderation_id) REFERENCES agent_moderations(post_id, id) ON DELETE CASCADE`
-- `agent_moderation_votes_user_agent_string_id_fkey`: `FOREIGN KEY (user_agent_string_id) REFERENCES user_agent_strings(id) ON DELETE SET NULL`
 - `agent_moderation_votes_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
 
 **Indexes:**
@@ -40,6 +35,7 @@ _none_
 - `agent_moderation_votes_pkey`: `CREATE UNIQUE INDEX agent_moderation_votes_pkey ON ONLY public.agent_moderation_votes USING btree (agent_moderation_id, id)`
 - `idx_agent_moderation_votes__agent_moderation_id__id`: `CREATE INDEX idx_agent_moderation_votes__agent_moderation_id__id ON ONLY public.agent_moderation_votes USING btree (agent_moderation_id, id)`
 - `idx_agent_moderation_votes__agent_moderation_id__user_id__id`: `CREATE INDEX idx_agent_moderation_votes__agent_moderation_id__user_id__id ON ONLY public.agent_moderation_votes USING btree (agent_moderation_id, user_id, id DESC)`
+- `idx_agent_moderation_votes__cleanup__id`: `CREATE INDEX idx_agent_moderation_votes__cleanup__id ON ONLY public.agent_moderation_votes USING btree (id)`
 - `idx_agent_moderation_votes__user_id__agent_moderation_id__id`: `CREATE INDEX idx_agent_moderation_votes__user_id__agent_moderation_id__id ON ONLY public.agent_moderation_votes USING btree (user_id, agent_moderation_id, id DESC)`
 
 **Triggers:**

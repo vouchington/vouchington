@@ -6,19 +6,15 @@ Append-only ballot events for rss_feed_items.
 
 RANGE partitioned on `rss_feed_item_id` (children: default, no retention owner, access class: target-scoped, growth: unbounded).
 
-| Column                 | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                          |
-| ---------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ---------------------------------------------------------------- |
-| `user_id`              | `uuid`                     | no       |                              |          |           |           | User who cast this ballot event.                                 |
-| `rss_feed_item_id`     | `uuid`                     | no       |                              |          |           |           | Concrete ballot target in rss_feed_items.                        |
-| `id`                   | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                  |
-| `score`                | `smallint`                 | yes      |                              |          |           |           | Ballot score; nullable events clear the current ballot.          |
-| `score_is_neutral`     | `boolean`                  | no       | `false`                      |          |           |           | Explicit neutral ballot provenance.                              |
-| `score_is_semantic`    | `boolean`                  | no       | `false`                      |          |           |           | Explicit semantic ballot provenance.                             |
-| `ip_address`           | `inet`                     | yes      |                              |          |           |           | Audit IP address captured with the ballot event.                 |
-| `device_id`            | `uuid`                     | yes      |                              |          |           |           | Opaque client device token with no durable owner row.            |
-| `session_id`           | `uuid`                     | yes      |                              |          |           |           | Opaque client session token with no durable owner row.           |
-| `user_agent_string_id` | `uuid`                     | yes      |                              |          |           |           | Shared bounded user-agent string captured with the ballot event. |
-| `created_at`           | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                  |
+| Column              | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                 |
+| ------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------- |
+| `user_id`           | `uuid`                     | no       |                              |          |           |           | User who cast this ballot event.                        |
+| `rss_feed_item_id`  | `uuid`                     | no       |                              |          |           |           | Concrete ballot target in rss_feed_items.               |
+| `id`                | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                         |
+| `score`             | `smallint`                 | yes      |                              |          |           |           | Ballot score; nullable events clear the current ballot. |
+| `score_is_neutral`  | `boolean`                  | no       | `false`                      |          |           |           | Explicit neutral ballot provenance.                     |
+| `score_is_semantic` | `boolean`                  | no       | `false`                      |          |           |           | Explicit semantic ballot provenance.                    |
+| `created_at`        | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                         |
 
 **Primary key:** `PRIMARY KEY (rss_feed_item_id, id)`
 
@@ -35,11 +31,11 @@ _none_
 **Foreign keys:**
 
 - `rss_feed_item_votes_rss_feed_item_id_fkey`: `FOREIGN KEY (rss_feed_item_id) REFERENCES rss_feed_items(id) ON DELETE CASCADE`
-- `rss_feed_item_votes_user_agent_string_id_fkey`: `FOREIGN KEY (user_agent_string_id) REFERENCES user_agent_strings(id) ON DELETE SET NULL`
 - `rss_feed_item_votes_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
 
 **Indexes:**
 
+- `idx_rss_feed_item_votes__cleanup__id`: `CREATE INDEX idx_rss_feed_item_votes__cleanup__id ON ONLY public.rss_feed_item_votes USING btree (id)`
 - `idx_rss_feed_item_votes__rss_feed_item_id__id`: `CREATE INDEX idx_rss_feed_item_votes__rss_feed_item_id__id ON ONLY public.rss_feed_item_votes USING btree (rss_feed_item_id, id)`
 - `idx_rss_feed_item_votes__rss_feed_item_id__user_id__id`: `CREATE INDEX idx_rss_feed_item_votes__rss_feed_item_id__user_id__id ON ONLY public.rss_feed_item_votes USING btree (rss_feed_item_id, user_id, id DESC)`
 - `idx_rss_feed_item_votes__user_id__rss_feed_item_id__id`: `CREATE INDEX idx_rss_feed_item_votes__user_id__rss_feed_item_id__id ON ONLY public.rss_feed_item_votes USING btree (user_id, rss_feed_item_id, id DESC)`
