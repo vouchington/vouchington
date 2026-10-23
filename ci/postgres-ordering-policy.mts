@@ -26,7 +26,7 @@ export const expectedCatalogOptions = {
 
 const executorOptions = {
   executorFactoryNames: ['beginTransaction', 'beginBoundedTransaction'],
-  executorTypeNames: ['TransactionQuery', 'QueryExecutor'],
+  executorTypeNames: ['TransactionQuery', 'QueryExecutor', 'PoolClient', 'QueryOptions'],
 }
 
 export const expectedCatalogOrderingRules = [
