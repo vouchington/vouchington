@@ -1,6 +1,11 @@
 import type { TransactionQuery } from '@data-stores/psql'
 import { getMinUUIDv7ForDate } from '@modules/utils'
-import type { CleanupName } from './cleanup-auth-sessions.mts'
+
+export type CleanupName =
+  | 'email_address_login_tokens'
+  | 'phone_number_login_tokens'
+  | 'user_sessions'
+  | 'web_push_subscriptions'
 
 export type Candidate = { id: string; user_id?: string; position_at: string | null }
 export type Cursor = {

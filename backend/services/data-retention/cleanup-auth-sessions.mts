@@ -1,13 +1,11 @@
 import { beginTransaction, withTransactionOptions, type TransactionQuery } from '@data-stores/psql'
-import { listCandidates, type Cursor } from './cleanup-auth-session-candidates.mts'
+import {
+  listCandidates,
+  type CleanupName,
+  type Cursor,
+} from './cleanup-auth-session-candidates.mts'
 import { getRetentionCutoffDate } from './cleanup-options.mts'
 import { assertPositiveInteger, normalizePositiveInteger } from './normalize-positive-integer.mts'
-
-export type CleanupName =
-  | 'email_address_login_tokens'
-  | 'phone_number_login_tokens'
-  | 'user_sessions'
-  | 'web_push_subscriptions'
 
 export type AuthSessionCleanupOptions = {
   batchSize?: number
