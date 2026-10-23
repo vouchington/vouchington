@@ -8,14 +8,14 @@ import {
 } from './rewards-program-statuses.mts'
 
 describe('rewards program status database failures', () => {
-  it('preserves a malformed-ID database error when creating a status and leaves owned statuses unchanged', async () => {
+  it('rejects a malformed topic ID before creating a status and leaves owned statuses unchanged', async () => {
     const user = await createTestUser()
     const statusId = await insertTestRewardsProgramStatus({ createdById: user.id })
     const existing = await createIndividualRewardsProgramStatus(user, user, statusId)
 
     await expect(
       createIndividualRewardsProgramStatus(user, user, 'not-a-uuid'),
-    ).rejects.toMatchObject({ code: '22P02' })
+    ).rejects.toMatchObject({ status: 422, message: 'Invalid UUID' })
 
     expect((await getIndividualRewardsProgramStatuses(user, user)).results).toEqual([existing])
   })

@@ -34,6 +34,10 @@ const REFUSAL = {
   retryable: true,
   retryAfterSeconds: REPORT_WINDOW_SECONDS,
 }
+const IMPOSSIBLE_BATCH_REFUSAL = {
+  ...REFUSAL,
+  message: 'This batch exceeds the route limit. Split the batch into fewer calls and retry.',
+}
 
 describe('MCP tool calls and their REST route rate limit', () => {
   let original: {
@@ -201,7 +205,7 @@ describe('MCP tool calls and their REST route rate limit', () => {
     const { user, token } = await callerWithToken()
     const postId = await newPostId()
     expect(refusalOf(await settleMeteredMcpResponses(() => reportOverMcp(token, postId)))).toEqual(
-      REFUSAL,
+      IMPOSSIBLE_BATCH_REFUSAL,
     )
     expect(
       (await checkUsageQuota('mcp_user', user.id, { limit: 1, windowSeconds: 900 })).limited,
@@ -257,7 +261,7 @@ describe('MCP tool calls and their REST route rate limit', () => {
 
     const byId = new Map((response.body as ToolResponse[]).map(result => [result.id, result]))
     expect(byId.get(1)?.result.isError).toBeUndefined()
-    expect(refusalOf(byId.get(2)!)).toEqual(REFUSAL)
+    expect(refusalOf(byId.get(2)!)).toEqual(IMPOSSIBLE_BATCH_REFUSAL)
     expect((await readTestMcpCallAuditEvents(user.id)).map(event => event.outcome)).toEqual([
       'accepted',
       'rate_limited',
