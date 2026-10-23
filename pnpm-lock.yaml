@@ -79,9 +79,6 @@ importers:
       '@vouchington/session-jwt':
         specifier: ^0.0.2
         version: 0.0.2
-      '@vouchington/utils':
-        specifier: ^0.7.5
-        version: 0.7.5
       '@vouchington/worker-runtime':
         specifier: ^0.1.3
         version: 0.1.3(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
@@ -2532,6 +2529,9 @@ importers:
       '@vouchington/session-jwt':
         specifier: ^0.0.2
         version: 0.0.2
+      '@vouchington/utils':
+        specifier: ^0.7.5
+        version: 0.7.5
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -4006,6 +4006,9 @@ importers:
       '@vouchington/postgres':
         specifier: ^0.0.16
         version: 0.0.16
+      '@vouchington/utils':
+        specifier: ^0.7.5
+        version: 0.7.5
       p-map:
         specifier: ^7.1.0
         version: 7.1.0
@@ -5771,6 +5774,9 @@ importers:
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
+      '@vouchington/utils':
+        specifier: ^0.7.5
+        version: 0.7.5
       ajv:
         specifier: ^8.20.0
         version: 8.20.0
@@ -6706,9 +6712,9 @@ importers:
       '@data-stores/valkey':
         specifier: workspace:^
         version: link:../../data-stores/valkey
-      '@ts-shared/feature-flags':
-        specifier: workspace:^
-        version: link:../../../ts-shared/feature-flags
+      '@vouchington/utils':
+        specifier: ^0.7.5
+        version: 0.7.5
 
   backend/services/fediverse-instances:
     dependencies:
@@ -7201,6 +7207,9 @@ importers:
       '@vouchington/pagination':
         specifier: ^0.0.3
         version: 0.0.3
+      '@vouchington/utils':
+        specifier: ^0.7.5
+        version: 0.7.5
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -10859,6 +10868,9 @@ importers:
       '@vouchington/typed-entities':
         specifier: ^0.3.0
         version: 0.3.0
+      '@vouchington/utils':
+        specifier: ^0.7.5
+        version: 0.7.5
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -11340,6 +11352,9 @@ importers:
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
+      '@vouchington/utils':
+        specifier: ^0.7.5
+        version: 0.7.5
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -12147,9 +12162,9 @@ importers:
       '@ts-shared/deploy-environment':
         specifier: workspace:^
         version: link:../../ts-shared/deploy-environment
-      '@ts-shared/utils':
-        specifier: workspace:^
-        version: link:../../ts-shared/utils
+      '@vouchington/utils':
+        specifier: ^0.7.5
+        version: 0.7.5
       '@vouchington/worker-runtime':
         specifier: ^0.1.3
         version: 0.1.3(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
@@ -14385,6 +14400,9 @@ importers:
       '@voucha/test-helpers':
         specifier: workspace:^
         version: link:../backend/test-helpers
+      '@vouchington/utils':
+        specifier: ^0.7.5
+        version: 0.7.5
       vitest:
         specifier: ^5.0.5
         version: 5.0.5(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.5)(jsdom@30.1.3(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
