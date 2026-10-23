@@ -1,9 +1,4 @@
 #!/usr/bin/env bash
 set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-if [ "$#" -eq 1 ] && { [ "$1" = --help ] || [ "$1" = -h ]; }; then
-  echo 'Usage: ./dev/tmux [--no-attach] [-v|--verbose]'
-  exit 0
-fi
-"$REPO_ROOT/dev/prepare-services"
-exec "$REPO_ROOT/node_modules/.bin/vouchington" tmux up --root "$REPO_ROOT" --config "$REPO_ROOT/dev/services.tmux.json" "$@"
+exec node "$REPO_ROOT/dev/launch-services.mts" "$@"

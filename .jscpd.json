@@ -45,7 +45,8 @@
       "web/storybook/mocks/upgrade-membership-aside.tsx",
       "web/test-helpers/vitest.setup.fake-timer-guard.mts",
       "web/test-helpers/vitest.setup.storybook-browser-guard.mts",
-      "dev/sandbox-command-audit/rules.mts"
+      "dev/sandbox-command-audit/rules.mts",
+      "dev/launch-services.mts"
     ]
   },
   "ignore": [

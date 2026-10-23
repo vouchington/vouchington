@@ -36,11 +36,10 @@ rule:
                 regex: '/.*\?'
               - kind: template_string
                 regex: '/.*\?'
-    # ci/transient-retry's shared `ghApi(args, options)` wrapper (ci/transient-retry/gh-api.mts)
-    # hoists the literal 'api' element inside the helper, so the caller's args array never starts
-    # with 'api' — match the call expression itself instead.
+    # The published GitHub API client owns the literal 'api' token. Match its caller's
+    # factory-and-call expression so array flags and endpoints remain guarded here.
     - all:
-        - pattern: 'ghApi($ARR, $$$GHREST)'
+        - pattern: 'createGhApi($$$OPTIONS).call($ARR)'
         - has:
             stopBy: end
             any:
@@ -56,7 +55,7 @@ examples:
   - code: |
       await execFileAsync('gh', ['api', '--paginate', '--slurp', `repos/${repo}/labels?per_page=100`])
     isValid: false
-    file: 'dev/agent-issue-labels/ensure-labels.mts'
+    file: 'dev/label-command.mts'
   - code: |
       await runGh(['api', `repos/${repo}/contents/${path}?ref=${ref}`, '-H', 'Accept: application/vnd.github.raw'])
     isValid: false
@@ -73,7 +72,7 @@ examples:
         'per_page=100',
       ])
     isValid: true
-    file: 'dev/agent-issue-labels/ensure-labels.mts'
+    file: 'dev/label-command.mts'
   - code: |
       await runGh([
         'api',
@@ -101,20 +100,19 @@ examples:
         'body=Ready?',
       ])
     isValid: true
-    file: 'dev/agent-issue-labels/ensure-labels.mts'
+    file: 'dev/label-command.mts'
   - code: |
       await execFileAsync('gh', ['api', `repos/${repo}/pulls/${number}`, '--jq', '.mergeable_state?'])
     isValid: true
-    file: 'dev/agent-issue-labels/ensure-labels.mts'
+    file: 'dev/label-command.mts'
   - code: |
-      const result = await ghApi(
+      const result = await createGhApi({ run }).call(
         [`repos/${repository}/check-runs/${job.id}/annotations?per_page=100`, '--paginate', '--slurp'],
-        { execFile, maxBuffer: LOG_MAX_BUFFER_BYTES, sleep },
       )
     isValid: false
-    file: 'ci/transient-retry/run-context.mts'
+    file: 'ci/source-run-state.mts'
   - code: |
-      const result = await ghApi(
+      const result = await createGhApi({ run }).call(
         [
           '-X',
           'GET',
@@ -124,7 +122,14 @@ examples:
           '--paginate',
           '--slurp',
         ],
-        { execFile, maxBuffer: LOG_MAX_BUFFER_BYTES, sleep },
       )
     isValid: true
-    file: 'ci/transient-retry/run-context.mts'
+    file: 'ci/source-run-state.mts'
+  - code: |
+      await createGhApi({ run }).call(['repos/OWNER/REPO/labels?per_page=100'])
+    isValid: false
+    file: 'ci/source-run-state.mts'
+  - code: |
+      await createGhApi({ run }).call(['-X', 'GET', 'repos/OWNER/REPO/labels', '-F', 'per_page=100'])
+    isValid: true
+    file: 'ci/source-run-state.mts'

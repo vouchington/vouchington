@@ -1,7 +1,7 @@
 id: web-test-no-ad-hoc-search-params-mock
 language: Tsx
 severity: error
-message: "Don't hand-mock useSearchParams in vi.mock factories. Use createNavMock() from @/test-helpers/next-navigation-mock instead."
+message: "Don't hand-mock useSearchParams in vi.mock factories. Use createNavMock() from vouchington-tooling/next-navigation-mock instead."
 files:
   - 'web/**/*.test.tsx'
 ignores:

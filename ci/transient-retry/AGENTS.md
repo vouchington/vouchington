@@ -3,7 +3,7 @@
 - [README.md](../../docs/development/ci/transient-retry/README.md) owns rule fields, ordering, accounting, vocabulary, examples, and validation.
 - Keep one rule per consumer/root-cause pair; broaden its status/URL/action/terminal variants instead of adding duplicate rules.
 - Anchor matches to the owning job/command's terminal failure; fail closed on mixed or missing evidence. Shared cause vocabulary never broadens consumer scope.
-- Reuse `hasAwsTransportTransientError()` and `gh-api.mts`'s shared Go `net/http` subset; reuse `hasUndiciConnectTimeout()` instead of copying markers.
+- Reuse `hasAwsTransportTransientError()` and `vouchington-tooling/transient-retry`'s shared Go `net/http` subset; reuse `hasUndiciConnectTimeout()` instead of copying markers.
 - Reuse `hasCurlGithubReleaseTransportFailure()` for vouchington-tooling `install-github-release.sh` curl failures. Curl `(22)` stays on that helper; `isGithubReleasesDownloadFlake()` still requires the asset URL.
 - Repo-owned `##[group]Run` markers are exported constants listed in `step-group-marker-policy.mts` Table A, checked by static CI. External-package markers use fixture logs, never installed package files.
 - Never fingerprint repo-owned application spec paths/titles under `playwright/tests/**`; failures caused by the diff remain bugs. Credentialed external probes (`playwright/credentialed/**`) and shared infrastructure (`playwright/helpers/**`) remain allowed; preserve `transient-retry-no-repo-owned-spec-pinning.yml`.
