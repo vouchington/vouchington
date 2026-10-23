@@ -5,7 +5,10 @@ import {
   getTestFriend,
   insertTestOAuthAccount,
 } from '@voucha/test-helpers'
-import { holdTestOAuthAccountRow } from '@voucha/test-helpers/entities/oauth-friend-edge-locks'
+import {
+  getTestFriendSyncStartTime,
+  holdTestOAuthAccountRow,
+} from '@voucha/test-helpers/entities/oauth-friend-edge-locks'
 import { persistGithubFriendPage } from '../friends-persistence.mts'
 
 describe('GitHub reciprocal friend imports', () => {
@@ -26,10 +29,11 @@ describe('GitHub reciprocal friend imports', () => {
     // A source FOR UPDATE/target FOR SHARE cycle would block here.
     const aliceHold = await holdTestOAuthAccountRow('github', aliceAccount.account_id, 'SHARE')
     const bobHold = await holdTestOAuthAccountRow('github', bobAccount.account_id, 'SHARE')
+    const syncStartTime = await getTestFriendSyncStartTime()
     try {
       const persisted = await Promise.all([
-        persistGithubFriendPage(aliceAccount.account_id, alice.id, [bobProviderId]),
-        persistGithubFriendPage(bobAccount.account_id, bob.id, [aliceProviderId]),
+        persistGithubFriendPage(aliceAccount.account_id, alice.id, [bobProviderId], syncStartTime),
+        persistGithubFriendPage(bobAccount.account_id, bob.id, [aliceProviderId], syncStartTime),
       ])
       expect(persisted).toEqual([true, true])
     } finally {

@@ -54,7 +54,7 @@ async function getFacebookSyncAccount(facebookUserId: string) {
 // Carry the marker as text and cast back to timestamptz in the cleanup DELETE — pg's TIMESTAMPTZ
 // parser (data-stores/psql/setup.mts) returns a JS Date, which truncates PostgreSQL's microsecond
 // precision to milliseconds and can leave stale rows whose last_observed_at sits in the truncated
-// sub-ms window uncleaned by `last_observed_at <= marker`.
+// sub-ms window uncleaned by `last_observed_at < marker`.
 async function getSyncStartTime(): Promise<string> {
   const {
     rows: [{ now }],
@@ -84,6 +84,7 @@ export async function syncFacebookFriends(facebookUserId: string): Promise<void>
       account.id,
       account.user_id,
       result.data.map(friend => friend.id),
+      syncStartTime,
     )
     if (!persisted) return
     after = result.paging?.cursors?.after

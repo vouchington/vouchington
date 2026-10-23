@@ -121,10 +121,15 @@ export async function cleanupOAuthFriendEdgePage(
     }
   }
 
-  const { rows } = await query<{ id: string; provider_user_id: string }>(
+  const { rows } = await query<{
+    id: string
+    provider_user_id: string
+    invalidated_at: string | null
+  }>(
     `/* lockFriendReferenceResolution */
      /* deadlock-safe: one target account lock by pending clock and id; reference rows use SKIP LOCKED. */
-     SELECT id, ${providerId} AS provider_user_id
+     SELECT id, ${providerId} AS provider_user_id,
+       friend_edges_invalidated_at::text AS invalidated_at
      FROM ${accountTable}
      WHERE user_id IS NOT NULL AND friend_references_resolve_pending_at < $1::timestamptz
        ${accountFilter}
@@ -139,6 +144,7 @@ export async function cleanupOAuthFriendEdgePage(
     account.id,
     account.provider_user_id,
     batchSize,
+    account.invalidated_at,
   )
   if (!page.hasMore) {
     await query(

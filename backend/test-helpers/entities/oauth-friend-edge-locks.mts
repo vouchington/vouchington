@@ -1,6 +1,14 @@
-import { beginTransaction, type OwnedTransaction } from '@data-stores/psql'
+import { beginTransaction, read, type OwnedTransaction } from '@data-stores/psql'
 
 type FriendProvider = 'facebook' | 'github' | 'x'
+
+export async function getTestFriendSyncStartTime(): Promise<string> {
+  const { rows } = await read<{ now: string }>(
+    '/* getTestFriendSyncStartTime */ SELECT CURRENT_TIMESTAMP::text AS now',
+    [],
+  )
+  return rows[0]!.now
+}
 
 export async function holdTestOAuthAccountRow(
   provider: FriendProvider,
