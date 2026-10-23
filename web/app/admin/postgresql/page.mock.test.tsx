@@ -1,19 +1,8 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { TooltipProvider } from '@/components/ui/tooltip'
-import { clientApi } from '@/lib/api/client/instance'
+import { spyOnPsqlRequestClient } from '@/test-helpers/lib/api/client/psql-request-spy'
 import PostgreSQLPage from './page'
-
-vi.mock(
-  import('@/lib/api/client/instance'),
-  () =>
-    ({
-      clientApi: {
-        get: vi.fn<VitestLooseMock>(),
-        post: vi.fn<VitestLooseMock>(),
-      },
-    }) as unknown as typeof import('@/lib/api/client/instance'),
-)
 
 vi.mock(import('@/lib/i18n/use-translations'), () => ({
   useTranslations: () => (key: string) => (key.includes('.confirm_') ? 'Confirm' : key),
@@ -37,14 +26,14 @@ class MockEventSource {
 
 describe('PostgreSQLPage classifier operator', () => {
   afterEach(() => {
+    vi.restoreAllMocks()
     vi.unstubAllGlobals()
     vi.clearAllMocks()
   })
 
   it('sends the selected range and row budget through confirmation to the PSQL job API', async () => {
     vi.stubGlobal('EventSource', MockEventSource)
-    const mockGet = vi.mocked(clientApi.get)
-    const mockPost = vi.mocked(clientApi.post)
+    const { get: mockGet, post: mockPost } = spyOnPsqlRequestClient()
     mockGet.mockResolvedValue({ applied: [], pending: [], total: 0 })
     mockPost.mockResolvedValue({ success: true })
 
