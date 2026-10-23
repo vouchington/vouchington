@@ -3,6 +3,7 @@ import type { ElectionVoteMutationResult } from '@services/elections-votes/share
 import { applyVoteMutation } from '@services/elections-votes/vote-handler'
 import type { CreateVoteHandlerOptions } from '@services/elections-votes/vote-handler-options'
 import { validateRequestContract } from './response-helpers.mts'
+import { enforceLowScoreBotChallenge } from './bot-challenge.mts'
 
 export type { CreateVoteHandlerOptions } from '@services/elections-votes/vote-handler-options'
 
@@ -25,6 +26,7 @@ function createVoteMutationHandler<VoteResult extends ElectionVoteMutationResult
   return async function handleVote(ctx: Context): Promise<void> {
     const currentUser = await ctx.getCurrentUser()
     ctx.assert(currentUser, 401, 'Unauthorized')
+    await enforceLowScoreBotChallenge(ctx)
     await applyVoteMutation(options, {
       currentUser,
       entityId: ctx.params.id!,

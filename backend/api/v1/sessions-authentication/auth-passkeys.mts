@@ -14,11 +14,17 @@ import { apiRequestContract } from '@vouchington/utils/api-response-contract'
 import { apiQuery } from '../../api-query-contract.mts'
 import { createPaginationParser } from '@modules/pagination'
 import { deleteMfaFactor, listMfaFactors, renameMfaFactor } from './passkey-totp-route-helpers.mts'
+import { enforceLowScoreBotChallenge } from '../../bot-challenge.mts'
 
 const passkeysParser = createPaginationParser({
   cursor: { type: 'simple' },
   limit: { min: 1, max: 100, default: 25 },
 })
+
+async function applyPasskeyMutationGuards(ctx: Context, operation: string): Promise<void> {
+  await ctx.applyRouteRateLimit(operation)
+  await enforceLowScoreBotChallenge(ctx)
+}
 
 // ─── Registration (add passkey, requires auth) ────────────────────────────────
 
@@ -29,7 +35,7 @@ app.route('/api/v1/auth/passkeys/registration/options').post(async (ctx: Context
   ])
   ctx.assert(currentUser, 401, 'Unauthorized')
   assertNotSuspended(currentUser)
-  await ctx.applyRouteRateLimit('POST:/api/v1/auth/passkeys/registration/options')
+  await applyPasskeyMutationGuards(ctx, 'POST:/api/v1/auth/passkeys/registration/options')
   const options = await getPasskeyRegistrationOptions(currentUser, deviceData.did)
   ctx.json({ options })
 })
@@ -41,7 +47,7 @@ app.route('/api/v1/auth/passkeys/registration/verify').post(async (ctx: Context)
   ])
   ctx.assert(currentUser, 401, 'Unauthorized')
   assertNotSuspended(currentUser)
-  await ctx.applyRouteRateLimit('POST:/api/v1/auth/passkeys/registration/verify')
+  await applyPasskeyMutationGuards(ctx, 'POST:/api/v1/auth/passkeys/registration/verify')
 
   const body = (await ctx.request.json('100kb')) as { response?: unknown; name?: string }
   validateRequestContract(ctx, 'POST:/api/v1/auth/passkeys/registration/verify', { body })

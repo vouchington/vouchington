@@ -16,6 +16,8 @@ import {
   type BackendRequestKind,
 } from './client-info.mts'
 import { stripStagingControlHeaders } from './staging-control-headers.mts'
+import { getCloudflareBotScore } from './cloudflare-bot-score.mts'
+import { VOUCHA_BOT_SCORE_HEADER } from '@ts-shared/utils/bot-challenge'
 
 type OriginRequestOptions = {
   canonicalSitemapUrl: URL | null
@@ -80,6 +82,7 @@ export function buildWorkerOriginRequest({
   appHeaders.delete('x-device-token')
   appHeaders.delete('x-session-token')
   appHeaders.delete('x-voucha-gpc')
+  appHeaders.delete(VOUCHA_BOT_SCORE_HEADER)
   appHeaders.delete(REQUEST_KIND_HEADER)
   if (request.headers.get('sec-gpc') === '1') appHeaders.set('x-voucha-gpc', '1')
   originRequestSource = new Request(originRequestSource, { headers: appHeaders })
@@ -103,6 +106,8 @@ export function buildWorkerOriginRequest({
   })
   if (target === 'backend') {
     const headers = new Headers(originRequest.headers)
+    const botScore = getCloudflareBotScore(request)
+    if (botScore !== undefined) headers.set(VOUCHA_BOT_SCORE_HEADER, String(botScore))
     applyBackendClientInfoHeaders(headers, {
       gitCommit: env.GIT_COMMIT,
       method: originRequestSource.method,

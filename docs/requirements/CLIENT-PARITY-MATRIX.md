@@ -129,9 +129,7 @@ tools stay out of this change.
 
 ## Household invitations
 
-| Capability                                                                                | Web  | Swift                   | .NET                    |
-| ----------------------------------------------------------------------------------------- | ---- | ----------------------- | ----------------------- |
-| Invite an existing user; review, accept, decline, or revoke pending household invitations | Full | Pending client adoption | Pending client adoption |
+Household invitations have full web support; Swift and .NET client adoption remains pending.
 
 Invitations require the invitee's decision before another user's individual joins a household. Web
 provides owner and invitee actions on the household page and opens that page from invitation
@@ -148,10 +146,29 @@ adoption should use the same identities and safe fallback when a username is abs
 | Behavior                                                                      | Web  | Swift                   | .NET                    |
 | ----------------------------------------------------------------------------- | ---- | ----------------------- | ----------------------- |
 | Render Turnstile fallback with its operation action and configured web origin | Full | Pending client adoption | Pending client adoption |
+| Complete a server-directed bot challenge and retry the pending mutation once  | Full | Pending client adoption | Pending client adoption |
 
 Browser challenge producers identify the operation when rendering a Turnstile widget. Server
 verification binds that result to the configured site and the operation being requested. Native
 App Attest retains its existing operation tags; clients that embed a browser challenge need the
 same action mapping and configured web origin. Native adoption is tracked in
+[vouchington-clients#486](https://github.com/vouchington/vouchington-clients/issues/486), with the
+producer landing first.
+
+## Low-score mutation challenge
+
+When Cloudflare supplies a low bot score for a cookie-authenticated mutation, the API returns a
+challenge-required code and canonical operation tag before running the mutation. Web maps that tag
+to the Turnstile action while native clients use the tag in the signed assertion payload. The client
+completes that proof and retries the unchanged request once; it does not retry another challenge or
+an ambiguous mutation failure. Missing Bot Management metadata leaves the request unchanged, which
+is the expected free-zone behavior. Native clients may use a cryptographically verified App Attest
+request or operation challenge instead of Turnstile. A native operation challenge selects that
+proof path by putting the shared `app-attest` marker in the generic bot-challenge token header;
+the marker grants no authority, and the assertion still verifies against the canonical operation.
+The generic assertion uses its dedicated bot-challenge App Attest headers, leaving an existing
+route-specific challenge for its owning verifier. Before retrying, native clients re-sign that
+route proof after generating the generic proof so its monotonic device counter remains newer. The
+browser-challenge follow-up remains
 [vouchington-clients#486](https://github.com/vouchington/vouchington-clients/issues/486), with the
 producer landing first.

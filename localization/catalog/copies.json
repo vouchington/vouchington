@@ -1,5 +1,7 @@
 [
 {"descriptor":null,"id":"copy.apiKeyLabelExample.mcp"},
+{"descriptor":null,"id":"copy.botChallenge.completeToContinue"},
+{"descriptor":null,"id":"copy.botChallenge.securityVerification"},
 {"descriptor":null,"id":"copy.common.cancel"},
 {"descriptor":null,"id":"copy.common.currency"},
 {"descriptor":null,"id":"copy.common.loading"},

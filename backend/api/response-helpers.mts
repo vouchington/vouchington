@@ -9,6 +9,7 @@ import {
   markRequestContractValidated,
 } from './request-contract-enforcement-helpers.mts'
 import { withOverlappedRateLimit } from '@vouchington/rate-limit'
+import { enforceLowScoreBotChallenge } from './bot-challenge.mts'
 export { setAnonymousPublicCacheHeaders } from './cache-headers.mts'
 
 const SUSPENDED_EXCEPTION_ROUTES = [
@@ -44,6 +45,7 @@ export async function requireAuth(ctx: Context, routeId: string): Promise<Privat
   const signatureError = captureSignatureVerificationError(ctx)
   await settleBeforeSignatureError(settleRateLimit, signatureError)
   assertActiveForRoute(currentUser, routeId)
+  await enforceLowScoreBotChallenge(ctx)
   return currentUser
 }
 export async function requireAuthForSuspendedException(
@@ -57,7 +59,7 @@ export async function requireAuthForSuspendedException(
   )
   if (!currentUser) return rejectAnonymous(ctx, settleRateLimit)
   const signatureError = captureSignatureVerificationError(ctx)
-  await settleBeforeSignatureError(settleRateLimit, signatureError)
+  await settleSignatureAndBotChallenge(ctx, settleRateLimit, signatureError)
   return currentUser
 }
 export async function getOptionalAuthAndRateLimit(
@@ -70,6 +72,7 @@ export async function getOptionalAuthAndRateLimit(
   )
   await settleBeforeSignatureError(settleRateLimit, signatureError)
   assertActiveForRoute(currentUser, routeId)
+  await enforceLowScoreBotChallenge(ctx)
   return currentUser
 }
 export async function getOptionalProtocolAuthAndRateLimit(
@@ -82,7 +85,7 @@ export async function getOptionalProtocolAuthAndRateLimit(
   const { value: currentUser, settleRateLimit } = await withOverlappedRateLimit(ctx, routeId, () =>
     ctx.getCurrentUser(),
   )
-  await settleBeforeSignatureError(settleRateLimit, signatureError)
+  await settleSignatureAndBotChallenge(ctx, settleRateLimit, signatureError)
   return currentUser
 }
 export async function requireAuthAndRateLimit(
@@ -95,6 +98,7 @@ export async function requireAuthAndRateLimit(
   const signatureError = captureSignatureVerificationError(ctx)
   await applyRouteRateLimitBeforeSignatureError(ctx, routeId, signatureError)
   assertActiveForRoute(currentUser, routeId)
+  await enforceLowScoreBotChallenge(ctx)
   return currentUser
 }
 export function validateUUIDParam(ctx: Context, name: string): string {
@@ -158,6 +162,14 @@ async function settleBeforeSignatureError(
 ): Promise<void> {
   await settleRateLimit()
   await throwSignatureError(signatureError)
+}
+async function settleSignatureAndBotChallenge(
+  ctx: Context,
+  settleRateLimit: () => Promise<void>,
+  signatureError: Promise<unknown | null>,
+): Promise<void> {
+  await settleBeforeSignatureError(settleRateLimit, signatureError)
+  await enforceLowScoreBotChallenge(ctx)
 }
 async function applyRouteRateLimitBeforeSignatureError(
   ctx: Context,

@@ -7,6 +7,7 @@ import { resolveUtmSource } from '@ts-shared/utm'
 import { isHttpError } from 'http-errors'
 import { hasGlobalPrivacyControlHeaders } from '@modules/utils'
 import { validateRequestContract } from '../../response-helpers.mts'
+import { enforceLowScoreBotChallenge } from '../../bot-challenge.mts'
 
 // 10 attribution calls per minute per session/IP (threshold 11 since addAndCheck adds before counting)
 const attributionRateLimiter = new RateLimiter({
@@ -35,7 +36,9 @@ const MAX_LANDING_URL_LENGTH = 2048
 app.route('/api/v1/attribution/referrer').post(async (ctx: Context) => {
   ctx.assert(ctx.request.is('json'), 415, 'Invalid Content-Type')
   await ctx.applyRouteRateLimit('POST:/api/v1/attribution/referrer')
-  assertNotSuspended(await ctx.getCurrentUser())
+  const currentUser = await ctx.getCurrentUser()
+  assertNotSuspended(currentUser)
+  await enforceLowScoreBotChallenge(ctx)
 
   const body = (await ctx.request.json('100kb')) as AttributionReferrerBody
   validateRequestContract(ctx, 'POST:/api/v1/attribution/referrer', { body })
