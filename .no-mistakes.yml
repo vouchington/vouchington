@@ -620,6 +620,9 @@ rules:
     options:
       effects: [postgres, valkey]
       allow:
+        # Each capped retention page locks, deletes, and checkpoints in one transaction.
+        # A per-page PostgreSQL effect is required; the loop is bounded by maxBatches.
+        - { file: backend/services/data-retention/cleanup-auth-sessions.mts, callee: 'cleanupPage' }
         - { file: backend/api/mcp-route-rate-limit-helpers.mts, callee: 'checkRouteRateLimit' }
         - {
             file: backend/scripts/backfill-rss-feed-item-source-publications.mts,

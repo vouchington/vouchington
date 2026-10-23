@@ -6,7 +6,7 @@ export type Candidate = { id: string; user_id?: string; position_at: string | nu
 export type Cursor = {
   cursor_at: string | null
   cursor_id: string | null
-  cursor_user_id: string | null
+  cursor_partition_key: string | null
   sweep_cutoff_at: Date | null
 }
 
@@ -37,7 +37,7 @@ export async function listCandidates(
       parameters.push(cursor.cursor_id)
       predicate += ` AND ${alias}.id > $${parameters.length}::uuid`
     } else if (name === 'web_push_subscriptions') {
-      parameters.push(cursor.cursor_at, cursor.cursor_id, cursor.cursor_user_id)
+      parameters.push(cursor.cursor_at, cursor.cursor_id, cursor.cursor_partition_key)
       predicate += ` AND (${alias}.${timestampColumn}, ${alias}.id, ${alias}.user_id) > ($${parameters.length - 2}::timestamptz, $${parameters.length - 1}::uuid, $${parameters.length}::uuid)`
     } else {
       parameters.push(cursor.cursor_at, cursor.cursor_id)
@@ -56,6 +56,7 @@ export async function listCandidates(
         : `${alias}.${timestampColumn}, ${alias}.id`
   const { rows } = await query<Candidate>(
     `/* listAuthSessionRetentionCandidates */
+     -- cross-partition: expiry and tombstone retention must inspect every partition through each child index
      SELECT ${columns}${alias}.id, ${position} AS position_at
      FROM ${name} ${alias}
      WHERE ${predicate}

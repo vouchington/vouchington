@@ -11,7 +11,7 @@ export async function insertTestRetentionToken(
   const id = v7({ msecs: at.getTime() })
   const address =
     family === 'email_address_login_tokens'
-      ? `${randomUUID()}@example.com`
+      ? `tests+${randomUUID()}@voucha.ai`
       : `+1555${randomInt(1000000, 9999999)}`
   const valueColumn = family === 'email_address_login_tokens' ? 'email_address' : 'phone_number'
   await query(
@@ -100,17 +100,17 @@ export async function getTestRetentionCursor(
 ): Promise<{
   cursor_id: string | null
   cursor_at: Date | null
-  cursor_user_id: string | null
+  cursor_partition_key: string | null
   sweep_cutoff_at: Date | null
 }> {
   const { rows } = await query<{
     cursor_id: string | null
     cursor_at: Date | null
-    cursor_user_id: string | null
+    cursor_partition_key: string | null
     sweep_cutoff_at: Date | null
   }>(
     `/* getTestRetentionCursor */
-     SELECT cursor_id, cursor_at, cursor_user_id, sweep_cutoff_at
+     SELECT cursor_id, cursor_at, cursor_partition_key, sweep_cutoff_at
      FROM auth_session_retention_cleanup_cursors WHERE cleanup_name = $1`,
     [family],
   )
@@ -126,7 +126,7 @@ export async function resetTestRetentionCursor(
      INSERT INTO auth_session_retention_cleanup_cursors (cleanup_name)
      VALUES ($1)
      ON CONFLICT (cleanup_name) DO UPDATE
-     SET cursor_at = NULL, cursor_id = NULL, cursor_user_id = NULL, sweep_cutoff_at = NULL`,
+     SET cursor_at = NULL, cursor_id = NULL, cursor_partition_key = NULL, sweep_cutoff_at = NULL`,
     [family],
   )
 }

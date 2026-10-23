@@ -127,7 +127,7 @@ describe('auth and session retention', () => {
     })
     expect(await getTestRetentionCursor(query, 'web_push_subscriptions')).toMatchObject({
       cursor_id: first,
-      cursor_user_id: user.id,
+      cursor_partition_key: user.id,
     })
     expect(await cleanupWebPushSubscriptionTombstones(options)).toEqual({
       deleted: 1,

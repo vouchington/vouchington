@@ -111,7 +111,7 @@ async function cleanupPageInTransaction(
     cursor = (
       await query<Cursor>(
         `/* lockAuthSessionRetentionCursor */
-         SELECT cursor_at::text AS cursor_at, cursor_id, cursor_user_id, sweep_cutoff_at
+         SELECT cursor_at::text AS cursor_at, cursor_id, cursor_partition_key, sweep_cutoff_at
          FROM auth_session_retention_cleanup_cursors
          WHERE cleanup_name = $1 FOR UPDATE`,
         [name],
@@ -136,7 +136,8 @@ async function cleanupPageInTransaction(
         ? await query(
             `/* deleteWebPushSubscriptionTombstonePage */
              DELETE FROM web_push_subscriptions subscription
-             WHERE (subscription.user_id, subscription.id) IN (
+             WHERE subscription.user_id = ANY($1::uuid[])
+             AND (subscription.user_id, subscription.id) IN (
                SELECT * FROM unnest($1::uuid[], $2::uuid[])
              )
              AND NOT EXISTS (
@@ -175,7 +176,7 @@ async function cleanupPageInTransaction(
     await query(
       `/* checkpointAuthSessionRetentionCursor */
        UPDATE auth_session_retention_cleanup_cursors
-       SET cursor_at = $2, cursor_id = $3, cursor_user_id = $4, sweep_cutoff_at = $5
+       SET cursor_at = $2, cursor_id = $3, cursor_partition_key = $4, sweep_cutoff_at = $5
        WHERE cleanup_name = $1`,
       [
         name,

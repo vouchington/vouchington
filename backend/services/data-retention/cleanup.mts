@@ -205,6 +205,7 @@ export async function runDataRetentionCleanup(
   )
   // Receipts for surviving intents retain their subscription generation. Each page checks them
   // again under the subscription row lock, even after the push-intent cleanup above has run.
+  // ast-grep-ignore: no-three-sequential-awaits -- tombstone deletion follows push-intent cleanup before later retention phases
   const webPushSubscriptionTombstones = await cleanupWebPushSubscriptionTombstones(
     withLimits(options.webPushSubscriptionTombstones),
   )

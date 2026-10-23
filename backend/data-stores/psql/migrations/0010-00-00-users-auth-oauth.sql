@@ -559,22 +559,25 @@ COMMENT ON COLUMN phone_number_login_tokens.token IS 'Purpose-bound HMAC-SHA256 
 COMMENT ON COLUMN phone_number_login_tokens.logged_in_at IS 'When the token was used to log in. NULL means the token is still pending.';
 
 -- One durable keyset position per auth and session retention sweep.
+CREATE TYPE auth_session_retention_cleanup_names AS ENUM (
+  'email_address_login_tokens', 'phone_number_login_tokens',
+  'user_sessions', 'web_push_subscriptions'
+);
+COMMENT ON TYPE auth_session_retention_cleanup_names IS 'Finite auth and session retention sweeps with independent durable cursors.';
+
 CREATE TABLE IF NOT EXISTS auth_session_retention_cleanup_cursors (
-  cleanup_name TEXT PRIMARY KEY CHECK (cleanup_name IN (
-    'email_address_login_tokens', 'phone_number_login_tokens',
-    'user_sessions', 'web_push_subscriptions'
-  )),
+  cleanup_name auth_session_retention_cleanup_names PRIMARY KEY,
   cursor_at TIMESTAMPTZ,
   cursor_id UUID,
-  cursor_user_id UUID,
+  cursor_partition_key UUID,
   sweep_cutoff_at TIMESTAMPTZ,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CHECK (cursor_at IS NULL OR cursor_id IS NOT NULL),
   CHECK ((cursor_id IS NULL) = (sweep_cutoff_at IS NULL)),
   CHECK (
     (cleanup_name = 'web_push_subscriptions'
-      AND (cursor_id IS NULL) = (cursor_user_id IS NULL))
-    OR (cleanup_name <> 'web_push_subscriptions' AND cursor_user_id IS NULL)
+      AND (cursor_id IS NULL) = (cursor_partition_key IS NULL))
+    OR (cleanup_name <> 'web_push_subscriptions' AND cursor_partition_key IS NULL)
   )
 );
 
@@ -586,7 +589,7 @@ COMMENT ON TABLE auth_session_retention_cleanup_cursors IS 'Durable bounded clea
 COMMENT ON COLUMN auth_session_retention_cleanup_cursors.cleanup_name IS 'Finite cleanup family with an independent keyset position.';
 COMMENT ON COLUMN auth_session_retention_cleanup_cursors.cursor_at IS 'Last scanned expiry or tombstone timestamp, where that family orders by a timestamp.';
 COMMENT ON COLUMN auth_session_retention_cleanup_cursors.cursor_id IS 'Last scanned UUIDv7 id; no foreign key preserves progress after deletion.';
-COMMENT ON COLUMN auth_session_retention_cleanup_cursors.cursor_user_id IS 'Partition-key tie-breaker, not a user relationship; no foreign key preserves sweep progress after user deletion.';
+COMMENT ON COLUMN auth_session_retention_cleanup_cursors.cursor_partition_key IS 'Partition-key tie-breaker, not a user relationship; no foreign key preserves sweep progress after user deletion.';
 COMMENT ON COLUMN auth_session_retention_cleanup_cursors.sweep_cutoff_at IS 'Fixed retention cutoff for an unfinished sweep.';
 COMMENT ON COLUMN auth_session_retention_cleanup_cursors.updated_at IS 'Most recent committed checkpoint.';
 

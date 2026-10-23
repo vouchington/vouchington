@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { loadSchemaSnapshot, SCHEMA_SNAPSHOT_PATH } from './schema-snapshot-loader.mts'
+import { partitionedSnapshotTable } from './schema-snapshot-test-fixtures.mts'
 
 const minimalSnapshot = {
   formatVersion: 2,
@@ -18,6 +19,33 @@ describe('schema snapshot loader', () => {
       errors: [],
       snapshot: minimalSnapshot,
     })
+  })
+
+  it('accepts daily row cleanup as a partition retention owner and rejects unknown owners', () => {
+    const table = partitionedSnapshotTable()
+    const snapshotWithOwner = (retentionOwner: string) => ({
+      ...minimalSnapshot,
+      tables: {
+        user_sessions: {
+          ...table,
+          partition: {
+            strategy: 'RANGE',
+            key: 'id',
+            children: 'default',
+            retentionOwner,
+            accessClass: 'retention-window',
+          },
+        },
+      },
+    })
+
+    expect(
+      loadSchemaSnapshot('/missing', new Set(), snapshotWithOwner('runDataRetentionCleanup'))
+        .errors,
+    ).toEqual([])
+    expect(loadSchemaSnapshot('/missing', new Set(), snapshotWithOwner('unknown')).errors).toEqual([
+      expect.stringContaining('tables.user_sessions.partition.retentionOwner'),
+    ])
   })
 
   it('fails closed when the committed snapshot is missing or untracked', () => {
