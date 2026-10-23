@@ -7,10 +7,11 @@ import {
 export async function claimCurrentModerationSummaryForTest(userId: string): Promise<{
   trackingKey: string
   windowEnd: string
+  dispatchTimeZone: string
 }> {
   const now = new Date()
   const timeZone = await getModerationEmailTimezone(userId)
   const trackingKey = `daily:${formatLocalDate(now, timeZone)}`
   await claimModerationEmailSend(userId, trackingKey)
-  return { trackingKey, windowEnd: now.toISOString() }
+  return { trackingKey, windowEnd: now.toISOString(), dispatchTimeZone: timeZone }
 }

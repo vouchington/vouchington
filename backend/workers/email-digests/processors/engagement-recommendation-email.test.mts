@@ -43,6 +43,10 @@ const notificationEmailFooter = {
   unsubscribeUrl: 'https://voucha.ai/my/notification-settings',
   physicalAddress: 'Voucha, 123 Test St, Test City, CA 94000',
 }
+const moderationEmailFooter = {
+  ...notificationEmailFooter,
+  dispatchTimeZone: 'America/Los_Angeles',
+}
 
 describe('engagement email processors', () => {
   beforeEach(() => {
@@ -155,7 +159,7 @@ describe('engagement email processors', () => {
       },
       {
         generatedForDate: '2026-07-09',
-        ...notificationEmailFooter,
+        ...moderationEmailFooter,
         communities: [
           {
             name: 'Travel Deals',
@@ -215,7 +219,7 @@ describe('engagement email processors', () => {
       { emailAddress: 'tests+moderator@voucha.ai', userId: user!.id, trackingKey, windowEnd },
       {
         generatedForDate: '2026-07-10',
-        ...notificationEmailFooter,
+        ...moderationEmailFooter,
         communities: [quietModerationCommunity],
       },
     )
@@ -255,7 +259,7 @@ describe('engagement email processors', () => {
         { emailAddress: 'tests+moderator@voucha.ai', userId: user!.id, trackingKey, windowEnd },
         {
           generatedForDate: '2026-07-10',
-          ...notificationEmailFooter,
+          ...moderationEmailFooter,
           communities: [quietModerationCommunity],
         },
       ),
@@ -286,7 +290,7 @@ describe('engagement email processors', () => {
         { emailAddress: 'tests+moderator@voucha.ai', userId: user!.id, trackingKey, windowEnd },
         {
           generatedForDate: '2026-07-11',
-          ...notificationEmailFooter,
+          ...moderationEmailFooter,
           communities: [quietModerationCommunity],
         },
       ),

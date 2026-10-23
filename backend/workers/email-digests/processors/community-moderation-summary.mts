@@ -9,7 +9,6 @@ import {
   getCommunityModerationSummaryCommunities,
   getModerationActivityWindowStart,
   getModerationEmailCadence,
-  getModerationEmailTimezone,
   hasModerationEmailSent,
   isModerationEmailsEnabled,
   formatLocalDate,
@@ -35,7 +34,7 @@ export const processSendCommunityModerationSummaryEmail = async (
   const emailAddress = recipient.emailAddress
   if (input.userId) {
     if (!(await isModerationEmailsEnabled(input.userId))) return null
-    const timeZone = await getModerationEmailTimezone(input.userId)
+    const timeZone = variables.dispatchTimeZone
     if (
       input.trackingKey &&
       (!input.windowEnd ||
