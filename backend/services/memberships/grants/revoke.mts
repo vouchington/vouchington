@@ -1,4 +1,4 @@
-import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
+import { beginTransaction, registerPostCommitAction, type QueryExecutor } from '@data-stores/psql'
 import { enqueueDeliverMembershipEntitlementEffectsBestEffort } from '@queues/memberships/enqueues'
 import sql from 'sql-template-strings'
 import { recordMembershipChange } from '../changes.mts'
@@ -38,13 +38,15 @@ export async function revokeMembershipGrant(
     throw new RangeError('Revocation reason must be 1-1000 characters')
   await using query = await beginTransaction()
   const outcome = await revokeGrantInTransaction(currentUserId, grantId, revocationReason, query)
+  if (
+    outcome.expired > 0 ||
+    (outcome.kind === 'result' && outcome.result && !outcome.result.alreadyRevoked)
+  )
+    registerPostCommitAction(query, () => enqueueEntitlementEffects())
   await query.commit()
   if (outcome.kind === 'completed') {
-    if (outcome.expired > 0) void enqueueEntitlementEffects()
     throw new CompletedMembershipGrantError()
   }
-  if (outcome.expired > 0 || (outcome.result && !outcome.result.alreadyRevoked))
-    void enqueueEntitlementEffects()
   return outcome.result
 }
 

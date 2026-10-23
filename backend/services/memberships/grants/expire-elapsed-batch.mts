@@ -71,7 +71,7 @@ export async function expireElapsedMembershipsForUsers(
     expired += result.expired
     hasMore ||= result.hasMore
   }
-  if (expired > 0) void enqueueDeliverMembershipEntitlementEffectsBestEffort()
+  if (expired > 0) await enqueueDeliverMembershipEntitlementEffectsBestEffort()
   return { expired, hasMore }
 }
 

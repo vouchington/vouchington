@@ -1,5 +1,6 @@
 import type { JobOptions, Queue } from 'glide-mq'
 import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
+export { awaitReportedEnqueueAdmission } from '@data-stores/valkey-glide-mq'
 import type {
   CreateBulkEnqueueFunctionOptions,
   CreateEnqueueFunctionOptions,

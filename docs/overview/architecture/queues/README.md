@@ -61,6 +61,9 @@ work ahead of housekeeping.
   reconciler, or a documented accepted loss. See [job replayability](../../../requirements/platform/JOB-REPLAYABILITY.md). Worker sizing is covered in [worker performance](../../../development/worker-performance.md).
 - **Never enqueue and wait.** A request or job does not block on another job's result. Clients poll
   durable state; a job that needs a result calls the service directly.
+- **Post-commit invalidation waits for admission, not completion.** A committed request may wait
+  until its cache-purge job is accepted by the queue, but never for the worker result. The enqueue
+  factory reports admission failures; best-effort invalidation does not undo or reject the commit.
 - **Blocklist membership rebuilds wait out replica lag.** URL and email blocklist rebuilds read the
   replica. The job that follows a committed sync is delayed by a lag safety margin so that commit
   is visible, and the rebuild stays off the writer.

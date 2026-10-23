@@ -38,7 +38,6 @@ export async function projectVerifiedProviderMembershipObservation(
   await using query = await beginTransaction()
   const result = await projectWithQuery(options, query, enqueue)
   await query.commit()
-  if (result.projected) void enqueue()
   return result
 }
 async function projectWithQuery(

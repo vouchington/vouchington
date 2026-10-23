@@ -1,9 +1,8 @@
 import { beginTransaction, registerPostCommitAction, type QueryExecutor } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { DuplicateStripeMembershipEventError } from './changes.mts'
-import { enqueueRecalculateUserVoteWeight } from '@queues/vote-aggregation/enqueues/vote-weight'
+import { enqueueRecalculateUserVoteWeightBestEffort } from '@queues/vote-aggregation/enqueues/vote-weight'
 import { markJwtStale } from '@data-stores/valkey/jwt-stale'
-import onError from '@modules/on-error'
 import { enqueueUnfurledChildRemovalOnDowngrade } from './paid-tier-downgrade.mts'
 import { resumeGrantAfterDirectAccessSuspensionInTransaction } from './grants/resume-after-direct-termination.mts'
 import {
@@ -18,11 +17,6 @@ import type {
   MembershipEventUpdateOptions,
   RecordMembershipUpdateEventChange,
 } from './update/event-types.mts'
-
-type MembershipEventUpdateOutcome = {
-  membership: MembershipUpdateResult
-  retainsPaidAccess: boolean
-}
 
 export async function updateMembershipFromEvent(
   options: MembershipEventUpdateOptions,
@@ -101,9 +95,7 @@ export async function updateMembershipFromEvent(
       new.should_cancel_at_period_end AS current_cancel_at_period_end
   `)
 
-  const update = async (
-    transaction: QueryExecutor,
-  ): Promise<MembershipEventUpdateOutcome | null> => {
+  const update = async (transaction: QueryExecutor): Promise<MembershipUpdateResult | null> => {
     await transaction(sql`/* updateMembershipFromEvent:lockUser */
       SELECT users.id FROM memberships membership
       INNER JOIN users ON users.id = membership.user_id
@@ -157,31 +149,28 @@ export async function updateMembershipFromEvent(
             transaction,
           )
         : null
-    return {
-      membership: updated,
-      retainsPaidAccess: retainsPaidAccess || !!resumedAccess?.retainsPaidAccess,
-    }
+    const retainsAccess = retainsPaidAccess || !!resumedAccess?.retainsPaidAccess
+    registerPostCommitAction(transaction, async () => {
+      await enqueueRecalculateUserVoteWeightBestEffort(updated.current.user_id, true)
+    })
+    registerPostCommitAction(transaction, async () => {
+      await markJwtStale(updated.current.user_id)
+    })
+    registerPostCommitAction(transaction, async () => {
+      await enqueueUnfurledChildRemovalOnDowngrade(updated, retainsAccess)
+    })
+    return updated
   }
-  let outcome: MembershipEventUpdateOutcome | null
   try {
-    if (options.query) outcome = await update(options.query)
-    else {
-      await using transaction = await beginTransaction()
-      outcome = await update(transaction)
-      await transaction.commit()
+    if (options.query) {
+      return await update(options.query)
     }
+    await using transaction = await beginTransaction()
+    const outcome = await update(transaction)
+    await transaction.commit()
+    return outcome
   } catch (err) {
     if (!options.query && err instanceof DuplicateStripeMembershipEventError) return null
     throw err
   }
-  const membership = outcome?.membership ?? null
-  if (!membership) return null
-  const dispatchEffects = async (): Promise<void> => {
-    void enqueueRecalculateUserVoteWeight(membership.current.user_id, true)
-    markJwtStale(membership.current.user_id).catch(onError)
-    enqueueUnfurledChildRemovalOnDowngrade(membership, outcome?.retainsPaidAccess ?? false)
-  }
-  if (options.query) registerPostCommitAction(options.query, dispatchEffects)
-  else await dispatchEffects()
-  return membership
 }

@@ -59,12 +59,32 @@ const createEnqueueFunctionImpl = <TData, TName extends string, TCallContext = u
       completion: job,
     })
     const trackJobEnqueueFn = options.trackJobEnqueue ?? trackJobEnqueue
-    trackJobEnqueueFn(options.queueName, options.jobName)
+    try {
+      trackJobEnqueueFn(options.queueName, options.jobName)
+    } catch (err) {
+      onError(toErrorWithReportingContext(err))
+    }
     return job as ReturnType<AddQueue['add']>
   }
 }
 
 export const createEnqueueFunction = createEnqueueFunctionImpl as CreateEnqueueFunction
+
+/** Waits for queue admission without reporting a factory-owned rejection a second time. */
+export async function awaitReportedEnqueueAdmission(start: () => Promise<unknown>): Promise<void> {
+  let admission: Promise<unknown>
+  try {
+    admission = start()
+  } catch (err) {
+    onError(toErrorWithReportingContext(err))
+    return
+  }
+  try {
+    await admission
+  } catch {
+    // createEnqueueFunction already reported this rejected admission promise.
+  }
+}
 
 const createBulkEnqueueFunctionImpl = <TInput, TData, TName extends string, TCallContext = unknown>(
   options: CreateBulkEnqueueFunctionOptions<TInput, TData, TName, TCallContext> & {
@@ -115,7 +135,11 @@ const createBulkEnqueueFunctionImpl = <TInput, TData, TName extends string, TCal
       completion: promise,
     })
     const trackJobEnqueueFn = options.trackJobEnqueue ?? trackJobEnqueue
-    trackJobEnqueueFn(options.queueName, options.jobName, inputs.length)
+    try {
+      trackJobEnqueueFn(options.queueName, options.jobName, inputs.length)
+    } catch (err) {
+      onError(toErrorWithReportingContext(err))
+    }
     return promise as ReturnType<AddBulkQueue['addBulk']>
   }
 }

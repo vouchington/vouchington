@@ -1,6 +1,8 @@
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
+import { awaitReportedEnqueueAdmission } from '@data-stores/valkey-glide-mq'
 import { enqueueBulkReactivatingFinished } from '@data-stores/valkey-glide-mq/enqueue-or-reactivate'
+import onError from '@modules/on-error'
 import { createBackgroundBulkEnqueue, createBackgroundEnqueue } from '@queues/background/enqueues'
 import {
   VOTE_AGGREGATION_RECALCULATE_USER_VOTE_WEIGHT_JOB,
@@ -67,7 +69,7 @@ const enqueueUserElectionFanOutJob = createBackgroundEnqueue(
 export function enqueueRecalculateUserVoteWeight(
   userId: string,
   forceRecalculate?: boolean,
-): EnqueueReturnType {
+): Promise<unknown> {
   if (forceRecalculate)
     return enqueueRecalculateVoteWeightEvents([
       { userId, jobId: `voteWeight__${userId}__force`, forceRecalculate: true },
@@ -78,10 +80,19 @@ export function enqueueRecalculateUserVoteWeight(
   )
 }
 
+export function enqueueRecalculateUserVoteWeightBestEffort(
+  userId: string,
+  forceRecalculate?: boolean,
+): Promise<void> {
+  return awaitReportedEnqueueAdmission(() => {
+    return enqueueRecalculateUserVoteWeight(userId, forceRecalculate)
+  })
+}
+
 export function enqueueBulkRecalculateUserVoteWeight(
   userIds: string[],
   forceRecalculate?: boolean,
-): EnqueueReturnType {
+): Promise<unknown> {
   if (forceRecalculate)
     return enqueueRecalculateVoteWeightEvents(
       userIds.map(userId => ({
@@ -106,11 +117,22 @@ const enqueueVoteWeightEvents = createBackgroundBulkEnqueue(
 
 /** Stable signal IDs are recoverable after a completed or failed retained job. */
 export function enqueueRecalculateVoteWeightEvents(events: VoteWeightEvent[]) {
+  let factoryRejected = false
   return enqueueBulkReactivatingFinished({
     queue: voteAggregation,
     inputs: events,
     jobIdOf: event => event.jobId,
-    enqueueBulk: enqueueVoteWeightEvents,
+    enqueueBulk: inputs =>
+      enqueueVoteWeightEvents(inputs).catch(err => {
+        factoryRejected = true
+        throw err
+      }),
+  }).catch(err => {
+    if (!factoryRejected)
+      onError(
+        err instanceof Error ? err : new Error('Vote-weight admission failed', { cause: err }),
+      )
+    throw err
   })
 }
 

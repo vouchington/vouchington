@@ -1,4 +1,9 @@
-import { beginTransaction, write, type QueryExecutor } from '@data-stores/psql'
+import {
+  beginTransaction,
+  registerPostCommitAction,
+  write,
+  type QueryExecutor,
+} from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { MembershipLifecycleFields } from './update-result.mts'
 import { recordMembershipChange } from './changes.mts'
@@ -69,8 +74,9 @@ export async function cancelMembership(currentUserId: string, membershipId: stri
       changedById: currentUserId,
       query: transaction,
     })
+    registerPostCommitAction(transaction, async () => {
+      await enqueueDeliverMembershipEntitlementEffectsBestEffort()
+    })
   }
   await transaction.commit()
-  if (!membership) return
-  void enqueueDeliverMembershipEntitlementEffectsBestEffort()
 }

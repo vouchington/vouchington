@@ -53,7 +53,7 @@ describe('enqueueUnfurledChildRemovalOnDowngrade', () => {
       }
       const pending = captureChildRemovalJobs()
 
-      enqueueUnfurledChildRemovalOnDowngrade(membership)
+      await enqueueUnfurledChildRemovalOnDowngrade(membership)
       await Promise.all(pending)
 
       const jobs = await readAllQueueJobs(unfurlReferralLinksQueue)
@@ -69,7 +69,7 @@ describe('enqueueUnfurledChildRemovalOnDowngrade', () => {
     }
     const pending = captureChildRemovalJobs()
 
-    enqueueUnfurledChildRemovalOnDowngrade(membership)
+    await enqueueUnfurledChildRemovalOnDowngrade(membership)
 
     expect(pending).toHaveLength(0)
   })
@@ -82,7 +82,7 @@ describe('enqueueUnfurledChildRemovalOnDowngrade', () => {
     }
     const pending = captureChildRemovalJobs()
 
-    enqueueUnfurledChildRemovalOnDowngrade(membership)
+    await enqueueUnfurledChildRemovalOnDowngrade(membership)
 
     expect(pending).toHaveLength(0)
   })
@@ -95,7 +95,7 @@ describe('enqueueUnfurledChildRemovalOnDowngrade', () => {
     }
     const pending = captureChildRemovalJobs()
 
-    enqueueUnfurledChildRemovalOnDowngrade(membership, true)
+    await enqueueUnfurledChildRemovalOnDowngrade(membership, true)
 
     expect(pending).toHaveLength(0)
   })

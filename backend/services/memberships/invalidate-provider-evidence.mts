@@ -2,7 +2,7 @@ import {
   markAndEnqueueRejectedFamilyVoteWeight,
   validateMembershipEvidenceRejectionReason,
 } from './rejection-vote-weight.mts'
-import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
+import { beginTransaction, registerPostCommitAction, type QueryExecutor } from '@data-stores/psql'
 import { enqueueDeliverMembershipEntitlementEffectsBestEffort } from '@queues/memberships/enqueues'
 import sql from 'sql-template-strings'
 import { recordMembershipChange } from './changes.mts'
@@ -35,8 +35,8 @@ export async function rejectMembershipProviderEvidence(
     rejectionReason,
     transaction,
   )
+  if (outcome.audited) registerPostCommitAction(transaction, () => enqueueEntitlementEffects())
   await transaction.commit()
-  if (outcome.audited) void enqueueEntitlementEffects()
   return { invalidated: outcome.invalidated, membershipId: outcome.membershipId }
 }
 async function rejectMembershipProviderEvidenceInTransaction(

@@ -1,5 +1,8 @@
-import { createBulkEnqueueFunction, createEnqueueFunction } from '@data-stores/valkey-glide-mq'
-import onError from '@modules/on-error'
+import {
+  awaitReportedEnqueueAdmission,
+  createBulkEnqueueFunction,
+  createEnqueueFunction,
+} from '@data-stores/valkey-glide-mq'
 import type { EnqueueReturnType } from '@voucha/types'
 import type { JobOptions } from 'glide-mq'
 import {
@@ -59,7 +62,7 @@ export function enqueueRenewalNotificationCheck(
   })
 }
 
-export function enqueueDeliverMembershipEntitlementEffects(): EnqueueReturnType {
+export function enqueueDeliverMembershipEntitlementEffects(): Promise<unknown> {
   const jobId = `membership-entitlement-effects__${Math.floor(Date.now() / MEMBERSHIP_ENTITLEMENT_EFFECTS_INTERVAL_MS)}`
   return enqueueDeliverMembershipEntitlementEffectsJob({}, {
     jobId,
@@ -73,10 +76,7 @@ export function enqueueDeliverMembershipEntitlementEffects(): EnqueueReturnType 
 }
 
 export function enqueueDeliverMembershipEntitlementEffectsBestEffort(): Promise<void> {
-  return Promise.resolve(enqueueDeliverMembershipEntitlementEffects()).then(
-    () => undefined,
-    onError,
-  )
+  return awaitReportedEnqueueAdmission(() => enqueueDeliverMembershipEntitlementEffects())
 }
 
 export function enqueueBulkSendRenewalPriceIncreaseEmail(

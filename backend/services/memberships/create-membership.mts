@@ -1,5 +1,6 @@
-import { beginTransaction, registerPostCommitAction, type QueryExecutor } from '@data-stores/psql'
+import { beginTransaction, type QueryExecutor } from '@data-stores/psql'
 import { enqueueDeliverMembershipEntitlementEffectsBestEffort } from '@queues/memberships/enqueues'
+import { registerEntitlementEffectsAfterCommit } from './entitlement-effects-after-commit.mts'
 import type {
   CreateMembershipOptions,
   MembershipProviderEvidenceDependency,
@@ -37,6 +38,8 @@ export async function createMembership(
       timingContext,
       dependencies.query,
     )
+    if (membership.projected)
+      registerEntitlementEffectsAfterCommit(dependencies.query, enqueueEntitlementEffects)
   } else {
     await using transaction = await beginTransaction()
     membership = await createMembershipWithQuery(
@@ -46,13 +49,9 @@ export async function createMembership(
       timingContext,
       transaction,
     )
+    if (membership.projected)
+      registerEntitlementEffectsAfterCommit(transaction, enqueueEntitlementEffects)
     await transaction.commit()
   }
-  if (membership.projected && dependencies.query)
-    registerPostCommitAction(dependencies.query, () => {
-      void enqueueEntitlementEffects()
-      return Promise.resolve()
-    })
-  else if (membership.projected) void enqueueEntitlementEffects()
   return membership
 }
