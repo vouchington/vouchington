@@ -38,15 +38,14 @@ describe('createSesBounceEvent', () => {
     expect(event?.recipients).toEqual(['tests+complaint@voucha.ai'])
   })
 
-  it('creates a delivery event', async () => {
-    const event = await createSesBounceEvent({
-      notification_type: 'delivery',
-      recipients: ['tests+success@voucha.ai'],
-      amazon_ses_message_id: `msg-${Math.random().toString(36).slice(2)}`,
-      raw_message: { notificationType: 'Delivery' },
-    })
-    expect(event?.notification_type).toBe('delivery')
-    expect(event?.recipients).toEqual(['tests+success@voucha.ai'])
+  it('rejects a delivery event at the storage boundary', async () => {
+    await expect(
+      createSesBounceEvent({
+        notification_type: 'delivery' as 'bounce',
+        recipients: ['tests+success@voucha.ai'],
+        raw_message: { notificationType: 'Delivery' },
+      }),
+    ).rejects.toMatchObject({ status: 422 })
   })
 
   it('rejects an invalid notification_type', async () => {
@@ -91,18 +90,18 @@ describe('createSesBounceEvent', () => {
     const recipientsB = ['tests+b@voucha.ai', 'tests+a@voucha.ai']
 
     const first = await createSesBounceEvent({
-      notification_type: 'delivery',
+      notification_type: 'bounce',
       recipients: recipientsA,
       amazon_ses_message_id: messageId,
       occurred_at: timestamp,
-      raw_message: { notificationType: 'Delivery' },
+      raw_message: { notificationType: 'Bounce' },
     })
     const second = await createSesBounceEvent({
-      notification_type: 'delivery',
+      notification_type: 'bounce',
       recipients: recipientsB,
       amazon_ses_message_id: messageId,
       occurred_at: timestamp,
-      raw_message: { notificationType: 'Delivery' },
+      raw_message: { notificationType: 'Bounce' },
     })
 
     expect(first?.dedup_key).toMatch(/^[0-9a-f]{64}$/)
@@ -111,9 +110,9 @@ describe('createSesBounceEvent', () => {
 
   it('leaves dedup_key null when amazon_ses_message_id or occurred_at is missing', async () => {
     const event = await createSesBounceEvent({
-      notification_type: 'delivery',
+      notification_type: 'bounce',
       recipients: ['tests+no-dedup-key@voucha.ai'],
-      raw_message: { notificationType: 'Delivery' },
+      raw_message: { notificationType: 'Bounce' },
     })
     expect(event?.dedup_key).toBeNull()
     expect(event?.occurred_at).toBeInstanceOf(Date)
@@ -144,25 +143,25 @@ describe('createSesBounceEvent', () => {
     const sharedMessageId = `msg-${Math.random().toString(36).slice(2)}`
     const timestamp = new Date('2024-01-01T00:00:00.000Z')
 
-    const delivery = await createSesBounceEvent({
-      notification_type: 'delivery',
+    const complaint = await createSesBounceEvent({
+      notification_type: 'complaint',
       recipients: ['tests+recipient-a@voucha.ai', 'tests+recipient-b@voucha.ai'],
       amazon_ses_message_id: sharedMessageId,
       occurred_at: timestamp,
-      raw_message: { notificationType: 'Delivery' },
+      raw_message: { notificationType: 'Complaint' },
     })
     const bounce = await createSesBounceEvent({
       notification_type: 'bounce',
       bounce_type: 'permanent',
-      recipients: ['tests+recipient-a@voucha.ai'],
+      recipients: ['tests+recipient-a@voucha.ai', 'tests+recipient-b@voucha.ai'],
       amazon_ses_message_id: sharedMessageId,
       occurred_at: timestamp,
       raw_message: { notificationType: 'Bounce' },
     })
 
-    expect(delivery?.id).toBeDefined()
+    expect(complaint?.id).toBeDefined()
     expect(bounce?.id).toBeDefined()
-    expect(bounce?.id).not.toBe(delivery?.id)
+    expect(bounce?.id).not.toBe(complaint?.id)
   })
 
   it('two distinct recipients sharing mail.messageId, type, and timestamp are not deduplicated against each other', async () => {
@@ -170,18 +169,18 @@ describe('createSesBounceEvent', () => {
     const timestamp = new Date('2024-01-01T00:00:00.000Z')
 
     const first = await createSesBounceEvent({
-      notification_type: 'delivery',
+      notification_type: 'complaint',
       recipients: ['tests+split-recipient-a@voucha.ai'],
       amazon_ses_message_id: sharedMessageId,
       occurred_at: timestamp,
-      raw_message: { notificationType: 'Delivery' },
+      raw_message: { notificationType: 'Complaint' },
     })
     const second = await createSesBounceEvent({
-      notification_type: 'delivery',
+      notification_type: 'complaint',
       recipients: ['tests+split-recipient-b@voucha.ai'],
       amazon_ses_message_id: sharedMessageId,
       occurred_at: timestamp,
-      raw_message: { notificationType: 'Delivery' },
+      raw_message: { notificationType: 'Complaint' },
     })
 
     expect(first?.id).toBeDefined()

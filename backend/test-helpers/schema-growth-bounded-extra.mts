@@ -22,6 +22,18 @@ export const EXTRA_BOUNDED_TABLES = new Map<string, string>([
     'A checked singleton retains one sent-through boundary for all completed digest windows.',
   ],
   [
+    'amazon_ses_bounce_events',
+    'Raw bounce and complaint events are folded into durable per-address suppression rows; bounded retention deletes every old raw event.',
+  ],
+  [
+    'user_moderation_email_sends',
+    'Recurring summary deduplication needs only the current weekly key; bounded retention removes send keys after 30 days.',
+  ],
+  [
+    'notification_email_retention_cleanup_cursors',
+    'The finite cleanup-name enum bounds durable notification and email sweep positions to four rows.',
+  ],
+  [
     'url_hostname_cache_invalidation_work_items',
     'At most one current generation per live hostname; successful eviction deletes it, hostname deletion cascades it, and bounded cache-TTL pruning removes abandoned work.',
   ],

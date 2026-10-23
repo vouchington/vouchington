@@ -64,6 +64,15 @@ describe('schema growth classification', () => {
     expect(EXPLICIT_BOUNDED_TABLES.get('notification_push_intent_retention_cursors')).toContain(
       'checked singleton',
     )
+    for (const table of [
+      'user_moderation_email_sends',
+      'notification_email_retention_cleanup_cursors',
+      'amazon_ses_bounce_events',
+    ]) {
+      expect(EXPLICIT_BOUNDED_TABLES.has(table)).toBe(true)
+    }
+    expect(UNBOUNDED_UNPARTITIONED_TABLES.has('amazon_ses_address_suppressions')).toBe(true)
+    expect(EXPLICIT_BOUNDED_TABLES.has('notifications')).toBe(false)
     expect(NON_DEFAULT_ID_EXCEPTIONS.get('user_sessions')).toMatchObject({ policy: 'uuidv7' })
   })
 

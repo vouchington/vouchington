@@ -9,6 +9,7 @@ export type DataRetentionConfig = {
   partition_status_probe_limit: number
   moderation_batch_size: number
   moderation_max_batches_per_run: number
+  ses_bounce_retention_days: number
 }
 
 /** The per-cleanup limits one retention run applies. Every cleanup in the run takes both. */
@@ -27,6 +28,7 @@ export const DEFAULT_DATA_RETENTION_CONFIG: DataRetentionConfig = {
   partition_status_probe_limit: 64,
   moderation_batch_size: 25,
   moderation_max_batches_per_run: 4,
+  ses_bounce_retention_days: 90,
 }
 
 export const DATA_RETENTION_MAX_VALUES: DataRetentionConfig = {
@@ -37,6 +39,7 @@ export const DATA_RETENTION_MAX_VALUES: DataRetentionConfig = {
   partition_status_probe_limit: 256,
   moderation_batch_size: 100,
   moderation_max_batches_per_run: 20,
+  ses_bounce_retention_days: 365,
 }
 
 export const dataRetentionConfig = new DynamicConfig({
@@ -49,6 +52,7 @@ export const dataRetentionConfig = new DynamicConfig({
     partition_status_probe_limit: 'number',
     moderation_batch_size: 'number',
     moderation_max_batches_per_run: 'number',
+    ses_bounce_retention_days: 'number',
   },
   defaultFields: DEFAULT_DATA_RETENTION_CONFIG,
 })
@@ -84,4 +88,8 @@ export function getModerationRecordCleanupLimits(): DataRetentionLimits {
     batchSize: readField('moderation_batch_size'),
     maxBatches: readField('moderation_max_batches_per_run'),
   }
+}
+
+export function getSesBounceRetentionDays(): number {
+  return readField('ses_bounce_retention_days')
 }

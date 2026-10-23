@@ -25,6 +25,7 @@
     "@data-stores/valkey": "workspace:^",
     "@modules/utils": "workspace:^",
     "@services/classifier-run-revival": "workspace:^",
+    "@services/communities": "workspace:^",
     "@services/contribution-gating": "workspace:^",
     "@services/moderation-appeals": "workspace:^",
     "@services/oauth": "workspace:^",
@@ -40,6 +41,7 @@
   },
   "devDependencies": {
     "@services/oauth-accounts": "workspace:^",
+    "@services/ses-bounce-events": "workspace:^",
     "@services/user-deletions": "workspace:^",
     "@voucha/test-helpers": "workspace:^"
   }

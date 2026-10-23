@@ -115,6 +115,10 @@ describe('cleanupAnalyticsLocalFiles', () => {
         oldModerationQueueClaims: emptyWindow,
         oldModerationMediaReveals: emptyWindow,
         classifierRecords: emptyWindow,
+        sesBounceEvents: emptyWindow,
+        systemPrunedNotifications: emptyWindow,
+        userDeletedNotifications: emptyWindow,
+        moderationEmailSends: emptyWindow,
       }),
     ).resolves.toMatchObject({
       retainedIdentityRoots: [],
@@ -163,6 +167,10 @@ describe('cleanupAnalyticsLocalFiles', () => {
         versionedIdentities: { scanned: 0, deleted: 0, hasMore: false },
         identities: { scanned: 0, deleted: 0, hasMore: false },
       },
+      sesBounceEvents: { deleted: 0, hasMore: false, continuation: null },
+      systemPrunedNotifications: { deleted: 0, hasMore: false, continuation: null },
+      userDeletedNotifications: { deleted: 0, hasMore: false, continuation: null },
+      moderationEmailSends: { deleted: 0, hasMore: false, continuation: null },
     })
     await flushFirehose()
     expect(firehoseSender).toHaveBeenCalled()

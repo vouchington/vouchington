@@ -31,12 +31,19 @@ const UNBOUNDED_AUDIT_AND_WORKFLOW_TABLES = [
   'membership_refund_operation_attempt_metadata_scans',
   'membership_refunds',
   'membership_verifications',
-  'amazon_ses_bounce_events',
+  'moderation_appeal_lifecycle_changes',
+  'moderation_appeals',
+  'moderation_cases',
+  'moderation_report_judgements',
+  'moderation_reports',
+  'moderator_actions',
+  'report_integrity_flags',
+  'review_dispute_lifecycle_changes',
+  'review_disputes',
   'stripe_events',
   'user_data_requests',
   'user_engagement_email_sends',
   'user_import_requests',
-  'user_moderation_email_sends',
   'user_rss_feed_import_batches',
   'user_rss_feed_import_rows',
   'user_rss_feed_import_row_discoveries',
@@ -127,6 +134,10 @@ export function buildUnboundedUnpartitionedTables(
       [
         'user_moderator_notes',
         'Soft-deleted notes expire after 30 days, while live moderator-authored notes remain until explicitly removed; repeated live notes per user are not capped.',
+      ],
+      [
+        'amazon_ses_address_suppressions',
+        'One durable row per normalized address with a permanent bounce or complaint; address-key reads remain selective.',
       ],
       ...entityRelationMetadatum.flatMap(({ table_name }) =>
         partitionedTables.has(table_name)

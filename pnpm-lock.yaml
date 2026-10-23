@@ -6069,6 +6069,9 @@ importers:
       '@services/classifier-run-revival':
         specifier: workspace:^
         version: link:../classifier-run-revival
+      '@services/communities':
+        specifier: workspace:^
+        version: link:../communities
       '@services/contribution-gating':
         specifier: workspace:^
         version: link:../contribution-gating
@@ -6109,6 +6112,9 @@ importers:
       '@services/oauth-accounts':
         specifier: workspace:^
         version: link:../oauth-accounts
+      '@services/ses-bounce-events':
+        specifier: workspace:^
+        version: link:../ses-bounce-events
       '@services/user-deletions':
         specifier: workspace:^
         version: link:../user-deletions
