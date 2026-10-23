@@ -84,7 +84,7 @@
     "@ts-shared/cache": "workspace:^",
     "@types/http-errors": "^2.0.5",
     "@voucha/test-helpers": "workspace:^",
-    "undici": "^8.11.2",
+    "undici": "^8.12.2",
     "vitest": "^5.0.5"
   }
 }

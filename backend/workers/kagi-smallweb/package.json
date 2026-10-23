@@ -20,6 +20,6 @@
     "@services/kagi-smallweb": "workspace:^"
   },
   "devDependencies": {
-    "undici": "^8.11.2"
+    "undici": "^8.12.2"
   }
 }
