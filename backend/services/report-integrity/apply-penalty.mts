@@ -4,7 +4,6 @@ import {
   runWithTransaction,
   type TransactionQuery,
 } from '@data-stores/psql'
-import onError from '@modules/on-error'
 import { markJwtStaleBatch } from '@services/jwt-session/invalidation'
 import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
@@ -49,11 +48,10 @@ export async function applyReportAbusePenalty(
       },
       { query },
     )
-    // Fire-and-forget: invalidate the JWT tt claim for each penalized user so
-    // computeTrustTier picks up the penalty on the next session cold-path refresh.
+    // Invalidate the JWT trust-tier claim for each penalized user after commit.
     if (result.penalties.length > 0) {
       registerPostCommitAction(query, async () => {
-        invalidateSessionsAsync(result.penalties.map(p => p.user_id))
+        await markJwtStaleBatch(result.penalties.map(p => p.user_id))
       })
     }
 
@@ -116,8 +114,4 @@ export async function applyReportAbusePenalty(
 
     return { flag: resolvedFlag, penalties: inserted }
   }
-}
-
-function invalidateSessionsAsync(userIds: string[]): void {
-  void markJwtStaleBatch(userIds).catch(onError)
 }

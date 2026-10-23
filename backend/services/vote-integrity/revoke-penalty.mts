@@ -4,7 +4,7 @@ import {
   runWithTransaction,
   type TransactionQuery,
 } from '@data-stores/psql'
-import { enqueueRecalculateUserVoteWeight } from '@queues/vote-aggregation/enqueues/vote-weight'
+import { enqueueRecalculateUserVoteWeightBestEffort } from '@queues/vote-aggregation/enqueues/vote-weight'
 import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
 
@@ -59,7 +59,7 @@ export async function revokeVoteWeightPenalty(
     )
     // No JWT invalidation: vote weight is read live, not cached in session claims.
     registerPostCommitAction(transaction, async () => {
-      void enqueueRecalculateUserVoteWeight(penalty.user_id, true)
+      await enqueueRecalculateUserVoteWeightBestEffort(penalty.user_id, true)
     })
 
     return penalty

@@ -1,5 +1,4 @@
-import { describe, it, expect, beforeAll, beforeEach, afterEach, vi } from 'vitest'
-import * as jwtInvalidation from '@services/jwt-session/invalidation'
+import { describe, it, expect, beforeAll, vi } from 'vitest'
 import { randomBytes } from 'node:crypto'
 import {
   createTestUserDirect,
@@ -15,8 +14,10 @@ import { applyReportAbusePenalty } from './apply-penalty.mts'
 import { revokeReportAbusePenalty } from './revoke-penalty.mts'
 import { resolveReportIntegrityFlag } from './resolve-flag.mts'
 import type { PrivateUser } from '@services/users/types'
-import { isJwtStale } from '@data-stores/valkey/jwt-stale'
+import { getJwtStaleKey, isJwtStale } from '@data-stores/valkey/jwt-stale'
+import { sessionValkeyClient } from '@data-stores/valkey/clients'
 import { withPostgresTransactionForTest } from '@voucha/test-helpers/postgres-transaction'
+import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
 
 describe('applyReportAbusePenalty / revokeReportAbusePenalty', () => {
   const randomUsername = () => `test-ri-penalty-${randomBytes(4).toString('hex')}`
@@ -25,32 +26,6 @@ describe('applyReportAbusePenalty / revokeReportAbusePenalty', () => {
 
   beforeAll(async () => {
     adminUser = await createTestUserDirect({ username: randomUsername() })
-  }, 5_000)
-
-  beforeEach(() => {
-    vi.spyOn(jwtInvalidation, 'markJwtStaleBatch')
-    vi.spyOn(jwtInvalidation, 'markJwtStale')
-  })
-
-  afterEach(async () => {
-    let settled: PromiseSettledResult<unknown>[]
-    try {
-      settled = await Promise.allSettled(
-        [
-          ...vi.mocked(jwtInvalidation.markJwtStaleBatch).mock.results,
-          ...vi.mocked(jwtInvalidation.markJwtStale).mock.results,
-        ].map(result => result.value),
-      )
-    } finally {
-      vi.restoreAllMocks()
-    }
-    const failures = settled.filter(result => result.status === 'rejected')
-    if (failures.length > 0) {
-      throw new AggregateError(
-        failures.map(result => result.reason),
-        'JWT invalidation failed',
-      )
-    }
   }, 5_000)
 
   it('penalizes the persisted reporter set and sets bad_faith_reporter_at', async () => {
@@ -83,7 +58,11 @@ describe('applyReportAbusePenalty / revokeReportAbusePenalty', () => {
     expect(await getTestUserBadFaithReporterAt(reporter1.id)).not.toBeNull()
     expect(await getTestUserBadFaithReporterAt(reporter2.id)).not.toBeNull()
     expect(await getTestUserBadFaithReporterAt(reporter3.id)).not.toBeNull()
-    await Promise.all([reporter1.id, reporter2.id, reporter3.id].map(expectJwtStale))
+    expect(await Promise.all([reporter1.id, reporter2.id, reporter3.id].map(isJwtStale))).toEqual([
+      true,
+      true,
+      true,
+    ])
   })
 
   it('skips reporters whose accounts no longer exist', async () => {
@@ -148,6 +127,55 @@ describe('applyReportAbusePenalty / revokeReportAbusePenalty', () => {
     })
   })
 
+  it.each(['success', 'failure'] as const)(
+    'waits for the post-commit JWT marker write before returning (%s)',
+    async outcome => {
+      const targetUser = await createTestUserDirect({ username: randomUsername() })
+      const reporter = await createTestUserDirect({ username: randomUsername() })
+      const flagId = await insertTestReportIntegrityFlag({
+        reportedUserId: targetUser.id,
+        reporterUserIds: [reporter.id],
+      })
+      const entered = Promise.withResolvers<void>()
+      const release = Promise.withResolvers<void>()
+      const originalSet = sessionValkeyClient.set
+      const failure = new Error('Owned JWT marker write failure')
+      const markerKey = getJwtStaleKey(reporter.id)
+      let operation: ReturnType<typeof applyReportAbusePenalty> | undefined
+      const set = vi.spyOn(sessionValkeyClient, 'set').mockImplementation((key, ...args) => {
+        if (key !== markerKey) return originalSet.call(sessionValkeyClient, key, ...args)
+        entered.resolve()
+        return release.promise.then(() =>
+          outcome === 'failure'
+            ? Promise.reject(failure)
+            : originalSet.call(sessionValkeyClient, key, ...args),
+        )
+      })
+
+      try {
+        let completed = false
+        operation = applyReportAbusePenalty(adminUser.id, flagId).then(result => {
+          completed = true
+          return result
+        })
+        await entered.promise
+
+        expect(await getTestReportAbusePenaltiesByFlagId(flagId)).toHaveLength(1)
+        expect(completed).toBe(false)
+        release.resolve()
+        await expect(operation).resolves.toMatchObject({ penalized_user_count: 1 })
+        expect(await isJwtStale(reporter.id)).toBe(outcome === 'success')
+        expect(
+          sentryCaptureExceptionMock.mock.calls.filter(([error]) => error === failure),
+        ).toHaveLength(outcome === 'failure' ? 1 : 0)
+      } finally {
+        release.resolve()
+        await operation?.catch(() => undefined)
+        set.mockRestore()
+      }
+    },
+  )
+
   it('commits exactly one terminal outcome when dismissal races reporter penalties', async () => {
     const targetUser = await createTestUserDirect({ username: randomUsername() })
     const reporter = await createTestUserDirect({ username: randomUsername() })
@@ -209,13 +237,39 @@ describe('applyReportAbusePenalty / revokeReportAbusePenalty', () => {
     const penalty = userPenalties.find(p => p.source_flag_id === flagId)
     expect(penalty).toBeDefined()
 
-    await revokeReportAbusePenalty(adminUser.id, penalty!.id)
+    const markerKey = getJwtStaleKey(reporter.id)
+    await sessionValkeyClient.unlink([markerKey])
+    const entered = Promise.withResolvers<void>()
+    const release = Promise.withResolvers<void>()
+    const originalSet = sessionValkeyClient.set
+    let operation: ReturnType<typeof revokeReportAbusePenalty> | undefined
+    const set = vi.spyOn(sessionValkeyClient, 'set').mockImplementation((key, ...args) => {
+      if (key !== markerKey) return originalSet.call(sessionValkeyClient, key, ...args)
+      entered.resolve()
+      return release.promise.then(() => originalSet.call(sessionValkeyClient, key, ...args))
+    })
 
-    expect(await getTestUserBadFaithReporterAt(reporter.id)).toBeNull()
+    try {
+      let completed = false
+      operation = revokeReportAbusePenalty(adminUser.id, penalty!.id).then(result => {
+        completed = true
+        return result
+      })
+      await entered.promise
 
-    const updatedPenalties = await getTestReportAbusePenaltiesByUserId(reporter.id)
-    const updatedPenalty = updatedPenalties.find(p => p.id === penalty!.id)
-    expect(updatedPenalty?.revoked_at).not.toBeNull()
+      expect(await getTestUserBadFaithReporterAt(reporter.id)).toBeNull()
+      expect(completed).toBe(false)
+      release.resolve()
+      await expect(operation).resolves.toMatchObject({ penaltyId: penalty!.id })
+      await expect(isJwtStale(reporter.id)).resolves.toBe(true)
+
+      const updatedPenalties = await getTestReportAbusePenaltiesByUserId(reporter.id)
+      expect(updatedPenalties.find(p => p.id === penalty!.id)?.revoked_at).not.toBeNull()
+    } finally {
+      release.resolve()
+      await operation?.catch(() => undefined)
+      set.mockRestore()
+    }
   })
 
   it('revoke throws 404 on an already-revoked penalty', async () => {
@@ -239,10 +293,3 @@ describe('applyReportAbusePenalty / revokeReportAbusePenalty', () => {
     )
   })
 })
-
-async function expectJwtStale(userId: string): Promise<void> {
-  await Promise.all(
-    vi.mocked(jwtInvalidation.markJwtStaleBatch).mock.results.map(result => result.value),
-  )
-  expect(await isJwtStale(userId)).toBe(true)
-}
