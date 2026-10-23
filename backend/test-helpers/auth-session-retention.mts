@@ -51,8 +51,10 @@ export async function insertTestRetentionSession(
   const agentId = await upsertUserAgentString('retention-test', { query })
   await query(
     `/* insertTestRetentionSession */
-     INSERT INTO user_sessions (id, user_id, device_id, user_agent_string_id, expires_at, revoked_at)
-     VALUES ($1, $2, $3, $4, $5, $6)`,
+     INSERT INTO user_sessions (
+       id, user_id, device_id, authentication_origin, user_agent_string_id, expires_at, revoked_at
+     )
+     VALUES ($1, $2, $3, 'web', $4, $5, $6)`,
     [id, userId, randomUUID(), agentId, expiresAt, revokedAt],
   )
   return id
