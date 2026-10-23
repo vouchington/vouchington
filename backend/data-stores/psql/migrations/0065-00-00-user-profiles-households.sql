@@ -541,7 +541,7 @@ CREATE INDEX idx_github_friends__target_observed
 ON github_friends (friend_github_account_id, last_observed_at, id)
 WHERE friend_github_account_id IS NOT NULL;
 CREATE INDEX idx_github_friends__unresolved_reference
-ON github_friends (github_friend_id, id)
+ON github_friends (github_friend_id, last_observed_at, id)
 WHERE friend_github_account_id IS NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -583,7 +583,7 @@ CREATE INDEX idx_x_friends__target_observed
 ON x_friends (friend_x_account_id, last_observed_at, id)
 WHERE friend_x_account_id IS NOT NULL;
 CREATE INDEX idx_x_friends__unresolved_reference
-ON x_friends (x_friend_id, id)
+ON x_friends (x_friend_id, last_observed_at, id)
 WHERE friend_x_account_id IS NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

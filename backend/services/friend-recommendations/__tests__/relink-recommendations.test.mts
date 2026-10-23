@@ -189,9 +189,7 @@ describe('friend recommendation relink boundary', () => {
         holder.query,
         'github',
         friendAccount.account_id,
-        friendProviderId,
         1,
-        null,
       )
       expect(page).toEqual({ resolved: 1, hasMore: false })
       const pendingUnlink = disconnectOAuthAccount(friend.id, 'github')

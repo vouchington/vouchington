@@ -7,31 +7,37 @@ export async function resolveFriendReferencePage(
   query: TransactionQuery,
   provider: FriendProvider,
   accountId: string,
-  providerUserId: string,
   batchSize: number,
-  invalidatedAt: string | null,
 ): Promise<{ resolved: number; hasMore: boolean }> {
+  const accountTable = `${provider}_accounts`
   const friendTable = `${provider}_friends`
   const targetId = `friend_${provider}_account_id`
   const friendId = `${provider}_friend_id`
-  const eligible = `edge.${friendId} = $2 AND edge.${targetId} IS NULL
-    AND edge.last_observed_at > COALESCE($4::timestamptz, '-infinity'::timestamptz)`
+  const providerId = `${provider}_user_id`
+  const eligible = `edge.${friendId} = account.${providerId} AND edge.${targetId} IS NULL
+    AND (edge.${friendId}, edge.last_observed_at) >
+      (account.${providerId}, COALESCE(account.friend_edges_invalidated_at, '-infinity'::timestamptz))`
   const updated = await query(
     `/* resolveFriendReferencePage */ WITH candidates AS (
-       SELECT edge.id FROM ${friendTable} edge
-       WHERE ${eligible}
-       ORDER BY edge.id LIMIT $3::integer FOR UPDATE OF edge SKIP LOCKED
+       SELECT eligible.id FROM ${accountTable} account
+       CROSS JOIN LATERAL (
+         SELECT edge.id FROM ${friendTable} edge WHERE ${eligible}
+         ORDER BY edge.last_observed_at, edge.id
+         LIMIT $2::integer FOR UPDATE OF edge SKIP LOCKED
+       ) eligible
+       WHERE account.id = $1::uuid
      ) UPDATE ${friendTable} target SET ${targetId} = $1::uuid
        FROM candidates WHERE target.id = candidates.id`,
-    [accountId, providerUserId, batchSize, invalidatedAt],
+    [accountId, batchSize],
   )
-  const { rows } = await query<{ more: boolean }>(
-    `/* hasUnresolvedFriendReferences */ SELECT EXISTS (
-       SELECT 1 FROM ${friendTable} edge
-       WHERE edge.${friendId} = $1 AND edge.${targetId} IS NULL
-         AND edge.last_observed_at > COALESCE($2::timestamptz, '-infinity'::timestamptz)
-       LIMIT 1) AS more`,
-    [providerUserId, invalidatedAt],
+  const { rows: remaining } = await query(
+    `/* hasUnresolvedFriendReferences */ SELECT eligible.id FROM ${accountTable} account
+     CROSS JOIN LATERAL (
+       SELECT edge.id FROM ${friendTable} edge WHERE ${eligible}
+       ORDER BY edge.last_observed_at, edge.id LIMIT 1
+     ) eligible
+     WHERE account.id = $1::uuid`,
+    [accountId],
   )
-  return { resolved: updated.rowCount ?? 0, hasMore: rows[0]?.more ?? false }
+  return { resolved: updated.rowCount ?? 0, hasMore: remaining.length > 0 }
 }
