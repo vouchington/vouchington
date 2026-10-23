@@ -188,7 +188,24 @@ describe('RSS import crawl rate-limit deferral', () => {
     let ownedJob: Job | null | undefined
     try {
       await Promise.all([events.waitUntilReady(), worker.waitUntilReady()])
-      let delayed = once(events, 'delay-changed')
+      // The shared queue also holds follow-up jobs from the previous test (such as a language
+      // detection job), so only events for the job under test count.
+      let resolveOwnedJobId: (jobId: string) => void
+      const ownedJobId = new Promise<string>(resolve => {
+        resolveOwnedJobId = resolve
+      })
+      const onceOwned = (eventName: 'delay-changed' | 'failed') =>
+        new Promise<[{ jobId: string }]>(resolve => {
+          const listener = (event: { jobId: string }) => {
+            void ownedJobId.then(jobId => {
+              if (event.jobId !== jobId) return
+              events.off(eventName, listener)
+              resolve([event])
+            })
+          }
+          events.on(eventName, listener)
+        })
+      let delayed = onceOwned('delay-changed')
       const [job] = await enqueueBulkCrawlUrls(
         [
           {
@@ -204,6 +221,7 @@ describe('RSS import crawl rate-limit deferral', () => {
       )
       if (!job) throw new Error('Expected an import discovery crawl job')
       ownedJob = job
+      resolveOwnedJobId!(job.id)
       let recoveryError: unknown
       let generationAfterRecovery: string | undefined
       for (const count of [1, 2, 3]) {
@@ -220,7 +238,7 @@ describe('RSS import crawl rate-limit deferral', () => {
           }
           generationAfterRecovery = (await getRssFeedImportDiscoveriesForTest(rowId))[0]?.generation
         }
-        delayed = once(events, count === 3 ? 'failed' : 'delay-changed')
+        delayed = onceOwned(count === 3 ? 'failed' : 'delay-changed')
         await stored!.promote()
       }
       expect(recoveryError).toBeInstanceOf(RssFeedDiscoveryPendingError)
