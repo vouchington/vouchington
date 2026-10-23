@@ -81,7 +81,11 @@ export async function createTestPendingOAuthAuthorization(
     token_endpoint_auth_method: tokenEndpointAuthMethod,
   }
   const client =
-    audience === 'admin' || audience === 'legal'
+    audience === 'admin' ||
+    audience === 'legal' ||
+    scope
+      .split(' ')
+      .some(value => value.startsWith('mcp.admin:') || value.startsWith('copyright-notices:'))
       ? await registerTestMetadataClient(metadata)
       : await registerOAuthClient(metadata)
   const verifier = randomBytes(32).toString('base64url')
@@ -129,7 +133,7 @@ export async function mintTestNativeSessionMcpGrant(
   })
 }
 
-async function registerTestMetadataClient(metadata: {
+export async function registerTestMetadataClient(metadata: {
   client_name: string
   redirect_uris: string[]
   scope: string
