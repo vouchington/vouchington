@@ -58,9 +58,11 @@ export function pipeStdout(
     return
   }
   output.on('error', err => {
-    const code = (err as NodeJS.ErrnoException).code
-    if (code === 'EPIPE' || code === 'ERR_STREAM_PREMATURE_CLOSE') return
-    onError(err instanceof Error ? err : new Error(String(err)))
+    const error = err instanceof Error ? err : new Error(String(err))
+    onError(error)
+    // pipe() does not end its destination when the source errors.
+    stdout.destroy(error)
+    killChild(child)
   })
   stdout.on('error', err => {
     onError(err instanceof Error ? err : new Error(String(err)))

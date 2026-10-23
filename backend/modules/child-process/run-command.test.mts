@@ -1,8 +1,10 @@
 import { createReadStream } from 'node:fs'
 import { once } from 'node:events'
+import { spawn } from 'node:child_process'
 import { Readable, Writable } from 'node:stream'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { CommandFailedError, runCommand } from './run-command.mts'
+import { pipeStdout } from './run-command-process.mts'
 
 const node = process.execPath
 
@@ -47,15 +49,20 @@ describe('runCommand', () => {
   })
 
   it('kills the child when the timeout fires', async () => {
-    const err = await rejectionOf(
-      runCommand({
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    try {
+      const pending = runCommand({
         command: node,
         args: ['-e', 'setInterval(() => {}, 1000)'],
         timeoutMs: 200,
-      }),
-    )
-    expect(err).toBeInstanceOf(CommandFailedError)
-    expect(err).toMatchObject({ reason: 'timeout' })
+      })
+      await vi.advanceTimersByTimeAsync(200)
+      const err = await rejectionOf(pending)
+      expect(err).toBeInstanceOf(CommandFailedError)
+      expect(err).toMatchObject({ reason: 'timeout' })
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('caps retained stderr and still drains the rest', async () => {
@@ -161,6 +168,23 @@ describe('runCommand', () => {
       settled: 'rejected',
       err: expect.objectContaining({ code: 'EIO' }),
     })
+  })
+
+  it('settles the stdout destination when the child stdout errors', async () => {
+    const child = spawn(node, ['-e', 'process.stdout.write("hi")'])
+    const stdout = new Writable({
+      write(_chunk, _encoding, callback) {
+        callback()
+      },
+    })
+    const errors: Error[] = []
+    pipeStdout(child, stdout, err => errors.push(err))
+    child.stdout?.destroy(
+      Object.assign(new Error('read failed'), { code: 'ERR_STREAM_PREMATURE_CLOSE' }),
+    )
+    await once(child, 'close')
+    expect(errors).toContainEqual(expect.objectContaining({ message: 'read failed' }))
+    expect(stdout.destroyed).toBe(true)
   })
 
   it('destroys a streamed stdin that the child never finishes', async () => {
