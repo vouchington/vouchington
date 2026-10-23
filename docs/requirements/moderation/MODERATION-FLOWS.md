@@ -25,6 +25,11 @@ community-scoped tools, and site admins have global control.
 
 **Flow:** a report creates or updates one pending row; see [Reporting](./REPORTING.md).
 
+Queue claims and disturbing-media reveals are short-lived operating state. The daily retention
+sweep removes stale entries after their claim and exposure windows, while a renewed claim or recent
+reveal stays available. Moderation cases, reports, and appeals keep their separate durable lifecycle;
+copyright evidence follows [its own retention policy](./COPYRIGHT-NOTICES.md#evidence-retention).
+
 ## Paid Transparency Projection
 
 The paid transparency API is an aggregate release, not a moderation queue or a community record

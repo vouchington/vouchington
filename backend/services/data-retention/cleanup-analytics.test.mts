@@ -84,6 +84,8 @@ describe('cleanupAnalyticsLocalFiles', () => {
         phoneNumberLoginTokens: emptyWindow,
         expiredUserSessions: emptyWindow,
         webPushSubscriptionTombstones: emptyWindow,
+        oldModerationQueueClaims: emptyWindow,
+        oldModerationMediaReveals: emptyWindow,
       }),
     ).resolves.toEqual({
       retainedIdentityRoots: [],
@@ -107,6 +109,8 @@ describe('cleanupAnalyticsLocalFiles', () => {
       phoneNumberLoginTokens: { deleted: 0, hasMore: false, continuation: null },
       expiredUserSessions: { deleted: 0, hasMore: false, continuation: null },
       webPushSubscriptionTombstones: { deleted: 0, hasMore: false, continuation: null },
+      oldModerationQueueClaims: { deleted: 0, hasMore: false, cursorId: null },
+      oldModerationMediaReveals: { deleted: 0, hasMore: false, cursorId: null },
     })
   })
 

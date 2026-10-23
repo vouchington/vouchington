@@ -15,13 +15,29 @@ CREATE TABLE IF NOT EXISTS moderation_queue_claims (
   CHECK (num_nonnulls(report_id, post_id) = 1)
 );
 
-COMMENT ON TABLE moderation_queue_claims IS 'Advisory claims on community moderation queue items. One live (un-released) claim per report or post-review; auto-expires after 15 minutes of inactivity (evaluated lazily at read time).';
+COMMENT ON TABLE moderation_queue_claims IS 'Advisory claims on community moderation queue items. One live (un-released) claim per report or post-review; auto-expires after 15 minutes of inactivity (evaluated lazily at read time), with old inactive rows removed by daily retention.';
 COMMENT ON COLUMN moderation_queue_claims.community_id IS 'The community whose moderation queue this claim belongs to.';
 COMMENT ON COLUMN moderation_queue_claims.report_id IS 'The moderation report being claimed. Mutually exclusive with post_id.';
 COMMENT ON COLUMN moderation_queue_claims.post_id IS 'The community post review being claimed (keyed by post_id, the PK of community_post_reviews). Mutually exclusive with report_id.';
 COMMENT ON COLUMN moderation_queue_claims.claimed_by_id IS 'The moderator who holds this claim.';
 COMMENT ON COLUMN moderation_queue_claims.claimed_at IS 'When this claim was last set or renewed. Updated on re-claim or takeover of an expired claim.';
 COMMENT ON COLUMN moderation_queue_claims.released_at IS 'When this claim was explicitly released. NULL means the claim is live (subject to the 15-minute inactivity window).';
+
+-- The cursor is independent of claim rows: deleting a claim must not erase progress.
+CREATE TABLE IF NOT EXISTS moderation_queue_claim_cleanup_cursors (
+  is_singleton boolean PRIMARY KEY DEFAULT TRUE CHECK (is_singleton),
+  cursor_claim_id uuid,
+  sweep_cutoff_at timestamptz,
+  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE OR REPLACE TRIGGER trigger_moderation_queue_claim_cleanup_cursors_updated_at
+BEFORE UPDATE ON moderation_queue_claim_cleanup_cursors
+FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+COMMENT ON TABLE moderation_queue_claim_cleanup_cursors IS 'Singleton keyset position for the daily bounded claim retention sweep.';
+COMMENT ON COLUMN moderation_queue_claim_cleanup_cursors.is_singleton IS 'Checked singleton serializes claim retention runs.';
+COMMENT ON COLUMN moderation_queue_claim_cleanup_cursors.cursor_claim_id IS 'Last examined claim id; no foreign key because cleanup deletes examined claims.';
+COMMENT ON COLUMN moderation_queue_claim_cleanup_cursors.sweep_cutoff_at IS 'Fixed age boundary for the current cyclic sweep; cleared with its cursor at completion.';
+COMMENT ON COLUMN moderation_queue_claim_cleanup_cursors.updated_at IS 'Last committed claim sweep progress.';
 
 -- One live (un-released) claim per item. Lazy 15-minute expiry is evaluated at read time
 -- and in the upsert takeover predicate — NOT in the index predicate, since now() is not IMMUTABLE.

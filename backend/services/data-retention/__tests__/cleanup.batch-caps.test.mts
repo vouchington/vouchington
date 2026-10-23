@@ -63,6 +63,8 @@ function emptyScopedOptions(now: Date) {
     phoneNumberLoginTokens: emptyWindow,
     expiredUserSessions: emptyWindow,
     webPushSubscriptionTombstones: emptyWindow,
+    oldModerationQueueClaims: emptyWindow,
+    oldModerationMediaReveals: emptyWindow,
   }
 }
 

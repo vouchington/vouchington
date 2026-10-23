@@ -51,6 +51,8 @@ describe('runDataRetentionCleanup', () => {
       phoneNumberLoginTokens: emptyWindow,
       expiredUserSessions: emptyWindow,
       webPushSubscriptionTombstones: emptyWindow,
+      oldModerationQueueClaims: emptyWindow,
+      oldModerationMediaReveals: emptyWindow,
     })
 
     expect(result.retainedIdentityRoots).toEqual([])
@@ -74,6 +76,8 @@ describe('runDataRetentionCleanup', () => {
       phoneNumberLoginTokens: { deleted: 0, hasMore: false, continuation: null },
       expiredUserSessions: { deleted: 0, hasMore: false, continuation: null },
       webPushSubscriptionTombstones: { deleted: 0, hasMore: false, continuation: null },
+      oldModerationQueueClaims: { deleted: 0, hasMore: false, cursorId: null },
+      oldModerationMediaReveals: { deleted: 0, hasMore: false, cursorId: null },
     })
   }, 30_000)
 })
