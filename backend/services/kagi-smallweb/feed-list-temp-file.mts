@@ -11,7 +11,7 @@ import { sortAndDiff } from './feed-list-sort.mts'
 const KAGI_FEED_LIST_DIRECTORY_PREFIX = `kagi-feed-list-${process.pid}-`
 
 export type FeedListChunkSource = {
-  chunks: AsyncIterable<Uint8Array | string>
+  chunks: Readable
   sourceType: FeedListSourceType
 }
 
@@ -78,19 +78,24 @@ export async function readFeedListPage(
   try {
     for await (const line of dedupedLines) {
       const entry = entryFromLine(line)
-      if (!entry || (cursor !== undefined && entry.feedUrl <= cursor)) continue
+      if (!entry || (cursor !== undefined && compareUtf8(entry.feedUrl, cursor) <= 0)) continue
       total += 1
-      // oxlint-disable-next-line no-await-in-loop -- sorted merge; the added cursor only moves forward
-      while (!pending.done && pending.value < entry.feedUrl) pending = await added.next()
+      while (!pending.done && compareUtf8(pending.value, entry.feedUrl) < 0)
+        // oxlint-disable-next-line no-await-in-loop -- each advance depends on the preceding line
+        pending = await added.next()
       if (page.length >= pageSize) continue
       page.push(entry)
-      if (!pending.done && pending.value === entry.feedUrl) newEntries.push(entry)
+      if (!pending.done && compareUtf8(pending.value, entry.feedUrl) === 0) newEntries.push(entry)
     }
   } finally {
     await dedupedLines.return(undefined)
     await added.return(undefined)
   }
   return { page, newEntries, total }
+}
+
+function compareUtf8(left: string, right: string): number {
+  return Buffer.compare(Buffer.from(left), Buffer.from(right))
 }
 
 async function* numberedLines(lists: readonly FeedListChunkSource[]): AsyncGenerator<string> {

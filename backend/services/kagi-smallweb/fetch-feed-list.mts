@@ -57,8 +57,12 @@ export async function fetchFeedList(
     etag: response.headers.get('etag'),
     lastModified: response.headers.get('last-modified'),
   }
+  const stream = cappedFeedListStream(response, url)
+  // Parallel fetches can finish before their bodies are read. The reader still
+  // receives errors through async iteration; this handles early error events.
+  stream.on('error', () => {})
   return {
-    stream: cappedFeedListStream(response, url),
+    stream,
     // Caching before the page is admitted would let a failed admission hide the list behind a 304.
     // A continuation never advances the validator: the next root must still see this snapshot.
     commitValidators: async () => {

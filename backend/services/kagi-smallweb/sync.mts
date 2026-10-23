@@ -46,19 +46,23 @@ export async function dispatchKagiSmallWeb(
   try {
     const fetched = await fetchChangedLists(cursor)
     if (fetched.kind === 'skipped') return { skipped: true, enqueued: 0, total: 0 }
-    const directory = await createFeedListDirectory()
     try {
-      await prepareFeedListDiff(fetched.lists, directory)
-      const result = await enqueueFeedListPage(directory, cursor, pageSize, fetched.incomplete)
-      if (result.hasMore) {
-        return { ...result, feedListDir: directory, commitValidators: fetched.commitValidators }
+      const directory = await createFeedListDirectory()
+      try {
+        await prepareFeedListDiff(fetched.lists, directory)
+        const result = await enqueueFeedListPage(directory, cursor, pageSize, fetched.incomplete)
+        if (result.hasMore) {
+          return { ...result, feedListDir: directory, commitValidators: fetched.commitValidators }
+        }
+        await fetched.commitValidators()
+        await removeFeedListDirectory(directory)
+        return result
+      } catch (err) {
+        await removeFeedListDirectory(directory)
+        throw err
       }
-      await fetched.commitValidators()
-      await removeFeedListDirectory(directory)
-      return result
-    } catch (err) {
-      await removeFeedListDirectory(directory)
-      throw err
+    } finally {
+      for (const list of fetched.lists) list.chunks.destroy()
     }
   } catch (err) {
     // A continuation that fails must make the next root read the lists again.
@@ -158,26 +162,32 @@ async function fetchChangedLists(cursor: string | undefined): Promise<FetchedLis
     (response): response is { read: FeedListRead; source: (typeof FEED_LIST_SOURCES)[number] } =>
       response?.read != null,
   )
-  // A page that missed a list would skip that list's entries at or below the cursor once the
-  // continuation resumes, so a paged read retries whole instead of carrying on without it.
-  if (changed.length === 0 && !(cursor !== undefined && missing)) {
-    /* v8 ignore next -- requires all fetchFeedList calls to return 304 simultaneously; HTTP boundary tested in fetch-feed-list.mock.test.mts */
-    return { kind: 'skipped' }
-  }
-  if (cursor !== undefined && missing) {
-    throw failure?.reason instanceof Error
-      ? failure.reason
-      : new Error('A Kagi Small Web list is unavailable; retrying the page')
-  }
-  return {
-    kind: 'ready',
-    incomplete: Boolean(failure),
-    lists: changed.map(response => ({
-      chunks: response.read.stream,
-      sourceType: response.source.type,
-    })),
-    commitValidators: async () => {
-      await Promise.all(changed.map(response => response.read.commitValidators()))
-    },
+  let returnedStreams = false
+  try {
+    // A page that missed a list would skip that list's entries at or below the cursor once the
+    // continuation resumes, so a paged read retries whole instead of carrying on without it.
+    if (changed.length === 0 && !(cursor !== undefined && missing)) {
+      /* v8 ignore next -- requires all fetchFeedList calls to return 304 simultaneously; HTTP boundary tested in fetch-feed-list.mock.test.mts */
+      return { kind: 'skipped' }
+    }
+    if (cursor !== undefined && missing) {
+      throw failure?.reason instanceof Error
+        ? failure.reason
+        : new Error('A Kagi Small Web list is unavailable; retrying the page')
+    }
+    returnedStreams = true
+    return {
+      kind: 'ready',
+      incomplete: Boolean(failure),
+      lists: changed.map(response => ({
+        chunks: response.read.stream,
+        sourceType: response.source.type,
+      })),
+      commitValidators: async () => {
+        await Promise.all(changed.map(response => response.read.commitValidators()))
+      },
+    }
+  } finally {
+    if (!returnedStreams) for (const response of changed) response.read.stream.destroy()
   }
 }

@@ -100,6 +100,39 @@ describe('dispatchKagiSmallWeb page retries', () => {
     await expect(dispatchKagiSmallWeb(feedUrl('a'))).rejects.toThrow('Failed to fetch')
   })
 
+  it('closes fetched bodies when another list fails before the diff starts', async () => {
+    overrideDynamicConfigFieldsForTest(kagiSmallWebImportConfig, { enabled: true })
+    const canceled = Promise.withResolvers<void>()
+    fetchSpy.mockReset()
+    fetchSpy.mockImplementation(async (url: string) => {
+      if (url === WEB) throw new Error('list unavailable')
+      if (url === COMIC)
+        return new Response(new ReadableStream({ cancel: () => canceled.resolve() }))
+      return new Response('')
+    })
+
+    await expect(dispatchKagiSmallWeb(feedUrl('a'))).rejects.toThrow('list unavailable')
+    await canceled.promise
+  })
+
+  it('closes the remaining fetched bodies when the first body fails', async () => {
+    overrideDynamicConfigFieldsForTest(kagiSmallWebImportConfig, { enabled: true })
+    const canceled = Promise.withResolvers<void>()
+    fetchSpy.mockReset()
+    fetchSpy.mockImplementation(async (url: string) => {
+      if (url === WEB)
+        return new Response(
+          new ReadableStream({ pull: controller => controller.error(new Error('body failed')) }),
+        )
+      if (url === COMIC)
+        return new Response(new ReadableStream({ cancel: () => canceled.resolve() }))
+      return new Response('')
+    })
+
+    await expect(dispatchKagiSmallWeb()).rejects.toThrow('body failed')
+    await canceled.promise
+  })
+
   it('retries the first page whole when a list fails and more pages follow', async () => {
     overrideDynamicConfigFieldsForTest(kagiSmallWebImportConfig, {
       enabled: true,
