@@ -8,95 +8,9 @@ import {
 } from './events.mts'
 import { insertStripeEvent } from './insert-event.mts'
 import { restartFailedStripeEventAttempt } from './event-processing.mts'
-import { normalizeStripeEvent } from './normalize-event.mts'
 
 describe('events', () => {
   beforeEach(async () => {})
-  describe('normalizeStripeEvent', () => {
-    it('extracts normalized ids from invoice events', () => {
-      const event = createStripeEvent('invoice.paid', {
-        id: 'in_test_123',
-        object: 'invoice',
-        customer: 'cus_test_123',
-        subscription: 'sub_test_123',
-      })
-
-      expect(normalizeStripeEvent(event)).toEqual({
-        stripeCreatedAt: new Date(event.created * 1000),
-        customerId: 'cus_test_123',
-        subscriptionId: 'sub_test_123',
-        invoiceId: 'in_test_123',
-        checkoutSessionId: null,
-      })
-    })
-
-    it('extracts normalized ids from subscription events', () => {
-      const event = createStripeEvent('customer.subscription.updated', {
-        id: 'sub_test_abc',
-        object: 'subscription',
-        customer: 'cus_test_abc',
-        status: 'active',
-        items: { data: [] },
-      })
-
-      expect(normalizeStripeEvent(event)).toEqual({
-        stripeCreatedAt: new Date(event.created * 1000),
-        customerId: 'cus_test_abc',
-        subscriptionId: 'sub_test_abc',
-        invoiceId: null,
-        checkoutSessionId: null,
-      })
-    })
-
-    it('extracts normalized ids from checkout session events', () => {
-      const event = createStripeEvent('checkout.session.completed', {
-        id: 'cs_test_abc',
-        object: 'checkout.session',
-        customer: 'cus_test_abc',
-        subscription: 'sub_test_abc',
-        payment_status: 'paid',
-      })
-
-      expect(normalizeStripeEvent(event)).toEqual({
-        stripeCreatedAt: new Date(event.created * 1000),
-        customerId: 'cus_test_abc',
-        subscriptionId: 'sub_test_abc',
-        invoiceId: null,
-        checkoutSessionId: 'cs_test_abc',
-      })
-    })
-
-    it('extracts normalized ids from customer events', () => {
-      const event = createStripeEvent('customer.updated', {
-        id: 'cus_test_xyz',
-        object: 'customer',
-      })
-
-      expect(normalizeStripeEvent(event)).toEqual({
-        stripeCreatedAt: new Date(event.created * 1000),
-        customerId: 'cus_test_xyz',
-        subscriptionId: null,
-        invoiceId: null,
-        checkoutSessionId: null,
-      })
-    })
-
-    it('returns nulls when ids are missing', () => {
-      const event = createStripeEvent('payment_intent.created', {
-        id: 'pi_test_123',
-        object: 'payment_intent',
-      })
-
-      expect(normalizeStripeEvent(event)).toEqual({
-        stripeCreatedAt: new Date(event.created * 1000),
-        customerId: null,
-        subscriptionId: null,
-        invoiceId: null,
-        checkoutSessionId: null,
-      })
-    })
-  })
-
   describe('stripe event persistence', () => {
     it('inserts a new stripe event with normalized identifiers', async () => {
       const event = createStripeEvent('checkout.session.completed', {

@@ -25,6 +25,7 @@
     "@services/identity-verification": "workspace:^",
     "@services/memberships": "workspace:^",
     "@services/stripe": "workspace:^",
+    "@vouchington/stripe": "^0.1.0",
     "stripe": "^23.0.0"
   },
   "devDependencies": {

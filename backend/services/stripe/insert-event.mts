@@ -5,7 +5,7 @@ import type Stripe from 'stripe'
 import { hydrateStripeEventRecord } from './event-record.mts'
 import type { InsertStripeEventResult, StripeEventRow } from './events-types.mts'
 import { stripeEventColumns } from './event-columns.mts'
-import { normalizeStripeEvent } from './normalize-event.mts'
+import { normalizeStripeEvent } from '@vouchington/stripe'
 
 export async function insertStripeEvent(
   event: Stripe.Event,

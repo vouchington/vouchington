@@ -2590,6 +2590,9 @@ importers:
       '@voucha/config':
         specifier: workspace:^
         version: link:../../config
+      '@vouchington/stripe':
+        specifier: ^0.1.0
+        version: 0.1.0(stripe@23.0.0(@types/node@26.6.5))
       '@vouchington/utils':
         specifier: ^0.7.5
         version: 0.7.5
@@ -10535,6 +10538,9 @@ importers:
       '@vouchington/memberships':
         specifier: ^0.2.0
         version: 0.2.0
+      '@vouchington/stripe':
+        specifier: ^0.1.0
+        version: 0.1.0(stripe@23.0.0(@types/node@26.6.5))
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -10569,6 +10575,9 @@ importers:
       '@services/stripe':
         specifier: workspace:^
         version: link:../stripe
+      '@vouchington/stripe':
+        specifier: ^0.1.0
+        version: 0.1.0(stripe@23.0.0(@types/node@26.6.5))
       stripe:
         specifier: ^23.0.0
         version: 23.0.0(@types/node@26.6.5)
@@ -19779,6 +19788,12 @@ packages:
     resolution: {integrity: sha512-YWvIqV50Mt1T1Ytkr8v+imuw2Qm1Ssu7JD9+If0FJ/nvORUggT7oOO+esWQynujVx7ss8+PKz+u+XvYcOKMd6w==}
     engines: {node: '>=24.0.0'}
 
+  '@vouchington/stripe@0.1.0':
+    resolution: {integrity: sha512-l8Hnhhbwo6w8hp+wOdoR+JZl1CrXBIdjZSLeHeqoG7Rz4CJMwSkzDfex2NTyBJecWO/G65qvW+rDBNmnYqA1Ng==}
+    engines: {node: '>=24.0.0'}
+    peerDependencies:
+      stripe: ^23.0.0
+
   '@vouchington/typed-entities@0.3.0':
     resolution: {integrity: sha512-YO4RzRxwuYJiuhMLrk29u2W2fKa9s6dFzyT8aHvw++eAir+QZT+qjHFaYOm+7MZtlNE9NruO0ji7TwT6lcC4AQ==}
     engines: {node: '>=24.0.0'}
@@ -28728,6 +28743,10 @@ snapshots:
     dependencies:
       '@vouchington/uuid-v7': 0.0.0
       jose: 6.2.13
+
+  '@vouchington/stripe@0.1.0(stripe@23.0.0(@types/node@26.6.5))':
+    dependencies:
+      stripe: 23.0.0(@types/node@26.6.5)
 
   '@vouchington/typed-entities@0.3.0':
     dependencies:

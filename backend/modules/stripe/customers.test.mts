@@ -55,7 +55,10 @@ describe('getOrCreateStripeCustomer', () => {
 
     const result = await getOrCreateStripeCustomer('user_456', 'b@c.com', { stripe })
     expect(result).toEqual(created)
-    expect(createFn).toHaveBeenCalledWith({ email: 'b@c.com', metadata: { userId: 'user_456' } })
+    expect(createFn).toHaveBeenCalledWith(
+      { email: 'b@c.com', metadata: { userId: 'user_456' } },
+      undefined,
+    )
   })
 
   it('passes an idempotency key when creating a customer', async () => {

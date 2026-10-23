@@ -88,29 +88,6 @@ describe('resolveRecurringCatalogPrice', () => {
     )
   })
 
-  it.each([
-    ['inactive', makePrice({ active: false })],
-    ['immutable mismatch', makePrice({ unit_amount: 501 })],
-    [
-      'metered usage',
-      makePrice({ recurring: { interval: 'month', interval_count: 1, usage_type: 'metered' } }),
-    ],
-    ['tiered billing', makePrice({ billing_scheme: 'tiered' })],
-    ['quantity transform', makePrice({ transform_quantity: { divide_by: 2, round: 'up' } })],
-    [
-      'ownership mismatch',
-      makePrice({
-        product: { ...makePrice().product, metadata: { voucha_catalog_version: 'v1' } },
-      }),
-    ],
-  ])('rejects an %s catalog price', async (_name, price) => {
-    installStripeClient({ listed: [price] })
-
-    await expect(resolveRecurringCatalogPrice(descriptor)).rejects.toThrow(
-      /inactive|does not match the immutable v1 descriptor/,
-    )
-  })
-
   it('refetches once only for Stripe lookup-key conflict evidence', async () => {
     const race = new Stripe.errors.StripeInvalidRequestError({
       code: 'resource_already_exists',

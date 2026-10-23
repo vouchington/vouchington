@@ -1,4 +1,4 @@
-import { getStripeObjectString } from './event-utils.mts'
+import { getStripeObjectString } from '@vouchington/stripe'
 import {
   DEFAULT_STRIPE_MEMBERSHIP_APPLICATION_CONTEXT,
   type StripeMembershipApplicationContext,

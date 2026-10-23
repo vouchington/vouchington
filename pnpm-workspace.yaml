@@ -102,6 +102,7 @@ minimumReleaseAgeExclude:
   - '@vouchington/rss-parser'
   - '@vouchington/robots'
   - '@vouchington/session-jwt'
+  - '@vouchington/stripe'
   - '@vouchington/typed-entities'
   - '@vouchington/utils'
   - '@vouchington/uuid-v7'

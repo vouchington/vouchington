@@ -19,26 +19,3 @@ export function mapStripeSubscriptionStatus(stripeStatus: string): MembershipSta
       throw new Error(`Unknown Stripe subscription status: ${stripeStatus}`)
   }
 }
-
-export function getStripeObjectString(value: unknown): string | null {
-  return typeof value === 'string' && value.length > 0 ? value : null
-}
-
-export function getStripeObjectId(value: unknown): string | null {
-  const id = getStripeObjectString(value)
-  if (id) return id
-  if (value === null || typeof value !== 'object' || Array.isArray(value)) return null
-  return getStripeObjectString((value as Record<string, unknown>).id)
-}
-
-export function getStripeObjectNumber(value: unknown): number | null {
-  return typeof value === 'number' ? value : null
-}
-
-/**
- * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
- * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
- */
-export function getStripeObjectBoolean(value: unknown): boolean | null {
-  return typeof value === 'boolean' ? value : null
-}

@@ -8,7 +8,7 @@ import {
 } from '@services/memberships/create-types'
 import { reconcileRecordedIneligibleStripePurchaseReversal } from '@services/memberships/reconcile-recorded-ineligible-stripe-purchase-reversal'
 import { isTerminalMembershipStatus } from './membership-change-helpers.mts'
-import { getStripeObjectId, getStripeObjectString } from './event-utils.mts'
+import { getStripeObjectId, getStripeObjectString } from '@vouchington/stripe'
 
 type InvoicePaymentPaidDependencies = {
   reconcileRecordedIneligibleStripePurchaseReversal: typeof reconcileRecordedIneligibleStripePurchaseReversal
