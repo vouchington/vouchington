@@ -1,3 +1,4 @@
+import { postgresLockQuery } from '@voucha/test-helpers/postgres-lock-observers'
 import { getPostPublicationWorkLimit } from './work-limits.mts'
 import type { TransactionQuery } from '@data-stores/psql'
 import {
@@ -70,7 +71,7 @@ async function assertOverlappingWrites(
 ): Promise<void> {
   await using first = await beginTransaction()
   await using second = await beginTransaction()
-  const firstPid = await getTestPostgresBackendProcessId(first)
+  const firstPid = await getTestPostgresBackendProcessId(postgresLockQuery(first))
   const inserted = Promise.withResolvers<void>()
   let insertCount = 0
   const barrieredQuery = Object.assign(

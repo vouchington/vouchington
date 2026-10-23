@@ -1,5 +1,5 @@
 import type { GenerateJsonOptions, generateJson } from '../modules/model-providers/generate.mts'
-import { createProviderReplay, type ProviderReplay } from './provider-replay.mts'
+import { createProviderReplay, type ProviderReplay } from 'vouchington-tooling/provider-replay'
 
 // Agent packages cannot resolve `@anthropic-ai/sdk`, so their tests cannot replay through the SDK's
 // `fetch`. The SDK-level replay lives beside the client, in

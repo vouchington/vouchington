@@ -1,6 +1,6 @@
 import { beginTransaction, write, type QueryInput, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { getTestPostgresBackendProcessId } from '../postgres-lock-wait.mts'
+import { postgresLockQuery, getTestPostgresBackendProcessId } from '../postgres-lock-observers.mts'
 import { startPausedTestUserDeletionWriter } from './user-deletion.mts'
 
 type HeldTestLock = {
@@ -16,7 +16,7 @@ async function holdTestLock(
   let holderProcessId: number | undefined
   const paused = await startPausedTestUserDeletionWriter(async query => {
     await lockRows(query)
-    holderProcessId = await getTestPostgresBackendProcessId(query)
+    holderProcessId = await getTestPostgresBackendProcessId(postgresLockQuery(query))
   })
   if (holderProcessId === undefined) throw new Error('Test lock holder had no PostgreSQL backend')
   return { ...paused, holderProcessId }

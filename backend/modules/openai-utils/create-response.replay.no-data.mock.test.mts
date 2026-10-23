@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { loadRecordedResponse } from '../../test-helpers/provider-replay.mts'
+import { loadRecordedResponse } from 'vouchington-tooling/provider-replay'
 import {
   createOpenAIResponse,
   OpenAIResponseStreamIterationError,
@@ -12,13 +12,13 @@ import {
 // boundaries). The live counterpart is the non-gating smoke check in
 // backend/agents/_shared/__tests__/create-response.openai.test.mts.
 const replay = await vi.hoisted(async () => {
-  const { createProviderReplay } = await import('../../test-helpers/provider-replay.mts')
+  const { createProviderReplay } = await import('vouchington-tooling/provider-replay')
   return createProviderReplay({ chunkBytes: 41 })
 })
 
 vi.mock<typeof import('openai')>(import('openai'), async importOriginal => {
   const actual = await importOriginal()
-  const { replayClient } = await import('../../test-helpers/provider-replay.mts')
+  const { replayClient } = await import('vouchington-tooling/provider-replay')
   return { ...actual, default: replayClient(actual.default, replay) }
 })
 
@@ -47,7 +47,11 @@ describe('createOpenAIResponse against recorded OpenAI responses', () => {
   })
 
   it('sends one background streaming request and parses the completed response from the SSE bytes', async () => {
-    replay.respondWith(loadRecordedResponse('openai/responses-stream-text-completed.http'))
+    replay.respondWith(
+      loadRecordedResponse('openai/responses-stream-text-completed.http', {
+        fixtureRoot: new URL('../../test-helpers/provider-fixtures/', import.meta.url),
+      }),
+    )
     const stopAndSettle = vi.fn<() => Promise<void>>(() => Promise.resolve())
     const onResponseCreated = vi.fn<
       (responseId: string) => Promise<{ stopAndSettle: () => Promise<void> }>
@@ -83,7 +87,11 @@ describe('createOpenAIResponse against recorded OpenAI responses', () => {
   })
 
   it('latches an HTTP 500 on create and stops without a second request', async () => {
-    replay.respondWith(loadRecordedResponse('openai/responses-create-server-error-500.http'))
+    replay.respondWith(
+      loadRecordedResponse('openai/responses-create-server-error-500.http', {
+        fixtureRoot: new URL('../../test-helpers/provider-fixtures/', import.meta.url),
+      }),
+    )
     const onUnknownBilledAttempt = vi.fn<LatchHook>(() => Promise.resolve())
 
     await expect(
@@ -98,8 +106,12 @@ describe('createOpenAIResponse against recorded OpenAI responses', () => {
 
   it('latches a server_error that arrives in the stream before any delta, cancels the response, and stops', async () => {
     replay.respondWith(
-      loadRecordedResponse('openai/responses-stream-error-server-error.http'),
-      loadRecordedResponse('openai/responses-cancelled.http'),
+      loadRecordedResponse('openai/responses-stream-error-server-error.http', {
+        fixtureRoot: new URL('../../test-helpers/provider-fixtures/', import.meta.url),
+      }),
+      loadRecordedResponse('openai/responses-cancelled.http', {
+        fixtureRoot: new URL('../../test-helpers/provider-fixtures/', import.meta.url),
+      }),
     )
     const onUnknownBilledAttempt = vi.fn<LatchHook>(() => Promise.resolve())
 
@@ -118,7 +130,11 @@ describe('createOpenAIResponse against recorded OpenAI responses', () => {
   })
 
   it('does not latch a missing previous response delivered as an SSE error', async () => {
-    replay.respondWith(loadRecordedResponse('openai/responses-stream-error-previous-response.http'))
+    replay.respondWith(
+      loadRecordedResponse('openai/responses-stream-error-previous-response.http', {
+        fixtureRoot: new URL('../../test-helpers/provider-fixtures/', import.meta.url),
+      }),
+    )
     const onUnknownBilledAttempt = vi.fn<LatchHook>(() => Promise.resolve())
 
     const error: unknown = await withLatchHook(onUnknownBilledAttempt, () =>

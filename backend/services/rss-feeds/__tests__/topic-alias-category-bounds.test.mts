@@ -1,3 +1,4 @@
+import { postgresLockQuery } from '@voucha/test-helpers/postgres-lock-observers'
 import '@services/elections-votes'
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it, onTestFinished } from 'vitest'
@@ -171,7 +172,7 @@ describe('bounded topic alias category reconciliation', () => {
     async function holdCategory() {
       await using query = await beginTransaction()
       await lockTestRssFeedItemCategory(item.id, aliasText, query)
-      ready.resolve(await getTestPostgresBackendProcessId(query))
+      ready.resolve(await getTestPostgresBackendProcessId(postgresLockQuery(query)))
       await release.promise
       await query.commit()
     }

@@ -3,9 +3,10 @@ import { lockImageDeliveryMutation } from '../services/media-delivery-safety/del
 import { lockPostPublication } from '../services/post-publication/lock.mts'
 import sql from 'sql-template-strings'
 import {
+  postgresLockQuery,
   getTestPostgresBackendProcessId,
   waitForTestPostgresLockWaiter,
-} from './postgres-lock-wait.mts'
+} from './postgres-lock-observers.mts'
 import { beginTransaction } from '@data-stores/psql'
 import { lockDelegatedPostThread } from '../services/posts/delegated-write-locks.mts'
 
@@ -45,7 +46,7 @@ export async function withConcurrentMediaThenPublicationFenceForTest<Result>(
 ): Promise<Result> {
   await using query = await beginTransaction()
   await lockImageDeliveryMutation(query, { postIds: [postId], imageIds: [imageId] })
-  const processId = await getTestPostgresBackendProcessId(query)
+  const processId = await getTestPostgresBackendProcessId(postgresLockQuery(query))
   const pending = operation()
   void pending.catch(() => undefined)
   try {

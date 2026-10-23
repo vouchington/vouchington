@@ -4,7 +4,7 @@ import {
   holdTestUserRowLock,
   isTestUserRowLocked,
 } from '@voucha/test-helpers/entities/user-deletion-actor-locks'
-import { waitForTestPostgresLockWaiter } from '@voucha/test-helpers/postgres-lock-wait'
+import { waitForTestPostgresLockWaiter } from '@voucha/test-helpers/postgres-lock-observers'
 import type { PrivateUser } from '../types.mts'
 import { deleteUser } from '../delete.mts'
 

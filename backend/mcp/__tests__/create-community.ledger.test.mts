@@ -10,7 +10,7 @@ import {
 import { getContributionAdmissionAttemptsForTest } from '@voucha/test-helpers/contribution-admission-attempts'
 import { createTestPlusMcpCaller } from '@voucha/test-helpers/mcp-plus-caller'
 import { callStructuredMcpTool } from '@voucha/test-helpers/mcp-tool-contract'
-import { waitForTestPostgresLockWaiter } from '@voucha/test-helpers/postgres-lock-wait'
+import { waitForTestPostgresLockWaiter } from '@voucha/test-helpers/postgres-lock-observers'
 import {
   countTestCommunitiesCreatedBy,
   holdTestAdmissionReservationLock,

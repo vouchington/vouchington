@@ -1,6 +1,6 @@
 import { beginTransaction, read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { getTestPostgresBackendProcessId } from './postgres-lock-wait.mts'
+import { postgresLockQuery, getTestPostgresBackendProcessId } from './postgres-lock-observers.mts'
 
 export type TestDelegatedCreateReservation = {
   id: string
@@ -35,7 +35,7 @@ export async function holdTestAdmissionReservationLock(actorId: string, idempote
     await query(sql`/* holdTestAdmissionReservationLock */
       SELECT id FROM post_admission_reservations
       WHERE actor_user_id = ${actorId} AND idempotency_key = ${idempotencyKey} FOR UPDATE`)
-    const processId = await getTestPostgresBackendProcessId(query)
+    const processId = await getTestPostgresBackendProcessId(postgresLockQuery(query))
     return {
       processId,
       async deleteAndRelease() {

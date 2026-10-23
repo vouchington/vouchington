@@ -1,5 +1,5 @@
 import { BedrockControlClient } from '@modules/aws/bedrock-control'
-import { createAwsReplayRequestHandler } from '@voucha/test-helpers/aws-replay-request-handler'
+import { createAwsReplayRequestHandler } from 'vouchington-tooling/provider-replay'
 import { createOwnedBedrockRouterFixtures } from '@voucha/test-helpers/bedrock-router-owned-fixtures'
 import { randomBytes, randomUUID } from 'node:crypto'
 import { mintUUIDv7 } from '../../../modules/utils/ids.mts'

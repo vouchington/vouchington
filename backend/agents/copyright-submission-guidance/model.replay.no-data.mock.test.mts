@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ANTHROPIC_HAIKU_CALL } from '@voucha/test-helpers/agents/model-call-result'
-import { loadRecordedResponse } from '../../test-helpers/provider-replay.mts'
+import { loadRecordedResponse } from 'vouchington-tooling/provider-replay'
 import { callCopyrightSubmissionGuidanceModel } from './model.mts'
 
 // The recorded Messages API body is served to the real `generateJson` through its `createMessage`
@@ -37,7 +37,11 @@ describe('callCopyrightSubmissionGuidanceModel against recorded Anthropic respon
   })
 
   it('sends the counter-notice checklist schema and returns the parsed guidance', async () => {
-    replay.respondWith(loadRecordedResponse(COUNTER_NOTICE_FIXTURE))
+    replay.respondWith(
+      loadRecordedResponse(COUNTER_NOTICE_FIXTURE, {
+        fixtureRoot: new URL('../../test-helpers/provider-fixtures/', import.meta.url),
+      }),
+    )
 
     const result = await callCopyrightSubmissionGuidanceModel(
       'counter_notice',
@@ -83,7 +87,11 @@ describe('callCopyrightSubmissionGuidanceModel against recorded Anthropic respon
   })
 
   it('sends the court-or-CCB hold criteria schema and returns the parsed guidance', async () => {
-    replay.respondWith(loadRecordedResponse(HOLD_FIXTURE))
+    replay.respondWith(
+      loadRecordedResponse(HOLD_FIXTURE, {
+        fixtureRoot: new URL('../../test-helpers/provider-fixtures/', import.meta.url),
+      }),
+    )
 
     const result = await callCopyrightSubmissionGuidanceModel(
       'court_or_ccb_hold',
@@ -122,7 +130,11 @@ describe('callCopyrightSubmissionGuidanceModel against recorded Anthropic respon
 
   it('rejects an answer for the other kind as a permanent invalid response that is still billed', async () => {
     // The kind picks the schema and parser, so a hold-shaped answer cannot pass as counter-notice.
-    replay.respondWith(loadRecordedResponse(HOLD_FIXTURE))
+    replay.respondWith(
+      loadRecordedResponse(HOLD_FIXTURE, {
+        fixtureRoot: new URL('../../test-helpers/provider-fixtures/', import.meta.url),
+      }),
+    )
 
     const failure: unknown = await callCopyrightSubmissionGuidanceModel(
       'counter_notice',

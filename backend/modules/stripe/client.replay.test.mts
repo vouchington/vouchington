@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createProviderReplay } from '../../test-helpers/provider-replay.mts'
-import { STRIPE_REPLAY_SECRET_KEY, loadStripeFixture } from '../../test-helpers/stripe-replay.mts'
+import { createProviderReplay, loadRecordedResponse } from 'vouchington-tooling/provider-replay'
+import { STRIPE_REPLAY_SECRET_KEY } from '../../test-helpers/stripe-replay.mts'
 
 // The recorded Stripe response is served through the `fetch` that `getStripeClient()` asks the
 // egress transport for, so the real Stripe SDK serializes the request and parses actual wire
@@ -27,7 +27,11 @@ describe('getStripeClient against recorded Stripe responses', () => {
       .spyOn(apiEgressProxy, 'getProviderFetch')
       .mockReturnValue(replay.fetch)
     const { getStripeClient } = await import('./client.mts')
-    replay.respondWith(loadStripeFixture('balance.http'))
+    replay.respondWith(
+      loadRecordedResponse('stripe/balance.http', {
+        fixtureRoot: new URL('../../test-helpers/provider-fixtures/', import.meta.url),
+      }),
+    )
 
     const balance = await getStripeClient().balance.retrieve()
 

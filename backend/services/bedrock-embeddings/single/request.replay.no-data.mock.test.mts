@@ -1,5 +1,5 @@
 import * as analytics from '@services/analytics'
-import { loadRecordedResponse } from '@voucha/test-helpers/provider-replay'
+import { loadRecordedResponse } from 'vouchington-tooling/provider-replay'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   BEDROCK_NOVA_MULTIMODAL_MODEL_ID,
@@ -14,7 +14,7 @@ import { createBedrockEmbedding } from './request.mts'
 // the documented Nova response body (https://docs.aws.amazon.com/nova/latest/userguide/embeddings-schema.html),
 // with the vector cut to 8 values: nothing here depends on its length.
 const replay = await vi.hoisted(async () => {
-  const { createProviderReplay } = await import('@voucha/test-helpers/provider-replay')
+  const { createProviderReplay } = await import('vouchington-tooling/provider-replay')
   return createProviderReplay()
 })
 
@@ -22,7 +22,7 @@ vi.mock<typeof import('@aws-sdk/client-bedrock-runtime')>(
   import('@aws-sdk/client-bedrock-runtime'),
   async importOriginal => {
     const actual = await importOriginal()
-    const { replayAwsClient } = await import('@voucha/test-helpers/aws-replay-request-handler')
+    const { replayAwsClient } = await import('vouchington-tooling/provider-replay')
     return { ...actual, BedrockRuntimeClient: replayAwsClient(actual.BedrockRuntimeClient, replay) }
   },
 )
@@ -45,7 +45,11 @@ describe('createBedrockEmbedding against recorded Bedrock responses', () => {
   })
 
   it('invokes the Nova model with our single text embedding request and parses the vector', async () => {
-    replay.respondWith(loadRecordedResponse('bedrock/invoke-nova-embedding-text.http'))
+    replay.respondWith(
+      loadRecordedResponse('bedrock/invoke-nova-embedding-text.http', {
+        fixtureRoot: new URL('../../../test-helpers/provider-fixtures/', import.meta.url),
+      }),
+    )
 
     const result = await createBedrockEmbedding(TEXT, { entityType: 'search' })
 
@@ -83,7 +87,11 @@ describe('createBedrockEmbedding against recorded Bedrock responses', () => {
   })
 
   it('caps 8,193 inline characters and estimates only the text sent to Nova', async () => {
-    replay.respondWith(loadRecordedResponse('bedrock/invoke-nova-embedding-text.http'))
+    replay.respondWith(
+      loadRecordedResponse('bedrock/invoke-nova-embedding-text.http', {
+        fixtureRoot: new URL('../../../test-helpers/provider-fixtures/', import.meta.url),
+      }),
+    )
 
     const result = await createBedrockEmbedding('x'.repeat(8_193), { entityType: 'topic' })
 
@@ -100,7 +108,11 @@ describe('createBedrockEmbedding against recorded Bedrock responses', () => {
   })
 
   it('records a failed call and rethrows the provider error when Bedrock rejects the request', async () => {
-    replay.respondWith(loadRecordedResponse('bedrock/invoke-validation-exception-400.http'))
+    replay.respondWith(
+      loadRecordedResponse('bedrock/invoke-validation-exception-400.http', {
+        fixtureRoot: new URL('../../../test-helpers/provider-fixtures/', import.meta.url),
+      }),
+    )
 
     const error: unknown = await createBedrockEmbedding(TEXT, { entityType: 'post' }).catch(
       (err: unknown) => err,
@@ -123,7 +135,11 @@ describe('createBedrockEmbedding against recorded Bedrock responses', () => {
   })
 
   it('suppresses logging for an access-denied error when the integration is optional', async () => {
-    replay.respondWith(loadRecordedResponse('bedrock/invoke-access-denied-403.http'))
+    replay.respondWith(
+      loadRecordedResponse('bedrock/invoke-access-denied-403.http', {
+        fixtureRoot: new URL('../../../test-helpers/provider-fixtures/', import.meta.url),
+      }),
+    )
 
     await expect(createBedrockEmbedding(TEXT, { entityType: 'post' })).rejects.toMatchObject({
       name: 'AccessDeniedException',
@@ -134,7 +150,11 @@ describe('createBedrockEmbedding against recorded Bedrock responses', () => {
 
   it('keeps logging an access-denied error when the integration is required', async () => {
     vi.stubEnv('REQUIRE_BEDROCK_INTEGRATION', 'true')
-    replay.respondWith(loadRecordedResponse('bedrock/invoke-access-denied-403.http'))
+    replay.respondWith(
+      loadRecordedResponse('bedrock/invoke-access-denied-403.http', {
+        fixtureRoot: new URL('../../../test-helpers/provider-fixtures/', import.meta.url),
+      }),
+    )
 
     const error: unknown = await createBedrockEmbedding(TEXT, { entityType: 'post' }).catch(
       (err: unknown) => err,

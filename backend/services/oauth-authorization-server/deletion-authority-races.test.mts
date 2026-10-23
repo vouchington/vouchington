@@ -8,7 +8,7 @@ import { startPausedTestUserSoftDeletion } from '@voucha/test-helpers/entities/u
 import {
   getTestPostgresAdvisoryLockHolderProcessId,
   waitForTestPostgresLockWaiter,
-} from '@voucha/test-helpers/postgres-lock-wait'
+} from '@voucha/test-helpers/postgres-lock-observers'
 import { createTestApprovedOAuthAuthorization } from '@voucha/test-helpers/services/oauth-authorization-server/test-support'
 import { exchangeOAuthAuthorizationCode } from './index.mts'
 import { validateOAuthAccessToken } from './access-tokens.mts'

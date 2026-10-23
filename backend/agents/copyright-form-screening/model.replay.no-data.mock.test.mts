@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ANTHROPIC_HAIKU_CALL } from '@voucha/test-helpers/agents/model-call-result'
-import { loadRecordedResponse } from '../../test-helpers/provider-replay.mts'
+import { loadRecordedResponse } from 'vouchington-tooling/provider-replay'
 import { callCopyrightFormScreeningModel } from './model.mts'
 
 // The recorded Messages API body is served to the real `generateJson` through its `createMessage`
@@ -43,7 +43,11 @@ describe('callCopyrightFormScreeningModel against a recorded Anthropic response'
   })
 
   it('sends the screening schema and input, and returns the parsed guidance with its billed usage', async () => {
-    replay.respondWith(loadRecordedResponse('anthropic/messages-copyright-form-screening.http'))
+    replay.respondWith(
+      loadRecordedResponse('anthropic/messages-copyright-form-screening.http', {
+        fixtureRoot: new URL('../../test-helpers/provider-fixtures/', import.meta.url),
+      }),
+    )
 
     const result = await callCopyrightFormScreeningModel(
       INPUT,
@@ -88,7 +92,9 @@ describe('callCopyrightFormScreeningModel against a recorded Anthropic response'
   it('rejects guidance that reports an element fewer than once as a permanent invalid response that is still billed', async () => {
     // The schema cannot require "each element exactly once"; the parser does.
     replay.respondWith(
-      loadRecordedResponse('anthropic/messages-copyright-form-screening-missing-element.http'),
+      loadRecordedResponse('anthropic/messages-copyright-form-screening-missing-element.http', {
+        fixtureRoot: new URL('../../test-helpers/provider-fixtures/', import.meta.url),
+      }),
     )
 
     const failure: unknown = await callCopyrightFormScreeningModel(

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ANTHROPIC_HAIKU_CALL } from '@voucha/test-helpers/agents/model-call-result'
-import { loadRecordedResponse } from '../../test-helpers/provider-replay.mts'
+import { loadRecordedResponse } from 'vouchington-tooling/provider-replay'
 import { callStoryPostModel } from './agent.mts'
 
 // The recorded Messages API body is served to the real `generateJson` through its `createMessage`
@@ -31,7 +31,11 @@ describe('callStoryPostModel against a recorded Anthropic response', () => {
   })
 
   it('sends the story schema and input, and returns the parsed post with its billed usage', async () => {
-    replay.respondWith(loadRecordedResponse('anthropic/messages-story-post.http'))
+    replay.respondWith(
+      loadRecordedResponse('anthropic/messages-story-post.http', {
+        fixtureRoot: new URL('../../test-helpers/provider-fixtures/', import.meta.url),
+      }),
+    )
 
     const result = await callStoryPostModel(INPUT, 'story-id', ANTHROPIC_HAIKU_CALL)
 
@@ -61,7 +65,11 @@ describe('callStoryPostModel against a recorded Anthropic response', () => {
 
   it('rejects a blank summary as a permanent invalid response that is still billed', async () => {
     // The schema accepts whitespace; a post without a summary is the parser's rejection.
-    replay.respondWith(loadRecordedResponse('anthropic/messages-story-post-blank-summary.http'))
+    replay.respondWith(
+      loadRecordedResponse('anthropic/messages-story-post-blank-summary.http', {
+        fixtureRoot: new URL('../../test-helpers/provider-fixtures/', import.meta.url),
+      }),
+    )
 
     const failure: unknown = await callStoryPostModel(
       INPUT,

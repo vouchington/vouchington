@@ -7,10 +7,11 @@ import {
   startCopyrightFormScreeningInTransaction,
 } from '../../../services/copyright-notices/form-screening-executions.mts'
 import {
+  postgresLockQuery,
   getTestPostgresBackendProcessId,
   getTestPostgresAdvisoryLockHolderProcessId,
   waitForTestPostgresLockWaiter,
-} from '../../postgres-lock-wait.mts'
+} from '../../postgres-lock-observers.mts'
 
 export async function eraseTestCopyrightFormRequester(intakeId: string): Promise<void> {
   await write(sql`/* eraseTestCopyrightFormRequester */
@@ -61,7 +62,7 @@ export async function admitTestCopyrightBeforeScreening<T>(
   await transaction(sql`/* admitTestCopyrightBeforeScreening:notice */
     SELECT id FROM copyright_notices WHERE id = ${noticeId} FOR UPDATE
   `)
-  const pid = await getTestPostgresBackendProcessId(transaction)
+  const pid = await getTestPostgresBackendProcessId(postgresLockQuery(transaction))
   const admission = admit().then(
     value => ({ value, error: null }),
     err => ({ value: null, error: err }),
@@ -105,7 +106,7 @@ export async function startTestCopyrightScreeningBeforeAdmission<T>(
   await using transaction = await beginTransaction()
   await lockCopyrightFormReview(intakeId, transaction)
   await startCopyrightFormScreeningInTransaction(intakeId, transaction)
-  const pid = await getTestPostgresBackendProcessId(transaction)
+  const pid = await getTestPostgresBackendProcessId(postgresLockQuery(transaction))
   const admission = admit().then(
     value => ({ value, error: null }),
     err => ({ value: null, error: err }),

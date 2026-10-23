@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ANTHROPIC_HAIKU_CALL } from '@voucha/test-helpers/agents/model-call-result'
-import { loadRecordedResponse } from '../../test-helpers/provider-replay.mts'
+import { loadRecordedResponse } from 'vouchington-tooling/provider-replay'
 import { callDisputeModel } from './model.mts'
 
 // The recorded Messages API body is served to the real `generateJson` through its `createMessage`
@@ -31,7 +31,11 @@ describe('callDisputeModel against a recorded Anthropic response', () => {
   })
 
   it('sends the dispute schema and input, and returns the parsed draft with its billed usage', async () => {
-    replay.respondWith(loadRecordedResponse('anthropic/messages-dispute-resolution.http'))
+    replay.respondWith(
+      loadRecordedResponse('anthropic/messages-dispute-resolution.http', {
+        fixtureRoot: new URL('../../test-helpers/provider-fixtures/', import.meta.url),
+      }),
+    )
 
     const result = await callDisputeModel(INPUT, 'author-hash', ANTHROPIC_HAIKU_CALL)
 

@@ -4,9 +4,10 @@ import { v7 as uuidv7 } from 'uuid'
 import { getClassifierBorrowedDecisionFacts } from '../../test-helpers/data-stores/psql/classifier-borrowed-transactions.mts'
 import { createClassifierFixture } from '../../test-helpers/data-stores/psql/classifiers.mts'
 import {
+  postgresLockQuery,
   getTestPostgresBackendProcessId,
   waitForTestPostgresLockWaiter,
-} from '../../test-helpers/postgres-lock-wait.mts'
+} from '../../test-helpers/postgres-lock-observers.mts'
 import { insertClassifierDecisionBatch } from './write-decision-lineage.mts'
 
 describe('classifier decision batch advisory lock', () => {
@@ -48,7 +49,7 @@ describe('classifier decision batch advisory lock', () => {
 
     async function holdSpelledBatch(): Promise<void> {
       await using transaction = await beginTransaction()
-      holderProcessId.resolve(await getTestPostgresBackendProcessId(transaction))
+      holderProcessId.resolve(await getTestPostgresBackendProcessId(postgresLockQuery(transaction)))
       expect(
         await insertClassifierDecisionBatch(transaction, {
           ...identity,

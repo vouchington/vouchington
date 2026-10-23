@@ -1,4 +1,7 @@
-import { waitForTestPostgresLockWaiter } from '@voucha/test-helpers/postgres-lock-wait'
+import {
+  postgresLockQuery,
+  waitForTestPostgresLockWaiter,
+} from '@voucha/test-helpers/postgres-lock-observers'
 import type { QueryExecutor } from '@data-stores/psql'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
@@ -106,7 +109,13 @@ describe('PostgreSQL lock observation cancellation ownership', () => {
     }
 
     await expect(
-      waitForTestPostgresLockWaiter(1, 'owned-marker', query, undefined, controller.signal),
+      waitForTestPostgresLockWaiter(
+        1,
+        'owned-marker',
+        postgresLockQuery(query),
+        undefined,
+        controller.signal,
+      ),
     ).rejects.toMatchObject({
       message: 'Operation did not wait for the test lock: owned-marker',
       cause: cancellation,
@@ -131,7 +140,7 @@ describe('PostgreSQL lock observation cancellation ownership', () => {
     const outcome = waitForTestPostgresLockWaiter(
       1,
       'owned-marker',
-      query,
+      postgresLockQuery(query),
       undefined,
       controller.signal,
     ).then(

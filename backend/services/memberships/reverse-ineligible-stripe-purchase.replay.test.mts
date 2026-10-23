@@ -6,10 +6,9 @@ import {
   getTestIneligiblePurchaseReversal,
 } from '@voucha/test-helpers'
 import * as stripeClientModule from '@modules/stripe/client'
-import { createProviderReplay } from '../../test-helpers/provider-replay.mts'
+import { createProviderReplay, loadRecordedResponse } from 'vouchington-tooling/provider-replay'
 import {
   createReplayStripeClient,
-  loadStripeFixture,
   routeStripeReplay,
   stripeFormBody,
 } from '../../test-helpers/stripe-replay.mts'
@@ -229,32 +228,60 @@ async function createScenario() {
         EARLIER_REFUND_AMOUNT: String(options.earlierRefundAmount ?? 0),
         REFUND_AMOUNT: String(options.refundAmount),
       }
-      const fixture = (name: string) => loadStripeFixture(name, tokenValues)
-      routes.on('GET', '/v1/invoices', fixture(options.invoices))
+      routes.on(
+        'GET',
+        '/v1/invoices',
+        loadRecordedResponse(`stripe/${options.invoices}`, {
+          fixtureRoot: new URL('../../test-helpers/provider-fixtures/', import.meta.url),
+          replace: tokenValues,
+        }),
+      )
       routes.on(
         'GET',
         `/v1/invoices/${tokens.INVOICE_ID}/lines`,
-        fixture('invoice-lines-one-subscription-line.http'),
+        loadRecordedResponse('stripe/invoice-lines-one-subscription-line.http', {
+          fixtureRoot: new URL('../../test-helpers/provider-fixtures/', import.meta.url),
+          replace: tokenValues,
+        }),
       )
       routes.on(
         'GET',
         '/v1/refunds',
-        fixture(
+        loadRecordedResponse(
           options.earlierRefundAmount
-            ? 'refunds-list-one-succeeded.http'
-            : 'refunds-list-empty.http',
+            ? 'stripe/refunds-list-one-succeeded.http'
+            : 'stripe/refunds-list-empty.http',
+          {
+            fixtureRoot: new URL('../../test-helpers/provider-fixtures/', import.meta.url),
+            replace: tokenValues,
+          },
         ),
       )
-      routes.on('GET', '/v1/disputes', fixture('disputes-list-empty.http'))
+      routes.on(
+        'GET',
+        '/v1/disputes',
+        loadRecordedResponse('stripe/disputes-list-empty.http', {
+          fixtureRoot: new URL('../../test-helpers/provider-fixtures/', import.meta.url),
+          replace: tokenValues,
+        }),
+      )
       routes.on(
         'DELETE',
         `/v1/subscriptions/${tokens.SUBSCRIPTION_ID}`,
-        fixture('subscription-canceled.http'),
+        loadRecordedResponse('stripe/subscription-canceled.http', {
+          fixtureRoot: new URL('../../test-helpers/provider-fixtures/', import.meta.url),
+          replace: tokenValues,
+        }),
       )
       routes.on(
         'POST',
         '/v1/refunds',
-        ...(options.refundCreate ?? ['refund-created-succeeded.http']).map(fixture),
+        ...(options.refundCreate ?? ['refund-created-succeeded.http']).map(name =>
+          loadRecordedResponse(`stripe/${name}`, {
+            fixtureRoot: new URL('../../test-helpers/provider-fixtures/', import.meta.url),
+            replace: tokenValues,
+          }),
+        ),
       )
     },
   }

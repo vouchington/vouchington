@@ -1,7 +1,7 @@
 import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import { getTestPostgresBackendProcessId } from './postgres-lock-wait.mts'
+import { postgresLockQuery, getTestPostgresBackendProcessId } from './postgres-lock-observers.mts'
 
 /** Inserts the promotion target first so the unique-index regression has a checked heap order. */
 export async function insertTestLandingPagesInPromotionOrder(userId: string) {
@@ -38,7 +38,7 @@ export async function holdTestLandingPageUserLock(userId: string) {
     await query(
       sql`/* holdTestLandingPageUserLock */ SELECT pg_advisory_xact_lock(hashtext(${userId}))`,
     )
-    const processId = await getTestPostgresBackendProcessId(query)
+    const processId = await getTestPostgresBackendProcessId(postgresLockQuery(query))
     return {
       processId,
       async release() {

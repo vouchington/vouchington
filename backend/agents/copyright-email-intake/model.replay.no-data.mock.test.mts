@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ANTHROPIC_HAIKU_CALL } from '@voucha/test-helpers/agents/model-call-result'
-import { loadRecordedResponse } from '../../test-helpers/provider-replay.mts'
+import { loadRecordedResponse } from 'vouchington-tooling/provider-replay'
 import { callCopyrightEmailIntakeModel } from './model.mts'
 
 // The recorded Messages API body is served to the real `generateJson` through its `createMessage`
@@ -35,7 +35,11 @@ describe('callCopyrightEmailIntakeModel against a recorded Anthropic response', 
   })
 
   it('sends the extraction schema and input, and returns the parsed extraction with its billed usage', async () => {
-    replay.respondWith(loadRecordedResponse('anthropic/messages-copyright-email-intake.http'))
+    replay.respondWith(
+      loadRecordedResponse('anthropic/messages-copyright-email-intake.http', {
+        fixtureRoot: new URL('../../test-helpers/provider-fixtures/', import.meta.url),
+      }),
+    )
 
     const result = await callCopyrightEmailIntakeModel(INPUT, 'intake-hash', ANTHROPIC_HAIKU_CALL)
 
@@ -91,7 +95,9 @@ describe('callCopyrightEmailIntakeModel against a recorded Anthropic response', 
 
   it('rejects more target URLs than the bound as a permanent invalid response that is still billed', async () => {
     replay.respondWith(
-      loadRecordedResponse('anthropic/messages-copyright-email-intake-too-many-targets.http'),
+      loadRecordedResponse('anthropic/messages-copyright-email-intake-too-many-targets.http', {
+        fixtureRoot: new URL('../../test-helpers/provider-fixtures/', import.meta.url),
+      }),
     )
 
     const failure: unknown = await callCopyrightEmailIntakeModel(

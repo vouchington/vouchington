@@ -1,3 +1,4 @@
+import { postgresLockQuery } from '@voucha/test-helpers/postgres-lock-observers'
 import crypto from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 
@@ -195,7 +196,7 @@ async function holdPublicationLockThenMutate(
 ): Promise<void> {
   await using query = await beginTransaction()
   await lockPostPublication(query, postId)
-  locked.resolve(await getTestPostgresBackendProcessId(query))
+  locked.resolve(await getTestPostgresBackendProcessId(postgresLockQuery(query)))
   await release.promise
   await mutate(query)
   await query.commit()

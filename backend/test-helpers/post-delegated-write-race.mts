@@ -7,10 +7,10 @@ import {
 import sql from 'sql-template-strings'
 import { createMembershipLockDiagnosticReporter } from './membership-lock-diagnostics.mts'
 import {
+  postgresLockQuery,
   getTestPostgresBackendProcessId,
   waitForTestPostgresLockWaiter,
-} from './postgres-lock-wait.mts'
-
+} from './postgres-lock-observers.mts'
 /** Hold the canonical writer fence while a delegated mutation passes its old public preflight. */
 export function withConcurrentPostPrivacyChangeForTest<T>(
   postId: string,
@@ -139,7 +139,7 @@ async function withConcurrentDelegatedWriteChangeForTest<T>(
     diagnostics.emit('holder-acquire-start')
     query = await beginTransaction()
     diagnostics.emit('holder-pid-query-start')
-    const processId = await getTestPostgresBackendProcessId(query)
+    const processId = await getTestPostgresBackendProcessId(postgresLockQuery(query))
     diagnostics.emit('holder-acquired', `holder_pid=${processId}`)
     await stageChange(query)
     diagnostics.emit('change-staged')
@@ -149,7 +149,7 @@ async function withConcurrentDelegatedWriteChangeForTest<T>(
     await waitForTestPostgresLockWaiter(
       processId,
       queryMarker,
-      observer,
+      postgresLockQuery(observer),
       membershipDiagnostics ? diagnostics.observeWait : undefined,
     )
     settlementAttempted = true

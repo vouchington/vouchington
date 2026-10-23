@@ -10,7 +10,7 @@ import {
   leaseSyntheticRun,
   reserveSyntheticRun,
 } from '@voucha/test-helpers/data-stores/psql/classifier-runs/synthetic-run'
-import { waitForTestPostgresLockWaiter } from '@voucha/test-helpers/postgres-lock-wait'
+import { waitForTestPostgresLockWaiter } from '@voucha/test-helpers/postgres-lock-observers'
 import { describe, expect, it } from 'vitest'
 import {
   failClassifierClientUnavailable,

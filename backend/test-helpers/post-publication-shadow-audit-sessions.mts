@@ -2,7 +2,7 @@ import { addAbortListener } from 'node:events'
 import { onTestFinished } from 'vitest'
 import { advisoryLockPool, beginTransaction, writePool, type PoolClient } from '@data-stores/psql'
 import { FAST_TEST_STATEMENT_TIMEOUT_MS } from './statement-timeout-constant.mts'
-import { waitForTestPostgresLockWaiter } from './postgres-lock-wait.mts'
+import { postgresLockQuery, waitForTestPostgresLockWaiter } from './postgres-lock-observers.mts'
 
 type AuditSessions = { observer: PoolClient; contender: PoolClient; holder?: PoolClient }
 export type AuditTransaction = Awaited<ReturnType<typeof beginTransaction>>
@@ -74,7 +74,7 @@ export async function observeAuditWait(
   await waitForTestPostgresLockWaiter(
     holderPid,
     marker,
-    observer,
+    postgresLockQuery(observer),
     undefined,
     cancellation.signal,
     contenderPid,

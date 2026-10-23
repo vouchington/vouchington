@@ -4,7 +4,7 @@ import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name
 import { beginTransaction, read, type TransactionQuery, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { hardDeleteTestPost } from './posts-deletion.mts'
-import { getTestPostgresBackendProcessId } from '../postgres-lock-wait.mts'
+import { postgresLockQuery, getTestPostgresBackendProcessId } from '../postgres-lock-observers.mts'
 
 export async function countTestBlueskyLinkAuthorizationsForUser(userId: string): Promise<number> {
   const { rows } = await read<{ count: number }>(
@@ -54,7 +54,7 @@ export async function startPausedTestUserSoftDeletion(
     await query(sql`/* startPausedTestUserSoftDeletion:lock */
       SELECT pg_advisory_xact_lock(hashtextextended(${userId}, 0))
     `)
-    holderProcessId = await getTestPostgresBackendProcessId(query)
+    holderProcessId = await getTestPostgresBackendProcessId(postgresLockQuery(query))
     await query(sql`/* startPausedTestUserSoftDeletion:delete */
       UPDATE users SET deleted_at = CURRENT_TIMESTAMP WHERE id = ${userId}
     `)

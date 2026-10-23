@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { loadRecordedResponse } from '@voucha/test-helpers/provider-replay'
+import { loadRecordedResponse } from 'vouchington-tooling/provider-replay'
 import { sendEmail } from './ses.mts'
 
 // The recorded SES responses are served through the real SES client's `requestHandler`, so the SDK
 // serializes, signs and parses actual wire bytes. The live counterpart is the non-gating smoke
 // check in ./ses.generated.test.mts.
 const replay = await vi.hoisted(async () => {
-  const { createProviderReplay } = await import('@voucha/test-helpers/provider-replay')
+  const { createProviderReplay } = await import('vouchington-tooling/provider-replay')
   return createProviderReplay()
 })
 
@@ -14,7 +14,7 @@ vi.mock<typeof import('@aws-sdk/client-ses')>(
   import('@aws-sdk/client-ses'),
   async importOriginal => {
     const actual = await importOriginal()
-    const { replayAwsClient } = await import('@voucha/test-helpers/aws-replay-request-handler')
+    const { replayAwsClient } = await import('vouchington-tooling/provider-replay')
     return { ...actual, SESClient: replayAwsClient(actual.SESClient, replay) }
   },
 )
@@ -40,7 +40,11 @@ describe('sendEmail against recorded SES responses', () => {
   })
 
   it('sends a SendEmail request that carries our destination, BCC, sender and content', async () => {
-    replay.respondWith(loadRecordedResponse('aws/ses-send-email-ok.http'))
+    replay.respondWith(
+      loadRecordedResponse('aws/ses-send-email-ok.http', {
+        fixtureRoot: new URL('../../test-helpers/provider-fixtures/', import.meta.url),
+      }),
+    )
 
     const result = await sendEmail({
       to: 'success@simulator.amazonses.com',
@@ -72,7 +76,11 @@ describe('sendEmail against recorded SES responses', () => {
   })
 
   it('uses the default sender and reply-to, and sends only the body parts it was given', async () => {
-    replay.respondWith(loadRecordedResponse('aws/ses-send-email-ok.http'))
+    replay.respondWith(
+      loadRecordedResponse('aws/ses-send-email-ok.http', {
+        fixtureRoot: new URL('../../test-helpers/provider-fixtures/', import.meta.url),
+      }),
+    )
 
     await sendEmail({ to: 'success@simulator.amazonses.com', subject: 'Defaults', text: 'Text' })
 
@@ -88,7 +96,11 @@ describe('sendEmail against recorded SES responses', () => {
   })
 
   it('omits the global BCC only when the caller opts out of it', async () => {
-    replay.respondWith(loadRecordedResponse('aws/ses-send-email-ok.http'))
+    replay.respondWith(
+      loadRecordedResponse('aws/ses-send-email-ok.http', {
+        fixtureRoot: new URL('../../test-helpers/provider-fixtures/', import.meta.url),
+      }),
+    )
 
     await sendEmail({
       to: ['a@simulator.amazonses.com', 'b@simulator.amazonses.com'],
@@ -109,7 +121,11 @@ describe('sendEmail against recorded SES responses', () => {
   })
 
   it('sends custom headers as a SendRawEmail request whose destinations include the BCC', async () => {
-    replay.respondWith(loadRecordedResponse('aws/ses-send-raw-email-ok.http'))
+    replay.respondWith(
+      loadRecordedResponse('aws/ses-send-raw-email-ok.http', {
+        fixtureRoot: new URL('../../test-helpers/provider-fixtures/', import.meta.url),
+      }),
+    )
 
     const result = await sendEmail({
       to: 'success@simulator.amazonses.com',
@@ -141,7 +157,11 @@ describe('sendEmail against recorded SES responses', () => {
   })
 
   it('sends a SendRawEmail request with the default sender and no configuration set', async () => {
-    replay.respondWith(loadRecordedResponse('aws/ses-send-raw-email-ok.http'))
+    replay.respondWith(
+      loadRecordedResponse('aws/ses-send-raw-email-ok.http', {
+        fixtureRoot: new URL('../../test-helpers/provider-fixtures/', import.meta.url),
+      }),
+    )
 
     await sendEmail({
       to: ['a@simulator.amazonses.com', 'b@simulator.amazonses.com'],
@@ -162,7 +182,11 @@ describe('sendEmail against recorded SES responses', () => {
   })
 
   it('does not retry a send the provider failed, because a retry could deliver the email twice', async () => {
-    replay.respondWith(loadRecordedResponse('aws/ses-send-email-service-unavailable-503.http'))
+    replay.respondWith(
+      loadRecordedResponse('aws/ses-send-email-service-unavailable-503.http', {
+        fixtureRoot: new URL('../../test-helpers/provider-fixtures/', import.meta.url),
+      }),
+    )
 
     await expect(
       sendEmail({ to: 'success@simulator.amazonses.com', subject: 'Once', text: 'Text' }),

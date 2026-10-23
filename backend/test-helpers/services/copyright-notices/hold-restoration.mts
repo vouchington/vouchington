@@ -7,9 +7,10 @@ import { lockCopyrightNoticeHoldPlacements } from '../../../services/copyright-n
 import { replayFailedCopyrightActionIntent } from '../../../services/copyright-notices/action-delivery-state.mts'
 import { replayEligibleCopyrightRestoreIntentsInTransaction } from '../../../services/copyright-notices/court-hold-restore-replay.mts'
 import {
+  postgresLockQuery,
   getTestPostgresBackendProcessId,
   waitForTestPostgresLockWaiter,
-} from '../../postgres-lock-wait.mts'
+} from '../../postgres-lock-observers.mts'
 
 /** Reproduces the pre-fix committed resolution with no intent reset, without changing original authority. */
 export async function recordHistoricalTestCopyrightHoldResolution(input: {
@@ -76,7 +77,7 @@ export async function replayTestFailedCopyrightActionBehindHoldFence(input: {
     await transaction(
       sql`/* replayTestFailedCopyrightActionBehindHoldFence */ SELECT id FROM copyright_notices WHERE id = ${input.noticeId} FOR UPDATE`,
     )
-    const pid = await getTestPostgresBackendProcessId(transaction)
+    const pid = await getTestPostgresBackendProcessId(postgresLockQuery(transaction))
     replay = replayFailedCopyrightActionIntent(input)
     await waitForTestPostgresLockWaiter(pid, 'replayFailedCopyrightActionIntent:placementLock')
     await transaction(

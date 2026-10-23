@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { loadRecordedResponse } from '../../test-helpers/provider-replay.mts'
+import { loadRecordedResponse } from 'vouchington-tooling/provider-replay'
 import { generateToolTurn } from './tool-turn.mts'
 
 // A recorded Messages API tool_use response is served through the real Anthropic SDK's `fetch`
@@ -7,13 +7,13 @@ import { generateToolTurn } from './tool-turn.mts'
 // Anthropic's documented format. The live counterpart is the non-gating smoke check in
 // generate.anthropic.test.mts.
 const replay = await vi.hoisted(async () => {
-  const { createProviderReplay } = await import('../../test-helpers/provider-replay.mts')
+  const { createProviderReplay } = await import('vouchington-tooling/provider-replay')
   return createProviderReplay()
 })
 
 vi.mock<typeof import('@anthropic-ai/sdk')>(import('@anthropic-ai/sdk'), async importOriginal => {
   const actual = await importOriginal()
-  const { replayClient } = await import('../../test-helpers/provider-replay.mts')
+  const { replayClient } = await import('vouchington-tooling/provider-replay')
   return { ...actual, default: replayClient(actual.default, replay) }
 })
 
@@ -29,7 +29,11 @@ describe('generateToolTurn against a recorded Anthropic tool_use response', () =
   })
 
   it('requires a tool call and returns the parsed call with billed usage', async () => {
-    replay.respondWith(loadRecordedResponse('anthropic/messages-tool-use.http'))
+    replay.respondWith(
+      loadRecordedResponse('anthropic/messages-tool-use.http', {
+        fixtureRoot: new URL('../../test-helpers/provider-fixtures/', import.meta.url),
+      }),
+    )
 
     const result = await generateToolTurn(
       { provider: 'anthropic', model: 'claude-haiku-5-5' },

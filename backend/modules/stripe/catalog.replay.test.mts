@@ -1,9 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as stripeClientModule from '@modules/stripe/client'
-import { createProviderReplay } from '../../test-helpers/provider-replay.mts'
+import { createProviderReplay, loadRecordedResponse } from 'vouchington-tooling/provider-replay'
 import {
   createReplayStripeClient,
-  loadStripeFixture,
   stripeFormBody,
   stripeQuery,
 } from '../../test-helpers/stripe-replay.mts'
@@ -35,7 +34,11 @@ describe('resolveRecurringCatalogPrice against recorded Stripe responses', () =>
   })
 
   it('reuses the active price Stripe lists for the lookup key without creating another', async () => {
-    replay.respondWith(loadStripeFixture('prices-list-plus-monthly.http'))
+    replay.respondWith(
+      loadRecordedResponse('stripe/prices-list-plus-monthly.http', {
+        fixtureRoot: new URL('../../test-helpers/provider-fixtures/', import.meta.url),
+      }),
+    )
 
     await expect(resolveRecurringCatalogPrice(descriptor)).resolves.toMatchObject({
       id: 'price_plus_monthly',
@@ -52,9 +55,15 @@ describe('resolveRecurringCatalogPrice against recorded Stripe responses', () =>
 
   it('creates the product and price under a stable idempotency key, then validates the product Stripe returns by id', async () => {
     replay.respondWith(
-      loadStripeFixture('prices-list-empty.http'),
-      loadStripeFixture('price-created-plus-monthly.http'),
-      loadStripeFixture('product-plus-monthly.http'),
+      loadRecordedResponse('stripe/prices-list-empty.http', {
+        fixtureRoot: new URL('../../test-helpers/provider-fixtures/', import.meta.url),
+      }),
+      loadRecordedResponse('stripe/price-created-plus-monthly.http', {
+        fixtureRoot: new URL('../../test-helpers/provider-fixtures/', import.meta.url),
+      }),
+      loadRecordedResponse('stripe/product-plus-monthly.http', {
+        fixtureRoot: new URL('../../test-helpers/provider-fixtures/', import.meta.url),
+      }),
     )
 
     await expect(resolveRecurringCatalogPrice(descriptor)).resolves.toMatchObject({
@@ -81,9 +90,15 @@ describe('resolveRecurringCatalogPrice against recorded Stripe responses', () =>
 
   it('reads the winner once and reuses it when Stripe reports the lookup key already exists', async () => {
     replay.respondWith(
-      loadStripeFixture('prices-list-empty.http'),
-      loadStripeFixture('price-create-lookup-key-exists-400.http'),
-      loadStripeFixture('prices-list-plus-monthly.http'),
+      loadRecordedResponse('stripe/prices-list-empty.http', {
+        fixtureRoot: new URL('../../test-helpers/provider-fixtures/', import.meta.url),
+      }),
+      loadRecordedResponse('stripe/price-create-lookup-key-exists-400.http', {
+        fixtureRoot: new URL('../../test-helpers/provider-fixtures/', import.meta.url),
+      }),
+      loadRecordedResponse('stripe/prices-list-plus-monthly.http', {
+        fixtureRoot: new URL('../../test-helpers/provider-fixtures/', import.meta.url),
+      }),
     )
 
     await expect(resolveRecurringCatalogPrice(descriptor)).resolves.toMatchObject({
@@ -97,8 +112,12 @@ describe('resolveRecurringCatalogPrice against recorded Stripe responses', () =>
 
   it('surfaces any other create rejection without reading the catalog again', async () => {
     replay.respondWith(
-      loadStripeFixture('prices-list-empty.http'),
-      loadStripeFixture('price-create-parameter-missing-400.http'),
+      loadRecordedResponse('stripe/prices-list-empty.http', {
+        fixtureRoot: new URL('../../test-helpers/provider-fixtures/', import.meta.url),
+      }),
+      loadRecordedResponse('stripe/price-create-parameter-missing-400.http', {
+        fixtureRoot: new URL('../../test-helpers/provider-fixtures/', import.meta.url),
+      }),
     )
 
     await expect(resolveRecurringCatalogPrice(descriptor)).rejects.toMatchObject({

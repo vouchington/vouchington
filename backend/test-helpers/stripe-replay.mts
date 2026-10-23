@@ -1,10 +1,9 @@
 import Stripe from 'stripe'
-import {
-  loadRecordedResponse,
-  type ProviderReplay,
-  type RecordedResponse,
-  type ReplayedRequest,
-} from './provider-replay.mts'
+import type {
+  ProviderReplay,
+  RecordedResponse,
+  ReplayedRequest,
+} from 'vouchington-tooling/provider-replay'
 
 // Stripe adapter for the shared provider replay (see docs/development/testing/backend/helpers.md).
 // Stripe takes an `httpClient`, not a `fetch` option, so `replayClient()` does not apply. A test
@@ -73,14 +72,6 @@ export function routeStripeReplay(replay: ProviderReplay): StripeRoutes {
     },
     reset: () => routes.clear(),
   }
-}
-
-/** Loads `provider-fixtures/stripe/<name>`; `replace` swaps tokens such as ids unique per run. */
-export function loadStripeFixture(
-  name: string,
-  replace: Record<string, string> = {},
-): RecordedResponse {
-  return loadRecordedResponse(`stripe/${name}`, { replace })
 }
 
 /** The decoded query string of a Stripe `GET`, where nested parameters are `key[0]`/`key[sub]`. */

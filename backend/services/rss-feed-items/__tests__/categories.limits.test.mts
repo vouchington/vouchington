@@ -1,3 +1,4 @@
+import { postgresLockQuery } from '@voucha/test-helpers/postgres-lock-observers'
 import { rssFeedItemsWorkConfig } from '@services/rss-feed-items/work-limits'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { it, expect, beforeEach, describe } from 'vitest'
@@ -230,7 +231,7 @@ describe('categories limits', () => {
     const holderProcessId = Promise.withResolvers<number>()
     async function holdMatchingCategory(): Promise<void> {
       await using query = await beginTransaction()
-      holderProcessId.resolve(await getTestPostgresBackendProcessId(query))
+      holderProcessId.resolve(await getTestPostgresBackendProcessId(postgresLockQuery(query)))
       await lockTestRssFeedItemCategory(item!.id, alias, query)
       ready.resolve()
       await release.promise

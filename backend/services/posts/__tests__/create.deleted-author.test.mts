@@ -1,3 +1,4 @@
+import { postgresLockQuery } from '@voucha/test-helpers/postgres-lock-observers'
 import { describe, expect, it } from 'vitest'
 import {
   createTestUser,
@@ -26,7 +27,7 @@ describe('createPost deleted author lifecycle', () => {
         releaseDeletion.promise,
         deletionHoldsAuthorLifecycle.resolve,
         async query => {
-          deletionBackendId = await getTestPostgresBackendProcessId(query)
+          deletionBackendId = await getTestPostgresBackendProcessId(postgresLockQuery(query))
           await lockTestUserMutation(query, author.id)
           await lockAuthorPublicationLifecycle(query, author.id)
         },

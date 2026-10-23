@@ -1,3 +1,4 @@
+import { postgresLockQuery } from '@voucha/test-helpers/postgres-lock-observers'
 import { beforeAll, describe, expect, it } from 'vitest'
 import {
   WEB_PROVENANCE,
@@ -229,7 +230,7 @@ describe('addPostHashtag', () => {
     })
     await using holder = await beginTransaction()
     await lockPostPublication(holder, post.id)
-    const holderPid = await getTestPostgresBackendProcessId(holder)
+    const holderPid = await getTestPostgresBackendProcessId(postgresLockQuery(holder))
     const additive = addPostHashtag(creator, post.id, `#added-${suffix}`, firstParty)
     try {
       await waitForTestPostgresLockWaiter(holderPid, 'lockPostPublicationCaptures')
@@ -259,7 +260,7 @@ describe('addPostHashtag', () => {
     })
     await using holder = await beginTransaction()
     await lockPostPublication(holder, post.id)
-    const holderPid = await getTestPostgresBackendProcessId(holder)
+    const holderPid = await getTestPostgresBackendProcessId(postgresLockQuery(holder))
     const replacement = updatePost(creator, post, {
       categories: [{ type: 'hashtag', hashtag: `#replacement-${suffix}` }],
     })

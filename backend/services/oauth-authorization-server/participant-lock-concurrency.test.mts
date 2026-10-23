@@ -5,7 +5,7 @@ import { startPausedTestOAuthCodeLock } from '@voucha/test-helpers/entities/oaut
 import { assignTestOAuthClientOwner } from '@voucha/test-helpers/entities/oauth-client-management'
 import { getTestOAuthCredentialStorage } from '@voucha/test-helpers/entities/oauth-authorization-server'
 import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
-import { waitForTestPostgresLockWaiter } from '@voucha/test-helpers/postgres-lock-wait'
+import { waitForTestPostgresLockWaiter } from '@voucha/test-helpers/postgres-lock-observers'
 import {
   createTestApprovedOAuthAuthorization,
   TEST_OAUTH_RESOURCE,

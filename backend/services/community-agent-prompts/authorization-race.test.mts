@@ -1,3 +1,4 @@
+import { postgresLockQuery } from '@voucha/test-helpers/postgres-lock-observers'
 import { describe, expect, it } from 'vitest'
 import {
   beginTransaction,
@@ -74,7 +75,7 @@ function holdCreatorRowLockUntilMembershipRemoval(communityId: string, creatorId
 
   async function removeCreatorMembershipAfterLock(): Promise<void> {
     await using query = await beginTransaction()
-    processId.resolve(await getTestPostgresBackendProcessId(query))
+    processId.resolve(await getTestPostgresBackendProcessId(postgresLockQuery(query)))
     const options = { query }
     await lockTestCommunityMemberForUpdate(communityId, creatorId, options)
     ready.resolve()

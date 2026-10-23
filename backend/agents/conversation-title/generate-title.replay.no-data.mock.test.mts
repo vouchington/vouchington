@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ANTHROPIC_HAIKU_CALL } from '@voucha/test-helpers/agents/model-call-result'
-import { loadRecordedResponse } from '../../test-helpers/provider-replay.mts'
+import { loadRecordedResponse } from 'vouchington-tooling/provider-replay'
 import { callConversationTitleModel } from './generate-title.mts'
 
 // The recorded Messages API body is served to the real `generateJson` through its `createMessage`
@@ -30,7 +30,11 @@ describe('callConversationTitleModel against a recorded Anthropic response', () 
   })
 
   it('sends the title schema and input, and returns the parsed title with its billed usage', async () => {
-    replay.respondWith(loadRecordedResponse('anthropic/messages-conversation-title.http'))
+    replay.respondWith(
+      loadRecordedResponse('anthropic/messages-conversation-title.http', {
+        fixtureRoot: new URL('../../test-helpers/provider-fixtures/', import.meta.url),
+      }),
+    )
 
     const result = await callConversationTitleModel(INPUT, 'user-hash', ANTHROPIC_HAIKU_CALL)
 

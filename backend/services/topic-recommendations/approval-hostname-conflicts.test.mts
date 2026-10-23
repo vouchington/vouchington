@@ -1,3 +1,4 @@
+import { postgresLockQuery } from '@voucha/test-helpers/postgres-lock-observers'
 import { describe, expect, it } from 'vitest'
 import {
   createTestUser,
@@ -82,7 +83,7 @@ describe('approval hostname conflicts', () => {
     const host = { id: ids.get(hostname)!, hostname }
     await using holder = await beginTransaction()
     await lockHostnameOwnership(holder, [hostname])
-    const holderPid = await getTestPostgresBackendProcessId(holder)
+    const holderPid = await getTestPostgresBackendProcessId(postgresLockQuery(holder))
     await using claimTx = await beginTransaction()
     const claim = createTopicRecommendationLinkRelation(otherAdmin, competitor, host, {
       query: claimTx,

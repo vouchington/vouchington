@@ -2,7 +2,7 @@ import { beginTransaction, read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { retainHardDeletedPostPublication } from '../../services/post-publication/capture-hard-delete.mts'
 import { lockPostPublicationPostScopes } from '../../services/post-publication/capture-posts.mts'
-import { getTestPostgresBackendProcessId } from '../postgres-lock-wait.mts'
+import { postgresLockQuery, getTestPostgresBackendProcessId } from '../postgres-lock-observers.mts'
 
 export async function markTestPostDeletedBy(postId: string, deletedById: string): Promise<void> {
   await write(sql`/* markTestPostDeletedBy */
@@ -51,7 +51,7 @@ export async function startPausedTestPostTopicRelationWriter(
     await transaction(sql`/* startPausedTestPostTopicRelationWriter:relation */
       SELECT id FROM relation__post__category__topic WHERE id = ${relationId} FOR UPDATE
     `)
-    paused.resolve(await getTestPostgresBackendProcessId(transaction))
+    paused.resolve(await getTestPostgresBackendProcessId(postgresLockQuery(transaction)))
     await resume.promise
     await transaction(sql`/* startPausedTestPostTopicRelationWriter:post */
       SELECT id FROM posts WHERE id = ${postId} FOR KEY SHARE

@@ -1,5 +1,8 @@
 import { beginTransaction } from '@data-stores/psql'
-import { getTestPostgresBackendProcessId } from '@voucha/test-helpers/postgres-lock-wait'
+import {
+  postgresLockQuery,
+  getTestPostgresBackendProcessId,
+} from '@voucha/test-helpers/postgres-lock-observers'
 import sql from 'sql-template-strings'
 
 export async function holdClassifierRunActorDeletionLock(actorId: string) {
@@ -8,7 +11,7 @@ export async function holdClassifierRunActorDeletionLock(actorId: string) {
     SELECT fn_lock_active_user_for_mutation(${actorId}::uuid)
   `)
   return {
-    processId: await getTestPostgresBackendProcessId(transaction),
+    processId: await getTestPostgresBackendProcessId(postgresLockQuery(transaction)),
     lockActorRow: async () => {
       await transaction(sql`/* holdClassifierRunActorDeletionRow */
         SET LOCAL lock_timeout = '250ms'

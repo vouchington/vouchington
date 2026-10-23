@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { loadRecordedResponse } from '../../test-helpers/provider-replay.mts'
+import { loadRecordedResponse } from 'vouchington-tooling/provider-replay'
 import { generateJson } from './generate.mts'
 import { calcCostMicrounits } from './pricing.mts'
 
@@ -8,13 +8,13 @@ import { calcCostMicrounits } from './pricing.mts'
 // are hand-written from Anthropic's documented wire format. The live counterpart is the non-gating
 // smoke check in generate.anthropic.test.mts.
 const replay = await vi.hoisted(async () => {
-  const { createProviderReplay } = await import('../../test-helpers/provider-replay.mts')
+  const { createProviderReplay } = await import('vouchington-tooling/provider-replay')
   return createProviderReplay()
 })
 
 vi.mock<typeof import('@anthropic-ai/sdk')>(import('@anthropic-ai/sdk'), async importOriginal => {
   const actual = await importOriginal()
-  const { replayClient } = await import('../../test-helpers/provider-replay.mts')
+  const { replayClient } = await import('vouchington-tooling/provider-replay')
   return { ...actual, default: replayClient(actual.default, replay) }
 })
 
@@ -58,7 +58,11 @@ describe('generateJson against recorded Anthropic Messages responses', () => {
   })
 
   it('sends one schema-constrained request and returns the parsed, priced, billed answer', async () => {
-    replay.respondWith(loadRecordedResponse('anthropic/messages-json-end-turn.http'))
+    replay.respondWith(
+      loadRecordedResponse('anthropic/messages-json-end-turn.http', {
+        fixtureRoot: new URL('../../test-helpers/provider-fixtures/', import.meta.url),
+      }),
+    )
 
     const result = await ask()
 
@@ -107,7 +111,11 @@ describe('generateJson against recorded Anthropic Messages responses', () => {
   it('authenticates with the federated token as a bearer when no API key is set', async () => {
     vi.stubEnv('ANTHROPIC_API_KEY', '')
     vi.stubEnv('ANTHROPIC_AUTH_TOKEN', 'federated-token')
-    replay.respondWith(loadRecordedResponse('anthropic/messages-json-end-turn.http'))
+    replay.respondWith(
+      loadRecordedResponse('anthropic/messages-json-end-turn.http', {
+        fixtureRoot: new URL('../../test-helpers/provider-fixtures/', import.meta.url),
+      }),
+    )
 
     await ask()
 
@@ -147,7 +155,11 @@ describe('generateJson against recorded Anthropic Messages responses', () => {
       },
     },
   ])('classifies $fixture and sends exactly one request', async ({ fixture, expected }) => {
-    replay.respondWith(loadRecordedResponse(`anthropic/${fixture}`))
+    replay.respondWith(
+      loadRecordedResponse(`anthropic/${fixture}`, {
+        fixtureRoot: new URL('../../test-helpers/provider-fixtures/', import.meta.url),
+      }),
+    )
 
     const failure: unknown = await ask().catch((err: unknown) => err)
 

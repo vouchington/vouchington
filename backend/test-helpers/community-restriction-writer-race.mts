@@ -3,9 +3,10 @@ import { setTimeout } from 'node:timers/promises'
 import { vi } from 'vitest'
 import { lockDelegatedPostCommunity } from '../services/posts/delegated-write-locks.mts'
 import {
+  postgresLockQuery,
   getTestPostgresBackendProcessId,
   waitForTestPostgresLockWaiter,
-} from './postgres-lock-wait.mts'
+} from './postgres-lock-observers.mts'
 
 /**
  * How far ahead of "now" a restriction expiry sits when a case needs it to pass while the writer is
@@ -23,7 +24,7 @@ export async function withHeldDelegatedCommunityFenceForTest<T>(
 ): Promise<T> {
   await using query = await beginTransaction()
   await lockDelegatedPostCommunity(query, communityId, actorId)
-  const processId = await getTestPostgresBackendProcessId(query)
+  const processId = await getTestPostgresBackendProcessId(postgresLockQuery(query))
   const pending = operation()
   void pending.catch(() => undefined)
   try {

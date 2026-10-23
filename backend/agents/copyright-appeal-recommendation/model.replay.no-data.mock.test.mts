@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ANTHROPIC_HAIKU_CALL } from '@voucha/test-helpers/agents/model-call-result'
-import { loadRecordedResponse } from '../../test-helpers/provider-replay.mts'
+import { loadRecordedResponse } from 'vouchington-tooling/provider-replay'
 import { callCopyrightAppealRecommendationModel } from './model.mts'
 
 // The recorded Messages API body is served to the real `generateJson` through its `createMessage`
@@ -34,7 +34,11 @@ describe('callCopyrightAppealRecommendationModel against a recorded Anthropic re
   })
 
   it('sends the recommendation schema and input, and returns the parsed advice with its billed usage', async () => {
-    replay.respondWith(loadRecordedResponse(FIXTURE))
+    replay.respondWith(
+      loadRecordedResponse(FIXTURE, {
+        fixtureRoot: new URL('../../test-helpers/provider-fixtures/', import.meta.url),
+      }),
+    )
 
     const result = await callCopyrightAppealRecommendationModel(
       INPUT,
@@ -74,6 +78,7 @@ describe('callCopyrightAppealRecommendationModel against a recorded Anthropic re
     // The schema allows any string; the 10,000-character bound belongs to this agent's parser.
     replay.respondWith(
       loadRecordedResponse(FIXTURE, {
+        fixtureRoot: new URL('../../test-helpers/provider-fixtures/', import.meta.url),
         replace: { 'The appeal asserts authorship': 'x'.repeat(10_001) },
       }),
     )

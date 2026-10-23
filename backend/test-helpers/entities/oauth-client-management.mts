@@ -1,5 +1,5 @@
 import { beginTransaction, read, write } from '@data-stores/psql'
-import { getTestPostgresBackendProcessId } from '../postgres-lock-wait.mts'
+import { postgresLockQuery, getTestPostgresBackendProcessId } from '../postgres-lock-observers.mts'
 import {
   updateTestOAuthClientWhileWaiting,
   type OperationWaitingOnClient,
@@ -125,7 +125,7 @@ export async function startPausedTestOAuthClientUpdate(
        SET client_name = client_name WHERE client_id = $1`,
       [clientId],
     )
-    locked.resolve(await getTestPostgresBackendProcessId(transaction))
+    locked.resolve(await getTestPostgresBackendProcessId(postgresLockQuery(transaction)))
     await release.promise
     await transaction.commit()
   })()

@@ -5,7 +5,7 @@ import {
   holdTestRetainedUserIdentityLocks,
   listTestUserDeletionRequestActorIds,
 } from '@voucha/test-helpers/entities/user-deletion-actor-locks'
-import { waitForTestPostgresBlockedLockChain } from '@voucha/test-helpers/postgres-lock-wait'
+import { waitForTestPostgresBlockedLockChain } from '@voucha/test-helpers/postgres-lock-observers'
 import { TestUserDeletionWriterAborted } from '@voucha/test-helpers/entities/user-deletion'
 import { deleteUser } from '../delete.mts'
 import { drainUserDeletionForTest } from '@voucha/test-helpers/services/users/delete-test-support'

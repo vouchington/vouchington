@@ -1,6 +1,6 @@
 import { beginTransaction } from '@data-stores/psql'
 import { runPostPublicationShadowAudit } from '../services/post-publication/shadow-audit.mts'
-import { getTestPostgresBackendProcessId } from './postgres-lock-wait.mts'
+import { postgresLockQuery, getTestPostgresBackendProcessId } from './postgres-lock-observers.mts'
 import {
   assertAuditOutcomes,
   auditOutcome,
@@ -19,7 +19,7 @@ export async function observeGlobalShadowAuditCancellation(holderPid: number, si
     await using contender = await beginTransaction({ client: sessions.contender })
     const baseline = await statementBudget(contender)
     const timeoutMs = await configureBoundedContender(contender)
-    const contenderPid = await getTestPostgresBackendProcessId(contender)
+    const contenderPid = await getTestPostgresBackendProcessId(postgresLockQuery(contender))
     signal.throwIfAborted()
     const operation = auditOutcome(
       runPostPublicationShadowAudit({ dryRun: false, limit: 1 }, { query: contender }),
@@ -75,8 +75,8 @@ export async function observeScopedShadowAuditSuccess(postId: string, signal: Ab
     await using contender = await beginTransaction({ client: sessions.contender })
     const baseline = await statementBudget(contender)
     const timeoutMs = await configureBoundedContender(contender)
-    const holderPid = await getTestPostgresBackendProcessId(holder)
-    const contenderPid = await getTestPostgresBackendProcessId(contender)
+    const holderPid = await getTestPostgresBackendProcessId(postgresLockQuery(holder))
+    const contenderPid = await getTestPostgresBackendProcessId(postgresLockQuery(contender))
     const options = { dryRun: false, limit: 1, postIdentityIds: [postId] }
     signal.throwIfAborted()
     const first = await runPostPublicationShadowAudit(options, { query: holder })

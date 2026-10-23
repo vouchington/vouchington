@@ -8,7 +8,7 @@ import {
   insertTestLandingPagesInPromotionOrder,
   holdTestLandingPageUserLock,
 } from '@voucha/test-helpers/landing-page-default'
-import { waitForTestPostgresLockWaiter } from '@voucha/test-helpers/postgres-lock-wait'
+import { waitForTestPostgresLockWaiter } from '@voucha/test-helpers/postgres-lock-observers'
 
 describe('setMyLandingPageDefault', () => {
   it('promotes a heap row preceding the current default without a unique-index collision', async () => {

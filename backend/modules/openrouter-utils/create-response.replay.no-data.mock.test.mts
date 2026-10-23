@@ -3,7 +3,7 @@ import {
   OpenAIResponseStreamIterationError,
   runWithOpenAIResponseAttemptHooks,
 } from '@modules/openai-utils/create-response'
-import { loadRecordedResponse } from '../../test-helpers/provider-replay.mts'
+import { loadRecordedResponse } from 'vouchington-tooling/provider-replay'
 import { createOpenRouterResponse, toOpenRouterModel } from './create-response.mts'
 
 // The recorded responses are served through the real OpenAI SDK's `fetch` option (OpenRouter's
@@ -13,13 +13,13 @@ import { createOpenRouterResponse, toOpenRouterModel } from './create-response.m
 // documented wire format, not recorded. The live counterpart is the non-gating smoke check in
 // create-response.openrouter.test.mts.
 const replay = await vi.hoisted(async () => {
-  const { createProviderReplay } = await import('../../test-helpers/provider-replay.mts')
+  const { createProviderReplay } = await import('vouchington-tooling/provider-replay')
   return createProviderReplay({ chunkBytes: 41 })
 })
 
 vi.mock<typeof import('openai')>(import('openai'), async importOriginal => {
   const actual = await importOriginal()
-  const { replayClient } = await import('../../test-helpers/provider-replay.mts')
+  const { replayClient } = await import('vouchington-tooling/provider-replay')
   return { ...actual, default: replayClient(actual.default, replay) }
 })
 
@@ -52,7 +52,9 @@ describe('createOpenRouterResponse against recorded OpenRouter responses', () =>
 
   it('sends one foreground streaming request and parses the completed response from the SSE bytes', async () => {
     replay.respondWith(
-      loadRecordedResponse('openrouter/responses-stream-structured-completed.http'),
+      loadRecordedResponse('openrouter/responses-stream-structured-completed.http', {
+        fixtureRoot: new URL('../../test-helpers/provider-fixtures/', import.meta.url),
+      }),
     )
     const hooks = makeHooks()
 
@@ -103,7 +105,11 @@ describe('createOpenRouterResponse against recorded OpenRouter responses', () =>
   })
 
   it('latches an HTTP 500 on create and stops without a second request', async () => {
-    replay.respondWith(loadRecordedResponse('openrouter/responses-create-server-error-500.http'))
+    replay.respondWith(
+      loadRecordedResponse('openrouter/responses-create-server-error-500.http', {
+        fixtureRoot: new URL('../../test-helpers/provider-fixtures/', import.meta.url),
+      }),
+    )
     const hooks = makeHooks()
 
     await expect(
@@ -128,7 +134,11 @@ describe('createOpenRouterResponse against recorded OpenRouter responses', () =>
   ])(
     'latches a server_error that arrives as %s before any delta and stops',
     async (_framing, fixture) => {
-      replay.respondWith(loadRecordedResponse(fixture))
+      replay.respondWith(
+        loadRecordedResponse(fixture, {
+          fixtureRoot: new URL('../../test-helpers/provider-fixtures/', import.meta.url),
+        }),
+      )
       const hooks = makeHooks()
 
       const error: unknown = await runWithOpenAIResponseAttemptHooks(hooks, () =>
@@ -148,7 +158,9 @@ describe('createOpenRouterResponse against recorded OpenRouter responses', () =>
 
   it('does not latch a missing previous response delivered as an SSE error', async () => {
     replay.respondWith(
-      loadRecordedResponse('openrouter/responses-stream-error-previous-response.http'),
+      loadRecordedResponse('openrouter/responses-stream-error-previous-response.http', {
+        fixtureRoot: new URL('../../test-helpers/provider-fixtures/', import.meta.url),
+      }),
     )
     const hooks = makeHooks()
 

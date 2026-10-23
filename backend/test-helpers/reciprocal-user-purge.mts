@@ -1,10 +1,11 @@
 import { beginTransaction, write } from '@data-stores/psql'
 import { FINAL_USER_PURGE_LOCK_KEY } from '../services/data-retention/cleanup-soft-deleted-user.mts'
 import {
+  postgresLockQuery,
   getTestPostgresAdvisoryLockHolderProcessId,
   getTestPostgresBackendProcessId,
   waitForTestPostgresLockWaiter,
-} from './postgres-lock-wait.mts'
+} from './postgres-lock-observers.mts'
 
 export async function setReciprocalTestUserDeletionActors(
   firstUserId: string,
@@ -28,7 +29,7 @@ export async function holdTestFinalPurgeUserLifecycle(userId: string) {
       SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`,
       [userId],
     )
-    const holderProcessId = await getTestPostgresBackendProcessId(transaction)
+    const holderProcessId = await getTestPostgresBackendProcessId(postgresLockQuery(transaction))
     return {
       async waitForFirstPurge() {
         await waitForTestPostgresLockWaiter(holderProcessId, 'cleanupSoftDeletedUserBatch:lockUser')

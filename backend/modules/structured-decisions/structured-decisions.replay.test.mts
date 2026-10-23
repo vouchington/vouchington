@@ -1,6 +1,6 @@
 import { Response as UndiciResponse } from 'undici'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createProviderReplay, loadRecordedResponse } from '../../test-helpers/provider-replay.mts'
+import { createProviderReplay, loadRecordedResponse } from 'vouchington-tooling/provider-replay'
 import {
   createStructuredDecisionClient,
   type StructuredDecisionAttemptHooks,
@@ -51,7 +51,11 @@ describe('createStructuredDecisionClient against a recorded OpenRouter Decisions
   })
 
   it('sends the native questions and decodes the recorded Noul, Choice and Score answers', async () => {
-    replay.respondWith(loadRecordedResponse('openrouter/decisions-jev-completed.http'))
+    replay.respondWith(
+      loadRecordedResponse('openrouter/decisions-jev-completed.http', {
+        fixtureRoot: new URL('../../test-helpers/provider-fixtures/', import.meta.url),
+      }),
+    )
     const onBilledResponse = vi.fn<NonNullable<StructuredDecisionAttemptHooks['onBilledResponse']>>(
       () => Promise.resolve(),
     )

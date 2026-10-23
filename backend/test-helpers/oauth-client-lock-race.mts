@@ -1,8 +1,9 @@
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import {
+  postgresLockQuery,
   getTestPostgresBackendProcessId,
   waitForTestPostgresLockWaiter,
-} from './postgres-lock-wait.mts'
+} from './postgres-lock-observers.mts'
 
 export type OperationWaitingOnClient<T> = {
   clientId: string
@@ -24,7 +25,7 @@ export async function updateTestOAuthClientWhileWaiting<T>(
   try {
     await using transaction = await beginTransaction()
     await update(transaction)
-    const holderProcessId = await getTestPostgresBackendProcessId(transaction)
+    const holderProcessId = await getTestPostgresBackendProcessId(postgresLockQuery(transaction))
     const observation = new AbortController()
     operationOutcome = Promise.allSettled([input.start()] as const).then(([outcome]) => {
       observation.abort(

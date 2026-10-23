@@ -1,3 +1,4 @@
+import { postgresLockQuery } from '@voucha/test-helpers/postgres-lock-observers'
 import type { QueryExecutor } from '@data-stores/psql'
 import { describe, expect, it } from 'vitest'
 import {
@@ -105,7 +106,7 @@ describe('community membership role locks', () => {
 
     async function holdTargetUserLock(): Promise<void> {
       await using query = await beginTransaction()
-      holderProcessId.resolve(await getTestPostgresBackendProcessId(query))
+      holderProcessId.resolve(await getTestPostgresBackendProcessId(postgresLockQuery(query)))
       await lockCommunityUser(community.id, target.id, { query })
       ready.resolve()
       await release.promise
@@ -137,7 +138,7 @@ describe('community membership role locks', () => {
 
     async function holdTargetUserLock(): Promise<void> {
       await using query = await beginTransaction()
-      holderProcessId.resolve(await getTestPostgresBackendProcessId(query))
+      holderProcessId.resolve(await getTestPostgresBackendProcessId(postgresLockQuery(query)))
       await lockCommunityUser(community.id, target.id, { query })
       ready.resolve()
       await release.promise
@@ -169,7 +170,7 @@ describe('community membership role locks', () => {
 
     async function holdTargetUserLock(): Promise<void> {
       await using query = await beginTransaction()
-      holderProcessId.resolve(await getTestPostgresBackendProcessId(query))
+      holderProcessId.resolve(await getTestPostgresBackendProcessId(postgresLockQuery(query)))
       await lockCommunityUser(community.id, target.id, { query })
       ready.resolve()
       await release.promise
@@ -207,7 +208,7 @@ describe('community membership role locks', () => {
 
     async function holdModeratorLockUntilDemoted(): Promise<void> {
       await using query = await beginTransaction()
-      holderProcessId.resolve(await getTestPostgresBackendProcessId(query))
+      holderProcessId.resolve(await getTestPostgresBackendProcessId(postgresLockQuery(query)))
       const options = { query }
       await lockCommunityUser(community.id, moderator.id, options)
       ready.resolve()
@@ -256,7 +257,7 @@ describe('community membership role locks', () => {
 
     async function holdModeratorLockUntilDemoted(): Promise<void> {
       await using query = await beginTransaction()
-      holderProcessId.resolve(await getTestPostgresBackendProcessId(query))
+      holderProcessId.resolve(await getTestPostgresBackendProcessId(postgresLockQuery(query)))
       const options = { query }
       await lockCommunityUser(community.id, moderator.id, options)
       ready.resolve()

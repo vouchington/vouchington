@@ -2,7 +2,7 @@ import {
   observeGlobalShadowAuditCancellation,
   observeScopedShadowAuditSuccess,
 } from '@voucha/test-helpers/post-publication-shadow-audit-contention'
-import { getTestPostgresAdvisoryLockHolderProcessId } from '@voucha/test-helpers/postgres-lock-wait'
+import { getTestPostgresAdvisoryLockHolderProcessId } from '@voucha/test-helpers/postgres-lock-observers'
 import { readFileSync } from 'node:fs'
 import { randomUUID } from 'node:crypto'
 import type { QueryExecutor } from '@data-stores/psql'

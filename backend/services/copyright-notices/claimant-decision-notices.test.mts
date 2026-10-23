@@ -5,9 +5,10 @@ import { deliverCopyrightInAppNotification } from './delivery-transport.mts'
 import { describe, expect, it } from 'vitest'
 import { beginTransaction, createTestUser } from '@voucha/test-helpers'
 import {
+  postgresLockQuery,
   getTestPostgresBackendProcessId,
   waitForTestPostgresLockWaiter,
-} from '@voucha/test-helpers/postgres-lock-wait'
+} from '@voucha/test-helpers/postgres-lock-observers'
 import { createCopyrightClaimantDecisionNoticeInTransaction } from './claimant-decision-notices.mts'
 import {
   createClearScreenedForm,
@@ -148,7 +149,7 @@ describe('claimant copyright decision notices', () => {
     const notice = await createSignedInCopyrightForm()
     const caseId = notice.intake.copyright_notice_id
     await using holder = await beginTransaction()
-    const holderProcessId = await getTestPostgresBackendProcessId(holder)
+    const holderProcessId = await getTestPostgresBackendProcessId(postgresLockQuery(holder))
     await createCopyrightClaimantDecisionNoticeInTransaction(
       { noticeId: caseId, event: 'not_accepted' },
       holder,

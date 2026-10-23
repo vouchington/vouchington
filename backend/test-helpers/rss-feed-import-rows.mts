@@ -1,7 +1,7 @@
 import { jobSerializationPool, write, type PoolClient } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { randomUUID } from 'node:crypto'
-import { getTestPostgresAdvisoryLockHolderProcessId } from './postgres-lock-wait.mts'
+import { getTestPostgresAdvisoryLockHolderProcessId } from './postgres-lock-observers.mts'
 
 const RSS_FEED_IMPORT_ROW_LOCK_NAMESPACE = 0x5252
 

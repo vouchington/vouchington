@@ -27,7 +27,7 @@ selection, parallel safety, and validation commands. Read
 4. Mock only external provider boundaries — see
    [`vitest-test-authoring`](../vitest-test-authoring/SKILL.md) for the exact boundary and naming
    rules. Gate a provider integration on a recorded response replayed through the SDK's `fetch`
-   (`createProviderReplay()` in `backend/test-helpers/provider-replay.mts`);
+   (`createProviderReplay()` from `vouchington-tooling/provider-replay`);
    a live-provider test is a non-gating smoke check
    ([rules](../../../docs/development/tests.md#live-provider-smoke-checks)).
 5. Run the exact file in its owning project before broader backend validation. If DB/Valkey setup is

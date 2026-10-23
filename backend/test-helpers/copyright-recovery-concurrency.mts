@@ -5,9 +5,10 @@ import {
   type AssessmentInput,
 } from '../services/copyright-notices/compliance-assessment.mts'
 import {
+  postgresLockQuery,
   getTestPostgresBackendProcessId,
   waitForTestPostgresLockWaiter,
-} from './postgres-lock-wait.mts'
+} from './postgres-lock-observers.mts'
 
 /** Commit a normal writer after recovery took its pre-lock READ COMMITTED snapshot. */
 export async function appendTestCopyrightAssessmentWhileRecoveryWaits<Result>(
@@ -19,7 +20,7 @@ export async function appendTestCopyrightAssessmentWhileRecoveryWaits<Result>(
     SELECT submission.id FROM copyright_notice_submissions submission
     JOIN copyright_notices notice ON notice.id = submission.copyright_notice_id
     WHERE submission.id = ${input.submissionId} FOR UPDATE OF notice, submission`)
-  const processId = await getTestPostgresBackendProcessId(transaction)
+  const processId = await getTestPostgresBackendProcessId(postgresLockQuery(transaction))
   const pending = recover()
   void pending.catch(() => undefined)
   try {

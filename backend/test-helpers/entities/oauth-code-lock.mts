@@ -1,7 +1,7 @@
 import { beginTransaction } from '@data-stores/psql'
 import { hashToken } from '@modules/token-secrets'
 import { OAUTH_SECRET_PURPOSES } from '../../services/oauth-authorization-server/constants.mts'
-import { getTestPostgresBackendProcessId } from '../postgres-lock-wait.mts'
+import { postgresLockQuery, getTestPostgresBackendProcessId } from '../postgres-lock-observers.mts'
 
 /** Holds one authorization-code row until the test releases its transaction. */
 export async function startPausedTestOAuthCodeLock(
@@ -17,7 +17,7 @@ export async function startPausedTestOAuthCodeLock(
       [hashToken(OAUTH_SECRET_PURPOSES.authorizationCode, rawCode)],
     )
     if (result.rows.length !== 1) throw new Error('Test authorization code does not exist')
-    locked.resolve(await getTestPostgresBackendProcessId(transaction))
+    locked.resolve(await getTestPostgresBackendProcessId(postgresLockQuery(transaction)))
     await release.promise
     await transaction.commit()
   })()

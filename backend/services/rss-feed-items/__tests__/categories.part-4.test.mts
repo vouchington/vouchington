@@ -1,3 +1,4 @@
+import { postgresLockQuery } from '@voucha/test-helpers/postgres-lock-observers'
 import { it, expect, beforeEach, describe } from 'vitest'
 import { getRssFeedItemCategories, upsertRssFeedItemCategories } from '../categories.mts'
 import { backfillCategoriesForTopicAliases } from '../backfill-categories-for-topic-aliases.mts'
@@ -6,7 +7,6 @@ import { createTopic } from '@services/topics'
 import { createTopicAliases, unlinkTopicAlias } from '@services/topics/aliases'
 import { upsertRssFeedItems } from '../upsert.mts'
 import { caches } from '@services/entity-cache/caches'
-
 import { getRssFeedItemById } from '../get.mts'
 
 import { v4 as uuid } from 'uuid'
@@ -216,7 +216,7 @@ describe('categories', () => {
     const holderProcessId = Promise.withResolvers<number>()
     async function holdStaleCategory(): Promise<void> {
       await using query = await beginTransaction()
-      holderProcessId.resolve(await getTestPostgresBackendProcessId(query))
+      holderProcessId.resolve(await getTestPostgresBackendProcessId(postgresLockQuery(query)))
       await lockTestRssFeedItemCategory(testRssFeedItemId, categoryText, query)
       ready.resolve()
       await release.promise
