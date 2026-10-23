@@ -65,7 +65,8 @@ Browser device credentials carry refresh authority separately from access author
 service may renew an access credential only after checking device binding, revocation and the
 current user; that refresh authority alone never authorizes a mutation. Ordinary authenticated
 requests still require a paired device and access credential. Browser-key binding is authoritative
-per session, so all renewal paths consult the same state and missing state cannot restore an
+on the PostgreSQL session row; Valkey holds only single-use proof challenges. Renewal checks the
+binding under the same row lock as credential rotation, and cache eviction cannot restore an
 unbound credential. Credential mint authority also preserves native identity during secure completion
 replay; verified native attestation can renew device lifetime without converting a web session. See the [browser auth boundary](../reference-auth-overview-web-client-auth-boundary.md).
 

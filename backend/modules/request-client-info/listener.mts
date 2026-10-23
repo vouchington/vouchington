@@ -16,6 +16,7 @@ import {
   type VerifiedDeviceIdentity,
 } from './index.mts'
 import { isAuthenticatedOriginRequest } from './authenticated-origin.mts'
+import { isDbscCeremonyRequest } from './browser-session-protocol.mts'
 
 type HttpListener = (req: IncomingMessage, res: ServerResponse) => void
 const TRUSTED_REQUEST_KINDS = new Set(['bot', 'cache-fill'])
@@ -67,6 +68,10 @@ async function handleRequest(
   dependencies: ListenerDependencies,
 ): Promise<void> {
   const path = new URL(req.url ?? '/', 'http://localhost').pathname
+  if (isDbscCeremonyRequest(req.method, path)) {
+    runWithSessionRequestContext(null, () => listener(req, res))
+    return
+  }
   if (isExempt(req, path)) {
     listener(req, res)
     return

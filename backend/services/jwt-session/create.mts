@@ -1,3 +1,4 @@
+import { markDbscRegistrationEligible } from './dbsc-eligibility.mts'
 import { mintAuthenticatedDeviceAuthority } from './device-authority-mint.mts'
 import { createSessionClientBinding } from './client-binding.mts'
 import type {
@@ -115,7 +116,7 @@ export async function createDeviceAndSessionTokens({
       { query },
     )
 
-  return {
+  const result: DeviceAndSessionTokenResult = {
     deviceToken: {
       token: deviceToken,
       payload: authority?.payload ?? { did, ...devicePayloadExtra },
@@ -125,6 +126,9 @@ export async function createDeviceAndSessionTokens({
       payload: { did, sid, uid: uid ?? null, ...binding, ...sessionPayloadExtra },
     },
   }
+  if (authority?.created && authority.binding.client === 'web')
+    markDbscRegistrationEligible(result.deviceToken)
+  return result
 }
 
 export async function createSessionToken({

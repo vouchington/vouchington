@@ -4,6 +4,8 @@ import { createRequest, createNativeRequest } from '@voucha/test-helpers/api/ser
 import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
 import { createEmailAddressLoginToken } from '@services/users/authentication'
 import { verifySessionJwt } from '@ts-shared/session-jwt'
+import { COOKIE_OPTIONS } from '@modules/api-utils'
+import { readSessionDeviceAuthority } from '@services/jwt-session/device-authority'
 
 const origin = 'https://dbsc.example'
 const userAgent = 'Synthetic browser/1.0'
@@ -11,6 +13,7 @@ const userAgent = 'Synthetic browser/1.0'
 function browser() {
   return createRequest()
     .set('User-Agent', userAgent)
+    .set('Origin', origin)
     .set('x-forwarded-proto', 'https')
     .set('x-forwarded-host', 'dbsc.example')
 }
@@ -27,9 +30,9 @@ async function signProof(nonce: string, registration = false) {
   const key = await generateKeyPair('ES256')
   const jwk = await exportJWK(key.publicKey)
   const sign = async (challenge: string, includeKey = false) =>
-    `"${await new SignJWT({ jti: challenge })
+    new SignJWT({ jti: challenge })
       .setProtectedHeader({ alg: 'ES256', typ: 'dbsc+jwt', ...(includeKey && { jwk }) })
-      .sign(key.privateKey)}"`
+      .sign(key.privateKey)
   return { initial: await sign(nonce, registration), sign }
 }
 function cookieTokens(headers: Record<string, unknown>): string[] {
@@ -57,27 +60,34 @@ describe('browser device-bound session protocol', () => {
       .set('Cookie', cookies.join('; '))
       .set('Secure-Session-Response', proof.initial)
       .expect(200)
-    expect(registered.body).toEqual({
+    expect(registered.body).toMatchObject({
       session_identifier: response.body.sid,
       refresh_url: `${origin}/api/v1/auth/device-bound-sessions/refreshes`,
       scope: { origin, include_site: false },
-      credentials: [
-        { type: 'cookie', name: 'st', attributes: 'Path=/; Secure; HttpOnly; SameSite=Lax' },
-      ],
+      credentials: [{ type: 'cookie', name: 'st' }],
     })
+    expect(registered.body.credentials[0].attributes).toContain('Path=/')
+    expect(registered.body.credentials[0].attributes).toContain('HttpOnly')
+    expect(registered.body.credentials[0].attributes.includes('Secure')).toBe(COOKIE_OPTIONS.secure)
+    expect(registered.body.scope.scope_specification).toEqual(
+      expect.arrayContaining([
+        { type: 'exclude', path: '/login' },
+        { type: 'exclude', path: '/session-renewal' },
+        { type: 'exclude', path: '/api/v1/auth/logout' },
+      ]),
+    )
+    expect(JSON.stringify(registered.body.scope)).not.toContain('*')
     expect(registered.headers['cache-control']).toBe('no-store')
     const boundCookies = cookieTokens(registered.headers)
     const st = boundCookies.find(cookie => cookie.startsWith('st='))!.slice(3)
-    expect((await verifySessionJwt(st))?.dbsc).toBe(true)
+    expect((await verifySessionJwt(st))?.client).toBe('web')
     expect(registered.body).not.toHaveProperty('dt')
     expect(registered.body).not.toHaveProperty('st')
-    // The pre-registration dt also requires proof after the authoritative transition.
-    await request.patch('/api/v1/session').set('Cookie', cookies.join('; ')).send({}).expect(403)
     const dt = boundCookies.find(cookie => cookie.startsWith('dt='))!
     const challenge = await request
       .post('/api/v1/auth/device-bound-sessions/refreshes')
       .set('Cookie', dt)
-      .set('Sec-Secure-Session-Id', `"${response.body.sid}"`)
+      .set('Sec-Secure-Session-Id', response.body.sid)
       .expect(403)
     const challengeHeader = challenge.headers['secure-session-challenge'] as string
     expect(challengeHeader).toMatch(new RegExp(`;id="${response.body.sid}"$`))
@@ -86,19 +96,63 @@ describe('browser device-bound session protocol', () => {
     const refreshed = await request
       .post('/api/v1/auth/device-bound-sessions/refreshes')
       .set('Cookie', dt)
-      .set('Sec-Secure-Session-Id', `"${response.body.sid}"`)
+      .set('Sec-Secure-Session-Id', response.body.sid)
       .set('Secure-Session-Response', refreshProof)
       .expect(200)
     expect(refreshed.headers['set-cookie']).toHaveLength(2)
     expect(refreshed.body.session_identifier).toBe(response.body.sid)
     expect(refreshed.body).not.toHaveProperty('session')
-    const replay = await request
+    const currentDt = cookieTokens(refreshed.headers).find(cookie => cookie.startsWith('dt='))!
+    const renewedChallenge = await browser()
+      .post('/api/v1/auth/device-bound-sessions/refreshes')
+      .set('Cookie', currentDt)
+      .set('Sec-Secure-Session-Id', response.body.sid)
+      .set('Secure-Session-Response', refreshProof)
+      .expect(403)
+    expect(renewedChallenge.body.code).toBe('DBSC_PROOF_REQUIRED')
+    const nextNonce = /^"([A-Za-z0-9_-]+)"/u.exec(
+      renewedChallenge.headers['secure-session-challenge'],
+    )![1]!
+    expect(nextNonce).not.toBe(refreshNonce)
+    await browser()
+      .post('/api/v1/auth/device-bound-sessions/refreshes')
+      .set('Cookie', currentDt)
+      .set('Sec-Secure-Session-Id', response.body.sid)
+      .set('Secure-Session-Response', await proof.sign(nextNonce))
+      .expect(200)
+    // A fresh agent preserves the deliberately old DT instead of attaching its updated cookie jar.
+    const replay = await browser()
       .post('/api/v1/auth/device-bound-sessions/refreshes')
       .set('Cookie', dt)
-      .set('Sec-Secure-Session-Id', `"${response.body.sid}"`)
+      .set('Sec-Secure-Session-Id', response.body.sid)
       .set('Secure-Session-Response', refreshProof)
-      .expect(400)
+      .expect(401)
     expect(replay.headers['secure-session-challenge']).toBeUndefined()
+  })
+
+  it('rejects ordinary bound refresh without key proof and preserves durable authority', async () => {
+    const { request, response } = await login()
+    const nonce = /challenge="([A-Za-z0-9_-]+)"/u.exec(
+      response.headers['secure-session-registration'],
+    )![1]!
+    const proof = await signProof(nonce, true)
+    const registered = await request
+      .post('/api/v1/auth/device-bound-sessions')
+      .set('Cookie', cookieTokens(response.headers).join('; '))
+      .set('Secure-Session-Response', proof.initial)
+      .expect(200)
+    const before = await readSessionDeviceAuthority(response.body.sid)
+    const rejected = await request
+      .patch('/api/v1/session')
+      .set('Cookie', cookieTokens(registered.headers).join('; '))
+      .send({})
+      .expect(403)
+    expect(rejected.body.code).toBe('DBSC_PROOF_REQUIRED')
+    expect(await readSessionDeviceAuthority(response.body.sid)).toMatchObject({
+      device_token_digest: before!.device_token_digest,
+      device_bound_session_binding: before!.device_bound_session_binding,
+      revoked_at: null,
+    })
   })
 
   it('returns terminal errors without a challenge for missing identifiers and unconfigured origins', async () => {
@@ -149,5 +203,28 @@ describe('browser device-bound session protocol', () => {
       .set('Cookie', cookieTokens(response.headers).join('; '))
       .set('Secure-Session-Response', proof.initial)
       .expect(401)
+  })
+
+  it.each(['logout', 'reset'] as const)('terminates Chrome binding on %s', async mode => {
+    const { request, response } = await login()
+    const nonce = /challenge="([A-Za-z0-9_-]+)"/u.exec(
+      response.headers['secure-session-registration'] as string,
+    )![1]!
+    const proof = await signProof(nonce, true)
+    const registered = await request
+      .post('/api/v1/auth/device-bound-sessions')
+      .set('Cookie', cookieTokens(response.headers).join('; '))
+      .unset('Origin')
+      .unset('Sec-Fetch-Site')
+      .set('Secure-Session-Response', proof.initial)
+      .expect(200)
+    const call =
+      mode === 'logout' ? request.post('/api/v1/auth/logout') : request.delete('/api/v1/session')
+    const ended = await call
+      .set('Cookie', cookieTokens(registered.headers).join('; '))
+      .send({})
+      .expect(mode === 'logout' ? 204 : 200)
+    expect(ended.headers['clear-site-data']).toBe('"cookies"')
+    expect((await readSessionDeviceAuthority(response.body.sid))!.revoked_at).toBeInstanceOf(Date)
   })
 })

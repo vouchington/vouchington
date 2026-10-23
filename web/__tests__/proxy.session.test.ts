@@ -135,19 +135,6 @@ describe('proxy.session', () => {
         )
       })
 
-      it('keeps a valid DBSC access cookie while the browser owns proof renewal', async () => {
-        mockDecodeSessionJwt.mockReturnValue({
-          ...AUTH_ST_PAYLOAD,
-          dbsc: true,
-          sca: 0,
-          exp: Math.floor(Date.now() / 1000) + 600,
-        })
-        await proxy(makeRequest({ cookies: { dt: 'my-dt', st: 'my-st' } }) as any)
-        expect(fetchMock).not.toHaveBeenCalled()
-        const headers = (mockNextResponseNext.mock as any).calls[0][0].request.headers as Headers
-        expect(headers.get('cookie')).toBe('dt=my-dt; st=my-st')
-      })
-
       it('skips /api/v1/session when st is anonymous (uid null)', async () => {
         mockDecodeSessionJwt.mockReturnValue({
           uid: null,

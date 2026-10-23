@@ -1,95 +1,41 @@
-import { afterEach, describe, expect, it } from 'vitest'
-import { v7 } from 'uuid'
-import { sessionValkeyClient } from '@data-stores/valkey/clients'
-import { createTestUserDirect, getTestPrivateUserById } from '@voucha/test-helpers/entities/users'
-import { createDeviceAndSessionTokens } from './index.mts'
-import { authorizeDbscProof, getWebRefreshAuthority } from './dbsc-proof.mts'
-import { createDbscRefreshChallenge } from './dbsc-registration.mts'
-import { getWebSessionAuthorityKey } from './dbsc-state.mts'
+import { describe, expect, it } from 'vitest'
+import { createDbscTestSession } from '@voucha/test-helpers/dbsc-session'
+import { softDeleteUser, suspendTestUser } from '@voucha/test-helpers/entities/users'
+import { refreshSessionState } from './flows.mts'
+import { revokeSession } from './user-session-revocation.mts'
+import { readSessionDeviceAuthority } from './device-authority.mts'
 
-const origin = 'https://dbsc-boundary.example'
-const userAgent = 'Synthetic browser boundary/1.0'
-const ownedAuthorityKeys: string[] = []
-
-async function createSession() {
-  const user = await createTestUserDirect()
-  const tokens = await createDeviceAndSessionTokens({
-    did: v7(),
-    uid: user.id,
-    deviceContext: { user_agent: userAgent, origin },
-  })
-  ownedAuthorityKeys.push(getWebSessionAuthorityKey(tokens.sessionToken.payload.sid))
-  return tokens
-}
-
-describe('DBSC authoritative storage boundary', () => {
-  afterEach(async () => {
-    if (ownedAuthorityKeys.length > 0)
-      await sessionValkeyClient.unlink(ownedAuthorityKeys.splice(0))
+describe('device-bound session live authority', () => {
+  it('rejects a durably revoked session before offering another challenge', async () => {
+    const fixture = await createDbscTestSession()
+    const registered = await fixture.register()
+    await revokeSession(registered.sid)
+    await expect(fixture.challenge(registered.dt)).rejects.toMatchObject({ status: 401 })
+    expect((await readSessionDeviceAuthority(registered.sid))!.revoked_at).toBeInstanceOf(Date)
   })
 
-  it.each([
-    ['invalid JSON', '{'],
-    ['missing identity', '{}'],
-    ['wrong stored user', { uid: 'another-user' }],
-    ['native authority with web fields', { client: 'native' }],
-    ['invalid browser hash', { uaHash: 'invalid' }],
-    ['invalid registration nonce', { registrationNonce: 'invalid' }],
-    ['invalid origin', { origin: 'not a URL' }],
-    ['noncanonical origin', { origin: `${origin}/unexpected` }],
-    ['unbound authority with a key', { publicKey: { kty: 'EC' } }],
-    ['bound authority without origin', { kind: 'bound', origin: undefined }],
-    ['bound authority with HTTP origin', { kind: 'bound', origin: 'http://dbsc-boundary.example' }],
-    ['bound authority without a key', { kind: 'bound' }],
-    [
-      'bound authority with a private key',
-      { kind: 'bound', publicKey: { kty: 'EC', d: 'private' } },
-    ],
-  ])(
-    'requires login for %s instead of authorizing from corrupt state',
-    async (_name, corruption) => {
-      const tokens = await createSession()
-      const key = getWebSessionAuthorityKey(tokens.sessionToken.payload.sid)
-      const original = String(await sessionValkeyClient.get(key))
-      const raw =
-        typeof corruption === 'string'
-          ? corruption
-          : JSON.stringify({ ...JSON.parse(original), ...corruption })
-      await sessionValkeyClient.set(key, raw)
+  it('does not authorize a retained credential after its user is deleted', async () => {
+    const fixture = await createDbscTestSession()
+    const registered = await fixture.register()
+    await softDeleteUser(fixture.user.id)
+    await expect(fixture.challenge(registered.dt)).rejects.toMatchObject({ status: 401 })
+  })
 
-      await expect(
-        getWebRefreshAuthority(tokens.deviceToken.token, userAgent),
-      ).rejects.toMatchObject({
-        status: 401,
-        code: 'SESSION_RELOGIN_REQUIRED',
-      })
-      expect(String(await sessionValkeyClient.get(key))).toBe(raw)
-    },
-  )
-
-  it('rejects a token without signed web refresh authority', async () => {
-    await expect(getWebRefreshAuthority('not-a-device-token', userAgent)).rejects.toMatchObject({
-      status: 401,
-      code: 'SESSION_RELOGIN_REQUIRED',
+  it('preserves the same suspended-user renewal policy for bound and unbound sessions', async () => {
+    const unbound = await createDbscTestSession()
+    const bound = await createDbscTestSession()
+    const registered = await bound.register()
+    await suspendTestUser(unbound.user.id)
+    await suspendTestUser(bound.user.id)
+    const unboundResult = await refreshSessionState(unbound.base)
+    const nonce = await bound.challenge(registered.dt)
+    const proof = await bound.authorizeRefresh(registered.dt, nonce)
+    const boundResult = await refreshSessionState({
+      ...bound.base,
+      deviceToken: registered.dt,
+      dbscProof: proof,
     })
-  })
-
-  it('offers no renewal challenge before binding and rejects malformed structured proof', async () => {
-    const tokens = await createSession()
-    const options = { deviceToken: tokens.deviceToken.token, userAgent, origin }
-    expect(
-      await createDbscRefreshChallenge({ ...options, sessionId: tokens.sessionToken.payload.sid }),
-    ).toBeNull()
-    await expect(
-      authorizeDbscProof({
-        ...options,
-        purpose: 'registration',
-        proofHeader: '"unterminated',
-        fetchUser: getTestPrivateUserById,
-      }),
-    ).rejects.toMatchObject({ status: 400, code: 'DBSC_PROOF_INVALID' })
-    expect((await getWebRefreshAuthority(options.deviceToken, userAgent)).authority.kind).toBe(
-      'unbound',
-    )
+    expect(unboundResult.uid).toBe(unbound.user.id)
+    expect(boundResult.uid).toBe(bound.user.id)
   })
 })

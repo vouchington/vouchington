@@ -47,6 +47,12 @@ Hardware attestation alone does not authenticate a user. The first native upgrad
 caller's live session authority through its replacement: if logout or another revocation wins
 while hardware proof is being checked, the caller must sign in again.
 
+Chrome can additionally bind renewal to its own key. PostgreSQL retains that binding with the
+session, while Valkey holds only single-use challenges. Browser-managed ceremonies can omit
+application metadata and origin headers, so their exact ingress exceptions retain device/key
+authorization. Key loss and terminal renewal failure lead to sign-in; logout remains available
+and asks Chrome to discard its binding. See the [session architecture](reference-auth-overview-stateless-session-architecture.md).
+
 Cookie attributes and token audiences remain centralized in the shared session package. Device and
 session token audiences differ, and API authentication requires matching device/session identity.
 Logout revokes web refresh authority even after its access cookie has expired, then removes or

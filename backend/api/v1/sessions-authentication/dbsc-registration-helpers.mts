@@ -1,11 +1,32 @@
+import { isDbscRegistrationEligible } from '@services/jwt-session/dbsc-eligibility'
 import type { Context } from '@jongleberry/api-server'
-import { getExpectedOrigin } from '@modules/api-utils'
+import { COOKIE_OPTIONS, getExpectedOrigin } from '@modules/api-utils'
+import { getTrustedClientJa4 } from '@modules/request-client-info/cloudflare-signals'
 import { getSiteOrigin } from '@modules/utils/site-origin'
 import { decodeDeviceJwt } from '@ts-shared/session-jwt'
 import { createDbscRegistrationOffer } from '@services/jwt-session/dbsc-registration'
+import { isNativeClientTransportRequest } from '@modules/request-client-info'
+import {
+  DBSC_REGISTRATION_PATH,
+  DBSC_REFRESH_PATH,
+} from '@modules/request-client-info/browser-session-protocol'
 
-export const DBSC_REGISTRATION_PATH = '/api/v1/auth/device-bound-sessions'
-export const DBSC_REFRESH_PATH = '/api/v1/auth/device-bound-sessions/refreshes'
+// A missing browser key must never block logout, login or credential bootstrap before the
+// server sees them. Chrome matches cookie-style path prefixes (no glob suffix); the
+// authentication and OAuth prefixes cover only their dynamic challenge/flow descendants.
+const RECOVERY_PATHS = [
+  '/login',
+  '/session-renewal',
+  '/api/v1/auth/logout',
+  '/api/v1/session',
+  DBSC_REGISTRATION_PATH,
+  '/api/v1/auth/email-address/tokens',
+  '/api/v1/auth/email-address/login',
+  '/api/v1/auth/passkeys/authentication/',
+  '/api/v1/auth/mfa/totp/verification',
+  '/api/v1/auth/mfa/passkeys/authentication/',
+  '/api/v1/auth/oauth/',
+] as const
 
 export function getDbscOrigin(ctx: Context): string | null {
   try {
@@ -17,21 +38,23 @@ export function getDbscOrigin(ctx: Context): string | null {
   }
 }
 
-/** This helper is used only by successful credential-completion routes. */
+/** Only successful credential completion can offer a new registration. */
 export async function advertiseDbscRegistration(
   ctx: Context,
-  deviceToken: { token: string; registrationEligible?: boolean },
+  deviceToken: { token: string },
 ): Promise<void> {
+  if (isNativeClientTransportRequest(ctx.req)) return
   const origin = getDbscOrigin(ctx)
   if (
     !origin ||
-    !deviceToken.registrationEligible ||
+    !isDbscRegistrationEligible(deviceToken) ||
     decodeDeviceJwt(deviceToken.token)?.client !== 'web'
   )
     return
   const nonce = await createDbscRegistrationOffer({
     deviceToken: deviceToken.token,
     userAgent: ctx.req.headers['user-agent'],
+    ja4: getTrustedClientJa4(ctx.req),
     origin,
   })
   if (nonce)
@@ -42,12 +65,20 @@ export async function advertiseDbscRegistration(
 }
 
 export function dbscSessionInstructions(sid: string, origin: string) {
+  const attributes = [
+    `Path=${COOKIE_OPTIONS.path}`,
+    ...(COOKIE_OPTIONS.secure ? ['Secure'] : []),
+    ...(COOKIE_OPTIONS.httpOnly ? ['HttpOnly'] : []),
+    `SameSite=${COOKIE_OPTIONS.sameSite[0]!.toUpperCase()}${COOKIE_OPTIONS.sameSite.slice(1)}`,
+  ].join('; ')
   return {
     session_identifier: sid,
     refresh_url: new URL(DBSC_REFRESH_PATH, origin).toString(),
-    scope: { origin, include_site: false },
-    credentials: [
-      { type: 'cookie' as const, name: 'st', attributes: 'Path=/; Secure; HttpOnly; SameSite=Lax' },
-    ],
+    scope: {
+      origin,
+      include_site: false,
+      scope_specification: RECOVERY_PATHS.map(path => ({ type: 'exclude' as const, path })),
+    },
+    credentials: [{ type: 'cookie' as const, name: 'st', attributes }],
   }
 }

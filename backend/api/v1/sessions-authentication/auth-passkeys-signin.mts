@@ -1,3 +1,4 @@
+import { advertiseDbscRegistration } from './dbsc-registration-helpers.mts'
 import { isNativeClientTransportRequest } from '@modules/request-client-info'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
@@ -62,6 +63,7 @@ app.route('/api/v1/auth/passkeys/authentication/verify').post(async (ctx: Contex
     deviceContext: getDeviceContext(ctx),
     fetchUser: getPrivateUserByAny,
   })
+  await advertiseDbscRegistration(ctx, login.deviceToken)
 
   /* v8 ignore start — success path requires a real WebAuthn ceremony (covered by Playwright) */
   setAuthenticationCookies(ctx, {
