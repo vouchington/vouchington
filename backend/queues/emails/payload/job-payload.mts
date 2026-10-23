@@ -20,6 +20,7 @@ import {
   dataExportVariables,
   ownershipVariables,
   roleChangeVariables,
+  reauthenticationVariables,
   stringVariables,
 } from './job-payload-templates.mts'
 
@@ -49,6 +50,7 @@ const templateParsers = {
       'expiration',
     ]),
   processSendDataExportReadyEmail: dataExportVariables,
+  processSendReauthenticationToken: reauthenticationVariables,
   processSendEmailVerificationToken: (data: unknown) =>
     stringVariables<ProcessSendEmailVerificationTokenVariables>(data, verificationVariableKeys, [
       'token',

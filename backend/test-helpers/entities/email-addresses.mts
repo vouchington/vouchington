@@ -1,9 +1,11 @@
+import type { EmailAuthenticationScope } from '../../services/users/email-authentication-scope.mts'
 import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 /**
  * Email address entity helpers
  */
 
 import { read, write, beginTransaction } from '@data-stores/psql'
+import { EMAIL_REAUTH_TOKEN_PURPOSE } from '../../services/users/authentication.mts'
 import { hashToken } from '@modules/token-secrets'
 import sql from 'sql-template-strings'
 import { upsertTestEmailDomainHostnameId, upsertTestHostnameId } from './email-domain-hostname.mts'
@@ -141,24 +143,24 @@ export async function addDisposableDomain(domain: string): Promise<void> {
 export async function insertEmailAddressLoginToken(
   emailAddress: string,
   token: string,
-  loggedIn: boolean = false,
+  consumed: boolean = false,
+  scope: EmailAuthenticationScope = { purpose: 'login' },
 ): Promise<void> {
-  const hashed = hashToken('email-address-login-token', token.toUpperCase())
-  if (loggedIn) {
-    await write(
-      allowUnannotatedQuery(sql`
-      INSERT INTO email_address_login_tokens (email_address, token, logged_in_at)
-      VALUES (${emailAddress}, ${hashed}, CURRENT_TIMESTAMP)
-    `),
-    )
-  } else {
-    await write(
-      allowUnannotatedQuery(sql`
-      INSERT INTO email_address_login_tokens (email_address, token)
-      VALUES (${emailAddress}, ${hashed})
-    `),
-    )
-  }
+  const sessionId = scope.purpose === 're_auth' ? scope.session.sid : null
+  const currentUserId = scope.purpose === 're_auth' ? scope.currentUserId : null
+  const hashed = hashToken(
+    scope.purpose === 'login'
+      ? 'email-address-login-token'
+      : `${EMAIL_REAUTH_TOKEN_PURPOSE}:${sessionId}`,
+    token.toUpperCase(),
+  )
+  await write(
+    allowUnannotatedQuery(sql`
+    INSERT INTO email_address_login_tokens (email_address, token, consumed_at, purpose, user_id, reauthentication_session_id)
+    VALUES (${emailAddress}, ${hashed}, CASE WHEN ${consumed} THEN CURRENT_TIMESTAMP ELSE NULL END,
+      ${scope.purpose}, ${currentUserId}, ${sessionId})
+  `),
+  )
 }
 
 export async function getLatestEmailAddressLoginTokenHash(

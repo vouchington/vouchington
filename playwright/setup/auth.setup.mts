@@ -58,6 +58,7 @@ test('authenticate as test user via real /login flow', async ({ page }) => {
   await otpInput.scrollIntoViewIfNeeded()
   await waitForBelowFoldHydration(page)
   await otpInput.pressSequentially(token)
+  await page.getByTestId('login-code-submit-button').click()
 
   // Assert login worked: the ?next= redirect sent us to the preferences page.
   await expect(page).toHaveURL(/\/my\/preferences/)

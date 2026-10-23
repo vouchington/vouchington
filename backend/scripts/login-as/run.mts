@@ -4,8 +4,8 @@
  * Creates or resolves a user by email address, assigns any requested roles, and
  * mints an OTP deep-link for live browser persona login via claude-in-chrome.
  *
- * The verify step at /login?emailAddress=…&otp=… auto-submits once when the tab
- * is focused and visible — no click and no CAPTCHA needed.
+ * The verify step at /login?emailAddress=…&otp=… prefills the code and waits for
+ * an explicit Log in click; the verify step requires no CAPTCHA.
  *
  * Usage:
  *   node backend/scripts/login-as/run.mts <email> [--role <slug>]...
@@ -15,7 +15,7 @@
  *
  * DNS note: brand-new emails (never logged in) trigger an MX lookup in
  * validateEmailAddress. Use a real-MX domain (e.g. @voucha.ai) and run with
- * network the first time. After the first successful login (logged_in_at set)
+ * network the first time. After the first successful login (consumed_at set)
  * the email is DNS-free on re-runs. The seeded admin (tests@voucha.ai) is
  * always DNS-free.
  *
@@ -138,7 +138,7 @@ async function main() {
   console.log(`URL:   ${url}`)
   console.log()
   console.log(
-    'Navigate to this URL in claude-in-chrome. The verify step auto-submits once the tab is focused.',
+    'Navigate to this URL in claude-in-chrome. The verify step prefills the code; click Log in to continue.',
   )
 }
 

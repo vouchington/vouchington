@@ -99,7 +99,7 @@ first caller's completion credential.
 3. Verify the email includes the full `/login?emailAddress=...&otp=...` URL in addition to the CTA button
 4. Click the CTA or pasted URL
 5. `/login` opens directly on the verification code step with the email address and OTP prefilled
-6. The form auto-submits once without another click
+6. The code stays prefilled until you click **Log in**; focus or tab visibility changes do not submit it
 7. You are redirected to `/`
 
 #### Error cases

@@ -56,7 +56,7 @@ vi.mock(import('../email-manager/verify-email-form'), () => ({
     <div>
       <button
         type='button'
-        onClick={() => submitVerify('ABCD1234')}
+        onClick={() => submitVerify('ABCDEFG234')}
       >
         Verify
       </button>
@@ -92,7 +92,7 @@ describe('EmailVerificationRecoveryDialog', () => {
     expect(requestMock).toHaveBeenCalledWith('Tests+Recovery@Voucha.ai')
     fireEvent.click(screen.getByRole('button', { name: 'Verify' }))
     await waitFor(() =>
-      expect(verifyMock).toHaveBeenCalledWith('tests+recovery@voucha.ai', 'ABCD1234'),
+      expect(verifyMock).toHaveBeenCalledWith('tests+recovery@voucha.ai', 'ABCDEFG234'),
     )
     expect(onVerified).toHaveBeenCalledOnce()
   })

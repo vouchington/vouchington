@@ -16,7 +16,7 @@ describe('renderLoginTokenEmail', () => {
   })
 
   it('uses a production-shaped preview token', () => {
-    expect(LoginTokenEmail.PreviewProps!.token).toMatch(/^[0-9A-F]{8}$/)
+    expect(LoginTokenEmail.PreviewProps!.token).toMatch(/^[A-Z2-7]{10}$/)
   })
 
   it('renders the expected subject and snapshots', async () => {
@@ -59,7 +59,7 @@ describe('renderLoginTokenEmail', () => {
   it('renders localized Spanish copy when requested', async () => {
     const result = await renderLoginTokenEmail({
       emailAddress: 'tests+user-preview@voucha.ai',
-      token: 'ABC12345',
+      token: 'ABCDEFG234',
       expiration: '15 minutes',
       uiLocale: 'es',
     })
@@ -74,7 +74,7 @@ describe('renderLoginTokenEmail', () => {
   it('keeps a caller-supplied expiration label', async () => {
     const result = await renderLoginTokenEmail({
       emailAddress: 'tests+user-preview@voucha.ai',
-      token: 'ABC12345',
+      token: 'ABCDEFG234',
       expiration: '1 hour',
     })
 

@@ -11,6 +11,23 @@ describe('parseEmailJob', () => {
     expect(() => parseEmailJob('toString', {})).toThrow(/unknown job toString/)
   })
 
+  it('validates the dedicated reauthentication code and expiry payload', () => {
+    const payload = { input: address, variables: { token: 'ABCDEFG234', expiresInMinutes: 15 } }
+    expect(parseEmailJob('processSendReauthenticationToken', payload)).toMatchObject({
+      kind: 'template',
+      name: 'processSendReauthenticationToken',
+      ...payload,
+    })
+    for (const expiresInMinutes of [undefined, '15', 0, -1, 1.5, Infinity]) {
+      expect(() =>
+        parseEmailJob('processSendReauthenticationToken', {
+          ...payload,
+          variables: { token: 'ABCDEFG234', expiresInMinutes },
+        }),
+      ).toThrow('expiresInMinutes must be a positive integer')
+    }
+  })
+
   it('accepts exactly one copyright delivery intent identifier', () => {
     expect(parseEmailJob('processSendCopyrightNoticeEmail', { intentId: 'intent' })).toEqual({
       kind: 'copyright',
