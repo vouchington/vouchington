@@ -11,7 +11,7 @@ import { describe, expect, it } from 'vitest'
 const execFile = promisify(execFileCallback)
 
 describe('vouchington-tooling consume wrappers', () => {
-  it('installs a verified tarball with npm and removes its temporary directory', async () => {
+  it('installs a verified tarball with npm and removes its temporary directory', async context => {
     const dir = await mkdtemp(join(tmpdir(), 'tooling-installer-tarball-'))
     const ciDir = join(dir, 'ci')
     const archiveDir = join(dir, 'package')
@@ -65,8 +65,14 @@ packages:
             ...process.env,
             DOWNLOAD_PACKAGE: tarball,
             npm_config_cache: join(dir, 'npm-cache'),
+            // This dependency-free tarball is local; registry audits are not this wrapper's contract.
+            npm_config_offline: 'true',
+            npm_config_audit: 'false',
+            npm_config_fund: 'false',
+            npm_config_update_notifier: 'false',
             TMPDIR: dir,
           },
+          signal: context.signal,
         },
       )
       expect(
