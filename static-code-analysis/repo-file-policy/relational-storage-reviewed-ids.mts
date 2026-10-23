@@ -20,6 +20,15 @@ function reviewed(reason: string, keys: readonly string[]): ReviewedIds {
 
 // Opaque ids with no owning row to reference: client tokens, traversal cursors, protocol ids.
 export const ALLOWED_TOKEN_CURSOR_PROTOCOL_ID = new Map<string, string>([
+  ...reviewed(
+    'Deletion-stable UUIDv7 keyset position; the scanned source row may be gone when the next bounded page resumes.',
+    [
+      'copyright_notice_minimal_purge_cursors.cursor_notice_id',
+      'copyright_submission_key_retention_cursors.cursor_record_id',
+      'legal_record_retention_cursors.cursor_record_id',
+      'payment_ledger_retention_cursors.cursor_record_id',
+    ],
+  ),
   [
     'copyright_dsa_statement_submissions.transparency_database_uuid',
     'Commission statement UUID returned by the external DSA protocol; no Voucha row owns it.',

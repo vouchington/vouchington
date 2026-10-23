@@ -80,6 +80,10 @@ export const ALLOWED_NONRELATION_UUID = new Set([
 // roots, publication bridges that mint their own id, and the session JWT sid are their own identity.
 // Extension tables such as user_metrics.id must keep the target FK instead of joining this set.
 export const ALLOWED_OWN_PRIMARY_UUID = new Set([
+  // The historical notice identity survives deletion of its source notice and cannot FK to it.
+  'copyright_notice_retained_identities.id',
+  // The terminal operation identity survives deletion of its source ledger row for exact replay.
+  'membership_operation_retained_identities.id',
   'post_publication_community_identities.id',
   'post_publication_rss_feed_identities.id',
   'post_publication_story_identities.id',
