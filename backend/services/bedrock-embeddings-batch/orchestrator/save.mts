@@ -87,6 +87,7 @@ export async function applyBatchUpdates(
       FROM ${tempTable} u
       WHERE ${tableName}.id = u.entity_id::uuid
         AND ${tableName}.${EMBEDDING_COLUMNS.content_sha256} = u.content_sha256
+        ${tableName === 'topics' ? 'AND topics.deleted_at IS NULL AND topics.merged_into_topic_id IS NULL' : ''}
       RETURNING ${tableName}.id`,
     { query },
   )

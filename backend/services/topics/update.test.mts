@@ -1,4 +1,5 @@
 import { it, expect, describe, vi } from 'vitest'
+import { randomUUID } from 'node:crypto'
 import { updateTopic } from './update.mts'
 import { getTopicByAny } from './get.mts'
 import { createTestUser, insertTestTopic } from '@voucha/test-helpers'
@@ -6,7 +7,29 @@ import { getTopicIdByAnyCached } from '@services/entity-cache/lookups'
 import { ValkeyBloomFilter } from '@data-stores/valkey'
 import { entityCacheBloomFilters } from '@services/entity-cache/backfill-bloom-filter'
 import { normalizeKey } from '@ts-shared/utils/strings'
+import { mergeTopicForTest } from '@voucha/test-helpers/entities/topics/deletion'
 describe('updateTopic', () => {
+  it('rejects image placement changes when a read topic was merged before the update', async () => {
+    const user = await createTestUser({ administrator: true })
+    const suffix = randomUUID()
+    const sourceId = await insertTestTopic({
+      name: `Stale source ${suffix}`,
+      slug: `stale-source-${suffix}`,
+      createdById: user!.id,
+    })
+    const destinationId = await insertTestTopic({
+      name: `Stale destination ${suffix}`,
+      slug: `stale-destination-${suffix}`,
+      createdById: user!.id,
+    })
+    const staleTopic = await getTopicByAny(sourceId)
+    await mergeTopicForTest(sourceId, destinationId, user!.id)
+
+    await expect(updateTopic(user!, staleTopic!, { logo_image_id: null })).rejects.toMatchObject({
+      status: 409,
+    })
+  })
+
   it('updates topic name', async () => {
     const random = Math.random().toString(36).slice(2, 15)
     const user = await createTestUser({ administrator: true })

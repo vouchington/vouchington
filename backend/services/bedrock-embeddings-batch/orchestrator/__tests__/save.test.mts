@@ -13,8 +13,41 @@ import {
 import { applyCrawlChunkBatchUpdates } from '../../entities/crawl-chunks.mts'
 import { createCrawlChunkEntityId } from '../../entities/crawl-chunk-entity-id.mts'
 import { applyBatchUpdates } from '../save.mts'
+import { mergeTopicForTest } from '@voucha/test-helpers/entities/topics/deletion'
 
 describe('batch embedding token count provenance', () => {
+  it('does not apply a returned embedding after its topic merges', async () => {
+    const actor = await createTestUser()
+    const suffix = randomUUID()
+    const contentSha256 = randomBytes(32)
+    const sourceId = await insertTestTopic({
+      name: `Batch merged source ${suffix}`,
+      slug: `batch-merged-source-${suffix}`,
+      createdById: actor.id,
+      embeddingSha256: `\\x${contentSha256.toString('hex')}`,
+    })
+    const destinationId = await insertTestTopic({
+      name: `Batch merged destination ${suffix}`,
+      slug: `batch-merged-destination-${suffix}`,
+      createdById: actor.id,
+    })
+    await mergeTopicForTest(sourceId, destinationId, actor.id)
+
+    expect(
+      await applyBatchUpdates('topics', [
+        {
+          entity_id: sourceId,
+          content_sha256: contentSha256,
+          embedding: makeRandomEmbedding(),
+          input_token_count: null,
+        },
+      ]),
+    ).toEqual([])
+    expect(await getTopicEmbeddingData(sourceId)).toMatchObject({
+      bedrock_nova_multimodal_v1_input_sha256: null,
+    })
+  })
+
   it('keeps a topic count for the same input and clears it for a new input without usage', async () => {
     const user = await createTestUser()
     const suffix = randomUUID().slice(0, 8)
