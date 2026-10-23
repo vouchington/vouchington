@@ -1,4 +1,4 @@
-import { enqueueOnUserUpdated } from '@queues/entity-listeners/enqueues'
+import { enqueueOnUserUpdatedBestEffort } from '@queues/entity-listeners/enqueues'
 import { getRequestCurrentUser, setRequestCurrentUser } from '@modules/utils/request-context'
 import { getPrivateUserByAny } from './get.mts'
 import assert from 'http-assert'
@@ -142,13 +142,12 @@ export async function updateUserFields(
   if (getRequestCurrentUser<PrivateUser>()?.id === updatedUser.id)
     setRequestCurrentUser(updatedUser)
 
-  if (typeof username === 'string') {
-    void addEntityBloomKeys('users', [normalizeKey(username)])
-  }
+  const bloomUpdate =
+    typeof username === 'string' ? addEntityBloomKeys('users', [normalizeKey(username)]) : undefined
   const invalidateUser = invalidatesUserMetrics ? invalidate.usersWithMetrics : invalidate.users
   await invalidateUser(userId, previousUsername, validatedUsername)
 
-  void enqueueOnUserUpdated(userId)
+  await Promise.all([bloomUpdate, enqueueOnUserUpdatedBestEffort(userId)])
   return updatedUser
 }
 
