@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type http from 'node:http'
 import { exitAfterErrorReporting, startApiServer } from './startup.mts'
-import { derivePublicJwk, encodeJwkSetForEnv } from '@ts-shared/session-jwt'
+import { derivePublicJwk, encodeJwkSet as encodeJwkSetForEnv } from '@vouchington/session-jwt'
 import testPrivateKey from '@ts-shared/session-jwt/test-jwt-private-key'
 
 type StartupDeps = Parameters<typeof startApiServer>[2]
