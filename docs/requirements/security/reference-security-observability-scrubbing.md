@@ -7,7 +7,9 @@
 Unsubscribe tokens, email-verification tokens, and API keys travel as query parameters across this
 codebase, so URLs shipped to Sentry would leak secrets. Sentry also copies request headers and
 cookies into error Request Interfaces and span attributes without applying its own header
-filtering. Repository-side scrubbing is therefore mandatory defense in depth; hosted Sentry
+filtering. The app injects its credential-header vocabulary and Grafana path-redaction policy into
+`@vouchington/utils/observability`; that package owns the shared copy-on-write scrubbing mechanics.
+Application-side scrubbing is therefore mandatory defense in depth; hosted Sentry
 scrubbing settings are not known from this repository.
 
 ## Data collection: the least-data policy

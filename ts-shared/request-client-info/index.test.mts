@@ -1,5 +1,6 @@
+import { ClientInfoValidationError } from '@vouchington/utils/request-client-info'
 import { describe, expect, it } from 'vitest'
-import { ClientInfoValidationError, parseClientHeaders } from './index.mts'
+import { parseClientHeaders } from './index.mts'
 
 describe('request client information contract', () => {
   it('parses compatible client metadata', () => {

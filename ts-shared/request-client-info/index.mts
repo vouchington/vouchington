@@ -1,7 +1,4 @@
-import {
-  ClientInfoValidationError,
-  createClientInfoParser,
-} from '@vouchington/utils/request-client-info'
+import { createClientInfoParser } from '@vouchington/utils/request-client-info'
 
 export const CLIENT_INFO_HEADERS = {
   client: 'x-voucha-client',
@@ -31,8 +28,6 @@ export interface RequestClientInfo extends ClientHeaders {
   ipAddress: string
   requestId?: string
 }
-
-export { ClientInfoValidationError }
 
 export const parseClientHeaders = createClientInfoParser({
   headers: CLIENT_INFO_HEADERS,

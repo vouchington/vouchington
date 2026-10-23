@@ -59,24 +59,3 @@ export function createSentryDataCollection(): SentryDataCollectionPolicy {
     genAI: { inputs: false, outputs: false },
   }
 }
-
-// `httpBodies` gates only the write: `requestdata` still copies body data that something else put
-// on the scope. These backstops drop it from spans and from the event Request Interface.
-const REQUEST_BODY_SPAN_ATTRIBUTE = 'http.request.body.data'
-
-export function dropSpanRequestBody<TData extends Record<string, unknown>>(data: TData): TData {
-  if (!Object.hasOwn(data, REQUEST_BODY_SPAN_ATTRIBUTE)) return data
-  return omitOwnKey(data, REQUEST_BODY_SPAN_ATTRIBUTE)
-}
-
-export function dropRequestBody<TRequest extends object>(
-  request: TRequest | undefined,
-): TRequest | undefined {
-  if (!request || !Object.hasOwn(request, 'data')) return request
-  return omitOwnKey(request, 'data')
-}
-
-function omitOwnKey<T extends object>(value: T, omitted: string): T {
-  const entries = Object.entries(value).filter(([key]) => key !== omitted)
-  return Object.fromEntries(entries) as T
-}

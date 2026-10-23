@@ -8,10 +8,10 @@ import {
   type FeatureFlagCookieCodec,
   type FeatureFlagCookieOptions,
   type FeatureFlags,
-} from '@ts-shared/feature-flags'
+} from '@vouchington/utils/feature-flags'
 import { featureFlagsConfig } from './config.mts'
 
-export type { FeatureFlags } from '@ts-shared/feature-flags'
+export type { FeatureFlags } from '@vouchington/utils/feature-flags'
 
 const featureFlagCookieCodec: FeatureFlagCookieCodec = {
   encodeBase64: value => Buffer.from(value, 'utf8').toString('base64'),

@@ -1,7 +1,7 @@
 import {
   DEFAULT_FEATURE_FLAG_COOKIE_MAX_LENGTH,
   parseFeatureFlagCookieMaxLength,
-} from '@ts-shared/feature-flags'
+} from '@vouchington/utils/feature-flags'
 
 function cleanRuntimeEnv(value: string | undefined): string | undefined {
   const trimmed = value?.trim()

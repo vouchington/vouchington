@@ -1,4 +1,5 @@
-import { parsePostgresMoneyAmount, type Money } from '@ts-shared/money'
+import type { Money } from '@ts-shared/money'
+import { parsePostgresMoneyAmount } from '@vouchington/utils/money'
 
 export type RenewalPriceIncreaseUser = {
   user_id: string

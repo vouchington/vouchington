@@ -13,7 +13,8 @@ import type {
   StripeRefundResult,
 } from '@modules/stripe/operations'
 import type { RefundableCharge } from './types.mts'
-import { isCurrencyCode, parsePostgresMoneyAmount } from '@ts-shared/money'
+import { isCurrencyCode } from '@ts-shared/money'
+import { parsePostgresMoneyAmount } from '@vouchington/utils/money'
 
 export type MembershipStripeOperations = {
   listSubscriptionInvoices: (

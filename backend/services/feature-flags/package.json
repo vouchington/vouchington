@@ -24,6 +24,6 @@
   "scripts": {},
   "dependencies": {
     "@data-stores/valkey": "workspace:^",
-    "@ts-shared/feature-flags": "workspace:^"
+    "@vouchington/utils": "^0.7.5"
   }
 }

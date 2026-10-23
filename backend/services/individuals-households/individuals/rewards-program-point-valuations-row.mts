@@ -1,5 +1,6 @@
 import type { IndividualRewardsProgramPointValuation } from './rewards-program-point-valuations-types.mts'
-import { MONEY_SCALE, parsePostgresMoneyAmount, type CurrencyCode } from '@ts-shared/money'
+import { MONEY_SCALE, type CurrencyCode } from '@ts-shared/money'
+import { parsePostgresMoneyAmount } from '@vouchington/utils/money'
 
 export type PointValuationRow = Omit<
   IndividualRewardsProgramPointValuation,

@@ -1,5 +1,6 @@
 import { write } from '@data-stores/psql'
-import { parsePostgresMoneyAmount, type Money } from '@ts-shared/money'
+import type { Money } from '@ts-shared/money'
+import { parsePostgresMoneyAmount } from '@vouchington/utils/money'
 import { getMembershipProviderContext } from '@voucha/config/membership-providers'
 import sql from 'sql-template-strings'
 import type { MembershipBillingInterval, MembershipPlanSlug } from './types.mts'

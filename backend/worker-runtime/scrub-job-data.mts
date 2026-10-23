@@ -1,4 +1,4 @@
-import { SENTRY_FILTERED_VALUE } from '@ts-shared/utils/sentry-event-scrubbing'
+import { SENSITIVE_VALUE as SENTRY_FILTERED_VALUE } from '@vouchington/utils/observability'
 
 // GlideMQ job payloads are per-queue-shaped and can carry email addresses, login tokens,
 // physical addresses, phone numbers, IPs, or names (see backend/queues/*/types.mts). Rather than

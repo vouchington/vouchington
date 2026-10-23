@@ -1,4 +1,5 @@
-import { isCurrencyCode, parsePostgresMoneyAmount } from '@ts-shared/money'
+import { isCurrencyCode } from '@ts-shared/money'
+import { parsePostgresMoneyAmount } from '@vouchington/utils/money'
 import type { RefundReconciliationAttempt, RefundReconciliationLease } from './types.mts'
 
 export type ReconciliationLeaseRow = {
