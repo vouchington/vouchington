@@ -67,7 +67,7 @@ _none_
 - `fk_notifications__community_ban_id`: `FOREIGN KEY (community_ban_id) REFERENCES community_bans(id) ON DELETE SET NULL`
 - `fk_notifications__community_id`: `FOREIGN KEY (community_id) REFERENCES communities(id) ON DELETE CASCADE`
 - `fk_notifications__copyright_notice`: `FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE RESTRICT`
-- `fk_notifications__household_invitation_id`: `FOREIGN KEY (household_invitation_id) REFERENCES household_invitations(id) ON DELETE CASCADE`
+- `fk_notifications__household_invitation_scope`: `FOREIGN KEY (household_id, user_id, household_invitation_id) REFERENCES household_invitations(household_id, invited_user_id, id) ON DELETE CASCADE`
 - `fk_notifications__moderation_appeal_id`: `FOREIGN KEY (moderation_appeal_id) REFERENCES moderation_appeals(id) ON DELETE SET NULL`
 - `fk_notifications__moderation_report_id`: `FOREIGN KEY (moderation_report_id) REFERENCES moderation_reports(id) ON DELETE SET NULL`
 - `fk_notifications__publication_post_id`: `FOREIGN KEY (publication_post_id) REFERENCES retained_post_identities(id) ON DELETE RESTRICT`

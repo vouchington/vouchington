@@ -46014,6 +46014,40 @@
           "ready": true,
           "unique": false,
           "valid": true
+        },
+        "uq_household_invitations__household_invited_user_id_id": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX uq_household_invitations__household_invited_user_id_id ON public.household_invitations USING btree (household_id, invited_user_id, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "household_id",
+              "descending": false,
+              "expression": "household_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "invited_user_id",
+              "descending": false,
+              "expression": "invited_user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
         }
       },
       "partition": null,
@@ -46026,7 +46060,12 @@
       "triggers": {
         "trigger_household_invitations_updated_at": "CREATE TRIGGER trigger_household_invitations_updated_at BEFORE UPDATE ON public.household_invitations FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "uq_household_invitations__household_invited_user_id_id": {
+          "columns": ["household_id", "invited_user_id", "id"],
+          "definition": "UNIQUE (household_id, invited_user_id, id)"
+        }
+      }
     },
     "household_members": {
       "checkConstraints": {
@@ -68287,12 +68326,12 @@
           "referencedTable": "copyright_notices",
           "validated": true
         },
-        "fk_notifications__household_invitation_id": {
-          "columns": ["household_invitation_id"],
-          "definition": "FOREIGN KEY (household_invitation_id) REFERENCES household_invitations(id) ON DELETE CASCADE",
+        "fk_notifications__household_invitation_scope": {
+          "columns": ["household_id", "user_id", "household_invitation_id"],
+          "definition": "FOREIGN KEY (household_id, user_id, household_invitation_id) REFERENCES household_invitations(household_id, invited_user_id, id) ON DELETE CASCADE",
           "onDelete": "cascade",
           "onUpdate": "no action",
-          "referencedColumns": ["id"],
+          "referencedColumns": ["household_id", "invited_user_id", "id"],
           "referencedTable": "household_invitations",
           "validated": true
         },
