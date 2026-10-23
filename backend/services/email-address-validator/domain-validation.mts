@@ -6,19 +6,6 @@ import { checkEmailBloomFilter } from '@services/urls-domains-blacklist'
 import { bloomFilterConfig } from '@services/bloom-filter-config'
 import { resolveMxRecords, DnsTimeoutError } from './resolve-mx.mts'
 
-// example.com, example.net, and example.org publish no MX records, so Vitest cannot prove
-// "this domain can receive mail" with a real lookup. `.invalid` and `.test` stay empty.
-// setResolveMxRecordsForDomainValidationTest replaces this for a single test.
-const SYNTHETIC_MX = [{ exchange: 'example.com', priority: 10 }]
-function syntheticResolveMxRecords(domain: string) {
-  const normalized = domain.toLowerCase().trim().replace(/\.$/, '')
-  if (normalized.endsWith('.invalid') || normalized.endsWith('.test')) return Promise.resolve([])
-  return Promise.resolve(SYNTHETIC_MX)
-}
-
-let resolveMxRecordsForValidation =
-  process.env.VITEST === 'true' ? syntheticResolveMxRecords : resolveMxRecords
-
 type DomainValidationResult = { success: true } | { success: false; reason: string }
 
 async function performDomainValidation(normalizedDomain: string): Promise<DomainValidationResult> {
@@ -58,7 +45,7 @@ async function performDomainValidation(normalizedDomain: string): Promise<Domain
   if (is_blacklisted) return { success: false, reason: 'disposable' }
 
   try {
-    const mxRecords = await resolveMxRecordsForValidation(normalizedDomain)
+    const mxRecords = await resolveMxRecords(normalizedDomain)
     if (!mxRecords || mxRecords.length === 0)
       return { success: false, reason: 'no MX records found' }
   } catch (err) {
@@ -85,21 +72,6 @@ export async function validateEmailDomain(domain: string): Promise<void> {
   const result = await performDomainValidationCached(normalizedDomain)
   if (!result || !result.success) {
     throw new EmailDomainInvalidError(normalizedDomain, result?.reason ?? 'domain is not valid')
-  }
-}
-
-/**
- * @public Retained provisionally under issue #1360; this synthetic Vitest DNS override is a test seam,
- * and external production use is unconfirmed. It may be made private or removed after the test seam
- * and intended-use review are complete.
- */
-export function setResolveMxRecordsForDomainValidationTest(
-  override: typeof resolveMxRecords,
-): () => void {
-  const previous = resolveMxRecordsForValidation
-  resolveMxRecordsForValidation = override
-  return () => {
-    resolveMxRecordsForValidation = previous
   }
 }
 

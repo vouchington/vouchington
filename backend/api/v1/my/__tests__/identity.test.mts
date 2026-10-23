@@ -1,4 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest'
+import { installEmailDomainDnsMock } from '@voucha/test-helpers/email-domain-dns'
 
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
@@ -12,11 +13,8 @@ import {
   getLatestEmailAddressLoginTokenHash,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
-
 import { createEmailVerificationToken } from '@services/my/email-address-verification'
-
 import { connectOAuthAccountToUser } from '@services/oauth'
-
 import { updateUserFields } from '@services/users/update-fields'
 import { encodeCursor } from '@modules/pagination'
 import { v7 as uuidv7 } from 'uuid'
@@ -181,6 +179,8 @@ describe('GET /api/v1/my/email-addresses', () => {
 })
 
 describe('POST /api/v1/my/email-addresses + verify flow', () => {
+  installEmailDomainDnsMock()
+
   let user: PrivateUser
 
   beforeAll(async () => {
@@ -223,7 +223,6 @@ describe('POST /api/v1/my/email-addresses + verify flow', () => {
     const request = createRequest()
     await request.authenticateAs(user)
 
-    // Verify with the token
     const response = await request
       .post(`/api/v1/my/email-addresses/${encodeURIComponent(newEmail)}/verifications`)
       .send({ token })
@@ -250,6 +249,8 @@ describe('POST /api/v1/my/email-addresses + verify flow', () => {
 })
 
 describe('PATCH /api/v1/my/email-addresses/:email (set primary)', () => {
+  installEmailDomainDnsMock()
+
   let user: PrivateUser
 
   beforeAll(async () => {
@@ -260,7 +261,6 @@ describe('PATCH /api/v1/my/email-addresses/:email (set primary)', () => {
     const suffix = randomSuffix()
     const secondEmail = `${TEST_EMAIL_BASE}-primary-${suffix}@voucha.ai`
 
-    // Add a second email via service
     const { token } = await createEmailVerificationToken(user.id, secondEmail)
     const request = createRequest()
     await request.authenticateAs(user)
@@ -276,7 +276,6 @@ describe('PATCH /api/v1/my/email-addresses/:email (set primary)', () => {
       ),
     )
 
-    // Now set it as primary
     const response = await request
       .patch(`/api/v1/my/email-addresses/${encodeURIComponent(secondEmail)}`)
       .send({ is_primary: true })

@@ -1,5 +1,6 @@
 import { withEntityListenerCompletion } from '@voucha/test-helpers/entity-listener-completion'
 import { beforeAll, describe, expect, it } from 'vitest'
+import { installEmailDomainDnsMock } from '@voucha/test-helpers/email-domain-dns'
 
 import { createRequest } from '@voucha/test-helpers/api/server'
 import {
@@ -23,6 +24,8 @@ const randomSuffix = () => Math.random().toString(36).slice(2, 10)
 const TEST_EMAIL_BASE = 'tests+my-identity'
 
 describe('DELETE /api/v1/my/email-addresses/:email', () => {
+  installEmailDomainDnsMock()
+
   let user: PrivateUser
 
   beforeAll(async () => {

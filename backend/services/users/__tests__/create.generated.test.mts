@@ -5,6 +5,7 @@ import {
   insertTestOAuthAccount,
 } from '@voucha/test-helpers'
 import { it, expect, describe } from 'vitest'
+import { installEmailDomainDnsMock } from '@voucha/test-helpers/email-domain-dns'
 import { createHash } from 'node:crypto'
 import { upsertUser } from '../create.mts'
 import { getPrivateUserByAny } from '../get.mts'
@@ -16,6 +17,7 @@ import { setTestEmailAddressLoginTokenId } from '@voucha/test-helpers/entities/l
 import { createEmailAddressLoginToken, verifyEmailAddressLoginToken } from '../authentication.mts'
 
 describe('create.generated', () => {
+  installEmailDomainDnsMock()
   it('preserves an unlinked OAuth identity when connecting an existing user fails', async () => {
     const emailAddress = createRandomEmailAddress()
     const user = await upsertUser({ emailAddress, sessionId: v7(), deviceId: v7() })
