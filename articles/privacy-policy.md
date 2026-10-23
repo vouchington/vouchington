@@ -197,6 +197,7 @@ Each of these providers has their own privacy policy. We select providers who ma
 - **Account data and content** — retained while your account is active
 - **Deleted account content** — posts are reassigned to a [deleted] tombstone; personal identifying information (email, phone, social logins, passkeys) is removed upon account deletion
 - **Recently viewed data** — 30-day rolling retention
+- **Referral clicks** — landing URLs and campaign tracking fields are removed after 90 days; the remaining attribution record is removed after 24 months
 - **Vote and activity data** — retained in aggregate form for trust scoring even after individual user deletion
 - **Billing records** — retained as required by financial regulations (typically 7 years); the email address associated with your Stripe customer record is redacted when you delete your account
 - **Security logs** — retained for up to 12 months

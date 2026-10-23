@@ -38909,7 +38909,7 @@
     },
     "GET:/api/v1/my/referral-clicks": {
       "bodyKind": "content",
-      "hash": "4798b6cd4a55766ff163f2519605c4f06994d7337f2f4a4c7db03cd5de58f340",
+      "hash": "545e40333919adda121fdb936e51e2f7120a754f464334bc468ad19c41c9ec7b",
       "mediaType": "application/json",
       "mediaTypeKnowledge": "known",
       "method": "GET",
@@ -39291,7 +39291,15 @@
               "landing_url": {
                 "required": true,
                 "schema": {
-                  "type": "string"
+                  "type": "union",
+                  "variants": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
                 }
               },
               "signed_up_at": {
@@ -98962,7 +98970,7 @@
       "migratedFrom": ["web/components/my/referral-clicks-page.tsx"],
       "path": "/api/v1/my/referral-clicks",
       "responseSchema": {
-        "hash": "ee10a1df032e1f3528355c06951ee39c93a4c5fb8d177b38c50dd410057cd16a",
+        "hash": "0547802ffbc0bab64d12549a12d06d6c11295459c3b6e5ae44cb719b1da8bfac",
         "key": "referral-clicks.mine"
       },
       "route": {
@@ -98986,7 +98994,7 @@
         "limit": "25"
       },
       "responseSchema": {
-        "hash": "ee10a1df032e1f3528355c06951ee39c93a4c5fb8d177b38c50dd410057cd16a",
+        "hash": "0547802ffbc0bab64d12549a12d06d6c11295459c3b6e5ae44cb719b1da8bfac",
         "key": "referral-clicks.mine"
       },
       "route": {

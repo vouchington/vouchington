@@ -9,6 +9,7 @@ export const copyrightConfig = new DynamicConfig({
   key: 'copyright',
   fieldTypes: {
     automaticProvisionalWithholding: 'boolean',
+    automaticProvisionalWithholdingSince: 'string',
     reviewTargetMinutes: 'number',
     evidenceRetentionDeletion: 'boolean',
     evidenceRetentionDays: 'number',
@@ -26,6 +27,7 @@ export const copyrightConfig = new DynamicConfig({
   },
   defaultFields: {
     automaticProvisionalWithholding: false,
+    automaticProvisionalWithholdingSince: '',
     // 0 means unset: no review-target page until an operator records an approved target.
     reviewTargetMinutes: 0,
     evidenceRetentionDeletion: false,
@@ -46,6 +48,16 @@ export const copyrightConfig = new DynamicConfig({
     automaticWithholdingPosterDailyCap: -1,
   },
 })
+
+/** Project the on-period only for a real switch transition; unrelated edits retain it. */
+export function deriveAutomaticWithholdingSince(
+  previousEnabled: unknown,
+  nextEnabled: unknown,
+  at: Date,
+): string | undefined {
+  if (previousEnabled === nextEnabled) return undefined
+  return nextEnabled === true ? at.toISOString() : ''
+}
 
 export type AutomaticWithholdingThresholds = {
   minTrustTier: number

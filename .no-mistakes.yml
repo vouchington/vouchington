@@ -4795,6 +4795,8 @@ rules:
                 reason: 'Device and session ids are issued in signed tokens, not stored in a table',
               }
       allow:
+        - object: column:history_retention_cursors.sweep_cutoff_id
+          reason: 'Frozen UUIDv7 sweep end may outlive a deleted history row; it is an operational checkpoint, not a relationship.'
         - object: column:domain_blocklist_sources.url
           reason: 'Decision 13 external blocklist source address; exact URL is input to the downloader.'
         - object: column:urls.url
