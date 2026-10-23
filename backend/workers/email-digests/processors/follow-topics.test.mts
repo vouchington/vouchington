@@ -19,7 +19,9 @@ describe('engagement email recipient recovery', () => {
 
   it('releases every claim when the user has no email address', async () => {
     const user = await createTestUserDirect({ withEmail: false })
-    const { trackingKey, windowEnd } = await claimCurrentModerationSummaryForTest(user!.id)
+    const { trackingKey, windowEnd, dispatchTimeZone } = await claimCurrentModerationSummaryForTest(
+      user!.id,
+    )
     await claimEngagementEmailSend(user!.id, 'follow_topics')
     await claimEngagementEmailSend(user!.id, 'post_referral_link')
     await claimEngagementEmailSend(user!.id, 'follow_news_sources')
@@ -53,6 +55,7 @@ describe('engagement email recipient recovery', () => {
         { ...input, trackingKey, windowEnd },
         {
           generatedForDate: '2026-07-12',
+          dispatchTimeZone,
           settingsUrl: commonVariables.settingsUrl,
           unsubscribeUrl: commonVariables.unsubscribeUrl,
           physicalAddress: commonVariables.physicalAddress,

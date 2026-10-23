@@ -48,14 +48,15 @@ async function dispatchModerationSummary(
     sendKey = buildModerationSendKey(recipient, now)
     if (!(await claimModerationEmailSend(recipient.id, sendKey))) return
 
-    const props: CommunityModerationSummaryEmailProps = {
+    const props = {
       userName: recipient.username ?? undefined,
       generatedForDate: formatLocalDate(now, recipient.moderation_email_timezone),
+      dispatchTimeZone: recipient.moderation_email_timezone,
       settingsUrl: getSiteUrl('/my/notification-settings'),
       unsubscribeUrl: createEmailUnsubscribeUrl(recipient.id, 'community_digest'),
       physicalAddress: getMarketingPostalAddress(),
       communities,
-    }
+    } satisfies CommunityModerationSummaryEmailProps & { dispatchTimeZone: string }
     await enqueueSendCommunityModerationSummaryEmail(
       {
         userId: recipient.id,

@@ -51,6 +51,7 @@ describe('engagement email payloads', () => {
         variables: {
           ...links,
           generatedForDate: '2026-09-27',
+          dispatchTimeZone: 'UTC',
           uiLocale: null,
           communities: [
             {
@@ -65,8 +66,19 @@ describe('engagement email payloads', () => {
     ).toBe('template')
     expect(() =>
       parseEmailDigestJob('processSendCommunityModerationSummaryEmail', {
-        input: { ...moderationInput, windowEnd: undefined },
+        input: moderationInput,
         variables: { ...links, generatedForDate: '2026-09-27', communities: [] },
+      }),
+    ).toThrow(/dispatchTimeZone/)
+    expect(() =>
+      parseEmailDigestJob('processSendCommunityModerationSummaryEmail', {
+        input: { ...moderationInput, windowEnd: undefined },
+        variables: {
+          ...links,
+          generatedForDate: '2026-09-27',
+          dispatchTimeZone: 'UTC',
+          communities: [],
+        },
       }),
     ).toThrow(/windowEnd/)
     expect(() =>
@@ -126,7 +138,12 @@ describe('engagement email payloads', () => {
     expect(() =>
       parseEmailDigestJob('processSendCommunityModerationSummaryEmail', {
         input: moderationInput,
-        variables: { ...links, generatedForDate: '2026-09-27', communities: 'none' },
+        variables: {
+          ...links,
+          generatedForDate: '2026-09-27',
+          dispatchTimeZone: 'UTC',
+          communities: 'none',
+        },
       }),
     ).toThrow(/communities must be an array/)
     expect(() =>
@@ -135,6 +152,7 @@ describe('engagement email payloads', () => {
         variables: {
           ...links,
           generatedForDate: '2026-09-27',
+          dispatchTimeZone: 'UTC',
           communities: [
             {
               name: 'Voucha',
@@ -152,6 +170,7 @@ describe('engagement email payloads', () => {
         variables: {
           ...links,
           generatedForDate: '2026-09-27',
+          dispatchTimeZone: 'UTC',
           communities: [
             {
               name: 'Voucha',

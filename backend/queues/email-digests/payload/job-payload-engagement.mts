@@ -93,6 +93,7 @@ function moderationVariables(data: unknown): Record<string, unknown> {
   const record = asRecord(data)
   assertExactKeys(record, Object.keys(moderationVariableKeys))
   requiredString(record, 'generatedForDate')
+  requiredString(record, 'dispatchTimeZone')
   requiredString(record, 'settingsUrl')
   optionalString(record, 'userName')
   optionalString(record, 'unsubscribeUrl')

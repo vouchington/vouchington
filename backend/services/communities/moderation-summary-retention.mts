@@ -3,7 +3,8 @@ import { formatLocalDate, getIsoWeekKey } from './moderation-summary-emails.mts'
 export const MODERATION_EMAIL_SEND_RETENTION_DAYS = 30
 const DAY_MS = 24 * 60 * 60 * 1000
 
-// Current dispatcher always supplies windowEnd and a daily/weekly key for that local period.
+// The dispatcher supplies windowEnd and a daily/weekly key for its immutable local period.
+// Validate with its queued timezone, not a preference that may change before delivery.
 // Once the claim can be pruned, a delayed queue delivery must not send it again.
 export function isModerationSummaryJobCurrent(
   trackingKey: string,

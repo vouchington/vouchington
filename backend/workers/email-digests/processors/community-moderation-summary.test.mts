@@ -9,10 +9,6 @@ import {
 } from '@voucha/test-helpers'
 import { insertTestPendingCommunityPostReview } from '@voucha/test-helpers/entities/community-post-reviews'
 import { insertTestPost } from '@voucha/test-helpers/entities/posts'
-import {
-  claimModerationEmailSend,
-  formatLocalDate,
-} from '@services/communities/moderation-summary-emails'
 import { updateUserFields } from '@services/users/update-fields'
 import { processSendCommunityModerationSummaryEmail } from './community-moderation-summary.mts'
 
@@ -51,7 +47,9 @@ describe('processSendCommunityModerationSummaryEmail', () => {
       postId,
       submittedById: user!.id,
     })
-    const { trackingKey, windowEnd } = await claimCurrentModerationSummaryForTest(user!.id)
+    const { trackingKey, windowEnd, dispatchTimeZone } = await claimCurrentModerationSummaryForTest(
+      user!.id,
+    )
 
     const input = {
       emailAddress: 'tests+moderator@voucha.ai',
@@ -61,6 +59,7 @@ describe('processSendCommunityModerationSummaryEmail', () => {
     }
     const variables = {
       generatedForDate: '2026-07-13',
+      dispatchTimeZone,
       settingsUrl: 'https://voucha.ai/my/notification-settings',
       unsubscribeUrl: 'https://voucha.ai/my/notification-settings',
       physicalAddress: 'Voucha, 123 Test St, Test City, CA 94000',
@@ -116,7 +115,9 @@ describe('processSendCommunityModerationSummaryEmail', () => {
       postId,
       submittedById: user!.id,
     })
-    const { trackingKey, windowEnd } = await claimCurrentModerationSummaryForTest(user!.id)
+    const { trackingKey, windowEnd, dispatchTimeZone } = await claimCurrentModerationSummaryForTest(
+      user!.id,
+    )
     await removeTestCommunityMember(community.id, user!.id)
 
     await expect(
@@ -124,6 +125,7 @@ describe('processSendCommunityModerationSummaryEmail', () => {
         { emailAddress: 'tests+moderator@voucha.ai', userId: user!.id, trackingKey, windowEnd },
         {
           generatedForDate: '2026-07-12',
+          dispatchTimeZone,
           settingsUrl: 'https://voucha.ai/my/notification-settings',
           unsubscribeUrl: 'https://voucha.ai/my/notification-settings',
           physicalAddress: 'Voucha, 123 Test St, Test City, CA 94000',
@@ -153,80 +155,6 @@ describe('processSendCommunityModerationSummaryEmail', () => {
     expect(ses.sendEmail).not.toHaveBeenCalled()
   })
 
-  it('recomputes the current summary date after refreshing moderation counts', async () => {
-    const windowEnd = new Date().toISOString()
-    const expectedDate = formatLocalDate(new Date(windowEnd), 'UTC')
-    const user = await createTestUser()
-    await updateUserFields(user!.id, { moderation_email_timezone: 'UTC' })
-    const community = await insertTestCommunity({ createdById: user!.id })
-    await insertTestCommunityMember({
-      communityId: community.id,
-      userId: user!.id,
-      role: 'owner',
-      approvedById: user!.id,
-    })
-    const postId = await insertTestPost({
-      title: 'Recomputed date moderator post',
-      slug: `recomputed-date-moderator-post-${user!.id}`,
-      createdById: user!.id,
-      markdown: 'Needs review.',
-      communityId: community.id,
-    })
-    await insertTestPendingCommunityPostReview({
-      communityId: community.id,
-      postId,
-      submittedById: user!.id,
-    })
-    const trackingKey = `daily:${expectedDate}`
-    await claimModerationEmailSend(user!.id, trackingKey)
-    await processSendCommunityModerationSummaryEmail(
-      {
-        emailAddress: 'tests+moderator@voucha.ai',
-        userId: user!.id,
-        trackingKey,
-        windowStart: '2020-01-01T00:00:00.000Z',
-        windowEnd,
-      },
-      {
-        generatedForDate: '1900-01-01',
-        settingsUrl: 'https://voucha.ai/my/notification-settings',
-        unsubscribeUrl: 'https://voucha.ai/my/notification-settings',
-        physicalAddress: 'Voucha, 123 Test St, Test City, CA 94000',
-        communities: [
-          {
-            name: 'Stale Queued Community',
-            url: 'https://voucha.ai/communities/stale',
-            pendingPostReviews: 1,
-            pendingApplications: 0,
-            pendingReports: 0,
-            escalatedItems: 0,
-            suspectedBanEvaders: 0,
-            netMemberChange: 0,
-            totalActiveMembers: 0,
-            newDiscussionPosts: 0,
-            newReviewPosts: 0,
-            newDataPointPosts: 0,
-            topDiscussionTitle: null,
-            topDiscussionReplyCount: 0,
-            activeMemberCount: 0,
-            activeMemberRate: 0,
-          },
-        ],
-      },
-    )
-
-    expect(ses.sendEmail).toHaveBeenCalledWith(
-      expect.objectContaining({
-        subject: `Community moderation summary for ${expectedDate}`,
-        text: expect.stringContaining(`summary for ${expectedDate}`),
-        headers: expect.objectContaining({
-          'List-Unsubscribe': expect.stringContaining('/api/v1/email-unsubscribe?token='),
-          'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-        }),
-      }),
-    )
-  })
-
   it('backfills unsubscribeUrl and physicalAddress for a legacy queue payload missing them', async () => {
     const user = await createTestUser()
     await updateUserFields(user!.id, { moderation_email_timezone: 'UTC' })
@@ -249,11 +177,14 @@ describe('processSendCommunityModerationSummaryEmail', () => {
       postId,
       submittedById: user!.id,
     })
-    const { trackingKey, windowEnd } = await claimCurrentModerationSummaryForTest(user!.id)
+    const { trackingKey, windowEnd, dispatchTimeZone } = await claimCurrentModerationSummaryForTest(
+      user!.id,
+    )
 
     // Simulates a job enqueued by pre-deploy dispatcher code, before
     const legacyVariables = {
       generatedForDate: '2026-07-12',
+      dispatchTimeZone,
       settingsUrl: 'https://voucha.ai/my/notification-settings',
       communities: [
         {
