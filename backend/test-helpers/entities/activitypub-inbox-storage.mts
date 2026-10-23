@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto'
+import { onTestFinished } from 'vitest'
 import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { read, beginTransaction, write } from '@data-stores/psql'
 import sql, { type SQLStatement } from 'sql-template-strings'
@@ -140,21 +142,31 @@ export async function insertActivityPubInboxCapacityDeliveriesForTest(
   count: number,
   bodyBytes: number,
   expired = false,
-): Promise<void> {
-  await write(sql`/* insertActivityPubInboxCapacityDeliveriesForTest */
+): Promise<string[]> {
+  if (!Number.isInteger(count) || count < 0 || !Number.isInteger(bodyBytes) || bodyBytes < 0)
+    throw new Error('ActivityPub capacity fixtures require nonnegative integer sizes')
+  if (count === 0) return []
+  const suffix = randomUUID()
+  const { rows } = await write<{
+    id: string
+  }>(sql`/* insertActivityPubInboxCapacityDeliveriesForTest */
     INSERT INTO activitypub_inbox_delivery_work_items (
       request_method, request_target, expected_host, signature_header, digest_header, date_header,
       raw_body, claimed_activity_id, claimed_activity_type, claimed_actor_uri, sender_hostname,
       received_at, retention_expires_at
     )
     SELECT 'POST', '/ap/inbox', 'voucha.example', 'signature', 'digest', 'date',
-           DECODE(REPEAT('00', ${bodyBytes}), 'hex'),
-           'https://capacity.example/activities/' || value,
-           'Create', 'https://capacity.example/users/alice', 'capacity.example',
+           CONVERT_TO(REPEAT('x', ${bodyBytes}), 'UTF8'),
+           'https://' || ${suffix} || '.example/activities/' || value,
+           'Create', 'https://' || ${suffix} || '.example/users/alice', ${`${suffix}.example`},
            CASE WHEN ${expired} THEN CURRENT_TIMESTAMP - INTERVAL '2 hours' ELSE CURRENT_TIMESTAMP END,
            CASE WHEN ${expired} THEN CURRENT_TIMESTAMP - INTERVAL '1 hour' ELSE CURRENT_TIMESTAMP + INTERVAL '1 hour' END
     FROM generate_series(1, ${count}) AS value
+    RETURNING id
   `)
+  const ids = rows.map(row => row.id)
+  onTestFinished(() => deleteActivityPubInboxDeliveriesForTest(ids))
+  return ids
 }
 
 export async function explainActivityPubInboxCleanupForTest(query: SQLStatement): Promise<string> {

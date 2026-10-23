@@ -26,7 +26,7 @@ import {
 import {
   claimTestDelivery,
   exhaustTestDelivery,
-} from '@voucha/test-helpers/services/ap-inbox-activities/durable-delivery-transitions.test-support'
+} from '@voucha/test-helpers/activitypub-inbox-transitions'
 import {
   createApprovedRemoteActor,
   createSignedDelivery,

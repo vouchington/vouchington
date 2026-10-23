@@ -8,7 +8,7 @@ import { activityPubInboxDeliveryTransitions } from '@services/ap-inbox-activiti
 import {
   claimTestDelivery,
   rejectTestDelivery,
-} from '@voucha/test-helpers/services/ap-inbox-activities/durable-delivery-transitions.test-support'
+} from '@voucha/test-helpers/activitypub-inbox-transitions'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { uuidBefore } from '@voucha/test-helpers/uuid-before'
 import { activitypub } from '@queues/activitypub/queues'

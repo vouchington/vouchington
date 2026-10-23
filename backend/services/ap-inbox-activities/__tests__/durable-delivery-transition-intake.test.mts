@@ -1,10 +1,13 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
+import { registerActivityPubInboxAdmission } from '@voucha/test-helpers/activitypub-inbox-transitions'
 import { activityPubInboxDeliveryExistsOnPrimaryForTest } from '@voucha/test-helpers/entities/activitypub-inbox'
 import { cleanupActivityPubInboxStorageFixturesForTest } from '@voucha/test-helpers/entities/activitypub-inbox-storage'
 import { withPostgresPoolQueryFailureForTest } from '@voucha/test-helpers/postgres-pool-query-failure'
 import { acceptActivityPubInboxDelivery } from '../durable-delivery-transition-intake.mts'
 import type { ActivityPubInboxEnvelope } from '../durable-delivery-transition-contract.mts'
+
+registerActivityPubInboxAdmission()
 
 describe('ActivityPub inbox intake database failure', () => {
   it('rethrows an unexpected insert failure without recording a delivery or reporting capacity exhaustion', async () => {
