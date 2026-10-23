@@ -40,8 +40,9 @@ describe('Valkey test container', () => {
     }
     const [start] = action.runs?.steps ?? []
     expect(start?.env?.VALKEY_IMAGE).toMatch(
-      /^mirror\.gcr\.io\/valkey\/valkey-bundle:\d+\.\d+\.\d+@sha256:[0-9a-f]{64}$/u,
+      /^ghcr\.io\/vouchington\/dependency-valkey:\d+\.\d+\.\d+@sha256:[0-9a-f]{64}$/u,
     )
+    expect(start?.run).toContain('timeout --kill-after=2s 50s docker pull "$VALKEY_IMAGE"')
     expect(start?.run).toContain('timeout 60')
     expect(start?.run).toContain('-p 127.0.0.1::6379')
     expect(start?.run).not.toMatch(/-p\s+\d+:6379/u)

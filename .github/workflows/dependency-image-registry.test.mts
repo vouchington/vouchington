@@ -7,7 +7,7 @@ import {
   type Document,
 } from '../../static-code-analysis/repo-file-policy/docker-image-mirror.mts'
 
-describe('Docker Hub images come through mirror.gcr.io', () => {
+describe('Docker Hub images use reviewed dependency packages', () => {
   it('flags Docker Hub references in every workflow image position', () => {
     const document: Document = {
       jobs: {
@@ -37,21 +37,21 @@ describe('Docker Hub images come through mirror.gcr.io', () => {
     }
 
     expect(workflowImageViolations('wf', document).map(entry => entry.split(': ')[1])).toEqual([
-      'node must come from mirror.gcr.io/',
-      'pgvector/pgvector must come from mirror.gcr.io/',
-      'otel/collector must come from mirror.gcr.io/',
-      'docker.io/library/redis must come from mirror.gcr.io/',
-      'alpine must come from mirror.gcr.io/',
-      'moby/buildkit must come from mirror.gcr.io/',
-      'moby/buildkit must come from mirror.gcr.io/',
-      'ubuntu must come from mirror.gcr.io/',
-      'busybox must come from mirror.gcr.io/',
-      'ubuntu must come from mirror.gcr.io/',
-      'alpine must come from mirror.gcr.io/',
-      'busybox must come from mirror.gcr.io/',
-      'node:${{ must come from mirror.gcr.io/',
-      'debian must come from mirror.gcr.io/',
-      'moby/buildkit must come from mirror.gcr.io/',
+      'node must use a reviewed GHCR dependency package',
+      'pgvector/pgvector must use a reviewed GHCR dependency package',
+      'otel/collector must use a reviewed GHCR dependency package',
+      'docker.io/library/redis must use a reviewed GHCR dependency package',
+      'alpine must use a reviewed GHCR dependency package',
+      'moby/buildkit must use a reviewed GHCR dependency package',
+      'moby/buildkit must use a reviewed GHCR dependency package',
+      'ubuntu must use a reviewed GHCR dependency package',
+      'busybox must use a reviewed GHCR dependency package',
+      'ubuntu must use a reviewed GHCR dependency package',
+      'alpine must use a reviewed GHCR dependency package',
+      'busybox must use a reviewed GHCR dependency package',
+      'node:${{ must use a reviewed GHCR dependency package',
+      'debian must use a reviewed GHCR dependency package',
+      'moby/buildkit must use a reviewed GHCR dependency package',
     ])
     expect(
       dockerfileViolations(
@@ -68,8 +68,15 @@ describe('Docker Hub images come through mirror.gcr.io', () => {
       workflowImageViolations('action.yml', { runs: { image: 'docker://alpine' } }).map(
         entry => entry.split(': ')[1],
       ),
-    ).toEqual(['alpine must come from mirror.gcr.io/'])
+    ).toEqual(['alpine must use a reviewed GHCR dependency package'])
     expect(workflowImageViolations('action.yml', { runs: { image: 'Dockerfile' } })).toEqual([])
+    expect(
+      workflowImageViolations('wf', {
+        jobs: { build: { services: { db: { image: 'mirror.gcr.io/example/db' } } } },
+      }),
+    ).toEqual([
+      'wf#build service db: mirror.gcr.io/example/db must use a reviewed GHCR dependency package',
+    ])
   })
 
   it('matches Dockerfile names at any depth and ignores lookalikes', () => {
@@ -82,18 +89,18 @@ describe('Docker Hub images come through mirror.gcr.io', () => {
     ).toBe(true)
   })
 
-  it('allows the mirror, other registries, variables, scratch, and earlier stages', () => {
+  it('allows GHCR, other registries, variables, scratch, and earlier stages', () => {
     const document: Document = {
       jobs: {
         build: {
-          services: { db: { image: 'mirror.gcr.io/pgvector/pgvector' } },
+          services: { db: { image: 'ghcr.io/vouchington/dependency-pgvector' } },
           steps: [
             { run: 'CID=$(docker run -d -p "$PORT:3000" -e A "$IMAGE")' },
             { run: 'docker run --rm public.ecr.aws/x/y && docker pull ghcr.io/o/i' },
             { run: 'docker pull "$reference"' },
-            { run: 'docker pull --platform linux/arm64 mirror.gcr.io/library/ubuntu' },
-            { run: 'docker run --platform "$PLATFORM" -u 0 mirror.gcr.io/library/ubuntu' },
-            { with: { 'driver-opts': 'image=mirror.gcr.io/moby/buildkit' } },
+            { run: 'docker pull --platform linux/arm64 ghcr.io/vouchington/dependency-ubuntu' },
+            { run: 'docker run --platform "$PLATFORM" -u 0 ghcr.io/vouchington/dependency-ubuntu' },
+            { with: { 'driver-opts': 'image=ghcr.io/vouchington/dependency-buildkit' } },
             { uses: 'docker/setup-buildx-action', with: { driver: 'docker' } },
             { uses: 'docker/setup-buildx-action', with: { 'driver-opts': 'image=ghcr.io/o/b' } },
           ],
@@ -106,13 +113,13 @@ describe('Docker Hub images come through mirror.gcr.io', () => {
       dockerfileViolations(
         'Dockerfile',
         [
-          '# syntax=mirror.gcr.io/docker/dockerfile',
-          'FROM mirror.gcr.io/library/node AS base',
+          '# syntax=ghcr.io/vouchington/dependency-dockerfile',
+          'FROM ghcr.io/vouchington/dependency-node AS base',
           'FROM --platform=linux/arm64 base AS next',
           'FROM gcr.io/distroless/nodejs26 AS runtime',
           'FROM scratch',
           'FROM ${REGISTRY}/library/node',
-          'FROM mirror.gcr.io/library/node:${NODE_VERSION}',
+          'FROM ghcr.io/vouchington/dependency-node:${NODE_VERSION}',
         ].join('\n'),
       ),
     ).toEqual([])

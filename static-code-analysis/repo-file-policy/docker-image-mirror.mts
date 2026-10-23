@@ -2,10 +2,8 @@ import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { parse } from 'yaml'
 
-// Anonymous Docker Hub pulls from hosted runners hit its rate limit and ejected unrelated
-// merge-queue entries (#2653). `mirror.gcr.io` serves the same pinned digest without credentials.
-// The Valkey helper (`start-valkey/pull-image.sh`) is a shell script, not a workflow body, so its
-// documented one-shot Docker Hub fallback is outside this scan.
+// Anonymous Docker Hub and public mirror pulls have exhausted shared registry quotas.
+// CI's declared dependencies use reviewed digest-pinned GHCR packages instead.
 const HUB_HOSTS = ['docker.io', 'index.docker.io', 'registry-1.docker.io']
 const VALUE_FLAGS = new Set(
   '-e --env -p --publish -v --volume --name --network --net --add-host --entrypoint -u --user -w --workdir --tmpfs --platform --mount --label -l --env-file --health-cmd --health-interval --health-retries --health-timeout --health-start-period -m --memory --cpus --restart --cap-add --cap-drop --shm-size --log-driver --ulimit -h --hostname --pull --pids-limit --group-add --device --dns --ipc --pid --cgroupns --stop-signal --stop-timeout'.split(
@@ -29,6 +27,7 @@ export type Document = {
 function isHubImage(reference: string): boolean {
   const image = reference.replace(/^["']|["'),;]+$/gu, '')
   if (image === '' || image === 'scratch') return false
+  if (image.startsWith('mirror.gcr.io/')) return true
   // Only the part before a variable is knowable; a wholly dynamic reference or registry is not.
   const dynamicAt = image.search(/\$|\{\{/u)
   const known = dynamicAt === -1 ? image : image.slice(0, dynamicAt)
@@ -100,7 +99,9 @@ export function workflowImageViolations(path: string, document: Document): strin
     found.push(...stepImages(step).map((image): [string, string] => ['composite', image]))
   }
   return found.flatMap(([where, image]) =>
-    isHubImage(image) ? [`${path}#${where}: ${image} must come from mirror.gcr.io/`] : [],
+    isHubImage(image)
+      ? [`${path}#${where}: ${image} must use a reviewed GHCR dependency package`]
+      : [],
   )
 }
 

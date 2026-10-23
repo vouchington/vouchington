@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { checkDockerImageMirrors } from './docker-image-mirror.mts'
 
-describe('finite tracked mirror policy', () => {
+describe('finite tracked dependency-image policy', () => {
   it('checks only tracked workflow, composite-action and Dockerfile inputs', async () => {
     const root = await mkdtemp(join(tmpdir(), 'docker-mirror-policy-'))
     try {
@@ -33,6 +33,10 @@ describe('finite tracked mirror policy', () => {
         checkDockerImageMirrors(root, ['unrelated.yml', '.github/workflows/deleted.yml']),
       ).toEqual([])
       await writeFile(join(root, 'Dockerfile'), 'FROM mirror.gcr.io/library/ubuntu\n')
+      expect(checkDockerImageMirrors(root, ['Dockerfile'])).toEqual([
+        'Dockerfile: FROM mirror.gcr.io/library/ubuntu',
+      ])
+      await writeFile(join(root, 'Dockerfile'), 'FROM ghcr.io/vouchington/dependency-ubuntu\n')
       expect(checkDockerImageMirrors(root, ['Dockerfile'])).toEqual([])
     } finally {
       await rm(root, { recursive: true, force: true })

@@ -14,8 +14,7 @@ set -euo pipefail
 #   - PostgreSQL 18 with pgvector (CI's digest-pinned image) on 127.0.0.1:5432 with a trusted
 #     `postgres` superuser, exported as an explicit DATABASE_URL the way the initialize smoke test
 #     does. The container has no $USER, so node-pg cannot default the role name.
-#   - Image pulls through mirror.gcr.io, because anonymous Docker Hub pulls from shared cloud
-#     egress are rate-limited.
+#   - CI's reviewed digest-pinned GHCR dependency images.
 #
 # It refuses to run outside a Claude Code cloud session. Every step is idempotent; rerun it after
 # a session resumes on a fresh VM, where the daemon and containers are no longer running.
@@ -33,7 +32,6 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 POSTGRES_CONTAINER=voucha-cloud-postgres
-IMAGE_MIRROR=mirror.gcr.io
 LOCAL_BIN="$HOME/.local/bin"
 
 print_usage() {
@@ -159,26 +157,10 @@ start_docker() {
   exit 1
 }
 
-# Pull a docker.io image reference through the mirror and tag it with the original reference so
-# `docker run <ref>` in ./dev/initialize finds it locally. Falls back to Docker Hub.
 ensure_image() {
-  local ref=$1 mirror_ref
-  # A digest-pinned reference is always pulled (a no-op once present) so a pin bump retags.
-  if [ "${ref%@*}" = "$ref" ] && docker image inspect "$ref" >/dev/null 2>&1; then
-    return
-  fi
-  mirror_ref="$IMAGE_MIRROR/$ref"
-  case "$ref" in
-    */*) ;;
-    *) mirror_ref="$IMAGE_MIRROR/library/$ref" ;;
-  esac
+  local ref=$1
   echo -e "${BLUE}Pulling $ref...${NC}"
-  if docker pull --quiet "$mirror_ref" >/dev/null && docker tag "$mirror_ref" "${ref%@*}"; then
-    return
-  fi
-  echo -e "${YELLOW}Mirror pull failed; trying Docker Hub.${NC}"
   docker pull --quiet "$ref" >/dev/null
-  [ "${ref%@*}" = "$ref" ] || docker tag "$ref" "${ref%@*}"
 }
 
 # Read image pins from their owners instead of duplicating them here.
@@ -194,14 +176,14 @@ pinned_image() {
 
 start_postgres() {
   local image
-  image="$(pinned_image 'pgvector/pgvector:pg18@sha256:[0-9a-f]+' .github/workflows/initialize-smoke-test.yml)"
+  image="$(pinned_image 'ghcr.io/vouchington/dependency-pgvector:pg18@sha256:[0-9a-f]+' .github/workflows/initialize-smoke-test.yml)"
   ensure_image "$image"
 
-  # A cached VM keeps the container from an earlier pin; retagging does not change it.
+  # A cached VM may keep a container from an earlier approved digest.
   local container_image
   container_image="$(docker inspect -f '{{.Image}}' "$POSTGRES_CONTAINER" 2>/dev/null || true)"
   if [ -n "$container_image" ] &&
-    [ "$container_image" != "$(docker image inspect -f '{{.Id}}' "${image%@*}")" ]; then
+    [ "$container_image" != "$(docker image inspect -f '{{.Id}}' "$image")" ]; then
     echo -e "${YELLOW}Recreating $POSTGRES_CONTAINER for the updated PostgreSQL image pin.${NC}"
     docker rm -f -v "$POSTGRES_CONTAINER" >/dev/null
   fi
@@ -219,7 +201,7 @@ start_postgres() {
         -e POSTGRES_USER=postgres \
         -e POSTGRES_INITDB_ARGS="-c max_connections=300" \
         -p 127.0.0.1:5432:5432 \
-        "${image%@*}" >/dev/null
+        "$image" >/dev/null
     fi
   fi
 
@@ -240,7 +222,7 @@ start_postgres() {
 install_node
 if [ "$MODE" != monorepo ]; then
   start_docker
-  ensure_image "$(pinned_image 'valkey/valkey-bundle:[0-9.]+' dev/initialize)"
+  ensure_image "$(pinned_image 'ghcr.io/vouchington/dependency-valkey:[0-9.]+@sha256:[0-9a-f]+' dev/initialize)"
   start_postgres
 fi
 
