@@ -45,7 +45,7 @@ const noFreshness = { enforceCatalogFreshness: false }
 describe('reviewed token and audit snapshot identifiers', () => {
   it('accepts a reviewed token and a reviewed audit snapshot id without a foreign key', () => {
     expect(
-      checkRelationalStorage(snapshot('post_votes', { device_id: column('uuid') }), noFreshness),
+      checkRelationalStorage(snapshot('user_sessions', { device_id: column('uuid') }), noFreshness),
     ).toEqual([])
     expect(
       checkRelationalStorage(
@@ -107,7 +107,7 @@ describe('reviewed token and audit snapshot identifiers', () => {
   })
 
   it.each([
-    ['post_votes', 'device_id', 'token, cursor or protocol identifier'],
+    ['user_sessions', 'device_id', 'token, cursor or protocol identifier'],
     ['oauth_authorization_server_events', 'client_id', 'audit snapshot identifier'],
     ['oauth_native_session_token_mints', 'client_id', 'audit snapshot identifier'],
     ['oauth_native_session_token_mints', 'grant_id', 'audit snapshot identifier'],
