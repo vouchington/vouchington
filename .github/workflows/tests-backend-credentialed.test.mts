@@ -33,7 +33,6 @@ describe('backend credentialed test workflow', () => {
 
     expect(credentialedJob).toContain('OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}')
     expect(credentialedJob).toContain('OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}')
-    expect(credentialedJob).toContain('STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}')
     expect(credentialedJob).toContain('LIGHTPANDA_TOKEN: ${{ secrets.LIGHTPANDA_TOKEN }}')
     expect(credentialedJob).toContain('.github/actions/setup-aws')
     expect(credentialedJob).toContain(
@@ -139,7 +138,6 @@ describe('backend credentialed test workflow', () => {
     expect(workflow).toContain('inputs.trusted_secret_context')
     expect(workflow).toContain('OPENAI_API_KEY:\n        required: false')
     expect(workflow).toContain('OPENROUTER_API_KEY:\n        required: false')
-    expect(workflow).toContain('STRIPE_SECRET_KEY:\n        required: false')
     expect(workflow).toContain('LIGHTPANDA_TOKEN:\n        required: false')
   })
 

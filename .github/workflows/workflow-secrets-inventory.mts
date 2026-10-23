@@ -104,10 +104,6 @@ export const SECRET_INVENTORY = {
       'When present, it creates releases and uploads Next.js source maps; without it, ' +
       'the validated image still publishes (repo secret).',
   },
-  STRIPE_SECRET_KEY: {
-    provisioned: true,
-    notes: 'Stripe secret key for credentialed backend tests (repo secret).',
-  },
   VOUCHINGTON_INFRA_APP_ID: {
     provisioned: true,
     notes:

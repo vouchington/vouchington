@@ -3,8 +3,7 @@ import { loadRecordedResponse } from '@voucha/test-helpers/provider-replay'
 import { sendEmail } from './ses.mts'
 
 // The recorded SES responses are served through the real SES client's `requestHandler`, so the SDK
-// serializes, signs and parses actual wire bytes. The live counterpart is the non-gating smoke
-// check in ./ses.generated.test.mts.
+// serializes, signs and parses actual wire bytes.
 const replay = await vi.hoisted(async () => {
   const { createProviderReplay } = await import('@voucha/test-helpers/provider-replay')
   return createProviderReplay()

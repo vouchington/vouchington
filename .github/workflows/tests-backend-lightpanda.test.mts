@@ -64,7 +64,6 @@ describe('retained Lightpanda cloud CI boundary', () => {
         AWS_TEST_ROLE_ARN: 'arn:aws:iam::123456789012:role/preflight-fixture',
         OPENAI_API_KEY: '',
         OPENROUTER_API_KEY: '',
-        STRIPE_SECRET_KEY: '',
         GITHUB_OUTPUT: join(directory, 'outputs'),
       }
       if (token === undefined) delete env.LIGHTPANDA_TOKEN

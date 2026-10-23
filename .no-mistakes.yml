@@ -611,11 +611,6 @@ tests:
         integration_suites:
           openrouter:
             - openrouter
-      backend-stripe:
-        integration_suites:
-          stripe:
-            - stripe
-
 rules:
   - name: Per-item PostgreSQL and Valkey effects
     rule: query-reached-per-item
@@ -3326,7 +3321,6 @@ rules:
         backend-bedrock: [backend-credentialed]
         backend-openai: [backend-credentialed]
         backend-openrouter: [backend-credentialed]
-        backend-stripe: [backend-credentialed]
         backend-lightpanda: [backend-credentialed]
         web: [web]
         web-storybook: [storybook]
