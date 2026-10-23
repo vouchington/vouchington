@@ -9,6 +9,7 @@ import {
   findMcpStepUpScopes,
   handleMcpHttpRequest,
   planMcpCalls,
+  resolveCopyrightUserTargetsForAudit,
   ALL_MCP_SERVER_CONFIGS,
   type McpCallAuditOutcome,
   type McpServerConfig,
@@ -123,6 +124,7 @@ export async function dispatchMcpRequest(
         stepUpScopes ? { ...plan, charges: [] } : plan,
         { identities: rateLimitIdentities, owner },
       )
+      await resolveCopyrightUserTargetsForAudit(parsedBody, events)
       usage.recordPlannedEvents(events)
       const messages = Array.isArray(parsedBody) ? parsedBody : [parsedBody]
       usage.toolCalls.recordCalls(events, messages, stepUpScopes === null)

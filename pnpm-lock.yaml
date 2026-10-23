@@ -6089,6 +6089,9 @@ importers:
       '@services/contribution-gating':
         specifier: workspace:^
         version: link:../contribution-gating
+      '@services/copyright-notices':
+        specifier: workspace:^
+        version: link:../copyright-notices
       '@services/media-delivery-safety':
         specifier: workspace:^
         version: link:../media-delivery-safety

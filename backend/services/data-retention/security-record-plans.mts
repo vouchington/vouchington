@@ -77,6 +77,17 @@ export function sourcePlan(source: Source, now: Date): SourcePlan {
         keyAt: 'target.revoked_at',
         cutoffAt: ninetyDaysAgo,
         predicate: 'target.revoked_at < $1',
+        // The parent page holds FOR UPDATE before this fresh DELETE predicate runs. A concurrent
+        // child insert must finish before that lock or wait for the grant deletion; neither case
+        // can turn one grant deletion into an unbounded ON DELETE CASCADE. The OAuth artifact
+        // cleaner owns each child's expiry window and bounded physical deletion.
+        deletePredicate: `NOT EXISTS (
+            SELECT 1 FROM oauth_authorization_codes code WHERE code.grant_id = target.id
+          ) AND NOT EXISTS (
+            SELECT 1 FROM oauth_refresh_token_families family WHERE family.grant_id = target.id
+          ) AND NOT EXISTS (
+            SELECT 1 FROM oauth_access_tokens access_token WHERE access_token.grant_id = target.id
+          )`,
       }
     case 'oauth_grant_anchors':
       return {

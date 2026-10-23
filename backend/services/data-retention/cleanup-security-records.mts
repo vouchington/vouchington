@@ -1,5 +1,6 @@
 import { beginTransaction } from '@data-stores/psql'
 import { getMinUUIDv7ForDate } from '@modules/utils'
+import { lockCopyrightRationaleRetentionPage } from '@services/copyright-notices/retention-erasure-preservation'
 import type { DataRetentionLimits } from './config.mts'
 
 import { SOURCES, sourcePlan, type Source } from './security-record-plans.mts'
@@ -70,16 +71,25 @@ export async function cleanupSecuritySourcePage(
     ? [cutoffId, cursor.cursor_id, batchSize + 1]
     : [plan.cutoffAt, cursor.cursor_at, cursor.cursor_id, batchSize + 1]
   const limitParameter = idKeyed ? '$3::integer' : '$4::integer'
+  const needsAccountLocks = source === 'copyright_rationales_noncase'
   const page = await query<{ id: string; key_at: Date }>(
     `/* listSecurityRetentionPage:${source} */
      SELECT target.id, ${plan.keyAt} AS key_at
      FROM ${plan.table} target
      WHERE ${plan.predicate} AND ${keyset}
      ORDER BY ${order} LIMIT ${limitParameter}
-     FOR UPDATE OF target SKIP LOCKED`,
+     ${needsAccountLocks ? '' : 'FOR UPDATE OF target SKIP LOCKED'}`,
     pageParameters,
   )
-  const selected = page.rows.slice(0, batchSize)
+  const scanned = page.rows.slice(0, batchSize)
+  let selected = scanned
+  if (needsAccountLocks && scanned.length > 0) {
+    const lockedIds = await lockCopyrightRationaleRetentionPage(
+      query,
+      scanned.map(row => row.id),
+    )
+    selected = scanned.filter(row => lockedIds.has(row.id))
+  }
   if (source === 'oauth_events') {
     // The trigger accepts only old, nonessential events inside this transaction.
     await query(
@@ -112,7 +122,7 @@ export async function cleanupSecuritySourcePage(
     deleted = result.rowCount ?? 0
   }
   const hasMore = page.rows.length > batchSize
-  const last = hasMore ? selected.at(-1)! : null
+  const last = hasMore ? scanned.at(-1)! : null
   await query(
     `/* checkpointSecurityRetentionCursor */
      UPDATE security_retention_cleanup_cursors

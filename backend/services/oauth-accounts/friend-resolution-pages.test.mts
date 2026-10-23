@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
   connectTestOAuthAccount,
@@ -5,6 +6,9 @@ import {
   getTestFriend,
   insertTestGithubFriend,
   insertTestOAuthAccount,
+  setTestGithubFriendInvalidation,
+  testGithubFriendCleanupComplete,
+  testGithubFriendExists,
 } from '@voucha/test-helpers'
 import {
   closeScopedDynamicConfigContext,
@@ -18,6 +22,35 @@ import { disconnectOAuthAccount } from '../my/oauth-account.mts'
 
 describe('bounded incoming friend resolution', () => {
   afterEach(() => closeScopedDynamicConfigContext([oauthAccountFriendWorkConfig]))
+
+  it('drains a pre-unlink observation within the same millisecond as its marker', async () => {
+    const account = await insertTestOAuthAccount('github', `github-microsecond-${randomUUID()}`)
+    if (!account.account_id) throw new Error('GitHub account id missing')
+    const stale = await insertTestGithubFriend(
+      account.account_id,
+      `stale-${randomUUID()}`,
+      '2020-01-01 00:00:00.123400+00',
+    )
+    const newer = await insertTestGithubFriend(
+      account.account_id,
+      `newer-${randomUUID()}`,
+      '2020-01-01 00:00:00.124000+00',
+    )
+    await setTestGithubFriendInvalidation(account.account_id, '2020-01-01 00:00:00.123900+00')
+
+    expect(
+      await cleanupOAuthFriendEdgePage(
+        'github',
+        'erase',
+        1,
+        new Date('2020-01-02T00:00:00Z'),
+        account.account_id,
+      ),
+    ).toMatchObject({ deleted: 1, hasMore: false })
+    expect(await testGithubFriendExists(stale)).toBe(false)
+    expect(await testGithubFriendExists(newer)).toBe(true)
+    expect(await testGithubFriendCleanupComplete(account.account_id)).toBe(true)
+  })
 
   it('skips an old unresolved edge and completes the fresh target page', async () => {
     overrideDynamicConfigFieldsForTest(oauthAccountFriendWorkConfig, {
