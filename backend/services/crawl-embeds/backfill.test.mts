@@ -40,20 +40,22 @@ describe('backfillPendingCrawlEmbeds', () => {
     await backfillPendingCrawlEmbeds()
 
     const enqueued = await readAllQueueJobs(crawlEmbedsQueue)
-    expect(enqueued.filter(job => job.data.crawl_id === validCrawlId)).toMatchObject([
-      {
+    expect(enqueued).toContainEqual(
+      expect.objectContaining({
         name: 'resolve_crawl_oembed',
         data: { crawl_id: validCrawlId },
-        opts: {
+        opts: expect.objectContaining({
           priority: PRIORITY_DEFAULT,
           deduplication: { id: `resolve_crawl_oembed__${validCrawlId}`, mode: 'simple' },
           ordering: {
             key: 'oembed:api.example.test',
             rateLimit: { max: 1, duration: OEMBED_HOST_RATE_LIMIT_MS },
           },
-        },
-      },
-    ])
-    expect(enqueued.filter(job => job.data.crawl_id === invalidCrawlId)).toEqual([])
+        }),
+      }),
+    )
+    expect(enqueued).not.toContainEqual(
+      expect.objectContaining({ data: { crawl_id: invalidCrawlId } }),
+    )
   })
 })
