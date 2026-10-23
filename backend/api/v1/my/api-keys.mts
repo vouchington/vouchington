@@ -10,7 +10,12 @@ import {
   API_KEY_TYPES,
   validateApiKeyCreationPermissions,
 } from '@services/api-keys'
-import { requireAuth, validateRequestContract, validateUUIDParam } from '../../response-helpers.mts'
+import {
+  parseJsonBody,
+  requireAuth,
+  validateRequestContract,
+  validateUUIDParam,
+} from '../../response-helpers.mts'
 import { apiQuery } from '../../api-query-contract.mts'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import {
@@ -65,7 +70,7 @@ app.route('/api/v1/my/api-keys').post(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/my/api-keys')
   assertNotSuspended(currentUser)
 
-  const body = (await ctx.request.json('10kb')) as CreateApiKeyBody
+  const body = (await parseJsonBody(ctx, '10kb')) as CreateApiKeyBody
   validateRequestContract(ctx, 'POST:/api/v1/my/api-keys', { body })
 
   ctx.assert(

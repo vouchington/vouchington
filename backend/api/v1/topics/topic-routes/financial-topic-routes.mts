@@ -13,7 +13,11 @@ import {
 import { currentUserCanUpdateTopic } from '@services/topics/authorization'
 import { assertNotSuspended } from '@services/users'
 import app from '../../../app.mts'
-import { requireAuthAndRateLimit, validateRequestContract } from '../../../response-helpers.mts'
+import {
+  parseJsonBody,
+  requireAuthAndRateLimit,
+  validateRequestContract,
+} from '../../../response-helpers.mts'
 
 app
   .route('/api/v1/topics/:idOrSlug/card')
@@ -39,7 +43,9 @@ app
     const topic = await getTopicByAny(ctx.params.idOrSlug!)
     if (!topic) ctx.throw(404, 'Topic not found')
 
-    const attributes = (await ctx.request.json('1mb')) as Parameters<typeof updateCardAttributes>[2]
+    const attributes = (await parseJsonBody(ctx, '1mb')) as Parameters<
+      typeof updateCardAttributes
+    >[2]
     validateRequestContract(ctx, 'PATCH:/api/v1/topics/:idOrSlug/card', { body: attributes })
     const updated = await updateCardAttributes(currentUser, topic, attributes)
 
@@ -74,7 +80,7 @@ app
     const topic = await getTopicByAny(ctx.params.idOrSlug!)
     if (!topic) ctx.throw(404, 'Topic not found')
 
-    const attributes = (await ctx.request.json('1mb')) as Parameters<
+    const attributes = (await parseJsonBody(ctx, '1mb')) as Parameters<
       typeof updateSpendingCategoryAttributes
     >[2]
     validateRequestContract(ctx, 'PATCH:/api/v1/topics/:idOrSlug/spending-category', {
@@ -97,7 +103,7 @@ app
     const topic = await getTopicByAny(ctx.params.idOrSlug!)
     if (!topic) ctx.throw(404, 'Topic not found')
 
-    const attributes = (await ctx.request.json('1mb')) as Parameters<
+    const attributes = (await parseJsonBody(ctx, '1mb')) as Parameters<
       typeof replaceSpendingCategoryAttributes
     >[2]
     validateRequestContract(ctx, 'PUT:/api/v1/topics/:idOrSlug/spending-category', {

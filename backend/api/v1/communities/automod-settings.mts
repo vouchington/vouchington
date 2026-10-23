@@ -1,6 +1,6 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
+import { parseJsonBody, requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import {
   loadCommunityWithViewer,
   type UpdateCommunityAutomodSettingsInput,
@@ -12,7 +12,7 @@ app.route('/api/v1/communities/:idOrSlug/automod-settings').patch(async (ctx: Co
   const currentUser = await requireAuth(ctx, 'PATCH:/api/v1/communities/:idOrSlug/automod-settings')
   const { idOrSlug } = ctx.params as { idOrSlug: string }
   const { community, membership } = await loadCommunityWithViewer(idOrSlug, currentUser.id)
-  const body = (await ctx.request.json('1mb')) as UpdateCommunityAutomodSettingsInput
+  const body = (await parseJsonBody(ctx, '1mb')) as UpdateCommunityAutomodSettingsInput
   validateRequestContract(ctx, 'PATCH:/api/v1/communities/:idOrSlug/automod-settings', {
     path: ctx.params,
     body,

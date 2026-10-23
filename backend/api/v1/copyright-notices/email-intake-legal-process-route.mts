@@ -26,12 +26,7 @@ app.route('/api/v1/copyright-email-intakes/:id/legal-process').post(async (ctx: 
   )
   assertNotSuspended(currentUser)
   ctx.assert(ctx.request.is('json'), 415, 'Invalid Content-Type')
-  const body = await parseJsonBody(ctx)
-  ctx.assert(
-    body !== null && typeof body === 'object' && !Array.isArray(body),
-    400,
-    'Invalid JSON body',
-  )
+  const body = await parseJsonBody<CopyrightEmailLegalProcessRequest>(ctx)
   const intakeId = validateUUIDParam(ctx, 'id')
   const request = body as CopyrightEmailLegalProcessRequest
   ctx.assert(typeof request.reason === 'string', 422, 'reason is required')

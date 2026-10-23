@@ -1,6 +1,7 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import {
+  parseJsonBody,
   requireAuthForSuspendedException,
   validateRequestContract,
 } from '../../response-helpers.mts'
@@ -16,7 +17,7 @@ app.route('/api/v1/memberships/billing-portal-sessions').post(async (ctx: Contex
     'POST:/api/v1/memberships/billing-portal-sessions',
   )
 
-  const body = (await ctx.request.json('1mb')) as BillingPortalSessionRequest
+  const body = (await parseJsonBody(ctx, '1mb')) as BillingPortalSessionRequest
   validateRequestContract(ctx, 'POST:/api/v1/memberships/billing-portal-sessions', { body })
   ctx.assert(body.return_url.startsWith('/'), 400, 'return_url must be a relative path')
 

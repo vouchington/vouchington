@@ -1,6 +1,6 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
+import { parseJsonBody, requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import {
   getUserFinancialProfile,
   upsertUserFinancialProfile,
@@ -22,7 +22,7 @@ app.route('/api/v1/my/financial-profile').get(async (ctx: Context) => {
 app.route('/api/v1/my/financial-profile').put(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'PUT:/api/v1/my/financial-profile')
 
-  const body = (await ctx.request.json('10kb')) as UpdateFinancialProfileRequest
+  const body = (await parseJsonBody(ctx, '10kb')) as UpdateFinancialProfileRequest
   validateRequestContract(ctx, 'PUT:/api/v1/my/financial-profile', { body })
   // The schema fixes shapes; the service also enforces value ranges and single-currency money.
   assertValidFinancialProfile(body)

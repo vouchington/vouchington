@@ -3,7 +3,7 @@ import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { isUUID } from '@modules/utils'
-import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
+import { parseJsonBody, requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { assertNotSuspended } from '@services/users'
 import {
   getCommunitySavedReplies,
@@ -56,7 +56,7 @@ app.route('/api/v1/communities/:idOrSlug/saved-replies').post(async (ctx: Contex
 
   ctx.assert(currentUserCanManageSavedReplies(currentUser, community, membership), 403, 'Forbidden')
 
-  const body = (await ctx.request.json('10kb')) as Record<string, unknown>
+  const body = (await parseJsonBody(ctx, '10kb')) as Record<string, unknown>
   validateRequestContract(ctx, 'POST:/api/v1/communities/:idOrSlug/saved-replies', {
     path: ctx.params,
     body,

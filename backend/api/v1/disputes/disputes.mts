@@ -1,7 +1,12 @@
 import { listReviewDisputePage } from '@services/review-disputes/list-page'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { requireAuth, validateRequestContract, validateUUIDParam } from '../../response-helpers.mts'
+import {
+  parseJsonBody,
+  requireAuth,
+  validateRequestContract,
+  validateUUIDParam,
+} from '../../response-helpers.mts'
 import type { ApiUuidContract } from '../../request-contract-types.mts'
 import { verifyCaptchaOrAttestation } from '@services/captcha'
 import {
@@ -55,7 +60,7 @@ const disputeDetailQuery = defineQueryContract({
 app.route('/api/v1/disputes').post(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/disputes')
 
-  const body = (await ctx.request.json('1mb')) as CreateReviewDisputeRequest
+  const body = (await parseJsonBody(ctx, '1mb')) as CreateReviewDisputeRequest
   validateRequestContract(ctx, 'POST:/api/v1/disputes', { body })
   await verifyCaptchaOrAttestation(ctx, body, { actionTag: 'disputes.create' })
 

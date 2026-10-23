@@ -1,13 +1,17 @@
+import { isHttpError } from 'http-errors'
 import type { Context } from '@jongleberry/api-server'
 import app from '../app.mts'
 import { unsubscribeEmailToken } from '@services/users'
-import { validateRequestContract } from '../response-helpers.mts'
+import { parseJsonBody, validateRequestContract } from '../response-helpers.mts'
 import { UNSUBSCRIBE_MEDIA_TYPES } from './unsubscribe-media-types.mts'
 
 app.route('/api/v1/email-unsubscribe').post(
   async (ctx: Context) => {
     await ctx.applyRouteRateLimit('POST:/api/v1/email-unsubscribe')
-    const body = (await ctx.request.json('10kb').catch(() => ({}))) as { token?: unknown }
+    const body = (await parseJsonBody(ctx, '10kb').catch(err => {
+      if (isHttpError(err) && err.status === 422) throw err
+      return {}
+    })) as { token?: unknown }
     const token =
       typeof body.token === 'string'
         ? body.token

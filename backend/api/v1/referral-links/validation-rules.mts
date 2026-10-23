@@ -2,6 +2,7 @@ import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import {
+  parseJsonBody,
   requireAuthAndRateLimit,
   validateRequestContract,
   validateUUIDParam,
@@ -73,7 +74,7 @@ app
     )
     const validationId = validateUUIDParam(ctx, 'validationId')
 
-    const body = (await ctx.request.json('1mb')) as CreateReferralLinkValidationRuleBody
+    const body = (await parseJsonBody(ctx, '1mb')) as CreateReferralLinkValidationRuleBody
     validateRequestContract(ctx, 'POST:/api/v1/referral-link-validations/:validationId/rules', {
       body,
       path: ctx.params,
@@ -107,7 +108,7 @@ app
     const validationId = validateUUIDParam(ctx, 'validationId')
     const ruleId = validateUUIDParam(ctx, 'ruleId')
 
-    const body = (await ctx.request.json('1mb')) as UpdateReferralLinkValidationRuleBody
+    const body = (await parseJsonBody(ctx, '1mb')) as UpdateReferralLinkValidationRuleBody
     validateRequestContract(
       ctx,
       'PATCH:/api/v1/referral-link-validations/:validationId/rules/:ruleId',

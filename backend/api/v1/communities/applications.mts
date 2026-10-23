@@ -1,7 +1,7 @@
 import app from '../../app.mts'
 import { apiQuery } from '../../api-query-contract.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
-import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
+import { parseJsonBody, requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import {
   getCommunityOrThrow,
   loadCommunityForModerator,
@@ -63,7 +63,7 @@ app
     const { idOrSlug } = ctx.params as { idOrSlug: string }
     const community = await getCommunityOrThrow(idOrSlug)
 
-    const body = (await ctx.request.json('1mb')) as {
+    const body = (await parseJsonBody(ctx, '1mb')) as {
       answers: Record<string, unknown>
       message?: string
     }
@@ -101,7 +101,7 @@ app.route('/api/v1/communities/:idOrSlug/applications/:id').patch(async (ctx: Co
   const { idOrSlug, id } = ctx.params as { idOrSlug: string; id: string }
   await loadCommunityForModerator(currentUser, idOrSlug)
 
-  const body = (await ctx.request.json('1mb')) as {
+  const body = (await parseJsonBody(ctx, '1mb')) as {
     status: 'approved' | 'rejected'
     reason?: string
   }

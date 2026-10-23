@@ -66,11 +66,6 @@ function assertCreateInput(ctx: Context, body: CopyrightTrustedFlaggerCreateRequ
   }
 }
 
-function assertObjectBody(ctx: Context, body: unknown): asserts body is Record<string, unknown> {
-  if (!body || typeof body !== 'object' || Array.isArray(body))
-    ctx.throw(422, 'Invalid request body')
-}
-
 app.route('/api/v1/copyright-trusted-flaggers').get(async (ctx: Context) => {
   apiQuery('GET:/api/v1/copyright-trusted-flaggers', listParser)
   setPrivateNoStoreCacheHeaders(ctx)
@@ -113,7 +108,7 @@ app.route('/api/v1/copyright-trusted-flaggers').post(async (ctx: Context) => {
   assertNotSuspended(currentUser)
   ctx.assert(ctx.request.is('json'), 415, 'Invalid Content-Type')
   const body = await parseJsonBody<CopyrightTrustedFlaggerCreateRequest>(ctx)
-  assertObjectBody(ctx, body)
+
   assertCreateInput(ctx, body)
   validateRequestContract(ctx, 'POST:/api/v1/copyright-trusted-flaggers', { body })
   const entry = await createCopyrightTrustedFlagger(currentUser, {
@@ -178,7 +173,7 @@ app.route('/api/v1/copyright-trusted-flaggers/:id/status-changes').post(async (c
   ctx.assert(ctx.request.is('json'), 415, 'Invalid Content-Type')
   const id = validateUUIDParam(ctx, 'id')
   const body = await parseJsonBody<CopyrightTrustedFlaggerChangeRequest>(ctx)
-  assertObjectBody(ctx, body)
+
   if (!['suspended', 'reinstated', 'revoked'].includes(body.change_type)) {
     ctx.throw(422, 'change_type is invalid')
   }

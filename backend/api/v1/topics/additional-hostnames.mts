@@ -9,7 +9,11 @@ import {
   removeAdditionalHostname,
 } from '@services/topics/additional-hostnames'
 import { currentUserCanUpdateTopic } from '@services/topics/authorization'
-import { requireAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
+import {
+  parseJsonBody,
+  requireAuthAndRateLimit,
+  validateRequestContract,
+} from '../../response-helpers.mts'
 import { apiQuery } from '../../api-query-contract.mts'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import {
@@ -78,7 +82,7 @@ app
     const topic = await getTopicByAny(ctx.params.idOrSlug!)
     ctx.assert(topic, 404, 'Topic not found')
 
-    const body = (await ctx.request.json('1mb')) as CreateAdditionalHostnameBody
+    const body = (await parseJsonBody(ctx, '1mb')) as CreateAdditionalHostnameBody
     validateRequestContract(ctx, 'POST:/api/v1/topics/:idOrSlug/additional-hostnames', {
       body,
     })

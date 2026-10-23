@@ -23,7 +23,7 @@ import {
 import { assertNotSuspended, isAdminUser } from '@services/users'
 import { mintUuidv7 as mintUUIDv7 } from '@vouchington/session-jwt'
 import app from '../../../app.mts'
-import { requireAuth, validateRequestContract } from '../../../response-helpers.mts'
+import { parseJsonBody, requireAuth, validateRequestContract } from '../../../response-helpers.mts'
 import { apiHeaders, apiRequestContract } from '@vouchington/utils/api-response-contract'
 
 type CreatePostRequestBody = CreatePostInput & {
@@ -71,12 +71,7 @@ app.route('/api/v1/posts').post(async (ctx: Context) => {
 
   const membershipPlan = await getAuthorizedPostContributionMembershipPlan(currentUser)
 
-  const parsedBody = await ctx.request.json('1mb')
-  ctx.assert(
-    parsedBody !== null && typeof parsedBody === 'object' && !Array.isArray(parsedBody),
-    422,
-    'Invalid request body',
-  )
+  const parsedBody = await parseJsonBody(ctx, '1mb')
   const body = parsedBody as CreatePostRequestBody
 
   if (isHoneypotTriggered(body as Record<string, unknown>)) {

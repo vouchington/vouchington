@@ -24,6 +24,7 @@ import { searchRssFeedCrawls } from '@services/rss-feeds/crawls'
 import { getMembershipByUserId } from '@services/memberships'
 import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
 import {
+  parseJsonBody,
   getOptionalAuthAndRateLimit,
   setAnonymousPublicCacheHeaders,
   requireAuthAndRateLimit,
@@ -88,7 +89,7 @@ app
     const id = validateUUIDParam(ctx, 'id')
     const rssFeed = await getRssFeedByIdCached(id)
     ctx.assert(rssFeed, 404, 'RSS feed not found')
-    const rawBody = (await ctx.request.json('1mb')) as UpdateRssFeedBody
+    const rawBody = (await parseJsonBody(ctx, '1mb')) as UpdateRssFeedBody
     if (rawBody && typeof rawBody === 'object' && !Array.isArray(rawBody)) {
       const bodyRecord = rawBody as Record<string, unknown>
       if ('should_ignore_robots_txt' in bodyRecord || 'unreliable_status_codes' in bodyRecord) {

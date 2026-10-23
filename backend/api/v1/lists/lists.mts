@@ -3,7 +3,7 @@ import app from '../../app.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import { defineQueryContract, queryInteger, queryString } from '@vouchington/pagination'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
-import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
+import { parseJsonBody, requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { apiQuery } from '../../api-query-contract.mts'
 import { createOwnedList, searchUserLists, type ListVisibility } from '@services/lists'
 import { assertNotSuspended } from '@services/users'
@@ -47,7 +47,7 @@ app
     const provenance = getRequestContentProvenance()
     assertNotSuspended(currentUser)
 
-    const body = (await ctx.request.json('1mb')) as CreateListBody
+    const body = (await parseJsonBody(ctx, '1mb')) as CreateListBody
     validateRequestContract(ctx, 'POST:/api/v1/lists', { body })
 
     const list = await createOwnedList(currentUser.id, provenance, body)

@@ -10,6 +10,7 @@ import {
 } from '@services/classifiers/change-classifier-candidate-threshold'
 import { assertNotSuspended, isAdminUser } from '@services/users'
 import {
+  parseJsonBody,
   requireAuthAndRateLimit,
   validateRequestContract,
   validateUUIDParam,
@@ -44,7 +45,7 @@ app
     assertNotSuspended(currentUser)
     const classifierId = validateUUIDParam(ctx, 'classifierId')
     const candidateId = validateUUIDParam(ctx, 'candidateId')
-    const body = (await ctx.request.json('10kb')) as SetClassifierCandidateThresholdRequest
+    const body = (await parseJsonBody(ctx, '10kb')) as SetClassifierCandidateThresholdRequest
     validateRequestContract(
       ctx,
       'PUT:/api/v1/admin/classifiers/:classifierId/candidates/:candidateId/threshold',
@@ -76,7 +77,7 @@ app
     assertNotSuspended(currentUser)
     const classifierId = validateUUIDParam(ctx, 'classifierId')
     const candidateId = validateUUIDParam(ctx, 'candidateId')
-    const body = (await ctx.request.json('10kb')) as RollbackClassifierCandidateThresholdRequest
+    const body = (await parseJsonBody(ctx, '10kb')) as RollbackClassifierCandidateThresholdRequest
     validateRequestContract(
       ctx,
       'POST:/api/v1/admin/classifiers/:classifierId/candidates/:candidateId/threshold/rollback',

@@ -1,6 +1,6 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { validateRequestContract } from '../../response-helpers.mts'
+import { parseJsonBody, validateRequestContract } from '../../response-helpers.mts'
 import { getExpectedOrigin } from '@modules/api-utils'
 import { assertNotSuspended } from '@services/users/suspension'
 import {
@@ -43,7 +43,7 @@ app.route('/api/v1/auth/passkeys/registration/verify').post(async (ctx: Context)
   assertNotSuspended(currentUser)
   await ctx.applyRouteRateLimit('POST:/api/v1/auth/passkeys/registration/verify')
 
-  const body = (await ctx.request.json('100kb')) as { response?: unknown; name?: string }
+  const body = (await parseJsonBody(ctx, '100kb')) as { response?: unknown; name?: string }
   validateRequestContract(ctx, 'POST:/api/v1/auth/passkeys/registration/verify', { body })
   ctx.assert(body.response, 422, 'response is required')
   const expectedOrigin = getExpectedOrigin(ctx.req)

@@ -13,6 +13,7 @@ import {
   resolveRssFeedsSearchParams,
 } from '@services/search-params'
 import {
+  parseJsonBody,
   getOptionalAuthAndRateLimit,
   requireAuth,
   setAnonymousPublicCacheHeaders,
@@ -137,7 +138,7 @@ app
     const provenance = getRequestContentProvenance()
     assertNotSuspended(currentUser)
 
-    const rawBody = (await ctx.request.json('1mb')) as CreateRssFeedBody
+    const rawBody = (await parseJsonBody(ctx, '1mb')) as CreateRssFeedBody
     validateRequestContract(ctx, 'POST:/api/v1/rss-feeds', { body: rawBody })
     const body = parseCreateSourceBody(rawBody)
     const result = await submitRssFeedSource(

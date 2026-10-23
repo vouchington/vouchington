@@ -2,6 +2,7 @@ import { clampAnonLimit, getPaginationLimits } from '@services/pagination'
 import app from '../../app.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import {
+  parseJsonBody,
   getOptionalAuthAndRateLimit,
   requireAuth,
   validateRequestContract,
@@ -157,7 +158,7 @@ app
     ctx.assert(currentUserCanCreateTopic(currentUser), 403, 'Forbidden')
     assertNotSuspended(currentUser)
 
-    const body = (await ctx.request.json('1mb')) as CreateTopicUpdates
+    const body = (await parseJsonBody(ctx, '1mb')) as CreateTopicUpdates
     validateRequestContract(ctx, 'POST:/api/v1/topics', { body })
     ctx.assert(
       body.source_topic_alias_id === undefined || isUUID(body.source_topic_alias_id),

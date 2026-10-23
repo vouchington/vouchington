@@ -2,7 +2,7 @@ import type { Context } from '@jongleberry/api-server'
 import type { ElectionVoteMutationResult } from '@services/elections-votes/shared'
 import { applyVoteMutation } from '@services/elections-votes/vote-handler'
 import type { CreateVoteHandlerOptions } from '@services/elections-votes/vote-handler-options'
-import { validateRequestContract } from './response-helpers.mts'
+import { parseJsonBody, validateRequestContract } from './response-helpers.mts'
 
 export type { CreateVoteHandlerOptions } from '@services/elections-votes/vote-handler-options'
 
@@ -31,7 +31,7 @@ function createVoteMutationHandler<VoteResult extends ElectionVoteMutationResult
       isClear,
       accessContext: ctx,
       applyRouteRateLimit: () => ctx.applyRouteRateLimit(options.routeKey),
-      readBody: () => ctx.request.json('10kb'),
+      readBody: () => parseJsonBody(ctx, '10kb'),
       validateRequest: body => {
         if (!options.requestContractOperation) return
         validateRequestContract(ctx, options.requestContractOperation, {

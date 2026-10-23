@@ -8,7 +8,11 @@ import {
 } from '@services/topics'
 import { attachWrittenTopicProvenance } from '@services/content-provenance'
 import app from '../../app.mts'
-import { requireAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
+import {
+  parseJsonBody,
+  requireAuthAndRateLimit,
+  validateRequestContract,
+} from '../../response-helpers.mts'
 
 type MergeTopicBody = { destination_id_or_slug: string }
 
@@ -20,7 +24,7 @@ app.route('/api/v1/topics/:sourceIdOrSlug/merges').post(async (ctx: Context) => 
   )
   validateRequestContract(ctx, 'POST:/api/v1/topics/:sourceIdOrSlug/merges', { path: ctx.params })
 
-  const body = (await ctx.request.json('1mb')) as MergeTopicBody
+  const body = (await parseJsonBody(ctx, '1mb')) as MergeTopicBody
   validateRequestContract(ctx, 'POST:/api/v1/topics/:sourceIdOrSlug/merges', {
     body,
   })

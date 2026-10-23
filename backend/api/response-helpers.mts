@@ -125,7 +125,13 @@ export function validateRequestContract(
   if (error) ctx.throw(422, error.message)
 }
 export async function parseJsonBody<T = unknown>(ctx: Context, maxSize = '1mb'): Promise<T> {
-  return (await ctx.request.json(maxSize)) as T
+  const body: unknown = await ctx.request.json(maxSize)
+  ctx.assert(
+    body !== null && typeof body === 'object' && !Array.isArray(body),
+    422,
+    'Invalid request body',
+  )
+  return body as T
 }
 export const EMPTY_PAGE_INFO: PageInfo = {
   has_next_page: false,

@@ -1,6 +1,7 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import {
+  parseJsonBody,
   getOptionalAuthAndRateLimit,
   requireAuthAndRateLimit,
   validateRequestContract,
@@ -60,7 +61,7 @@ app.route('/api/v1/curated-aside-items').post(async (ctx: Context) => {
     'POST:/api/v1/curated-aside-items',
   )
 
-  const body = (await ctx.request.json('10kb')) as CreateCuratedAsideItemRequest
+  const body = (await parseJsonBody(ctx, '10kb')) as CreateCuratedAsideItemRequest
   validateRequestContract(ctx, 'POST:/api/v1/curated-aside-items', { body })
   ctx.assert(body.aside_type.trim().length > 0, 400, 'aside_type is required')
   ctx.assert(
@@ -113,7 +114,7 @@ app.route('/api/v1/curated-aside-items/order').put(async (ctx: Context) => {
     'PUT:/api/v1/curated-aside-items/order',
   )
 
-  const body = (await ctx.request.json('50kb')) as ReorderCuratedAsideItemsRequest
+  const body = (await parseJsonBody(ctx, '50kb')) as ReorderCuratedAsideItemsRequest
   validateRequestContract(ctx, 'PUT:/api/v1/curated-aside-items/order', { body })
   ctx.assert(body.aside_type.trim().length > 0, 400, 'aside_type is required')
   ctx.assert(

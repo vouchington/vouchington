@@ -1,6 +1,7 @@
 import app from '../../app.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import {
+  parseJsonBody,
   getOptionalAuthAndRateLimit,
   requireAuth,
   validateRequestContract,
@@ -50,7 +51,7 @@ app
     const listId = validateUUIDParam(ctx, 'id')
     const list = await getManageableList(currentUser.id, listId)
 
-    const body = (await ctx.request.json('1mb')) as UpdateListBody
+    const body = (await parseJsonBody(ctx, '1mb')) as UpdateListBody
     validateRequestContract(ctx, 'PATCH:/api/v1/lists/:id', { path: ctx.params, body })
 
     const updated = await updateOwnedList(currentUser.id, list, body)

@@ -5,13 +5,13 @@ import { getPrimaryEmailAddress } from '@services/my/email-addresses'
 import { verifyEmailAddressLoginToken } from '@services/users/authentication'
 import { assertNotSuspended } from '@services/users/suspension'
 import app from '../../../app.mts'
-import { requireAuth, validateRequestContract } from '../../../response-helpers.mts'
+import { parseJsonBody, requireAuth, validateRequestContract } from '../../../response-helpers.mts'
 
 app.route('/api/v1/auth/mfa/re-auth/email/verification').post(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/auth/mfa/re-auth/email/verification')
   assertNotSuspended(currentUser)
 
-  const body = (await ctx.request.json('100kb')) as { code?: string }
+  const body = (await parseJsonBody(ctx, '100kb')) as { code?: string }
   validateRequestContract(ctx, 'POST:/api/v1/auth/mfa/re-auth/email/verification', { body })
   ctx.assert(body.code, 422, 'code is required')
 

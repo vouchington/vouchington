@@ -10,6 +10,7 @@ import {
 import { boundedString } from '@services/copyright-notices/http-input'
 import { assertNotSuspended } from '@services/users'
 import {
+  parseJsonBody,
   requireAuthAndRateLimit,
   validateRequestContract,
   validateUUIDParam,
@@ -32,17 +33,6 @@ const dispositions = new Set<CopyrightRepeatInfringerDispositionRequest['disposi
   'duplicate',
   'abusive',
 ])
-
-// A JSON `null`, array or scalar has no fields to read; refuse it before the first field read so it
-// answers 422 instead of throwing a TypeError (500). Each handler keeps its own typed
-// `ctx.request.json` cast, which is how the request-contract compiler finds the body type.
-function assertObjectBody(ctx: Context, body: unknown) {
-  ctx.assert(
-    body !== null && typeof body === 'object' && !Array.isArray(body),
-    422,
-    'Invalid request body',
-  )
-}
 
 // Every handler keeps its admission order (content type, authentication and role, rate limit,
 // suspension, non-object body, field-named parsers, path id) and adds the generated contract
@@ -78,8 +68,8 @@ app
       'POST:/api/v1/copyright-repeat-infringer-incidents/:id/dispositions',
     )
     assertNotSuspended(currentUser)
-    const body = (await ctx.request.json('1mb')) as CopyrightRepeatInfringerDispositionRequest
-    assertObjectBody(ctx, body)
+    const body = (await parseJsonBody(ctx, '1mb')) as CopyrightRepeatInfringerDispositionRequest
+
     ctx.assert(boundedString(body.rationale, 10_000), 422, 'rationale is required')
     ctx.assert(
       dispositions.has(body.disposition),
@@ -112,8 +102,8 @@ app.route('/api/v1/copyright-repeat-infringer-reviews/:id/outcomes').post(async 
     'POST:/api/v1/copyright-repeat-infringer-reviews/:id/outcomes',
   )
   assertNotSuspended(currentUser)
-  const body = (await ctx.request.json('1mb')) as CopyrightRepeatInfringerOutcomeRequest
-  assertObjectBody(ctx, body)
+  const body = (await parseJsonBody(ctx, '1mb')) as CopyrightRepeatInfringerOutcomeRequest
+
   ctx.assert(boundedString(body.rationale, 10_000), 422, 'rationale is required')
   ctx.assert(
     reviewDecisions.has(body.outcome),
@@ -147,8 +137,8 @@ app
       'POST:/api/v1/copyright-repeat-infringer-accounts/:accountUserId/reinstatements',
     )
     assertNotSuspended(currentUser)
-    const body = (await ctx.request.json('1mb')) as CopyrightRepeatInfringerReinstatementRequest
-    assertObjectBody(ctx, body)
+    const body = (await parseJsonBody(ctx, '1mb')) as CopyrightRepeatInfringerReinstatementRequest
+
     ctx.assert(boundedString(body.rationale, 10_000), 422, 'rationale is required')
     const accountUserId = validateUUIDParam(ctx, 'accountUserId')
     validateRequestContract(

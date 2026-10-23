@@ -11,6 +11,7 @@ import {
 import { boundedString } from '@services/copyright-notices/http-input'
 import { assertNotSuspended } from '@services/users'
 import {
+  parseJsonBody,
   getOptionalProtocolAuthAndRateLimit,
   requireAuthAndRateLimit,
   validateRequestContract,
@@ -53,7 +54,7 @@ app.route('/api/v1/copyright-notices/:id/guest-capabilities').post(async (ctx: C
     'POST:/api/v1/copyright-notices/:id/guest-capabilities',
   )
   assertNotSuspended(currentUser)
-  const body = (await ctx.request.json('1mb')) as CopyrightGuestCapabilityIssueRequest
+  const body = (await parseJsonBody(ctx, '1mb')) as CopyrightGuestCapabilityIssueRequest
   const issuedAt = new Date()
   const expiresAt = futureInstant(body.expires_at, issuedAt)
   if (!expiresAt) ctx.throw(422, 'expires_at must be a future instant')
@@ -123,7 +124,7 @@ app
       'POST:/api/v1/copyright-notices/:id/guest-capabilities/:capabilityId/information-requests',
     )
     assertNotSuspended(currentUser)
-    const body = (await ctx.request.json('1mb')) as CopyrightGuestInformationRequest
+    const body = (await parseJsonBody(ctx, '1mb')) as CopyrightGuestInformationRequest
     if (!boundedString(body.statement, 50_000)) ctx.throw(422, 'statement is required')
     const noticeId = validateUUIDParam(ctx, 'id')
     const capabilityId = validateUUIDParam(ctx, 'capabilityId')
@@ -163,7 +164,7 @@ app.route('/api/v1/copyright-notices/:id/guest-filings').post(async (ctx: Contex
     },
   })
   await getOptionalProtocolAuthAndRateLimit(ctx, 'POST:/api/v1/copyright-notices/:id/guest-filings')
-  const body = (await ctx.request.json('1mb')) as CopyrightGuestFilingRequest
+  const body = (await parseJsonBody(ctx, '1mb')) as CopyrightGuestFilingRequest
   await verifyCaptchaOrAttestation(ctx, body, { actionTag: 'copyright-notices.guest-filing' })
   if (!isGuestFilingKind(body.kind)) ctx.throw(422, 'kind is not a guest filing')
   if (!boundedString(body.statement, 50_000)) ctx.throw(422, 'statement is required')

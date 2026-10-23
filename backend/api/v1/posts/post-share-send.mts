@@ -10,7 +10,7 @@ import {
 } from '@services/follower-distributions'
 import { assertNotSuspended } from '@services/users'
 import { enqueueProcessFollowerDistribution } from '@queues/follower-distributions/enqueues'
-import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
+import { parseJsonBody, requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import {
   apiNoRequestBody,
   apiRequestContract,
@@ -52,7 +52,7 @@ app.route('/api/v1/posts/:idOrSlug/sends').post(async (ctx: Context) => {
     'POST:/api/v1/posts/:idOrSlug/sends',
   )
   await preflightPostDistributionTarget(currentUser, 'post_send', ctx.params.idOrSlug!)
-  const body = await ctx.request.json('128kb')
+  const body = await parseJsonBody(ctx, '128kb')
   validateRequestContract(ctx, 'POST:/api/v1/posts/:idOrSlug/sends', { body, path: ctx.params })
   const input = parseSendFollowersInput(body)
   const result = await sendPostToFollowers(currentUser, ctx.params.idOrSlug!, input)

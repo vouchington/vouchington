@@ -16,7 +16,11 @@ import {
 } from '@services/crawlers/authorization'
 import { isAdminUser } from '@services/users'
 import { isUUID } from '@modules/utils'
-import { requireAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
+import {
+  parseJsonBody,
+  requireAuthAndRateLimit,
+  validateRequestContract,
+} from '../../response-helpers.mts'
 import { apiQuery } from '../../api-query-contract.mts'
 import { defineQueryContract, queryInteger, queryString, queryUuid } from '@vouchington/pagination'
 import type { ApiUuidContract } from '../../request-contract-types.mts'
@@ -84,7 +88,7 @@ app.route('/api/v1/crawlers/referral-program').put(async (ctx: Context) => {
     'PUT:/api/v1/crawlers/referral-program',
   )
 
-  const body = (await ctx.request.json('1mb')) as UpsertReferralProgramCrawlerRequest
+  const body = (await parseJsonBody(ctx, '1mb')) as UpsertReferralProgramCrawlerRequest
   validateRequestContract(ctx, 'PUT:/api/v1/crawlers/referral-program', { body })
 
   const crawler = await upsertCrawlerForReferralProgram(
@@ -123,7 +127,7 @@ app
       'PATCH:/api/v1/crawlers/:id',
     )
 
-    const body = (await ctx.request.json('1mb')) as UpdateCrawlerUpdates
+    const body = (await parseJsonBody(ctx, '1mb')) as UpdateCrawlerUpdates
     validateRequestContract(ctx, 'PATCH:/api/v1/crawlers/:id', { body, path: ctx.params })
 
     const updatedCrawler = await updateCrawlerForUser(currentUser, ctx.params.id!, body)

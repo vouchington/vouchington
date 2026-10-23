@@ -6,13 +6,13 @@ import {
 } from '@services/mfa'
 import { verifyTotpCode } from '@services/totp'
 import app from '../../../app.mts'
-import { validateRequestContract } from '../../../response-helpers.mts'
+import { parseJsonBody, validateRequestContract } from '../../../response-helpers.mts'
 import { completeMfaVerification } from './complete-mfa-verification.mts'
 
 app.route('/api/v1/auth/mfa/totp/verification').post(async (ctx: Context) => {
   await ctx.applyRouteRateLimit('POST:/api/v1/auth/mfa/totp/verification')
 
-  const body = (await ctx.request.json('100kb')) as {
+  const body = (await parseJsonBody(ctx, '100kb')) as {
     login_attempt_id?: string
     code?: string
   }

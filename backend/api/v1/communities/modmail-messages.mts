@@ -7,7 +7,7 @@ import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { isUUID } from '@modules/utils'
 import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
-import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
+import { parseJsonBody, requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { assertNotSuspended } from '@services/users'
 import { loadCommunityWithViewer } from '@services/communities'
 import { getModmailThread, currentUserCanViewModmailThread } from '@services/modmail'
@@ -88,7 +88,7 @@ app
     ctx.assert(isUUID(conversationId), 422, 'Invalid conversation ID')
     const access = await loadModmailReplyAccess(currentUser, idOrSlug, conversationId)
 
-    const body = (await ctx.request.json('10kb')) as Record<string, unknown>
+    const body = (await parseJsonBody(ctx, '10kb')) as Record<string, unknown>
     validateRequestContract(
       ctx,
       'POST:/api/v1/communities/:idOrSlug/modmail/:conversationId/messages',

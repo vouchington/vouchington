@@ -9,7 +9,11 @@ import {
 import type { BloomFilterRebuildInput } from '@queues/bloom-filters/types'
 import { getCacheGroups, clearCacheGroup, clearAllCaches } from '@services/valkey-admin/clear-cache'
 import { flushConcern, type FlushConcern } from '@services/valkey-admin/flush'
-import { requireAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
+import {
+  parseJsonBody,
+  requireAuthAndRateLimit,
+  validateRequestContract,
+} from '../../response-helpers.mts'
 import { flushQueues } from './queues-flush.mts'
 
 type BloomFilterRebuildRequest = { filter: BloomFilterRebuildInput }
@@ -24,7 +28,7 @@ app.route('/api/v1/valkey/bloom-filters/rebuild').post(async (ctx: Context) => {
     'POST:/api/v1/valkey/bloom-filters/rebuild',
   )
 
-  const body = (await ctx.request.json('1mb')) as BloomFilterRebuildRequest
+  const body = (await parseJsonBody(ctx, '1mb')) as BloomFilterRebuildRequest
   validateRequestContract(ctx, 'POST:/api/v1/valkey/bloom-filters/rebuild', { body })
   const { filter } = body
 
@@ -72,7 +76,7 @@ app.route('/api/v1/valkey/caches/clear').post(async (ctx: Context) => {
     'POST:/api/v1/valkey/caches/clear',
   )
 
-  const body = (await ctx.request.json('1mb')) as ClearCacheRequest
+  const body = (await parseJsonBody(ctx, '1mb')) as ClearCacheRequest
   validateRequestContract(ctx, 'POST:/api/v1/valkey/caches/clear', { body })
   const { group } = body
 
@@ -89,7 +93,7 @@ app.route('/api/v1/valkey/caches/clear').post(async (ctx: Context) => {
 app.route('/api/v1/valkey/flush').post(async (ctx: Context) => {
   await requireAuthAndRateLimit(ctx, currentUserCanAccessValkeyAdmin, 'POST:/api/v1/valkey/flush')
 
-  const body = (await ctx.request.json('1mb')) as FlushRequest
+  const body = (await parseJsonBody(ctx, '1mb')) as FlushRequest
   validateRequestContract(ctx, 'POST:/api/v1/valkey/flush', { body })
   const { concern } = body
   const force = body.force === true

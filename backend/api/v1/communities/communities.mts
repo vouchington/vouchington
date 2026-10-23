@@ -3,6 +3,7 @@ import { getRequestContentProvenance } from '@modules/request-client-info/conten
 import app from '../../app.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import {
+  parseJsonBody,
   getOptionalAuthAndRateLimit,
   requireAuth,
   validateRequestContract,
@@ -154,7 +155,7 @@ app
     assertNotSuspended(currentUser)
     assertCanCreateCommunity(currentUser)
 
-    const raw = (await ctx.request.json('1mb')) as Record<string, unknown>
+    const raw = (await parseJsonBody(ctx, '1mb')) as Record<string, unknown>
     validateRequestContract(ctx, 'POST:/api/v1/communities', { body: raw })
     const body = raw as CreateCommunityInput
     body.member_invites_allowed_at = raw.member_invites_allowed_at ? new Date() : null

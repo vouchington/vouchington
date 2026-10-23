@@ -1,6 +1,6 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
+import { parseJsonBody, requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import {
   approvePublication,
   loadCommunityForPublicationModerator,
@@ -14,7 +14,7 @@ app.route('/api/v1/communities/:idOrSlug/posts/:postId').patch(async (ctx: Conte
   const currentUser = await requireAuth(ctx, 'PATCH:/api/v1/communities/:idOrSlug/posts/:postId')
   const { idOrSlug, postId } = ctx.params as { idOrSlug: string; postId: string }
   const { community } = await loadCommunityForPublicationModerator(currentUser, idOrSlug)
-  const body = (await ctx.request.json('1mb')) as {
+  const body = (await parseJsonBody(ctx, '1mb')) as {
     status?: unknown
     reason?: unknown
     reason_code?: unknown

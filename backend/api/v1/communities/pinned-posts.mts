@@ -1,6 +1,7 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import {
+  parseJsonBody,
   getOptionalAuthAndRateLimit,
   requireAuth,
   validateRequestContract,
@@ -40,7 +41,7 @@ app.route('/api/v1/communities/:idOrSlug/pinned-posts').put(async (ctx: Context)
   const { idOrSlug } = ctx.params as { idOrSlug: string }
   const { community } = await loadCommunityForModerator(currentUser, idOrSlug)
 
-  const body = (await ctx.request.json('1mb')) as { post_ids: string[] }
+  const body = (await parseJsonBody(ctx, '1mb')) as { post_ids: string[] }
   validateRequestContract(ctx, 'PUT:/api/v1/communities/:idOrSlug/pinned-posts', {
     path: ctx.params,
     body,

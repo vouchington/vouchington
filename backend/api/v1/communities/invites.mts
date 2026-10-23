@@ -2,7 +2,7 @@ import app from '../../app.mts'
 import { apiQuery } from '../../api-query-contract.mts'
 import { communityPageQuery, communityPageQueryInput } from './query-contracts-helpers.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
-import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
+import { parseJsonBody, requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import {
   loadCommunityForModerator,
   loadCommunityWithViewer,
@@ -54,7 +54,7 @@ app
     const { idOrSlug } = ctx.params as { idOrSlug: string }
     const loaded = await loadCommunityWithViewer(idOrSlug, currentUser.id)
 
-    const body = (await ctx.request.json('1mb')) as CreateInviteInput
+    const body = (await parseJsonBody(ctx, '1mb')) as CreateInviteInput
     validateRequestContract(ctx, 'POST:/api/v1/communities/:idOrSlug/invites', {
       path: ctx.params,
       body,
@@ -81,7 +81,7 @@ app.route('/api/v1/communities/:idOrSlug/invites/:id').delete(async (ctx: Contex
 app.route('/api/v1/communities/invite-redemptions').post(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/communities/invite-redemptions')
 
-  const body = (await ctx.request.json('1mb')) as { code: string }
+  const body = (await parseJsonBody(ctx, '1mb')) as { code: string }
   validateRequestContract(ctx, 'POST:/api/v1/communities/invite-redemptions', { body })
   ctx.assert(body.code, 422, 'code is required')
 

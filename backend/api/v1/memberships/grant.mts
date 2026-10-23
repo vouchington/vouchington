@@ -1,6 +1,10 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { requireAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
+import {
+  parseJsonBody,
+  requireAuthAndRateLimit,
+  validateRequestContract,
+} from '../../response-helpers.mts'
 import type { ApiUuidContract } from '../../request-contract-types.mts'
 import {
   currentUserCanGrantMembership,
@@ -25,7 +29,7 @@ app.route('/api/v1/membership-grants').post(async (ctx: Context) => {
   )
   assertNotSuspended(currentUser)
 
-  const body = (await ctx.request.json('1mb')) as GrantMembershipRequest
+  const body = (await parseJsonBody(ctx, '1mb')) as GrantMembershipRequest
   validateRequestContract(ctx, 'POST:/api/v1/membership-grants', { body })
 
   ctx.assert(

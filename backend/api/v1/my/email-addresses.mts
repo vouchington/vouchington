@@ -12,7 +12,7 @@ import {
   verifyEmailVerificationToken,
 } from '@services/my/email-address-verification'
 import { enqueueSendEmailVerificationToken } from '@queues/emails/enqueues'
-import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
+import { parseJsonBody, requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { createPaginationParser, decodeScopedTierCursor, encodeCursor } from '@modules/pagination'
 import { isUUID } from '@modules/utils'
 import { apiQuery } from '../../api-query-contract.mts'
@@ -66,7 +66,7 @@ app.route('/api/v1/my/email-addresses').post(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/my/email-addresses')
   assertNotSuspended(currentUser)
 
-  const body = (await ctx.request.json('10kb')) as AddEmailAddressRequest
+  const body = (await parseJsonBody(ctx, '10kb')) as AddEmailAddressRequest
   validateRequestContract(ctx, 'POST:/api/v1/my/email-addresses', { body })
 
   const { token, normalizedEmail } = await createEmailVerificationToken(
@@ -86,7 +86,7 @@ app.route('/api/v1/my/email-addresses/:email/verifications').post(async (ctx: Co
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/my/email-addresses/:email/verifications')
   assertNotSuspended(currentUser)
 
-  const body = (await ctx.request.json('10kb')) as VerifyEmailAddressRequest
+  const body = (await parseJsonBody(ctx, '10kb')) as VerifyEmailAddressRequest
   validateRequestContract(ctx, 'POST:/api/v1/my/email-addresses/:email/verifications', {
     path: ctx.params,
     body,
@@ -102,7 +102,7 @@ app.route('/api/v1/my/email-addresses/:email').patch(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'PATCH:/api/v1/my/email-addresses/:email')
   assertNotSuspended(currentUser)
 
-  const body = (await ctx.request.json('10kb')) as SetPrimaryEmailAddressRequest
+  const body = (await parseJsonBody(ctx, '10kb')) as SetPrimaryEmailAddressRequest
   validateRequestContract(ctx, 'PATCH:/api/v1/my/email-addresses/:email', {
     path: ctx.params,
     body,

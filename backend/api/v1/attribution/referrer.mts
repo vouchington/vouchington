@@ -6,7 +6,7 @@ import { assertNotSuspended } from '@services/users/suspension-guard'
 import { resolveUtmSource } from '@ts-shared/utm'
 import { isHttpError } from 'http-errors'
 import { hasGlobalPrivacyControlHeaders } from '@modules/utils'
-import { validateRequestContract } from '../../response-helpers.mts'
+import { parseJsonBody, validateRequestContract } from '../../response-helpers.mts'
 
 // 10 attribution calls per minute per session/IP (threshold 11 since addAndCheck adds before counting)
 const attributionRateLimiter = new RateLimiter({
@@ -37,7 +37,7 @@ app.route('/api/v1/attribution/referrer').post(async (ctx: Context) => {
   await ctx.applyRouteRateLimit('POST:/api/v1/attribution/referrer')
   assertNotSuspended(await ctx.getCurrentUser())
 
-  const body = (await ctx.request.json('100kb')) as AttributionReferrerBody
+  const body = (await parseJsonBody(ctx, '100kb')) as AttributionReferrerBody
   validateRequestContract(ctx, 'POST:/api/v1/attribution/referrer', { body })
   ctx.assert(body.referrer, 400, 'referrer is required')
   ctx.assert(body.referrer.length <= MAX_REFERRER_LENGTH, 400, 'referrer is too long')

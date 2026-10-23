@@ -5,7 +5,7 @@ import { recordLandingPageVisit } from '@services/landing-page-analytics'
 import { resolveUtmSource } from '@ts-shared/utm'
 import { hasGlobalPrivacyControlHeaders, isUUID } from '@modules/utils'
 import onError from '@modules/on-error'
-import { validateRequestContract } from '../../response-helpers.mts'
+import { parseJsonBody, validateRequestContract } from '../../response-helpers.mts'
 
 const visitRateLimiter = new RateLimiter({
   prefix: 'landing-page-visits',
@@ -31,7 +31,7 @@ app.route('/api/v1/landing-pages/:landingPageId/visits').post(async (ctx: Contex
   const { landingPageId } = ctx.params
   ctx.assert(landingPageId && isUUID(landingPageId), 400, 'Invalid landingPageId')
 
-  const body = (await ctx.request.json('10kb')) as LandingPageVisitBody
+  const body = (await parseJsonBody(ctx, '10kb')) as LandingPageVisitBody
   validateRequestContract(ctx, 'POST:/api/v1/landing-pages/:landingPageId/visits', {
     body,
     path: ctx.params,

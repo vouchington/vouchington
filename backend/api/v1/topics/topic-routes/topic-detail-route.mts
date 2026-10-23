@@ -26,6 +26,7 @@ import { assertNotSuspended, entityRelationViewerFor } from '@services/users'
 import { HTTP_CACHE_LONG_MAX_AGE_SECONDS } from '@voucha/config'
 import app from '../../../app.mts'
 import {
+  parseJsonBody,
   getOptionalAuthAndRateLimit,
   setAnonymousPublicCacheHeaders,
   requireAuth,
@@ -113,7 +114,7 @@ app
     const topic = await getTopicByAny(ctx.params.idOrSlug!)
     if (!topic) ctx.throw(404, 'Topic not found')
 
-    const changes = (await ctx.request.json('1mb')) as Partial<CreateTopicUpdates>
+    const changes = (await parseJsonBody(ctx, '1mb')) as Partial<CreateTopicUpdates>
     validateRequestContract(ctx, 'PATCH:/api/v1/topics/:idOrSlug', { body: changes })
     const updated = await updateTopic(currentUser, topic, changes)
 

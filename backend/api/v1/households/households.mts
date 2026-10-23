@@ -6,7 +6,7 @@ import {
   householdsPaginationParser,
   householdsFilterQuery,
 } from '@services/individuals-households/households/household-commands'
-import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
+import { parseJsonBody, requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { apiQuery } from '../../api-query-contract.mts'
 
 /** Closed empty request body: a household is created without client-supplied fields. */
@@ -27,7 +27,7 @@ app
     const currentUser = await requireAuth(ctx, 'POST:/api/v1/households')
     const result = await createMyHousehold(
       currentUser,
-      async () => (await ctx.request.json('1mb')) as CreateHouseholdBody,
+      async () => (await parseJsonBody(ctx, '1mb')) as CreateHouseholdBody,
       input => validateRequestContract(ctx, 'POST:/api/v1/households', input),
     )
     ctx.setStatus(201)

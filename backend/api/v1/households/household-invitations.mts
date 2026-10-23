@@ -1,7 +1,7 @@
 import type { Context } from '@jongleberry/api-server'
 import app from '../../app.mts'
 import { apiQuery } from '../../api-query-contract.mts'
-import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
+import { parseJsonBody, requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import {
   createHouseholdInvitationCommand,
   decideHouseholdInvitationCommand,
@@ -30,7 +30,7 @@ app
       currentUser,
       ctx.params,
       async () =>
-        (await ctx.request.json('1mb')) as {
+        (await parseJsonBody(ctx, '1mb')) as {
           user: string
           relationship?: string
         },
@@ -70,7 +70,7 @@ app
         currentUser,
         ctx.params,
         'accept',
-        async () => (await ctx.request.json('1mb')) as Record<string, never>,
+        async () => (await parseJsonBody(ctx, '1mb')) as Record<string, never>,
         input => validateRequestContract(ctx, route, input),
       ),
     )
@@ -83,7 +83,7 @@ app.route('/api/v1/my/household-invitations/:invitationId/decline').post(async (
     currentUser,
     ctx.params,
     'decline',
-    async () => (await ctx.request.json('1mb')) as Record<string, never>,
+    async () => (await parseJsonBody(ctx, '1mb')) as Record<string, never>,
     input => validateRequestContract(ctx, route, input),
   )
   ctx.setStatus(204)

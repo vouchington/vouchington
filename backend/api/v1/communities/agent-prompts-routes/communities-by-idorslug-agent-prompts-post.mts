@@ -5,7 +5,7 @@ import {
   currentUserCanManageCommunityPrompts,
 } from '@services/community-agent-prompts'
 import app from '../../../app.mts'
-import { requireAuth, validateRequestContract } from '../../../response-helpers.mts'
+import { parseJsonBody, requireAuth, validateRequestContract } from '../../../response-helpers.mts'
 
 app.route('/api/v1/communities/:idOrSlug/agent-prompts').post(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/communities/:idOrSlug/agent-prompts')
@@ -19,7 +19,7 @@ app.route('/api/v1/communities/:idOrSlug/agent-prompts').post(async (ctx: Contex
     'Forbidden',
   )
 
-  const body = (await ctx.request.json('1mb')) as {
+  const body = (await parseJsonBody(ctx, '1mb')) as {
     prompt: string
     model_name?: string
     model_provider?: string

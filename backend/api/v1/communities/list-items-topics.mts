@@ -5,6 +5,7 @@ import { communityPageQuery, communityPageQueryInput } from './query-contracts-h
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import createHttpError from 'http-errors'
 import {
+  parseJsonBody,
   getOptionalAuthAndRateLimit,
   requireAuth,
   validateRequestContract,
@@ -72,7 +73,7 @@ app
       'Forbidden',
     )
 
-    const body = (await ctx.request.json('1mb')) as { topic_id: string }
+    const body = (await parseJsonBody(ctx, '1mb')) as { topic_id: string }
     validateRequestContract(ctx, 'POST:/api/v1/communities/:idOrSlug/list-items/topics', {
       path: ctx.params,
       body,

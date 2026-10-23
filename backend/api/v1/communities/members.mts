@@ -2,6 +2,7 @@ import app from '../../app.mts'
 import { apiQuery } from '../../api-query-contract.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import {
+  parseJsonBody,
   getOptionalAuthAndRateLimit,
   requireAuth,
   validateRequestContract,
@@ -119,7 +120,7 @@ app
     const { idOrSlug, userId } = ctx.params as { idOrSlug: string; userId: string }
     const community = await getCommunityOrThrow(idOrSlug)
 
-    const body = (await ctx.request.json('1mb')) as { role: CommunityMemberRole }
+    const body = (await parseJsonBody(ctx, '1mb')) as { role: CommunityMemberRole }
     validateRequestContract(ctx, 'PATCH:/api/v1/communities/:idOrSlug/members/:userId', {
       path: ctx.params,
       body,
@@ -155,7 +156,7 @@ app.route('/api/v1/communities/:idOrSlug/ownership-transfers').post(async (ctx: 
   const { idOrSlug } = ctx.params as { idOrSlug: string }
   const community = await getCommunityOrThrow(idOrSlug)
 
-  const body = (await ctx.request.json('1mb')) as { user_id: string }
+  const body = (await parseJsonBody(ctx, '1mb')) as { user_id: string }
   validateRequestContract(ctx, 'POST:/api/v1/communities/:idOrSlug/ownership-transfers', {
     path: ctx.params,
     body,

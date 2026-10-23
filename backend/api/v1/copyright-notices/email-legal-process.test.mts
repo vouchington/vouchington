@@ -76,7 +76,7 @@ describe('POST /api/v1/copyright-email-intakes/:id/legal-process', () => {
     },
   )
 
-  it.each([null, [], 'reason'])('answers a non-object JSON body with 400: %#', async body => {
+  it.each([null, [], 'reason'])('answers a non-object JSON body with 422: %#', async body => {
     const staff = await createStaffRequest()
     const intake = await createParsedCopyrightEmailIntake()
 
@@ -84,7 +84,7 @@ describe('POST /api/v1/copyright-email-intakes/:id/legal-process', () => {
       .post(path(intake.id))
       .set('Content-Type', 'application/json')
       .send(JSON.stringify(body))
-      .expect(400)
+      .expect(422)
 
     await expect(readCopyrightEmailIntakeReviewRecord(intake.id)).resolves.toEqual([])
   })

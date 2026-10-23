@@ -3,7 +3,7 @@ import app from '../../app.mts'
 import { enqueueDeleteNotification } from '@queues/notifications/enqueues'
 import type { Context } from '@jongleberry/api-server'
 import { createPaginationParser } from '@modules/pagination'
-import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
+import { parseJsonBody, requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { apiQuery } from '../../api-query-contract.mts'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import { assertNotSuspended } from '@services/users/suspension'
@@ -120,7 +120,7 @@ app.route('/api/v1/my/notifications/push-subscriptions').post(async (ctx: Contex
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/my/notifications/push-subscriptions')
   assertNotSuspended(currentUser)
 
-  const body = (await ctx.request.json('20kb')) as CreateWebPushSubscriptionRequest
+  const body = (await parseJsonBody(ctx, '20kb')) as CreateWebPushSubscriptionRequest
   validateRequestContract(ctx, 'POST:/api/v1/my/notifications/push-subscriptions', { body })
   // The schema fixes types; length, scheme and integer bounds are semantic checks.
   const endpoint = parseEndpointUrl(body.endpoint)

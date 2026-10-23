@@ -8,6 +8,7 @@ import {
 } from '@services/community-agent-prompts'
 import app from '../../../app.mts'
 import {
+  parseJsonBody,
   requireAuth,
   validateRequestContract,
   validateUUIDParam,
@@ -56,7 +57,7 @@ app
     ctx.assert(prompt, 404, 'Prompt not found')
     ctx.assert(prompt.community_id === community.id, 404, 'Prompt not found')
 
-    const body = (await ctx.request.json('1mb')) as { prompt?: string }
+    const body = (await parseJsonBody(ctx, '1mb')) as { prompt?: string }
     validateRequestContract(ctx, 'PATCH:/api/v1/communities/:idOrSlug/agent-prompts/:promptId', {
       path: ctx.params,
       body,

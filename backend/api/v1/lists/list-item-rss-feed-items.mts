@@ -1,6 +1,11 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { requireAuth, validateRequestContract, validateUUIDParam } from '../../response-helpers.mts'
+import {
+  parseJsonBody,
+  requireAuth,
+  validateRequestContract,
+  validateUUIDParam,
+} from '../../response-helpers.mts'
 import type { ApiUuidContract } from '../../request-contract-types.mts'
 import {
   addListItem,
@@ -18,7 +23,7 @@ app.route('/api/v1/lists/:id/items/rss-feed-items').post(async (ctx: Context) =>
   const listId = validateUUIDParam(ctx, 'id')
   const list = await getManageableList(currentUser.id, listId)
 
-  const body = (await ctx.request.json('1mb')) as AddListRssFeedItemBody
+  const body = (await parseJsonBody(ctx, '1mb')) as AddListRssFeedItemBody
   validateRequestContract(ctx, 'POST:/api/v1/lists/:id/items/rss-feed-items', {
     path: ctx.params,
     body,

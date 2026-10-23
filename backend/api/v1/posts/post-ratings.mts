@@ -13,7 +13,12 @@ import {
 } from '@services/posts/post-rating-target'
 import { assertNotSuspended } from '@services/users'
 import { assertWithinContributionActionLimit } from '@services/contribution-gating/limits'
-import { requireAuth, validateRequestContract, validateUUIDParam } from '../../response-helpers.mts'
+import {
+  parseJsonBody,
+  requireAuth,
+  validateRequestContract,
+  validateUUIDParam,
+} from '../../response-helpers.mts'
 
 type CreatePostRatingBody = {
   topic_id: string
@@ -33,7 +38,7 @@ app.route('/api/v1/posts/:idOrSlug/ratings').post(async (ctx: Context) => {
 
   const post = await loadPostRatingTarget(currentUser, ctx.params.idOrSlug!)
 
-  const body = (await ctx.request.json('1mb')) as CreatePostRatingBody
+  const body = (await parseJsonBody(ctx, '1mb')) as CreatePostRatingBody
   validateRequestContract(ctx, 'POST:/api/v1/posts/:idOrSlug/ratings', {
     body,
     path: ctx.params,
@@ -56,7 +61,7 @@ app.route('/api/v1/posts/:idOrSlug/ratings/:topicId').patch(async (ctx: Context)
   const post = await loadPostRatingTarget(currentUser, ctx.params.idOrSlug!)
   ctx.assert(isUUID(ctx.params.topicId!), 422, 'Invalid topic_id')
 
-  const body = (await ctx.request.json('1mb')) as UpdatePostRatingBody
+  const body = (await parseJsonBody(ctx, '1mb')) as UpdatePostRatingBody
   validateRequestContract(ctx, 'PATCH:/api/v1/posts/:idOrSlug/ratings/:topicId', {
     body,
     path: ctx.params,

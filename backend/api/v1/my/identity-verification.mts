@@ -1,6 +1,6 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
+import { parseJsonBody, requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { getUserPrivateByAnyCached } from '@services/entity-fetch'
 import type { PrivateUser } from '@services/users/types'
 import type { PublicVerifiedNameDisplay } from '@voucha/types/entities/user'
@@ -66,7 +66,7 @@ app.route('/api/v1/my/identity-verification/display-preferences').patch(async (c
     'PATCH:/api/v1/my/identity-verification/display-preferences',
   )
 
-  const body = (await ctx.request.json('10kb')) as UpdateDisplayPreferencesRequest
+  const body = (await parseJsonBody(ctx, '10kb')) as UpdateDisplayPreferencesRequest
   validateRequestContract(ctx, 'PATCH:/api/v1/my/identity-verification/display-preferences', {
     body,
   })

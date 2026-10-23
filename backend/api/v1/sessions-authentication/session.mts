@@ -1,9 +1,10 @@
+import { isHttpError } from 'http-errors'
 import app from '../../app.mts'
 import { DEVICE_EXPIRATION_SECONDS, sessionExpirySecondsFor } from '@ts-shared/session-jwt'
 import { refreshSessionState, resetSessionState } from '@services/jwt-session'
 import { setAuthenticationCookies, COOKIE_OPTIONS } from '@modules/api-utils'
 import { getPrivateUserByAny } from '@services/users/get'
-import { validateRequestContract } from '../../response-helpers.mts'
+import { parseJsonBody, validateRequestContract } from '../../response-helpers.mts'
 import type { Context } from '@jongleberry/api-server'
 
 const isTest = process.env.NODE_ENV === 'test'
@@ -35,15 +36,16 @@ app
   .patch(async (ctx: Context) => {
     const routeKey = 'PATCH:/api/v1/session'
     // The parse-and-cast below must stay lexically inside each route's own handler: the OpenAPI
-    // request-contract harvester statically attributes a `ctx.request.json(...) as T` cast to
+    // request-contract harvester statically attributes a `parseJsonBody(ctx, ...) as T` cast to
     // exactly one route, so it can't live in a helper this route shares with DELETE's JSON
     // branch. `rateLimitAndValidateSessionBody` covers everything after the cast, which has no
     // such restriction.
     let rawBody: SessionTokenBody
     try {
-      rawBody = (await ctx.request.json('100kb')) as SessionTokenBody
-    } catch {
+      rawBody = (await parseJsonBody(ctx, '100kb')) as SessionTokenBody
+    } catch (err) {
       await ctx.applyRouteRateLimit(routeKey)
+      if (isHttpError(err) && err.status === 422) throw err
       ctx.throw(422, 'Invalid body')
     }
     const { dt, st } = await rateLimitAndValidateSessionBody(ctx, routeKey, rawBody)
@@ -86,9 +88,10 @@ app
       // the OpenAPI request-contract harvester can't attribute a cast shared by two routes.
       let rawBody: SessionTokenBody
       try {
-        rawBody = (await ctx.request.json('100kb')) as SessionTokenBody
-      } catch {
+        rawBody = (await parseJsonBody(ctx, '100kb')) as SessionTokenBody
+      } catch (err) {
         await ctx.applyRouteRateLimit(routeKey)
+        if (isHttpError(err) && err.status === 422) throw err
         ctx.throw(422, 'Invalid body')
       }
       ;({ dt, st } = await rateLimitAndValidateSessionBody(ctx, routeKey, rawBody))

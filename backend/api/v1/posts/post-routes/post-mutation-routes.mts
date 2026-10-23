@@ -13,7 +13,7 @@ import {
 import { assertNotSuspended, isAdminUser } from '@services/users'
 import { assertPostUpdatePreflight } from '@services/posts/update/validation'
 import app from '../../../app.mts'
-import { requireAuth, validateRequestContract } from '../../../response-helpers.mts'
+import { parseJsonBody, requireAuth, validateRequestContract } from '../../../response-helpers.mts'
 import { apiRequestContract } from '@vouchington/utils/api-response-contract'
 import {
   getRouteAccessPost,
@@ -35,12 +35,7 @@ app.route('/api/v1/posts/:idOrSlug').patch(async (ctx: Context) => {
   ctx.assert(await canViewPost(currentUser, privacyPost), 404, 'Post not found')
   ctx.assert(currentUserCanUpdatePost(currentUser, post), 403, 'Forbidden')
 
-  const parsedChanges = await ctx.request.json('1mb')
-  ctx.assert(
-    parsedChanges !== null && typeof parsedChanges === 'object' && !Array.isArray(parsedChanges),
-    422,
-    'Invalid request body',
-  )
+  const parsedChanges = await parseJsonBody(ctx, '1mb')
   const changes = parsedChanges as UpdatePostChanges
   ctx.assert(
     changes.slug === undefined || isAdminUser(currentUser),

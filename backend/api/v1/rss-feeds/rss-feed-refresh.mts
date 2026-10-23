@@ -7,6 +7,7 @@ import { prepareQueryForValidation } from '@services/search-params/prepare-query
 import { parseBooleanish } from '@ts-shared/utils/query'
 import app from '../../app.mts'
 import {
+  parseJsonBody,
   requireAuthAndRateLimit,
   validateRequestContract,
   validateUUIDParam,
@@ -35,7 +36,7 @@ app.route('/api/v1/rss-feeds/:id/refreshes').post(async (ctx: Context) => {
 
   let force = query.force === true
   const useBodyForce = ctx.query.force === undefined && ctx.request.is('json')
-  const body = useBodyForce ? ((await ctx.request.json('1mb')) as { force?: unknown }) : {}
+  const body = useBodyForce ? ((await parseJsonBody(ctx, '1mb')) as { force?: unknown }) : {}
   if (body && typeof body === 'object' && !Array.isArray(body) && body.force !== undefined) {
     body.force = normalizeRefreshForce(body.force)
   }

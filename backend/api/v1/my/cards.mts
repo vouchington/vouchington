@@ -1,7 +1,7 @@
 import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
+import { parseJsonBody, requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { apiQuery } from '../../api-query-contract.mts'
 import { createPaginationParser } from '@modules/pagination'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
@@ -47,7 +47,7 @@ app.route('/api/v1/my/cards').get(async (ctx: Context) => {
 app.route('/api/v1/my/cards').post(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/my/cards')
 
-  const body = (await ctx.request.json('10kb')) as CreateCardRequest
+  const body = (await parseJsonBody(ctx, '10kb')) as CreateCardRequest
   validateRequestContract(ctx, 'POST:/api/v1/my/cards', { body })
 
   const card = await createIndividualCard(currentUser, currentUser, body.card_topic_id)
@@ -60,7 +60,7 @@ app.route('/api/v1/my/cards').post(async (ctx: Context) => {
 app.route('/api/v1/my/cards/:id').patch(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'PATCH:/api/v1/my/cards/:id')
 
-  const body = (await ctx.request.json('10kb')) as UpdateCardRequest
+  const body = (await parseJsonBody(ctx, '10kb')) as UpdateCardRequest
   validateRequestContract(ctx, 'PATCH:/api/v1/my/cards/:id', { path: ctx.params, body })
 
   const card = await updateIndividualCardById(currentUser, currentUser, ctx.params.id!, {

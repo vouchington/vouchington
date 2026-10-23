@@ -7,6 +7,7 @@ import { recordModerationTrainingFeedback } from '@services/moderation-training'
 import { getPromptTestTrainingLabel } from '@services/moderation-training/prompt-test-label'
 import app from '../../../app.mts'
 import {
+  parseJsonBody,
   requireAuth,
   validateRequestContract,
   validateUUIDParam,
@@ -34,7 +35,7 @@ app
     ctx.assert(prompt, 404, 'Prompt not found')
     ctx.assert(prompt.community_id === community.id, 404, 'Prompt not found')
 
-    const body = (await ctx.request.json('1mb')) as {
+    const body = (await parseJsonBody(ctx, '1mb')) as {
       text: string
       save_for_training?: boolean
       expected_flagged?: boolean

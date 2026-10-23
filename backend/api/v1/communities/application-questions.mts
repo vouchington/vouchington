@@ -1,6 +1,7 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import {
+  parseJsonBody,
   getOptionalAuthAndRateLimit,
   requireAuth,
   validateRequestContract,
@@ -47,7 +48,7 @@ app
     const { community, membership } = await loadCommunityWithViewer(idOrSlug, currentUser.id)
     ctx.assert(currentUserCanUpdateCommunity(currentUser, community, membership), 403, 'Forbidden')
 
-    const body = (await ctx.request.json('1mb')) as { questions: ApplicationQuestionInput[] }
+    const body = (await parseJsonBody(ctx, '1mb')) as { questions: ApplicationQuestionInput[] }
     validateRequestContract(ctx, 'PUT:/api/v1/communities/:idOrSlug/application-questions', {
       path: ctx.params,
       body,

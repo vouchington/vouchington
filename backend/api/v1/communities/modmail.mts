@@ -7,7 +7,7 @@ import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { isUUID } from '@modules/utils'
-import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
+import { parseJsonBody, requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { assertNotSuspended } from '@services/users'
 import { getCommunityMember } from '@services/communities/members/get'
 import {
@@ -77,7 +77,7 @@ app.route('/api/v1/communities/:idOrSlug/modmail').post(async (ctx: Context) => 
   const { idOrSlug } = ctx.params as { idOrSlug: string }
   const access = await loadModmailOpeningAccess(currentUser, idOrSlug)
 
-  const body = (await ctx.request.json('10kb')) as Record<string, unknown>
+  const body = (await parseJsonBody(ctx, '10kb')) as Record<string, unknown>
   validateRequestContract(ctx, 'POST:/api/v1/communities/:idOrSlug/modmail', {
     path: ctx.params,
     body,
@@ -133,7 +133,7 @@ app.route('/api/v1/communities/:idOrSlug/modmail/:conversationId').patch(async (
   ctx.assert(thread, 404, 'Modmail thread not found')
   ctx.assert(thread.community_id === community.id, 404, 'Modmail thread not found')
 
-  const body = (await ctx.request.json('10kb')) as Record<string, unknown>
+  const body = (await parseJsonBody(ctx, '10kb')) as Record<string, unknown>
   validateRequestContract(ctx, 'PATCH:/api/v1/communities/:idOrSlug/modmail/:conversationId', {
     path: ctx.params,
     body,

@@ -84,6 +84,18 @@ describe('response-helpers', () => {
   })
 
   describe('parseJsonBody', () => {
+    it.each([null, [], 'text', 42, true])(
+      'rejects a non-object JSON body before route field access: %#',
+      async body => {
+        const request = createRequest()
+        await request
+          .post('/api/v1/email-unsubscribe')
+          .set('Content-Type', 'application/json')
+          .send(JSON.stringify(body))
+          .expect(422)
+      },
+    )
+
     it('returns 415 when content-type is not JSON', async () => {
       const request = createRequest()
       await request.authenticateAs(regularUser)
