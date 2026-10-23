@@ -1,4 +1,4 @@
-import { chmod, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { delimiter, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -15,44 +15,13 @@ type ScriptRun = {
   timedOut: boolean
 }
 
-// Static across every test (no per-workspace interpolation), so both fakes can be
-// written once and shared instead of rewritten per test.
-const DOCKER_FAKE = [
-  '#!/usr/bin/env bash',
-  'set -euo pipefail',
-  'for name in DATABASE_URL S3_AWS_SECRET_ACCESS_KEY BEDROCK_AWS_SECRET_ACCESS_KEY; do',
-  '  if [ -n "${!name:-}" ]; then',
-  '    printf "%s leaked to docker\\n" "$name" >&2',
-  '    exit 2',
-  '  fi',
-  'done',
-  'if [ "${1:-}" != exec ] || [ "${2:-}" != voucha-test-valkey ] || [ "${3:-}" != valkey-cli ]; then',
-  '  printf "unexpected docker invocation: %s\\n" "$*" >&2',
-  '  exit 2',
-  'fi',
-  'case "${4:-}" in',
-  '  PING) printf PONG ;;',
-  "  MONITOR) printf '+OK monitor started\\n'; sleep 1 ;;",
-  '  *) printf "unexpected valkey command: %s\\n" "${4:-}" >&2; exit 2 ;;',
-  'esac',
-  '',
-].join('\n')
-
-const TAIL_FAKE = [
-  '#!/usr/bin/env bash',
-  'set -euo pipefail',
-  'if [ "${1:-}" != -f ] || [ -z "${2:-}" ]; then',
-  '  printf "unexpected tail invocation: %s\\n" "$*" >&2',
-  '  exit 2',
-  'fi',
-  'cat "$2"',
-  '',
-].join('\n')
+const dockerFakePath = fileURLToPath(
+  new URL('../test-helpers/valkey-logs-docker.sh', import.meta.url),
+)
+const tailFakePath = fileURLToPath(new URL('../test-helpers/valkey-logs-tail.sh', import.meta.url))
 
 let binRoot: string
 let binDir: string
-let dockerPath: string
-let tailPath: string
 
 async function createFakeWorkspace(databaseUrl?: string) {
   const dir = await mkdtemp(join(tmpdir(), 'voucha-valkey-logs-'))
@@ -90,21 +59,11 @@ describe('dev Valkey log commands', () => {
     binRoot = await mkdtemp(join(tmpdir(), 'voucha-valkey-logs-bin-'))
     binDir = join(binRoot, 'bin')
     await mkdir(binDir)
-    dockerPath = join(binDir, 'docker')
-    tailPath = join(binDir, 'tail')
-
-    await writeFile(dockerPath, DOCKER_FAKE)
-    await chmod(dockerPath, 0o755)
-    await writeFile(tailPath, TAIL_FAKE)
-    await chmod(tailPath, 0o755)
-
-    // Warm the freshly-written executables once: a brand-new file pays a one-time
-    // first-exec cost on macOS that the timed tests below can't reliably absorb
-    // (suspected cause of the #473 flake). The invocation args only need to exercise
-    // the fake's own script/interpreter path, not succeed.
+    // Execute immutable fixtures: freshly written executable files can still be
+    // busy at first exec under concurrent process startup (ETXTBSY).
     await Promise.all([
-      runProcess(dockerPath, [], { timeoutMs: 2000 }),
-      runProcess(tailPath, ['-f', join(binRoot, 'warm-missing-file')], { timeoutMs: 2000 }),
+      symlink(dockerFakePath, join(binDir, 'docker')),
+      symlink(tailFakePath, join(binDir, 'tail')),
     ])
   })
 
