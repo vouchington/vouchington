@@ -101,6 +101,7 @@ minimumReleaseAgeExclude:
   - '@vouchington/rss-crawler'
   - '@vouchington/rss-parser'
   - '@vouchington/robots'
+  - '@vouchington/script-loader'
   - '@vouchington/session-jwt'
   - '@vouchington/stripe'
   - '@vouchington/typed-entities'

@@ -11,7 +11,7 @@ vi.mock(import('@/hooks/use-recaptcha-token'), async importActual => importActua
 const useLoadScriptMock = vi.hoisted(() =>
   vi.fn<VitestLooseMock>(() => ({ isLoaded: true, isError: false })),
 )
-vi.mock(import('@/hooks/use-load-script'), () => ({ useLoadScript: useLoadScriptMock }))
+vi.mock(import('@vouchington/script-loader'), () => ({ useLoadScript: useLoadScriptMock }))
 
 import { useRecaptchaToken } from '@/hooks/use-recaptcha-token'
 

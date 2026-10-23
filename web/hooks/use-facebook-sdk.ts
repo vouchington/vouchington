@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useSyncExternalStore } from 'react'
-import { useLoadScript } from './use-load-script'
+import { useLoadScript } from '@vouchington/script-loader'
 import { useRuntimePublicConfig } from '@/lib/runtime-public-config-context'
 
 const FACEBOOK_SCRIPT_SRC = 'https://connect.facebook.net/en_US/sdk.js'

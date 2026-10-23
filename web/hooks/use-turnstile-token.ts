@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useTurnstile } from './use-turnstile'
+import { useTurnstile } from '@vouchington/script-loader/turnstile'
 import {
   TURNSTILE_ALWAYS_APPROVE_TOKEN,
   useTurnstileAlwaysApprove,

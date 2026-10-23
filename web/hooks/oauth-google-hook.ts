@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useSyncExternalStore } from 'react'
 import { OAuthCancelledError } from '@/lib/auth/oauth-error'
 import type { AuthState } from './oauth-types'
-import { useLoadScript } from './use-load-script'
+import { useLoadScript } from '@vouchington/script-loader'
 
 export interface GoogleOAuthConfig {
   clientId: string
