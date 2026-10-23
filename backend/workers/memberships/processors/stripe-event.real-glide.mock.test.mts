@@ -16,6 +16,7 @@ type StripeEvent = Parameters<typeof ingestStripeEvent>[0]
 describe('Stripe event recovery with a retained failed job under the lease token', () => {
   it('re-dispatches the unleased event so its job acquires the lease', async () => {
     const stored = await ingestStripeEvent(makeEvent(`sub_${randomUUID()}`))
+    if (!stored) throw new Error('Current Stripe event unexpectedly outside fiscal retention')
     const jobId = `stripe-event__${stored.id}__${stored.lease_token}`
 
     try {

@@ -42,7 +42,24 @@ LANGUAGE plpgsql
 AS $$
 BEGIN
   IF TG_OP = 'DELETE' THEN
-    RAISE EXCEPTION 'membership operations cannot be deleted';
+    IF current_setting('app.billing_retention_delete', true) = 'on'
+      AND OLD.completed_at IS NOT NULL
+      AND OLD.operation_kind IN ('cancel_source', 'administrator_refund')
+      AND (OLD.operation_kind = 'cancel_source' OR EXISTS (
+        SELECT 1 FROM membership_administrator_refund_operation_requests request
+        JOIN membership_refunds refund ON refund.membership_operation_id = OLD.id
+        WHERE request.membership_operation_id = OLD.id
+          AND (NOT request.is_cancel_requested OR refund.has_revoked_access)))
+      AND EXISTS (SELECT 1 FROM membership_operation_retained_identities identity
+        WHERE identity.id = OLD.id
+          AND identity.membership_provider_context_id = OLD.membership_provider_context_id
+          AND identity.idempotency_key = OLD.idempotency_key)
+      AND NOT EXISTS (SELECT 1 FROM membership_ineligible_purchase_reversal_case_operations case_operation
+        WHERE case_operation.membership_operation_id = OLD.id)
+      AND date_trunc('year', GREATEST(OLD.requested_at, OLD.completed_at)
+        AT TIME ZONE 'UTC') + INTERVAL '8 years' <= CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+      THEN RETURN OLD; END IF;
+    RAISE EXCEPTION 'membership operations cannot be deleted outside completed fiscal retention';
   END IF;
 
   IF OLD.completed_at IS NOT NULL THEN

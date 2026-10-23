@@ -13,6 +13,7 @@ import {
 import { enableAutomaticProvisionalWithholdingForTest } from '@voucha/test-helpers/services/copyright-notices/automatic-withholding'
 import { createRetentionEmailCase } from '@voucha/test-helpers/services/copyright-notices/retention-email-case'
 import { createRetentionFormCase } from '@voucha/test-helpers/services/copyright-notices/retention-form-case'
+import { createRetentionTerritorialCase } from '@voucha/test-helpers/services/copyright-notices/retention-territorial-case'
 import { addTestCopyrightSubmissionGuidanceForRetentionCase } from '@voucha/test-helpers/copyright-submission-guidance-retention'
 import { createRetentionAdministratorLiftCase } from '@voucha/test-helpers/copyright-retention-administrator-lift'
 import { COPYRIGHT_RETENTION_ERASURE } from './retention-erasure-spec.mts'
@@ -33,10 +34,14 @@ const changesWithoutPermit = (spec: (typeof COPYRIGHT_RETENTION_ERASURE)[number]
     Object.values(spec.columns).every(kind => kind === 'null'))
 
 /**
- * Tables the sweep deliberately keeps whole: EU and UK cases (the EU-only tables and the shared
- * territorial tables) are not swept, and a repeat-infringer decision is the 17 USC 512(i) record.
+ * A repeat-infringer decision remains while it counts under 17 USC 512(i). The
+ * acknowledgment digest identifies an already-terminal exact replay after its
+ * notice is deleted; it has no live case relation or erasable evidence payload.
  */
-const KEPT_TABLES = [/^copyright_(eu|uk|territorial)_/, /^copyright_repeat_infringer_/]
+const KEPT_TABLES = [
+  /^copyright_repeat_infringer_/,
+  /^copyright_territorial_acknowledgment_retained_identities$/,
+]
 
 type Target = { spec: (typeof COPYRIGHT_RETENTION_ERASURE)[number]; noticeId: string }
 
@@ -46,6 +51,7 @@ async function createTargets(): Promise<Target[]> {
     createRetentionEmailCase(),
     createRetentionFormCase(),
     createRetentionAdministratorLiftCase(),
+    createRetentionTerritorialCase('eu_dsa', true),
   ])
   const cases = caseResults.map(result => {
     if (result.status === 'rejected') throw result.reason

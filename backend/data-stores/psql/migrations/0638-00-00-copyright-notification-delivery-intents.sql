@@ -5,8 +5,8 @@
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_delivery_work_items (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  copyright_notice_id uuid REFERENCES copyright_notices(id) ON DELETE RESTRICT,
-  copyright_notice_email_intake_id uuid CONSTRAINT fk_copyright_notice_delivery_work_items__email_intake REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT,
+  copyright_notice_id uuid REFERENCES copyright_notices(id) ON DELETE CASCADE,
+  copyright_notice_email_intake_id uuid CONSTRAINT fk_copyright_notice_delivery_work_items__email_intake REFERENCES copyright_notice_email_intakes(id) ON DELETE CASCADE,
   copyright_notice_submission_id uuid,
   copyright_notice_correspondence_message_id uuid,
   recipient_user_id uuid REFERENCES users(id) ON DELETE SET NULL,
@@ -37,9 +37,9 @@ CREATE TABLE copyright_notice_delivery_work_items (
   UNIQUE (idempotency_key),
   CONSTRAINT uq_copyri_notice_delive_intents__email_intake_id__delivery_kind UNIQUE (copyright_notice_email_intake_id, delivery_kind),
   CONSTRAINT fk_copyright_notice_delivery_work_items__submission__notice FOREIGN KEY (copyright_notice_submission_id, copyright_notice_id)
-    REFERENCES copyright_notice_submissions(id, copyright_notice_id) ON DELETE RESTRICT,
+    REFERENCES copyright_notice_submissions(id, copyright_notice_id) ON DELETE CASCADE,
   CONSTRAINT fk_copyri_notice_delive_intents__correspondence_message__notice FOREIGN KEY (copyright_notice_correspondence_message_id, copyright_notice_id)
-    REFERENCES copyright_notice_correspondence_messages(id, copyright_notice_id) ON DELETE RESTRICT,
+    REFERENCES copyright_notice_correspondence_messages(id, copyright_notice_id) ON DELETE CASCADE,
   CHECK (delivery_kind <> 'claimant_decision_notice' OR recipient_role = 'claimant'),
   CHECK (delivery_kind NOT IN ('poster_restriction_notice', 'poster_review_notice', 'poster_restoration_notice') OR recipient_role IN ('poster', 'informed_owner')),
   CHECK (delivery_kind <> 'owner_information_notice' OR recipient_role = 'informed_owner'),
@@ -63,6 +63,9 @@ CREATE TABLE copyright_notice_delivery_work_items (
   CHECK (copyright_notice_email_intake_id IS NULL OR (recipient_role = 'correspondent' AND channel = 'email'
     AND copyright_notice_submission_id IS NULL AND copyright_notice_correspondence_message_id IS NULL))
 );
+CREATE INDEX idx_copyright_notice_delivery_work_items__notice_id
+  ON copyright_notice_delivery_work_items(copyright_notice_id, id)
+  WHERE copyright_notice_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_delivery_attempts (
@@ -84,9 +87,9 @@ CREATE TABLE copyright_notice_delivery_attempt_results (
   CHECK (num_nonnulls(sent_at, failed_at, bounced_at, abandoned_at) = 1)
 );
 CREATE TRIGGER trigger_copyright_delivery_attempts_immutable BEFORE UPDATE OR DELETE ON copyright_notice_delivery_attempts
-FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
+FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_purge_only_mutation();
 CREATE TRIGGER trigger_copyright_delivery_attempt_results_immutable BEFORE UPDATE OR DELETE ON copyright_notice_delivery_attempt_results
-FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
+FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_purge_only_mutation();
 COMMENT ON TABLE copyright_notice_delivery_attempts IS 'Immutable numbered executions across all explicit replay generations; legal work retention owns this history.';
 COMMENT ON COLUMN copyright_notice_delivery_attempts.work_item_id IS 'Concrete copyright delivery work whose execution this records.';
 COMMENT ON COLUMN copyright_notice_delivery_attempts.generation IS 'Replay generation captured before external execution.';
@@ -146,13 +149,15 @@ COMMENT ON COLUMN copyright_notice_delivery_work_items.lease_expires_at IS 'Curr
 ALTER TABLE copyright_notice_lifecycle_changes
   ADD CONSTRAINT copyright_lifecycle_event_delivery_intent_fk
   FOREIGN KEY (copyright_notice_delivery_work_item_id)
-  REFERENCES copyright_notice_delivery_work_items(id) ON DELETE RESTRICT NOT VALID;
+  REFERENCES copyright_notice_delivery_work_items(id) ON DELETE CASCADE NOT VALID;
 ALTER TABLE copyright_notice_lifecycle_changes
   VALIDATE CONSTRAINT copyright_lifecycle_event_delivery_intent_fk;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_delivery_work_items__notice
   ON copyright_notice_delivery_work_items (copyright_notice_id, id);
+CREATE INDEX idx_copyright_notice_delivery_work_items__legal_clock
+  ON copyright_notice_delivery_work_items (copyright_notice_id, updated_at DESC);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_delivery_work_items__submission
   ON copyright_notice_delivery_work_items (copyright_notice_submission_id, copyright_notice_id)
@@ -175,7 +180,11 @@ RETURNS TRIGGER LANGUAGE plpgsql AS $$
 DECLARE next_state copyright_notice_delivery_intent_states;
 BEGIN
   next_state := CASE WHEN NEW.bounced_at IS NOT NULL THEN 'bounced'::copyright_notice_delivery_intent_states WHEN NEW.sent_at IS NOT NULL THEN 'sent'::copyright_notice_delivery_intent_states WHEN NEW.failed_at IS NOT NULL THEN 'failed'::copyright_notice_delivery_intent_states WHEN NEW.leased_at IS NOT NULL THEN 'claimed'::copyright_notice_delivery_intent_states ELSE 'pending'::copyright_notice_delivery_intent_states END;
+  IF TG_OP = 'UPDATE' AND current_setting('app.copyright_retention_erasure', true) = 'on' THEN
+    IF fn_copyright_retention_erasure_permitted(TG_TABLE_NAME, to_jsonb(OLD), to_jsonb(NEW)) THEN RETURN NEW; END IF;
+  END IF;
   IF TG_OP = 'DELETE' THEN
+    IF fn_project_copyright_minimal_purge_child_allowed(TG_TABLE_NAME, to_jsonb(OLD)) THEN RETURN OLD; END IF;
     RAISE EXCEPTION 'copyright delivery intents are retained' USING ERRCODE = 'check_violation';
   END IF;
   IF NEW.copyright_notice_id IS DISTINCT FROM OLD.copyright_notice_id
@@ -204,8 +213,18 @@ BEGIN
   ELSIF NEW.recipient_user_erased_at IS DISTINCT FROM OLD.recipient_user_erased_at THEN
     RAISE EXCEPTION 'copyright delivery recipient erasure is system-managed' USING ERRCODE = 'check_violation';
   END IF;
-  IF (OLD.state IN ('bounced', 'failed') AND next_state IS DISTINCT FROM OLD.state)
-    OR (OLD.state = 'sent' AND next_state NOT IN ('sent', 'bounced')) THEN
+  IF OLD.state = 'bounced' AND next_state IS DISTINCT FROM OLD.state THEN
+    RAISE EXCEPTION 'terminal copyright delivery intent cannot change' USING ERRCODE = 'check_violation';
+  END IF;
+  IF OLD.state = 'failed' AND next_state IS DISTINCT FROM OLD.state
+    AND NOT (
+      next_state = 'pending' AND NEW.leased_at IS NULL AND NEW.failed_at IS NULL
+      AND NEW.available_at IS NOT NULL AND NEW.attempt_count = 0
+    ) THEN
+    RAISE EXCEPTION 'failed copyright delivery intents may only be explicitly replayed'
+      USING ERRCODE = 'check_violation';
+  END IF;
+  IF OLD.state = 'sent' AND next_state NOT IN ('sent', 'bounced') THEN
     RAISE EXCEPTION 'terminal copyright delivery intent cannot change' USING ERRCODE = 'check_violation';
   END IF;
   RETURN NEW;

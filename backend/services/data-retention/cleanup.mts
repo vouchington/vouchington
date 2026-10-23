@@ -29,6 +29,10 @@ import {
 } from './cleanup-options.mts'
 import { assertPositiveInteger, normalizePositiveInteger } from './normalize-positive-integer.mts'
 import { runBoundedBatches } from './run-bounded-batches.mts'
+import { cleanupLegalRecords } from './cleanup-legal-records.mts'
+import { cleanupPaymentLedgers } from './cleanup-payment-ledgers.mts'
+import { cleanupCopyrightSubmissionKeys } from './cleanup-copyright-submission-keys.mts'
+import { cleanupCopyrightMinimalRecords } from './cleanup-copyright-minimal-records.mts'
 import { pruneExpiredContributionAdmissions } from '@services/contribution-gating/admission'
 import { pruneExpiredContributionAdmissionConsumptions } from '@services/contribution-gating/admission-quota'
 import { pruneExpiredTopicImportAttempts } from '@services/user-import-export/topic-import-attempts'
@@ -79,6 +83,10 @@ type ExpiryCleanupOptions = Pick<
 // Each cleanup in a run takes its batch size and per-run cap from the required run limits; a
 // per-cleanup option can override either one (tests use this to scope windows and shrink limits).
 type DataRetentionCleanupOptions = {
+  copyrightSubmissionKeys?: { now?: Date; requestIds?: readonly string[] }
+  copyrightMinimalRecords?: { now?: Date; noticeIds?: readonly string[] }
+  legalRecords?: { now?: Date; recordIds?: readonly string[] }
+  paymentLedgers?: { recordIds?: readonly string[] }
   retainedIdentityRootIds?: Partial<Record<RetainedIdentityFamily, readonly string[]>>
   retainedRelationIdentityKeys?: Readonly<Record<string, readonly RetainedRelationIdentityKey[]>>
   retainedMediaBindingIds?: readonly string[]
@@ -98,6 +106,10 @@ type DataRetentionCleanupOptions = {
 }
 
 type DataRetentionCleanupResult = {
+  copyrightSubmissionKeys: Awaited<ReturnType<typeof cleanupCopyrightSubmissionKeys>>
+  copyrightMinimalRecords: Awaited<ReturnType<typeof cleanupCopyrightMinimalRecords>>
+  legalRecords: Awaited<ReturnType<typeof cleanupLegalRecords>>
+  paymentLedgers: Awaited<ReturnType<typeof cleanupPaymentLedgers>>
   retainedRelationIdentities: RetainedRelationIdentityCleanupPage[]
   retainedMediaBindings: RetainedMediaBindingCleanupPage
   retainedIdentityRoots: RetainedIdentityCleanupPage[]
@@ -162,6 +174,21 @@ export async function runDataRetentionCleanup(
   const terminalNotificationPushIntents = await cleanupTerminalNotificationPushIntents(
     withLimits(options.terminalNotificationPushIntents),
   )
+  const legalRecords = await cleanupLegalRecords(
+    limits,
+    options.legalRecords?.now,
+    options.legalRecords?.recordIds,
+  )
+  const copyrightSubmissionKeys = await cleanupCopyrightSubmissionKeys(
+    limits,
+    options.copyrightSubmissionKeys?.now,
+    options.copyrightSubmissionKeys?.requestIds,
+  )
+  const copyrightMinimalRecords = await cleanupCopyrightMinimalRecords(
+    limits,
+    options.copyrightMinimalRecords,
+  )
+  const paymentLedgers = await cleanupPaymentLedgers(limits, options.paymentLedgers?.recordIds)
   const retainedRelationIdentities = await cleanupRetainedRelationIdentities(
     retainedPageSize,
     options.retainedRelationIdentityKeys,
@@ -177,6 +204,10 @@ export async function runDataRetentionCleanup(
   await cleanupAnalyticsLocalFiles()
 
   return {
+    copyrightSubmissionKeys,
+    copyrightMinimalRecords,
+    legalRecords,
+    paymentLedgers,
     retainedRelationIdentities,
     retainedMediaBindings,
     retainedIdentityRoots,

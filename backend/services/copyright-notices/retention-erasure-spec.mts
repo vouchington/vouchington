@@ -1,5 +1,4 @@
 import sql, { type SQLStatement } from 'sql-template-strings'
-import { COPYRIGHT_ERASED_CIPHERTEXT } from './erased-ciphertext.mts'
 import { exclusiveCaseThreadTokenScopeSql } from './retention-erasure-thread-tokens.mts'
 
 /**
@@ -38,6 +37,9 @@ const emailIntakesOf = (id: string) =>
     WHERE copyright_notice_id = ${id})`
 const viaEmailIntakes = (id: string) =>
   sql`copyright_notice_email_intake_id IN `.append(emailIntakesOf(id))
+const viaTerritorialRedress = (id: string) =>
+  sql`copyright_territorial_redress_request_id IN
+    (SELECT id FROM copyright_territorial_redress_requests WHERE copyright_notice_id = ${id})`
 const table = (
   name: string,
   columns: CopyrightRetentionErasureTable['columns'],
@@ -161,27 +163,26 @@ export const COPYRIGHT_RETENTION_ERASURE: readonly CopyrightRetentionErasureTabl
         WHERE copyright_notice_id = ${id})`,
   ),
   table('copyright_notice_lifecycle_change_rationales', { review_rationale_ciphertext: 'redact' }),
+  table('copyright_territorial_notice_receipts', {
+    requester_user_id: 'null',
+    hosted_use_url: 'redact',
+    grounds_ciphertext: 'redact',
+    notifier_email_ciphertext: 'redact',
+  }),
+  table('copyright_territorial_decisions', {
+    rationale_ciphertext: 'redact',
+    public_explanation_ciphertext: 'redact',
+  }),
+  table('copyright_territorial_redress_requests', {
+    submitted_by_id: 'null',
+    explanation_ciphertext: 'redact',
+  }),
+  table(
+    'copyright_territorial_redress_decisions',
+    { rationale_ciphertext: 'redact' },
+    viaTerritorialRedress,
+  ),
+  table('copyright_eu_supervised_complaints', {
+    explanation_ciphertext: 'redact',
+  }),
 ]
-
-const OVERWRITE: Record<CopyrightRetentionErasureKind, (column: string) => string> = {
-  redact: column =>
-    `CASE WHEN ${column} IS NULL THEN NULL ELSE '${COPYRIGHT_ERASED_CIPHERTEXT}' END`,
-  null: () => 'NULL',
-  hex64: column =>
-    `CASE WHEN ${column} IS NULL THEN NULL
-      ELSE encode(sha256(convert_to('erased:' || id::text, 'UTF8')), 'hex') END`,
-  digest: () => `sha256(convert_to('erased:' || id::text, 'UTF8'))`,
-}
-
-/** The in-place overwrite of one table's rows for a notice. Names come only from the spec above. */
-export function eraseCopyrightRetentionTableSql(
-  spec: CopyrightRetentionErasureTable,
-  noticeId: string,
-): SQLStatement {
-  const assignments = Object.entries(spec.columns)
-    .map(([column, kind]) => `${column} = ${OVERWRITE[kind](column)}`)
-    .join(', ')
-  return sql`/* eraseCopyrightRetentionTable */`
-    .append(`\n    UPDATE ${spec.table} SET ${assignments} WHERE `)
-    .append(spec.scope(noticeId))
-}

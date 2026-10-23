@@ -1,8 +1,7 @@
 -- Legal-process preservation holds on a user account (issue #1449). An open hold blocks account
 -- deletion; the owner decides scope and duration on a lawyer's advice, so neither is stored.
--- Holds are never deleted: releasing writes released_at/released_by_id once, so the placement and
--- release facts persist as an audit trail. All three user references target the retained identity,
--- so the history outlives the user and a released hold never blocks the final hard delete.
+-- Releasing writes released_at/released_by_id once. An open hold survives account deletion;
+-- released holds are removed after their finite proof window.
 
 CREATE TABLE IF NOT EXISTS user_legal_preservation_holds (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
@@ -21,6 +20,9 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_user_legal_preservation_holds__one_open
 
 CREATE INDEX IF NOT EXISTS idx_user_legal_preservation_holds__account_user_id
   ON user_legal_preservation_holds (account_user_id, id DESC);
+CREATE INDEX idx_user_legal_preservation_holds__released_latest
+  ON user_legal_preservation_holds (account_user_id, released_at DESC)
+  WHERE released_at IS NOT NULL;
 
 CREATE INDEX IF NOT EXISTS idx_user_legal_preservation_holds__placed_by_id
   ON user_legal_preservation_holds (placed_by_id);
@@ -33,6 +35,11 @@ CREATE OR REPLACE FUNCTION fn_reject_user_legal_preservation_hold_mutation()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP = 'DELETE' THEN
+    IF current_setting('app.legal_record_retention_delete', true) = 'on'
+      AND OLD.released_at IS NOT NULL
+      AND OLD.released_at + INTERVAL '3 years' <= CURRENT_TIMESTAMP THEN
+      RETURN OLD;
+    END IF;
     RAISE EXCEPTION 'legal preservation holds are retained' USING ERRCODE = 'check_violation';
   END IF;
   IF OLD.released_at IS NOT NULL
@@ -50,7 +57,7 @@ CREATE OR REPLACE TRIGGER trigger_user_legal_preservation_holds_reject_mutation
 BEFORE UPDATE OR DELETE ON user_legal_preservation_holds
 FOR EACH ROW EXECUTE FUNCTION fn_reject_user_legal_preservation_hold_mutation();
 
-COMMENT ON TABLE user_legal_preservation_holds IS 'Staff-placed legal-process preservation holds on a user account (for example a DMCA 512(h) subpoena). A hold with released_at NULL pauses the 90-day final account purge but not immediate account-deletion phases; at most one hold per account is open at a time. Rows are append-only apart from a single release and survive the account through retained identity references. Holds may be placed or released while the users row is soft-deleted. The owner decides scope and duration on a lawyer''s advice, so neither is stored.';
+COMMENT ON TABLE user_legal_preservation_holds IS 'Staff-placed legal-process preservation holds on a user account (for example a DMCA 512(h) subpoena). A hold with released_at NULL pauses the 90-day final account purge but not immediate account-deletion phases; at most one hold per account is open at a time. Rows are append-only apart from a single release; released proof is removed after three years. Holds may be placed or released while the users row is soft-deleted. The owner decides scope and duration on a lawyer''s advice, so neither is stored.';
 COMMENT ON COLUMN user_legal_preservation_holds.account_user_id IS 'Account whose records are preserved; the retained identity shares the user id.';
 COMMENT ON COLUMN user_legal_preservation_holds.placed_by_id IS 'Administrator who placed the hold.';
 COMMENT ON COLUMN user_legal_preservation_holds.reference_ciphertext IS 'Encrypted short reference, such as a matter id, for the legal process; sensitive, shown only to administrators and never logged or copied to other audit rows.';

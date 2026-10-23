@@ -28,6 +28,9 @@ describe('runDataRetentionCleanup', () => {
     }
 
     const result = await runDataRetentionCleanup(limits, {
+      legalRecords: { recordIds: [] },
+      paymentLedgers: { recordIds: [] },
+      copyrightMinimalRecords: { noticeIds: [] },
       retainedIdentityRootIds: {},
       retainedRelationIdentityKeys: {},
       retainedMediaBindingIds: [],

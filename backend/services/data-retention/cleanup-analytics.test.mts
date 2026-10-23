@@ -60,6 +60,9 @@ describe('cleanupAnalyticsLocalFiles', () => {
 
     await expect(
       runDataRetentionCleanup(limits, {
+        legalRecords: { recordIds: [] },
+        paymentLedgers: { recordIds: [] },
+        copyrightMinimalRecords: { noticeIds: [] },
         retainedIdentityRootIds: {},
         retainedRelationIdentityKeys: {},
         retainedMediaBindingIds: [],
@@ -76,6 +79,24 @@ describe('cleanupAnalyticsLocalFiles', () => {
         terminalNotificationPushIntents: emptyWindow,
       }),
     ).resolves.toEqual({
+      copyrightMinimalRecords: {
+        purged: 0,
+        progressed: 0,
+        ineligible: 0,
+        retainedIdentitiesDeleted: 0,
+        hasMore: false,
+        failed: [],
+      },
+      copyrightSubmissionKeys: { scanned: 0, cleared: 0, hasMore: false },
+      legalRecords: [
+        { family: 'identity_verification_attempt', scanned: 0, deleted: 0, hasMore: false },
+        { family: 'user_deletion_request', scanned: 0, deleted: 0, hasMore: false },
+        { family: 'user_legal_preservation_hold', scanned: 0, deleted: 0, hasMore: false },
+      ],
+      paymentLedgers: [
+        { family: 'stripe_event', scanned: 0, deleted: 0, hasMore: false },
+        { family: 'membership_operation', scanned: 0, deleted: 0, hasMore: false },
+      ],
       retainedIdentityRoots: [],
       retainedRelationIdentities: [],
       retainedMediaBindings: { scanned: 0, deleted: 0, hasMore: false },

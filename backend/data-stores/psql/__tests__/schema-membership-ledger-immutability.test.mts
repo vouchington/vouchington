@@ -6,15 +6,17 @@ import {
   attemptTestMembershipOperationTransition,
   attemptTestRefundMembershipOperationTransition,
   claimTestMembershipOperation,
-  createTestImmutableLineageBinding,
-  createTestImmutableMembershipChange,
   createTestImmutableMembershipGrant,
   createTestImmutableMembershipOperation,
   createTestRefundMembershipOperation,
+} from '../../../test-helpers/data-stores/psql/membership-ledger-immutability.mts'
+import {
+  createTestImmutableLineageBinding,
+  createTestImmutableMembershipChange,
   deleteTestMembershipChange,
   mutateTestMembershipChange,
   setTestLineageBindingOriginatingInvoice,
-} from '../../../test-helpers/data-stores/psql/membership-ledger-immutability.mts'
+} from '../../../test-helpers/data-stores/psql/membership-lineage-change-immutability.mts'
 
 describe('membership ledger immutability', () => {
   afterAll(async () => {

@@ -62,7 +62,7 @@ COMMENT ON COLUMN copyright_notice_email_message_ancestors.reference_kind IS 'Wh
 CREATE TABLE copyright_notice_email_intake_notice_links (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_email_intake_id uuid NOT NULL CONSTRAINT uq_copyright_notice_email_intake_notice_links__intake_id UNIQUE CONSTRAINT fk_copyright_notice_email_intake_notice_links__intake REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT,
-  copyright_notice_id uuid NOT NULL CONSTRAINT fk_copyright_notice_email_intake_notice_links__notice REFERENCES copyright_notices(id) ON DELETE RESTRICT,
+  copyright_notice_id uuid NOT NULL CONSTRAINT fk_copyright_notice_email_intake_notice_links__notice REFERENCES copyright_notices(id) ON DELETE CASCADE,
   copyright_notice_email_intake_recommendation_id uuid CONSTRAINT fk_copyright_notice_email_intake_notice_links__recommendation REFERENCES copyright_notice_email_intake_recommendations(id) ON DELETE RESTRICT,
   link_kind copyright_notice_email_intake_link_kinds NOT NULL CHECK (link_kind IN ('initial', 'thread')),
   matched_token_id uuid CONSTRAINT fk_copyright_notice_email_intake_notice_links__matched_token REFERENCES copyright_notice_email_thread_tokens(id) ON DELETE RESTRICT,
@@ -75,7 +75,7 @@ ALTER TABLE copyright_notice_lifecycle_changes
   ADD CONSTRAINT fk_copyright_lifecycle_events__email_intake_notice
   FOREIGN KEY (copyright_notice_id, copyright_notice_email_intake_id)
   REFERENCES copyright_notice_email_intake_notice_links(copyright_notice_id, copyright_notice_email_intake_id)
-  ON DELETE RESTRICT NOT VALID;
+  ON DELETE CASCADE NOT VALID;
 ALTER TABLE copyright_notice_lifecycle_changes
   VALIDATE CONSTRAINT fk_copyright_lifecycle_events__email_intake_notice;
 
@@ -83,12 +83,12 @@ ALTER TABLE copyright_notice_lifecycle_changes
 CREATE TABLE copyright_notice_email_correspondence_reviews (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   copyright_notice_email_intake_id uuid NOT NULL CONSTRAINT fk_copyright_notice_email_correspondence_reviews__intake REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT,
-  copyright_notice_id uuid NOT NULL CONSTRAINT fk_copyright_notice_email_correspondence_reviews__notice REFERENCES copyright_notices(id) ON DELETE RESTRICT,
+  copyright_notice_id uuid NOT NULL CONSTRAINT fk_copyright_notice_email_correspondence_reviews__notice REFERENCES copyright_notices(id) ON DELETE CASCADE,
   copyright_notice_email_intake_recommendation_id uuid,
   action copyright_notice_email_correspondence_review_actions NOT NULL CHECK (action IN ('pending', 'admitted', 'rejected')),
   kind copyright_notice_email_correspondence_review_kinds CHECK (kind IN ('supplement', 'appeal', 'counter_notice', 'withdrawal', 'court_or_ccb_hold', 'complaint')),
-  copyright_notice_submission_id uuid CONSTRAINT uq_copyright_notice_email_correspondence_reviews__submission_id UNIQUE CONSTRAINT fk_copyright_notice_email_correspondence_reviews__submission REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT,
-  copyright_notice_correspondence_message_id uuid CONSTRAINT uq_copyright_notice_email_correspond_reviews__correspondence_id UNIQUE CONSTRAINT fk_copyright_notice_email_correspondenc_reviews__correspondence REFERENCES copyright_notice_correspondence_messages(id) ON DELETE RESTRICT,
+  copyright_notice_submission_id uuid CONSTRAINT uq_copyright_notice_email_correspondence_reviews__submission_id UNIQUE CONSTRAINT fk_copyright_notice_email_correspondence_reviews__submission REFERENCES copyright_notice_submissions(id) ON DELETE CASCADE,
+  copyright_notice_correspondence_message_id uuid CONSTRAINT uq_copyright_notice_email_correspond_reviews__correspondence_id UNIQUE CONSTRAINT fk_copyright_notice_email_correspondenc_reviews__correspondence REFERENCES copyright_notice_correspondence_messages(id) ON DELETE CASCADE,
   reviewed_at timestamptz,
   reviewed_by_id uuid CONSTRAINT fk_copyright_notice_email_correspondence_reviews__reviewed_by REFERENCES users(id) ON DELETE SET NULL,
   rationale_ciphertext text,
@@ -106,6 +106,44 @@ CREATE TABLE copyright_notice_email_correspondence_reviews (
     FOREIGN KEY (copyright_notice_email_intake_id, copyright_notice_email_intake_recommendation_id)
     REFERENCES copyright_notice_email_intake_recommendations(copyright_notice_email_intake_id, id) ON DELETE RESTRICT
 );
+
+-- Each intake has at most one case link and one review. Retain only their latest factual
+-- activity instant so the legal clock never scans an unbounded case thread.
+CREATE FUNCTION fn_register_copyright_email_case_activity()
+RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE
+  target_notice_id uuid;
+  activity_at timestamptz;
+BEGIN
+  IF TG_TABLE_NAME = 'copyright_notice_email_intake_notice_links' THEN
+    target_notice_id := NEW.copyright_notice_id;
+    SELECT GREATEST(uuid_extract_timestamp(NEW.id), intake.received_at, review.reviewed_at)
+      INTO activity_at
+    FROM copyright_notice_email_intakes intake
+    LEFT JOIN copyright_notice_email_intake_reviews review
+      ON review.copyright_notice_email_intake_id = intake.id
+    WHERE intake.id = NEW.copyright_notice_email_intake_id;
+  ELSE
+    SELECT link.copyright_notice_id INTO target_notice_id
+    FROM copyright_notice_email_intake_notice_links link
+    WHERE link.copyright_notice_email_intake_id = NEW.copyright_notice_email_intake_id;
+    activity_at := NEW.reviewed_at;
+  END IF;
+  IF target_notice_id IS NOT NULL AND activity_at IS NOT NULL THEN
+    UPDATE copyright_notice_retained_identities
+      SET email_activity_at = GREATEST(email_activity_at, activity_at),
+        proof_generation = proof_generation + 1
+      WHERE id = target_notice_id;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+CREATE TRIGGER trigger_register_copyright_email_link_activity
+AFTER INSERT ON copyright_notice_email_intake_notice_links FOR EACH ROW
+EXECUTE FUNCTION fn_register_copyright_email_case_activity();
+CREATE TRIGGER trigger_register_copyright_email_review_activity
+AFTER INSERT ON copyright_notice_email_intake_reviews FOR EACH ROW
+EXECUTE FUNCTION fn_register_copyright_email_case_activity();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_email_thread_references__token
@@ -128,6 +166,9 @@ CREATE INDEX idx_copyright_notice_email_intake_notice_links__recommendation
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_email_correspondence_reviews__notice
   ON copyright_notice_email_correspondence_reviews(copyright_notice_id, id);
+CREATE INDEX idx_copyright_notice_email_correspondence_reviews__clock
+  ON copyright_notice_email_correspondence_reviews(copyright_notice_id, reviewed_at DESC)
+  WHERE reviewed_at IS NOT NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX idx_copyright_notice_email_correspondence_reviews__reviewer
   ON copyright_notice_email_correspondence_reviews(reviewed_by_id)

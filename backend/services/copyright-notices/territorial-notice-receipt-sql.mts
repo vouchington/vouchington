@@ -7,17 +7,11 @@ export function existingReceiptQuery(
   idempotencyKey: string,
 ) {
   return sql`/* receiveTerritorialCopyrightNotice:existing */
-    SELECT receipt.copyright_notice_id AS notice_id, receipt.id AS receipt_id,
-      receipt.request_sha256, acknowledgment.id AS acknowledgment_id,
-      routing.destination AS route_destination
-    FROM copyright_territorial_notice_receipts receipt
-    JOIN copyright_territorial_notice_acknowledgments acknowledgment
-      ON acknowledgment.copyright_territorial_notice_receipt_id = receipt.id
-    JOIN copyright_territorial_notice_routings routing
-      ON routing.copyright_territorial_notice_receipt_id = receipt.id
-    WHERE receipt.requester_identity_sha256 = ${requesterIdentitySha256}
-      AND receipt.jurisdiction = ${jurisdiction}
-      AND receipt.idempotency_key = ${idempotencyKey}`
+    SELECT identity.response_snapshot, identity.request_sha256
+    FROM copyright_territorial_notice_retained_identities identity
+    WHERE identity.requester_identity_sha256 = ${requesterIdentitySha256}
+      AND identity.jurisdiction = ${jurisdiction}
+      AND identity.idempotency_key = ${idempotencyKey}`
 }
 
 export function insertReceiptQuery(

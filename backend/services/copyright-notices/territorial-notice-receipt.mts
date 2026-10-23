@@ -5,11 +5,10 @@ import { encryptSecret } from '@modules/token-secrets'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import type { PrivateUser } from '@services/users/types'
-import { isEmailAddress } from '@ts-shared/utils/validation-core'
 import { lockCurrentCopyrightJurisdictionPolicy } from './jurisdiction-policy.mts'
 import {
-  assertBoundedText,
   assertIdempotencyKey,
+  noticeFields,
   sameSha256,
   territorialRequestSha256,
   type TerritorialCopyrightJurisdiction,
@@ -36,8 +35,34 @@ export type TerritorialCopyrightNoticeReceipt = {
 
 export type TerritorialNoticeRequester = { user: PrivateUser | null; identity: string }
 
-type TerritorialReceiptRow = Omit<TerritorialCopyrightNoticeReceipt, 'is_duplicate'> & {
+type TerritorialReceiptRow = {
   request_sha256: Uint8Array
+  response_snapshot: unknown
+}
+
+function decodeTerritorialReceiptSnapshot(
+  value: unknown,
+): Omit<TerritorialCopyrightNoticeReceipt, 'is_duplicate'> {
+  assert(
+    value && typeof value === 'object' && !Array.isArray(value),
+    500,
+    'Invalid retained territorial receipt',
+  )
+  const snapshot = value as Record<string, unknown>
+  assert(
+    typeof snapshot.notice_id === 'string' &&
+      typeof snapshot.receipt_id === 'string' &&
+      typeof snapshot.acknowledgment_id === 'string' &&
+      snapshot.route_destination === 'staff_queue',
+    500,
+    'Invalid retained territorial receipt',
+  )
+  return {
+    notice_id: snapshot.notice_id,
+    receipt_id: snapshot.receipt_id,
+    acknowledgment_id: snapshot.acknowledgment_id,
+    route_destination: snapshot.route_destination,
+  }
 }
 
 export async function receiveTerritorialCopyrightNotice(
@@ -82,13 +107,7 @@ export async function receiveTerritorialCopyrightNoticeInTransaction(
       409,
       'Idempotency-Key was reused for a different request',
     )
-    return {
-      notice_id: existing.notice_id,
-      receipt_id: existing.receipt_id,
-      acknowledgment_id: existing.acknowledgment_id,
-      route_destination: existing.route_destination,
-      is_duplicate: true,
-    }
+    return { ...decodeTerritorialReceiptSnapshot(existing.response_snapshot), is_duplicate: true }
   }
   const approval = await lockCurrentCopyrightJurisdictionPolicy(jurisdiction, transaction)
   const labels = territorialLabels(jurisdiction)
@@ -136,6 +155,16 @@ export async function receiveTerritorialCopyrightNoticeInTransaction(
   )
   const acknowledgment = acknowledgments[0]
   assert(acknowledgment, 500, failure)
+  await transaction(sql`/* receiveTerritorialCopyrightNotice:retainReplayIdentity */
+    INSERT INTO copyright_territorial_notice_retained_identities (
+      receipt_id, jurisdiction, requester_identity_sha256, idempotency_key,
+      request_sha256, response_snapshot
+    ) VALUES (
+      ${receipt.id}, ${jurisdiction}, ${identitySha256}, ${idempotencyKey},
+      ${requestSha256}, jsonb_build_object('notice_id', ${notice.id}::text,
+        'receipt_id', ${receipt.id}::text, 'acknowledgment_id', ${acknowledgment.id}::text,
+        'route_destination', 'staff_queue')
+    )`)
   if ('notifierEmail' in fields)
     await createEuCopyrightReceiptDelivery(
       {
@@ -151,41 +180,5 @@ export async function receiveTerritorialCopyrightNoticeInTransaction(
     acknowledgment_id: acknowledgment.id,
     route_destination: 'staff_queue',
     is_duplicate: false,
-  }
-}
-
-function noticeFields(
-  request: TerritorialNoticeRequest | EuTerritorialNoticeRequest,
-  jurisdiction: TerritorialCopyrightJurisdiction,
-): TerritorialNoticeRequest | EuTerritorialNoticeRequest {
-  const base = {
-    contact: assertBoundedText(request.contact, 4096, 'contact is required'),
-    contentDescription: assertBoundedText(
-      request.contentDescription,
-      50_000,
-      'content_description is required',
-    ),
-    grounds: assertBoundedText(request.grounds, 50_000, 'grounds are required'),
-    hostedUseUrl: assertBoundedText(request.hostedUseUrl, 2048, 'hosted_use_url is required'),
-  }
-  if (jurisdiction === 'uk') {
-    assert(
-      !('notifierName' in request) &&
-        !('notifierEmail' in request) &&
-        !('goodFaithStatement' in request),
-      422,
-      'UK notice must not include EU fields',
-    )
-    return base
-  }
-  assert('notifierName' in request, 422, 'notifier_name is required')
-  assert(request.goodFaithStatement, 422, 'has_good_faith_statement must be true')
-  const notifierEmail = assertBoundedText(request.notifierEmail, 254, 'notifier_email is required')
-  assert(isEmailAddress(notifierEmail), 422, 'notifier_email must be an email address')
-  return {
-    ...base,
-    notifierName: assertBoundedText(request.notifierName, 200, 'notifier_name is required'),
-    notifierEmail,
-    goodFaithStatement: true,
   }
 }

@@ -14,6 +14,7 @@ export type TestAdministratorRefundOperation = {
 }
 export async function createTestAdministratorRefundOperation(
   applicationId = `administrator-refund-${randomUUID()}`,
+  requestedAt = new Date(),
 ): Promise<TestAdministratorRefundOperation> {
   const { rows } = await write<Omit<TestAdministratorRefundOperation, 'applicationId'>>(
     sql`/* createTestAdministratorRefundOperation */
@@ -37,11 +38,11 @@ export async function createTestAdministratorRefundOperation(
       membership_source_id, membership_provider_lineage_id, membership_lineage_binding_id,
       membership_provider_context_id, operation_kind, idempotency_key,
       qualifying_allocation_minor_units, remaining_refundable_minor_units, currency_code,
-      period_started_at, period_ends_at
+      period_started_at, period_ends_at, requested_at
     )
     SELECT source.id, source.membership_provider_lineage_id, binding.id,
       fn_upsert_membership_provider_context_id('stripe', 'test', ${applicationId}), 'administrator_refund', ${`operation-${randomUUID()}`},
-      100, 100, 'usd', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+      100, 100, 'usd', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ${requestedAt}
     FROM source INNER JOIN binding
       ON binding.membership_provider_lineage_id = source.membership_provider_lineage_id
     RETURNING id, membership_source_id AS "membershipSourceId",
@@ -79,18 +80,6 @@ export async function getTestAdministratorRefundRetryState(operationId: string) 
     JOIN membership_operation_execution_work_items work ON work.membership_operation_id = operation.id
     WHERE operation.id = ${operationId}`)
   return rows[0]
-}
-export async function hasExpectedTestMembershipOperationReconciliationDueIndex(): Promise<boolean> {
-  const { rows } = await read<{ indexdef: string }>(
-    `/* getTestMembershipOperationReconciliationDueIndex */
-      SELECT indexdef FROM pg_indexes
-      WHERE schemaname = 'public' AND tablename = 'membership_operation_execution_work_items'
-        AND indexname = 'idx_membership_operation_execution_work_items__available'`,
-  )
-  return (
-    rows[0]?.indexdef ===
-    'CREATE INDEX idx_membership_operation_execution_work_items__available ON public.membership_operation_execution_work_items USING btree (available_at, membership_operation_id) WHERE (lease_token IS NULL)'
-  )
 }
 export async function createTestAdministratorRefundRequest(
   operation: TestAdministratorRefundOperation,
@@ -142,16 +131,6 @@ export async function mutateTestRefundOperationAttemptAmount(attemptId: string):
 export async function deleteTestRefundOperationAttempt(attemptId: string): Promise<void> {
   await write(sql`/* deleteTestRefundOperationAttempt */
     DELETE FROM membership_refund_operation_attempts WHERE id = ${attemptId}`)
-}
-
-export async function getTestMembershipRefundOperationLinkNullable(): Promise<boolean | undefined> {
-  const { rows } = await read<{ isNullable: string }>(
-    `/* getTestMembershipRefundOperationLinkNullable */
-      SELECT is_nullable AS "isNullable" FROM information_schema.columns
-      WHERE table_schema = 'public' AND table_name = 'membership_refunds'
-        AND column_name = 'membership_operation_id'`,
-  )
-  return rows[0]?.isNullable === 'YES'
 }
 
 export async function createTestLinkedRefundReceiptRequest(

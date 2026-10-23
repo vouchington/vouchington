@@ -1,7 +1,7 @@
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_restriction_administrator_lifts (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  copyright_restriction_id uuid NOT NULL CONSTRAINT uq_copyright_restriction_administrator_lifts__restriction_id UNIQUE CONSTRAINT fk_copyright_restriction_administrator_lifts__restriction REFERENCES copyright_restrictions(id) ON DELETE RESTRICT,
+  copyright_restriction_id uuid NOT NULL CONSTRAINT uq_copyright_restriction_administrator_lifts__restriction_id UNIQUE CONSTRAINT fk_copyright_restriction_administrator_lifts__restriction REFERENCES copyright_restrictions(id) ON DELETE CASCADE,
   lifted_at timestamptz NOT NULL,
   lifted_by_id uuid REFERENCES users(id) ON DELETE SET NULL,
   rationale_ciphertext text NOT NULL CONSTRAINT chk_copyright_restrictio_administra_lifts__rationale_ciphertext CHECK (char_length(rationale_ciphertext) BETWEEN 1 AND 1048576),
@@ -36,8 +36,8 @@ ALTER TABLE copyright_notice_appeal_recommendations
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_appeal_reviews (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  copyright_notice_submission_id uuid NOT NULL CONSTRAINT fk_copyright_notice_appeal_reviews__submission REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT,
-  copyright_restriction_id uuid NOT NULL REFERENCES copyright_restrictions(id) ON DELETE RESTRICT,
+  copyright_notice_submission_id uuid NOT NULL CONSTRAINT fk_copyright_notice_appeal_reviews__submission REFERENCES copyright_notice_submissions(id) ON DELETE CASCADE,
+  copyright_restriction_id uuid NOT NULL REFERENCES copyright_restrictions(id) ON DELETE CASCADE,
   copyright_notice_appeal_recommendation_id uuid,
   reviewed_at timestamptz NOT NULL,
   reviewed_by_id uuid REFERENCES users(id) ON DELETE SET NULL,
@@ -48,16 +48,16 @@ CREATE TABLE copyright_notice_appeal_reviews (
 
   CONSTRAINT uq_copyrig_notice_appeal_reviews__submission_id__restriction_id UNIQUE (copyright_notice_submission_id, copyright_restriction_id),
   CONSTRAINT fk_copyright_notice_appeal_reviews__recommendation__submission FOREIGN KEY (copyright_notice_appeal_recommendation_id, copyright_notice_submission_id)
-    REFERENCES copyright_notice_appeal_recommendations(id, copyright_notice_submission_id) ON DELETE RESTRICT,
+    REFERENCES copyright_notice_appeal_recommendations(id, copyright_notice_submission_id) ON DELETE CASCADE,
   CHECK ((copyright_notice_appeal_recommendation_id IS NULL) = (manual_fallback_reason_ciphertext IS NOT NULL))
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_counter_notice_reviews (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  copyright_notice_submission_id uuid NOT NULL CONSTRAINT uq_copyright_notice_counter_notice_reviews__submission_id UNIQUE CONSTRAINT fk_copyright_notice_counter_notice_reviews__submission REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT,
-  copyright_notice_submission_assessment_id uuid NOT NULL CONSTRAINT uq_copyri_notice_counte_notice_review__submission_assessment_id UNIQUE CONSTRAINT fk_copyrig_notice_counter_notice_reviews__submission_assessment REFERENCES copyright_notice_submission_assessments(id) ON DELETE RESTRICT,
-  copyright_notice_deadline_id uuid CONSTRAINT uq_copyright_notice_counter_notice_reviews__deadline_id UNIQUE CONSTRAINT fk_copyright_notice_counter_notice_reviews__deadline REFERENCES copyright_notice_deadlines(id) ON DELETE RESTRICT,
+  copyright_notice_submission_id uuid NOT NULL CONSTRAINT uq_copyright_notice_counter_notice_reviews__submission_id UNIQUE CONSTRAINT fk_copyright_notice_counter_notice_reviews__submission REFERENCES copyright_notice_submissions(id) ON DELETE CASCADE,
+  copyright_notice_submission_assessment_id uuid NOT NULL CONSTRAINT uq_copyri_notice_counte_notice_review__submission_assessment_id UNIQUE CONSTRAINT fk_copyrig_notice_counter_notice_reviews__submission_assessment REFERENCES copyright_notice_submission_assessments(id) ON DELETE CASCADE,
+  copyright_notice_deadline_id uuid CONSTRAINT uq_copyright_notice_counter_notice_reviews__deadline_id UNIQUE CONSTRAINT fk_copyright_notice_counter_notice_reviews__deadline REFERENCES copyright_notice_deadlines(id) ON DELETE CASCADE,
   reviewed_at timestamptz NOT NULL,
   reviewed_by_id uuid REFERENCES users(id) ON DELETE SET NULL,
   is_accepted boolean NOT NULL,

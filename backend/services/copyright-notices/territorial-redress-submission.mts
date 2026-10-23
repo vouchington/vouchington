@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { beginTransaction } from '@data-stores/psql'
 import { encryptSecret } from '@modules/token-secrets'
 import { copyrightPlacementPartiesSql } from '@services/media-delivery-safety/copyright-placement-parties'
@@ -31,6 +32,33 @@ export async function submitTerritorialCopyrightRedress(
   assertIdempotencyKey(idempotencyKey)
   const text = assertBoundedText(explanation, 50_000, 'explanation is required')
   await using transaction = await beginTransaction()
+  const requesterIdentitySha256 = createHash('sha256').update(actor.id).digest()
+  await transaction(sql`/* submitTerritorialCopyrightRedress:identityLock */
+    SELECT pg_advisory_xact_lock(hashtextextended(
+      ${`territorial-redress:${actor.id}:${idempotencyKey}`}, 0))`)
+  const { rows: retained } = await transaction<{ response_snapshot: unknown }>(sql`
+    /* submitTerritorialCopyrightRedress:retained */
+    SELECT response_snapshot FROM copyright_territorial_redress_retained_identities
+    WHERE requester_identity_sha256 = ${requesterIdentitySha256}
+      AND jurisdiction = ${jurisdiction} AND idempotency_key = ${idempotencyKey}`)
+  if (retained[0]) {
+    const snapshot = retained[0].response_snapshot
+    assert(
+      snapshot && typeof snapshot === 'object' && !Array.isArray(snapshot),
+      500,
+      'Invalid retained territorial redress receipt',
+    )
+    const result = snapshot as Record<string, unknown>
+    assert(
+      typeof result.id === 'string' &&
+        result.notice_id === noticeId &&
+        typeof result.decision_id === 'string',
+      409,
+      'Idempotency-Key was reused',
+    )
+    await transaction.commit()
+    return { id: result.id, is_duplicate: true }
+  }
   await transaction(sql`/* submitTerritorialCopyrightRedress:lockNotice */
     SELECT id FROM copyright_notices WHERE id = ${noticeId} FOR UPDATE
   `)
@@ -106,6 +134,12 @@ export async function submitTerritorialCopyrightRedress(
   )
   const created = rows[0]
   assert(created, 500, labels.redressFailed)
+  await transaction(sql`/* retainTerritorialRedressReceiptIdentity */
+    INSERT INTO copyright_territorial_redress_retained_identities (
+      requester_identity_sha256, jurisdiction, idempotency_key, response_snapshot
+    ) VALUES (${requesterIdentitySha256}, ${jurisdiction}, ${idempotencyKey},
+      jsonb_build_object('id', ${created.id}::text, 'notice_id', ${noticeId}::text,
+        'decision_id', ${parent.id}::text))`)
   await transaction.commit()
   return { id: created.id, is_duplicate: false }
 }

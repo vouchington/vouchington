@@ -98,8 +98,9 @@ payment/support audit without retaining either deleted account identifier.
    prior username, clears completed provider work keys to `NULL` while retaining non-identifying
    audit metadata and timestamps, and deletes the fully recomputed relation-impact worklist. A
    completed relation-effect pointer may then become `NULL`; pending effects require their typed
-   same-request impact pointer. A separate bounded retention sweep reclaims unreferenced retained
-   relation identities without expiring request or audit history.
+   same-request impact pointer. Completed deletion proof is retained for three years, then a bounded
+   cleanup removes the request and its completed child work. A separate bounded retention sweep can
+   then reclaim retained identities that no surviving record references.
 
 Stripe customer anonymization uses a request-derived provider idempotency key. The per-provider
 egress flag selects the direct or HTTP CONNECT transport without changing the operation or retrying

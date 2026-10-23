@@ -4,6 +4,7 @@ import {
   DATA_RETENTION_MAX_VALUES,
   DEFAULT_DATA_RETENTION_CONFIG,
   dataRetentionConfig,
+  getCopyrightMinimalPurgeLimits,
   getDataRetentionLimits,
 } from '../config.mts'
 
@@ -47,12 +48,32 @@ describe('getDataRetentionLimits', () => {
   })
 
   it('keeps every default finite, positive and within its hard maximum', () => {
-    for (const field of ['batch_size', 'max_batches_per_run'] as const) {
+    for (const field of Object.keys(
+      DEFAULT_DATA_RETENTION_CONFIG,
+    ) as (keyof typeof DEFAULT_DATA_RETENTION_CONFIG)[]) {
       expect(Number.isInteger(DEFAULT_DATA_RETENTION_CONFIG[field])).toBe(true)
       expect(DEFAULT_DATA_RETENTION_CONFIG[field]).toBeGreaterThan(0)
       expect(DEFAULT_DATA_RETENTION_CONFIG[field]).toBeLessThanOrEqual(
         DATA_RETENTION_MAX_VALUES[field],
       )
     }
+  })
+
+  it('applies validated limits to copyright minimal-record pages', () => {
+    expect(getCopyrightMinimalPurgeLimits()).toEqual({
+      caseBatchSize: DEFAULT_DATA_RETENTION_CONFIG.copyright_minimal_case_batch_size,
+      pageSize: DEFAULT_DATA_RETENTION_CONFIG.copyright_minimal_page_size,
+      maxPagesPerCase: DEFAULT_DATA_RETENTION_CONFIG.copyright_minimal_max_pages_per_case,
+    })
+    overrideDynamicConfigFieldsForTest(dataRetentionConfig, {
+      copyright_minimal_case_batch_size: 7,
+      copyright_minimal_page_size: 3,
+      copyright_minimal_max_pages_per_case: 2,
+    })
+    expect(getCopyrightMinimalPurgeLimits()).toEqual({
+      caseBatchSize: 7,
+      pageSize: 3,
+      maxPagesPerCase: 2,
+    })
   })
 })

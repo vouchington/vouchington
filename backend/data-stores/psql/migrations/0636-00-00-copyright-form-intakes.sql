@@ -6,8 +6,8 @@
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_form_intakes (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  copyright_notice_id uuid NOT NULL UNIQUE REFERENCES copyright_notices(id) ON DELETE RESTRICT,
-  copyright_notice_submission_id uuid NOT NULL CONSTRAINT uq_copyright_notice_form_intakes__submission_id UNIQUE CONSTRAINT fk_copyright_notice_form_intakes__submission REFERENCES copyright_notice_submissions(id) ON DELETE RESTRICT,
+  copyright_notice_id uuid NOT NULL UNIQUE REFERENCES copyright_notices(id) ON DELETE CASCADE,
+  copyright_notice_submission_id uuid NOT NULL CONSTRAINT uq_copyright_notice_form_intakes__submission_id UNIQUE CONSTRAINT fk_copyright_notice_form_intakes__submission REFERENCES copyright_notice_submissions(id) ON DELETE CASCADE,
   requester_user_id uuid REFERENCES users(id) ON DELETE SET NULL,
   requester_identity_sha256 bytea NOT NULL CHECK (octet_length(requester_identity_sha256) = 32),
   idempotency_key uuid NOT NULL,
@@ -20,10 +20,45 @@ CREATE TABLE copyright_notice_form_intakes (
   CONSTRAINT uq_cop_not_for_inta__requester_identity_sha256__idempotency_key UNIQUE (requester_identity_sha256, idempotency_key)
 );
 
+-- The receipt identity survives evidence erasure and eventual case deletion. The response
+-- snapshot is limited to public receipt IDs; it contains no original form or account data.
+CREATE TABLE copyright_notice_form_retained_identities (
+  requester_identity_sha256 bytea NOT NULL CHECK (octet_length(requester_identity_sha256) = 32),
+  idempotency_key uuid NOT NULL,
+  request_sha256 bytea NOT NULL CHECK (octet_length(request_sha256) = 32),
+  response_snapshot jsonb NOT NULL CHECK (
+    jsonb_typeof(response_snapshot) = 'object'
+    AND response_snapshot ?& ARRAY['id', 'copyright_notice_id', 'copyright_notice_submission_id']
+    AND jsonb_typeof(response_snapshot->'id') = 'string'
+    AND jsonb_typeof(response_snapshot->'copyright_notice_id') = 'string'
+    AND jsonb_typeof(response_snapshot->'copyright_notice_submission_id') = 'string'
+  ),
+  PRIMARY KEY (requester_identity_sha256, idempotency_key)
+);
+COMMENT ON TABLE copyright_notice_form_retained_identities IS 'Compact immutable form admission identity and public receipt IDs; retained IDs do not authorize an expired case.';
+CREATE TRIGGER trigger_copyright_notice_form_retained_identities_immutable
+BEFORE UPDATE OR DELETE ON copyright_notice_form_retained_identities FOR EACH ROW
+EXECUTE FUNCTION fn_reject_mutation();
+
+CREATE FUNCTION fn_reject_replayed_copyright_form_identity()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  PERFORM pg_advisory_xact_lock(hashtextextended(encode(NEW.requester_identity_sha256, 'hex'), 0));
+  IF EXISTS (SELECT 1 FROM copyright_notice_form_retained_identities identity
+    WHERE identity.requester_identity_sha256 = NEW.requester_identity_sha256
+      AND identity.idempotency_key = NEW.idempotency_key) THEN
+    RAISE EXCEPTION 'copyright form identity is retained' USING ERRCODE = 'unique_violation';
+  END IF;
+  RETURN NEW;
+END $$;
+CREATE TRIGGER trigger_copyright_notice_form_intakes_retained_identity
+BEFORE INSERT ON copyright_notice_form_intakes FOR EACH ROW
+EXECUTE FUNCTION fn_reject_replayed_copyright_form_identity();
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_form_screenings (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  copyright_notice_form_intake_id uuid NOT NULL CONSTRAINT fk_copyright_notice_form_screenings__intake REFERENCES copyright_notice_form_intakes(id) ON DELETE RESTRICT,
+  copyright_notice_form_intake_id uuid NOT NULL CONSTRAINT fk_copyright_notice_form_screenings__intake REFERENCES copyright_notice_form_intakes(id) ON DELETE CASCADE,
   input_sha256 bytea NOT NULL CHECK (octet_length(input_sha256) = 32),
   prompt_version text NOT NULL CHECK (char_length(prompt_version) BETWEEN 1 AND 100),
   model text NOT NULL CHECK (char_length(model) BETWEEN 1 AND 255),
@@ -39,7 +74,7 @@ CREATE TYPE copyright_notice_form_screening_attempt_states AS ENUM ('pending', '
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_form_screening_attempts (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  copyright_notice_form_intake_id uuid NOT NULL CONSTRAINT fk_copyright_notice_form_screening_attempts__intake REFERENCES copyright_notice_form_intakes(id) ON DELETE RESTRICT,
+  copyright_notice_form_intake_id uuid NOT NULL CONSTRAINT fk_copyright_notice_form_screening_attempts__intake REFERENCES copyright_notice_form_intakes(id) ON DELETE CASCADE,
   attempt_number integer NOT NULL CHECK (attempt_number > 0),
   copyright_notice_form_screening_id uuid,
   started_at timestamptz NOT NULL DEFAULT clock_timestamp(),
@@ -55,7 +90,7 @@ CREATE TABLE copyright_notice_form_screening_attempts (
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   CONSTRAINT uq_copyri_notice_form_screen_attempt__intake_id__attempt_number UNIQUE (copyright_notice_form_intake_id, attempt_number),
   CONSTRAINT fk_copyright_notice_form_screening_attempts__intake__screening FOREIGN KEY (copyright_notice_form_intake_id, copyright_notice_form_screening_id)
-    REFERENCES copyright_notice_form_screenings(copyright_notice_form_intake_id, id) ON DELETE RESTRICT,
+    REFERENCES copyright_notice_form_screenings(copyright_notice_form_intake_id, id) ON DELETE CASCADE,
   UNIQUE (copyright_notice_form_intake_id, id),
   CHECK ((completed_at IS NULL) = (copyright_notice_form_screening_id IS NULL)),
   CHECK (num_nonnulls(completed_at, failed_at) <= 1),
@@ -71,6 +106,9 @@ CREATE INDEX idx_copyright_notice_form_screening_attempts__latest ON copyright_n
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE FUNCTION fn_reject_copyright_screening_attempt_rewind() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
+  IF TG_OP = 'DELETE' AND fn_project_copyright_minimal_purge_child_allowed(TG_TABLE_NAME, to_jsonb(OLD)) THEN
+    RETURN OLD;
+  END IF;
   IF TG_OP = 'DELETE' OR OLD.completed_at IS NOT NULL OR OLD.failed_at IS NOT NULL
     OR (to_jsonb(NEW) - ARRAY['execution_started_at', 'completed_at', 'failed_at', 'copyright_notice_form_screening_id', 'state', 'execution_token'])
       IS DISTINCT FROM (to_jsonb(OLD) - ARRAY['execution_started_at', 'completed_at', 'failed_at', 'copyright_notice_form_screening_id', 'state', 'execution_token'])
@@ -133,7 +171,7 @@ FOR EACH ROW EXECUTE FUNCTION fn_project_copyright_form_screening_work();
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE copyright_notice_form_intake_reviews (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
-  copyright_notice_form_intake_id uuid NOT NULL CONSTRAINT uq_copyright_notice_form_intake_reviews__intake_id UNIQUE CONSTRAINT fk_copyright_notice_form_intake_reviews__intake REFERENCES copyright_notice_form_intakes(id) ON DELETE RESTRICT,
+  copyright_notice_form_intake_id uuid NOT NULL CONSTRAINT uq_copyright_notice_form_intake_reviews__intake_id UNIQUE CONSTRAINT fk_copyright_notice_form_intake_reviews__intake REFERENCES copyright_notice_form_intakes(id) ON DELETE CASCADE,
   reviewed_at timestamptz NOT NULL,
   reviewed_by_id uuid REFERENCES users(id) ON DELETE SET NULL,
   is_accepted boolean NOT NULL,

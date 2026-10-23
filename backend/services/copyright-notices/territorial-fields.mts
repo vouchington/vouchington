@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import assert from 'http-assert'
 import { isUUID } from '@modules/utils'
+import { isEmailAddress } from '@ts-shared/utils/validation-core'
 
 export const TERRITORIAL_COMPLAINT_WINDOW_MONTHS = 6
 
@@ -84,4 +85,40 @@ export function territorialRequestSha256(
 
 export function sameSha256(stored: Uint8Array, expected: Buffer): boolean {
   return Buffer.from(stored).equals(expected)
+}
+
+export function noticeFields(
+  request: TerritorialNoticeRequest | EuTerritorialNoticeRequest,
+  jurisdiction: TerritorialCopyrightJurisdiction,
+): TerritorialNoticeRequest | EuTerritorialNoticeRequest {
+  const base = {
+    contact: assertBoundedText(request.contact, 4096, 'contact is required'),
+    contentDescription: assertBoundedText(
+      request.contentDescription,
+      50_000,
+      'content_description is required',
+    ),
+    grounds: assertBoundedText(request.grounds, 50_000, 'grounds are required'),
+    hostedUseUrl: assertBoundedText(request.hostedUseUrl, 2048, 'hosted_use_url is required'),
+  }
+  if (jurisdiction === 'uk') {
+    assert(
+      !('notifierName' in request) &&
+        !('notifierEmail' in request) &&
+        !('goodFaithStatement' in request),
+      422,
+      'UK notice must not include EU fields',
+    )
+    return base
+  }
+  assert('notifierName' in request, 422, 'notifier_name is required')
+  assert(request.goodFaithStatement, 422, 'has_good_faith_statement must be true')
+  const notifierEmail = assertBoundedText(request.notifierEmail, 254, 'notifier_email is required')
+  assert(isEmailAddress(notifierEmail), 422, 'notifier_email must be an email address')
+  return {
+    ...base,
+    notifierName: assertBoundedText(request.notifierName, 200, 'notifier_name is required'),
+    notifierEmail,
+    goodFaithStatement: true,
+  }
 }

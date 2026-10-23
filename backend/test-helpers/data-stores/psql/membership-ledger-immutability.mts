@@ -1,4 +1,3 @@
-import { createTestRetainedMembershipIdentity } from '../../entities/retained-identities.mts'
 import { randomUUID } from 'node:crypto'
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
@@ -59,8 +58,16 @@ export function attemptTestMembershipGrantMutation(
 export async function createTestImmutableMembershipOperation(
   idempotencyKey: string,
   collisionAt: Date | null = null,
+  requestedAt = new Date(),
+  applicationId?: string,
 ): Promise<string> {
-  return createTestMembershipOperation(idempotencyKey, collisionAt, 'cancel_source')
+  return createTestMembershipOperation(
+    idempotencyKey,
+    collisionAt,
+    'cancel_source',
+    requestedAt,
+    applicationId,
+  )
 }
 export async function createTestRefundMembershipOperation(idempotencyKey: string): Promise<string> {
   return createTestMembershipOperation(idempotencyKey, null, 'automatic_refund')
@@ -69,9 +76,13 @@ async function createTestMembershipOperation(
   idempotencyKey: string,
   collisionAt: Date | null,
   operationKind: 'automatic_refund' | 'cancel_source',
+  requestedAt = new Date(),
+  explicitApplicationId?: string,
 ): Promise<string> {
   const user = await createLocalTestUser()
-  const applicationId = `${operationKind === 'automatic_refund' ? 'ledger-lease' : 'ledger-immutable'}-${randomUUID()}`
+  const applicationId =
+    explicitApplicationId ??
+    `${operationKind === 'automatic_refund' ? 'ledger-lease' : 'ledger-immutable'}-${randomUUID()}`
   const { rows } = await write<{ id: string }>(sql`/* createTestMembershipOperation */
     WITH lineage AS (INSERT INTO membership_provider_lineages (membership_provider_context_id, provider_lineage_id)
       VALUES (fn_upsert_membership_provider_context_id('stripe', 'test', ${applicationId}), ${`lineage-${randomUUID()}`}) RETURNING id),
@@ -79,9 +90,9 @@ async function createTestMembershipOperation(
     source AS (INSERT INTO membership_sources (source_kind, membership_provider_lineage_id) SELECT 'direct', id FROM lineage RETURNING id, membership_provider_lineage_id)
     INSERT INTO membership_operations (membership_source_id, membership_provider_lineage_id,
       membership_lineage_binding_id, membership_provider_context_id, operation_kind,
-      idempotency_key, collision_at, qualifying_allocation_minor_units,
+      idempotency_key, requested_at, collision_at, qualifying_allocation_minor_units,
       remaining_refundable_minor_units, currency_code, period_started_at, period_ends_at)
-    SELECT source.id, source.membership_provider_lineage_id, binding.id, fn_upsert_membership_provider_context_id('stripe', 'test', ${applicationId}), ${operationKind}, ${idempotencyKey}, ${collisionAt},
+    SELECT source.id, source.membership_provider_lineage_id, binding.id, fn_upsert_membership_provider_context_id('stripe', 'test', ${applicationId}), ${operationKind}, ${idempotencyKey}, ${requestedAt}, ${collisionAt},
       CASE WHEN ${operationKind} = 'automatic_refund' THEN 100 END,
       CASE WHEN ${operationKind} = 'automatic_refund' THEN 100 END,
       CASE WHEN ${operationKind} = 'automatic_refund' THEN 'usd'::currency_codes END,
@@ -89,6 +100,32 @@ async function createTestMembershipOperation(
       CASE WHEN ${operationKind} = 'automatic_refund' THEN CURRENT_TIMESTAMP END
     FROM source INNER JOIN binding ON binding.membership_provider_lineage_id = source.membership_provider_lineage_id RETURNING id`)
   return rows[0]!.id
+}
+
+export async function completeTestMembershipOperationAt(
+  id: string,
+  completedAt: Date,
+): Promise<void> {
+  await claimTestMembershipOperation(id)
+  await write(sql`/* completeTestMembershipOperationAt */
+    UPDATE membership_operations SET completed_at = ${completedAt} WHERE id = ${id}`)
+}
+
+export async function getTestCancellationClaimContext(id: string): Promise<{
+  membershipSourceId: string
+  membershipLineageBindingId: string
+  membershipProviderLineageId: string
+}> {
+  const { rows } = await read<{
+    membershipSourceId: string
+    membershipLineageBindingId: string
+    membershipProviderLineageId: string
+  }>(sql`/* getTestCancellationClaimContext */
+    SELECT membership_source_id AS "membershipSourceId",
+      membership_lineage_binding_id AS "membershipLineageBindingId",
+      membership_provider_lineage_id AS "membershipProviderLineageId"
+    FROM membership_operations WHERE id = ${id}`)
+  return rows[0]!
 }
 
 export function claimTestMembershipOperation(
@@ -159,41 +196,4 @@ export function attemptTestRefundMembershipOperationTransition(
         sql`/* setTestRemainingRefundable */ UPDATE membership_operations SET remaining_refundable_minor_units = 50 WHERE id = ${operationId}`,
       )
   }
-}
-
-export async function createTestImmutableLineageBinding(): Promise<string> {
-  const user = await createLocalTestUser()
-  const applicationId = `binding-immutable-${randomUUID()}`
-  const { rows } = await write<{ id: string }>(sql`/* createImmutableTestBinding */
-    WITH lineage AS (INSERT INTO membership_provider_lineages (membership_provider_context_id, provider_lineage_id) VALUES (fn_upsert_membership_provider_context_id('stripe', 'test', ${applicationId}), ${`lineage-${randomUUID()}`}) RETURNING id)
-    INSERT INTO membership_lineage_bindings (membership_provider_lineage_id, user_id) SELECT id, ${user.id} FROM lineage RETURNING id`)
-  return rows[0]!.id
-}
-
-export function setTestLineageBindingOriginatingInvoice(
-  bindingId: string,
-  invoiceId: string,
-): Promise<QueryResult> {
-  return write(
-    sql`/* setTestLineageBindingOriginatingInvoice */ UPDATE membership_lineage_bindings SET originating_invoice_id = ${invoiceId} WHERE id = ${bindingId}`,
-  )
-}
-
-export async function createTestImmutableMembershipChange(): Promise<string> {
-  const changeId = randomUUID()
-  await write(
-    sql`/* createImmutableTestMembershipChange */ WITH actor AS (INSERT INTO users DEFAULT VALUES RETURNING id) INSERT INTO membership_changes (id, membership_id, user_id, change_type, note) SELECT ${changeId}, ${await createTestRetainedMembershipIdentity()}, id, 'admin_grant', 'original' FROM actor`,
-  )
-  return changeId
-}
-
-export function mutateTestMembershipChange(changeId: string): Promise<QueryResult> {
-  return write(
-    sql`/* mutateTestMembershipChange */ UPDATE membership_changes SET note = 'rewritten' WHERE id = ${changeId}`,
-  )
-}
-export function deleteTestMembershipChange(changeId: string): Promise<QueryResult> {
-  return write(
-    sql`/* deleteTestMembershipChange */ DELETE FROM membership_changes WHERE id = ${changeId}`,
-  )
 }

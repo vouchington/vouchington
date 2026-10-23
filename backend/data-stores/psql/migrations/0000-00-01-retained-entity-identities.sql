@@ -1,8 +1,15 @@
 -- Canonical identity owners outlive their live entity rows. They contain no authorization facts.
 CREATE TABLE IF NOT EXISTS retained_user_identities (
-  id UUID PRIMARY KEY
+  id UUID PRIMARY KEY,
+  purged_at TIMESTAMPTZ,
+  legal_retention_mutation_sequence BIGINT NOT NULL DEFAULT 0
 );
 COMMENT ON TABLE retained_user_identities IS 'Concrete user identity owner that outlives the live row while durable references remain; never authorizes actions.';
+COMMENT ON COLUMN retained_user_identities.purged_at IS 'Time final user deletion removed the live account; factual retention clock only, never authorization.';
+COMMENT ON COLUMN retained_user_identities.legal_retention_mutation_sequence IS 'Latest committed preservation-hold or final-account-purge sequence; a compact current fact for bounded copyright case proof.';
+CREATE INDEX idx_retained_user_identities__legal_retention_mutation
+  ON retained_user_identities(legal_retention_mutation_sequence, id)
+  WHERE legal_retention_mutation_sequence > 0;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS retained_membership_identities (

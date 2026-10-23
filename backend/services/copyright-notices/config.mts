@@ -28,10 +28,8 @@ export const copyrightConfig = new DynamicConfig({
     automaticProvisionalWithholding: false,
     // 0 means unset: no review-target page until an operator records an approved target.
     reviewTargetMinutes: 0,
-    evidenceRetentionDeletion: false,
-    // 0 means unset: nothing is deleted until the owner approves a retention period, even when the
-    // switch is on.
-    evidenceRetentionDays: 0,
+    evidenceRetentionDeletion: true,
+    evidenceRetentionDays: 1095,
     emailThreadGraphMaxRows: 1000,
     staydownMatching: false,
     trustedFlaggerPriority: false,
@@ -101,7 +99,7 @@ export async function getCopyrightReviewTargetMinutes(): Promise<number | null> 
   return typeof minutes === 'number' && minutes > 0 ? minutes : null
 }
 
-/** Whether the evidence retention-deletion sweep may run. Off by default; read the runbook first. */
+/** Whether the evidence retention-deletion sweep may run. */
 export async function isCopyrightEvidenceRetentionDeletionEnabled(): Promise<boolean> {
   await copyrightConfig.waitForInitialization()
   return copyrightConfig.getFields().evidenceRetentionDeletion === true

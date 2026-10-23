@@ -112,6 +112,24 @@ export const operationalDynamicConfigRegistryEntries = [
         maxValue: DATA_RETENTION_MAX_VALUES.max_batches_per_run,
         integer: true,
       },
+      copyright_minimal_case_batch_size: {
+        description: 'Maximum new and unfinished copyright cases selected per retention run.',
+        minValue: 1,
+        maxValue: DATA_RETENTION_MAX_VALUES.copyright_minimal_case_batch_size,
+        integer: true,
+      },
+      copyright_minimal_page_size: {
+        description: 'Maximum case-owned rows deleted in one copyright minimal-record page.',
+        minValue: 1,
+        maxValue: DATA_RETENTION_MAX_VALUES.copyright_minimal_page_size,
+        integer: true,
+      },
+      copyright_minimal_max_pages_per_case: {
+        description: 'Maximum committed child pages per copyright case and retention run.',
+        minValue: 1,
+        maxValue: DATA_RETENTION_MAX_VALUES.copyright_minimal_max_pages_per_case,
+        integer: true,
+      },
     },
   }),
   defineDynamicConfigNamespace({

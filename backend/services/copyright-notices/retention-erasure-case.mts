@@ -4,10 +4,8 @@ import sql from 'sql-template-strings'
 import { copyrightRetentionEligibleSql } from './retention-erasure-eligibility.mts'
 import { deleteCopyrightEvidenceObjectVersions } from './retention-erasure-s3.mts'
 import { lockCopyrightRetentionCaseThreadTokens } from './retention-erasure-thread-tokens.mts'
-import {
-  COPYRIGHT_RETENTION_ERASURE,
-  eraseCopyrightRetentionTableSql,
-} from './retention-erasure-spec.mts'
+import { COPYRIGHT_RETENTION_ERASURE } from './retention-erasure-spec.mts'
+import { eraseCopyrightRetentionTableSql } from './retention-erasure-update-sql.mts'
 
 const CONNECTION_TIMEOUT_MS = 5_000
 const STATEMENT_TIMEOUT_MS = 20_000
@@ -105,9 +103,27 @@ export async function eraseCopyrightRetentionCase(
       .append(sql`SELECT id FROM eligible WHERE id = ${noticeId}`),
   )
   if (stillEligible.length === 0) return 'ineligible'
+  // Capture the substantive case clock before erasure overwrites ciphertext rows and their
+  // updated_at stamps. The minimal-record window must not restart for this technical write.
+  const { rows: legalClocks } = await transaction<{ legal_clock_at: Date }>(sql`
+    /* captureCopyrightMinimalLegalClock */
+    SELECT fn_project_copyright_minimal_record_legal_clock(${noticeId}) AS legal_clock_at`)
+  const legalClockAt = legalClocks[0]?.legal_clock_at
+  if (!legalClockAt) throw new Error('Copyright legal clock missing for eligible case')
   const exclusiveObjects = await listCopyrightRetentionEvidenceKeys(noticeId, transaction)
   const keys = exclusiveObjects.map(row => row.key)
   await deleteCopyrightEvidenceObjectVersions(keys)
+  // The per-SES locks above fence a concurrent inbound copy. Once evidence versions are gone,
+  // keep only the provider identity and digest so a late replay cannot copy the MIME back.
+  await transaction(sql`/* retainErasedCopyrightEmailIdentities */
+    INSERT INTO copyright_notice_email_retained_identities (
+      amazon_ses_message_id, raw_sha256, raw_byte_size
+    ) SELECT intake.amazon_ses_message_id, intake.raw_sha256, intake.raw_byte_size
+    FROM copyright_notice_email_intake_notice_links link
+    JOIN copyright_notice_email_intakes intake
+      ON intake.id = link.copyright_notice_email_intake_id
+    WHERE link.copyright_notice_id = ${noticeId}
+    ON CONFLICT ON CONSTRAINT copyright_notice_email_retained_identities_pkey DO NOTHING`)
   await transaction(
     sql`/* enableCopyrightRetentionErasure */ SET LOCAL app.copyright_retention_erasure = 'on'`,
   )
@@ -126,8 +142,9 @@ export async function eraseCopyrightRetentionCase(
     DELETE FROM copyright_notice_storage_objects
     WHERE id = ANY(${exclusiveObjects.map(row => row.id)}::uuid[])`)
   await transaction(sql`/* insertCopyrightRetentionErasure */
-    INSERT INTO copyright_notice_retention_erasures (copyright_notice_id, retention_days, erased_object_count)
-    VALUES (${noticeId}, ${options.retentionDays}, ${keys.length})`)
+    INSERT INTO copyright_notice_retention_erasures (
+      copyright_notice_id, retention_days, erased_object_count, legal_clock_at)
+    VALUES (${noticeId}, ${options.retentionDays}, ${keys.length}, ${legalClockAt})`)
   await transaction.commit()
   return 'erased'
 }

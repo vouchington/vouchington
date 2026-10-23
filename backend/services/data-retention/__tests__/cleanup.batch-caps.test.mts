@@ -43,6 +43,9 @@ const DAY_MS = 24 * 60 * 60 * 1000
 function emptyScopedOptions(now: Date) {
   const emptyWindow = { lowerBoundDate: new Date(now.getTime() + DAY_MS), now }
   return {
+    legalRecords: { recordIds: [] },
+    copyrightMinimalRecords: { noticeIds: [] },
+    paymentLedgers: { recordIds: [] },
     retainedIdentityRootIds: {},
     retainedRelationIdentityKeys: {},
     retainedMediaBindingIds: [],

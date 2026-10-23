@@ -63,7 +63,7 @@ async function selectCandidates(options: {
 }
 
 /**
- * Erases the evidence and personal data of US DMCA cases whose retention period has run out, at
+ * Erases the evidence and personal data of copyright cases whose retention period has run out, at
  * most `limit` per run, keeping the minimal record the §512(i) repeat-infringer counts need. It
  * does nothing, and reads nothing else, while `copyright.evidenceRetentionDeletion` is off or
  * `copyright.evidenceRetentionDays` is unset. A case that fails (a bucket refusal, a lock timeout)
