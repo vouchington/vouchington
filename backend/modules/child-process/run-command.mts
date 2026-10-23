@@ -66,15 +66,15 @@ export async function runCommand(options: RunCommandOptions): Promise<{ stderr: 
   })
 
   const onAbort = () => {
-    if (child.exitCode !== null || child.signalCode !== null) return
     aborted = true
     killChild(child)
+    if (!options.stdout?.writableFinished) options.stdout?.destroy()
   }
   options.signal?.addEventListener('abort', onAbort, { once: true })
   const timer = setTimeout(() => {
-    if (child.exitCode !== null || child.signalCode !== null) return
     timedOut = true
     killChild(child)
+    if (!options.stdout?.writableFinished) options.stdout?.destroy()
   }, options.timeoutMs)
   timer.unref()
 
@@ -118,7 +118,7 @@ async function settleStdout(
 ): Promise<void> {
   if (!stdout) return
   try {
-    await finished(stdout)
+    await finished(stdout, { readable: false })
   } catch (err) {
     onError(err instanceof Error ? err : new Error(String(err)))
   }

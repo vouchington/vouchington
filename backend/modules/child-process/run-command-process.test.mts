@@ -19,7 +19,7 @@ describe('runCommand process edges', () => {
     expect(broken.kill).toHaveBeenCalledWith('SIGKILL')
   })
 
-  it('kills the child when a streamed stdin fails, and ignores a closed stdout pipe', () => {
+  it('kills the child when a streamed stdin fails, and reports stdout source errors', () => {
     const child = fakeChild()
     const report = vi.fn<(err: Error) => void>()
     const source = new PassThrough()
@@ -33,7 +33,10 @@ describe('runCommand process edges', () => {
     pipeStdout(output, new PassThrough(), stdoutReport)
     output.stdout?.emit('error', errno('ERR_STREAM_PREMATURE_CLOSE'))
     output.stdout?.emit('error', errno('EIO'))
-    expect(stdoutReport).toHaveBeenCalledOnce()
+    expect(stdoutReport).toHaveBeenCalledWith(
+      expect.objectContaining({ code: 'ERR_STREAM_PREMATURE_CLOSE' }),
+    )
+    expect(stdoutReport).toHaveBeenCalledWith(expect.objectContaining({ code: 'EIO' }))
 
     const destination = new PassThrough()
     const destinationReport = vi.fn<(err: Error) => void>()
