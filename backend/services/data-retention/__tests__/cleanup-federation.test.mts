@@ -1,13 +1,16 @@
 import { describe, expect, it, onTestFinished } from 'vitest'
 import {
   createTestUserDirect,
+  countFederationReplayDecoysForTest,
   deleteFederationInboxFixturesForTest,
   insertFederationRetentionFixturesForTest,
+  insertFederationReplayDecoysForTest,
   insertTestPost,
   prepareFederationDistributionReplayForTest,
   readFederationRetentionFixtureStateForTest,
   readFollowerDistributionRetentionCursorForTest,
   recordFederationInboxActivityReplayForTest,
+  resetActivityPubReplayRetentionCursorForTest,
   resetFollowerDistributionRetentionCursorForTest,
   type FederationRetentionFixtureIds,
 } from '@voucha/test-helpers'
@@ -39,6 +42,23 @@ describe('federation retention', () => {
     await expect(cleanupFederationRetention({ batchSize: 0, maxBatches: 1 })).rejects.toThrow(
       'batchSize must be a positive safe integer',
     )
+
+    await expect(
+      cleanupActivityPubReplayLedger('inbox', {
+        batchSize: 1,
+        maxBatches: 1,
+        scope: { activityIds: [] },
+      }),
+    ).rejects.toThrow('A scoped replay sweep requires a borrowed transaction')
+    await withPostgresTransactionForTest(async query => {
+      await expect(
+        cleanupActivityPubReplayLedger('outbound', {
+          batchSize: 1,
+          maxBatches: 1,
+          borrowedQuery: query,
+        }),
+      ).rejects.toThrow('A borrowed replay sweep requires a source-row scope')
+    })
   })
 
   it('preserves replay identities while continuing capped terminal-follower cleanup', async () => {
@@ -175,56 +195,68 @@ describe('federation retention', () => {
       markdown: '',
     })
     const now = new Date()
-    let ids: FederationRetentionFixtureIds | undefined
     onTestFinished(async () => {
-      if (ids) {
-        const ownedIds = ids
-        await withCommittedPostgresTransactionForTest(query =>
-          deleteFederationInboxFixturesForTest(query, ownedIds),
-        )
-      }
       await deleteTestPost(postId)
       await deleteTestUser(recipient.id)
       await deleteTestUser(sender.id)
     })
-    ids = await withCommittedPostgresTransactionForTest(query =>
-      insertFederationRetentionFixturesForTest({
+    await withPostgresTransactionForTest(async query => {
+      const ids = await insertFederationRetentionFixturesForTest({
         senderUserId: sender.id,
         recipientUserId: recipient.id,
         postId,
         now,
         query,
-      }),
-    )
+      })
+      const decoys = await insertFederationReplayDecoysForTest(query, sender.id, now)
+      await resetActivityPubReplayRetentionCursorForTest(query, 'inbox')
+      await resetActivityPubReplayRetentionCursorForTest(query, 'outbound')
+      const inboxScope = {
+        activityIds: [...ids.expiredInboxActivityIds, ids.currentInboxActivityId],
+      }
+      const outboundScope = {
+        activityIds: [...ids.expiredDistributionActivityIds, ids.unfinishedDistributionActivityId],
+      }
 
-    const firstInbox = await cleanupActivityPubReplayLedger('inbox', {
-      batchSize: 1,
-      maxBatches: 1,
-      now,
-    })
-    const firstOutbound = await cleanupActivityPubReplayLedger('outbound', {
-      batchSize: 1,
-      maxBatches: 1,
-      now,
-    })
-    expect(firstInbox).toMatchObject({ deleted: 1, hasMore: true })
-    expect(firstOutbound).toMatchObject({ deleted: 1, hasMore: true })
-    const secondInbox = await cleanupActivityPubReplayLedger('inbox', {
-      batchSize: 1,
-      maxBatches: 1,
-      now,
-    })
-    const secondOutbound = await cleanupActivityPubReplayLedger('outbound', {
-      batchSize: 1,
-      maxBatches: 1,
-      now,
-    })
-    expect(secondInbox).toMatchObject({ deleted: 1, hasMore: false })
-    expect(secondOutbound).toMatchObject({ deleted: 1, hasMore: false })
-    await withPostgresTransactionForTest(async inspect => {
-      expect(await readFederationRetentionFixtureStateForTest(inspect, ids)).toMatchObject({
+      const firstInbox = await cleanupActivityPubReplayLedger('inbox', {
+        batchSize: 1,
+        maxBatches: 1,
+        now,
+        borrowedQuery: query,
+        scope: inboxScope,
+      })
+      const firstOutbound = await cleanupActivityPubReplayLedger('outbound', {
+        batchSize: 1,
+        maxBatches: 1,
+        now,
+        borrowedQuery: query,
+        scope: outboundScope,
+      })
+      expect(firstInbox).toMatchObject({ deleted: 1, hasMore: true })
+      expect(firstOutbound).toMatchObject({ deleted: 1, hasMore: true })
+      const secondInbox = await cleanupActivityPubReplayLedger('inbox', {
+        batchSize: 1,
+        maxBatches: 1,
+        now,
+        borrowedQuery: query,
+        scope: inboxScope,
+      })
+      const secondOutbound = await cleanupActivityPubReplayLedger('outbound', {
+        batchSize: 1,
+        maxBatches: 1,
+        now,
+        borrowedQuery: query,
+        scope: outboundScope,
+      })
+      expect(secondInbox).toMatchObject({ deleted: 1, hasMore: false })
+      expect(secondOutbound).toMatchObject({ deleted: 1, hasMore: false })
+      expect(await readFederationRetentionFixtureStateForTest(query, ids)).toMatchObject({
         inboxActivityIds: [ids.currentInboxActivityId],
         distributionActivityIds: [ids.unfinishedDistributionActivityId],
+      })
+      expect(await countFederationReplayDecoysForTest(query, decoys)).toEqual({
+        inbox: 1,
+        outbound: 1,
       })
     })
   })
