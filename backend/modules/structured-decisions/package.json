@@ -24,6 +24,6 @@
     "@modules/utils": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/types": "workspace:^",
-    "undici": "^8.11.2"
+    "undici": "^8.12.2"
   }
 }

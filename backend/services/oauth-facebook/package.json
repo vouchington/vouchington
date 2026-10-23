@@ -31,7 +31,7 @@
     "@services/oauth-accounts": "workspace:^",
     "@voucha/config": "workspace:^",
     "http-errors": "^2.0.1",
-    "undici": "^8.11.2",
+    "undici": "^8.12.2",
     "valkyries": "^0.11.1"
   },
   "devDependencies": {

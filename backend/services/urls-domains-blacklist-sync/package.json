@@ -30,7 +30,7 @@
     "@services/entity-cache": "workspace:^",
     "@services/urls-domains-blacklist": "workspace:^",
     "pg-copy-streams": "^7.0.0",
-    "undici": "^8.11.2"
+    "undici": "^8.12.2"
   },
   "devDependencies": {
     "@types/pg-copy-streams": "^1.2.5",
