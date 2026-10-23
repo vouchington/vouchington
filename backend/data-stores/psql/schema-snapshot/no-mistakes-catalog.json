@@ -534,6 +534,18 @@
     "follower_distribution_audiences": {
       "values": ["all_followers", "selected_followers"]
     },
+    "history_retention_cleanup_names": {
+      "values": [
+        "dynamic_configuration_revisions",
+        "rss_feed_setting_changes",
+        "fediverse_instance_integration_changes",
+        "community_agent_prompt_revisions",
+        "followed_user_import_requests",
+        "pending_user_import_requests",
+        "referral_attribution_scrub",
+        "referral_attribution_expiry"
+      ]
+    },
     "http_request_methods": {
       "values": ["GET", "HEAD", "POST", "PUT", "DELETE", "CONNECT", "OPTIONS", "TRACE", "PATCH"]
     },
@@ -1664,7 +1676,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_moderation_appeal_resolution()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF OLD.resolved_at IS NULL AND OLD.resolution_action IS NULL\n    AND NEW.resolved_at IS NOT NULL AND NEW.resolution_action IS NOT NULL THEN\n    RETURN NEW;\n  END IF;\n  IF OLD.resolved_at IS DISTINCT FROM NEW.resolved_at\n    OR OLD.resolution_action IS DISTINCT FROM NEW.resolution_action THEN\n    RAISE EXCEPTION 'moderation appeal resolution is immutable once set';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
     },
     "fn_reject_mutation()": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  actor_column TEXT;\n  actor_columns TEXT[] := COALESCE(TG_ARGV, ARRAY[]::TEXT[]);\n  old_row JSONB;\n  new_row JSONB;\nBEGIN\n  IF TG_OP = 'DELETE' AND pg_trigger_depth() > 1 THEN RETURN OLD; END IF;\n  IF TG_OP = 'UPDATE' THEN\n    old_row := to_jsonb(OLD);\n    new_row := to_jsonb(NEW);\n    IF (old_row - actor_columns) IS NOT DISTINCT FROM (new_row - actor_columns) THEN\n      FOREACH actor_column IN ARRAY actor_columns LOOP\n        IF new_row -> actor_column IS DISTINCT FROM old_row -> actor_column\n          AND new_row -> actor_column IS DISTINCT FROM 'null'::jsonb THEN\n          RAISE EXCEPTION '% rows are append-only', TG_TABLE_NAME USING ERRCODE = 'check_violation';\n        END IF;\n      END LOOP;\n      RETURN NEW;\n    END IF;\n  END IF;\n  RAISE EXCEPTION '% rows are append-only', TG_TABLE_NAME USING ERRCODE = 'check_violation';\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  actor_column TEXT;\n  actor_columns TEXT[] := COALESCE(TG_ARGV, ARRAY[]::TEXT[]);\n  old_row JSONB;\n  new_row JSONB;\nBEGIN\n  IF TG_OP = 'DELETE' AND pg_trigger_depth() > 1 THEN RETURN OLD; END IF;\n  -- Only the bounded history-retention transaction may delete these four audit families.\n  -- Other append-only tables and every UPDATE retain the ordinary mutation guard.\n  IF TG_OP = 'DELETE'\n    AND TG_TABLE_NAME IN (\n      'dynamic_configuration_revisions',\n      'rss_feed_setting_changes',\n      'fediverse_instance_integration_changes',\n      'community_agent_prompt_revisions'\n    )\n    AND current_setting('app.history_retention_cleanup', true) = 'on'\n  THEN RETURN OLD; END IF;\n  IF TG_OP = 'UPDATE' THEN\n    old_row := to_jsonb(OLD);\n    new_row := to_jsonb(NEW);\n    IF (old_row - actor_columns) IS NOT DISTINCT FROM (new_row - actor_columns) THEN\n      FOREACH actor_column IN ARRAY actor_columns LOOP\n        IF new_row -> actor_column IS DISTINCT FROM old_row -> actor_column\n          AND new_row -> actor_column IS DISTINCT FROM 'null'::jsonb THEN\n          RAISE EXCEPTION '% rows are append-only', TG_TABLE_NAME USING ERRCODE = 'check_violation';\n        END IF;\n      END LOOP;\n      RETURN NEW;\n    END IF;\n  END IF;\n  RAISE EXCEPTION '% rows are append-only', TG_TABLE_NAME USING ERRCODE = 'check_violation';\nEND;\n$function$\n"
     },
     "fn_reject_non_stripe_membership_purchase_intent_checkout()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_non_stripe_membership_purchase_intent_checkout()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.provider_checkout_id IS NOT NULL AND NOT EXISTS (\n    SELECT 1 FROM membership_provider_contexts context\n    WHERE context.id = NEW.membership_provider_context_id AND context.provider = 'stripe'\n  ) THEN\n    RAISE EXCEPTION 'only Stripe purchase intents may have checkout ids' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
@@ -47061,6 +47073,89 @@
           "columns": ["google_user_id"]
         }
       }
+    },
+    "history_retention_cursors": {
+      "checkConstraints": {},
+      "columns": {
+        "cleanup_name": {
+          "comment": "History family whose pass this row checkpoints.",
+          "dataType": "history_retention_cleanup_names",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        },
+        "cursor_id": {
+          "comment": "Last raw candidate id scanned, even when its row was a keeper.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2
+        },
+        "sweep_cutoff_id": {
+          "comment": "Exclusive frozen end of the current UUIDv7 pass.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3
+        },
+        "updated_at": {
+          "comment": "Time the pass checkpoint last changed.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4
+        }
+      },
+      "comment": "Durable UUIDv7 progress for bounded history retention passes.",
+      "foreignKeys": {},
+      "indexes": {
+        "history_retention_cursors_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX history_retention_cursors_pkey ON public.history_retention_cursors USING btree (cleanup_name)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "cleanup_name",
+              "descending": false,
+              "expression": "cleanup_name",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.enum_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["cleanup_name"]
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_history_retention_cursors_updated_at": {
+          "definition": "CREATE TRIGGER trigger_history_retention_cursors_updated_at BEFORE UPDATE ON public.history_retention_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        }
+      },
+      "uniqueConstraints": {}
     },
     "hostname_crawler_configurations": {
       "checkConstraints": {},
@@ -122530,7 +122625,7 @@
           "validated": true
         },
         "session_referral_attributions_landing_url_check": {
-          "definition": "CHECK ((char_length(landing_url) <= 2048))",
+          "definition": "CHECK (((landing_url IS NULL) OR (char_length(landing_url) <= 2048)))",
           "validated": true
         }
       },
@@ -122556,13 +122651,13 @@
           "ordinalPosition": 1
         },
         "landing_url": {
-          "comment": "The URL the referred session landed on (max 2048 chars).",
+          "comment": "The URL the referred session landed on (max 2048 chars), cleared after its short attribution window.",
           "dataType": "text",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
-          "nullable": false,
+          "nullable": true,
           "ordinalPosition": 5
         },
         "referrer_user_id": {
