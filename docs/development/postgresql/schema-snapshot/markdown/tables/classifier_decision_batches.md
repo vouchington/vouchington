@@ -15,6 +15,7 @@ Not partitioned — growth: unbounded.
 | `rss_feed_item_id`   | `uuid`                        | yes      |                              |          |           |           | Classified RSS item subject; mutually exclusive with post_id.                                                        |
 | `scope_category`     | `classifier_scope_categories` | no       |                              |          |           |           | Decision scope: global or community_ai.                                                                              |
 | `scope_community_id` | `uuid`                        | yes      |                              |          |           |           | Immutable community for community_ai scope; deleting the community cascades to its scoped batches and their results. |
+| `input_sha256`       | `bytea`                       | yes      |                              |          |           |           | SHA-256 of the full normalized provider input, including inactive results omitted from result tables.                |
 | `completed_at`       | `timestamp with time zone`    | yes      |                              |          |           |           | Completion marker set only after every call and result for this batch is durable.                                    |
 | `created_at`         | `timestamp with time zone`    | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                      |
 | `updated_at`         | `timestamp with time zone`    | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                      |
@@ -31,6 +32,8 @@ Not partitioned — growth: unbounded.
 
 **Check constraints:**
 
+- `chk_classifier_decision_batches__completed_input`: `CHECK ((((completed_at IS NULL) AND (input_sha256 IS NULL)) OR ((completed_at IS NOT NULL) AND (input_sha256 IS NOT NULL))))`
+- `chk_classifier_decision_batches__input_sha256`: `CHECK (((input_sha256 IS NULL) OR (octet_length(input_sha256) = 32)))`
 - `chk_classifier_decision_batches__one_subject`: `CHECK ((num_nonnulls(post_id, rss_feed_item_id) = 1))`
 - `chk_classifier_decision_batches__scope`: `CHECK ((((scope_category = 'global'::classifier_scope_categories) AND (scope_community_id IS NULL)) OR ((scope_category = 'community_ai'::classifier_scope_categories) AND (scope_community_id IS NOT NULL))))`
 

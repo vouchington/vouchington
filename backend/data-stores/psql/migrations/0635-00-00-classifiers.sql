@@ -184,9 +184,9 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_classifier_candidates__active_story
   WHERE story_id IS NOT NULL AND deleted_at IS NULL;
 
 CREATE OR REPLACE TRIGGER trigger_classifier_candidates_identity_immutable
-  BEFORE UPDATE OF id, classifier_id, candidate_kind, topic_id, story_id, community_id ON classifier_candidates
+  BEFORE UPDATE OF id, classifier_id, candidate_kind, story_id, community_id ON classifier_candidates
   FOR EACH ROW
-  WHEN (ROW(OLD.id, OLD.classifier_id, OLD.candidate_kind, OLD.topic_id, OLD.story_id, OLD.community_id) IS DISTINCT FROM ROW(NEW.id, NEW.classifier_id, NEW.candidate_kind, NEW.topic_id, NEW.story_id, NEW.community_id)) EXECUTE FUNCTION fn_reject_mutation();
+  WHEN (ROW(OLD.id, OLD.classifier_id, OLD.candidate_kind, OLD.story_id, OLD.community_id) IS DISTINCT FROM ROW(NEW.id, NEW.classifier_id, NEW.candidate_kind, NEW.story_id, NEW.community_id)) EXECUTE FUNCTION fn_reject_mutation();
 
 CREATE OR REPLACE TRIGGER trigger_classifier_candidates_updated_at
   BEFORE UPDATE ON classifier_candidates
@@ -400,6 +400,7 @@ CREATE TABLE IF NOT EXISTS classifier_decision_batches (
   rss_feed_item_id UUID REFERENCES rss_feed_items ON DELETE CASCADE,
   scope_category classifier_scope_categories NOT NULL,
   scope_community_id UUID REFERENCES communities ON DELETE CASCADE,
+  input_sha256 BYTEA,
   completed_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -407,6 +408,13 @@ CREATE TABLE IF NOT EXISTS classifier_decision_batches (
   CONSTRAINT chk_classifier_decision_batches__scope CHECK (
     (scope_category = 'global' AND scope_community_id IS NULL)
     OR (scope_category = 'community_ai' AND scope_community_id IS NOT NULL)
+  ),
+  CONSTRAINT chk_classifier_decision_batches__input_sha256 CHECK (
+    input_sha256 IS NULL OR octet_length(input_sha256) = 32
+  ),
+  CONSTRAINT chk_classifier_decision_batches__completed_input CHECK (
+    (completed_at IS NULL AND input_sha256 IS NULL)
+    OR (completed_at IS NOT NULL AND input_sha256 IS NOT NULL)
   ),
   CONSTRAINT fk_classifier_decision_batches__prompt_classifier
     FOREIGN KEY (prompt_version_id, classifier_id)
@@ -441,6 +449,8 @@ BEGIN
     OR NEW.rss_feed_item_id IS DISTINCT FROM OLD.rss_feed_item_id
     OR NEW.scope_category IS DISTINCT FROM OLD.scope_category
     OR NEW.scope_community_id IS DISTINCT FROM OLD.scope_community_id
+    OR OLD.input_sha256 IS NOT NULL
+    OR NEW.input_sha256 IS NULL
     OR NEW.created_at IS DISTINCT FROM OLD.created_at
     OR NEW.updated_at IS DISTINCT FROM OLD.updated_at
     OR NEW.completed_at < OLD.created_at THEN
@@ -448,6 +458,9 @@ BEGIN
   END IF;
   RETURN NEW;
 END $$;
+
+COMMENT ON COLUMN classifier_decision_batches.input_sha256 IS
+  'SHA-256 of the full normalized provider input, including inactive results omitted from result tables.';
 
 CREATE OR REPLACE TRIGGER trigger_classifier_decision_batches_completion
   BEFORE UPDATE ON classifier_decision_batches

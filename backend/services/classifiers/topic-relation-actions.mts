@@ -1,3 +1,4 @@
+import { readInactiveClassifierTopicIds } from './inactive-topic-results.mts'
 import type { OwnedTransaction } from '@data-stores/psql'
 import { upsertEntityRelation } from '@services/entity-relations'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
@@ -59,7 +60,11 @@ export async function applyTopicClassifierDecisionRelations(
     sharedActorId,
     expectedBindings: input.expectedBindings,
   })
-  const results = validateTopicDecision(decision, input.expectedBindings)
+  const inactive = await readInactiveClassifierTopicIds(
+    query,
+    input.expectedBindings.map(binding => binding.topicId),
+  )
+  const results = validateTopicDecision(decision, input.expectedBindings, inactive)
   assertSubjectMatchesDecision(subject, decision.subject)
   await assertSharedSystemActor(query, sharedActorId)
 

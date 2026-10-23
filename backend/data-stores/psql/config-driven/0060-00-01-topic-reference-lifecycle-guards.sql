@@ -1,4 +1,4 @@
--- Generated relations and handwritten references share the merge's attachment lifecycle fence.
+-- Generated relations and handwritten references share the merge's dedicated lifecycle fence.
 CREATE OR REPLACE FUNCTION fn_ensure_active_topic_references()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -6,19 +6,20 @@ AS $$
 DECLARE
   reference_column TEXT;
   referenced_topic_id UUID;
+  previous_topic_id UUID;
 BEGIN
   FOREACH reference_column IN ARRAY TG_ARGV LOOP
-    IF TG_OP = 'UPDATE' AND
-      (to_jsonb(NEW) -> reference_column) IS NOT DISTINCT FROM (to_jsonb(OLD) -> reference_column)
-    THEN
-      CONTINUE;
+    -- Read only the FK field, never serialize the entire (potentially wide) row.
+    EXECUTE format('SELECT ($1).%I', reference_column) INTO referenced_topic_id USING NEW;
+    IF TG_OP = 'UPDATE' THEN
+      EXECUTE format('SELECT ($1).%I', reference_column) INTO previous_topic_id USING OLD;
+      IF referenced_topic_id IS NOT DISTINCT FROM previous_topic_id THEN CONTINUE; END IF;
     END IF;
-    referenced_topic_id := (to_jsonb(NEW) ->> reference_column)::UUID;
     IF referenced_topic_id IS NULL THEN CONTINUE; END IF;
 
     -- Never wait while holding a child row or publication scope: the merge takes this fence first.
     IF NOT pg_try_advisory_xact_lock_shared(hashtextextended(
-      'topic-rss-feed-attachment:' || referenced_topic_id::TEXT, 0
+      'topic-merge-lifecycle:' || referenced_topic_id::TEXT, 0
     )) THEN
       RAISE EXCEPTION USING ERRCODE = 'V0409',
         MESSAGE = 'Topic references are changing; retry the request',
@@ -48,7 +49,8 @@ DECLARE
 BEGIN
   FOR reference_table IN
     SELECT format('%I.%I', namespace.nspname, source.relname) AS qualified_name,
-      string_agg(DISTINCT quote_literal(attribute.attname), ', ' ORDER BY quote_literal(attribute.attname)) AS column_arguments
+      string_agg(DISTINCT quote_literal(attribute.attname), ', ' ORDER BY quote_literal(attribute.attname)) AS column_arguments,
+      string_agg(DISTINCT quote_ident(attribute.attname), ', ' ORDER BY quote_ident(attribute.attname)) AS update_columns
     FROM pg_constraint constraint_record
     JOIN pg_class source ON source.oid = constraint_record.conrelid
     JOIN pg_namespace namespace ON namespace.oid = source.relnamespace
@@ -65,15 +67,20 @@ BEGIN
       ])
       AND source.relname <> ALL(ARRAY[
         'admin_import_rows', 'fediverse_instance_integration_changes', 'moderator_actions',
-        'review_disputes', 'topic_revisions', 'user_import_requests', 'vote_integrity_flags'
+        'review_disputes', 'topic_revisions', 'user_import_requests', 'vote_integrity_flags',
+        'image_surface_placements', 'topic_classifier_results',
+        'topic_metrics', 'bedrock_embedding_batch_entities',
+        'classifier_run_candidates', 'post_autotagger_result_topics',
+        'rss_feed_item_autotagger_result_topics', 'autotagger_agent_run_topics',
+        'post_classifier_local_outcomes'
       ])
       AND NOT (source.relname = 'topics' AND attribute.attname = 'merged_into_topic_id')
     GROUP BY namespace.nspname, source.relname
     ORDER BY namespace.nspname, source.relname
   LOOP
     EXECUTE format(
-      'CREATE OR REPLACE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE ON %s FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references(%s)',
-      reference_table.qualified_name, reference_table.column_arguments
+      'CREATE OR REPLACE TRIGGER trigger_active_topic_references BEFORE INSERT OR UPDATE OF %s ON %s FOR EACH ROW EXECUTE FUNCTION fn_ensure_active_topic_references(%s)',
+      reference_table.update_columns, reference_table.qualified_name, reference_table.column_arguments
     );
     EXECUTE format(
       'COMMENT ON TRIGGER trigger_active_topic_references ON %s IS %L',

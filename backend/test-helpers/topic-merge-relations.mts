@@ -114,3 +114,61 @@ export async function seedTopicMergeAuditCollision(
     destinationFlagId: rows.find(row => row.topic_id === destinationId)!.id,
   }
 }
+
+export async function seedTopicMergeDeletedBookmarks(
+  sourceId: string,
+  destinationId: string,
+  userId: string,
+) {
+  await write(
+    `/* seedTopicMergeDeletedBookmarks */
+    WITH follows AS (INSERT INTO relation__user__follow__topic (subject_id, object_id, deleted_at)
+      VALUES ($3::uuid, $1::uuid, NULL), ($3::uuid, $2::uuid, CURRENT_TIMESTAMP))
+    INSERT INTO relation__user__block__topic (subject_id, object_id, deleted_at)
+      VALUES ($3::uuid, $1::uuid, NULL), ($3::uuid, $2::uuid, CURRENT_TIMESTAMP)`,
+    [sourceId, destinationId, userId],
+  )
+}
+
+export async function getTopicMergeLiveBookmarks(topicIds: string[], userId: string) {
+  const { rows } = await write<{ kind: string; object_id: string }>(
+    `/* getTopicMergeLiveBookmarks */
+    SELECT 'follow' AS kind, object_id FROM relation__user__follow__topic
+      WHERE subject_id = $1::uuid AND object_id = ANY($2::uuid[]) AND deleted_at IS NULL
+    UNION ALL SELECT 'block', object_id FROM relation__user__block__topic
+      WHERE subject_id = $1::uuid AND object_id = ANY($2::uuid[]) AND deleted_at IS NULL
+    ORDER BY kind`,
+    [userId, topicIds],
+  )
+  return rows
+}
+
+export async function seedTopicMergeParentEdges(edges: readonly (readonly [string, string])[]) {
+  await write(
+    `/* seedTopicMergeParentEdges */ INSERT INTO relation__topic__parent__topic (subject_id, object_id)
+    SELECT * FROM unnest($1::uuid[], $2::uuid[])`,
+    [edges.map(edge => edge[0]), edges.map(edge => edge[1])],
+  )
+}
+
+export async function seedTopicMergeClaims(
+  sourceId: string,
+  destinationId: string,
+  userId: string,
+) {
+  await write(
+    `/* seedTopicMergeClaims */ INSERT INTO topic_claims (topic_id, claimant_user_id, verified_at)
+    VALUES ($1::uuid, $3::uuid, CURRENT_TIMESTAMP), ($2::uuid, $3::uuid, NULL)`,
+    [sourceId, destinationId, userId],
+  )
+}
+
+export async function getTopicMergeClaims(topicIds: string[], userId: string) {
+  const { rows } = await write<{ topic_id: string; verified: boolean }>(
+    `/* getTopicMergeClaims */
+    SELECT topic_id, verified_at IS NOT NULL AS verified FROM topic_claims
+    WHERE topic_id = ANY($1::uuid[]) AND claimant_user_id = $2::uuid`,
+    [topicIds, userId],
+  )
+  return rows
+}

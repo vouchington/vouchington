@@ -75,6 +75,18 @@ export function assertBatchMatchesInput(
   }
 }
 
+export function assertBatchInputFingerprintMatches(
+  batch: LockedClassifierDecisionBatch,
+  inputSha256: Buffer,
+): void {
+  if (!batch.inputSha256?.equals(inputSha256)) {
+    throw new ClassifierDecisionReuseError(
+      'results',
+      'Classifier decision batch ID was reused with different results',
+    )
+  }
+}
+
 export function assertCompletePersistence(
   input: NormalizedClassifierDecisionInput,
   callCount: number,

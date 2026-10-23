@@ -6,6 +6,7 @@ import {
   getActiveTopicReferenceGuardFollows,
   insertTopicReferenceGuardFollow,
   withTopicReferenceGuardFence,
+  withTopicAttachmentFence,
 } from '@voucha/test-helpers/topic-reference-guard'
 import { getTopicMergeRelations } from '@voucha/test-helpers/topic-merge-references'
 import {
@@ -26,7 +27,9 @@ describe('topic merge reference lifecycle', () => {
       const key =
         `${row.table_name}.${row.column_name}` as keyof typeof TOPIC_MERGE_REFERENCE_GROUPS
       const shouldGuard =
-        TOPIC_MERGE_REFERENCE_GROUPS[key] !== 'history' && key !== 'topics.merged_into_topic_id'
+        TOPIC_MERGE_REFERENCE_GROUPS[key] !== 'history' &&
+        TOPIC_MERGE_REFERENCE_GROUPS[key] !== 'derived' &&
+        key !== 'topics.merged_into_topic_id'
       expect({ key, guarded: row.guarded }).toEqual({ key, guarded: shouldGuard })
     }
   })
@@ -41,6 +44,17 @@ describe('topic merge reference lifecycle', () => {
     ).rejects.toMatchObject({
       code: '23503',
     })
+  })
+
+  it('allows ordinary references while stats or feed updates hold the attachment fence', async () => {
+    const user = await createTestUser()
+    const topic = await createTestTopic({ user })
+    await withTopicAttachmentFence(topic.id, () =>
+      insertTopicReferenceGuardFollow(topic.id, user.id),
+    )
+    await expect(getActiveTopicReferenceGuardFollows([topic.id], user.id)).resolves.toEqual([
+      { object_id: topic.id },
+    ])
   })
 
   it('rejects a contending new reference instead of waiting behind publication locks', async () => {

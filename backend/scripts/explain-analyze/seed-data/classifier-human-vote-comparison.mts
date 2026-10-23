@@ -145,10 +145,12 @@ async function insertBatches(input: {
   await write(
     `/* seedExplainData */ INSERT INTO classifier_decision_batches (
        id, classifier_id, prompt_version_id, post_id, rss_feed_item_id,
-       scope_category, scope_community_id, completed_at
+       scope_category, scope_community_id, input_sha256, completed_at
      )
-     SELECT batch_id, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP
-     FROM unnest($1::uuid[]) AS batch_id
+     SELECT batch_id, $2, $3, $4, $5, $6, $7,
+       -- Synthetic empty-call EXPLAIN rows are not replayable provider decisions.
+       sha256(convert_to(batch_id::text, 'UTF8')), CURRENT_TIMESTAMP
+     FROM unnest($1::uuid[]) AS batches(batch_id)
      ON CONFLICT (id) DO NOTHING`,
     [
       input.ids,

@@ -10,6 +10,12 @@ import {
 export const plainReferences = getPlainTopicMergeReferences()
 
 export const collisionReferences: readonly MergeReferenceTable[] = [
+  {
+    table: 'classifier_candidates',
+    columns: ['topic_id'],
+    collisionKey: ['classifier_id', 'topic_id', 'community_id'],
+    live: 'deleted_at IS NULL',
+  },
   { table: 'post_data_point_topics', columns: ['topic_id'], collisionKey: ['post_id', 'topic_id'] },
   {
     table: 'post_explicit_topic_categories',
@@ -35,6 +41,7 @@ export const collisionReferences: readonly MergeReferenceTable[] = [
   },
   {
     table: 'topic_claims',
+    preferVerified: true,
     columns: ['topic_id'],
     collisionKey: ['topic_id', 'claimant_user_id'],
     live: 'rejected_at IS NULL AND revoked_at IS NULL',

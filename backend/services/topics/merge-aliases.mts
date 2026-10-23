@@ -14,10 +14,16 @@ import { lockTopicRssFeedAttachmentLifecycles } from '@services/post-publication
 import { lockTopicMergeAliasPublicationScopes } from './alias-publication-locks.mts'
 import { prepublishImageSurfaceDenials } from '@services/media-delivery-safety'
 import { finalizeTopicAliasMerge } from './merge-aliases-finalize.mts'
-import { assertTopicMergeReferenceCompatibility } from './merge-preflight.mts'
+import {
+  assertTopicMergeReferenceCompatibility,
+  assertLockedTopicMergeTypes,
+  lockTopicMergeLifecycles,
+  rethrowTopicMergeError,
+} from './merge-preflight.mts'
 import { repointTopicReferences } from './merge-references.mts'
 import { mergeTopicSubtypeReferences } from './merge-subtypes.mts'
 import { deleteMergedTopicDerivedRows } from './merge-derived.mts'
+import { lockAndAssertTopicMergeSelfRelationFlags } from './merge-self-relation-flags.mts'
 type MergeRow = Pick<Topic, 'id' | 'slug' | 'topic_type'> &
   Record<'is_deleted' | 'is_merged', boolean>
 export async function mergeTopicAliases(
@@ -27,6 +33,10 @@ export async function mergeTopicAliases(
 ) {
   assert(currentUserCanMergeTopic(merger), 403, 'Forbidden')
   assert(sourceTopic.id !== destinationTopic.id, 409, 'Cannot merge a topic into itself')
+  return executeTopicMerge(merger, sourceTopic, destinationTopic).catch(rethrowTopicMergeError)
+}
+
+async function executeTopicMerge(merger: PrivateUser, sourceTopic: Topic, destinationTopic: Topic) {
   await using query = await beginTransaction()
   // ast-grep-ignore: no-three-sequential-awaits -- alias publication, attachment lifecycle, and merge capture locks share one global order.
   const aliasScopes = await lockTopicMergeAliasPublicationScopes(
@@ -35,6 +45,7 @@ export async function mergeTopicAliases(
     sourceTopic.slug,
   )
   await lockTopicRssFeedAttachmentLifecycles(query, [sourceTopic.id, destinationTopic.id])
+  await lockTopicMergeLifecycles(query, [sourceTopic.id, destinationTopic.id])
   // ast-grep-ignore: no-three-sequential-awaits -- reject conflicts before publication writes; capture and external denials precede topic row locks.
   await assertTopicMergeReferenceCompatibility(query, sourceTopic.id, destinationTopic.id)
   await recordTopicMergePublicationChanges(
@@ -60,9 +71,9 @@ export async function mergeTopicAliases(
   const destinationRow = topicRows.find(row => row.id === destinationTopic.id)
   assert(sourceRow && !sourceRow.is_deleted, 404, 'Source topic not found')
   assert(destinationRow && !destinationRow.is_deleted, 404, 'Destination topic not found')
-  assert(sourceRow.topic_type === destinationRow.topic_type, 409, 'Topics must have the same type')
   assert(!sourceRow.is_merged, 409, 'Source topic has already been merged')
   assert(!destinationRow.is_merged, 409, 'Destination topic has already been merged')
+  assertLockedTopicMergeTypes(sourceRow, destinationRow)
   const { rows: inboundMergeRows } = await query<{ id: string }>(
     // no-mistakes-disable-next-line postgres-required-predicates: inverse lookup for topics already merged into the source
     `/* mergeTopicAliases inboundMerges */ SELECT id FROM topics WHERE merged_into_topic_id = $1 AND deleted_at IS NULL ORDER BY id FOR UPDATE`,
@@ -73,6 +84,7 @@ export async function mergeTopicAliases(
     409,
     'Source topic already has merged aliases and cannot be merged again',
   )
+  await lockAndAssertTopicMergeSelfRelationFlags(query, sourceTopic.id, destinationTopic.id)
   const { rows: sourceAliasRows } = await query<{
     id: string
     alias: string
@@ -157,8 +169,8 @@ export async function mergeTopicAliases(
     [destinationTopic.id, merger.id, sourceTopic.id],
   )
   await mergeTopicSubtypeReferences(query, sourceTopic.id, destinationTopic.id)
-  const referenceChanges = await repointTopicReferences(query, sourceTopic.id, destinationTopic.id)
   await deleteMergedTopicDerivedRows(query, sourceTopic.id)
+  const referenceChanges = await repointTopicReferences(query, sourceTopic.id, destinationTopic.id)
   await createTopicAliasMergeRevisions({
     query,
     revisedById: merger.id,

@@ -85,7 +85,7 @@ describe('mergeTopicAliases references', () => {
     })
     await expect(getTopicMergeRelations(source.id, destination.id, admin.id)).resolves.toEqual({
       follows: [{ object_id: destination.id }],
-      parents: [{ subject_id: destination.id, object_id: destination.id }],
+      parents: [],
     })
   })
 

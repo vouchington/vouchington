@@ -1,3 +1,4 @@
+import { mergeTopicForTest } from '@voucha/test-helpers/entities/topics/deletion'
 import { randomBytes, randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { addUrl } from '@services/urls'
@@ -48,6 +49,27 @@ describe('streamPendingEntities', () => {
 
     expect(ids).not.toContain(cachedTopicId)
     expect(ids).toContain(uncachedTopicId)
+  })
+
+  it('skips merged topics awaiting their first embedding while scanning active siblings', async () => {
+    const user = await createTestUserDirect()
+    const suffix = randomUUID().slice(0, 8)
+    const source = await insertTestTopic({
+      name: `Merged embedding ${suffix}`,
+      slug: `merged-embedding-${suffix}`,
+      createdById: user.id,
+    })
+    const active = await insertTestTopic({
+      name: `Active embedding ${suffix}`,
+      slug: `active-embedding-${suffix}`,
+      createdById: user.id,
+    })
+    await mergeTopicForTest(source, active, user.id)
+    const ids = await collectIds(
+      streamPendingTopics({ cursor: { sweepStartedAt: '2100-01-01T00:00:00.000Z' } }),
+    )
+    expect(ids).toContain(active)
+    expect(ids).not.toContain(source)
   })
 
   it('excludes posts that already have a reusable centralized embedding', async () => {

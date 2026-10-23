@@ -1,4 +1,5 @@
 import type { ClassifierCandidateKind } from '@voucha/types'
+import { createHash } from 'node:crypto'
 import type {
   ClassifierDecisionInputResult,
   PersistClassifierDecisionCall,
@@ -7,6 +8,7 @@ import type {
 import { isUUID } from '@modules/utils/ids'
 import { classifierCandidateKindFamily } from './candidate-family.mts'
 import { serializeClassifierRawResponse } from './raw-response.mts'
+import { stableStringify } from '@modules/utils/stable-stringify'
 
 export type NormalizedClassifierDecisionInput = PersistClassifierDecisionInput & {
   calls: readonly (PersistClassifierDecisionCall & {
@@ -106,6 +108,40 @@ export function classifierDecisionEntityId(result: ClassifierDecisionInputResult
 
 export function classifierDecisionResultKey(result: ClassifierDecisionInputResult): string {
   return `${result.candidateKind}:${classifierDecisionEntityId(result)}`
+}
+
+/** Hashes the full provider input so inactive results remain part of batch replay identity. */
+export function classifierDecisionInputFingerprint(
+  input: Pick<
+    NormalizedClassifierDecisionInput,
+    'batchId' | 'classifierId' | 'promptVersionId' | 'subject' | 'scope' | 'calls'
+  >,
+): Buffer {
+  const calls = input.calls.map(call => ({
+    shardOrdinal: call.shardOrdinal,
+    results: call.results
+      .map(result => ({
+        key: classifierDecisionResultKey(result),
+        candidateKind: result.candidateKind,
+        entityId: classifierDecisionEntityId(result),
+        storedCandidateId: result.storedCandidateId,
+        probability: result.probability,
+        rawResponse: serializeClassifierRawResponse(result.rawResponse),
+      }))
+      .toSorted((left, right) => left.key.localeCompare(right.key)),
+  }))
+  return createHash('sha256')
+    .update(
+      stableStringify({
+        batchId: input.batchId,
+        classifierId: input.classifierId,
+        promptVersionId: input.promptVersionId,
+        subject: input.subject,
+        scope: input.scope,
+        calls,
+      }),
+    )
+    .digest()
 }
 
 function assertDecisionCalls(calls: readonly PersistClassifierDecisionCall[]): void {

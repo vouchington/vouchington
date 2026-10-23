@@ -27,19 +27,26 @@ export const relationReferences = {
   relation__user__subscribe_rss_feed_items__topic: ['object_id'],
 } as const
 
-const relationElectionTables = new Set(
+export const relationElectionTables = new Set(
   entityRelationMetadatum.flatMap(metadata => (metadata.election ? [metadata.table_name] : [])),
 )
 
 export function buildTopicRelationMergeTargetsSql(): string {
-  return Object.keys(relationReferences)
-    .flatMap((table, index) => {
+  return Object.entries(relationReferences)
+    .flatMap(([table, columns], index) => {
       const metadata = entityRelationMetadatum.find(relation => relation.table_name === table)!
       if (relationElectionTables.has(table))
         return [
           `SELECT DISTINCT 'election'::text AS kind, next_id AS entity_relation_id,
         old_id AS previous_relation_id, '${table}'::text AS relation_table,
         NULL::uuid AS subject_id, NULL::uuid AS object_id FROM r${index}_map`,
+          ...(columns.length === 2
+            ? [
+                `SELECT 'election'::text AS kind, NULL::uuid AS entity_relation_id,
+            id AS previous_relation_id, '${table}'::text AS relation_table,
+            NULL::uuid AS subject_id, NULL::uuid AS object_id FROM r${index}_self_delete`,
+              ]
+            : []),
         ]
       if (metadata.is_bookmark && metadata.subject_type === 'user')
         return [
@@ -76,6 +83,16 @@ export function buildTopicRelationAuditConflictsSql(): string {
         AND destination_flag.${table}_id = other.id AND destination_flag.resolved_at IS NULL
         AND destination_flag.flag_type = source_flag.flag_type
       WHERE ${columns.map(column => `r.${column} = $1::uuid`).join(' OR ')}`,
+        ...(columns.length === 2
+          ? [
+              `SELECT 'self_relation_audit_flag' AS kind, r.id AS source_id, flag.id AS destination_id
+      FROM ${table} r
+      JOIN vote_integrity_flags flag ON flag.${table}_subject_id = r.subject_id
+        AND flag.${table}_id = r.id AND flag.resolved_at IS NULL
+      WHERE (${columns.map(column => `r.${column} = $1::uuid`).join(' OR ')})
+        AND ${subject} = ${object}`,
+            ]
+          : []),
       ]
     })
     .join(' UNION ALL ')
@@ -98,11 +115,18 @@ export function buildTopicRelationMergeCtes(): string[] {
       .join(' OR ')
     const sourceCount = columns.map(column => `(s.${column} = $1::uuid)::int`).join(' + ')
     const mapCtes = [
+      ...(columns.length === 2
+        ? [
+            `${prefix}_self_delete AS (
+        DELETE FROM ${table} s WHERE (${source}) AND ${subject} = ${object} RETURNING ${hasVotes ? 's.id' : '1'}
+      )`,
+          ]
+        : []),
       `${prefix}_ranked AS MATERIALIZED (
         SELECT s.*, ${subject} AS next_subject, ${object} AS next_object,
           (${source}) AS moving,
-          row_number() OVER (PARTITION BY ${subject}, ${object} ORDER BY (${sourceCount}), ${hasVotes ? 's.id' : 's.subject_id, s.object_id'} DESC) AS priority
-        FROM ${table} s WHERE ${affected}
+          row_number() OVER (PARTITION BY ${subject}, ${object} ORDER BY (s.deleted_at IS NULL) DESC, (${sourceCount}), ${hasVotes ? 's.id' : 's.subject_id, s.object_id'} DESC) AS priority
+        FROM ${table} s WHERE (${affected}) ${columns.length === 2 ? `AND ${subject} <> ${object}` : ''}
       )`,
       `${prefix}_winner AS MATERIALIZED (
         SELECT *, ${hasVotes ? 'CASE WHEN moving THEN uuidv7() ELSE id END AS next_id' : '1 AS marker'}
@@ -112,7 +136,7 @@ export function buildTopicRelationMergeCtes(): string[] {
         SELECT ${hasVotes ? 's.id AS old_id,' : ''} s.subject_id AS old_subject, s.object_id AS old_object,
           w.next_subject, w.next_object, ${hasVotes ? 'w.next_id,' : ''} s.priority > 1 AS collision
         FROM ${prefix}_ranked s JOIN ${prefix}_winner w USING (next_subject, next_object)
-        WHERE s.moving
+        WHERE s.moving OR s.priority > 1
       )`,
     ]
     if (!hasVotes)
@@ -122,7 +146,7 @@ export function buildTopicRelationMergeCtes(): string[] {
         WHERE s.subject_id = m.old_subject AND s.object_id = m.old_object AND m.collision RETURNING 1)`,
         `${prefix}_update AS (UPDATE ${table} s SET subject_id = m.next_subject, object_id = m.next_object
         FROM ${prefix}_map m WHERE s.subject_id = m.old_subject AND s.object_id = m.old_object
-          AND NOT m.collision RETURNING 1)`,
+          AND NOT m.collision AND (SELECT count(*) FROM ${prefix}_delete) >= 0 RETURNING 1)`,
       ]
     return [
       ...mapCtes,
@@ -143,6 +167,7 @@ export function buildTopicRelationMergeCtes(): string[] {
         UPDATE ${table}__votes v SET entity_relation_id = m.next_id, subject_id = m.next_subject
         FROM ${prefix}_map m
         WHERE v.entity_relation_id = m.old_id AND v.subject_id = m.old_subject
+          AND (SELECT count(*) FROM ${prefix}_votes_delete) >= 0
           AND EXISTS (SELECT 1 FROM ${prefix}_votes_keep k
             WHERE k.next_id = m.next_id AND k.user_id = v.user_id AND k.old_relation = m.old_id)
         RETURNING v.id
@@ -163,7 +188,9 @@ export function buildTopicRelationMergeCtes(): string[] {
       `${prefix}_update AS (
         UPDATE ${table} s SET id = m.next_id, subject_id = m.next_subject, object_id = m.next_object
         FROM ${prefix}_map m WHERE s.id = m.old_id AND s.subject_id = m.old_subject
-          AND NOT m.collision RETURNING s.id
+          AND NOT m.collision AND (SELECT count(*) FROM ${prefix}_delete) >= 0
+          AND (SELECT count(*) FROM ${prefix}_votes_update) >= 0
+          AND (SELECT count(*) FROM ${prefix}_flags_update) >= 0 RETURNING s.id
       )`,
     ]
   })

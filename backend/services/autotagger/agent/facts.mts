@@ -25,13 +25,16 @@ export async function persistAutotaggerAgentFacts(
 ): Promise<void> {
   const reported = [...new Set(facts.topicIds)]
   if (reported.length === 0) return
-  const { rowCount } = await query(sql`/* persistAutotaggerAgentFacts */
+  if (reported.some(id => !lease.capturedTopicIds.includes(id)))
+    throw new Error('Agent topic facts include a topic outside the run candidates')
+  await query(sql`/* persistAutotaggerAgentFacts */
     INSERT INTO autotagger_agent_run_topics (run_id, topic_id)
     SELECT candidate.run_id, candidate.topic_id FROM classifier_run_candidates candidate
+    JOIN topics topic ON topic.id = candidate.topic_id
+      AND topic.deleted_at IS NULL AND topic.merged_into_topic_id IS NULL
     WHERE candidate.run_id = ${lease.runId} AND candidate.topic_id = ANY(${reported}::uuid[])
+    ORDER BY topic.id FOR SHARE OF topic
   `)
-  if (rowCount !== reported.length)
-    throw new Error('Agent topic facts include a topic outside the run candidates')
 }
 
 export async function readAutotaggerAgentFacts(

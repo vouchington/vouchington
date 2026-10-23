@@ -1,7 +1,7 @@
+import type { ClassifierCandidateKind } from '@voucha/types'
 import type { OwnedTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import {
-  classifierDecisionCandidateKind,
   classifierDecisionEntityId,
   flattenClassifierDecisionResults,
   type NormalizedClassifierDecisionInput,
@@ -18,6 +18,7 @@ export async function insertClassifierDecisionResults(
   calls: readonly PersistedClassifierDecisionCall[],
   snapshots: ReadonlyMap<string, ClassifierDecisionSnapshot>,
   promptThresholds: { lower: number; upper: number },
+  candidateKind: ClassifierCandidateKind,
 ): Promise<number> {
   const callIdsByOrdinal = new Map(calls.map(call => [call.shardOrdinal, call.id]))
   const rows = input.calls.flatMap(call =>
@@ -33,7 +34,7 @@ export async function insertClassifierDecisionResults(
   if (rows.some(row => !row.decisionCallId)) {
     throw new Error('Classifier decision call is missing its persisted shard')
   }
-  switch (classifierDecisionCandidateKind(input)) {
+  switch (candidateKind) {
     case 'topic':
       return insertTopicResults(query, input, rows)
     case 'story':

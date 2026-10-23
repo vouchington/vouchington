@@ -1,3 +1,5 @@
+import type { QueryExecutor } from '@data-stores/psql'
+import { readInactiveClassifierTopicIds } from '@services/classifiers/inactive-topic-results'
 import type {
   ClassifierDecisionScope,
   PersistClassifierDecisionInput,
@@ -90,6 +92,7 @@ export function assertRemoteInputCandidates<C>(
 export function assertPersistedDecisionMatchesRun<C>(
   lease: ClassifierRunLease<C>,
   decision: PersistedClassifierDecision,
+  inactive: ReadonlySet<string> = new Set(),
 ): void {
   const remote = remotePlan(lease)
   if (
@@ -102,12 +105,18 @@ export function assertPersistedDecisionMatchesRun<C>(
     throw new Error('classifier run remote decision identity does not match its receipt')
   }
   const expected = expectedCandidates(lease, remote)
-  if (decision.results.length !== expected.size || decision.calls.length !== 1) {
+  for (const key of expected.keys()) {
+    if (key.startsWith('topic:') && inactive.has(key.split(':')[1]!)) expected.delete(key)
+  }
+  const results = decision.results.filter(
+    result => result.candidateKind !== 'topic' || !inactive.has(result.topicId),
+  )
+  if (results.length !== expected.size || decision.calls.length !== 1) {
     throw new Error('classifier run remote decision does not cover its exact reserved candidates')
   }
   const callIds = new Set(decision.calls.map(call => call.id))
   const seen = new Set<string>()
-  for (const result of decision.results) {
+  for (const result of results) {
     const key = resultKey(result)
     if (
       !expected.has(key) ||
@@ -123,4 +132,18 @@ export function assertPersistedDecisionMatchesRun<C>(
     }
     seen.add(key)
   }
+}
+
+export async function readInactiveRunTopicIds<C>(
+  query: QueryExecutor,
+  lease: ClassifierRunLease<C>,
+): Promise<ReadonlySet<string>> {
+  const remote = remotePlan(lease)
+  if (remote.candidateKind !== 'topic') return new Set()
+  return readInactiveClassifierTopicIds(
+    query,
+    remote.capturedCandidates
+      ? lease.capturedTopicIds
+      : remote.candidates.map(candidate => candidate.topicId),
+  )
 }
