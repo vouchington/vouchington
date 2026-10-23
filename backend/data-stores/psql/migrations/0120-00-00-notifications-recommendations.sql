@@ -564,6 +564,10 @@ CREATE INDEX IF NOT EXISTS idx_web_push_subs__user_id__id_desc
 ON web_push_subscriptions (user_id, id DESC)
 WHERE deleted_at IS NULL;
 
+CREATE INDEX IF NOT EXISTS idx_web_push_subs__deleted_at_id_user_id
+ON web_push_subscriptions (deleted_at, id, user_id)
+WHERE deleted_at IS NOT NULL;
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE OR REPLACE TRIGGER trigger_web_push_subscriptions_updated_at
 BEFORE UPDATE ON web_push_subscriptions

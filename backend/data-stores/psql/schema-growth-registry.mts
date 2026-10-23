@@ -11,7 +11,7 @@ export type PartitionPolicy = {
   strategy: 'RANGE'
   key: string
   children: 'default' | 'monthly'
-  retentionOwner: 'cleanupPartitions' | null
+  retentionOwner: 'cleanupPartitions' | 'runDataRetentionCleanup' | null
   accessClass: PartitionAccessClass
 }
 
@@ -57,11 +57,25 @@ const PARTITION_POLICY_ENTRIES: [string, PartitionPolicy][] = [
   ['post_clearance_changes', defaultRange('id')],
   ['mcp_call_audit_events', defaultRange('id')],
   ['community_post_review_changes', defaultRange('id')],
-  ['user_sessions', defaultRange('id')],
+  [
+    'user_sessions',
+    {
+      ...defaultRange('id'),
+      accessClass: 'retention-window',
+      retentionOwner: 'runDataRetentionCleanup',
+    },
+  ],
   ['session_referral_attributions', defaultRange('id')],
   ['conversation_messages', defaultRange('conversation_id')],
   ['notifications', defaultRange('user_id')],
-  ['web_push_subscriptions', defaultRange('user_id')],
+  [
+    'web_push_subscriptions',
+    {
+      ...defaultRange('user_id'),
+      accessClass: 'retention-window',
+      retentionOwner: 'runDataRetentionCleanup',
+    },
+  ],
   ['post_feed_shares', defaultRange('recipient_user_id')],
   ['rss_feed_item_feed_shares', defaultRange('recipient_user_id')],
   ['post_read_states', defaultRange('user_id')],

@@ -8,11 +8,10 @@ import { EmailFormatInvalidError } from './errors.mts'
 
 const { isEmail } = validator
 
-const hasEmailBeenUsedForLogin = async (emailAddress: string): Promise<boolean> => {
-  const query = sql`/* hasEmailBeenUsedForLogin */
-    SELECT 1 FROM email_address_login_tokens
+const hasAssociatedEmailAddress = async (emailAddress: string): Promise<boolean> => {
+  const query = sql`/* hasAssociatedEmailAddress */
+    SELECT 1 FROM user_email_addresses
     WHERE email_address = ${emailAddress}
-      AND logged_in_at IS NOT NULL
     LIMIT 1
   `
   const result = await read(query)
@@ -38,10 +37,9 @@ export const validateEmailAddress = async (
   }
   const domain = sanitized.slice(atIndex + 1)
 
-  // 4. Early return optimization: Check if email was previously used for login
-  const hasBeenUsedForLogin = await hasEmailBeenUsedForLogin(sanitized)
-  if (hasBeenUsedForLogin) {
-    // Email was previously used for login, skip domain validation
+  // 4. An existing associated address can remain usable after its domain stops validating.
+  const hasAssociatedAddress = await hasAssociatedEmailAddress(sanitized)
+  if (hasAssociatedAddress) {
     return sanitized
   }
 

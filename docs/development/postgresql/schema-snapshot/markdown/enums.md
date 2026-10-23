@@ -160,6 +160,13 @@
 - `production`
 - `development`
 
+## `auth_session_retention_cleanup_names`
+
+- `email_address_login_tokens`
+- `phone_number_login_tokens`
+- `user_sessions`
+- `web_push_subscriptions`
+
 ## `bedrock_embedding_batch_job_types`
 
 - `topics`

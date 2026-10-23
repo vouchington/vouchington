@@ -46,6 +46,8 @@ export {
 
 // Tokens, traversal cursors, and a retained table's own primary identity are not foreign references.
 export const ALLOWED_NONRELATION_UUID = new Set([
+  // Cleanup positions survive deletion of the scanned auth or subscription row.
+  'auth_session_retention_cleanup_cursors.cursor_id',
   'follower_distribution_deliveries.delivery_id',
   'membership_google_play_recovery_cursors.cursor_evidence_id',
   'membership_google_play_recovery_cursors.sweep_upper_bound_evidence_id',
