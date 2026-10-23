@@ -1,12 +1,3 @@
-import {
-  entityRelationMetadatum,
-  getEntityRelationVoteTableName,
-} from '../../backend/types/entities/entity-relations-metadata.mts'
-
-const electedVoteTables = entityRelationMetadatum.flatMap(metadata =>
-  metadata.election ? [getEntityRelationVoteTableName(metadata)] : [],
-)
-
 // Reviewed non-relationship ids. Each key is an exact table.column from the committed PostgreSQL
 // schema snapshot with a one-line reason. The two categories are defined in
 // docs/development/postgres-schema-rules.md#prelaunch-relational-storage. A key that gains a
@@ -24,16 +15,7 @@ export const ALLOWED_TOKEN_CURSOR_PROTOCOL_ID = new Map<string, string>([
     'copyright_dsa_statement_submissions.transparency_database_uuid',
     'Commission statement UUID returned by the external DSA protocol; no Voucha row owns it.',
   ],
-  ...reviewed('Client-issued device token; no devices table exists.', [
-    'agent_moderation_votes.device_id',
-    ...electedVoteTables.map(table => `${table}.device_id`),
-    'hostname_votes.device_id',
-    'post_votes.device_id',
-    'rss_feed_item_votes.device_id',
-    'topic_votes.device_id',
-    'user_sessions.device_id',
-    'user_vouch_votes.device_id',
-  ]),
+  ...reviewed('Client-issued device token; no devices table exists.', ['user_sessions.device_id']),
   [
     'session_referral_attributions.session_id',
     'Anonymous session id from the auth cookie; sessions live outside PostgreSQL.',
@@ -65,6 +47,18 @@ export const ALLOWED_TOKEN_CURSOR_PROTOCOL_ID = new Map<string, string>([
   [
     'notification_push_intent_retention_cursors.cursor_notification_push_intent_id',
     'UUIDv7 traversal position survives deletion of the scanned intent so a sweep cannot rewind.',
+  ],
+  [
+    'user_agent_string_cleanup_cursors.cursor_user_agent_string_id',
+    'UUIDv7 traversal position survives deletion of the scanned user-agent row; it is not a joined identity.',
+  ],
+  [
+    'vote_ballot_cleanup_cursors.cursor_vote_id',
+    'UUIDv7 traversal position survives deletion of the scanned ballot; it is not a joined identity.',
+  ],
+  [
+    'vote_integrity_flag_detail_cleanup_cursors.cursor_flag_id',
+    'UUIDv7 traversal position survives deletion of the scanned flag; it is not a joined identity.',
   ],
   [
     'notification_push_intent_retention_cursors.sweep_upper_bound_notification_push_intent_id',
@@ -143,13 +137,4 @@ export const ALLOWED_AUDIT_SNAPSHOT_ID = new Map<string, string>([
     'topic_alias_category_mapping_reconciliations.topic_alias_id',
     'Alias id at transition time; the pending work is keyed by it and outlives the alias.',
   ],
-  ...reviewed('Session id recorded at vote time; sessions live outside PostgreSQL.', [
-    'agent_moderation_votes.session_id',
-    ...electedVoteTables.map(table => `${table}.session_id`),
-    'hostname_votes.session_id',
-    'post_votes.session_id',
-    'rss_feed_item_votes.session_id',
-    'topic_votes.session_id',
-    'user_vouch_votes.session_id',
-  ]),
 ])
