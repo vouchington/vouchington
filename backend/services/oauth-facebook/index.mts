@@ -4,7 +4,7 @@ import { upsertOAuthAccount, type OAuthAccount } from '@services/oauth-accounts'
 import { fetch } from 'undici'
 import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
 
-const fields = ['name', 'email'].join(',')
+const fields = 'name'
 
 type FacebookUserData = {
   id: string
@@ -123,8 +123,9 @@ export async function upsertFacebookAccount(
   return upsertOAuthAccount(
     'facebook',
     me.id,
-    me.email ?? null,
-    me,
+    // Graph email has no per-address verification signal.
+    null,
+    { name: me.name },
     {
       accessToken: longLivedAccessToken.access_token,
       accessTokenExpiresAt: new Date(Date.now() + longLivedAccessToken.expires_in * 1000),

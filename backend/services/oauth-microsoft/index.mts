@@ -1,3 +1,4 @@
+import { getMicrosoftVerifiedEmail } from './verified-email.mts'
 import createHttpError from 'http-errors'
 import { MICROSOFT_CLIENT_ID, MICROSOFT_CLIENT_SECRET, MICROSOFT_TENANT_ID } from '@voucha/config'
 import { upsertOAuthAccount, type OAuthAccount } from '@services/oauth-accounts'
@@ -5,6 +6,7 @@ import { fetch } from 'undici'
 import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
 
 type MicrosoftTokenResponse = {
+  id_token?: string
   access_token: string
   expires_in?: number
   refresh_token?: string
@@ -92,7 +94,7 @@ export async function upsertMicrosoftAccount(
   }
 
   const msUser = await fetchMicrosoftUser(tokenResponse.access_token, options.signal)
-  const email = msUser.mail ?? null
+  const email = await getMicrosoftVerifiedEmail(tokenResponse.id_token, msUser.id, options.signal)
   const providerUserData: Record<string, unknown> = {}
   if (msUser.displayName) providerUserData.name = msUser.displayName
   if (email) providerUserData.email = email

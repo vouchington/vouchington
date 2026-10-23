@@ -4,6 +4,7 @@ import type { QueryExecutor, QueryOptions } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import {
   connectOAuthAccountToUser,
+  getOAuthAccountByProviderUserId,
   runOAuthAccountConnectionPostCommitEffects,
 } from '@services/oauth-accounts'
 import assert from 'http-assert'
@@ -101,9 +102,14 @@ export const getUser = async ({
   phoneNumber,
   client,
 }: GetUserOptions): Promise<PrivateUser | null> => {
-  if (oauthAccount?.account.user_id) {
-    const user = await getPrivateUserByAny(oauthAccount.account.user_id, { client })
-    if (user) return user
+  if (oauthAccount) {
+    const account = await getOAuthAccountByProviderUserId(
+      oauthAccount.provider,
+      oauthAccount.account.provider_user_id,
+    )
+    return account?.user_id
+      ? getPrivateUserByAny(account.user_id, { client, readOnly: false })
+      : null
   }
 
   if (emailAddress) return getPrivateUserByAny(emailAddress, { client })

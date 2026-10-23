@@ -86,24 +86,6 @@ describe('create', () => {
     })
   })
 
-  it('upsertUser finds an existing email-address user when facebook account has same email', async () => {
-    // Create a user with a known email address
-    const emailAddress = createRandomEmailAddress()
-    const existingUser = await upsertUser({ emailAddress, sessionId: v7(), deviceId: v7() })
-    // Create a facebook account whose email matches the existing user, not yet connected
-    const facebookUserId = `test-facebook-${v7()}`
-    const account = await insertTestOAuthAccount('facebook', facebookUserId, emailAddress)
-    // upsertUser with the facebook account but no emailAddress should find the existing user
-    const user = await upsertUser({
-      oauthAccount: { provider: 'facebook', account },
-      sessionId: v7(),
-      deviceId: v7(),
-    })
-
-    expect(user.id).toEqual(existingUser.id)
-    expect(user.email_address).toEqual(emailAddress)
-  })
-
   it('upsertUser creates a new user via facebook account and finds them on subsequent login', async () => {
     const facebookUserId = `test-facebook-${v7()}`
     const account = await insertTestOAuthAccount(

@@ -18,9 +18,8 @@ import { createEmailAddressLoginToken, verifyEmailAddressLoginToken } from '../a
 
 describe('create.generated', () => {
   installEmailDomainDnsMock()
-  it('preserves an unlinked OAuth identity when connecting an existing user fails', async () => {
+  it('preserves an unlinked OAuth identity when creating a new provider user fails', async () => {
     const emailAddress = createRandomEmailAddress()
-    const user = await upsertUser({ emailAddress, sessionId: v7(), deviceId: v7() })
     const providerUserId = `test-facebook-${v7()}`
     const account = await insertTestOAuthAccount('facebook', providerUserId, emailAddress)
     const options = {
@@ -44,14 +43,10 @@ describe('create.generated', () => {
     await expect(
       getOAuthAccountByProviderUserId('facebook', providerUserId),
     ).resolves.toMatchObject({ user_id: null })
-    await expect(getPrivateUserByAny(user.id, { readOnly: false })).resolves.toMatchObject({
-      facebook_account: null,
-    })
     const retry = await upsertUser(options)
-    expect(retry.id).toBe(user.id)
     await expect(
       getOAuthAccountByProviderUserId('facebook', providerUserId),
-    ).resolves.toMatchObject({ user_id: user.id })
+    ).resolves.toMatchObject({ user_id: retry.id })
   })
   it('Sign up with Email Address', async () => {
     const email_address = createRandomEmailAddress()

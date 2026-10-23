@@ -46,6 +46,17 @@ first caller's completion credential.
     lose only the backend acknowledgement after receipt and confirm the delivered result remains
     usable while the remaining credential expires with the authorization
 
+### Provider identity and email sign-in
+
+- [ ] A known provider account signs in to its connected user even when its provider email changes
+- [ ] An unconnected provider account sharing a registered email returns a factual conflict code;
+      sign in using the existing method, then connect the provider from account settings
+- [ ] An email OTP for an address present only on a provider account creates a separate email
+      identity; it does not sign in to that provider account's user
+- [ ] Microsoft stores an email only when its validated identity token reports verified ownership
+      for that token's email claim; Graph profile email alone does not qualify
+- [ ] Facebook sign-in succeeds without treating its profile email as a verified address
+
 ### Native broker resume
 
 1. Start Facebook, X, GitHub, or LinkedIn authentication in a native client
