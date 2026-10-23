@@ -11,7 +11,7 @@ import { describe, expect, it } from 'vitest'
 const execFile = promisify(execFileCallback)
 
 describe('vouchington-tooling consume wrappers', () => {
-  it('installs a verified tarball with npm and removes its temporary directory', async context => {
+  it('installs a verified tarball with npm and removes its temporary directory', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'tooling-installer-tarball-'))
     const ciDir = join(dir, 'ci')
     const archiveDir = join(dir, 'package')
@@ -72,7 +72,6 @@ packages:
             npm_config_update_notifier: 'false',
             TMPDIR: dir,
           },
-          signal: context.signal,
         },
       )
       expect(
