@@ -99,7 +99,9 @@ export function workflowImageViolations(path: string, document: Document): strin
     found.push(...stepImages(step).map((image): [string, string] => ['composite', image]))
   }
   return found.flatMap(([where, image]) =>
-    isHubImage(image) ? [`${path}#${where}: ${image} must use a reviewed GHCR dependency package`] : [],
+    isHubImage(image)
+      ? [`${path}#${where}: ${image} must use a reviewed GHCR dependency package`]
+      : [],
   )
 }
 
