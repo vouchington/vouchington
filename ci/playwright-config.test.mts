@@ -265,7 +265,8 @@ describe('Playwright shared config', () => {
   })
   // pnpm may install separate peer-variant copies of vouchington-tooling per workspace package, so
   // the reporter path can resolve to a sibling copy; match the package-relative path instead.
-  const lifecycleReporterPathPattern = /vouchington-tooling\/dist\/playwright\/test-lifecycle-reporter\.mjs$/u
+  const lifecycleReporterPathPattern =
+    /vouchington-tooling\/dist\/playwright\/test-lifecycle-reporter\.mjs$/u
   it.each([
     ['ordinary', () => import('../playwright.config.mts'), ['setup', 'chromium']],
     ['credentialed', () => import('../playwright.credentialed.config.mts'), ['chromium']],
