@@ -1,4 +1,4 @@
-import { read, write } from '@data-stores/psql'
+import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { createHash } from 'node:crypto'
 import assert from 'http-assert'
@@ -20,16 +20,6 @@ const CLAIM_SELECT = sql`
   verification_hostname_id, verification_token_issued_at,
   domain_verified_at, created_at, updated_at
 `
-
-export async function getTopicClaimById(id: string): Promise<TopicClaim | null> {
-  const { rows } = await write(
-    sql`/* getTopicClaimById */
-    SELECT `.append(CLAIM_SELECT).append(sql`
-    FROM topic_claims WHERE id = ${id}
-  `),
-  )
-  return (rows[0] as TopicClaim | undefined) ?? null
-}
 
 export async function getVerifiedTopicClaim(
   topicId: string,

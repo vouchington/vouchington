@@ -4,45 +4,11 @@ import type { PrivateUser } from '@services/users/types'
 import { createTopicClaim } from './create.mts'
 import { adminVerifyTopicClaim } from './admin-verify.mts'
 import {
-  getTopicClaimById,
   getVerifiedTopicClaim,
   listTopicClaimsForTopic,
   listTopicClaimsForUser,
   listPendingTopicClaims,
 } from './get.mts'
-
-describe('getTopicClaimById', () => {
-  let claimant: PrivateUser
-  let topicId: string
-
-  beforeAll(async () => {
-    claimant = await createTestUser()
-    const creator = await createTestUser()
-    topicId = await insertTestTopic({
-      name: `GetById Topic ${crypto.randomUUID().slice(0, 8)}`,
-      slug: `getbyid-topic-${crypto.randomUUID().slice(0, 8)}`,
-      createdById: creator.id,
-    })
-  })
-
-  it('returns a claim by id', async () => {
-    const { claim } = await createTopicClaim(claimant.id, {
-      topicId,
-      claimedRole: 'Issuer',
-      evidence: '',
-    })
-    const found = await getTopicClaimById(claim.id)
-    expect(found).not.toBeNull()
-    expect(found!.id).toBe(claim.id)
-    expect(found!.topic_id).toBe(topicId)
-    expect(found).not.toHaveProperty('verification_token_hash')
-  })
-
-  it('returns null for unknown id', async () => {
-    const result = await getTopicClaimById(crypto.randomUUID())
-    expect(result).toBeNull()
-  })
-})
 
 describe('getVerifiedTopicClaim', () => {
   let staff: PrivateUser
