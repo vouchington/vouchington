@@ -50,7 +50,7 @@ export const ALLOWED_NONRELATION_UUID = new Set([
   'auth_session_retention_cleanup_cursors.cursor_id',
   // Content-history cleanup positions survive deletion of the scanned record.
   'content_history_cleanup_cursors.cursor_record_id',
-  'content_history_cleanup_cursors.sweep_upper_id',
+  'content_history_cleanup_cursors.sweep_upper_bound_record_id',
   'follower_distribution_deliveries.delivery_id',
   'membership_google_play_recovery_cursors.cursor_evidence_id',
   'membership_google_play_recovery_cursors.sweep_upper_bound_evidence_id',

@@ -70,6 +70,7 @@ export async function guardAndRetireExplicitHistoryRange(
   // a writer's SELECT FOR UPDATE ROW SHARE lock; ordinary ACCESS SHARE reads remain available.
   // NOWAIT refuses concurrent writes instead of waiting into an opposite-order lock cycle.
   const [liveOwner, ...otherReferences] = DDL_REFERENCE_LOCKS[range.table]
+  // ast-grep-ignore: no-three-sequential-awaits -- DDL reference locks must be acquired in this exact owner-to-child order within one transaction.
   await query(
     `/* retireExplicitHistoryRange:lockLiveOwner */ LOCK TABLE ONLY "${liveOwner}" IN EXCLUSIVE MODE NOWAIT`,
   )

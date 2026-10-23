@@ -79,15 +79,16 @@ $$;
 CREATE TRIGGER trigger_topic_revisions_retention_delete
 BEFORE DELETE ON topic_revisions FOR EACH ROW EXECUTE FUNCTION fn_reject_topic_revision_retention_delete();
 
+CREATE TYPE content_history_cleanup_families AS ENUM (
+  'topic_revisions', 'post_moderation_versions',
+  'post_moderation_dispositions', 'agent_moderations'
+);
 CREATE TABLE IF NOT EXISTS content_history_cleanup_cursors (
-  family TEXT PRIMARY KEY CHECK (family IN (
-    'topic_revisions', 'post_moderation_versions',
-    'post_moderation_dispositions', 'agent_moderations'
-  )),
+  family content_history_cleanup_families PRIMARY KEY,
   cursor_record_id UUID,
-  sweep_upper_id UUID,
+  sweep_upper_bound_record_id UUID,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CHECK ((cursor_record_id IS NULL) OR (sweep_upper_id IS NOT NULL AND cursor_record_id < sweep_upper_id))
+  CHECK ((cursor_record_id IS NULL) OR (sweep_upper_bound_record_id IS NOT NULL AND cursor_record_id < sweep_upper_bound_record_id))
 );
 CREATE TRIGGER trigger_content_history_cleanup_cursors_updated_at
 BEFORE UPDATE ON content_history_cleanup_cursors
@@ -95,5 +96,5 @@ FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 COMMENT ON TABLE content_history_cleanup_cursors IS 'One deletion-stable fixed-window UUIDv7 sweep cursor per bounded content-history cleanup.';
 COMMENT ON COLUMN content_history_cleanup_cursors.family IS 'History family with an independent retention scan and lock.';
 COMMENT ON COLUMN content_history_cleanup_cursors.cursor_record_id IS 'Last scanned UUIDv7 record, not a live entity relationship.';
-COMMENT ON COLUMN content_history_cleanup_cursors.sweep_upper_id IS 'Exclusive fixed UUIDv7 age bound for the current sweep, not a live entity relationship.';
+COMMENT ON COLUMN content_history_cleanup_cursors.sweep_upper_bound_record_id IS 'Exclusive fixed UUIDv7 age bound for the current sweep, not a live entity relationship.';
 COMMENT ON COLUMN content_history_cleanup_cursors.updated_at IS 'Last committed sweep advance.';

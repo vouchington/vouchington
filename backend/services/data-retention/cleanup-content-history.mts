@@ -135,15 +135,15 @@ async function cleanupPage(
   )
   const { rows: cursors } = await transaction<{
     cursor_record_id: string | null
-    sweep_upper_id: string | null
+    sweep_upper_bound_record_id: string | null
   }>(
     `/* cleanupContentHistory:lockCursor */
-      SELECT cursor_record_id, sweep_upper_id
+      SELECT cursor_record_id, sweep_upper_bound_record_id
       FROM content_history_cleanup_cursors WHERE family = $1 FOR UPDATE`,
     [family],
   )
   const cursor = cursors[0]!
-  const upperId = cursor.sweep_upper_id ?? requestedUpperId
+  const upperId = cursor.sweep_upper_bound_record_id ?? requestedUpperId
   const { rows: candidates } = await transaction<{ id: string }>(
     `/* cleanupContentHistory:listCandidates */
       SELECT id FROM ${family}
@@ -169,7 +169,7 @@ async function cleanupPage(
   await transaction(
     `/* cleanupContentHistory:advanceCursor */
       UPDATE content_history_cleanup_cursors
-      SET cursor_record_id = $2, sweep_upper_id = $3
+      SET cursor_record_id = $2, sweep_upper_bound_record_id = $3
       WHERE family = $1`,
     [family, hasMore ? page.at(-1)!.id : null, hasMore ? upperId : null],
   )

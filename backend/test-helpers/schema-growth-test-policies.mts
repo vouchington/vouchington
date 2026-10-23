@@ -38,6 +38,7 @@ const RETAINED_ID_POLICIES = [
   ['retained_api_key_identities', sharedParentUuidv7('api_keys')],
   ['retained_topic_identities', sharedParentUuidv7('topics')],
   ['retained_post_identities', sharedParentUuidv7('posts')],
+  ['retained_post_clearance_change_identities', sharedParentUuidv7('post_clearance_changes')],
   ['retained_rss_feed_item_identities', sharedParentUuidv7('rss_feed_items')],
   ['retained_image_identities', sharedParentUuidv7('images')],
   ...entityRelationMetadatum.flatMap(metadata =>
