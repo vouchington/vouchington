@@ -3,11 +3,7 @@ import { indexById } from '@modules/utils'
 import { electionVotesMapToRecord } from '@modules/utils/collections'
 import { type CommentNode, getCommentAncestorsByAny } from '@services/comments'
 import { getPostElectionVotesByUser } from '@services/elections-votes/post'
-import {
-  getPostByAnyCached,
-  getPostByAnyCachedBatch,
-  getPostMetricsByAnyCachedBatch,
-} from '@services/entity-fetch'
+import { getPostByAnyCachedBatch, getPostMetricsByAnyCachedBatch } from '@services/entity-fetch'
 import { getAdminUserIdsFromPosts } from '@services/markdown/admin-users'
 import { renderMarkdownBatch } from '@services/markdown/batch-render'
 import { getBookmarksForEntities } from '@services/bookmarks/get'
@@ -71,15 +67,17 @@ app.route('/api/v1/posts/:idOrSlug/ancestors').get(async (ctx: Context) => {
   ctx.assert(targetId, 404, 'Post not found')
 
   const rootAncestor = ancestors[0]
-  const rootPost = await getPostByAnyCached(rootAncestor.id)
-  ctx.assert(rootPost, 404, 'Post not found')
-  ctx.assert(await getRouteAccessPost(rootPost), 404, 'Post not found')
   const ancestorIds = ancestors.map(a => a.id)
   const accessIds = [...new Set([...ancestorIds, targetId])]
+  // The root is the first ancestor, so the page batch is the root read. A separate
+  // getPostByAnyCached would add a round trip and then repeat that id in the batch.
   const fetchedPosts = await getPostByAnyCachedBatch(accessIds)
   const fetchedPostsById = new Map(
     fetchedPosts.filter(post => post != null).map(post => [post.id, post]),
   )
+  const rootPost = rootAncestor ? fetchedPostsById.get(rootAncestor.id) : undefined
+  ctx.assert(rootPost, 404, 'Post not found')
+  ctx.assert(await getRouteAccessPost(rootPost), 404, 'Post not found')
   const posts = ancestorIds.flatMap(id => {
     const post = fetchedPostsById.get(id)
     return post ? [post] : []
