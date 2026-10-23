@@ -57,24 +57,21 @@ app
     const { idOrSlug } = ctx.params as { idOrSlug: string }
     const { community, membership } = await loadCommunityWithViewer(idOrSlug, currentUser.id)
 
+    const canUpdate = currentUserCanUpdateCommunity(currentUser, community, membership)
+    const canArchive = currentUserCanDeleteCommunity(currentUser, community, membership)
+    // Establish community authority before the parser exposes body-shape diagnostics.
+    ctx.assert(canUpdate || canArchive, 403, 'Forbidden')
+
     const parsedBody: unknown = await parseJsonBody(ctx, '1mb')
     const body = parsedBody as Record<string, unknown>
     const { archive, ...updateBody } = body
     const hasUpdateFields = Object.keys(updateBody).length > 0
 
     if (archive !== undefined) {
-      ctx.assert(
-        currentUserCanDeleteCommunity(currentUser, community, membership),
-        403,
-        'Forbidden',
-      )
+      ctx.assert(canArchive, 403, 'Forbidden')
     }
     if (archive === undefined || hasUpdateFields) {
-      ctx.assert(
-        currentUserCanUpdateCommunity(currentUser, community, membership),
-        403,
-        'Forbidden',
-      )
+      ctx.assert(canUpdate, 403, 'Forbidden')
     }
     validateRequestContract(ctx, 'PATCH:/api/v1/communities/:idOrSlug', {
       path: ctx.params,

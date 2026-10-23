@@ -54,11 +54,13 @@ describe('PATCH /api/v1/communities/:idOrSlug request contract validation', () =
 
     const request = createRequest()
     await request.authenticateAs(member!)
-    await request
-      .patch(`/api/v1/communities/${community.slug}`)
-      .set('Content-Type', 'application/json')
-      .send('null')
-      .expect(403)
+    for (const body of [null, [], 'text', 1, true]) {
+      await request
+        .patch(`/api/v1/communities/${community.slug}`)
+        .set('Content-Type', 'application/json')
+        .send(JSON.stringify(body))
+        .expect(403)
+    }
   })
 
   it('returns 401 (not 422) for a malformed body when unauthenticated', async () => {
