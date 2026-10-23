@@ -30,7 +30,7 @@ describe('classifier run reservation and requests (real PG)', () => {
     })
     expect(facts!.input_sha256.equals(setup.post.inputSha256)).toBe(true)
     const [request] = await getClassifierRunRequestFacts(setup.post.id, setup.slug)
-    expect(request).toMatchObject({ run_id: run.runId, no_work_at: null, stale_at: null })
+    expect(request).toMatchObject({ run_identity_id: run.runId, no_work_at: null, stale_at: null })
   })
 
   it('creates one receipt when reservations race, and none for a repeat', async () => {
@@ -126,7 +126,7 @@ describe('classifier run reservation and requests (real PG)', () => {
     const older = requests.find(request => request.input_sha256.equals(setup.post.inputSha256))
     const newer = requests.find(request => request.input_sha256.equals(revised))
     expect(older!.stale_at).not.toBeNull()
-    expect(newer).toMatchObject({ run_id: null, no_work_at: null, stale_at: null })
+    expect(newer).toMatchObject({ run_identity_id: null, no_work_at: null, stale_at: null })
   })
 
   it('writes no request when no classifier is asked for', async () => {

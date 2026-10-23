@@ -9,6 +9,10 @@ export const EXTRA_BOUNDED_TABLES = new Map<string, string>([
     'At most one runtime-bounded pending post page per unfinished image deletion; acknowledged admissions delete receipts, so cardinality tracks active work rather than retained deletion history.',
   ],
   [
+    'classifier_retention_cursors',
+    'One persisted cyclic keyset cursor for each finite classifier record cleanup family.',
+  ],
+  [
     'url_hostname_cache_invalidation_work_items',
     'At most one current generation per live hostname; successful eviction deletes it, hostname deletion cascades it, and bounded cache-TTL pruning removes abandoned work.',
   ],

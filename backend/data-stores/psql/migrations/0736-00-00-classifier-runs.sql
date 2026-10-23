@@ -1,14 +1,45 @@
--- Shared fixed-classifier run lifecycle: one receipt per classifier, subject, content and
--- configuration identity, plus the durable request that makes a subject recoverable by the sweep
+-- Shared fixed-classifier run lifecycle: one compact identity per classifier, subject, content and
+-- configuration, plus the durable request that makes a subject recoverable by the sweep
 -- before any receipt exists. C3 batches retain remote results; C4 retains votes. Remote work
 -- reserves its real C3 batch and exact candidate snapshots before provider execution.
 --
--- The table is unpartitioned: a unique index on a partitioned table must include the partition key,
--- and the identity index below is per subject kind.
+-- Identity rows survive payload retirement and subject deletion. They never authorize the subject.
+
+CREATE TABLE IF NOT EXISTS classifier_run_identities (
+  id UUID NOT NULL DEFAULT uuidv7(),
+  classifier_id UUID NOT NULL REFERENCES classifiers (id) ON DELETE RESTRICT,
+  post_id UUID REFERENCES retained_post_identities (id) ON DELETE RESTRICT,
+  rss_feed_item_id UUID REFERENCES retained_rss_feed_item_identities (id) ON DELETE RESTRICT,
+  input_sha256 BYTEA NOT NULL CHECK (OCTET_LENGTH(input_sha256) = 32),
+  configuration_sha256 BYTEA NOT NULL CHECK (OCTET_LENGTH(configuration_sha256) = 32),
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
+  CONSTRAINT pk_classifier_run_identities PRIMARY KEY (id),
+  CONSTRAINT chk_classifier_run_identities__one_subject
+    CHECK (num_nonnulls(post_id, rss_feed_item_id) = 1)
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_classifier_run_identities__post
+  ON classifier_run_identities (classifier_id, post_id, input_sha256, configuration_sha256)
+  WHERE post_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_classifier_run_identities__rss_feed_item
+  ON classifier_run_identities (classifier_id, rss_feed_item_id, input_sha256, configuration_sha256)
+  WHERE rss_feed_item_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_classifier_run_identities__classifier
+  ON classifier_run_identities (classifier_id, id);
+CREATE INDEX IF NOT EXISTS idx_classifier_run_identities__post
+  ON classifier_run_identities (post_id, id) WHERE post_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_classifier_run_identities__rss_feed_item
+  ON classifier_run_identities (rss_feed_item_id, id) WHERE rss_feed_item_id IS NOT NULL;
+COMMENT ON TABLE classifier_run_identities IS 'Minimal exact-dedup identity retained after the classifier run payload expires; never authorizes a deleted subject.';
+COMMENT ON COLUMN classifier_run_identities.classifier_id IS 'Classifier named in the immutable run deduplication key.';
+COMMENT ON COLUMN classifier_run_identities.post_id IS 'Retained post identity in the deduplication key; never grants live-post access.';
+COMMENT ON COLUMN classifier_run_identities.rss_feed_item_id IS 'Retained feed-item identity in the deduplication key; never grants live-item access.';
+COMMENT ON COLUMN classifier_run_identities.input_sha256 IS 'Exact content digest in the immutable run deduplication key.';
+COMMENT ON COLUMN classifier_run_identities.configuration_sha256 IS 'Exact classifier configuration digest in the immutable run deduplication key.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS classifier_runs (
-  id UUID NOT NULL DEFAULT uuidv7(),
+  id UUID NOT NULL REFERENCES classifier_run_identities (id) ON DELETE RESTRICT,
   classifier_id UUID NOT NULL REFERENCES classifiers (id) ON DELETE RESTRICT,
   post_id UUID REFERENCES posts (id) ON DELETE CASCADE,
   rss_feed_item_id UUID REFERENCES rss_feed_items (id) ON DELETE CASCADE,
@@ -64,15 +95,6 @@ CREATE TABLE IF NOT EXISTS classifier_runs (
     )
 );
 
--- One receipt per classifier, subject, content and configuration identity. Kept per subject kind
--- so each index is a plain unique btree over concrete columns.
-CREATE UNIQUE INDEX IF NOT EXISTS uq_classifier_runs__identity_post
-  ON classifier_runs (classifier_id, post_id, input_sha256, configuration_sha256)
-  WHERE post_id IS NOT NULL;
-CREATE UNIQUE INDEX IF NOT EXISTS uq_classifier_runs__identity_rss_feed_item
-  ON classifier_runs (classifier_id, rss_feed_item_id, input_sha256, configuration_sha256)
-  WHERE rss_feed_item_id IS NOT NULL;
-
 -- The batch table is defined by C2/C3, so add and validate its concrete same-classifier and
 -- same-subject FKs here. A NULL subject column skips its composite FK (MATCH SIMPLE).
 DO $$ BEGIN
@@ -124,26 +146,26 @@ CREATE INDEX IF NOT EXISTS idx_classifier_runs__recoverable
   WHERE completed_at IS NULL AND superseded_at IS NULL AND terminal_failed_at IS NULL;
 
 -- The usage ledger (0490) is created earlier, so add and validate its run attribution FK here. A
--- deleted run leaves its cost rows in place: the ledger is a financial record, not run state.
+-- deleted run payload leaves its cost rows and run identity in place: the ledger is a financial record.
 DO $$ BEGIN
   IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint WHERE conname = 'fk_ai_usage_records__classifier_run'
+    SELECT 1 FROM pg_constraint WHERE conname = 'fk_ai_usage_records__classifier_run_identity'
   ) THEN
     ALTER TABLE ai_usage_records
-      ADD CONSTRAINT fk_ai_usage_records__classifier_run
-      FOREIGN KEY (classifier_run_id) REFERENCES classifier_runs (id)
-      ON DELETE SET NULL NOT VALID;
+      ADD CONSTRAINT fk_ai_usage_records__classifier_run_identity
+      FOREIGN KEY (classifier_run_identity_id) REFERENCES classifier_run_identities (id)
+      ON DELETE RESTRICT NOT VALID;
   END IF;
 END $$;
-ALTER TABLE ai_usage_records VALIDATE CONSTRAINT fk_ai_usage_records__classifier_run;
+ALTER TABLE ai_usage_records VALIDATE CONSTRAINT fk_ai_usage_records__classifier_run_identity;
 
 CREATE TABLE IF NOT EXISTS classifier_run_requests (
   id UUID NOT NULL DEFAULT uuidv7(),
   classifier_id UUID NOT NULL REFERENCES classifiers (id) ON DELETE RESTRICT,
-  post_id UUID REFERENCES posts (id) ON DELETE CASCADE,
-  rss_feed_item_id UUID REFERENCES rss_feed_items (id) ON DELETE CASCADE,
+  post_id UUID REFERENCES retained_post_identities (id) ON DELETE RESTRICT,
+  rss_feed_item_id UUID REFERENCES retained_rss_feed_item_identities (id) ON DELETE RESTRICT,
   input_sha256 BYTEA NOT NULL CHECK (OCTET_LENGTH(input_sha256) = 32),
-  run_id UUID REFERENCES classifier_runs (id) ON DELETE SET NULL,
+  run_identity_id UUID REFERENCES classifier_run_identities (id) ON DELETE RESTRICT,
   no_work_at TIMESTAMPTZ,
   stale_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
@@ -152,7 +174,7 @@ CREATE TABLE IF NOT EXISTS classifier_run_requests (
   CONSTRAINT chk_classifier_run_requests__one_subject
     CHECK (num_nonnulls(post_id, rss_feed_item_id) = 1),
   CONSTRAINT chk_classifier_run_requests__one_settlement
-    CHECK (num_nonnulls(run_id, no_work_at, stale_at) <= 1)
+    CHECK (num_nonnulls(run_identity_id, no_work_at, stale_at) <= 1)
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS uq_classifier_run_requests__identity_post
@@ -167,11 +189,11 @@ CREATE INDEX IF NOT EXISTS idx_classifier_run_requests__post
   ON classifier_run_requests (post_id, id) WHERE post_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_classifier_run_requests__rss_feed_item
   ON classifier_run_requests (rss_feed_item_id, id) WHERE rss_feed_item_id IS NOT NULL;
-CREATE INDEX IF NOT EXISTS idx_classifier_run_requests__run
-  ON classifier_run_requests (run_id, id) WHERE run_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_classifier_run_requests__run_identity
+  ON classifier_run_requests (run_identity_id, id) WHERE run_identity_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_classifier_run_requests__pending
   ON classifier_run_requests (id)
-  WHERE run_id IS NULL AND no_work_at IS NULL AND stale_at IS NULL;
+  WHERE run_identity_id IS NULL AND no_work_at IS NULL AND stale_at IS NULL;
 
 -- The candidate set a run captured once when it was reserved: C6's topics, or C9's stories and
 -- standalone RSS items. The set is deliberately outside the run identity, so a later search that
@@ -286,13 +308,13 @@ COMMENT ON TABLE classifier_run_requests IS
 COMMENT ON COLUMN classifier_run_requests.classifier_id IS
   'Fixed classifier the subject is requested for.';
 COMMENT ON COLUMN classifier_run_requests.post_id IS
-  'Post subject of the request; deleting the post removes the request. Exactly one subject column is set.';
+  'Retained post identity in the request deduplication key; deleting the live post does not erase it or authorize replay.';
 COMMENT ON COLUMN classifier_run_requests.rss_feed_item_id IS
-  'RSS feed item subject of the request; deleting the item removes the request. Exactly one subject column is set.';
+  'Retained feed-item identity in the request deduplication key; deleting the live item does not erase it or authorize replay.';
 COMMENT ON COLUMN classifier_run_requests.input_sha256 IS
   'Subject content digest current when the request was written; a request settles once per content version.';
-COMMENT ON COLUMN classifier_run_requests.run_id IS
-  'Run receipt reserved for the request; NULL while unsettled, and cleared again if the run is deleted so the sweep recovers it.';
+COMMENT ON COLUMN classifier_run_requests.run_identity_id IS
+  'Durable run identity that settled this request; NULL while unsettled. Payload expiry never reopens it.';
 COMMENT ON COLUMN classifier_run_requests.no_work_at IS
   'Time the classifier resolved to no configured work for the subject; a settled request is not swept again until a new approval re-arms it.';
 COMMENT ON COLUMN classifier_run_requests.stale_at IS

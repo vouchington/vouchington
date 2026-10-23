@@ -613,7 +613,7 @@ CREATE TABLE IF NOT EXISTS topic_classifier_results (
   scope_community_id UUID,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
 
-  PRIMARY KEY (topic_id, id),
+  PRIMARY KEY (batch_id, id),
   CONSTRAINT chk_topic_classifier_results__scope CHECK (
     (scope_category = 'global' AND scope_community_id IS NULL)
     OR (scope_category = 'community_ai' AND scope_community_id IS NOT NULL)
@@ -657,7 +657,7 @@ CREATE TABLE IF NOT EXISTS topic_classifier_results (
   CONSTRAINT fk_topic_classifier_results__call_batch
     FOREIGN KEY (decision_call_id, batch_id)
     REFERENCES classifier_decision_calls (id, batch_id) ON DELETE CASCADE
-) PARTITION BY RANGE (topic_id);
+) PARTITION BY RANGE (batch_id);
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_topic_classifier_results__topic_batch
   ON topic_classifier_results (topic_id, batch_id);
@@ -926,7 +926,7 @@ COMMENT ON COLUMN classifier_decision_batch_candidates.effective_lower_threshold
 COMMENT ON COLUMN classifier_decision_batch_candidates.effective_upper_threshold IS 'Captured upper decision bound after prompt-default inheritance.';
 COMMENT ON TABLE classifier_decision_batches IS 'One classified post or RSS item decision, including scope provenance and prompt revision.';
 COMMENT ON TABLE classifier_decision_calls IS 'Ordered shards for one classifier decision batch.';
-COMMENT ON TABLE topic_classifier_results IS 'Per-candidate classifier results for topic candidates, RANGE-partitioned by topic_id.';
+COMMENT ON TABLE topic_classifier_results IS 'Per-candidate classifier results for topic candidates, RANGE-partitioned by the UUIDv7 decision batch_id.';
 COMMENT ON TABLE story_classifier_results IS 'Per-candidate classifier results for story-family candidates (a clustered story or a standalone RSS item), RANGE-partitioned by batch_id.';
 COMMENT ON TABLE community_prompt_classifier_results IS 'Per-prompt classifier results for community moderation prompts, RANGE-partitioned by batch_id.';
 
@@ -978,8 +978,8 @@ COMMENT ON COLUMN classifier_decision_batches.completed_at IS 'Completion marker
 COMMENT ON COLUMN classifier_decision_calls.batch_id IS 'Logical decision batch containing this provider call.';
 COMMENT ON COLUMN classifier_decision_calls.shard_ordinal IS 'Zero-based order of this context-window shard within its batch.';
 
-COMMENT ON COLUMN topic_classifier_results.topic_id IS 'Topic candidate scored by this result and the partition key.';
-COMMENT ON COLUMN topic_classifier_results.batch_id IS 'Logical decision batch that produced this result.';
+COMMENT ON COLUMN topic_classifier_results.topic_id IS 'Topic candidate scored by this result.';
+COMMENT ON COLUMN topic_classifier_results.batch_id IS 'Time-ordered logical decision batch that produced this result and owns its partition.';
 COMMENT ON COLUMN topic_classifier_results.decision_call_id IS 'Specific provider call or shard that produced this result.';
 COMMENT ON COLUMN topic_classifier_results.classifier_id IS 'Classifier copied from the owning batch for relational enforcement.';
 COMMENT ON COLUMN topic_classifier_results.candidate_kind IS 'Fixed topic discriminator used only for the classifier-kind foreign key.';
@@ -1022,3 +1022,31 @@ COMMENT ON COLUMN community_prompt_classifier_results.effective_upper_threshold 
 COMMENT ON COLUMN community_prompt_classifier_results.raw_response IS 'Full native structured-decision answer for audit and diagnostics.';
 COMMENT ON COLUMN community_prompt_classifier_results.scope_category IS 'Always community_ai, copied from the owning batch.';
 COMMENT ON COLUMN community_prompt_classifier_results.scope_community_id IS 'Community provenance copied from the owning batch; deleting the community cascades to its results.';
+
+-- One deletion-stable high-water mark per bounded classifier retention sweep. A sweep scans raw
+-- UUIDv7 keys before checking eligibility, so old batches waiting for operator partition retirement
+-- cannot make a daily run inspect an unbounded number of rows.
+CREATE TYPE classifier_retention_sweeps AS ENUM (
+  'run_candidates', 'agent_topics', 'local_outcomes', 'runs', 'calls', 'batches'
+);
+
+CREATE TABLE IF NOT EXISTS classifier_retention_cursors (
+  sweep classifier_retention_sweeps PRIMARY KEY,
+  cursor_id UUID,
+  cursor_ordinal INTEGER,
+  cursor_child_id UUID,
+  sweep_end_key UUID,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE OR REPLACE TRIGGER trigger_classifier_retention_cursors_updated_at
+  BEFORE UPDATE ON classifier_retention_cursors
+  FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+
+COMMENT ON TABLE classifier_retention_cursors IS 'One independent cyclic keyset position per bounded classifier record retention sweep.';
+COMMENT ON COLUMN classifier_retention_cursors.sweep IS 'The classifier record family whose daily sweep owns this position.';
+COMMENT ON COLUMN classifier_retention_cursors.cursor_id IS 'Last raw UUIDv7 row examined; no FK so deletion preserves progress.';
+COMMENT ON COLUMN classifier_retention_cursors.cursor_ordinal IS 'Last candidate ordinal examined within cursor_id when sweeping run candidates.';
+COMMENT ON COLUMN classifier_retention_cursors.cursor_child_id IS 'Last topic ID examined within cursor_id when sweeping agent topics.';
+COMMENT ON COLUMN classifier_retention_cursors.sweep_end_key IS 'Fixed exclusive UUIDv7 cutoff captured when a sweep cycle begins.';
+COMMENT ON COLUMN classifier_retention_cursors.updated_at IS 'Last committed sweep progress.';

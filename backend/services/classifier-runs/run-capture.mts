@@ -175,7 +175,7 @@ async function hasClassifierRunReceipt<C, L, E>(
       : sql`rss_feed_item_id = ${subject.rssFeedItemId}`
   const { rows } = await query(
     sql`/* reserveClassifierRun.existing */
-    SELECT 1 FROM classifier_runs
+    SELECT 1 FROM classifier_run_identities
     WHERE classifier_id = (SELECT id FROM classifiers WHERE slug = ${slug})
       AND input_sha256 = ${current.inputSha256}
       AND configuration_sha256 = ${resolved.configurationSha256} AND `.append(subjectMatch),

@@ -55,7 +55,9 @@ describe('classifier run dispatcher', () => {
       rssFeedItemId: null,
       inputSha256: inputSha256.toString('hex'),
     })
-    expect(await getClassifierRunRequestFacts(post.id)).toMatchObject([{ run_id: runs[0]!.id }])
+    expect(await getClassifierRunRequestFacts(post.id)).toMatchObject([
+      { run_identity_id: runs[0]!.id },
+    ])
   })
 
   it('reserves nothing for an unapproved post and settles its request stale until re-approval re-arms it', async () => {
@@ -69,12 +71,12 @@ describe('classifier run dispatcher', () => {
 
     expect(await runsOf(post.id)).toEqual([])
     expect(await getClassifierRunRequestFacts(post.id)).toMatchObject([
-      { run_id: null, no_work_at: null, stale_at: expect.any(Date) },
+      { run_identity_id: null, no_work_at: null, stale_at: expect.any(Date) },
     ])
 
     await requestPostClassifierRun(post, inputSha256)
     expect(await getClassifierRunRequestFacts(post.id)).toMatchObject([
-      { run_id: null, no_work_at: null, stale_at: null },
+      { run_identity_id: null, no_work_at: null, stale_at: null },
     ])
   })
 
@@ -88,7 +90,7 @@ describe('classifier run dispatcher', () => {
 
     expect(await runsOf(post.id)).toEqual([])
     expect(await getClassifierRunRequestFacts(post.id)).toMatchObject([
-      { run_id: null, no_work_at: expect.any(Date) },
+      { run_identity_id: null, no_work_at: expect.any(Date) },
     ])
   })
 

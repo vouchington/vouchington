@@ -39,7 +39,7 @@ export function describeClassifierUsageLedger(driver: ClassifierFailureDriver): 
         expect(success).toHaveBeenCalledOnce()
         expect(await listAiUsageRecordsForClassifierRun(run.runId)).toEqual([
           expect.objectContaining({
-            classifier_run_id: run.runId,
+            classifier_run_identity_id: run.runId,
             latency_milliseconds: LATENCY_MS,
             ...BILLED_ROW,
           }),

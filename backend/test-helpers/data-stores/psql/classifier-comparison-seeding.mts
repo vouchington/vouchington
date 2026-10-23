@@ -21,8 +21,8 @@ import type { createClassifierFixture } from './classifiers.mts'
 type ComparisonFixture = Awaited<ReturnType<typeof createClassifierFixture>>
 export type Ballot = -1 | 0 | 1
 
-/** The day the comparison tests place their decisions on, safely before any real clock time. */
-const SEED_DAY_MS = Date.UTC(2026, 2, 10, 12)
+/** Place synthetic decisions safely inside classifier retention and before the real clock. */
+const SEED_DAY_MS = Date.now() - 2 * 24 * 60 * 60 * 1000
 
 /** A moment `hours` after noon on the seed day, for dating decision batches by their UUIDv7 id. */
 export function seedMoment(hours: number): Date {

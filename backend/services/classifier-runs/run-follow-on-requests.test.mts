@@ -33,7 +33,7 @@ describe('requestFollowOnClassifierRun (real PG)', () => {
     const requests = await requestsOf(fixture)
     expect(requests).toHaveLength(1)
     expect(requests[0]!.input_sha256.equals(fixture.inputSha256)).toBe(true)
-    expect(requests[0]).toMatchObject({ run_id: null, no_work_at: null, stale_at: null })
+    expect(requests[0]).toMatchObject({ run_identity_id: null, no_work_at: null, stale_at: null })
   })
 
   it('writes the same request for a feed item', async () => {
@@ -69,7 +69,7 @@ describe('requestFollowOnClassifierRun (real PG)', () => {
     await requestFollowOnForTest(fixture)
 
     expect(await requestsOf(fixture)).toMatchObject([
-      { run_id: null, no_work_at: null, stale_at: null },
+      { run_identity_id: null, no_work_at: null, stale_at: null },
     ])
   })
 

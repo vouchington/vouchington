@@ -11,7 +11,7 @@ export type PartitionPolicy = {
   strategy: 'RANGE'
   key: string
   children: 'default' | 'monthly'
-  retentionOwner: 'cleanupPartitions' | 'runDataRetentionCleanup' | null
+  retentionOwner: 'cleanupPartitions' | 'runDataRetentionCleanup' | 'operatorPartitionDrop' | null
   accessClass: PartitionAccessClass
 }
 
@@ -31,6 +31,83 @@ const monthlyRange = (key: string): PartitionPolicy => ({
   accessClass: 'retention-window',
 })
 
+const operatorRetentionRange = (key: string): PartitionPolicy => ({
+  strategy: 'RANGE',
+  key,
+  children: 'default',
+  retentionOwner: 'operatorPartitionDrop',
+  accessClass: 'retention-window',
+})
+
+type ClassifierRetentionPolicy = {
+  minimumDays: number
+  owner: 'data-retention' | 'operator-partition-drop'
+  reason: string
+}
+
+/** Parent receipts are reclaimed after their operator-owned result partitions have been removed. */
+export const CLASSIFIER_RETENTION_POLICIES = new Map<string, ClassifierRetentionPolicy>([
+  [
+    'classifier_decision_batches',
+    {
+      minimumDays: 90,
+      owner: 'data-retention',
+      reason:
+        'Daily capped cleanup deletes old batches only after operator-owned result partitions and their calls and candidate snapshots are gone.',
+    },
+  ],
+  [
+    'classifier_decision_calls',
+    {
+      minimumDays: 90,
+      owner: 'data-retention',
+      reason:
+        'Daily capped cleanup deletes old calls only after their operator-owned result rows are gone.',
+    },
+  ],
+  [
+    'classifier_runs',
+    {
+      minimumDays: 90,
+      owner: 'data-retention',
+      reason:
+        'Daily capped cleanup expires terminal run payloads after their child rows are removed; compact identities and ledger attribution remain.',
+    },
+  ],
+  [
+    'classifier_run_candidates',
+    {
+      minimumDays: 90,
+      owner: 'data-retention',
+      reason: 'Daily capped cleanup removes candidates of old runs before deleting their receipts.',
+    },
+  ],
+  ...['autotagger_agent_run_topics', 'post_classifier_local_outcomes'].map(
+    (table): [string, ClassifierRetentionPolicy] => [
+      table,
+      {
+        minimumDays: 90,
+        owner: 'data-retention',
+        reason: 'Daily capped cleanup removes terminal run children before their run payload.',
+      },
+    ],
+  ),
+  ...[
+    'classifier_decision_batch_candidates',
+    'topic_classifier_results',
+    'story_classifier_results',
+    'community_prompt_classifier_results',
+  ].map((table): [string, ClassifierRetentionPolicy] => [
+    table,
+    {
+      minimumDays: 90,
+      owner: 'operator-partition-drop',
+      reason:
+        'UUIDv7 batch ranges start in DEFAULT and are split on demand; the owner retires only complete ranges outside the retention window.',
+    },
+  ]),
+])
+
 const PARTITION_POLICY_ENTRIES: [string, PartitionPolicy][] = [
   ['retained_post_identities', defaultRange('id')],
   ['retained_rss_feed_item_identities', defaultRange('id')],
@@ -44,10 +121,10 @@ const PARTITION_POLICY_ENTRIES: [string, PartitionPolicy][] = [
   ['post_topic_recommendations', defaultRange('post_id')],
   ['post_autotagger_results', defaultRange('post_id')],
   ['agent_moderations', defaultRange('post_id')],
-  ['classifier_decision_batch_candidates', defaultRange('batch_id')],
-  ['topic_classifier_results', defaultRange('topic_id')],
-  ['story_classifier_results', defaultRange('batch_id')],
-  ['community_prompt_classifier_results', defaultRange('batch_id')],
+  ['classifier_decision_batch_candidates', operatorRetentionRange('batch_id')],
+  ['topic_classifier_results', operatorRetentionRange('batch_id')],
+  ['story_classifier_results', operatorRetentionRange('batch_id')],
+  ['community_prompt_classifier_results', operatorRetentionRange('batch_id')],
   ['rss_feed_crawls', monthlyRange('id')],
   ['post_publication_projection_receipts', defaultRange('post_identity_id')],
   ['post_publication_post_identities', defaultRange('id')],

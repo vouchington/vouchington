@@ -32,10 +32,8 @@ export const POST_PARTITION_TABLES: string[] = [
 
 /**
  * Classifier results retain one row per candidate. Topic and story-family ownership use
- * separate parents; topic results prune by topic_id, while story-family results hold either a
- * story or a standalone RSS item (so no single entity column can be the key) and prune by the
- * UUIDv7 decision batch_id instead. Community prompt results have no stable per-prompt key worth
- * pruning on, so they range over their decision batch too.
+ * separate parents. All result families range by the UUIDv7 decision batch so batch-scoped replay
+ * and retention share one time key. Topic and story lookups also have entity-leading indexes.
  */
 export const CLASSIFIER_RESULT_PARTITION_TABLES: string[] = [
   'classifier_decision_batch_candidates',

@@ -1,5 +1,6 @@
 import { entityRelationMetadatum } from '@voucha/types/entities/entity-relations-metadata'
 import {
+  CLASSIFIER_RETENTION_POLICIES,
   PARTITION_POLICIES,
   UNBOUNDED_UNPARTITIONED_TABLES,
   type PartitionPolicy,
@@ -99,11 +100,15 @@ export function buildSchemaGrowthRegistry(
       const partition = PARTITION_POLICIES.get(table) ?? null
       const unboundedRationale = UNBOUNDED_UNPARTITIONED_TABLES.get(table)
       const boundedRationale = EXPLICIT_BOUNDED_TABLES.get(table)
-      if (!partition && !unboundedRationale && !boundedRationale) {
+      const retentionPolicy = CLASSIFIER_RETENTION_POLICIES.get(table)
+      if (!partition && !unboundedRationale && !boundedRationale && !retentionPolicy) {
         throw new Error(`Unclassified schema growth table: ${table}`)
       }
-      const growth: SchemaGrowthClass = boundedRationale ? 'bounded' : 'unbounded'
-      const noPartitionRationale = partition ? undefined : (unboundedRationale ?? boundedRationale)
+      const growth: SchemaGrowthClass =
+        boundedRationale || retentionPolicy ? 'bounded' : 'unbounded'
+      const noPartitionRationale = partition
+        ? undefined
+        : (unboundedRationale ?? boundedRationale ?? retentionPolicy?.reason)
       return {
         table,
         growth,

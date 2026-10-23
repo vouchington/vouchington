@@ -127,12 +127,23 @@ async function insertClassifierRunRow(input: {
   if (input.communityId) {
     await retainPublicationIdentityBridges(transaction, 'community', [input.communityId])
   }
-  const { rows } = await transaction<{ id: string }>(sql`/* insertClassifierRunSchemaRow */
-    INSERT INTO classifier_runs (
-      classifier_id, post_id, rss_feed_item_id, input_sha256, configuration_json,
-      configuration_sha256, shared_actor_user_id, decision_batch_id
+  const { rows: identities } = await transaction<{ id: string }>(sql`
+    /* insertClassifierRunSchemaIdentity */
+    INSERT INTO classifier_run_identities (
+      classifier_id, post_id, rss_feed_item_id, input_sha256, configuration_sha256
     ) VALUES (
       ${input.classifierId}, ${input.postId}, ${input.rssFeedItemId}, ${input.inputSha256},
+      COALESCE(${input.configurationSha256 ?? null}::bytea,
+        digest(${input.configurationJson}::jsonb::text, 'sha256'))
+    ) RETURNING id
+  `)
+  const identityId = identities[0]!.id
+  const { rows } = await transaction<{ id: string }>(sql`/* insertClassifierRunSchemaRow */
+    INSERT INTO classifier_runs (
+      id, classifier_id, post_id, rss_feed_item_id, input_sha256, configuration_json,
+      configuration_sha256, shared_actor_user_id, decision_batch_id
+    ) VALUES (
+      ${identityId}, ${input.classifierId}, ${input.postId}, ${input.rssFeedItemId}, ${input.inputSha256},
       ${input.configurationJson}::jsonb,
       COALESCE(${input.configurationSha256 ?? null}::bytea,
         digest(${input.configurationJson}::jsonb::text, 'sha256')),
