@@ -1,8 +1,7 @@
 import type { Context } from '@jongleberry/api-server'
 import { sanitizeEmailAddress } from '@services/email-address-validator'
-import { createReAuthToken } from '@services/mfa'
 import { getPrimaryEmailAddress } from '@services/my/email-addresses'
-import { verifyEmailAddressLoginToken } from '@services/users/authentication'
+import { completeEmailReAuth } from '@services/users/email-reauth'
 import { assertNotSuspended } from '@services/users/suspension'
 import { assertEmailTokenVerificationAllowed } from '@services/users/email-auth-rate-limits'
 import app from '../../../app.mts'
@@ -30,13 +29,6 @@ app.route('/api/v1/auth/mfa/re-auth/email/verification').post(async (ctx: Contex
     deviceId: session.did,
     sessionId: session.sid,
   })
-  const result = await verifyEmailAddressLoginToken(emailAddress, body.code, {
-    purpose: 're_auth',
-    currentUserId: currentUser.id,
-    session,
-  })
-  if (!result.success) ctx.throw(401, 'Invalid or expired verification code')
-
-  const token = await createReAuthToken(currentUser.id)
+  const token = await completeEmailReAuth(currentUser.id, session, emailAddress, body.code)
   ctx.json({ re_auth_token: token })
 })

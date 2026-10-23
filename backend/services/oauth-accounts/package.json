@@ -29,6 +29,7 @@
     "@queues/vote-aggregation": "workspace:^",
     "@services/contribution-gating": "workspace:^",
     "@services/email-address-validator": "workspace:^",
+    "@voucha/config": "workspace:^",
     "http-errors": "^2.0.1"
   },
   "devDependencies": {

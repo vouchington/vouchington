@@ -14,10 +14,12 @@ export type OAuthBrokerPurpose = 'authenticate' | 'connect'
 export function beginOAuthAuthorization(
   provider: 'facebook' | 'x' | 'github' | 'linkedin' | 'microsoft',
   purpose: OAuthBrokerPurpose,
+  reAuthToken?: string,
 ): Promise<{ flow_id: string; redirect_url: string; expires_at: string }> {
   return clientApi.post(`/api/v1/auth/oauth/${provider}/authorizations`, {
     purpose,
     callback_mode: 'web',
+    ...(reAuthToken && { re_auth_token: reAuthToken }),
   })
 }
 
@@ -94,9 +96,9 @@ export function renamePasskey(passkeyId: string, name: string): Promise<void> {
   return clientApi.patch(`/api/v1/auth/passkeys/${passkeyId}`, { name })
 }
 
-export function deletePasskey(passkeyId: string, reAuthToken?: string): Promise<void> {
+export function deletePasskey(passkeyId: string, reAuthToken: string): Promise<void> {
   return clientApi.delete(`/api/v1/auth/passkeys/${passkeyId}`, {
-    body: reAuthToken ? { re_auth_token: reAuthToken } : undefined,
+    body: { re_auth_token: reAuthToken },
   })
 }
 
@@ -104,19 +106,27 @@ export function connectOAuthAccount<T>(provider: string, body: unknown): Promise
   return clientApi.put<T>(`/api/v1/auth/oauth/${provider}/connect`, body)
 }
 
-export function disconnectOAuthAccount(provider: string): Promise<void> {
-  return clientApi.delete(`/api/v1/auth/oauth/${provider}/connect`)
+export function disconnectOAuthAccount(provider: string, reAuthToken: string): Promise<void> {
+  return clientApi.delete(`/api/v1/auth/oauth/${provider}/connect`, {
+    body: { re_auth_token: reAuthToken },
+  })
 }
 
 // Bluesky account linking is a full-page redirect dance (AT Protocol OAuth has no client-side
 // token flow), not a single request/response like connectOAuthAccount above — the caller must
 // navigate to the returned redirect_url.
-export function beginBlueskyAccountLink(handle: string): Promise<{ redirect_url: string }> {
-  return clientApi.post<{ redirect_url: string }>('/api/v1/auth/bluesky/link', { handle })
+export function beginBlueskyAccountLink(
+  handle: string,
+  reAuthToken: string,
+): Promise<{ redirect_url: string }> {
+  return clientApi.post<{ redirect_url: string }>('/api/v1/auth/bluesky/link', {
+    handle,
+    re_auth_token: reAuthToken,
+  })
 }
 
-export function disconnectBlueskyAccount(): Promise<void> {
-  return clientApi.delete('/api/v1/auth/bluesky/link')
+export function disconnectBlueskyAccount(reAuthToken: string): Promise<void> {
+  return clientApi.delete('/api/v1/auth/bluesky/link', { body: { re_auth_token: reAuthToken } })
 }
 
 export function getMfaStatusClient<T>(): Promise<T> {
@@ -171,22 +181,5 @@ export function verifyMfaPasskey<T>(loginAttemptId: string, response: unknown): 
   return clientApi.post<T>('/api/v1/auth/mfa/passkeys/authentication/verification', {
     login_attempt_id: loginAttemptId,
     response,
-  })
-}
-
-// Re-auth
-export function requestReAuthEmail(): Promise<{ email_address: string }> {
-  return clientApi.post<{ email_address: string }>('/api/v1/auth/mfa/re-auth/email/tokens', {})
-}
-
-export function verifyReAuthEmail<T>(code: string): Promise<T> {
-  return clientApi.post<T>('/api/v1/auth/mfa/re-auth/email/verification', {
-    code,
-  })
-}
-
-export function verifyReAuthTotp<T>(code: string): Promise<T> {
-  return clientApi.post<T>('/api/v1/auth/mfa/re-auth/totp/verification', {
-    code,
   })
 }

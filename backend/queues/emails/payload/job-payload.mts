@@ -49,6 +49,11 @@ const templateParsers = {
       'token',
       'expiration',
     ]),
+  processSendAccountSecurityEmail: (data: unknown) => {
+    const record = asRecord(data, 'variables')
+    assertExactKeys(record, [])
+    return record
+  },
   processSendDataExportReadyEmail: dataExportVariables,
   processSendReauthenticationToken: reauthenticationVariables,
   processSendEmailVerificationToken: (data: unknown) =>

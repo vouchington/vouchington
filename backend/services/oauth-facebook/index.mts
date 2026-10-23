@@ -1,6 +1,10 @@
+import type {
+  OAuthAccountUpsertOptions,
+  PreparedOAuthAccount,
+} from '@services/oauth-accounts/reauthentication'
 import createHttpError from 'http-errors'
 import { FACEBOOK_APP_ID, FACEBOOK_APP_SECRET, FACEBOOK_GRAPHQL_VERSION } from '@voucha/config'
-import { upsertOAuthAccount, type OAuthAccount } from '@services/oauth-accounts'
+import { prepareOAuthAccountPersistence, type OAuthAccount } from '@services/oauth-accounts'
 import { fetch } from 'undici'
 import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
 
@@ -106,21 +110,17 @@ async function getMe(
   return response.json() as unknown as FacebookUserData
 }
 
-export async function upsertFacebookAccount(
+export async function prepareFacebookAccount(
   accessToken: string,
-  options: {
-    authorizationId?: string
-    authorizationClaimId?: string
-    signal?: AbortSignal
-  } = {},
-): Promise<OAuthAccount> {
+  options: OAuthAccountUpsertOptions & { signal?: AbortSignal } = {},
+): Promise<PreparedOAuthAccount> {
   const longLivedAccessToken = await exchangeFacebookAccessToken(accessToken, options.signal)
   if (longLivedAccessToken.error)
     throw createHttpError(502, 'Facebook token exchange failed', {
       cause: new Error(longLivedAccessToken.error.message),
     })
   const me = await getMe(longLivedAccessToken.access_token, fields, options.signal)
-  return upsertOAuthAccount(
+  return prepareOAuthAccountPersistence(
     'facebook',
     me.id,
     // Graph email has no per-address verification signal.
@@ -137,11 +137,7 @@ export async function upsertFacebookAccount(
 export async function upsertFacebookAuthorizationCodeAccount(
   code: string,
   redirectUri: string,
-  options: {
-    authorizationId?: string
-    authorizationClaimId?: string
-    signal?: AbortSignal
-  } = {},
+  options: OAuthAccountUpsertOptions & { signal?: AbortSignal } = {},
 ): Promise<OAuthAccount> {
   const token = await exchangeFacebookAuthorizationCode(code, redirectUri, options.signal)
   if (token.error) {
@@ -150,4 +146,12 @@ export async function upsertFacebookAuthorizationCodeAccount(
     })
   }
   return upsertFacebookAccount(token.access_token, options)
+}
+
+export async function upsertFacebookAccount(
+  accessToken: string,
+  options: OAuthAccountUpsertOptions & { signal?: AbortSignal } = {},
+): Promise<OAuthAccount> {
+  const prepared = await prepareFacebookAccount(accessToken, options)
+  return prepared.persist()
 }

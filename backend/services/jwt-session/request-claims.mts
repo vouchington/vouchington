@@ -1,7 +1,8 @@
+import { filterSessionRoles } from './assurance.mts'
 import { sessionValkeyClient } from '@data-stores/valkey/clients'
 import { getJwtStaleKey } from '@data-stores/valkey/jwt-stale'
 import type { PrivateUser } from '@voucha/types/entities/user'
-import { getEnrichedSessionClaims } from './enrich.mts'
+import { getEnrichedSessionClaims, getSessionAuthorizedUser } from './enrich.mts'
 import type { FetchUserForSession, VerifyDeviceAndSessionTokenResult } from './types.mts'
 
 /** Derive fresh request-local claims without issuing tokens or consuming a stale marker. */
@@ -11,6 +12,10 @@ export async function resolveRequestSessionClaims(
   clock: () => number = Date.now,
 ): Promise<{ session: VerifyDeviceAndSessionTokenResult | null; user?: PrivateUser | null }> {
   if (!verified.uid) return { session: verified }
+  const session = {
+    ...verified,
+    ...(verified.rol !== undefined && { rol: filterSessionRoles(verified.rol, verified.mfa_at) }),
+  }
   const now = Math.floor(clock() / 1000)
   const membershipExpired = verified.mpe !== undefined && now >= verified.mpe
   if (
@@ -20,13 +25,14 @@ export async function resolveRequestSessionClaims(
     now < verified.rca &&
     !membershipExpired
   )
-    return { session: verified }
+    return { session }
   const stale = await sessionValkeyClient.get(getJwtStaleKey(verified.uid))
   if (stale === null && verified.rca !== undefined && now < verified.rca && !membershipExpired)
-    return { session: verified }
+    return { session }
   const user = await fetchUser(verified.uid)
   if (!user || user.id !== verified.uid) return { session: null, user: null }
-  const claims = await getEnrichedSessionClaims(user)
+  const assurance = { mfaVerifiedAt: verified.mfa_at }
+  const claims = await getEnrichedSessionClaims(user, assurance)
   return {
     session: {
       ...verified,
@@ -38,6 +44,6 @@ export async function resolveRequestSessionClaims(
       tt: claims.trustTier,
       uil: claims.uiLocale ?? undefined,
     },
-    user,
+    user: getSessionAuthorizedUser(user, assurance),
   }
 }

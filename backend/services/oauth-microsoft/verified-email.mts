@@ -40,12 +40,12 @@ function fetchMicrosoftKeys(signal?: AbortSignal, forceRefresh = false) {
   return keysPromise
 }
 
-export async function getMicrosoftVerifiedEmail(
-  idToken: string | undefined,
+/** Reuse the canonical signature and shared shape validation for nonce-bound confirmation. */
+export async function verifyMicrosoftIdentityToken(
+  idToken: string,
   providerUserId: string,
   signal?: AbortSignal,
-): Promise<string | null> {
-  if (!idToken) return null
+): Promise<{ email: string | null; nonce: unknown }> {
   const { headerPart, payloadPart, signaturePart, header } =
     parseMicrosoftIdentityTokenParts(idToken)
   let keys = await fetchMicrosoftKeys(signal)
@@ -94,5 +94,8 @@ export async function getMicrosoftVerifiedEmail(
     throw createHttpError(401, 'Microsoft identity token claims are invalid')
   }
   // xms_edov covers the token's email claim, never Graph mail or userPrincipalName.
-  return claims.xms_edov === true && typeof claims.email === 'string' ? claims.email : null
+  return {
+    email: claims.xms_edov === true && typeof claims.email === 'string' ? claims.email : null,
+    nonce: claims.nonce,
+  }
 }

@@ -1,4 +1,9 @@
-import { read, write } from '@data-stores/psql'
+import { revokeOtherAuthenticatedSessions } from '@services/jwt-session/user-session-revocation'
+import {
+  captureAccountSecurityAddress,
+  notifyAccountSecurityChange,
+} from '@services/mfa/account-change'
+import { read, write, registerPostCommitAction } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
 import createHttpError from 'http-errors'
@@ -22,7 +27,11 @@ export async function connectBlueskyAccountInLockedTransaction(
   handle: string,
   linkAuthorizationId: string,
   query: TransactionQuery,
+  actorSessionId: string | null,
 ): Promise<void> {
+  const oldEmail = actorSessionId
+    ? await captureAccountSecurityAddress(userId, { query })
+    : undefined
   try {
     await attachBlueskyAccountRows(userId, did, handle, linkAuthorizationId, query)
   } catch (err) {
@@ -30,6 +39,10 @@ export async function connectBlueskyAccountInLockedTransaction(
       throw createHttpError(409, 'You already have a Bluesky account linked — unlink it first')
     }
     throw err
+  }
+  if (actorSessionId) {
+    await revokeOtherAuthenticatedSessions(userId, actorSessionId, { query })
+    registerPostCommitAction(query, () => notifyAccountSecurityChange(oldEmail))
   }
 }
 

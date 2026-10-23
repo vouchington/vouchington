@@ -3,7 +3,7 @@ import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, insertTestTotpAuthenticator } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
 import { v7 } from 'uuid'
-import { createReAuthToken } from '@services/mfa/re-auth'
+import { createTestAccountChangeProof } from '@voucha/test-helpers/account-change'
 
 // Covers the post-parse runtime request-contract validation added for issue #322 on the
 // authenticated TOTP management routes (mirrors auth-passkeys.mts). These are protected routes:
@@ -90,7 +90,7 @@ describe('TOTP routes - request contract validation', () => {
       ).toBe(true)
     }, 20_000)
 
-    it('deletes with no JSON body', async () => {
+    it('rejects a missing proof without deleting the authenticator', async () => {
       const freshUser = await createTestUser()
       const suffix = `non-json-delete-${crypto.randomUUID()}`
       const authenticator = await insertTestTotpAuthenticator(freshUser.id, suffix)
@@ -99,7 +99,12 @@ describe('TOTP routes - request contract validation', () => {
       const req = createRequest()
       await req.authenticateAs(freshUser)
 
-      await req.delete(`/api/v1/auth/totp/${authenticator.id}`).expect(204)
+      const response = await req.delete(`/api/v1/auth/totp/${authenticator.id}`).expect(403)
+      expect(response.body.code).toBe('MFA_REAUTH_REQUIRED')
+      const list = await req.get('/api/v1/auth/totp').expect(200)
+      expect(list.body.results.some((item: { id: string }) => item.id === authenticator.id)).toBe(
+        true,
+      )
     }, 20_000)
 
     it('passes a JSON re-auth token through to the protected delete', async () => {
@@ -108,10 +113,9 @@ describe('TOTP routes - request contract validation', () => {
         freshUser.id,
         `reauth-delete-${crypto.randomUUID()}`,
       )
-      const reAuthToken = await createReAuthToken(freshUser.id)
-
       const req = createRequest()
       await req.authenticateAs(freshUser)
+      const reAuthToken = await createTestAccountChangeProof(freshUser.id, req)
 
       await req
         .delete(`/api/v1/auth/totp/${authenticator.id}`)

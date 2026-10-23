@@ -20,7 +20,7 @@ vi.doMock<typeof import('undici')>(import('undici'), async () => {
 
 const {
   getGoogleAccountByGoogleUserId,
-  upsertGoogleAccount,
+  prepareGoogleAccount,
   upsertGoogleAuthorizationCodeAccount,
 } = await import('./index.mts')
 
@@ -72,7 +72,7 @@ describe('google oauth', () => {
       },
     )
 
-    const account = await upsertGoogleAccount(credential)
+    const account = await (await prepareGoogleAccount(credential)).persist()
 
     expect(account.provider_user_id).toBe(googleUserId)
     expect(account.provider_user_email_address).toBe(email)
@@ -93,7 +93,7 @@ describe('google oauth', () => {
       },
     )
 
-    await expect(upsertGoogleAccount(credential)).rejects.toThrow('unsupported algorithm')
+    await expect(prepareGoogleAccount(credential)).rejects.toThrow('unsupported algorithm')
   })
 
   it('redeems the broker code with server secret and PKCE, then completes by stable sub', async () => {

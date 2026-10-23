@@ -1,6 +1,7 @@
 import type { IncomingHttpHeaders, IncomingMessage } from 'node:http'
 import { describe, expect, it } from 'vitest'
 import { createIsAdminDashboardRequest, createWorkerSecretValidator } from './dashboard-auth.mts'
+import { currentUserCanAccessQueueStats } from '@services/queue-monitoring'
 import type { PrivateUser } from '@services/users/types'
 
 function req(headers: IncomingHttpHeaders): IncomingMessage {
@@ -33,36 +34,58 @@ describe('dashboard auth', () => {
     expect(getUserCalls).toBe(0)
   })
 
-  it('allows non-revoked users with queue stats permission', async () => {
-    let receivedUser: PrivateUser | null | undefined
-    let revocationOptions: { userId?: string | null; issuedAt?: number } | undefined
-    const user = {
-      __entity_type: 'user',
-      id: 'user-1',
-      roles: ['administrator'],
-    } as unknown as PrivateUser
-    const isAdminDashboardRequest = createIsAdminDashboardRequest({
-      verifyDeviceAndSessionTokens: async () => ({
-        did: 'did',
-        sid: 'sid',
-        uid: 'user-1',
-        iat: 123,
-      }),
-      isSessionRevoked: async (_sid, options) => {
-        revocationOptions = options
-        return false
-      },
-      getPrivateUserByAny: async () => user,
-      currentUserCanAccessQueueStats: currentUser => {
-        receivedUser = currentUser
-        return true
-      },
-    })
+  it.each([undefined, 123])(
+    'requires original MFA before using current administrator roles (proof=%s)',
+    async proof => {
+      let receivedUser: PrivateUser | null | undefined
+      let revocationOptions:
+        | {
+            userId?: string | null
+            deviceId?: string
+            issuedAt?: number
+            mfaVerifiedAt?: number | null
+          }
+        | undefined
+      let primaryRead: unknown
+      const user = {
+        __entity_type: 'user',
+        id: 'user-1',
+        roles: ['administrator'],
+      } as unknown as PrivateUser
+      const isAdminDashboardRequest = createIsAdminDashboardRequest({
+        verifyDeviceAndSessionTokens: async () => ({
+          did: 'did',
+          sid: 'sid',
+          uid: 'user-1',
+          iat: 456,
+          device_iat: 123,
+          mfa_at: proof,
+        }),
+        isSessionRevoked: async (_sid, options) => {
+          revocationOptions = options
+          return false
+        },
+        getPrivateUserByAny: async (_userId, options) => {
+          primaryRead = options
+          return user
+        },
+        currentUserCanAccessQueueStats: currentUser => {
+          receivedUser = currentUser
+          return currentUserCanAccessQueueStats(currentUser)
+        },
+      })
 
-    await expect(isAdminDashboardRequest(req({ cookie: 'dt=device; st=session' }))).resolves.toBe(
-      true,
-    )
-    expect(receivedUser).toBe(user)
-    expect(revocationOptions).toEqual({ userId: 'user-1', issuedAt: 123 })
-  })
+      await expect(isAdminDashboardRequest(req({ cookie: 'dt=device; st=session' }))).resolves.toBe(
+        proof !== undefined,
+      )
+      expect(receivedUser?.roles).toEqual(proof === undefined ? [] : ['administrator'])
+      expect(primaryRead).toEqual({ readOnly: false })
+      expect(revocationOptions).toEqual({
+        userId: 'user-1',
+        deviceId: 'did',
+        issuedAt: 123,
+        mfaVerifiedAt: proof ?? null,
+      })
+    },
+  )
 })

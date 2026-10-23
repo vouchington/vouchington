@@ -1,3 +1,4 @@
+import { assertOriginalMfaVerifiedAt } from './assurance.mts'
 import { randomUUID } from 'node:crypto'
 import { runWithTransaction, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
@@ -34,6 +35,7 @@ export async function mintAuthenticatedDeviceAuthority(options: {
   credentialReplay?: boolean
   deviceRenewal?: 'verified-native-attestation'
 }) {
+  assertOriginalMfaVerifiedAt(options.binding.mfa_at, options.issuedAt)
   return runWithTransaction(options.query, async query => {
     await lockSessionDeviceAuthority(query, options.uid, options.sid)
     const [revoked, cutoff] = await sessionValkeyClient.mget([
@@ -63,6 +65,7 @@ export async function mintAuthenticatedDeviceAuthority(options: {
         !device ||
         device.did !== options.did ||
         device.client !== row.device_token_binding?.client ||
+        device.mfa_at !== row.device_token_binding?.mfa_at ||
         device.ua_hash !==
           (row.device_token_binding?.client === 'web'
             ? row.device_token_binding.ua_hash

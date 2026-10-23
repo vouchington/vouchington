@@ -1,4 +1,5 @@
 export * from './authentication.mts'
+export * from './account-security.mts'
 export * from './community-invite.mts'
 export * from './community-application-decision.mts'
 export * from './community-role-change.mts'

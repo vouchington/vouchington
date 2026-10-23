@@ -1,3 +1,4 @@
+import { withReauthenticatedAccountChange } from '@services/mfa/account-change'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { validateRequestContract } from '../../response-helpers.mts'
@@ -43,16 +44,27 @@ app.route('/api/v1/auth/passkeys/registration/verify').post(async (ctx: Context)
   assertNotSuspended(currentUser)
   await ctx.applyRouteRateLimit('POST:/api/v1/auth/passkeys/registration/verify')
 
-  const body = (await ctx.request.json('100kb')) as { response?: unknown; name?: string }
+  const body = (await ctx.request.json('100kb')) as {
+    response?: unknown
+    name?: string
+    re_auth_token?: string
+  }
   validateRequestContract(ctx, 'POST:/api/v1/auth/passkeys/registration/verify', { body })
   ctx.assert(body.response, 422, 'response is required')
   const expectedOrigin = getExpectedOrigin(ctx.req)
-  const passkey = await verifyPasskeyRegistration(
+  const passkey = await withReauthenticatedAccountChange(
     currentUser.id,
-    deviceData.did,
-    expectedOrigin,
-    body.response,
-    body.name,
+    await ctx.getSessionTokenData(),
+    body.re_auth_token,
+    query =>
+      verifyPasskeyRegistration(
+        currentUser.id,
+        deviceData.did,
+        expectedOrigin,
+        body.response,
+        body.name,
+        { query },
+      ),
   )
   ctx.json({ passkey })
 })

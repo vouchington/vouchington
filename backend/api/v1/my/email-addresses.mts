@@ -1,3 +1,4 @@
+import { withReauthenticatedAccountChange } from '@services/mfa/account-change'
 import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
@@ -19,9 +20,9 @@ import { apiQuery } from '../../api-query-contract.mts'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import createHttpError from 'http-errors'
 
-type AddEmailAddressRequest = { email_address: string }
-type VerifyEmailAddressRequest = { token: string }
-type SetPrimaryEmailAddressRequest = { is_primary: true }
+type AddEmailAddressRequest = { email_address: string; re_auth_token?: string }
+type VerifyEmailAddressRequest = { token: string; re_auth_token?: string }
+type SetPrimaryEmailAddressRequest = { is_primary: true; re_auth_token?: string }
 
 const emailAddressesParser = createPaginationParser({
   cursor: { type: 'tier' },
@@ -69,9 +70,11 @@ app.route('/api/v1/my/email-addresses').post(async (ctx: Context) => {
   const body = (await ctx.request.json('10kb')) as AddEmailAddressRequest
   validateRequestContract(ctx, 'POST:/api/v1/my/email-addresses', { body })
 
-  const { token, normalizedEmail } = await createEmailVerificationToken(
+  const { token, normalizedEmail } = await withReauthenticatedAccountChange(
     currentUser.id,
-    body.email_address,
+    await ctx.getSessionTokenData(),
+    body.re_auth_token,
+    query => createEmailVerificationToken(currentUser.id, body.email_address, { query }),
   )
 
   ctx.json({ email_address: normalizedEmail })
@@ -92,7 +95,12 @@ app.route('/api/v1/my/email-addresses/:email/verifications').post(async (ctx: Co
     body,
   })
 
-  await verifyEmailVerificationToken(currentUser.id, ctx.params.email!, body.token)
+  await withReauthenticatedAccountChange(
+    currentUser.id,
+    await ctx.getSessionTokenData(),
+    body.re_auth_token,
+    query => verifyEmailVerificationToken(currentUser.id, ctx.params.email!, body.token, { query }),
+  )
 
   ctx.json(await emailAddressPage(currentUser.id, EMAIL_ADDRESS_PAGE_LIMIT))
 })
@@ -108,7 +116,12 @@ app.route('/api/v1/my/email-addresses/:email').patch(async (ctx: Context) => {
     body,
   })
 
-  await setPrimaryEmailAddress(currentUser.id, ctx.params.email!)
+  await withReauthenticatedAccountChange(
+    currentUser.id,
+    await ctx.getSessionTokenData(),
+    body.re_auth_token,
+    query => setPrimaryEmailAddress(currentUser.id, ctx.params.email!, { query }),
+  )
 
   ctx.json(await emailAddressPage(currentUser.id, EMAIL_ADDRESS_PAGE_LIMIT))
 })
@@ -117,9 +130,19 @@ app.route('/api/v1/my/email-addresses/:email').patch(async (ctx: Context) => {
 app.route('/api/v1/my/email-addresses/:email').delete(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'DELETE:/api/v1/my/email-addresses/:email')
   assertNotSuspended(currentUser)
-  validateRequestContract(ctx, 'DELETE:/api/v1/my/email-addresses/:email', { path: ctx.params })
-
-  await removeEmailAddress(currentUser.id, ctx.params.email!)
+  const body = ctx.request.is('json')
+    ? ((await ctx.request.json('10kb')) as { re_auth_token?: string })
+    : {}
+  validateRequestContract(ctx, 'DELETE:/api/v1/my/email-addresses/:email', {
+    path: ctx.params,
+    body,
+  })
+  await withReauthenticatedAccountChange(
+    currentUser.id,
+    await ctx.getSessionTokenData(),
+    body.re_auth_token,
+    query => removeEmailAddress(currentUser.id, ctx.params.email!, { query }),
+  )
 
   ctx.setStatus(204)
 })

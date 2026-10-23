@@ -4,15 +4,21 @@ import sql from 'sql-template-strings'
 import { enqueueRecalculateUserVoteWeight } from '@queues/vote-aggregation/enqueues/vote-weight'
 import { markJwtStale } from '@data-stores/valkey/jwt-stale'
 import onError from '@modules/on-error'
+import { getUserMfaStatus } from '@services/mfa/status'
 
 export const addUserRole = async (userId: string, role: string) => {
   await using query = await beginTransaction()
+  await query(sql`/* lockRoleGrantUser */ SELECT fn_lock_active_user_for_mutation(${userId})`)
   const { rows } = await query<{
     platform_account_kind: 'official' | 'system' | null
   }>(sql`/* lockRoleGrantUser */
     SELECT platform_account_kind FROM users WHERE id = ${userId}::uuid FOR UPDATE
   `)
   assert(rows[0]?.platform_account_kind !== 'system', 403, 'System accounts cannot hold roles')
+  if (role === 'administrator') {
+    const status = await getUserMfaStatus(userId, { query })
+    assert(status.hasMfa, 403, 'Administrator role requires MFA')
+  }
   const { rowCount } = await query(sql`/* addUserRole */
     WITH user_role AS (
       SELECT id FROM user_role_types WHERE slug = ${role}

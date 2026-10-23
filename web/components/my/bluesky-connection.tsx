@@ -1,5 +1,7 @@
 'use client'
 
+import { MfaReauthDialog } from './mfa-reauth-dialog'
+import { useFreshAuthentication } from './use-fresh-authentication'
 import { Suspense, useEffect, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
@@ -38,6 +40,7 @@ export function BlueskyConnection(props: Props) {
 }
 
 function BlueskyConnectionContent({ initialAccount }: Props) {
+  const authentication = useFreshAuthentication()
   const featureFlags = useFeatureFlags()
   const fediverseEnabled = featureFlags.fediverse === true
   const router = useRouter()
@@ -72,9 +75,11 @@ function BlueskyConnectionContent({ initialAccount }: Props) {
 
   async function handleLink(e: React.FormEvent) {
     e.preventDefault()
+    const reAuthToken = await authentication.requestAuthentication()
+    if (!reAuthToken) return
     setLinking(true)
     try {
-      const { redirect_url } = await beginBlueskyAccountLink(handle.trim())
+      const { redirect_url } = await beginBlueskyAccountLink(handle.trim(), reAuthToken)
       // Defense in depth against an open-redirect-shaped response — mirrors CheckoutButton's
       // Stripe redirect guard (web/components/memberships/checkout-button.tsx).
       if (new URL(redirect_url).protocol !== 'https:') {
@@ -92,9 +97,11 @@ function BlueskyConnectionContent({ initialAccount }: Props) {
   }
 
   async function handleDisconnect() {
+    const reAuthToken = await authentication.requestAuthentication()
+    if (!reAuthToken) return
     setDisconnecting(true)
     try {
-      await disconnectBlueskyAccount()
+      await disconnectBlueskyAccount(reAuthToken)
       setAccount(null)
       toast.success('Bluesky account disconnected')
     } catch (err) {
@@ -108,6 +115,7 @@ function BlueskyConnectionContent({ initialAccount }: Props) {
 
   return (
     <div className='space-y-4'>
+      <MfaReauthDialog {...authentication.dialogProps} />
       <h2
         className='text-lg font-semibold'
         data-pw='bluesky-connection-heading'

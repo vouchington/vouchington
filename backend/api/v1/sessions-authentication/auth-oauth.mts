@@ -1,4 +1,7 @@
 import { advertiseDbscRegistration } from './dbsc-registration-helpers.mts'
+import { assertAccountChangeProofFormat } from '@services/mfa/re-auth'
+import { prepareProviderAccount } from '@services/oauth/upsert-provider-account'
+import { withReauthenticatedAccountChange } from '@services/mfa/account-change'
 import app from '../../app.mts'
 import {
   getOptionalProtocolAuthAndRateLimit,
@@ -27,12 +30,23 @@ app.route('/api/v1/auth/oauth/:provider/connect').put(async ctx => {
     path: ctx.params,
     body,
   })
-  const { account, name } = await connectOAuthAccountFlow({
-    provider,
-    currentUserId: currentUser.id,
-    body,
-    expectedOrigin: getExpectedOrigin(ctx.req),
+  const reAuthToken = body.re_auth_token
+  assertAccountChangeProofFormat(reAuthToken)
+  const prepared = await prepareProviderAccount(provider, body, getExpectedOrigin(ctx.req), {
+    requireAppleVerifiedEmail: false,
   })
+  const { account, name } = await withReauthenticatedAccountChange(
+    currentUser.id,
+    await ctx.getSessionTokenData(),
+    reAuthToken,
+    query =>
+      connectOAuthAccountFlow({
+        query,
+        provider,
+        currentUserId: currentUser.id,
+        prepared,
+      }),
+  )
   ctx.json({
     oauth_account: {
       id: account.provider_user_id,
@@ -47,11 +61,20 @@ app.route('/api/v1/auth/oauth/:provider/connect').put(async ctx => {
 app.route('/api/v1/auth/oauth/:provider/connect').delete(async ctx => {
   const currentUser = await requireAuth(ctx, 'DELETE:/api/v1/auth/oauth/:provider/connect')
   assertNotSuspended(currentUser)
+  const body = ctx.request.is('json')
+    ? ((await ctx.request.json('10kb')) as { re_auth_token?: string })
+    : {}
   validateRequestContract(ctx, 'DELETE:/api/v1/auth/oauth/:provider/connect', {
     path: ctx.params,
+    body,
   })
   const provider = assertValidProvider(ctx.params.provider ?? '')
-  await disconnectOAuthAccount(currentUser.id, provider)
+  await withReauthenticatedAccountChange(
+    currentUser.id,
+    await ctx.getSessionTokenData(),
+    body.re_auth_token,
+    query => disconnectOAuthAccount(currentUser.id, provider, { query }),
+  )
   ctx.setStatus(204)
 })
 

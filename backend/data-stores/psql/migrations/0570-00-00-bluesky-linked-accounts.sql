@@ -7,6 +7,7 @@
 CREATE TABLE IF NOT EXISTS bluesky_link_authorizations (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   user_id UUID NOT NULL REFERENCES users ON DELETE CASCADE,
+  initiating_session_id UUID REFERENCES user_sessions(id) ON DELETE SET NULL,
   handle TEXT CHECK (handle IS NULL OR (char_length(handle) > 0 AND char_length(handle) <= 253)),
   callback_mode oauth_callback_modes NOT NULL CHECK (callback_mode IN ('web', 'native')),
   status bluesky_link_authorization_statuses GENERATED ALWAYS AS (
@@ -57,6 +58,9 @@ EXECUTE FUNCTION fn_update_updated_at();
 CREATE INDEX IF NOT EXISTS idx_bluesky_link_authorizations__user_id
 ON bluesky_link_authorizations (user_id);
 
+CREATE INDEX IF NOT EXISTS idx_bluesky_link_authorizations__initiating_session_id
+ON bluesky_link_authorizations (initiating_session_id);
+
 CREATE INDEX IF NOT EXISTS idx_bluesky_link_authorizations__expiry
 ON bluesky_link_authorizations (expires_at, id)
 WHERE status IN ('pending', 'callback_claimed', 'handoff_ready');
@@ -67,6 +71,7 @@ WHERE claimed_did IS NOT NULL;
 
 COMMENT ON TABLE bluesky_link_authorizations IS 'Durable Bluesky OAuth link state machine. UUIDs identify generations but are never compared for lifecycle causality; status transitions and timestamp expiry are authoritative.';
 COMMENT ON COLUMN bluesky_link_authorizations.user_id IS 'Voucha user who authenticated the begin request and exclusively owns this authorization lifecycle.';
+COMMENT ON COLUMN bluesky_link_authorizations.initiating_session_id IS 'Authenticated initiating session. A retained or null history reference never authorizes pending credential persistence or first attachment.';
 COMMENT ON COLUMN bluesky_link_authorizations.handle IS 'Handle supplied when authorization began; display-only because Bluesky DIDs are authoritative, and scrubbed when the authorization becomes terminal.';
 COMMENT ON COLUMN bluesky_link_authorizations.callback_mode IS 'web for cookie-bound browser attachment; native for proof-bound custom-scheme completion.';
 COMMENT ON COLUMN bluesky_link_authorizations.status IS 'Generated current lifecycle derived exclusively from ordered authorization timestamps.';

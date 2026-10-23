@@ -5,6 +5,7 @@ import {
   isSessionRevoked,
   verifyDeviceAndSessionTokens,
   assertSessionClientBinding,
+  getSessionAuthorizedUser,
 } from '@services/jwt-session'
 import { getPrivateUserByAny } from '@services/users/get'
 import { currentUserCanAccessQueueStats } from '@services/queue-monitoring'
@@ -62,13 +63,17 @@ export function createIsAdminDashboardRequest(
     if (
       await dependencies.isSessionRevoked(sessionData.sid, {
         userId: sessionData.uid,
+        deviceId: sessionData.did,
         issuedAt: sessionData.device_iat,
+        mfaVerifiedAt: sessionData.mfa_at ?? null,
       })
     ) {
       return false
     }
-    const user = await dependencies.getPrivateUserByAny(sessionData.uid)
-    return dependencies.currentUserCanAccessQueueStats(user)
+    const user = await dependencies.getPrivateUserByAny(sessionData.uid, { readOnly: false })
+    return dependencies.currentUserCanAccessQueueStats(
+      user ? getSessionAuthorizedUser(user, { mfaVerifiedAt: sessionData.mfa_at }) : null,
+    )
   }
 }
 

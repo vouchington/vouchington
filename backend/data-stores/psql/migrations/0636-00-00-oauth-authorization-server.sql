@@ -130,6 +130,7 @@ CREATE TABLE IF NOT EXISTS oauth_grants (
   resource TEXT NOT NULL CHECK (char_length(resource) BETWEEN 1 AND 2048),
   scopes api_scopes[] NOT NULL CHECK (cardinality(scopes) > 0),
   consented_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  mfa_verified_at TIMESTAMPTZ,
   last_used_at TIMESTAMPTZ,
   revoked_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
@@ -422,3 +423,5 @@ ALTER TABLE moderator_actions DROP CONSTRAINT IF EXISTS fk_moderator_actions__oa
 ALTER TABLE moderator_actions ADD CONSTRAINT fk_moderator_actions__oauth_client_id
   FOREIGN KEY (oauth_client_id) REFERENCES oauth_clients (id) ON DELETE SET NULL NOT VALID;
 ALTER TABLE moderator_actions VALIDATE CONSTRAINT fk_moderator_actions__oauth_client_id;
+
+COMMENT ON COLUMN oauth_grants.mfa_verified_at IS 'Consent was approved by a session that completed MFA or passkey authentication; required for staff resource access.';

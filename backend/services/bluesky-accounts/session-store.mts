@@ -1,3 +1,4 @@
+import { lockBlueskyInitiatingSession } from './initiating-session.mts'
 import type { FiniteValue } from '@data-stores/psql/finite-values/index'
 import { read, beginTransaction } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
@@ -57,6 +58,13 @@ export class BlueskySessionStore implements NodeSavedSessionStore {
 
     await using query = await beginTransaction()
 
+    if (authorization.owner.kind === 'linking') {
+      await lockBlueskyInitiatingSession(
+        authorization.owner.userId,
+        authorization.authorizationId,
+        query,
+      )
+    }
     await lockBlueskySessionOwner(authorization.owner.userId, did, query)
     if (authorization.owner.kind === 'attached') {
       await refreshAttachedSession(did, sessionCiphertext, authorization, query)

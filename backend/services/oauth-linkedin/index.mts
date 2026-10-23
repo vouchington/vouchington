@@ -1,6 +1,10 @@
+import type {
+  OAuthAccountUpsertOptions,
+  PreparedOAuthAccount,
+} from '@services/oauth-accounts/reauthentication'
 import createHttpError from 'http-errors'
 import { LINKEDIN_CLIENT_ID, LINKEDIN_CLIENT_SECRET } from '@voucha/config'
-import { upsertOAuthAccount, type OAuthAccount } from '@services/oauth-accounts'
+import { prepareOAuthAccountPersistence, type OAuthAccount } from '@services/oauth-accounts'
 import { fetch } from 'undici'
 import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
 
@@ -68,16 +72,12 @@ async function fetchLinkedInUserInfo(
   return response.json() as Promise<LinkedInUserInfo>
 }
 
-export async function upsertLinkedInAccount(
+export async function prepareLinkedInAccount(
   code: string,
   redirectUri: string,
   codeVerifier: string | undefined,
-  options: {
-    authorizationId?: string
-    authorizationClaimId?: string
-    signal?: AbortSignal
-  } = {},
-): Promise<OAuthAccount> {
+  options: OAuthAccountUpsertOptions & { signal?: AbortSignal } = {},
+): Promise<PreparedOAuthAccount> {
   const tokenResponse = await exchangeLinkedInAuthorizationCode(
     code,
     redirectUri,
@@ -102,7 +102,7 @@ export async function upsertLinkedInAccount(
     ? new Date(Date.now() + tokenResponse.expires_in * 1000)
     : undefined
 
-  return upsertOAuthAccount(
+  return prepareOAuthAccountPersistence(
     'linkedin',
     userInfo.sub,
     userInfo.email_verified ? (userInfo.email ?? null) : null,
@@ -114,4 +114,14 @@ export async function upsertLinkedInAccount(
     },
     options,
   )
+}
+
+export async function upsertLinkedInAccount(
+  code: string,
+  redirectUri: string,
+  codeVerifier: string | undefined,
+  options: OAuthAccountUpsertOptions & { signal?: AbortSignal } = {},
+): Promise<OAuthAccount> {
+  const prepared = await prepareLinkedInAccount(code, redirectUri, codeVerifier, options)
+  return prepared.persist()
 }

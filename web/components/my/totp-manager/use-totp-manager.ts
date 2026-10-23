@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import onError, { onSuccess } from '@/lib/on-error'
 import {
   setupTotp,
@@ -8,7 +8,7 @@ import {
   renameTotpAuthenticator,
   deleteTotpAuthenticator,
 } from '@/lib/api/client'
-import { ApiError } from '@/lib/api/error'
+import { useFreshAuthentication } from '../use-fresh-authentication'
 import type { ListResponse } from '@/types/api-responses'
 import type { MfaStatus, TotpAuthenticator } from '@/types/user'
 import { useTranslations } from '@/lib/i18n/use-translations'
@@ -22,7 +22,6 @@ export function useTotpManager(initialData: ListResponse<TotpAuthenticator>, mfa
   const {
     authenticators,
     pagination,
-    netAuthenticatorCountDelta,
     addAuthenticator,
     renameAuthenticatorLocally,
     removeAuthenticatorLocally,
@@ -35,14 +34,19 @@ export function useTotpManager(initialData: ListResponse<TotpAuthenticator>, mfa
   const [setupData, setSetupData] = useState<TotpSetupData | null>(null)
   const [setupCode, setSetupCode] = useState('')
   const [setupName, setSetupName] = useState('')
-  const [reauthDialogOpen, setReauthDialogOpen] = useState(false)
-  const pendingDeleteIdRef = useRef<string | null>(null)
+  const authentication = useFreshAuthentication(mfaStatus)
+  const reauthDialogOpen = authentication.dialogProps.open
 
   async function handleStartSetup(e: React.FormEvent) {
     e.preventDefault()
+    const reAuthToken = await authentication.requestAuthentication()
+    if (!reAuthToken) return
     setLoading(true)
     try {
-      const result = await setupTotp<TotpSetupData>({ name: setupName.trim() || undefined })
+      const result = await setupTotp<TotpSetupData>({
+        name: setupName.trim() || undefined,
+        re_auth_token: reAuthToken,
+      })
       setSetupData(result)
     } catch (err) {
       onError(err, {
@@ -56,10 +60,13 @@ export function useTotpManager(initialData: ListResponse<TotpAuthenticator>, mfa
 
   async function handleVerifySetup(code: string) {
     if (!setupData || code.length < 6) return
+    const reAuthToken = await authentication.requestAuthentication()
+    if (!reAuthToken) return
     setLoading(true)
     try {
       const result = await verifyTotpSetup<{ authenticator: TotpAuthenticator }>({
         authenticator_id: setupData.authenticator.id,
+        re_auth_token: reAuthToken,
         code,
       })
       addAuthenticator(result.authenticator)
@@ -97,25 +104,9 @@ export function useTotpManager(initialData: ListResponse<TotpAuthenticator>, mfa
     }
   }
 
-  function handleRemoveClick(authenticatorId: string) {
-    // Use the server-reported totals, not the accumulated-pages array length: the
-    // paginated list only reflects the pages loaded so far, which undercounts once a
-    // later page hasn't been fetched yet. mfaStatus is also a static snapshot fetched
-    // once at page load, so it doesn't reflect authenticators added or removed locally
-    // this session (e.g. right after verifying a new TOTP setup) —
-    // netAuthenticatorCountDelta corrects for that on top of the server-reported
-    // baseline.
-    const totalMfa = mfaStatus.passkeys_count + mfaStatus.totp_count + netAuthenticatorCountDelta
-    if (totalMfa <= 1) {
-      pendingDeleteIdRef.current = authenticatorId
-      setConfirmingDeleteId(null)
-      setReauthDialogOpen(true)
-      return
-    }
-    setConfirmingDeleteId(authenticatorId)
-  }
-
-  async function handleRemove(authenticatorId: string, reAuthToken?: string) {
+  async function handleRemove(authenticatorId: string) {
+    const reAuthToken = await authentication.requestAuthentication()
+    if (!reAuthToken) return
     setLoading(true)
     try {
       await deleteTotpAuthenticator(authenticatorId, reAuthToken)
@@ -123,33 +114,17 @@ export function useTotpManager(initialData: ListResponse<TotpAuthenticator>, mfa
       setConfirmingDeleteId(null)
       onSuccess(t('extracted.my.totpManager.authenticatorRemoved_151cad93'))
     } catch (err) {
-      if (err instanceof ApiError && err.code === 'MFA_REAUTH_REQUIRED') {
-        pendingDeleteIdRef.current = authenticatorId
-        setConfirmingDeleteId(null)
-        setReauthDialogOpen(true)
-      } else {
-        onError(err, {
-          fallback: t('extracted.my.totpManager.failedToRemoveAuthenticator_07cfc08f'),
-          tags: { form: 'my-totp' },
-        })
-      }
+      onError(err, {
+        fallback: t('extracted.my.totpManager.failedToRemoveAuthenticator_07cfc08f'),
+        tags: { form: 'my-totp' },
+      })
     } finally {
       setLoading(false)
     }
   }
 
-  async function handleRemoveWithReauth(reAuthToken: string) {
-    const pendingDeleteId = pendingDeleteIdRef.current
-    if (!pendingDeleteId) return
-    pendingDeleteIdRef.current = null
-    setReauthDialogOpen(false)
-    await handleRemove(pendingDeleteId, reAuthToken)
-  }
-
-  function handleCloseReauthDialog() {
-    setReauthDialogOpen(false)
-    pendingDeleteIdRef.current = null
-  }
+  const handleRemoveWithReauth = authentication.dialogProps.onVerified
+  const handleCloseReauthDialog = authentication.dialogProps.onClose
 
   return {
     authenticators,
@@ -173,7 +148,7 @@ export function useTotpManager(initialData: ListResponse<TotpAuthenticator>, mfa
     handleStartSetup,
     handleVerifySetup,
     handleRename,
-    handleRemoveClick,
+    handleRemoveClick: setConfirmingDeleteId,
     handleRemove,
     handleRemoveWithReauth,
     handleCloseReauthDialog,

@@ -1,3 +1,4 @@
+import { createTestAccountChangeProof } from '@voucha/test-helpers/account-change'
 import { describe, expect, it, vi } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUser, updateTestUserUiLocale } from '@voucha/test-helpers'
@@ -38,7 +39,10 @@ describe('email address list and verification request', () => {
 
     const response = await request
       .post('/api/v1/my/email-addresses')
-      .send({ email_address: address })
+      .send({
+        email_address: address,
+        re_auth_token: await createTestAccountChangeProof(user.id, request),
+      })
       .expect(200)
     expect(response.body.email_address).toBe(address)
   })
@@ -50,7 +54,10 @@ describe('email address list and verification request', () => {
 
     const response = await request
       .post('/api/v1/my/email-addresses')
-      .send({ email_address: user.email_address })
+      .send({
+        email_address: user.email_address,
+        re_auth_token: await createTestAccountChangeProof(user.id, request),
+      })
       .expect(422)
 
     expect(response.body.message).toBe('Email address already added to your account')
@@ -64,7 +71,10 @@ describe('email address list and verification request', () => {
 
     const response = await request
       .post('/api/v1/my/email-addresses')
-      .send({ email_address: otherUser.email_address })
+      .send({
+        email_address: otherUser.email_address,
+        re_auth_token: await createTestAccountChangeProof(user.id, request),
+      })
       .expect(422)
 
     expect(response.body.message).toBe('Email address is already in use')
@@ -81,7 +91,10 @@ describe('email address list and verification request', () => {
 
       await request
         .post('/api/v1/my/email-addresses')
-        .send({ email_address: newAddress() })
+        .send({
+          email_address: newAddress(),
+          re_auth_token: await createTestAccountChangeProof(user.id, request),
+        })
         .expect(200)
 
       const profileLines = stderr.mock.calls

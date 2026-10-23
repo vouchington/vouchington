@@ -17,7 +17,11 @@ import { isOAuthBrokerProvider } from '@/lib/auth/oauth-broker-provider'
 
 type Props = OAuthButtonProps & {
   provider: OAuthProvider
-  broker?: { purpose: OAuthBrokerPurpose; returnTo: string }
+  broker?: {
+    purpose: OAuthBrokerPurpose
+    returnTo: string
+    requestReAuth?: () => Promise<string | null>
+  }
 }
 
 export function OAuthLoginButton({
@@ -34,6 +38,7 @@ export function OAuthLoginButton({
         purpose={broker.purpose}
         returnTo={broker.returnTo}
         disabled={disabled}
+        requestReAuth={broker.requestReAuth}
       />
     )
   }

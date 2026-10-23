@@ -37,10 +37,10 @@ export async function insertTestUserSession(options: {
   const userAgentId = await upsertUserAgentString(userAgent, { query: transaction })
   const { rows } = await transaction(sql`/* insertTestUserSession */
     INSERT INTO user_sessions (
-      id, user_id, device_id, device_name, user_agent_string_id, ip_address, expires_at, revoked_at
+      id, user_id, device_id, device_name, user_agent_string_id, ip_address, expires_at, revoked_at, session_token_issued_at
     )
     SELECT ${sessionId}, ${options.userId}, ${deviceId}, ${deviceName}, ${userAgentId},
-      ${ipAddress}, ${expiresAt}, ${revokedAt}
+      ${ipAddress}, ${expiresAt}, ${revokedAt}, date_trunc('second', CURRENT_TIMESTAMP)
     RETURNING id, user_id, device_id, device_name,
       (SELECT user_agent FROM user_agent_strings WHERE id = user_sessions.user_agent_string_id) AS user_agent,
       ip_address, created_at,

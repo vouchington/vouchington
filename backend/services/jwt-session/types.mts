@@ -50,6 +50,7 @@ export interface VerifyDeviceAndSessionTokenResult {
   sid: string
   uid: string | null
   client?: 'web' | 'native'
+  mfa_at?: number
   ua_hash?: string
   ja4_hash?: string
   exp?: number
@@ -66,11 +67,13 @@ export interface VerifyDeviceAndSessionTokenResult {
   dc?: DeviceClass
 }
 
-export type SessionClientBinding =
+export type SessionClientBinding = (
   | { client: 'web'; ua_hash: string; ja4_hash?: string }
   | { client: 'native' }
+) & { mfa_at?: number }
 
 export interface SessionMintOptions {
+  mfaVerifiedAt?: number
   query?: TransactionQuery
   did: string
   sid?: string

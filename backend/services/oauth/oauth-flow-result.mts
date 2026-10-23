@@ -1,6 +1,15 @@
+import { runWithTransaction, type TransactionQuery } from '@data-stores/psql'
+import { readOriginalSessionAssurance } from '@services/jwt-session/assurance'
+import {
+  lockLoginCredentialAdmission,
+  type VerifiedLoginFirstFactor,
+} from '@services/oauth-accounts/login-admission'
+import { getPrivateUserByAny } from '@services/users/get'
+import createHttpError from 'http-errors'
 import {
   createDeviceAndSessionTokens,
   getEnrichedSessionClaims,
+  getSessionResponseUser,
   type DeviceClass,
   type DeviceContext,
 } from '@services/jwt-session'
@@ -21,6 +30,7 @@ export type OAuthFlowResult =
 
 export async function createOAuthFlowResultForUser(options: {
   user: PrivateUser
+  firstFactor: VerifiedLoginFirstFactor
   deviceId: string
   sessionId: string
   authenticatedSessionId?: string
@@ -29,28 +39,45 @@ export async function createOAuthFlowResultForUser(options: {
   deviceContext?: DeviceContext
   loginAttemptId?: string
 }): Promise<OAuthFlowResult> {
-  const result = await prepareOAuthFlowResultForUser(options)
-  if (result.mfaRequired) return result
-  return issuePreparedOAuthFlowResult({
-    ...options,
-    ...result,
+  return runWithTransaction(undefined, async query => {
+    await lockLoginCredentialAdmission(options.user.id, options.firstFactor, query)
+    const loaded = await getPrivateUserByAny(options.user.id, { query })
+    if (!loaded) throw createHttpError(401, 'Sign-in account no longer exists')
+    const user = loaded
+    const original = options.authenticatedSessionId
+      ? await readOriginalSessionAssurance(
+          user.id,
+          { sid: options.authenticatedSessionId, did: options.deviceId },
+          { query },
+        )
+      : null
+    if (original) {
+      const claims = await getEnrichedSessionClaims(user, original)
+      return issuePreparedOAuthFlowResult({ ...options, user, claims, query })
+    }
+    const result = await prepareOAuthFlowResultForUser({ ...options, user, query })
+    if (result.mfaRequired) return result
+    return issuePreparedOAuthFlowResult({ ...options, ...result, query })
   })
 }
 
 export async function prepareOAuthFlowResultForUser(options: {
   user: PrivateUser
+  firstFactor: VerifiedLoginFirstFactor
   deviceId: string
   sessionId: string
   deviceClass?: DeviceClass
   loginAttemptId?: string
+  query?: TransactionQuery
 }) {
   const { user } = options
   const claims = await getEnrichedSessionClaims(user)
 
-  if (await userHasMfa(user.id)) {
+  if (await userHasMfa(user.id, { query: options.query })) {
     const loginAttemptId = await createLoginAttempt(
       {
         userId: user.id,
+        firstFactor: options.firstFactor,
         deviceId: options.deviceId,
         sessionId: options.sessionId,
         deviceClass: options.deviceClass,
@@ -60,12 +87,13 @@ export async function prepareOAuthFlowResultForUser(options: {
     return { mfaRequired: true as const, loginAttemptId }
   }
 
-  return { mfaRequired: false as const, user, claims }
+  return { mfaRequired: false as const, user, claims, firstFactor: options.firstFactor }
 }
 
-export async function issuePreparedOAuthFlowResult(options: {
+async function issuePreparedOAuthFlowResult(options: {
   user: PrivateUser
   claims: Awaited<ReturnType<typeof getEnrichedSessionClaims>>
+  query: TransactionQuery
   deviceId: string
   authenticatedSessionId?: string
   refreshAuthenticatedSession?: boolean
@@ -77,19 +105,20 @@ export async function issuePreparedOAuthFlowResult(options: {
     sid: options.authenticatedSessionId,
     uid: options.user.id,
     eventType: options.refreshAuthenticatedSession ? 'refreshed_authenticated' : 'created',
-    credentialReplay: options.refreshAuthenticatedSession === true,
-    roles: options.claims?.roles,
+    credentialReplay: options.authenticatedSessionId !== undefined,
+    roles: options.user.roles,
     membershipPlan: options.claims?.membershipPlan,
     membershipExpiresAt: options.claims?.membershipExpiresAt,
     trustTier: options.claims?.trustTier,
     uiLocale: options.claims?.uiLocale,
     deviceClass: options.deviceClass,
     deviceContext: options.deviceContext,
+    query: options.query,
   })
 
   return {
     mfaRequired: false,
-    user: options.user,
+    user: getSessionResponseUser(options.user, tokens.sessionToken.payload),
     deviceToken: tokens.deviceToken,
     sessionToken: tokens.sessionToken,
   }

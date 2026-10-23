@@ -1,3 +1,4 @@
+import { assertOAuthMfaTimestamp, recordOAuthGrantConsent } from './grant-consent.mts'
 import type { AuthorizationRequestRow } from './consent-types.mts'
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import { hashToken } from '@modules/token-secrets'
@@ -14,7 +15,7 @@ import {
   generateOpaqueToken,
   matchesRegisteredRedirectUri,
 } from '@vouchington/oauth-server'
-import { getOAuthIssuer } from './resources.mts'
+import { getOAuthIssuer, findOAuthProtectedResource } from './resources.mts'
 import { mayUserAuthorizeOAuthResource } from './resource-authorization.mts'
 
 export async function decideOAuthAuthorizationRequest(
@@ -22,7 +23,9 @@ export async function decideOAuthAuthorizationRequest(
   requestId: string,
   decision: 'approve' | 'deny',
   browserBindingHash: string,
+  mfaVerifiedAt?: number,
 ): Promise<{ redirect_uri: string }> {
+  assertOAuthMfaTimestamp(mfaVerifiedAt)
   await using query = await beginTransaction()
   const activeParticipantIds = await lockOAuthParticipantUsers(
     await readOAuthAuthorizationRequestParticipantUserIds(requestId, userId, query),
@@ -40,6 +43,8 @@ export async function decideOAuthAuthorizationRequest(
   }
   if (
     decision === 'deny' ||
+    (['admin', 'legal'].includes(findOAuthProtectedResource(request.resource)?.audience ?? '') &&
+      mfaVerifiedAt === undefined) ||
     !(await mayUserAuthorizeOAuthResource(request.user_id, request.resource, query))
   ) {
     await denyAuthorizationRequest(request, query)
@@ -52,7 +57,7 @@ export async function decideOAuthAuthorizationRequest(
       ),
     }
   }
-  const rawCode = await approveAuthorizationRequest(request, query)
+  const rawCode = await approveAuthorizationRequest(request, query, mfaVerifiedAt)
   await query.commit()
   return {
     redirect_uri: buildAuthorizationResponseUrl(
@@ -77,15 +82,17 @@ async function denyAuthorizationRequest(
 async function approveAuthorizationRequest(
   request: AuthorizationRequestRow,
   query: TransactionQuery,
+  mfaVerifiedAt: number | undefined,
 ): Promise<string> {
-  const grantId = await recordAuthorizationApproval(request, query)
+  const grantId = await recordAuthorizationApproval(request, query, mfaVerifiedAt)
   return issueAuthorizationCode(request, grantId, query)
 }
 async function recordAuthorizationApproval(
   request: AuthorizationRequestRow,
   query: TransactionQuery,
+  mfaVerifiedAt: number | undefined,
 ): Promise<string> {
-  const grantId = await upsertGrant(request, query)
+  const grantId = await recordOAuthGrantConsent(request, query, mfaVerifiedAt)
   await insertConsentDecision(request, 'approve', grantId, query)
   return grantId
 }
@@ -178,22 +185,4 @@ async function lockAuthorizationRequest(
     hasEveryScope(request.client_scopes, request.scopes)
     ? request
     : null
-}
-
-async function upsertGrant(
-  request: AuthorizationRequestRow,
-  query: TransactionQuery,
-): Promise<string> {
-  const result = await query<{ id: string }>(
-    `/* upsertGrant */ INSERT INTO oauth_grants (user_id, client_id, resource, scopes)
-     VALUES ($1, $2, $3, $4::api_scopes[])
-     ON CONFLICT (user_id, client_id, resource) WHERE revoked_at IS NULL
-     DO UPDATE SET scopes = EXCLUDED.scopes,
-                   consented_at = CURRENT_TIMESTAMP
-     RETURNING id`,
-    [request.user_id, request.client_id, request.resource, request.scopes],
-  )
-  const row = result.rows[0]
-  if (!row) throw new OAuthProtocolError('server_error', 'authorization grant was not created', 503)
-  return row.id
 }

@@ -1,3 +1,5 @@
+import { createTestAccountChangeActor } from '../account-change.mts'
+import { getTestBlueskyCompletionProofVerifier } from './bluesky-link-authorizations.mts'
 import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
 import { read, beginTransaction, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
@@ -29,6 +31,7 @@ export async function insertTestBlueskyLinkedAccount(options: {
   linkingUserId?: string | null
   authorizationId?: string
   authorizationExpiresAt?: Date
+  initiatingSessionId?: string | null
 }): Promise<{
   bluesky_did: string
   user_id: string | null
@@ -51,14 +54,20 @@ export async function insertTestBlueskyLinkedAccount(options: {
           .update(getTestBlueskyCompletionProofVerifier(authorizationId))
           .digest('base64url')
       : null
+  const initiatingSessionId =
+    options.initiatingSessionId !== undefined
+      ? options.initiatingSessionId
+      : options.userId === null
+        ? (await createTestAccountChangeActor(authorizationUserId)).session.sid
+        : null
   const sessionCiphertext = encryptSecret('{}', `bluesky:session:${did}`)
   await using transaction = await beginTransaction()
   await transaction(sql`/* insertTestBlueskyLinkAuthorization */
         INSERT INTO bluesky_link_authorizations (
-          id, user_id, handle, callback_mode, callback_claimed_at, attached_at,
+          id, user_id, initiating_session_id, handle, callback_mode, callback_claimed_at, attached_at,
           completion_proof_challenge, claimed_did, expires_at
         ) VALUES (
-          ${authorizationId}, ${authorizationUserId}, ${handle ?? `${v7()}.bsky.social`},
+          ${authorizationId}, ${authorizationUserId}, ${initiatingSessionId}, ${handle ?? `${v7()}.bsky.social`},
           ${callbackMode}, CURRENT_TIMESTAMP,
           CASE WHEN ${options.userId !== null} THEN CURRENT_TIMESTAMP END,
           ${proofChallenge}, ${did},
@@ -151,33 +160,6 @@ export async function insertTestBlueskyLinkCompletion(options: {
       ${options.expiresAt ?? new Date(Date.now() + 10 * 60 * 1000)}
     )`)
   return token
-}
-
-export function getTestBlueskyCompletionProofVerifier(flowId: string): string {
-  return createHash('sha256').update(`test-bluesky-proof:${flowId}`).digest('base64url')
-}
-
-export async function ensureTestBlueskyLinkAuthorization(options: {
-  authorizationId: string
-  userId: string
-  callbackMode?: 'web' | 'native'
-  handle?: string
-}): Promise<void> {
-  const callbackMode = options.callbackMode ?? 'web'
-  const completionProofChallenge =
-    callbackMode === 'native'
-      ? createHash('sha256')
-          .update(getTestBlueskyCompletionProofVerifier(options.authorizationId))
-          .digest('base64url')
-      : null
-  await write(sql`/* ensureTestBlueskyLinkAuthorization */
-    INSERT INTO bluesky_link_authorizations (
-      id, user_id, handle, callback_mode, completion_proof_challenge, expires_at
-    ) VALUES (
-      ${options.authorizationId}, ${options.userId}, ${options.handle ?? `${v7()}.bsky.social`},
-      ${callbackMode}, ${completionProofChallenge}, ${new Date(Date.now() + 10 * 60 * 1000)}
-    )
-    ON CONFLICT (id) DO NOTHING`)
 }
 
 // Raw-row read (including the encrypted session_ciphertext column) for asserting

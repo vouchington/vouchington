@@ -9,7 +9,12 @@ export { revokeSession } from './user-session-revocation.mts'
 /** Returns true if the session has been revoked. */
 export async function isSessionRevoked(
   sid: string,
-  options?: { userId?: string | null; deviceId?: string; issuedAt?: number },
+  options?: {
+    userId?: string | null
+    deviceId?: string
+    issuedAt?: number
+    mfaVerifiedAt?: number | null
+  },
 ): Promise<boolean> {
   const sessionRevokedKey = getJwtRevokedKey(sid)
   if (options?.userId && options.issuedAt !== undefined) {
@@ -25,26 +30,38 @@ export async function isSessionRevoked(
     }
     const [sessionRevoked, userRevokedBefore] = batchResult
     if (sessionRevoked !== null) return true
-    if (userRevokedBefore === null) return isDurablyRevoked(sid, options.userId, options.deviceId)
+    if (userRevokedBefore === null)
+      return isDurablyRevoked(sid, options.userId, options.deviceId, options.mfaVerifiedAt)
 
     const revokedBeforeSeconds = Number(userRevokedBefore)
     if (Number.isFinite(revokedBeforeSeconds) && options.issuedAt <= revokedBeforeSeconds)
       return true
-    return isDurablyRevoked(sid, options.userId, options.deviceId)
+    return isDurablyRevoked(sid, options.userId, options.deviceId, options.mfaVerifiedAt)
   }
 
   const result = await sessionValkeyClient.get(sessionRevokedKey)
   if (result !== null) return true
-  return options?.userId ? isDurablyRevoked(sid, options.userId, options.deviceId) : false
+  return options?.userId
+    ? isDurablyRevoked(sid, options.userId, options.deviceId, options.mfaVerifiedAt)
+    : false
 }
 
-async function isDurablyRevoked(sid: string, userId: string, deviceId?: string): Promise<boolean> {
+async function isDurablyRevoked(
+  sid: string,
+  userId: string,
+  deviceId?: string,
+  mfaVerifiedAt?: number | null,
+): Promise<boolean> {
   const statement = sql`/* isDurablyRevoked */
     SELECT s.id FROM user_sessions s JOIN users u ON u.id = s.user_id
     WHERE s.id = ${sid} AND s.user_id = ${userId}
       AND s.revoked_at IS NULL AND s.expires_at > CURRENT_TIMESTAMP
       AND s.device_token_digest IS NOT NULL AND u.deleted_at IS NULL`
   if (deviceId) statement.append(sql` AND s.device_id = ${deviceId}`)
+  if (mfaVerifiedAt !== undefined)
+    statement.append(
+      sql` AND (s.device_token_binding -> 'mfa_at') IS NOT DISTINCT FROM to_jsonb(${mfaVerifiedAt}::bigint)`,
+    )
   const { rows } = await write(statement)
   return rows.length === 0
 }

@@ -1,3 +1,8 @@
+import {
+  withActiveAccountSession,
+  type AccountChangeSession,
+} from '@services/mfa/active-account-session'
+import { assertFreshReAuth } from '@services/mfa/re-auth'
 import createHttpError from 'http-errors'
 import { beginBlueskyAuthorization, completeBlueskyCallback } from '@modules/bluesky-oauth'
 import { getBlueskyOAuthClient } from './client.mts'
@@ -50,23 +55,33 @@ function decodeAuthorizationId(raw: string | null): string {
 // redirect the user's browser to. The existing-link check here is a fast, friendly pre-check, not
 // the real guard — the real one is the unique-constraint catch in connectBlueskyAccountToUser,
 // which is race-safe against two concurrent link attempts.
-export async function beginBlueskyAccountLinkDirect(
+export async function beginBlueskyAccountLink(
   userId: string,
   handle: string,
-  callbackMode: BlueskyLinkCallbackMode = 'web',
-  completionProofChallenge?: string,
+  options: {
+    session: AccountChangeSession
+    reAuthToken?: string
+    callbackMode?: BlueskyLinkCallbackMode
+    completionProofChallenge?: string
+  },
 ): Promise<{ redirectUrl: URL; flowId?: string }> {
-  const existing = await getBlueskyLinkedAccountForUser(userId, {}, true)
-  if (existing?.disconnect_requested_at) {
-    throw createHttpError(409, 'Your previous Bluesky account is still disconnecting')
-  }
-  if (existing) throw createHttpError(409, 'You already have a Bluesky account linked')
+  const { callbackMode = 'web', completionProofChallenge } = options
+  const flowId = await withActiveAccountSession(userId, options.session, async query => {
+    await assertFreshReAuth(userId, options.session, options.reAuthToken, query)
+    const existing = await getBlueskyLinkedAccountForUser(userId, { query }, true)
+    if (existing?.disconnect_requested_at) {
+      throw createHttpError(409, 'Your previous Bluesky account is still disconnecting')
+    }
+    if (existing) throw createHttpError(409, 'You already have a Bluesky account linked')
 
-  const flowId = await createBlueskyLinkAuthorization({
-    userId,
-    handle,
-    callbackMode,
-    completionProofChallenge,
+    return createBlueskyLinkAuthorization({
+      userId,
+      handle,
+      callbackMode,
+      completionProofChallenge,
+      initiatingSessionId: options.session.sid,
+      query,
+    })
   })
   let redirectUrl: URL
   try {

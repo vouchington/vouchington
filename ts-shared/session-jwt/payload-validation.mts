@@ -3,6 +3,7 @@ import { validate as isUUID } from 'uuid'
 import { isUuidv7 as isUUIDv7 } from '@vouchington/session-jwt'
 import {
   isOptionalDeviceClass,
+  isOptionalMfaVerifiedAt,
   type DeviceTokenPayload,
   type SessionTokenPayload,
 } from './types.mts'
@@ -20,6 +21,7 @@ export function isValidDevicePayload(payload: JWTPayload): payload is DeviceToke
     isUUIDv7(payload.did) &&
     isOptionalDeviceClass(payload.dc) &&
     isValidClientBinding(payload) &&
+    isValidMfaAssurance(payload, typeof payload.refresh_uid === 'string') &&
     (payload.refresh_uid === undefined ||
       (typeof payload.refresh_uid === 'string' && isUUID(payload.refresh_uid))) &&
     (payload.refresh_sid === undefined ||
@@ -30,6 +32,7 @@ export function isValidDevicePayload(payload: JWTPayload): payload is DeviceToke
 export function isValidSessionPayload(payload: JWTPayload): payload is SessionTokenPayload {
   return (
     isValidClientBinding(payload) &&
+    isValidMfaAssurance(payload, typeof payload.uid === 'string') &&
     isNonEmptyString(payload.did) &&
     isUUIDv7(payload.did) &&
     isNonEmptyString(payload.sid) &&
@@ -52,5 +55,14 @@ function isValidClientBinding(payload: JWTPayload): boolean {
       (typeof payload.ja4_hash === 'string' && /^[a-f0-9]{64}$/u.test(payload.ja4_hash))) &&
     (payload.ua_hash === undefined ||
       (typeof payload.ua_hash === 'string' && /^[a-f0-9]{64}$/u.test(payload.ua_hash)))
+  )
+}
+
+function isValidMfaAssurance(payload: JWTPayload, authenticated: boolean): boolean {
+  const verifiedAt = payload.mfa_at
+  return (
+    isOptionalMfaVerifiedAt(verifiedAt) &&
+    (verifiedAt === undefined ||
+      (authenticated && typeof payload.iat === 'number' && verifiedAt <= payload.iat))
   )
 }

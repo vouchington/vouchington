@@ -1,7 +1,12 @@
 import { randomInt } from 'node:crypto'
 import { v7 } from 'uuid'
 import { it, expect, describe, beforeAll, onTestFinished } from 'vitest'
-import { countUserRoleAssignments, createTestUser, getTestUserRaw } from '@voucha/test-helpers'
+import {
+  countUserRoleAssignments,
+  createTestUser,
+  getTestUserRaw,
+  insertTestTotpAuthenticator,
+} from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { createVoteWeightDispatchUserAt } from '@voucha/test-helpers/vote-weight-dispatch'
 import { createVoteWeightRecalculationRaceQuery } from '@voucha/test-helpers/vote-weight-recalculation-race'
@@ -17,6 +22,7 @@ describe('roles-permissions', () => {
 
   beforeAll(async () => {
     user = await createTestUser()
+    await insertTestTotpAuthenticator(user.id, 'role-grant')
   })
   describe('addUserRole', () => {
     it('is idempotent for the same user and role', async () => {
@@ -34,6 +40,7 @@ describe('roles-permissions', () => {
       const at = new Date(Date.UTC(2004, 0, 1) + randomInt(0, 30_000_000))
       const userId = await createVoteWeightDispatchUserAt(at)
       const afterId = v7({ msecs: at.getTime() - 1 })
+      await insertTestTotpAuthenticator(userId, 'role-grant-race')
       const baseline = await recalculateUserVoteWeight(userId)
       const release = holdBackgroundDomain('vote-aggregation')
       try {

@@ -1,5 +1,5 @@
 import { getBlueskyFollowsWorkLimit } from './work-limits.mts'
-import { read, write } from '@data-stores/psql'
+import { read, write, registerPostCommitAction, type TransactionQuery } from '@data-stores/psql'
 import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
 import { enqueueOnUserUpdated } from '@queues/entity-listeners/enqueues'
@@ -10,12 +10,16 @@ export type BlueskyDisconnectRequest = {
   linkAuthorizationId: string
 }
 
-export async function requestBlueskyDisconnect(userId: string): Promise<BlueskyDisconnectRequest> {
+export async function requestBlueskyDisconnect(
+  userId: string,
+  options: { query?: TransactionQuery } = {},
+): Promise<BlueskyDisconnectRequest> {
   const { rows } = await write<{
     user_id: string
     bluesky_did: string
     link_authorization_id: string
-  }>(sql`/* requestBlueskyDisconnect */
+  }>(
+    sql`/* requestBlueskyDisconnect */
     UPDATE bluesky_linked_accounts account
     SET disconnect_requested_at = COALESCE(account.disconnect_requested_at, CURRENT_TIMESTAMP)
     FROM bluesky_link_authorizations link_auth
@@ -23,7 +27,10 @@ export async function requestBlueskyDisconnect(userId: string): Promise<BlueskyD
       AND link_auth.id = account.link_authorization_id
       AND link_auth.user_id = account.user_id
       AND link_auth.status = 'attached'
-    RETURNING account.user_id, account.bluesky_did, account.link_authorization_id`)
+      AND account.disconnect_requested_at IS NULL
+    RETURNING account.user_id, account.bluesky_did, account.link_authorization_id`,
+    options,
+  )
   const row = rows[0]
   if (!row) throw createHttpError(404, 'No Bluesky account linked')
   const request = {
@@ -31,7 +38,11 @@ export async function requestBlueskyDisconnect(userId: string): Promise<BlueskyD
     blueskyDid: row.bluesky_did,
     linkAuthorizationId: row.link_authorization_id,
   }
-  void enqueueOnUserUpdated(userId)
+  if (options.query)
+    registerPostCommitAction(options.query, async () => {
+      void enqueueOnUserUpdated(userId)
+    })
+  else void enqueueOnUserUpdated(userId)
   return request
 }
 

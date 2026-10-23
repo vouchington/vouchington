@@ -38,10 +38,11 @@ describe('my email address client helpers', () => {
   it('requests verification for the supplied email address', async () => {
     mockPost.mockResolvedValue({ email_address: 'tests+client@voucha.ai' })
 
-    await requestMyEmailAddressVerification('Tests+Client@Voucha.ai')
+    await requestMyEmailAddressVerification('Tests+Client@Voucha.ai', 'email-proof')
 
     expect(mockPost).toHaveBeenCalledWith('/api/v1/my/email-addresses', {
       email_address: 'Tests+Client@Voucha.ai',
+      re_auth_token: 'email-proof',
     })
   })
 

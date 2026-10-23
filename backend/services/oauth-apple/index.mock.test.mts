@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto'
 import { createRandomString } from '@voucha/test-helpers'
 import {
   createSignedJwt,
+  createAppleCredentialForSubject as credentialForSubject,
   makeAppleJwk,
   makeFetchResponse,
 } from '@voucha/test-helpers/services/oauth-apple/fixtures'
@@ -16,7 +17,7 @@ const originalAppleNativeClientIds = process.env.APPLE_NATIVE_CLIENT_IDS
 process.env.APPLE_CLIENT_ID = appleClientId
 process.env.APPLE_NATIVE_CLIENT_IDS = nativeAppleClientId
 
-let upsertAppleAccount: typeof import('./index.mts').upsertAppleAccount
+let prepareAppleAccount: typeof import('./index.mts').prepareAppleAccount
 let getAppleAccountByAppleUserId: typeof import('./index.mts').getAppleAccountByAppleUserId
 
 describe('apple oauth', () => {
@@ -28,7 +29,7 @@ describe('apple oauth', () => {
       return { ...actual, fetch: fetchSpy }
     })
     const service = await import('./index.mts')
-    upsertAppleAccount = service.upsertAppleAccount
+    prepareAppleAccount = service.prepareAppleAccount
     getAppleAccountByAppleUserId = service.getAppleAccountByAppleUserId
   })
 
@@ -68,7 +69,9 @@ describe('apple oauth', () => {
         },
       )
 
-      const account = await upsertAppleAccount(credential, { name: 'Apple Test User' }, nonce)
+      const account = await (
+        await prepareAppleAccount(credential, { name: 'Apple Test User' }, nonce)
+      ).persist()
       expect(account.provider_user_id).toBe(appleUserId)
       expect(account.provider_user_email_address).toBe(email)
       expect(fetchSpy).toHaveBeenCalledWith(
@@ -116,12 +119,12 @@ describe('apple oauth', () => {
         },
       )
 
-      const firstAccount = await upsertAppleAccount(
-        firstCredential,
-        { name: 'Apple Recovery User' },
-        firstNonce,
-      )
-      const secondAccount = await upsertAppleAccount(secondCredential, undefined, secondNonce)
+      const firstAccount = await (
+        await prepareAppleAccount(firstCredential, { name: 'Apple Recovery User' }, firstNonce)
+      ).persist()
+      const secondAccount = await (
+        await prepareAppleAccount(secondCredential, undefined, secondNonce)
+      ).persist()
       expect(secondCredential).not.toBe(firstCredential)
       expect(secondAccount).toEqual(firstAccount)
       expect(secondAccount.provider_user_data.name).toBe('Apple Recovery User')
@@ -148,7 +151,7 @@ describe('apple oauth', () => {
         },
       )
 
-      await expect(upsertAppleAccount(credential, undefined, 'different')).rejects.toThrow(
+      await expect(prepareAppleAccount(credential, undefined, 'different')).rejects.toThrow(
         'nonce is invalid',
       )
     })
@@ -170,7 +173,7 @@ describe('apple oauth', () => {
         },
       )
 
-      const account = await upsertAppleAccount(credential)
+      const account = await (await prepareAppleAccount(credential)).persist()
       expect(account.provider_user_id).toBe('apple-native-audience')
     })
 
@@ -189,7 +192,7 @@ describe('apple oauth', () => {
         },
       )
 
-      await expect(upsertAppleAccount(credential)).rejects.toThrow('must include a verified email')
+      await expect(prepareAppleAccount(credential)).rejects.toThrow('must include a verified email')
     })
 
     it('allows authenticated apple connect without a repeated email claim', async () => {
@@ -208,9 +211,11 @@ describe('apple oauth', () => {
         },
       )
 
-      const account = await upsertAppleAccount(credential, undefined, undefined, {
-        requireVerifiedEmail: false,
-      })
+      const account = await (
+        await prepareAppleAccount(credential, undefined, undefined, {
+          requireVerifiedEmail: false,
+        })
+      ).persist()
       expect(account.provider_user_id).toBe(appleUserId)
       expect(account.provider_user_email_address).toBeNull()
     })
@@ -218,7 +223,7 @@ describe('apple oauth', () => {
     it('allows existing apple accounts to sign in without a repeated email claim', async () => {
       const appleUserId = `apple-existing-${createRandomString(8)}`
       fetchSpy.mockResolvedValueOnce(makeFetchResponse(makeAppleJwk('apple-kid')))
-      await upsertAppleAccount(createCredentialForSubject(appleUserId))
+      await (await prepareAppleAccount(credentialForSubject(appleUserId, appleClientId))).persist()
 
       const credential = createSignedJwt(
         { kid: 'apple-kid', alg: 'RS256' },
@@ -231,7 +236,7 @@ describe('apple oauth', () => {
         },
       )
 
-      const account = await upsertAppleAccount(credential)
+      const account = await (await prepareAppleAccount(credential)).persist()
 
       expect(account.provider_user_id).toBe(appleUserId)
       expect(account.provider_user_email_address).toContain('@voucha.ai')
@@ -252,7 +257,7 @@ describe('apple oauth', () => {
         },
       )
 
-      await expect(upsertAppleAccount(credential)).rejects.toMatchObject({ status: 502 })
+      await expect(prepareAppleAccount(credential)).rejects.toMatchObject({ status: 502 })
       expect(fetchSpy).toHaveBeenCalledTimes(1)
     })
   })
@@ -260,10 +265,12 @@ describe('apple oauth', () => {
   describe('cache', () => {
     it('caches apple keys for the production undici fetch dependency', async () => {
       fetchSpy.mockResolvedValueOnce(makeFetchResponse(makeAppleJwk('apple-kid')))
-
-      await upsertAppleAccount(createCredential('apple-cache-user-a'))
-      await upsertAppleAccount(createCredential('apple-cache-user-b'))
-
+      await prepareAppleAccount(
+        credentialForSubject(`apple-cache-a-${createRandomString(8)}`, appleClientId),
+      )
+      await prepareAppleAccount(
+        credentialForSubject(`apple-cache-b-${createRandomString(8)}`, appleClientId),
+      )
       expect(fetchSpy).toHaveBeenCalledTimes(1)
     })
 
@@ -271,30 +278,14 @@ describe('apple oauth', () => {
       fetchSpy
         .mockResolvedValueOnce(makeFetchResponse(makeAppleJwk('stale-apple-kid')))
         .mockResolvedValueOnce(makeFetchResponse(makeAppleJwk('rotated-apple-kid')))
-
-      await upsertAppleAccount(createCredential('apple-cache-refresh-user', 'rotated-apple-kid'))
-
+      await prepareAppleAccount(
+        credentialForSubject(
+          `apple-rotated-${createRandomString(8)}`,
+          appleClientId,
+          'rotated-apple-kid',
+        ),
+      )
       expect(fetchSpy).toHaveBeenCalledTimes(2)
     })
   })
 })
-
-function createCredential(subjectPrefix: string, kid = 'apple-kid'): string {
-  const subject = `${subjectPrefix}-${createRandomString(8)}`
-  return createCredentialForSubject(subject, kid)
-}
-
-function createCredentialForSubject(subject: string, kid = 'apple-kid'): string {
-  return createSignedJwt(
-    { kid, alg: 'RS256' },
-    {
-      iss: 'https://appleid.apple.com',
-      aud: appleClientId,
-      sub: subject,
-      email: `${subject}@voucha.ai`,
-      email_verified: 'true',
-      iat: Math.floor(Date.now() / 1000) - 60,
-      exp: Math.floor(Date.now() / 1000) + 300,
-    },
-  )
-}

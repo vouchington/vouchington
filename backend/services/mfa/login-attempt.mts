@@ -1,3 +1,4 @@
+import type { VerifiedLoginFirstFactor } from '@services/oauth-accounts/login-admission'
 import { randomUUID } from 'node:crypto'
 import { sessionValkeyClient } from '@data-stores/valkey/clients'
 import { getAndDelete } from '@data-stores/valkey/idempotency-key'
@@ -17,6 +18,7 @@ export const failedMfaLoginAttemptRateLimiter = new RateLimiter({
 })
 
 export type LoginAttempt = {
+  firstFactor: VerifiedLoginFirstFactor
   userId: string
   deviceId: string
   sessionId: string

@@ -39,6 +39,7 @@ describe('OAuth broker popup', () => {
       {
         provider: 'github',
         purpose: 'connect',
+        requestReAuth: async () => 'reauth-token',
         returnTo: '/my/identity#social',
       },
       { lockManager, reloadPage },

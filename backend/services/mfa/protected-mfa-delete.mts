@@ -1,67 +1,41 @@
-import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
+import type { AccountChangeSession } from './active-account-session.mts'
+import type { TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
-import { createCodedError } from '@modules/on-error/create-coded-error'
-import { MFA_REAUTH_REQUIRED } from '@modules/on-error/error-codes'
 import { getUserMfaStatus } from './status.mts'
-import { verifyAndDeleteReAuthToken } from './re-auth.mts'
+import { withReauthenticatedAccountChange } from './account-change.mts'
 import { deletePasskey } from '@services/passkeys'
 import { deleteTotpAuthenticator } from '@services/totp'
 import { enqueueRecalculateUserVoteWeightBestEffort } from '@queues/vote-aggregation/enqueues/vote-weight'
 
-async function lockUserMfaRows(query: TransactionQuery, userId: string): Promise<void> {
-  await query(
-    sql`/* withMfaLock */ SELECT 1 FROM user_passkeys WHERE user_id = ${userId} FOR UPDATE`,
-  )
-  await query(
-    sql`/* withMfaLock */ SELECT 1 FROM user_totp_authenticators WHERE user_id = ${userId} FOR UPDATE`,
-  )
-}
-
-async function lockMfaMutation(query: TransactionQuery, userId: string): Promise<void> {
-  await query(sql`/* withMfaLock */ SELECT fn_lock_active_user_for_mutation(${userId})`)
-  await lockUserMfaRows(query, userId)
-}
-
-// Lock all MFA rows for the user inside a transaction to prevent TOCTOU races
-// where two concurrent deletes both pass the last-method check and both succeed.
-async function withMfaLock<T>(
-  userId: string,
-  handler: (query: TransactionQuery) => Promise<T>,
-): Promise<T> {
-  await using query = await beginTransaction()
-  await lockMfaMutation(query, userId)
-  const result = await handler(query)
-  await query.commit()
-  return result
-}
-
-async function assertReAuthIfLastMethod(
+async function assertAdministratorKeepsMfa(
   userId: string,
   query: TransactionQuery,
-  reAuthToken: string | undefined,
+  pendingTotpId?: string,
 ): Promise<void> {
+  if (pendingTotpId) {
+    const { rows } =
+      await query(sql`/* deletingVerifiedTotp */ SELECT 1 FROM user_totp_authenticators
+      WHERE id = ${pendingTotpId} AND user_id = ${userId} AND verified_at IS NOT NULL LIMIT 1`)
+    if (rows.length === 0) return
+  }
   const status = await getUserMfaStatus(userId, { query })
   if (status.passkeysCount + status.totpCount > 1) return
-
-  if (!reAuthToken)
-    throw createCodedError(
-      422,
-      'Re-authentication required to remove last MFA method',
-      MFA_REAUTH_REQUIRED,
-    )
-
-  const valid = await verifyAndDeleteReAuthToken(userId, reAuthToken)
-  assert(valid, 401, 'Re-authentication token expired or invalid')
+  const { rows } = await query(sql`/* administratorMfaRequired */
+    SELECT 1 FROM user_roles r JOIN user_role_types t ON t.id = r.role_type_id
+    WHERE r.user_id = ${userId} AND t.slug = 'administrator' LIMIT 1
+  `)
+  assert(rows.length === 0, 403, 'Administrators must keep an MFA method')
 }
 
 export async function deletePasskeyWithMfaProtection(
   userId: string,
   passkeyId: string,
   reAuthToken: string | undefined,
+  session: AccountChangeSession,
 ): Promise<void> {
-  await withMfaLock(userId, async query => {
-    await assertReAuthIfLastMethod(userId, query, reAuthToken)
+  await withReauthenticatedAccountChange(userId, session, reAuthToken, async query => {
+    await assertAdministratorKeepsMfa(userId, query)
     await deletePasskey(userId, passkeyId, query)
   })
   // Enqueue after the transaction commits so the job sees the committed delete.
@@ -72,9 +46,10 @@ export async function deleteTotpAuthenticatorWithMfaProtection(
   userId: string,
   authenticatorId: string,
   reAuthToken: string | undefined,
+  session: AccountChangeSession,
 ): Promise<void> {
-  await withMfaLock(userId, async query => {
-    await assertReAuthIfLastMethod(userId, query, reAuthToken)
+  await withReauthenticatedAccountChange(userId, session, reAuthToken, async query => {
+    await assertAdministratorKeepsMfa(userId, query, authenticatorId)
     await deleteTotpAuthenticator(userId, authenticatorId, query)
   })
 }

@@ -167,6 +167,7 @@ app.route('/api/v1/oauth/authorization-requests/:id/decisions').post(async (ctx:
     id,
     body.decision,
     createOAuthBrowserBindingHash(session.did, session.sid),
+    'mfa_at' in session ? session.mfa_at : undefined,
   )
   ctx.json(result)
 })

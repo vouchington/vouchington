@@ -1,3 +1,4 @@
+import type { VerifiedLoginFirstFactor } from '@services/oauth-accounts/login-admission'
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
 import { completeOAuthAuthorization } from '../authorization-completion.mts'
@@ -19,6 +20,7 @@ describe('OAuth authorization completion orchestration', () => {
     const firstDependencies = completionDependencies(
       {
         kind: 'authenticated',
+        firstFactor: { type: 'email', emailAddress: user.email_address! },
         userId,
         deviceId,
         sessionId,
@@ -29,6 +31,7 @@ describe('OAuth authorization completion orchestration', () => {
     const replayDependencies = completionDependencies(
       {
         kind: 'authenticated',
+        firstFactor: { type: 'email', emailAddress: user.email_address! },
         userId,
         deviceId,
         sessionId,
@@ -66,6 +69,7 @@ describe('OAuth authorization completion orchestration', () => {
     const sessionId = randomUUID()
     const transaction = Promise.withResolvers<{
       kind: 'authenticated'
+      firstFactor: VerifiedLoginFirstFactor
       userId: string
       deviceId: string
       sessionId: string
@@ -74,6 +78,7 @@ describe('OAuth authorization completion orchestration', () => {
     const dependencies = completionDependencies(
       {
         kind: 'authenticated',
+        firstFactor: { type: 'email', emailAddress: user.email_address! },
         userId,
         deviceId,
         sessionId,
@@ -92,6 +97,7 @@ describe('OAuth authorization completion orchestration', () => {
       () =>
         transaction.resolve({
           kind: 'authenticated',
+          firstFactor: { type: 'email', emailAddress: user.email_address! },
           userId,
           deviceId,
           sessionId,
@@ -132,6 +138,7 @@ describe('OAuth authorization completion orchestration', () => {
     const dependencies = completionDependencies(
       {
         kind: 'authenticated',
+        firstFactor: { type: 'email', emailAddress: user.email_address! },
         userId: user.id,
         deviceId: randomUUID(),
         sessionId: randomUUID(),
@@ -184,36 +191,41 @@ describe('OAuth authorization completion orchestration', () => {
     )
   })
 
-  it('returns a durable connection when its immediate friend-sync enqueue fails', async () => {
-    const userId = randomUUID()
-    const accountId = randomUUID()
-    const dependencies = completionDependencies({
-      kind: 'connected',
-      userId,
-      provider: 'github',
-      newlyCompleted: true,
-      account: {
-        account_id: accountId,
-        user_id: userId,
-        provider_user_id: 'github-user',
-        provider_user_email_address: null,
-        provider_user_data: {},
-      },
-    })
-    vi.mocked(dependencies.enqueueFriendSync).mockRejectedValue(
-      Object.assign(new Error('Valkey unavailable'), {
-        tags: { suppressLogging: true },
-      }),
-    )
+  it.each(['notifyAccountSecurityChange', 'enqueueFriendSync'] as const)(
+    'returns a durable connection when postcommit %s fails',
+    async effect => {
+      const userId = randomUUID()
+      const accountId = randomUUID()
+      const dependencies = completionDependencies({
+        kind: 'connected',
+        userId,
+        provider: 'github',
+        newlyCompleted: true,
+        account: {
+          account_id: accountId,
+          user_id: userId,
+          provider_user_id: 'github-user',
+          provider_user_email_address: null,
+          provider_user_data: {},
+        },
+      })
+      vi.mocked(dependencies[effect]).mockRejectedValue(
+        Object.assign(new Error('Valkey unavailable'), {
+          tags: { suppressLogging: true },
+        }),
+      )
 
-    await expect(
-      completeOAuthAuthorization(completionOptions(), dependencies),
-    ).resolves.toMatchObject({
-      status: 'connected',
-      account: { provider_user_id: 'github-user' },
-    })
-    expect(dependencies.enqueueFriendSync).toHaveBeenCalledOnce()
-  })
+      await expect(
+        completeOAuthAuthorization(completionOptions(), dependencies),
+      ).resolves.toMatchObject({
+        status: 'connected',
+        account: { provider_user_id: 'github-user' },
+      })
+      expect(dependencies.notifyAccountSecurityChange).toHaveBeenCalledOnce()
+      expect(dependencies.runConnectionEffects).toHaveBeenCalledWith(userId)
+      expect(dependencies.enqueueFriendSync).toHaveBeenCalledOnce()
+    },
+  )
 
   it('returns a durable connection and continues friend sync when connection effects fail', async () => {
     const userId = randomUUID()

@@ -62,128 +62,35 @@ describe('TotpManager reauthentication', () => {
     mockDelete.mockResolvedValue(undefined as never)
   })
 
-  it('allows only one token-bearing delete while the last-MFA deletion is pending', async () => {
-    let resolveDelete!: () => void
-    const pendingDelete = new Promise<void>(resolve => {
-      resolveDelete = resolve
-    })
-    mockDelete.mockReturnValueOnce(pendingDelete as never)
+  it('requires a proof before removing a factor even when other factors remain', async () => {
     render(
       <TotpManager
-        initialData={page([makeAuth('totp-last')])}
-        mfaStatus={{ ...mfaStatus, passkeys_count: 0, totp_count: 1 }}
+        initialData={page([makeAuth('totp-1'), makeAuth('totp-2')])}
+        mfaStatus={mfaStatus}
       />,
     )
-
-    fireEvent.click(screen.getByRole('button', { name: /^Remove$/ }))
+    fireEvent.click(screen.getAllByRole('button', { name: /^Remove$/ })[0]!)
+    fireEvent.click(await screen.findByRole('button', { name: /confirm remove|confirm/i }))
     expect(screen.getByTestId('mfa-reauth-dialog')).toHaveAttribute('data-open', 'true')
+    expect(mockDelete).not.toHaveBeenCalled()
     fireEvent.click(screen.getByRole('button', { name: 'Verify MFA' }))
     fireEvent.click(screen.getByRole('button', { name: 'Verify MFA' }))
-
-    await waitFor(() => {
-      expect(mockDelete).toHaveBeenCalledWith('totp-last', 'reauth-token')
-    })
-    expect(mockDelete).toHaveBeenCalledOnce()
-    expect(screen.getByTestId('mfa-reauth-dialog')).toHaveAttribute('data-open', 'false')
-
-    resolveDelete()
-    await waitFor(() => {
-      expect(screen.queryByRole('button', { name: /^Remove$/ })).not.toBeInTheDocument()
-    })
+    await waitFor(() => expect(mockDelete).toHaveBeenCalledWith('totp-1', 'reauth-token'))
     expect(mockDelete).toHaveBeenCalledOnce()
   })
 
-  it('retries an MFA_REAUTH_REQUIRED deletion with the pending ID and verified token', async () => {
-    const { ApiError } = await import('@/lib/api/error')
-    mockDelete
-      .mockRejectedValueOnce(
-        new (ApiError as unknown as new (msg: string, status: number, code: string) => Error)(
-          'reauth required',
-          409,
-          'MFA_REAUTH_REQUIRED',
-        ),
-      )
-      .mockResolvedValueOnce(undefined as never)
-
+  it('leaves the factor intact when fresh authentication is cancelled', async () => {
     render(
       <TotpManager
-        initialData={page([makeAuth('totp-1'), makeAuth('totp-2')])}
+        initialData={page([makeAuth('totp-1')])}
         mfaStatus={mfaStatus}
       />,
     )
-    fireEvent.click(screen.getAllByRole('button', { name: /^Remove$/ })[0]!)
-    fireEvent.click(await screen.findByRole('button', { name: /confirm remove|confirm/i }))
-    await waitFor(() => {
-      expect(screen.getByTestId('mfa-reauth-dialog')).toHaveAttribute('data-open', 'true')
-    })
-
-    fireEvent.click(screen.getByRole('button', { name: 'Verify MFA' }))
-
-    await waitFor(() => {
-      expect(mockDelete).toHaveBeenNthCalledWith(1, 'totp-1', undefined)
-      expect(mockDelete).toHaveBeenNthCalledWith(2, 'totp-1', 'reauth-token')
-    })
-  })
-
-  it('reopens reauthentication when the token-bearing retry also requires MFA, and a further retry still works', async () => {
-    // Regression test for the bug where handleRemoveWithReauth unconditionally
-    // cleared the pending delete id after the await, wiping out the re-armed id
-    // that handleRemove's catch block had just set for the second reauth attempt.
-    // If that regresses, the third click below silently no-ops instead of calling
-    // deleteTotpAuthenticator a third time.
-    const { ApiError } = await import('@/lib/api/error')
-    const reauthRequired = () =>
-      new (ApiError as unknown as new (msg: string, status: number, code: string) => Error)(
-        'reauth required',
-        409,
-        'MFA_REAUTH_REQUIRED',
-      )
-    mockDelete
-      .mockRejectedValueOnce(reauthRequired())
-      .mockRejectedValueOnce(reauthRequired())
-      .mockResolvedValueOnce(undefined as never)
-
-    render(
-      <TotpManager
-        initialData={page([makeAuth('totp-1'), makeAuth('totp-2')])}
-        mfaStatus={mfaStatus}
-      />,
-    )
-    fireEvent.click(screen.getAllByRole('button', { name: /^Remove$/ })[0]!)
-    fireEvent.click(await screen.findByRole('button', { name: /confirm remove|confirm/i }))
-    await waitFor(() => {
-      expect(mockDelete).toHaveBeenCalledOnce()
-      expect(screen.getByTestId('mfa-reauth-dialog')).toHaveAttribute('data-open', 'true')
-    })
-
-    fireEvent.click(screen.getByRole('button', { name: 'Verify MFA' }))
-    await waitFor(() => {
-      expect(mockDelete).toHaveBeenCalledTimes(2)
-      expect(screen.getByTestId('mfa-reauth-dialog')).toHaveAttribute('data-open', 'true')
-    })
-
-    fireEvent.click(screen.getByRole('button', { name: 'Verify MFA' }))
-    await waitFor(() => {
-      expect(mockDelete).toHaveBeenCalledTimes(3)
-    })
-    expect(mockDelete).toHaveBeenNthCalledWith(1, 'totp-1', undefined)
-    expect(mockDelete).toHaveBeenNthCalledWith(2, 'totp-1', 'reauth-token')
-    expect(mockDelete).toHaveBeenNthCalledWith(3, 'totp-1', 'reauth-token')
-  })
-
-  it('clears the pending last-MFA deletion when reauthentication closes', () => {
-    render(
-      <TotpManager
-        initialData={page([makeAuth('totp-last')])}
-        mfaStatus={{ ...mfaStatus, passkeys_count: 0, totp_count: 1 }}
-      />,
-    )
-
     fireEvent.click(screen.getByRole('button', { name: /^Remove$/ }))
+    fireEvent.click(await screen.findByRole('button', { name: /confirm remove|confirm/i }))
     fireEvent.click(screen.getByRole('button', { name: 'Close MFA' }))
-    expect(screen.getByTestId('mfa-reauth-dialog')).toHaveAttribute('data-open', 'false')
-
     fireEvent.click(screen.getByRole('button', { name: 'Verify MFA' }))
     expect(mockDelete).not.toHaveBeenCalled()
+    expect(screen.getByTestId('mfa-reauth-dialog')).toHaveAttribute('data-open', 'false')
   })
 })

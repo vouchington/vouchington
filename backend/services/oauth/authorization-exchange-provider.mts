@@ -1,3 +1,5 @@
+import { readProviderReAuthChallenge } from './provider-reauth-challenge.mts'
+import createHttpError from 'http-errors'
 import type {
   ClaimedOAuthAuthorization,
   claimOAuthAuthorizationExchange,
@@ -56,6 +58,10 @@ export async function exchangeClaimedOAuthAuthorization(
             authorization.pkce_verifier_ciphertext,
           ),
         }
+  const reAuth =
+    authorization.purpose === 're_auth'
+      ? await requireProviderReAuthContext(authorization)
+      : undefined
   await ownership?.persist(authorization.exchange_claim_id, true)
   admission.armed = ownership !== undefined
   signal.throwIfAborted()
@@ -65,6 +71,7 @@ export async function exchangeClaimedOAuthAuthorization(
     authorizationId: authorization.id,
     authorizationClaimId: authorization.exchange_claim_id,
     signal,
+    ...(reAuth && { reAuth }),
   }
   switch (providerInput.provider) {
     case 'facebook':
@@ -109,4 +116,16 @@ export async function exchangeClaimedOAuthAuthorization(
       )
       break
   }
+}
+
+async function requireProviderReAuthContext(authorization: ClaimedOAuthAuthorization) {
+  if (!authorization.initiating_user_id)
+    throw createHttpError(401, 'Provider reauthentication has no owner')
+  return readProviderReAuthChallenge({
+    flowId: authorization.id,
+    provider: authorization.provider,
+    userId: authorization.initiating_user_id,
+    deviceId: authorization.initiating_device_id,
+    sessionId: authorization.initiating_session_id,
+  })
 }

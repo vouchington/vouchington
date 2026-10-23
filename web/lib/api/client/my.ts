@@ -95,9 +95,11 @@ export function unsubscribeEmailToken(token: string): Promise<{ ok: true }> {
 }
 export function requestMyEmailAddressVerification(
   emailAddress: string,
+  reAuthToken: string,
 ): Promise<{ email_address: string }> {
   return clientApi.post<{ email_address: string }>('/api/v1/my/email-addresses', {
     email_address: emailAddress,
+    re_auth_token: reAuthToken,
   })
 }
 export function getMyEmailAddressesClient(options?: {
@@ -111,22 +113,26 @@ export function getMyEmailAddressesClient(options?: {
 export function verifyMyEmailAddress(
   emailAddress: string,
   token: string,
+  reAuthToken: string,
 ): Promise<ListResponse<EmailAddress>> {
   return clientApi.post<ListResponse<EmailAddress>>(
     `/api/v1/my/email-addresses/${encodeURIComponent(emailAddress)}/verifications`,
-    { token },
+    { token, re_auth_token: reAuthToken },
   )
 }
 export function setPrimaryMyEmailAddress(
   emailAddress: string,
+  reAuthToken: string,
 ): Promise<ListResponse<EmailAddress>> {
   return clientApi.patch<ListResponse<EmailAddress>>(
     `/api/v1/my/email-addresses/${encodeURIComponent(emailAddress)}`,
-    { is_primary: true },
+    { is_primary: true, re_auth_token: reAuthToken },
   )
 }
-export function deleteMyEmailAddress(emailAddress: string): Promise<void> {
-  return clientApi.delete(`/api/v1/my/email-addresses/${encodeURIComponent(emailAddress)}`)
+export function deleteMyEmailAddress(emailAddress: string, reAuthToken: string): Promise<void> {
+  return clientApi.delete(`/api/v1/my/email-addresses/${encodeURIComponent(emailAddress)}`, {
+    body: { re_auth_token: reAuthToken },
+  })
 }
 export function createMyRewardsProgramStatus(
   body: unknown,

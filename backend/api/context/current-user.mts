@@ -2,7 +2,7 @@ import type { Context } from '@jongleberry/api-server'
 import { setAuthenticationCookies } from '@modules/api-utils'
 import { getPrivateUserByAny } from '@services/users/get'
 import type { PrivateUser } from '@services/users/types'
-import { createDeviceAndSessionTokens } from '@services/jwt-session'
+import { createDeviceAndSessionTokens, getSessionAuthorizedUser } from '@services/jwt-session'
 import { setRequestCurrentUser } from './request-context.mts'
 
 /** Memoized primary read of the acting user. Fills the request store and does not authenticate. */
@@ -39,8 +39,11 @@ async function readCurrentUser(context: Context): Promise<PrivateUser | null> {
     context.currentUser = null
     return null
   }
-  context.currentUser = user
-  return user
+  const authorized = getSessionAuthorizedUser(user, {
+    mfaVerifiedAt: 'mfa_at' in sessionData ? sessionData.mfa_at : undefined,
+  })
+  context.currentUser = authorized
+  return authorized
 }
 
 async function resetDeletedUserSession(context: Context, deviceId: string): Promise<void> {
