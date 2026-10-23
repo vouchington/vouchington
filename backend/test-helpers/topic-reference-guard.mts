@@ -1,10 +1,23 @@
-import { beginTransaction, write } from '@data-stores/psql'
+import { beginTransaction, write, type TransactionQuery } from '@data-stores/psql'
 import { lockTopicRssFeedAttachmentLifecycle } from '../services/post-publication/lock.mts'
 
 export async function insertTopicReferenceGuardFollow(topicId: string, userId: string) {
   await write(
     `/* insertTopicReferenceGuardFollow */ INSERT INTO relation__user__follow__topic (subject_id, object_id)
     VALUES ($1::uuid, $2::uuid) ON CONFLICT (subject_id, object_id) DO UPDATE SET deleted_at = NULL`,
+    [userId, topicId],
+  )
+}
+
+export async function insertTopicReferenceGuardFollowInTransaction(
+  query: TransactionQuery,
+  topicId: string,
+  userId: string,
+) {
+  await query(
+    `/* insertTopicReferenceGuardFollowInTransaction */
+      INSERT INTO relation__user__follow__topic (subject_id, object_id)
+      VALUES ($1::uuid, $2::uuid)`,
     [userId, topicId],
   )
 }

@@ -10,7 +10,7 @@ import {
 import { OFFICIAL_ACCOUNT_TRUST_SIGNAL_FORBIDDEN } from '@modules/on-error/error-codes'
 import { createUserReferralLink } from './create.mts'
 import { deactivateUserReferralLink } from './activate.mts'
-import { withPostgresPoolQueryFailureForTest } from '@voucha/test-helpers/postgres-pool-query-failure'
+import { withPostgresQueryFailureForTest } from '@voucha/test-helpers/postgres-query-failure'
 
 describe('create', () => {
   let user: PrivateUser
@@ -93,7 +93,7 @@ describe('create', () => {
   })
 
   it('preserves unrelated database errors during link creation', async () => {
-    const failure = await withPostgresPoolQueryFailureForTest('/* createUserReferralLink */', () =>
+    const failure = await withPostgresQueryFailureForTest('/* createUserReferralLink */', () =>
       createUserReferralLink(user, WEB_PROVENANCE, {
         user_id: user.id,
         referral_program_id: referralProgramId!,

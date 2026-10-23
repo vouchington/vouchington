@@ -1,6 +1,6 @@
-import { getRssFeedItemsWorkLimit } from './work-limits.mts'
 import { write, type QueryExecutor } from '@data-stores/psql'
 import { registerRssCategoryIdentities } from './category-identities.mts'
+import { orderedCategoryChunks } from './ordered-category-chunks.mts'
 
 export type CategoryTopicMutation = {
   rss_feed_item_id: string
@@ -27,7 +27,12 @@ export async function insertMissingHashtagAliases(aliases: string[]): Promise<vo
 }
 
 export async function insertMissingCategories(
-  toInsert: Array<{ rss_feed_item_id: string; category: string; hashtag_alias: string | null }>,
+  toInsert: Array<{
+    rss_feed_item_id: string
+    category: string
+    hashtag_alias: string | null
+    topicId: string | null
+  }>,
   query: QueryExecutor,
 ): Promise<CategoryTopicMutation[]> {
   if (toInsert.length === 0) return []
@@ -41,7 +46,12 @@ export async function insertMissingCategories(
 }
 
 async function insertMissingCategoriesChunk(
-  toInsert: Array<{ rss_feed_item_id: string; category: string; hashtag_alias: string | null }>,
+  toInsert: Array<{
+    rss_feed_item_id: string
+    category: string
+    hashtag_alias: string | null
+    topicId: string | null
+  }>,
   query: QueryExecutor,
 ): Promise<CategoryTopicMutation[]> {
   await registerRssCategoryIdentities(
@@ -61,23 +71,19 @@ async function insertMissingCategoriesChunk(
         input.rss_feed_item_id,
         identity.id,
         input.category_text,
-        COALESCE(t_alias.id, t_name.id, t_slug.id) as topic_id,
+        input.topic_id,
         ta.id AS topic_alias_id
       FROM (
         SELECT
           unnest($1::uuid[]) as rss_feed_item_id,
           unnest($2::text[]) as category_text,
-          unnest($3::text[]) as hashtag_alias
+          unnest($3::text[]) as hashtag_alias,
+          unnest($4::uuid[]) as topic_id
       ) as input
       JOIN rss_category_identities identity
         ON identity.category_text = LOWER(TRIM(input.category_text))
       LEFT JOIN topic_aliases ta
         ON ta.alias = input.hashtag_alias
-      LEFT JOIN topic_aliases text_alias
-        ON text_alias.alias = LOWER(input.category_text)
-      LEFT JOIN topics t_alias ON t_alias.id = COALESCE(ta.topic_id, text_alias.topic_id) AND t_alias.deleted_at IS NULL
-      LEFT JOIN topics t_name ON LOWER(t_name.name) = LOWER(input.category_text) AND t_name.deleted_at IS NULL AND t_name.merged_into_topic_id IS NULL
-      LEFT JOIN topics t_slug ON t_slug.slug = LOWER(input.category_text) AND t_slug.deleted_at IS NULL AND t_slug.merged_into_topic_id IS NULL
       ORDER BY input.rss_feed_item_id, identity.id
       ON CONFLICT (rss_feed_item_id, category_identity_id) DO NOTHING
       RETURNING rss_feed_item_id, NULL::uuid AS previous_topic_id, topic_id,
@@ -87,6 +93,7 @@ async function insertMissingCategoriesChunk(
       toInsert.map(i => i.rss_feed_item_id),
       toInsert.map(i => i.category),
       toInsert.map(i => i.hashtag_alias),
+      toInsert.map(i => i.topicId),
     ],
   )
   return rows
@@ -109,32 +116,6 @@ export async function updateMatchedCategories(
     mutations.push(...(await updateMatchedCategoriesChunk(chunk, query)))
   }
   return mutations
-}
-
-function orderedCategoryChunks<T extends { rss_feed_item_id: string }>(rows: readonly T[]): T[][] {
-  const RSS_FEED_ITEM_CATEGORY_SQL_BATCH_SIZE = getRssFeedItemsWorkLimit('category_sql_batch_size')
-  const rowsByItemId = new Map<string, T[]>()
-  for (const row of rows) {
-    const itemRows = rowsByItemId.get(row.rss_feed_item_id) ?? []
-    itemRows.push(row)
-    rowsByItemId.set(row.rss_feed_item_id, itemRows)
-  }
-  const chunks: T[][] = []
-  let chunk: T[] = []
-  for (const [, itemRows] of [...rowsByItemId].toSorted(([left], [right]) =>
-    left.localeCompare(right),
-  )) {
-    if (
-      chunk.length > 0 &&
-      chunk.length + itemRows.length > RSS_FEED_ITEM_CATEGORY_SQL_BATCH_SIZE
-    ) {
-      chunks.push(chunk)
-      chunk = []
-    }
-    chunk.push(...itemRows)
-  }
-  if (chunk.length > 0) chunks.push(chunk)
-  return chunks
 }
 
 async function updateMatchedCategoriesChunk(

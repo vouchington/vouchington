@@ -1,4 +1,5 @@
 import { read } from '@data-stores/psql'
+import type { QueryOptions } from '@data-stores/psql/types'
 import { isUUID } from '@modules/utils'
 import { getPostContentLimitsConfig } from '@services/post-content-limits'
 import assert from 'http-assert'
@@ -38,11 +39,15 @@ export function assertValidReviewTopicRatings(
   }
 }
 
-export async function assertReviewTopicsAllowReviews(topicIds: string[]): Promise<void> {
+export async function assertReviewTopicsAllowReviews(
+  topicIds: string[],
+  options: QueryOptions = {},
+): Promise<void> {
   if (topicIds.length === 0) return
   const { rows } = await read<{
     active_topic_exists: boolean
-  }>(sql`/* assertReviewTopicsAllowReviews */
+  }>(
+    sql`/* assertReviewTopicsAllowReviews */
     SELECT topics.id IS NOT NULL AS active_topic_exists
     FROM unnest(${topicIds}::uuid[]) AS requested(topic_id)
     LEFT JOIN topics ON topics.id = requested.topic_id
@@ -51,7 +56,10 @@ export async function assertReviewTopicsAllowReviews(topicIds: string[]): Promis
     WHERE topics.id IS NULL
       OR topics.should_allow_reviews = FALSE
     LIMIT 1
-  `)
+  `,
+    undefined,
+    options,
+  )
   const invalidTopic = rows[0]
   if (!invalidTopic) return
   if (!invalidTopic.active_topic_exists) throw createHttpError(422, 'Topic not found')

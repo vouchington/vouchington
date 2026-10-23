@@ -6,7 +6,7 @@ export const TOPIC_MERGE_REFERENCE_GROUPS = {
   'card_topics.bank_topic_id': 'references',
   'card_topics.brand_topic_id': 'references',
   'card_topics.topic_id': 'subtype',
-  'classifier_candidates.topic_id': 'collisions',
+  'classifier_candidates.topic_id': 'configuration',
   'classifier_run_candidates.topic_id': 'derived',
   'community_list_topics.topic_id': 'collisions',
   'curated_aside_items.topic_id': 'collisions',

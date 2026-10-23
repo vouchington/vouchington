@@ -12,6 +12,7 @@ import {
 import { currentUserCanUpdateTopic } from './authorization.mts'
 import { upsertTopicAttributes } from './upsert-attributes.mts'
 import { withReferralLinkEligibilityMutationLock } from '@services/entity-relations/referral-link-eligibility-lock'
+import { lockTopicRssFeedAttachmentLifecycle } from '@services/post-publication/lock'
 
 type ReferralProgramAttributes = {
   company_topic_id?: string | null
@@ -75,13 +76,14 @@ export async function linkValidationToReferralProgram(
   assert(currentUserCanUpdateTopic(currentUser), 403, 'Forbidden')
   // ast-grep-ignore: no-three-sequential-awaits -- service workflow has dependent validation, mutation, and follow-up side effects
   await assertReferralProgramAndLinkValidationExist(referralProgramId, validationId, options)
-  await withReferralLinkEligibilityMutationLock(options ?? {}, query =>
-    query(sql`/* linkValidationToReferralProgram */
+  await withReferralLinkEligibilityMutationLock(options ?? {}, async query => {
+    await lockTopicRssFeedAttachmentLifecycle(query, referralProgramId)
+    await query(sql`/* linkValidationToReferralProgram */
         INSERT INTO referral_program_topic_link_validation_rule_sets (referral_program_topic_id, referral_program_link_validation_rule_set_id)
         VALUES (${referralProgramId}, ${validationId})
         ON CONFLICT DO NOTHING
-      `),
-  )
+      `)
+  })
 }
 
 export async function unlinkValidationFromReferralProgram(

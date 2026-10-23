@@ -1,17 +1,30 @@
 import { rethrowTopicMergeError } from './merge-preflight.mts'
 import { createClassifierFixture } from '@voucha/test-helpers/data-stores/psql/classifiers'
 import {
+  changeTopicMergeClassifierCandidateTopic,
+  getTopicMergeClassifierArtifacts,
   getTopicMergeClassifierConfiguration,
   seedTopicMergeClassifierCollision,
 } from '@voucha/test-helpers/topic-merge-classifiers'
-import { createTestTopic, createTestUser, insertTestImage } from '@voucha/test-helpers'
+import {
+  beginTransaction,
+  createTestTopic,
+  createTestUser,
+  insertTestImage,
+} from '@voucha/test-helpers'
 import { setTestTopicSurfaceImages } from '@voucha/test-helpers/entities/media-surface-writes'
+import { getTestImageSurfacePlacements } from '@voucha/test-helpers/entities/image-surface-placements'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { waitForTestPostgresLockWaiter } from '@voucha/test-helpers/postgres-lock-wait'
+import { withHeldTopicMergeTopicRow } from '@voucha/test-helpers/topic-merge-self-relations'
 import {
   seedTopicMergeDeletedBookmarks,
   getTopicMergeLiveBookmarks,
   seedTopicMergeParentEdges,
   seedTopicMergeClaims,
   getTopicMergeClaims,
+  lockTestTopicMergeAncestorRow,
+  seedTopicMergeParentEdgeInTransaction,
 } from '@voucha/test-helpers/topic-merge-relations'
 import { getTopicMergeRelations } from '@voucha/test-helpers/topic-merge-references'
 import { seedTopicMergeLifetimeChain } from '@voucha/test-helpers/topic-merge-subtypes'
@@ -19,6 +32,7 @@ import { describe, expect, it } from 'vitest'
 import { getTopicByAny } from './get.mts'
 import { mergeTopicAliases } from './merge-aliases.mts'
 import type { Topic } from './types.mts'
+import { topicsWorkConfig } from './work-limits.mts'
 async function createFullTestTopic(options: Parameters<typeof createTestTopic>[0]): Promise<Topic> {
   const topic = await createTestTopic(options)
   const fullTopic = await getTopicByAny(topic.id)
@@ -52,6 +66,9 @@ describe('topic merge reference regressions', () => {
     await expect(mergeTopicAliases(admin, source, destination)).resolves.toMatchObject({
       destination_topic_id: destination.id,
     })
+    await expect(getTestImageSurfacePlacements({ imageId, topicId: source.id })).resolves.toEqual([
+      expect.objectContaining({ image_id: imageId, topic_id: source.id }),
+    ])
   })
 
   it('retains live source follows and blocks over deleted destination bookmarks', async () => {
@@ -95,8 +112,85 @@ describe('topic merge reference regressions', () => {
     await expect(getTopicByAny(source.id)).resolves.toMatchObject({ id: source.id })
   })
 
+  it('rejects an ancestry walk that exceeds its configured depth', async () => {
+    const admin = await createTestUser({ administrator: true })
+    const source = await createFullTestTopic({ user: admin })
+    const destination = await createFullTestTopic({ user: admin })
+    const first = await createFullTestTopic({ user: admin })
+    const second = await createFullTestTopic({ user: admin })
+    const third = await createFullTestTopic({ user: admin })
+    await seedTopicMergeParentEdges([
+      [destination.id, first.id],
+      [first.id, second.id],
+      [second.id, third.id],
+    ])
+    const restore = overrideDynamicConfigFieldsForTest(topicsWorkConfig, {
+      parent_merge_cycle_max_depth: 2,
+    })
+    try {
+      await expect(mergeTopicAliases(admin, source, destination)).rejects.toMatchObject({
+        status: 409,
+        code: 'topic_merge_parent_cycle',
+      })
+    } finally {
+      restore()
+    }
+  })
+
+  it('rechecks an intermediate parent edge committed after preflight', async () => {
+    const admin = await createTestUser({ administrator: true })
+    const source = await createFullTestTopic({ user: admin })
+    const destination = await createFullTestTopic({ user: admin })
+    const first = await createFullTestTopic({ user: admin })
+    const second = await createFullTestTopic({ user: admin })
+    await seedTopicMergeParentEdges([
+      [destination.id, first.id],
+      [second.id, source.id],
+    ])
+    let outcome: Promise<{ value: unknown } | { error: unknown }> | undefined
+    await withHeldTopicMergeTopicRow(destination.id, async holderProcessId => {
+      outcome = mergeTopicAliases(admin, source, destination).then(
+        value => ({ value }),
+        err => ({ error: err }),
+      )
+      await waitForTestPostgresLockWaiter(holderProcessId, 'mergeTopicAliases lockTopics')
+      await seedTopicMergeParentEdges([[first.id, second.id]])
+    })
+    await expect(outcome).resolves.toMatchObject({
+      error: { status: 409, code: 'topic_merge_parent_cycle' },
+    })
+    await expect(getTopicByAny(source.id)).resolves.toMatchObject({ id: source.id })
+  })
+
+  it('serializes a new parent edge through a locked ancestor before the final check', async () => {
+    const admin = await createTestUser({ administrator: true })
+    const source = await createFullTestTopic({ user: admin })
+    const destination = await createFullTestTopic({ user: admin })
+    const first = await createFullTestTopic({ user: admin })
+    const second = await createFullTestTopic({ user: admin })
+    await seedTopicMergeParentEdges([
+      [destination.id, first.id],
+      [second.id, source.id],
+    ])
+    let outcome: Promise<{ value: unknown } | { error: unknown }> | undefined
+    {
+      await using writer = await beginTransaction()
+      const writerProcessId = await lockTestTopicMergeAncestorRow(writer, first.id)
+      outcome = mergeTopicAliases(admin, source, destination).then(
+        value => ({ value }),
+        err => ({ error: err }),
+      )
+      await waitForTestPostgresLockWaiter(writerProcessId, 'lockTopicMergeParentAncestors')
+      await seedTopicMergeParentEdgeInTransaction(writer, first.id, second.id)
+      await writer.commit()
+    }
+    await expect(outcome).resolves.toMatchObject({
+      error: { status: 409, code: 'topic_merge_parent_cycle' },
+    })
+  })
+
   it.each([false, true])(
-    'moves classifier configuration and retains destination collisions=%s',
+    'discards source classifier configuration and preserves only destination candidates collision=%s',
     async collision => {
       const fixture = await createClassifierFixture()
       const admin = await createTestUser({ administrator: true })
@@ -117,17 +211,35 @@ describe('topic merge reference regressions', () => {
           fixture.topicCandidateId,
           ...(destinationCandidateId ? [destinationCandidateId] : []),
         ]),
-      ).resolves.toEqual([
-        {
-          id: destinationCandidateId ?? fixture.topicCandidateId,
-          topic_id: destination.id,
-          thresholds: 1,
-          overrides: collision ? 0 : 1,
-          snapshots: collision ? 0 : 1,
-        },
-      ])
+      ).resolves.toEqual(
+        destinationCandidateId
+          ? [
+              {
+                id: destinationCandidateId,
+                topic_id: destination.id,
+                thresholds: 1,
+                overrides: 0,
+                snapshots: 0,
+              },
+            ]
+          : [],
+      )
+      await expect(getTopicMergeClassifierArtifacts(fixture.topicCandidateId)).resolves.toEqual({
+        thresholds: 0,
+        overrides: 0,
+        snapshots: 0,
+      })
     },
   )
+
+  it('keeps classifier candidate topic identity immutable outside a merge', async () => {
+    const fixture = await createClassifierFixture()
+    const admin = await createTestUser({ administrator: true })
+    const other = await createFullTestTopic({ user: admin })
+    await expect(
+      changeTopicMergeClassifierCandidateTopic(fixture.topicCandidateId, other.id),
+    ).rejects.toMatchObject({ code: '23514' })
+  })
 
   it('keeps a verified source claim over a pending destination claim', async () => {
     const admin = await createTestUser({ administrator: true })

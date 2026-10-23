@@ -2,6 +2,7 @@ import { invalidate } from '@services/entity-cache/invalidate'
 import { beginTransaction, withTransactionOptions, type TransactionQuery } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
+import createHttpError from 'http-errors'
 import {
   setRssFeedDiscoverabilityAsSystem,
   setRssFeedEnablementAsSystem,
@@ -13,7 +14,7 @@ import { recordRssFeedDiscoverabilityPublicationChange } from './publication-cha
 import { assertTopicHasHostname } from '@services/topics/hostname-link'
 import {
   lockPostPublicationScope,
-  lockTopicRssFeedAttachmentLifecycle,
+  lockTopicRssFeedAttachmentLifecycles,
 } from '@services/post-publication/lock'
 
 import type { UpdateRssFeedChanges, UpdateRssFeedOptions } from './update-types.mts'
@@ -38,8 +39,16 @@ export const updateRssFeedById = async (
 
   const transactionOptions = options ?? {}
   const run = async (query: TransactionQuery) => {
+    let priorTopicId: string | null = null
     if (changes.topic_id !== undefined) {
-      await lockTopicRssFeedAttachmentLifecycle(query, changes.topic_id)
+      const prior = await query<{ topic_id: string | null }>(
+        sql`/* updateRssFeedById:priorTopic */ SELECT topic_id FROM rss_feeds WHERE id = ${id}`,
+      )
+      priorTopicId = prior.rows[0]?.topic_id ?? null
+      await lockTopicRssFeedAttachmentLifecycles(
+        query,
+        [priorTopicId, changes.topic_id].filter((topicId): topicId is string => topicId !== null),
+      )
       await assertTopicHasHostname(changes.topic_id, { query })
     }
     await lockPostPublicationScope(query, { type: 'rss_feed', rssFeedId: id })
@@ -48,6 +57,12 @@ export const updateRssFeedById = async (
     )
     if (existing.rows.length === 0) return null
     const previousTopicId = existing.rows[0]!.topic_id
+    if (
+      changes.topic_id !== undefined &&
+      previousTopicId !== priorTopicId &&
+      previousTopicId !== changes.topic_id
+    )
+      throw createHttpError(409, 'RSS feed topic changed while acquiring attachment fences')
 
     const stateChange = stateChanges.find(({ kind }) => kind === 'enablement')
     if (stateChange) {

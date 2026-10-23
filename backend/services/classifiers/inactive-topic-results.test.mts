@@ -197,7 +197,7 @@ describe('delayed topic classifier decisions', () => {
       }),
     ).rejects.toBeInstanceOf(ClassifierDecisionReuseError)
   })
-  it('completes a reserved stored-candidate answer after that candidate moves to the destination', async () => {
+  it('completes a reserved stored-candidate answer after that candidate is removed by a merge', async () => {
     const fixture = await createClassifierFixture()
     await fixture.activateClassifierConfigurations()
     const admin = await createTestUser({ administrator: true })
@@ -252,7 +252,7 @@ describe('delayed topic classifier decisions', () => {
     await expect(fixture.getDecisionPersistenceFacts(batchId)).resolves.toMatchObject({
       batches: 1,
       calls: 1,
-      snapshots: 1,
+      snapshots: 0,
       topic_results: 0,
     })
   })

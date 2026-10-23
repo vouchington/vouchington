@@ -43,6 +43,7 @@ describe('topic merge foreign-key inventory', () => {
       ...TOPIC_MERGE_SUBTYPE_TABLES.map(table => [`${table}.topic_id`, 'subtype'] as const),
       ['rewards_program_status_topics.lifetime_version_id', 'subtype'],
       ...derivedReferences.map(([table, column]) => [`${table}.${column}`, 'derived'] as const),
+      ['classifier_candidates.topic_id', 'configuration'],
     ])
     for (const [reference, group] of Object.entries(TOPIC_MERGE_REFERENCE_GROUPS)) {
       if (group === 'history' || group === 'alias') continue

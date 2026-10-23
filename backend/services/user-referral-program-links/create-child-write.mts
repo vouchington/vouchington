@@ -3,6 +3,7 @@ import type { ContentProvenance } from '@voucha/types/entities/content-provenanc
 import type { UserReferralLink } from './types.mts'
 import { userReferralLinkColumns } from './columns.mts'
 import sql from 'sql-template-strings'
+import { withTopicReferenceAttachmentFences } from '@services/topics/reference-attachment-fence'
 
 type ResolvedChildReferralLink = {
   userId: string
@@ -26,8 +27,12 @@ export async function insertChildReferralLinkRows(
     unique.set(key, { ...input, label: input.label ?? previous?.label ?? null })
   }
   const rowsToInsert = [...unique.values()]
-  const { rows } = await write<UserReferralLink>(
-    sql`/* createChildReferralLinks */
+  const { rows } = await withTopicReferenceAttachmentFences(
+    rowsToInsert.map(input => input.referralProgramId),
+    options,
+    query =>
+      write<UserReferralLink>(
+        sql`/* createChildReferralLinks */
       INSERT INTO user_referral_program_links (
         user_id, referral_program_topic_id, url_id, parent_link_id, label, activated_at,
         created_via, created_via_oauth_client_id
@@ -48,7 +53,8 @@ export async function insertChildReferralLinkRows(
         activated_at = CURRENT_TIMESTAMP, deactivated_at = NULL
       WHERE user_referral_program_links.parent_link_id IS NOT NULL
       RETURNING `.append(userReferralLinkColumns()),
-    options,
+        { query },
+      ),
   )
   return rows
 }

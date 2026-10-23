@@ -32,6 +32,14 @@
     "code": "backend/services/entity-relations/post-access-visibility.mts:36"
   },
   {
+    "annotation": "assertTopicMergeParentCompatibility",
+    "route": null,
+    "maxCount": null,
+    "reason": "The bounded batched ancestor walk runs before merge capture and again after locking topic rows and reachable ancestors, so a parent edge committed during the lock wait cannot create a cycle unnoticed.",
+    "permanent": true,
+    "code": "backend/services/topics/merge-aliases.mts:53"
+  },
+  {
     "annotation": "assertReferralProgramExists",
     "route": null,
     "maxCount": null,

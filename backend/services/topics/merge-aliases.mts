@@ -16,17 +16,16 @@ import { prepublishImageSurfaceDenials } from '@services/media-delivery-safety'
 import { finalizeTopicAliasMerge } from './merge-aliases-finalize.mts'
 import {
   assertTopicMergeReferenceCompatibility,
-  assertLockedTopicMergeTypes,
+  lockAndAssertMergeParticipants,
   lockTopicMergeLifecycles,
   rethrowTopicMergeError,
 } from './merge-preflight.mts'
+import { assertTopicMergeParentCompatibility } from './merge-parent-cycle.mts'
 import { repointTopicReferences } from './merge-references.mts'
 import { mergeTopicSubtypeReferences } from './merge-subtypes.mts'
 import { deleteMergedTopicDerivedRows } from './merge-derived.mts'
 import { lockAndAssertTopicMergeSelfRelationFlags } from './merge-self-relation-flags.mts'
 import { lockTopicMergeHostnameOwnership } from './merge-hostname-ownership.mts'
-type MergeRow = Pick<Topic, 'id' | 'slug' | 'topic_type'> &
-  Record<'is_deleted' | 'is_merged', boolean>
 export async function mergeTopicAliases(
   merger: PrivateUser,
   sourceTopic: Topic,
@@ -49,6 +48,8 @@ async function executeTopicMerge(merger: PrivateUser, sourceTopic: Topic, destin
   await lockTopicRssFeedAttachmentLifecycles(query, [sourceTopic.id, destinationTopic.id])
   // ast-grep-ignore: no-three-sequential-awaits -- publication waits precede the lifecycle fence; preflight under that fence precedes capture writes.
   await lockTopicMergeLifecycles(query, [sourceTopic.id, destinationTopic.id])
+  // ast-grep-ignore: no-three-sequential-awaits -- reject conflicts before publication writes; capture and external denials precede topic row locks.
+  await assertTopicMergeParentCompatibility(query, sourceTopic.id, destinationTopic.id)
   await assertTopicMergeReferenceCompatibility(query, sourceTopic.id, destinationTopic.id)
   await recordTopicMergePublicationChanges(
     query,
@@ -63,18 +64,11 @@ async function executeTopicMerge(merger: PrivateUser, sourceTopic: Topic, destin
     ],
     query,
   )
-  const { rows: topicRows } = await query<MergeRow>(
-    // no-mistakes-disable-next-line postgres-required-predicates: lifecycle output enables precise 404/409 assertions below
-    `/* mergeTopicAliases lockTopics */ SELECT id, slug, topic_type, deleted_at IS NOT NULL AS is_deleted, merged_into_topic_id IS NOT NULL AS is_merged FROM topics WHERE id = ANY($1::uuid[]) ORDER BY id FOR UPDATE`,
-    [[sourceTopic.id, destinationTopic.id]],
-  )
-  const sourceRow = topicRows.find(row => row.id === sourceTopic.id)
-  const destinationRow = topicRows.find(row => row.id === destinationTopic.id)
-  assert(sourceRow && !sourceRow.is_deleted, 404, 'Source topic not found')
-  assert(destinationRow && !destinationRow.is_deleted, 404, 'Destination topic not found')
-  assert(!sourceRow.is_merged, 409, 'Source topic has already been merged')
-  assert(!destinationRow.is_merged, 409, 'Destination topic has already been merged')
-  assertLockedTopicMergeTypes(sourceRow, destinationRow)
+  const sourceRow = await lockAndAssertMergeParticipants(query, sourceTopic.id, destinationTopic.id)
+  // A parent edge between other topics can commit while capture waits for the topic rows.
+  await assertTopicMergeParentCompatibility(query, sourceTopic.id, destinationTopic.id, {
+    lockAncestors: true,
+  })
   const { rows: inboundMergeRows } = await query<{ id: string }>(
     // no-mistakes-disable-next-line postgres-required-predicates: inverse lookup for topics already merged into the source
     `/* mergeTopicAliases inboundMerges */ SELECT id FROM topics WHERE merged_into_topic_id = $1 AND deleted_at IS NULL ORDER BY id FOR UPDATE`,
@@ -158,15 +152,9 @@ async function executeTopicMerge(merger: PrivateUser, sourceTopic: Topic, destin
     [destinationTopic.id, sourceRow.slug, merger.id, sourceTopic.id],
   )
   await query(
-    `/* mergeTopicAliases markSourceMerged */
-      UPDATE topics
-      SET
-        merged_into_topic_id = $1,
-        merged_at = CURRENT_TIMESTAMP,
-        merged_by_id = $2,
-        updated_by_id = $2
-      WHERE id = $3
-    `,
+    `/* mergeTopicAliases markSourceMerged */ UPDATE topics
+      SET merged_into_topic_id = $1, merged_at = CURRENT_TIMESTAMP,
+        merged_by_id = $2, updated_by_id = $2 WHERE id = $3`,
     [destinationTopic.id, merger.id, sourceTopic.id],
   )
   await mergeTopicSubtypeReferences(query, sourceTopic.id, destinationTopic.id)

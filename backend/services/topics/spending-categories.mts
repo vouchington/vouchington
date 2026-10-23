@@ -6,6 +6,7 @@ import type { Topic } from './types.mts'
 import { validateOptionalBoolean } from './validation.mts'
 import { currentUserCanUpdateTopic } from './authorization.mts'
 import { upsertTopicAttributes } from './upsert-attributes.mts'
+import { withTopicReferenceAttachmentFences } from '@services/post-publication/lock'
 
 type SpendingCategoryAttributes = {
   is_foreign_transaction?: boolean
@@ -86,7 +87,9 @@ export async function replaceSpendingCategoryAttributes(
     'default_spending_frequency must be monthly or annually',
   )
 
-  const { rows } = await write(sql`/* replaceSpendingCategoryAttributes */
+  const { rows } = await withTopicReferenceAttachmentFences([topic.id], {}, query =>
+    write(
+      sql`/* replaceSpendingCategoryAttributes */
     INSERT INTO spending_category_topics (
       topic_id,
       is_foreign_transaction,
@@ -102,6 +105,9 @@ export async function replaceSpendingCategoryAttributes(
       is_foreign_transaction = ${attributes.is_foreign_transaction ?? false},
       default_spending_frequency = ${attributes.default_spending_frequency ?? 'monthly'}
     RETURNING is_foreign_transaction, default_spending_frequency
-  `)
+  `,
+      { query },
+    ),
+  )
   return rows[0] ?? null
 }

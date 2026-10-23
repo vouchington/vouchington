@@ -1,4 +1,4 @@
-import { write } from '@data-stores/psql'
+import { write, type TransactionQuery } from '@data-stores/psql'
 import { RSS_FEED_CATEGORIZER_USERNAME } from '@services/users/constants'
 import sql from 'sql-template-strings'
 
@@ -20,13 +20,15 @@ export async function readCategoryDataChunk(
     category: string
     hashtag_alias: string | null
   }>,
+  query?: TransactionQuery,
 ) {
   const rssFeedItemIds = categories.map(c => c.rss_feed_item_id)
   const categoryTexts = categories.map(c => c.category)
   const hashtagAliases = categories.map(c => c.hashtag_alias)
 
   // This is a writer read: aliases may have been created immediately before this query.
-  const { rows } = await write<CategoryDataRow>(sql`/* upsertRssFeedItemCategories */
+  const { rows } = await write<CategoryDataRow>(
+    sql`/* upsertRssFeedItemCategories */
       SELECT
         input.rss_feed_item_id,
         input.category_text,
@@ -90,6 +92,20 @@ export async function readCategoryDataChunk(
         ORDER BY vote.id DESC
         LIMIT 1
       ) hashtag_vote ON TRUE
-    `)
+    `,
+    query ? { query } : {},
+  )
   return rows
+}
+
+/** Row order from the unordered snapshot read is not stable, so compare by item and category key. */
+export function categorySnapshotKey(rows: readonly CategoryDataRow[]): string {
+  return JSON.stringify(
+    rows
+      .map(row => [row.rss_feed_item_id, row.category_text, row] as const)
+      .toSorted(([itemA, textA], [itemB, textB]) =>
+        itemA === itemB ? (textA < textB ? -1 : textA > textB ? 1 : 0) : itemA < itemB ? -1 : 1,
+      )
+      .map(([, , row]) => row),
+  )
 }

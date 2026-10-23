@@ -1,4 +1,10 @@
-import { advisoryLockPool, type TransactionQuery } from '@data-stores/psql'
+import {
+  advisoryLockPool,
+  beginTransaction,
+  withTransactionOptions,
+  type TransactionQuery,
+} from '@data-stores/psql'
+import type { QueryOptions } from '@data-stores/psql/types'
 import type { PostPublicationScope } from './types.mts'
 
 export function postPublicationScopeIdentifier(scope: PostPublicationScope): string {
@@ -66,6 +72,23 @@ export async function lockTopicRssFeedAttachmentLifecycle(
   topicId: string,
 ): Promise<void> {
   await lockTopicRssFeedAttachmentLifecycles(query, [topicId])
+}
+
+/** Takes topic attachment fences in the writer's transaction before a guarded reference write. */
+export async function withTopicReferenceAttachmentFences<Result>(
+  topicIds: readonly string[],
+  options: QueryOptions,
+  writeReference: (query: TransactionQuery) => Promise<Result>,
+): Promise<Result> {
+  const run = async (query: TransactionQuery) => {
+    await lockTopicRssFeedAttachmentLifecycles(query, topicIds)
+    return writeReference(query)
+  }
+  if (options.query || options.client) return withTransactionOptions(options, run)
+  await using query = await beginTransaction()
+  const result = await run(query)
+  await query.commit()
+  return result
 }
 
 export async function withPostPublicationReconciliationLock<Result>(

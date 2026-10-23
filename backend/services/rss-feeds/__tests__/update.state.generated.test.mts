@@ -270,12 +270,12 @@ describe('update.generated (state)', () => {
       topic_id: source.id,
       title: `Attachment lifecycle ${random}`,
     })
-    const lockAttachment = publicationLock.lockTopicRssFeedAttachmentLifecycle
+    const lockAttachments = publicationLock.lockTopicRssFeedAttachmentLifecycles
     const attachmentHeld = Promise.withResolvers<void>()
     const attachmentSpy = vi
-      .spyOn(publicationLock, 'lockTopicRssFeedAttachmentLifecycle')
-      .mockImplementation(async (query, topicId) => {
-        await lockAttachment(query, topicId)
+      .spyOn(publicationLock, 'lockTopicRssFeedAttachmentLifecycles')
+      .mockImplementation(async (query, topicIds) => {
+        await lockAttachments(query, topicIds)
         attachmentHeld.resolve()
       })
     await expect(
@@ -286,7 +286,7 @@ describe('update.generated (state)', () => {
         async () => {
           await using query = await beginTransaction()
           await query(`/* testUpdate */ SET LOCAL lock_timeout = '50ms'`)
-          await lockAttachment(query, destination.id)
+          await lockAttachments(query, [destination.id])
           await query.commit()
         },
         () => attachmentSpy.mockRestore(),

@@ -12,7 +12,7 @@ import assert from 'http-assert'
 import { enqueueHostnameCacheInvalidation } from '@services/entity-cache/hostname-invalidation-work'
 import { drainHostnameCacheInvalidationWork } from '@services/entity-cache/hostname-invalidation-drain'
 import { lockTopicHostnameOwnership } from './hostname-ownership-lock.mts'
-
+import { lockTopicRssFeedAttachmentLifecycle } from '@services/post-publication'
 type TopicHostnameLinkValidation = {
   topic_exists: boolean
   hostname_exists: boolean
@@ -131,31 +131,13 @@ export async function linkHostnameToSourceTopic(
   return withTopicHostnameTransaction(options, async query => {
     // ast-grep-ignore: no-three-sequential-awaits -- ownership locks precede clearing the old claim, which must precede assigning the new primary hostname.
     await lockTopicHostnameOwnership(query, [topicId], [hostnameId])
+    // ast-grep-ignore: no-three-sequential-awaits -- attachment must follow hostname ownership and precede the guarded hostname writes.
+    await lockTopicRssFeedAttachmentLifecycle(query, topicId)
     await clearOtherHostnameLinks(topicId, hostnameId, { query })
     await updateTopicHostnameId(topicId, hostnameId, query)
   })
 }
-
-export async function assertTopicHasHostname(
-  topicId: string,
-  options: QueryOptions = {},
-): Promise<void> {
-  assert(isUUID(topicId), 422, 'topic_id must be a valid UUID')
-  const { rows } = await read<{ hostname_id: string | null }>(
-    `/* assertTopicHasHostname */
-    -- no-mistakes-disable-next-line postgres-required-predicates: exact write target validation must reject merged topic IDs.
-    SELECT hostname_id
-    FROM topics
-    WHERE id = $1::uuid
-      AND deleted_at IS NULL
-      AND merged_into_topic_id IS NULL`,
-    [topicId],
-    options,
-  )
-  const topic = rows[0]
-  assert(topic, 422, 'Topic not found')
-  assert(topic.hostname_id, 422, 'RSS feed topic must be linked to a hostname')
-}
+export { assertTopicHasHostname } from './assert-topic-has-hostname.mts'
 
 export async function setTopicHostnameLink(
   topicId: string,
@@ -163,7 +145,9 @@ export async function setTopicHostnameLink(
   options: QueryOptions = {},
 ): Promise<void> {
   return withTopicHostnameTransaction(options, async query => {
+    // ast-grep-ignore: no-three-sequential-awaits -- ownership then attachment must precede validation and the guarded hostname writes.
     await lockTopicHostnameOwnership(query, [topicId], hostnameId ? [hostnameId] : [])
+    await lockTopicRssFeedAttachmentLifecycle(query, topicId)
     const transaction = { query }
     if (hostnameId) await assertTopicHostnameLinkIsValid(topicId, hostnameId, transaction)
     await clearOtherHostnameLinks(topicId, hostnameId, transaction)

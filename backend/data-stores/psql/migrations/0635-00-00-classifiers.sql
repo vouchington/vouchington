@@ -184,9 +184,9 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_classifier_candidates__active_story
   WHERE story_id IS NOT NULL AND deleted_at IS NULL;
 
 CREATE OR REPLACE TRIGGER trigger_classifier_candidates_identity_immutable
-  BEFORE UPDATE OF id, classifier_id, candidate_kind, story_id, community_id ON classifier_candidates
+  BEFORE UPDATE OF id, classifier_id, candidate_kind, topic_id, story_id, community_id ON classifier_candidates
   FOR EACH ROW
-  WHEN (ROW(OLD.id, OLD.classifier_id, OLD.candidate_kind, OLD.story_id, OLD.community_id) IS DISTINCT FROM ROW(NEW.id, NEW.classifier_id, NEW.candidate_kind, NEW.story_id, NEW.community_id)) EXECUTE FUNCTION fn_reject_mutation();
+  WHEN (ROW(OLD.id, OLD.classifier_id, OLD.candidate_kind, OLD.topic_id, OLD.story_id, OLD.community_id) IS DISTINCT FROM ROW(NEW.id, NEW.classifier_id, NEW.candidate_kind, NEW.topic_id, NEW.story_id, NEW.community_id)) EXECUTE FUNCTION fn_reject_mutation();
 
 CREATE OR REPLACE TRIGGER trigger_classifier_candidates_updated_at
   BEFORE UPDATE ON classifier_candidates

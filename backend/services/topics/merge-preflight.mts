@@ -2,6 +2,31 @@ import type { Topic } from './types.mts'
 import type { TransactionQuery } from '@data-stores/psql'
 import { buildTopicRelationAuditConflictsSql } from './merge-relations.mts'
 import { createCodedError } from '@modules/on-error/create-coded-error'
+import assert from 'http-assert'
+
+type MergeRow = Pick<Topic, 'id' | 'slug' | 'topic_type'> &
+  Record<'is_deleted' | 'is_merged', boolean>
+
+/** Lock both participants after publication capture and retain precise inactive-topic errors. */
+export async function lockAndAssertMergeParticipants(
+  query: TransactionQuery,
+  sourceTopicId: string,
+  destinationTopicId: string,
+): Promise<MergeRow> {
+  const { rows } = await query<MergeRow>(
+    // no-mistakes-disable-next-line postgres-required-predicates: lifecycle output enables precise 404/409 assertions below
+    `/* mergeTopicAliases lockTopics */ SELECT id, slug, topic_type, deleted_at IS NOT NULL AS is_deleted, merged_into_topic_id IS NOT NULL AS is_merged FROM topics WHERE id = ANY($1::uuid[]) ORDER BY id FOR UPDATE`,
+    [[sourceTopicId, destinationTopicId]],
+  )
+  const sourceRow = rows.find(row => row.id === sourceTopicId)
+  const destinationRow = rows.find(row => row.id === destinationTopicId)
+  assert(sourceRow && !sourceRow.is_deleted, 404, 'Source topic not found')
+  assert(destinationRow && !destinationRow.is_deleted, 404, 'Destination topic not found')
+  assert(!sourceRow.is_merged, 409, 'Source topic has already been merged')
+  assert(!destinationRow.is_merged, 409, 'Destination topic has already been merged')
+  assertLockedTopicMergeTypes(sourceRow, destinationRow)
+  return sourceRow
+}
 
 /** Exclusive topic lifecycle fences protect every changed reference during this read; rejection precedes publication and merge writes. */
 export async function assertTopicMergeReferenceCompatibility(
@@ -16,29 +41,16 @@ export async function assertTopicMergeReferenceCompatibility(
       | 'subtype_reference'
       | 'audit_flag'
       | 'self_relation_audit_flag'
-      | 'parent_cycle'
       | 'topic_type'
     source_id: string
     destination_id: string
   }>(
     `/* assertTopicMergeReferenceCompatibility */
-      WITH RECURSIVE parent_edges AS NOT MATERIALIZED (
-        SELECT CASE WHEN subject_id = $1::uuid THEN $2::uuid ELSE subject_id END AS subject_id,
-          CASE WHEN object_id = $1::uuid THEN $2::uuid ELSE object_id END AS object_id
-        FROM relation__topic__parent__topic WHERE deleted_at IS NULL
-      ), ancestors(id) AS (
-        SELECT object_id FROM parent_edges WHERE subject_id = $2::uuid AND object_id <> subject_id
-        UNION
-        SELECT e.object_id FROM parent_edges e JOIN ancestors a ON e.subject_id = a.id
-        WHERE e.object_id <> e.subject_id
-      )
       SELECT 'topic_type' AS kind, s.id AS source_id, d.id AS destination_id
       FROM topics s JOIN topics d ON d.id = $2::uuid
       WHERE s.id = $1::uuid AND s.topic_type <> d.topic_type
         AND s.deleted_at IS NULL AND s.merged_into_topic_id IS NULL
         AND d.deleted_at IS NULL AND d.merged_into_topic_id IS NULL
-      UNION ALL
-      SELECT 'parent_cycle', $1::uuid, $2::uuid FROM ancestors WHERE id = $2::uuid
       UNION ALL
       SELECT 'feed' AS kind, s.id AS source_id, d.id AS destination_id
       FROM rss_feeds s JOIN rss_feeds d ON d.topic_id = $2::uuid AND d.deleted_at IS NULL
@@ -88,11 +100,9 @@ export async function assertTopicMergeReferenceCompatibility(
       ? 'topic_merge_feed_conflict'
       : conflict.kind === 'lifetime_version'
         ? 'topic_merge_lifetime_version_conflict'
-        : conflict.kind === 'parent_cycle'
-          ? 'topic_merge_parent_cycle'
-          : conflict.kind === 'topic_type'
-            ? 'topic_merge_type_conflict'
-            : 'topic_merge_reference_conflict'
+        : conflict.kind === 'topic_type'
+          ? 'topic_merge_type_conflict'
+          : 'topic_merge_reference_conflict'
   throw Object.assign(
     createCodedError(
       409,

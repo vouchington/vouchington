@@ -18,6 +18,7 @@ import {
   lockRssFeedItemsForStoryPublicationChanges,
   recordStoryPublicationChangesForCategoryTopics,
 } from './story-publication-change.mts'
+import { lockTopicRssFeedAttachmentLifecycles } from '@services/post-publication/lock'
 
 // Backfills topic_id by alias (overwrites stale assignments), or by topic name/slug (fills nulls only).
 export async function backfillCategoriesForTopicAliases(
@@ -35,11 +36,13 @@ async function backfillCategoryBatch(
   const run = async (query: TransactionQuery) => {
     const { rows: candidateItems } = await query<{
       rss_feed_item_id: string
+      previous_topic_id: string | null
       candidate_count: string
     }>(
       `/* backfillCategoriesForTopicAliases.candidateItems */
-      SELECT DISTINCT rss_feed_item_id, count(*) OVER () AS candidate_count FROM (
-        SELECT category.rss_feed_item_id, category.category_text
+      SELECT rss_feed_item_id, previous_topic_id, count(*) OVER () AS candidate_count FROM (
+        SELECT category.rss_feed_item_id, category.category_identity_id,
+          category.topic_id AS previous_topic_id
         FROM rss_feed_item_categories category
         JOIN rss_category_identities identity ON identity.id = category.category_identity_id
         WHERE
@@ -50,14 +53,18 @@ async function backfillCategoryBatch(
           )
           OR (category.topic_id IS NULL AND identity.category_text = (SELECT LOWER(name) FROM topics WHERE id = $1 AND deleted_at IS NULL AND merged_into_topic_id IS NULL))
           OR (category.topic_id IS NULL AND identity.category_text = (SELECT slug FROM topics WHERE id = $1 AND deleted_at IS NULL AND merged_into_topic_id IS NULL)))
-        ORDER BY category.rss_feed_item_id, category.category_text LIMIT $2
+        ORDER BY category.rss_feed_item_id, category.category_identity_id LIMIT $2
       ) candidates ORDER BY rss_feed_item_id`,
       [topicId, CATEGORY_BACKFILL_BATCH_SIZE],
     )
     const hasMore = Number(candidateItems[0]?.candidate_count ?? 0) === CATEGORY_BACKFILL_BATCH_SIZE
-    const candidateItemIds = candidateItems.map(row => row.rss_feed_item_id)
+    const candidateItemIds = [...new Set(candidateItems.map(row => row.rss_feed_item_id))]
     if (candidateItemIds.length === 0)
       return { rows: [], changedItemIds: [], statTargets: [], hasMore }
+    const oldTopicIds = candidateItems.flatMap(row =>
+      row.previous_topic_id ? [row.previous_topic_id] : [],
+    )
+    await lockTopicRssFeedAttachmentLifecycles(query, [topicId, ...oldTopicIds])
     await lockRssFeedItemsForStoryPublicationChanges(query, candidateItemIds)
     const { rows } = await query<{
       rss_feed_item_id: string
@@ -68,7 +75,9 @@ async function backfillCategoryBatch(
         SELECT category.rss_feed_item_id, category.category_identity_id, category.topic_id AS previous_topic_id
         FROM rss_feed_item_categories category
         JOIN rss_category_identities identity ON identity.id = category.category_identity_id
-        WHERE category.rss_feed_item_id = ANY($3::uuid[]) AND (
+        WHERE category.rss_feed_item_id = ANY($3::uuid[])
+          AND (category.topic_id IS NULL OR category.topic_id = ANY($4::uuid[]))
+          AND (
           ((
             category.topic_alias_id IN (SELECT id FROM topic_aliases WHERE topic_id = $1)
             OR identity.category_text IN (SELECT alias FROM topic_aliases WHERE topic_id = $1)
@@ -86,7 +95,7 @@ async function backfillCategoryBatch(
         AND target.category_identity_id = candidates.category_identity_id
       RETURNING target.rss_feed_item_id, candidates.previous_topic_id
     `,
-      [topicId, CATEGORY_BACKFILL_BATCH_SIZE, candidateItemIds],
+      [topicId, CATEGORY_BACKFILL_BATCH_SIZE, candidateItemIds, oldTopicIds],
     )
     const changedItemIds = [...new Set(rows.map(row => row.rss_feed_item_id))]
     const [createdTargets, clearedVotes] = await Promise.all([

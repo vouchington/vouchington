@@ -5,6 +5,7 @@ import type { PrivateUser } from '@services/users/types'
 import type { Topic } from './types.mts'
 import { currentUserCanUpdateTopic } from './authorization.mts'
 import { upsertTopicAttributes } from './upsert-attributes.mts'
+import { lockTopicRssFeedAttachmentLifecycle } from '@services/post-publication/lock'
 
 type RetailerAttributes = Record<string, never>
 
@@ -77,6 +78,7 @@ export async function updateRetailerCountries(
   }
 
   await using query = await beginTransaction()
+  await lockTopicRssFeedAttachmentLifecycle(query, topic.id)
   await query(sql`/* updateRetailerCountries delete */
     DELETE FROM retailer_countries
     WHERE retailer_topic_id = ${topic.id}

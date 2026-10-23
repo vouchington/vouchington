@@ -1,31 +1,31 @@
 import { getRssFeedItemsWorkLimit } from '@services/rss-feed-items/work-limits'
-import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
+import { beginTransaction } from '@data-stores/psql'
 import { chunkArray } from './processing-limits.mts'
 import {
   buildRssFeedItemCategorySqlBatches,
   normalizeRssFeedItemCategorySnapshots,
 } from './category-batches.mts'
-import { readCategoryDataChunk, type CategoryDataRow } from './category-data.mts'
+import {
+  categorySnapshotKey,
+  readCategoryDataChunk,
+  type CategoryDataRow,
+} from './category-data.mts'
 import {
   insertMissingCategories,
   insertMissingHashtagAliases,
   updateMatchedCategories,
-  type CategoryTopicMutation,
 } from './categories-chunks.mts'
+import { recordCategoryPublicationChanges } from './category-publication-changes.mts'
 import { createCategoryRelations } from './category-relations.mts'
 import { reconcileRssFeedItemCategorySnapshots } from './reconcile-categories.mts'
 import { invalidateRssFeedItemsAndWaitForPurge } from '@services/entity-cache/invalidate-rss-feed-items'
 import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
 import { normalizeHashtag } from '@ts-shared/utils'
+import createHttpError from 'http-errors'
 import { withRssFeedItemCategorySnapshotLocks } from './category-snapshot-lock.mts'
-import {
-  lockRssFeedItemsForStoryPublicationChanges,
-  recordStoryPublicationChangesForCategoryTopics,
-} from './story-publication-change.mts'
-import {
-  lockTopicAliasPublicationScopes,
-  recordTopicAliasPublicationWork,
-} from '@services/post-publication'
+import { lockRssFeedItemsForStoryPublicationChanges } from './story-publication-change.mts'
+import { lockTopicAliasPublicationScopes } from '@services/post-publication'
+import { lockTopicRssFeedAttachmentLifecycles } from '@services/post-publication/lock'
 
 // Keeps per-call Valkey work below the client in-flight ceiling during large category imports.
 
@@ -72,6 +72,7 @@ async function upsertRssFeedItemCategorySnapshots(
     rss_feed_item_id: string
     category: string
     hashtag_alias: string | null
+    topicId: string | null
   }> = []
   const toUpdate: Array<{
     rss_feed_item_id: string
@@ -100,6 +101,7 @@ async function upsertRssFeedItemCategorySnapshots(
         rss_feed_item_id: row.rss_feed_item_id,
         category: row.category_text,
         hashtag_alias: hashtagAlias,
+        topicId: row.new_topic_id,
       })
     } else if (
       (row.existing_topic_id === null && row.new_topic_id !== null) ||
@@ -135,6 +137,24 @@ async function upsertRssFeedItemCategorySnapshots(
         ...toUpdate.map(category => category.topicAliasId),
       ].filter((id): id is string => id !== null && id !== undefined),
     )
+    await lockTopicRssFeedAttachmentLifecycles(
+      query,
+      [
+        ...categoryData.map(row => row.existing_topic_id),
+        ...toInsert.map(row => row.topicId),
+        ...toUpdate.map(row => row.topicId),
+      ].filter((id): id is string => typeof id === 'string'),
+    )
+    const currentCategoryData: CategoryDataRow[] = []
+    for (const batch of categorySqlBatches) {
+      // oxlint-disable-next-line no-await-in-loop -- bounded chunks are rechecked in the fenced transaction.
+      currentCategoryData.push(...(await readCategoryDataChunk(batch, query)))
+    }
+    if (categorySnapshotKey(currentCategoryData) !== categorySnapshotKey(categoryData))
+      throw createHttpError(
+        409,
+        'RSS item category topics changed while acquiring attachment fences',
+      )
     await lockRssFeedItemsForStoryPublicationChanges(query, [
       ...toInsert.map(category => category.rss_feed_item_id),
       ...toUpdate.map(category => category.rss_feed_item_id),
@@ -170,22 +190,4 @@ async function upsertRssFeedItemCategorySnapshots(
     await invalidateRssFeedItemsAndWaitForPurge(...chunk)
   }
   if (changedItemIds.length > 0) void enqueueRefreshTopHashtags()
-}
-
-async function recordCategoryPublicationChanges(
-  query: TransactionQuery,
-  changes: readonly CategoryTopicMutation[],
-  repairedTopicAliasIds: readonly string[],
-): Promise<void> {
-  await recordStoryPublicationChangesForCategoryTopics(query, changes)
-  await recordTopicAliasPublicationWork(query, [
-    ...repairedTopicAliasIds,
-    ...changes.flatMap(change =>
-      change.previous_topic_alias_id !== change.topic_alias_id
-        ? [change.previous_topic_alias_id, change.topic_alias_id].filter(
-            (id): id is string => id !== null,
-          )
-        : [],
-    ),
-  ])
 }

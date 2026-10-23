@@ -5,6 +5,7 @@ import assert from 'http-assert'
 import type { TopicAlias } from './alias-types.mts'
 import { recordTopicAliasPublicationChanges } from './publication-change.mts'
 import { lockExistingTopicAliasPublicationScopes } from './alias-publication-locks.mts'
+import { lockTopicRssFeedAttachmentLifecycle } from '@services/post-publication'
 
 export async function claimTopicAlias(
   topicId: string,
@@ -15,6 +16,7 @@ export async function claimTopicAlias(
   assert(normalizedAlias.length > 0 && normalizedAlias.length <= 255, 422, 'Invalid topic alias')
   const run = async (query: TransactionQuery): Promise<TopicAlias> => {
     const existingAliasIds = await lockExistingTopicAliasPublicationScopes(query, [normalizedAlias])
+    await lockTopicRssFeedAttachmentLifecycle(query, topicId)
     const { rows: existingRows } = await query<Pick<TopicAlias, 'id' | 'topic_id'>>(
       `/* claimTopicAlias lockExisting */
       SELECT id, topic_id

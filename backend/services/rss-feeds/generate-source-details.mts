@@ -1,6 +1,7 @@
 import { createSlugFromTitle } from '@modules/utils'
 import { randomBytes } from 'node:crypto'
 
+/** Slug = slugify(feedTitle + url-without-protocol), capped at 250 chars. Appends random hex suffix on retry. */
 export function generateSourceDetails(
   topicName: string,
   feedTitle: string,
