@@ -5,6 +5,7 @@ import { CommandFailedError } from './command-failed-error.mts'
 import {
   classifyFailure,
   collectCappedStderr,
+  isSharedOutput,
   killChild,
   pipeStdin,
   pipeStdout,
@@ -56,6 +57,7 @@ export async function runCommand(options: RunCommandOptions): Promise<{ stderr: 
   let timedOut = false
   let stdinError: Error | undefined
   let stdoutError: Error | undefined
+  const outputCancellation = new AbortController()
   const stderr = collectCappedStderr(child, options.stderrCapBytes ?? DEFAULT_STDERR_CAP_BYTES)
   pipeStdin(child, options.stdin, err => {
     stdinError = err
@@ -68,13 +70,17 @@ export async function runCommand(options: RunCommandOptions): Promise<{ stderr: 
   const onAbort = () => {
     aborted = true
     killChild(child)
-    if (!options.stdout?.writableFinished) options.stdout?.destroy()
+    outputCancellation.abort()
+    if (options.stdout && !isSharedOutput(options.stdout) && !options.stdout.writableFinished)
+      options.stdout.destroy()
   }
   options.signal?.addEventListener('abort', onAbort, { once: true })
   const timer = setTimeout(() => {
     timedOut = true
     killChild(child)
-    if (!options.stdout?.writableFinished) options.stdout?.destroy()
+    outputCancellation.abort()
+    if (options.stdout && !isSharedOutput(options.stdout) && !options.stdout.writableFinished)
+      options.stdout.destroy()
   }, options.timeoutMs)
   timer.unref()
 
@@ -82,7 +88,7 @@ export async function runCommand(options: RunCommandOptions): Promise<{ stderr: 
     const outcome = await waitForChild(child)
     if (outcome.kind === 'error') throw outcome.error
     // The child can close before an async stdout destination finishes its writes.
-    await settleStdout(options.stdout, err => {
+    await settleStdout(options.stdout, outputCancellation.signal, err => {
       if (!stdoutError) stdoutError = err
     })
     const failure = classifyFailure({
@@ -114,12 +120,35 @@ function childEnvironment(): NodeJS.ProcessEnv {
 
 async function settleStdout(
   stdout: Writable | undefined,
+  cancellation: AbortSignal,
   onError: (err: Error) => void,
 ): Promise<void> {
   if (!stdout) return
   try {
-    await finished(stdout, { readable: false })
+    if (isSharedOutput(stdout)) {
+      await flushSharedOutput(stdout, cancellation)
+    } else {
+      await finished(stdout, { readable: false })
+    }
   } catch (err) {
     onError(err instanceof Error ? err : new Error(String(err)))
+  }
+}
+
+async function flushSharedOutput(stdout: Writable, cancellation: AbortSignal): Promise<void> {
+  if (cancellation.aborted) return
+  const flushed = new Promise<void>((resolve, reject) => {
+    stdout.write('', err => (err ? reject(err) : resolve()))
+  })
+  let onCancel!: () => void
+  const cancelled = new Promise<void>(resolve => {
+    onCancel = resolve
+    cancellation.addEventListener('abort', onCancel, { once: true })
+    if (cancellation.aborted) resolve()
+  })
+  try {
+    await Promise.race([flushed, cancelled])
+  } finally {
+    cancellation.removeEventListener('abort', onCancel)
   }
 }

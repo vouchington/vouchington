@@ -7,6 +7,10 @@ export function killChild(child: ChildProcess): void {
   child.kill('SIGKILL')
 }
 
+export function isSharedOutput(stdout: Writable): boolean {
+  return stdout === process.stdout || stdout === process.stderr
+}
+
 export function pipeStdin(
   child: ChildProcess,
   stdin: Readable | Uint8Array | string | undefined,
@@ -61,12 +65,16 @@ export function pipeStdout(
     const error = err instanceof Error ? err : new Error(String(err))
     onError(error)
     // pipe() does not end its destination when the source errors.
-    stdout.destroy(error)
+    if (!isSharedOutput(stdout)) stdout.destroy(error)
     killChild(child)
   })
-  stdout.on('error', err => {
+  const onDestinationError = (err: Error) => {
     onError(err instanceof Error ? err : new Error(String(err)))
-  })
+  }
+  stdout.on('error', onDestinationError)
+  if (isSharedOutput(stdout)) {
+    output.once('close', () => stdout.removeListener('error', onDestinationError))
+  }
   output.pipe(stdout)
 }
 
