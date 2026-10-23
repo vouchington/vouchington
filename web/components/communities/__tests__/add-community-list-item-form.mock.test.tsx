@@ -229,7 +229,7 @@ describe('AddCommunityListItemForm', () => {
     fireEvent.click(screen.getByTestId('select-item'))
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith(
-        'This community list can have up to 2 feeds. Remove a feed before adding another.',
+        'This list allows up to 2 feeds. Remove feeds until the list is below the limit, then try again.',
       )
     })
   })

@@ -678,7 +678,7 @@
 {"id":"copy.extracted.comments.deleteCommentButton.failedToDeleteComment_c65a5314","value":"Failed to delete comment"},
 {"id":"copy.extracted.communities.addCommunityListItemForm.addLabel_511a3a5d","value":"Add {label}"},
 {"id":"copy.extracted.communities.addCommunityListItemForm.failedToAddLabel_22332393","value":"Failed to add {label}"},
-{"id":"copy.extracted.communities.addCommunityListItemForm.feedLimitReached_f93c20b1","value":"This community list can have up to {limit} feeds. Remove a feed before adding another."},
+{"id":"copy.extracted.communities.addCommunityListItemForm.feedLimitReached_f93c20b1","value":"This list allows up to {limit} feeds. Remove feeds until the list is below the limit, then try again."},
 {"id":"copy.extracted.communities.addCommunityListItemForm.labelAddedToList_6fb6fe6e","value":"{label} added to list"},
 {"id":"copy.extracted.communities.addCommunityListItemForm.searchAndSelectAnItemTo_70e3aeeb","value":"Search and select an item to add it to this community list."},
 {"id":"copy.extracted.communities.applicationForm.anythingElseYouWouldLikeTo_b7565a0d","value":"Anything else you would like to share..."},
