@@ -39,6 +39,10 @@ import {
   type AuthSessionCleanupResult,
 } from './cleanup-auth-sessions.mts'
 import {
+  cleanupOldModerationQueueClaims,
+  cleanupOldModerationMediaReveals,
+} from './cleanup-moderation-operations.mts'
+import {
   applyRetentionLimits,
   getRetentionCutoffDate,
   normalizeRetentionDays,
@@ -70,6 +74,7 @@ export { cleanupExpiredOAuthAuthorizationServerArtifacts }
 export { cleanupTerminalNotificationPushIntents }
 export { cleanupTerminalStripeEventWork, cleanupAbandonedMembershipPurchaseIntents }
 export { cleanupOldPendingNotificationPushIntents }
+export { cleanupOldModerationQueueClaims, cleanupOldModerationMediaReveals }
 
 export async function cleanupAnalyticsLocalFiles(): Promise<void> {
   if (process.env.ANALYTICS_BACKEND !== 'local') return
@@ -125,6 +130,8 @@ type DataRetentionCleanupOptions = {
     maxBatches: number
     now?: Date
   }>
+  oldModerationQueueClaims?: OptionalRetentionLimits<CleanupOptions>
+  oldModerationMediaReveals?: OptionalRetentionLimits<CleanupOptions>
 }
 
 type DataRetentionCleanupResult = {
@@ -149,6 +156,8 @@ type DataRetentionCleanupResult = {
   expiredUserSessions: AuthSessionCleanupResult
   webPushSubscriptionTombstones: AuthSessionCleanupResult
   oldPendingNotificationPushIntents: PendingNotificationPushIntentCleanupResult
+  oldModerationQueueClaims: CleanupResult & { cursorId: string | null }
+  oldModerationMediaReveals: CleanupResult & { cursorId: string | null }
 }
 
 export async function runDataRetentionCleanup(
@@ -223,6 +232,12 @@ export async function runDataRetentionCleanup(
   const webPushSubscriptionTombstones = await cleanupWebPushSubscriptionTombstones(
     withLimits(options.webPushSubscriptionTombstones),
   )
+  const oldModerationQueueClaims = await cleanupOldModerationQueueClaims(
+    withLimits(options.oldModerationQueueClaims),
+  )
+  const oldModerationMediaReveals = await cleanupOldModerationMediaReveals(
+    withLimits(options.oldModerationMediaReveals),
+  )
   const retainedRelationIdentities = await cleanupRetainedRelationIdentities(
     retainedPageSize,
     options.retainedRelationIdentityKeys,
@@ -259,6 +274,8 @@ export async function runDataRetentionCleanup(
     expiredUserSessions,
     webPushSubscriptionTombstones,
     oldPendingNotificationPushIntents,
+    oldModerationQueueClaims,
+    oldModerationMediaReveals,
   }
 }
 

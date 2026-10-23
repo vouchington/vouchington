@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
+import { acquireModerationOperationRetentionTestLock } from '@voucha/test-helpers'
 import { acquirePaymentOperationRetentionTestLock } from '@voucha/test-helpers/payment-operation-retention'
 import { cleanupAnalyticsLocalFiles, runDataRetentionCleanup } from './cleanup.mts'
 
@@ -51,6 +52,8 @@ describe('cleanupAnalyticsLocalFiles', () => {
   })
 
   it('runs analytics cleanup as part of the full retention workflow', async () => {
+    const moderationLock = await acquireModerationOperationRetentionTestLock()
+    onTestFinished(() => moderationLock.release())
     const lock = await acquirePaymentOperationRetentionTestLock()
     onTestFinished(() => lock.release())
     process.env.ANALYTICS_BACKEND = 'firehose'
@@ -84,6 +87,8 @@ describe('cleanupAnalyticsLocalFiles', () => {
         phoneNumberLoginTokens: emptyWindow,
         expiredUserSessions: emptyWindow,
         webPushSubscriptionTombstones: emptyWindow,
+        oldModerationQueueClaims: emptyWindow,
+        oldModerationMediaReveals: emptyWindow,
       }),
     ).resolves.toEqual({
       retainedIdentityRoots: [],
@@ -107,6 +112,8 @@ describe('cleanupAnalyticsLocalFiles', () => {
       phoneNumberLoginTokens: { deleted: 0, hasMore: false, continuation: null },
       expiredUserSessions: { deleted: 0, hasMore: false, continuation: null },
       webPushSubscriptionTombstones: { deleted: 0, hasMore: false, continuation: null },
+      oldModerationQueueClaims: { deleted: 0, hasMore: false, cursorId: null },
+      oldModerationMediaReveals: { deleted: 0, hasMore: false, cursorId: null },
     })
   })
 

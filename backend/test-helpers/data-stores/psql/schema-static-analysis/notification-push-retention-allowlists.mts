@@ -1,5 +1,8 @@
 /* v8 ignore start -- declarative schema-test allowlists have no executable branches */
+import { MODERATION_CLEANUP_UUID_COLUMNS_WITHOUT_KEYS } from './moderation-cleanup-uuid-allowlists.mts'
+
 export const NOTIFICATION_PUSH_RETENTION_UUID_COLUMNS_WITHOUT_KEYS = [
+  ...MODERATION_CLEANUP_UUID_COLUMNS_WITHOUT_KEYS,
   [
     'notification_push_intent_retention_cursors.cursor_notification_push_intent_id',
     'Operational UUIDv7 keyset position survives deletion of the scanned push intent; it is not a relationship.',

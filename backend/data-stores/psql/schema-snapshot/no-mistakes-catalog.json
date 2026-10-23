@@ -67009,6 +67009,94 @@
       },
       "uniqueConstraints": {}
     },
+    "moderation_media_reveal_cleanup_cursors": {
+      "checkConstraints": {
+        "moderation_media_reveal_cleanup_cursors_is_singleton_check": {
+          "definition": "CHECK (is_singleton)",
+          "validated": true
+        }
+      },
+      "columns": {
+        "cursor_reveal_id": {
+          "comment": "Last examined reveal id; no foreign key because cleanup deletes examined reveals.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2
+        },
+        "is_singleton": {
+          "comment": "Checked singleton serializes media reveal retention runs.",
+          "dataType": "boolean",
+          "defaultExpression": "true",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        },
+        "sweep_cutoff_at": {
+          "comment": "Fixed age boundary for the current cyclic sweep; cleared with its cursor at completion.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3
+        },
+        "updated_at": {
+          "comment": "Last committed media reveal sweep progress.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4
+        }
+      },
+      "comment": "Singleton keyset position for the daily bounded media reveal retention sweep.",
+      "foreignKeys": {},
+      "indexes": {
+        "moderation_media_reveal_cleanup_cursors_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX moderation_media_reveal_cleanup_cursors_pkey ON public.moderation_media_reveal_cleanup_cursors USING btree (is_singleton)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "is_singleton",
+              "descending": false,
+              "expression": "is_singleton",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.bool_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["is_singleton"]
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_moderation_media_reveal_cleanup_cursors_updated_at": {
+          "definition": "CREATE TRIGGER trigger_moderation_media_reveal_cleanup_cursors_updated_at BEFORE UPDATE ON public.moderation_media_reveal_cleanup_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        }
+      },
+      "uniqueConstraints": {}
+    },
     "moderation_media_reveals": {
       "checkConstraints": {
         "moderation_media_reveals_metadata_check": {
@@ -67098,7 +67186,7 @@
           "ordinalPosition": 6
         }
       },
-      "comment": "Append-only log of disturbing-media reveals by moderators. Used to count session exposure and trigger cooldown prompts.",
+      "comment": "Log of disturbing-media reveals by moderators. Used to count session exposure and trigger cooldown prompts; old rows are removed by daily retention.",
       "foreignKeys": {
         "moderation_media_reveals_moderator_user_id_fkey": {
           "columns": ["moderator_user_id"],
@@ -67236,6 +67324,94 @@
       "triggers": {},
       "uniqueConstraints": {}
     },
+    "moderation_queue_claim_cleanup_cursors": {
+      "checkConstraints": {
+        "moderation_queue_claim_cleanup_cursors_is_singleton_check": {
+          "definition": "CHECK (is_singleton)",
+          "validated": true
+        }
+      },
+      "columns": {
+        "cursor_claim_id": {
+          "comment": "Last examined claim id; no foreign key because cleanup deletes examined claims.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2
+        },
+        "is_singleton": {
+          "comment": "Checked singleton serializes claim retention runs.",
+          "dataType": "boolean",
+          "defaultExpression": "true",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        },
+        "sweep_cutoff_at": {
+          "comment": "Fixed age boundary for the current cyclic sweep; cleared with its cursor at completion.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3
+        },
+        "updated_at": {
+          "comment": "Last committed claim sweep progress.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4
+        }
+      },
+      "comment": "Singleton keyset position for the daily bounded claim retention sweep.",
+      "foreignKeys": {},
+      "indexes": {
+        "moderation_queue_claim_cleanup_cursors_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX moderation_queue_claim_cleanup_cursors_pkey ON public.moderation_queue_claim_cleanup_cursors USING btree (is_singleton)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "is_singleton",
+              "descending": false,
+              "expression": "is_singleton",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.bool_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["is_singleton"]
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_moderation_queue_claim_cleanup_cursors_updated_at": {
+          "definition": "CREATE TRIGGER trigger_moderation_queue_claim_cleanup_cursors_updated_at BEFORE UPDATE ON public.moderation_queue_claim_cleanup_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        }
+      },
+      "uniqueConstraints": {}
+    },
     "moderation_queue_claims": {
       "checkConstraints": {
         "moderation_queue_claims_check": {
@@ -67325,7 +67501,7 @@
           "ordinalPosition": 4
         }
       },
-      "comment": "Advisory claims on community moderation queue items. One live (un-released) claim per report or post-review; auto-expires after 15 minutes of inactivity (evaluated lazily at read time).",
+      "comment": "Advisory claims on community moderation queue items. One live (un-released) claim per report or post-review; auto-expires after 15 minutes of inactivity (evaluated lazily at read time), with old inactive rows removed by daily retention.",
       "foreignKeys": {
         "moderation_queue_claims_claimed_by_id_fkey": {
           "columns": ["claimed_by_id"],

@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS moderation_media_reveals (
 CREATE INDEX IF NOT EXISTS idx_moderation_media_reveals__moderator_revealed
   ON moderation_media_reveals (moderator_user_id, revealed_at DESC);
 
-COMMENT ON TABLE moderation_media_reveals IS 'Append-only log of disturbing-media reveals by moderators. Used to count session exposure and trigger cooldown prompts.';
+COMMENT ON TABLE moderation_media_reveals IS 'Log of disturbing-media reveals by moderators. Used to count session exposure and trigger cooldown prompts; old rows are removed by daily retention.';
 
 COMMENT ON COLUMN moderation_media_reveals.created_at IS 'Row insertion time derived from the UUIDv7 id; used for schema convention only. Windowed queries use revealed_at.';
 
@@ -47,6 +47,21 @@ COMMENT ON COLUMN moderation_media_reveals.surface IS 'Queue surface where the r
 COMMENT ON COLUMN moderation_media_reveals.revealed_at IS 'When the moderator clicked to reveal the media. Real column (not virtual) for time-window range queries.';
 
 COMMENT ON COLUMN moderation_media_reveals.metadata IS 'Structured context (e.g. community_id, image_id).';
+
+CREATE TABLE IF NOT EXISTS moderation_media_reveal_cleanup_cursors (
+  is_singleton boolean PRIMARY KEY DEFAULT TRUE CHECK (is_singleton),
+  cursor_reveal_id uuid,
+  sweep_cutoff_at timestamptz,
+  updated_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE OR REPLACE TRIGGER trigger_moderation_media_reveal_cleanup_cursors_updated_at
+BEFORE UPDATE ON moderation_media_reveal_cleanup_cursors
+FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+COMMENT ON TABLE moderation_media_reveal_cleanup_cursors IS 'Singleton keyset position for the daily bounded media reveal retention sweep.';
+COMMENT ON COLUMN moderation_media_reveal_cleanup_cursors.is_singleton IS 'Checked singleton serializes media reveal retention runs.';
+COMMENT ON COLUMN moderation_media_reveal_cleanup_cursors.cursor_reveal_id IS 'Last examined reveal id; no foreign key because cleanup deletes examined reveals.';
+COMMENT ON COLUMN moderation_media_reveal_cleanup_cursors.sweep_cutoff_at IS 'Fixed age boundary for the current cyclic sweep; cleared with its cursor at completion.';
+COMMENT ON COLUMN moderation_media_reveal_cleanup_cursors.updated_at IS 'Last committed media reveal sweep progress.';
 
 -- Current indexes for fresh schema bootstrap.
 CREATE INDEX IF NOT EXISTS idx_moderation_media_reveals__post_id
