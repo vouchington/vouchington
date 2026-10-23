@@ -1,9 +1,10 @@
+import { getTestRssFeedItemCategories } from '@voucha/test-helpers/entities/rss-feed-item-categories'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { v4 as uuid } from 'uuid'
 
 import { getRssFeedItemById } from '../get.mts'
 import { upsertRssFeedItems } from '../upsert.mts'
-import { getRssFeedItemCategories, upsertRssFeedItemCategories } from '../categories.mts'
+import { upsertRssFeedItemCategories } from '../categories.mts'
 import { backfillCategoriesForTopicAliases } from '../backfill-categories-for-topic-aliases.mts'
 import { createTopicAliases, linkTopicAlias, unlinkTopicAlias } from '@services/topics/aliases'
 import { getEntityRelationElectionVote } from '@services/elections-votes/entity-relation/votes-get'
@@ -96,7 +97,7 @@ describe('RSS feed item category relation retries', () => {
       ),
     ])
 
-    await expect(getRssFeedItemCategories(rssFeedItemId)).resolves.toEqual(
+    await expect(getTestRssFeedItemCategories(rssFeedItemId)).resolves.toEqual(
       expect.arrayContaining([expect.objectContaining({ topic_id: topicId })]),
     )
     const before = await getTestPostPublicationDirtyWorkForScope({
@@ -202,7 +203,7 @@ describe('RSS feed item category relation retries', () => {
     ).rejects.toThrow(
       'Injected query failure for updateEntityRelationElectionVoteStatsFromPrimaryBatch',
     )
-    await expect(getRssFeedItemCategories(rssFeedItemId)).resolves.toEqual(
+    await expect(getTestRssFeedItemCategories(rssFeedItemId)).resolves.toEqual(
       expect.arrayContaining([
         expect.objectContaining({ category_text: movedAlias, topic_id: topicId }),
       ]),
@@ -211,7 +212,7 @@ describe('RSS feed item category relation retries', () => {
     await expect(backfillCategoriesForTopicAliases(destination.id)).resolves.toMatchObject({
       updated: 1,
     })
-    await expect(getRssFeedItemCategories(rssFeedItemId)).resolves.toEqual(
+    await expect(getTestRssFeedItemCategories(rssFeedItemId)).resolves.toEqual(
       expect.arrayContaining([
         expect.objectContaining({ category_text: movedAlias, topic_id: destination.id }),
       ]),

@@ -1,7 +1,7 @@
 import { it, expect, beforeAll, describe } from 'vitest'
 import { createRssFeed } from '../create.mts'
 import { updateRssFeedById } from '../update.mts'
-import { updateRssFeedByIdAsCurrentUser } from '../update-current-user.mts'
+import { updateRssFeedWithStateAsCurrentUser } from '../update-current-user.mts'
 import { getRssFeedById } from '../get.mts'
 import {
   createTestTopic,
@@ -122,7 +122,6 @@ describe('update.generated (fields)', () => {
       [topic1.id, topic2.id].toSorted(),
     )
   })
-
   it('updateRssFeedById updates etag', async () => {
     const random = Math.random().toString(36).slice(2, 15)
     const topic = await createTestTopic({
@@ -142,7 +141,6 @@ describe('update.generated (fields)', () => {
     const updated = await getRssFeedById(feed.id)
     expect(updated!.etag).toBe('"test-etag"')
   })
-
   it('updateRssFeedById sets etag to null', async () => {
     const random = Math.random().toString(36).slice(2, 15)
     const topic = await createTestTopic({
@@ -163,7 +161,6 @@ describe('update.generated (fields)', () => {
     const updated = await getRssFeedById(feed.id)
     expect(updated!.etag).toBeNull()
   })
-
   it('updateRssFeedById updates last_modified_at with Date', async () => {
     const random = Math.random().toString(36).slice(2, 15)
     const topic = await createTestTopic({
@@ -286,10 +283,13 @@ describe('update.generated (fields)', () => {
     expect(result).toBeNull()
   })
 
-  it('updateRssFeedByIdAsCurrentUser returns null when no row is updated', async () => {
-    const result = await updateRssFeedByIdAsCurrentUser(sharedUser, randomUUID(), {
-      title: 'Missing feed',
-    })
+  it('updateRssFeedWithStateAsCurrentUser returns null when no row is updated', async () => {
+    const result = await updateRssFeedWithStateAsCurrentUser(
+      sharedUser,
+      randomUUID(),
+      { title: 'Missing feed' },
+      {},
+    )
     expect(result).toBeNull()
   })
 

@@ -1,6 +1,7 @@
 import { it, expect, describe, beforeAll } from 'vitest'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
-import { upsertPodcastShow, getPodcastShow } from '../podcast-show.mts'
+import { getTestPodcastShow } from '@voucha/test-helpers'
+import { upsertPodcastShow } from '../podcast-show.mts'
 
 describe('podcast-show', () => {
   let rssFeedId: string
@@ -22,7 +23,7 @@ describe('podcast-show', () => {
         description: 'A podcast about money.',
       })
 
-      const result = await getPodcastShow(rssFeedId)
+      const result = await getTestPodcastShow(rssFeedId)
       expect(result).not.toBeNull()
       expect(result?.itunes_author).toBe('NPR')
       expect(result?.itunes_owner_name).toBe('NPR Podcasts')
@@ -56,7 +57,7 @@ describe('podcast-show', () => {
         description: 'Updated description.',
       })
 
-      const result = await getPodcastShow(rssFeedId)
+      const result = await getTestPodcastShow(rssFeedId)
       expect(result?.itunes_author).toBe('Updated Author')
       expect(result?.itunes_owner_name).toBe('Owner Name')
       expect(result?.cover_art_url).toBe('https://example.com/new-cover.jpg')
@@ -76,18 +77,10 @@ describe('podcast-show', () => {
         description: null,
       })
 
-      const result = await getPodcastShow(feed.id)
+      const result = await getTestPodcastShow(feed.id)
       expect(result).not.toBeNull()
       expect(result?.itunes_author).toBeNull()
       expect(result?.itunes_type).toBeNull()
-    })
-  })
-
-  describe('getPodcastShow', () => {
-    it('returns null for a feed with no podcast show row', async () => {
-      const feed = await createTestRssFeed({})
-      const result = await getPodcastShow(feed.id)
-      expect(result).toBeNull()
     })
   })
 })

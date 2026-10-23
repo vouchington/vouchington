@@ -1,5 +1,6 @@
+import { getTestRssFeedItemCategories } from '@voucha/test-helpers/entities/rss-feed-item-categories'
 import { it, expect, beforeEach, describe } from 'vitest'
-import { upsertRssFeedItemCategories, getRssFeedItemCategories } from '../categories.mts'
+import { upsertRssFeedItemCategories } from '../categories.mts'
 import { backfillCategoriesForTopicAliases } from '../backfill-categories-for-topic-aliases.mts'
 import { createTopic } from '@services/topics'
 import { createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
@@ -25,7 +26,7 @@ describe('categories', () => {
       },
     ])
 
-    let allCategories = await getRssFeedItemCategories(testRssFeedItemId)
+    let allCategories = await getTestRssFeedItemCategories(testRssFeedItemId)
     const before = allCategories.find(c => c.category_text === slug)
     expect(before?.topic_id).toBeNull()
 
@@ -37,7 +38,7 @@ describe('categories', () => {
     const result = await backfillCategoriesForTopicAliases(topic.id)
     expect(result.updated).toBeGreaterThanOrEqual(1)
 
-    allCategories = await getRssFeedItemCategories(testRssFeedItemId)
+    allCategories = await getTestRssFeedItemCategories(testRssFeedItemId)
     const after = allCategories.find(c => c.category_text === slug)
     expect(after?.topic_id).toBe(topic.id)
   })

@@ -1,3 +1,4 @@
+import { getTestRssFeedItemCategories } from '@voucha/test-helpers/entities/rss-feed-item-categories'
 import { describe, expect, it } from 'vitest'
 import type { TransactionQuery } from '@data-stores/psql'
 import {
@@ -17,7 +18,6 @@ import {
   reconcileRssFeedItemCategorySnapshotRows,
   type RssFeedItemCategorySnapshotReconciliation,
 } from '../category-snapshot-reconciliations.mts'
-import { getRssFeedItemCategories } from '../categories.mts'
 
 describe('RSS feed item concurrent upsert ordering', () => {
   it('dispatches reverse-order identity, content, and source writers on two PostgreSQL clients', async () => {
@@ -131,7 +131,7 @@ describe('RSS feed item concurrent upsert ordering', () => {
       ])
       const stored = await getRssFeedItemById(itemId)
       expect(stored?.data.title).toBe(item.title)
-      await expect(getRssFeedItemCategories(itemId)).resolves.toEqual([
+      await expect(getTestRssFeedItemCategories(itemId)).resolves.toEqual([
         expect.objectContaining({ category_text: item.categories![0] }),
       ])
     }

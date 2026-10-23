@@ -1,3 +1,4 @@
+import { getTestRssFeedItemCategories } from '@voucha/test-helpers/entities/rss-feed-item-categories'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   createTestPost,
@@ -7,10 +8,7 @@ import {
   insertTestTopic,
   readAllQueueJobs,
 } from '@voucha/test-helpers'
-import {
-  getRssFeedItemCategories,
-  upsertRssFeedItemCategories,
-} from '@services/rss-feed-items/categories'
+import { upsertRssFeedItemCategories } from '@services/rss-feed-items/categories'
 import { upsertRssFeedItems } from '@services/rss-feed-items/upsert'
 import { createTopicAliases, unlinkTopicAlias } from '@services/topics/aliases'
 import {
@@ -62,7 +60,7 @@ describe('topic-aliases processors', () => {
 
     await processTopicAliasesUpdate({ topicId, removedTopicAliasId: alias!.id })
 
-    await expect(getRssFeedItemCategories(item!.id)).resolves.toEqual(
+    await expect(getTestRssFeedItemCategories(item!.id)).resolves.toEqual(
       expect.arrayContaining([expect.objectContaining({ topic_id: null })]),
     )
   })

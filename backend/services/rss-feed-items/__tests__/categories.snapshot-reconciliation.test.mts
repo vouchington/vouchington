@@ -1,6 +1,7 @@
+import { getTestRssFeedItemCategories } from '@voucha/test-helpers/entities/rss-feed-item-categories'
 import { describe, expect, it } from 'vitest'
 import { getRssFeedItemById } from '../get.mts'
-import { getRssFeedItemCategories, upsertRssFeedItemCategories } from '../categories.mts'
+import { upsertRssFeedItemCategories } from '../categories.mts'
 import { upsertRssFeedItems } from '../upsert.mts'
 import { searchRssFeedItems } from '../search.mts'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
@@ -61,7 +62,7 @@ describe('RSS category snapshots', () => {
     )
 
     await upsertRssFeedItemCategories([{ rss_feed_item_id: item!.id, categories: [firstCategory] }])
-    await expect(getRssFeedItemCategories(item!.id)).resolves.toEqual([
+    await expect(getTestRssFeedItemCategories(item!.id)).resolves.toEqual([
       expect.objectContaining({ category_text: firstCategory }),
     ])
     await expect(
@@ -80,7 +81,7 @@ describe('RSS category snapshots', () => {
     await upsertRssFeedItemCategories([{ rss_feed_item_id: item!.id, categories: [] }])
     const categorizer = await getSystemUserByUsername(RSS_FEED_CATEGORIZER_USERNAME)
     expect(categorizer).not.toBeNull()
-    await expect(getRssFeedItemCategories(item!.id)).resolves.toEqual([])
+    await expect(getTestRssFeedItemCategories(item!.id)).resolves.toEqual([])
     await expect(
       searchRssFeedItems({ hashtag_alias_ids: [firstAlias!.id] }),
     ).resolves.toMatchObject({

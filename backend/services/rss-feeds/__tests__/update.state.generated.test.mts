@@ -1,17 +1,14 @@
 import { it, expect, beforeAll, describe, vi } from 'vitest'
 import { createRssFeed } from '../create.mts'
 import { updateRssFeedById } from '../update.mts'
-import {
-  updateRssFeedByIdAsCurrentUser,
-  updateRssFeedWithStateAsCurrentUser,
-} from '../update-current-user.mts'
+import { updateRssFeedWithStateAsCurrentUser } from '../update-current-user.mts'
 import { getRssFeedById } from '../get.mts'
-import { getLatestDiscoverabilityChange, getLatestEnablementChange } from '../discoverability.mts'
 import {
   beginTransaction,
   createTestTopic,
   createTestUser,
   getRssFeedCrawlById,
+  getLatestTestRssFeedStateChange,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
@@ -58,8 +55,8 @@ describe('update.generated (state)', () => {
       { is_enabled: false, discoverable: false },
       { stateChangeReason: 'test: focused state reason' },
     )
-    const enablement = await getLatestEnablementChange(feed.id)
-    const discoverability = await getLatestDiscoverabilityChange(feed.id)
+    const enablement = await getLatestTestRssFeedStateChange('enablement', feed.id)
+    const discoverability = await getLatestTestRssFeedStateChange('discoverability', feed.id)
     expect(enablement!.reason).toBe('test: focused state reason')
     expect(discoverability!.reason).toBe('test: focused state reason')
   })
@@ -81,7 +78,7 @@ describe('update.generated (state)', () => {
     const updated = await getRssFeedById(feed.id)
     expect(updated!.is_enabled).toBe(false)
   })
-  it('updateRssFeedByIdAsCurrentUser attributes state changes to current user', async () => {
+  it('updateRssFeedWithStateAsCurrentUser attributes state changes to current user', async () => {
     const random = Math.random().toString(36).slice(2, 15)
     const topic = await createTestTopic({
       user: sharedUser,
@@ -94,20 +91,22 @@ describe('update.generated (state)', () => {
       topic_id: topic.id,
       title: `Test Feed ${random}`,
     })
-    await updateRssFeedByIdAsCurrentUser(sharedUser, feed.id, {
-      is_enabled: false,
-      discoverable: false,
-    })
-    const enablement = await getLatestEnablementChange(feed.id)
-    const discoverability = await getLatestDiscoverabilityChange(feed.id)
+    await updateRssFeedWithStateAsCurrentUser(
+      sharedUser,
+      feed.id,
+      {},
+      {
+        is_enabled: false,
+        discoverable: false,
+        reason: 'test: current user state update',
+      },
+    )
+    const enablement = await getLatestTestRssFeedStateChange('enablement', feed.id)
+    const discoverability = await getLatestTestRssFeedStateChange('discoverability', feed.id)
     expect(enablement!.changed_by_id).toBe(sharedUser.id)
     expect(discoverability!.changed_by_id).toBe(sharedUser.id)
-  })
-  it('updateRssFeedByIdAsCurrentUser returns null for state-only changes on missing feed', async () => {
-    const result = await updateRssFeedByIdAsCurrentUser(sharedUser, randomUUID(), {
-      discoverable: false,
-    })
-    expect(result).toBeNull()
+    expect(enablement!.reason).toBe('test: current user state update')
+    expect(discoverability!.reason).toBe('test: current user state update')
   })
   it('updateRssFeedWithStateAsCurrentUser ignores state-only changes on missing feed', async () => {
     await expect(

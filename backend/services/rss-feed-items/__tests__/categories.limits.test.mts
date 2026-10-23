@@ -1,7 +1,8 @@
+import { getTestRssFeedItemCategories } from '@voucha/test-helpers/entities/rss-feed-item-categories'
 import { rssFeedItemsWorkConfig } from '@services/rss-feed-items/work-limits'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { it, expect, beforeEach, describe } from 'vitest'
-import { upsertRssFeedItemCategories, getRssFeedItemCategories } from '../categories.mts'
+import { upsertRssFeedItemCategories } from '../categories.mts'
 import { buildRssFeedItemCategorySqlBatches } from '../category-batches.mts'
 import { backfillCategoriesForTopicAliases } from '../backfill-categories-for-topic-aliases.mts'
 import { upsertRssFeedItems } from '../upsert.mts'
@@ -44,11 +45,19 @@ describe('categories limits', () => {
     testRssFeedItemId = items[0]!.id
   })
 
-  it('does nothing when items contain no categories', async () => {
+  it('does not mutate categories when a category list or batch is empty', async () => {
     await expect(
       upsertRssFeedItemCategories([{ rss_feed_item_id: testRssFeedItemId, categories: [] }]),
     ).resolves.toBeUndefined()
-    await expect(getRssFeedItemCategories(testRssFeedItemId)).resolves.toEqual([])
+    await expect(getTestRssFeedItemCategories(testRssFeedItemId)).resolves.toEqual([])
+
+    await upsertRssFeedItemCategories([
+      { rss_feed_item_id: testRssFeedItemId, categories: [`keep-${uuid()}`] },
+    ])
+    const before = await getTestRssFeedItemCategories(testRssFeedItemId)
+    expect(before).toHaveLength(1)
+    await upsertRssFeedItemCategories([])
+    await expect(getTestRssFeedItemCategories(testRssFeedItemId)).resolves.toEqual(before)
   })
 
   it('upsertRssFeedItemCategories caps categories per item after normalization', async () => {
@@ -67,7 +76,7 @@ describe('categories limits', () => {
       },
     ])
 
-    const allCategories = await getRssFeedItemCategories(testRssFeedItemId)
+    const allCategories = await getTestRssFeedItemCategories(testRssFeedItemId)
     const cappedCategories = allCategories.filter(
       category =>
         category.category_text.startsWith(`zzzz-category-cap-${random}-`) ||
@@ -104,8 +113,8 @@ describe('categories limits', () => {
         })),
       )
 
-      const firstCategories = await getRssFeedItemCategories(items[0]!.id)
-      const lastCategories = await getRssFeedItemCategories(items.at(-1)!.id)
+      const firstCategories = await getTestRssFeedItemCategories(items[0]!.id)
+      const lastCategories = await getTestRssFeedItemCategories(items.at(-1)!.id)
       expect(
         firstCategories.filter(category =>
           category.category_text.startsWith(`zzzz-chunked-${random}-0-`),
@@ -154,7 +163,7 @@ describe('categories limits', () => {
       await createTopicAliases(topic.id, [categoryInputs[0]!.categories[0]!])
       await upsertRssFeedItemCategories(categoryInputs)
 
-      const categories = await getRssFeedItemCategories(items[0]!.id)
+      const categories = await getTestRssFeedItemCategories(items[0]!.id)
       const matched = categories.find(
         category => category.category_text === categoryInputs[0]!.categories[0]!,
       )
@@ -196,10 +205,10 @@ describe('categories limits', () => {
         updated: 1,
         hasMore: false,
       })
-      await expect(getRssFeedItemCategories(items[0]!.id)).resolves.toEqual([
+      await expect(getTestRssFeedItemCategories(items[0]!.id)).resolves.toEqual([
         expect.objectContaining({ category_text: alias, topic_id: topic.id }),
       ])
-      await expect(getRssFeedItemCategories(items.at(-1)!.id)).resolves.toEqual([
+      await expect(getTestRssFeedItemCategories(items.at(-1)!.id)).resolves.toEqual([
         expect.objectContaining({ category_text: alias, topic_id: topic.id }),
       ])
     } finally {
@@ -244,14 +253,14 @@ describe('categories limits', () => {
       await holderProcessId.promise,
       'backfillCategoriesForTopicAliases',
     )
-    await expect(getRssFeedItemCategories(item!.id)).resolves.toEqual([
+    await expect(getTestRssFeedItemCategories(item!.id)).resolves.toEqual([
       expect.objectContaining({ category_text: alias, topic_id: null }),
     ])
 
     release.resolve()
     await holder
     await expect(backfill).resolves.toEqual({ updated: 1, hasMore: false })
-    await expect(getRssFeedItemCategories(item!.id)).resolves.toEqual([
+    await expect(getTestRssFeedItemCategories(item!.id)).resolves.toEqual([
       expect.objectContaining({ category_text: alias, topic_id: topic.id }),
     ])
   })

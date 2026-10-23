@@ -1,3 +1,4 @@
+import { getTestRssFeedItemCategories } from '@voucha/test-helpers/entities/rss-feed-item-categories'
 import { randomUUID } from 'node:crypto'
 import '@services/elections-votes'
 import { Queue, Worker, type Job } from 'glide-mq'
@@ -5,10 +6,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
 import { notifications } from '@queues/notifications/queues'
 import { QUEUE_NAME } from '@queues/rss-feed-maintenance/config'
-import {
-  getRssFeedItemCategories,
-  upsertRssFeedItemCategories,
-} from '@services/rss-feed-items/categories'
+import { upsertRssFeedItemCategories } from '@services/rss-feed-items/categories'
 import { upsertRssFeedItems } from '@services/rss-feed-items/upsert'
 import { getRssFeedCategories, upsertRssFeedCategories } from '@services/rss-feeds/categories'
 import { createTopicAliases, unlinkTopicAlias } from '@services/topics/aliases'
@@ -18,7 +16,7 @@ import {
   createTestUser,
   createTopHashtagPostSourceForTest,
   getTestRssFeedItemCategorySnapshotReconciliation,
-  getLatestTestRssFeedDiscoverabilityChange,
+  getLatestTestRssFeedStateChange,
   getTopicAliasCategoryMappingDirtyRowForTest,
   insertTestRssFeedDirect,
   setRssFeedOwningTopicVoteScore,
@@ -84,7 +82,7 @@ describe('merged RSS feed maintenance worker with real GlideMQ', () => {
     })
     expect(result).toMatchObject({ reconciled: 1 })
     expect(await getTestRssFeedItemCategorySnapshotReconciliation(item!.id)).toBeUndefined()
-    expect(await getRssFeedItemCategories(item!.id)).toEqual([
+    expect(await getTestRssFeedItemCategories(item!.id)).toEqual([
       expect.objectContaining({ category_text: category }),
     ])
   })
@@ -102,14 +100,16 @@ describe('merged RSS feed maintenance worker with real GlideMQ', () => {
     ])
     await upsertRssFeedItemCategories([{ rss_feed_item_id: item!.id, categories: [slug] }])
     expect(
-      (await getRssFeedItemCategories(item!.id)).find(row => row.category_text === slug)?.topic_id,
+      (await getTestRssFeedItemCategories(item!.id)).find(row => row.category_text === slug)
+        ?.topic_id,
     ).toBeNull()
     const topic = await createTestTopic({ slug, name: slug })
 
     const result = await runJob('processBackfillCategoriesForTopicAliases', { topicId: topic.id })
     expect(result).toMatchObject({ updated: expect.any(Number) })
     expect(
-      (await getRssFeedItemCategories(item!.id)).find(row => row.category_text === slug)?.topic_id,
+      (await getTestRssFeedItemCategories(item!.id)).find(row => row.category_text === slug)
+        ?.topic_id,
     ).toBe(topic.id)
   })
 
@@ -137,7 +137,9 @@ describe('merged RSS feed maintenance worker with real GlideMQ', () => {
     await expect(
       runJob('processEvaluateRssFeedDiscoverability', { rssFeedId: feed.id }),
     ).resolves.toBe('updated')
-    await expect(getLatestTestRssFeedDiscoverabilityChange(feed.id)).resolves.toMatchObject({
+    await expect(
+      getLatestTestRssFeedStateChange('discoverability', feed.id),
+    ).resolves.toMatchObject({
       reason: expect.stringContaining('auto:'),
     })
   })
@@ -156,7 +158,7 @@ describe('merged RSS feed maintenance worker with real GlideMQ', () => {
     await unlinkTopicAlias(alias!.id, { expectedTopicId: topic.id, skipSideEffects: true })
     await runJob('processTopicAliasesUpdate', { topicId: topic.id, removedTopicAliasId: alias!.id })
     expect(
-      (await getRssFeedItemCategories(item!.id)).find(
+      (await getTestRssFeedItemCategories(item!.id)).find(
         row => row.category_text === `#${alias!.alias}`,
       )?.topic_id,
     ).toBeNull()

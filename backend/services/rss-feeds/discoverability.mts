@@ -1,5 +1,5 @@
 import { getRssFeedAutoUpdaterUserId } from '@services/users/system-users'
-import { read, type QueryOptions, type TransactionQuery } from '@data-stores/psql'
+import type { QueryOptions, TransactionQuery } from '@data-stores/psql'
 import { insertRssFeedStateChanges, type RssFeedStateKind } from './state-changes.mts'
 import { recordRssFeedStatePublicationChange } from './publication-change.mts'
 import { lockPostPublicationScope } from '@services/post-publication/lock'
@@ -7,14 +7,6 @@ import { applyCommittedRssFeedStateChangeEffects } from './state-effects.mts'
 import { runRssFeedStateTransaction } from './state-transaction.mts'
 type ChangeKind = RssFeedStateKind
 type SetStateResult = 'updated' | 'noop' | 'skipped:human-locked'
-type RssFeedStateChange = {
-  id: string
-  rss_feed_id: string
-  is_enabled: boolean
-  changed_by_id: string | null
-  reason: string | null
-  created_at: Date
-}
 type SetRssFeedStateInput = {
   rssFeedId: string
   is_enabled: boolean
@@ -24,23 +16,6 @@ type SetRssFeedStateAsSystemInput = SetRssFeedStateInput & {
   overrideHumanLock?: boolean
 }
 
-async function getLatestChange(
-  kind: ChangeKind,
-  rssFeedId: string,
-  options: QueryOptions = {},
-): Promise<RssFeedStateChange | null> {
-  const { rows } = await read(
-    `/* getLatestRssFeedStateChange */
-      SELECT id, rss_feed_id, is_enabled, changed_by_id, reason, created_at
-      FROM rss_feed_setting_changes
-      WHERE rss_feed_id = $1 AND change_type = $2
-      ORDER BY id DESC
-      LIMIT 1`,
-    [rssFeedId, kind],
-    options,
-  )
-  return (rows[0] as RssFeedStateChange | undefined) ?? null
-}
 async function insertChange(
   kind: ChangeKind,
   input: SetRssFeedStateInput & { createdById: string | null },
@@ -83,28 +58,6 @@ async function setStateAsSystem(
   const result = await runRssFeedStateTransaction(options, run)
   await applyCommittedRssFeedStateChangeEffects(input.rssFeedId, result === 'updated', options)
   return result
-}
-/**
- * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
- * export may be made private or removed after intended-use review.
- * Evidence: `docs/overview/architecture/services/README.md`.
- */
-export function getLatestDiscoverabilityChange(
-  rssFeedId: string,
-  options?: QueryOptions,
-): Promise<RssFeedStateChange | null> {
-  return getLatestChange('discoverability', rssFeedId, options)
-}
-
-/**
- * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
- * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
- */
-export function getLatestEnablementChange(
-  rssFeedId: string,
-  options?: QueryOptions,
-): Promise<RssFeedStateChange | null> {
-  return getLatestChange('enablement', rssFeedId, options)
 }
 export function setRssFeedDiscoverabilityAsSystem(
   input: SetRssFeedStateAsSystemInput,

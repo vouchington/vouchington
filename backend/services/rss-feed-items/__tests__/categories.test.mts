@@ -1,5 +1,6 @@
+import { getTestRssFeedItemCategories } from '@voucha/test-helpers/entities/rss-feed-item-categories'
 import { it, expect, beforeEach, describe } from 'vitest'
-import { upsertRssFeedItemCategories, getRssFeedItemCategories } from '../categories.mts'
+import { upsertRssFeedItemCategories } from '../categories.mts'
 import { backfillCategoriesForTopicAliases } from '../backfill-categories-for-topic-aliases.mts'
 import { createTopic } from '@services/topics'
 import { createTopicAliases } from '@services/topics/aliases'
@@ -40,7 +41,7 @@ describe('categories', () => {
       },
     ])
 
-    const allCategories = await getRssFeedItemCategories(testRssFeedItemId)
+    const allCategories = await getTestRssFeedItemCategories(testRssFeedItemId)
     const categories = filterCategories(allCategories, [testAliases[0], testCategories[0]])
     expect(categories).toHaveLength(2)
 
@@ -62,7 +63,7 @@ describe('categories', () => {
       },
     ])
 
-    const allCategories = await getRssFeedItemCategories(testRssFeedItemId)
+    const allCategories = await getTestRssFeedItemCategories(testRssFeedItemId)
     const categories = filterCategories(allCategories, [testCategory])
     // Should dedupe on a case-insensitive key while retaining the source spelling.
     expect(categories).toHaveLength(1)
@@ -102,7 +103,7 @@ describe('categories', () => {
       { rss_feed_item_id: testRssFeedItemId, categories: [firstSpelling.toUpperCase()] },
     ])
 
-    const allCategories = await getRssFeedItemCategories(testRssFeedItemId)
+    const allCategories = await getTestRssFeedItemCategories(testRssFeedItemId)
     expect(
       allCategories.filter(c => c.category_text.toLowerCase() === firstSpelling.toLowerCase()),
     ).toEqual([expect.objectContaining({ category_text: firstSpelling })])
@@ -136,7 +137,7 @@ describe('categories', () => {
       },
     ])
 
-    const allCategories = await getRssFeedItemCategories(testRssFeedItemId)
+    const allCategories = await getTestRssFeedItemCategories(testRssFeedItemId)
     const categories = filterCategories(allCategories, [uniqueCategory])
     expect(categories).toHaveLength(1)
     expect(categories[0].topic_id).toBe(scienceTopic.id)
@@ -168,8 +169,8 @@ describe('categories', () => {
       { rss_feed_item_id: secondItemId, categories: [category2] },
     ])
 
-    const categories1 = await getRssFeedItemCategories(testRssFeedItemId)
-    const categories2 = await getRssFeedItemCategories(secondItemId)
+    const categories1 = await getTestRssFeedItemCategories(testRssFeedItemId)
+    const categories2 = await getTestRssFeedItemCategories(secondItemId)
 
     expect(filterCategories(categories1, [category1])).toHaveLength(1)
     expect(filterCategories(categories2, [category2])).toHaveLength(1)
@@ -188,7 +189,7 @@ describe('categories', () => {
     ])
 
     // Verify they have no topic_id
-    let allCategories = await getRssFeedItemCategories(testRssFeedItemId)
+    let allCategories = await getTestRssFeedItemCategories(testRssFeedItemId)
     let categories = filterCategories(allCategories, uniqueCategories)
     expect(categories.every(r => r.topic_id === null)).toBe(true)
 
@@ -206,7 +207,7 @@ describe('categories', () => {
     expect(result.updated).toBe(2) // Both categories should be updated
 
     // Verify the updates
-    allCategories = await getRssFeedItemCategories(testRssFeedItemId)
+    allCategories = await getTestRssFeedItemCategories(testRssFeedItemId)
     categories = filterCategories(allCategories, uniqueCategories)
     expect(categories).toHaveLength(2)
     expect(categories.every(r => r.topic_id === scienceTopic.id)).toBe(true)

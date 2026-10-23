@@ -1,6 +1,7 @@
+import { getTestRssFeedItemCategories } from '@voucha/test-helpers/entities/rss-feed-item-categories'
 import { describe, expect, it } from 'vitest'
 
-import { getRssFeedItemCategories, upsertRssFeedItemCategories } from '../categories.mts'
+import { upsertRssFeedItemCategories } from '../categories.mts'
 import { clearCategoriesForUnlinkedTopicAlias } from '../clear-topic-alias-categories.mts'
 import { applyCollaborativeTopicRelations } from '../collaborative-topic-relations.mts'
 import { clearCategorizerVotesForUnreferencedCategoryTopicRelations } from '../category-topic-votes.mts'
@@ -71,7 +72,7 @@ describe('clearCategoriesForUnlinkedTopicAlias votes', () => {
       'Injected query failure for updateEntityRelationElectionVoteStatsFromPrimaryBatch',
     )
 
-    await expect(getRssFeedItemCategories(item!.id)).resolves.toContainEqual(
+    await expect(getTestRssFeedItemCategories(item!.id)).resolves.toContainEqual(
       expect.objectContaining({ category_text: categoryText, topic_id: topic.id }),
     )
     await expect(

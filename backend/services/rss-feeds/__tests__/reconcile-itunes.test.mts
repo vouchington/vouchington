@@ -1,7 +1,7 @@
 import { it, expect, describe } from 'vitest'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
+import { getTestPodcastShow } from '@voucha/test-helpers'
 import { persistFeedMetadataAndReconcileLanguage } from '../reconcile-item-language.mts'
-import { getPodcastShow } from '../podcast-show.mts'
 import { getRssFeedCategories } from '../categories.mts'
 
 describe('persistFeedMetadataAndReconcileLanguage (integration)', () => {
@@ -21,7 +21,7 @@ describe('persistFeedMetadataAndReconcileLanguage (integration)', () => {
     // oldTitle=null with no title in parsedFeed → no title update; null language unchanged → no language update
     await persistFeedMetadataAndReconcileLanguage(feed.id, parsedFeed, null, null)
 
-    const show = await getPodcastShow(feed.id)
+    const show = await getTestPodcastShow(feed.id)
     expect(show).not.toBeNull()
     expect(show?.itunes_author).toBe('NPR')
     expect(show?.itunes_owner_name).toBe('NPR Podcasts')
@@ -39,7 +39,7 @@ describe('persistFeedMetadataAndReconcileLanguage (integration)', () => {
 
     await persistFeedMetadataAndReconcileLanguage(feed.id, {}, null, null)
 
-    const show = await getPodcastShow(feed.id)
+    const show = await getTestPodcastShow(feed.id)
     expect(show).toBeNull()
     const categories = await getRssFeedCategories(feed.id)
     expect(categories).toHaveLength(0)
