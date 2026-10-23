@@ -6,19 +6,19 @@ Tracks which user referred a session, linking anonymous sessions to referrers fo
 
 RANGE partitioned on `id` (children: default, no retention owner, access class: target-scoped, growth: unbounded).
 
-| Column             | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                  |
-| ------------------ | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ---------------------------------------------------------------------------------------- |
-| `id`               | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                          |
-| `session_id`       | `uuid`                     | no       |                              |          |           |           | The anonymous session that was referred. Not a FK — sessions live outside PostgreSQL.    |
-| `referrer_user_id` | `uuid`                     | yes      |                              |          |           |           | The user who referred this session. NULL if the referrer deleted their account.          |
-| `user_id`          | `uuid`                     | yes      |                              |          |           |           | The user who signed up from this referral. NULL until signup or if user deletes account. |
-| `landing_url`      | `text`                     | no       |                              |          |           |           | The URL the referred session landed on (max 2048 chars).                                 |
-| `utm_source`       | `text`                     | yes      |                              |          |           |           | UTM source parameter from the referral URL (e.g. google, newsletter).                    |
-| `utm_medium`       | `text`                     | yes      |                              |          |           |           | UTM medium parameter from the referral URL (e.g. cpc, email).                            |
-| `utm_campaign`     | `text`                     | yes      |                              |          |           |           | UTM campaign name from the referral URL.                                                 |
-| `utm_content`      | `text`                     | yes      |                              |          |           |           | UTM content parameter, used to differentiate links within the same campaign.             |
-| `signed_up_at`     | `timestamp with time zone` | yes      |                              |          |           |           | When the referred session converted to a signup. NULL until the user registers.          |
-| `created_at`       | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                          |
+| Column             | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                              |
+| ------------------ | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ---------------------------------------------------------------------------------------------------- |
+| `id`               | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                      |
+| `session_id`       | `uuid`                     | no       |                              |          |           |           | The anonymous session that was referred. Not a FK — sessions live outside PostgreSQL.                |
+| `referrer_user_id` | `uuid`                     | yes      |                              |          |           |           | The user who referred this session. NULL if the referrer deleted their account.                      |
+| `user_id`          | `uuid`                     | yes      |                              |          |           |           | The user who signed up from this referral. NULL until signup or if user deletes account.             |
+| `landing_url`      | `text`                     | yes      |                              |          |           |           | The URL the referred session landed on (max 2048 chars), cleared after its short attribution window. |
+| `utm_source`       | `text`                     | yes      |                              |          |           |           | UTM source parameter from the referral URL (e.g. google, newsletter).                                |
+| `utm_medium`       | `text`                     | yes      |                              |          |           |           | UTM medium parameter from the referral URL (e.g. cpc, email).                                        |
+| `utm_campaign`     | `text`                     | yes      |                              |          |           |           | UTM campaign name from the referral URL.                                                             |
+| `utm_content`      | `text`                     | yes      |                              |          |           |           | UTM content parameter, used to differentiate links within the same campaign.                         |
+| `signed_up_at`     | `timestamp with time zone` | yes      |                              |          |           |           | When the referred session converted to a signup. NULL until the user registers.                      |
+| `created_at`       | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                      |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -32,7 +32,7 @@ _none_
 - `chk_sra_utm_medium`: `CHECK (((utm_medium IS NULL) OR ((char_length(utm_medium) <= 255) AND (utm_medium = lower(TRIM(BOTH FROM utm_medium))))))`
 - `chk_sra_utm_source`: `CHECK (((utm_source IS NULL) OR ((char_length(utm_source) <= 255) AND (utm_source = lower(TRIM(BOTH FROM utm_source))))))`
 - `session_referral_attributions_check`: `CHECK ((referrer_user_id <> user_id))`
-- `session_referral_attributions_landing_url_check`: `CHECK ((char_length(landing_url) <= 2048))`
+- `session_referral_attributions_landing_url_check`: `CHECK (((landing_url IS NULL) OR (char_length(landing_url) <= 2048)))`
 
 **Foreign keys:**
 
