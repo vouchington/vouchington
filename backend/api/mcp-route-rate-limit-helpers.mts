@@ -15,42 +15,37 @@ export type ChargedMcpCalls = {
 }
 
 // Charges every `tools/call` to the bucket of each REST route it exercises. Weighted batches are
-// charged atomically per route, so a refused batch does not partially spend the REST-shared budget.
+// charged atomically per route, and later routes for a refused call are left untouched.
 export async function chargeMcpToolCalls(
   plan: McpCallPlan,
   { identities, owner }: RouteRateLimitSubject,
 ): Promise<ChargedMcpCalls> {
   const events = [...plan.events]
-  const callEvents: number[] = []
-  const impossibleCosts = new Set<string>()
-  const charges = plan.charges.flatMap(({ eventIndex, routeCharges }) =>
-    routeCharges.map(({ routeKeys, weight }) => {
-      const index = callEvents.push(eventIndex) - 1
-      return { index, routeKeys, weight }
-    }),
-  )
-  const refusedCalls = await chargeRoutes(charges, async (routeKey, cost) => {
-    const result = await checkRouteRateLimit(routeKey, identities, owner, { cost })
-    if (result.limited && cost !== undefined && cost >= result.limit) {
-      impossibleCosts.add(`${routeKey}\0${cost}`)
-    }
-    return result
-  })
   const rateLimitedCalls = new Map<number, { retryAfterSeconds: number; message?: string }>()
-  for (const [chargeIndex, retryAfterSeconds] of refusedCalls) {
-    const eventIndex = callEvents[chargeIndex]
-    if (eventIndex === undefined) continue
-    const charge = charges[chargeIndex]
-    const message =
-      charge?.weight !== undefined &&
-      charge.routeKeys.some(routeKey => impossibleCosts.has(`${routeKey}\0${charge.weight}`))
-        ? 'This batch exceeds the route limit. Split the batch into fewer calls and retry.'
-        : undefined
-    const prior = rateLimitedCalls.get(eventIndex)
-    rateLimitedCalls.set(eventIndex, {
-      retryAfterSeconds: Math.max(prior?.retryAfterSeconds ?? 0, retryAfterSeconds),
-      ...(prior?.message || message ? { message: prior?.message ?? message } : {}),
-    })
+  for (const { eventIndex, routeCharges } of plan.charges) {
+    for (const routeCharge of routeCharges) {
+      let message: string | undefined
+      // Each tool call stops charging as soon as one of its ordered route charges is refused.
+      // oxlint-disable-next-line no-await-in-loop -- route charging must preserve per-call route order
+      const refusedCharge = await chargeRoutes(
+        [{ index: eventIndex, ...routeCharge }],
+        async (routeKey, cost) => {
+          const result = await checkRouteRateLimit(routeKey, identities, owner, { cost })
+          if (result.limited && cost !== undefined && cost >= result.limit) {
+            message =
+              'This batch exceeds the route limit. Split the batch into fewer calls and retry.'
+          }
+          return result
+        },
+      )
+      const retryAfterSeconds = refusedCharge.get(eventIndex)
+      if (retryAfterSeconds === undefined) continue
+      rateLimitedCalls.set(eventIndex, {
+        retryAfterSeconds,
+        ...(message === undefined ? {} : { message }),
+      })
+      break
+    }
   }
   for (const [eventIndex] of rateLimitedCalls) {
     // The refusal is the whole outcome, so a copyright rationale (stored only for an accepted

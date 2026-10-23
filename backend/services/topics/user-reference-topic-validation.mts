@@ -1,5 +1,5 @@
 import assert from 'http-assert'
-import { read } from '@data-stores/psql'
+import { write } from '@data-stores/psql'
 import { validateUUID } from '@modules/utils'
 import sql from 'sql-template-strings'
 
@@ -10,7 +10,7 @@ export const assertUserReferenceTopicExists = async (
   invalidMessage: string,
 ): Promise<void> => {
   validateUUID(id)
-  const { rows } = await read(sql`/* assertUserReferenceTopicExists */
+  const { rows } = await write(sql`/* assertUserReferenceTopicExists */
     SELECT
       id,
       deleted_at,

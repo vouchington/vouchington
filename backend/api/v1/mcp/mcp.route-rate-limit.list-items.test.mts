@@ -4,7 +4,11 @@ import type { PrivateUser } from '@services/users/types'
 import { rateLimitConfig } from '@services/user-rate-limits/config'
 import {
   createTestPost,
+  createRandomString,
+  createTestRssFeedItemWithUrl,
   createTestUser,
+  insertTestRssFeed,
+  insertTestTopic,
   overrideDynamicConfigFieldsForTest,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
@@ -196,5 +200,45 @@ describe('weighted add_list_item route charging', () => {
       .send({ post_id: postIds[0] })
       .expect(201)
     expect((await searchListItems(list.id, { currentUserId: user.id })).results).toHaveLength(1)
+  })
+
+  it('does not charge a later route after a mixed batch is refused', async () => {
+    admitWriteCalls(1)
+    const { user, token } = await callerWithToken()
+    const rest = createRequest()
+    await rest.authenticateAs(user)
+    const list = await createOwnedList(user.id, WEB_PROVENANCE, {
+      name: 'Mixed weighted MCP list',
+    })
+    const postIds = [await newPostId(), await newPostId()]
+    const topicId = await insertTestTopic({
+      name: `Weighted feed ${createRandomString(8)}`,
+      slug: `weighted-feed-${createRandomString(8)}`,
+      createdById: author.id,
+    })
+    const feedId = await insertTestRssFeed({ topicId, title: 'Weighted feed' })
+    const feedItem = await createTestRssFeedItemWithUrl(feedId)
+
+    const response = await mcpPost(
+      token,
+      toolCall({
+        list_id: list.id,
+        items: [
+          ...postIds.map(entity => ({ item_type: 'post', entity })),
+          { item_type: 'rss_feed_item', entity: feedItem.id },
+        ],
+      }),
+    ).expect(200)
+    expect((response.body as ToolResponse).result.isError).toBe(true)
+    const refusal = JSON.parse((response.body as ToolResponse).result.content[0]!.text) as {
+      error: { message: string }
+    }
+    expect(refusal.error).toMatchObject({ message: expect.stringMatching(/split the batch/i) })
+
+    await rest
+      .post(`/api/v1/lists/${list.id}/items/rss-feed-items`)
+      .set('Content-Type', 'application/json')
+      .send({ rss_feed_item_id: feedItem.id })
+      .expect(201)
   })
 })
