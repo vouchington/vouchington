@@ -67,7 +67,7 @@ export async function getTrendingPosts(
     cursorId = cursor.id
   }
 
-  const query = sql`trending AS (
+  const query = sql`trending AS NOT MATERIALIZED (
       SELECT
         p.id,
         `.append(buildHotScoreExpression('p', capturedReferenceTime)).append(sql` AS trending_score
@@ -108,12 +108,12 @@ export async function getTrendingPosts(
       sql`
       AND (trending_score, id) < (
         COALESCE((
-          SELECT `.append(buildHotScoreExpression('cursor_post', capturedReferenceTime)).append(sql`
-          FROM posts cursor_post
+          SELECT cursor_post.trending_score
+          FROM trending cursor_post
           WHERE cursor_post.id = ${cursorId}
         ), ${cursorScore}),
         ${cursorId}
-      )`),
+      )`,
     )
   }
 

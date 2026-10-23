@@ -4,7 +4,11 @@ import { encodeCursor } from '@modules/pagination'
 import { insertTestTopic } from '@voucha/test-helpers/entities/topics'
 import { insertScoredPostTopicCategoryRelation } from '@voucha/test-helpers/entities/entity-relations-posts'
 import { createTrendingPostData } from '@voucha/test-helpers/entities/trending-posts'
-import { deleteTestPost } from '@voucha/test-helpers/entities/posts'
+import {
+  deleteTestPost,
+  insertTestPost,
+  setPostVotesScoreUp,
+} from '@voucha/test-helpers/entities/posts'
 import { getTrendingPosts } from './get-trending-posts.mts'
 
 describe('getTrendingPosts pagination', () => {
@@ -78,6 +82,30 @@ describe('getTrendingPosts pagination', () => {
     )
     expect(absentBoundary.results.map(row => row.id)).toEqual([postIds[2]])
 
+    const privatePostId = await insertTestPost({
+      title: `Private trending ${namespace}`,
+      slug: `private-trending-${namespace}`,
+      createdById: posts[0]!.userId,
+      markdown: 'Private trending content',
+      privacy: 'private',
+      broadcast: 'followers',
+      createdAt,
+    })
+    await setPostVotesScoreUp(privatePostId, 2)
+    await insertScoredPostTopicCategoryRelation(privatePostId, topicId, posts[0]!.userId)
+    const privateWithForgedScore = await getTrendingPosts(
+      {
+        timeRange: 'day',
+        limit: 2,
+        minScore,
+        topicId,
+        after: encodeCursor({ score: 3.5, id: privatePostId }),
+      },
+      referenceTime,
+    )
+    expect(privateWithForgedScore.results.map(row => row.id)).toEqual(postIds.slice(0, 2))
+    await deleteTestPost(privatePostId)
+
     await deleteTestPost(postIds[1]!)
     const deletedBoundary = await getTrendingPosts(
       {
@@ -90,5 +118,17 @@ describe('getTrendingPosts pagination', () => {
       referenceTime,
     )
     expect(deletedBoundary.results.map(row => row.id)).toEqual([postIds[2]])
+
+    const deletedWithForgedScore = await getTrendingPosts(
+      {
+        timeRange: 'day',
+        limit: 2,
+        minScore,
+        topicId,
+        after: encodeCursor({ score: 3.5, id: postIds[1]! }),
+      },
+      referenceTime,
+    )
+    expect(deletedWithForgedScore.results.map(row => row.id)).toEqual([postIds[0], postIds[2]])
   })
 })
