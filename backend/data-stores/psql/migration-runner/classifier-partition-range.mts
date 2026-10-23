@@ -10,6 +10,38 @@ export type ClassifierPartitionRangeInput = {
 export const CLASSIFIER_PARTITION_MAX_DEFAULT_ROWS = 5_000
 export const CLASSIFIER_PARTITION_MAX_TOTAL_ROWS = 15_000
 
+/** Accept only PostgreSQL's exact rendered UUID bound for this operator-owned child. */
+export function matchesClassifierPartitionBound(
+  bound: string,
+  fromId: string,
+  toId: string,
+): boolean {
+  const match =
+    /^FOR VALUES FROM \('([0-9a-f-]{36})'(?:::uuid)?\) TO \('([0-9a-f-]{36})'(?:::uuid)?\)$/.exec(
+      bound,
+    )
+  return match?.[1] === fromId && match[2] === toId
+}
+
+export function classifierRangeFromChild(
+  table: string,
+  child: string,
+  bound: string,
+): ReturnType<typeof parseClassifierPartitionRange> | null {
+  const prefix = `${table}__r_`
+  if (!child.startsWith(prefix)) return null
+  const match = /^(\d{8})_(\d{8})$/.exec(child.slice(prefix.length))
+  if (!match) return null
+  const fromDate = match[1]!.replace(/^(\d{4})(\d{2})(\d{2})$/, '$1-$2-$3')
+  const toDate = match[2]!.replace(/^(\d{4})(\d{2})(\d{2})$/, '$1-$2-$3')
+  try {
+    const range = parseClassifierPartitionRange({ fromDate, toDate })
+    return matchesClassifierPartitionBound(bound, range.fromId, range.toId) ? range : null
+  } catch {
+    return null
+  }
+}
+
 export function parseClassifierPartitionRange(input: ClassifierPartitionRangeInput) {
   const fromDate = parseUtcCalendarDate(input.fromDate)
   const toDate = parseUtcCalendarDate(input.toDate)

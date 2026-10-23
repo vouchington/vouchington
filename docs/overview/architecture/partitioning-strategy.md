@@ -60,7 +60,10 @@ small ranges as they grow. The candidate snapshots stay unpartitioned: the topic
 foreign keys prevent detaching a populated candidate partition. Their bounded row cleanup waits
 for old results, calls, and run payloads to leave and never weakens the foreign keys. Classifier
 range retirement is operator initiated and checks the configured retention window and pending work
-under the partition locks; the scheduled monthly job still owns only crawl and RSS history.
+under the partition locks. Its batch and run checks use indexed existence probes, so a sealed range
+can grow beyond the creation row budget and still retire. If a producer holds the batch or run
+table, the retirement transaction refuses the operation without waiting on a reverse lock order.
+The scheduled monthly job still owns only crawl and RSS history.
 
 ## Related
 

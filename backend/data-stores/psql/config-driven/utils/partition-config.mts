@@ -158,3 +158,10 @@ for (const config of ALL_MONTHLY_PARTITION_TABLES) {
     }),
   }
 }
+
+for (const table of CLASSIFIER_RESULT_PARTITION_TABLES) {
+  PARTITION_DROP_POLICIES[table] = {
+    minimumRetentionDays: 90,
+    legalBasis: 'docs/overview/architecture/partitioning-strategy.md',
+  }
+}

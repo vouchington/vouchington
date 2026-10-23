@@ -434,6 +434,8 @@ CREATE INDEX IF NOT EXISTS idx_classifier_decision_batches__scope
   ON classifier_decision_batches (scope_community_id, id) WHERE scope_community_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_classifier_decision_batches__classifier
   ON classifier_decision_batches (classifier_id, id);
+CREATE INDEX IF NOT EXISTS idx_classifier_decision_batches__pending_retirement
+  ON classifier_decision_batches (id) WHERE completed_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_classifier_decision_batches__prompt_classifier
   ON classifier_decision_batches (prompt_version_id, classifier_id);
 

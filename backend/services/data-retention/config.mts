@@ -65,6 +65,8 @@ export function getTopicImportAttemptDeletionBatchSize(): number {
 
 export function getPartitionStatusProbeLimit(): number {
   return readField('partition_status_probe_limit')
+}
+
 export function getClassifierRetentionDays(): number {
   return Math.max(90, readField('classifier_retention_days'))
 }

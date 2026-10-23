@@ -53,10 +53,12 @@ describe('POST /api/v1/psql/jobs', () => {
     const administrator = await createTestUser({ administrator: true })
     const authorizedRequest = createRequest()
     await authorizedRequest.authenticateAs(administrator)
-    await authorizedRequest
-      .post('/api/v1/psql/jobs')
-      .send({ type: 'createPartitions', classifierRange: range })
-      .expect(200)
+    for (const type of ['createPartitions', 'cleanupPartitions']) {
+      await authorizedRequest
+        .post('/api/v1/psql/jobs')
+        .send({ type, classifierRange: range })
+        .expect(200)
+    }
 
     const regularUser = await createTestUser()
     const unauthorizedRequest = createRequest()
