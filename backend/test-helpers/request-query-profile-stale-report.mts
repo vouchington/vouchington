@@ -1,4 +1,4 @@
-import { REQUEST_PROFILE_PREFIX } from './request-query-profile-summary.mts'
+import { REQUEST_PROFILE_PREFIX } from './request-query-profile-line.mts'
 import type { RepeatBaselineEntry } from './request-query-profile-baseline.mts'
 
 /**

@@ -10,7 +10,7 @@
   "dependencies": {
     "@vouchington/localization": "^0.2.1",
     "@vouchington/localization-compiler": "^0.2.2",
-    "@vouchington/postgres": "^0.0.16",
+    "@vouchington/postgres": "^0.0.17",
     "ajv": "^8.20.0",
     "no-mistakes": "^0.93.0",
     "oxfmt": "^0.74.0",

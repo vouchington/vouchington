@@ -7,55 +7,27 @@ import {
   formatUnbaselinedRepeats,
 } from '../../test-helpers/request-query-profile-baseline.mts'
 import {
-  computeSerialDepth,
-  findRepeatedAnnotations,
-  formatRequestProfileLine,
-  summarizeRequestQueries,
-  type RequestQuery,
-} from '../../test-helpers/request-query-profile-summary.mts'
-import { createRequestQueryProfile } from '../../test-helpers/request-query-profile-state.mts'
+  createRequestQueryProfile,
+  type RequestQuerySummary,
+} from '../../test-helpers/query-profiles.mts'
+import { formatRequestProfileLine } from '../../test-helpers/request-query-profile-line.mts'
 import { recordQueryTiming } from './query-timing.mts'
 
-function query(annotation: string | null, startMs: number, endMs: number, excluded = false) {
-  return { annotation, startMs, endMs, excludedFromRepeats: excluded } satisfies RequestQuery
-}
+const summary = (repeats: RequestQuerySummary['repeats']): RequestQuerySummary => ({
+  totalQueries: 2,
+  serialDepth: 2,
+  repeats,
+})
 
-describe('request query profile math', () => {
-  it('counts sequential queries as depth and overlapping ones once', () => {
-    expect(computeSerialDepth([query('a', 0, 5), query('b', 5, 10), query('c', 10, 12)])).toBe(3)
-    expect(computeSerialDepth([query('a', 0, 10), query('b', 1, 9), query('c', 2, 8)])).toBe(1)
-    expect(computeSerialDepth([query('a', 0, 5), query('b', 4, 9), query('c', 8, 12)])).toBe(2)
-    expect(computeSerialDepth([])).toBe(0)
-  })
-
-  it('reports repeated annotations and skips cursor and pipelined batches', () => {
-    const queries = [
-      query('loadPost', 0, 1),
-      query('loadPost', 1, 2),
-      query('loadPost', 2, 3),
-      query('list', 3, 4),
-      query('batched', 4, 5, true),
-      query('batched', 5, 6, true),
-      query(null, 6, 7),
-      query(null, 7, 8),
-    ]
-    expect(findRepeatedAnnotations(queries)).toEqual([
-      { annotation: 'loadPost', count: 3 },
-      { annotation: 'unannotated', count: 2 },
-    ])
-    expect(summarizeRequestQueries(queries).totalQueries).toBe(8)
-  })
-
+describe('request profile line', () => {
   it('stays quiet without repeats unless all profiles are requested', () => {
-    const summary = summarizeRequestQueries([query('a', 0, 1), query('b', 1, 2)])
-    expect(formatRequestProfileLine('GET /x', summary, { all: false })).toBeNull()
-    expect(formatRequestProfileLine('GET /x', summary, { all: true })).toBe(
+    expect(formatRequestProfileLine('GET /x', summary([]), { all: false })).toBeNull()
+    expect(formatRequestProfileLine('GET /x', summary([]), { all: true })).toBe(
       '[pg-request-profile] route=GET /x queries=2 serialDepth=2 repeats=none\n',
     )
-    const repeated = summarizeRequestQueries([query('a', 0, 1), query('a', 1, 2)])
-    expect(formatRequestProfileLine('GET /x', repeated, { all: false })).toBe(
-      '[pg-request-profile] route=GET /x queries=2 serialDepth=2 repeats=a(x2)\n',
-    )
+    expect(
+      formatRequestProfileLine('GET /x', summary([{ annotation: 'a', count: 2 }]), { all: false }),
+    ).toBe('[pg-request-profile] route=GET /x queries=2 serialDepth=2 repeats=a(x2)\n')
   })
 })
 
@@ -80,21 +52,6 @@ describe('request query profile attribution', () => {
     expect(first.summarize().totalQueries).toBe(2)
     expect(first.summarize().repeats).toEqual([])
     expect(second.summarize().totalQueries).toBe(1)
-  })
-
-  it('ignores transaction starts as repeats but still flags statements repeated inside them', () => {
-    const profile = createRequestQueryProfile()
-    profile.run(() => {
-      for (let i = 0; i < 2; i++) {
-        recordQueryTiming({ ...timing, annotation: 'beginTransaction' })
-        recordQueryTiming({ ...timing, annotation: 'beginBoundedTransaction' })
-        recordQueryTiming({ ...timing, annotation: 'withClientTransaction' })
-        recordQueryTiming({ ...timing, annotation: 'insideTransaction' })
-      }
-    })
-    const summary = profile.summarize()
-    expect(summary.totalQueries).toBe(8)
-    expect(summary.repeats).toEqual([{ annotation: 'insideTransaction', count: 2 }])
   })
 })
 

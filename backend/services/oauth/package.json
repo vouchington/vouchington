@@ -40,7 +40,7 @@
     "@services/oauth-x": "workspace:^",
     "@services/users": "workspace:^",
     "@voucha/config": "workspace:^",
-    "@vouchington/postgres": "^0.0.16",
+    "@vouchington/postgres": "^0.0.17",
     "http-errors": "^2.0.1",
     "uuid": "^14.0.3",
     "valkyries": "^0.11.1"

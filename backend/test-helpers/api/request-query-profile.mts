@@ -6,11 +6,8 @@ import {
   formatUnbaselinedRepeats,
   parseRepeatBaseline,
 } from '../request-query-profile-baseline.mts'
-import {
-  createRequestQueryProfile,
-  type RequestQueryProfile,
-} from '../request-query-profile-state.mts'
-import { formatRequestProfileLine } from '../request-query-profile-summary.mts'
+import { createRequestQueryProfile, type RequestQueryProfile } from '../query-profiles.mts'
+import { formatRequestProfileLine } from '../request-query-profile-line.mts'
 import { recordRequestQueryProfileViolation } from './request-query-profile-violations.mts'
 
 const UUID_SEGMENT = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi
