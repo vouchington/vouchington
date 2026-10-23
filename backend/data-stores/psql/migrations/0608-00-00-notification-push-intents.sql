@@ -19,7 +19,7 @@ CREATE TABLE notification_push_intents (
   lease_expires_at TIMESTAMPTZ,
   suppressed_at TIMESTAMPTZ,
   delivered_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (user_id, notification_id),
   FOREIGN KEY (user_id, notification_id)
