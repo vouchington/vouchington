@@ -1,7 +1,7 @@
 import { mergeConfig } from 'vitest/config'
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
+import { resolve } from 'node:path'
 import picomatch from 'picomatch'
 import config from '../vitest.config.mts'
 import { backendCoreProjects } from '../test-helpers/vitest-config/backend-core-projects.mts'
@@ -51,16 +51,12 @@ describe('backend Vitest project config', () => {
     expect(owners[0]?.test?.setupFiles).toContain(
       './test-helpers/vitest.setup.glide-mq-workers.mts',
     )
-    const setupFiles = owners[0]?.test?.setupFiles ?? []
-    expect(
-      setupFiles.indexOf('./test-helpers/vitest.setup.worker-query-profiles.mts'),
-    ).toBeLessThan(setupFiles.indexOf('./test-helpers/vitest.setup.glide-mq-workers.mts'))
   })
   it('registers request query timing before the database setup in profiled projects', () => {
     const projects = config.test?.projects as BackendProject[] | undefined
     const profiledProjects =
       projects?.filter(project =>
-        project.test?.setupFiles?.includes('./test-helpers/vitest.setup.worker-query-profiles.mts'),
+        project.test?.setupFiles?.includes('./test-helpers/vitest.setup.request-query-timing.mts'),
       ) ?? []
 
     expect(profiledProjects).not.toHaveLength(0)
@@ -166,7 +162,7 @@ describe('backend Vitest project config', () => {
     expect(project?.extends).toBe(true)
     expect(glideMqAlias).toEqual(realGlideMqAlias())
     expect(backendAliases().find(alias => String(alias.find) === '/^glide-mq$/')?.replacement).toBe(
-      fileURLToPath(import.meta.resolve('@vouchington/worker-runtime/testing')),
+      resolve(process.cwd(), 'test-helpers/request-query-profile-worker.mts'),
     )
   })
 

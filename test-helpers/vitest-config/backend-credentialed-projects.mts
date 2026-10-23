@@ -58,7 +58,6 @@ export const backendCredentialedTestProjects: TestProjectConfiguration[] = [
         './test-helpers/vitest.setup.request-query-timing.mts',
         './test-helpers/vitest.setup.shared-db-scope-guard.mts',
         './test-helpers/vitest.setup.dynamic-config-isolation.mts',
-        './test-helpers/vitest.setup.worker-query-profiles.mts',
         './test-helpers/vitest.setup.glide-mq-workers.mts',
         // The real-presigner test serves requests through the profiled API test server.
         './backend/test-helpers/vitest.setup.request-query-profile.mts',
@@ -82,7 +81,6 @@ export const backendCredentialedTestProjects: TestProjectConfiguration[] = [
         './test-helpers/vitest.setup.request-query-timing.mts',
         './test-helpers/vitest.setup.shared-db-scope-guard.mts',
         './test-helpers/vitest.setup.dynamic-config-isolation.mts',
-        './test-helpers/vitest.setup.worker-query-profiles.mts',
         './test-helpers/vitest.setup.glide-mq-workers.mts',
         './backend/test-helpers/vitest.setup.aws-mocks.mts',
         './test-helpers/vitest.setup.fork-leak-detection.mts',
@@ -105,7 +103,6 @@ export const backendCredentialedTestProjects: TestProjectConfiguration[] = [
         './test-helpers/vitest.setup.request-query-timing.mts',
         './test-helpers/vitest.setup.shared-db-scope-guard.mts',
         './test-helpers/vitest.setup.dynamic-config-isolation.mts',
-        './test-helpers/vitest.setup.worker-query-profiles.mts',
         './test-helpers/vitest.setup.glide-mq-workers.mts',
         './backend/test-helpers/vitest.setup.aws-mocks.mts',
         './test-helpers/vitest.setup.fork-leak-detection.mts',

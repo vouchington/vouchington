@@ -20,7 +20,6 @@ import {
   unregisterGlideMQInstance,
 } from '@data-stores/valkey-core/glide-mq-registry'
 import { checkedPriorityOptions, type QueuePriorityKind } from './queue-priority.mts'
-import { getTestWorkerProcessorDecorator } from './test-worker-processor-decorator.mts'
 import { DEFAULT_MAX_STALLED_COUNT } from './worker-stall-budget.mts'
 import {
   rejectSelfAdd,
@@ -142,18 +141,6 @@ function buildWorker<D, R>(
     prefix: options.prefix ?? workerQueuePrefix,
     maxStalledCount: options.maxStalledCount ?? DEFAULT_MAX_STALLED_COUNT,
     commandClient: dedicated?.client ?? workerQueueCommandClient,
-  }
-  const processorDecorator = getTestWorkerProcessorDecorator()
-  if (processorDecorator) {
-    const callerWrapProcessor = (
-      workerOptions as typeof workerOptions & {
-        wrapProcessor?: (processor: unknown, queueName: string) => unknown
-      }
-    ).wrapProcessor
-    Object.assign(workerOptions, {
-      wrapProcessor: (processor: unknown, queueName: string) =>
-        processorDecorator(callerWrapProcessor?.(processor, queueName) ?? processor, queueName),
-    })
   }
   const worker = new Worker<D, R>(name, processor, workerOptions)
   if (dedicated) closeCommandClientWithWorker(worker, dedicated)
