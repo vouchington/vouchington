@@ -51,6 +51,7 @@
     "backend/services/elections-votes/entity-relation/vote-stats-batch.mts",
     "backend/services/elections-votes/shared/vote-stats-update.mts",
     "backend/services/topics/aliases.mts",
+    "backend/services/topics/link-topic-alias.mts",
     "backend/services/topics/delete-topic-aliases.mts",
     "backend/services/topics/merge-aliases.mts",
     "backend/services/topics/claim-topic-alias.mts",

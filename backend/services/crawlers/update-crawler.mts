@@ -3,13 +3,14 @@ import { crawlerHistorySnapshot } from './history.mts'
 import type { PrivateUser } from '@services/users/types'
 import { isUUID } from '@modules/utils'
 import { runWithTransaction, write, type TransactionQuery } from '@data-stores/psql'
-import type { QueryOptions } from '@data-stores/psql/types'
 import { getCrawlerById, toCrawler } from './get.mts'
 import assert from 'http-assert'
 import createError from 'http-errors'
 import type { UpdateCrawlerUpdates, Crawler } from './types.mts'
 import sql from 'sql-template-strings'
 import { lockTopicRssFeedAttachmentLifecycles } from '@services/post-publication/lock'
+
+export { updateCrawlerCssSelectorsByHostname } from './update-crawler-css-selectors.mts'
 
 export const updateCrawler = async (
   updater: PrivateUser,
@@ -38,8 +39,8 @@ export const updateCrawler = async (
     return crawler
   }
 
-  validateCrawlerUpdates(updates)
   return runWithTransaction(options.query, async (transaction: TransactionQuery) => {
+    await validateCrawlerUpdates(updates, transaction)
     let priorReferralProgramId: string | null = null
     if (updates.referral_program_id !== undefined) {
       const prior = await transaction<{ referral_program_topic_id: string | null }>(
@@ -60,7 +61,6 @@ export const updateCrawler = async (
     )
     const previous = await getCrawlerById(crawlerId, { query: transaction })
     if (!previous) throw createError(404, `Crawler not found: ${crawlerId}`)
-    await validateCrawlerUpdates(updates, transaction)
     if (
       updates.referral_program_id !== undefined &&
       previous.referral_program_id !== priorReferralProgramId &&
@@ -114,44 +114,6 @@ export const updateCrawler = async (
     )
     return crawler
   })
-}
-
-export const updateCrawlerCssSelectorsByHostname = async (
-  hostnameId: string,
-  cssSelectorsToRemove: string[],
-  queryOptions: QueryOptions = {},
-): Promise<boolean> => {
-  const selectorsToAppend = [...new Set(cssSelectorsToRemove)]
-  if (selectorsToAppend.length === 0) return false
-
-  const { rowCount } = await write(
-    sql`/* updateCrawlerCssSelectorsByHostname */
-    UPDATE hostname_crawler_configurations
-    SET css_selectors_to_remove = (
-      SELECT ARRAY_AGG(value ORDER BY first_ord ASC)
-      FROM (
-        SELECT value, MIN(ord) AS first_ord
-        FROM unnest(
-          COALESCE(hostname_crawler_configurations.css_selectors_to_remove, ARRAY[]::TEXT[]) || ${selectorsToAppend}::TEXT[]
-        ) WITH ORDINALITY AS selectors(value, ord)
-        GROUP BY value
-      ) deduped
-    )
-    WHERE hostname_id = ${hostnameId}
-      AND deleted_at IS NULL
-      AND EXISTS (
-        SELECT 1
-        FROM unnest(${selectorsToAppend}::TEXT[]) AS candidate(value)
-        WHERE NOT (
-          candidate.value = ANY(COALESCE(hostname_crawler_configurations.css_selectors_to_remove, ARRAY[]::TEXT[]))
-        )
-      )
-  `,
-    undefined,
-    queryOptions,
-  )
-
-  return (rowCount ?? 0) > 0
 }
 
 async function validateCrawlerUpdates(
