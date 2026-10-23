@@ -39,11 +39,13 @@ describe('blocklist file diff', () => {
       const copyIndex = observed.queries.findIndex(query =>
         query.text.includes('copySourceMembership'),
       )
-      const lockIndex = observed.queries.findIndex(query =>
-        query.text.includes('pg_advisory_xact_lock'),
-      )
       expect(copyIndex).toBeGreaterThanOrEqual(0)
-      expect(lockIndex).toBeGreaterThan(copyIndex)
+      // Another task in the worker can lock first; this sync must still lock after its COPY.
+      expect(
+        observed.queries
+          .slice(copyIndex + 1)
+          .some(query => query.text.includes('pg_advisory_xact_lock')),
+      ).toBe(true)
       expect(observed.result).toEqual({ skipped: false, domainsAdded: 1, domainsRemoved: 0 })
       expect(
         observed.queries.some(query => query.text.includes('tmp_domain_blacklist_raw_domains')),
