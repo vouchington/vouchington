@@ -19,10 +19,10 @@ const meteredRequests = new WeakSet<Context>()
 // has already passed (so a request that limit refused is never a usage event). A signed-in caller
 // draws on their own allowance, which is checked here and refused with the same 429 and
 // `Retry-After` an MCP caller gets; session and sign-in routes are metered but never refused. An
-// anonymous caller (`userId` null) is metered as one aggregate and never refused: nothing
+// anonymous caller (`userId` null) is recorded only in analytics and never refused: nothing
 // privacy-safe tells anonymous callers apart, and a shared cap would let a few clients lock
-// everyone else out. Either way the quota is charged and the usage event emitted when the
-// response closes, so a 5xx is never charged.
+// everyone else out. When the response closes, signed-in usage charges the quota and every
+// request emits a usage event, so a 5xx is never charged.
 export async function meterRestUsage(
   ctx: Context,
   routeKey: string,
