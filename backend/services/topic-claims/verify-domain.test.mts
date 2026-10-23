@@ -4,6 +4,7 @@ import {
   insertTestTopic,
   insertTestUrlHostname,
   softDeleteTopic,
+  getTestTopicClaimVerificationState,
 } from '@voucha/test-helpers'
 import { mergeTopicAliases } from '../topics/merge-aliases.mts'
 import { getTopicByAny } from '../topics/get.mts'
@@ -13,22 +14,11 @@ import { revokeTopicClaim } from './revoke.mts'
 import { issueDomainVerificationToken } from './generate-verification-token.mts'
 import { verifyTopicClaimDomain } from './verify-domain.mts'
 import { TOPIC_CLAIM_DNS_TXT_PREFIX } from './config.mts'
-import { write } from '@data-stores/psql'
-import sql from 'sql-template-strings'
 import { requireTopicClaimOnTopic } from './require-on-topic.mts'
 
 async function issueClaimToken(currentUserId: string, claimId: string, topicId: string) {
   const context = await requireTopicClaimOnTopic(topicId, claimId)
   return issueDomainVerificationToken(currentUserId, context)
-}
-
-async function readStoredClaim(id: string) {
-  const { rows } = await write(sql`/* verifyDomainTestReadStoredClaim */
-    SELECT topic_id, rejected_at, verified_at FROM topic_claims WHERE id = ${id}
-  `)
-  return rows[0] as
-    | { topic_id: string; rejected_at: Date | null; verified_at: Date | null }
-    | undefined
 }
 
 async function mergeClaimTopic(
@@ -72,7 +62,7 @@ describe('verifyTopicClaimDomain', () => {
   const fetchWellKnownToken = vi.fn<() => Promise<string | null>>()
 
   async function verifyClaim(currentUserId: string, claimId: string) {
-    const stored = await readStoredClaim(claimId)
+    const stored = await getTestTopicClaimVerificationState(claimId)
     const context = await requireTopicClaimOnTopic(stored?.topic_id ?? '', claimId)
     return verifyTopicClaimDomain(currentUserId, context, {
       resolveTxtRecords,
@@ -190,7 +180,7 @@ describe('verifyTopicClaimDomain', () => {
     })
 
     await expect(verifyClaim(claimant.id, claim.id)).rejects.toMatchObject({ status: 409 })
-    const stored = await readStoredClaim(claim.id)
+    const stored = await getTestTopicClaimVerificationState(claim.id)
     expect(stored?.rejected_at).not.toBeNull()
     expect(stored?.verified_at).toBeNull()
   })

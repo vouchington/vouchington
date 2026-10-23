@@ -30,3 +30,18 @@ export async function insertTestTopicClaim(options: {
   `)
   return rows[0]!.id
 }
+
+export async function getTestTopicClaimVerificationState(id: string): Promise<{
+  topic_id: string
+  rejected_at: Date | null
+  verified_at: Date | null
+} | null> {
+  const { rows } = await write<{
+    topic_id: string
+    rejected_at: Date | null
+    verified_at: Date | null
+  }>(sql`/* getTestTopicClaimVerificationState */
+    SELECT topic_id, rejected_at, verified_at FROM topic_claims WHERE id = ${id}
+  `)
+  return rows[0] ?? null
+}
