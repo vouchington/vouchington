@@ -11,8 +11,11 @@ export async function applyWithPreparedMembership<T>(
   apply: (version: string | null) => Promise<T | null>,
 ): Promise<T> {
   async function attempt(index: number): Promise<T> {
-    const version = await sourceVersion(sourceId)
-    await prepareMembershipDiff(sourceId, paths, index === 0 ? readPool : writePool)
+    const version = await prepareVersionedMembership(
+      sourceId,
+      paths,
+      index === 0 ? readPool : writePool,
+    )
     const result = await apply(version)
     if (result !== null) return result
     if (index + 1 >= MAX_MEMBERSHIP_PREPARATIONS) {
@@ -21,6 +24,16 @@ export async function applyWithPreparedMembership<T>(
     return attempt(index + 1)
   }
   return attempt(0)
+}
+
+async function prepareVersionedMembership(
+  sourceId: DomainBlacklistSourceId,
+  paths: MembershipDiffPaths,
+  pool: typeof readPool,
+): Promise<string | null> {
+  const version = await sourceVersion(sourceId)
+  await prepareMembershipDiff(sourceId, paths, pool)
+  return version
 }
 
 async function sourceVersion(sourceId: DomainBlacklistSourceId): Promise<string | null> {
