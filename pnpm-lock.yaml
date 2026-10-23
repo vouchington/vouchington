@@ -4591,6 +4591,9 @@ importers:
         specifier: ^14.0.3
         version: 14.0.3
     devDependencies:
+      '@queues/background':
+        specifier: workspace:^
+        version: link:../../queues/background
       '@types/http-errors':
         specifier: ^2.0.5
         version: 2.0.5

@@ -1,5 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
+import { background } from '@queues/background/queues'
+import { ENTITY_LISTENERS_USER_UPDATED_JOB } from '@queues/background/enqueues/entity-listeners-jobs'
 import {
   createRandomString,
   createTestUserDirect,
@@ -11,10 +13,7 @@ import {
   testBlueskyLinkCompletionExists,
 } from '@voucha/test-helpers'
 import { createNativeBlueskyLinkCompletion } from '@voucha/test-helpers/bluesky-native-completion-fixtures'
-import {
-  holdUserUpdatedAdmission,
-  mockUserUpdatedJobAdd,
-} from '../../test-helpers/bluesky-user-update-admission.mts'
+import { withEntityListenerAdmissionRead } from '@voucha/test-helpers/entity-listener-admission-read'
 import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
 import type { NodeOAuthClient } from '@modules/bluesky-oauth'
 
@@ -40,8 +39,6 @@ vi.mocked(revokeBlueskySessionMock).mockImplementation(
   async (_client: NodeOAuthClient, did: string) => new BlueskySessionStore().del(did),
 )
 
-type UserUpdatedAdmissionGate = ReturnType<typeof holdUserUpdatedAdmission>
-
 function fakeDid(): string {
   return `did:plc:${createRandomString(24)}`
 }
@@ -54,37 +51,28 @@ async function seedLinkedAccount(userId: string): Promise<string> {
 
 async function expectPendingUserUpdatedAdmission<Result>(
   userId: string,
-  start: (gate: UserUpdatedAdmissionGate) => Promise<Result>,
+  start: () => Promise<Result>,
   assertCommittedState: () => Promise<void>,
 ): Promise<Result> {
-  const gate = holdUserUpdatedAdmission(userId)
+  let operationSettled = false
   const reportsBeforeAdmission = sentryCaptureExceptionMock.mock.calls.length
-  let operation: Promise<Result> | undefined
-  let settled = false
-  try {
-    operation = start(gate).then(result => {
-      settled = true
-      return result
-    })
-    const reached = await Promise.race([
-      gate.entered.then(() => 'admission' as const),
-      operation.then(() => 'settled' as const),
-    ])
-    expect(reached).toBe('admission')
-    await assertCommittedState()
-    expect(settled).toBe(false)
-    await gate.finishAdmission()
-    if (operation === undefined) throw new Error('The user update operation did not start')
-    const result = await operation
-    expect(await gate.readAdmittedJob()).toMatchObject({
-      name: gate.jobName,
-      data: { id: userId },
-    })
-    expect(sentryCaptureExceptionMock.mock.calls.slice(reportsBeforeAdmission)).toHaveLength(0)
-    return result
-  } finally {
-    await gate.cleanup(operation)
-  }
+  const result = await withEntityListenerAdmissionRead(
+    { jobName: 'processUserUpdated', entityId: userId },
+    async () => {
+      try {
+        return await start()
+      } finally {
+        operationSettled = true
+      }
+    },
+    async () => {
+      expect(operationSettled).toBe(false)
+      await assertCommittedState()
+      expect(operationSettled).toBe(false)
+    },
+  )
+  expect(sentryCaptureExceptionMock.mock.calls.slice(reportsBeforeAdmission)).toHaveLength(0)
+  return result
 }
 
 describe('Bluesky user updates settle after their durable mutation', () => {
@@ -196,7 +184,17 @@ describe('Bluesky user updates settle after their durable mutation', () => {
       const user = await createTestUserDirect()
       const did = await seedLinkedAccount(user.id)
       const failure = new Error('User update admission failed')
-      const addSpy = mockUserUpdatedJobAdd(user.id, (_add, _name, _data, _options) => {
+      const originalAdd = background.add
+      let ownedAttempts = 0
+      const addSpy = vi.spyOn(background, 'add').mockImplementation((name, data, options) => {
+        const matches =
+          name === ENTITY_LISTENERS_USER_UPDATED_JOB.name &&
+          typeof data === 'object' &&
+          data !== null &&
+          'id' in data &&
+          data.id === user.id
+        if (!matches) return originalAdd.call(background, name, data, options)
+        ownedAttempts += 1
         if (failureMode === 'synchronous throw') throw failure
         return Promise.reject(failure)
       })
@@ -209,6 +207,7 @@ describe('Bluesky user updates settle after their durable mutation', () => {
           bluesky_did: did,
           disconnect_requested_at: expect.any(Date),
         })
+        expect(ownedAttempts).toBe(1)
         const reports = sentryCaptureExceptionMock.mock.calls.filter(([error]) => error === failure)
         expect(reports).toHaveLength(1)
       } finally {
