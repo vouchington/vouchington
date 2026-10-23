@@ -14,9 +14,9 @@ import { Responses } from 'openai/resources/responses/responses'
 import openAIClient from '@modules/openai-utils/client'
 import {
   createTestUser,
+  createTestConversationMessage,
   countAiUsageRecordsForResponseId,
   findAiUsageRecordForResponseId,
-  WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { withReservedAiUsageDay } from '@voucha/test-helpers/with-reserved-ai-usage-day'
 import {
@@ -28,10 +28,7 @@ import {
   makeSdkResponse,
   makeSdkTextResponse,
 } from '../../test-helpers/modules/openai-utils/responses.mts'
-import {
-  createConversation,
-  createConversationMessage,
-} from '@services/conversations-messages/create'
+import { createConversation } from '@services/conversations-messages/create'
 import { modelRoutingConfig, SpendCapBreachError } from '../../services/ai-usage/index.mts'
 import type { PrivateUser } from '@services/users/types'
 import { TEST_OPENAI_SELECTION } from '@voucha/test-helpers/agents/model-call-result'
@@ -96,9 +93,10 @@ describe('conversation title input and model owners', () => {
 
   async function makeInput(content = `Hello, can you help? ${randomUUID()}`): Promise<string> {
     const conversation = await createConversation(user.id, `Chat ${randomUUID()}`)
-    await createConversationMessage(conversation.id, user.id, WEB_PROVENANCE, {
-      role: 'user',
-      content,
+    await createTestConversationMessage({
+      conversationId: conversation.id,
+      createdById: user.id,
+      content: { role: 'user', content },
     })
     const input = await getConversationTitleGenerationInput(conversation.id)
     if (input === null) throw new Error('The real conversation message did not produce title input')
@@ -141,17 +139,20 @@ describe('conversation title input and model owners', () => {
 
   it('loads only the two recent messages and truncates and wraps real sanitized input', async () => {
     const conversation = await createConversation(user.id, `Input ${randomUUID()}`)
-    await createConversationMessage(conversation.id, user.id, WEB_PROVENANCE, {
-      role: 'user',
-      content: 'Excluded oldest message',
+    await createTestConversationMessage({
+      conversationId: conversation.id,
+      createdById: user.id,
+      content: { role: 'user', content: 'Excluded oldest message' },
     })
-    await createConversationMessage(conversation.id, user.id, WEB_PROVENANCE, {
-      role: 'user',
-      content: 'a'.repeat(1001),
+    await createTestConversationMessage({
+      conversationId: conversation.id,
+      createdById: user.id,
+      content: { role: 'user', content: 'a'.repeat(1001) },
     })
-    await createConversationMessage(conversation.id, user.id, WEB_PROVENANCE, {
-      role: 'assistant',
-      content: 'Recent assistant message',
+    await createTestConversationMessage({
+      conversationId: conversation.id,
+      createdById: user.id,
+      content: { role: 'assistant', content: 'Recent assistant message' },
     })
     const input = await getConversationTitleGenerationInput(conversation.id)
     expect(input).not.toBeNull()

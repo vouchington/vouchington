@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { createSystemUser, WEB_PROVENANCE } from '@voucha/test-helpers'
+import {
+  createSystemUser,
+  createTestConversationMessage,
+  WEB_PROVENANCE,
+} from '@voucha/test-helpers'
 import {
   ClientGeneratedTurnIdentityConflictError,
   createClientGeneratedChatTurn,
   createConversation,
-  createConversationMessage,
-  getConversationByCreatedByAndTitle,
   getConversationById,
   getConversationsByCreatedById,
   getConversationMessagesByConversationId,
@@ -63,18 +65,6 @@ describe('conversations-messages service (conversations)', () => {
     ).resolves.toBeNull()
   })
 
-  it('getConversationByCreatedByAndTitle retrieves a conversation', async () => {
-    const random = Math.random().toString(36).slice(2, 10)
-    const user = await createSystemUser(`test-user-${random}`)
-    const title = `Test Conversation ${random}`
-    const conversation = await createConversation(user.id, title)
-    const retrieved = await getConversationByCreatedByAndTitle(user.id, title)
-
-    expect(retrieved).toBeDefined()
-    expect(retrieved?.id).toBe(conversation.id)
-    expect(retrieved?.title).toBe(title)
-  })
-
   it('getConversationsByCreatedById retrieves conversations by user', async () => {
     const random = Math.random().toString(36).slice(2, 10)
     const user = await createSystemUser(`test-user-${random}`)
@@ -87,31 +77,25 @@ describe('conversations-messages service (conversations)', () => {
     expect(retrieved.map(c => c.id)).toContain(conversation2.id)
   })
 
-  it('createConversationMessage creates a message', async () => {
-    const random = Math.random().toString(36).slice(2, 10)
-    const user = await createSystemUser(`test-user-${random}`)
-    const conversation = await createConversation(user.id, 'Test Conversation')
-    const message = await createConversationMessage(conversation.id, user.id, WEB_PROVENANCE, {
-      role: 'user',
-      content: 'Hello',
-    })
-    expect(message.id).toBeDefined()
-    expect(message.content).toEqual({ role: 'user', content: 'Hello' })
-    expect(message.conversation_id).toBe(conversation.id)
-    expect(message.created_by_id).toBe(user.id)
-  })
-
   it('getConversationMessagesByConversationId retrieves messages', async () => {
     const random = Math.random().toString(36).slice(2, 10)
     const user = await createSystemUser(`test-user-${random}`)
     const conversation = await createConversation(user.id, 'Test Conversation')
-    const message1 = await createConversationMessage(conversation.id, user.id, WEB_PROVENANCE, {
-      role: 'user',
-      content: 'Hello',
+    const message1 = await createTestConversationMessage({
+      conversationId: conversation.id,
+      createdById: user.id,
+      content: {
+        role: 'user',
+        content: 'Hello',
+      },
     })
-    const message2 = await createConversationMessage(conversation.id, user.id, WEB_PROVENANCE, {
-      role: 'user',
-      content: 'World',
+    const message2 = await createTestConversationMessage({
+      conversationId: conversation.id,
+      createdById: user.id,
+      content: {
+        role: 'user',
+        content: 'World',
+      },
     })
     const retrieved = await getConversationMessagesByConversationId(conversation.id)
 
@@ -189,9 +173,13 @@ describe('conversations-messages service (conversations)', () => {
     const random = Math.random().toString(36).slice(2, 10)
     const user = await createSystemUser(`test-user-${random}`)
     const conversation = await createConversation(user.id, 'Pending placeholder')
-    await createConversationMessage(conversation.id, user.id, WEB_PROVENANCE, {
-      role: 'assistant',
-      content: null,
+    await createTestConversationMessage({
+      conversationId: conversation.id,
+      createdById: user.id,
+      content: {
+        role: 'assistant',
+        content: null,
+      },
     })
 
     await createClientGeneratedChatTurn(turnParams(user.id, conversation.id))

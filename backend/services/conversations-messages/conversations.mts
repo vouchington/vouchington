@@ -36,32 +36,6 @@ async function fetchConversationById(
   return rows[0] || null
 }
 
-/** @public May be removed after intended-use review; production use is unconfirmed. */
-export async function getConversationByCreatedByAndTitle(
-  createdById: string,
-  title: string,
-): Promise<ConversationWithoutChannelType | null> {
-  const { rows } =
-    await read<ConversationWithoutChannelType>(sql`/* getConversationByCreatedByAndTitle */
-    SELECT
-      id,
-      title,
-      created_at,
-      created_by_id,
-      updated_at,
-      updated_by_id,
-      deleted_at,
-      deleted_by_id
-    FROM conversations
-    WHERE created_by_id = ${createdById}
-      AND title = ${title}
-      AND deleted_at IS NULL
-    ORDER BY id DESC
-    LIMIT 1
-  `)
-  return rows[0] || null
-}
-
 export async function getConversationsByCreatedById(
   createdById: string,
   options?: {

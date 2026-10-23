@@ -1,7 +1,6 @@
 export * from './types.mts'
 export * from './authorization.mts'
 export * from './create.mts'
-export * from './update-message.mts'
 export * from './conversations.mts'
 export * from './messages.mts'
 export * from './client-generated-chat.mts'
