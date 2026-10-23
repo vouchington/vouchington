@@ -62,7 +62,7 @@ export async function runCommand(options: RunCommandOptions): Promise<{ stderr: 
   pipeStdin(child, options.stdin, err => {
     stdinError = err
   })
-  pipeStdout(child, options.stdout, err => {
+  const releaseStdout = pipeStdout(child, options.stdout, err => {
     stdoutError = err
     killChild(child)
   })
@@ -105,6 +105,7 @@ export async function runCommand(options: RunCommandOptions): Promise<{ stderr: 
     return { stderr: stderr.bytes() }
   } finally {
     clearTimeout(timer)
+    releaseStdout()
     options.signal?.removeEventListener('abort', onAbort)
   }
 }

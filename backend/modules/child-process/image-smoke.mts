@@ -72,5 +72,6 @@ async function collectStdout(
 }
 
 if (import.meta.main) {
+  /* v8 ignore next -- CLI entry; ci/worker-io-image-smoke.test.mts runs it in a subprocess */
   await runWorkerIoCliSmoke()
 }

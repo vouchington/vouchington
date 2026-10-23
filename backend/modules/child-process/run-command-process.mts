@@ -54,12 +54,12 @@ export function pipeStdout(
   child: ChildProcess,
   stdout: Writable | undefined,
   onError: (err: Error) => void,
-): void {
+): () => void {
   const output = child.stdout
   if (!output) throw new Error('child stdout is not a pipe')
   if (!stdout) {
     output.resume()
-    return
+    return () => {}
   }
   output.on('error', err => {
     const error = err instanceof Error ? err : new Error(String(err))
@@ -72,10 +72,11 @@ export function pipeStdout(
     onError(err instanceof Error ? err : new Error(String(err)))
   }
   stdout.on('error', onDestinationError)
-  if (isSharedOutput(stdout)) {
-    output.once('close', () => stdout.removeListener('error', onDestinationError))
-  }
   output.pipe(stdout)
+  // Shared streams outlive the command; the caller removes this once writes settle.
+  return () => {
+    if (isSharedOutput(stdout)) stdout.removeListener('error', onDestinationError)
+  }
 }
 
 export function collectCappedStderr(child: ChildProcess, cap: number): { bytes: () => Buffer } {
