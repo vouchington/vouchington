@@ -3,6 +3,7 @@ import { describe, expect, it, onTestFinished } from 'vitest'
 import { activitypub } from '@queues/activitypub/queues'
 import {
   claimTestDelivery,
+  registerActivityPubInboxAdmission,
   rejectTestDelivery,
 } from '@voucha/test-helpers/activitypub-inbox-transitions'
 import {
@@ -16,7 +17,9 @@ import { processDelivery } from '../processors/inbox.mts'
 import {
   createApprovedRemoteActor,
   createSignedDelivery,
-} from '@voucha/test-helpers/workers/activitypub-inbox/test-support'
+} from '@voucha/test-helpers/activitypub-inbox-signed-delivery'
+
+registerActivityPubInboxAdmission()
 
 describe('ActivityPub inbox processor sender rate limit', () => {
   it('delays a valid signed delivery when the sender allowance races to exhausted', async () => {

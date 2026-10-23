@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import type { Job } from 'glide-mq'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
 import {
   ACTIVITYPUB_CLEANUP_EXPIRED_DELIVERIES_JOB,
@@ -19,32 +19,25 @@ import {
   readAllQueueJobs,
 } from '@voucha/test-helpers'
 import { scopedActivityPubInboxProcessors } from '@voucha/test-helpers/activitypub-inbox-scoped-processors'
-import {
-  startBackgroundHarness,
-  type BackgroundHarness,
-} from '@voucha/test-helpers/real-glide-background'
+import { startBackgroundHarness } from '@voucha/test-helpers/real-glide-background'
 import {
   claimTestDelivery,
   exhaustTestDelivery,
+  registerActivityPubInboxAdmission,
 } from '@voucha/test-helpers/activitypub-inbox-transitions'
 import {
   createApprovedRemoteActor,
   createSignedDelivery,
-} from '@voucha/test-helpers/workers/activitypub-inbox/test-support'
+} from '@voucha/test-helpers/activitypub-inbox-signed-delivery'
 import { createBackgroundProcessor } from '../processors.mts'
 
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), async importOriginal => importOriginal())
 
 const connection = { connection: workerQueueConnection, prefix: workerQueuePrefix }
 
+registerActivityPubInboxAdmission()
+
 describe('activitypub durable inbox through the production background processor', () => {
-  let harness: BackgroundHarness | undefined
-
-  afterEach(async () => {
-    await harness?.close()
-    harness = undefined
-  })
-
   // Maintenance jobs are scoped to one delivery, so they never touch other tests' durable rows.
   async function runJob(
     job: BackgroundJobDefinition,
@@ -52,7 +45,7 @@ describe('activitypub durable inbox through the production background processor'
     scopedTo: string,
   ): Promise<unknown> {
     const scoped = scopedActivityPubInboxProcessors(scopedTo)
-    harness = await startBackgroundHarness({
+    const harness = await startBackgroundHarness({
       connection,
       createProcessor: createBackgroundProcessor,
       bodies: {
@@ -63,9 +56,13 @@ describe('activitypub durable inbox through the production background processor'
         [ACTIVITYPUB_CLEANUP_EXPIRED_DELIVERIES_JOB.name]: scoped.cleanupExpiredDeliveries,
       },
     })
-    const added = await harness.add(job, data, { attempts: 1 })
-    await expect(harness.settled(added)).resolves.toBe('completed')
-    return (await harness.queue.getJob(added.id))?.returnvalue
+    try {
+      const added = await harness.add(job, data, { attempts: 1 })
+      await expect(harness.settled(added)).resolves.toBe('completed')
+      return (await harness.queue.getJob(added.id))?.returnvalue
+    } finally {
+      await harness.close()
+    }
   }
 
   async function findProcessDeliveryJob(deliveryId: string) {

@@ -1,25 +1,33 @@
 import { randomUUID } from 'node:crypto'
-import dns from 'node:dns'
-import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
+import {
+  stubUnresolvableHostname,
+  markActivityPubInboxDeliveryVerified,
+  releaseActivityPubInboxDeliveryForRetry,
+  rearmScopedActivityPubInboxDeliveries,
+} from '@voucha/test-helpers/activitypub-inbox-processor-fixtures'
 import { generateRsaSha256KeyPair } from '@modules/http-signatures'
 import { UnrecoverableError } from '@vouchington/queue-errors'
 import { softDeleteRemoteActorForInboxTest, readAllQueueJobs } from '@voucha/test-helpers'
 import { activityPubInboxDeliveryTransitions } from '@services/ap-inbox-activities'
 import {
   claimTestDelivery,
+  registerActivityPubInboxAdmission,
   rejectTestDelivery,
 } from '@voucha/test-helpers/activitypub-inbox-transitions'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { uuidBefore } from '@voucha/test-helpers/uuid-before'
 import { activitypub } from '@queues/activitypub/queues'
 import { apInboxActivitiesWorkConfig } from '@services/ap-inbox-activities/work-limits'
-import { processDelivery, rearmFailedDeliveries } from '../processors/inbox.mts'
+import { processDelivery } from '../processors/inbox.mts'
 import {
   approveInstance,
   createApprovedRemoteActor,
   createSignedDelivery,
   makeUnavailableActor,
-} from '@voucha/test-helpers/workers/activitypub-inbox/test-support'
+} from '@voucha/test-helpers/activitypub-inbox-signed-delivery'
+
+registerActivityPubInboxAdmission()
 
 const rearmFailedActivityPubInboxDeliveries = activityPubInboxDeliveryTransitions.rearm
 
@@ -182,7 +190,12 @@ describe('ActivityPub inbox processor', () => {
         UnrecoverableError,
       )
 
-      await expect(rearmFailedDeliveries(uuidBefore(delivery.deliveryId))).resolves.toEqual({
+      await expect(
+        rearmScopedActivityPubInboxDeliveries(
+          [delivery.deliveryId],
+          uuidBefore(delivery.deliveryId),
+        ),
+      ).resolves.toEqual({
         enqueued: 1,
         hasMore: true,
       })
@@ -215,40 +228,3 @@ describe('ActivityPub inbox processor', () => {
     }
   })
 })
-
-function stubUnresolvableHostname(hostname: string) {
-  const originalLookup = dns.promises.lookup
-  return vi.spyOn(dns.promises, 'lookup').mockImplementation(((
-    requested: string,
-    options?: unknown,
-  ) => {
-    if (requested === hostname) {
-      return Promise.reject(
-        Object.assign(new Error(`getaddrinfo ENOTFOUND ${hostname}`), { code: 'ENOTFOUND' }),
-      )
-    }
-    return Reflect.apply(originalLookup, dns.promises, [requested, options])
-  }) as typeof dns.promises.lookup)
-}
-
-async function markActivityPubInboxDeliveryVerified(
-  deliveryId: string,
-  leaseToken: string,
-  remoteActorId: string,
-) {
-  return (
-    (await activityPubInboxDeliveryTransitions.verify(deliveryId, leaseToken, remoteActorId))
-      .outcome === 'applied'
-  )
-}
-
-async function releaseActivityPubInboxDeliveryForRetry(
-  deliveryId: string,
-  leaseToken: string,
-  error: unknown,
-) {
-  return (
-    (await activityPubInboxDeliveryTransitions.release(deliveryId, leaseToken, error)).outcome ===
-    'applied'
-  )
-}

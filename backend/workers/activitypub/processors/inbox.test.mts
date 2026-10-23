@@ -1,4 +1,5 @@
 import { describe, expect, it, onTestFinished } from 'vitest'
+import { registerActivityPubInboxAdmission } from '@voucha/test-helpers/activitypub-inbox-transitions'
 import { apInboxActivitiesWorkConfig } from '@services/ap-inbox-activities/work-limits'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import {
@@ -12,6 +13,8 @@ import {
   getActivityPubInboxStorageSnapshot,
 } from '@services/ap-inbox-activities'
 import { cleanupExpiredDeliveries } from './inbox.mts'
+
+registerActivityPubInboxAdmission()
 
 describe('ActivityPub inbox owned cleanup', () => {
   it('stops after two full pages, then continues the owned remainder without deleting a foreign row', async () => {
