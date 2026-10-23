@@ -77,7 +77,7 @@ describe('payment operational retention', () => {
 
     expect(first).toMatchObject({ deleted: 1, hasMore: true })
     expect(first.cursorId).not.toBeNull()
-    expect(second).toMatchObject({ deleted: 1, hasMore: true })
+    expect(second).toMatchObject({ deleted: 1, hasMore: false })
     expect(third).toEqual({ deleted: 0, hasMore: false, cursorId: null })
     expect(await stripeEventWorkExists(firstId)).toBe(false)
     expect(await stripeEventWorkExists(secondId)).toBe(false)

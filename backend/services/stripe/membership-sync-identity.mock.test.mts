@@ -165,7 +165,7 @@ describe('Stripe membership source identity', () => {
       },
     } as never)
     const initialEventId = `evt_initial_${randomUUID()}`
-    await insertStripeEvent(makeSubscriptionEvent(initialEventId, subscriptionId))
+    await insertStripeEvent(makeSubscriptionEvent(initialEventId, subscriptionId, customerId))
     await ensureMembershipFromStripeSubscription(
       initialEventId,
       subscriptionId,
@@ -195,13 +195,13 @@ describe('Stripe membership source identity', () => {
   })
 })
 
-function makeSubscriptionEvent(id: string, subscriptionId: string) {
+function makeSubscriptionEvent(id: string, subscriptionId: string, customerId?: string) {
   return {
     id,
     object: 'event',
     api_version: '2025-09-30.clover',
     created: 1_741_398_400,
-    data: { object: { id: subscriptionId, object: 'subscription' } },
+    data: { object: { id: subscriptionId, object: 'subscription', customer: customerId } },
     livemode: false,
     pending_webhooks: 1,
     request: null,
