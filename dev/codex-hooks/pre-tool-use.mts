@@ -7,18 +7,9 @@
 // normalized to Claude's `Bash` + `tool_response` shape when the payload is read, so policy sees
 // one dialect.
 //
-// Working directory: the worktree root comes from this script's own location, never from the Bash
-// tool call's cwd, so a `cd` earlier in the session cannot change which checkout the policy judges.
-//
-import * as path from 'node:path'
-
 import { isAttendedClaudeSession, isAutomationContext, preToolUseOutput } from './policy.mts'
 import { readHookPayload, resolvePreToolUseRuntime } from './hook-payload.mts'
 
-// This script's own location is a stable worktree anchor, independent of the Bash tool call's
-// cwd (which can differ between merges in the same session, e.g. after a `cd`) — same
-// computation post-tool-use.mts uses.
-const worktreeRoot = path.resolve(import.meta.dirname, '../..')
 const payload = readHookPayload()
 // argv[2] is the runtime token appended by each config: `claude` (.claude/settings.json, which
 // Cursor and Grok also run) or `codex` (.codex/config.toml). Cursor and Grok are detected from
