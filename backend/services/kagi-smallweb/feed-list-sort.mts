@@ -77,10 +77,9 @@ async function keepNewUrls(
 
 async function copyExistingFeedUrls(destination: string): Promise<void> {
   const client = await readPool.connect()
-  try {
-    const copy = client.query(
-      copyTo(
-        `/* copyExistingFeedUrls */
+  const copy: Readable = client.query(
+    copyTo(
+      `/* copyExistingFeedUrls */
         COPY (
           SELECT encode(convert_to(urls.url, 'UTF8'), 'hex') AS url_hex FROM urls
           WHERE EXISTS (
@@ -89,11 +88,18 @@ async function copyExistingFeedUrls(destination: string): Promise<void> {
           )
           ORDER BY urls.url COLLATE "C"
         ) TO STDOUT`,
-      ),
-    )
+    ),
+  )
+  let failure: Error | undefined
+  try {
     await pipeline(Readable.from(decodedMembershipLines(copy)), createWriteStream(destination))
+  } catch (err) {
+    // An unfinished COPY leaves the connection mid-stream: end it and discard the client.
+    failure = err instanceof Error ? err : new Error(String(err))
+    copy.destroy()
+    throw err
   } finally {
-    client.release()
+    client.release(failure)
   }
 }
 

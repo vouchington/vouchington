@@ -1,6 +1,12 @@
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { kagiSmallWebImportConfig } from './import-config.mts'
+import { mkdir, writeFile } from 'node:fs/promises'
+import { join } from 'node:path'
+import { readPool } from '@data-stores/psql'
 import { describe, it, expect } from 'vitest'
+import { numberedLine } from './feed-list-lines.mts'
+import { sortAndDiff } from './feed-list-sort.mts'
+import { createFeedListDirectory, removeFeedListDirectory } from './feed-list-temp-file.mts'
 import { processFeedEntry } from './process-feed-entry.mts'
 import { dispatchKagiSmallWeb, dispatchKagiSmallWebPage } from './sync.mts'
 import {
@@ -168,6 +174,31 @@ describe('dispatchKagiSmallWebPage', () => {
     const observed = await observeTestPostgresClientQueries(() => dispatchKagiSmallWebPage([]))
     const membership = observed.queries.filter(query => query.text.includes('copyExistingFeedUrls'))
     expect(membership.map(query => query.pool)).toEqual(['read'])
+  })
+
+  it('discards the reader connection when the membership file cannot be written', async () => {
+    const directory = await createFeedListDirectory()
+    try {
+      const numbered = join(directory, 'numbered')
+      await writeFile(
+        numbered,
+        numberedLine(
+          {
+            feedUrl: 'https://kagi-fail.example.com/feed.xml',
+            name: 'Failing feed',
+            slug: 'kagi-fail',
+            sourceType: 'web',
+          },
+          1,
+        ),
+      )
+      // A directory at the membership path makes the file write fail after the COPY starts.
+      await mkdir(join(directory, 'membership'))
+      await expect(sortAndDiff(numbered, directory)).rejects.toMatchObject({ code: 'EISDIR' })
+      await expect(readPool.query('SELECT 1 AS ok')).resolves.toMatchObject({ rows: [{ ok: 1 }] })
+    } finally {
+      await removeFeedListDirectory(directory)
+    }
   })
 
   it('distinguishes a new URL from an existing URL with one fewer query backslash', async () => {
