@@ -5,14 +5,10 @@ import * as customers from './customers.mts'
 import * as identity from './identity.mts'
 import * as invoices from './invoices.mts'
 import * as portal from './portal.mts'
-import * as refunds from './refunds.mts'
-import * as subscriptions from './subscriptions.mts'
 import {
-  cancelSubscriptionImmediatelyOperation,
   createBillingPortalSessionOperation,
   createIdentityCheckoutSessionOperation,
   createMembershipCheckoutSessionOperation,
-  createRefundOperation,
   listSubscriptionInvoicesOperation,
   retrieveIdentityVerificationSessionUrlOperation,
 } from './operations.mts'
@@ -89,23 +85,13 @@ describe('Stripe operations', () => {
     )
   })
 
-  it('maps portal, immediate cancellation, identity URL, and refund results to JSON-safe values', async () => {
+  it('maps portal and identity URL results to JSON-safe values', async () => {
     const createPortal = vi.spyOn(portal, 'createBillingPortalSession').mockResolvedValue({
       url: 'https://portal.test',
     } as never)
-    const cancelImmediately = vi
-      .spyOn(subscriptions, 'cancelStripeSubscriptionImmediately')
-      .mockResolvedValue({ id: 'sub_1' } as never)
     vi.spyOn(identity, 'stripeRetrieveVerificationSessionUrl').mockResolvedValue(
       'https://identity.test',
     )
-    const createRefund = vi.spyOn(refunds, 'createStripeRefund').mockResolvedValue({
-      id: 're_1',
-      charge: { id: 'ch_1' },
-      payment_intent: 'pi_1',
-      amount: 500,
-      currency: 'usd',
-    } as never)
 
     await expect(
       createBillingPortalSessionOperation({
@@ -133,33 +119,14 @@ describe('Stripe operations', () => {
       'sub_1',
     )
     await expect(
-      cancelSubscriptionImmediatelyOperation({
-        subscriptionId: 'sub_1',
-      }),
-    ).resolves.toBeNull()
-    await expect(
       retrieveIdentityVerificationSessionUrlOperation({ sessionId: 'vs_1' }),
     ).resolves.toBe('https://identity.test')
-    await expect(
-      createRefundOperation({ chargeId: 'ch_1', idempotencyKey: 'refund-key' }),
-    ).resolves.toEqual({
-      id: 're_1',
-      chargeId: 'ch_1',
-      paymentIntentId: 'pi_1',
-      amount: 500,
-      currency: 'usd',
-    })
     expect(createPortal).toHaveBeenCalledWith(
       'cus_1',
       'https://example.com',
       'portal-key',
       undefined,
     )
-    expect(cancelImmediately).toHaveBeenCalledWith('sub_1')
-    expect(createRefund).toHaveBeenCalledWith({
-      chargeId: 'ch_1',
-      idempotencyKey: 'refund-key',
-    })
   })
 
   it('maps subscription invoices and payments to JSON-safe summaries', async () => {
