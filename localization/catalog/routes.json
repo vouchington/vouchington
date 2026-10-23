@@ -60645,6 +60645,7 @@
 {"alias":"extracted.ui.breadcrumb.breadcrumb_d6dc6b5e","consumer":"web","pattern":"/rss-feed-categories"},
 {"alias":"extracted.ui.breadcrumb.more_d47d7cb0","consumer":"web","pattern":"/rss-feed-categories"},
 {"alias":"nav.home","consumer":"web","pattern":"/rss-feed-categories"},
+{"consumer":"web","pattern":"/session-renewal"},
 {"alias":"extracted.admin.adminModerationButton.confidenceConfidencescoreVsThresholdConfidencethreshold_19d5ea3a","consumer":"web","pattern":"/source/[id]"},
 {"alias":"extracted.admin.adminModerationButton.moderationResults_64be347a","consumer":"web","pattern":"/source/[id]"},
 {"alias":"extracted.admin.adminModerationButton.noModerationResults_06b3b075","consumer":"web","pattern":"/source/[id]"},
