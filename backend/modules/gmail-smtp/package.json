@@ -25,7 +25,7 @@
   "dependencies": {
     "@modules/on-error": "workspace:^",
     "@modules/utils": "workspace:^",
-    "nodemailer": "^10.1.0"
+    "nodemailer": "^10.1.4"
   },
   "devDependencies": {
     "@types/nodemailer": "^8.0.2"
