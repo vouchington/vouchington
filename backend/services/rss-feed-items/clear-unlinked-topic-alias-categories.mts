@@ -15,6 +15,7 @@ import { markRssFeedItemCategorySnapshotsForReconciliation } from './category-sn
 import { chunkArray } from './processing-limits.mts'
 import { recordStoryPublicationChangesForCategoryTopics } from './story-publication-change.mts'
 import { clearUnlinkedTopicAliasCategoryBatch } from './clear-unlinked-topic-alias-category-batch.mts'
+import { clearUnlinkedTopicAliasFeedCategories } from './clear-unlinked-topic-alias-feed-categories.mts'
 /**
  * Re-resolves mappings for an alias that no longer has an active topic owner.
  *
@@ -29,62 +30,10 @@ export async function clearUnlinkedTopicAliasCategories(
   options: QueryOptions,
 ): Promise<{ updated: number; hasMore: boolean }> {
   const feedBatchSize = getRssFeedItemsWorkLimit('category_clear_batch_size')
-  const clearFeedCategories = (query: TransactionQuery) =>
-    query(
-      `/* clearCategoriesForUnlinkedTopicAlias.feedCategories */
-        WITH candidates AS (
-          SELECT
-            feed_category.rss_feed_id,
-            feed_category.category_identity_id,
-            replacement.topic_id AS replacement_topic_id
-          FROM rss_feed_categories feed_category
-          JOIN rss_category_identities identity ON identity.id = feed_category.category_identity_id
-          LEFT JOIN topic_aliases source_alias ON source_alias.id = $1
-          LEFT JOIN LATERAL (
-            SELECT topic.id AS topic_id
-            FROM topics topic
-            WHERE topic.deleted_at IS NULL
-              AND topic.merged_into_topic_id IS NULL
-              AND (
-                LOWER(topic.name) IN (
-                  identity.category_text,
-                  CASE WHEN LEFT(identity.category_text, 1) = '#' THEN SUBSTRING(identity.category_text FROM 2) ELSE identity.category_text END,
-                  LOWER(source_alias.alias)
-                )
-                OR topic.slug IN (
-                  identity.category_text,
-                  CASE WHEN LEFT(identity.category_text, 1) = '#' THEN SUBSTRING(identity.category_text FROM 2) ELSE identity.category_text END,
-                  LOWER(source_alias.alias)
-                )
-              )
-            ORDER BY topic.id
-            LIMIT 1
-          ) replacement ON TRUE
-          WHERE feed_category.topic_id IS NOT NULL
-            AND identity.category_text = LOWER($2)
-            AND ($3::uuid IS NULL OR feed_category.topic_id = $3)
-            AND feed_category.topic_id IS DISTINCT FROM replacement.topic_id
-            AND NOT EXISTS (
-              SELECT 1
-              FROM topic_aliases current_alias
-              WHERE current_alias.alias = LOWER($2)
-                AND current_alias.topic_id IS NOT NULL
-            )
-          ORDER BY feed_category.rss_feed_id, feed_category.category_identity_id
-          LIMIT $4
-          FOR UPDATE OF feed_category
-        )
-        UPDATE rss_feed_categories target
-        SET topic_id = candidates.replacement_topic_id
-        FROM candidates
-        WHERE target.rss_feed_id = candidates.rss_feed_id
-          AND target.category_identity_id = candidates.category_identity_id`,
-      [topicAliasId, alias, formerTopicId ?? null, feedBatchSize],
-    )
-
-  const feedResult = await runInTransaction(options, clearFeedCategories)
+  const feedUpdated = await runInTransaction(options, query =>
+    clearUnlinkedTopicAliasFeedCategories(query, topicAliasId, alias, formerTopicId, feedBatchSize),
+  )
   const itemResult = await clearCategoryBatch(topicAliasId, alias, formerTopicId, options)
-  const feedUpdated = feedResult.rowCount ?? 0
   return {
     updated: feedUpdated + itemResult.updated,
     hasMore: feedUpdated === feedBatchSize || itemResult.hasMore,

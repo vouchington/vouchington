@@ -3,6 +3,7 @@ import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import type { TopicClaim } from './config.mts'
 import type { CreateTopicClaimInput } from './parse.mts'
+import { withTopicReferenceAttachmentFences } from '@services/topics/reference-attachment-fence'
 
 export async function createTopicClaim(
   currentUserId: string,
@@ -11,7 +12,18 @@ export async function createTopicClaim(
   const topic = await resolveClaimTopic(input.topicId)
   assert(topic, 404, 'Topic not found')
 
-  const { rows } = await write(sql`/* createTopicClaim */
+  const { rows } = await withTopicReferenceAttachmentFences([topic.id], {}, async query => {
+    const { rows: currentTopics } = await read<ClaimTopic>(
+      sql`/* createTopicClaim:activeTopic */
+        SELECT id, hostname_id FROM topics
+        WHERE id = ${topic.id} AND deleted_at IS NULL AND merged_into_topic_id IS NULL`,
+      undefined,
+      { query },
+    )
+    const currentTopic = currentTopics[0]
+    assert(currentTopic, 409, 'Topic changed while creating claim')
+    return write(
+      sql`/* createTopicClaim */
     WITH upsert AS (
       INSERT INTO topic_claims (
         topic_id,
@@ -25,7 +37,7 @@ export async function createTopicClaim(
         ${currentUserId},
         ${input.claimedRole},
         ${input.evidence},
-        ${topic.hostname_id}
+        ${currentTopic.hostname_id}
       )
       ON CONFLICT (topic_id, claimant_user_id)
       WHERE rejected_at IS NULL AND revoked_at IS NULL
@@ -69,7 +81,10 @@ export async function createTopicClaim(
       AND revoked_at IS NULL
       AND (verified_at IS NOT NULL OR submitted_at IS NOT NULL)
     LIMIT 1
-  `)
+  `,
+      { query },
+    )
+  })
 
   const result = rows[0] as (TopicClaim & { inserted: boolean }) | undefined
   assert(result, 500, 'Failed to create topic claim')

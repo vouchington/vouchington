@@ -48,15 +48,20 @@ Live relations survive collisions with removed relations; among live claims, ver
 precedence. Merging directly related topics removes the resulting self-relation, while a merge
 that would create an indirect parent cycle is refused. An unresolved vote-integrity flag prevents
 self-relation removal so the merge cannot erase an outstanding audit finding.
+The merge walks indexed parent edges up to a configured depth and refuses deeper ancestry. It
+rechecks after locking the topic rows because intermediate parent edges can change during capture.
 Image placements retain their source identity as history. Delayed classification applies no
 effects to inactive topics. A dedicated merge fence protects new current references without refusing
-ordinary reference writes during feed or vote-stat updates. Derived batch rows remain unfenced.
+ordinary reference writes during feed or vote-stat updates. The merge acquires topic and hostname
+ownership, alias publication, and attachment fences before the lifecycle fence and preflight.
+Guarded reference writers acquire the attachment fence before their reference write, including
+when they borrow an existing transaction. Derived batch rows remain unfenced.
 New embedding and classifier work admits only active topic identities; completed derived records
 retain the identity they describe rather than being redirected by a later merge.
 
-Classifier candidates are administrative configuration: source-only candidates keep their identity
-and dependent thresholds, overrides, and reserved snapshots when moved. A destination candidate
-wins a uniqueness collision. Classifier results remain derived; obsolete topic results are skipped
+Classifier candidates are administrative configuration owned by their topic. A merge discards the
+source candidates and their dependent configuration; the destination keeps only its own candidates.
+Classifier results remain derived; obsolete topic results are skipped
 without retargeting the provider's answer to the destination.
 Decision replay retains the full submitted input identity independently of derived results, so
 removing an obsolete result cannot make conflicting batch reuse appear identical.

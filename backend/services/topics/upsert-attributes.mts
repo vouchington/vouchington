@@ -1,4 +1,6 @@
 import { write, type QueryOptions } from '@data-stores/psql'
+import { withTopicReferenceAttachmentFences } from '@services/post-publication/lock'
+import { isUUID } from '@modules/utils'
 import type pg from 'pg'
 
 type TopicAttributeTableName =
@@ -25,12 +27,24 @@ export async function upsertTopicAttributes<T extends pg.QueryResultRow>(
   values: unknown[],
   options?: QueryOptions,
 ): Promise<T | null> {
+  const topicIds = [
+    topicId,
+    ...values.flatMap((value, index) =>
+      (columns[index]?.endsWith('_topic_id') || columns[index] === 'lifetime_version_id') &&
+      typeof value === 'string' &&
+      isUUID(value)
+        ? [value]
+        : [],
+    ),
+  ]
   if (columns.length === 0) {
     // No columns to update, but we still want to ensure the row exists
     // Use a no-op update on conflict so RETURNING always yields a row.
     const query = topicAttributeUpsertQuery(tableName, '', '', 'topic_id = EXCLUDED.topic_id')
-    const { rows } = await write<T>(query, [topicId], options)
-    return rows[0] ?? null
+    return withTopicReferenceAttachmentFences(topicIds, options ?? {}, async transaction => {
+      const { rows } = await write<T>(query, [topicId], { query: transaction })
+      return rows[0] ?? null
+    })
   }
 
   // Build placeholders for INSERT values ($2, $3, ...)
@@ -47,8 +61,10 @@ export async function upsertTopicAttributes<T extends pg.QueryResultRow>(
     updateSets,
   )
 
-  const { rows } = await write<T>(query, [topicId, ...values], options)
-  return rows[0] ?? null
+  return withTopicReferenceAttachmentFences(topicIds, options ?? {}, async transaction => {
+    const { rows } = await write<T>(query, [topicId, ...values], { query: transaction })
+    return rows[0] ?? null
+  })
 }
 
 function topicAttributeUpsertQuery(

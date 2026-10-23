@@ -1,5 +1,10 @@
 import { it, expect, describe, beforeAll } from 'vitest'
-import { createTestTopic, createRandomString } from '@voucha/test-helpers'
+import { beginTransaction, createTestTopic, createRandomString } from '@voucha/test-helpers'
+import {
+  getTestPostgresBackendProcessId,
+  waitForTestPostgresLockWaiter,
+} from '@voucha/test-helpers/postgres-lock-wait'
+import { lockTopicRssFeedAttachmentLifecycle } from '@services/post-publication/lock'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import {
   upsertRssFeedCategories,
@@ -58,6 +63,30 @@ describe('rss-feed categories', () => {
       const after = await getRssFeedCategories(feed.id)
       const afterRow = after.find(r => r.category_text === uniqueCategory)
       expect(afterRow?.topic_id).toBe(topic.id)
+    })
+
+    it('returns a conflict when a resolved topic changes while its attachment fence is held', async () => {
+      const category = `fence-cat-${createRandomString(12)}`
+      const feed = await createTestRssFeed({})
+      const topic = await createTestTopic({ slug: category, name: category })
+      let outcome: Promise<{ error: unknown } | { value: void }> | undefined
+      {
+        await using holder = await beginTransaction()
+        await lockTopicRssFeedAttachmentLifecycle(holder, topic.id)
+        const holderPid = await getTestPostgresBackendProcessId(holder)
+        outcome = upsertRssFeedCategories(feed.id, [category]).then(
+          value => ({ value }),
+          err => ({ error: err }),
+        )
+        await waitForTestPostgresLockWaiter(holderPid, 'lockTopicRssFeedAttachmentLifecycles')
+        await holder(
+          '/* rssFeedCategoryFenceConflict */ UPDATE topics SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1',
+          [topic.id],
+        )
+        await holder.commit()
+      }
+      await expect(outcome).resolves.toMatchObject({ error: { status: 409 } })
+      expect(await getRssFeedCategories(feed.id)).toEqual([])
     })
 
     it('does nothing for empty input', async () => {

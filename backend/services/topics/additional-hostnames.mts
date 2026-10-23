@@ -15,6 +15,10 @@ import {
   lockHostnameOwnership,
   lockTopicHostnameMutations,
 } from '@services/urls-hostnames/ownership-lock'
+import {
+  lockTopicRssFeedAttachmentLifecycle,
+  lockTopicRssFeedAttachmentLifecycles,
+} from '@services/post-publication/lock'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 
@@ -86,6 +90,14 @@ async function addAdditionalHostnameInTransaction(
   const hostnameId = hostnameMap.values().next().value as string | undefined
   assert(hostnameId, 500, 'Failed to resolve hostname')
   await lockHostnameOwnership(options.query, [hostnameId])
+  const { rows: previousOwners } = await options.query<{ topic_id: string | null }>(
+    sql`/* addAdditionalHostname:previousOwner */
+      SELECT topic_id FROM url_hostnames WHERE id = ${hostnameId}`,
+  )
+  await lockTopicRssFeedAttachmentLifecycles(
+    options.query,
+    [topicId, previousOwners[0]?.topic_id].filter((id): id is string => Boolean(id)),
+  )
   await upsertUrlHostnames(userId, [normalizedHostname!], options)
 
   // Conflict check, update, and hostname fetch in one query.
@@ -156,6 +168,7 @@ async function removeAdditionalHostnameInTransaction(
   // ast-grep-ignore: no-three-sequential-awaits -- topic ownership must precede hostname ownership, and both must precede the release write.
   await lockTopicHostnameMutations(options.query, [topicId])
   await lockHostnameOwnership(options.query, [hostnameId])
+  await lockTopicRssFeedAttachmentLifecycle(options.query, topicId)
 
   const { rows } = await write(
     // no-mistakes-disable-next-line postgres-required-predicates: id-scoped hostname_id lookup of the already-validated topic

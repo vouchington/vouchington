@@ -9,6 +9,7 @@ import assert from 'http-assert'
 import createError from 'http-errors'
 import type { UpdateCrawlerUpdates, Crawler } from './types.mts'
 import sql from 'sql-template-strings'
+import { lockTopicRssFeedAttachmentLifecycles } from '@services/post-publication/lock'
 
 export const updateCrawler = async (
   updater: PrivateUser,
@@ -37,13 +38,36 @@ export const updateCrawler = async (
     return crawler
   }
 
+  validateCrawlerUpdates(updates)
   return runWithTransaction(options.query, async (transaction: TransactionQuery) => {
+    let priorReferralProgramId: string | null = null
+    if (updates.referral_program_id !== undefined) {
+      const prior = await transaction<{ referral_program_topic_id: string | null }>(
+        sql`/* updateCrawler:priorReferralProgram */
+          SELECT referral_program_topic_id FROM hostname_crawler_configurations
+          WHERE id = ${crawlerId} AND deleted_at IS NULL`,
+      )
+      priorReferralProgramId = prior.rows[0]?.referral_program_topic_id ?? null
+      await lockTopicRssFeedAttachmentLifecycles(
+        transaction,
+        [priorReferralProgramId, updates.referral_program_id].filter(
+          (topicId): topicId is string => topicId !== null,
+        ),
+      )
+    }
     await transaction(
       sql`/* updateCrawler:lock */ SELECT id FROM hostname_crawler_configurations WHERE id = ${crawlerId} AND deleted_at IS NULL FOR UPDATE`,
     )
     const previous = await getCrawlerById(crawlerId, { query: transaction })
     if (!previous) throw createError(404, `Crawler not found: ${crawlerId}`)
     await validateCrawlerUpdates(updates, transaction)
+    if (
+      updates.referral_program_id !== undefined &&
+      previous.referral_program_id !== priorReferralProgramId &&
+      previous.referral_program_id !== updates.referral_program_id &&
+      previous.referral_program_id !== null
+    )
+      throw createError(409, 'Crawler referral program changed while acquiring attachment fences')
     const query = sql`/* updateCrawler */ UPDATE hostname_crawler_configurations SET updated_by_id = ${updater.id}`
     if (hostnameId !== undefined) query.append(sql`, hostname_id = ${hostnameId}`)
     if (updates.description !== undefined) query.append(sql`, description = ${updates.description}`)

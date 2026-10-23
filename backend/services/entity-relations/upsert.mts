@@ -155,6 +155,7 @@ export const upsertEntityRelation = async (
       subject.id,
       objects.map(object => object.id),
       relation.subject_type === 'user' ? [subject.id, ...objects.map(object => object.id)] : [],
+      relation.subject_type === 'topic' ? [subject.id, ...objects.map(object => object.id)] : [],
     )
     if (relationOptions?.postMutationGuard?.postIds.length)
       await lockPostPublicationPostScopes(

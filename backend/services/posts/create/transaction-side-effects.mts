@@ -16,6 +16,7 @@ import { syncPostHashtagCategoriesInTransaction } from '../hashtags.mts'
 import { syncPostExplicitTopicCategoriesInTransaction } from '../explicit-topic-categories.mts'
 import { castPostCategoryVotesInTransaction } from '../hashtag-votes.mts'
 import { syncPostImagePlacements } from '../image-placements.mts'
+import { lockTopicRssFeedAttachmentLifecycles } from '@services/post-publication/lock'
 
 export async function applyPostTransactionSideEffects({
   creator,
@@ -32,6 +33,18 @@ export async function applyPostTransactionSideEffects({
 }): Promise<{
   communityReviews: CommunityPostReview[]
 }> {
+  if (postType === 'review') assertValidReviewTopicRatings(updates.review_topic_ratings)
+  await lockTopicRssFeedAttachmentLifecycles(options.query, [
+    ...(updates.categories ?? []).flatMap(category =>
+      category.type === 'topic' ? [category.topic_id] : [],
+    ),
+    ...(postType === 'review'
+      ? (updates.review_topic_ratings ?? []).map(rating => rating.topic_id)
+      : []),
+    ...(postType === 'data_point'
+      ? (updates.structured_data as { topic_ids: string[] }).topic_ids
+      : []),
+  ])
   await Promise.all([
     syncPostHashtagCategoriesInTransaction(creator, post.id, updates, options),
     syncPostExplicitTopicCategoriesInTransaction(post.id, updates.categories, options),

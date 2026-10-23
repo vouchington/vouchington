@@ -65,6 +65,8 @@ export const backgroundWorkRegistryEntries7 = {
     descriptions: {
       alias_post_invalidation_batch_size:
         'Alias post invalidation batch size for topics processing.',
+      parent_merge_cycle_max_depth:
+        'Maximum ancestry depth inspected before a topic merge fails closed.',
     },
   }),
 }

@@ -5,6 +5,7 @@ import { currentUserCanManageCuratedAsides } from './authorization.mts'
 import { getCuratedAsideEntityData } from './entity-data.mts'
 import type { CuratedAsideItem, CuratedAsideType } from './types.mts'
 import type { PrivateUser } from '@services/users/types'
+import { lockTopicRssFeedAttachmentLifecycle } from '@services/post-publication/lock'
 
 export async function createCuratedItem(
   currentUser: PrivateUser,
@@ -17,6 +18,7 @@ export async function createCuratedItem(
   }
 
   await using query = await beginTransaction()
+  if (asideType === 'topic') await lockTopicRssFeedAttachmentLifecycle(query, entityId)
   const entityData = await getCuratedAsideEntityData(asideType, entityId, { query })
   if (!entityData) {
     throw createHttpError(422, `${asideType} entity not found`)

@@ -10,12 +10,6 @@ import {
 export const plainReferences = getPlainTopicMergeReferences()
 
 export const collisionReferences: readonly MergeReferenceTable[] = [
-  {
-    table: 'classifier_candidates',
-    columns: ['topic_id'],
-    collisionKey: ['classifier_id', 'topic_id', 'community_id'],
-    live: 'deleted_at IS NULL',
-  },
   { table: 'post_data_point_topics', columns: ['topic_id'], collisionKey: ['post_id', 'topic_id'] },
   {
     table: 'post_explicit_topic_categories',
@@ -55,6 +49,12 @@ export async function repointTopicReferences(
   sourceId: string,
   destinationId: string,
 ) {
+  // Candidate deletion owns the snapshot cascade; direct snapshot deletion is deliberately blocked.
+  await query(
+    `/* deleteSourceTopicClassifierCandidates */
+    DELETE FROM classifier_candidates WHERE topic_id = $1::uuid`,
+    [sourceId],
+  )
   await query(
     `/* mergeTopicPlainReferences */ WITH ${buildReferenceMergeCtes(plainReferences).join(',\n')} SELECT 1`,
     [sourceId, destinationId],

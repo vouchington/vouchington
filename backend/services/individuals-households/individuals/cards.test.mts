@@ -5,7 +5,7 @@ import {
   deleteForeignKeyTargetDuringInsertForTest,
   insertTestCard,
 } from '@voucha/test-helpers'
-import { withPostgresPoolQueryFailureForTest } from '@voucha/test-helpers/postgres-pool-query-failure'
+import { withPostgresQueryFailureForTest } from '@voucha/test-helpers/postgres-query-failure'
 import { createIndividualCard } from './cards.mts'
 import { getIndividualCards } from './cards-get.mts'
 
@@ -64,7 +64,7 @@ describe('individual card storage errors', () => {
   it('preserves the actual generic INSERT error without claiming that a valid card id is invalid', async () => {
     const user = await createTestUser()
     const cardId = await insertTestCard({ createdById: user.id, name: `Card ${user.id}` })
-    const failure = await withPostgresPoolQueryFailureForTest('/* createIndividualCard */', () =>
+    const failure = await withPostgresQueryFailureForTest('/* createIndividualCard */', () =>
       createIndividualCard(user, user, cardId).catch((err: unknown) => err),
     )
 

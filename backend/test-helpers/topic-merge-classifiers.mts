@@ -19,6 +19,32 @@ export async function getTopicMergeClassifierConfiguration(candidateIds: readonl
   return rows
 }
 
+export async function getTopicMergeClassifierArtifacts(candidateId: string) {
+  const { rows } = await write<{
+    thresholds: number
+    overrides: number
+    snapshots: number
+  }>(
+    `/* getTopicMergeClassifierArtifacts */ SELECT
+      (SELECT count(*)::int FROM classifier_candidate_thresholds WHERE candidate_id = $1::uuid) AS thresholds,
+      (SELECT count(*)::int FROM classifier_candidate_community_overrides WHERE candidate_id = $1::uuid) AS overrides,
+      (SELECT count(*)::int FROM classifier_decision_batch_candidates WHERE candidate_id = $1::uuid) AS snapshots`,
+    [candidateId],
+  )
+  return rows[0]!
+}
+
+export async function changeTopicMergeClassifierCandidateTopic(
+  candidateId: string,
+  topicId: string,
+) {
+  await write(
+    `/* changeTopicMergeClassifierCandidateTopic */
+      UPDATE classifier_candidates SET topic_id = $2::uuid WHERE id = $1::uuid`,
+    [candidateId, topicId],
+  )
+}
+
 export async function seedTopicMergeClassifierCollision(
   classifierId: string,
   topicId: string,

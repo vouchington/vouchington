@@ -12,6 +12,7 @@ import type { PrivateUser } from '@services/users/types'
 import type { IndividualRewardsProgramPointValuation } from './rewards-program-point-valuations-types.mts'
 import { isScaledMoney, MAX_POINT_VALUE_MICROUNITS, type ScaledMoney } from '@ts-shared/money'
 import { assertUserReferenceTopicExists } from '@services/topics/user-reference-topic-validation'
+import { withTopicReferenceAttachmentFences } from '@services/post-publication/lock'
 
 const duplicatePointValuationConstraintNames = new Set([
   'uq_ind_rp_point_valuations__individual_rewards_program',
@@ -84,7 +85,9 @@ export const createIndividualRewardsProgramPointValuation = async (
   const individual = await getOrCreateIndividual(user)
   let rows: { id: string }[]
   try {
-    ;({ rows } = await write(sql`/* createIndividualRewardsProgramPointValuation */
+    ;({ rows } = await withTopicReferenceAttachmentFences([rewardsProgramId], {}, query =>
+      write<{ id: string }>(
+        sql`/* createIndividualRewardsProgramPointValuation */
       INSERT INTO individual_rewards_program_point_valuations (
         individual_id,
         rewards_program_topic_id,
@@ -100,7 +103,10 @@ export const createIndividualRewardsProgramPointValuation = async (
         ${data.note ?? null}
       )
       RETURNING id
-    `))
+    `,
+        { query },
+      ),
+    ))
   } catch (err) {
     const pgError = err as { code?: string; constraint?: string }
     if (

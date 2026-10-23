@@ -1,6 +1,7 @@
 import type { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { buildLandingPageInsertRows } from './replace-item-rows.mts'
+import { lockTopicRssFeedAttachmentLifecycles } from '@services/post-publication/lock'
 
 export async function replaceLandingPageItemRows(
   query: Awaited<ReturnType<typeof beginTransaction>>,
@@ -8,6 +9,10 @@ export async function replaceLandingPageItemRows(
   itemRows: ReturnType<typeof buildLandingPageInsertRows>['itemRows'],
   groupMemberRows: ReturnType<typeof buildLandingPageInsertRows>['groupMemberRows'],
 ): Promise<void> {
+  await lockTopicRssFeedAttachmentLifecycles(
+    query,
+    itemRows.flatMap(row => (row.topicId ? [row.topicId] : [])),
+  )
   // user_landing_page_group_members.landing_page_item_id is ON DELETE CASCADE, so deleting the
   // items removes their group members in the same statement.
   await query(

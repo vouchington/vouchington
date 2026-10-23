@@ -14,6 +14,7 @@ import sql from 'sql-template-strings'
 import { deletePostRatingRecord } from './post-ratings/delete.mts'
 import { createPostRevision } from '@services/post-revisions'
 import { lockPostPublication, recordPostPublicationChange } from '@services/post-publication'
+import { lockTopicRssFeedAttachmentLifecycle } from '@services/post-publication/lock'
 
 async function enqueueRssFeedDiscoverabilityForTopics(topicIds: string[]): Promise<void> {
   const rssFeedIds = await searchRssFeedIdsByTopicIds(topicIds)
@@ -43,7 +44,6 @@ export async function addPostRating(
   assert(currentUserCanUpdatePost(user, post), 403, 'Forbidden')
   assert(post.post_type === 'review', 422, 'Post is not a review')
   assert(isUUID(input.topic_id), 422, 'Invalid topic_id')
-  await assertReviewTopicsAllowReviews([input.topic_id])
   assert(
     Number.isInteger(input.rating) && input.rating >= 1 && input.rating <= 5,
     422,
@@ -57,6 +57,8 @@ export async function addPostRating(
   const { review_topic_ratings_max_items } = getPostContentLimitsConfig()
 
   await using query = await beginTransaction()
+  await lockTopicRssFeedAttachmentLifecycle(query, input.topic_id)
+  await assertReviewTopicsAllowReviews([input.topic_id], { query })
   // ast-grep-ignore: no-three-sequential-awaits -- publication advisory lock must precede the post row lock and dependent rating reads.
   await lockPostPublication(query, post.id)
   await lockPostRatingMutation(query, post.id)

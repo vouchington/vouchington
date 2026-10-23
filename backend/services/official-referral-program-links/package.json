@@ -23,6 +23,7 @@
     "@data-stores/psql": "workspace:^",
     "@modules/utils": "workspace:^",
     "@services/referral-program-link-validations": "workspace:^",
+    "@services/topics": "workspace:^",
     "@services/urls": "workspace:^",
     "@services/users": "workspace:^",
     "@voucha/types": "workspace:^",

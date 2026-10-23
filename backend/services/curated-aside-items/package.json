@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@data-stores/psql": "workspace:^",
+    "@services/post-publication": "workspace:^",
     "@services/users": "workspace:^",
     "@voucha/types": "workspace:^",
     "http-errors": "^2.0.1",

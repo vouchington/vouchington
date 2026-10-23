@@ -10,6 +10,7 @@ import {
   lockPostPublicationPostScopes,
   lockTopicRssFeedPublicationScopes,
   lockTopicAliasPublicationScopes,
+  lockTopicRssFeedAttachmentLifecycles,
 } from '@services/post-publication'
 import { lockActiveUserSubjectsForMutation } from '@services/user-deletions/active-user-mutation-lock'
 import {
@@ -51,6 +52,11 @@ export async function runRelationPublicationMutation<
       }
     }
     await lockActiveUserSubjectsForMutation(query, activeUserSubjectIds)
+    const topicIds = [
+      ...(relationTable.startsWith('relation__topic__') ? subjectIds : []),
+      ...(relationTable.endsWith('__topic') ? objectIds : []),
+    ]
+    if (topicIds.length > 0) await lockTopicRssFeedAttachmentLifecycles(query, topicIds)
     const capturePublication = options?.capturePublication !== false
     const postScopeIds = [
       ...(capturePublication && isPostScopedPublicationRelationTable(relationTable)

@@ -1,5 +1,6 @@
 import { getEntityRelationElectionByTargetCachedBatch } from '../services/entity-fetch/get.mts'
-import { write } from '@data-stores/psql'
+import { write, type TransactionQuery } from '@data-stores/psql'
+import { getTestPostgresBackendProcessId } from './postgres-lock-wait.mts'
 
 export async function seedTopicMergeVotedRelations(
   sourceId: string,
@@ -148,6 +149,27 @@ export async function seedTopicMergeParentEdges(edges: readonly (readonly [strin
     `/* seedTopicMergeParentEdges */ INSERT INTO relation__topic__parent__topic (subject_id, object_id)
     SELECT * FROM unnest($1::uuid[], $2::uuid[])`,
     [edges.map(edge => edge[0]), edges.map(edge => edge[1])],
+  )
+}
+
+export async function lockTestTopicMergeAncestorRow(query: TransactionQuery, topicId: string) {
+  await query(
+    `/* lockTestTopicMergeAncestorRow */ SELECT id FROM topics WHERE id = $1::uuid FOR UPDATE`,
+    [topicId],
+  )
+  return getTestPostgresBackendProcessId(query)
+}
+
+export async function seedTopicMergeParentEdgeInTransaction(
+  query: TransactionQuery,
+  childId: string,
+  parentId: string,
+) {
+  await query(
+    `/* seedTopicMergeParentEdgeInTransaction */
+      INSERT INTO relation__topic__parent__topic (subject_id, object_id)
+      VALUES ($1::uuid, $2::uuid)`,
+    [childId, parentId],
   )
 }
 

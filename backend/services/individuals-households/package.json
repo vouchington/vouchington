@@ -29,6 +29,7 @@
     "@services/entity-relations": "workspace:^",
     "@services/notifications": "workspace:^",
     "@services/pagination": "workspace:^",
+    "@services/post-publication": "workspace:^",
     "@services/search-params": "workspace:^",
     "@services/topics": "workspace:^",
     "@services/users": "workspace:^",

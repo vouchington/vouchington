@@ -1,5 +1,6 @@
 import type { TransactionQuery } from '@data-stores/psql'
 import { lockActiveUserSubjectsForMutation } from '@services/user-deletions/active-user-mutation-lock'
+import { lockTopicRssFeedAttachmentLifecycles } from '@services/post-publication/lock'
 
 /**
  * Serializes opposite directions of the same symmetric relation before either physical direction
@@ -33,7 +34,10 @@ export async function lockBidirectionalRelationMutation(
   subjectId: string,
   objectIds: readonly string[],
   userSubjectIds: readonly string[],
+  topicReferenceIds: readonly string[] = [],
 ): Promise<void> {
+  if (topicReferenceIds.length > 0)
+    await lockTopicRssFeedAttachmentLifecycles(query, topicReferenceIds)
   await lockBidirectionalRelationPairs(query, relationTable, subjectId, objectIds)
   await lockActiveUserSubjectsForMutation(query, userSubjectIds)
 }

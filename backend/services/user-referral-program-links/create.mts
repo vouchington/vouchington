@@ -10,6 +10,7 @@ import { assertCurrentUserCanCreateUserReferralLink } from './authorization.mts'
 import type { UserReferralLink } from './types.mts'
 import { userReferralLinkColumns } from './columns.mts'
 import { assertUserReferenceTopicExists } from '@services/topics/user-reference-topic-validation'
+import { withTopicReferenceAttachmentFences } from '@services/topics/reference-attachment-fence'
 
 export async function createUserReferralLink(
   currentUser: PrivateUser | null,
@@ -63,8 +64,9 @@ export async function createUserReferralLink(
 
   let rows: UserReferralLink[]
   try {
-    ;({ rows } = await write<UserReferralLink>(
-      sql`/* createUserReferralLink */
+    ;({ rows } = await withTopicReferenceAttachmentFences([data.referral_program_id], {}, query =>
+      write<UserReferralLink>(
+        sql`/* createUserReferralLink */
       INSERT INTO user_referral_program_links (
         user_id,
         referral_program_topic_id,
@@ -90,6 +92,8 @@ export async function createUserReferralLink(
         activated_at = CURRENT_TIMESTAMP,
         deactivated_at = NULL
       RETURNING `.append(userReferralLinkColumns()),
+        { query },
+      ),
     ))
   } catch (err) {
     const pgError = err as { code?: string; constraint?: string }

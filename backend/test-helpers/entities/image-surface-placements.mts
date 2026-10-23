@@ -8,6 +8,7 @@ export type TestImageSurfacePlacement = {
   placement_id: string
   placement_revision: number
   image_id: string
+  topic_id: string | null
   retired_at: Date | null
   retirement_reason: 'asset_deleted' | 'owner_removed' | null
   user_id: string | null
@@ -23,7 +24,7 @@ export async function getTestImageSurfacePlacements(input: {
   profileLinkId?: string
 }): Promise<TestImageSurfacePlacement[]> {
   const { rows } = await read<TestImageSurfacePlacement>(sql`/* getTestImageSurfacePlacements */
-    SELECT surface.placement_id, placement.revision AS placement_revision, surface.image_id,
+    SELECT surface.placement_id, placement.revision AS placement_revision, surface.image_id, surface.topic_id,
       placement.retired_at, placement.retirement_reason, surface.user_id,
       surface.user_profile_link_id
     FROM image_surface_placements surface
