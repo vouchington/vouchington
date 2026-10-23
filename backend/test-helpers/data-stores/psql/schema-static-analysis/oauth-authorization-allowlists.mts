@@ -52,6 +52,10 @@ export const OAUTH_AUTHORIZATION_UUID_COLUMNS_WITHOUT_KEYS = [
     'mcp_call_audit_events.correlation_id',
     'Server-minted request correlation identifier shared by the rows of one MCP request and echoed in X-Correlation-Id; it identifies no relation.',
   ],
+  [
+    'security_retention_cleanup_cursors.cursor_id',
+    'Deletion-stable keyset position; the scanned source row can be deleted before the next pass.',
+  ],
 ] as const
 
 export const AUTHORIZATION_TABLES_WITHOUT_CREATED_AT = [
