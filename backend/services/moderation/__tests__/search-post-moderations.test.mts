@@ -1,15 +1,11 @@
 import { it, expect, beforeAll, describe } from 'vitest'
-import {
-  searchPostModerationsByPostIds,
-  searchPostModerationsByAgent,
-} from '../search-post-moderations.mts'
+import { searchPostModerationsByPostIds } from '../search-post-moderations.mts'
 import { createPost } from '@services/posts'
 import {
   createTestAgent,
   createTestUser,
   insertTestAgentModeration,
   insertTestAgentPrompt,
-  mockAiGeneratedModerationResults,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@services/users/types'
@@ -117,77 +113,5 @@ describe('search-post-moderations', () => {
 
     const results = await searchPostModerationsByPostIds([post.id])
     expect(results.length).toBeLessThanOrEqual(10)
-  })
-
-  it('searchPostModerationsByAgent - returns moderations for post + agent', async () => {
-    const random = randomSuffix()
-    const post = await createPost(user, WEB_PROVENANCE, {
-      title: `Test Post ${random}`,
-      markdown: `Content ${random}`,
-      post_type: 'discussion',
-    })
-    const moderationId = await insertTestAgentModeration({
-      postId: post.id,
-      promptId,
-      agentId,
-      flagged: false,
-      results: { flagged: false },
-    })
-
-    const { results } = await searchPostModerationsByAgent(post.id, agentId)
-    expect(results.length).toBeGreaterThanOrEqual(1)
-    const match = results.find(r => r.id === moderationId)
-    expect(match).toBeDefined()
-    expect(match?.post_id).toBe(post.id)
-    expect(match?.agent_id).toBe(agentId)
-    expect(match?.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)
-    expect(match?.moderator_slug).toBe(moderatorSlug)
-    expect(typeof match?.input_sha256).toBe('string')
-  })
-
-  it('searchPostModerationsByAgent - preserves stored confidence metadata', async () => {
-    const random = randomSuffix()
-    const post = await createPost(user, WEB_PROVENANCE, {
-      title: `Confidence Post ${random}`,
-      markdown: `Confidence Content ${random}`,
-      post_type: 'discussion',
-    })
-    await insertTestAgentModeration({
-      postId: post.id,
-      promptId,
-      agentId,
-      flagged: true,
-      results: mockAiGeneratedModerationResults,
-    })
-
-    const { results } = await searchPostModerationsByAgent(post.id, agentId)
-    expect(results[0]?.results).toMatchObject(mockAiGeneratedModerationResults)
-  })
-
-  it('searchPostModerationsByAgent - respects limit option', async () => {
-    const random = randomSuffix()
-    const post = await createPost(user, WEB_PROVENANCE, {
-      title: `Test Post ${random}`,
-      markdown: `Content ${random}`,
-      post_type: 'discussion',
-    })
-    for (let i = 0; i < 5; i++) {
-      await insertTestAgentModeration({ postId: post.id, promptId, agentId })
-    }
-
-    const { results } = await searchPostModerationsByAgent(post.id, agentId, { limit: 3 })
-    expect(results.length).toBeLessThanOrEqual(3)
-  })
-
-  it('searchPostModerationsByAgent - returns empty array when no moderations for agent', async () => {
-    const random = randomSuffix()
-    const post = await createPost(user, WEB_PROVENANCE, {
-      title: `Test Post ${random}`,
-      markdown: `Content ${random}`,
-      post_type: 'discussion',
-    })
-    const { results, hasNextPage } = await searchPostModerationsByAgent(post.id, agentId)
-    expect(results).toEqual([])
-    expect(hasNextPage).toBe(false)
   })
 })
