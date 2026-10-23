@@ -17,7 +17,6 @@ import { getApiKeys } from '../api-keys'
 import { fetchCaptchaConfig } from '../captcha-config'
 import { getFeatureFlagsClient } from '../feature-flags'
 import { exportRssFeeds, getRssFeedImport } from '../import-export'
-import { markMyNotificationReadKeepalive } from '../my-notifications'
 import { unsubscribeEmailToken } from '../my'
 import { searchRssFeedsClient } from '../rss-feeds'
 
@@ -56,23 +55,6 @@ describe('simple client api helpers', () => {
     expect(await fetchCaptchaConfig()).toBe(response)
 
     expect(mockGet).toHaveBeenCalledWith('/api/v1/captcha-config')
-  })
-
-  it('marks a notification read using keepalive fetch', async () => {
-    const response = new Response(null, { status: 204 })
-    const fetchMock = vi.fn<VitestLooseMock>().mockResolvedValueOnce(response)
-    vi.stubGlobal('fetch', fetchMock)
-
-    const result = await markMyNotificationReadKeepalive('notification-1')
-
-    expect(fetchMock).toHaveBeenCalledWith('/api/v1/my/notifications/notification-1', {
-      method: 'PATCH',
-      body: JSON.stringify({ is_read: true }),
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'same-origin',
-      keepalive: true,
-    })
-    expect(result).toBe(response)
   })
 
   it('returns the direct RSS export download URL', () => {

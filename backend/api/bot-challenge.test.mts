@@ -2,6 +2,7 @@ import type { IncomingMessage } from 'node:http'
 import type { Context } from '@jongleberry/api-server'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { markAuthenticatedOriginRequest } from '@modules/request-client-info/authenticated-origin'
+import { markVerifiedSessionCredential } from '@modules/request-client-info/session-credential'
 import {
   runWithCredentialRequestContext,
   runWithSessionRequestContext,
@@ -36,6 +37,22 @@ describe('low-score bot challenge', () => {
     await expect(asSession(() => enforceLowScoreBotChallenge(ctx))).rejects.toMatchObject({
       code: BOT_CHALLENGE_REQUIRED,
     })
+  })
+
+  it('requires proof for verified cookie authority even without session-origin context', async () => {
+    vi.stubEnv('SKIP_CAPTCHA_VERIFICATION', 'false')
+    const ctx = context({ score: '7' })
+
+    await expect(enforceLowScoreBotChallenge(ctx)).rejects.toMatchObject({
+      code: BOT_CHALLENGE_REQUIRED,
+    })
+  })
+
+  it('skips a request without a verified session credential', async () => {
+    const ctx = context({ score: '7', verifiedSession: false })
+
+    await expect(asSession(() => enforceLowScoreBotChallenge(ctx))).resolves.toBeUndefined()
+    expect(ctx.verifyAttestedRequestSignature).not.toHaveBeenCalled()
   })
 
   it.each([undefined, '30', '99'])('skips an absent or non-low score %s', async score => {
@@ -83,6 +100,7 @@ type ContextOptions = {
   score?: string
   token?: string
   trusted?: boolean
+  verifiedSession?: boolean
 }
 
 function context(options: ContextOptions): Context {
@@ -93,6 +111,7 @@ function context(options: ContextOptions): Context {
   }
   const req = { method: 'POST', headers } as IncomingMessage
   if (options.trusted !== false) markAuthenticatedOriginRequest(req)
+  if (options.verifiedSession !== false) markVerifiedSessionCredential(req)
 
   return {
     req,
