@@ -34,7 +34,7 @@ type McpRequestContext = {
   clientIp?: string
   // The retry delay of each `tools/call` whose REST route bucket was spent, by message index.
   // Those calls are refused in-band without running, and are already audited as rate limited.
-  rateLimitedCalls: ReadonlyMap<number, number>
+  rateLimitedCalls: ReadonlyMap<number, { retryAfterSeconds: number; message?: string }>
 }
 
 export async function handleMcpHttpRequest(ctx: McpRequestContext): Promise<McpHttpResponse> {
@@ -80,10 +80,10 @@ export async function handleMcpHttpRequest(ctx: McpRequestContext): Promise<McpH
         if (messageIndex === undefined) return
         ctx.onToolCallSettled?.(messageIndex, settlement)
       }
-      const retryAfterSeconds = ctx.rateLimitedCalls.get(messageIndex ?? -1)
-      if (retryAfterSeconds !== undefined) {
+      const rateLimit = ctx.rateLimitedCalls.get(messageIndex ?? -1)
+      if (rateLimit !== undefined) {
         settle({ durationMs: null, toolError: false, rateLimited: true })
-        return buildRateLimitedToolResult(retryAfterSeconds)
+        return buildRateLimitedToolResult(rateLimit.retryAfterSeconds, rateLimit.message)
       }
       const resolution = resolveMcpToolCall(
         request.params.name,

@@ -29,18 +29,26 @@ const REFERENCE_FIELDS = {
   userId: 'user',
   user_id: 'user',
   assigned_moderator_user_id: 'user',
-  postId: 'post',
 } as const
 
 async function resolveModerationReferences(args: unknown): Promise<CommunityModerationArgs> {
   const next = { ...(args as Record<string, unknown>) }
-  await resolveReferenceFields(next, REFERENCE_FIELDS)
-  if (Array.isArray(next.post_ids)) {
-    const ids = await canonicalEntityIds(
-      'post',
-      next.post_ids.filter((id): id is string => typeof id === 'string'),
-    )
-    next.post_ids = ids.map(id => id ?? MISSING_REFERENCE_ID)
+  const postIdPresent = typeof next.postId === 'string'
+  const postIdsPresent = Array.isArray(next.post_ids)
+  const postIds = postIdsPresent
+    ? (next.post_ids as unknown[]).filter((id): id is string => typeof id === 'string')
+    : []
+  const postReferences = [...(postIdPresent ? [next.postId as string] : []), ...postIds]
+  const [, resolvedPosts] = await Promise.all([
+    resolveReferenceFields(next, REFERENCE_FIELDS),
+    postReferences.length > 0 ? canonicalEntityIds('post', postReferences) : Promise.resolve([]),
+  ])
+  let resolvedIndex = 0
+  if (postIdPresent) {
+    next.postId = resolvedPosts[resolvedIndex++] ?? MISSING_REFERENCE_ID
+  }
+  if (postIdsPresent) {
+    next.post_ids = resolvedPosts.slice(resolvedIndex).map(id => id ?? MISSING_REFERENCE_ID)
   }
   return next as CommunityModerationArgs
 }

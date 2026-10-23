@@ -1,5 +1,13 @@
 [
   {
+    "annotation": "addListItem",
+    "route": "POST /api/v1/mcp",
+    "maxCount": 100,
+    "reason": "The recorded #3345 decision keeps these writes per target so each batch result retains its own persisted row; the delegated batch contract caps the loop at 100 items.",
+    "permanent": true,
+    "code": "backend/mcp/add-list-items.mts:82"
+  },
+  {
     "annotation": "allocateCommunityAgentPromptSlot",
     "route": null,
     "maxCount": null,

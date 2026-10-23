@@ -19,6 +19,7 @@ type AccessGroup = {
   role: 'subject' | 'object'
   ids: readonly string[]
   filter: SQLStatement | null
+  excludedAccessPostTypes?: readonly string[]
 }
 
 /** One statement for the relatable filter and the root privacy/creator snapshot. */
@@ -48,6 +49,11 @@ export async function selectPostMutationAccess(
       JOIN posts access_post ON access_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)
       WHERE candidate_post.id = ANY(${group.ids}::uuid[])`)
     if (group.filter) query.append(sql` AND `).append(group.filter)
+    if (group.excludedAccessPostTypes?.length) {
+      query.append(
+        sql` AND access_post.post_type::text != ALL(${[...group.excludedAccessPostTypes]}::text[])`,
+      )
+    }
   })
   const { rows } = await write<{
     id: string

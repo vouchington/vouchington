@@ -38,4 +38,19 @@ describe('relation post role visibility', () => {
       objectIds: new Set(),
     })
   })
+
+  it('can exclude blocked root post types for delegated object writes', async () => {
+    const author = await createTestUser()
+    const recommendation = await createTestPost({ user: author, post_type: 'topic_recommendation' })
+    const discussion = await createTestPost({ user: author })
+    const viewer = { kind: 'user', userId: author.id, staffRole: null } as const
+    const allowed = await getRelatablePostIds(
+      viewer,
+      { subjectIds: [], objectIds: [recommendation.id, discussion.id] },
+      undefined,
+      ['topic_recommendation'],
+    )
+
+    expect(allowed.objectIds).toEqual(new Set([discussion.id]))
+  })
 })

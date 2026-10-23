@@ -11,6 +11,7 @@ import assert from 'http-assert'
 import type { PrivateUser } from '@services/users/types'
 import type { IndividualRewardsProgramPointValuation } from './rewards-program-point-valuations-types.mts'
 import { isScaledMoney, MAX_POINT_VALUE_MICROUNITS, type ScaledMoney } from '@ts-shared/money'
+import { assertUserReferenceTopicExists } from '@services/topics/user-reference-topic-validation'
 
 const duplicatePointValuationConstraintNames = new Set([
   'uq_ind_rp_point_valuations__individual_rewards_program',
@@ -71,6 +72,11 @@ export const createIndividualRewardsProgramPointValuation = async (
 ) => {
   assert(currentUser, 401, 'User not logged in')
   assert(currentUserCanAccessUser(currentUser, user.id), 403, 'Forbidden')
+  await assertUserReferenceTopicExists(
+    rewardsProgramId,
+    'rewards_program',
+    'Invalid rewards_program_id',
+  )
   assertPointValuation(
     data.value_per_point,
     'value_per_point is required and must be valid scale-six money',
@@ -97,9 +103,13 @@ export const createIndividualRewardsProgramPointValuation = async (
     `))
   } catch (err) {
     const pgError = err as { code?: string; constraint?: string }
-    if (pgError.code === '23503') {
-      assert(false, 422, 'Invalid rewards_program_id')
+    if (
+      pgError.code === '23503' &&
+      pgError.constraint === 'fk_individ_rewards_program_point_valuati__rewards_program_topic'
+    ) {
+      assert(false, 404, 'Topic not found')
     }
+    if (pgError.code === '23503') assert(false, 422, 'Invalid rewards_program_id')
     if (pgError.code === '23505' && isDuplicatePointValuationConstraint(pgError.constraint)) {
       assert(false, 409, 'You already have a valuation for this rewards program')
     }

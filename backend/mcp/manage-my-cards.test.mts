@@ -56,6 +56,15 @@ describe('manage_my_cards tool — real DB', () => {
     expect((result.result as { card_topic_id: string }).card_topic_id).toBe(cardId)
   })
 
+  it('returns REST not-found semantics for a missing card topic', async () => {
+    await expect(
+      manageMyCardsTool.function(user)({
+        action: 'add',
+        card_topic_id: 'missing-topic-reference-for-404-test',
+      }),
+    ).rejects.toMatchObject({ status: 404, message: 'Topic not found' })
+  })
+
   it('list after add returns the card', async () => {
     const result = await getMyCardsTool.function(user)({})
     expect(result.success).toBe(true)

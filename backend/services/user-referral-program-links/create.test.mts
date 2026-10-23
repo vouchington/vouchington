@@ -1,10 +1,16 @@
-import { it, beforeAll, describe } from 'vitest'
+import { it, beforeAll, describe, expect } from 'vitest'
 import type { PrivateUser } from '@services/users/types'
 import assert from 'node:assert/strict'
-import { createReferralProgramFixture, createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
+import {
+  createReferralProgramFixture,
+  createTestUser,
+  deleteForeignKeyTargetDuringInsertForTest,
+  WEB_PROVENANCE,
+} from '@voucha/test-helpers'
 import { OFFICIAL_ACCOUNT_TRUST_SIGNAL_FORBIDDEN } from '@modules/on-error/error-codes'
 import { createUserReferralLink } from './create.mts'
 import { deactivateUserReferralLink } from './activate.mts'
+import { withPostgresPoolQueryFailureForTest } from '@voucha/test-helpers/postgres-pool-query-failure'
 
 describe('create', () => {
   let user: PrivateUser
@@ -38,6 +44,65 @@ describe('create', () => {
     assert.equal(link.referral_program_id, referralProgramId)
     assert.equal(link.label, 'My referral link')
     assert.ok(link.activated_at)
+  })
+
+  it('returns REST not-found semantics before validating URLs for a missing program', async () => {
+    await assert.rejects(
+      () =>
+        createUserReferralLink(user, WEB_PROVENANCE, {
+          user_id: user.id,
+          referral_program_id: '00000000-0000-7000-8000-000000000111',
+          url: 'https://example.com/refer',
+        }),
+      { status: 404, message: 'Topic not found' },
+    )
+  })
+
+  it('maps a referral-program deletion during the insert FK check to not found', async () => {
+    const randomSuffix = Math.random().toString(36).slice(7)
+    const hostname = `create-race-${randomSuffix}.com`
+    const fixture = await createReferralProgramFixture({
+      createdById: user.id,
+      randomSuffix,
+      hostname,
+      pathname: '/refer',
+    })
+    const outcome = await deleteForeignKeyTargetDuringInsertForTest({
+      queryMarker: '/* createUserReferralLink */',
+      lockTarget: async query => {
+        await query(
+          '/* lockTestReferralProgramTopic */ SELECT topic_id FROM referral_program_topics WHERE topic_id = $1 FOR UPDATE',
+          [fixture.referralProgramId],
+        )
+      },
+      deleteTarget: async query => {
+        await query(
+          '/* deleteTestReferralProgramTopic */ DELETE FROM referral_program_topics WHERE topic_id = $1',
+          [fixture.referralProgramId],
+        )
+      },
+      operation: () =>
+        createUserReferralLink(user, WEB_PROVENANCE, {
+          user_id: user.id,
+          referral_program_id: fixture.referralProgramId,
+          url: `https://${hostname}/refer?race=${randomSuffix}`,
+        }),
+    })
+
+    expect(outcome).toMatchObject({ error: { status: 404, message: 'Topic not found' } })
+  })
+
+  it('preserves unrelated database errors during link creation', async () => {
+    const failure = await withPostgresPoolQueryFailureForTest('/* createUserReferralLink */', () =>
+      createUserReferralLink(user, WEB_PROVENANCE, {
+        user_id: user.id,
+        referral_program_id: referralProgramId!,
+        url: `https://${testHostname}/refer?failure=${Math.random().toString(36).slice(7)}`,
+      }).catch((err: unknown) => err),
+    )
+
+    expect(failure.result).toMatchObject({ code: '25P02' })
+    expect(failure.result).toBe(failure.error)
   })
 
   it('createUserReferralLink upserts duplicate links and reactivates deactivated rows', async () => {

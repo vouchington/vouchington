@@ -3,8 +3,6 @@ import { canViewPostsBatch, type PostAccessInput } from './check-privacy-access-
 import type { QueryOptions } from '@data-stores/psql'
 
 export { canViewPostsBatch, type PostAccessInput } from './check-privacy-access-batch.mts'
-export { BLOCKED_POST_TYPES } from './blocked-post-types.mts'
-
 /**
  * Checks whether the current user can view a post.
  */

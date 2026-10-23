@@ -6,6 +6,7 @@ import {
   archiveTestCommunity,
   createTestPost,
   createTestUser,
+  deleteForeignKeyTargetDuringInsertForTest,
   insertTestCommunity,
   insertTestCommunityPostReview,
   insertTestCommunityListItem,
@@ -13,11 +14,42 @@ import {
 } from '@voucha/test-helpers'
 import { createOwnedList, searchListItems } from '@services/lists'
 import { archivePost } from '@services/posts/archive'
+import { addVisibleListItems } from '../add-list-items.mts'
 
 const SCOPES = ['lists:read', 'lists:write'] as const
 const PRIVATE_SCOPES = [...SCOPES, 'post-relations.owned-private:write'] as const
 
 describe('add_list_item batch — real DB', () => {
+  it('reports a list deleted during the item insert FK check as not found', async () => {
+    const caller = { ...(await createTestUser()), membership_plan: 'plus' as const }
+    const list = await createOwnedList(caller.id, WEB_PROVENANCE, { name: 'Deleted list race' })
+    const post = await createTestPost({ user: caller })
+    const outcome = await deleteForeignKeyTargetDuringInsertForTest({
+      queryMarker: '/* addListItem */',
+      lockTarget: async query => {
+        await query('/* lockTestUserList */ SELECT id FROM user_lists WHERE id = $1 FOR UPDATE', [
+          list.id,
+        ])
+      },
+      deleteTarget: async query => {
+        await query('/* deleteTestUserList */ DELETE FROM user_lists WHERE id = $1', [list.id])
+      },
+      operation: () =>
+        addVisibleListItems(caller, null, list.id, [{ item_type: 'post', entity: post.id }]),
+    })
+
+    expect(outcome).toMatchObject({
+      value: [
+        {
+          item_type: 'post',
+          entity: post.id,
+          status: 'not_found',
+          error: 'Referenced list or entity does not exist',
+        },
+      ],
+    })
+  })
+
   it('reports an archived-community post as ineligible without writing it', async () => {
     const caller = { ...(await createTestUser()), membership_plan: 'plus' as const }
     const community = await insertTestCommunity({ createdById: caller.id })
@@ -182,5 +214,42 @@ describe('add_list_item batch — real DB', () => {
     )
     expect(hidden.results).toMatchObject([{ status: 'not_found', error: 'Not found' }])
     expect((await searchListItems(list.id, {})).results).toHaveLength(0)
+  })
+
+  it('blocks delegated writes and imports of topic-recommendation threads', async () => {
+    const caller = { ...(await createTestUser()), membership_plan: 'plus' as const }
+    const recommendation = await createTestPost({ user: caller, post_type: 'topic_recommendation' })
+    const directList = await createOwnedList(caller.id, WEB_PROVENANCE, {
+      name: 'Direct recommendation',
+    })
+    const direct = await callStructuredMcpTool(
+      caller,
+      'add_list_item',
+      { list_id: directList.id, items: [{ item_type: 'post', entity: recommendation.id }] },
+      SCOPES,
+    )
+    expect(direct.results).toMatchObject([{ status: 'not_found', error: 'Not found' }])
+
+    const community = await insertTestCommunity({
+      createdById: caller.id,
+      slug: `recommendation-community-${createRandomString(8)}`,
+    })
+    await insertTestCommunityListItem({
+      communityId: community.id,
+      itemType: 'post',
+      entityId: recommendation.id,
+      addedById: caller.id,
+    })
+    const importList = await createOwnedList(caller.id, WEB_PROVENANCE, {
+      name: 'Recommendation import',
+    })
+    const imported = await callStructuredMcpTool(
+      caller,
+      'add_list_item',
+      { list_id: importList.id, source: { community: community.slug } },
+      SCOPES,
+    )
+    expect(imported.posts).toBe(0)
+    expect((await searchListItems(importList.id, {})).results).toHaveLength(0)
   })
 })

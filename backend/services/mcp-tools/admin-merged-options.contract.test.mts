@@ -171,7 +171,9 @@ describe('all merged admin MCP options', () => {
       },
     ])
     expect(plan.charges).toEqual(
-      routes.length ? [{ eventIndex: 0, requestId: 1, routeKeys: routes }] : [],
+      routes.length
+        ? [{ eventIndex: 0, requestId: 1, routeCharges: [{ routeKeys: routes, weight: 1 }] }]
+        : [],
     )
   })
 

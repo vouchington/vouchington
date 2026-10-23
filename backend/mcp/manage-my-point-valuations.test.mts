@@ -65,6 +65,16 @@ describe('manage_my_point_valuations tool — real DB', () => {
     })
   })
 
+  it('returns REST not-found semantics for a missing rewards-program topic', async () => {
+    await expect(
+      manageMyPointValuationsTool.function(user)({
+        action: 'add',
+        rewards_program_id: 'missing-topic-reference-for-404-test',
+        value_per_point: { amount: 10_000, currency: 'usd', scale: 6 },
+      }),
+    ).rejects.toMatchObject({ status: 404, message: 'Topic not found' })
+  })
+
   it('list after add returns the valuation', async () => {
     const result = await getMyPointValuationsTool.function(user)({})
     expect(result.success).toBe(true)

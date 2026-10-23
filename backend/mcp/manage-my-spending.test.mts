@@ -69,6 +69,16 @@ describe('manage_my_spending tool — real DB', () => {
     ).toBe(spendingCategoryId)
   })
 
+  it('returns REST not-found semantics for a missing spending-category topic', async () => {
+    await expect(
+      manageMySpendingTool.function(user)({
+        action: 'add',
+        spending_category_topic_id: 'missing-topic-reference-for-404-test',
+        amount: { amount: 100, currency: 'usd' },
+      }),
+    ).rejects.toMatchObject({ status: 404, message: 'Topic not found' })
+  })
+
   it('list after add returns the spending category', async () => {
     const result = await getMySpendingTool.function(user)({})
     expect(result.success).toBe(true)

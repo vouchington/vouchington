@@ -84,10 +84,13 @@ const tool: MergedToolSource<SetBookmarkArgs, { success: true; results: Bookmark
           const topicFollow =
             args['recommend_unknown_topics'] === true && args['predicate'] === 'follow'
           const importsTopics = topicFollow && targets.some(target => isImportedTopicTarget(target))
-          const setsBookmark = targets.some(
+          const bookmarkTargetCount = targets.filter(
             target => !(topicFollow && isImportedTopicTarget(target)),
-          )
-          return [...(importsTopics ? [topicImport] : []), ...(setsBookmark ? [bookmark] : [])]
+          ).length
+          return [
+            ...(importsTopics ? [{ ...topicImport, weight: 1 }] : []),
+            ...(bookmarkTargetCount > 0 ? [{ ...bookmark, weight: bookmarkTargetCount }] : []),
+          ]
         }
         // Route probes set one field at a time, including the string sentinel "present".
         if (

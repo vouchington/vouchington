@@ -1,5 +1,9 @@
 import { RateLimiter } from '@data-stores/valkey-rate-limiter'
-import { createRouteRateLimiter, type RouteRateLimitResult } from '@vouchington/rate-limit'
+import {
+  createRouteRateLimiter,
+  type RouteRateLimitCheckOptions,
+  type RouteRateLimitResult,
+} from '@vouchington/rate-limit'
 import type { PrivateUser } from '@services/users/types'
 import { computeTrustTier } from '@services/user-rate-limits/trust-tier'
 import { getUserRateLimitContext } from '@services/user-rate-limits/context'
@@ -76,13 +80,14 @@ export async function checkRouteRateLimit(
   routeKey: string,
   identities: RateLimitIdentities,
   currentUser: PrivateUser | null,
+  options: RouteRateLimitCheckOptions = {},
 ): Promise<RouteRateLimitResult> {
   if (!isRouteRateLimitEnabled()) {
     return { limited: false, retryAfterSeconds: 0, limit: 0, remaining: 0 }
   }
 
   const keyIdentities = getRateLimitKeyDimensions(identities)
-  return checkPublishedRouteLimit(routeKey, keyIdentities, { identities, currentUser })
+  return checkPublishedRouteLimit(routeKey, keyIdentities, { identities, currentUser }, options)
 }
 
 export { routeRateLimiters }

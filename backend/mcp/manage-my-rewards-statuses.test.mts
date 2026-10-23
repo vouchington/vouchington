@@ -40,6 +40,15 @@ describe('manage_my_rewards_statuses tool — real DB', () => {
     ).toBe(rewardsProgramStatusId)
   })
 
+  it('returns REST not-found semantics for a missing rewards-status topic', async () => {
+    await expect(
+      manageMyRewardsStatusesTool.function(user)({
+        action: 'add',
+        rewards_program_status_topic_id: 'missing-topic-reference-for-404-test',
+      }),
+    ).rejects.toMatchObject({ status: 404, message: 'Topic not found' })
+  })
+
   it('list after add returns the status', async () => {
     const result = await getMyRewardsStatusesTool.function(user)({})
     expect(result.success).toBe(true)

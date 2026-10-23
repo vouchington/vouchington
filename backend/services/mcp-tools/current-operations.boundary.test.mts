@@ -169,7 +169,9 @@ describe('every current MCP operation: planning, real route charge, and durable 
       }),
     ])
     expect(acceptedPlan.charges).toEqual(
-      routeKeys.length ? [{ eventIndex: 0, requestId: 1, routeKeys }] : [],
+      routeKeys.length
+        ? [{ eventIndex: 0, requestId: 1, routeCharges: [{ routeKeys, weight: 1 }] }]
+        : [],
     )
     const charged = await chargeMcpToolCalls(acceptedPlan, { identities, owner: actor.user })
     expect(charged.events).toEqual(acceptedPlan.events)

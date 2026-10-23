@@ -49,6 +49,9 @@ export type ToolAnnotations = ReadOnlyToolAnnotations | WriteToolAnnotations
 export type ToolApiEndpoint = {
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
   path: string
+  // Runtime-only number of REST write units this selected route represents. `meta.api` omits it;
+  // batch tools set it only from validated arguments in `selectApi`.
+  weight?: number
 }
 
 // JSON Schema for a tool's structured result. MCP (2025-06-18) requires an object at the root.

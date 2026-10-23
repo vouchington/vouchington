@@ -153,9 +153,9 @@ describe('request query profile baseline', () => {
       await import('../../test-helpers/api/request-query-profile.mts')
     const { takeRequestQueryProfileViolations } =
       await import('../../test-helpers/api/request-query-profile-violations.mts')
-    const serve = (annotation: string) => {
+    const serve = (annotation: string, method = 'GET', url = '/v1/x?y=1') => {
       const res = new EventEmitter() as unknown as http.ServerResponse
-      const req = { method: 'GET', url: '/v1/x?y=1' } as http.IncomingMessage
+      const req = { method, url } as http.IncomingMessage
       profileRequestQueries(req, res, () => {
         recordQueryTiming({ pool: 'read', durationMs: 0, rowCount: 0, error: false, annotation })
         recordQueryTiming({ pool: 'read', durationMs: 0, rowCount: 0, error: false, annotation })
@@ -166,7 +166,9 @@ describe('request query profile baseline', () => {
     const stderrSpy = vi.spyOn(process.stderr, 'write').mockReturnValue(true)
     vi.stubEnv('VITEST_DIAGNOSTICS', undefined)
     try {
-      serve(committed[0]?.annotation ?? '')
+      const scopedBaseline = committed.find(entry => entry.annotation === 'addListItem')
+      expect(scopedBaseline).toBeDefined()
+      serve(scopedBaseline?.annotation ?? '', 'POST', '/api/v1/mcp')
       expect(takeRequestQueryProfileViolations()).toEqual([])
       serve('notInTheBaseline')
       expect(takeRequestQueryProfileViolations()).toEqual([

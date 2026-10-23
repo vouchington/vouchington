@@ -1,6 +1,6 @@
 import { getPostByAnyCached } from './get-cached.mts'
 import type { Post } from './types.mts'
-import { BLOCKED_POST_TYPES } from './blocked-post-types.mts'
+import { BLOCKED_POST_TYPES } from '@voucha/types/entities/post'
 import { getPostsWithRootsByAnyCached } from './get-cached-with-roots.mts'
 
 export async function getRoutePostByAnyCached(identifier: string) {

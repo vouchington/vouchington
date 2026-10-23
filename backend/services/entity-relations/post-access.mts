@@ -86,6 +86,7 @@ export async function loadPostMutationAccess(
   viewer: EntityRelationViewer,
   posts: { readonly subjectIds: readonly string[]; readonly objectIds: readonly string[] },
   options?: QueryOptions,
+  excludedObjectAccessPostTypes?: readonly string[],
 ): Promise<PostMutationAccess> {
   const identifiers = [...posts.subjectIds, ...posts.objectIds]
   if (identifiers.length > 0 && !identifiers.every(isUUID)) {
@@ -102,6 +103,9 @@ export async function loadPostMutationAccess(
         role: 'object',
         ids: posts.objectIds,
         filter: buildObjectPostAccessFilter('candidate_post', 'access_post', viewer, 'named'),
+        ...(excludedObjectAccessPostTypes?.length
+          ? { excludedAccessPostTypes: excludedObjectAccessPostTypes }
+          : {}),
       },
     ],
     options,
@@ -112,8 +116,9 @@ export async function getRelatablePostIds(
   viewer: EntityRelationViewer,
   posts: { readonly subjectIds: readonly string[]; readonly objectIds: readonly string[] },
   options?: QueryOptions,
+  excludedObjectAccessPostTypes?: readonly string[],
 ): Promise<{ subjectIds: Set<string>; objectIds: Set<string> }> {
-  const access = await loadPostMutationAccess(viewer, posts, options)
+  const access = await loadPostMutationAccess(viewer, posts, options, excludedObjectAccessPostTypes)
   return { subjectIds: access.subjectIds, objectIds: access.objectIds }
 }
 

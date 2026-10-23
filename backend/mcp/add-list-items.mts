@@ -83,9 +83,22 @@ export async function addVisibleListItems(
       results.push({ ...item, status: 'not_found', error: 'Not found' })
       continue
     }
-    // no-mistakes-disable-next-line query-reached-per-item: visibility is one batch; each insert is the existing single-item write
-    const list_item = await addListItem(listId, item.item_type, id)
-    results.push({ ...item, status: 'added', list_item })
+    try {
+      // no-mistakes-disable-next-line query-reached-per-item: visibility is one batch; each insert is the existing single-item write
+      const list_item = await addListItem(listId, item.item_type, id)
+      results.push({ ...item, status: 'added', list_item })
+    } catch (err) {
+      const status =
+        typeof err === 'object' && err !== null && 'status' in err
+          ? (err as { status?: unknown }).status
+          : undefined
+      if (status !== 404 && status !== 403) throw err
+      results.push({
+        ...item,
+        status: status === 404 ? 'not_found' : 'forbidden',
+        error: err instanceof Error ? err.message : status === 404 ? 'Not found' : 'Forbidden',
+      })
+    }
   }
   // oxlint-enable no-await-in-loop
   return results

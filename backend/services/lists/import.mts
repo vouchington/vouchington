@@ -1,5 +1,6 @@
 import { write } from '@data-stores/psql'
 import { buildObjectPostAccessFilter } from '@services/entity-relations/post-access'
+import { BLOCKED_POST_TYPES } from '@voucha/types/entities/post'
 import type { EntityRelationViewer } from '@services/entity-relations/viewer'
 import { invalidate } from '@services/entity-cache/invalidate'
 import sql, { type SQLStatement } from 'sql-template-strings'
@@ -28,8 +29,11 @@ export function importCommunityListPostsSourceSql(
       AND item.removed_at IS NULL
       AND `
   const eligibility = buildObjectPostAccessFilter('candidate_post', 'access_post', viewer, 'listed')
-  statement.append(eligibility ?? sql`TRUE`)
+  statement.append(eligibility ?? sql` TRUE `)
   if (delegated) {
+    statement.append(
+      sql`AND access_post.post_type::text != ALL(${[...BLOCKED_POST_TYPES]}::text[])`,
+    )
     const ownsPrivate = delegated.grantedScopes.includes('post-relations.owned-private:write')
     statement.append(sql`
       AND NOT (

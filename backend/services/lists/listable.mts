@@ -8,6 +8,7 @@ import {
   buildObjectPostAccessFilter,
   type PostMutationAuthority,
 } from '@services/entity-relations/post-access'
+import { BLOCKED_POST_TYPES } from '@voucha/types/entities/post'
 import { isDelegatedPrivateRootDenied } from '@services/entity-relations/post-mutation-snapshots'
 import type { EntityRelationViewer } from '@services/entity-relations/viewer'
 import assert from 'http-assert'
@@ -23,6 +24,7 @@ export type ListablePostIds = {
  * A named-inaccessible post stays missing. A named-accessible post that list discovery would
  * hide is reported separately, so callers can refuse it before writing an invisible list row.
  * Both predicates and the delegated private-root snapshot come from one batch statement.
+ * Delegated callers also cannot name roots of the blocked post types.
  */
 export async function filterListablePostIds(
   viewer: EntityRelationViewer,
@@ -50,6 +52,9 @@ export async function filterListablePostIds(
       ON access_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)
     WHERE candidate_post.id = ANY(${uuids}::uuid[])
   `)
+  if (authority?.kind === 'delegated') {
+    query.append(sql`AND access_post.post_type::text != ALL(${[...BLOCKED_POST_TYPES]}::text[])`)
+  }
   const { rows } = await write<{
     id: string
     root_post_id: string

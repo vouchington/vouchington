@@ -9,6 +9,7 @@ import { addUrl } from '@services/urls/upsert'
 import { assertCurrentUserCanCreateUserReferralLink } from './authorization.mts'
 import type { UserReferralLink } from './types.mts'
 import { userReferralLinkColumns } from './columns.mts'
+import { assertUserReferenceTopicExists } from '@services/topics/user-reference-topic-validation'
 
 export async function createUserReferralLink(
   currentUser: PrivateUser | null,
@@ -25,6 +26,11 @@ export async function createUserReferralLink(
   validateUUID(data.referral_program_id)
 
   assertCurrentUserCanCreateUserReferralLink(currentUser, data.user_id)
+  await assertUserReferenceTopicExists(
+    data.referral_program_id,
+    'referral_program',
+    'Invalid referral_program_id',
+  )
 
   const validationResult = await isUrlReferralLink(data.url, {
     referral_program_id: data.referral_program_id,
@@ -55,8 +61,10 @@ export async function createUserReferralLink(
     assert(label.length <= 255, 422, 'label must be 255 characters or less')
   }
 
-  const { rows } = await write<UserReferralLink>(
-    sql`/* createUserReferralLink */
+  let rows: UserReferralLink[]
+  try {
+    ;({ rows } = await write<UserReferralLink>(
+      sql`/* createUserReferralLink */
       INSERT INTO user_referral_program_links (
         user_id,
         referral_program_topic_id,
@@ -82,7 +90,17 @@ export async function createUserReferralLink(
         activated_at = CURRENT_TIMESTAMP,
         deactivated_at = NULL
       RETURNING `.append(userReferralLinkColumns()),
-  )
+    ))
+  } catch (err) {
+    const pgError = err as { code?: string; constraint?: string }
+    if (
+      pgError.code === '23503' &&
+      pgError.constraint === 'user_referral_program_links_referral_program_topic_id_fkey'
+    ) {
+      assert(false, 404, 'Topic not found')
+    }
+    throw err
+  }
 
   return rows[0]
 }

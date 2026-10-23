@@ -6,7 +6,8 @@ import {
   getUrlByAnyCached,
   getUrlHostnameByAnyCached,
 } from '@services/entity-fetch'
-import { canViewPost, BLOCKED_POST_TYPES } from '@services/posts'
+import { canViewPost } from '@services/posts'
+import { BLOCKED_POST_TYPES } from '@voucha/types/entities/post'
 import { getRoutePostByAnyCached } from '@services/posts/route-access'
 import { getRssFeedItemById } from '@services/rss-feed-items'
 import { loadCommunityForViewerOrApplicant } from '@services/communities'
