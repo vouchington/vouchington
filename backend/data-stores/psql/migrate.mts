@@ -34,8 +34,9 @@ export {
 
 export type MigrationPlatform = Pick<Psql, 'runMigrations' | 'withMigrationSession' | 'write'>
 
-export async function runMigrations() {
-  await psql.runMigrations(path.resolve(__dirname, 'migrations'), { logger: console })
+export async function runMigrations(platform: Pick<Psql, 'runMigrations'> = psql) {
+  const selectedPlatform = platform
+  await selectedPlatform.runMigrations(path.resolve(__dirname, 'migrations'), { logger: console })
 }
 
 export async function runViews(options: RunViewsOptions = {}) {
