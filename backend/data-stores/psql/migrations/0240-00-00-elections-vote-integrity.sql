@@ -80,6 +80,14 @@ COMMENT ON COLUMN vote_ballot_cleanup_cursors.family IS 'Concrete ballot family 
 COMMENT ON COLUMN vote_ballot_cleanup_cursors.cursor_vote_id IS 'Last scanned ballot ID; not a durable relationship to a ballot.';
 COMMENT ON COLUMN vote_ballot_cleanup_cursors.updated_at IS 'Last committed ballot sweep progress.';
 
+CREATE TABLE IF NOT EXISTS post_vote_retained_daily_counts (
+  day DATE PRIMARY KEY,
+  count BIGINT NOT NULL CHECK (count >= 0)
+);
+COMMENT ON TABLE post_vote_retained_daily_counts IS 'Anonymous daily count of post vote events removed by ballot retention, preserving historical engagement metrics.';
+COMMENT ON COLUMN post_vote_retained_daily_counts.day IS 'UTC day of the removed ballot event.';
+COMMENT ON COLUMN post_vote_retained_daily_counts.count IS 'Number of qualifying removed post vote events on this day.';
+
 CREATE TABLE IF NOT EXISTS user_agent_string_cleanup_cursors (
   is_singleton BOOLEAN PRIMARY KEY DEFAULT TRUE CHECK (is_singleton),
   cursor_user_agent_string_id UUID,

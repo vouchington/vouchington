@@ -115,6 +115,9 @@ type ExpiryCleanupOptions = Pick<
 // Each cleanup in a run takes its batch size and per-run cap from the required run limits; a
 // per-cleanup option can override either one (tests use this to scope windows and shrink limits).
 type DataRetentionCleanupOptions = {
+  voteBallotIdsByTable?: Readonly<Record<string, readonly string[]>>
+  userAgentStringIds?: readonly string[]
+  voteIntegrityFlagIds?: readonly string[]
   retainedIdentityRootIds?: Partial<Record<RetainedIdentityFamily, readonly string[]>>
   retainedRelationIdentityKeys?: Readonly<Record<string, readonly RetainedRelationIdentityKey[]>>
   retainedMediaBindingIds?: readonly string[]
@@ -253,9 +256,20 @@ export async function runDataRetentionCleanup(
   const oldModerationMediaReveals = await cleanupOldModerationMediaReveals(
     withLimits(options.oldModerationMediaReveals),
   )
-  const supersededVoteBallots = await cleanupSupersededVoteBallots(limits.batchSize)
-  const orphanedUserAgentStrings = await cleanupOrphanedUserAgentStrings(limits.batchSize)
-  const voteIntegrityDetails = await cleanupVoteIntegrityDetails(limits.batchSize)
+  const supersededVoteBallots = await cleanupSupersededVoteBallots(
+    limits.batchSize,
+    new Date(),
+    options.voteBallotIdsByTable,
+  )
+  const orphanedUserAgentStrings = await cleanupOrphanedUserAgentStrings(
+    limits.batchSize,
+    options.userAgentStringIds,
+  )
+  const voteIntegrityDetails = await cleanupVoteIntegrityDetails(
+    limits.batchSize,
+    new Date(),
+    options.voteIntegrityFlagIds,
+  )
   const retainedRelationIdentities = await cleanupRetainedRelationIdentities(
     retainedPageSize,
     options.retainedRelationIdentityKeys,

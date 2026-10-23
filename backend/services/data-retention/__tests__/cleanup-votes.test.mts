@@ -1,10 +1,11 @@
-import { randomUUID } from 'node:crypto'
+import { randomInt, randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { v7 as uuidv7 } from 'uuid'
 import { upsertUserAgentString } from '@data-stores/psql/upsert-user-agent-string'
 import {
   createTestUserDirect,
   getTestPostVoteIds,
+  getTestRetainedPostVoteCount,
   getTestVoteIntegrityFlagDetails,
   hasTestUserAgentString,
   insertTestPost,
@@ -15,6 +16,7 @@ import {
 import { cleanupSupersededVoteBallotTable } from '../cleanup-vote-ballots.mts'
 import { cleanupOrphanedUserAgentStrings } from '../cleanup-user-agent-strings.mts'
 import { cleanupVoteIntegrityDetails } from '../cleanup-vote-integrity-details.mts'
+import { getEngagement } from '@services/growth-metrics/get-engagement'
 
 const NOW = new Date('2026-10-23T12:00:00.000Z')
 
@@ -44,12 +46,17 @@ describe('vote and user-agent retention', () => {
 
   it('deletes only ballots superseded for 90 days and keeps the newest ballot', async () => {
     const { userId, postId } = await postForTest()
-    const firstId = uuidv7({ msecs: Date.parse('2026-01-01T00:00:00.000Z') })
+    const firstDay = new Date(Date.UTC(2023, 0, 1 + randomInt(730)))
+    const firstDayText = firstDay.toISOString().slice(0, 10)
+    const firstId = uuidv7({ msecs: firstDay.getTime() })
     const secondId = uuidv7({ msecs: Date.parse('2026-02-01T00:00:00.000Z') })
     const recentId = uuidv7({ msecs: Date.parse('2026-10-01T00:00:00.000Z') })
     await insertTestPostVote(postId, userId, 1, firstId)
     await insertTestPostVote(postId, userId, -1, secondId)
     await insertTestPostVote(postId, userId, 1, recentId)
+
+    const retainedBefore = await getTestRetainedPostVoteCount(firstDayText)
+    const engagementBefore = await getEngagement('all', new Date(0))
 
     const page = await cleanupSupersededVoteBallotTable('post_votes', 3, NOW, [
       firstId,
@@ -58,6 +65,15 @@ describe('vote and user-agent retention', () => {
     ])
     expect(page).toMatchObject({ scanned: 2, deleted: 1, hasMore: false })
     expect(await getTestPostVoteIds(postId, userId)).toEqual([secondId, recentId])
+    expect(await getTestRetainedPostVoteCount(firstDayText)).toBe(retainedBefore + 1)
+    const engagementAfter = await getEngagement('all', new Date(0))
+    const dayCount = (engagement: typeof engagementAfter) =>
+      engagement.votes_over_time.find(point => point.date === firstDayText)?.count ?? 0
+    expect(dayCount(engagementAfter)).toBe(dayCount(engagementBefore))
+    expect(await cleanupSupersededVoteBallotTable('post_votes', 1, NOW, [firstId])).toMatchObject({
+      deleted: 0,
+    })
+    expect(await getTestRetainedPostVoteCount(firstDayText)).toBe(retainedBefore + 1)
   })
 
   it('removes an orphan user agent and keeps one referenced by a session', async () => {

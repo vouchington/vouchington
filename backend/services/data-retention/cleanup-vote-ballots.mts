@@ -36,11 +36,19 @@ export type VoteBallotCleanupPage = {
 export async function cleanupSupersededVoteBallots(
   batchSize: number,
   now = new Date(),
+  voteIdsByTable?: Readonly<Record<string, readonly string[]>>,
 ): Promise<VoteBallotCleanupPage[]> {
   const results: VoteBallotCleanupPage[] = []
   for (const config of voteTables) {
-    // oxlint-disable-next-line no-await-in-loop -- each ballot table owns an independent bounded cursor transaction.
-    results.push(await cleanupSupersededVoteBallotTable(config.table, batchSize, now)) // no-mistakes-disable-line query-reached-per-item: fixed schema-declared ballot tables each require one independent capped cursor transaction
+    results.push(
+      // oxlint-disable-next-line no-await-in-loop -- each ballot table owns an independent bounded cursor transaction.
+      await cleanupSupersededVoteBallotTable(
+        config.table,
+        batchSize,
+        now,
+        voteIdsByTable ? (voteIdsByTable[config.table] ?? []) : undefined,
+      ),
+    ) // no-mistakes-disable-line query-reached-per-item: fixed schema-declared ballot tables each require one independent capped cursor transaction
   }
   return results
 }
@@ -91,7 +99,20 @@ export async function cleanupSupersededVoteBallotTable(
     [cutoffId, voteIds ?? null, cursor?.cursor_vote_id ?? null, batchSize + 1],
   )
   const page = candidates.slice(0, batchSize)
-  const { rowCount } = await query(
+  const tallySql =
+    voteTable === 'post_votes'
+      ? `, tallied AS (
+         INSERT INTO post_vote_retained_daily_counts (day, count)
+         SELECT (uuid_extract_timestamp(id) AT TIME ZONE 'UTC')::date, COUNT(*)
+         FROM deleted
+         WHERE score IS NOT NULL AND NOT (score IN (-2, 2) AND NOT score_is_semantic)
+         GROUP BY 1
+         ON CONFLICT (day) DO UPDATE
+           SET count = post_vote_retained_daily_counts.count + EXCLUDED.count
+         RETURNING day
+       )`
+      : ''
+  const { rows: deletedRows } = await query<{ deleted: number }>(
     `/* deleteSupersededVoteBallots */
      WITH locked AS MATERIALIZED (
        SELECT old.${entityColumn} AS entity_id, old.id, old.user_id
@@ -100,16 +121,19 @@ export async function cleanupSupersededVoteBallotTable(
          ON candidate.entity_id = old.${entityColumn} AND candidate.id = old.id
        ORDER BY old.${entityColumn}, old.id
        FOR UPDATE OF old SKIP LOCKED
-     )
-     DELETE FROM ${table} old USING locked
-     WHERE old.${entityColumn} = locked.entity_id AND old.id = locked.id
+     ), deleted AS (
+       DELETE FROM ${table} old USING locked
+       WHERE old.${entityColumn} = locked.entity_id AND old.id = locked.id
        AND EXISTS (
          SELECT 1 FROM ${table} newer
          WHERE newer.${entityColumn} = locked.entity_id
            AND newer.user_id = locked.user_id
            AND newer.id > locked.id AND newer.id < $3::uuid
          LIMIT 1
-       )`,
+       )
+       RETURNING old.id${voteTable === 'post_votes' ? ', old.score, old.score_is_semantic' : ''}
+     )${tallySql}
+     SELECT COUNT(*)::int AS deleted FROM deleted`,
     [page.map(row => row.entity_id), page.map(row => row.id), cutoffId],
   )
   const hasMore = candidates.length > batchSize
@@ -120,5 +144,5 @@ export async function cleanupSupersededVoteBallotTable(
       [table, hasMore ? page.at(-1)!.id : null],
     )
   await query.commit()
-  return { voteTable, scanned: page.length, deleted: rowCount ?? 0, hasMore }
+  return { voteTable, scanned: page.length, deleted: deletedRows[0]?.deleted ?? 0, hasMore }
 }

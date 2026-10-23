@@ -1,4 +1,4 @@
-import { cacheValkeyClient } from '@data-stores/valkey/clients'
+import { cachePrimaryValkeyClient } from '@data-stores/valkey/clients'
 import { getDateFromUUIDv7 } from '@modules/utils'
 import { TimeUnit } from '@valkey/valkey-glide'
 
@@ -22,7 +22,7 @@ export async function storeVoteIpEvidence(
   if (!Number.isFinite(remainingMs)) throw new RangeError('Vote IP evidence time must be finite')
   const ttlSeconds = Math.min(EVIDENCE_TTL_SECONDS, Math.floor(remainingMs / 1_000))
   if (ttlSeconds < 1) return
-  await cacheValkeyClient.set(voteIpEvidenceKey(voteId), ipAddress, {
+  await cachePrimaryValkeyClient.set(voteIpEvidenceKey(voteId), ipAddress, {
     conditionalSet: 'onlyIfDoesNotExist',
     expiry: { type: TimeUnit.Seconds, count: ttlSeconds },
   })
@@ -30,6 +30,6 @@ export async function storeVoteIpEvidence(
 
 /** A retry may read the same immutable evidence until its original expiry. */
 export async function getVoteIpEvidence(voteId: string): Promise<string | null> {
-  const value = await cacheValkeyClient.get(voteIpEvidenceKey(voteId))
+  const value = await cachePrimaryValkeyClient.get(voteIpEvidenceKey(voteId))
   return value === null ? null : value.toString()
 }

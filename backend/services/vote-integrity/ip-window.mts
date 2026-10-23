@@ -1,4 +1,4 @@
-import { cacheValkeyClient } from '@data-stores/valkey/clients'
+import { cachePrimaryValkeyClient } from '@data-stores/valkey/clients'
 import { loadScript, registerScript } from '@data-stores/valkey/scripts'
 import { hashToken } from '@modules/token-secrets'
 import { IP_CORRELATION_WINDOW_MINUTES } from './config.mts'
@@ -26,7 +26,7 @@ export async function recordVoteIp(
   if (!Number.isFinite(voteAtMs) || !Number.isFinite(asOfMs)) {
     throw new RangeError('Vote IP timestamps must be finite dates')
   }
-  await cacheValkeyClient.invokeScript(recordScript, {
+  await cachePrimaryValkeyClient.invokeScript(recordScript, {
     keys: [keyFor(entityType, entityId, ipAddress)],
     args: [
       userId,
@@ -45,7 +45,7 @@ export async function countDistinctVoteUsersForIp(
 ): Promise<number> {
   const asOfMs = asOf.getTime()
   if (!Number.isFinite(asOfMs)) throw new RangeError('asOf must be a finite date')
-  return cacheValkeyClient.zcount(
+  return cachePrimaryValkeyClient.zcount(
     keyFor(entityType, entityId, ipAddress),
     { value: asOfMs - IP_CORRELATION_WINDOW_MINUTES * 60_000, isInclusive: true },
     { value: asOfMs, isInclusive: true },

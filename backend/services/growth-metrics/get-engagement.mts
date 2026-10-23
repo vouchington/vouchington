@@ -3,20 +3,24 @@ import { getMinUUIDv7ForDate } from '@modules/utils/ids'
 import sql from 'sql-template-strings'
 import type { GrowthRange, Engagement, DailyDataPoint } from './types.mts'
 
-export async function getEngagement(_range: GrowthRange, periodStart: Date): Promise<Engagement> {
+export async function getEngagement(range: GrowthRange, periodStart: Date): Promise<Engagement> {
   const periodStartUuid = getMinUUIDv7ForDate(periodStart)
 
   const { rows } = await read(sql`/* getEngagement */
     WITH votes AS (
       SELECT
         COUNT(*)::INT AS cnt,
-        DATE(uuid_extract_timestamp(id)) AS day
+        (uuid_extract_timestamp(id) AT TIME ZONE 'UTC')::date AS day
       -- no-mistakes-disable-next-line postgres-required-predicates: engagement aggregates a time window across target post_id partitions
       FROM post_votes
       WHERE id > ${periodStartUuid}
         AND score IS NOT NULL
         AND NOT (score IN (-2, 2) AND NOT score_is_semantic)
       GROUP BY day
+      UNION ALL
+      SELECT count::int AS cnt, day
+      FROM post_vote_retained_daily_counts
+      WHERE ${range} = 'all' AND day >= (${periodStart}::timestamptz AT TIME ZONE 'UTC')::date
     ),
     votes_total AS (
       SELECT SUM(cnt)::INT AS cnt FROM votes
@@ -55,7 +59,8 @@ export async function getEngagement(_range: GrowthRange, periodStart: Date): Pro
       (SELECT cnt FROM follows_total) AS follows_created,
       (SELECT cnt FROM total_follows) AS total_follows,
       (SELECT cnt FROM total_users) AS total_users,
-      (SELECT COALESCE(json_agg(json_build_object('date', day::TEXT, 'count', cnt) ORDER BY day ASC), '[]'::json) FROM votes) AS votes_over_time,
+      (SELECT COALESCE(json_agg(json_build_object('date', day::TEXT, 'count', cnt) ORDER BY day ASC), '[]'::json)
+         FROM (SELECT day, SUM(cnt)::int AS cnt FROM votes GROUP BY day) daily_votes) AS votes_over_time,
       (SELECT COALESCE(json_agg(json_build_object('date', day::TEXT, 'count', cnt) ORDER BY day ASC), '[]'::json) FROM comments) AS comments_over_time,
       (SELECT COALESCE(json_agg(json_build_object('date', day::TEXT, 'count', cnt) ORDER BY day ASC), '[]'::json) FROM follows) AS follows_over_time
   `)

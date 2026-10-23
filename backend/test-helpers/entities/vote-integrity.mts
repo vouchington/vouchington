@@ -85,6 +85,13 @@ export async function getTestPostVoteIds(postId: string, userId: string): Promis
   return rows.map(row => row.id)
 }
 
+export async function getTestRetainedPostVoteCount(day: string): Promise<number> {
+  const { rows } = await read<{ count: string }>(sql`/* getTestRetainedPostVoteCount */
+    SELECT count FROM post_vote_retained_daily_counts WHERE day = ${day}::date
+  `)
+  return Number(rows[0]?.count ?? 0)
+}
+
 export async function hasTestUserAgentString(id: string): Promise<boolean> {
   const { rows } = await read<{ exists: boolean }>(sql`/* hasTestUserAgentString */
     SELECT EXISTS(SELECT 1 FROM user_agent_strings WHERE id = ${id}::uuid) AS exists

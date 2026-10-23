@@ -66,6 +66,9 @@ describe('cleanupAnalyticsLocalFiles', () => {
 
     await expect(
       runDataRetentionCleanup(limits, {
+        voteBallotIdsByTable: {},
+        userAgentStringIds: [],
+        voteIntegrityFlagIds: [],
         retainedIdentityRootIds: {},
         retainedRelationIdentityKeys: {},
         retainedMediaBindingIds: [],
