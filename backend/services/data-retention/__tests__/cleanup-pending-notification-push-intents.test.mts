@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import { v7 } from 'uuid'
-import sql from 'sql-template-strings'
 import {
   createTestManualPostNotification,
   createTestPost,
@@ -38,13 +37,6 @@ describe('old pending notification push intent cleanup', () => {
     const { result, remainingIds } = await withTestScopedPendingPushRetention(
       { userId: user.id, notificationIds: allIds },
       async borrowedQuery => {
-        const { rows: initialCursor } = await borrowedQuery<{
-          cursor_created_at: string | null
-        }>(sql`
-          /* readTestResetPendingPushRetentionCursor */
-          SELECT cursor_created_at::text FROM notification_push_intent_retention_cursors
-          WHERE is_singleton`)
-        expect(initialCursor[0]?.cursor_created_at).toBeNull()
         await setTestPendingPushIntentRetentionState(borrowedQuery, {
           userId: user.id,
           notificationId: agedIdle,
@@ -73,30 +65,31 @@ describe('old pending notification push intent cleanup', () => {
         expect(first).toMatchObject({
           deleted: 1,
           hasMore: true,
-          continuation: {
-            notificationId: agedIdle,
-            userId: user.id,
-            createdAt: expect.any(String),
-          },
+          continuation: expect.any(String),
         })
         const second = await cleanupOldPendingNotificationPushIntents(options)
         expect(second).toMatchObject({
           deleted: 0,
           hasMore: true,
-          continuation: {
-            notificationId: agedActiveLease,
-            userId: user.id,
-            createdAt: expect.any(String),
-          },
+          continuation: expect.any(String),
+        })
+        expect(second.continuation).not.toBe(first.continuation)
+        expect(await cleanupOldPendingNotificationPushIntents(options)).toEqual({
+          deleted: 1,
+          hasMore: false,
+          continuation: null,
+        })
+        await setTestPendingPushIntentRetentionState(borrowedQuery, {
+          userId: user.id,
+          notificationId: agedActiveLease,
+          createdAt: new Date(now.getTime() - 32 * DAY_MS),
+          leaseExpiresAt: new Date(now.getTime() - DAY_MS),
         })
         return cleanupOldPendingNotificationPushIntents(options)
       },
     )
     expect(result).toEqual({ deleted: 1, hasMore: false, continuation: null })
-    expect(remainingIds).toHaveLength(3)
-    expect(remainingIds).toEqual(
-      expect.arrayContaining([oldNotificationNewIntent, agedActiveLease, recent]),
-    )
+    expect(remainingIds).toEqual([oldNotificationNewIntent, recent].toSorted())
     for (const id of allIds) {
       await expect(notificationPushIntentExists(user.id, id)).resolves.toBe(true)
     }

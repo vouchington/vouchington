@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { v7 } from 'uuid'
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
@@ -16,8 +17,8 @@ export async function withTestScopedPendingPushRetention<T>(
     WHERE is_singleton FOR UPDATE`)
   await query(sql`/* resetTestPendingPushRetentionCursor */
     UPDATE notification_push_intent_retention_cursors
-    SET cursor_created_at = NULL, cursor_notification_id = NULL,
-      cursor_notification_owner_id = NULL, sweep_upper_bound_created_at = NULL
+    SET cursor_notification_push_intent_id = NULL,
+      sweep_upper_bound_notification_push_intent_id = NULL
     WHERE is_singleton`)
   const result = await run(query)
   const { rows } = await query<{ notification_id: string }>(sql`
@@ -40,7 +41,8 @@ export async function setTestPendingPushIntentRetentionState(
 ): Promise<void> {
   const { rowCount } = await query(sql`/* setTestPendingPushIntentRetentionState */
     UPDATE notification_push_intents
-    SET created_at = ${input.createdAt}::timestamptz,
+    SET id = ${v7({ msecs: input.createdAt.getTime() })}::uuid,
+      created_at = ${input.createdAt}::timestamptz,
       lease_token = ${input.leaseExpiresAt ? randomUUID() : null}::uuid,
       leased_at = ${input.leaseExpiresAt ? input.createdAt : null}::timestamptz,
       lease_expires_at = ${input.leaseExpiresAt ?? null}::timestamptz
