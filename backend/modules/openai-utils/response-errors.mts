@@ -1,6 +1,6 @@
 import type { Response } from 'openai/resources/responses/responses'
-import { APIConnectionError, APIError, APIUserAbortError } from 'openai'
-import { findInErrorChain, walkErrorChain } from './error-chain.mts'
+import { APIError, APIUserAbortError } from 'openai'
+import { walkErrorChain } from './error-chain.mts'
 
 type ResponseUsage = NonNullable<Response['usage']>
 export type OpenAIUsage = Pick<ResponseUsage, 'input_tokens' | 'output_tokens'> & {
@@ -46,8 +46,7 @@ export class OpenAIResponseNotCompletedError extends Error {
  * Thrown when the SSE stream for a response dies part-way through iteration. `emittedTextDelta`
  * records whether any text had already reached the caller: `false` means the attempt produced
  * nothing at all, which is the signature of upstream/edge weather rather than a defect in how we
- * consume the stream. Carrying that as a field rather than only inside the message is what lets
- * `describeOpenAIUpstreamFailure` tell the two apart without parsing prose.
+ * consume the stream. The field preserves this distinction for callers without parsing prose.
  */
 export class OpenAIResponseStreamIterationError extends Error {
   readonly emittedTextDelta: boolean
@@ -59,65 +58,6 @@ export class OpenAIResponseStreamIterationError extends Error {
     super(`OpenAI response stream iteration failed ${timing}`, options)
     this.emittedTextDelta = emittedTextDelta
   }
-}
-
-/** What a tolerated upstream failure was, recorded so a skip stays attributable in CI logs. */
-export type OpenAIUpstreamFailure = {
-  readonly reason: string
-  readonly status?: number
-  readonly requestId?: string
-  readonly code?: string
-}
-
-/**
- * Statuses OpenAI's own SDK retry predicate treats as transient. 404 is deliberately absent: it is
- * only transient in the bodiless form handled separately below.
- */
-const TRANSIENT_OPENAI_STATUSES = new Set([408, 409, 429])
-
-/**
- * Describes an error that is the provider being unavailable rather than our code being wrong, or
- * null when the error is ours to own.
- *
- * Live-API integration tests use this to skip instead of fail: an OpenAI outage must not turn a
- * required check red on a PR that cannot have caused it. The classification is deliberately narrow
- * so that the failures which indicate a real regression — a retired model, a rejected key, a
- * changed response shape, a blown timeout budget, a failed assertion — are never tolerated.
- * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
- * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/backend/README.md`.
- */
-export function describeOpenAIUpstreamFailure(error: unknown): OpenAIUpstreamFailure | null {
-  // Our own abort or timeout is our budget being exceeded, not the provider being down.
-  if (isExplicitClientCancelError(error)) return null
-  return findInErrorChain(error, matchUpstreamFailure)
-}
-
-function matchUpstreamFailure(current: object): OpenAIUpstreamFailure | null {
-  if (current instanceof OpenAIResponseStreamIterationError) {
-    // A stream that broke after emitting text may have been cut short by our own consumption.
-    if (current.emittedTextDelta) return null
-    return { reason: 'the response stream ended before emitting any text' }
-  }
-  if (current instanceof OpenAIResponseNotCompletedError) {
-    if (current.code !== 'server_error') return null
-    return { reason: 'OpenAI returned a failed response', code: current.code }
-  }
-  // Checked before APIError because it extends it and carries no status to match on.
-  if (current instanceof APIConnectionError) {
-    return { reason: 'the connection to OpenAI failed' }
-  }
-  if (!(current instanceof APIError) || current.status == null) return null
-  const requestId = current.requestID ?? undefined
-  if (current.status >= 500 || TRANSIENT_OPENAI_STATUSES.has(current.status)) {
-    const code = current.code ?? undefined
-    return { reason: `OpenAI returned ${current.status}`, status: current.status, requestId, code }
-  }
-  // A 404 with no parsed error body came from an edge or gateway, not from the API rejecting the
-  // request: every genuine 404 (unknown model, unknown route) carries a JSON body with `code`.
-  if (current.status === 404 && current.error === undefined && current.code === undefined) {
-    return { reason: 'OpenAI returned a 404 with no error body', status: 404, requestId }
-  }
-  return null
 }
 
 const FLEX_CAPACITY_FAILURE_PATTERN = /flex processing is temporarily unavailable/i

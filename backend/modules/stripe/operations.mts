@@ -3,20 +3,15 @@ import * as stripeCustomers from './customers.mts'
 import * as stripeIdentity from './identity.mts'
 import { listStripeSubscriptionInvoices } from './invoices.mts'
 import { createBillingPortalSession } from './portal.mts'
-import { createStripeRefund } from './refunds.mts'
-import { cancelStripeSubscriptionImmediately } from './subscriptions.mts'
 import type {
-  CancelSubscriptionImmediatelyPayload,
   CreateBillingPortalSessionPayload,
   CreateIdentityCheckoutSessionPayload,
   CreateMembershipCheckoutSessionPayload,
-  CreateRefundPayload,
   ListSubscriptionInvoicesPayload,
   RetrieveIdentityVerificationSessionUrlPayload,
   StripeBillingPortalSessionResult,
   StripeCheckoutSessionResult,
   StripeInvoiceSummary,
-  StripeRefundResult,
 } from './types.mts'
 
 export * from './types.mts'
@@ -109,35 +104,6 @@ export async function listSubscriptionInvoicesOperation(
   })
 }
 
-/**
- * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
- * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/backend/README.md`.
- */
-export async function createRefundOperation(
-  payload: CreateRefundPayload,
-): Promise<StripeRefundResult> {
-  const refund = await createStripeRefund(payload)
-  return {
-    id: refund.id,
-    chargeId: expandableId(refund.charge),
-    paymentIntentId: expandableId(refund.payment_intent),
-    amount: refund.amount,
-    currency: refund.currency,
-  }
-}
-
-/**
- * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
- * export may be made private or removed after intended-use review.
- * Evidence: `docs/overview/architecture/backend/README.md`.
- */
-export async function cancelSubscriptionImmediatelyOperation(
-  payload: CancelSubscriptionImmediatelyPayload,
-): Promise<null> {
-  await cancelStripeSubscriptionImmediately(payload.subscriptionId)
-  return null
-}
-
 type InvoiceWithPayments = {
   payments?: {
     data: Array<{
@@ -149,8 +115,4 @@ type InvoiceWithPayments = {
       } | null
     }>
   }
-}
-
-function expandableId(value: string | { id: string } | null): string | null {
-  return typeof value === 'string' ? value : (value?.id ?? null)
 }

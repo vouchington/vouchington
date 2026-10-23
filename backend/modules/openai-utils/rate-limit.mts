@@ -40,18 +40,6 @@ export function isOpenAIFlexResourceUnavailableError(error?: unknown): boolean {
   return FLEX_RESOURCE_UNAVAILABLE_PATTERN.test(error.message)
 }
 
-/** Returns true for transient server errors on the OpenAI API (e.g. flex-tier 5xx).
- *  Responses API calls disable SDK retries and treat these as accounting-ambiguous. *
- * @public Documented contract; production use is unconfirmed and this export may be
- * removed after intended-use review. Evidence: `docs/overview/architecture/backend/README.md`.
- */
-export function isOpenAIServerError(error?: unknown): boolean {
-  if (error instanceof APIError) {
-    return error.status >= 500
-  }
-  return false
-}
-
 export function getRetryAfterDuration(error: unknown): number {
   if (error instanceof APIError && error.headers) {
     const retryAfter = getHeaderValue(error.headers, 'retry-after')

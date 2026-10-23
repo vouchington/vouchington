@@ -3,7 +3,6 @@ import { RateLimitError, APIError, InternalServerError } from 'openai'
 import {
   isOpenAIRateLimitError,
   getRetryAfterDuration,
-  isOpenAIServerError,
   isOpenAIFlexResourceUnavailableError,
 } from './rate-limit.mts'
 
@@ -92,32 +91,6 @@ describe('rate-limit.generated', () => {
   it('getRetryAfterDuration handles RateLimitError without headers', () => {
     const error = new RateLimitError(429, {}, 'Rate limit exceeded', new Headers())
     expect(getRetryAfterDuration(error)).toBe(60000) // 60 seconds in milliseconds
-  })
-
-  // Tests for isOpenAIServerError
-  it('isOpenAIServerError returns true for OpenAI 500', () => {
-    const err = new InternalServerError(
-      500,
-      { message: 'Internal Server Error' },
-      'ISE',
-      new Headers(),
-    )
-    expect(isOpenAIServerError(err)).toBe(true)
-  })
-
-  it('isOpenAIServerError returns false for 429', () => {
-    const err = new APIError(429, { message: 'Rate limit' }, 'RL', new Headers())
-    expect(isOpenAIServerError(err)).toBe(false)
-  })
-
-  it('isOpenAIServerError returns false for 401', () => {
-    const err = new APIError(401, { message: 'Unauthorized' }, 'AUTH', new Headers())
-    expect(isOpenAIServerError(err)).toBe(false)
-  })
-
-  it('isOpenAIServerError returns false for non-Error', () => {
-    expect(isOpenAIServerError(undefined)).toBe(false)
-    expect(isOpenAIServerError('string error')).toBe(false)
   })
 
   // Tests for isOpenAIFlexResourceUnavailableError
