@@ -16,7 +16,6 @@ import {
 import { MODERATION_SYSTEM_USERNAME } from '@services/users/constants'
 
 import { checkPostClearance, resetPostClearance, updateClearanceStatus } from '../index.mts'
-import { approvePendingPostClearance } from '../approve-pending.mts'
 
 const randomSuffix = () => Math.random().toString(36).slice(2, 10)
 
@@ -257,6 +256,5 @@ describe('resetPostClearance', () => {
     await expect(getPostClearanceChanges(postId)).resolves.toEqual([])
   })
   // keep generated shard bindings live for typecheck
-  void (0 as unknown as typeof approvePendingPostClearance)
   void (0 as unknown as typeof updateClearanceStatus)
 })

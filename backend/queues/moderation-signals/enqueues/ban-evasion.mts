@@ -42,25 +42,6 @@ export async function enqueueDetectBanEvasion(
 }
 
 /**
- * Enqueue detection after a first community post's embedding is available.
- * Uses a post-specific dedup key so it cannot be swallowed by the initial first-post trigger.
- *
- * @public Documented contract; production use is unconfirmed and this export may be
- * removed after intended-use review. Evidence: `docs/overview/architecture/queues/README.md`.
- */
-export async function enqueueDetectBanEvasionAfterPostEmbedding(
-  communityId: string,
-  userId: string,
-  postId: string,
-  inputSha256Hex: string,
-): Promise<void> {
-  await enqueueBanEvasionJob(
-    { communityId, userId, postId },
-    makeJobOpts(buildPostEmbeddingDedupId(communityId, userId, postId, inputSha256Hex)),
-  )
-}
-
-/**
  * Enqueue detection for the join trigger.
  * Uses a separate dedup key so a no-post join probe does not block the subsequent
  * first-post detection window from running.

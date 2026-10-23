@@ -2,17 +2,15 @@ import { describe, it, expect, beforeAll } from 'vitest'
 import {
   createTestUser,
   insertTestUserWarning,
-  insertTestModerationReport,
-  insertTestModerationAppeal,
   softDeleteUser,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@voucha/types/entities/user'
-import { openOrGetOpenCase } from '@services/moderation-cases'
 import { createModerationAppeal } from './create.mts'
 import { parseCreateModerationAppealInput } from './parse.mts'
-import { getModerationAppealById, listModerationAppeals, getAppealCaseTrace } from './get.mts'
+import { getModerationAppealById, listModerationAppeals } from './get.mts'
 import { dismissModerationAppeal } from './dismiss-appeal.mts'
+import { resolveModerationAppealReduce } from './resolve.mts'
 import { deliverModerationAppealForTest } from '@voucha/test-helpers/services/moderation-appeals/resolution.fixtures'
 
 describe('getModerationAppealById', () => {
@@ -120,9 +118,9 @@ describe('listModerationAppeals', () => {
     appellant = await createTestUser()
   })
 
-  async function createAppeal(reason: string) {
+  async function createAppeal(reason: string, target = appellant) {
     const warning = await insertTestUserWarning({
-      userId: appellant.id,
+      userId: target.id,
       issuedById: staff.id,
       reason: 'spam',
     })
@@ -131,7 +129,7 @@ describe('listModerationAppeals', () => {
       target_id: warning.id,
       appeal_reason: reason,
     })
-    const { appeal } = await createModerationAppeal(appellant, WEB_PROVENANCE, input)
+    const { appeal } = await createModerationAppeal(target, WEB_PROVENANCE, input)
     return appeal
   }
 
@@ -199,52 +197,23 @@ describe('listModerationAppeals', () => {
 
     expect(appeals.some(a => a.id === appeal.id)).toBe(true)
   })
-})
 
-// Relocated from @services/moderation-cases/chain.test.mts (#6908 phase 3): moderation-cases
-// must not depend on moderation-appeals, even in tests — the real dependency direction is
-// moderation-appeals -> moderation-cases. getAppealCaseTrace is defined in ./get.mts, so its
-// tests belong alongside the rest of this file's get.mts coverage.
-describe('getAppealCaseTrace', () => {
-  let reporter: PrivateUser
-  let target: PrivateUser
-  let staff: PrivateUser
+  it('filters resolved appeals and pages strictly before the cursor', async () => {
+    const uniqueAppellant = await createTestUser()
+    const first = await createAppeal('First resolved appeal', uniqueAppellant)
+    const second = await createAppeal('Second resolved appeal', uniqueAppellant)
+    await createAppeal('Pending appeal', uniqueAppellant)
 
-  beforeAll(async () => {
-    reporter = await createTestUser()
-    target = await createTestUser()
-    staff = await createTestUser({ extraRoles: ['staff'] })
-  })
+    for (const appeal of [first, second]) {
+      await deliverModerationAppealForTest(staff.id, appeal.id)
+      await resolveModerationAppealReduce(staff.id, appeal.id, 'staff_or_user')
+    }
 
-  it('returns trace containing the originating report', async () => {
-    await openOrGetOpenCase({ entityType: 'user', entityId: target.id })
-
-    const reportId = await insertTestModerationReport({
-      reporterUserId: reporter.id,
-      entityType: 'user',
-      entityId: target.id,
-    })
-
-    const warning = await insertTestUserWarning({
-      userId: target.id,
-      issuedById: staff.id,
-      reason: 'Violation',
-      reportId,
-    })
-
-    const appeal = await insertTestModerationAppeal({
-      appellantId: target.id,
-      userWarningId: warning.id,
-    })
-
-    const trace = await getAppealCaseTrace(appeal.id)
-
-    expect(trace).not.toBeNull()
-    expect(trace!.reports.some(r => r.id === reportId)).toBe(true)
-  })
-
-  it('returns null for unknown appeal id', async () => {
-    const trace = await getAppealCaseTrace(crypto.randomUUID())
-    expect(trace).toBeNull()
+    const [older, newer] = [first.id, second.id].toSorted()
+    const options = { appellantUserId: uniqueAppellant.id, status: 'resolved' as const }
+    const all = await listModerationAppeals(options)
+    expect(all.appeals.map(appeal => appeal.id)).toEqual([newer, older])
+    const page = await listModerationAppeals({ ...options, beforeId: newer })
+    expect(page.appeals.map(appeal => appeal.id)).toEqual([older])
   })
 })

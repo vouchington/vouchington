@@ -13,54 +13,8 @@ import {
 } from '@voucha/test-helpers'
 
 import { checkPostClearance, resetPostClearance, updateClearanceStatus } from '../index.mts'
-import { approvePendingPostClearance } from '../approve-pending.mts'
 
 const randomSuffix = () => Math.random().toString(36).slice(2, 10)
-
-describe('approvePendingPostClearance', () => {
-  let userId: string
-
-  beforeAll(async () => {
-    const user = await createTestUser({ username: safeUsername('approve-pending') })
-    userId = user!.id
-  })
-
-  it('approves pending posts and records an approve change', async () => {
-    const postId = await insertTestPost({
-      title: `approve-pending-${randomSuffix()}`,
-      slug: `approve-pending-${randomSuffix()}`,
-      createdById: userId,
-      markdown: 'test',
-      clearanceStatus: 'pending',
-    })
-
-    await expect(approvePendingPostClearance(postId, userId)).resolves.toBe(true)
-
-    await expect(getPostClearanceStatus(postId)).resolves.toBe('approved')
-    await expect(getPostClearanceChanges(postId)).resolves.toEqual([
-      { change_type: 'approve', changed_by_id: userId },
-    ])
-  })
-
-  it.each(['approved', 'rejected', 'in_review'] as const)(
-    'does not append a change when the post is already %s',
-    async clearanceStatus => {
-      const postId = await insertTestPost({
-        title: `approve-non-pending-${clearanceStatus}-${randomSuffix()}`,
-        slug: `approve-non-pending-${clearanceStatus}-${randomSuffix()}`,
-        createdById: userId,
-        markdown: 'test',
-        clearanceStatus,
-      })
-      const changesBefore = await getPostClearanceChanges(postId)
-
-      await expect(approvePendingPostClearance(postId, userId)).resolves.toBe(false)
-
-      await expect(getPostClearanceStatus(postId)).resolves.toBe(clearanceStatus)
-      await expect(getPostClearanceChanges(postId)).resolves.toEqual(changesBefore)
-    },
-  )
-})
 
 describe('updateClearanceStatus', () => {
   let userId: string

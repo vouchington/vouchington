@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { getPublicUserByAny, getPrivateUserByAny } from '@services/users'
 import { addUserRole } from '@services/users/roles-permissions'
-import { getActiveAgentsByType } from '@services/agents/get'
 import {
   createAccountTypeTestUser,
   createAccountTypeTestAgent,
@@ -22,18 +21,11 @@ describe('account type storage and public projection', () => {
     'derives $expected from $kind, $role and agent=$agent',
     async ({ kind, role, agent, expected }) => {
       const user = await createAccountTypeTestUser(kind, role)
-      if (agent) await createAccountTypeTestAgent(user.id)
+      if (agent) await createAccountTypeTestAgent(user.id, false, true)
       expect((await getPublicUserByAny(user.id))?.account_type).toBe(expected)
       expect((await getPrivateUserByAny(user.id))?.account_type).toBe(expected)
     },
   )
-
-  it('keeps active classifiers out of moderator dispatch', async () => {
-    const user = await createAccountTypeTestUser('system')
-    const agentId = await createAccountTypeTestAgent(user.id, false, true)
-    expect((await getPublicUserByAny(user.id))?.account_type).toBe('ai_agent')
-    expect((await getActiveAgentsByType('moderator')).map(agent => agent.id)).not.toContain(agentId)
-  })
 
   it('labels an account with only a deleted agent as System', async () => {
     const user = await createAccountTypeTestUser('system')

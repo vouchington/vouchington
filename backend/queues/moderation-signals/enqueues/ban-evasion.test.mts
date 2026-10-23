@@ -3,58 +3,40 @@ import { describe, expect, it } from 'vitest'
 import { MODERATION_SIGNALS_BAN_EVASION_JOB } from '@queues/background/enqueues/moderation-signals-jobs'
 import {
   enqueueDetectBanEvasion,
-  enqueueDetectBanEvasionAfterPostEmbedding,
+  enqueueDetectBanEvasionOnJoin,
   enqueueBulkDetectBanEvasionAfterPostEmbeddings,
 } from './ban-evasion.mts'
 import { moderationSignalsQueue } from '../queues.mts'
 import { readAllQueueJobs } from '@voucha/test-helpers'
 
 describe('ban-evasion enqueues', () => {
-  it('uses a post-specific dedup key for post-embedding detection', async () => {
-    const communityId = randomUUID()
-    const userId = randomUUID()
-    const postId = randomUUID()
-    const inputSha256Hex = 'a'.repeat(64)
-
-    await enqueueDetectBanEvasion(communityId, userId, postId)
-    await enqueueDetectBanEvasionAfterPostEmbedding(communityId, userId, postId, inputSha256Hex)
-
-    const waiting = await readAllQueueJobs(moderationSignalsQueue)
-    const jobs = waiting.filter(
-      job =>
-        (job.data as { communityId?: string; userId?: string }).communityId === communityId &&
-        (job.data as { communityId?: string; userId?: string }).userId === userId,
-    )
-    expect(jobs).toHaveLength(2)
-    expect(new Set(jobs.map(getDeduplicationId))).toEqual(
-      new Set([
-        `ban_evasion_${communityId}_${userId}`,
-        `ban_evasion_post_embedding_${communityId}_${userId}_${postId}_${inputSha256Hex}`,
-      ]),
-    )
-    expect(jobs.find(job => getDeduplicationId(job)?.includes('post_embedding'))?.data).toEqual({
-      communityId,
-      userId,
-      postId,
-    })
-  })
-
-  it('bulk-enqueues post-embedding detection jobs', async () => {
+  it('keeps join, first-post, and bulk post-embedding triggers distinct', async () => {
     const communityId = randomUUID()
     const userId = randomUUID()
     const postId = randomUUID()
     const inputSha256Hex = 'b'.repeat(64)
 
+    await enqueueDetectBanEvasionOnJoin(communityId, userId)
+    await enqueueDetectBanEvasion(communityId, userId, postId)
     await enqueueBulkDetectBanEvasionAfterPostEmbeddings([
       { communityId, userId, postId, inputSha256Hex },
     ])
 
     const waiting = await readAllQueueJobs(moderationSignalsQueue)
-    const job = waiting.find(
+    const jobs = waiting.filter(
       item =>
         (item.data as { communityId?: string; userId?: string }).communityId === communityId &&
         (item.data as { communityId?: string; userId?: string }).userId === userId,
     )
+    expect(jobs).toHaveLength(3)
+    expect(new Set(jobs.map(getDeduplicationId))).toEqual(
+      new Set([
+        `ban_evasion_join_${communityId}_${userId}`,
+        `ban_evasion_${communityId}_${userId}`,
+        `ban_evasion_post_embedding_${communityId}_${userId}_${postId}_${inputSha256Hex}`,
+      ]),
+    )
+    const job = jobs.find(item => getDeduplicationId(item)?.includes('post_embedding'))
     expect(job).toBeDefined()
     expect(job!.name).toBe(MODERATION_SIGNALS_BAN_EVASION_JOB.name)
     expect(job!.data).toEqual({ communityId, userId, postId })

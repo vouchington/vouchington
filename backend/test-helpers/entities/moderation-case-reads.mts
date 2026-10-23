@@ -1,9 +1,23 @@
-import { write } from '@data-stores/psql'
+import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import {
   caseEntityFkColumn,
+  type ModerationCase,
   type ModerationCaseEntity,
 } from '@voucha/types/entities/moderation-case'
+
+export async function getTestModerationCaseById(caseId: string): Promise<ModerationCase | null> {
+  const { rows } = await read<ModerationCase>(
+    sql`/* getTestModerationCaseById */
+    SELECT id, post_id, reported_user_id, hostname_id, rss_feed_item_id,
+           uuid_extract_timestamp(id) AS created_at, updated_at, resolved_at, resolved_by_id
+    FROM moderation_cases
+    WHERE id = ${caseId}
+    LIMIT 1
+  `,
+  )
+  return rows[0] ?? null
+}
 
 export type TestModerationCaseState = {
   id: string
