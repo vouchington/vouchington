@@ -36,7 +36,10 @@ export async function receiveOAuthAuthorizationCallback(
   now: () => Date,
 ): Promise<ReceiveOAuthAuthorizationCallbackResult> {
   if (!options.state) throw createHttpError(400, 'OAuth callback is invalid')
-  if (!options.code && !options.error) throw createHttpError(400, 'OAuth callback is invalid')
+  // A provider result is either a code or an error. Rejecting mixed payloads keeps first receipt
+  // and replay bound to exactly one stored callback value.
+  if (Boolean(options.code) === Boolean(options.error))
+    throw createHttpError(400, 'OAuth callback is invalid')
 
   await using query = await beginTransaction()
   const result = await receiveCallbackInTransaction()

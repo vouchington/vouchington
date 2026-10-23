@@ -25,6 +25,24 @@ describe('OAuth callback replay proof', () => {
     ).rejects.toMatchObject({ status: 409 })
   })
 
+  it('rejects callbacks that carry both a code and an error', async () => {
+    const state = randomBytes(32).toString('base64url')
+    const flowId = await insertTestOAuthAuthorization({ provider: 'google', state })
+    onTestFinished(() => deleteTestOAuthAuthorizationFixtures({ authorizationIds: [flowId] }))
+    const code = `google-code-${randomUUID()}`
+
+    await expect(
+      receiveCallback(
+        { provider: 'google', state, code, error: 'access_denied' },
+        () => new Date(),
+      ),
+    ).rejects.toMatchObject({ status: 400 })
+    await receiveCallback({ provider: 'google', state, code }, () => new Date())
+    await expect(
+      receiveCallback({ provider: 'google', state, code, error: 'forged' }, () => new Date()),
+    ).rejects.toMatchObject({ status: 400 })
+  })
+
   it('requires the original error even when another error normalizes to the same value', async () => {
     const state = randomBytes(32).toString('base64url')
     const flowId = await insertTestOAuthAuthorization({ provider: 'google', state })
