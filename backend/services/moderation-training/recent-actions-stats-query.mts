@@ -16,6 +16,9 @@ export function buildRecentAutomodActionsStatsQuery(
     WITH filtered_actions AS (
       `.append(baseQuery).append(sql`
     ),
+    window_cutoff AS (
+      SELECT NOW() - (${windowHours}::text || ' hours')::interval AS cutoff_at
+    ),
     historical_false_positives AS (
       SELECT
         mtf.source_type,
@@ -46,13 +49,19 @@ export function buildRecentAutomodActionsStatsQuery(
         ORDER BY id DESC
         LIMIT 1
       ) spam_disposition ON true
-      LEFT JOIN agent_moderations am ON am.id = mtf.agent_moderation_id
+      LEFT JOIN agent_moderations am
+        ON am.id = mtf.agent_moderation_id AND am.post_id = mtf.post_id
       LEFT JOIN moderator_agents mod ON mod.agent_id = am.agent_id
+      CROSS JOIN window_cutoff cutoff
       WHERE mtf.community_id = ${communityId}
         AND mtf.event_type = 'automod_reviewed'
         AND mtf.label = 'false_positive'
         AND mtf.source_type IN ('agent_moderation', 'openai_omni', 'spam_detection', 'community_prompt')
-        AND mtf.created_at >= NOW() - (${windowHours}::text || ' hours')::interval
+        AND mtf.id >= fn_min_uuidv7(
+          date_trunc('milliseconds', cutoff.cutoff_at) +
+          CASE WHEN date_trunc('milliseconds', cutoff.cutoff_at) < cutoff.cutoff_at
+            THEN INTERVAL '1 millisecond' ELSE INTERVAL '0 milliseconds' END
+        )
         AND (${sourceType}::text IS NULL OR mtf.source_type::text = ${sourceType})
         AND (${agentSlug}::text IS NULL OR mod.slug = ${agentSlug})
         AND (${postType}::text IS NULL OR p.post_type::text = ${postType})

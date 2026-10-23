@@ -72,7 +72,7 @@ export function buildRecentAutomodActionsQuery(
             AND newer_am.is_flagged IS TRUE
             AND newer_am.deleted_at IS NULL
             AND newer_am.input_sha256 IS NOT DISTINCT FROM p.llm_moderation_content_sha256
-            AND (newer_am.created_at, newer_am.id) > (am.created_at, am.id)
+            AND newer_am.id > am.id
         )
         AND cpr.unpublished_at >= NOW() - (${windowHours}::text || ' hours')::interval
       UNION ALL
@@ -132,11 +132,6 @@ export function buildRecentAutomodActionsQuery(
           OR (
             p.in_review_at IS NULL
             AND p.rejected_at >= NOW() - (${windowHours}::text || ' hours')::interval
-          )
-          OR (
-            p.in_review_at IS NULL
-            AND p.rejected_at IS NULL
-            AND am.created_at >= NOW() - (${windowHours}::text || ' hours')::interval
           )
         )
       UNION ALL

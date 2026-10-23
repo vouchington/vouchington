@@ -118,6 +118,8 @@ describe('moderation-training feedback', () => {
       agentId: moderator.id,
       promptId,
       flagged: true,
+      // A recent rejection remains actionable even when its moderation predates the window.
+      occurredAt: new Date(Date.now() - 72 * 60 * 60 * 1000),
       results: {
         flagged: true,
         confidence_score: 0.44,
