@@ -2,7 +2,9 @@ import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 
-import type { NoMistakesTestPolicyInput } from '../check-no-mistakes-test-policy.mts'
+import type { checkNoMistakesTestPolicy } from '../check-no-mistakes-test-policy.mts'
+
+type NoMistakesTestPolicyInput = Parameters<typeof checkNoMistakesTestPolicy>[0]
 
 export const staticAnalysisWorkflow = `name: Static Code Analysis
 on: workflow_call

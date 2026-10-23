@@ -42,7 +42,7 @@ type Workflow = {
 
 type WorkflowCommand = (typeof expectedWorkflowCommands)[number]
 
-export type NoMistakesTestPolicyInput = {
+type NoMistakesTestPolicyInput = {
   root: string
   testPaths: string[]
   workflowPaths: string[]
@@ -68,7 +68,7 @@ function readRepoFile(root: string, path: string): string {
   }
 }
 
-export function relevantWorkflowCommands(root: string, paths: string[]): WorkflowCommand[] {
+function relevantWorkflowCommands(root: string, paths: string[]): WorkflowCommand[] {
   return paths.toSorted().flatMap(path => {
     const source = readRepoFile(root, path)
     let workflow: Workflow
@@ -92,7 +92,7 @@ export function relevantWorkflowCommands(root: string, paths: string[]): Workflo
   })
 }
 
-export function spawnsNoMistakesCli(source: string): boolean {
+function spawnsNoMistakesCli(source: string): boolean {
   return (
     /join\([^)]*['"]node_modules\/\.bin\/no-mistakes['"]/u.test(source) ||
     /\b(?:spawnSync|execFileSync|execFile)\(\s*(?:noMistakes(?:Binary)?|NO_MISTAKES_BIN|['"]no-mistakes['"])/u.test(
