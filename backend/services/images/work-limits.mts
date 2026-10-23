@@ -3,6 +3,8 @@ import { getBoundedPositiveIntegerField } from 'valkyries/dynamic-config'
 
 const defaultFields = {
   cleanup_batch_size: 100,
+  recovery_max_depth: 1000,
+  recovery_backoff_ms: 300000,
   recovery_threshold_hours: 1,
   abandoned_threshold_hours: 24,
 }
@@ -10,6 +12,8 @@ const defaultFields = {
 /** Hard ceilings for the current runtime configuration contract. */
 export const imagesWorkMaxValues = {
   cleanup_batch_size: 1000,
+  recovery_max_depth: 1000000,
+  recovery_backoff_ms: 300000,
   recovery_threshold_hours: 72,
   abandoned_threshold_hours: 240,
 }
@@ -18,6 +22,8 @@ export const imagesWorkConfig = new DynamicConfig({
   key: 'images-work-config',
   fieldTypes: {
     cleanup_batch_size: 'number',
+    recovery_max_depth: 'number',
+    recovery_backoff_ms: 'number',
     recovery_threshold_hours: 'number',
     abandoned_threshold_hours: 'number',
   },

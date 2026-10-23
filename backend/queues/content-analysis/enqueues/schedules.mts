@@ -1,3 +1,4 @@
+import type { CleanupAbandonedUploadsData } from '../types.mts'
 import type { JobOptions } from 'glide-mq'
 import { defineScheduledJobManifest } from '@modules/scheduled-job-manifest'
 import { BACKGROUND_CPU_QUEUE_NAME } from '@queues/background-cpu/config'
@@ -10,7 +11,7 @@ export const scheduledJobManifest = defineScheduledJobManifest(BACKGROUND_CPU_QU
     repeat: { every: 3_600_000 },
     template: {
       name: 'content-analysis.cleanup-abandoned-uploads',
-      data: {},
+      data: {} satisfies CleanupAbandonedUploadsData,
       opts: {
         ...requireBackgroundCpuJob('content-analysis.cleanup-abandoned-uploads').options,
       } satisfies JobOptions,

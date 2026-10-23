@@ -1,3 +1,4 @@
+import { runUploadCleanupScenarios } from './run-scenarios/upload-cleanup.mts'
 import { runRelationReadBatchScenarios } from './run-scenarios/relation-read-batches.mts'
 import { runDispatchWorkPlanScenarios } from './run-scenarios/dispatch-work-plans.mts'
 import { runMediaDeliveryReplayScenarios } from './run-scenarios/media-delivery-replay.mts'
@@ -86,6 +87,7 @@ const RUN_STEPS: readonly (() => Promise<unknown>)[] = [
   runRequestContextFoldScenarios,
   runCommunityRoundTripScenarios,
   runImageDeliveryFoldScenarios,
+  runUploadCleanupScenarios,
   runUserProfileRoundTripScenarios,
   runRelationReadBatchScenarios,
   runDispatchWorkPlanScenarios,

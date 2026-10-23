@@ -1,4 +1,7 @@
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createOwnedUploadRecoveryQueue } from '@voucha/test-helpers/image-upload-cleanup-queue'
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
+import { randomBytes } from 'node:crypto'
+import { S3Buckets } from '@modules/aws'
 import {
   backdateImageUploadStagedAt,
   createTestUser,
@@ -7,189 +10,146 @@ import {
   setImageHashAndProcessing,
   setTestImageHashWhileProcessing,
 } from '@voucha/test-helpers'
+import { cleanupOwnedTestUploads } from '@voucha/test-helpers/image-upload-cleanup'
+import { installOwnedUploadCleanupStorage } from '@voucha/test-helpers/image-upload-cleanup-storage'
 import {
   onEnqueueAdmission,
   type EnqueueAdmission,
 } from '@data-stores/valkey-glide-mq/glide-mq-admission'
-import { imageUploadsQueue } from '@queues/image-uploads/queues'
 import { cleanupAbandonedUploads } from '../cleanup-abandoned-uploads.mts'
 import { createImageUploadUrl } from '../create-upload-url.mts'
 import { getImageByHash, getImageById } from '../get.mts'
-import * as s3Module from '../s3-upload-lifecycle.mts'
-import { randomBytes } from 'node:crypto'
-import type { PrivateUser } from '@voucha/types/entities/user'
 
+const HOUR = 60 * 60 * 1000
+
+let recoveryTarget: ReturnType<typeof createOwnedUploadRecoveryQueue>
+const runCleanup: typeof cleanupAbandonedUploads = (sweep, save) =>
+  cleanupAbandonedUploads(sweep, save, recoveryTarget.queue)
 describe('cleanupAbandonedUploads', () => {
-  let user: PrivateUser
-
-  beforeAll(async () => {
-    user = await createTestUser()
+  beforeEach(context => {
+    const target = createOwnedUploadRecoveryQueue()
+    recoveryTarget = target
+    context.onTestFinished(() => target.close())
   })
 
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
+  afterEach(() => vi.restoreAllMocks())
 
   it('recovers immutable processing rows instead of deleting final media', async () => {
-    const result = await createImageUploadUrl(user, {
+    const user = await createTestUser()
+    const upload = await createImageUploadUrl(user, {
       contentType: 'image/jpeg',
       contentLength: 1024,
     })
     const now = new Date()
-    await backdateImageUploadStagedAt(
-      result.image_id,
-      new Date(now.getTime() - 25 * 60 * 60 * 1000),
-    )
-    const sha256 = randomBytes(32)
-    await setImageHashAndProcessing(result.image_id, sha256)
-    const deleteFromS3Spy = vi.spyOn(s3Module, 'deleteKnownImageStorageFromS3')
-    const deleteSourceSpy = vi
-      .spyOn(s3Module, 'deleteImageUploadSourceFromS3')
-      .mockResolvedValue(undefined)
-
+    await backdateImageUploadStagedAt(upload.image_id, new Date(now.getTime() - 25 * HOUR))
+    await setImageHashAndProcessing(upload.image_id, randomBytes(32))
+    const storage = installOwnedUploadCleanupStorage([upload.image_id])
     const admissions: EnqueueAdmission[] = []
     const off = onEnqueueAdmission(event => {
       const [input] = event.inputs
       if (
-        event.queue === imageUploadsQueue &&
+        event.queue === recoveryTarget.queue &&
         event.jobName === 'extract-metadata' &&
         typeof input === 'object' &&
         input !== null &&
         'id' in input &&
-        input.id === result.image_id
-      ) {
+        input.id === upload.image_id
+      )
         admissions.push(event)
-      }
-      return undefined
     })
-    let cleanupResult: Awaited<ReturnType<typeof cleanupAbandonedUploads>>
     try {
-      cleanupResult = await cleanupAbandonedUploads({
-        imageIds: [result.image_id],
-        now: new Date(now.getTime()),
-      })
+      const result = await cleanupOwnedTestUploads(runCleanup, [upload.image_id], now)
+      expect(result.recovered).toBe(1)
+      expect(result.cleaned).toBe(0)
+      expect(storage.calls).toEqual([{ Bucket: S3Buckets.imageUploads, Key: upload.image_id }])
+      expect(await getImageById(upload.image_id)).not.toBeNull()
+      expect(admissions).toHaveLength(1)
+      const admission = admissions[0]
+      if (!admission) throw new Error('Missing owned extraction admission')
+      const job = await readEnqueuedJob(recoveryTarget.queue, await admission.completion)
+      expect(job.data).toEqual({ id: upload.image_id })
     } finally {
       off()
     }
-
-    expect(cleanupResult.recovered).toBeGreaterThanOrEqual(1)
-    expect(admissions).toHaveLength(1)
-    expect(deleteFromS3Spy).not.toHaveBeenCalledWith(
-      expect.objectContaining({ id: result.image_id }),
-    )
-    expect(deleteSourceSpy).toHaveBeenCalledWith(expect.objectContaining({ id: result.image_id }))
-    expect(await getImageById(result.image_id)).not.toBeNull()
-    const [admission] = admissions
-    expect(admission).toBeDefined()
-    if (!admission) throw new Error('Missing owned extract-metadata enqueue admission')
-    const completionResult = await admission.completion
-    const job = await readEnqueuedJob(imageUploadsQueue, completionResult)
-    expect(job.data).toEqual({ id: result.image_id })
   })
 
   it('retries deleting a staged source after promotion', async () => {
-    const result = await createImageUploadUrl(user, {
+    const user = await createTestUser()
+    const upload = await createImageUploadUrl(user, {
       contentType: 'image/jpeg',
       contentLength: 1024,
     })
     const now = new Date()
     await backdateImageUploadStagedAt(
-      result.image_id,
-      new Date(now.getTime() - 2 * 60 * 60 * 1000),
+      upload.image_id,
+      new Date(now.getTime() - 2 * HOUR),
       'complete',
     )
-    const deleteSourceSpy = vi
-      .spyOn(s3Module, 'deleteImageUploadSourceFromS3')
-      .mockResolvedValue(undefined)
-
-    const cleanupResult = await cleanupAbandonedUploads({
-      imageIds: [result.image_id],
-      now: new Date(now.getTime()),
-    })
-
-    expect(cleanupResult.stagedSourcesDeleted).toBeGreaterThanOrEqual(1)
-    expect(deleteSourceSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ id: result.image_id, upload_staged_at: expect.any(Date) }),
-    )
-    expect((await getImageById(result.image_id))?.upload_source_deleted_at).toBeInstanceOf(Date)
+    const storage = installOwnedUploadCleanupStorage([upload.image_id])
+    const result = await cleanupOwnedTestUploads(runCleanup, [upload.image_id], now)
+    expect(result.stagedSourcesDeleted).toBe(1)
+    expect(storage.calls).toEqual([{ Bucket: S3Buckets.imageUploads, Key: upload.image_id }])
+    expect((await getImageById(upload.image_id))?.upload_source_deleted_at).toBeInstanceOf(Date)
   })
 
   it('retries deleting all known storage for a deleted staged image', async () => {
-    const result = await createImageUploadUrl(user, {
+    const user = await createTestUser()
+    const upload = await createImageUploadUrl(user, {
       contentType: 'image/jpeg',
       contentLength: 1024,
     })
     const now = new Date()
     await backdateImageUploadStagedAt(
-      result.image_id,
-      new Date(now.getTime() - 2 * 60 * 60 * 1000),
+      upload.image_id,
+      new Date(now.getTime() - 2 * HOUR),
       'complete',
     )
-    await markImageDeleted(result.image_id)
-    let failedOwnedDelete = false
-    const deleteKnownSpy = vi
-      .spyOn(s3Module, 'deleteKnownImageStorageFromS3')
-      .mockImplementation(async image => {
-        if (image.id === result.image_id && !failedOwnedDelete) {
-          failedOwnedDelete = true
-          throw new Error('storage delete failed')
-        }
-      })
-
-    await cleanupAbandonedUploads({ imageIds: [result.image_id], now: new Date(now.getTime()) })
-
-    expect((await getImageById(result.image_id, true))?.upload_source_deleted_at).toBeNull()
-
-    const cleanupResult = await cleanupAbandonedUploads({
-      imageIds: [result.image_id],
-      now: new Date(now.getTime()),
+    await markImageDeleted(upload.image_id)
+    const digest = upload.image_id.replaceAll('-', '').repeat(2)
+    let failed = false
+    const storage = installOwnedUploadCleanupStorage([upload.image_id, digest], async input => {
+      if (!failed && input.Key === upload.image_id && input.Bucket === S3Buckets.imageUploads) {
+        failed = true
+        throw new Error('storage delete failed')
+      }
     })
-
-    expect(cleanupResult.stagedSourcesDeleted).toBeGreaterThanOrEqual(1)
-    expect(deleteKnownSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ id: result.image_id, deleted_at: expect.any(Date) }),
-    )
-    expect((await getImageById(result.image_id, true))?.upload_source_deleted_at).toBeInstanceOf(
+    await cleanupOwnedTestUploads(runCleanup, [upload.image_id], now)
+    expect((await getImageById(upload.image_id, true))?.upload_source_deleted_at).toBeNull()
+    const result = await cleanupOwnedTestUploads(runCleanup, [upload.image_id], now)
+    expect(result.stagedSourcesDeleted).toBe(1)
+    expect(storage.calls).toContainEqual({ Bucket: S3Buckets.images, Key: digest })
+    expect((await getImageById(upload.image_id, true))?.upload_source_deleted_at).toBeInstanceOf(
       Date,
     )
   })
 
   it('retains a digest for cleanup retry, then releases it after storage deletion', async () => {
-    const result = await createImageUploadUrl(user, {
+    const user = await createTestUser()
+    const upload = await createImageUploadUrl(user, {
       contentType: 'image/jpeg',
       contentLength: 1024,
     })
     const now = new Date()
-    const sha256 = randomBytes(32)
-    await backdateImageUploadStagedAt(
-      result.image_id,
-      new Date(now.getTime() - 25 * 60 * 60 * 1000),
+    const digest = randomBytes(32)
+    await backdateImageUploadStagedAt(upload.image_id, new Date(now.getTime() - 25 * HOUR))
+    await setTestImageHashWhileProcessing(upload.image_id, digest)
+    let failed = false
+    const storage = installOwnedUploadCleanupStorage(
+      [upload.image_id, digest.toString('hex')],
+      async input => {
+        if (!failed && input.Key === upload.image_id && input.Bucket === S3Buckets.imageUploads) {
+          failed = true
+          throw new Error('storage delete failed')
+        }
+      },
     )
-    await setTestImageHashWhileProcessing(result.image_id, sha256)
-    let deleteAttempts = 0
-    const deleteFromS3Spy = vi
-      .spyOn(s3Module, 'deleteKnownImageStorageFromS3')
-      .mockImplementation(async () => {
-        deleteAttempts += 1
-        if (deleteAttempts === 1) throw new Error('storage delete failed')
-      })
-
-    const scope = { imageIds: [result.image_id], now: new Date(now.getTime()) }
-    const firstCleanup = await cleanupAbandonedUploads(scope)
-
-    expect(firstCleanup.cleaned).toBeGreaterThanOrEqual(1)
-    expect(deleteFromS3Spy).toHaveBeenCalledWith(
-      expect.objectContaining({ id: result.image_id, sha_256: sha256 }),
-    )
-    expect((await getImageById(result.image_id, true))?.sha_256).toEqual(sha256)
-
-    const secondCleanup = await cleanupAbandonedUploads(scope)
-
-    expect(secondCleanup.stagedSourcesDeleted).toBeGreaterThanOrEqual(1)
-    expect(deleteFromS3Spy).toHaveBeenLastCalledWith(
-      expect.objectContaining({ id: result.image_id, sha_256: sha256 }),
-    )
-    expect((await getImageById(result.image_id, true))?.sha_256).toBeNull()
-    expect(await getImageByHash(sha256, true)).toBeNull()
+    const first = await cleanupOwnedTestUploads(runCleanup, [upload.image_id], now)
+    expect(first.cleaned).toBe(1)
+    expect((await getImageById(upload.image_id, true))?.sha_256).toEqual(digest)
+    const second = await cleanupOwnedTestUploads(runCleanup, [upload.image_id], now)
+    expect(second.stagedSourcesDeleted).toBe(1)
+    expect(storage.calls).toContainEqual({ Bucket: S3Buckets.images, Key: digest.toString('hex') })
+    expect((await getImageById(upload.image_id, true))?.sha_256).toBeNull()
+    expect(await getImageByHash(digest, true)).toBeNull()
   })
 })

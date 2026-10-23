@@ -2,6 +2,12 @@ import { COPYRIGHT_DELIVERY_SCENARIO_IDS } from './copyright-delivery-scenario-i
 
 export const BOUNDED_WORK_SCENARIOS = [
   ...COPYRIGHT_DELIVERY_SCENARIO_IDS,
+  'upload-cleanup-staged-upper',
+  'upload-cleanup-staged-forward',
+  'upload-cleanup-recovery-upper',
+  'upload-cleanup-recovery-forward',
+  'upload-cleanup-abandonment-upper',
+  'upload-cleanup-abandonment-forward',
   'dispatch-hostname-url-selectivity',
   'dispatch-tier1-url-selectivity',
   'dispatch-tier2-url-selectivity',

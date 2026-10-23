@@ -2923,12 +2923,18 @@ importers:
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
         version: link:../../data-stores/valkey-glide-mq
+      '@modules/pagination':
+        specifier: workspace:^
+        version: link:../../modules/pagination
       '@modules/scheduled-job-manifest':
         specifier: workspace:^
         version: link:../../modules/scheduled-job-manifest
       '@queues/background-cpu':
         specifier: workspace:^
         version: link:../background-cpu
+      '@ts-shared/utils':
+        specifier: workspace:^
+        version: link:../../../ts-shared/utils
       '@voucha/types':
         specifier: workspace:^
         version: link:../../types
@@ -3575,6 +3581,9 @@ importers:
       '@services/identity-verification':
         specifier: workspace:^
         version: link:../services/identity-verification
+      '@services/images':
+        specifier: workspace:^
+        version: link:../services/images
       '@services/individuals-households':
         specifier: workspace:^
         version: link:../services/individuals-households
@@ -7068,6 +7077,9 @@ importers:
       '@queues/background':
         specifier: workspace:^
         version: link:../../queues/background
+      '@queues/content-analysis':
+        specifier: workspace:^
+        version: link:../../queues/content-analysis
       '@queues/entity-listeners':
         specifier: workspace:^
         version: link:../../queues/entity-listeners
@@ -11906,6 +11918,9 @@ importers:
       '@data-stores/valkey':
         specifier: workspace:^
         version: link:../data-stores/valkey
+      '@data-stores/valkey-glide-mq':
+        specifier: workspace:^
+        version: link:../data-stores/valkey-glide-mq
       '@data-stores/valkey-rate-limiter':
         specifier: workspace:^
         version: link:../data-stores/valkey-rate-limiter
@@ -11942,9 +11957,15 @@ importers:
       '@queues/background-cpu':
         specifier: workspace:^
         version: link:../queues/background-cpu
+      '@queues/content-analysis':
+        specifier: workspace:^
+        version: link:../queues/content-analysis
       '@queues/entity-listeners':
         specifier: workspace:^
         version: link:../queues/entity-listeners
+      '@queues/image-uploads':
+        specifier: workspace:^
+        version: link:../queues/image-uploads
       '@queues/notifications':
         specifier: workspace:^
         version: link:../queues/notifications
@@ -12681,6 +12702,9 @@ importers:
       '@queues/crawler':
         specifier: workspace:^
         version: link:../../queues/crawler
+      '@queues/image-uploads':
+        specifier: workspace:^
+        version: link:../../queues/image-uploads
       '@services/language-detection':
         specifier: workspace:^
         version: link:../../services/language-detection
