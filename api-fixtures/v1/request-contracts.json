@@ -29772,21 +29772,38 @@
       "type": "string"
     },
     "PsqlJobRequest": {
-      "additionalProperties": false,
-      "properties": {
-        "type": {
-          "enum": [
-            "cleanupPartitions",
-            "createPartitions",
-            "runConfigDriven",
-            "runMigrations",
-            "runViews"
-          ],
-          "type": "string"
+      "anyOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "range": {
+              "additionalProperties": false,
+              "properties": {
+                "fromId": { "format": "uuid", "type": "string" },
+                "maxRows": { "maximum": 10000, "minimum": 1, "type": "integer" },
+                "table": { "type": "string" },
+                "toId": { "format": "uuid", "type": "string" }
+              },
+              "required": ["table", "fromId", "toId", "maxRows"],
+              "type": "object"
+            },
+            "type": { "const": "createPartitions" }
+          },
+          "required": ["type", "range"],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "type": {
+              "enum": ["cleanupPartitions", "runConfigDriven", "runMigrations", "runViews"],
+              "type": "string"
+            }
+          },
+          "required": ["type"],
+          "type": "object"
         }
-      },
-      "required": ["type"],
-      "type": "object"
+      ]
     },
     "PublicContentProvenance": {
       "additionalProperties": false,

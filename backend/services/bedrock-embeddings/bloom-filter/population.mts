@@ -3,6 +3,7 @@ import { createAsyncGeneratorFromCursor, read } from '@data-stores/psql'
 import { bloomValkeyClient } from '@data-stores/valkey'
 import { EMBEDDINGS_TABLE } from '../config.mts'
 import { EMBEDDING_BLOOM_READY_KEY, embeddingBloomFilter } from './bloom-filter.mts'
+import { acknowledgeEmbeddingBloomRebuild } from './retention-acknowledgement.mts'
 
 type ContentRow = { content_sha256: string }
 
@@ -32,7 +33,7 @@ async function* hashBatchesFromDb(): AsyncGenerator<string[]> {
  * Streams embeddings from DB to avoid loading entire dataset into memory.
  * Rebuilds at 2× current row count per AGENTS.md to reduce immediate expansion chaining.
  */
-export async function rebuildEmbeddingBloomFilter(): Promise<void> {
+export async function rebuildEmbeddingBloomFilter(retentionGeneration?: string): Promise<void> {
   const { rows } = await read(
     `/* rebuildEmbeddingBloomFilter */ SELECT COUNT(*)::int AS count FROM ${EMBEDDINGS_TABLE}`,
     [],
@@ -41,4 +42,7 @@ export async function rebuildEmbeddingBloomFilter(): Promise<void> {
   const capacity = Math.max(embeddingBloomFilter.getConfig().capacity, 2 * count)
   await embeddingBloomFilter.rebuildFromStream(hashBatchesFromDb(), capacity)
   await bloomValkeyClient.set(EMBEDDING_BLOOM_READY_KEY, '1')
+  if (retentionGeneration !== undefined) {
+    await acknowledgeEmbeddingBloomRebuild(retentionGeneration)
+  }
 }

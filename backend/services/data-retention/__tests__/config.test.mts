@@ -4,6 +4,7 @@ import {
   DATA_RETENTION_MAX_VALUES,
   DEFAULT_DATA_RETENTION_CONFIG,
   dataRetentionConfig,
+  getAIRetentionPageLimits,
   getDataRetentionLimits,
   getPartitionStatusProbeLimit,
 } from '../config.mts'
@@ -61,12 +62,25 @@ describe('getDataRetentionLimits', () => {
   })
 
   it('keeps every default finite, positive and within its hard maximum', () => {
-    for (const field of ['batch_size', 'max_batches_per_run'] as const) {
+    for (const field of [
+      'batch_size',
+      'max_batches_per_run',
+      'ai_retention_page_size',
+      'ai_retention_max_pages_per_run',
+    ] as const) {
       expect(Number.isInteger(DEFAULT_DATA_RETENTION_CONFIG[field])).toBe(true)
       expect(DEFAULT_DATA_RETENTION_CONFIG[field]).toBeGreaterThan(0)
       expect(DEFAULT_DATA_RETENTION_CONFIG[field]).toBeLessThanOrEqual(
         DATA_RETENTION_MAX_VALUES[field],
       )
     }
+  })
+
+  it('bounds persisted AI pages with the owning runtime config', () => {
+    overrideDynamicConfigFieldsForTest(dataRetentionConfig, {
+      ai_retention_page_size: 7,
+      ai_retention_max_pages_per_run: 3,
+    })
+    expect(getAIRetentionPageLimits()).toEqual({ batchSize: 7, maxBatches: 3 })
   })
 })

@@ -6,40 +6,50 @@ AI-generated judgements on reported entities recommending a moderation action.
 
 Not partitioned — growth: unbounded.
 
-| Column                    | Type                           | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                         |
-| ------------------------- | ------------------------------ | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `id`                      | `uuid`                         | no       | `uuidv7()`                   |          |           |           |                                                                                                                                 |
-| `post_id`                 | `uuid`                         | yes      |                              |          |           |           | Judged post or comment; set when entity is a post or comment.                                                                   |
-| `reported_user_id`        | `uuid`                         | yes      |                              |          |           |           | Judged user; set when entity is a user.                                                                                         |
-| `hostname_id`             | `uuid`                         | yes      |                              |          |           |           | Judged URL hostname; set when entity is url_hostname.                                                                           |
-| `rss_feed_item_id`        | `uuid`                         | yes      |                              |          |           |           | Judged RSS feed item; set when entity is rss_feed_item.                                                                         |
-| `case_id`                 | `uuid`                         | yes      |                              |          |           |           | The moderation case this judgement belongs to, if any.                                                                          |
-| `triggering_report_id`    | `uuid`                         | yes      |                              |          |           |           | The moderation report that triggered this judgement run, if any.                                                                |
-| `rerun_by_id`             | `uuid`                         | yes      |                              |          |           |           | Moderator who requested a re-run of the judgement, if applicable.                                                               |
-| `run_id`                  | `uuid`                         | yes      |                              |          |           |           | Unique opaque identity of the admitted manual judgement run, used for exact result polling and retry replay.                    |
-| `recommended_action`      | `moderation_judgement_actions` | no       |                              |          |           |           | AI-recommended moderation action.                                                                                               |
-| `public_response`         | `text`                         | no       |                              |          |           |           | Public-facing explanation of the judgement.                                                                                     |
-| `internal_response`       | `text`                         | no       |                              |          |           |           | Internal reasoning visible to staff only.                                                                                       |
-| `model`                   | `text`                         | no       |                              |          |           |           | OpenAI model used for this judgement.                                                                                           |
-| `context_hash`            | `text`                         | yes      |                              |          |           |           | Hash of the bounded report context used to generate this judgement.                                                             |
-| `context_report_count`    | `integer`                      | yes      |                              |          |           |           | Total number of reports on the judged entity when this judgement was generated.                                                 |
-| `context_note_hash`       | `text`                         | yes      |                              |          |           |           | Hash of report notes in the bounded context, used for refresh decisions.                                                        |
-| `context_max_reason_rank` | `integer`                      | yes      |                              |          |           |           | Highest report reason severity rank in the bounded context when this judgement was generated.                                   |
-| `created_at`              | `timestamp with time zone`     | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                                 |
-| `dispatched_at`           | `timestamp with time zone`     | yes      |                              |          |           |           | Timestamp when auto-dispatch successfully processed this judgement. NULL means not yet dispatched or auto-dispatch is disabled. |
+| Column                       | Type                           | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                                         |
+| ---------------------------- | ------------------------------ | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                         | `uuid`                         | no       | `uuidv7()`                   |          |           |           |                                                                                                                                 |
+| `post_id`                    | `uuid`                         | yes      |                              |          |           |           | Judged post or comment; set when entity is a post or comment.                                                                   |
+| `reported_user_id`           | `uuid`                         | yes      |                              |          |           |           | Judged user; set when entity is a user.                                                                                         |
+| `hostname_id`                | `uuid`                         | yes      |                              |          |           |           | Judged URL hostname; set when entity is url_hostname.                                                                           |
+| `rss_feed_item_id`           | `uuid`                         | yes      |                              |          |           |           | Judged RSS feed item; set when entity is rss_feed_item.                                                                         |
+| `case_id`                    | `uuid`                         | yes      |                              |          |           |           | The moderation case this judgement belongs to, if any.                                                                          |
+| `triggering_report_id`       | `uuid`                         | yes      |                              |          |           |           | The moderation report that triggered this judgement run, if any.                                                                |
+| `rerun_by_id`                | `uuid`                         | yes      |                              |          |           |           | Moderator who requested a re-run of the judgement, if applicable.                                                               |
+| `run_id`                     | `uuid`                         | yes      |                              |          |           |           | Unique opaque identity of the admitted manual judgement run, used for exact result polling and retry replay.                    |
+| `agent_call_receipt_id`      | `uuid`                         | yes      |                              |          |           |           | Paid-call receipt retained for exact durable judgement replay.                                                                  |
+| `agent_call_request_sha256`  | `text`                         | yes      |                              |          |           |           | Exact model, prompt-version and normalized-input digest reserved by the paid-call receipt.                                      |
+| `agent_call_identity_sha256` | `text`                         | yes      |                              |          |           |           | Digest of the original entity, triggering report, run and operation identity for replay validation.                             |
+| `agent_call_community_id`    | `uuid`                         | yes      |                              |          |           |           | Community scope captured with the paid judgement for post-write auto-dispatch retries.                                          |
+| `recommended_action`         | `moderation_judgement_actions` | no       |                              |          |           |           | AI-recommended moderation action.                                                                                               |
+| `public_response`            | `text`                         | no       |                              |          |           |           | Public-facing explanation of the judgement.                                                                                     |
+| `internal_response`          | `text`                         | no       |                              |          |           |           | Internal reasoning visible to staff only.                                                                                       |
+| `model`                      | `text`                         | no       |                              |          |           |           | OpenAI model used for this judgement.                                                                                           |
+| `context_hash`               | `text`                         | yes      |                              |          |           |           | Hash of the bounded report context used to generate this judgement.                                                             |
+| `context_report_count`       | `integer`                      | yes      |                              |          |           |           | Total number of reports on the judged entity when this judgement was generated.                                                 |
+| `context_note_hash`          | `text`                         | yes      |                              |          |           |           | Hash of report notes in the bounded context, used for refresh decisions.                                                        |
+| `context_max_reason_rank`    | `integer`                      | yes      |                              |          |           |           | Highest report reason severity rank in the bounded context when this judgement was generated.                                   |
+| `created_at`                 | `timestamp with time zone`     | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                                 |
+| `dispatched_at`              | `timestamp with time zone`     | yes      |                              |          |           |           | Timestamp when auto-dispatch successfully processed this judgement. NULL means not yet dispatched or auto-dispatch is disabled. |
 
 **Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
 
+- `moderation_report_judgements_agent_call_receipt_id_key`: `UNIQUE (agent_call_receipt_id)`
 - `moderation_report_judgements_run_id_key`: `UNIQUE (run_id)`
 
 **Check constraints:**
 
-- `moderation_report_judgements_check`: `CHECK ((num_nonnulls(post_id, reported_user_id, hostname_id, rss_feed_item_id) = 1))`
+- `moderation_report_judgements_agent_call_identity_sha256_check`: `CHECK (((agent_call_identity_sha256 IS NULL) OR (char_length(agent_call_identity_sha256) = 64)))`
+- `moderation_report_judgements_agent_call_request_sha256_check`: `CHECK (((agent_call_request_sha256 IS NULL) OR (char_length(agent_call_request_sha256) = 64)))`
+- `moderation_report_judgements_check`: `CHECK ((num_nonnulls(agent_call_receipt_id, agent_call_request_sha256, agent_call_identity_sha256) = ANY (ARRAY[0, 3])))`
+- `moderation_report_judgements_check1`: `CHECK ((num_nonnulls(post_id, reported_user_id, hostname_id, rss_feed_item_id) = 1))`
 
 **Foreign keys:**
 
+- `fk_moderation_report_judgements__agent_call_receipt`: `FOREIGN KEY (agent_call_receipt_id) REFERENCES ai_agent_call_receipts(id) ON DELETE CASCADE`
+- `moderation_report_judgements_agent_call_community_id_fkey`: `FOREIGN KEY (agent_call_community_id) REFERENCES communities(id) ON DELETE SET NULL`
 - `moderation_report_judgements_case_id_fkey`: `FOREIGN KEY (case_id) REFERENCES moderation_cases(id) ON DELETE SET NULL`
 - `moderation_report_judgements_hostname_id_fkey`: `FOREIGN KEY (hostname_id) REFERENCES url_hostnames(id) ON DELETE CASCADE`
 - `moderation_report_judgements_post_id_fkey`: `FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE`
@@ -50,6 +60,7 @@ Not partitioned — growth: unbounded.
 
 **Indexes:**
 
+- `idx_moderation_report_judgements__agent_call_community_id`: `CREATE INDEX idx_moderation_report_judgements__agent_call_community_id ON public.moderation_report_judgements USING btree (agent_call_community_id) WHERE (agent_call_community_id IS NOT NULL)`
 - `idx_moderation_report_judgements__case_id`: `CREATE INDEX idx_moderation_report_judgements__case_id ON public.moderation_report_judgements USING btree (case_id) WHERE (case_id IS NOT NULL)`
 - `idx_moderation_report_judgements__hostname_id`: `CREATE INDEX idx_moderation_report_judgements__hostname_id ON public.moderation_report_judgements USING btree (hostname_id, id DESC) WHERE (hostname_id IS NOT NULL)`
 - `idx_moderation_report_judgements__post_id`: `CREATE INDEX idx_moderation_report_judgements__post_id ON public.moderation_report_judgements USING btree (post_id, id DESC) WHERE (post_id IS NOT NULL)`
@@ -57,6 +68,7 @@ Not partitioned — growth: unbounded.
 - `idx_moderation_report_judgements__triggering_report_id`: `CREATE INDEX idx_moderation_report_judgements__triggering_report_id ON public.moderation_report_judgements USING btree (triggering_report_id) WHERE (triggering_report_id IS NOT NULL)`
 - `idx_moderation_report_judgements__undispatched`: `CREATE INDEX idx_moderation_report_judgements__undispatched ON public.moderation_report_judgements USING btree (id) WHERE ((dispatched_at IS NULL) AND (rerun_by_id IS NULL))`
 - `idx_moderation_report_judgements__user_id`: `CREATE INDEX idx_moderation_report_judgements__user_id ON public.moderation_report_judgements USING btree (reported_user_id, id DESC) WHERE (reported_user_id IS NOT NULL)`
+- `moderation_report_judgements_agent_call_receipt_id_key`: `CREATE UNIQUE INDEX moderation_report_judgements_agent_call_receipt_id_key ON public.moderation_report_judgements USING btree (agent_call_receipt_id)`
 - `moderation_report_judgements_pkey`: `CREATE UNIQUE INDEX moderation_report_judgements_pkey ON public.moderation_report_judgements USING btree (id)`
 - `moderation_report_judgements_run_id_key`: `CREATE UNIQUE INDEX moderation_report_judgements_run_id_key ON public.moderation_report_judgements USING btree (run_id)`
 

@@ -1,4 +1,6 @@
 import { DSA_SUBMISSION_UUID_COLUMNS_WITHOUT_KEYS } from './dsa-submission-uuid-allowlists.mts'
+import { AI_RETENTION_UUID_COLUMNS_WITHOUT_KEYS } from './ai-retention-uuid-allowlists.mts'
+import { RETENTION_CURSOR_UUID_COLUMNS_WITHOUT_KEYS } from './retention-cursor-uuid-allowlists.mts'
 /* v8 ignore start -- declarative schema-test allowlists have no executable branches */
 import { POST_PUBLICATION_UUID_COLUMNS_WITHOUT_KEYS } from './post-publication-allowlists.mts'
 import { ALLOWED_MEMBERSHIP_UUID_COLUMNS_WITHOUT_KEYS } from './membership-uuid-allowlists.mts'
@@ -7,7 +9,9 @@ import { OAUTH_AUTHORIZATION_UUID_COLUMNS_WITHOUT_KEYS } from './oauth-authoriza
 import { STORY_POST_RELATED_URL_PROJECTION_UUID_COLUMNS_WITHOUT_KEYS } from './story-post-related-url-projection-uuid-allowlists.mts'
 import { USER_DELETION_UUID_COLUMNS_WITHOUT_KEYS } from './user-deletion-uuid-allowlists.mts'
 export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
+  ...AI_RETENTION_UUID_COLUMNS_WITHOUT_KEYS,
   ...DSA_SUBMISSION_UUID_COLUMNS_WITHOUT_KEYS,
+  ...RETENTION_CURSOR_UUID_COLUMNS_WITHOUT_KEYS,
   [
     'user_rss_feed_import_row_discoveries.generation',
     'Opaque per-attempt crawl outcome fence; not a durable relationship.',
@@ -27,39 +31,6 @@ export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
   [
     'media_delivery_registry_projection_work_items.lease_token',
     'Opaque projection ownership token; not a relationship.',
-  ],
-  [
-    'follower_distributions.cursor_recipient_id',
-    'Deletion-stable recipient UUIDv7 keyset position, not a relationship.',
-  ],
-  [
-    'retained_identity_cleanup_cursors.cursor_identity_id',
-
-    'Operational keyset scan position can outlive its prior root row; it is not a relationship.',
-  ],
-  [
-    'payment_operational_cleanup_cursors.cursor_id',
-    'Operational keyset position survives deletion of the swept row; it is not a relationship.',
-  ],
-  [
-    'auth_session_retention_cleanup_cursors.cursor_id',
-    'Keyset scan position survives deletion of the scanned auth, session, or subscription row.',
-  ],
-  [
-    'auth_session_retention_cleanup_cursors.cursor_partition_key',
-    'Subscription partition tie-breaker survives deletion of its user and subscription rows.',
-  ],
-  [
-    'retained_image_placement_binding_cleanup_cursors.cursor_placement_id',
-    'Operational placement UUIDv7 position survives deletion of the swept binding; it is not a relationship.',
-  ],
-  [
-    'retained_relation_identity_cleanup_cursors.cursor_subject_id',
-    'Operational composite keyset scan position can outlive its prior owner; it is not a relationship.',
-  ],
-  [
-    'retained_relation_identity_cleanup_cursors.cursor_relation_id',
-    'Operational composite keyset scan position can outlive its prior owner; it is not a relationship.',
   ],
   ...NOTIFICATION_PUSH_RETENTION_UUID_COLUMNS_WITHOUT_KEYS,
   ...POST_PUBLICATION_UUID_COLUMNS_WITHOUT_KEYS,
@@ -113,10 +84,6 @@ export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
   [
     'activitypub_distribution_work_items.lease_token',
     'Opaque worker fencing token, not a relationship.',
-  ],
-  [
-    'activitypub_distribution_work_items.cursor_remote_actor_id',
-    'Durable keyset cursor intentionally survives remote actor deletion so completed fan-out progress cannot rewind.',
   ],
   [
     'app_attestation_keys.did',

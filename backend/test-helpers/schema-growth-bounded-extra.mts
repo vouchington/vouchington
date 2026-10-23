@@ -1,7 +1,57 @@
 import { MODERATION_RETENTION_BOUNDED_TABLES } from './schema-growth-moderation-retention.mts'
+import { EXTRA_BOUNDED_TABLES_CONTINUED } from './schema-growth-bounded-extra-continued.mts'
 
 export const EXTRA_BOUNDED_TABLES = new Map<string, string>([
   ...MODERATION_RETENTION_BOUNDED_TABLES,
+  [
+    'bedrock_embedding_batches',
+    'Terminal batches are deleted after 30 days by persisted capped pages; in-flight batches remain until terminal.',
+  ],
+  [
+    'bedrock_embedding_batch_entities',
+    'Batch member rows cascade when a terminal parent batch expires.',
+  ],
+  [
+    'ai_usage_provider_response_keys',
+    'Provider response identities expire after 90 days through persisted UUIDv7 keyset pages.',
+  ],
+  [
+    'ai_usage_response_key_retention_cursors',
+    'A checked true primary key permits one provider-key sweep position.',
+  ],
+  [
+    'post_moderation_work_items',
+    'Completed work items expire after 90 days through persisted capped pages.',
+  ],
+  ['post_moderation_attempts', 'Attempts cascade with completed work-item retention.'],
+  [
+    'media_delivery_registry_changes',
+    'A persisted raw UUIDv7 cursor removes only old superseded transitions; current, failed replay, and completed withheld transitions are retained.',
+  ],
+  [
+    'media_delivery_change_retention_cursors',
+    'A checked true primary key permits one delivery-transition sweep position.',
+  ],
+  [
+    'bedrock_nova_multimodal_v1_embeddings',
+    'Recomputable text vectors are removed by a persisted, capped 90-day retention sweep.',
+  ],
+  [
+    'bedrock_text_embedding_retention_cursors',
+    'A checked true primary key permits one retained text-embedding sweep position.',
+  ],
+  [
+    'bedrock_embedding_batch_retention_cursors',
+    'A checked true primary key permits one terminal batch sweep position.',
+  ],
+  [
+    'post_moderation_work_retention_cursors',
+    'A checked true primary key permits one terminal moderation sweep position.',
+  ],
+  [
+    'ai_agent_receipt_retention_cursors',
+    'A checked true primary key permits one paid-call ciphertext erasure position.',
+  ],
   [
     'url_hostname_cache_invalidation_work_items',
     'At most one current generation per live hostname; successful eviction deletes it, hostname deletion cascades it, and bounded cache-TTL pruning removes abandoned work.',
@@ -142,32 +192,5 @@ export const EXTRA_BOUNDED_TABLES = new Map<string, string>([
     'user_topic_import_attempts',
     'Completed response replays and abandoned attempts expire after 48 hours, and bounded cleanup deletes both classes, bounding cardinality to recent topic-import traffic.',
   ],
-  [
-    'post_admission_quota_consumptions',
-    'Committed quota rows are retained for seven days, while policy windows are capped at one day; bounded cleanup keeps cardinality tied to recent admission traffic.',
-  ],
-  [
-    'topic_alias_category_mapping_reconciliations',
-    'One coalesced row per alias with pending category-mapping work; successful reconciliation deletes the row, bounding cardinality to the active backlog.',
-  ],
-  [
-    'rss_feed_item_category_snapshot_reconciliations',
-    'One coalesced row per RSS item with pending category snapshot work; successful exact-generation reconciliation deletes the row, bounding cardinality to the active backlog.',
-  ],
-  [
-    'rss_feed_item_source_category_snapshots',
-    'One current snapshot per RSS feed-to-item source row; the source primary key bounds cardinality to live RSS feed item sources.',
-  ],
-  [
-    'post_publication_dirty_work',
-    'One coalesced row per exact publication dependency scope; successful exact-generation acknowledgement deletes the row, bounding cardinality to the active backlog.',
-  ],
-  [
-    'post_publication_dirty_work_keys',
-    'Retained keys cannot outlive their cascade-deleted dirty-work parent, so cardinality is bounded by the active backlog. The table remains partitioned by dirty_work_id because one active high-fanout scope can still contain enough keys to benefit from target-scoped pruning.',
-  ],
-  [
-    'post_publication_reconciliation_audit_cursors',
-    'One checkpoint per named operator scan bounds the audit state independently of post cardinality.',
-  ],
+  ...EXTRA_BOUNDED_TABLES_CONTINUED,
 ])

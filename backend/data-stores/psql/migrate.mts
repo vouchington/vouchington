@@ -14,6 +14,12 @@ import {
   type RunConfigDrivenOptions,
 } from './migration-runner/migrations.mts'
 import { refreshMaterializedView } from './migration-runner/refresh-materialized-view.mts'
+import {
+  assertExplicitRange,
+  splitDefaultRange,
+  type ExplicitRange,
+} from './migration-runner/split-default-range.mts'
+import { retireReceiptRange } from './migration-runner/retire-receipt-range.mts'
 import { initSqlAst, loadSqlParserModule } from './migration-runner/sql-statements.mts'
 import { verifyLiveSchemaMatchesSnapshot } from './schema-snapshot/verify-live-schema.mts'
 import { psql, write } from './setup.mts'
@@ -29,6 +35,10 @@ export {
   cleanupPartitions,
   createMonthlyPartitions,
   refreshMaterializedView,
+  splitDefaultRange,
+  assertExplicitRange,
+  retireReceiptRange,
+  type ExplicitRange,
   type RunConfigDrivenOptions,
 }
 

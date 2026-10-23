@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 import { unrecoverable } from '@vouchington/queue-errors'
 import { decryptSecret, encryptSecret } from '@modules/token-secrets'
 import { ModelProviderError } from '@modules/model-providers/errors'
-import type { ModelCallResult } from '@modules/model-providers/types'
+import type { ModelCallResult, ModelSelection } from '@modules/model-providers/types'
 import {
   completeAgentCallReceipt,
   getAgentCallReceipt,
@@ -33,6 +33,16 @@ export function agentCallOperationKey(agentSlug: string, operationId: string): s
     .digest('hex')
 }
 
+export function agentCallRequestSha256(
+  selection: ModelSelection,
+  promptVersion: string,
+  input: string,
+): string {
+  return createHash('sha256')
+    .update(JSON.stringify([selection, promptVersion, input]))
+    .digest('hex')
+}
+
 /** A missing result means dispatch might have been billed. Never automatically send it again. */
 export async function callReceiptedAgentModel<Output>(
   params: ReceiptedCall<Output>,
@@ -40,22 +50,22 @@ export async function callReceiptedAgentModel<Output>(
   const { agentSlug, operationId, promptVersion, selection, input, safetyIdentifier, callModel } =
     params
   const key = agentCallOperationKey(agentSlug, operationId)
-  const requestSha256 = createHash('sha256')
-    .update(JSON.stringify([selection, promptVersion, input]))
-    .digest('hex')
+  const requestSha256 = agentCallRequestSha256(selection, promptVersion, input)
   const purpose = `ai-agent-call-receipt:${key}`
   const existing = await getAgentCallReceipt(key)
   if (existing) {
     if (existing.request_sha256 !== requestSha256) {
       unrecoverable(new Error(`Paid ${agentSlug} call ${key} request changed after reservation`))
     }
-    if (!existing.result_ciphertext) {
+    if (existing.status === 'in_flight') {
       unrecoverable(new Error(`Paid ${agentSlug} call ${key} has an uncertain receipt`))
     }
-    if (existing.result_ciphertext === 'erased') {
+    if (existing.status === 'erased') {
       unrecoverable(new Error(`Paid ${agentSlug} call ${key} was erased by retention`))
     }
-    return JSON.parse(decryptSecret(existing.result_ciphertext, purpose)) as ModelCallResult<Output>
+    return JSON.parse(
+      decryptSecret(existing.result_ciphertext!, purpose),
+    ) as ModelCallResult<Output>
   }
 
   let result: ModelCallResult<Output>

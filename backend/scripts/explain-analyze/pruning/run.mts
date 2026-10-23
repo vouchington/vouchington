@@ -128,6 +128,9 @@ async function runPruningProof(): Promise<void> {
         },
       })
     const { attachProofRanges } = await import('./partitions.mts')
+    const { assertManualReceiptPartitionLifecycle } =
+      await import('./manual-receipt-partition-lifecycle.mts')
+    const { assertIdleEmbeddingRetention } = await import('./idle-embedding-retention.mts')
     const { seedPruningProof, assertPruningFixturePlacement } = await import('./seed.mts')
     const { capturePruningProof } = await import('./capture.mts')
     const { assertMonthlyRetirementControls } = await import('./retirement-controls.mts')
@@ -135,6 +138,8 @@ async function runPruningProof(): Promise<void> {
     if (retirementControls.length !== 3)
       throw new Error('Expected all three native retirement controls')
     await attachProofRanges(write)
+    evidence.manualReceiptRange = await assertManualReceiptPartitionLifecycle()
+    evidence.idleEmbeddingRetention = await assertIdleEmbeddingRetention()
     migrationAbort.signal.throwIfAborted()
     await seedPruningProof()
     migrationAbort.signal.throwIfAborted()

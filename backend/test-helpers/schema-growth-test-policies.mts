@@ -26,6 +26,7 @@ function sharedParentUuidv7(parentTable: string) {
 }
 
 const COMPANION_ID_POLICIES = [
+  ['ai_agent_call_receipts', sharedParentUuidv7('ai_agent_call_receipt_keys')],
   [
     'copyright_notice_lifecycle_change_rationales',
     sharedParentUuidv7('copyright_notice_lifecycle_changes'),
@@ -77,12 +78,8 @@ export const NON_DEFAULT_ID_EXCEPTIONS = new Map<string, NonDefaultIdException>(
 ])
 const UNBOUNDED_RECONSIDERATION_EXCEPTIONS = new Map([
   [
-    'ai_usage_provider_response_keys',
-    'Only if the replacement preserves global response-id uniqueness across every ledger partition.',
-  ],
-  [
-    'ai_agent_call_receipts',
-    'Only if the replacement preserves global paid-call operation-key uniqueness across every receipt partition.',
+    'ai_agent_call_receipt_keys',
+    'Only if the replacement preserves global paid-call operation-key uniqueness after receipt partition retirement.',
   ],
   [
     'web_push_endpoint_owners',

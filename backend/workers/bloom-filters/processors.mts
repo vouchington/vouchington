@@ -20,7 +20,7 @@ export async function processRebuildBloomFilter(data: RebuildBloomFilterData): P
   } else if (data.filter === 'email-blocklist') {
     await rebuildEmailBloomFilter()
   } else if (data.filter === 'embedding') {
-    await rebuildEmbeddingBloomFilter()
+    await rebuildEmbeddingBloomFilter(data.retentionGeneration)
   } else if (data.filter === 'api-keys') {
     await rebuildApiKeyBloomFilter()
   }

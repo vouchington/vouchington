@@ -126,12 +126,8 @@ export function buildUnboundedUnpartitionedTables(
         'Bounded ActivityPub inbox delivery queue: terminal outcomes delete rows, unverified rows expire after one hour, operational failures expire seven days after their immutable first failure, and bounded cleanup removes expired rows. Size tracks recent inbox backlog, not retained history.',
       ],
       [
-        'ai_usage_provider_response_keys',
-        'Permanent global response-id idempotency keys cannot be partitioned without weakening cross-partition uniqueness; the primary-key lookup remains selective.',
-      ],
-      [
-        'ai_agent_call_receipts',
-        'Permanent paid-call idempotency receipts require global operation-key uniqueness; the unique-key lookup remains selective.',
+        'ai_agent_call_receipt_keys',
+        'Retained paid-operation identities preserve global uniqueness after an operator retires a ciphertext receipt range; the unique-key lookup remains selective.',
       ],
       ['web_push_endpoint_owners', 'Global claim key preserves cross-user endpoint uniqueness.'],
     ],

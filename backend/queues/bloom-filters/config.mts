@@ -91,7 +91,10 @@ export function rebuildBloomFilterJobOptions(
     ...BLOOM_FILTER_JOB_DEFAULTS,
     priority: priority ?? PRIORITY_DEFAULT,
     ordering: rebuildBloomFilterOrdering(data),
-    jobId: `bloomFilterRebuild__${data.filter}`,
+    jobId:
+      data.filter === 'embedding' && data.retentionGeneration
+        ? `bloomFilterRebuild__embedding__retention_${data.retentionGeneration}`
+        : `bloomFilterRebuild__${data.filter}`,
     removeOnComplete: true,
     removeOnFail: true,
     ...(delay === undefined ? {} : { delay }),

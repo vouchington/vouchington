@@ -94,10 +94,12 @@ describe('copyright evidence retention sweep', () => {
 
     expect(result).toEqual({ erased: 3, ineligible: 0, failed: [] })
     await expect(getAgentCallReceipt(receiptKey)).resolves.toMatchObject({
-      result_ciphertext: 'erased',
+      status: 'erased',
+      result_ciphertext: null,
     })
     await expect(getAgentCallReceipt(pendingReceiptKey)).resolves.toMatchObject({
-      result_ciphertext: 'erased',
+      status: 'erased',
+      result_ciphertext: null,
     })
     await expect(
       completeAgentCallReceipt(pendingReceiptKey, 'late private guidance fixture'),

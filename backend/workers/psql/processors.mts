@@ -3,17 +3,23 @@ import {
   runViews,
   runConfigDriven,
   createMonthlyPartitions,
+  splitDefaultRange,
   cleanupPartitions,
   refreshMaterializedView,
 } from '@data-stores/psql/migrate'
 import { runDataRetentionCleanup } from '@services/data-retention'
 import { dataRetentionConfig, getDataRetentionLimits } from '@services/data-retention/config'
 import { reconcilePostVoteDrift } from '@services/elections-votes/shared'
-import type { PsqlJobs, RefreshMaterializedViewData } from '@queues/psql/types'
+import type {
+  CreatePartitionsData,
+  PsqlJobs,
+  RefreshMaterializedViewData,
+} from '@queues/psql/types'
 
 type ProcessPsqlDependencies = {
   cleanupPartitions: typeof cleanupPartitions
   createPartitions: typeof createMonthlyPartitions
+  splitDefaultRange: typeof splitDefaultRange
   dataRetentionCleanup: typeof runDataRetentionCleanup
   reconcileVoteDrift: typeof reconcilePostVoteDrift
   refreshMaterializedView: typeof refreshMaterializedView
@@ -24,7 +30,7 @@ type ProcessPsqlDependencies = {
 
 export default async function processPsql(
   jobName: PsqlJobs,
-  data?: Partial<RefreshMaterializedViewData>,
+  data?: Partial<RefreshMaterializedViewData & CreatePartitionsData>,
   dependencies?: Partial<ProcessPsqlDependencies>,
 ) {
   switch (jobName) {
@@ -35,7 +41,9 @@ export default async function processPsql(
     case 'runConfigDriven':
       return (dependencies?.runConfigDriven ?? runConfigDriven)()
     case 'createPartitions':
-      return (dependencies?.createPartitions ?? createMonthlyPartitions)()
+      return data?.range
+        ? (dependencies?.splitDefaultRange ?? splitDefaultRange)(data.range)
+        : (dependencies?.createPartitions ?? createMonthlyPartitions)()
     case 'cleanupPartitions':
       return (dependencies?.cleanupPartitions ?? cleanupPartitions)()
     case 'dataRetentionCleanup': {

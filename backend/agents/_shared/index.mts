@@ -1,5 +1,10 @@
 export { callAgentModel, type AgentModelCaller } from './call-agent-model.mts'
-export { callReceiptedAgentModel, agentCallOperationKey } from './receipted-agent-model.mts'
+export {
+  callReceiptedAgentModel,
+  agentCallOperationKey,
+  agentCallRequestSha256,
+} from './receipted-agent-model.mts'
+export { unrecoverable } from '@vouchington/queue-errors'
 export { callAgentToolTurn, type AgentToolTurnCaller } from './call-agent-tool-turn.mts'
 export { recordAgentResponseUsage } from './record-response-usage.mts'
 export { createStructuredDecisionBillingHooks } from './structured-decision-billing-hooks.mts'

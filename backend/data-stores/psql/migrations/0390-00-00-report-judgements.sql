@@ -25,6 +25,11 @@ CREATE TABLE IF NOT EXISTS moderation_report_judgements (
   rerun_by_id uuid REFERENCES users (id) ON DELETE SET NULL,
   -- Opaque identity of a manually admitted run; automatic judgements have no run identity.
   run_id uuid UNIQUE,
+  -- The FK is added after the receipt table is created in migration 0753.
+  agent_call_receipt_id uuid UNIQUE,
+  agent_call_request_sha256 text CHECK (agent_call_request_sha256 IS NULL OR char_length(agent_call_request_sha256) = 64),
+  agent_call_identity_sha256 text CHECK (agent_call_identity_sha256 IS NULL OR char_length(agent_call_identity_sha256) = 64),
+  agent_call_community_id uuid REFERENCES communities (id) ON DELETE SET NULL,
   recommended_action moderation_judgement_actions NOT NULL,
   public_response text NOT NULL,
   internal_response text NOT NULL,
@@ -35,6 +40,8 @@ CREATE TABLE IF NOT EXISTS moderation_report_judgements (
   context_max_reason_rank integer,
   created_at timestamptz GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   dispatched_at timestamptz,
+  CHECK (num_nonnulls(agent_call_receipt_id, agent_call_request_sha256,
+    agent_call_identity_sha256) IN (0, 3)),
   CHECK (num_nonnulls(post_id, reported_user_id, hostname_id, rss_feed_item_id) = 1)
 );
 
@@ -59,6 +66,10 @@ CREATE INDEX IF NOT EXISTS idx_moderation_report_judgements__rss_id
 CREATE INDEX IF NOT EXISTS idx_moderation_report_judgements__case_id
   ON moderation_report_judgements (case_id) WHERE case_id IS NOT NULL;
 
+CREATE INDEX IF NOT EXISTS idx_moderation_report_judgements__agent_call_community_id
+  ON moderation_report_judgements (agent_call_community_id)
+  WHERE agent_call_community_id IS NOT NULL;
+
 COMMENT ON TABLE moderation_report_judgements IS 'AI-generated judgements on reported entities recommending a moderation action.';
 COMMENT ON COLUMN moderation_report_judgements.post_id IS 'Judged post or comment; set when entity is a post or comment.';
 COMMENT ON COLUMN moderation_report_judgements.reported_user_id IS 'Judged user; set when entity is a user.';
@@ -67,6 +78,10 @@ COMMENT ON COLUMN moderation_report_judgements.rss_feed_item_id IS 'Judged RSS f
 COMMENT ON COLUMN moderation_report_judgements.triggering_report_id IS 'The moderation report that triggered this judgement run, if any.';
 COMMENT ON COLUMN moderation_report_judgements.rerun_by_id IS 'Moderator who requested a re-run of the judgement, if applicable.';
 COMMENT ON COLUMN moderation_report_judgements.run_id IS 'Unique opaque identity of the admitted manual judgement run, used for exact result polling and retry replay.';
+COMMENT ON COLUMN moderation_report_judgements.agent_call_receipt_id IS 'Paid-call receipt retained for exact durable judgement replay.';
+COMMENT ON COLUMN moderation_report_judgements.agent_call_request_sha256 IS 'Exact model, prompt-version and normalized-input digest reserved by the paid-call receipt.';
+COMMENT ON COLUMN moderation_report_judgements.agent_call_identity_sha256 IS 'Digest of the original entity, triggering report, run and operation identity for replay validation.';
+COMMENT ON COLUMN moderation_report_judgements.agent_call_community_id IS 'Community scope captured with the paid judgement for post-write auto-dispatch retries.';
 COMMENT ON COLUMN moderation_report_judgements.recommended_action IS 'AI-recommended moderation action.';
 COMMENT ON COLUMN moderation_report_judgements.public_response IS 'Public-facing explanation of the judgement.';
 COMMENT ON COLUMN moderation_report_judgements.internal_response IS 'Internal reasoning visible to staff only.';

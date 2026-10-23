@@ -5834,6 +5834,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@queues/bloom-filters':
+        specifier: workspace:^
+        version: link:../../queues/bloom-filters
       '@services/contribution-gating':
         specifier: workspace:^
         version: link:../contribution-gating

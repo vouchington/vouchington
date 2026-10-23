@@ -25,9 +25,10 @@ describe('schema growth classification', () => {
     expect(tables.get('communities')).toContain('product adoption')
     expect(tables.get('rss_feed_item_guids')).toContain('Relationship edges')
     expect(tables.get('admin_import_batches')).toContain('audit/workflow')
-    expect(tables.get('ai_usage_provider_response_keys')).toContain(
-      'global response-id idempotency',
-    )
+    expect(tables.has('ai_usage_provider_response_keys')).toBe(false)
+    expect(EXPLICIT_BOUNDED_TABLES.get('ai_usage_provider_response_keys')).toContain('90 days')
+    expect(tables.has('notification_push_intents')).toBe(false)
+    expect(tables.has('notification_push_intent_subscription_receipts')).toBe(false)
     expect(tables.get('web_push_endpoint_owners')).toContain('cross-user endpoint uniqueness')
     expect(tables.get('community_members')).toContain('Relationship edges')
     expect(tables.get(EXTRA_UNBOUNDED_TABLES[0]!)).toContain('owning entity or workflow')
@@ -107,7 +108,7 @@ describe('schema growth registry', () => {
     expect(entry).not.toHaveProperty('noPartitionRationale')
   })
 
-  it('keeps global response-id uniqueness as the partitioning gate for usage keys', () => {
+  it('classifies provider response keys by their 90-day retention', () => {
     const [entry] = buildSchemaGrowthRegistry(
       new Map([
         [
@@ -118,9 +119,9 @@ describe('schema growth registry', () => {
     )
 
     expect(entry).toMatchObject({
-      growth: 'unbounded',
+      growth: 'bounded',
       partition: null,
-      reconsiderPartitioningWhen: expect.stringContaining('global response-id uniqueness'),
+      reconsiderPartitioningWhen: expect.stringContaining('bounded-cardinality'),
     })
   })
 

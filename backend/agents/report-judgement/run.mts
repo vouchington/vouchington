@@ -1,4 +1,9 @@
-import { callReceiptedAgentModel } from '@agents/_shared'
+import {
+  agentCallOperationKey,
+  agentCallRequestSha256,
+  callReceiptedAgentModel,
+  unrecoverable,
+} from '@agents/_shared'
 import type { ModelSelection } from '@modules/model-providers/types'
 import { sanitizePromptInjection, wrapExternalContent } from '@jongleberry/vurst-prompt'
 import {
@@ -6,6 +11,7 @@ import {
   getReportJudgementContextForEntity,
   insertReportJudgement,
   getJudgementByRunId,
+  getJudgementByOperationKey,
   shouldRefreshReportJudgementForEntity,
   type ModerationReportEntityType,
   type ModerationReportJudgement,
@@ -20,6 +26,10 @@ import {
   REPORT_JUDGEMENT_PROMPT_VERSION,
   type JudgementModelCaller,
 } from './model.mts'
+import {
+  assertReportJudgementReplayIdentity,
+  reportJudgementIdentitySha256,
+} from './replay-identity.mts'
 
 interface JudgementInput {
   entityType: ModerationReportEntityType
@@ -44,20 +54,17 @@ export async function runReportJudgementAgent(
   callModel: JudgementModelCaller = callJudgementModel,
 ): Promise<JudgementAgentResult | null> {
   const { entityType, entityId, triggeringReportId, rerunById, runId } = input
-
-  if (runId) {
-    const existing = await withPrimaryReads(() => getJudgementByRunId(runId))
-    if (existing) {
-      if (
-        existing.entity_type !== entityType ||
-        existing.entity_id !== entityId ||
-        existing.triggering_report_id !== triggeringReportId ||
-        existing.rerun_by_id !== rerunById
-      )
-        throw new Error('Judgement run identity belongs to another request')
-      return { judgement: existing, communityId: null, authorId: null }
-    }
+  const operationId =
+    input.operationId ?? `${entityType}:${entityId}:${triggeringReportId}:${rerunById ?? ''}`
+  const operationKey = agentCallOperationKey('report-judgement', operationId)
+  const identity = { entityType, entityId, triggeringReportId, rerunById, runId, operationId }
+  const identitySha256 = reportJudgementIdentitySha256(identity)
+  const replay = await withPrimaryReads(() => getJudgementByOperationKey(operationKey))
+  const runReplay = runId ? await withPrimaryReads(() => getJudgementByRunId(runId)) : null
+  if (runReplay && runReplay.id !== replay?.id) {
+    throw new Error('Judgement run identity belongs to another paid operation')
   }
+  if (replay) assertReportJudgementReplayIdentity(replay, identity, identitySha256)
 
   const loadCurrentInput = async (): Promise<{
     entityContent: NonNullable<Awaited<ReturnType<typeof fetchEntityContent>>>
@@ -77,21 +84,24 @@ export async function runReportJudgementAgent(
     if (
       entityContent.communityId &&
       !moderationAiConfig.getFields().community_judgement_enabled &&
-      !rerunById
+      !rerunById &&
+      !replay
     )
       return null
     // Automatic runs skip only when the latest judgement matches current context.
-    const context = rerunById
-      ? await getReportJudgementContextForEntity(entityType, entityId)
-      : await shouldRefreshReportJudgementForEntity(entityType, entityId).then(state =>
-          state.refresh ? state.context : null,
-        )
+    const context =
+      rerunById || replay
+        ? await getReportJudgementContextForEntity(entityType, entityId)
+        : await shouldRefreshReportJudgementForEntity(entityType, entityId).then(state =>
+            state.refresh ? state.context : null,
+          )
     if (!context) return null
     const reports = await getAllReportsForEntity(entityType, entityId)
     return { entityContent, context, reports }
   }
   // Scope only the reads: paid model I/O and the conditional write run after the primary read scope.
-  const current = rerunById ? await withPrimaryReads(loadCurrentInput) : await loadCurrentInput()
+  const current =
+    rerunById || replay ? await withPrimaryReads(loadCurrentInput) : await loadCurrentInput()
   if (!current) return null
   const { entityContent, context, reports } = current
 
@@ -135,18 +145,32 @@ export async function runReportJudgementAgent(
     .filter(Boolean)
     .join('\n')
 
+  const requestSha256 = agentCallRequestSha256(
+    selection,
+    REPORT_JUDGEMENT_PROMPT_VERSION,
+    userInput,
+  )
+  if (replay) {
+    if (replay.agent_call_request_sha256 !== requestSha256) {
+      unrecoverable(
+        new Error(`Paid report-judgement call ${operationKey} request changed after reservation`),
+      )
+    }
+    return {
+      judgement: replay,
+      communityId: replay.agent_call_community_id ?? null,
+      authorId: entityContent.authorId,
+    }
+  }
+
   const safetyIdentifier = entityContent.authorId ?? entityId
-  // Usage is recorded from what was actually spent: on success, and for a billed answer that
-  // failed validation or did not complete, which still billed tokens. postId is set for 'post' and
-  // 'comment' -- both are rows in `posts` (see fetch-entity.mts's combined post-or-comment query)
-  // -- but not for 'user', 'url_hostname', or 'rss_feed_item', which don't reference a row in
-  // `posts`, and ai_usage_records.post_id has a real FK to it.
+  // Bill actual provider usage, including billed validation failures. Comments are posts;
+  // other report targets do not have the post FK required by ai_usage_records.
   const result = await callReceiptedAgentModel({
     agentSlug: 'report-judgement',
     reportTarget: { entityType, entityId },
     promptVersion: REPORT_JUDGEMENT_PROMPT_VERSION,
-    operationId:
-      input.operationId ?? `${entityType}:${entityId}:${triggeringReportId}:${rerunById ?? ''}`,
+    operationId,
     selection,
     input: userInput,
     safetyIdentifier,
@@ -161,6 +185,10 @@ export async function runReportJudgementAgent(
     triggeringReportId,
     rerunById: rerunById ?? null,
     runId: runId ?? null,
+    agentCallOperationKey: operationKey,
+    agentCallRequestSha256: requestSha256,
+    agentCallIdentitySha256: identitySha256,
+    agentCallCommunityId: entityContent.communityId,
     recommendedAction: result.output.recommended_action,
     publicResponse: result.output.public_response,
     internalResponse: result.output.internal_response,

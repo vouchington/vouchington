@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { createTestUserDirect, insertTestPost } from '@voucha/test-helpers'
 import { hardDeleteTestPost } from '@voucha/test-helpers/entities/posts-deletion'
+import { deleteReceiptRowForTest } from '@voucha/test-helpers/agent-call-receipt-targets'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { spendCapConfig } from '@services/ai-usage/spend-cap-config'
 import { getAgentCallReceipt } from '@services/ai-usage/agent-call-receipts'
@@ -39,7 +40,11 @@ describe('report model receipt after target deletion', () => {
         output: { internal_response: 'Private report reasoning' },
       })
       await hardDeleteTestPost(postId)
-      await expect(getAgentCallReceipt(key)).resolves.toMatchObject({ result_ciphertext: 'erased' })
+      await deleteReceiptRowForTest(key)
+      await expect(getAgentCallReceipt(key)).resolves.toMatchObject({
+        status: 'erased',
+        result_ciphertext: null,
+      })
       await expect(callReceiptedAgentModel(params)).rejects.toMatchObject({
         name: 'UnrecoverableError',
       })

@@ -41,7 +41,7 @@ export async function getUndispatchedJudgements(): Promise<
         WHEN j.hostname_id IS NOT NULL THEN 'url_hostname'
         WHEN j.rss_feed_item_id IS NOT NULL THEN 'rss_feed_item'
       END AS entity_type,
-      p.community_id
+      j.agent_call_community_id AS community_id
     FROM moderation_report_judgements j
     LEFT JOIN posts p ON j.post_id IS NOT NULL AND p.id = j.post_id
     WHERE j.dispatched_at IS NULL

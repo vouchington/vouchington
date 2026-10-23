@@ -1,4 +1,4 @@
-import { read, write } from '@data-stores/psql'
+import { beginTransaction, read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import {
   type ModerationReportEntityType,
@@ -32,6 +32,11 @@ export interface ModerationReportJudgement {
   context_max_reason_rank: number | null
   created_at: Date
   dispatched_at?: Date | null
+  run_id?: string | null
+  agent_call_receipt_id?: string | null
+  agent_call_request_sha256?: string | null
+  agent_call_identity_sha256?: string | null
+  agent_call_community_id?: string | null
 }
 
 export type InsertReportJudgementInput = {
@@ -41,6 +46,10 @@ export type InsertReportJudgementInput = {
   triggeringReportId?: string | null
   rerunById?: string | null
   runId?: string | null
+  agentCallOperationKey?: string
+  agentCallRequestSha256?: string
+  agentCallIdentitySha256?: string
+  agentCallCommunityId?: string | null
   recommendedAction: ModerationJudgementAction
   publicResponse: string
   internalResponse: string
@@ -66,18 +75,32 @@ export async function insertReportJudgement(
   }
   const context =
     input.context ?? (await getReportJudgementContextForEntity(input.entityType, input.entityId))
+  await using transaction = await beginTransaction()
+  let receiptId: string | null = null
+  if (input.agentCallOperationKey) {
+    const { rows } = await transaction<{ id: string }>(sql`/* consumeReportJudgementAgentReceipt */
+      UPDATE ai_agent_call_receipts SET consumed_at = CURRENT_TIMESTAMP
+      WHERE id = (SELECT id FROM ai_agent_call_receipt_keys
+        WHERE operation_key = ${input.agentCallOperationKey})
+        AND agent_slug = 'report-judgement'
+        AND status = 'done'
+      RETURNING id`)
+    receiptId = rows[0]?.id ?? null
+    if (!receiptId) throw new Error('Report judgement paid-call receipt is not replayable')
+  }
   const fkColumn = reportEntityFkColumn(input.entityType)
   const query = sql`/* insertReportJudgement */ INSERT INTO moderation_report_judgements (`
   query.append(fkColumn)
   query.append(
-    sql`, case_id, triggering_report_id, rerun_by_id, run_id, recommended_action, public_response, internal_response, model, context_hash, context_report_count, context_note_hash, context_max_reason_rank) VALUES (${input.entityId}::uuid, ${resolvedCaseId}, ${input.triggeringReportId ?? null}, ${input.rerunById ?? null}, ${input.runId ?? null}::uuid, ${input.recommendedAction}, ${input.publicResponse}, ${input.internalResponse}, ${input.model}, ${context.contextHash}, ${context.reportCount}, ${context.noteHash}, ${context.maxReasonRank}) RETURNING id, case_id, triggering_report_id, rerun_by_id, recommended_action, public_response, internal_response, model, context_hash, context_report_count, context_note_hash, context_max_reason_rank, created_at, `,
+    sql`, case_id, triggering_report_id, rerun_by_id, run_id, agent_call_receipt_id, agent_call_request_sha256, agent_call_identity_sha256, agent_call_community_id, recommended_action, public_response, internal_response, model, context_hash, context_report_count, context_note_hash, context_max_reason_rank) VALUES (${input.entityId}::uuid, ${resolvedCaseId}, ${input.triggeringReportId ?? null}, ${input.rerunById ?? null}, ${input.runId ?? null}::uuid, ${receiptId}::uuid, ${input.agentCallRequestSha256 ?? null}, ${input.agentCallIdentitySha256 ?? null}, ${input.agentCallCommunityId ?? null}::uuid, ${input.recommendedAction}, ${input.publicResponse}, ${input.internalResponse}, ${input.model}, ${context.contextHash}, ${context.reportCount}, ${context.noteHash}, ${context.maxReasonRank}) RETURNING id, case_id, triggering_report_id, rerun_by_id, run_id, agent_call_receipt_id, agent_call_request_sha256, agent_call_identity_sha256, agent_call_community_id, recommended_action, public_response, internal_response, model, context_hash, context_report_count, context_note_hash, context_max_reason_rank, created_at, dispatched_at, `,
   )
   query.append(fkColumn)
   query.append(
     sql` AS entity_id, ${input.entityType}::moderation_report_entity_types AS entity_type`,
   )
 
-  const { rows } = await write(query)
+  const { rows } = await transaction(query)
+  await transaction.commit()
   return rows[0] as ModerationReportJudgement
 }
 

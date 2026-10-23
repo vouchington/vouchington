@@ -908,6 +908,14 @@ CREATE OR REPLACE FUNCTION public.fn_reject_invalid_membership_refund_operation_
  LANGUAGE plpgsql
 ```
 
+## `fn_reject_media_delivery_registry_change_retention`
+
+```sql
+CREATE OR REPLACE FUNCTION public.fn_reject_media_delivery_registry_change_retention()
+ RETURNS trigger
+ LANGUAGE plpgsql
+```
+
 ## `fn_reject_media_placement`
 
 ```sql

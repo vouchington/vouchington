@@ -1,4 +1,5 @@
 import app from '../../app.mts'
+import { assertExplicitRange } from '@data-stores/psql/migrate'
 import type { Context } from '@jongleberry/api-server'
 import { currentUserCanAccessPsqlAdmin } from '@services/psql-admin/authorization'
 import { getMigrationStatus } from '@services/psql-admin'
@@ -11,9 +12,11 @@ import {
   enqueueCleanupPartitions,
 } from '@queues/psql/enqueues'
 import { requireAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
-import type { PsqlAdminJobType } from '@queues/psql/types'
+import type { ExplicitPartitionRange, PsqlAdminJobType } from '@queues/psql/types'
 
-type PsqlJobRequest = { type: PsqlAdminJobType }
+type PsqlJobRequest =
+  | { type: 'createPartitions'; range: ExplicitPartitionRange }
+  | { type: Exclude<PsqlAdminJobType, 'createPartitions'> }
 
 // GET /api/v1/psql/partitions - Get partition status
 app.route('/api/v1/psql/partitions').get(async (ctx: Context) => {
@@ -38,6 +41,9 @@ app.route('/api/v1/psql/jobs').post(async (ctx: Context) => {
   const body = (await ctx.request.json('1mb')) as PsqlJobRequest
   validateRequestContract(ctx, 'POST:/api/v1/psql/jobs', { body })
   const { type } = body
+  if (type !== 'createPartitions' && 'range' in body) {
+    ctx.throw(422, 'A partition range is only valid for createPartitions')
+  }
 
   switch (type) {
     case 'runMigrations':
@@ -50,7 +56,12 @@ app.route('/api/v1/psql/jobs').post(async (ctx: Context) => {
       await enqueueRunConfigDriven()
       break
     case 'createPartitions':
-      await enqueueCreatePartitions()
+      try {
+        assertExplicitRange(body.range)
+      } catch (err) {
+        ctx.throw(422, err instanceof Error ? err.message : 'Invalid partition range')
+      }
+      await enqueueCreatePartitions(body.range)
       break
     case 'cleanupPartitions':
       await enqueueCleanupPartitions()

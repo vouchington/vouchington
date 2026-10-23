@@ -74,6 +74,23 @@ describe('PostgreSQL schema growth registry', () => {
     const registry = buildSchemaGrowthRegistry(tables)
 
     expect(unknownIdPolicies).toEqual([])
+    const receiptKey = rows.find(row => row.table_name === 'ai_agent_call_receipt_keys')
+    expect(receiptKey).toMatchObject({ id_type: 'uuid', id_default: 'uuidv7()' })
+    const receipt = rows.find(row => row.table_name === 'ai_agent_call_receipts')
+    expect(receipt).toMatchObject({ id_type: 'uuid', id_default: null })
+    const receiptKeyForeignKey = await read<{
+      definition: string
+    }>(`/* getReceiptKeyIdentityForeignKey */
+      SELECT pg_get_constraintdef(fk.oid) AS definition
+      FROM pg_constraint fk
+      WHERE fk.conrelid = 'ai_agent_call_receipts'::regclass
+        AND fk.confrelid = 'ai_agent_call_receipt_keys'::regclass
+        AND fk.contype = 'f'`)
+    expect(receiptKeyForeignKey.rows).toEqual([
+      {
+        definition: 'FOREIGN KEY (id) REFERENCES ai_agent_call_receipt_keys(id) ON DELETE CASCADE',
+      },
+    ])
     expect(registry.map(({ table }) => table)).toEqual(rows.map(({ table_name }) => table_name))
     expect([...PARTITION_POLICIES.keys()].filter(table => !tables.has(table))).toEqual([])
     expect([...UNBOUNDED_UNPARTITIONED_TABLES.keys()].filter(table => !tables.has(table))).toEqual(
