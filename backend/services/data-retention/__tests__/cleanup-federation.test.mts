@@ -250,6 +250,15 @@ describe('federation retention', () => {
       })
       expect(secondInbox).toMatchObject({ deleted: 1, hasMore: false })
       expect(secondOutbound).toMatchObject({ deleted: 1, hasMore: false })
+      expect(
+        await cleanupActivityPubReplayLedger('inbox', {
+          batchSize: 1,
+          maxBatches: 1,
+          now,
+          borrowedQuery: query,
+          scope: inboxScope,
+        }),
+      ).toEqual({ deleted: 0, hasMore: false, continuationPosition: null })
       expect(await readFederationRetentionFixtureStateForTest(query, ids)).toMatchObject({
         inboxActivityIds: [ids.currentInboxActivityId],
         distributionActivityIds: [ids.unfinishedDistributionActivityId],
