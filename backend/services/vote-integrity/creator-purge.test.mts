@@ -6,8 +6,8 @@ import {
   insertTestVoteWeightPenalty,
   softDeleteUserAt,
 } from '@voucha/test-helpers'
-import { cleanupSoftDeletedUser } from '@services/data-retention/cleanup-soft-deleted-user'
-import { gatherVoteWeightFactors } from '@services/vote-weight/gather-factors'
+import { cleanupSoftDeletedUser } from '../data-retention/cleanup-soft-deleted-user.mts'
+import { gatherVoteWeightFactors } from '../vote-weight/gather-factors.mts'
 import { getVoteWeightPenaltyByIdFromPrimary } from './get-penalties.mts'
 
 describe('vote-weight penalty creator purge', () => {
