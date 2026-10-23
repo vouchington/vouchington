@@ -66,6 +66,12 @@ function emptyScopedOptions(now: Date) {
     webPushSubscriptionTombstones: emptyWindow,
     oldModerationQueueClaims: emptyWindow,
     oldModerationMediaReveals: emptyWindow,
+    textEmbeddingCache: emptyWindow,
+    terminalEmbeddingBatches: emptyWindow,
+    terminalModerationWork: emptyWindow,
+    oldAgentCallReceipts: emptyWindow,
+    oldProviderResponseKeys: emptyWindow,
+    oldMediaDeliveryChanges: emptyWindow,
   }
 }
 

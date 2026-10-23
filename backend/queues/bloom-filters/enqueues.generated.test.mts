@@ -60,6 +60,13 @@ describe('enqueues.generated', () => {
     )
   })
 
+  it('orders a later retention rebuild behind an already admitted generation', () => {
+    const first = rebuildBloomFilterJobOptions({ filter: 'embedding', retentionGeneration: '1' })
+    const second = rebuildBloomFilterJobOptions({ filter: 'embedding', retentionGeneration: '2' })
+    expect(first.jobId).not.toBe(second.jobId)
+    expect(first.ordering).toEqual(second.ordering)
+  })
+
   it('enqueues the same embedding rebuild job used by admin and failure recovery', async () => {
     const add = vi.spyOn(bloomFilters, 'add').mockResolvedValue(undefined as never)
 

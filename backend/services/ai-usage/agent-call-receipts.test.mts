@@ -43,7 +43,8 @@ describe('report call receipt target retention', () => {
       for (const key of [completed, pending]) {
         await expect(getAgentCallReceipt(key)).resolves.toEqual({
           request_sha256: digest,
-          result_ciphertext: 'erased',
+          status: 'erased',
+          result_ciphertext: null,
         })
         await expect(completeAgentCallReceipt(key, 'late-private-result')).rejects.toBeInstanceOf(
           Error,
@@ -53,7 +54,8 @@ describe('report call receipt target retention', () => {
         ).resolves.toBe(false)
         await expect(getAgentCallReceipt(key)).resolves.toEqual({
           request_sha256: digest,
-          result_ciphertext: 'erased',
+          status: 'erased',
+          result_ciphertext: null,
         })
       }
     },

@@ -45,6 +45,29 @@ WHERE completed_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_post_moderation_work_items__incomplete_version_source
 ON post_moderation_work_items (version_id, source)
 WHERE completed_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_post_moderation_work_items__terminal_retention
+ON post_moderation_work_items (completed_at, version_id, source)
+WHERE completed_at IS NOT NULL;
+
+CREATE TABLE post_moderation_work_retention_cursors (
+  is_singleton BOOLEAN PRIMARY KEY DEFAULT TRUE CHECK (is_singleton),
+  cursor_completed_at TIMESTAMPTZ,
+  cursor_version_id UUID,
+  cursor_source post_moderation_sources,
+  sweep_upper_bound_completed_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CHECK (num_nonnulls(cursor_completed_at, cursor_version_id, cursor_source) IN (0, 3))
+);
+CREATE OR REPLACE TRIGGER trigger_post_moderation_work_retention_cursors_updated_at
+BEFORE UPDATE ON post_moderation_work_retention_cursors
+FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+COMMENT ON TABLE post_moderation_work_retention_cursors IS 'Singleton keyset position for terminal moderation work retention.';
+COMMENT ON COLUMN post_moderation_work_retention_cursors.is_singleton IS 'Allows one terminal work sweep position.';
+COMMENT ON COLUMN post_moderation_work_retention_cursors.cursor_completed_at IS 'Exact completion timestamp of the last scanned work item.';
+COMMENT ON COLUMN post_moderation_work_retention_cursors.cursor_version_id IS 'Version tie breaker for the last scanned completion timestamp.';
+COMMENT ON COLUMN post_moderation_work_retention_cursors.cursor_source IS 'Source tie breaker for the last scanned version.';
+COMMENT ON COLUMN post_moderation_work_retention_cursors.sweep_upper_bound_completed_at IS 'Frozen exclusive completion-age bound for the current sweep.';
+COMMENT ON COLUMN post_moderation_work_retention_cursors.updated_at IS 'Last cursor transition time.';
 
 CREATE TABLE IF NOT EXISTS post_moderation_attempts (
   id UUID PRIMARY KEY DEFAULT uuidv7(),

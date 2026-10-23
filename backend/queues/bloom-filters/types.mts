@@ -17,6 +17,8 @@ export type BloomFilterRebuildInput = (typeof BLOOM_FILTER_REBUILD_INPUTS)[numbe
 
 export type RebuildBloomFilterData = {
   filter: Exclude<BloomFilterRebuildInput, 'entity-cache'>
+  /** Distinct retention sweep generation keeps a later rebuild behind one already running. */
+  retentionGeneration?: string
 }
 
 export type BloomFilterEntityType = 'posts' | 'topics' | 'users' | 'communities' | 'rss_feed_items'

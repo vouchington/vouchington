@@ -87,6 +87,9 @@ CREATE INDEX idx_media_delivery_registry_projection_work_items__expired
 CREATE INDEX idx_media_delivery_registry_projection_work_items__failed
   ON media_delivery_registry_projection_work_items(media_delivery_registry_record_id, generation, failed_change_id)
   WHERE failed_change_id IS NOT NULL;
+CREATE INDEX idx_med_dlvry_rgstry_prjctn_wrk_itms__failed_change
+  ON media_delivery_registry_projection_work_items(failed_change_id)
+  WHERE failed_change_id IS NOT NULL;
 COMMENT ON TABLE media_delivery_registry_projection_work_items IS 'Derived current-generation projection ownership and failed replay membership; immutable transitions remain authoritative.';
 COMMENT ON COLUMN media_delivery_registry_projection_work_items.failed_change_id IS 'Exact authoritative failed transition requiring operator replay; null for active projection work.';
 COMMENT ON COLUMN media_delivery_registry_projection_work_items.media_delivery_registry_record_id IS 'Retained delivery authority being projected.';
@@ -131,10 +134,50 @@ ALTER TABLE media_delivery_registry_records
   FOREIGN KEY (id, latest_change_id)
   REFERENCES media_delivery_registry_changes(media_delivery_registry_record_id, id) ON DELETE RESTRICT NOT VALID;
 ALTER TABLE media_delivery_registry_records VALIDATE CONSTRAINT fk_media_registry_records__latest_change;
+CREATE INDEX idx_media_delivery_registry_records__latest_change_id
+  ON media_delivery_registry_records(latest_change_id)
+  WHERE latest_change_id IS NOT NULL;
 CREATE INDEX idx_media_delivery_registry_changes__latest ON media_delivery_registry_changes(media_delivery_registry_record_id, id DESC);
 CREATE INDEX idx_media_delivery_registry_changes__actor ON media_delivery_registry_changes(changed_by_id) WHERE changed_by_id IS NOT NULL;
+CREATE FUNCTION fn_reject_media_delivery_registry_change_retention() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE cutoff_id uuid; cutoff_at timestamptz;
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    cutoff_id := NULLIF(current_setting('app.media_delivery_retention_cutoff_id', TRUE), '')::uuid;
+    cutoff_at := NULLIF(current_setting('app.media_delivery_retention_cutoff_at', TRUE), '')::timestamptz;
+    IF cutoff_id IS NOT NULL AND OLD.id < cutoff_id
+      AND cutoff_at IS NOT NULL
+      AND (OLD.completed_at IS NULL OR OLD.completed_at < cutoff_at)
+      AND NOT (OLD.change_type = 'completed' AND OLD.desired_state = 'withheld')
+      AND NOT EXISTS (SELECT 1 FROM media_delivery_registry_records record
+        WHERE record.latest_change_id = OLD.id)
+      AND NOT EXISTS (SELECT 1 FROM media_delivery_registry_projection_work_items work
+        WHERE work.failed_change_id = OLD.id) THEN
+      RETURN OLD;
+    END IF;
+  END IF;
+  RAISE EXCEPTION 'media delivery registry changes are immutable outside eligible retention';
+END;
+$$;
+COMMENT ON FUNCTION fn_reject_media_delivery_registry_change_retention() IS 'Allows only old, superseded, unreferenced transition deletes in the retention transaction; updates always fail.';
 CREATE TRIGGER trigger_media_delivery_registry_changes_immutable BEFORE UPDATE OR DELETE ON media_delivery_registry_changes
-FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
+FOR EACH ROW EXECUTE FUNCTION fn_reject_media_delivery_registry_change_retention();
+
+CREATE TABLE media_delivery_change_retention_cursors (
+  is_singleton BOOLEAN PRIMARY KEY DEFAULT TRUE CHECK (is_singleton),
+  cursor_id UUID,
+  sweep_upper_bound_id UUID,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CHECK (cursor_id IS NULL OR sweep_upper_bound_id IS NOT NULL)
+);
+CREATE OR REPLACE TRIGGER trigger_media_delivery_change_retention_cursors_updated_at
+BEFORE UPDATE ON media_delivery_change_retention_cursors
+FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+COMMENT ON TABLE media_delivery_change_retention_cursors IS 'Singleton raw UUIDv7 scan position for aged delivery transition retention.';
+COMMENT ON COLUMN media_delivery_change_retention_cursors.is_singleton IS 'Allows one delivery-transition retention sweep position.';
+COMMENT ON COLUMN media_delivery_change_retention_cursors.cursor_id IS 'Last scanned transition identity, including protected rows.';
+COMMENT ON COLUMN media_delivery_change_retention_cursors.sweep_upper_bound_id IS 'Frozen exclusive UUIDv7 age bound for the current sweep.';
+COMMENT ON COLUMN media_delivery_change_retention_cursors.updated_at IS 'Last cursor transition time.';
 CREATE TRIGGER trigger_media_delivery_registry_changes_actor BEFORE INSERT ON media_delivery_registry_changes
 FOR EACH ROW EXECUTE FUNCTION fn_ensure_retained_actor_identity('changed_by_id');
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

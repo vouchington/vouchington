@@ -29,3 +29,12 @@ export type PsqlAdminJobType = (typeof PSQL_ADMIN_JOB_TYPES)[number]
 export type RefreshMaterializedViewData = {
   viewName: string
 }
+
+export type ExplicitPartitionRange = {
+  table: string
+  fromId: string
+  toId: string
+  maxRows: number
+}
+
+export type CreatePartitionsData = { range?: ExplicitPartitionRange }

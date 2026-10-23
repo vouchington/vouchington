@@ -40,7 +40,6 @@ vi.mock(import('@/lib/on-error'), () => ({
 const mockedEnqueue = vi.mocked(enqueuePsqlJob)
 const mockedFetch = vi.mocked(fetchMigrations)
 
-// Minimal EventSource stub so usePostgreSQLAdminState's SSE useEffect does not throw.
 type ESListener = (event: MessageEvent) => void
 class MockEventSource {
   static instances: MockEventSource[] = []
@@ -75,11 +74,7 @@ class MockEventSource {
   }
 }
 
-const EMPTY_STATUS = {
-  applied: [],
-  pending: [],
-  total: 0,
-} as never
+const EMPTY_STATUS = { applied: [], pending: [], total: 0 } as never
 
 /** Emit the default snapshot so the hook's loading state becomes false. */
 async function emitDefaultSnapshot() {
@@ -91,11 +86,7 @@ async function emitDefaultSnapshot() {
 }
 
 function defer<T>() {
-  let resolve!: (value: T) => void
-  const promise = new Promise<T>(res => {
-    resolve = res
-  })
-  return { promise, resolve }
+  return Promise.withResolvers<T>()
 }
 
 describe('usePostgreSQLAdminState', () => {
@@ -147,6 +138,12 @@ describe('usePostgreSQLAdminState', () => {
     await waitFor(() => expect(result.current.loading).toBe(false))
 
     act(() => {
+      result.current.setPartitionRange({
+        table: 'ai_agent_call_receipts',
+        fromId: '01990000-0000-7000-8000-000000000000',
+        toId: '019a0000-0000-7000-8000-000000000000',
+        maxRows: 100,
+      })
       result.current.setPendingAction('createPartitions')
     })
 
@@ -154,7 +151,15 @@ describe('usePostgreSQLAdminState', () => {
       await result.current.confirmPartitionAction()
     })
 
-    expect(mockedEnqueue).toHaveBeenCalledWith('createPartitions')
+    expect(mockedEnqueue).toHaveBeenCalledWith({
+      type: 'createPartitions',
+      range: {
+        table: 'ai_agent_call_receipts',
+        fromId: '01990000-0000-7000-8000-000000000000',
+        toId: '019a0000-0000-7000-8000-000000000000',
+        maxRows: 100,
+      },
+    })
     expect(toastMock.success).toHaveBeenCalledWith('createPartitions job queued')
     expect(result.current.pendingAction).toBeNull()
   })

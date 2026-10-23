@@ -4,6 +4,14 @@
 
 ## Dual Pipeline Architecture
 
+The shared text-vector cache is recomputable. A persisted keyset sweep removes entries that
+have not been updated for 90 days; entity-owned vectors remain in place. Its Bloom filter may
+briefly contain hashes that the sweep removed. These are harmless false positives because a
+positive Bloom result still goes through the SQL lookup, while a negative result avoids that
+lookup. A completed sweep queues a rebuild; its durable pending marker clears only after the
+worker replaces the filter successfully. Terminal batch-tracking rows expire after 30 days, with their entity locks cascading.
+Active batches remain available to polling and rate limits.
+
 ```mermaid
 flowchart LR
   subgraph single ["Single — real-time"]

@@ -89,6 +89,12 @@ describe('cleanupAnalyticsLocalFiles', () => {
         webPushSubscriptionTombstones: emptyWindow,
         oldModerationQueueClaims: emptyWindow,
         oldModerationMediaReveals: emptyWindow,
+        textEmbeddingCache: emptyWindow,
+        terminalEmbeddingBatches: emptyWindow,
+        terminalModerationWork: emptyWindow,
+        oldAgentCallReceipts: emptyWindow,
+        oldProviderResponseKeys: emptyWindow,
+        oldMediaDeliveryChanges: emptyWindow,
       }),
     ).resolves.toEqual({
       retainedIdentityRoots: [],
@@ -114,6 +120,12 @@ describe('cleanupAnalyticsLocalFiles', () => {
       webPushSubscriptionTombstones: { deleted: 0, hasMore: false, continuation: null },
       oldModerationQueueClaims: { deleted: 0, hasMore: false, cursorId: null },
       oldModerationMediaReveals: { deleted: 0, hasMore: false, cursorId: null },
+      textEmbeddingCache: { deleted: 0, hasMore: false, continuation: null },
+      terminalEmbeddingBatches: { deleted: 0, hasMore: false, continuation: null },
+      terminalModerationWork: { deleted: 0, hasMore: false, continuation: null },
+      oldAgentCallReceipts: { deleted: 0, hasMore: false, continuation: null },
+      oldProviderResponseKeys: { deleted: 0, hasMore: false, continuation: null },
+      oldMediaDeliveryChanges: { deleted: 0, hasMore: false, continuation: null },
     })
   })
 

@@ -104,6 +104,10 @@ work ahead of housekeeping.
 - **Spend admission is single-sourced.** Every call that can incur billed model spend goes through
   one spend-cap decision point, and capped jobs park until the daily rollover instead of failing.
   The coordinator that releases them is deliberately not behind the provider limiter.
+- **Embedding Bloom rebuilds follow completed cache purges.** The retention cursor keeps a pending
+  rebuild generation until the ordered Bloom worker successfully replaces the filter. Distinct
+  generations prevent an older rebuild job from absorbing a later purge, and a failed rebuild
+  remains eligible for the next cleanup admission.
 - **Deletion and money paths recover from durable rows.** Account deletion, membership refunds and
   OAuth exchange keep their work in PostgreSQL with fenced leases, so terminal queue failure can
   never silently mark the work complete or issue a duplicate refund.

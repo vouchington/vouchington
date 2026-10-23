@@ -43,7 +43,7 @@ describe('psql client helpers', () => {
     const response = { success: true }
     mockPost.mockResolvedValueOnce(response)
 
-    await expect(enqueuePsqlJob('runConfigDriven')).resolves.toBe(response)
+    await expect(enqueuePsqlJob({ type: 'runConfigDriven' })).resolves.toBe(response)
     expect(mockPost).toHaveBeenCalledWith('/api/v1/psql/jobs', { type: 'runConfigDriven' })
   })
 })

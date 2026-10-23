@@ -23,6 +23,30 @@ projection or eligibility failure to diagnose, not a reason to reset unit resour
 
 See [prelaunch relational storage](../postgres-schema-rules.md#prelaunch-relational-storage).
 
+## Manual DEFAULT range splits and receipt retirement
+
+The PostgreSQL admin **Create Partitions** action accepts an explicit UUIDv7 interval for a
+registered DEFAULT range table. A populated DEFAULT is split in one transaction under relation
+locks; the operator sets a row admission limit and can choose smaller intervals when that limit is
+exceeded. The scheduled monthly partition maintenance remains for tables that use it and does not
+create ranges for DEFAULT-only tables.
+
+Retiring an explicit `ai_agent_call_receipts` range uses
+[`retireReceiptRange`](../../../backend/data-stores/psql/migration-runner/retire-receipt-range.mts)
+after the owner verifies the intended partition name. This helper rejects in-flight calls, deletes
+dependent report judgements within its admission limit, then detaches and drops the partition in
+one transaction. PostgreSQL partition DROP does not invoke row-level foreign-key cascades; an
+unrecognized reference blocks the transaction and leaves the range intact. Retained paid-operation
+keys survive retirement and continue to reject a duplicate paid dispatch without authorizing
+replay of the deleted ciphertext.
+
+Other DEFAULT range families use the internal
+[`retireExplicitRange`](../../../backend/data-stores/psql/migration-runner/retire-explicit-range.mts)
+transaction only through a family-specific operator entry point. That entry point must verify its
+own retention clock, child rows and external objects while the named relations are locked; the
+common transaction then drops dependent ranges before their parent. A generic retirement action
+is not exposed to the admin UI.
+
 ## View composition and the eligibility-view pull-up rule
 
 PostgreSQL pulls a view up into the enclosing query, turning a per-row correlated re-scan into an

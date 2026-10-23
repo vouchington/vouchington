@@ -12,6 +12,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import type { ExplicitPartitionRange } from '@/lib/api/client/psql'
 import {
   PARTITION_ACTION_DESCRIPTIONS,
   PARTITION_ACTION_LABELS,
@@ -29,13 +32,31 @@ const DROP_REASON_LABELS: Record<NonNullable<PartitionInfo['drop_refusal']>, str
   'check-pending': 'the backend will check this partition during cleanup',
 }
 
+const UUIDV7_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u
+
+function isReadyRange(range: ExplicitPartitionRange): boolean {
+  return (
+    /^[a-z][a-z0-9_]*$/u.test(range.table) &&
+    UUIDV7_PATTERN.test(range.fromId) &&
+    UUIDV7_PATTERN.test(range.toId) &&
+    range.fromId < range.toId &&
+    Number.isInteger(range.maxRows) &&
+    range.maxRows >= 1 &&
+    range.maxRows <= 10_000
+  )
+}
+
 export function PartitionConfirmDialog({
   confirmPartitionAction,
   pendingAction,
+  partitionRange,
+  setPartitionRange,
   setPendingAction,
 }: {
   confirmPartitionAction: () => void
   pendingAction: PartitionAction | null
+  partitionRange: ExplicitPartitionRange
+  setPartitionRange: (range: ExplicitPartitionRange) => void
   setPendingAction: (action: PartitionAction | null) => void
 }) {
   const t = useTranslations()
@@ -108,13 +129,60 @@ export function PartitionConfirmDialog({
             </div>
           )}
         </AlertDialogHeader>
+        {pendingAction === 'createPartitions' && (
+          <div className='grid gap-3'>
+            <Label htmlFor='partition-table'>Table</Label>
+            <Input
+              id='partition-table'
+              value={partitionRange.table}
+              onChange={event =>
+                setPartitionRange({ ...partitionRange, table: event.target.value })
+              }
+            />
+            <Label htmlFor='partition-from-id'>From UUIDv7 (inclusive)</Label>
+            <Input
+              id='partition-from-id'
+              value={partitionRange.fromId}
+              onChange={event =>
+                setPartitionRange({ ...partitionRange, fromId: event.target.value })
+              }
+            />
+            <Label htmlFor='partition-to-id'>To UUIDv7 (exclusive)</Label>
+            <Input
+              id='partition-to-id'
+              value={partitionRange.toId}
+              onChange={event => setPartitionRange({ ...partitionRange, toId: event.target.value })}
+            />
+            <Label htmlFor='partition-max-rows'>Maximum rows to move</Label>
+            <Input
+              id='partition-max-rows'
+              type='number'
+              min={1}
+              max={10_000}
+              value={partitionRange.maxRows}
+              onChange={event =>
+                setPartitionRange({ ...partitionRange, maxRows: Number(event.target.value) })
+              }
+            />
+            <p className='text-sm text-muted-foreground'>
+              Use lowercase UUIDv7 bounds, with From before To.
+            </p>
+            <p className='text-sm text-muted-foreground'>
+              The action stops if the range exceeds this limit, the DEFAULT partition exceeds
+              100,000 rows, or a referencing table exceeds 100,000 rows.
+            </p>
+          </div>
+        )}
         <AlertDialogFooter>
           <AlertDialogCancel>
             {t('extracted.postgresql.partitionConfirmDialog.cancel_19766ed6')}
           </AlertDialogCancel>
           <AlertDialogAction
-            disabled={pendingAction === 'cleanupPartitions' && !partitionStatus}
             onClick={confirmPartitionAction}
+            disabled={
+              (pendingAction === 'cleanupPartitions' && !partitionStatus) ||
+              (pendingAction === 'createPartitions' && !isReadyRange(partitionRange))
+            }
           >
             {t('extracted.postgresql.partitionConfirmDialog.confirm_eebdd24a')}
           </AlertDialogAction>

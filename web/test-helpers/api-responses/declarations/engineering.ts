@@ -129,7 +129,7 @@ export const ENGINEERING_DECLARATIONS = [
   defineWebApiFixture<PsqlJobEnqueueResponse>()(
     'web.admin.psql.jobs.default',
     adminPsqlJobsDefault,
-    context => context.client.psql.enqueuePsqlJob('runConfigDriven'),
+    context => context.client.psql.enqueuePsqlJob({ type: 'runConfigDriven' }),
   ),
   defineWebApiFixture<RebuildBloomFilterResponse>()(
     'web.admin.valkey.bloom-filters.rebuild.default',

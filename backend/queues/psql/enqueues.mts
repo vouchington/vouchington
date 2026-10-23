@@ -2,7 +2,12 @@ import { createEnqueueFunction } from '@data-stores/valkey-glide-mq'
 import type { EnqueueReturnType } from '@voucha/types'
 import { PRIORITY_DEFAULT, QUEUE_NAME, TOP_HASHTAGS_VIEW } from './config.mts'
 import { psql } from './queues.mts'
-import type { PsqlJobs, RefreshMaterializedViewData } from './types.mts'
+import type {
+  CreatePartitionsData,
+  ExplicitPartitionRange,
+  PsqlJobs,
+  RefreshMaterializedViewData,
+} from './types.mts'
 
 function createPsqlEnqueue(jobName: PsqlJobs) {
   const enqueue = createEnqueueFunction<Record<string, never>, PsqlJobs>({
@@ -19,7 +24,14 @@ function createPsqlEnqueue(jobName: PsqlJobs) {
 export const enqueueRunMigrations = createPsqlEnqueue('runMigrations')
 export const enqueueRunViews = createPsqlEnqueue('runViews')
 export const enqueueRunConfigDriven = createPsqlEnqueue('runConfigDriven')
-export const enqueueCreatePartitions = createPsqlEnqueue('createPartitions')
+const enqueueCreatePartitionsJob = createEnqueueFunction<CreatePartitionsData, PsqlJobs>({
+  queue: psql,
+  queueName: QUEUE_NAME,
+  jobName: 'createPartitions',
+})
+
+export const enqueueCreatePartitions = (range: ExplicitPartitionRange): EnqueueReturnType =>
+  enqueueCreatePartitionsJob({ range }, { priority: PRIORITY_DEFAULT })
 export const enqueueCleanupPartitions = createPsqlEnqueue('cleanupPartitions')
 export const enqueueDataRetentionCleanup = createPsqlEnqueue('dataRetentionCleanup')
 export const enqueueReconcileVoteDrift = createPsqlEnqueue('reconcileVoteDrift')

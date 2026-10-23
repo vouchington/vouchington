@@ -25,6 +25,12 @@ import {
   cleanupTerminalNotificationPushIntents,
   type PendingNotificationPushIntentCleanupResult,
 } from './cleanup-notification-push-intents.mts'
+import { cleanupTextEmbeddingCache } from './cleanup-text-embeddings.mts'
+import { cleanupTerminalEmbeddingBatches } from './cleanup-embedding-batches.mts'
+import { cleanupTerminalModerationWork } from './cleanup-moderation-work.mts'
+import { eraseOldAgentCallReceipts } from './cleanup-report-receipts.mts'
+import { cleanupOldProviderResponseKeys } from './cleanup-provider-response-keys.mts'
+import { cleanupOldMediaDeliveryChanges } from './cleanup-media-delivery-changes.mts'
 import {
   cleanupTerminalStripeEventWork,
   cleanupAbandonedMembershipPurchaseIntents,
@@ -75,6 +81,10 @@ export { cleanupTerminalNotificationPushIntents }
 export { cleanupTerminalStripeEventWork, cleanupAbandonedMembershipPurchaseIntents }
 export { cleanupOldPendingNotificationPushIntents }
 export { cleanupOldModerationQueueClaims, cleanupOldModerationMediaReveals }
+export { cleanupTextEmbeddingCache, cleanupTerminalEmbeddingBatches, cleanupTerminalModerationWork }
+export { eraseOldAgentCallReceipts }
+export { cleanupOldProviderResponseKeys }
+export { cleanupOldMediaDeliveryChanges }
 
 export async function cleanupAnalyticsLocalFiles(): Promise<void> {
   if (process.env.ANALYTICS_BACKEND !== 'local') return
@@ -132,6 +142,12 @@ type DataRetentionCleanupOptions = {
   }>
   oldModerationQueueClaims?: OptionalRetentionLimits<CleanupOptions>
   oldModerationMediaReveals?: OptionalRetentionLimits<CleanupOptions>
+  textEmbeddingCache?: OptionalRetentionLimits<CleanupOptions>
+  terminalEmbeddingBatches?: OptionalRetentionLimits<CleanupOptions>
+  terminalModerationWork?: OptionalRetentionLimits<CleanupOptions>
+  oldAgentCallReceipts?: OptionalRetentionLimits<CleanupOptions>
+  oldProviderResponseKeys?: OptionalRetentionLimits<CleanupOptions>
+  oldMediaDeliveryChanges?: OptionalRetentionLimits<CleanupOptions>
 }
 
 type DataRetentionCleanupResult = {
@@ -158,6 +174,12 @@ type DataRetentionCleanupResult = {
   oldPendingNotificationPushIntents: PendingNotificationPushIntentCleanupResult
   oldModerationQueueClaims: CleanupResult & { cursorId: string | null }
   oldModerationMediaReveals: CleanupResult & { cursorId: string | null }
+  textEmbeddingCache: CleanupResult
+  terminalEmbeddingBatches: CleanupResult
+  terminalModerationWork: CleanupResult
+  oldAgentCallReceipts: CleanupResult
+  oldProviderResponseKeys: CleanupResult
+  oldMediaDeliveryChanges: CleanupResult
 }
 
 export async function runDataRetentionCleanup(
@@ -238,6 +260,22 @@ export async function runDataRetentionCleanup(
   const oldModerationMediaReveals = await cleanupOldModerationMediaReveals(
     withLimits(options.oldModerationMediaReveals),
   )
+  const textEmbeddingCache = await cleanupTextEmbeddingCache(withLimits(options.textEmbeddingCache))
+  const terminalEmbeddingBatches = await cleanupTerminalEmbeddingBatches(
+    withLimits(options.terminalEmbeddingBatches),
+  )
+  const terminalModerationWork = await cleanupTerminalModerationWork(
+    withLimits(options.terminalModerationWork),
+  )
+  const oldAgentCallReceipts = await eraseOldAgentCallReceipts(
+    withLimits(options.oldAgentCallReceipts),
+  )
+  const oldProviderResponseKeys = await cleanupOldProviderResponseKeys(
+    withLimits(options.oldProviderResponseKeys),
+  )
+  const oldMediaDeliveryChanges = await cleanupOldMediaDeliveryChanges(
+    withLimits(options.oldMediaDeliveryChanges),
+  )
   const retainedRelationIdentities = await cleanupRetainedRelationIdentities(
     retainedPageSize,
     options.retainedRelationIdentityKeys,
@@ -276,6 +314,12 @@ export async function runDataRetentionCleanup(
     oldPendingNotificationPushIntents,
     oldModerationQueueClaims,
     oldModerationMediaReveals,
+    textEmbeddingCache,
+    terminalEmbeddingBatches,
+    terminalModerationWork,
+    oldAgentCallReceipts,
+    oldProviderResponseKeys,
+    oldMediaDeliveryChanges,
   }
 }
 

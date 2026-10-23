@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
 import { beginTransaction, write } from '@data-stores/psql'
-import { IMAGE_EMBEDDINGS_TABLE, EMBEDDING_DIMENSION } from '@services/bedrock-embeddings/config'
+import { EMBEDDING_DIMENSION } from '@services/bedrock-embeddings/config'
 import { from as copyFrom } from 'pg-copy-streams'
 import type { ImageBatchUpdateItem } from '@services/bedrock-embeddings/batch/types'
 import { csvEscape } from './csv.mts'
@@ -30,8 +30,7 @@ export async function applyImageBatchUpdates(items: ImageBatchUpdateItem[]): Pro
   )
   await pipeline(Readable.from(generateImageCsvRows(items)), copyStream)
 
-  // Pre-lock image rows in ascending id order BEFORE the embedding upsert so
-  // that entity and embedding locks are acquired in a consistent order (entity then embedding).
+  // Lock image rows in ascending id order before updating their vectors.
   const imageEntityIds = items.map(item => item.entity_id)
   // ast-grep-ignore: no-three-sequential-awaits
   await query(
@@ -41,14 +40,6 @@ export async function applyImageBatchUpdates(items: ImageBatchUpdateItem[]): Pro
       ORDER BY id
       FOR UPDATE`,
     [imageEntityIds],
-  )
-
-  await query(
-    `/* applyImageBatchUpdates */ INSERT INTO ${IMAGE_EMBEDDINGS_TABLE} (image_sha_256, embedding)
-      SELECT DISTINCT image_sha_256, embedding
-      FROM ${tempTable}
-      ORDER BY image_sha_256
-      ON CONFLICT (image_sha_256) DO NOTHING`,
   )
 
   const { rows } = await write<{ id: string }>(

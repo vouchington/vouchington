@@ -2,16 +2,11 @@
 
 import { useEffect, useRef, useState } from 'react'
 import onError, { onSuccess } from '@/lib/on-error'
-import { enqueuePsqlJob, fetchMigrations } from '@/lib/api/client/psql'
+import { enqueuePsqlJob, fetchMigrations, type ExplicitPartitionRange } from '@/lib/api/client/psql'
 import type { MigrationStatusResponse } from '@/types/api-responses'
 
 export type PartitionAction = 'createPartitions' | 'cleanupPartitions'
-export type PsqlAction =
-  | 'runMigrations'
-  | 'runViews'
-  | 'runConfigDriven'
-  | 'createPartitions'
-  | 'cleanupPartitions'
+export type PsqlAction = 'runMigrations' | 'runViews' | 'runConfigDriven'
 
 export const PARTITION_ACTION_LABELS: Record<PartitionAction, string> = {
   createPartitions: 'Create Partitions',
@@ -20,13 +15,13 @@ export const PARTITION_ACTION_LABELS: Record<PartitionAction, string> = {
 
 export const PARTITION_ACTION_DESCRIPTIONS: Record<PartitionAction, string> = {
   createPartitions:
-    'This will create future date-based partitions for all partitioned tables. Safe to run at any time.',
+    'Split an explicit UUIDv7 range out of a table’s DEFAULT partition. Existing rows move in one locked transaction, subject to the row cap.',
   cleanupPartitions:
     'This will drop expired partitions that are past their retention period. Dropped partitions cannot be recovered.',
 }
 
 export const PARTITION_ACTION_TOOLTIPS: Record<PartitionAction, string> = {
-  createPartitions: 'Creates future date-based partitions for all partitioned tables',
+  createPartitions: 'Split a selected UUIDv7 range out of a DEFAULT partition',
   cleanupPartitions: 'Drops expired partitions that are past their retention period',
 }
 
@@ -39,6 +34,12 @@ export function usePostgreSQLAdminState() {
   const [error, setError] = useState<string | null>(null)
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({})
   const [pendingAction, setPendingAction] = useState<PartitionAction | null>(null)
+  const [partitionRange, setPartitionRange] = useState<ExplicitPartitionRange>({
+    table: '',
+    fromId: '',
+    toId: '',
+    maxRows: 1_000,
+  })
   const esRef = useRef<EventSource | null>(null)
   const streamSnapshotAppliedRef = useRef(false)
   const loadDataPendingRef = useRef(false)
@@ -131,7 +132,7 @@ export function usePostgreSQLAdminState() {
   async function handleAction(type: PsqlAction) {
     setActionLoading(prev => ({ ...prev, [type]: true }))
     try {
-      await enqueuePsqlJob(type)
+      await enqueuePsqlJob({ type })
       onSuccess(`${type} job queued`)
       await loadData()
     } catch (err) {
@@ -145,7 +146,20 @@ export function usePostgreSQLAdminState() {
     if (!pendingAction) return
     const action = pendingAction
     setPendingAction(null)
-    await handleAction(action)
+    setActionLoading(prev => ({ ...prev, [action]: true }))
+    try {
+      if (action === 'createPartitions') {
+        await enqueuePsqlJob({ type: action, range: partitionRange })
+      } else {
+        await enqueuePsqlJob({ type: action })
+      }
+      onSuccess(`${action} job queued`)
+      await loadData()
+    } catch (err) {
+      onError(err, { fallback: `Failed to run ${action}`, tags: { form: 'admin-partition' } })
+    } finally {
+      setActionLoading(prev => ({ ...prev, [action]: false }))
+    }
   }
 
   return {
@@ -156,6 +170,8 @@ export function usePostgreSQLAdminState() {
     loadData,
     loading,
     pendingAction,
+    partitionRange,
+    setPartitionRange,
     setPendingAction,
     status,
   }

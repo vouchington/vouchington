@@ -24,6 +24,7 @@
     "@data-stores/psql": "workspace:^",
     "@data-stores/valkey": "workspace:^",
     "@modules/utils": "workspace:^",
+    "@queues/bloom-filters": "workspace:^",
     "@services/contribution-gating": "workspace:^",
     "@services/oauth": "workspace:^",
     "@services/oauth-authorization-server": "workspace:^",

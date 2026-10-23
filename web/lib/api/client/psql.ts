@@ -15,8 +15,17 @@ export function fetchPartitions(): Promise<PartitionStatusResponseBody> {
   return clientApi.get<PartitionStatusResponseBody>('/api/v1/psql/partitions')
 }
 
-export function enqueuePsqlJob(
-  type: 'runMigrations' | 'runViews' | 'runConfigDriven' | 'createPartitions' | 'cleanupPartitions',
-): Promise<PsqlJobEnqueueResponse> {
-  return clientApi.post<PsqlJobEnqueueResponse>('/api/v1/psql/jobs', { type })
+export type ExplicitPartitionRange = {
+  table: string
+  fromId: string
+  toId: string
+  maxRows: number
+}
+
+export type PsqlJobRequest =
+  | { type: 'createPartitions'; range: ExplicitPartitionRange }
+  | { type: 'runMigrations' | 'runViews' | 'runConfigDriven' | 'cleanupPartitions' }
+
+export function enqueuePsqlJob(request: PsqlJobRequest): Promise<PsqlJobEnqueueResponse> {
+  return clientApi.post<PsqlJobEnqueueResponse>('/api/v1/psql/jobs', request)
 }

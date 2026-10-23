@@ -4,6 +4,7 @@ import sql from 'sql-template-strings'
 import { copyrightRetentionEligibleSql } from './retention-erasure-eligibility.mts'
 import { deleteCopyrightEvidenceObjectVersions } from './retention-erasure-s3.mts'
 import { lockCopyrightRetentionCaseThreadTokens } from './retention-erasure-thread-tokens.mts'
+import { eraseCopyrightAgentCallReceipts } from './retention-erasure-agent-receipts.mts'
 import {
   COPYRIGHT_RETENTION_ERASURE,
   eraseCopyrightRetentionTableSql,
@@ -118,10 +119,7 @@ export async function eraseCopyrightRetentionCase(
   // Receipt ciphertext duplicates guidance/appeal output before the domain write. Its submission
   // FK identifies the case even when that write never completed.
   // ast-grep-ignore: no-three-sequential-awaits -- one transaction erases receipts and evidence before inserting the completion marker.
-  await transaction(sql`/* eraseCopyrightAgentCallReceipts */
-    UPDATE ai_agent_call_receipts SET result_ciphertext = 'erased'
-    WHERE copyright_notice_submission_id IN
-      (SELECT id FROM copyright_notice_submissions WHERE copyright_notice_id = ${noticeId})`)
+  await eraseCopyrightAgentCallReceipts(transaction, noticeId)
   await transaction(sql`/* deleteCopyrightRetentionStorageObjects */
     DELETE FROM copyright_notice_storage_objects
     WHERE id = ANY(${exclusiveObjects.map(row => row.id)}::uuid[])`)

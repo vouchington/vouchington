@@ -35,6 +35,8 @@ export default function PostgreSQLPage() {
       <PartitionConfirmDialog
         confirmPartitionAction={state.confirmPartitionAction}
         pendingAction={state.pendingAction}
+        partitionRange={state.partitionRange}
+        setPartitionRange={state.setPartitionRange}
         setPendingAction={state.setPendingAction}
       />
     </div>

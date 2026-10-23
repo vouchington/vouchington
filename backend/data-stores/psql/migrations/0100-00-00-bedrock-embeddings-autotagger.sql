@@ -77,6 +77,28 @@ CREATE INDEX IF NOT EXISTS idx_bedrock_embedding_batches__crawl_id
 ON bedrock_embedding_batches (crawl_id)
 WHERE crawl_id IS NOT NULL;
 
+CREATE INDEX IF NOT EXISTS idx_bedrock_embedding_batches__terminal_retention
+ON bedrock_embedding_batches ((COALESCE(completed_at, failed_at, cancelled_at)), id)
+WHERE completed_at IS NOT NULL OR failed_at IS NOT NULL OR cancelled_at IS NOT NULL;
+
+CREATE TABLE bedrock_embedding_batch_retention_cursors (
+  is_singleton BOOLEAN PRIMARY KEY DEFAULT TRUE CHECK (is_singleton),
+  cursor_terminal_at TIMESTAMPTZ,
+  cursor_batch_id UUID,
+  sweep_upper_bound_terminal_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CHECK ((cursor_terminal_at IS NULL) = (cursor_batch_id IS NULL))
+);
+CREATE OR REPLACE TRIGGER trigger_bedrock_embedding_batch_retention_cursors_updated_at
+BEFORE UPDATE ON bedrock_embedding_batch_retention_cursors
+FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+COMMENT ON TABLE bedrock_embedding_batch_retention_cursors IS 'Singleton keyset position for terminal embedding-batch retention.';
+COMMENT ON COLUMN bedrock_embedding_batch_retention_cursors.is_singleton IS 'Allows one retained batch sweep position.';
+COMMENT ON COLUMN bedrock_embedding_batch_retention_cursors.cursor_terminal_at IS 'Exact terminal timestamp of the last scanned batch.';
+COMMENT ON COLUMN bedrock_embedding_batch_retention_cursors.cursor_batch_id IS 'Batch tie breaker for the last scanned timestamp.';
+COMMENT ON COLUMN bedrock_embedding_batch_retention_cursors.sweep_upper_bound_terminal_at IS 'Frozen exclusive terminal-age bound for the current sweep.';
+COMMENT ON COLUMN bedrock_embedding_batch_retention_cursors.updated_at IS 'Last cursor transition time.';
+
 COMMENT ON TABLE bedrock_embedding_batches IS 'Tracks Amazon Bedrock batch embedding jobs and their lifecycle.';
 COMMENT ON COLUMN bedrock_embedding_batches.id IS 'UUIDv7 identifier of this Bedrock embedding batch.';
 COMMENT ON COLUMN bedrock_embedding_batches.job_arn IS 'The Bedrock model invocation job ARN.';
@@ -210,110 +232,6 @@ COMMENT ON COLUMN bedrock_embedding_batch_entities.image_id IS 'Image currently 
 -- 0070-00-00-autotagger-embeddings.sql
 -- ============================================================================
 
--- Autotagger uses the generic agents system
-
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TABLE IF NOT EXISTS post_autotagger_results (
-  post_id UUID NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
-  prompt_id UUID NOT NULL REFERENCES agent_prompts(id) ON DELETE CASCADE,
-  content_sha256 BYTEA NOT NULL CHECK (octet_length(content_sha256) = 32),
-  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  created_by_id UUID REFERENCES users ON DELETE SET NULL,
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_by_id UUID REFERENCES users ON DELETE SET NULL,
-  deleted_at TIMESTAMPTZ,
-  deleted_by_id UUID REFERENCES users ON DELETE SET NULL,
-  PRIMARY KEY (post_id, prompt_id)
-) PARTITION BY RANGE (post_id);
-
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_post_autotagger_results__lookup ON post_autotagger_results(post_id, prompt_id) WHERE deleted_at IS NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_post_autotagger_results__prompt_id ON post_autotagger_results(prompt_id);
-
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TABLE IF NOT EXISTS post_autotagger_result_topics (
-  post_id UUID NOT NULL,
-  prompt_id UUID NOT NULL,
-  topic_id UUID NOT NULL REFERENCES topics(id) ON DELETE CASCADE,
-  topic_order INT NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-  PRIMARY KEY (post_id, prompt_id, topic_id),
-  FOREIGN KEY (post_id, prompt_id) REFERENCES post_autotagger_results(post_id, prompt_id) ON DELETE CASCADE
-);
-
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_post_autotagger_result_topics__topic_id ON post_autotagger_result_topics(topic_id);
-
-COMMENT ON TABLE post_autotagger_results IS 'Autotagger LLM results for posts. Keyed by (post, prompt). RANGE-partitioned by post_id.';
-COMMENT ON COLUMN post_autotagger_results.post_id IS 'The post that was auto-tagged.';
-COMMENT ON COLUMN post_autotagger_results.prompt_id IS 'The agent prompt version used for tagging.';
-COMMENT ON COLUMN post_autotagger_results.content_sha256 IS 'SHA-256 of the post content that was analyzed.';
-
-COMMENT ON TABLE post_autotagger_result_topics IS 'Topics suggested by the autotagger for a given post result.';
-COMMENT ON COLUMN post_autotagger_result_topics.post_id IS 'The post (part of composite FK to post_autotagger_results).';
-COMMENT ON COLUMN post_autotagger_result_topics.prompt_id IS 'The prompt version (part of composite FK to post_autotagger_results).';
-COMMENT ON COLUMN post_autotagger_result_topics.topic_id IS 'The topic suggested by the autotagger.';
-COMMENT ON COLUMN post_autotagger_result_topics.topic_order IS 'Relevance order of this topic suggestion (0 = most relevant).';
-
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TABLE IF NOT EXISTS rss_feed_item_autotagger_results (
-  id UUID PRIMARY KEY DEFAULT uuidv7(),
-  rss_feed_item_id UUID NOT NULL REFERENCES rss_feed_items ON DELETE CASCADE,
-  content_sha256 BYTEA NOT NULL CHECK (octet_length(content_sha256) = 32),
-  prompt_id UUID NOT NULL REFERENCES agent_prompts(id) ON DELETE CASCADE,
-  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  created_by_id UUID REFERENCES users ON DELETE SET NULL,
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_by_id UUID REFERENCES users ON DELETE SET NULL,
-  deleted_at TIMESTAMPTZ,
-  deleted_by_id UUID REFERENCES users ON DELETE SET NULL,
-  CONSTRAINT uq_rss_feed_item_auto_resul__item_id__content_sha256__prompt_id UNIQUE(rss_feed_item_id, content_sha256, prompt_id)
-);
-
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_rss_feed_item_autotagger_results__lookup ON rss_feed_item_autotagger_results(rss_feed_item_id, prompt_id, content_sha256) WHERE deleted_at IS NULL;
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_rss_feed_item_autotagger_results__prompt_id ON rss_feed_item_autotagger_results(prompt_id);
-
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TABLE IF NOT EXISTS rss_feed_item_autotagger_result_topics (
-  rss_feed_item_autotagger_result_id UUID NOT NULL CONSTRAINT fk_rss_feed_item_autotagger_result_topics__result REFERENCES rss_feed_item_autotagger_results(id) ON DELETE CASCADE,
-  topic_id UUID NOT NULL REFERENCES topics(id) ON DELETE CASCADE,
-  topic_order INT NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-  PRIMARY KEY (rss_feed_item_autotagger_result_id, topic_id)
-);
-
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE INDEX IF NOT EXISTS idx_rss_feed_item_autotagger_result_topics__topic_id ON rss_feed_item_autotagger_result_topics(topic_id);
-
-COMMENT ON TABLE rss_feed_item_autotagger_results IS 'Autotagger LLM results for RSS feed items. Keyed by (rss_feed_item_id, content hash, prompt).';
-COMMENT ON COLUMN rss_feed_item_autotagger_results.rss_feed_item_id IS 'The RSS feed item that was auto-tagged.';
-COMMENT ON COLUMN rss_feed_item_autotagger_results.content_sha256 IS 'SHA-256 of the item content that was analyzed.';
-COMMENT ON COLUMN rss_feed_item_autotagger_results.prompt_id IS 'The agent prompt version used for tagging.';
-
-COMMENT ON TABLE rss_feed_item_autotagger_result_topics IS 'Topics suggested by the autotagger for a given RSS feed item result.';
-COMMENT ON COLUMN rss_feed_item_autotagger_result_topics.rss_feed_item_autotagger_result_id IS 'The autotagger result this topic belongs to.';
-COMMENT ON COLUMN rss_feed_item_autotagger_result_topics.topic_id IS 'The topic suggested by the autotagger.';
-COMMENT ON COLUMN rss_feed_item_autotagger_result_topics.topic_order IS 'Relevance order of this topic suggestion (0 = most relevant).';
-
--- Trigger to update updated_at on post_autotagger_results
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TRIGGER trigger_post_autotagger_results_updated_at
-BEFORE UPDATE ON post_autotagger_results
-FOR EACH ROW
-EXECUTE FUNCTION fn_update_updated_at();
-
--- Trigger to update updated_at on rss_feed_item_autotagger_results
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TRIGGER trigger_rss_feed_item_autotagger_results_updated_at
-BEFORE UPDATE ON rss_feed_item_autotagger_results
-FOR EACH ROW
-EXECUTE FUNCTION fn_update_updated_at();
-
 -- Create centralized embeddings table with content_sha256 as primary key
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS bedrock_nova_multimodal_v1_embeddings (
@@ -330,24 +248,30 @@ BEFORE UPDATE ON bedrock_nova_multimodal_v1_embeddings
 FOR EACH ROW
 EXECUTE FUNCTION fn_update_updated_at();
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TABLE IF NOT EXISTS bedrock_nova_multimodal_v1_image_embeddings (
-  image_sha_256 BYTEA PRIMARY KEY CHECK (OCTET_LENGTH(image_sha_256) = 32),
-  embedding VECTOR(1024) NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+CREATE TABLE bedrock_text_embedding_retention_cursors (
+  is_singleton BOOLEAN PRIMARY KEY DEFAULT TRUE CHECK (is_singleton),
+  cursor_updated_at TIMESTAMPTZ,
+  cursor_content_sha256 BYTEA,
+  sweep_upper_bound_updated_at TIMESTAMPTZ,
+  bloom_rebuild_generation BIGINT NOT NULL DEFAULT 0,
+  is_bloom_rebuild_needed BOOLEAN NOT NULL DEFAULT FALSE,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CHECK ((cursor_updated_at IS NULL) = (cursor_content_sha256 IS NULL)),
+  CHECK (cursor_content_sha256 IS NULL OR octet_length(cursor_content_sha256) = 32)
 );
-
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE OR REPLACE TRIGGER trigger_bedrock_nova_multimodal_v1_image_embeddings_updated_at
-BEFORE UPDATE ON bedrock_nova_multimodal_v1_image_embeddings
-FOR EACH ROW
-EXECUTE FUNCTION fn_update_updated_at();
+CREATE OR REPLACE TRIGGER trigger_bedrock_text_embedding_retention_cursors_updated_at
+BEFORE UPDATE ON bedrock_text_embedding_retention_cursors
+FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+COMMENT ON TABLE bedrock_text_embedding_retention_cursors IS 'Singleton keyset position for old text-vector cache eviction.';
+COMMENT ON COLUMN bedrock_text_embedding_retention_cursors.is_singleton IS 'Allows one cache eviction sweep position.';
+COMMENT ON COLUMN bedrock_text_embedding_retention_cursors.cursor_updated_at IS 'Exact update timestamp of the last scanned cached vector.';
+COMMENT ON COLUMN bedrock_text_embedding_retention_cursors.cursor_content_sha256 IS 'Content hash tie breaker for the last scanned timestamp.';
+COMMENT ON COLUMN bedrock_text_embedding_retention_cursors.sweep_upper_bound_updated_at IS 'Frozen exclusive cache-age bound for the current sweep.';
+COMMENT ON COLUMN bedrock_text_embedding_retention_cursors.bloom_rebuild_generation IS 'Increments after each page that evicts vectors, so an enqueued rebuild cannot clear a newer purge.';
+COMMENT ON COLUMN bedrock_text_embedding_retention_cursors.is_bloom_rebuild_needed IS 'A completed eviction sweep must enqueue a Bloom rebuild before this flag clears.';
+COMMENT ON COLUMN bedrock_text_embedding_retention_cursors.updated_at IS 'Last cursor transition time.';
 
 COMMENT ON TABLE bedrock_nova_multimodal_v1_embeddings IS 'Centralized lookup table for Amazon Nova multimodal text vectors, keyed by content hash.';
 COMMENT ON COLUMN bedrock_nova_multimodal_v1_embeddings.content_sha256 IS 'SHA-256 of the input content. Primary key for deduplication.';
 COMMENT ON COLUMN bedrock_nova_multimodal_v1_embeddings.embedding IS '1024-dimensional vector from Amazon Nova 2 Multimodal Embeddings V1.';
 COMMENT ON COLUMN bedrock_nova_multimodal_v1_embeddings.input_token_count IS 'Number of tokens Bedrock consumed for this content. NULL until first embedded; populated on insert and backfilled on cache hits.';
-COMMENT ON TABLE bedrock_nova_multimodal_v1_image_embeddings IS 'Centralized lookup table for Amazon Nova multimodal image vectors, keyed by image hash.';
-COMMENT ON COLUMN bedrock_nova_multimodal_v1_image_embeddings.image_sha_256 IS 'SHA-256 of the original image bytes. Primary key for image embedding deduplication.';
-COMMENT ON COLUMN bedrock_nova_multimodal_v1_image_embeddings.embedding IS '1024-dimensional image vector from Amazon Nova 2 Multimodal Embeddings V1.';

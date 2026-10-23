@@ -11,6 +11,11 @@ export async function getJudgementById(
       j.case_id,
       j.triggering_report_id,
       j.rerun_by_id,
+      j.run_id,
+      j.agent_call_receipt_id,
+      j.agent_call_request_sha256,
+      j.agent_call_identity_sha256,
+      j.agent_call_community_id,
       j.recommended_action,
       j.public_response,
       j.internal_response,
@@ -42,6 +47,19 @@ export async function getJudgementByRunId(
 ): Promise<ModerationReportJudgement | null> {
   const { rows } = await read<{ id: string }>(sql`/* getJudgementByRunId */
     SELECT id FROM moderation_report_judgements WHERE run_id = ${runId}::uuid LIMIT 1
+  `)
+  return rows[0] ? getJudgementById(rows[0].id) : null
+}
+
+export async function getJudgementByOperationKey(
+  operationKey: string,
+): Promise<ModerationReportJudgement | null> {
+  const { rows } = await read<{ id: string }>(sql`/* getJudgementByOperationKey */
+    SELECT j.id FROM ai_agent_call_receipt_keys k
+    JOIN ai_agent_call_receipts r ON r.id = k.id
+    JOIN moderation_report_judgements j ON j.agent_call_receipt_id = r.id
+    WHERE k.operation_key = ${operationKey} AND r.agent_slug = 'report-judgement'
+    LIMIT 1
   `)
   return rows[0] ? getJudgementById(rows[0].id) : null
 }

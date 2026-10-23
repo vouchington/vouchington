@@ -24,6 +24,14 @@ See also: [Native Client Strategy](../overview/architecture/native-clients.md),
 [Client Intent Parity](./navigation/CLIENT-INTENT-PARITY.md), and
 [Native Parity Interactions](../checklists/native-parity-interactions.md).
 
+## PostgreSQL operator partition ranges
+
+`POST /api/v1/psql/jobs` accepts a `createPartitions` job with an explicit UUIDv7 `range`
+(`table`, `fromId`, `toId`, `maxRows`). The web PostgreSQL admin page is the operator surface for
+this action. The scheduled maintenance job still creates its existing monthly partitions without
+a range. Swift and .NET do not offer PostgreSQL administration; this staff-only operator action has
+no native client flow.
+
 ## RSS feed submission
 
 REST `POST /api/v1/rss-feeds` and MCP `submit_rss_feed` option `submit` return the same pending

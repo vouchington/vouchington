@@ -4,12 +4,21 @@ import type { ModerationReportEntityType } from '@ts-shared/utils/moderation-rep
 
 export type ReportReceiptTarget = { entityType: ModerationReportEntityType; entityId: string }
 
-type ReceiptRow = { request_sha256: string; result_ciphertext: string | null }
+type ReceiptRow = {
+  request_sha256: string
+  status: 'in_flight' | 'done' | 'erased'
+  result_ciphertext: string | null
+}
 
 /** Read the writer so a retry sees a result committed by the preceding attempt immediately. */
 export async function getAgentCallReceipt(key: string): Promise<ReceiptRow | undefined> {
   const { rows } = await write<ReceiptRow>(sql`/* getAgentCallReceipt */
-    SELECT request_sha256, result_ciphertext FROM ai_agent_call_receipts WHERE operation_key = ${key}
+    SELECT reservation.request_sha256,
+      COALESCE(receipt.status, 'erased') AS status,
+      receipt.result_ciphertext
+    FROM ai_agent_call_receipt_keys reservation
+    LEFT JOIN ai_agent_call_receipts receipt ON receipt.id = reservation.id
+    WHERE reservation.operation_key = ${key}
   `)
   return rows[0]
 }
@@ -21,22 +30,24 @@ export async function reserveAgentCallReceipt(
   copyrightNoticeSubmissionId?: string,
   reportTarget?: ReportReceiptTarget,
 ): Promise<boolean> {
-  const insert = sql`/* reserveAgentCallReceipt */
+  await using transaction = await beginTransaction()
+  const reserve = sql`/* reserveAgentCallReceiptKey */
+    INSERT INTO ai_agent_call_receipt_keys (operation_key, request_sha256)
+    VALUES (${key}, ${requestSha256}) ON CONFLICT DO NOTHING RETURNING id
+  `
+  const insert = (id: string) => sql`/* reserveAgentCallReceipt */
     INSERT INTO ai_agent_call_receipts (
-      operation_key, agent_slug, request_sha256, copyright_notice_submission_id,
+      id, agent_slug, copyright_notice_submission_id,
       post_id, reported_user_id, hostname_id, rss_feed_item_id
     ) VALUES (
-      ${key}, ${agentSlug}, ${requestSha256}, ${copyrightNoticeSubmissionId ?? null},
+      ${id}, ${agentSlug}, ${copyrightNoticeSubmissionId ?? null},
       ${reportTarget?.entityType === 'post' || reportTarget?.entityType === 'comment' ? reportTarget.entityId : null},
       ${reportTarget?.entityType === 'user' ? reportTarget.entityId : null},
       ${reportTarget?.entityType === 'url_hostname' ? reportTarget.entityId : null},
       ${reportTarget?.entityType === 'rss_feed_item' ? reportTarget.entityId : null}
     )
-    ON CONFLICT DO NOTHING
-    RETURNING id
   `
   if (copyrightNoticeSubmissionId) {
-    await using transaction = await beginTransaction()
     // The retention sweep locks the notice before overwriting submissions and receipts. Use the
     // same parent lock, then a fresh statement to see an erasure marker committed while waiting.
     const { rows: owners } = await transaction<{
@@ -53,19 +64,21 @@ export async function reserveAgentCallReceipt(
       SELECT 1 FROM copyright_notice_retention_erasures
       WHERE copyright_notice_id = ${noticeId}`)
     if (erased.length > 0) throw new Error('Copyright receipt owner was erased by retention')
-    const { rows } = await transaction(insert)
-    await transaction.commit()
-    return rows.length > 0
   }
-  const { rows } = await write(insert)
-  return rows.length > 0
+  const { rows } = await transaction<{ id: string }>(reserve)
+  const id = rows[0]?.id
+  if (!id) return false
+  await transaction(insert(id))
+  await transaction.commit()
+  return true
 }
 
 export async function completeAgentCallReceipt(key: string, ciphertext: string): Promise<void> {
   const { rows } = await write(sql`/* completeAgentCallReceipt */
     UPDATE ai_agent_call_receipts
-    SET result_ciphertext = ${ciphertext}
-    WHERE operation_key = ${key} AND result_ciphertext IS NULL
+    SET result_ciphertext = ${ciphertext}, status = 'done', completed_at = CURRENT_TIMESTAMP
+    WHERE id = (SELECT id FROM ai_agent_call_receipt_keys WHERE operation_key = ${key})
+      AND status = 'in_flight'
     RETURNING id
   `)
   if (rows.length !== 1) throw new Error('Paid agent call receipt could not be completed')
@@ -77,7 +90,8 @@ export async function releaseUnbilledAgentCallReceipt(
   requestSha256: string,
 ): Promise<void> {
   await write(sql`/* releaseUnbilledAgentCallReceipt */
-    DELETE FROM ai_agent_call_receipts
+    DELETE FROM ai_agent_call_receipt_keys reservation
     WHERE operation_key = ${key} AND request_sha256 = ${requestSha256}
-      AND result_ciphertext IS NULL`)
+      AND EXISTS (SELECT 1 FROM ai_agent_call_receipts receipt
+        WHERE receipt.id = reservation.id AND receipt.status = 'in_flight')`)
 }
