@@ -18,8 +18,9 @@ export async function cleanupPostPublicationIdentityBridges(limit = 100): Promis
   await query(
     `/* ensurePublicationIdentityBridgeCleanupCursors */
       INSERT INTO post_publication_identity_bridge_cleanup_cursors (family)
-      SELECT unnest(enum_range(NULL::post_publication_identity_bridge_families))
-      ON CONFLICT DO NOTHING`,
+      SELECT family FROM unnest(enum_range(NULL::post_publication_identity_bridge_families)) AS cursor_family(family)
+      ORDER BY family ASC NULLS LAST
+      ON CONFLICT (family) DO NOTHING`,
   )
   const { rows: progress } = await query<{
     family: PublicationIdentityBridgeFamily
