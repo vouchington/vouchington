@@ -107,7 +107,16 @@ export function sourcePlan(source: Source, now: Date): SourcePlan {
         keyAt: 'target.created_at',
         cutoffAt: ninetyDaysAgo,
         predicate: 'target.id < $1::uuid AND target.first_granted_at IS NULL',
+        // The locked parent is checked again by DELETE. Requests and grants otherwise cascade;
+        // moderator actions otherwise receive an unbounded ON DELETE SET NULL update. OAuth
+        // artifact retention drains requests in capped expiry pages before this client is eligible.
         deletePredicate: `NOT EXISTS (
+            SELECT 1 FROM oauth_authorization_requests request
+            WHERE request.client_id = target.id
+          )
+          AND NOT EXISTS (SELECT 1 FROM oauth_grants grant_row WHERE grant_row.client_id = target.id)
+          AND NOT EXISTS (SELECT 1 FROM moderator_actions action WHERE action.oauth_client_id = target.id)
+          AND NOT EXISTS (
             SELECT 1 FROM mcp_call_audit_events audit
             WHERE audit.oauth_client_id = target.id
           )

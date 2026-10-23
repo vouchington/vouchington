@@ -1,6 +1,6 @@
 import type { McpCallAuditEvent } from './audit.mts'
 import { validate as isUuid } from 'uuid'
-import { canonicalEntityIds } from '../../mcp/resolve-entity-reference.mts'
+import { getUsersByReferenceBatch } from '@services/users/resolve-references'
 
 /**
  * Resolve admitted reinstatement usernames before the audit and the tool dispatch. The same
@@ -39,15 +39,12 @@ export async function resolveCopyrightUserTargetsForAudit(
   if (pending.length === 0) return
   // One batched lookup for the bounded JSON-RPC request. Missing names retain the original
   // arguments, allowing the existing handler to produce its usual not-found response.
-  const resolved = await canonicalEntityIds(
-    'user',
-    pending.map(item => item.reference),
-  )
-  for (const [index, id] of resolved.entries()) {
-    if (!id) continue
+  const resolved = await getUsersByReferenceBatch(pending.map(item => item.reference))
+  for (const [index, user] of resolved.entries()) {
+    if (!user) continue
     const { args, event } = pending[index]!
-    args['accountUserId'] = id
-    event.copyrightTarget = { kind: 'account_user', id }
+    args['accountUserId'] = user.id
+    event.copyrightTarget = { kind: 'account_user', id: user.id }
   }
 }
 
