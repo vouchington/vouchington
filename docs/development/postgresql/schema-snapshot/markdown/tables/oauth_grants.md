@@ -35,6 +35,7 @@ _none_
 **Foreign keys:**
 
 - `oauth_grants_client_id_fkey`: `FOREIGN KEY (client_id) REFERENCES oauth_clients(id) ON DELETE CASCADE`
+- `oauth_grants_id_fkey`: `FOREIGN KEY (id) REFERENCES oauth_grant_retention_anchors(id) ON DELETE RESTRICT DEFERRABLE INITIALLY DEFERRED`
 - `oauth_grants_session_id_fkey`: `FOREIGN KEY (session_id) REFERENCES user_sessions(id) ON DELETE CASCADE`
 - `oauth_grants_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
 
@@ -43,9 +44,14 @@ _none_
 - `idx_oauth_grants__active_subject`: `CREATE UNIQUE INDEX idx_oauth_grants__active_subject ON public.oauth_grants USING btree (user_id, client_id, resource) WHERE ((revoked_at IS NULL) AND (session_id IS NULL))`
 - `idx_oauth_grants__client`: `CREATE INDEX idx_oauth_grants__client ON public.oauth_grants USING btree (client_id, id)`
 - `idx_oauth_grants__native_session`: `CREATE UNIQUE INDEX idx_oauth_grants__native_session ON public.oauth_grants USING btree (session_id) WHERE (session_id IS NOT NULL)`
+- `idx_oauth_grants__retention`: `CREATE INDEX idx_oauth_grants__retention ON public.oauth_grants USING btree (revoked_at, id) WHERE (revoked_at IS NOT NULL)`
 - `idx_oauth_grants__user`: `CREATE INDEX idx_oauth_grants__user ON public.oauth_grants USING btree (user_id, id)`
 - `oauth_grants_pkey`: `CREATE UNIQUE INDEX oauth_grants_pkey ON public.oauth_grants USING btree (id)`
 
 **Triggers:**
 
+- `trigger_oauth_grants_end_retention_on_delete`: `CREATE TRIGGER trigger_oauth_grants_end_retention_on_delete BEFORE DELETE ON public.oauth_grants FOR EACH ROW EXECUTE FUNCTION fn_update_oauth_grant_retention_anchor()`
+- `trigger_oauth_grants_end_retention_on_revoke`: `CREATE TRIGGER trigger_oauth_grants_end_retention_on_revoke AFTER UPDATE OF revoked_at ON public.oauth_grants FOR EACH ROW WHEN (((new.revoked_at IS NOT NULL) AND (old.revoked_at IS DISTINCT FROM new.revoked_at))) EXECUTE FUNCTION fn_update_oauth_grant_retention_anchor()`
+- `trigger_oauth_grants_register_client_marker`: `CREATE TRIGGER trigger_oauth_grants_register_client_marker AFTER INSERT ON public.oauth_grants FOR EACH ROW EXECUTE FUNCTION fn_register_oauth_client_grant_marker()`
+- `trigger_oauth_grants_register_retention_anchor`: `CREATE TRIGGER trigger_oauth_grants_register_retention_anchor AFTER INSERT ON public.oauth_grants FOR EACH ROW EXECUTE FUNCTION fn_register_oauth_grant_retention_anchor()`
 - `trigger_oauth_grants_updated_at`: `CREATE TRIGGER trigger_oauth_grants_updated_at BEFORE UPDATE ON public.oauth_grants FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()`

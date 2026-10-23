@@ -33,7 +33,10 @@ _none_
 **Indexes:**
 
 - `idx_x_friends__friend_id`: `CREATE INDEX idx_x_friends__friend_id ON public.x_friends USING btree (x_friend_id)`
-- `idx_x_friends__friend_x_account_id`: `CREATE INDEX idx_x_friends__friend_x_account_id ON public.x_friends USING btree (friend_x_account_id) WHERE (friend_x_account_id IS NOT NULL)`
+- `idx_x_friends__retention`: `CREATE INDEX idx_x_friends__retention ON public.x_friends USING btree (last_observed_at, id)`
+- `idx_x_friends__source_observed`: `CREATE INDEX idx_x_friends__source_observed ON public.x_friends USING btree (x_account_id, last_observed_at, id)`
+- `idx_x_friends__target_observed`: `CREATE INDEX idx_x_friends__target_observed ON public.x_friends USING btree (friend_x_account_id, last_observed_at, id) WHERE (friend_x_account_id IS NOT NULL)`
+- `idx_x_friends__unresolved_reference`: `CREATE INDEX idx_x_friends__unresolved_reference ON public.x_friends USING btree (x_friend_id, last_observed_at, id) WHERE (friend_x_account_id IS NULL)`
 - `x_friends_pkey`: `CREATE UNIQUE INDEX x_friends_pkey ON public.x_friends USING btree (id)`
 - `x_friends_x_account_id_x_friend_id_key`: `CREATE UNIQUE INDEX x_friends_x_account_id_x_friend_id_key ON public.x_friends USING btree (x_account_id, x_friend_id)`
 

@@ -1183,6 +1183,22 @@
     "rss_feed_setting_change_types": {
       "values": ["enablement", "discoverability"]
     },
+    "security_retention_sources": {
+      "values": [
+        "oauth_events",
+        "oauth_native_mints",
+        "oauth_grants",
+        "oauth_grant_anchors",
+        "oauth_clients",
+        "api_keys_revoked",
+        "api_keys_expired",
+        "facebook_friends",
+        "github_friends",
+        "x_friends",
+        "copyright_rationales_erased",
+        "copyright_rationales_noncase"
+      ]
+    },
     "spending_frequencies": {
       "values": ["monthly", "annually"]
     },
@@ -1287,8 +1303,11 @@
     "fn_classifier_audit_actor_was_deleted(actor_user_id uuid)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_classifier_audit_actor_was_deleted(actor_user_id uuid)\n RETURNS boolean\n LANGUAGE sql\nAS $function$\n  SELECT actor_user_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM users WHERE id = actor_user_id)\n$function$\n"
     },
+    "fn_copyright_decision_rationale_retention_eligible(rationale copyright_decision_rationales, cutoff_at timestamp with time zone)": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_copyright_decision_rationale_retention_eligible(rationale copyright_decision_rationales, cutoff_at timestamp with time zone)\n RETURNS boolean\n LANGUAGE sql\n STABLE\nAS $function$\n  SELECT uuid_extract_timestamp(rationale.id) < cutoff_at AND (\n    (rationale.copyright_notice_id IS NOT NULL\n      AND rationale.rationale_ciphertext = 'erased'\n      AND EXISTS (SELECT 1 FROM copyright_notice_retention_erasures erasure\n        WHERE erasure.copyright_notice_id = rationale.copyright_notice_id))\n    OR (rationale.copyright_notice_email_intake_id IS NOT NULL AND (\n      (rationale.rationale_ciphertext = 'erased'\n        AND EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links link\n          WHERE link.copyright_notice_email_intake_id = rationale.copyright_notice_email_intake_id)\n        AND NOT EXISTS (\n          SELECT 1 FROM copyright_notice_email_intake_notice_links link\n          WHERE link.copyright_notice_email_intake_id = rationale.copyright_notice_email_intake_id\n            AND NOT EXISTS (SELECT 1 FROM copyright_notice_retention_erasures erasure\n              WHERE erasure.copyright_notice_id = link.copyright_notice_id)))\n      OR (NOT EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links link\n            WHERE link.copyright_notice_email_intake_id = rationale.copyright_notice_email_intake_id)\n        AND EXISTS (SELECT 1 FROM copyright_notice_email_intake_reviews review\n          WHERE review.copyright_notice_email_intake_id = rationale.copyright_notice_email_intake_id\n            AND review.decision = 'rejected' AND review.reviewed_at < cutoff_at)\n        AND NOT EXISTS (SELECT 1 FROM copyright_notice_delivery_work_items delivery\n          WHERE delivery.copyright_notice_email_intake_id = rationale.copyright_notice_email_intake_id\n            AND (delivery.state IN ('pending', 'claimed') OR delivery.updated_at >= cutoff_at)))\n    ))\n    OR (rationale.copyright_repeat_infringer_review_id IS NOT NULL\n      AND EXISTS (SELECT 1 FROM copyright_repeat_infringer_reviews review\n        WHERE review.id = rationale.copyright_repeat_infringer_review_id\n          AND review.outcome IN ('no_action', 'warning', 'reinstatement')\n          AND review.outcome_at < cutoff_at\n          AND NOT EXISTS (SELECT 1 FROM user_legal_preservation_holds hold\n            WHERE hold.account_user_id = review.account_user_id AND hold.released_at IS NULL)))\n    OR (rationale.account_user_id IS NOT NULL\n      AND EXISTS (SELECT 1 FROM copyright_repeat_infringer_reviews terminal_review\n        WHERE terminal_review.account_user_id = rationale.account_user_id\n          AND terminal_review.outcome = 'reinstatement'\n          AND terminal_review.outcome_at < cutoff_at)\n      AND NOT EXISTS (SELECT 1 FROM user_legal_preservation_holds hold\n        WHERE hold.account_user_id = rationale.account_user_id\n          AND (hold.released_at IS NULL OR hold.released_at >= cutoff_at))\n      AND NOT EXISTS (SELECT 1 FROM copyright_repeat_infringer_incidents incident\n        WHERE incident.account_user_id = rationale.account_user_id\n          AND (incident.is_operative OR incident.created_at >= cutoff_at))\n      AND NOT EXISTS (SELECT 1 FROM copyright_repeat_infringer_reviews review\n        WHERE review.account_user_id = rationale.account_user_id\n          AND (review.outcome IS NULL OR review.outcome_at >= cutoff_at)))\n  )\n$function$\n"
+    },
     "fn_copyright_retention_erasable_columns(table_name text)": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_copyright_retention_erasable_columns(table_name text)\n RETURNS text[]\n LANGUAGE sql\n IMMUTABLE PARALLEL SAFE\nAS $function$\n  SELECT CASE table_name\n    WHEN 'copyright_notices' THEN ARRAY['claimant_user_id', 'claimant_display_name', 'claimant_contact_ciphertext', 'work_description']\n    WHEN 'copyright_notice_submissions' THEN ARRAY['submitted_by_id', 'body_ciphertext']\n    WHEN 'copyright_notice_submission_guidance' THEN ARRAY['guidance_ciphertext']\n    WHEN 'copyright_notice_submission_requests' THEN ARRAY['requester_user_id']\n    WHEN 'copyright_notice_form_intakes' THEN ARRAY['requester_user_id', 'requester_identity_sha256', 'electronic_signature_ciphertext']\n    WHEN 'copyright_notice_form_screenings' THEN ARRAY['rationale_ciphertext', 'guidance_ciphertext']\n    WHEN 'copyright_notice_form_intake_reviews' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_evidence_artifacts' THEN ARRAY['storage_object_id']\n    WHEN 'copyright_notice_email_intakes' THEN ARRAY['raw_storage_object_id']\n    WHEN 'copyright_notice_email_intake_parses' THEN ARRAY['sender_email_ciphertext', 'sender_name_ciphertext', 'subject_ciphertext', 'body_ciphertext', 'message_id_ciphertext', 'reply_references_ciphertext', 'error_ciphertext']\n    WHEN 'copyright_notice_email_intake_attachments' THEN ARRAY['filename_ciphertext', 'content_id_ciphertext']\n    WHEN 'copyright_notice_email_thread_tokens' THEN ARRAY['lookup_digest']\n    WHEN 'copyright_notice_email_thread_references' THEN ARRAY['token_id']\n    WHEN 'copyright_notice_email_intake_notice_links' THEN ARRAY['matched_token_id']\n    WHEN 'copyright_notice_email_intake_recommendations' THEN ARRAY['structured_output_ciphertext']\n    WHEN 'copyright_notice_email_intake_reviews' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_email_correspondence_reviews' THEN ARRAY['rationale_ciphertext', 'manual_fallback_reason_ciphertext']\n    WHEN 'copyright_notice_appeal_recommendations' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_appeal_reviews' THEN ARRAY['rationale_ciphertext', 'manual_fallback_reason_ciphertext']\n    WHEN 'copyright_restriction_administrator_lifts' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_counter_notice_reviews' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_legal_hold_assessments' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_legal_hold_resolutions' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_correspondence_messages' THEN ARRAY['body_ciphertext']\n    WHEN 'copyright_notice_delivery_work_items' THEN ARRAY['body_ciphertext', 'failure_ciphertext']\n    WHEN 'copyright_notice_delivery_recipients' THEN ARRAY['email_ciphertext']\n    WHEN 'copyright_notice_lifecycle_change_rationales' THEN ARRAY['review_rationale_ciphertext']\n  END\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_copyright_retention_erasable_columns(table_name text)\n RETURNS text[]\n LANGUAGE sql\n IMMUTABLE PARALLEL SAFE\nAS $function$\n  SELECT CASE table_name\n    WHEN 'copyright_notices' THEN ARRAY['claimant_user_id', 'claimant_display_name', 'claimant_contact_ciphertext', 'work_description']\n    WHEN 'copyright_notice_submissions' THEN ARRAY['submitted_by_id', 'body_ciphertext']\n    WHEN 'copyright_notice_submission_guidance' THEN ARRAY['guidance_ciphertext']\n    WHEN 'copyright_notice_submission_requests' THEN ARRAY['requester_user_id']\n    WHEN 'copyright_notice_form_intakes' THEN ARRAY['requester_user_id', 'requester_identity_sha256', 'electronic_signature_ciphertext']\n    WHEN 'copyright_notice_form_screenings' THEN ARRAY['rationale_ciphertext', 'guidance_ciphertext']\n    WHEN 'copyright_notice_form_intake_reviews' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_evidence_artifacts' THEN ARRAY['storage_object_id']\n    WHEN 'copyright_notice_email_intakes' THEN ARRAY['raw_storage_object_id']\n    WHEN 'copyright_notice_email_intake_parses' THEN ARRAY['sender_email_ciphertext', 'sender_name_ciphertext', 'subject_ciphertext', 'body_ciphertext', 'message_id_ciphertext', 'reply_references_ciphertext', 'error_ciphertext']\n    WHEN 'copyright_notice_email_intake_attachments' THEN ARRAY['filename_ciphertext', 'content_id_ciphertext']\n    WHEN 'copyright_notice_email_thread_tokens' THEN ARRAY['lookup_digest']\n    WHEN 'copyright_notice_email_thread_references' THEN ARRAY['token_id']\n    WHEN 'copyright_notice_email_intake_notice_links' THEN ARRAY['matched_token_id']\n    WHEN 'copyright_notice_email_intake_recommendations' THEN ARRAY['structured_output_ciphertext']\n    WHEN 'copyright_notice_email_intake_reviews' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_email_correspondence_reviews' THEN ARRAY['rationale_ciphertext', 'manual_fallback_reason_ciphertext']\n    WHEN 'copyright_notice_appeal_recommendations' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_appeal_reviews' THEN ARRAY['rationale_ciphertext', 'manual_fallback_reason_ciphertext']\n    WHEN 'copyright_restriction_administrator_lifts' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_counter_notice_reviews' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_legal_hold_assessments' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_legal_hold_resolutions' THEN ARRAY['rationale_ciphertext']\n    WHEN 'copyright_notice_correspondence_messages' THEN ARRAY['body_ciphertext']\n    WHEN 'copyright_notice_delivery_work_items' THEN ARRAY['body_ciphertext', 'failure_ciphertext']\n    WHEN 'copyright_notice_delivery_recipients' THEN ARRAY['email_ciphertext']\n    WHEN 'copyright_notice_lifecycle_change_rationales' THEN ARRAY['review_rationale_ciphertext']\n    WHEN 'copyright_decision_rationales' THEN ARRAY['rationale_ciphertext']\n  END\n$function$\n"
     },
     "fn_copyright_retention_erasure_permitted(table_name text, old_row jsonb, new_row jsonb)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_copyright_retention_erasure_permitted(table_name text, old_row jsonb, new_row jsonb)\n RETURNS boolean\n LANGUAGE sql\n STABLE\nAS $function$\n  SELECT COALESCE(current_setting('app.copyright_retention_erasure', true) = 'on', false)\n    AND fn_copyright_retention_erasable_columns(table_name) IS NOT NULL\n    AND (old_row - fn_copyright_retention_erasable_columns(table_name))\n      = (new_row - fn_copyright_retention_erasable_columns(table_name))\n$function$\n"
@@ -1361,6 +1380,9 @@
     },
     "fn_lock_moderation_transparency_projection(p_domain text, p_id uuid)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_lock_moderation_transparency_projection(p_domain text, p_id uuid)\n RETURNS void\n LANGUAGE sql\nAS $function$\n  SELECT pg_advisory_xact_lock(hashtextextended(p_domain || ':' || p_id::text, 0))\n$function$\n"
+    },
+    "fn_lock_oauth_friend_targets(target_provider text, target_external_ids text[], exclusive_lock boolean)": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_lock_oauth_friend_targets(target_provider text, target_external_ids text[], exclusive_lock boolean)\n RETURNS void\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  external_id TEXT;\n  lock_key BIGINT;\nBEGIN\n  IF target_provider IS NULL OR target_provider NOT IN ('facebook', 'github', 'x')\n    OR exclusive_lock IS NULL\n    OR target_external_ids IS NULL OR cardinality(target_external_ids) > 256 THEN\n    RAISE EXCEPTION 'Invalid OAuth friend target lock request' USING ERRCODE = 'invalid_parameter_value';\n  END IF;\n  IF array_position(target_external_ids, NULL) IS NOT NULL THEN\n    RAISE EXCEPTION 'Invalid OAuth friend target lock request' USING ERRCODE = 'invalid_parameter_value';\n  END IF;\n\n  FOR external_id IN\n    SELECT DISTINCT target_id FROM unnest(target_external_ids) AS targets(target_id)\n    ORDER BY target_id\n  LOOP\n    lock_key := hashtextextended('oauth-friend-target:' || target_provider || ':' || external_id, 0);\n    IF exclusive_lock THEN\n      PERFORM pg_advisory_xact_lock(lock_key);\n    ELSE\n      PERFORM pg_advisory_xact_lock_shared(lock_key);\n    END IF;\n  END LOOP;\nEND;\n$function$\n"
     },
     "fn_membership_grant_remaining_duration(grant_id uuid)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_membership_grant_remaining_duration(grant_id uuid)\n RETURNS interval\n LANGUAGE sql\n STABLE PARALLEL SAFE\nAS $function$\n  SELECT make_interval(days => grant_row.calendar_days) - COALESCE(\n    (\n      SELECT SUM(GREATEST(INTERVAL '0', COALESCE(period.ended_at, CURRENT_TIMESTAMP) - period.started_at))\n      FROM membership_grant_activation_periods period\n      WHERE period.membership_grant_id = grant_row.id\n    ),\n    INTERVAL '0'\n  )\n  FROM membership_grants grant_row\n  WHERE grant_row.id = grant_id\n$function$\n"
@@ -1479,6 +1501,12 @@
     "fn_project_user_profile_link_image_placement": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_user_profile_link_image_placement()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'INSERT' OR NEW.image_id IS DISTINCT FROM OLD.image_id THEN\n    PERFORM fn_sync_image_surface_placement('user-profile-link-image', NEW.image_id, NULL, NULL, NULL, NEW.id);\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
+    "fn_register_oauth_client_grant_marker": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_register_oauth_client_grant_marker()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  INSERT INTO oauth_client_grant_markers (client_id)\n  VALUES (NEW.client_id) ON CONFLICT (client_id) DO NOTHING;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_register_oauth_grant_retention_anchor": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_register_oauth_grant_retention_anchor()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  INSERT INTO oauth_grant_retention_anchors (id, user_id) VALUES (NEW.id, NEW.user_id);\n  RETURN NEW;\nEND;\n$function$\n"
+    },
     "fn_register_retained_identity": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_register_retained_identity()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  PERFORM fn_ensure_retained_identity(TG_ARGV[0]::retained_identity_families, NEW.id);\n  RETURN NEW;\nEND;\n$function$\n"
     },
@@ -1542,6 +1570,9 @@
     "fn_reject_copyright_deadline": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_deadline()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright deadlines are durable statutory records' USING ERRCODE = 'check_violation';\n  END IF;\n  IF ROW(\n    OLD.copyright_notice_id,\n    OLD.qualifying_counter_notice_assessment_id,\n    OLD.earliest_restoration_at,\n    OLD.escalation_at,\n    OLD.restoration_deadline_at\n  ) IS DISTINCT FROM ROW(\n    NEW.copyright_notice_id,\n    NEW.qualifying_counter_notice_assessment_id,\n    NEW.earliest_restoration_at,\n    NEW.escalation_at,\n    NEW.restoration_deadline_at\n  ) THEN\n    RAISE EXCEPTION 'copyright deadline origin and schedule are immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF (OLD.resolved_at IS NOT NULL OR OLD.cancelled_at IS NOT NULL)\n    AND ROW(OLD.resolved_at, OLD.cancelled_at) IS DISTINCT FROM ROW(NEW.resolved_at, NEW.cancelled_at) THEN\n    RAISE EXCEPTION 'copyright deadline terminal outcome is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
+    "fn_reject_copyright_decision_rationale_mutation": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_decision_rationale_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE retention_cutoff TIMESTAMPTZ;\nBEGIN\n  IF TG_OP = 'UPDATE' AND fn_copyright_retention_erasure_permitted(\n    TG_TABLE_NAME, to_jsonb(OLD), to_jsonb(NEW)) THEN\n    RETURN NEW;\n  END IF;\n  IF TG_OP = 'DELETE' THEN\n    -- A case record may later be removed after its controlled erasure. Its already-redacted\n    -- rationale can follow the case through the notice FK's ON DELETE CASCADE.\n    IF OLD.copyright_notice_id IS NOT NULL AND OLD.rationale_ciphertext = 'erased' THEN\n      RETURN OLD;\n    END IF;\n    retention_cutoff := NULLIF(current_setting('app.copyright_rationale_retention_cutoff', TRUE), '')::timestamptz;\n    IF retention_cutoff IS NOT NULL\n      AND fn_copyright_decision_rationale_retention_eligible(OLD, retention_cutoff) THEN\n      RETURN OLD;\n    END IF;\n  END IF;\n  RAISE EXCEPTION 'copyright decision rationale is retained legal evidence'\n    USING ERRCODE = 'check_violation';\nEND;\n$function$\n"
+    },
     "fn_reject_copyright_delivery_intent_transition": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_delivery_intent_transition()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE next_state copyright_notice_delivery_intent_states;\nBEGIN\n  next_state := CASE WHEN NEW.bounced_at IS NOT NULL THEN 'bounced'::copyright_notice_delivery_intent_states WHEN NEW.sent_at IS NOT NULL THEN 'sent'::copyright_notice_delivery_intent_states WHEN NEW.failed_at IS NOT NULL THEN 'failed'::copyright_notice_delivery_intent_states WHEN NEW.leased_at IS NOT NULL THEN 'claimed'::copyright_notice_delivery_intent_states ELSE 'pending'::copyright_notice_delivery_intent_states END;\n  IF TG_OP = 'UPDATE' AND current_setting('app.copyright_retention_erasure', true) = 'on' THEN\n    IF fn_copyright_retention_erasure_permitted(TG_TABLE_NAME, to_jsonb(OLD), to_jsonb(NEW)) THEN RETURN NEW; END IF;\n  END IF;\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright delivery intents are retained' USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.copyright_notice_id IS DISTINCT FROM OLD.copyright_notice_id\n    OR NEW.copyright_notice_email_intake_id IS DISTINCT FROM OLD.copyright_notice_email_intake_id\n    OR NEW.copyright_notice_submission_id IS DISTINCT FROM OLD.copyright_notice_submission_id\n    OR NEW.copyright_notice_correspondence_message_id IS DISTINCT FROM OLD.copyright_notice_correspondence_message_id\n    OR NEW.recipient_role IS DISTINCT FROM OLD.recipient_role\n    OR NEW.delivery_kind IS DISTINCT FROM OLD.delivery_kind\n    OR NEW.channel IS DISTINCT FROM OLD.channel\n    OR NEW.body_ciphertext IS DISTINCT FROM OLD.body_ciphertext\n    OR NEW.idempotency_key IS DISTINCT FROM OLD.idempotency_key THEN\n    RAISE EXCEPTION 'copyright delivery intent facts are immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF (OLD.sent_at IS NOT NULL AND (NEW.sent_at IS DISTINCT FROM OLD.sent_at\n      OR NEW.amazon_ses_message_id IS DISTINCT FROM OLD.amazon_ses_message_id))\n    OR (OLD.bounced_at IS NOT NULL AND NEW.bounced_at IS DISTINCT FROM OLD.bounced_at)\n    OR (OLD.failed_at IS NOT NULL AND NEW.failed_at IS NOT NULL AND NEW.failed_at IS DISTINCT FROM OLD.failed_at) THEN\n    RAISE EXCEPTION 'terminal copyright delivery intent cannot change' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.recipient_user_id IS DISTINCT FROM NEW.recipient_user_id THEN\n    IF OLD.recipient_user_id IS NULL OR NEW.recipient_user_id IS NOT NULL THEN\n      RAISE EXCEPTION 'copyright delivery recipient cannot change' USING ERRCODE = 'check_violation';\n    END IF;\n    NEW.recipient_user_erased_at := CURRENT_TIMESTAMP;\n  ELSIF NEW.recipient_user_erased_at IS DISTINCT FROM OLD.recipient_user_erased_at THEN\n    RAISE EXCEPTION 'copyright delivery recipient erasure is system-managed' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.state = 'bounced' AND next_state IS DISTINCT FROM OLD.state THEN\n    RAISE EXCEPTION 'terminal copyright delivery intent cannot change' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.state = 'failed' AND next_state IS DISTINCT FROM OLD.state\n    AND NOT (\n      next_state = 'pending' AND NEW.leased_at IS NULL AND NEW.failed_at IS NULL\n      AND NEW.available_at IS NOT NULL AND NEW.attempt_count = 0\n    ) THEN\n    RAISE EXCEPTION 'failed copyright delivery intents may only be explicitly replayed'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.state = 'sent' AND next_state NOT IN ('sent', 'bounced') THEN\n    RAISE EXCEPTION 'terminal copyright delivery intent cannot change' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
@@ -1592,6 +1623,9 @@
     },
     "fn_reject_copyright_territorial_escalation": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_territorial_escalation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF (\n    NEW.copyright_territorial_notice_acknowledgment_id IS NOT NULL AND NOT EXISTS (\n      SELECT 1\n      FROM copyright_territorial_notice_acknowledgments acknowledgment\n      JOIN copyright_territorial_notice_receipts receipt\n        ON receipt.id = acknowledgment.copyright_territorial_notice_receipt_id\n      WHERE acknowledgment.id = NEW.copyright_territorial_notice_acknowledgment_id\n        AND receipt.copyright_notice_id = NEW.copyright_notice_id\n    )\n  ) OR (\n    NEW.copyright_eu_supervised_complaint_id IS NOT NULL AND NOT EXISTS (\n      SELECT 1 FROM copyright_eu_supervised_complaints complaint\n      WHERE complaint.id = NEW.copyright_eu_supervised_complaint_id\n        AND complaint.copyright_notice_id = NEW.copyright_notice_id\n    )\n  ) THEN\n    RAISE EXCEPTION 'territorial escalation source belongs to another notice'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_reject_erased_copyright_decision_rationale": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_erased_copyright_decision_rationale()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE case_id UUID;\nBEGIN\n  FOR case_id IN\n    SELECT notice.id FROM copyright_notices notice\n    WHERE notice.id = NEW.copyright_notice_id\n      OR notice.id IN (\n        SELECT link.copyright_notice_id FROM copyright_notice_email_intake_notice_links link\n        WHERE link.copyright_notice_email_intake_id = NEW.copyright_notice_email_intake_id)\n    ORDER BY notice.id\n  LOOP\n    PERFORM 1 FROM copyright_notices WHERE id = case_id FOR KEY SHARE;\n  END LOOP;\n  IF EXISTS (SELECT 1 FROM copyright_notice_retention_erasures erased\n    WHERE erased.copyright_notice_id = NEW.copyright_notice_id\n      OR erased.copyright_notice_id IN (\n        SELECT link.copyright_notice_id FROM copyright_notice_email_intake_notice_links link\n        WHERE link.copyright_notice_email_intake_id = NEW.copyright_notice_email_intake_id)) THEN\n    RETURN NULL;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_reject_follower_distribution_recipient_bounds": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_follower_distribution_recipient_bounds()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  distribution_ids UUID[] := ARRAY[]::UUID[];\n  checked_distribution_id UUID;\n  audience_value follower_distribution_audiences;\n  recipient_count INTEGER;\nBEGIN\n  IF TG_TABLE_NAME = 'follower_distributions' THEN\n    distribution_ids := ARRAY[COALESCE(NEW.id, OLD.id)];\n  ELSE\n    distribution_ids := ARRAY[COALESCE(NEW.distribution_id, OLD.distribution_id)];\n    IF TG_OP = 'UPDATE' AND OLD.distribution_id IS DISTINCT FROM NEW.distribution_id THEN\n      distribution_ids := distribution_ids || OLD.distribution_id;\n    END IF;\n  END IF;\n\n  FOREACH checked_distribution_id IN ARRAY distribution_ids LOOP\n    SELECT audience INTO audience_value\n    FROM follower_distributions\n    WHERE id = checked_distribution_id;\n    IF NOT FOUND THEN\n      CONTINUE;\n    END IF;\n\n    SELECT COUNT(*) INTO recipient_count\n    FROM follower_distribution_selected_recipients\n    WHERE follower_distribution_selected_recipients.distribution_id = checked_distribution_id;\n\n    IF audience_value = 'all_followers' AND recipient_count <> 0 THEN\n      RAISE EXCEPTION 'all_followers distributions cannot store selected recipients'\n        USING ERRCODE = '23514';\n    END IF;\n\n    IF audience_value = 'selected_followers' AND recipient_count > 100 THEN\n      RAISE EXCEPTION 'selected_followers distributions require between 1 and 100 recipients'\n        USING ERRCODE = '23514';\n    END IF;\n\n    IF audience_value = 'selected_followers'\n      AND recipient_count < 1\n      AND NOT (\n        TG_TABLE_NAME = 'follower_distribution_selected_recipients'\n        AND TG_OP = 'DELETE'\n      ) THEN\n      RAISE EXCEPTION 'selected_followers distributions require between 1 and 100 recipients'\n        USING ERRCODE = '23514';\n    END IF;\n  END LOOP;\n\n  RETURN NULL;\nEND;\n$function$\n"
@@ -1665,11 +1699,17 @@
     "fn_reject_mutation": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  actor_column TEXT;\n  actor_columns TEXT[] := COALESCE(TG_ARGV, ARRAY[]::TEXT[]);\n  old_row JSONB;\n  new_row JSONB;\nBEGIN\n  IF TG_OP = 'DELETE' AND pg_trigger_depth() > 1 THEN RETURN OLD; END IF;\n  IF TG_OP = 'UPDATE' THEN\n    old_row := to_jsonb(OLD);\n    new_row := to_jsonb(NEW);\n    IF (old_row - actor_columns) IS NOT DISTINCT FROM (new_row - actor_columns) THEN\n      FOREACH actor_column IN ARRAY actor_columns LOOP\n        IF new_row -> actor_column IS DISTINCT FROM old_row -> actor_column\n          AND new_row -> actor_column IS DISTINCT FROM 'null'::jsonb THEN\n          RAISE EXCEPTION '% rows are append-only', TG_TABLE_NAME USING ERRCODE = 'check_violation';\n        END IF;\n      END LOOP;\n      RETURN NEW;\n    END IF;\n  END IF;\n  RAISE EXCEPTION '% rows are append-only', TG_TABLE_NAME USING ERRCODE = 'check_violation';\nEND;\n$function$\n"
     },
+    "fn_reject_native_session_mint_mutation": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_native_session_mint_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE retention_cutoff TIMESTAMPTZ;\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    retention_cutoff := NULLIF(current_setting('app.oauth_native_mint_retention_cutoff', TRUE), '')::timestamptz;\n    IF retention_cutoff IS NOT NULL\n       AND retention_cutoff <= CURRENT_TIMESTAMP - INTERVAL '12 months'\n       AND uuid_extract_timestamp(OLD.id) < retention_cutoff THEN\n      -- Hold placement takes this account lock first; deletion checks the hold after acquiring it.\n      PERFORM pg_advisory_xact_lock(hashtextextended(OLD.user_id::text, 0));\n      IF NOT EXISTS (\n        SELECT 1 FROM user_legal_preservation_holds preservation_hold\n        WHERE preservation_hold.account_user_id = OLD.user_id\n          AND preservation_hold.released_at IS NULL\n      ) THEN\n        RETURN OLD;\n      END IF;\n    END IF;\n  END IF;\n  RAISE EXCEPTION 'oauth_native_session_token_mints rows are append-only until eligible for retention'\n    USING ERRCODE = 'check_violation';\nEND;\n$function$\n"
+    },
     "fn_reject_non_stripe_membership_purchase_intent_checkout": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_non_stripe_membership_purchase_intent_checkout()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.provider_checkout_id IS NOT NULL AND NOT EXISTS (\n    SELECT 1 FROM membership_provider_contexts context\n    WHERE context.id = NEW.membership_provider_context_id AND context.provider = 'stripe'\n  ) THEN\n    RAISE EXCEPTION 'only Stripe purchase intents may have checkout ids' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
     },
     "fn_reject_non_stripe_user_deletion_external_work": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_non_stripe_user_deletion_external_work()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.work_kind = 'stripe-customer' AND NOT EXISTS (\n    SELECT 1 FROM membership_provider_lineages lineage\n    INNER JOIN membership_provider_contexts context\n      ON context.id = lineage.membership_provider_context_id\n    WHERE lineage.id = NEW.membership_provider_lineage_id AND context.provider = 'stripe'\n  ) THEN\n    RAISE EXCEPTION 'Stripe customer deletion work requires a Stripe lineage' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
+    },
+    "fn_reject_oauth_event_mutation": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_oauth_event_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE retention_cutoff TIMESTAMPTZ;\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    retention_cutoff := NULLIF(current_setting('app.oauth_event_retention_cutoff', TRUE), '')::timestamptz;\n    IF retention_cutoff IS NOT NULL AND uuid_extract_timestamp(OLD.id) < retention_cutoff THEN\n      IF OLD.event_type = 'consent_approved' AND EXISTS (\n        SELECT 1 FROM oauth_grant_retention_anchors anchor\n        WHERE anchor.id = OLD.grant_id\n          AND (anchor.ended_at IS NULL OR anchor.ended_at >= retention_cutoff)\n          AND NOT EXISTS (\n            SELECT 1 FROM oauth_authorization_server_events newer\n            WHERE newer.grant_id = OLD.grant_id\n              AND newer.event_type = 'consent_approved'\n              AND newer.id > OLD.id\n          )\n      ) THEN\n        RAISE EXCEPTION 'latest live OAuth consent evidence cannot be deleted'\n          USING ERRCODE = 'check_violation';\n      END IF;\n      RETURN OLD;\n    END IF;\n  END IF;\n  RAISE EXCEPTION 'oauth_authorization_server_events rows are append-only'\n    USING ERRCODE = 'check_violation';\nEND;\n$function$\n"
     },
     "fn_reject_ownerless_image_surface_retirement": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_ownerless_image_surface_retirement()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  v_ownerless boolean;\nBEGIN\n  SELECT num_nonnulls(surface.user_id, surface.topic_id, surface.community_id, surface.user_profile_link_id) = 0\n  INTO v_ownerless FROM image_surface_placements surface WHERE surface.placement_id = NEW.id\n  FOR UPDATE;\n  IF v_ownerless AND (NEW.retired_at IS NULL OR NEW.retirement_reason IS DISTINCT FROM 'owner_removed') THEN\n    RAISE EXCEPTION 'ownerless image surface must remain retired for owner removal' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -1766,6 +1806,12 @@
     },
     "fn_update_notification_publication_target": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_notification_publication_target()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'INSERT' THEN\n    NEW.publication_post_id := COALESCE(NEW.publication_post_id, NEW.post_id);\n    NEW.publication_rss_feed_item_id := COALESCE(\n      NEW.publication_rss_feed_item_id,\n      NEW.rss_feed_item_id\n    );\n  ELSE\n    NEW.publication_post_id := COALESCE(\n      NEW.publication_post_id,\n      NEW.post_id,\n      OLD.publication_post_id,\n      OLD.post_id\n    );\n    NEW.publication_rss_feed_item_id := COALESCE(\n      NEW.publication_rss_feed_item_id,\n      NEW.rss_feed_item_id,\n      OLD.publication_rss_feed_item_id,\n      OLD.rss_feed_item_id\n    );\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_update_oauth_account_linkage": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_oauth_account_linkage()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  transition_at TIMESTAMPTZ;\nBEGIN\n  IF NEW.user_id IS DISTINCT FROM OLD.user_id THEN\n    IF NEW.user_id IS NULL THEN\n      -- BEFORE UPDATE runs after the account row lock is acquired. Transaction start can\n      -- precede a committed friend observation while this mutation waits for that lock.\n      transition_at := clock_timestamp();\n      IF TG_TABLE_NAME IN ('facebook_accounts', 'github_accounts', 'x_accounts') THEN\n        transition_at := GREATEST(\n          transition_at, COALESCE(OLD.friend_edges_invalidated_at, '-infinity'::timestamptz)\n        );\n        NEW.friend_edges_invalidated_at := transition_at;\n        NEW.friend_edges_cleanup_completed_at := NULL;\n        NEW.friend_references_resolve_pending_at := NULL;\n        NEW.friends_synced_at := NULL;\n      END IF;\n      NEW.unlinked_at := transition_at;\n    ELSE\n      NEW.unlinked_at := NULL;\n    END IF;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_update_oauth_grant_retention_anchor": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_oauth_grant_retention_anchor()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    UPDATE oauth_grant_retention_anchors\n    SET ended_at = GREATEST(COALESCE(ended_at, '-infinity'::timestamptz), CURRENT_TIMESTAMP)\n    WHERE id = OLD.id;\n    RETURN OLD;\n  END IF;\n  UPDATE oauth_grant_retention_anchors\n  SET ended_at = GREATEST(COALESCE(ended_at, '-infinity'::timestamptz), NEW.revoked_at)\n  WHERE id = OLD.id;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_update_parent_notice_scope": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_parent_notice_scope()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE notice_id UUID;\nBEGIN\n  IF NEW.copyright_notice_id IS NULL THEN\n    EXECUTE format('SELECT copyright_notice_id FROM %I.%I WHERE id = $1',\n      TG_TABLE_SCHEMA, TG_ARGV[0]) INTO notice_id\n      USING (to_jsonb(NEW) ->> TG_ARGV[1])::uuid;\n    IF notice_id IS NULL AND to_jsonb(NEW) ->> TG_ARGV[1] IS NOT NULL THEN\n      RAISE EXCEPTION '% parent % does not exist', TG_TABLE_NAME, TG_ARGV[0]\n        USING ERRCODE = 'foreign_key_violation';\n    END IF;\n    NEW.copyright_notice_id := notice_id;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -6821,6 +6867,33 @@
           "unique": true,
           "valid": true
         },
+        "idx_api_keys__expired_retention": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_api_keys__expired_retention ON public.api_keys USING btree (expires_at, id) WHERE (expires_at IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "expires_at",
+              "descending": false,
+              "expression": "expires_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(expires_at IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_api_keys__expiry_reminder": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -6883,6 +6956,33 @@
             }
           ],
           "predicate": "(replaced_by_api_key_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_api_keys__revoked_retention": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_api_keys__revoked_retention ON public.api_keys USING btree (revoked_at, id) WHERE (revoked_at IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "revoked_at",
+              "descending": false,
+              "expression": "revoked_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(revoked_at IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -7172,7 +7272,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "jsonb"
         },
         "apple_user_email_address": {
@@ -7183,7 +7283,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4,
+          "ordinalPosition": 5,
           "type": "text"
         },
         "apple_user_id": {
@@ -7194,7 +7294,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 3,
+          "ordinalPosition": 4,
           "type": "text"
         },
         "created_at": {
@@ -7205,7 +7305,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 8,
           "type": "timestamp with time zone"
         },
         "email_domain_hostname_id": {
@@ -7216,7 +7316,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "uuid"
         },
         "id": {
@@ -7230,6 +7330,17 @@
           "ordinalPosition": 1,
           "type": "uuid"
         },
+        "unlinked_at": {
+          "collation": null,
+          "comment": "Time this account last became unlinked, or was first saved before a user linked it; NULL while linked. Orphan cleanup uses this clock.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "timestamp with time zone"
+        },
         "updated_at": {
           "collation": null,
           "comment": null,
@@ -7238,7 +7349,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 9,
           "type": "timestamp with time zone"
         },
         "user_id": {
@@ -7383,6 +7494,33 @@
           "unique": false,
           "valid": true
         },
+        "idx_apple_accounts__unlinked_at": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_apple_accounts__unlinked_at ON public.apple_accounts USING btree (unlinked_at, id) WHERE (user_id IS NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "unlinked_at",
+              "descending": false,
+              "expression": "unlinked_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(user_id IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_apple_accounts__user_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -7412,6 +7550,7 @@
       },
       "relationKind": "table",
       "triggers": {
+        "trigger_apple_accounts_linkage": "CREATE TRIGGER trigger_apple_accounts_linkage BEFORE UPDATE OF user_id ON public.apple_accounts FOR EACH ROW EXECUTE FUNCTION fn_update_oauth_account_linkage()",
         "trigger_apple_accounts_updated_at": "CREATE TRIGGER trigger_apple_accounts_updated_at BEFORE UPDATE ON public.apple_accounts FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {
@@ -23022,6 +23161,365 @@
           "definition": "UNIQUE (copyright_restriction_id)"
         }
       }
+    },
+    "copyright_decision_rationales": {
+      "checkConstraints": {
+        "copyright_decision_rationales_check": "CHECK ((num_nonnulls(copyright_notice_id, copyright_notice_email_intake_id, copyright_repeat_infringer_review_id, account_user_id) = 1))",
+        "copyright_decision_rationales_rationale_ciphertext_check": "CHECK (((char_length(rationale_ciphertext) >= 1) AND (char_length(rationale_ciphertext) <= 65536)))",
+        "copyright_decision_rationales_tool_name_check": "CHECK ((tool_name ~ '^[a-z_]{1,64}$'::text))"
+      },
+      "columns": {
+        "account_user_id": {
+          "collation": null,
+          "comment": "Retained account identity for a reinstatement decision when no single case owns it; this identity does not authorize the account.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "uuid"
+        },
+        "copyright_notice_email_intake_id": {
+          "collation": null,
+          "comment": "Email intake that had not yet been admitted to a copyright case.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "copyright_notice_id": {
+          "collation": null,
+          "comment": "Copyright case whose decision this rationale accompanies.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        },
+        "copyright_repeat_infringer_review_id": {
+          "collation": null,
+          "comment": "Account-level repeat-infringer review when no single copyright case owns the decision.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "uuid"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 9,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "rationale_ciphertext": {
+          "collation": null,
+          "comment": "Validated rationale encrypted with AAD bound to this row id; erased under copyright retention.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 8,
+          "type": "text"
+        },
+        "recorded_by_id": {
+          "collation": null,
+          "comment": "Retained staff identity that supplied the validated legal rationale.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "uuid"
+        },
+        "tool_name": {
+          "collation": null,
+          "comment": "Registered legal decision tool name, never arbitrary caller text.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7,
+          "type": "text"
+        }
+      },
+      "comment": "Encrypted rationale for an admitted legal MCP decision attempt, retained with a concrete legal case, intake, review or account independently of the short security audit. A later tool failure does not turn this attempted decision into a completed one.",
+      "foreignKeys": {
+        "copyright_decision_rationales_account_user_id_fkey": {
+          "columns": ["account_user_id"],
+          "definition": "FOREIGN KEY (account_user_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_user_identities",
+          "validated": true
+        },
+        "copyright_decision_rationales_copyright_notice_email_intak_fkey": {
+          "columns": ["copyright_notice_email_intake_id"],
+          "definition": "FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_notice_email_intakes",
+          "validated": true
+        },
+        "copyright_decision_rationales_copyright_notice_id_fkey": {
+          "columns": ["copyright_notice_id"],
+          "definition": "FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notices(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_notices",
+          "validated": true
+        },
+        "copyright_decision_rationales_copyright_repeat_infringer_r_fkey": {
+          "columns": ["copyright_repeat_infringer_review_id"],
+          "definition": "FOREIGN KEY (copyright_repeat_infringer_review_id) REFERENCES copyright_repeat_infringer_reviews(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_repeat_infringer_reviews",
+          "validated": true
+        },
+        "copyright_decision_rationales_recorded_by_id_fkey": {
+          "columns": ["recorded_by_id"],
+          "definition": "FOREIGN KEY (recorded_by_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_user_identities",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "copyright_decision_rationales_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_decision_rationales_pkey ON public.copyright_decision_rationales USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "idx_copyright_decision_rationales__account_user": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_decision_rationales__account_user ON public.copyright_decision_rationales USING btree (account_user_id, id) WHERE (account_user_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "account_user_id",
+              "descending": false,
+              "expression": "account_user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(account_user_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_decision_rationales__email_intake": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_decision_rationales__email_intake ON public.copyright_decision_rationales USING btree (copyright_notice_email_intake_id, id) WHERE (copyright_notice_email_intake_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_email_intake_id",
+              "descending": false,
+              "expression": "copyright_notice_email_intake_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(copyright_notice_email_intake_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_decision_rationales__erased_retention": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_decision_rationales__erased_retention ON public.copyright_decision_rationales USING btree (id) WHERE (rationale_ciphertext = 'erased'::text)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(rationale_ciphertext = 'erased'::text)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_decision_rationales__noncase_retention": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_decision_rationales__noncase_retention ON public.copyright_decision_rationales USING btree (id) WHERE ((copyright_notice_id IS NULL) AND (rationale_ciphertext <> 'erased'::text))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((copyright_notice_id IS NULL) AND (rationale_ciphertext <> 'erased'::text))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_decision_rationales__notice": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_decision_rationales__notice ON public.copyright_decision_rationales USING btree (copyright_notice_id, id) WHERE (copyright_notice_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_id",
+              "descending": false,
+              "expression": "copyright_notice_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(copyright_notice_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_decision_rationales__recorded_by": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_decision_rationales__recorded_by ON public.copyright_decision_rationales USING btree (recorded_by_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "recorded_by_id",
+              "descending": false,
+              "expression": "recorded_by_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_decision_rationales__repeat_review": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_decision_rationales__repeat_review ON public.copyright_decision_rationales USING btree (copyright_repeat_infringer_review_id, id) WHERE (copyright_repeat_infringer_review_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_repeat_infringer_review_id",
+              "descending": false,
+              "expression": "copyright_repeat_infringer_review_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(copyright_repeat_infringer_review_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_copyright_decision_rationales_immutable": "CREATE TRIGGER trigger_copyright_decision_rationales_immutable BEFORE DELETE OR UPDATE ON public.copyright_decision_rationales FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_decision_rationale_mutation()",
+        "trigger_copyright_decision_rationales_skip_erased": "CREATE TRIGGER trigger_copyright_decision_rationales_skip_erased BEFORE INSERT ON public.copyright_decision_rationales FOR EACH ROW EXECUTE FUNCTION fn_reject_erased_copyright_decision_rationale()"
+      },
+      "uniqueConstraints": {}
     },
     "copyright_dsa_statement_submission_attempts": {
       "checkConstraints": {
@@ -42669,7 +43167,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 11,
           "type": "text"
         },
         "access_token_expires_at": {
@@ -42680,7 +43178,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 12,
           "type": "timestamp with time zone"
         },
         "created_at": {
@@ -42691,7 +43189,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10,
+          "ordinalPosition": 14,
           "type": "timestamp with time zone"
         },
         "email_domain_hostname_id": {
@@ -42702,7 +43200,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5,
+          "ordinalPosition": 9,
           "type": "uuid"
         },
         "facebook_user_data": {
@@ -42713,7 +43211,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6,
+          "ordinalPosition": 10,
           "type": "jsonb"
         },
         "facebook_user_email_address": {
@@ -42724,7 +43222,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4,
+          "ordinalPosition": 8,
           "type": "text"
         },
         "facebook_user_id": {
@@ -42735,8 +43233,41 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 3,
+          "ordinalPosition": 7,
           "type": "text"
+        },
+        "friend_edges_cleanup_completed_at": {
+          "collation": null,
+          "comment": "Last invalidation boundary fully drained by bounded friend-edge cleanup.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "timestamp with time zone"
+        },
+        "friend_edges_invalidated_at": {
+          "collation": null,
+          "comment": "Durable friend-visibility boundary advanced at unlink; relink does not revive earlier observations.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
+        },
+        "friend_references_resolve_pending_at": {
+          "collation": null,
+          "comment": "Connection work marker for bounded resolution of existing incoming friend references.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "timestamp with time zone"
         },
         "friends_synced_at": {
           "collation": null,
@@ -42746,7 +43277,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 13,
           "type": "timestamp with time zone"
         },
         "id": {
@@ -42760,6 +43291,17 @@
           "ordinalPosition": 1,
           "type": "uuid"
         },
+        "unlinked_at": {
+          "collation": null,
+          "comment": "Time this account last became unlinked, or was first saved before a user linked it; NULL while linked. Orphan cleanup uses this clock.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "timestamp with time zone"
+        },
         "updated_at": {
           "collation": null,
           "comment": null,
@@ -42768,7 +43310,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11,
+          "ordinalPosition": 15,
           "type": "timestamp with time zone"
         },
         "user_id": {
@@ -42886,6 +43428,60 @@
           "unique": false,
           "valid": true
         },
+        "idx_facebook_accounts__friend_edges_pending": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_facebook_accounts__friend_edges_pending ON public.facebook_accounts USING btree (friend_edges_invalidated_at, id) WHERE ((friend_edges_invalidated_at IS NOT NULL) AND (friend_edges_cleanup_completed_at IS DISTINCT FROM friend_edges_invalidated_at))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "friend_edges_invalidated_at",
+              "descending": false,
+              "expression": "friend_edges_invalidated_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((friend_edges_invalidated_at IS NOT NULL) AND (friend_edges_cleanup_completed_at IS DISTINCT FROM friend_edges_invalidated_at))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_facebook_accounts__friend_resolution_pending": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_facebook_accounts__friend_resolution_pending ON public.facebook_accounts USING btree (friend_references_resolve_pending_at, id) WHERE (friend_references_resolve_pending_at IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "friend_references_resolve_pending_at",
+              "descending": false,
+              "expression": "friend_references_resolve_pending_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(friend_references_resolve_pending_at IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_facebook_accounts__friends_synced_at": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -42953,6 +43549,33 @@
           "unique": false,
           "valid": true
         },
+        "idx_facebook_accounts__unlinked_at": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_facebook_accounts__unlinked_at ON public.facebook_accounts USING btree (unlinked_at, id) WHERE (user_id IS NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "unlinked_at",
+              "descending": false,
+              "expression": "unlinked_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(user_id IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_facebook_accounts__user_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -42982,6 +43605,7 @@
       },
       "relationKind": "table",
       "triggers": {
+        "trigger_facebook_accounts_linkage": "CREATE TRIGGER trigger_facebook_accounts_linkage BEFORE UPDATE OF user_id ON public.facebook_accounts FOR EACH ROW EXECUTE FUNCTION fn_update_oauth_account_linkage()",
         "trigger_facebook_accounts_updated_at": "CREATE TRIGGER trigger_facebook_accounts_updated_at BEFORE UPDATE ON public.facebook_accounts FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {
@@ -43162,10 +43786,71 @@
           "unique": false,
           "valid": true
         },
-        "idx_facebook_friends__friend_facebook_account_id": {
+        "idx_facebook_friends__retention": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_facebook_friends__friend_facebook_account_id ON public.facebook_friends USING btree (friend_facebook_account_id) WHERE (friend_facebook_account_id IS NOT NULL)",
+          "definition": "CREATE INDEX idx_facebook_friends__retention ON public.facebook_friends USING btree (last_observed_at, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "last_observed_at",
+              "descending": false,
+              "expression": "last_observed_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_facebook_friends__source_observed": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_facebook_friends__source_observed ON public.facebook_friends USING btree (facebook_account_id, last_observed_at, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "facebook_account_id",
+              "descending": false,
+              "expression": "facebook_account_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "last_observed_at",
+              "descending": false,
+              "expression": "last_observed_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_facebook_friends__target_observed": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_facebook_friends__target_observed ON public.facebook_friends USING btree (friend_facebook_account_id, last_observed_at, id) WHERE (friend_facebook_account_id IS NOT NULL)",
           "includedColumns": [],
           "keys": [
             {
@@ -43174,9 +43859,57 @@
               "expression": "friend_facebook_account_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
+            },
+            {
+              "column": "last_observed_at",
+              "descending": false,
+              "expression": "last_observed_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
             }
           ],
           "predicate": "(friend_facebook_account_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_facebook_friends__unresolved_reference": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_facebook_friends__unresolved_reference ON public.facebook_friends USING btree (facebook_friend_id, last_observed_at, id) WHERE (friend_facebook_account_id IS NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "facebook_friend_id",
+              "descending": false,
+              "expression": "facebook_friend_id",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            },
+            {
+              "column": "last_observed_at",
+              "descending": false,
+              "expression": "last_observed_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(friend_facebook_account_id IS NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -44212,7 +44945,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 11,
           "type": "text"
         },
         "access_token_expires_at": {
@@ -44223,7 +44956,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 13,
           "type": "timestamp with time zone"
         },
         "created_at": {
@@ -44234,7 +44967,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11,
+          "ordinalPosition": 15,
           "type": "timestamp with time zone"
         },
         "email_domain_hostname_id": {
@@ -44245,8 +44978,41 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5,
+          "ordinalPosition": 9,
           "type": "uuid"
+        },
+        "friend_edges_cleanup_completed_at": {
+          "collation": null,
+          "comment": "Last invalidation boundary fully drained by bounded friend-edge cleanup.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "timestamp with time zone"
+        },
+        "friend_edges_invalidated_at": {
+          "collation": null,
+          "comment": "Durable friend-visibility boundary advanced at unlink; relink does not revive earlier observations.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
+        },
+        "friend_references_resolve_pending_at": {
+          "collation": null,
+          "comment": "Connection work marker for bounded resolution of existing incoming friend references.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
+          "type": "timestamp with time zone"
         },
         "friends_synced_at": {
           "collation": null,
@@ -44256,7 +45022,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10,
+          "ordinalPosition": 14,
           "type": "timestamp with time zone"
         },
         "github_user_data": {
@@ -44267,7 +45033,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6,
+          "ordinalPosition": 10,
           "type": "jsonb"
         },
         "github_user_email_address": {
@@ -44278,7 +45044,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4,
+          "ordinalPosition": 8,
           "type": "text"
         },
         "github_user_id": {
@@ -44289,7 +45055,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 3,
+          "ordinalPosition": 7,
           "type": "text"
         },
         "id": {
@@ -44311,8 +45077,19 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 12,
           "type": "text"
+        },
+        "unlinked_at": {
+          "collation": null,
+          "comment": "Time this account last became unlinked, or was first saved before a user linked it; NULL while linked. Orphan cleanup uses this clock.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "timestamp with time zone"
         },
         "updated_at": {
           "collation": null,
@@ -44322,7 +45099,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12,
+          "ordinalPosition": 16,
           "type": "timestamp with time zone"
         },
         "user_id": {
@@ -44440,6 +45217,60 @@
           "unique": false,
           "valid": true
         },
+        "idx_github_accounts__friend_edges_pending": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_github_accounts__friend_edges_pending ON public.github_accounts USING btree (friend_edges_invalidated_at, id) WHERE ((friend_edges_invalidated_at IS NOT NULL) AND (friend_edges_cleanup_completed_at IS DISTINCT FROM friend_edges_invalidated_at))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "friend_edges_invalidated_at",
+              "descending": false,
+              "expression": "friend_edges_invalidated_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((friend_edges_invalidated_at IS NOT NULL) AND (friend_edges_cleanup_completed_at IS DISTINCT FROM friend_edges_invalidated_at))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_github_accounts__friend_resolution_pending": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_github_accounts__friend_resolution_pending ON public.github_accounts USING btree (friend_references_resolve_pending_at, id) WHERE (friend_references_resolve_pending_at IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "friend_references_resolve_pending_at",
+              "descending": false,
+              "expression": "friend_references_resolve_pending_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(friend_references_resolve_pending_at IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_github_accounts__friends_synced_at": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -44507,6 +45338,33 @@
           "unique": false,
           "valid": true
         },
+        "idx_github_accounts__unlinked_at": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_github_accounts__unlinked_at ON public.github_accounts USING btree (unlinked_at, id) WHERE (user_id IS NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "unlinked_at",
+              "descending": false,
+              "expression": "unlinked_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(user_id IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_github_accounts__user_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -44536,6 +45394,7 @@
       },
       "relationKind": "table",
       "triggers": {
+        "trigger_github_accounts_linkage": "CREATE TRIGGER trigger_github_accounts_linkage BEFORE UPDATE OF user_id ON public.github_accounts FOR EACH ROW EXECUTE FUNCTION fn_update_oauth_account_linkage()",
         "trigger_github_accounts_updated_at": "CREATE TRIGGER trigger_github_accounts_updated_at BEFORE UPDATE ON public.github_accounts FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {
@@ -44696,26 +45555,6 @@
           "unique": true,
           "valid": true
         },
-        "idx_github_friends__friend_github_account_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_github_friends__friend_github_account_id ON public.github_friends USING btree (friend_github_account_id) WHERE (friend_github_account_id IS NOT NULL)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "friend_github_account_id",
-              "descending": false,
-              "expression": "friend_github_account_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "(friend_github_account_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
         "idx_github_friends__friend_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -44731,6 +45570,135 @@
             }
           ],
           "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_github_friends__retention": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_github_friends__retention ON public.github_friends USING btree (last_observed_at, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "last_observed_at",
+              "descending": false,
+              "expression": "last_observed_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_github_friends__source_observed": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_github_friends__source_observed ON public.github_friends USING btree (github_account_id, last_observed_at, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "github_account_id",
+              "descending": false,
+              "expression": "github_account_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "last_observed_at",
+              "descending": false,
+              "expression": "last_observed_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_github_friends__target_observed": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_github_friends__target_observed ON public.github_friends USING btree (friend_github_account_id, last_observed_at, id) WHERE (friend_github_account_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "friend_github_account_id",
+              "descending": false,
+              "expression": "friend_github_account_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "last_observed_at",
+              "descending": false,
+              "expression": "last_observed_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(friend_github_account_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_github_friends__unresolved_reference": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_github_friends__unresolved_reference ON public.github_friends USING btree (github_friend_id, last_observed_at, id) WHERE (friend_github_account_id IS NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "github_friend_id",
+              "descending": false,
+              "expression": "github_friend_id",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            },
+            {
+              "column": "last_observed_at",
+              "descending": false,
+              "expression": "last_observed_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(friend_github_account_id IS NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -44765,7 +45733,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 8,
           "type": "timestamp with time zone"
         },
         "email_domain_hostname_id": {
@@ -44776,7 +45744,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "uuid"
         },
         "google_user_data": {
@@ -44787,7 +45755,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "jsonb"
         },
         "google_user_email_address": {
@@ -44798,7 +45766,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4,
+          "ordinalPosition": 5,
           "type": "text"
         },
         "google_user_id": {
@@ -44809,7 +45777,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 3,
+          "ordinalPosition": 4,
           "type": "text"
         },
         "id": {
@@ -44823,6 +45791,17 @@
           "ordinalPosition": 1,
           "type": "uuid"
         },
+        "unlinked_at": {
+          "collation": null,
+          "comment": "Time this account last became unlinked, or was first saved before a user linked it; NULL while linked. Orphan cleanup uses this clock.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "timestamp with time zone"
+        },
         "updated_at": {
           "collation": null,
           "comment": null,
@@ -44831,7 +45810,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 9,
           "type": "timestamp with time zone"
         },
         "user_id": {
@@ -44976,6 +45955,33 @@
           "unique": false,
           "valid": true
         },
+        "idx_google_accounts__unlinked_at": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_google_accounts__unlinked_at ON public.google_accounts USING btree (unlinked_at, id) WHERE (user_id IS NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "unlinked_at",
+              "descending": false,
+              "expression": "unlinked_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(user_id IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_google_accounts__user_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -45005,6 +46011,7 @@
       },
       "relationKind": "table",
       "triggers": {
+        "trigger_google_accounts_linkage": "CREATE TRIGGER trigger_google_accounts_linkage BEFORE UPDATE OF user_id ON public.google_accounts FOR EACH ROW EXECUTE FUNCTION fn_update_oauth_account_linkage()",
         "trigger_google_accounts_updated_at": "CREATE TRIGGER trigger_google_accounts_updated_at BEFORE UPDATE ON public.google_accounts FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {
@@ -49521,7 +50528,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 8,
           "type": "text"
         },
         "access_token_expires_at": {
@@ -49532,7 +50539,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 10,
           "type": "timestamp with time zone"
         },
         "created_at": {
@@ -49543,7 +50550,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10,
+          "ordinalPosition": 11,
           "type": "timestamp with time zone"
         },
         "email_domain_hostname_id": {
@@ -49554,7 +50561,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "uuid"
         },
         "id": {
@@ -49576,7 +50583,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "jsonb"
         },
         "linkedin_user_email_address": {
@@ -49587,7 +50594,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4,
+          "ordinalPosition": 5,
           "type": "text"
         },
         "linkedin_user_id": {
@@ -49598,7 +50605,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 3,
+          "ordinalPosition": 4,
           "type": "text"
         },
         "refresh_token_ciphertext": {
@@ -49609,8 +50616,19 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 9,
           "type": "text"
+        },
+        "unlinked_at": {
+          "collation": null,
+          "comment": "Time this account last became unlinked, or was first saved before a user linked it; NULL while linked. Orphan cleanup uses this clock.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "timestamp with time zone"
         },
         "updated_at": {
           "collation": null,
@@ -49620,7 +50638,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11,
+          "ordinalPosition": 12,
           "type": "timestamp with time zone"
         },
         "user_id": {
@@ -49745,6 +50763,33 @@
           "unique": false,
           "valid": true
         },
+        "idx_linkedin_accounts__unlinked_at": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_linkedin_accounts__unlinked_at ON public.linkedin_accounts USING btree (unlinked_at, id) WHERE (user_id IS NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "unlinked_at",
+              "descending": false,
+              "expression": "unlinked_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(user_id IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_linkedin_accounts__user_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -49814,6 +50859,7 @@
       },
       "relationKind": "table",
       "triggers": {
+        "trigger_linkedin_accounts_linkage": "CREATE TRIGGER trigger_linkedin_accounts_linkage BEFORE UPDATE OF user_id ON public.linkedin_accounts FOR EACH ROW EXECUTE FUNCTION fn_update_oauth_account_linkage()",
         "trigger_linkedin_accounts_updated_at": "CREATE TRIGGER trigger_linkedin_accounts_updated_at BEFORE UPDATE ON public.linkedin_accounts FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {
@@ -49828,8 +50874,7 @@
         "mcp_call_audit_events_audience_check": "CHECK ((audience = ANY (ARRAY['user'::mcp_call_audit_event_audiences, 'community_moderation'::mcp_call_audit_event_audiences, 'brand'::mcp_call_audit_event_audiences, 'admin'::mcp_call_audit_event_audiences, 'legal'::mcp_call_audit_event_audiences])))",
         "mcp_call_audit_events_check": "CHECK (((tool_option IS NULL) OR (tool_name IS NOT NULL)))",
         "mcp_call_audit_events_check1": "CHECK (((tool_name IS NULL) OR (jsonrpc_method = 'tools/call'::text)))",
-        "mcp_call_audit_events_check2": "CHECK (((copyright_rationale_ciphertext IS NULL) OR ((audience = 'legal'::mcp_call_audit_event_audiences) AND (jsonrpc_method = 'tools/call'::text) AND (outcome = 'accepted'::mcp_call_audit_event_outcomes) AND (tool_name IS NOT NULL))))",
-        "mcp_call_audit_events_check3": "CHECK ((num_nonnulls(oauth_client_id, api_key_id) = 1))",
+        "mcp_call_audit_events_check2": "CHECK ((num_nonnulls(oauth_client_id, api_key_id) = 1))",
         "mcp_call_audit_events_jsonrpc_method_check": "CHECK ((jsonrpc_method ~ '^[A-Za-z][A-Za-z0-9_./-]{0,63}$'::text))",
         "mcp_call_audit_events_outcome_check": "CHECK ((outcome = ANY (ARRAY['accepted'::mcp_call_audit_event_outcomes, 'tool_error'::mcp_call_audit_event_outcomes, 'invalid_request'::mcp_call_audit_event_outcomes, 'invalid_arguments'::mcp_call_audit_event_outcomes, 'not_found'::mcp_call_audit_event_outcomes, 'role_denied'::mcp_call_audit_event_outcomes, 'plan_denied'::mcp_call_audit_event_outcomes, 'suspended'::mcp_call_audit_event_outcomes, 'scopes_undeclared'::mcp_call_audit_event_outcomes, 'insufficient_scope'::mcp_call_audit_event_outcomes, 'rate_limited'::mcp_call_audit_event_outcomes])))",
         "mcp_call_audit_events_resource_check": "CHECK (((char_length(resource) >= 1) AND (char_length(resource) <= 2048)))",
@@ -49869,17 +50914,6 @@
           "nullable": false,
           "ordinalPosition": 2,
           "type": "mcp_call_audit_event_audiences"
-        },
-        "copyright_rationale_ciphertext": {
-          "collation": null,
-          "comment": "Encrypted validated rationale for an admitted administrator copyright decision call, bound to this audit row id. No general argument or result text is stored.",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 12,
-          "type": "text"
         },
         "correlation_id": {
           "collation": null,
@@ -49933,7 +50967,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 13,
+          "ordinalPosition": 12,
           "type": "timestamp with time zone"
         },
         "outcome": {
@@ -49981,7 +51015,7 @@
           "type": "text"
         }
       },
-      "comment": "Append-only durable audit of MCP calls made with a verified OAuth access token or user API key; one row per JSON-RPC message, plus a tool_error follow-up row for an admitted tool call that failed. Only validated copyright decision rationales are encrypted; arbitrary arguments, results, tokens, keys, and headers are never stored.",
+      "comment": "Append-only 12-month security audit of MCP calls made with a verified OAuth access token or user API key; one row per JSON-RPC message, plus a tool_error follow-up row for an admitted tool call that failed. Arguments, results, tokens, keys, headers, and legal rationale are never stored here.",
       "foreignKeys": {
         "mcp_call_audit_events_actor_user_id_fkey": {
           "columns": ["actor_user_id"],
@@ -61865,7 +62899,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 8,
           "type": "text"
         },
         "access_token_expires_at": {
@@ -61876,7 +62910,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 10,
           "type": "timestamp with time zone"
         },
         "created_at": {
@@ -61887,7 +62921,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10,
+          "ordinalPosition": 11,
           "type": "timestamp with time zone"
         },
         "email_domain_hostname_id": {
@@ -61898,7 +62932,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5,
+          "ordinalPosition": 6,
           "type": "uuid"
         },
         "id": {
@@ -61920,7 +62954,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6,
+          "ordinalPosition": 7,
           "type": "jsonb"
         },
         "microsoft_user_email_address": {
@@ -61931,7 +62965,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4,
+          "ordinalPosition": 5,
           "type": "text"
         },
         "microsoft_user_id": {
@@ -61942,7 +62976,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 3,
+          "ordinalPosition": 4,
           "type": "text"
         },
         "refresh_token_ciphertext": {
@@ -61953,8 +62987,19 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 9,
           "type": "text"
+        },
+        "unlinked_at": {
+          "collation": null,
+          "comment": "Time this account last became unlinked, or was first saved before a user linked it; NULL while linked. Orphan cleanup uses this clock.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "timestamp with time zone"
         },
         "updated_at": {
           "collation": null,
@@ -61964,7 +63009,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11,
+          "ordinalPosition": 12,
           "type": "timestamp with time zone"
         },
         "user_id": {
@@ -62089,6 +63134,33 @@
           "unique": false,
           "valid": true
         },
+        "idx_microsoft_accounts__unlinked_at": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_microsoft_accounts__unlinked_at ON public.microsoft_accounts USING btree (unlinked_at, id) WHERE (user_id IS NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "unlinked_at",
+              "descending": false,
+              "expression": "unlinked_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(user_id IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_microsoft_accounts__user_id": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -62158,6 +63230,7 @@
       },
       "relationKind": "table",
       "triggers": {
+        "trigger_microsoft_accounts_linkage": "CREATE TRIGGER trigger_microsoft_accounts_linkage BEFORE UPDATE OF user_id ON public.microsoft_accounts FOR EACH ROW EXECUTE FUNCTION fn_update_oauth_account_linkage()",
         "trigger_microsoft_accounts_updated_at": "CREATE TRIGGER trigger_microsoft_accounts_updated_at BEFORE UPDATE ON public.microsoft_accounts FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {
@@ -71187,7 +72260,7 @@
         },
         "grant_id": {
           "collation": null,
-          "comment": "Grant internal identifier at event time; intentionally not a foreign key so grant deletion preserves the audit record.",
+          "comment": "Retained, non-authorizing grant identity; survives deletion of the live grant until its consent evidence expires.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -71263,8 +72336,17 @@
           "type": "uuid"
         }
       },
-      "comment": "Append-only durable evidence of OAuth consent and token revocation lifecycle events; user_id references the retained user identity, and client, grant, request, and token ids are audit snapshot identifiers without foreign keys, so retention and identity deletion cannot erase the audit record.",
+      "comment": "Durable OAuth consent and token revocation evidence. Ordinary mutation is rejected; bounded retention deletes after 12 months while the latest consent remains through the live grant and for 12 months after its end.",
       "foreignKeys": {
+        "oauth_authorization_server_events_grant_id_fkey": {
+          "columns": ["grant_id"],
+          "definition": "FOREIGN KEY (grant_id) REFERENCES oauth_grant_retention_anchors(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "oauth_grant_retention_anchors",
+          "validated": true
+        },
         "oauth_authorization_server_events_user_id_fkey": {
           "columns": ["user_id"],
           "definition": "FOREIGN KEY (user_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT",
@@ -71371,6 +72453,53 @@
           "unique": true,
           "valid": true
         },
+        "idx_oauth_authorization_server_events__grant_consent": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_oauth_authorization_server_events__grant_consent ON public.oauth_authorization_server_events USING btree (grant_id, id DESC) WHERE (event_type = 'consent_approved'::oauth_authorization_server_event_types)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "grant_id",
+              "descending": false,
+              "expression": "grant_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "id",
+              "descending": true,
+              "expression": "id",
+              "nullsFirst": true,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(event_type = 'consent_approved'::oauth_authorization_server_event_types)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_oauth_authorization_server_events__grant_id__foreign_key": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_oauth_authorization_server_events__grant_id__foreign_key ON public.oauth_authorization_server_events USING btree (grant_id) WHERE (grant_id IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "grant_id",
+              "descending": false,
+              "expression": "grant_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(grant_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_oauth_authorization_server_events__user": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -71427,7 +72556,7 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trigger_oauth_authorization_server_events_append_only": "CREATE TRIGGER trigger_oauth_authorization_server_events_append_only BEFORE DELETE OR UPDATE ON public.oauth_authorization_server_events FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()"
+        "trigger_oauth_authorization_server_events_append_only": "CREATE TRIGGER trigger_oauth_authorization_server_events_append_only BEFORE DELETE OR UPDATE ON public.oauth_authorization_server_events FOR EACH ROW EXECUTE FUNCTION fn_reject_oauth_event_mutation()"
       },
       "uniqueConstraints": {}
     },
@@ -72267,6 +73396,66 @@
       },
       "uniqueConstraints": {}
     },
+    "oauth_client_grant_markers": {
+      "checkConstraints": {},
+      "columns": {
+        "client_id": {
+          "collation": null,
+          "comment": "The live OAuth client whose grant history excludes it from never-used cleanup.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        }
+      },
+      "comment": "One durable marker per OAuth client that has ever held a grant; never-used client cleanup requires its absence.",
+      "foreignKeys": {
+        "oauth_client_grant_markers_client_id_fkey": {
+          "columns": ["client_id"],
+          "definition": "FOREIGN KEY (client_id) REFERENCES oauth_clients(id) ON DELETE CASCADE",
+          "onDelete": "cascade",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "oauth_clients",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "oauth_client_grant_markers_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX oauth_client_grant_markers_pkey ON public.oauth_client_grant_markers USING btree (client_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "client_id",
+              "descending": false,
+              "expression": "client_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["client_id"],
+        "definition": "PRIMARY KEY (client_id)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
     "oauth_clients": {
       "checkConstraints": {
         "oauth_clients_check": "CHECK ((((client_type = 'public'::oauth_client_types) AND (token_endpoint_auth_method = 'none'::oauth_client_token_endpoint_auth_methods) AND (client_secret_hash IS NULL)) OR ((client_type = 'confidential'::oauth_client_types) AND (token_endpoint_auth_method = 'client_secret_basic'::oauth_client_token_endpoint_auth_methods) AND (client_secret_hash IS NOT NULL))))",
@@ -72672,6 +73861,135 @@
         }
       }
     },
+    "oauth_grant_retention_anchors": {
+      "checkConstraints": {},
+      "columns": {
+        "ended_at": {
+          "collation": null,
+          "comment": "Latest revoke or deletion time, from which the final consent-evidence window runs.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "timestamp with time zone"
+        },
+        "id": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "user_id": {
+          "collation": null,
+          "comment": "Retained owner identity; this row never grants access.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "uuid"
+        }
+      },
+      "comment": "Non-authorizing identity and end clock for a grant whose consent evidence survives deletion of the live grant.",
+      "foreignKeys": {
+        "oauth_grant_retention_anchors_user_id_fkey": {
+          "columns": ["user_id"],
+          "definition": "FOREIGN KEY (user_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "retained_user_identities",
+          "validated": true
+        }
+      },
+      "growth": "unbounded",
+      "indexes": {
+        "idx_oauth_grant_retention_anchors__ended": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_oauth_grant_retention_anchors__ended ON public.oauth_grant_retention_anchors USING btree (ended_at, id) WHERE (ended_at IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "ended_at",
+              "descending": false,
+              "expression": "ended_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(ended_at IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_oauth_grant_retention_anchors__user": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_oauth_grant_retention_anchors__user ON public.oauth_grant_retention_anchors USING btree (user_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "oauth_grant_retention_anchors_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX oauth_grant_retention_anchors_pkey ON public.oauth_grant_retention_anchors USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
     "oauth_grants": {
       "checkConstraints": {
         "oauth_grants_check": "CHECK (((session_id IS NULL) = (attestation_status IS NULL)))",
@@ -72823,6 +74141,15 @@
           "referencedTable": "oauth_clients",
           "validated": true
         },
+        "oauth_grants_id_fkey": {
+          "columns": ["id"],
+          "definition": "FOREIGN KEY (id) REFERENCES oauth_grant_retention_anchors(id) ON DELETE RESTRICT DEFERRABLE INITIALLY DEFERRED",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "oauth_grant_retention_anchors",
+          "validated": true
+        },
         "oauth_grants_session_id_fkey": {
           "columns": ["session_id"],
           "definition": "FOREIGN KEY (session_id) REFERENCES user_sessions(id) ON DELETE CASCADE",
@@ -72925,6 +74252,33 @@
           "unique": true,
           "valid": true
         },
+        "idx_oauth_grants__retention": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_oauth_grants__retention ON public.oauth_grants USING btree (revoked_at, id) WHERE (revoked_at IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "revoked_at",
+              "descending": false,
+              "expression": "revoked_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(revoked_at IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_oauth_grants__user": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -72981,6 +74335,10 @@
       },
       "relationKind": "table",
       "triggers": {
+        "trigger_oauth_grants_end_retention_on_delete": "CREATE TRIGGER trigger_oauth_grants_end_retention_on_delete BEFORE DELETE ON public.oauth_grants FOR EACH ROW EXECUTE FUNCTION fn_update_oauth_grant_retention_anchor()",
+        "trigger_oauth_grants_end_retention_on_revoke": "CREATE TRIGGER trigger_oauth_grants_end_retention_on_revoke AFTER UPDATE OF revoked_at ON public.oauth_grants FOR EACH ROW WHEN (((new.revoked_at IS NOT NULL) AND (old.revoked_at IS DISTINCT FROM new.revoked_at))) EXECUTE FUNCTION fn_update_oauth_grant_retention_anchor()",
+        "trigger_oauth_grants_register_client_marker": "CREATE TRIGGER trigger_oauth_grants_register_client_marker AFTER INSERT ON public.oauth_grants FOR EACH ROW EXECUTE FUNCTION fn_register_oauth_client_grant_marker()",
+        "trigger_oauth_grants_register_retention_anchor": "CREATE TRIGGER trigger_oauth_grants_register_retention_anchor AFTER INSERT ON public.oauth_grants FOR EACH ROW EXECUTE FUNCTION fn_register_oauth_grant_retention_anchor()",
         "trigger_oauth_grants_updated_at": "CREATE TRIGGER trigger_oauth_grants_updated_at BEFORE UPDATE ON public.oauth_grants FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
@@ -73077,7 +74435,7 @@
           "type": "uuid"
         }
       },
-      "comment": "Append-only record of native-session MCP token issuance, preserved after grant or session deletion.",
+      "comment": "Native-session MCP token issuance audit survives grant or session deletion, rejects ordinary mutation, and is retired after 12 months unless the account has an active preservation hold.",
       "foreignKeys": {
         "oauth_native_session_token_mints_user_id_fkey": {
           "columns": ["user_id"],
@@ -73167,7 +74525,7 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trigger_oauth_native_session_token_mints_append_only": "CREATE TRIGGER trigger_oauth_native_session_token_mints_append_only BEFORE DELETE OR UPDATE ON public.oauth_native_session_token_mints FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()"
+        "trigger_oauth_native_session_token_mints_append_only": "CREATE TRIGGER trigger_oauth_native_session_token_mints_append_only BEFORE DELETE OR UPDATE ON public.oauth_native_session_token_mints FOR EACH ROW EXECUTE FUNCTION fn_reject_native_session_mint_mutation()"
       },
       "uniqueConstraints": {
         "oauth_native_session_token_mints_access_token_id_key": {
@@ -116573,6 +117931,93 @@
       },
       "uniqueConstraints": {}
     },
+    "security_retention_cleanup_cursors": {
+      "checkConstraints": {
+        "security_retention_cleanup_cursors_check": "CHECK (((cursor_at IS NULL) = (cursor_id IS NULL)))"
+      },
+      "columns": {
+        "cursor_at": {
+          "collation": null,
+          "comment": "Last scanned eligibility timestamp; NULL starts a new complete pass.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2,
+          "type": "timestamp with time zone"
+        },
+        "cursor_id": {
+          "collation": null,
+          "comment": "UUIDv7 tie-breaker of the last scanned record; NULL starts a new complete pass.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "source": {
+          "collation": null,
+          "comment": "Security-record family whose cleanup scan owns this position.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "security_retention_sources"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": "Last committed bounded security retention sweep for this source.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "One durable keyset position per bounded security-record cleanup source.",
+      "foreignKeys": {},
+      "growth": "bounded",
+      "indexes": {
+        "security_retention_cleanup_cursors_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX security_retention_cleanup_cursors_pkey ON public.security_retention_cleanup_cursors USING btree (source)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "source",
+              "descending": false,
+              "expression": "source",
+              "nullsFirst": false,
+              "opclass": "enum_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["source"],
+        "definition": "PRIMARY KEY (source)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_security_retention_cleanup_cursors_updated_at": "CREATE TRIGGER trigger_security_retention_cleanup_cursors_updated_at BEFORE UPDATE ON public.security_retention_cleanup_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {}
+    },
     "session_referral_attributions": {
       "checkConstraints": {
         "chk_sra_utm_campaign": "CHECK (((utm_campaign IS NULL) OR ((char_length(utm_campaign) <= 255) AND (utm_campaign = lower(TRIM(BOTH FROM utm_campaign))))))",
@@ -139091,7 +140536,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6,
+          "ordinalPosition": 10,
           "type": "text"
         },
         "access_token_expires_at": {
@@ -139102,7 +140547,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8,
+          "ordinalPosition": 12,
           "type": "timestamp with time zone"
         },
         "created_at": {
@@ -139113,7 +140558,40 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10,
+          "ordinalPosition": 14,
+          "type": "timestamp with time zone"
+        },
+        "friend_edges_cleanup_completed_at": {
+          "collation": null,
+          "comment": "Last invalidation boundary fully drained by bounded friend-edge cleanup.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "timestamp with time zone"
+        },
+        "friend_edges_invalidated_at": {
+          "collation": null,
+          "comment": "Durable friend-visibility boundary advanced at unlink; relink does not revive earlier observations.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "timestamp with time zone"
+        },
+        "friend_references_resolve_pending_at": {
+          "collation": null,
+          "comment": "Connection work marker for bounded resolution of existing incoming friend references.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 6,
           "type": "timestamp with time zone"
         },
         "friends_synced_at": {
@@ -139124,7 +140602,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9,
+          "ordinalPosition": 13,
           "type": "timestamp with time zone"
         },
         "id": {
@@ -139146,8 +140624,19 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7,
+          "ordinalPosition": 11,
           "type": "text"
+        },
+        "unlinked_at": {
+          "collation": null,
+          "comment": "Time this account last became unlinked, or was first saved before a user linked it; NULL while linked. Orphan cleanup uses this clock.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "timestamp with time zone"
         },
         "updated_at": {
           "collation": null,
@@ -139157,7 +140646,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11,
+          "ordinalPosition": 15,
           "type": "timestamp with time zone"
         },
         "user_id": {
@@ -139179,7 +140668,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5,
+          "ordinalPosition": 9,
           "type": "jsonb"
         },
         "x_user_email_address": {
@@ -139190,7 +140679,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4,
+          "ordinalPosition": 8,
           "type": "text"
         },
         "x_user_id": {
@@ -139201,7 +140690,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 3,
+          "ordinalPosition": 7,
           "type": "text"
         }
       },
@@ -139219,6 +140708,60 @@
       },
       "growth": "unbounded",
       "indexes": {
+        "idx_x_accounts__friend_edges_pending": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_x_accounts__friend_edges_pending ON public.x_accounts USING btree (friend_edges_invalidated_at, id) WHERE ((friend_edges_invalidated_at IS NOT NULL) AND (friend_edges_cleanup_completed_at IS DISTINCT FROM friend_edges_invalidated_at))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "friend_edges_invalidated_at",
+              "descending": false,
+              "expression": "friend_edges_invalidated_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((friend_edges_invalidated_at IS NOT NULL) AND (friend_edges_cleanup_completed_at IS DISTINCT FROM friend_edges_invalidated_at))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_x_accounts__friend_resolution_pending": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_x_accounts__friend_resolution_pending ON public.x_accounts USING btree (friend_references_resolve_pending_at, id) WHERE (friend_references_resolve_pending_at IS NOT NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "friend_references_resolve_pending_at",
+              "descending": false,
+              "expression": "friend_references_resolve_pending_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(friend_references_resolve_pending_at IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_x_accounts__friends_synced_at": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -139281,6 +140824,33 @@
             }
           ],
           "predicate": "(access_token_expires_at IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_x_accounts__unlinked_at": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_x_accounts__unlinked_at ON public.x_accounts USING btree (unlinked_at, id) WHERE (user_id IS NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "unlinked_at",
+              "descending": false,
+              "expression": "unlinked_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(user_id IS NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -139355,6 +140925,7 @@
       },
       "relationKind": "table",
       "triggers": {
+        "trigger_x_accounts_linkage": "CREATE TRIGGER trigger_x_accounts_linkage BEFORE UPDATE OF user_id ON public.x_accounts FOR EACH ROW EXECUTE FUNCTION fn_update_oauth_account_linkage()",
         "trigger_x_accounts_updated_at": "CREATE TRIGGER trigger_x_accounts_updated_at BEFORE UPDATE ON public.x_accounts FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {
@@ -139488,10 +141059,71 @@
           "unique": false,
           "valid": true
         },
-        "idx_x_friends__friend_x_account_id": {
+        "idx_x_friends__retention": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_x_friends__friend_x_account_id ON public.x_friends USING btree (friend_x_account_id) WHERE (friend_x_account_id IS NOT NULL)",
+          "definition": "CREATE INDEX idx_x_friends__retention ON public.x_friends USING btree (last_observed_at, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "last_observed_at",
+              "descending": false,
+              "expression": "last_observed_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_x_friends__source_observed": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_x_friends__source_observed ON public.x_friends USING btree (x_account_id, last_observed_at, id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "x_account_id",
+              "descending": false,
+              "expression": "x_account_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            },
+            {
+              "column": "last_observed_at",
+              "descending": false,
+              "expression": "last_observed_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_x_friends__target_observed": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_x_friends__target_observed ON public.x_friends USING btree (friend_x_account_id, last_observed_at, id) WHERE (friend_x_account_id IS NOT NULL)",
           "includedColumns": [],
           "keys": [
             {
@@ -139500,9 +141132,57 @@
               "expression": "friend_x_account_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
+            },
+            {
+              "column": "last_observed_at",
+              "descending": false,
+              "expression": "last_observed_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
             }
           ],
           "predicate": "(friend_x_account_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_x_friends__unresolved_reference": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_x_friends__unresolved_reference ON public.x_friends USING btree (x_friend_id, last_observed_at, id) WHERE (friend_x_account_id IS NULL)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "x_friend_id",
+              "descending": false,
+              "expression": "x_friend_id",
+              "nullsFirst": false,
+              "opclass": "text_ops"
+            },
+            {
+              "column": "last_observed_at",
+              "descending": false,
+              "expression": "last_observed_at",
+              "nullsFirst": false,
+              "opclass": "timestamptz_ops"
+            },
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(friend_x_account_id IS NULL)",
           "primary": false,
           "ready": true,
           "unique": false,

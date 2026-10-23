@@ -1581,6 +1581,21 @@
 - `enablement`
 - `discoverability`
 
+## `security_retention_sources`
+
+- `oauth_events`
+- `oauth_native_mints`
+- `oauth_grants`
+- `oauth_grant_anchors`
+- `oauth_clients`
+- `api_keys_revoked`
+- `api_keys_expired`
+- `facebook_friends`
+- `github_friends`
+- `x_friends`
+- `copyright_rationales_erased`
+- `copyright_rationales_noncase`
+
 ## `spending_frequencies`
 
 - `monthly`
