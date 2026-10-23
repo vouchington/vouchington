@@ -30,9 +30,21 @@ export async function validateOAuthAccessToken(
        AND access.revoked_at IS NULL
        AND access.expires_at > CURRENT_TIMESTAMP
        AND oauth_grant.revoked_at IS NULL
+       AND (oauth_grant.session_id IS NULL OR EXISTS (
+         SELECT 1 FROM user_sessions AS session
+         WHERE session.id = oauth_grant.session_id
+           AND session.user_id = oauth_grant.user_id
+           AND session.authentication_origin = 'native'
+           AND session.revoked_at IS NULL
+           AND session.expires_at > CURRENT_TIMESTAMP
+       ))
        AND client.revoked_at IS NULL
        AND EXISTS (
          SELECT 1 FROM users WHERE users.id = oauth_grant.user_id AND users.deleted_at IS NULL
+       )
+       AND NOT EXISTS (
+         SELECT 1 FROM user_suspensions AS suspension
+         WHERE suspension.user_id = oauth_grant.user_id AND suspension.lifted_at IS NULL
        )
        AND (
          client.owner_user_id IS NULL OR EXISTS (

@@ -49,6 +49,10 @@ export const coreDynamicConfigRegistryEntries = [
         description:
           "Per-request ECDSA signing mode for attested iOS devices. 'off' = disabled; 'observe' = verify and log failures but do not block; 'enforce' = reject requests with invalid or missing signatures.",
       },
+      allow_unattested_native_mcp_mint: {
+        description:
+          'Allow native sessions without a registered App Attest key to mint member MCP tokens. A registered key always requires a valid assertion.',
+      },
     },
     validate: validateRequestSigningModeConfig,
   }),

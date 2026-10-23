@@ -1,0 +1,7 @@
+{
+  "access_token": "voucha_access_fixture-secret",
+  "expires_in": 3600,
+  "resource": "https://voucha.ai/api/v1/mcp",
+  "scope": "mcp.user:read mcp.user:write",
+  "token_type": "Bearer"
+}

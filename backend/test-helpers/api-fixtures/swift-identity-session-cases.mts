@@ -95,6 +95,7 @@ export const swiftIdentitySessionApiFixtureCases: ApiFixtureCase[] = [
           last_seen_at: '2026-07-06T12:15:00.000Z',
           expires_at: '2026-07-08T12:15:00.000Z',
           is_current: true,
+          mcp_connections: [],
         },
         {
           id: '0193f16e-24ab-78fb-8f68-c9b2f99d864f',
@@ -106,6 +107,14 @@ export const swiftIdentitySessionApiFixtureCases: ApiFixtureCase[] = [
           last_seen_at: '2026-07-06T11:45:00.000Z',
           expires_at: '2026-08-05T11:45:00.000Z',
           is_current: false,
+          mcp_connections: [
+            {
+              grant_id: '00000000-0000-7000-8000-000000000711',
+              client_name: 'Voucha iOS',
+              attestation_status: 'attested',
+              last_minted_at: '2026-07-06T11:45:00.000Z',
+            },
+          ],
         },
       ],
       page_info: pageInfo,

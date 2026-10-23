@@ -34,6 +34,7 @@ import {
 } from './protocol-helpers.mts'
 import { exchangeOAuthTokenGrant } from './token-grant.mts'
 import './discovery.mts'
+import './native-session-tokens.mts'
 
 const FORM_MEDIA_TYPES = ['application/x-www-form-urlencoded'] as const
 

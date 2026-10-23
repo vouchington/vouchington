@@ -18,6 +18,8 @@ CREATE TABLE IF NOT EXISTS app_attestation_keys (
   last_used_at TIMESTAMPTZ
 );
 
+CREATE INDEX IF NOT EXISTS idx_app_attestation_keys__did ON app_attestation_keys (did);
+
 COMMENT ON TABLE app_attestation_keys IS 'Apple App Attest keys, one row per device-generated attestation key, used to verify subsequent per-request assertions.';
 COMMENT ON COLUMN app_attestation_keys.key_id IS 'Apple App Attest key identifier: raw 32-byte SHA-256 of the attested public key, as returned by DCAppAttestService.';
 COMMENT ON COLUMN app_attestation_keys.did IS 'The dt device-id claim bound to this key at attest time. There is no devices table (did is an ephemeral JWT claim, not a durable identity) so this is a plain UUID, not a foreign key. Assertion verification rejects a valid signature if the caller''s current did does not match, so one attested device cannot be used as a signing oracle for another device''s session.';

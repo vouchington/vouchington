@@ -4,9 +4,10 @@ import { createNavMock, navMockModule } from 'vouchington-tooling/next-navigatio
 
 const mockNav = createNavMock()
 
-const { mockDeleteSession, mockRevokeSessions } = vi.hoisted(() => ({
+const { mockDeleteSession, mockRevokeSessions, mockRevokeGrant } = vi.hoisted(() => ({
   mockDeleteSession: vi.fn<VitestLooseMock>(),
   mockRevokeSessions: vi.fn<VitestLooseMock>(),
+  mockRevokeGrant: vi.fn<VitestLooseMock>(),
 }))
 
 vi.mock(
@@ -16,6 +17,9 @@ vi.mock(
 vi.mock(import('@/lib/api/client'), () => ({
   deleteAuthSession: mockDeleteSession,
   revokeAuthSessions: mockRevokeSessions,
+}))
+vi.mock(import('@/lib/api/client/oauth-grants'), () => ({
+  revokeOAuthGrant: mockRevokeGrant,
 }))
 vi.mock(import('@/lib/on-error'), () => ({
   default: vi.fn<VitestLooseMock>(),
@@ -36,6 +40,14 @@ const initialSessions: AuthSession[] = [
     last_seen_at: '2026-07-06T10:00:00Z',
     expires_at: '2026-08-01T12:00:00Z',
     is_current: true,
+    mcp_connections: [
+      {
+        grant_id: 'grant-1',
+        client_name: 'Voucha macOS',
+        attestation_status: 'attested',
+        last_minted_at: '2026-07-06T10:00:00Z',
+      },
+    ],
   },
   {
     id: 'session-2',
@@ -47,6 +59,14 @@ const initialSessions: AuthSession[] = [
     last_seen_at: '2026-07-05T09:30:00Z',
     expires_at: '2026-07-30T12:00:00Z',
     is_current: false,
+    mcp_connections: [
+      {
+        grant_id: 'grant-2',
+        client_name: 'Voucha Windows',
+        attestation_status: 'unattested',
+        last_minted_at: '2026-07-05T09:30:00Z',
+      },
+    ],
   },
 ]
 
@@ -55,8 +75,10 @@ describe('ActiveSessionsManager', () => {
     mockNav.reset()
     mockDeleteSession.mockReset()
     mockRevokeSessions.mockReset()
+    mockRevokeGrant.mockReset()
     mockDeleteSession.mockResolvedValue(undefined)
     mockRevokeSessions.mockResolvedValue(undefined)
+    mockRevokeGrant.mockResolvedValue(undefined)
   })
 
   it('renders the active sessions list with the current device badge', () => {
@@ -115,5 +137,46 @@ describe('ActiveSessionsManager', () => {
       expect(mockRevokeSessions).toHaveBeenCalledOnce()
       expect(mockNav.replace).toHaveBeenCalledWith('/login')
     })
+  })
+
+  it('shows each MCP connection under its session and revokes only its grant after confirmation', async () => {
+    render(<ActiveSessionsManager initialSessions={initialSessions} />)
+
+    const currentRow = screen.getByText('My laptop').closest('li')!
+    const otherRow = screen.getByText('Work browser').closest('li')!
+    expect(within(currentRow).getByText('Voucha macOS')).toBeInTheDocument()
+    expect(within(currentRow).getByText('Attested')).toBeInTheDocument()
+    expect(within(otherRow).getByText('Voucha Windows')).toBeInTheDocument()
+    expect(within(otherRow).getByText('Unattested')).toBeInTheDocument()
+
+    fireEvent.click(within(currentRow).getByRole('button', { name: 'Revoke MCP access' }))
+    expect(mockRevokeGrant).not.toHaveBeenCalled()
+    fireEvent.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Revoke MCP access' }),
+    )
+
+    await waitFor(() => {
+      expect(mockRevokeGrant).toHaveBeenCalledWith('grant-1')
+      expect(within(currentRow).queryByText('Voucha macOS')).not.toBeInTheDocument()
+    })
+    expect(screen.getByText('My laptop')).toBeInTheDocument()
+    expect(within(otherRow).getByText('Voucha Windows')).toBeInTheDocument()
+    expect(mockDeleteSession).not.toHaveBeenCalled()
+    expect(mockNav.replace).not.toHaveBeenCalled()
+  })
+
+  it('keeps the MCP connection visible when grant revocation fails', async () => {
+    mockRevokeGrant.mockRejectedValueOnce(new Error('failed'))
+    render(<ActiveSessionsManager initialSessions={initialSessions} />)
+
+    const row = screen.getByText('My laptop').closest('li')!
+    fireEvent.click(within(row).getByRole('button', { name: 'Revoke MCP access' }))
+    fireEvent.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Revoke MCP access' }),
+    )
+
+    await waitFor(() => expect(mockRevokeGrant).toHaveBeenCalledWith('grant-1'))
+    expect(within(row).getByText('Voucha macOS')).toBeInTheDocument()
+    expect(mockDeleteSession).not.toHaveBeenCalled()
   })
 })

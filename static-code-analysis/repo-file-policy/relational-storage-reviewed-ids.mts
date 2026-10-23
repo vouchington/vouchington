@@ -95,6 +95,22 @@ export const ALLOWED_TOKEN_CURSOR_PROTOCOL_ID = new Map<string, string>([
 // Ids recorded at write time and never joined for authorization. They outlive their source row.
 export const ALLOWED_AUDIT_SNAPSHOT_ID = new Map<string, string>([
   [
+    'oauth_native_session_token_mints.client_id',
+    'Native client id at mint time; the append-only audit record survives client deletion.',
+  ],
+  [
+    'oauth_native_session_token_mints.grant_id',
+    'Session grant id at mint time; the append-only audit record survives grant deletion.',
+  ],
+  [
+    'oauth_native_session_token_mints.session_id',
+    'Authenticating session id at mint time; the append-only audit record survives session deletion.',
+  ],
+  [
+    'oauth_native_session_token_mints.access_token_id',
+    'Issued access token id at mint time; the append-only audit record survives token deletion.',
+  ],
+  [
     'oauth_authorization_server_events.client_id',
     'Client id at event time; the audit record survives client deletion.',
   ],

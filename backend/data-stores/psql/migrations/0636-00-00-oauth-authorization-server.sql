@@ -123,17 +123,26 @@ CREATE INDEX IF NOT EXISTS idx_oauth_authorization_requests__expiry
 ON oauth_authorization_requests (expires_at, id);
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+DO $$ BEGIN
+  CREATE TYPE oauth_native_attestation_statuses AS ENUM ('attested', 'unattested');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS oauth_grants (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   user_id UUID NOT NULL REFERENCES users ON DELETE CASCADE,
   client_id UUID NOT NULL REFERENCES oauth_clients ON DELETE CASCADE,
+  session_id UUID REFERENCES user_sessions(id) ON DELETE CASCADE,
+  attestation_status oauth_native_attestation_statuses,
   resource TEXT NOT NULL CHECK (char_length(resource) BETWEEN 1 AND 2048),
   scopes api_scopes[] NOT NULL CHECK (cardinality(scopes) > 0),
   consented_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   last_used_at TIMESTAMPTZ,
   revoked_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CHECK ((session_id IS NULL) = (attestation_status IS NULL))
 );
 
 CREATE OR REPLACE TRIGGER trigger_oauth_grants_updated_at
@@ -143,7 +152,14 @@ EXECUTE FUNCTION fn_update_updated_at();
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_oauth_grants__active_subject
 ON oauth_grants (user_id, client_id, resource)
-WHERE revoked_at IS NULL;
+WHERE revoked_at IS NULL AND session_id IS NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_oauth_grants__native_session
+ON oauth_grants (session_id)
+WHERE session_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_oauth_grants__session
+ON oauth_grants (session_id, id);
 
 CREATE INDEX IF NOT EXISTS idx_oauth_grants__client
 ON oauth_grants (client_id, id);
@@ -206,6 +222,24 @@ WHERE refresh_token_family_id IS NOT NULL;
 
 CREATE OR REPLACE TRIGGER trigger_oauth_authorization_server_events_append_only
 BEFORE UPDATE OR DELETE ON oauth_authorization_server_events
+FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
+
+CREATE TABLE IF NOT EXISTS oauth_native_session_token_mints (
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
+  user_id UUID NOT NULL REFERENCES retained_user_identities(id) ON DELETE RESTRICT,
+  client_id UUID NOT NULL,
+  grant_id UUID NOT NULL,
+  session_id UUID NOT NULL,
+  access_token_id UUID NOT NULL UNIQUE,
+  attestation_status oauth_native_attestation_statuses NOT NULL,
+  occurred_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL
+);
+
+CREATE INDEX IF NOT EXISTS idx_oauth_native_session_token_mints__user
+ON oauth_native_session_token_mints (user_id, id);
+
+CREATE OR REPLACE TRIGGER trigger_oauth_native_session_token_mints_append_only
+BEFORE UPDATE OR DELETE ON oauth_native_session_token_mints
 FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation();
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -297,7 +331,7 @@ ON oauth_refresh_tokens (expires_at, family_id, generation, id);
 CREATE TABLE IF NOT EXISTS oauth_access_tokens (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   grant_id UUID NOT NULL REFERENCES oauth_grants ON DELETE CASCADE,
-  refresh_family_id UUID NOT NULL,
+  refresh_family_id UUID,
   token_hash TEXT NOT NULL UNIQUE CHECK (char_length(token_hash) = 64),
   resource TEXT NOT NULL CHECK (char_length(resource) BETWEEN 1 AND 2048),
   scopes api_scopes[] NOT NULL CHECK (cardinality(scopes) > 0),
@@ -333,6 +367,14 @@ COMMENT ON TABLE oauth_clients IS 'Dynamically registered and Client ID Metadata
 COMMENT ON TABLE oauth_authorization_requests IS 'Short-lived browser consent requests bound to one Voucha user session.';
 COMMENT ON TABLE oauth_grants IS 'Durable user consent for one client, resource, and canonical scope set.';
 COMMENT ON TABLE oauth_authorization_server_events IS 'Append-only durable evidence of OAuth consent and token revocation lifecycle events; user_id references the retained user identity, and client, grant, request, and token ids are audit snapshot identifiers without foreign keys, so retention and identity deletion cannot erase the audit record.';
+COMMENT ON TABLE oauth_native_session_token_mints IS 'Append-only record of native-session MCP token issuance, preserved after grant or session deletion.';
+COMMENT ON COLUMN oauth_native_session_token_mints.user_id IS 'Retained user identity at mint time.';
+COMMENT ON COLUMN oauth_native_session_token_mints.client_id IS 'Snapshot of native OAuth client identifier at mint time.';
+COMMENT ON COLUMN oauth_native_session_token_mints.grant_id IS 'Snapshot of session-scoped grant identifier at mint time.';
+COMMENT ON COLUMN oauth_native_session_token_mints.session_id IS 'Snapshot of authenticating session identifier at mint time.';
+COMMENT ON COLUMN oauth_native_session_token_mints.access_token_id IS 'Snapshot of issued access token identifier, never the bearer secret.';
+COMMENT ON COLUMN oauth_native_session_token_mints.attestation_status IS 'Whether this mint verified an App Attest request signature.';
+COMMENT ON COLUMN oauth_native_session_token_mints.occurred_at IS 'UUIDv7-derived mint time.';
 COMMENT ON TABLE oauth_authorization_codes IS 'Single-use S256 authorization codes stored only as purpose-bound hashes.';
 COMMENT ON TABLE oauth_refresh_token_families IS 'Rotating refresh-token family lifecycle and reuse detection.';
 COMMENT ON TABLE oauth_refresh_tokens IS 'Single-use refresh tokens stored only as purpose-bound hashes.';
@@ -367,6 +409,8 @@ COMMENT ON COLUMN oauth_authorization_requests.denied_at IS 'Time at which the r
 
 COMMENT ON COLUMN oauth_grants.user_id IS 'User who consented to the delegated grant.';
 COMMENT ON COLUMN oauth_grants.client_id IS 'Client receiving the delegated grant.';
+COMMENT ON COLUMN oauth_grants.session_id IS 'Native app session that may silently mint member MCP access; deletion cascades to this grant.';
+COMMENT ON COLUMN oauth_grants.attestation_status IS 'Attestation status of the most recent native-session mint.';
 COMMENT ON COLUMN oauth_grants.resource IS 'Protected resource audience covered by the grant.';
 COMMENT ON COLUMN oauth_grants.scopes IS 'Latest canonical scope set consented for this client and resource.';
 COMMENT ON COLUMN oauth_grants.consented_at IS 'Time of the latest affirmative consent decision.';

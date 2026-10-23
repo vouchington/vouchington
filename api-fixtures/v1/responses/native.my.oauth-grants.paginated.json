@@ -6,6 +6,7 @@
   },
   "results": [
     {
+      "attestation_status": null,
       "client": {
         "client_id": "voucha_fixture-client",
         "client_name": "Fixture Agent",
@@ -16,7 +17,8 @@
       "id": "00000000-0000-7000-8000-000000000711",
       "last_used_at": null,
       "resource": "https://voucha.ai/api/v1/mcp",
-      "scopes": ["mcp.user:read", "mcp.user:write"]
+      "scopes": ["mcp.user:read", "mcp.user:write"],
+      "session_id": null
     }
   ]
 }

@@ -23,6 +23,7 @@ describe('OAuth authorization completion orchestration', () => {
         deviceId,
         sessionId,
         newlyCompleted: true,
+        authOrigin: 'web',
       },
       user,
     )
@@ -33,6 +34,7 @@ describe('OAuth authorization completion orchestration', () => {
         deviceId,
         sessionId,
         newlyCompleted: false,
+        authOrigin: 'web',
       },
       user,
     )
@@ -70,6 +72,7 @@ describe('OAuth authorization completion orchestration', () => {
       deviceId: string
       sessionId: string
       newlyCompleted: boolean
+      authOrigin: 'web' | 'native'
     }>()
     const dependencies = completionDependencies(
       {
@@ -78,6 +81,7 @@ describe('OAuth authorization completion orchestration', () => {
         deviceId,
         sessionId,
         newlyCompleted: true,
+        authOrigin: 'web',
       },
       user,
     )
@@ -96,6 +100,7 @@ describe('OAuth authorization completion orchestration', () => {
           deviceId,
           sessionId,
           newlyCompleted: true,
+          authOrigin: 'web',
         }),
       async () => {
         expect(dependencies.completeTransaction).toHaveBeenCalledOnce()
@@ -136,6 +141,7 @@ describe('OAuth authorization completion orchestration', () => {
         deviceId: randomUUID(),
         sessionId: randomUUID(),
         newlyCompleted: false,
+        authOrigin: 'web',
       },
       user,
     )

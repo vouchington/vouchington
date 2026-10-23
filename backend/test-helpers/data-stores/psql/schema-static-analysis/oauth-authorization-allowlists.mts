@@ -37,6 +37,22 @@ export const OAUTH_AUTHORIZATION_UUID_COLUMNS_WITHOUT_KEYS = [
     'Immutable audit snapshot intentionally survives OAuth grant deletion.',
   ],
   [
+    'oauth_native_session_token_mints.client_id',
+    'Immutable mint audit snapshot intentionally survives OAuth client deletion.',
+  ],
+  [
+    'oauth_native_session_token_mints.grant_id',
+    'Immutable mint audit snapshot intentionally survives OAuth grant deletion.',
+  ],
+  [
+    'oauth_native_session_token_mints.session_id',
+    'Immutable mint audit snapshot intentionally survives session deletion.',
+  ],
+  [
+    'oauth_native_session_token_mints.access_token_id',
+    'Immutable mint audit snapshot intentionally survives access token deletion.',
+  ],
+  [
     'mcp_call_audit_events.correlation_id',
     'Server-minted request correlation identifier shared by the rows of one MCP request and echoed in X-Correlation-Id; it identifies no relation.',
   ],
@@ -47,6 +63,10 @@ export const AUTHORIZATION_TABLES_WITHOUT_CREATED_AT = [
   [
     'oauth_authorization_server_events',
     'Append-only audit events never update; their immutable occurrence time derives from the UUIDv7 id as occurred_at.',
+  ],
+  [
+    'oauth_native_session_token_mints',
+    'Append-only mint audit events never update; their immutable occurrence time derives from the UUIDv7 id as occurred_at.',
   ],
   [
     'mcp_call_audit_events',

@@ -55,6 +55,17 @@ describe('reviewed token and audit snapshot identifiers', () => {
     ).toEqual([])
     expect(
       checkRelationalStorage(
+        snapshot('oauth_native_session_token_mints', {
+          client_id: column('uuid'),
+          grant_id: column('uuid'),
+          session_id: column('uuid'),
+          access_token_id: column('uuid'),
+        }),
+        noFreshness,
+      ),
+    ).toEqual([])
+    expect(
+      checkRelationalStorage(
         snapshot('moderation_report_judgements', { run_id: column('uuid') }),
         noFreshness,
       ),
@@ -66,6 +77,9 @@ describe('reviewed token and audit snapshot identifiers', () => {
       snapshot('new_records', {
         device_id: column('uuid'),
         client_id: column('uuid'),
+        grant_id: column('uuid'),
+        session_id: column('uuid'),
+        access_token_id: column('uuid'),
         run_id: column('uuid'),
       }),
       noFreshness,
@@ -73,6 +87,9 @@ describe('reviewed token and audit snapshot identifiers', () => {
     expect(errors).toEqual([
       expect.stringContaining('new_records.device_id'),
       expect.stringContaining('new_records.client_id'),
+      expect.stringContaining('new_records.grant_id'),
+      expect.stringContaining('new_records.session_id'),
+      expect.stringContaining('new_records.access_token_id'),
       expect.stringContaining('new_records.run_id'),
     ])
   })
@@ -92,6 +109,10 @@ describe('reviewed token and audit snapshot identifiers', () => {
   it.each([
     ['post_votes', 'device_id', 'token, cursor or protocol identifier'],
     ['oauth_authorization_server_events', 'client_id', 'audit snapshot identifier'],
+    ['oauth_native_session_token_mints', 'client_id', 'audit snapshot identifier'],
+    ['oauth_native_session_token_mints', 'grant_id', 'audit snapshot identifier'],
+    ['oauth_native_session_token_mints', 'session_id', 'audit snapshot identifier'],
+    ['oauth_native_session_token_mints', 'access_token_id', 'audit snapshot identifier'],
     ['moderation_report_judgements', 'run_id', 'token, cursor or protocol identifier'],
   ])('reports %s.%s as stale once the column gains a foreign key', (table, name, label) => {
     const value = snapshot(table, { [name]: column('uuid') })

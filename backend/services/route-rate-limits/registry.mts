@@ -25,6 +25,9 @@ export const ROUTE_REGISTRY: Record<string, RouteRateLimitEntry> = {
   // Auth & sessions — sensitive: low threshold, high-risk operations
   'POST:/api/v1/auth/email-address/tokens': { category: 'sensitive' },
   'POST:/api/v1/auth/email-address/login': { category: 'sensitive', multiplier: 2 },
+  'POST:/api/v1/auth/native/email-address/tokens': { category: 'sensitive' },
+  'POST:/api/v1/auth/native/email-address/login': { category: 'sensitive', multiplier: 2 },
+  'POST:/api/v1/oauth/native-session-tokens': { category: 'sensitive', multiplier: 2 },
   'POST:/api/v1/auth/mfa/totp/verification': { category: 'sensitive' },
   'POST:/api/v1/auth/mfa/passkeys/authentication/options': { category: 'sensitive' },
   'POST:/api/v1/auth/mfa/passkeys/authentication/verification': { category: 'sensitive' },

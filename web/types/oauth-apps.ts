@@ -39,6 +39,8 @@ export interface UpdateOAuthAppInput {
 /** One app the signed-in user has authorized. */
 export interface OAuthGrant {
   id: string
+  session_id: string | null
+  attestation_status: 'attested' | 'unattested' | null
   client: {
     id: string
     client_id: string

@@ -132,6 +132,7 @@ export function getStoredCompletionResult(
       userId: authorization.result_user_id,
       deviceId: authorization.result_device_id,
       sessionId: authorization.result_session_id,
+      authOrigin: authorization.callback_mode,
     }
   }
   return {

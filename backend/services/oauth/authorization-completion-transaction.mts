@@ -98,6 +98,7 @@ export async function completeOAuthAuthorizationTransaction(
       deviceClass: options.deviceClass,
       deviceContext: options.deviceContext,
       loginAttemptId: uuidv7(),
+      authOrigin: authorization.callback_mode,
     })
     if (result.mfaRequired) {
       const durableResult = {
@@ -114,6 +115,7 @@ export async function completeOAuthAuthorizationTransaction(
       userId: result.user.id,
       deviceId: durableDeviceId(authorization.initiating_device_id),
       sessionId: uuidv7(),
+      authOrigin: authorization.callback_mode,
     }
     await persistCompletionResult(authorization.id, durableResult, query)
     return { ...durableResult, newlyCompleted: true }

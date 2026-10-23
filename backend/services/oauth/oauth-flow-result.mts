@@ -28,6 +28,7 @@ export async function createOAuthFlowResultForUser(options: {
   deviceClass?: DeviceClass
   deviceContext?: DeviceContext
   loginAttemptId?: string
+  authOrigin?: 'web' | 'native'
 }): Promise<OAuthFlowResult> {
   const result = await prepareOAuthFlowResultForUser(options)
   if (result.mfaRequired) return result
@@ -43,6 +44,7 @@ export async function prepareOAuthFlowResultForUser(options: {
   sessionId: string
   deviceClass?: DeviceClass
   loginAttemptId?: string
+  authOrigin?: 'web' | 'native'
 }) {
   const { user } = options
   const claims = await getEnrichedSessionClaims(user)
@@ -54,6 +56,7 @@ export async function prepareOAuthFlowResultForUser(options: {
         deviceId: options.deviceId,
         sessionId: options.sessionId,
         deviceClass: options.deviceClass,
+        authOrigin: options.authOrigin,
       },
       options.loginAttemptId ? { id: options.loginAttemptId } : undefined,
     )
@@ -71,6 +74,7 @@ export async function issuePreparedOAuthFlowResult(options: {
   refreshAuthenticatedSession?: boolean
   deviceClass?: DeviceClass
   deviceContext?: DeviceContext
+  authOrigin?: 'web' | 'native'
 }): Promise<Extract<OAuthFlowResult, { mfaRequired: false }>> {
   const tokens = await createDeviceAndSessionTokens({
     did: options.deviceId,
@@ -84,6 +88,7 @@ export async function issuePreparedOAuthFlowResult(options: {
     uiLocale: options.claims?.uiLocale,
     deviceClass: options.deviceClass,
     deviceContext: options.deviceContext,
+    authOrigin: options.authOrigin,
   })
 
   return {

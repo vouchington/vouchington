@@ -35,6 +35,8 @@ export type OAuthGrantClientView = {
 /** One app a user has authorized, as listed on the user's connected-apps surface. */
 export type OAuthGrantView = {
   id: string
+  session_id: string | null
+  attestation_status: 'attested' | 'unattested' | null
   client: OAuthGrantClientView
   resource: string
   scopes: string[]

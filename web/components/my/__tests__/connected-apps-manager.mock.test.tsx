@@ -104,6 +104,16 @@ describe('ConnectedAppsManager', () => {
     expect(within(row).getByText('Unverified')).toBeInTheDocument()
   })
 
+  it('shows attestation only for a session-bound native grant', () => {
+    const row = renderGrant({
+      session_id: 'session-1',
+      attestation_status: 'unattested',
+    })
+
+    expect(within(row).getByText('Unattested')).toBeInTheDocument()
+    expect(within(row).getByText('Verified')).toBeInTheDocument()
+  })
+
   it('shows the empty state when no apps have access', () => {
     render(<ConnectedAppsManager initialData={{ results: [], page_info: lastPage }} />)
 

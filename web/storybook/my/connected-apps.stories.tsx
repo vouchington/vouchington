@@ -14,6 +14,8 @@ type Story = StoryObj<typeof meta>
 
 const verifiedGrant: OAuthGrant = {
   id: 'storybook-grant',
+  session_id: null,
+  attestation_status: null,
   client: {
     id: 'storybook-client',
     client_id: 'voucha_storybook-agent',
@@ -38,13 +40,24 @@ const unverifiedGrant: OAuthGrant = {
   scopes: ['posts:read'],
 }
 
+const nativeGrant: OAuthGrant = {
+  ...verifiedGrant,
+  id: 'storybook-native-grant',
+  session_id: 'storybook-native-session',
+  attestation_status: 'attested',
+  client: { ...verifiedGrant.client, client_name: 'Voucha iOS' },
+}
+
 const lastPage = { has_next_page: false, end_cursor: null, start_cursor: null }
 
 export const Manager: Story = {
   render: () => (
     <div className='w-[min(92vw,720px)]'>
       <ConnectedAppsManager
-        initialData={{ results: [verifiedGrant, unverifiedGrant], page_info: lastPage }}
+        initialData={{
+          results: [verifiedGrant, nativeGrant, unverifiedGrant],
+          page_info: lastPage,
+        }}
       />
     </div>
   ),

@@ -64,6 +64,15 @@ localized labels. Native agent server selection and credential-picker adoption r
 client work under [the MCP audience split](https://github.com/vouchington/vouchington/issues/3179).
 The producer lands first; audience routing does not change tool arguments or results.
 
+## Native in-app MCP session
+
+First-party native chat uses the signed-in native session to mint a user-MCP bearer token without a
+second browser authorization. The web settings UI shows the resulting grant beneath its session,
+including attestation status and a grant-only revoke action. Web login sessions cannot mint. Native
+OTP uses its dedicated entry point, while third-party OAuth consent remains unchanged. The producer
+publishes the native OTP and mint contracts before [clients #210](https://github.com/vouchington/vouchington-clients/issues/210)
+adopts them in Swift and .NET. See the [authorization decision](security/OAUTH-AUTHORIZATION-SERVER.md#first-party-native-clients).
+
 ## Direct-message MCP consent
 
 Direct-message access uses explicit private-data grants, with localized read and write descriptions

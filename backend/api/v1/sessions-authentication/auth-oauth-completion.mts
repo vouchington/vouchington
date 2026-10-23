@@ -13,6 +13,7 @@ import {
 } from '@services/oauth'
 import type { Context } from '@jongleberry/api-server'
 import { getDeviceContext } from './device-context.mts'
+import { assertNativeRequest } from './native-request.mts'
 
 type CompleteOAuthAuthorizationBody = {
   completion_token?: string
@@ -38,6 +39,7 @@ app.route('/api/v1/auth/oauth/authorizations/:flowId/complete').post(async (ctx:
   const bodyCredential =
     typeof body.completion_token === 'string' ? body.completion_token : undefined
   const completionToken = cookieCredential ?? bodyCredential
+  if (bodyCredential && !cookieCredential) assertNativeRequest(ctx)
   ctx.assert(completionToken, 401, 'OAuth completion token is required')
 
   const sessionData = await ctx.getSessionTokenData()

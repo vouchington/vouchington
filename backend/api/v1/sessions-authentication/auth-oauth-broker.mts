@@ -18,6 +18,7 @@ import {
 import { assertNotSuspended } from '@services/users/suspension'
 import type { Context } from '@jongleberry/api-server'
 import { enqueueInitialOAuthAuthorizationExchangeBestEffort } from './oauth-broker-callback-enqueue.mts'
+import { assertNativeRequest } from './native-request.mts'
 
 type BeginOAuthAuthorizationBody = {
   purpose: 'authenticate' | 'connect'
@@ -60,6 +61,7 @@ app.route('/api/v1/auth/oauth/:provider/authorizations').post(async (ctx: Contex
     422,
     'callback_mode must be web or native',
   )
+  if (body.callback_mode === 'native') assertNativeRequest(ctx)
   // Manual asserts above pin the specific 422 messages this route's tests rely on for an
   // invalid purpose/callback_mode value; the schema check runs after them, against the same
   // body, to add the unrecognized-field and completion_proof_challenge type guard.

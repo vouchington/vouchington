@@ -68,6 +68,7 @@ export async function loginWithEmailAddressToken(options: {
   sessionId: string
   deviceClass?: DeviceClass
   deviceContext?: DeviceContext
+  authOrigin?: 'web' | 'native'
 }) {
   try {
     const sanitizedEmail = sanitizeEmailAddress(options.emailAddress)
@@ -103,6 +104,7 @@ export async function loginWithEmailAddressToken(options: {
         deviceId: options.deviceId,
         sessionId: options.sessionId,
         deviceClass: options.deviceClass,
+        authOrigin: options.authOrigin,
       })
       return { mfaRequired: true as const, loginAttemptId }
     }
@@ -117,6 +119,7 @@ export async function loginWithEmailAddressToken(options: {
       uiLocale: claims?.uiLocale,
       deviceClass: options.deviceClass,
       deviceContext: options.deviceContext,
+      authOrigin: options.authOrigin,
     })
 
     return {
