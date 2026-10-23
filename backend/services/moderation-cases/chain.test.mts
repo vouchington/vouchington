@@ -6,10 +6,10 @@ import {
   insertTestUserWarning,
   insertTestModerationAppeal,
 } from '@voucha/test-helpers'
+import { resolveTestModerationCase } from '@voucha/test-helpers/entities/moderation-case-reads'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import { openOrGetOpenCase } from './open.mts'
 import { findMostRecentCaseForEntity } from './get.mts'
-import { resolveCase } from './resolve.mts'
 
 describe('moderation case chain', () => {
   let reporter: PrivateUser
@@ -62,7 +62,7 @@ describe('findMostRecentCaseForEntity', () => {
     const staff = await createTestUser({ extraRoles: ['staff'] })
 
     const firstCaseId = await openOrGetOpenCase({ entityType: 'user', entityId: user.id })
-    await resolveCase(firstCaseId, staff.id)
+    await resolveTestModerationCase(firstCaseId, staff.id)
 
     const secondCaseId = await openOrGetOpenCase({ entityType: 'user', entityId: user.id })
 

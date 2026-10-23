@@ -9,9 +9,9 @@ import {
   insertTestModerationAppeal,
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
+import { resolveTestModerationCase } from '@voucha/test-helpers/entities/moderation-case-reads'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import { openOrGetOpenCase, findOpenCaseForEntity } from '@services/moderation-cases'
-import { resolveCase } from '@services/moderation-cases/resolve'
 import { createModerationAppeal } from './create.mts'
 import { parseCreateModerationAppealInput } from './parse.mts'
 
@@ -30,7 +30,7 @@ describe('resolveAppealTarget — warning reopenCase branches', () => {
       issuedById: staff.id,
       reason: 'spam',
     })
-    await resolveCase(warning.case_id, staff.id)
+    await resolveTestModerationCase(warning.case_id, staff.id)
 
     const input = parseCreateModerationAppealInput({
       target_type: 'warning',
@@ -50,7 +50,7 @@ describe('resolveAppealTarget — warning reopenCase branches', () => {
       reason: 'spam',
     })
     const caseA = warning.case_id
-    await resolveCase(caseA, staff.id)
+    await resolveTestModerationCase(caseA, staff.id)
 
     const caseB = await openOrGetOpenCase({ entityType: 'user', entityId: appellant.id })
 
@@ -86,7 +86,7 @@ describe('resolveAppealTarget — ban reopenCase branches', () => {
       bannedById: staff.id,
       reason: 'Repeated violations',
     })
-    await resolveCase(ban.case_id, staff.id)
+    await resolveTestModerationCase(ban.case_id, staff.id)
 
     const input = parseCreateModerationAppealInput({
       target_type: 'ban',
@@ -112,7 +112,7 @@ describe('resolveAppealTarget — ban reopenCase branches', () => {
       reason: 'Violations',
     })
     const caseA = ban.case_id
-    await resolveCase(caseA, staff.id)
+    await resolveTestModerationCase(caseA, staff.id)
 
     const caseB = await openOrGetOpenCase({ entityType: 'user', entityId: appellant.id })
 
@@ -206,7 +206,7 @@ describe('resolveAppealTarget — post removal reopenCase branch', () => {
     })
 
     const caseId = await openOrGetOpenCase({ entityType: 'post', entityId: postId })
-    await resolveCase(caseId, staff.id)
+    await resolveTestModerationCase(caseId, staff.id)
 
     const input = parseCreateModerationAppealInput({
       target_type: 'removal',

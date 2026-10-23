@@ -3,26 +3,6 @@ import sql from 'sql-template-strings'
 import type { QueryOptions } from '@data-stores/psql/types'
 
 /**
- * Unconditionally marks a case as resolved.
- *
- * @public Documented contract; production use is unconfirmed and this export may be
- * removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
- */
-export async function resolveCase(
-  caseId: string,
-  resolvedById: string | null,
-  options?: QueryOptions,
-): Promise<void> {
-  const query = sql`/* resolveCase */
-    UPDATE moderation_cases
-    SET resolved_at = CURRENT_TIMESTAMP,
-        resolved_by_id = ${resolvedById}
-    WHERE id = ${caseId} AND resolved_at IS NULL
-  `
-  await write(query, options)
-}
-
-/**
  * Resolves a case only if there are no remaining pending reports or pending appeals
  * linked to this case. The check and update are done atomically on the primary to
  * avoid read-replica staleness races.
