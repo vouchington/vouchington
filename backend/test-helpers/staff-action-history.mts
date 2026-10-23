@@ -29,25 +29,14 @@ export async function readStaffActionHistory(actorId: string) {
   return rows
 }
 
-/** Only this executor's history insert fails; `finished` leaves the request insert durable. */
-export function rejectStaffActionHistoryQuery<Query extends QueryExecutor>(
-  query: Query,
-  phase?: 'finished',
-): Query {
+/** Only this executor's history insert fails. */
+function rejectStaffActionHistoryQuery<Query extends QueryExecutor>(query: Query): Query {
   return rejectQuery(
     query,
-    (statement, values) =>
-      statement.startsWith('/* recordModeratorAction') &&
-      statement.includes('moderator_actions') &&
-      (!phase ||
-        values.some(value => typeof value === 'string' && value.includes('"phase":"finished"'))),
+    statement =>
+      statement.startsWith('/* recordModeratorAction') && statement.includes('moderator_actions'),
     'staff history rejected for test',
   )
-}
-
-/** Wrap the primary writer for operations that commit intent outside a transaction. */
-export function rejectStaffActionHistoryWrite(phase?: 'finished'): QueryExecutor {
-  return rejectStaffActionHistoryQuery(write, phase)
 }
 
 /** Lend a rejecting query to one mutation; disposal rolls back any partial writes. */
