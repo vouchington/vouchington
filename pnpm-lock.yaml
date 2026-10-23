@@ -112,9 +112,6 @@ importers:
       glide-mq:
         specifier: ^0.19.0
         version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
-      jose:
-        specifier: ^6.2.13
-        version: 6.2.13
       jscpd:
         specifier: ^5.4.1
         version: 5.4.1
@@ -8279,9 +8276,6 @@ importers:
       '@services/media-delivery-safety':
         specifier: workspace:^
         version: link:../media-delivery-safety
-      '@services/oauth':
-        specifier: workspace:^
-        version: link:../oauth
       '@services/oauth-accounts':
         specifier: workspace:^
         version: link:../oauth-accounts
@@ -8468,7 +8462,7 @@ importers:
         version: link:../../test-helpers
       undici:
         specifier: ^8.11.2
-        version: 8.12.3
+        version: 8.11.2
 
   backend/services/oauth-accounts:
     dependencies:
@@ -23515,10 +23509,6 @@ packages:
     resolution: {integrity: sha512-XtuDWVdqTLr3NAxm2ly9/hU6kUsJOgGh1RASzMBbsw6aWCOaQzHdW+QQDfdERjfJ2V5vL5pRPa4RetO9UfivDg==}
     engines: {node: '>=22.19.0'}
 
-  undici@8.12.3:
-    resolution: {integrity: sha512-+fdndUTwBP86cVjihTp21hZHo7d6oj1c/47XPA3lL8mM0XHs+C4EkcjmgRsFnFk2f/UONGDy9ItBItmXsLOQHw==}
-    engines: {node: '>=22.19.0'}
-
   unenv@2.0.0-rc.24:
     resolution: {integrity: sha512-i7qRCmY42zmCwnYlh9H2SvLEypEFGye5iRmEMKjcGi7zk9UquigRjFtTLz0TYqr0ZGLZhaMHl/foy1bZR+Cwlw==}
 
@@ -32819,8 +32809,6 @@ snapshots:
   undici@8.11.2: {}
 
   undici@8.12.2: {}
-
-  undici@8.12.3: {}
 
   unenv@2.0.0-rc.24:
     dependencies:
