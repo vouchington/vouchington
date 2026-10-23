@@ -1,11 +1,14 @@
-import { mkdir, mkdtempDisposable, readFile, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
-import { dirname, join } from 'node:path'
+import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
-import { check } from 'no-mistakes'
 import { parse as parseYaml } from 'yaml'
+import {
+  checkLiveAnalysisGuardFixtures,
+  checkLiveAnalysisTransitiveCapabilityFixtures,
+} from './test-helpers/no-mistakes-live-analysis-guard-fixtures.mts'
+import { runGuardFixtures } from './test-helpers/no-mistakes-guard-fixture-runner.mts'
 
-const name = 'Vitest tests do not generate the full PostgreSQL schema snapshot'
+const schemaGenerationGuardName = 'Vitest tests do not generate the full PostgreSQL schema snapshot'
+const liveAnalysisGuardName = 'Vitest tests do not run live no-mistakes analysis'
 const target = './backend/data-stores/psql/schema-snapshot/generate.mts'
 const fixtures = [
   [
@@ -67,17 +70,10 @@ const fixtures = [
   ],
 ] as const
 
-// A dedicated finite CLI: Vitest never invokes repository analyzers, directly or through a helper.
+// The workflow checks finite fixtures; only schema-generation is live-transitive enforcement.
+// The separate analyzer transitive run records 0.93 capability, not live Vitest enforcement.
 export async function checkSchemaGenerationGuardFixtures(rule: object): Promise<void> {
-  await using directory = await mkdtempDisposable(join(tmpdir(), 'schema-generation-rule-'))
-  const root = directory.path
-  const sources: Record<string, string> = {
-    'package.json': JSON.stringify({ type: 'module' }),
-    'tsconfig.json': JSON.stringify({
-      compilerOptions: { module: 'NodeNext', moduleResolution: 'NodeNext', target: 'ESNext' },
-    }),
-    'vitest.config.mts':
-      "export default { test: { name: 'finite-schema', include: ['*.test.mts'], testTimeout: 5000, hookTimeout: 5000 } }",
+  await runGuardFixtures('schema-generation', rule, fixtures, {
     [target]:
       'export function generateSchemaSnapshot() {} export function writeSchemaSnapshot() {}',
     'bridge.mts': `export { generateSchemaSnapshot as snapshot } from '${target}'`,
@@ -91,48 +87,24 @@ export async function checkSchemaGenerationGuardFixtures(rule: object): Promise<
     'test-helpers/cycle-one.mts':
       "import {two} from './cycle-two.mts'; export function one(){two()}",
     'test-helpers/cycle-two.mts': `import {one} from './cycle-one.mts'; import {generateSchemaSnapshot} from '.${target}'; export function two(){generateSchemaSnapshot(); one()}`,
-    '.no-mistakes.json': JSON.stringify({
-      rules: [rule],
-      tests: { vitest: { configs: 'vitest.config.mts' } },
-    }),
-    ...Object.fromEntries(fixtures.map(([file, source]) => [file, source])),
-  }
-  const writes = await Promise.allSettled(
-    Object.entries(sources).map(async ([file, source]) => {
-      const path = join(root, file)
-      await mkdir(dirname(path), { recursive: true })
-      await writeFile(path, source)
-    }),
-  )
-  const errors: unknown[] = writes.flatMap(result =>
-    result.status === 'rejected' ? [result.reason] : [],
-  )
-  if (errors.length)
-    throw new AggregateError(errors, 'Writing finite schema fixtures failed', { cause: errors[0] })
-  const report = await check({ root, config: join(root, '.no-mistakes.json') })
-  const actual = report.rules
-    .flatMap(finding => (finding.rule === 'forbidden-calls' ? [finding.file] : []))
-    .toSorted()
-  const expected = fixtures
-    .flatMap(([file, , forbidden, location]) => (forbidden ? [location ?? file] : []))
-    .toSorted()
-  if (report.warnings.length || JSON.stringify(actual) !== JSON.stringify(expected))
-    throw new Error(
-      `Schema guard fixture mismatch: ${JSON.stringify({ expected, actual, warnings: report.warnings })}`,
-    )
-  console.log(
-    JSON.stringify({
-      fixtures: fixtures.length,
-      rejected: actual.length,
-      allowed: fixtures.length - actual.length,
-    }),
-  )
+  })
 }
 
 if (import.meta.main) {
   const path = fileURLToPath(new URL('../.no-mistakes.yml', import.meta.url))
   const config = parseYaml(await readFile(path, 'utf8')) as { rules: { name: string }[] }
-  const rules = config.rules.filter(rule => rule.name === name)
-  if (rules.length !== 1) throw new Error('Expected exactly one configured schema generation guard')
-  await checkSchemaGenerationGuardFixtures(rules[0]!)
+  const schemaRules = config.rules.filter(rule => rule.name === schemaGenerationGuardName)
+  if (schemaRules.length !== 1)
+    throw new Error('Expected exactly one configured schema generation guard')
+  const analysisRules = config.rules.filter(rule => rule.name === liveAnalysisGuardName)
+  if (analysisRules.length !== 1)
+    throw new Error('Expected exactly one configured live analysis guard')
+  // no-mistakes calls share a machine-wide lock, so keep these checks serial.
+  for (const check of [
+    () => checkSchemaGenerationGuardFixtures(schemaRules[0]!),
+    () => checkLiveAnalysisGuardFixtures(analysisRules[0]!),
+    () => checkLiveAnalysisTransitiveCapabilityFixtures(analysisRules[0]!),
+  ]) {
+    await check()
+  }
 }

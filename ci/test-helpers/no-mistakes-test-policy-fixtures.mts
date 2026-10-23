@@ -1,8 +1,9 @@
+import { createHash } from 'node:crypto'
 import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 
-import type { NoMistakesTestPolicyInput } from '../check-no-mistakes-test-policy.mts'
+import type { NoMistakesTestPolicyInput } from './no-mistakes-test-policy.mts'
 
 export const staticAnalysisWorkflow = `name: Static Code Analysis
 on: workflow_call
@@ -61,11 +62,19 @@ export function makeNoMistakesPolicyFixture({
   workflow = staticAnalysisWorkflow,
   tests = { 'ci/sample.test.mts': "import { symbols } from 'no-mistakes'" },
   routeSelectorTest = 'export const fixture = true',
+  mockedAnalysisTest = `import { vi } from 'vitest'
+import { analyzeProject } from 'no-mistakes'
+const noMistakes = { analyzeProject: vi.fn() }
+vi.mock<typeof import('no-mistakes')>(import('no-mistakes'), () => ({ ...noMistakes }))
+noMistakes.analyzeProject.mockImplementation(async () => analyzeProject())`,
+  mockExclusions = ['static-code-analysis/i18n-extract/route-selector-map.mock.test.mts'],
   otherWorkflows = {},
 }: {
   workflow?: string
   tests?: Record<string, string>
   routeSelectorTest?: string
+  mockedAnalysisTest?: string
+  mockExclusions?: string[]
   otherWorkflows?: Record<string, string>
 } = {}): NoMistakesTestPolicyInput {
   const root = mkdtempSync(join(tmpdir(), 'no-mistakes-test-policy-'))
@@ -75,7 +84,16 @@ export function makeNoMistakesPolicyFixture({
   ]
   const files = {
     '.github/workflows/static-code-analysis.yml': workflow,
+    '.no-mistakes.yml': JSON.stringify({
+      rules: [
+        {
+          name: 'Vitest tests do not run live no-mistakes analysis',
+          exclude: mockExclusions,
+        },
+      ],
+    }),
     'static-code-analysis/i18n-extract/route-selector-map.test.mts': routeSelectorTest,
+    'static-code-analysis/i18n-extract/route-selector-map.mock.test.mts': mockedAnalysisTest,
     ...otherWorkflows,
     ...tests,
   }
@@ -84,5 +102,13 @@ export function makeNoMistakesPolicyFixture({
     mkdirSync(dirname(fullPath), { recursive: true })
     writeFileSync(fullPath, source)
   }
-  return { root, workflowPaths, testPaths: Object.keys(tests) }
+  return {
+    root,
+    reviewedMockTestDigest: createHash('sha256').update(mockedAnalysisTest, 'utf8').digest('hex'),
+    workflowPaths,
+    testPaths: [
+      ...Object.keys(tests),
+      'static-code-analysis/i18n-extract/route-selector-map.mock.test.mts',
+    ],
+  }
 }

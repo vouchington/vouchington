@@ -1,4 +1,4 @@
-import { rmSync, writeFileSync } from 'node:fs'
+import { readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { afterEach, describe, expect, it } from 'vitest'
@@ -7,7 +7,7 @@ import {
   checkNoMistakesTestPolicy,
   relevantWorkflowCommands,
   spawnsNoMistakesCli,
-} from './check-no-mistakes-test-policy.mts'
+} from './test-helpers/no-mistakes-test-policy.mts'
 import {
   acceptedTestSources,
   cliSpawnSources,
@@ -92,6 +92,29 @@ describe('no-mistakes CI contention policy', () => {
   it('rejects direct, resolved-bin, and pnpm no-mistakes CLI spawns', () => {
     expect(cliSpawnSources.map(spawnsNoMistakesCli)).toEqual([true, true, true, true])
     expect(spawnsNoMistakesCli(nonNoMistakesCliSource)).toBe(false)
+  })
+
+  it('keeps the exact mock exception and reviewed source pinned', () => {
+    const broadExclusion = fixture({ mockExclusions: ['**/*.mock.test.*'] })
+    expect(checkNoMistakesTestPolicy(broadExclusion)).toEqual([
+      '.no-mistakes.yml must list only the reviewed mocked test exception for Vitest tests do not run live no-mistakes analysis',
+    ])
+
+    const staleMock = fixture()
+    const mockedTestPath = 'static-code-analysis/i18n-extract/route-selector-map.mock.test.mts'
+    const reviewedMockSource = readFileSync(join(staleMock.root, mockedTestPath), 'utf8')
+    writeFileSync(
+      join(staleMock.root, mockedTestPath),
+      `/* ${reviewedMockSource} */\nimport { check } from 'no-mistakes'; check()`,
+    )
+    expect(checkNoMistakesTestPolicy(staleMock)).toEqual([
+      'static-code-analysis/i18n-extract/route-selector-map.mock.test.mts no longer proves that the analyzer call is mocked',
+    ])
+
+    writeFileSync(join(staleMock.root, mockedTestPath), `${reviewedMockSource}\ncheck()`)
+    expect(checkNoMistakesTestPolicy(staleMock)).toEqual([
+      expect.stringContaining('no longer proves that the analyzer call is mocked'),
+    ])
   })
 
   it('fails when the live command moves to another workflow', () => {
