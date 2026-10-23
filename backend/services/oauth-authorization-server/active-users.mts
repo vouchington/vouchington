@@ -9,6 +9,7 @@ import { OAUTH_SECRET_PURPOSES } from './constants.mts'
 export async function lockOAuthParticipantUsers(
   userIds: readonly (string | null)[],
   query: TransactionQuery,
+  options: { allowSuspended?: boolean } = {},
 ): Promise<Set<string>> {
   const participantIds = [...new Set(userIds.filter((userId): userId is string => userId !== null))]
   participantIds.sort()
@@ -21,11 +22,15 @@ export async function lockOAuthParticipantUsers(
   }
   if (participantIds.length === 0) return new Set()
   const result = await query<{ id: string }>(
-    `/* lockOAuthParticipantUsers active */ SELECT id
+    `/* lockOAuthParticipantUsers active */ SELECT users.id
      FROM users
-     WHERE id = ANY($1::uuid[])
-       AND deleted_at IS NULL`,
-    [participantIds],
+     WHERE users.id = ANY($1::uuid[])
+       AND users.deleted_at IS NULL
+       AND ($2::boolean OR NOT EXISTS (
+         SELECT 1 FROM user_suspensions AS suspension
+         WHERE suspension.user_id = users.id AND suspension.lifted_at IS NULL
+       ))`,
+    [participantIds, options.allowSuspended === true],
   )
   return new Set(result.rows.map(row => row.id))
 }
