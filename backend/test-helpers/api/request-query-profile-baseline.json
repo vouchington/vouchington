@@ -392,6 +392,14 @@
     "code": "backend/services/topics/alias-publication-locks.mts:16"
   },
   {
+    "annotation": "lockHostnameOwnership",
+    "route": "POST /api/v1/fediverse/instances",
+    "maxCount": 2,
+    "reason": "Two independently committed transactions each need their own transaction-scoped ownership key: createInstanceFromHostname resolves and commits public introduction here; createInstanceInTransaction reacquires ownership before source writes (backend/services/fediverse-instances/create-instance-helpers.mts:73).",
+    "permanent": true,
+    "code": "backend/services/fediverse-instances/create-instance.mts:34"
+  },
+  {
     "annotation": "lockPostPublicationCaptures",
     "route": null,
     "maxCount": null,
