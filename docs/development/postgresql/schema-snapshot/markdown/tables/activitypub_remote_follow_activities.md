@@ -6,13 +6,14 @@ Per-activity remote Follow identity and durable Undo state. An undone activity c
 
 Not partitioned — growth: unbounded.
 
-| Column            | Type                       | Nullable | Default    | Identity | Generated | Collation | Comment                                                                            |
-| ----------------- | -------------------------- | -------- | ---------- | -------- | --------- | --------- | ---------------------------------------------------------------------------------- |
-| `id`              | `uuid`                     | no       | `uuidv7()` |          |           |           |                                                                                    |
-| `activity_id`     | `text`                     | no       |            |          |           |           | External ActivityPub Follow id; unique across active and undone cycles.            |
-| `remote_actor_id` | `uuid`                     | no       |            |          |           |           | Signing remote actor that sent the Follow.                                         |
-| `target_user_id`  | `uuid`                     | no       |            |          |           |           | Local user targeted by the Follow.                                                 |
-| `undone_at`       | `timestamp with time zone` | yes      |            |          |           |           | Set by Undo, including an Undo received before its original Follow; never cleared. |
+| Column            | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                    |
+| ----------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ---------------------------------------------------------------------------------------------------------- |
+| `id`              | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                                                            |
+| `created_at`      | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           | Virtual UUIDv7 creation time for per-activity Follow identity; the identity and Undo state remain durable. |
+| `activity_id`     | `text`                     | no       |                              |          |           |           | External ActivityPub Follow id; unique across active and undone cycles.                                    |
+| `remote_actor_id` | `uuid`                     | no       |                              |          |           |           | Signing remote actor that sent the Follow.                                                                 |
+| `target_user_id`  | `uuid`                     | no       |                              |          |           |           | Local user targeted by the Follow.                                                                         |
+| `undone_at`       | `timestamp with time zone` | yes      |                              |          |           |           | Set by Undo, including an Undo received before its original Follow; never cleared.                         |
 
 **Primary key:** `PRIMARY KEY (id)`
 

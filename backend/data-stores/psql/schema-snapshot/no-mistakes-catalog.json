@@ -3332,6 +3332,16 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
+          "ordinalPosition": 3
+        },
+        "created_at": {
+          "comment": "Virtual UUIDv7 creation time for per-activity Follow identity; the identity and Undo state remain durable.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
           "ordinalPosition": 2
         },
         "id": {
@@ -3352,7 +3362,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 3
+          "ordinalPosition": 4
         },
         "target_user_id": {
           "comment": "Local user targeted by the Follow.",
@@ -3362,7 +3372,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4
+          "ordinalPosition": 5
         },
         "undone_at": {
           "comment": "Set by Undo, including an Undo received before its original Follow; never cleared.",
@@ -3372,7 +3382,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5
+          "ordinalPosition": 6
         }
       },
       "comment": "Per-activity remote Follow identity and durable Undo state. An undone activity cannot reactivate a follow after inbox dedup retention.",
@@ -46283,15 +46293,15 @@
     "follower_distribution_retention_cursors": {
       "checkConstraints": {
         "follower_distribution_retention_cursors_check": {
-          "definition": "CHECK (((sweep_cutoff_at IS NOT NULL) OR ((cursor_distribution_id IS NULL) AND (sweep_upper_bound_distribution_id IS NULL))))",
+          "definition": "CHECK (((sweep_cutoff_at IS NOT NULL) OR ((cursor_distribution_position IS NULL) AND (sweep_upper_bound_distribution_position IS NULL))))",
           "validated": true
         },
         "follower_distribution_retention_cursors_check1": {
-          "definition": "CHECK (((sweep_cutoff_at IS NULL) OR (sweep_upper_bound_distribution_id IS NOT NULL)))",
+          "definition": "CHECK (((sweep_cutoff_at IS NULL) OR (sweep_upper_bound_distribution_position IS NOT NULL)))",
           "validated": true
         },
         "follower_distribution_retention_cursors_check2": {
-          "definition": "CHECK (((cursor_distribution_id IS NULL) OR (cursor_distribution_id <= sweep_upper_bound_distribution_id)))",
+          "definition": "CHECK (((cursor_distribution_position IS NULL) OR (cursor_distribution_position <= sweep_upper_bound_distribution_position)))",
           "validated": true
         },
         "follower_distribution_retention_cursors_is_singleton_check": {
@@ -46300,7 +46310,7 @@
         }
       },
       "columns": {
-        "cursor_distribution_id": {
+        "cursor_distribution_position": {
           "comment": "Last terminal follower-distribution id processed in the current pass; a position, not a live entity reference.",
           "dataType": "uuid",
           "defaultExpression": null,
@@ -46330,7 +46340,7 @@
           "nullable": true,
           "ordinalPosition": 2
         },
-        "sweep_upper_bound_distribution_id": {
+        "sweep_upper_bound_distribution_position": {
           "comment": "Highest eligible follower-distribution id captured when the pass starts; a position, not a live entity reference.",
           "dataType": "uuid",
           "defaultExpression": null,
