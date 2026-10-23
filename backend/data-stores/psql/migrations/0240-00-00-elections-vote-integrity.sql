@@ -42,15 +42,41 @@ COMMENT ON COLUMN user_agent_strings.user_agent IS 'The full user agent string, 
 
 -- Each ballot family has its own cyclic UUIDv7 cleanup position. A cycle must revisit
 -- older ballots because a current ballot can become superseded long after it was cast.
+DO $$ BEGIN
+  CREATE TYPE vote_ballot_cleanup_families AS ENUM (
+    'post_votes', 'topic_votes', 'hostname_votes', 'rss_feed_item_votes',
+    'agent_moderation_votes', 'user_vouch_votes',
+    'relation__user__category__topic__votes',
+    'relation__post__category__topic__votes',
+    'relation__post__category__topic_alias__votes',
+    'relation__post__related__post__votes',
+    'relation__post__related__url__votes',
+    'relation__topic__related__topic__votes',
+    'relation__topic__category__topic__votes',
+    'relation__topic__publisher_type__topic__votes',
+    'relation__topic__faq__post__votes',
+    'relation__topic__related__post__votes',
+    'relation__topic__related__url__votes',
+    'relation__topic__faq__url__votes',
+    'relation__topic__guide__url__votes',
+    'relation__topic__landing_page__url__votes',
+    'relation__topic__terms_of_service__url__votes',
+    'relation__rss_feed_item__category__topic__votes',
+    'relation__rss_feed_item__category__topic_alias__votes'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+COMMENT ON TYPE vote_ballot_cleanup_families IS 'Fixed ballot families eligible for one independent retention cursor each.';
+
 CREATE TABLE IF NOT EXISTS vote_ballot_cleanup_cursors (
-  vote_table TEXT PRIMARY KEY,
+  family vote_ballot_cleanup_families PRIMARY KEY,
   cursor_vote_id UUID,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE OR REPLACE TRIGGER trigger_vote_ballot_cleanup_cursors_updated_at
   BEFORE UPDATE ON vote_ballot_cleanup_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 COMMENT ON TABLE vote_ballot_cleanup_cursors IS 'One bounded cyclic UUIDv7 cleanup position per concrete ballot table.';
-COMMENT ON COLUMN vote_ballot_cleanup_cursors.vote_table IS 'Whitelisted concrete ballot table selected by the cleanup worker.';
+COMMENT ON COLUMN vote_ballot_cleanup_cursors.family IS 'Concrete ballot family selected by the cleanup worker.';
 COMMENT ON COLUMN vote_ballot_cleanup_cursors.cursor_vote_id IS 'Last scanned ballot ID; not a durable relationship to a ballot.';
 COMMENT ON COLUMN vote_ballot_cleanup_cursors.updated_at IS 'Last committed ballot sweep progress.';
 

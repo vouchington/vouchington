@@ -5279,12 +5279,12 @@ rules:
               type: smallint
             - name: score_is_neutral
             - name: score_is_semantic
-            - name: device_id
-            - name: ip_address
-            - name: session_id
-            - name: user_agent_string_id
           forbiddenColumns:
             - relation_table
+            - device_id
+            - ip_address
+            - session_id
+            - user_agent_string_id
         - name: relation-votes
           tablePattern: ^relation__.*__votes$
           requiredColumns:

@@ -1,7 +1,9 @@
 import { MODERATION_RETENTION_BOUNDED_TABLES } from './schema-growth-moderation-retention.mts'
+import { VOTE_RETENTION_BOUNDED_TABLES } from './schema-vote-retention-policies.mts'
 
 export const EXTRA_BOUNDED_TABLES = new Map<string, string>([
   ...MODERATION_RETENTION_BOUNDED_TABLES,
+  ...VOTE_RETENTION_BOUNDED_TABLES,
   [
     'url_hostname_cache_invalidation_work_items',
     'At most one current generation per live hostname; successful eviction deletes it, hostname deletion cascades it, and bounded cache-TTL pruning removes abandoned work.',

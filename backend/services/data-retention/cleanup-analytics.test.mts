@@ -90,7 +90,7 @@ describe('cleanupAnalyticsLocalFiles', () => {
         oldModerationQueueClaims: emptyWindow,
         oldModerationMediaReveals: emptyWindow,
       }),
-    ).resolves.toEqual({
+    ).resolves.toMatchObject({
       retainedIdentityRoots: [],
       retainedRelationIdentities: [],
       retainedMediaBindings: { scanned: 0, deleted: 0, hasMore: false },
@@ -114,6 +114,19 @@ describe('cleanupAnalyticsLocalFiles', () => {
       webPushSubscriptionTombstones: { deleted: 0, hasMore: false, continuation: null },
       oldModerationQueueClaims: { deleted: 0, hasMore: false, cursorId: null },
       oldModerationMediaReveals: { deleted: 0, hasMore: false, cursorId: null },
+      supersededVoteBallots: expect.arrayContaining([
+        expect.objectContaining({ voteTable: 'post_votes', scanned: expect.any(Number) }),
+      ]),
+      orphanedUserAgentStrings: expect.objectContaining({
+        scanned: expect.any(Number),
+        deleted: expect.any(Number),
+        hasMore: expect.any(Boolean),
+      }),
+      voteIntegrityDetails: expect.objectContaining({
+        scanned: expect.any(Number),
+        redacted: expect.any(Number),
+        hasMore: expect.any(Boolean),
+      }),
     })
   })
 

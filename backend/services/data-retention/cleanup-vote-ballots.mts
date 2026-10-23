@@ -68,8 +68,8 @@ export async function cleanupSupersededVoteBallotTable(
   await using query = await beginTransaction()
   if (!voteIds)
     await query(
-      `/* ensureVoteBallotCleanupCursor */ INSERT INTO vote_ballot_cleanup_cursors (vote_table)
-       VALUES ($1) ON CONFLICT DO NOTHING`,
+      `/* ensureVoteBallotCleanupCursor */ INSERT INTO vote_ballot_cleanup_cursors (family)
+       VALUES ($1::vote_ballot_cleanup_families) ON CONFLICT DO NOTHING`,
       [table],
     )
   const cursor = voteIds
@@ -77,7 +77,7 @@ export async function cleanupSupersededVoteBallotTable(
     : (
         await query<{ cursor_vote_id: string | null }>(
           `/* lockVoteBallotCleanupCursor */ SELECT cursor_vote_id
-           FROM vote_ballot_cleanup_cursors WHERE vote_table = $1 FOR UPDATE`,
+           FROM vote_ballot_cleanup_cursors WHERE family = $1::vote_ballot_cleanup_families FOR UPDATE`,
           [table],
         )
       ).rows[0]
@@ -116,7 +116,7 @@ export async function cleanupSupersededVoteBallotTable(
   if (!voteIds)
     await query(
       `/* checkpointVoteBallotCleanupCursor */ UPDATE vote_ballot_cleanup_cursors
-       SET cursor_vote_id = $2 WHERE vote_table = $1`,
+       SET cursor_vote_id = $2 WHERE family = $1::vote_ballot_cleanup_families`,
       [table, hasMore ? page.at(-1)!.id : null],
     )
   await query.commit()
