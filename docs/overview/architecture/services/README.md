@@ -72,8 +72,9 @@ markers provide recovery when publication or timestamp visibility loses a trigge
 [vote-weight recovery](../queues/README.md#vote-weight-recovery) for continuation and replay semantics.
 
 Data retention bounds pending push work by the intent's creation time, because push work can be
-created after its notification. Its cursor orders that timestamp with the notification identity
-and keeps a fixed cutoff for each sweep, so a large backlog resumes on the next scheduled run.
+created after its notification. The intent's UUIDv7 `id` carries that time. A persisted cursor
+pages by that `id` and keeps a fixed cutoff for each sweep, so a large backlog resumes on the next
+scheduled run.
 An active delivery lease is preserved until a later sweep. Endpoint receipts follow their intent's
 deletion through the foreign key.
 
