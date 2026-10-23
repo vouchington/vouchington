@@ -109,8 +109,10 @@ The token is short-lived, has no refresh token, and is bound to the user MCP aud
 MCP scopes. A session is the long-lived credential; the app mints again when its access token
 expires. Each native session keeps one grant, bound to the first native client selected for that
 session. Revoking it blocks minting again under another client identity. The server checks the
-linked session on every bearer call, so sign-out, session revocation, expiry, suspension, and account deletion remove
-MCP authority. Users can see each grant under its session with its attestation status and revoke
+linked session on every bearer call, so sign-out, session revocation, expiry, suspension, and account
+deletion remove that native grant's MCP authority. Third-party grants retain the existing
+appeal-only access for suspended paying members, matching REST. Users can see each native grant
+under its session with its attestation status and revoke
 that grant without signing out. Mint and MCP calls remain audited and rate limited; plan and scope
 checks still apply on every tool call, including Free members' read-only limit. Native adoption is
 tracked in [clients #210](https://github.com/vouchington/vouchington-clients/issues/210).

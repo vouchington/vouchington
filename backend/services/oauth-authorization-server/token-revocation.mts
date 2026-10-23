@@ -16,7 +16,6 @@ export async function revokeOAuthToken(input: {
   const activeParticipantIds = await lockOAuthParticipantUsers(
     await readTokenParticipants(accessHash, refreshHash, input.clientId, query),
     query,
-    { allowSuspended: true },
   )
   const client = await authenticateLockedOAuthClient(
     input.clientId,

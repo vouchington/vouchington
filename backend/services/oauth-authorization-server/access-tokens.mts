@@ -42,10 +42,10 @@ export async function validateOAuthAccessToken(
        AND EXISTS (
          SELECT 1 FROM users WHERE users.id = oauth_grant.user_id AND users.deleted_at IS NULL
        )
-       AND NOT EXISTS (
+       AND (oauth_grant.session_id IS NULL OR NOT EXISTS (
          SELECT 1 FROM user_suspensions AS suspension
          WHERE suspension.user_id = oauth_grant.user_id AND suspension.lifted_at IS NULL
-       )
+       ))
        AND (
          client.owner_user_id IS NULL OR EXISTS (
            SELECT 1 FROM users WHERE users.id = client.owner_user_id AND users.deleted_at IS NULL

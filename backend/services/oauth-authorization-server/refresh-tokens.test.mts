@@ -196,7 +196,7 @@ describe('OAuth refresh tokens', () => {
     expect(refreshed.expires_in).toBeLessThanOrEqual(remainingSeconds)
   })
 
-  it('denies access-token use and refresh exchange while the grant owner is suspended', async () => {
+  it('keeps an issued access token and rotates refresh while the grant owner is suspended', async () => {
     const flow = await createApprovedAuthorization(owner)
     const initial = await exchangeOAuthAuthorizationCode({
       clientId: flow.client.client_id,
@@ -207,13 +207,17 @@ describe('OAuth refresh tokens', () => {
     await suspendTestUser(owner.id)
 
     try {
-      await expect(validateOAuthAccessToken(initial.access_token, 'user')).resolves.toBeNull()
-      await expect(
-        exchangeOAuthRefreshToken({
-          clientId: flow.client.client_id,
-          refreshToken: initial.refresh_token,
-        }),
-      ).rejects.toMatchObject({ code: 'invalid_grant' })
+      await expect(validateOAuthAccessToken(initial.access_token, 'user')).resolves.toMatchObject({
+        user_id: owner.id,
+      })
+      const refreshed = await exchangeOAuthRefreshToken({
+        clientId: flow.client.client_id,
+        refreshToken: initial.refresh_token,
+      })
+      expect(refreshed.access_token).not.toBe(initial.access_token)
+      await expect(validateOAuthAccessToken(refreshed.access_token, 'user')).resolves.toMatchObject(
+        { user_id: owner.id },
+      )
     } finally {
       await unsuspendTestUser(owner.id)
     }

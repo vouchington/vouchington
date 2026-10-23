@@ -123,12 +123,12 @@ export async function listActiveUserSessions(
         'last_minted_at', connection.last_used_at
       ) ORDER BY connection.id DESC) AS connections
       FROM (
-        SELECT grant.id, client.client_name, grant.attestation_status, grant.last_used_at
-        FROM oauth_grants AS grant
-        JOIN oauth_clients AS client ON client.id = grant.client_id AND client.revoked_at IS NULL
-        WHERE grant.session_id = s.id
-          AND grant.revoked_at IS NULL
-        ORDER BY grant.id DESC
+        SELECT oauth_grant.id, client.client_name, oauth_grant.attestation_status, oauth_grant.last_used_at
+        FROM oauth_grants AS oauth_grant
+        JOIN oauth_clients AS client ON client.id = oauth_grant.client_id AND client.revoked_at IS NULL
+        WHERE oauth_grant.session_id = s.id
+          AND oauth_grant.revoked_at IS NULL
+        ORDER BY oauth_grant.id DESC
         LIMIT 1
       ) AS connection
     ) AS native_connections ON TRUE
