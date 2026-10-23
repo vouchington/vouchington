@@ -16,6 +16,9 @@ import {
   guardAndRetireExplicitHistoryRange,
   type ExplicitHistoryRange,
 } from '@data-stores/psql/migration-runner/explicit-range-retirement'
+import { getPartitionDropStatusRefusals } from '@data-stores/psql/migration-runner/partition-drop-guard'
+import { runRetireHistoryRange } from '@data-stores/psql/retire-history-range'
+import { PARTITION_DROP_POLICIES } from '@data-stores/psql/config-driven/utils/partition-config'
 import { cleanupRetainedIdentityRoots } from '../cleanup-retained-identities.mts'
 
 const range: ExplicitHistoryRange = {
@@ -42,6 +45,54 @@ function catalogQuery(options: { held?: boolean; busy?: boolean; absent?: boolea
 }
 
 describe('manual clearance history range retirement', () => {
+  it('rejects missing or unapproved operator arguments before opening a range', async () => {
+    await expect(runRetireHistoryRange(['post_clearance_changes'])).rejects.toThrow(
+      'Usage: retire-history-range',
+    )
+    await expect(
+      runRetireHistoryRange(['posts', range.partition, range.fromId, range.toId]),
+    ).rejects.toThrow('Usage: retire-history-range')
+  })
+
+  it('rejects unmatched and empty operator ranges through real transactions before DDL', async () => {
+    await expect(
+      runRetireHistoryRange([range.table, range.partition, range.fromId, range.toId]),
+    ).rejects.toThrow('History range retirement refused: catalog-mismatch')
+    await expect(
+      runRetireHistoryRange([range.table, range.partition, range.fromId, range.fromId]),
+    ).rejects.toThrow('History range retirement refused: catalog-mismatch')
+  })
+
+  it('checks held post authors in the bounded history-range status probe', async () => {
+    const statements: string[] = []
+    const partition = range.partition
+    const query = (async (statement: string) => {
+      statements.push(statement)
+      return { rows: [{ partition_name: partition, reason: 'legal-hold' }] }
+    }) as unknown as QueryExecutor
+    const statuses = await getPartitionDropStatusRefusals(
+      query,
+      [
+        {
+          table: range.table,
+          partition,
+          upperBound: new Date('2023-06-01T00:00:00.001Z'),
+        },
+      ],
+      PARTITION_DROP_POLICIES,
+      now,
+      1,
+    )
+
+    expect(statuses.get(partition)).toBe('legal-hold')
+    expect(statements).toHaveLength(1)
+    expect(statements[0]).toContain(
+      `JOIN ${partition} AS candidate_row ON candidate_row.post_id = held_post.id`,
+    )
+    expect(statements[0]).toContain('held_post.created_by_id = hold.account_user_id')
+    expect(statements[0]).toContain('LIMIT 1')
+  })
+
   it('validates the catalog twice and takes the owner and reference locks before detach', async () => {
     const { query, statements } = catalogQuery()
     await expect(guardAndRetireExplicitHistoryRange(query, range, now)).resolves.toBeNull()

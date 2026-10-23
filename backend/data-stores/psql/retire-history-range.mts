@@ -28,9 +28,5 @@ export async function runRetireHistoryRange(argv: string[]): Promise<void> {
 }
 
 if (import.meta.main) {
-  try {
-    await runRetireHistoryRange(process.argv.slice(2))
-  } finally {
-    await close()
-  }
+  await runRetireHistoryRange(process.argv.slice(2)).finally(close)
 }
