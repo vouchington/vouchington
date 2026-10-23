@@ -85,8 +85,8 @@ vi.mock(
     }) as unknown as typeof import('../../../components/auth/oauth-login-button'),
 )
 
-vi.mock(import('@vouchington/script-loader/turnstile'), () => ({
-  useTurnstile: ({ onSuccess }: { onSuccess: (token: string) => void }) => {
+vi.mock(import('../../../hooks/use-turnstile-action'), () => ({
+  useTurnstileAction: ({ onSuccess }: { onSuccess: (token: string) => void }) => {
     turnstileCallbacks.onSuccess = onSuccess
     return { ref: () => {}, reset: turnstileCallbacks.reset, isError: false }
   },
