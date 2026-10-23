@@ -14,7 +14,7 @@ import {
 } from '@voucha/test-helpers'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import { updateRssFeedById } from '@services/rss-feeds'
-import { updateRssFeedByIdAsCurrentUser } from '@services/rss-feeds/update-current-user'
+import { updateRssFeedWithStateAsCurrentUser } from '@services/rss-feeds/update-current-user'
 import { evaluateRssFeedDiscoverability } from '@services/rss-feeds/evaluate-discoverability'
 import { getPublisherTypeTopicId } from '@services/topics/publisher-type-topics'
 
@@ -119,9 +119,14 @@ describe('suppression', () => {
     const aggregatorTopicId = await getPublisherTypeTopicId('aggregator')
     expect(aggregatorTopicId).toBeTruthy()
 
-    await updateRssFeedByIdAsCurrentUser(admin, feed.id, {
-      discoverable: true,
-    })
+    await updateRssFeedWithStateAsCurrentUser(
+      admin,
+      feed.id,
+      {},
+      {
+        discoverable: true,
+      },
+    )
     await addRssFeedTopicPublisherType(feed.topic_id as string, aggregatorTopicId!)
 
     const result = await evaluateRssFeedDiscoverability(feed.id)
@@ -142,9 +147,14 @@ describe('suppression', () => {
     })
     expect(aggregatorTopicId).toBeTruthy()
 
-    await updateRssFeedByIdAsCurrentUser(admin, feed.id, {
-      discoverable: true,
-    })
+    await updateRssFeedWithStateAsCurrentUser(
+      admin,
+      feed.id,
+      {},
+      {
+        discoverable: true,
+      },
+    )
     await addRssFeedTopicPublisherTypeWithScore(
       feed.topic_id as string,
       noncanonicalPublisher.id,

@@ -1,6 +1,31 @@
 import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
+type TestRssFeedStateChange = {
+  id: string
+  rss_feed_id: string
+  is_enabled: boolean
+  changed_by_id: string | null
+  reason: string | null
+  created_at: Date
+}
+
+export async function getLatestTestRssFeedStateChange(
+  kind: 'discoverability' | 'enablement',
+  rssFeedId: string,
+): Promise<TestRssFeedStateChange | null> {
+  const { rows } = await read<TestRssFeedStateChange>(
+    `/* getLatestTestRssFeedStateChange */
+      SELECT id, rss_feed_id, is_enabled, changed_by_id, reason, created_at
+      FROM rss_feed_setting_changes
+      WHERE rss_feed_id = $1 AND change_type = $2
+      ORDER BY id DESC
+      LIMIT 1`,
+    [rssFeedId, kind],
+  )
+  return rows[0] ?? null
+}
+
 /**
  * Returns the deleted_at timestamp for a given RSS feed, or null if not soft-deleted.
  * Reads directly from the raw table to bypass the view (which does not expose deleted_at).

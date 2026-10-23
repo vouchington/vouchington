@@ -1,5 +1,6 @@
+import { getTestRssFeedItemCategories } from '@voucha/test-helpers/entities/rss-feed-item-categories'
 import { it, expect, beforeEach, describe } from 'vitest'
-import { upsertRssFeedItemCategories, getRssFeedItemCategories } from '../categories.mts'
+import { upsertRssFeedItemCategories } from '../categories.mts'
 import { backfillCategoriesForTopicAliases } from '../backfill-categories-for-topic-aliases.mts'
 import { createTopic } from '@services/topics'
 import { createTopicAliases } from '@services/topics/aliases'
@@ -30,7 +31,7 @@ describe('categories', () => {
       },
     ])
 
-    const allCategories = await getRssFeedItemCategories(testRssFeedItemId)
+    const allCategories = await getTestRssFeedItemCategories(testRssFeedItemId)
     const matched = allCategories.find(c => c.category_text === topicName)
     expect(matched?.topic_id).toBe(topic.id)
   })
@@ -51,7 +52,7 @@ describe('categories', () => {
       },
     ])
 
-    const allCategories = await getRssFeedItemCategories(testRssFeedItemId)
+    const allCategories = await getTestRssFeedItemCategories(testRssFeedItemId)
     const matched = allCategories.find(c => c.category_text === `Bank Of America ${random}`)
     expect(matched?.topic_id).toBe(topic.id)
   })
@@ -81,7 +82,7 @@ describe('categories', () => {
       },
     ])
 
-    const allCategories = await getRssFeedItemCategories(testRssFeedItemId)
+    const allCategories = await getTestRssFeedItemCategories(testRssFeedItemId)
     const matched = allCategories.find(c => c.category_text === sharedText)
     // Alias (topic A) takes precedence over name match (topic B)
     expect(matched?.topic_id).toBe(topicA.id)
@@ -101,7 +102,7 @@ describe('categories', () => {
       },
     ])
 
-    let allCategories = await getRssFeedItemCategories(testRssFeedItemId)
+    let allCategories = await getTestRssFeedItemCategories(testRssFeedItemId)
     const before = allCategories.find(c => c.category_text === topicName)
     expect(before?.topic_id).toBeNull()
 
@@ -114,7 +115,7 @@ describe('categories', () => {
     const result = await backfillCategoriesForTopicAliases(topic.id)
     expect(result.updated).toBeGreaterThanOrEqual(1)
 
-    allCategories = await getRssFeedItemCategories(testRssFeedItemId)
+    allCategories = await getTestRssFeedItemCategories(testRssFeedItemId)
     const after = allCategories.find(c => c.category_text === topicName)
     expect(after?.topic_id).toBe(topic.id)
   })
@@ -137,7 +138,7 @@ describe('categories', () => {
       },
     ])
 
-    const allCategories = await getRssFeedItemCategories(testRssFeedItemId)
+    const allCategories = await getTestRssFeedItemCategories(testRssFeedItemId)
     const matched = allCategories.find(c => c.category_text === topicName)
     expect(matched?.topic_id).toBeNull()
   })
@@ -158,7 +159,7 @@ describe('categories', () => {
       },
     ])
 
-    const allCategories = await getRssFeedItemCategories(testRssFeedItemId)
+    const allCategories = await getTestRssFeedItemCategories(testRssFeedItemId)
     const matched = allCategories.find(c => c.category_text === slug)
     expect(matched?.topic_id).toBe(topic.id)
   })

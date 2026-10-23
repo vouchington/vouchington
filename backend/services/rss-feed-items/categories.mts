@@ -1,6 +1,5 @@
 import { getRssFeedItemsWorkLimit } from '@services/rss-feed-items/work-limits'
-/* oxlint-disable max-lines -- category upsert retains its staged read, ordered mutation, and post-commit reconciliation boundary together. */
-import { read, beginTransaction, type TransactionQuery } from '@data-stores/psql'
+import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import { chunkArray } from './processing-limits.mts'
 import {
   buildRssFeedItemCategorySqlBatches,
@@ -189,31 +188,4 @@ async function recordCategoryPublicationChanges(
         : [],
     ),
   ])
-}
-
-/**
- * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
- * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
- */
-export const getRssFeedItemCategories = async (rss_feed_item_id: string) => {
-  const { rows } = await read<{
-    rss_feed_item_id: string
-    category_text: string
-    topic_id: string | null
-    created_at: Date
-    updated_at: Date
-  }>(
-    `/* getRssFeedItemCategories */
-    SELECT
-      rss_feed_item_id,
-      category_text,
-      topic_id,
-      created_at,
-      updated_at
-    FROM rss_feed_item_categories
-    WHERE rss_feed_item_id = $1
-  `,
-    [rss_feed_item_id],
-  )
-  return rows
 }

@@ -1,80 +1,16 @@
 import { invalidate } from '@services/entity-cache/invalidate'
 import type { PrivateUser } from '@services/users/types'
 import { currentUserCanUpdateRssFeed } from './authorization.mts'
-import {
-  beginTransaction,
-  withTransactionOptions,
-  type QueryOptions,
-  type TransactionQuery,
-} from '@data-stores/psql'
+import type { TransactionQuery } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 import { setRssFeedStatesAsCurrentUser } from './set-states-as-current-user.mts'
 import type { ViewRssFeed } from './types.mts'
 import { updateRssFeedById, type UpdateRssFeedChanges } from './update.mts'
-import { omitStateChanges, type RssFeedStateChange } from './update-state-helpers.mts'
+import { omitStateChanges } from './update-state-helpers.mts'
 import { enqueueEvaluateRssFeedDiscoverability } from '@queues/rss-feed-maintenance/enqueues/discoverability'
 import { enqueueRefreshTopHashtags } from '@queues/psql/enqueues'
-
-/**
- * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
- * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
- */
-export const updateRssFeedByIdAsCurrentUser = async (
-  currentUser: PrivateUser,
-  id: string,
-  changes: UpdateRssFeedChanges,
-  options?: QueryOptions,
-): Promise<string | null> => {
-  assert(currentUserCanUpdateRssFeed(currentUser), 403, 'Forbidden')
-  const stateChanges: RssFeedStateChange[] = []
-  if (changes.is_enabled !== undefined) {
-    stateChanges.push({ kind: 'enablement', is_enabled: changes.is_enabled })
-  }
-  if (changes.discoverable !== undefined) {
-    stateChanges.push({ kind: 'discoverability', is_enabled: changes.discoverable })
-  }
-
-  const fieldChanges = omitStateChanges(changes)
-  const hasFieldChanges = Object.keys(fieldChanges).length > 0
-  if (!hasFieldChanges && stateChanges.length === 0) return null
-  let eligibilityChanged = false
-
-  const transactionOptions = options ?? {}
-  const run = async (query: TransactionQuery) => {
-    const txOptions = { query }
-    if (hasFieldChanges) {
-      const updatedFieldId = await updateRssFeedById(id, fieldChanges, txOptions)
-      if (!updatedFieldId) return null
-    } else {
-      const existing = await query(
-        sql`/* updateRssFeedByIdAsCurrentUser:lock */ SELECT id FROM rss_feeds WHERE id = ${id} FOR UPDATE`,
-      )
-      if (existing.rows.length === 0) return null
-    }
-    const result = await setRssFeedStatesAsCurrentUser(
-      currentUser,
-      id,
-      stateChanges.map(({ kind, is_enabled }) => ({
-        kind,
-        is_enabled,
-        reason: 'user update helper',
-      })),
-      txOptions,
-    )
-    eligibilityChanged ||= result === 'updated'
-    return id
-  }
-  const updatedId = await runInTransaction(transactionOptions, run)
-  if (!options?.query && !options?.client) await invalidate.rss_feeds(id)
-  if (updatedId && fieldChanges.topic_id !== undefined && !options?.query && !options?.client) {
-    /* c8 ignore next -- lint-only fire-and-forget enqueue disposition. */
-    void enqueueEvaluateRssFeedDiscoverability(id)
-  }
-  if (updatedId && eligibilityChanged && !options?.query && !options?.client)
-    void enqueueRefreshTopHashtags()
-  return updatedId as string | null
-}
+import { runRssFeedStateTransaction } from './state-transaction.mts'
 
 export async function updateRssFeedWithStateAsCurrentUser(
   currentUser: PrivateUser,
@@ -135,20 +71,9 @@ export async function updateRssFeedWithStateAsCurrentUser(
     )
     return (fresh.rows[0] as ViewRssFeed | undefined) ?? null
   }
-  const updated = await runInTransaction({}, run)
+  const updated = await runRssFeedStateTransaction({}, run)
   if (updated) await invalidate.rss_feeds(id)
   if (updated && fieldChanges.topic_id !== undefined) void enqueueEvaluateRssFeedDiscoverability(id)
   if (updated && eligibilityChanged) void enqueueRefreshTopHashtags()
   return updated
-}
-
-async function runInTransaction<Result>(
-  options: QueryOptions,
-  run: (query: TransactionQuery) => Promise<Result>,
-): Promise<Result> {
-  if (options.query || options.client) return withTransactionOptions(options, run)
-  await using transaction = await beginTransaction()
-  const result = await run(transaction)
-  await transaction.commit()
-  return result
 }

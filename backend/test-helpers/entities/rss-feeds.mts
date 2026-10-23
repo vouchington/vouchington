@@ -18,6 +18,7 @@ export {
   deleteRssFeedsByIds,
   disableTestRssFeed,
   ensureTestRssFeedEnabled,
+  getLatestTestRssFeedStateChange,
   getRssFeedDeletedAt,
   updateRssFeedTiming,
 } from './rss-feeds-state.mts'
@@ -165,15 +166,22 @@ export async function updateRssFeedFollowCreatedAt(
   }
 }
 
-export async function getLatestTestRssFeedDiscoverabilityChange(
-  rssFeedId: string,
-): Promise<{ is_enabled: boolean; reason: string | null } | undefined> {
-  const { rows } = await read<{ is_enabled: boolean; reason: string | null }>(
-    `/* getLatestTestRssFeedDiscoverabilityChange */
-      SELECT is_enabled, reason FROM rss_feed_setting_changes
-      WHERE rss_feed_id = $1::uuid AND change_type = 'discoverability'
-      ORDER BY id DESC LIMIT 1`,
-    [rssFeedId],
-  )
-  return rows[0]
+type TestPodcastShow = {
+  itunes_author: string | null
+  itunes_owner_name: string | null
+  itunes_owner_email: string | null
+  cover_art_url: string | null
+  is_explicit: boolean
+  itunes_type: 'episodic' | 'serial' | null
+  description: string | null
+}
+
+export async function getTestPodcastShow(rssFeedId: string): Promise<TestPodcastShow | null> {
+  const { rows } = await read<TestPodcastShow>(sql`/* getTestPodcastShow */
+    SELECT itunes_author, itunes_owner_name, itunes_owner_email, cover_art_url,
+           is_explicit, itunes_type, description
+    FROM podcast_shows
+    WHERE rss_feed_id = ${rssFeedId}
+  `)
+  return rows[0] ?? null
 }

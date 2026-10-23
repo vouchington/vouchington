@@ -1,6 +1,7 @@
+import { getTestRssFeedItemCategories } from '@voucha/test-helpers/entities/rss-feed-item-categories'
 import { describe, expect, it } from 'vitest'
 
-import { getRssFeedItemCategories, upsertRssFeedItemCategories } from '../categories.mts'
+import { upsertRssFeedItemCategories } from '../categories.mts'
 import { clearAllCategoriesForUnlinkedTopicAlias } from '../clear-all-unlinked-topic-alias-categories.mts'
 import { getRssFeedItemById } from '../get.mts'
 import { upsertRssFeedItems } from '../upsert.mts'
@@ -47,7 +48,7 @@ describe('unlinked RSS topic alias category cleanup', () => {
 
     await expect(getTestRssFeedItemCategorySnapshotReconciliation(item!.id)).resolves.toBeDefined()
 
-    await expect(getRssFeedItemCategories(item!.id)).resolves.toContainEqual(
+    await expect(getTestRssFeedItemCategories(item!.id)).resolves.toContainEqual(
       expect.objectContaining({
         category_text: `#${aliasText}`,
         topic_id: replacementTopic.id,

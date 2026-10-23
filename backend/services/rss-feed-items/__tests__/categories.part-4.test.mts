@@ -1,12 +1,12 @@
+import { getTestRssFeedItemCategories } from '@voucha/test-helpers/entities/rss-feed-item-categories'
 import { it, expect, beforeEach, describe } from 'vitest'
-import { getRssFeedItemCategories, upsertRssFeedItemCategories } from '../categories.mts'
+import { upsertRssFeedItemCategories } from '../categories.mts'
 import { backfillCategoriesForTopicAliases } from '../backfill-categories-for-topic-aliases.mts'
 import { clearCategoriesForUnlinkedTopicAlias } from '../clear-topic-alias-categories.mts'
 import { createTopic } from '@services/topics'
 import { createTopicAliases, unlinkTopicAlias } from '@services/topics/aliases'
 import { upsertRssFeedItems } from '../upsert.mts'
 import { caches } from '@services/entity-cache/caches'
-
 import { getRssFeedItemById } from '../get.mts'
 
 import { v4 as uuid } from 'uuid'
@@ -190,7 +190,7 @@ describe('categories', () => {
       updated: 1,
       hasMore: false,
     })
-    await expect(getRssFeedItemCategories(testRssFeedItemId)).resolves.toEqual(
+    await expect(getTestRssFeedItemCategories(testRssFeedItemId)).resolves.toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           category_text: `#${alias!.alias}`,
@@ -230,14 +230,14 @@ describe('categories', () => {
       await holderProcessId.promise,
       'clearCategoriesForUnlinkedTopicAlias',
     )
-    await expect(getRssFeedItemCategories(testRssFeedItemId)).resolves.toEqual(
+    await expect(getTestRssFeedItemCategories(testRssFeedItemId)).resolves.toEqual(
       expect.arrayContaining([expect.objectContaining({ category_text: categoryText })]),
     )
 
     release.resolve()
     await holder
     await expect(cleanup).resolves.toEqual({ updated: 1, hasMore: false })
-    await expect(getRssFeedItemCategories(testRssFeedItemId)).resolves.toEqual(
+    await expect(getTestRssFeedItemCategories(testRssFeedItemId)).resolves.toEqual(
       expect.arrayContaining([
         expect.objectContaining({ category_text: categoryText, topic_id: null }),
       ]),
@@ -267,7 +267,7 @@ describe('categories', () => {
       updated: 0,
       hasMore: false,
     })
-    await expect(getRssFeedItemCategories(testRssFeedItemId)).resolves.toEqual(
+    await expect(getTestRssFeedItemCategories(testRssFeedItemId)).resolves.toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           category_text: `#${alias!.alias}`,

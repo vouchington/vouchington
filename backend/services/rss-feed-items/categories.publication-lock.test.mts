@@ -1,9 +1,10 @@
+import { getTestRssFeedItemCategories } from '@voucha/test-helpers/entities/rss-feed-item-categories'
 import * as postPublication from '@services/post-publication'
 import { beginTransaction, createTestTopic, insertTestRssFeedDirect } from '@voucha/test-helpers'
 import { describe, expect, it, vi } from 'vitest'
 import { createUnlinkedTopicAlias, linkTopicAlias } from '@services/topics/aliases'
 import { upsertRssFeedItems } from './upsert.mts'
-import { getRssFeedItemCategories, upsertRssFeedItemCategories } from './categories.mts'
+import { upsertRssFeedItemCategories } from './categories.mts'
 
 describe('RSS feed item category publication locking', () => {
   it('locks matched topic-alias scopes before waiting on category item rows', async () => {
@@ -101,7 +102,7 @@ describe('RSS feed item category publication locking', () => {
     }
     await holder
     await expect(reconciling).resolves.toBeUndefined()
-    await expect(getRssFeedItemCategories(item!.id)).resolves.toEqual([])
+    await expect(getTestRssFeedItemCategories(item!.id)).resolves.toEqual([])
 
     async function contendForStaleCategoryAliasScope(): Promise<void> {
       await using query = await beginTransaction()

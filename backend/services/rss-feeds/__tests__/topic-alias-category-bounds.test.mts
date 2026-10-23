@@ -1,3 +1,4 @@
+import { getTestRssFeedItemCategories } from '@voucha/test-helpers/entities/rss-feed-item-categories'
 import '@services/elections-votes'
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it, onTestFinished } from 'vitest'
@@ -17,10 +18,7 @@ import {
   waitForTestPostgresLockWaiter,
 } from '@voucha/test-helpers'
 import { createTopicAliases } from '@services/topics/aliases'
-import {
-  getRssFeedItemCategories,
-  upsertRssFeedItemCategories,
-} from '@services/rss-feed-items/categories'
+import { upsertRssFeedItemCategories } from '@services/rss-feed-items/categories'
 import { rssFeedItemsWorkConfig } from '@services/rss-feed-items/work-limits'
 import { overrideDynamicConfigFieldsForTest } from '../../../test-helpers/dynamic-config.mts'
 import { rssFeedsWorkConfig } from '../work-limits.mts'
@@ -77,7 +75,7 @@ describe('bounded topic alias category reconciliation', () => {
         category_text: aliasText,
         topic_id: topic.id,
       })
-      await expect(getRssFeedItemCategories(fixture.itemId)).resolves.toContainEqual(
+      await expect(getTestRssFeedItemCategories(fixture.itemId)).resolves.toContainEqual(
         expect.objectContaining({ topic_id: topic.id }),
       )
     }
@@ -103,7 +101,7 @@ describe('bounded topic alias category reconciliation', () => {
         category_text: aliasText,
         topic_id: null,
       })
-      await expect(getRssFeedItemCategories(fixture.itemId)).resolves.toContainEqual(
+      await expect(getTestRssFeedItemCategories(fixture.itemId)).resolves.toContainEqual(
         expect.objectContaining({ topic_id: null }),
       )
     }
@@ -139,7 +137,7 @@ describe('bounded topic alias category reconciliation', () => {
       hasMore: true,
     })
     const last = items.at(-1)!
-    await expect(getRssFeedItemCategories(last.itemId)).resolves.toContainEqual(
+    await expect(getTestRssFeedItemCategories(last.itemId)).resolves.toContainEqual(
       expect.objectContaining({ topic_id: replacement.id }),
     )
     await expect(getTestRssFeedCategories(last.feedId)).resolves.toContainEqual({
@@ -193,7 +191,7 @@ describe('bounded topic alias category reconciliation', () => {
         processReconcileTopicAliasCategoryMappings(undefined, [alias.id]),
       ).resolves.toMatchObject({ reconciled: 1, hasMore: false })
       await expect(getTopicAliasCategoryMappingDirtyRowForTest(alias.id)).resolves.toBeUndefined()
-      await expect(getRssFeedItemCategories(item.id)).resolves.toContainEqual(
+      await expect(getTestRssFeedItemCategories(item.id)).resolves.toContainEqual(
         expect.objectContaining({ topic_id: nextOwner.id }),
       )
     } finally {

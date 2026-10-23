@@ -1,8 +1,6 @@
+import { getTestRssFeedItemCategories } from '@voucha/test-helpers/entities/rss-feed-item-categories'
 import '@services/elections-votes'
-import {
-  getRssFeedItemCategories,
-  upsertRssFeedItemCategories,
-} from '@services/rss-feed-items/categories'
+import { upsertRssFeedItemCategories } from '@services/rss-feed-items/categories'
 import { createTopicAliases } from '@services/topics/aliases'
 import {
   acknowledgeTopicAliasCategoryMappingDirtyRowForTest,
@@ -115,7 +113,7 @@ describe('topic alias category mapping reconciliation', () => {
     await owned.run(() => updateTestTopicAliasCategoryMappingOwner(alias!.id, null))
 
     await owned.run(() => processReconcileTopicAliasCategoryMappings(undefined, [alias!.id]))
-    await expect(owned.run(() => getRssFeedItemCategories(item.id))).resolves.toContainEqual(
+    await expect(owned.run(() => getTestRssFeedItemCategories(item.id))).resolves.toContainEqual(
       expect.objectContaining({ category_text: `#${alias!.alias}`, topic_id: null }),
     )
     await expect(owned.run(() => getTestRssFeedCategories(feedId))).resolves.toContainEqual({

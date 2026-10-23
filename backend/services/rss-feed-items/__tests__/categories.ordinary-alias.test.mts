@@ -1,3 +1,4 @@
+import { getTestRssFeedItemCategories } from '@voucha/test-helpers/entities/rss-feed-item-categories'
 import { describe, expect, it } from 'vitest'
 
 import { createTopicAliases } from '@services/topics/aliases'
@@ -9,7 +10,7 @@ import {
   insertTestRssFeedDirect,
   listTestPostPublicationImpactTopicIds,
 } from '@voucha/test-helpers'
-import { getRssFeedItemCategories, upsertRssFeedItemCategories } from '../categories.mts'
+import { upsertRssFeedItemCategories } from '../categories.mts'
 import { getRssFeedItemMappedTopics } from '../category-relations.mts'
 import { upsertRssFeedItems } from '../upsert.mts'
 
@@ -45,7 +46,7 @@ describe('RSS feed item ordinary category aliases', () => {
     expect(after!.reasons).toContain('post_topics_changed')
     await expect(listTestPostPublicationImpactTopicIds(after!.id)).resolves.toContain(topic.id)
 
-    await expect(getRssFeedItemCategories(item.id)).resolves.toEqual(
+    await expect(getTestRssFeedItemCategories(item.id)).resolves.toEqual(
       expect.arrayContaining([
         expect.objectContaining({ category_text: category, topic_id: topic.id }),
       ]),

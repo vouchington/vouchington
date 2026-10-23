@@ -1,4 +1,4 @@
-import { read, write } from '@data-stores/psql'
+import { write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 export type PodcastShowMetadata = {
@@ -62,46 +62,4 @@ export async function deletePodcastShow(rssFeedId: string): Promise<void> {
       DELETE FROM podcast_shows WHERE rss_feed_id = ${rssFeedId}
     `,
   )
-}
-
-/**
- * Returns the podcast show metadata for a feed, or null if not found.
- *
- * @public Documented contract; production use is unconfirmed and this export may be
- * removed after intended-use review. Evidence: `docs/requirements/content/reference-podcasts-parsing.md`.
- */
-export async function getPodcastShow(rssFeedId: string): Promise<PodcastShowMetadata | null> {
-  const { rows } = await read(
-    sql`/* getPodcastShow */
-      SELECT
-        itunes_author,
-        itunes_owner_name,
-        itunes_owner_email,
-        cover_art_url,
-        is_explicit,
-        itunes_type,
-        description
-      FROM podcast_shows
-      WHERE rss_feed_id = ${rssFeedId}
-    `,
-  )
-  if (rows.length === 0) return null
-  const row = rows[0] as {
-    itunes_author: string | null
-    itunes_owner_name: string | null
-    itunes_owner_email: string | null
-    cover_art_url: string | null
-    is_explicit: boolean
-    itunes_type: 'episodic' | 'serial' | null
-    description: string | null
-  }
-  return {
-    itunes_author: row.itunes_author,
-    itunes_owner_name: row.itunes_owner_name,
-    itunes_owner_email: row.itunes_owner_email,
-    cover_art_url: row.cover_art_url,
-    is_explicit: row.is_explicit,
-    itunes_type: row.itunes_type,
-    description: row.description,
-  }
 }

@@ -1,5 +1,5 @@
 import { allowUnannotatedQuery } from '@data-stores/psql/prepared-statement-name'
-import { write } from '@data-stores/psql'
+import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 export async function setTestRssFeedItemCategoryTopicId(
@@ -17,4 +17,21 @@ export async function setTestRssFeedItemCategoryTopicId(
       )
   `),
   )
+}
+
+export async function getTestRssFeedItemCategories(rssFeedItemId: string) {
+  const { rows } = await read<{
+    rss_feed_item_id: string
+    category_text: string
+    topic_id: string | null
+    created_at: Date
+    updated_at: Date
+  }>(
+    `/* getTestRssFeedItemCategories */
+      SELECT rss_feed_item_id, category_text, topic_id, created_at, updated_at
+      FROM rss_feed_item_categories
+      WHERE rss_feed_item_id = $1`,
+    [rssFeedItemId],
+  )
+  return rows
 }

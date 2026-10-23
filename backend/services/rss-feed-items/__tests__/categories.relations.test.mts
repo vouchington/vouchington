@@ -1,6 +1,7 @@
+import { getTestRssFeedItemCategories } from '@voucha/test-helpers/entities/rss-feed-item-categories'
 import { it, expect, beforeEach, describe } from 'vitest'
 
-import { upsertRssFeedItemCategories, getRssFeedItemCategories } from '../categories.mts'
+import { upsertRssFeedItemCategories } from '../categories.mts'
 import { getRssFeedItemMappedTopics } from '../category-relations.mts'
 import { backfillCategoriesForTopicAliases } from '../backfill-categories-for-topic-aliases.mts'
 
@@ -174,7 +175,7 @@ describe('categories relations', () => {
       { rss_feed_item_id: testRssFeedItemId, categories: [authored] },
     ])
 
-    const categories = await getRssFeedItemCategories(testRssFeedItemId)
+    const categories = await getTestRssFeedItemCategories(testRssFeedItemId)
     expect(categories).toEqual(
       expect.arrayContaining([expect.objectContaining({ category_text: authored })]),
     )
@@ -225,7 +226,7 @@ describe('categories relations', () => {
     await linkTopicAlias(topic.id, aliasId!, { skipSideEffects: true })
 
     await expect(backfillCategoriesForTopicAliases(topic.id)).resolves.toMatchObject({ updated: 1 })
-    await expect(getRssFeedItemCategories(testRssFeedItemId)).resolves.toEqual(
+    await expect(getTestRssFeedItemCategories(testRssFeedItemId)).resolves.toEqual(
       expect.arrayContaining([
         expect.objectContaining({ category_text: authored, topic_id: topic.id }),
       ]),
