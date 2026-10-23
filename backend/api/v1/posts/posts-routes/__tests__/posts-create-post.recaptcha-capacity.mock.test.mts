@@ -1,4 +1,4 @@
-import { derivePublicJwk, encodeJwkSetForEnv } from '@ts-shared/session-jwt'
+import { derivePublicJwk, encodeJwkSet as encodeJwkSetForEnv } from '@vouchington/session-jwt'
 import testPrivateKey from '@ts-shared/session-jwt/test-jwt-private-key'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'

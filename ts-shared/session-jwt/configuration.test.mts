@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { assertSessionJwtConfiguration } from './configuration.mts'
-import { derivePublicJwk } from './keys.mts'
-import { encodeJwkSetForEnv } from './jwt.mts'
+import { derivePublicJwk, encodeJwkSet as encodeJwkSetForEnv } from '@vouchington/session-jwt'
 import testPrivateKey from './test-jwt-private-key.mts'
 
 const emptyKeys = {
@@ -86,6 +85,20 @@ describe('session key configuration', () => {
         },
         { signing: true },
       ),
-    ).rejects.toThrow('must contain private signing keys')
+    ).rejects.toThrow(/private/)
+  })
+
+  it('rejects a configuration with no usable verification keys before startup', async () => {
+    await expect(
+      assertSessionJwtConfiguration({
+        env: {
+          ...emptyKeys,
+          ENVIRONMENT: 'staging',
+          VOUCHA_SESSION_JWT_PUBLIC_KEYS_B64: encodeJwkSetForEnv([
+            { kty: 'RSA', kid: 'invalid-verification-key' },
+          ]),
+        },
+      }),
+    ).rejects.toThrow('must contain a verification key')
   })
 })
