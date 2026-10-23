@@ -2,6 +2,7 @@ export type ManifestEndpoint = {
   method: string
   path: string
   query?: Record<string, string>
+  requestHeaders?: Record<string, string>
   requestBody?: unknown
 }
 

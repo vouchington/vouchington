@@ -36,14 +36,15 @@ type EmailAddressLoginBody = {
   hp_phone?: string
 }
 
-app.route('/api/v1/auth/email-address/tokens').post(ctx => requestEmailToken(ctx, false))
-app.route('/api/v1/auth/native/email-address/tokens').post(ctx => requestEmailToken(ctx, true))
+app
+  .route('/api/v1/auth/email-address/tokens')
+  .post(ctx => requestEmailToken(ctx, 'POST:/api/v1/auth/email-address/tokens', false))
+app
+  .route('/api/v1/auth/native/email-address/tokens')
+  .post(ctx => requestEmailToken(ctx, 'POST:/api/v1/auth/native/email-address/tokens', true))
 
-async function requestEmailToken(ctx: Context, native: boolean): Promise<void> {
+async function requestEmailToken(ctx: Context, routeKey: string, native: boolean): Promise<void> {
   if (native) assertNativeRequest(ctx)
-  const routeKey = native
-    ? 'POST:/api/v1/auth/native/email-address/tokens'
-    : 'POST:/api/v1/auth/email-address/tokens'
   ctx.assert(ctx.request.is('json'), 415, 'Invalid Content-Type')
   let body: EmailAddressTokenBody
   try {
@@ -82,14 +83,15 @@ async function requestEmailToken(ctx: Context, native: boolean): Promise<void> {
   ctx.json({ email_address: result.emailAddress })
 }
 
-app.route('/api/v1/auth/email-address/login').post(ctx => loginWithEmailToken(ctx, false))
-app.route('/api/v1/auth/native/email-address/login').post(ctx => loginWithEmailToken(ctx, true))
+app
+  .route('/api/v1/auth/email-address/login')
+  .post(ctx => loginWithEmailToken(ctx, 'POST:/api/v1/auth/email-address/login', false))
+app
+  .route('/api/v1/auth/native/email-address/login')
+  .post(ctx => loginWithEmailToken(ctx, 'POST:/api/v1/auth/native/email-address/login', true))
 
-async function loginWithEmailToken(ctx: Context, native: boolean): Promise<void> {
+async function loginWithEmailToken(ctx: Context, routeKey: string, native: boolean): Promise<void> {
   if (native) assertNativeRequest(ctx)
-  const routeKey = native
-    ? 'POST:/api/v1/auth/native/email-address/login'
-    : 'POST:/api/v1/auth/email-address/login'
   ctx.assert(ctx.request.is('json'), 415, 'Invalid Content-Type')
   let body: EmailAddressLoginBody
   try {

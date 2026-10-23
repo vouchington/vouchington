@@ -16,10 +16,10 @@ import {
 } from '@services/oauth-authorization-server'
 import type { Context } from '@jongleberry/api-server'
 
-const ROUTE = 'POST:/api/v1/oauth/native-session-tokens'
 const mintRateLimiter = new RateLimiter({ prefix: 'native-session-mcp-mint', ttlSeconds: 60 })
 
 app.route('/api/v1/oauth/native-session-tokens').post(async (ctx: Context) => {
+  const ROUTE = 'POST:/api/v1/oauth/native-session-tokens'
   assertNativeRequest(ctx)
   ctx.assert(ctx.request.is('json'), 415, 'Invalid Content-Type')
   ctx.assert(
