@@ -33,6 +33,7 @@ import {
 } from './index.mts'
 import { getCopyrightRepeatInfringerAccount } from './repeat-infringer-incidents.mts'
 import { linkCopyrightEmailIntakeToNotice } from './email-threading.mts'
+import { rejectCopyrightEmailCorrespondence } from './email-correspondence-admission.mts'
 import { normalizeCopyrightEmailReference } from './email-thread-references.mts'
 
 const DAY_MS = 24 * 60 * 60 * 1000
@@ -177,6 +178,14 @@ describe('copyright evidence retention sweep', () => {
       noticeId: erasedCase.noticeId,
       linkKind: 'thread',
       matchedReference: normalizeCopyrightEmailReference(sharedMessageId),
+    })
+    await rejectCopyrightEmailCorrespondence({
+      currentUser: erasedCase.moderator,
+      intakeId: matchedIntake.id,
+      kind: 'supplement',
+      rationale: 'The correspondence does not meet the filing requirements.',
+      recommendationId: null,
+      manualFallbackReason: 'No recommendation was available.',
     })
     for (const key of [...erasedCase.evidenceKeys, matchedIntake.raw_storage_key]) bucket.put(key)
 

@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { writeLateCopyrightEmailAfterRetentionMarker } from '@voucha/test-helpers/copyright-retention-late-email-lock'
+import {
+  writeLateCopyrightEmailAfterRetentionMarker,
+  writeLateCopyrightGuidanceAfterRetentionMarker,
+} from '@voucha/test-helpers/copyright-retention-late-email-lock'
+import { insertCopyrightRetentionIntakeReview } from '@voucha/test-helpers/copyright-retention-intake-review'
 import { COPYRIGHT_LEGAL_HOLD_GUIDANCE_CRITERIA } from '@ts-shared/utils/copyright-submission-guidance'
 import {
   readCopyrightRetentionColumns,
@@ -103,6 +107,74 @@ describe('copyright retention and late agent writes', () => {
     ).resolves.toBe(false)
     const retained = await readCopyrightRetentionColumns(entry.noticeId)
     expect(retained.copyright_notice_email_intake_recommendations).toEqual([])
+  })
+
+  it('restarts the retention clock when an intake-level review resolves a thread reply', async () => {
+    await configure({ evidenceRetentionDeletion: true, evidenceRetentionDays: 30 })
+    const entry = await createRetentionMinimalCase({ artifacts: 1 })
+    const watched = await watch(entry.noticeId, entry.evidenceKeys[0]!)
+    const sesMessageId = `retention-intake-review-${crypto.randomUUID()}`
+    const { intake } = await createCopyrightEmailIntake({
+      sesMessageId,
+      receivedAt: new Date(),
+      rawStorageKey: `email/${sesMessageId}/original.eml`,
+      rawSha256: Buffer.alloc(32, 6),
+      rawMimeType: 'message/rfc822',
+      rawByteSize: 12,
+      sesVerdicts: PASSING_COPYRIGHT_EMAIL_SES_VERDICTS,
+    })
+    // An initial decision can precede discovery of the parent thread.
+    await insertCopyrightRetentionIntakeReview({
+      intakeId: intake.id,
+      sesMessageId,
+      reviewerId: entry.moderator.id,
+      reviewedAt: daysFromNow(390),
+    })
+    expect(
+      await linkCopyrightEmailIntakeToNotice({
+        intakeId: intake.id,
+        noticeId: entry.noticeId,
+        linkKind: 'thread',
+      }),
+    ).toBe(true)
+
+    await expect(
+      sweepCopyrightEvidenceRetention({ now: daysFromNow(400), noticeIds: [entry.noticeId] }),
+    ).resolves.toEqual(nothing)
+    await watched.expectUntouched()
+    await expect(
+      sweepCopyrightEvidenceRetention({ now: daysFromNow(430), noticeIds: [entry.noticeId] }),
+    ).resolves.toEqual({ erased: 1, ineligible: 0, failed: [] })
+    await watched.expectErased()
+  })
+
+  it('fences submission guidance waiting behind the notice erasure lock', async () => {
+    const entry = await createRetentionMinimalCase()
+    const submission = await appendCopyrightNoticeSubmission({
+      noticeId: entry.noticeId,
+      kind: 'court_or_ccb_hold',
+      receivedAt: new Date(),
+      sourceKind: 'signed_in_form',
+      submittedByUserId: null,
+      bodyCiphertext: `filing-${crypto.randomUUID()}`,
+    })
+    await writeLateCopyrightGuidanceAfterRetentionMarker(entry.noticeId, {
+      submissionId: submission.id,
+      inputSha256: Buffer.alloc(32, 3),
+      promptVersion: 'test-guidance-lock-v1',
+      model: 'test-model',
+      guidance: {
+        summary: 'Guidance waiting while the case is erased.',
+        criteria: COPYRIGHT_LEGAL_HOLD_GUIDANCE_CRITERIA.map(criterion => ({
+          criterion,
+          status: 'present' as const,
+          gap: null,
+        })),
+        risk_notes: [],
+      },
+    })
+    const retained = await readCopyrightRetentionColumns(entry.noticeId)
+    expect(retained.copyright_notice_submission_guidance).toEqual([])
   })
 
   it('does not retain guidance written after the parent case was erased', async () => {
