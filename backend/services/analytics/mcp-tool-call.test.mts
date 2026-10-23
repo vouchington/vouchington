@@ -262,20 +262,25 @@ describe('mcp_tool_call', () => {
     expect(recorded[0]!.option ?? null).toBeNull()
   })
 
-  it('emits nothing for a notification-shaped tools/call', async () => {
+  it('emits nothing for a notification or missing event in a batch', async () => {
     const analytics = createMcpToolCallAnalytics(context(), dispatch)
+    const events = [event({ toolName: 'hidden' }), event({ toolName: 'shown' })]
+    events.length = 3
     analytics.recordCalls(
-      [event({ toolName: 'hidden' }), event({ toolName: 'shown' })],
-      [{ method: 'tools/call' }, toolCall('shown')],
+      events,
+      [{ method: 'tools/call' }, toolCall('shown'), toolCall('missing')],
       true,
     )
     analytics.settleDispatchedCall(0, { durationMs: 5, toolError: false, rateLimited: false })
     analytics.settleDispatchedCall(1, { durationMs: 9, toolError: false, rateLimited: false })
+    analytics.settleDispatchedCall(2, { durationMs: 5, toolError: false, rateLimited: false })
+    analytics.settleDispatchedCall(9, { durationMs: 5, toolError: false, rateLimited: false })
 
     const recorded = await rows(analytics.requestEventId)
 
     expect(recorded.map(row => row.tool)).toEqual(['shown'])
     expect(Number(recorded[0]!.batch_index)).toBe(1)
+    expect(Number(recorded[0]!.batch_size)).toBe(3)
     expect(Number(recorded[0]!.duration_ms)).toBe(9)
   })
 
