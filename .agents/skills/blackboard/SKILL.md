@@ -141,4 +141,4 @@ validated retrospective persistence with `journal_append`.
 Follow the canonical "Child identity for spawned agents" section, including its Claude Code
 subagent exception. A spawned child resolves its session id from its runtime environment
 (`CODEX_THREAD_ID` for Codex, `CLAUDE_CODE_SESSION_ID` for Claude Code). A resolved id must
-satisfy `isValidSessionId` in `dev/agent-session-id/valid-id.mts`.
+satisfy `isValidSessionId` in `agent-blackboard`.

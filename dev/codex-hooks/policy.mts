@@ -43,7 +43,7 @@ export function findPreToolUseBlock(
     return {
       reason:
         'Cannot Edit/Write/apply_patch the permission-enforcement hooks (dev/codex-hooks/**, ' +
-        'dev/agent-session-id/**, dev/agent-policy.mts, dev/agent-policy/**, ' +
+        'dev/agent-policy.mts, dev/agent-policy/**, ' +
         'dev/pr-description/**) ' +
         'or execpolicy configuration (.codex/config.toml, .codex/rules/**, ' +
         '.cursor/*.json) ' +

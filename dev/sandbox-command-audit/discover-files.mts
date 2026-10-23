@@ -16,7 +16,7 @@ export type DiscoverOptions = {
   now?: number
   // Narrows discovery to a single session's transcript(s) — mirrors
   // vouchington-tooling's resolveTranscriptFile session-scoped globs. Validated
-  // with agent-session-id/valid-id.mts before it ever reaches here. An explicit
+  // with agent-blackboard’s isValidSessionId before it ever reaches here. An explicit
   // session id is already an exact target, so it bypasses repo scoping below — a
   // caller asking for one specific session should never lose it to an unresolved cwd.
   sessionId?: string

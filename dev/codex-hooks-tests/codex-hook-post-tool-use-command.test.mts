@@ -190,9 +190,7 @@ describe('dev/codex-hooks/post-tool-use-command.mts (merged PostToolUse hook sub
   // no module this hook can load may reach the Blackboard writer. The scan follows static and
   // dynamic relative imports, because the hook loads every side effect lazily with `import()`.
   it('never reaches the Blackboard journal writer through its static or dynamic imports', () => {
-    const writerDirs = ['blackboard', 'agent-session-id'].map(dir =>
-      path.join(worktreeRoot, 'dev', dir, path.sep),
-    )
+    const writerDirs = ['blackboard'].map(dir => path.join(worktreeRoot, 'dev', dir, path.sep))
     const pending = [scriptPath]
     const reachable = new Set<string>()
     for (let file = pending.pop(); file !== undefined; file = pending.pop()) {

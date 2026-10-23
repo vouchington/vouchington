@@ -4,7 +4,6 @@ import { findPreToolUseBlock } from '../codex-hooks/policy.mts'
 const PROTECTED_TOKENS = [
   'dev/codex-hooks/policy.mts',
   'dev/codex-hooks/pre-tool-use.mts',
-  'dev/agent-session-id/valid-id.mts',
   'dev/agent-policy.mts',
   'dev/agent-policy/pull-request.mts',
   '.codex/config.toml',
