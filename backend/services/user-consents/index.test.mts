@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import { grantConsent } from './create.mts'
-import { getActiveConsents, hasActiveConsent } from './get.mts'
+import { getActiveConsents } from './get.mts'
 import { revokeConsent } from './revoke.mts'
 
 describe('user-consents service', () => {
@@ -15,16 +15,16 @@ describe('user-consents service', () => {
   it('grants consent and shows as active', async () => {
     await grantConsent(user.id, 'privacy_policy', '1.0')
 
-    const active = await hasActiveConsent(user.id, 'privacy_policy')
-    expect(active).toBe(true)
+    const active = await getActiveConsents(user.id)
+    expect(active.map(consent => consent.consent_type)).toContain('privacy_policy')
   })
 
   it('revokes consent and shows as inactive', async () => {
     await grantConsent(user.id, 'terms_of_service', '1.0')
     await revokeConsent(user.id, 'terms_of_service')
 
-    const active = await hasActiveConsent(user.id, 'terms_of_service')
-    expect(active).toBe(false)
+    const active = await getActiveConsents(user.id)
+    expect(active.map(consent => consent.consent_type)).not.toContain('terms_of_service')
   })
 
   it('granting a new version supersedes the old one', async () => {

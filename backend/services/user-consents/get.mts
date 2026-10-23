@@ -1,6 +1,6 @@
 import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
-import type { ConsentType, UserConsent } from './types.mts'
+import type { UserConsent } from './types.mts'
 
 export async function getActiveConsents(userId: string): Promise<UserConsent[]> {
   const { rows } = await read(sql`/* getActiveConsents */
@@ -10,20 +10,4 @@ export async function getActiveConsents(userId: string): Promise<UserConsent[]> 
       AND revoked_at IS NULL
   `)
   return rows as UserConsent[]
-}
-
-/**
- * @public Documented contract; production use is unconfirmed and this export may be
- * removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
- */
-export async function hasActiveConsent(userId: string, consentType: ConsentType): Promise<boolean> {
-  const { rows } = await read(sql`/* hasActiveConsent */
-    SELECT 1
-    FROM user_consents
-    WHERE user_id = ${userId}
-      AND consent_type = ${consentType}
-      AND revoked_at IS NULL
-    LIMIT 1
-  `)
-  return rows.length > 0
 }

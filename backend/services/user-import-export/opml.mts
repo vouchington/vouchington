@@ -1,4 +1,4 @@
-import { decodeHtmlEntities, escapeHtml } from '@ts-shared/utils/html'
+import { decodeHtmlEntities } from '@ts-shared/utils/html'
 
 export type OpmlOutline = {
   text: string
@@ -19,30 +19,6 @@ function parseOutlineAttributes(tag: string): Record<string, string> {
   return attrs
 }
 
-/**
- * @public Documented contract; production use is unconfirmed and this export may be
- * removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
- */
-export function parseOpml(opmlText: string): OpmlOutline[] {
-  const outlines: OpmlOutline[] = []
-  let match: RegExpExecArray | null
-  OUTLINE_PATTERN.lastIndex = 0
-
-  while ((match = OUTLINE_PATTERN.exec(opmlText)) !== null) {
-    const attrs = parseOutlineAttributes(match[0]!)
-    const xmlUrl = attrs['xmlurl']
-    if (!xmlUrl) continue
-
-    outlines.push({
-      text: attrs['text'] || attrs['title'] || '',
-      xmlUrl,
-      htmlUrl: attrs['htmlurl'] || null,
-    })
-  }
-
-  return outlines
-}
-
 export function* parseOpmlOutlines(opmlText: string): Generator<OpmlOutline> {
   let match: RegExpExecArray | null
   OUTLINE_PATTERN.lastIndex = 0
@@ -58,32 +34,4 @@ export function* parseOpmlOutlines(opmlText: string): Generator<OpmlOutline> {
       htmlUrl: attrs['htmlurl'] || null,
     }
   }
-}
-
-/**
- * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
- * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
- */
-export function generateOpml(feeds: OpmlOutline[], title = 'RSS Feed Export'): string {
-  const lines = [
-    '<?xml version="1.0" encoding="UTF-8"?>',
-    '<opml version="2.0">',
-    '  <head>',
-    `    <title>${escapeHtml(title)}</title>`,
-    '  </head>',
-    '  <body>',
-  ]
-
-  for (const feed of feeds) {
-    const attrs = [`text="${escapeHtml(feed.text)}"`, `xmlUrl="${escapeHtml(feed.xmlUrl)}"`]
-    if (feed.htmlUrl) {
-      attrs.push(`htmlUrl="${escapeHtml(feed.htmlUrl)}"`)
-    }
-    attrs.push('type="rss"')
-    lines.push(`    <outline ${attrs.join(' ')} />`)
-  }
-
-  lines.push('  </body>', '</opml>', '')
-
-  return lines.join('\n')
 }
