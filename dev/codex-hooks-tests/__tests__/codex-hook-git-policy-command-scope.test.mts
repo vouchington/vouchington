@@ -25,6 +25,21 @@ describe('Codex hook git policy command scope', () => {
     expect(blockReason(command)).toBeUndefined()
   })
 
+  it.each(["printf '%s\\n' 'git' '-c' 'core.hooksPath=/tmp/hooks'"])(
+    'does not read a git word in argument position as a command: %s',
+    command => {
+      expect(blockReason(command)).toBeUndefined()
+    },
+  )
+
+  it.each([
+    'sudo git -c "core.hooksPath=/tmp/hooks" push --force',
+    'FOO=1 git -c "core.hooksPath=/tmp/hooks" status',
+    'echo ok && git -c "color.ui=never" push --force',
+  ])('reads a wrapped or chained git command: %s', command => {
+    expect(blockReason(command)).toBeDefined()
+  })
+
   it('does not treat a later grep -r as git pull --rebase', () => {
     expect(findBlockedGitReason('git pull origin main | grep -r foo')).toBeNull()
   })

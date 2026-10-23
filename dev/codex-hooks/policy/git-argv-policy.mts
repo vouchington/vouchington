@@ -1,4 +1,8 @@
-import { isShellCommandSeparator, tokenizeShellWords } from 'vouchington-tooling/shell-parse'
+import {
+  isShellAssignment,
+  isShellCommandSeparator,
+  tokenizeShellWords,
+} from 'vouchington-tooling/shell-parse'
 
 import { findBlockedGitReason, HOOKS_PATH_REASON } from './blocked-command-patterns.mts'
 
@@ -34,7 +38,7 @@ export function gitInvocations(command: string): GitInvocation[] {
   const words = tokenizeShellWords(command)
   const invocations: GitInvocation[] = []
   for (let index = 0; index < words.length; index += 1) {
-    if (!isGitWord(words[index])) continue
+    if (!isGitWord(words[index]) || !atCommandPosition(words, index)) continue
     const invocation = readInvocation(words, index + 1)
     invocations.push(invocation.value)
     index = invocation.end
@@ -51,6 +55,33 @@ export function findBlockedGitArgvReason(command: string): string | null {
     if (reason !== null) return reason
   }
   return null
+}
+
+const COMMAND_WRAPPERS = new Set([
+  'env',
+  'sudo',
+  'command',
+  'exec',
+  'time',
+  'nohup',
+  'nice',
+  'xargs',
+  'timeout',
+])
+
+/** True when only assignments, wrappers, and their options precede the word in its command. */
+function atCommandPosition(words: string[], index: number): boolean {
+  for (let before = index - 1; before >= 0; before -= 1) {
+    const word = words[before]
+    if (isShellCommandSeparator(word)) return true
+    const isPrefix =
+      isShellAssignment(word) ||
+      COMMAND_WRAPPERS.has(word) ||
+      word.startsWith('-') ||
+      /^\d+[smhd]?$/.test(word)
+    if (!isPrefix) return false
+  }
+  return true
 }
 
 function isGitWord(word: string): boolean {
