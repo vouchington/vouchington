@@ -16,6 +16,7 @@ import {
 } from '@voucha/test-helpers'
 import { syncGithubFriends } from '../friends.mts'
 import { finalizeGithubFriendSync } from '../friends-persistence.mts'
+import { getOauthGithubWorkLimit } from '../work-limits.mts'
 import { disconnectOAuthAccount } from '../../my/oauth-account.mts'
 import { connectOAuthAccountToUser } from '../../oauth-accounts/connect.mts'
 
@@ -87,7 +88,10 @@ describe('syncGithubFriends batching', () => {
 
   it('commits each bounded stale-row cleanup page separately', async () => {
     const { accountId, providerUserId, userId } = await createGithubSyncAccount()
-    const friendIds = makeFriendIds('github-stale')
+    const friendIds = makeFriendIds(
+      'github-stale',
+      getOauthGithubWorkLimit('friend_mutation_batch_size') + 1,
+    )
     await insertTestFriends('github', providerUserId, friendIds)
     const rowLock = await acquireTestFriendRowLock('github', providerUserId, friendIds.at(-1)!)
     const secondStalePage = Promise.withResolvers<void>()
@@ -140,10 +144,10 @@ function randomGithubId(offset: number): number {
   return offset + Math.floor(Math.random() * 500_000)
 }
 
-function makeFriendIds(prefix: string): string[] {
+function makeFriendIds(prefix: string, count: number): string[] {
   const suffix = createRandomString(10)
   return Array.from(
-    { length: 1001 },
+    { length: count },
     (_, index) => `${prefix}-${suffix}-${String(index).padStart(4, '0')}`,
   )
 }
