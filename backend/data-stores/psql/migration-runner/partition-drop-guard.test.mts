@@ -1,8 +1,14 @@
 import { describe, expect, it } from 'vitest'
+import { beginTransaction, write } from '../setup.mts'
 import type { QueryExecutor } from '../types.mts'
-import { getPartitionDropRefusal, getPartitionDropStatusRefusals } from './partition-drop-guard.mts'
+import {
+  getMonthlyPartitionUpperBound,
+  getPartitionDropRefusal,
+  getPartitionDropStatusRefusals,
+} from './partition-drop-guard.mts'
 import {
   guardAndRetireMonthlyPartition,
+  listMonthlyDropCandidates,
   retirePartitionsSequentially,
 } from './monthly-partitions.mts'
 
@@ -21,6 +27,75 @@ function queryWithResults(results: Record<string, boolean>): QueryExecutor {
 }
 
 describe('partition drop guard', () => {
+  it('derives an upper bound only for the requested monthly parent', () => {
+    expect(getMonthlyPartitionUpperBound('crawls', 'crawls__p_2026_01')).toEqual(
+      new Date('2026-02-01T00:00:00.000Z'),
+    )
+    expect(getMonthlyPartitionUpperBound('rss_feed_crawls', 'crawls__p_2026_01')).toBeNull()
+  })
+
+  it('rejects an invalid status probe limit', async () => {
+    await expect(getPartitionDropStatusRefusals(write, [], {}, now, 0)).rejects.toThrow(
+      'maxProbes must be a positive safe integer',
+    )
+  })
+
+  it('reports age refusal or an eligible child without probes when policy has no row checks', async () => {
+    const statuses = await getPartitionDropStatusRefusals(
+      write,
+      [
+        {
+          ...candidate,
+          partition: 'crawls__p_2026_10',
+          upperBound: new Date('2026-11-01T00:00:00.000Z'),
+        },
+        { ...candidate, partition: 'crawls__p_2025_01', upperBound: new Date('2025-02-01') },
+      ],
+      { crawls: { minimumRetentionDays: 30 } },
+      now,
+      1,
+    )
+
+    expect(statuses.get('crawls__p_2026_10')).toBe('inside-retention')
+    expect(statuses.get('crawls__p_2025_01')).toBeNull()
+  })
+
+  it('agrees between the live batch preview and direct legal-hold recheck', async () => {
+    const monthly = (await listMonthlyDropCandidates(write)).find(
+      entry => entry.table === 'rss_feed_crawls',
+    )
+    expect(monthly).toBeDefined()
+    const policy = { minimumRetentionDays: 0, legalHoldAccountColumn: 'id' }
+    const referenceDate = new Date('2100-01-01T00:00:00.000Z')
+
+    const status = await getPartitionDropStatusRefusals(
+      write,
+      [monthly!],
+      { rss_feed_crawls: policy },
+      referenceDate,
+      1,
+    )
+    const direct = await getPartitionDropRefusal(write, monthly!, policy, referenceDate)
+    expect(status.get(monthly!.partition)).toBe(direct)
+  })
+
+  it('holds the legal-hold relation lock while refusing a live child inside retention', async () => {
+    const monthly = (await listMonthlyDropCandidates(write)).find(
+      entry => entry.table === 'rss_feed_crawls',
+    )
+    expect(monthly).toBeDefined()
+    await using transaction = await beginTransaction()
+
+    await expect(
+      guardAndRetireMonthlyPartition(
+        transaction,
+        monthly!,
+        { minimumRetentionDays: 30, legalHoldAccountColumn: 'id' },
+        new Date('1900-01-01T00:00:00.000Z'),
+      ),
+    ).resolves.toBe('inside-retention')
+  })
+
   it('refuses a missing minimum or a partition without an upper bound', async () => {
     const query = queryWithResults({})
     await expect(getPartitionDropRefusal(query, candidate, undefined, now)).resolves.toBe(

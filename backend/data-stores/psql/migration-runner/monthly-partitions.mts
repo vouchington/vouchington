@@ -64,7 +64,7 @@ export async function cleanupPartitions(
 ): Promise<PartitionDropOutcome[]> {
   const candidates = await listMonthlyDropCandidates()
   const outcomes = await retirePartitionsSequentially(candidates, candidate =>
-    retireGuardedPartition(candidate, referenceDate),
+    retireMonthlyPartitionCandidate(candidate, referenceDate),
   )
   for (const outcome of outcomes) console.info('Partition cleanup:', outcome)
   return outcomes
@@ -86,7 +86,8 @@ export async function retirePartitionsSequentially(
   )
 }
 
-async function retireGuardedPartition(
+/** Retire one discovered monthly child; callers may inspect a refusal without sweeping siblings. */
+export async function retireMonthlyPartitionCandidate(
   candidate: PartitionDropCandidate,
   referenceDate: Date,
 ): Promise<PartitionDropOutcome> {
