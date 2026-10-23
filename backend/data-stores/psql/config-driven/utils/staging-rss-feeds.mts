@@ -5,9 +5,10 @@
  * The ids carry a timestamp from before any real change row, so a later `uuidv7()` enablement
  * change always sorts after the initial one (the sync triggers read `ORDER BY id DESC`).
  *
- * The runner applies config-driven files in name order, in one pass. This file's prefix sorts
- * after 0080-00-01-publisher-type-topics.mts and before 0080-00-02-publisher-type-relations.sql,
- * so the Cloudflare topic exists when that file relates it to its `blog` publisher type.
+ * The config-driven entrypoint `0080-00-01a-staging-rss-feeds.mts` runs after
+ * `0080-00-01-publisher-type-topics.mts` and before
+ * `0080-00-02-publisher-type-relations.sql`, so the Cloudflare topic exists when that SQL file
+ * relates it to its `blog` publisher type.
  */
 export type StagingRssFeed = {
   readonly url: string
