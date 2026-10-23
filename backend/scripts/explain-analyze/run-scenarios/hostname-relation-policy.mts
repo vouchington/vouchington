@@ -3,6 +3,7 @@ import { runRelationPublicationMutation } from '@services/entity-relations/publi
 import { registerScenarioContract } from '../plan-expectations.mts'
 import { runAndCapture, seedTopicId, seedUser } from '../run-support.mts'
 import { lockTopicHostnameOwnership } from '@services/topics/hostname-ownership-lock'
+import { lockTopicMergeHostnameOwnership } from '@services/topics/merge-hostname-ownership'
 import { seedUuid } from '../seed-data/common.mts'
 import { addUrls } from '@services/urls/upsert'
 import { createTopic } from '@services/topics/create'
@@ -57,6 +58,24 @@ export async function runHostnameOwnershipSnapshotScenario(): Promise<void> {
     },
     undefined,
     'getTopicHostnameOwnershipIds',
+  )
+  registerScenarioContract('hostname-owner-merge-snapshot', {
+    seededRows: { relation__topic__landing_page__url: 2 },
+    expectations: [
+      { kind: 'maxProcessedRows', relation: 'topics', max: 3 },
+      { kind: 'maxProcessedRows', relation: 'url_hostnames', max: 4 },
+      { kind: 'maxProcessedRows', relation: 'relation__topic__landing_page__url', max: 3 },
+      { kind: 'maxProcessedRows', relation: 'urls', max: 3 },
+    ],
+  })
+  await runAndCapture(
+    'hostname-owner-merge-snapshot',
+    async () => {
+      await using query = await beginTransaction()
+      await lockTopicMergeHostnameOwnership(query, [topicId, seedTopicId])
+    },
+    undefined,
+    ['getTopicMergeHostnameOwnershipIds', 'lockTopicMergeLifecycles'],
   )
 }
 

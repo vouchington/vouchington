@@ -17,13 +17,13 @@ import { finalizeTopicAliasMerge } from './merge-aliases-finalize.mts'
 import {
   assertTopicMergeReferenceCompatibility,
   assertLockedTopicMergeTypes,
-  lockTopicMergeLifecycles,
   rethrowTopicMergeError,
 } from './merge-preflight.mts'
 import { repointTopicReferences } from './merge-references.mts'
 import { mergeTopicSubtypeReferences } from './merge-subtypes.mts'
 import { deleteMergedTopicDerivedRows } from './merge-derived.mts'
 import { lockAndAssertTopicMergeSelfRelationFlags } from './merge-self-relation-flags.mts'
+import { lockTopicMergeHostnameOwnership } from './merge-hostname-ownership.mts'
 type MergeRow = Pick<Topic, 'id' | 'slug' | 'topic_type'> &
   Record<'is_deleted' | 'is_merged', boolean>
 export async function mergeTopicAliases(
@@ -38,14 +38,14 @@ export async function mergeTopicAliases(
 
 async function executeTopicMerge(merger: PrivateUser, sourceTopic: Topic, destinationTopic: Topic) {
   await using query = await beginTransaction()
-  // ast-grep-ignore: no-three-sequential-awaits -- alias publication, attachment lifecycle, and merge capture locks share one global order.
+  // ast-grep-ignore: no-three-sequential-awaits -- topic/fence and hostname ownership precede alias publication and RSS attachment scopes.
+  await lockTopicMergeHostnameOwnership(query, [sourceTopic.id, destinationTopic.id])
   const aliasScopes = await lockTopicMergeAliasPublicationScopes(
     query,
     sourceTopic.id,
     sourceTopic.slug,
   )
   await lockTopicRssFeedAttachmentLifecycles(query, [sourceTopic.id, destinationTopic.id])
-  await lockTopicMergeLifecycles(query, [sourceTopic.id, destinationTopic.id])
   // ast-grep-ignore: no-three-sequential-awaits -- reject conflicts before publication writes; capture and external denials precede topic row locks.
   await assertTopicMergeReferenceCompatibility(query, sourceTopic.id, destinationTopic.id)
   await recordTopicMergePublicationChanges(
