@@ -1,11 +1,12 @@
 import { randomUUID } from 'node:crypto'
-import { write } from '@data-stores/psql'
 import { createTestUser, insertTestTopic } from '@voucha/test-helpers'
-import { getClassifierRunCandidateTopicIdsForTest } from '@voucha/test-helpers/data-stores/psql/classifier-runs/run-facts'
+import {
+  captureClassifierRunCandidatesForTest,
+  getClassifierRunCandidateTopicIdsForTest,
+} from '@voucha/test-helpers/data-stores/psql/classifier-runs/run-facts'
 import { reserveSyntheticRunId } from '@voucha/test-helpers/data-stores/psql/classifier-runs/synthetic-run'
 import { mergeTopicForTest } from '@voucha/test-helpers/entities/topics/deletion'
 import { describe, expect, it } from 'vitest'
-import { insertClassifierRunCandidates } from './run-candidates.mts'
 
 describe('classifier run candidate capture (real PG)', () => {
   it('does not capture a topic merged after candidate discovery', async () => {
@@ -24,7 +25,7 @@ describe('classifier run candidate capture (real PG)', () => {
     })
     await mergeTopicForTest(inactiveId, activeId, actor.id)
 
-    await insertClassifierRunCandidates(write, runId, [inactiveId, activeId])
+    await captureClassifierRunCandidatesForTest(runId, [inactiveId, activeId])
 
     expect(await getClassifierRunCandidateTopicIdsForTest(runId)).toEqual([activeId])
   })
