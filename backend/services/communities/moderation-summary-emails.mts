@@ -110,18 +110,6 @@ export async function isModerationEmailsEnabled(userId: string): Promise<boolean
   return rows.at(0)?.is_moderation_emails_enabled ?? false
 }
 
-export async function getModerationEmailTimezone(userId: string): Promise<string> {
-  const { rows } = await read<{ moderation_email_timezone: string }>(
-    sql`/* getModerationEmailTimezone */
-      SELECT COALESCE(moderation_email_timezone, 'America/Los_Angeles') AS moderation_email_timezone
-      FROM view_users_private
-      WHERE id = ${userId}
-      LIMIT 1
-    `,
-  )
-  return rows[0]?.moderation_email_timezone ?? 'America/Los_Angeles'
-}
-
 export async function getModerationEmailCadence(
   userId: string,
 ): Promise<ModerationRecipientRow['moderation_email_cadence']> {
