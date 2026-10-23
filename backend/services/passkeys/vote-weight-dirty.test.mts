@@ -1,6 +1,14 @@
 import { randomInt } from 'node:crypto'
-import { describe, expect, it, onTestFinished } from 'vitest'
-import { getTestUserRaw } from '@voucha/test-helpers'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import {
+  countTestPasskeys,
+  createTestUserDirect,
+  getTestUserRaw,
+  insertTestPasskey,
+  safeUsername,
+} from '@voucha/test-helpers'
+import { voteAggregation } from '@queues/vote-aggregation/queues'
+import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import {
   createTestPasskeyVoteWeightDirtyUser,
@@ -51,4 +59,85 @@ describe('passkey vote-weight dirty markers', () => {
       await release()
     }
   })
+
+  it.each([
+    { action: 'create', outcome: 'success' },
+    { action: 'create', outcome: 'failure' },
+    { action: 'delete', outcome: 'success' },
+    { action: 'delete', outcome: 'failure' },
+    { action: 'protected-delete', outcome: 'success' },
+    { action: 'protected-delete', outcome: 'failure' },
+  ] as const)(
+    '$action settles committed vote-weight admission ($outcome)',
+    async ({ action, outcome }) => {
+      const user = await createTestUserDirect({ username: safeUsername('passkey-admission') })
+      const registration = createTestVerifiedPasskeyRegistration()
+      const passkey =
+        action === 'create' ? undefined : await insertTestPasskey(user.id, safeUsername('owned'))
+      if (action === 'protected-delete') await insertTestPasskey(user.id, safeUsername('remaining'))
+      const entered = Promise.withResolvers<void>()
+      const release = Promise.withResolvers<void>()
+      const failure = new Error('Owned passkey vote-weight admission failure')
+      const originalAdd = voteAggregation.add
+      let admitted: Awaited<ReturnType<typeof voteAggregation.add>> | undefined
+      let admission: ReturnType<typeof voteAggregation.add> | undefined
+      let operation: Promise<unknown> | undefined
+      const add = vi.spyOn(voteAggregation, 'add').mockImplementation((name, data, options) => {
+        if (
+          typeof data !== 'object' ||
+          data === null ||
+          !('userId' in data) ||
+          data.userId !== user.id
+        )
+          return originalAdd.call(voteAggregation, name, data, options)
+        entered.resolve()
+        admission = release.promise.then(async () => {
+          if (outcome === 'failure') throw failure
+          admitted = await originalAdd.call(voteAggregation, name, data, options)
+          return admitted
+        })
+        return admission
+      })
+
+      try {
+        let completed = false
+        operation = (
+          action === 'create'
+            ? createPasskey(user.id, registration, 'Admitted passkey')
+            : action === 'delete'
+              ? deletePasskey(user.id, passkey!.id)
+              : deletePasskeyWithMfaProtection(user.id, passkey!.id, undefined)
+        ).then(result => {
+          completed = true
+          return result
+        })
+        await Promise.race([
+          entered.promise,
+          operation.then(() => {
+            throw new Error('Passkey mutation settled before entering vote-weight admission')
+          }),
+        ])
+
+        expect(await countTestPasskeys(user.id)).toBe(action === 'delete' ? 0 : 1)
+        expect((await getTestUserRaw(user.id))?.vote_weight_recalculated_at).toBeNull()
+        expect(completed).toBe(false)
+        release.resolve()
+        await operation
+        const job = admitted ? await voteAggregation.getJob(admitted.id) : undefined
+        expect(job?.data).toEqual(outcome === 'success' ? { userId: user.id } : undefined)
+        expect(
+          sentryCaptureExceptionMock.mock.calls.filter(([error]) => error === failure),
+        ).toHaveLength(outcome === 'failure' ? 1 : 0)
+      } finally {
+        release.resolve()
+        try {
+          await operation?.catch(() => undefined)
+          await admission?.catch(() => undefined)
+          await admitted?.remove()
+        } finally {
+          add.mockRestore()
+        }
+      }
+    },
+  )
 })
