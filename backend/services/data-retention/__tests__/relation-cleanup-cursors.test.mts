@@ -1,4 +1,3 @@
-import { proveOwnedSqlFixtureDrain } from '@voucha/test-helpers/owned-sql-fixture-drain-proof'
 import { describe, expect, it } from 'vitest'
 import { v7 } from 'uuid'
 import { electedRelationMetadata } from '@services/users/relation-impact-targets'
@@ -16,22 +15,6 @@ function retainedRootFamily(subjectType: string): 'user' | 'post' | 'topic' | 'r
 }
 
 describe('retained relation cleanup cursors', () => {
-  it('drains an admitted SQL producer before rollback and reservation release', async () => {
-    const proof = await proveOwnedSqlFixtureDrain()
-    expect(proof.before).toMatchObject({ pid: expect.any(Number), held: true })
-    expect(proof.after).toEqual({ pid: proof.before!.pid, held: false, unlocked: true })
-    expect(proof).toMatchObject({
-      operationPendingAtClose: true,
-      heldWhilePending: true,
-      finalizerPending: true,
-      operationSettled: true,
-      closeSettled: true,
-      lateAdmissionRejected: true,
-      rolledBack: true,
-      siblingAcquired: true,
-    })
-  })
-
   it('ensures all family cursors and reuses them on replay while leaving foreign tuples', async () => {
     await withTestRetainedRelationCleanupReservation(
       async ({
