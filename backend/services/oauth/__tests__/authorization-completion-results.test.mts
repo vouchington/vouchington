@@ -18,16 +18,19 @@ describe('OAuth authorization durable completion results', () => {
 
     const deviceId = uuidv7()
     const sessionId = uuidv7()
-    expect(
-      getStoredCompletionResult(
-        completionRow({
-          result_kind: 'authenticated',
-          result_user_id: userId,
-          result_device_id: deviceId,
-          result_session_id: sessionId,
-        }),
-      ),
-    ).toEqual({ kind: 'authenticated', userId, deviceId, sessionId })
+    for (const callbackMode of ['web', 'native'] as const) {
+      expect(
+        getStoredCompletionResult(
+          completionRow({
+            callback_mode: callbackMode,
+            result_kind: 'authenticated',
+            result_user_id: userId,
+            result_device_id: deviceId,
+            result_session_id: sessionId,
+          }),
+        ),
+      ).toEqual({ kind: 'authenticated', userId, deviceId, sessionId, authOrigin: callbackMode })
+    }
   })
 
   it('persists only the fields allowed by each durable result kind', async () => {
