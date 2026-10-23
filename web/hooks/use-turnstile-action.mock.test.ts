@@ -33,9 +33,11 @@ describe('useTurnstileAction', () => {
   })
 
   it('renders the provider widget with the mapped operation action', () => {
-    const view = renderHook(({ actionTag }) =>
-      useTurnstileAction({ actionTag, onSuccess: vi.fn<(token: string) => void>(), siteKey: 'site' }),
-    , { initialProps: { actionTag: 'posts.create' } })
+    const onSuccess = vi.fn<(token: string) => void>()
+    const view = renderHook(
+      ({ actionTag }) => useTurnstileAction({ actionTag, onSuccess, siteKey: 'site' }),
+      { initialProps: { actionTag: 'posts.create' } },
+    )
     const container = document.createElement('div')
     act(() => view.result.current.ref(container))
 
