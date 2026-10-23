@@ -29,8 +29,8 @@ async function admitModmailReply(
   user: Parameters<typeof loadModmailReplyAccess>[0],
   args: Args,
 ): Promise<void> {
-  await readMessageBody({ text: args.text })
   const access = await loadModmailReplyAccess(user, args.community_id, args.conversationId!)
+  await readMessageBody({ text: args.text })
   return admitModmailReplyParticipant(user, access)
 }
 
@@ -100,8 +100,8 @@ function source(option: Option): MergedToolSource<Args> {
         return { success: true, community_id: community.id }
       }
       if (option === 'open_modmail') {
-        await readMessageBody({ subject_user_id: args.subject_user_id })
         const access = await loadModmailOpeningAccess(user, args.community_id)
+        await readMessageBody({ subject_user_id: args.subject_user_id })
         const subjectUserId = args.subject_user_id
           ? await entityIdOrMissing('user', args.subject_user_id)
           : undefined
