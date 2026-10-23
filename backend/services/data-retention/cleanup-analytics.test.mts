@@ -1,7 +1,8 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
+import { acquirePaymentOperationRetentionTestLock } from '@voucha/test-helpers/payment-operation-retention'
 import { cleanupAnalyticsLocalFiles, runDataRetentionCleanup } from './cleanup.mts'
 
 describe('cleanupAnalyticsLocalFiles', () => {
@@ -50,6 +51,8 @@ describe('cleanupAnalyticsLocalFiles', () => {
   })
 
   it('runs analytics cleanup as part of the full retention workflow', async () => {
+    const lock = await acquirePaymentOperationRetentionTestLock()
+    onTestFinished(() => lock.release())
     process.env.ANALYTICS_BACKEND = 'firehose'
     const now = new Date()
     const limits = { batchSize: 10, maxBatches: 10 }

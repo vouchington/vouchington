@@ -10,6 +10,7 @@ import {
   testBlueskyLinkCompletionExists,
 } from '@voucha/test-helpers'
 import { v7 } from 'uuid'
+import { acquirePaymentOperationRetentionTestLock } from '@voucha/test-helpers/payment-operation-retention'
 import {
   cleanupAbandonedBlueskyLinkSessions,
   cleanupExpiredBlueskyLinkCompletions,
@@ -20,6 +21,8 @@ const DAY_MS = 24 * 60 * 60 * 1000
 
 describe('runDataRetentionCleanup', () => {
   it('returns per-cleanup deletion summaries', async () => {
+    const lock = await acquirePaymentOperationRetentionTestLock()
+    onTestFinished(() => lock.release())
     const now = new Date()
     const limits = { batchSize: 10, maxBatches: 10 }
     const emptyWindow = {
