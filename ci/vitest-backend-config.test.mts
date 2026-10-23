@@ -56,6 +56,24 @@ describe('backend Vitest project config', () => {
       setupFiles.indexOf('./test-helpers/vitest.setup.worker-query-profiles.mts'),
     ).toBeLessThan(setupFiles.indexOf('./test-helpers/vitest.setup.glide-mq-workers.mts'))
   })
+  it('registers request query timing before the database setup in profiled projects', () => {
+    const projects = config.test?.projects as BackendProject[] | undefined
+    const profiledProjects =
+      projects?.filter(project =>
+        project.test?.setupFiles?.includes('./test-helpers/vitest.setup.worker-query-profiles.mts'),
+      ) ?? []
+
+    expect(profiledProjects).not.toHaveLength(0)
+    for (const project of profiledProjects) {
+      const setupFiles = project.test?.setupFiles ?? []
+      expect(
+        setupFiles.indexOf('./test-helpers/vitest.setup.request-query-timing.mts'),
+      ).toBeGreaterThanOrEqual(0)
+      expect(
+        setupFiles.indexOf('./test-helpers/vitest.setup.request-query-timing.mts'),
+      ).toBeLessThan(setupFiles.indexOf('./test-helpers/vitest.setup.shared-db-scope-guard.mts'))
+    }
+  })
   it('registers the GlideMQ attachment guard runner only for backend-data-stores', () => {
     const runner = './test-helpers/vitest.runner.backend-data-guards.mts'
     const projects = config.test?.projects as BackendProject[] | undefined

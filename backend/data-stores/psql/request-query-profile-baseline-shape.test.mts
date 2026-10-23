@@ -5,7 +5,7 @@ import {
   formatClosedBaselineIssues,
   parseRepeatBaseline,
   temporaryBaselineEntries,
-} from './request-query-profile-baseline.mts'
+} from '../../test-helpers/api/request-query-profile-baseline.mts'
 
 const BASELINE_URL = new URL(
   '../../test-helpers/api/request-query-profile-baseline.json',

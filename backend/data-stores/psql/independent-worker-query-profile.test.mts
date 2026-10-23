@@ -3,8 +3,8 @@ import {
   createRequestQueryProfile,
   recordRequestQueryTiming,
   runIndependentWorker,
-} from './request-query-profile.mts'
-import { findUnbaselinedRepeats } from './request-query-profile-baseline.mts'
+} from '../../test-helpers/api/request-query-profile-state.mts'
+import { findUnbaselinedRepeats } from '../../test-helpers/api/request-query-profile-baseline.mts'
 
 const timing = { durationMs: 0 }
 const identity = (id: string) => ({ queue: 'profile-contract', jobs: [{ id, name: 'owned' }] })

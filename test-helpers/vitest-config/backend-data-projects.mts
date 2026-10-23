@@ -18,6 +18,7 @@ const backendDataStoreTestDefaults = {
     // solely if it's the first file in its worker to do so, since the module body doesn't
     // re-run for later files sharing the cached module graph.
     './backend/test-helpers/vitest.setup.sentry-mock.mts',
+    './test-helpers/vitest.setup.request-query-timing.mts',
     './test-helpers/vitest.setup.shared-db-scope-guard.mts',
     './test-helpers/vitest.setup.dynamic-config-isolation.mts',
     './test-helpers/vitest.setup.worker-query-profiles.mts',
@@ -59,6 +60,7 @@ const backendMocksProject = {
       // import @modules/on-error → @sentry/node, so the Sentry mock has to be registered
       // first or the real SDK singleton gets bound during preload and tests can't intercept it.
       './backend/test-helpers/vitest.setup.sentry-mock.mts',
+      './test-helpers/vitest.setup.request-query-timing.mts',
       './test-helpers/vitest.setup.shared-db-scope-guard.mts',
       './test-helpers/vitest.setup.dynamic-config-isolation.mts',
       './test-helpers/vitest.setup.worker-query-profiles.mts',

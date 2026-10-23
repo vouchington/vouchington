@@ -5,7 +5,7 @@ import type { RepeatBaselineEntry } from './request-query-profile-baseline.mts'
  * Baseline entries whose annotation was not observed repeating. Report-only: a stale entry means
  * the fix landed, so the entry should be deleted, but it never fails a run.
  *
- * @public used by the stale-entry report in backend/test-helpers
+ * Used by the stale-entry report in backend/test-helpers.
  */
 export function findStaleBaselineEntries(
   baseline: readonly RepeatBaselineEntry[],
@@ -33,7 +33,7 @@ export interface StaleReport {
  * Stale entries across independent run logs (one log text per run): an entry is stale only when it
  * is absent from every log, because a data-dependent repeat can miss any single run.
  *
- * @public used by the stale-entry report in backend/test-helpers
+ * Used by the stale-entry report in backend/test-helpers.
  */
 export function buildStaleReport(
   baseline: readonly RepeatBaselineEntry[],
@@ -55,7 +55,7 @@ export function buildStaleReport(
 /**
  * Annotations that repeated in `[pg-request-profile]` lines of CI log text (one run, any shard).
  *
- * @public used by the stale-entry report in backend/test-helpers
+ * Used by the stale-entry report in backend/test-helpers.
  */
 export function observedRepeatAnnotations(logText: string): Set<string> {
   const observed = new Set<string>()

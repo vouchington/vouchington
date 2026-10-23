@@ -9,7 +9,7 @@ import {
   createRequestQueryProfile,
   recordRequestQueryTiming,
   type WorkerQueryProfile,
-} from '../backend/data-stores/psql/request-query-profile.mts'
+} from '../backend/test-helpers/api/request-query-profile-state.mts'
 import { takeRequestQueryProfileViolations } from '../backend/test-helpers/api/request-query-profile-violations.mts'
 
 type WorkerQueryProfileSnapshot = {

@@ -5,8 +5,8 @@ import {
   type RequestQuerySummary,
 } from './request-query-profile-summary.mts'
 
-const PROFILES_KEY = Symbol.for('voucha.requestQueryProfiles')
-const OWNERS_KEY = Symbol.for('voucha.workerQueryProfileOwners')
+const PROFILES_KEY = Symbol.for('voucha.test.requestQueryProfiles')
+const OWNERS_KEY = Symbol.for('voucha.test.workerQueryProfileOwners')
 type WorkerProfiles = WorkerQueryProfile[]
 const profilesGlobal = globalThis as typeof globalThis & {
   [PROFILES_KEY]?: AsyncLocalStorage<RequestQuery[]>
@@ -39,7 +39,7 @@ export interface RequestQueryProfile {
   workerProfiles: () => readonly WorkerQueryProfile[]
 }
 
-/** @public API harnesses own their request bucket and the independent worker tree. */
+/** API harnesses own their request bucket and the independent worker tree. */
 export function createRequestQueryProfile(): RequestQueryProfile {
   const queries: RequestQuery[] = []
   const workers: WorkerProfiles = []
@@ -51,7 +51,7 @@ export function createRequestQueryProfile(): RequestQueryProfile {
   }
 }
 
-/** @public Retains every worker timing separately; owners register synchronously, never join completion. */
+/** Retains every worker timing separately; owners register synchronously, never join completion. */
 export function runIndependentWorker<Result>(
   identity: WorkerQueryIdentity,
   handler: () => Result | PromiseLike<Result>,
