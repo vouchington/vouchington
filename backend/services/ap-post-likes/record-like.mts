@@ -1,49 +1,55 @@
-import { write, type QueryOptions } from '@data-stores/psql'
+import { beginTransaction, type QueryOptions, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
-// Records (or idempotently re-records) a remote actor's Like on a local post. Isolated from
-// post_votes/votes_score_net by design — see the activitypub_post_likes migration and
-// docs/overview/architecture/fediverse-federation.md's Like reuse-mapping row. `post_activitypub_like_tallies`'s tally
-// columns stay in sync via the fn_project_activitypub_post_likes trigger; this function never touches post_activitypub_like_tallies
-// directly.
-//
-// A plain `INSERT ... ON CONFLICT (post_id, remote_actor_id)` cannot resurrect a prior
-// soft-deleted row on its own: the unique index backing that conflict target is partial
-// (`WHERE deleted_at IS NULL`), so a soft-deleted row falls outside its conflict-detection scope —
-// a second INSERT would collide with nothing there. The `resurrect` CTE below explicitly
-// reactivates the most recently soft-deleted row for this (post_id, remote_actor_id) pair first
-// (repeated Like/Undo cycles can leave more than one soft-deleted row behind; `LIMIT 1 FOR UPDATE`
-// locks and resurrects only the latest, leaving earlier cycles as history). The INSERT only fires
-// when nothing was resurrected, falling through to the ordinary `ON CONFLICT ... DO UPDATE` for
-// the already-active-row case — a redelivered Like carrying the same or an updated `like_activitypub_id`.
+// The activity id owns a durable row across Undo. A fresh Like after Undo gets a new row;
+// replaying the old id cannot clear its deleted_at marker after inbox dedup expires.
 export async function recordLike(
   postId: string,
   remoteActorId: string,
   likeApId: string,
   options: QueryOptions = {},
 ): Promise<void> {
-  const run = options.query ?? write
-  await run(sql`/* recordLike */
-    WITH target AS (
-      SELECT id
-      FROM activitypub_post_likes
-      WHERE post_id = ${postId}
-        AND remote_actor_id = ${remoteActorId}
-        AND deleted_at IS NOT NULL
-      ORDER BY id DESC
-      LIMIT 1
-      FOR UPDATE
-    ),
-    resurrect AS (
-      UPDATE activitypub_post_likes
-      SET deleted_at = NULL, like_activitypub_id = ${likeApId}
-      WHERE id IN (SELECT id FROM target)
-      RETURNING id
+  if (options.query) {
+    await recordLikeInTransaction(
+      options.query as TransactionQuery,
+      postId,
+      remoteActorId,
+      likeApId,
     )
+    return
+  }
+  await using query = await beginTransaction()
+  await recordLikeInTransaction(query, postId, remoteActorId, likeApId)
+  await query.commit()
+}
+
+async function recordLikeInTransaction(
+  query: TransactionQuery,
+  postId: string,
+  remoteActorId: string,
+  likeApId: string,
+): Promise<void> {
+  // Serialize per actor/post even when no active row exists yet. An Undo of this exact id
+  // races through the all-rows unique index and wins as a permanent tombstone.
+  await query(sql`/* lockActivityPubLikePair */
+    SELECT pg_advisory_xact_lock(hashtextextended(
+      'activitypub-like:' || ${postId} || ':' || ${remoteActorId}, 0
+    ))
+  `)
+  const { rows } = await query<{ id: string }>(sql`/* findActivityPubLikeIdentity */
+    SELECT id FROM activitypub_post_likes WHERE like_activitypub_id = ${likeApId} LIMIT 1
+  `)
+  if (rows.length > 0) return
+
+  // A different live Like id replaces the actor's prior cycle without overwriting its identity.
+  await query(sql`/* retireReplacedActivityPubLike */
+    UPDATE activitypub_post_likes SET deleted_at = clock_timestamp()
+    WHERE post_id = ${postId} AND remote_actor_id = ${remoteActorId}
+      AND deleted_at IS NULL
+  `)
+  await query(sql`/* insertActivityPubLikeCycle */
     INSERT INTO activitypub_post_likes (post_id, remote_actor_id, like_activitypub_id)
-    SELECT ${postId}, ${remoteActorId}, ${likeApId}
-    WHERE NOT EXISTS (SELECT 1 FROM resurrect)
-    ON CONFLICT (post_id, remote_actor_id) WHERE deleted_at IS NULL
-    DO UPDATE SET like_activitypub_id = EXCLUDED.like_activitypub_id
+    VALUES (${postId}, ${remoteActorId}, ${likeApId})
+    ON CONFLICT (like_activitypub_id) DO NOTHING
   `)
 }

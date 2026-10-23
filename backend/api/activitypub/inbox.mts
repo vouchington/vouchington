@@ -24,10 +24,7 @@ import {
   recordActivityPubInboxSenderDelivery,
 } from '@services/route-rate-limits'
 
-// Inbound ActivityPub deliveries are per-request signature-authenticated (HTTP Signatures over
-// the sender's actor keypair), not session-authenticated — there is no Voucha session on a
-// server-to-server delivery, so this route intentionally skips response-helpers.mts's
-// session-auth preamble (requireAuth / getOptionalAuthAndRateLimit / requireAuthAndRateLimit).
+// Server-to-server deliveries use HTTP Signatures, so this route skips session authentication.
 app.route('/ap/inbox').post(async (ctx: Context) => {
   const signatureHeader = headerValue(ctx.req.headers.signature)
   const digestHeader = headerValue(ctx.req.headers.digest)
@@ -168,16 +165,17 @@ app.route('/ap/inbox').post(async (ctx: Context) => {
   }
 
   const activity = parseInboundActivity(rawBody)
-  // Distinct from the keyId <-> fetched-document match already enforced inside
-  // getOrFetchRemoteActorByKeyId: this checks the *activity's own* claimed actor against the
-  // actor that actually signed the request, rejecting a signer that forges another actor's id.
+  // The activity's claimed actor must match the verified signing actor.
   ctx.assert(
     activity.actor === remoteActor.actor_uri,
     401,
     'Signing actor does not match activity actor',
   )
 
-  const { duplicate } = await recordAndDispatchInboundActivity(remoteActor, activity)
+  const { duplicate } = await recordAndDispatchInboundActivity(remoteActor, {
+    ...activity,
+    signedAt: new Date(dateHeader),
+  })
   if (duplicate) {
     ctx.json({ received: true, duplicate: true })
     return

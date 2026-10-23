@@ -117,7 +117,6 @@ export const EXTRA_UNBOUNDED_TABLES = [
   'curated_aside_items',
   'blocklisted_domains',
   'facebook_accounts',
-  'follower_distribution_selected_recipients',
   'fediverse_instance_integration_changes',
   'github_accounts',
   'google_accounts',

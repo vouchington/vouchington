@@ -38,8 +38,9 @@ describe('dispatchInboundActivity', () => {
   it('removes the follow relation for an Undo(Follow) activity', async () => {
     const remoteActor = await createRemoteActorFixture()
     const user = await createFederatedUser()
+    const followId = `https://remote.example/activities/${randomSuffix()}`
     await dispatchInboundActivity(remoteActor, {
-      id: `https://remote.example/activities/${randomSuffix()}`,
+      id: followId,
       type: 'Follow',
       actor: remoteActor.actor_uri,
       object: getActorUri(user.id),
@@ -50,10 +51,35 @@ describe('dispatchInboundActivity', () => {
       id: `https://remote.example/activities/${randomSuffix()}`,
       type: 'Undo',
       actor: remoteActor.actor_uri,
-      object: { type: 'Follow', object: getActorUri(user.id) },
+      object: { id: followId, type: 'Follow', object: getActorUri(user.id) },
     })
 
     expect(await hasFollowRelation(remoteActor, user.id)).toBe(false)
+  })
+
+  it('keeps a later Follow cycle active when the old activity and Undo replay', async () => {
+    const remoteActor = await createRemoteActorFixture()
+    const user = await createFederatedUser()
+    const firstId = `https://remote.example/activities/${randomSuffix()}`
+    const secondId = `https://remote.example/activities/${randomSuffix()}`
+    const first = {
+      id: firstId,
+      type: 'Follow',
+      actor: remoteActor.actor_uri,
+      object: getActorUri(user.id),
+    }
+    const undo = {
+      id: `https://remote.example/activities/${randomSuffix()}`,
+      type: 'Undo',
+      actor: remoteActor.actor_uri,
+      object: { id: firstId, type: 'Follow', object: getActorUri(user.id) },
+    }
+    await dispatchInboundActivity(remoteActor, first)
+    await dispatchInboundActivity(remoteActor, undo)
+    await dispatchInboundActivity(remoteActor, { ...first, id: secondId })
+    await dispatchInboundActivity(remoteActor, first)
+    await dispatchInboundActivity(remoteActor, undo)
+    expect(await hasFollowRelation(remoteActor, user.id)).toBe(true)
   })
 
   it('does not create a follow relation when the target user has not enabled federation', async () => {
@@ -159,7 +185,11 @@ describe('dispatchInboundActivity', () => {
       id: `https://remote.example/activities/${randomSuffix()}`,
       type: 'Undo',
       actor: remoteActor.actor_uri,
-      object: { type: 'Like', object: getPostUri(post.id) },
+      object: {
+        id: `https://remote.example/activities/${remoteActor.id}`,
+        type: 'Like',
+        object: getPostUri(post.id),
+      },
     })
 
     expect(await getApPostLikesTally(post.id)).toEqual({
@@ -219,7 +249,11 @@ describe('dispatchInboundActivity', () => {
         id: `https://remote.example/activities/${randomSuffix()}`,
         type: 'Undo',
         actor: remoteActor.actor_uri,
-        object: { type: 'Like', object: getPostUri(post.id) },
+        object: {
+          id: `https://remote.example/activities/${remoteActor.id}`,
+          type: 'Like',
+          object: getPostUri(post.id),
+        },
       }),
     ).resolves.toBeUndefined()
 

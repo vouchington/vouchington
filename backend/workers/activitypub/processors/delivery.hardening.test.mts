@@ -136,7 +136,7 @@ describe('distributeActivity', () => {
       { ...FOLLOW_DATA, inboxUrl: 'https://b.example/inbox' },
     ])
     expect(commitActivityDistributionPageMock).toHaveBeenCalledWith(
-      'activity-1',
+      FOLLOW_DATA.activityId,
       'user-1',
       'remote-actor-0',
       'remote-actor-3',
@@ -171,7 +171,10 @@ describe('distributeActivity', () => {
     await expect(distributeActivity(FOLLOW_DATA, distributeDeps())).rejects.toBe(error)
 
     expect(commitActivityDistributionPageMock).not.toHaveBeenCalled()
-    expect(releaseActivityDistributionPageMock).toHaveBeenCalledWith('activity-1', 'lease-one')
+    expect(releaseActivityDistributionPageMock).toHaveBeenCalledWith(
+      FOLLOW_DATA.activityId,
+      'lease-one',
+    )
     expect(enqueueDistributeActivityMock).not.toHaveBeenCalled()
   })
 
@@ -273,7 +276,7 @@ describe('distributeActivity', () => {
     expect(result).toEqual({ enqueued: 0, completed: true })
     expect(enqueueBulkDeliverActivityMock).not.toHaveBeenCalled()
     expect(commitActivityDistributionPageMock).toHaveBeenCalledWith(
-      'activity-1',
+      FOLLOW_DATA.activityId,
       'user-1',
       null,
       null,

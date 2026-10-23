@@ -26,6 +26,9 @@ EXECUTE FUNCTION fn_update_updated_at();
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_activitypub_distribution_work_items__source_user_id
   ON activitypub_distribution_work_items (source_user_id);
+CREATE INDEX IF NOT EXISTS idx_activitypub_distribution_work_items__retention
+  ON activitypub_distribution_work_items (completed_at, activity_id)
+  WHERE completed_at IS NOT NULL;
 
 COMMENT ON TABLE activitypub_distribution_work_items IS 'Durable outbound ActivityPub fan-out cursor. A committed cursor means delivery jobs through that remote actor were accepted by Valkey; completed rows are retained until their source user is deleted.';
 COMMENT ON COLUMN activitypub_distribution_work_items.activity_id IS 'Stable UUID ActivityPub activity identity; one durable distribution cursor per activity.';

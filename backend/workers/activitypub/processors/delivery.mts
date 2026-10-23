@@ -1,5 +1,7 @@
 import { getActorKeyId } from '@modules/activitypub-uris'
+import { getDateFromUUIDv7 } from '@modules/utils/ids'
 import { wrapHttpForRetry } from '@modules/queue-errors'
+import { getMaximumActivityAgeDays } from '@services/ap-inbox-activities/config'
 import {
   buildActivityJson,
   commitActivityDistributionPage,
@@ -38,6 +40,16 @@ function isUndoMissingOriginalActivityId(
   return typeof originalActivityId !== 'string' || originalActivityId.trim().length === 0
 }
 
+function activityAgeRejectionReason(
+  activityId: string,
+): 'unsupported-activity-id' | 'expired-activity' | null {
+  const activityCreatedAt = getDateFromUUIDv7(activityId)
+  if (!activityCreatedAt) return 'unsupported-activity-id'
+  return Date.now() - activityCreatedAt.getTime() > getMaximumActivityAgeDays() * 86_400_000
+    ? 'expired-activity'
+    : null
+}
+
 // Fans a social action out to a bounded page of the acting user's remote followers. The durable
 // cursor advances only after Valkey accepts that page's delivery jobs; continuation enqueues one
 // more ordered distribute job. An accepted Valkey enqueue followed by a failed cursor commit may
@@ -59,6 +71,11 @@ export async function distributeActivity(
   if (isUndoMissingOriginalActivityId(data)) {
     return { enqueued: 0, reason: 'missing-original-activity-id' as const }
   }
+  // All production Follow and vote event identities originate from uuidv7(). Once a completed
+  // checkpoint has aged out, this immutable identity still prevents a delayed queue retry from
+  // recreating the checkpoint and sending the old activity again.
+  const ageRejection = activityAgeRejectionReason(data.activityId)
+  if (ageRejection) return { enqueued: 0, reason: ageRejection }
   if (!(await deps.isFederationEnabledForUser(data.sourceUserId))) {
     return { enqueued: 0 }
   }
@@ -141,6 +158,12 @@ export async function deliverActivity(
 
   if (isUndoMissingOriginalActivityId(data)) {
     return { delivered: false, reason: 'missing-original-activity-id' as const }
+  }
+  // Accept is a direct response with a stable UUIDv5 wire identity, not a distribution job.
+  // Every other production delivery shares the UUIDv7 source event and its maximum age.
+  if (data.activityType !== 'Accept') {
+    const ageRejection = activityAgeRejectionReason(data.activityId)
+    if (ageRejection) return { delivered: false, reason: ageRejection }
   }
   if (!(await deps.isFederationEnabledForUser(data.sourceUserId))) {
     return { delivered: false, reason: 'federation-disabled' as const }

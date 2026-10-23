@@ -1,21 +1,22 @@
 import { write, type QueryOptions } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
-// Soft-deletes the active Like row for this (post_id, remote_actor_id) pair, if one exists.
-// No-ops (0 rows affected) when there is no active Like — the out-of-order Undo-before-Like case,
-// or a redelivered Undo for an already-undone Like. fn_project_activitypub_post_likes keeps post_activitypub_like_tallies's tally
-// in sync with the resulting deleted_at.
+// An Undo records the embedded Like id even when it arrives before the Like. The scope
+// comparison prevents an actor from undoing another actor's activity id.
 export async function undoLike(
   postId: string,
   remoteActorId: string,
+  likeApId: string,
   options: QueryOptions = {},
 ): Promise<void> {
   const run = options.query ?? write
   await run(sql`/* undoLike */
-    UPDATE activitypub_post_likes
-    SET deleted_at = CURRENT_TIMESTAMP
-    WHERE post_id = ${postId}
-      AND remote_actor_id = ${remoteActorId}
-      AND deleted_at IS NULL
+    INSERT INTO activitypub_post_likes
+      (post_id, remote_actor_id, like_activitypub_id, deleted_at)
+    VALUES (${postId}, ${remoteActorId}, ${likeApId}, clock_timestamp())
+    ON CONFLICT (like_activitypub_id) DO UPDATE
+      SET deleted_at = COALESCE(activitypub_post_likes.deleted_at, EXCLUDED.deleted_at)
+      WHERE activitypub_post_likes.post_id = EXCLUDED.post_id
+        AND activitypub_post_likes.remote_actor_id = EXCLUDED.remote_actor_id
   `)
 }
