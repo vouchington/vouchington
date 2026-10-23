@@ -14,6 +14,7 @@ import type { SharedContext } from 'vouchington-tooling/shared-context'
 import { checkGhaWorkspacePolicy } from 'vouchington-tooling/gha-workspace-policy'
 import { initSqlAst } from 'vouchington-tooling/sql-ast'
 import { checkMigrationSqlGuard } from './migration-sql-guard.mts'
+import { checkExtraGeneratedColumnsFreshness } from './extra-generated-columns-freshness.mts'
 import { checkUuidv7CreatedAtDdl } from './uuidv7-created-at-ddl-guard.mts'
 import { checkModerationHistoryGuard } from './moderation-history-guard.mts'
 import { checkStaleSchemaAllowlistEntries } from './schema-allowlist-freshness.mts'
@@ -74,7 +75,15 @@ export async function checkRepoFilePolicy(
     ),
   )
 
-  await checkMigrationSqlGuard(ctx.repoRoot, trackedFiles, errors)
+  const migrationCreateTableNames = await checkMigrationSqlGuard(ctx.repoRoot, trackedFiles, errors)
+  errors.push(
+    ...checkExtraGeneratedColumnsFreshness(
+      ctx.repoRoot,
+      ctx.trackedFiles,
+      schema,
+      migrationCreateTableNames,
+    ),
+  )
   await checkMonetaryContracts(ctx.repoRoot, trackedFiles, errors, ctx.readTrackedFile)
   errors.push(...checkAgentBlackboardMcpConfig(ctx))
   checkMonetarySnapshot(schema, errors)

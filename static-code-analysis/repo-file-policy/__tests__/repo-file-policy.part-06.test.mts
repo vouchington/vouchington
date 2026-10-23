@@ -9,6 +9,13 @@ describe('repo-file-policy', () => {
   const { makeRepo, run, track, trackPostEnumSurfaces, trackTopicEnumSurfaces } =
     setupRepoFilePolicyTest()
 
+  it('fails closed when a tracked no-mistakes config is missing from disk', async () => {
+    const dir = await makeRepo()
+    await rm(join(dir, '.no-mistakes.yml'))
+
+    await expect(run(dir)).rejects.toThrow(/\.no-mistakes\.yml/)
+  })
+
   it('rejects referral-program validation factories without the referral_program guard', async () => {
     const dir = await makeRepo()
     await track(

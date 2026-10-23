@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
+import { extractCreateTableMetadata, lineOfUtf8ByteOffset } from 'vouchington-tooling/sql-ast'
 import { stripSqlComments } from './sql-scanner.mts'
-import { lineOfUtf8ByteOffset } from 'vouchington-tooling/sql-ast'
 import { extractPolymorphicTargetTables } from './sql-constraint-ast.mts'
 import {
   ALLOWED_POLYMORPHIC_TARGET_TABLES,
@@ -17,15 +17,17 @@ export async function checkMigrationSqlGuard(
   repoRoot: string,
   trackedFiles: string[],
   errors: string[],
-): Promise<void> {
+): Promise<Set<string>> {
   const observedPolymorphicTargets = new Set<string>()
   const observedLegacyMarkerMigrations = new Set<string>()
+  const observedCreateTableNames = new Set<string>()
   for (const file of trackedFiles) {
     if (!file.startsWith('backend/data-stores/psql/migrations/')) continue
     if (!file.endsWith('.sql')) continue
 
     const filePath = join(repoRoot, file)
     const content = readFileSync(filePath, 'utf8')
+    addMigrationCreateTableNames(content, observedCreateTableNames)
     checkEditedInPlaceMarkerWording(file, content, observedLegacyMarkerMigrations, errors)
     const stripped = stripSqlComments(content)
     for (const target of await extractPolymorphicTargetTables(stripped)) {
@@ -46,4 +48,9 @@ export async function checkMigrationSqlGuard(
     }
     checkStaleLegacyEditedInPlaceMarkerEntries(observedLegacyMarkerMigrations, errors)
   }
+  return observedCreateTableNames
+}
+
+export function addMigrationCreateTableNames(content: string, names: Set<string>): void {
+  for (const { tableName } of extractCreateTableMetadata(content)) names.add(tableName)
 }

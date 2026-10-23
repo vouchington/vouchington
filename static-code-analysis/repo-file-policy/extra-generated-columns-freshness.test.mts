@@ -1,114 +1,166 @@
-import { existsSync } from 'node:fs'
-import { readdir, readFile } from 'node:fs/promises'
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-import { describe, expect, it } from 'vitest'
-import { parse as parseYaml } from 'yaml'
-
 import type { SchemaSnapshot } from '@vouchington/postgres/pg-schema-snapshot'
+import { afterEach, beforeAll, describe, expect, it } from 'vitest'
+import { initSqlAst } from 'vouchington-tooling/sql-ast'
 
-const REPO_ROOT = join(import.meta.dirname, '../..')
-const SCHEMA_PATH = join(REPO_ROOT, 'backend/data-stores/psql/schema-snapshot/schema.json')
-const NO_MISTAKES_PATH = join(REPO_ROOT, '.no-mistakes.yml')
-const MIGRATIONS_DIR = join(REPO_ROOT, 'backend/data-stores/psql/migrations')
-const PLACEHOLDER_PATH = join(MIGRATIONS_DIR, '.no-mistakes-schema-placeholder.sql')
+import {
+  checkExtraGeneratedColumnsFreshness,
+  findGeneratedCreatedAtTables,
+} from './extra-generated-columns-freshness.mts'
+import { addMigrationCreateTableNames } from './migration-sql-guard.mts'
+
 const MIGRATIONS_SQL_INCLUDE = 'backend/data-stores/psql/migrations/**/*.sql'
-const PREDICATE_RULE = 'postgres-generated-column-predicates'
-const CREATE_TABLE_NAME =
-  /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:"([^"]+)"|([A-Za-z_][A-Za-z0-9_]*))/gi
+const trackedPlaceholder = 'backend/data-stores/psql/migrations/.no-mistakes-schema-placeholder.sql'
+const roots: string[] = []
 
-type ExtraGeneratedColumn = {
-  table?: unknown
-  column?: unknown
-  sourceColumn?: unknown
+function schemaFixture(): Pick<SchemaSnapshot, 'tables'> {
+  return {
+    tables: {
+      legacy_generated: { columns: { created_at: { generatedExpression: "'now'" } } },
+      migrated_generated: { columns: { created_at: { generatedExpression: "'now'" } } },
+      ordinary: { columns: { created_at: {} } },
+    },
+  } as unknown as Pick<SchemaSnapshot, 'tables'>
 }
 
-type NoMistakesRule = {
-  rule?: unknown
-  options?: {
-    extraGeneratedColumns?: ExtraGeneratedColumn[]
-    requireArgumentIsPrimaryKey?: unknown
+function configFixture(
+  options: {
+    generatedTables?: string[]
+    predicateTables?: string[]
+    predicateRuleCount?: number
     sqlInclude?: unknown
+    predicateRequiresPrimaryKey?: unknown
+    predicateSourceColumn?: unknown
+  } = {},
+) {
+  const generatedTables = options.generatedTables ?? ['legacy_generated']
+  const predicateTables = options.predicateTables ?? ['legacy_generated']
+  return {
+    rules: [
+      {
+        rule: 'postgres-no-generated-column-writes',
+        options: {
+          sqlInclude: options.sqlInclude ?? [MIGRATIONS_SQL_INCLUDE],
+          extraGeneratedColumns: generatedTables.map(table => ({
+            table,
+            column: 'created_at',
+          })),
+        },
+      },
+      ...Array.from({ length: options.predicateRuleCount ?? 2 }, () => ({
+        rule: 'postgres-generated-column-predicates',
+        options: {
+          requireArgumentIsPrimaryKey: options.predicateRequiresPrimaryKey ?? false,
+          extraGeneratedColumns: predicateTables.map(table => ({
+            table,
+            column: 'created_at',
+            sourceColumn: options.predicateSourceColumn ?? 'id',
+          })),
+        },
+      })),
+    ],
   }
 }
 
-describe('extraGeneratedColumns freshness', () => {
-  it('points sqlInclude at real migrations and has no placeholder', async () => {
-    const rule = await loadGeneratedColumnRule()
-    expect(rule.options?.sqlInclude).toEqual([MIGRATIONS_SQL_INCLUDE])
-    expect(existsSync(PLACEHOLDER_PATH)).toBe(false)
+async function createConfigRoot(config: ReturnType<typeof configFixture>): Promise<string> {
+  const root = await mkdtemp(join(tmpdir(), 'generated-column-policy-'))
+  roots.push(root)
+  await writeFile(join(root, '.no-mistakes.yml'), JSON.stringify(config))
+  return root
+}
+
+describe('extraGeneratedColumns freshness policy', () => {
+  beforeAll(() => initSqlAst())
+
+  afterEach(async () => {
+    await Promise.all(roots.splice(0).map(root => rm(root, { force: true, recursive: true })))
   })
 
-  it('keeps both predicate entries aligned with config-driven generated created_at tables', async () => {
-    const expected = (await leftoverGeneratedCreatedAtTables()).toSorted()
-    expect([...extraGeneratedCreatedAtTables(await loadGeneratedColumnRule())].toSorted()).toEqual(
-      expected,
+  it('extracts only actual migration table names from structured SQL facts', () => {
+    const names = new Set<string>()
+    addMigrationCreateTableNames(
+      [
+        '-- CREATE TABLE comment_only (id uuid);',
+        'CREATE TABLE IF NOT EXISTS migrated_generated (id uuid);',
+        'CREATE TABLE public."QuotedName" (id uuid);',
+        "SELECT 'CREATE TABLE string_only (id uuid);';",
+      ].join('\n'),
+      names,
     )
-    const rules = await loadGeneratedPredicateRules()
-    expect(rules).toHaveLength(2)
-    for (const rule of rules) {
-      expect([...extraGeneratedCreatedAtTables(rule)].toSorted()).toEqual(expected)
-      expect(rule.options?.extraGeneratedColumns?.every(entry => entry.sourceColumn === 'id')).toBe(
-        true,
-      )
-      expect(rule.options?.requireArgumentIsPrimaryKey).toBe(false)
+    expect(names).toEqual(new Set(['migrated_generated', 'QuotedName']))
+  })
+
+  it('accepts matching tracked migration and generated-column config fixtures', async () => {
+    const root = await createConfigRoot(configFixture())
+    const schema = schemaFixture()
+    expect([...findGeneratedCreatedAtTables(schema)]).toEqual([
+      'legacy_generated',
+      'migrated_generated',
+    ])
+    expect(
+      checkExtraGeneratedColumnsFreshness(
+        root,
+        ['.no-mistakes.yml', 'backend/data-stores/psql/migrations/001-example.sql'],
+        schema,
+        new Set(['migrated_generated']),
+      ),
+    ).toEqual([])
+  })
+
+  it('reads the allowlist only when the config is in the tracked inventory', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'generated-column-partial-root-'))
+    try {
+      expect(checkExtraGeneratedColumnsFreshness(root, [], schemaFixture(), new Set())).toEqual([])
+      expect(() =>
+        checkExtraGeneratedColumnsFreshness(root, ['.no-mistakes.yml'], schemaFixture(), new Set()),
+      ).toThrow(/\.no-mistakes\.yml/)
+    } finally {
+      await rm(root, { force: true, recursive: true })
     }
+  })
+
+  it('reports missing and stale generated-column entries across both policy rules', async () => {
+    const root = await createConfigRoot(
+      configFixture({ generatedTables: ['stale_table'], predicateTables: [] }),
+    )
+    const errors = checkExtraGeneratedColumnsFreshness(
+      root,
+      ['.no-mistakes.yml'],
+      schemaFixture(),
+      new Set(['migrated_generated']),
+    )
+    expect(errors).toEqual([
+      expect.stringContaining('missing generated created_at table entry: legacy_generated'),
+      expect.stringContaining('stale generated created_at table entry: stale_table'),
+      expect.stringContaining('missing generated created_at table entry: legacy_generated'),
+      expect.stringContaining('missing generated created_at table entry: legacy_generated'),
+    ])
+  })
+
+  it('rejects a changed SQL include, tracked placeholder, and incomplete predicate inventory', async () => {
+    const root = await createConfigRoot(
+      configFixture({
+        predicateRuleCount: 1,
+        sqlInclude: ['backend/data-stores/psql/migrations/*.sql'],
+        predicateRequiresPrimaryKey: true,
+        predicateSourceColumn: 'wrong',
+      }),
+    )
+    const errors = checkExtraGeneratedColumnsFreshness(
+      root,
+      ['.no-mistakes.yml', trackedPlaceholder],
+      schemaFixture(),
+      new Set(['migrated_generated']),
+    )
+    expect(errors).toEqual([
+      expect.stringContaining('sqlInclude must target'),
+      expect.stringContaining('schema placeholder must not be tracked'),
+      expect.stringContaining('expected two postgres-generated-column-predicates rules'),
+      expect.stringContaining('sourceColumn must be id'),
+      expect.stringContaining('predicate rule must not require a primary-key argument'),
+    ])
   })
 })
-
-async function leftoverGeneratedCreatedAtTables(): Promise<string[]> {
-  const declared = await migrationCreateTableNames()
-  return (await snapshotGeneratedCreatedAtTables()).filter(table => !declared.has(table))
-}
-
-async function snapshotGeneratedCreatedAtTables(): Promise<string[]> {
-  const schema = JSON.parse(await readFile(SCHEMA_PATH, 'utf8')) as SchemaSnapshot
-  return Object.entries(schema.tables)
-    .filter(([, table]) => typeof table.columns.created_at?.generatedExpression === 'string')
-    .map(([name]) => name)
-}
-
-async function migrationCreateTableNames(): Promise<Set<string>> {
-  const names = new Set<string>()
-  for (const file of await listMigrationSqlFiles(MIGRATIONS_DIR)) {
-    const content = await readFile(file, 'utf8')
-    for (const match of content.matchAll(CREATE_TABLE_NAME)) {
-      names.add((match[1] ?? match[2] ?? '').toLowerCase())
-    }
-  }
-  return names
-}
-
-async function listMigrationSqlFiles(dir: string): Promise<string[]> {
-  const entries = await readdir(dir, { withFileTypes: true })
-  const files: string[] = []
-  for (const entry of entries) {
-    const path = join(dir, entry.name)
-    if (entry.isDirectory()) files.push(...(await listMigrationSqlFiles(path)))
-    else if (entry.isFile() && entry.name.endsWith('.sql')) files.push(path)
-  }
-  return files
-}
-
-async function loadGeneratedColumnRule(): Promise<NoMistakesRule> {
-  const parsed = parseYaml(await readFile(NO_MISTAKES_PATH, 'utf8')) as {
-    rules?: NoMistakesRule[]
-  }
-  const rule = parsed.rules?.find(entry => entry.rule === 'postgres-no-generated-column-writes')
-  if (rule === undefined) throw new Error('postgres-no-generated-column-writes is not configured')
-  return rule
-}
-
-async function loadGeneratedPredicateRules(): Promise<NoMistakesRule[]> {
-  const parsed = parseYaml(await readFile(NO_MISTAKES_PATH, 'utf8')) as { rules?: NoMistakesRule[] }
-  return parsed.rules?.filter(entry => entry.rule === PREDICATE_RULE) ?? []
-}
-
-function extraGeneratedCreatedAtTables(rule: NoMistakesRule): Set<string> {
-  const extras = new Set<string>()
-  for (const entry of rule.options?.extraGeneratedColumns ?? []) {
-    if (typeof entry.table !== 'string' || entry.column !== 'created_at') continue
-    extras.add(entry.table)
-  }
-  return extras
-}
