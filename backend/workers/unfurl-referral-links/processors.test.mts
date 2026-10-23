@@ -7,7 +7,7 @@ import {
   readAllQueueJobs,
 } from '@voucha/test-helpers'
 import { createUserReferralLink } from '@services/user-referral-program-links/create'
-import { createChildReferralLink } from '@services/user-referral-program-links/create-child'
+import { createChildReferralLinks } from '@services/user-referral-program-links/create-child'
 import { getUserReferralLink } from '@services/user-referral-program-links/get'
 import { markReferralLinkUnfurlRequested } from '@services/user-referral-program-links/unfurl-state'
 import { backgroundCpu as unfurlReferralLinksQueue } from '@queues/background-cpu/queues'
@@ -92,13 +92,17 @@ describe('unfurl referral links processor', () => {
       url: `https://${fixture.hostname}/ref/${randomSlug('remove-parent')}`,
       label: 'parent for removal test',
     })
-    const child = await createChildReferralLink(owner!.id, WEB_PROVENANCE, {
-      userId: owner!.id,
-      referralProgramId: fixture.referralProgramId,
-      url: `https://${fixture.hostname}/ref/${randomSlug('remove-child')}`,
-      parentLinkId: parent.id,
-      label: 'child to remove',
-    })
+    const child = (
+      await createChildReferralLinks(owner!.id, WEB_PROVENANCE, [
+        {
+          userId: owner!.id,
+          referralProgramId: fixture.referralProgramId,
+          url: `https://${fixture.hostname}/ref/${randomSlug('remove-child')}`,
+          parentLinkId: parent.id,
+          label: 'child to remove',
+        },
+      ])
+    )[0]!
 
     await processUnfurlReferralLinksJob(
       makeJob('crawl.remove_unfurled_children_for_user', { userId: owner!.id }),

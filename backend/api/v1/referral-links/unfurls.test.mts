@@ -3,7 +3,7 @@ import { createRequest } from '@voucha/test-helpers/api/server'
 import { createTestUserDirect, createTestMembership, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { getTopicBySlug } from '@services/topics/get'
 import { createUserReferralLink } from '@services/user-referral-program-links/create'
-import { createChildReferralLink } from '@services/user-referral-program-links/create-child'
+import { createChildReferralLinks } from '@services/user-referral-program-links/create-child'
 
 // The Amex all-cards program is seeded via seed/referral-programs-topics.csv (slug
 // `amex-referral-program`, hostname `*.americanexpress.com`, pathname
@@ -65,13 +65,17 @@ describe('unfurls', () => {
     const request = createRequest()
     await request.authenticateAs(owner!)
     const parentLinkId = await createOwnerParentLink('child-parent')
-    const child = await createChildReferralLink(owner!.id, WEB_PROVENANCE, {
-      userId: owner!.id,
-      referralProgramId: referralProgramId!,
-      url: buildAmexReferralUrl('api-child'),
-      parentLinkId,
-      label: 'Gold Card',
-    })
+    const child = (
+      await createChildReferralLinks(owner!.id, WEB_PROVENANCE, [
+        {
+          userId: owner!.id,
+          referralProgramId: referralProgramId!,
+          url: buildAmexReferralUrl('api-child'),
+          parentLinkId,
+          label: 'Gold Card',
+        },
+      ])
+    )[0]!
 
     await request.post(`/api/v1/referral-links/${child.id}/unfurls`).expect(403)
   })

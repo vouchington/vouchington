@@ -14,6 +14,12 @@ type OwnedWebRiskOptions = {
   monthThreshold?: number
 }
 
+/** Expire only this test's randomized URL, leaving shared provider budgets untouched. */
+export async function expireWebRiskCleanVerdictForTest(url: string): Promise<void> {
+  const hash = createHash('sha256').update(new URL(url).toString()).digest('hex')
+  await rateLimiterValkeyClient.customCommand(['PEXPIRE', `web-risk:clean:${hash}`, '0'])
+}
+
 /** A real checker/state with only the finite fixture namespace's used keys eligible for cleanup. */
 export function createOwnedWebRiskFixture(options: OwnedWebRiskOptions = {}) {
   const namespace = `web-risk-test-${randomUUID()}`

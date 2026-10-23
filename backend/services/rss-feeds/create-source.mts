@@ -1,6 +1,6 @@
 import type { BasicUser } from '@services/users/types'
 import { normalizeUrlForUrlTable } from '@modules/utils/urls'
-import { resolveHostname } from '@services/topics/hostname-link'
+import { resolveHostname } from '@services/topics/resolve-hostname'
 import { upsertEntityRelation } from '@services/entity-relations/upsert'
 import { upsertAutomaticTopicUpvote } from '@services/elections-votes/topic/automatic-upvote'
 import assert from 'http-assert'

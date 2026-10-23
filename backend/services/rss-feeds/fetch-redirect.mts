@@ -3,21 +3,16 @@ import { setCanonicalUrl, CircularCanonicalReferenceError } from '@services/urls
 import { findExistingFeedByUrlId } from './find-existing-feed.mts'
 import { setCanonicalRssFeed, CircularRssFeedCanonicalError } from './set-canonical.mts'
 import { updateRssFeedById } from './update.mts'
-import {
-  lockPostPublicationRssFeedScopes,
-  recordPostPublicationChange,
-} from '@services/post-publication'
 import { safeResolveUrl } from '@services/crawls/crawl-url-utils'
 import { enqueueBulkFetchRssFeeds } from '@queues/rss-feeds/enqueues'
-import { read, beginTransaction } from '@data-stores/psql'
+import { read } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import { isHttpError } from 'http-errors'
 import onError from '@modules/on-error'
 import type { CrawlerRssRedirect } from '@services/crawler-rss'
-import { getRssFeedAutoUpdaterUserId } from '@services/users/system-users'
-import { invalidate } from '@services/entity-cache/invalidate'
 import type { RssFeedToFetch } from './get-to-fetch.mts'
+import { disableAndHideSource } from './disable-and-hide-source.mts'
 
 type RedirectHandleResult = { type: 'done' } | { type: 'follow'; url: string }
 
@@ -121,49 +116,6 @@ export async function handleRssFeedRedirect(params: {
 
   // Temporary redirect or permanent with no existing canonical: follow to resolved URL
   return { type: 'follow', url: resolvedUrl }
-}
-
-/**
- * Soft-deletes the source topic and disables the feed for a permanently-redirected feed.
- * Only marks the topic deleted if its topic_type is 'rss_feed' (avoids hiding manually-created topics).
- */
-export async function disableAndHideSource(rssFeedId: string): Promise<void> {
-  const systemUserId = await getRssFeedAutoUpdaterUserId()
-  await using query = await beginTransaction()
-  // ast-grep-ignore: no-three-sequential-awaits -- service workflow has dependent validation, mutation, and follow-up side effects
-  await lockPostPublicationRssFeedScopes(query, [rssFeedId])
-  await query(
-    `/* disableAndHideSource:rss_feed */
-       INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, is_enabled, changed_by_id, reason)
-       VALUES ('enablement', $1, FALSE, $2, 'permanent redirect to canonical feed')
-      `,
-    [rssFeedId, systemUserId],
-  )
-  await recordPostPublicationChange(query, {
-    scope: { type: 'rss_feed', rssFeedId },
-    reason: 'rss_feed_discoverability_changed',
-  })
-  await query(
-    `/* disableAndHideSource:discoverability */
-       INSERT INTO rss_feed_setting_changes (change_type, rss_feed_id, is_enabled, changed_by_id, reason)
-       VALUES ('discoverability', $1, FALSE, $2, 'permanent redirect to canonical feed')
-      `,
-    [rssFeedId, systemUserId],
-  )
-  await query(
-    `/* disableAndHideSource:topic */
-       UPDATE topics
-       SET deleted_at = CURRENT_TIMESTAMP
-       FROM rss_feeds
-       WHERE rss_feeds.id = $1
-         AND rss_feeds.topic_id = topics.id
-         AND topics.topic_type = 'rss_feed'
-         AND topics.deleted_at IS NULL
-      `,
-    [rssFeedId],
-  )
-  await query.commit()
-  await invalidate.rss_feeds(rssFeedId)
 }
 
 async function getRssFeedUrlId(rssFeedId: string): Promise<string> {

@@ -7,15 +7,14 @@ import {
   WEB_PROVENANCE,
   beginTransaction,
 } from '@voucha/test-helpers'
-import { lockHostnameOwnership } from '@services/entity-relations/hostname-ownership-lock'
 import { createTopicRecommendation, approveTopicRecommendation } from './index.mts'
 import { getPostByAny } from '@services/posts'
 import { getTopicByAny } from '@services/topics'
 import { upsertUrlHostnames } from '@services/urls-hostnames'
-import { createTopicRecommendationLinkRelation } from './create-topic-recommendation-link-relation.mts'
+import { createTopicRecommendationRelations } from './create-topic-recommendation-link-relation.mts'
 
 describe('approval hostname conflicts', () => {
-  it('rejects a later hostname associated by another transaction after an earlier write', async () => {
+  it('rejects a hostname batch when a competing transaction committed a later hostname', async () => {
     const admin = await createTestUser({ administrator: true })
     const otherAdmin = await createTestUser({ administrator: true })
     const firstTopic = await createTestTopic({ user: admin })
@@ -28,15 +27,14 @@ describe('approval hostname conflicts', () => {
     const ids = await upsertUrlHostnames(admin.id, [firstHostname, laterHostname])
     const first = { id: ids.get(firstHostname)!, hostname: firstHostname }
     const later = { id: ids.get(laterHostname)!, hostname: laterHostname }
-    await using query = await beginTransaction()
-    await createTopicRecommendationLinkRelation(admin, topic, first, { query })
     await using competingQuery = await beginTransaction()
-    await createTopicRecommendationLinkRelation(otherAdmin, competitor, later, {
+    await createTopicRecommendationRelations(otherAdmin, competitor, [later], {
       query: competingQuery,
     })
     await competingQuery.commit()
+    await using query = await beginTransaction()
     await expect(
-      createTopicRecommendationLinkRelation(admin, topic, later, { query }),
+      createTopicRecommendationRelations(admin, topic, [first, later], { query }),
     ).rejects.toMatchObject({
       status: 422,
       message: `Hostname ${laterHostname} is already associated with another topic`,
@@ -81,10 +79,10 @@ describe('approval hostname conflicts', () => {
     const ids = await upsertUrlHostnames(admin.id, [hostname])
     const host = { id: ids.get(hostname)!, hostname }
     await using holder = await beginTransaction()
-    await lockHostnameOwnership(holder, [hostname])
+    await createTopicRecommendationRelations(admin, topic, [host], { query: holder })
     const holderPid = await getTestPostgresBackendProcessId(holder)
     await using claimTx = await beginTransaction()
-    const claim = createTopicRecommendationLinkRelation(otherAdmin, competitor, host, {
+    const claim = createTopicRecommendationRelations(otherAdmin, competitor, [host], {
       query: claimTx,
     }).then(
       () => {
@@ -93,7 +91,6 @@ describe('approval hostname conflicts', () => {
       (err: unknown) => err,
     )
     await waitForTestPostgresLockWaiter(holderPid, 'lockHostnameOwnership')
-    await createTopicRecommendationLinkRelation(admin, topic, host, { query: holder })
     await holder.commit()
     await expect(claim).resolves.toMatchObject({
       status: 422,

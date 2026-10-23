@@ -1,99 +1,61 @@
-import { write, type QueryOptions } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import type { QueryOptions } from '@data-stores/psql'
 import assert from 'http-assert'
 import { validateUUID } from '@modules/utils'
+import { normalizeUrlForUrlTable } from '@modules/utils/urls'
 import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
-import { isUrlReferralLink } from '@services/referral-program-link-validations'
-import { addUrl } from '@services/urls/upsert'
+import { validateReferralLinkUrls } from '@services/referral-program-link-validations'
+import { assessUrls } from '@services/urls/upsert'
+import { persistAssessedUrls, type AssessedUrls } from '@services/urls/upsert-persist'
 import type { UserReferralLink } from './types.mts'
-import { userReferralLinkColumns } from './columns.mts'
+import { insertChildReferralLinkRows } from './create-child-write.mts'
 
-/**
- * Creates (or re-activates) a child referral link produced by unfurling a parent link.
- * Unlike `createUserReferralLink`, this is an internal helper with no caller-facing
- * authorization: the acting user's right to unfurl is already established by
- * `requestReferralLinkUnfurl` before the unfurl processor ever reaches this function.
- *
- * The upsert's `ON CONFLICT ... DO UPDATE ... WHERE parent_link_id IS NOT NULL` guard
- * ensures a manually-added link is never silently converted into a child: if the same
- * (user, program, url) row already exists as a manual link, the conflicting row is left
- * untouched and no row is returned.
- */
-export async function createChildReferralLink(
+type ChildReferralLinkInput = {
+  userId: string
+  referralProgramId: string
+  url: string
+  parentLinkId: string
+  label?: string | null
+}
+type ChildReferralLinkOptions = QueryOptions & { assessedUrls?: AssessedUrls }
+
+/** Internal unfurl batch. Manual links remain untouched and are omitted from the result. */
+export async function createChildReferralLinks(
   currentUserId: string,
   provenance: ContentProvenance,
-  data: {
-    userId: string
-    referralProgramId: string
-    url: string
-    parentLinkId: string
-    label?: string | null
-  },
-  options?: QueryOptions,
-): Promise<UserReferralLink> {
+  inputs: ChildReferralLinkInput[],
+  { assessedUrls, ...options }: ChildReferralLinkOptions = {},
+): Promise<UserReferralLink[]> {
+  if (inputs.length === 0) return []
   validateUUID(currentUserId)
-  validateUUID(data.userId)
-  validateUUID(data.referralProgramId)
-  validateUUID(data.parentLinkId)
-
-  const validationResult = await isUrlReferralLink(data.url, {
-    referral_program_id: data.referralProgramId,
-  })
-  assert(
-    validationResult.is_valid,
-    422,
-    validationResult.user_error_text || 'Invalid referral link URL',
-  )
-  assert(
-    validationResult.referral_program_id === data.referralProgramId,
-    422,
-    'URL does not match the specified referral program',
-  )
-
-  const urlRecord = await addUrl(currentUserId, data.url, options)
-  assert(urlRecord, 500, 'Failed to create URL record')
-
-  const rawLabel = data.label
-  const label = typeof rawLabel === 'string' ? rawLabel.trim() || null : null
-  if (label) {
-    assert(label.length <= 255, 422, 'label must be 255 characters or less')
+  for (const input of inputs) {
+    validateUUID(input.userId)
+    validateUUID(input.referralProgramId)
+    validateUUID(input.parentLinkId)
   }
-
-  const { rows } = await write<UserReferralLink>(
-    sql`/* createChildReferralLink */
-      INSERT INTO user_referral_program_links (
-        user_id,
-        referral_program_topic_id,
-        url_id,
-        parent_link_id,
-        label,
-        activated_at,
-        created_via,
-        created_via_oauth_client_id
-      )
-      VALUES (
-        ${data.userId},
-        ${data.referralProgramId},
-        ${urlRecord.id},
-        ${data.parentLinkId},
-        ${label},
-        CURRENT_TIMESTAMP,
-        ${provenance.createdVia},
-        ${provenance.oauthClientId}
-      )
-      ON CONFLICT (user_id, referral_program_topic_id, url_id)
-        WHERE deleted_at IS NULL
-      DO UPDATE SET
-        parent_link_id = EXCLUDED.parent_link_id,
-        label = COALESCE(EXCLUDED.label, user_referral_program_links.label),
-        activated_at = CURRENT_TIMESTAMP,
-        deactivated_at = NULL
-      WHERE user_referral_program_links.parent_link_id IS NOT NULL
-      RETURNING `.append(userReferralLinkColumns()),
-    options,
+  const validations = await validateReferralLinkUrls(
+    inputs.map(input => input.url),
+    { referralProgramIds: inputs.map(input => input.referralProgramId) },
   )
-
-  assert(rows[0], 409, 'Referral link already exists as a manually-added link')
-
-  return rows[0]
+  const candidates = inputs.map((input, index) => {
+    const validation = validations[index]!
+    assert(validation.is_valid, 422, validation.user_error_text || 'Invalid referral link URL')
+    assert(
+      validation.referral_program_id === input.referralProgramId,
+      422,
+      'URL does not match the specified referral program',
+    )
+    const label = typeof input.label === 'string' ? input.label.trim() || null : null
+    return { ...input, label }
+  })
+  const assessment = assessedUrls ?? (await assessUrls(candidates.map(input => input.url)))
+  const urls = await persistAssessedUrls(currentUserId, assessment, options)
+  for (const { label } of candidates)
+    assert(!label || label.length <= 255, 422, 'label must be 255 characters or less')
+  const byHref = new Map(urls.map(url => [url.url, url.id]))
+  const rowsToInsert = candidates.map(input => {
+    const urlId = byHref.get(normalizeUrlForUrlTable(input.url).toString())
+    assert(urlId, 500, 'Failed to create URL record')
+    return { ...input, urlId }
+  })
+  return insertChildReferralLinkRows(provenance, rowsToInsert, options)
 }

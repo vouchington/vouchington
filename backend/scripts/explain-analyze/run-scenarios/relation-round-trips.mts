@@ -5,7 +5,7 @@ import { upsertEntityRelation } from '@services/entity-relations/upsert'
 import { upsertPostCategoryRelationRows } from '@services/posts/category-relation-insert'
 import { deletePendingRecommendation } from '@services/topic-recommendations/delete-pending-recommendation'
 import { replaceTopicRecommendationHostnames } from '@services/topic-recommendations/materialize-topic-recommendation'
-import { createTopicRecommendationLinkRelation } from '@services/topic-recommendations/create-topic-recommendation-link-relation'
+import { createTopicRecommendationRelations } from '@services/topic-recommendations/create-topic-recommendation-link-relation'
 import { writeTopicRecommendationUpdate } from '@services/topic-recommendations/update-topic-recommendation'
 import { createPostTextEmbeddingContent } from '@services/posts/content'
 import type { TopicRecommendationPost } from '@services/topic-recommendations/types'
@@ -17,6 +17,7 @@ import { RELATION_INSERT_POST_INDEXES, seedUuid } from '../seed-data/common.mts'
 // Budgets are the larger of both plan modes and capture passes, plus 20% rounded up.
 export async function runRelationRoundTripScenarios(): Promise<void> {
   registerScenarioContract('topic-recommendation-pending-delete', {
+    allowEmptyResult: true,
     expectations: [
       { kind: 'maxProcessedRows', relation: 'post_topic_recommendations', max: 0 },
       { kind: 'maxProcessedRows', relation: 'posts', max: 0 },
@@ -35,7 +36,7 @@ export async function runRelationRoundTripScenarios(): Promise<void> {
       })
     },
     undefined,
-    'deletePendingRecommendation',
+    'deletePendingRecommendation:review',
   )
 
   registerScenarioContract('topic-recommendation-update-write', {
@@ -117,10 +118,10 @@ export async function runRelationRoundTripScenarios(): Promise<void> {
     'topic-landing-page-hostname-conflict',
     async () => {
       await using transaction = await beginTransaction()
-      await createTopicRecommendationLinkRelation(
+      await createTopicRecommendationRelations(
         seedUser,
         topic,
-        { id: seedHostnameIds[0]!, hostname: 'seed-host-0.example.com' },
+        [{ id: seedHostnameIds[0]!, hostname: 'seed-host-0.example.com' }],
         { query: transaction },
       ).catch((err: unknown) => {
         if ((err as { status?: number }).status !== 422) throw err

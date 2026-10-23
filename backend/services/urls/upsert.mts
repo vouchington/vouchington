@@ -1,51 +1,17 @@
-import { upsertUrlHostnames } from '@services/urls-hostnames'
-import { upsertMediaTypes } from './media-types.mts'
-import type { QueryOptions } from '@data-stores/psql/types'
-import type { ViewUrl } from './types.mts'
-import { getOrCreateCrawlerForHostname } from '@services/crawlers'
-import createError from 'http-errors'
 import { isPublicHostname, normalizeUrlForUrlTable } from '@modules/utils/urls'
-import { enqueueBulkOnUrlCreated } from '@queues/entity-listeners/enqueues'
-import { invalidate } from '@services/entity-cache'
 import { assertUrlsAllowedByWebRisk } from '@services/web-risk/check'
-import { upsertUrlRows } from './upsert-write.mts'
+import { persistAssessedUrls, type AddUrlOptions, type AssessedUrls } from './upsert-persist.mts'
 
-type AddUrlOptions = {
-  content_type?: string
-  skipCreatedEvents?: boolean
-  preserveHttp?: boolean
-} & QueryOptions
-type TransactionQueryWithClient = NonNullable<QueryOptions['query']> & { client: object }
+export const { addUrls, addUrl, assessUrls } = createUrlUpsert()
 
-export function extractInsertedUrlIds(
-  rows: Array<{ hostname_id: string; id: string; inserted: boolean }>,
-): string[] {
-  return rows
-    .filter(row => row.inserted)
-    .toSorted(
-      (left, right) =>
-        left.hostname_id.localeCompare(right.hostname_id) || left.id.localeCompare(right.id),
-    )
-    .map(row => row.id)
-}
-
-export const { addUrls, addUrl } = createUrlUpsert()
-
-/** Binds real URL persistence/prewrite validation to its actual Web Risk checker owner. */
+/** One unlocked provider assessment followed by one batch persistence implementation. */
 export function createUrlUpsert(
   checkUrls: (urls: readonly string[]) => Promise<void> = assertUrlsAllowedByWebRisk,
 ) {
-  const addUrls = async (
-    userId: string | null,
-    hrefs: string[],
-    options: AddUrlOptions = {},
-  ): Promise<Array<ViewUrl & { canonical_hostname_id: string | null }>> => {
-    const {
-      content_type,
-      skipCreatedEvents = false,
-      preserveHttp = false,
-      ...queryOptions
-    } = options
+  const assessUrls = async (
+    hrefs: readonly string[],
+    { preserveHttp = false }: Pick<AddUrlOptions, 'preserveHttp'> = {},
+  ): Promise<AssessedUrls> => {
     // Public-host checks are best-effort in batch mode — skip non-public items only.
     // Only reject actual IP literals, not domain names with a private-looking prefix.
     const urls = hrefs.flatMap(href => {
@@ -67,132 +33,13 @@ export function createUrlUpsert(
     })
 
     await checkUrls(uniqueUrls.map(url => url.toString()))
-
-    const hostnames = await upsertUrlHostnames(
-      userId,
-      uniqueUrls.map(url => url.hostname),
-      queryOptions,
-    )
-    for (const url of uniqueUrls) {
-      if (!hostnames.has(url.hostname)) throw new Error(`Hostname not found for ${url.hostname}`)
-    }
-
-    const values: unknown[] = [
-      uniqueUrls.map(url => url.toString()),
-      uniqueUrls.map(url => hostnames.get(url.hostname)!),
-      uniqueUrls.map(url => url.pathname),
-      uniqueUrls.map(url => Object.fromEntries(url.searchParams)),
-      uniqueUrls.map(() => userId || null),
-    ]
-
-    let mimeTypeId: string | null = null
-    if (content_type) {
-      mimeTypeId = await upsertMediaTypes(content_type, queryOptions)
-    }
-
-    const rows = await upsertUrlRows(
-      values,
-      mimeTypeId === null ? null : uniqueUrls.map(() => mimeTypeId),
-      queryOptions,
-    )
-
-    const idsByUrl = new Map(rows.map(row => [row.url, row]))
-    const viewUrls = uniqueUrls.flatMap(url => {
-      const row = idsByUrl.get(url.toString())
-      return row ? [toViewUrl(row)] : []
-    })
-    const viewUrlsById = new Map(viewUrls.map(url => [url.id, url]))
-
-    for (const viewUrl of viewUrls) {
-      if (viewUrl.hostname.is_blocked) {
-        throw createError(422, `Hostname ${viewUrl.hostname.hostname} is blocked`)
-      }
-    }
-
-    const insertedIds = extractInsertedUrlIds(rows)
-    await dispatchUrlCreatedEvents(insertedIds, viewUrlsById, queryOptions, skipCreatedEvents)
-
-    // Skip invalidation inside transactions — the transaction hasn't committed yet, so
-    // Valkey invalidation would race with commit. Callers that insert URLs inside a transaction
-    // (by passing queryOptions.client) MUST call invalidate.urls(...urlStrings) post-commit
-    // to clear the urls_lookup cache. The 1-day null-sentinel TTL means a missed invalidation
-    // can cause a 404-until-expiry regression for URL lookups.
-    const updatedIds = rows.flatMap(row => {
-      const r = row as { inserted?: boolean; id?: string }
-      return r.inserted === false && r.id ? [r.id] : []
-    })
-    if (!queryOptions.client && (insertedIds.length > 0 || updatedIds.length > 0)) {
-      const changedIdSet = new Set([...insertedIds, ...updatedIds])
-      const changedIds = [...changedIdSet]
-      const changedUrlStrings = rows.flatMap(row => (changedIdSet.has(row.id) ? [row.url] : []))
-      await invalidate.urls(...changedUrlStrings, ...changedIds)
-    }
-
-    return viewUrls
+    return uniqueUrls
   }
-
-  const addUrl = (
-    userId: string | null,
-    url: string,
-    options?: AddUrlOptions,
-  ): Promise<(ViewUrl & { canonical_hostname_id: string | null }) | null> =>
-    Promise.resolve().then(() => {
-      const preserveHttp = options?.preserveHttp ?? false
-      const normalizedUrl = normalizeUrlForUrlTable(url, { preserveHttp })
-      if (!isPublicHostname(normalizedUrl.hostname)) return null
-      return addUrls(userId, [normalizedUrl.toString()], options).then(x => x[0] || null)
-    })
-
-  return { addUrls, addUrl }
-}
-
-async function dispatchUrlCreatedEvents(
-  insertedIds: string[],
-  viewUrlsById: Map<string, ViewUrl>,
-  queryOptions: QueryOptions,
-  skipCreatedEvents: boolean,
-): Promise<void> {
-  if (insertedIds.length === 0) return
-  if (skipCreatedEvents) return
-
-  if (queryOptions.client || hasTransactionQuery(queryOptions.query)) {
-    await processUrlCreatedInline(insertedIds, viewUrlsById, queryOptions)
-    return
+  const addUrls = async (userId: string | null, hrefs: string[], options: AddUrlOptions = {}) => {
+    const assessed = await assessUrls(hrefs, options)
+    return persistAssessedUrls(userId, assessed, options)
   }
-
-  void enqueueBulkOnUrlCreated(insertedIds)
-}
-
-async function processUrlCreatedInline(
-  ids: string[],
-  viewUrlsById: Map<string, ViewUrl>,
-  options: QueryOptions,
-): Promise<void> {
-  await ids.reduce(async (previous, id) => {
-    await previous
-
-    const url = viewUrlsById.get(id)
-    if (!url) return
-    if (url.hostname.is_blocked || !url.hostname.is_crawlable) return
-    await getOrCreateCrawlerForHostname(null, url.hostname.id, options)
-  }, Promise.resolve())
-}
-
-function toViewUrl(
-  row: Awaited<ReturnType<typeof upsertUrlRows>>[number],
-): ViewUrl & { canonical_hostname_id: string | null } {
-  return {
-    __entity_type: row.__entity_type,
-    id: row.id,
-    hostname: row.hostname,
-    canonical_url_id: row.canonical_url_id,
-    url: row.url,
-    pathname: row.pathname,
-    search_params: row.search_params,
-    canonical_hostname_id: row.canonical_hostname_id,
-  }
-}
-
-function hasTransactionQuery(query: QueryOptions['query']): query is TransactionQueryWithClient {
-  return typeof query === 'function' && 'client' in query
+  const addUrl = (userId: string | null, href: string, options?: AddUrlOptions) =>
+    addUrls(userId, [href], options).then(urls => urls[0] ?? null)
+  return { assessUrls, addUrls, addUrl }
 }

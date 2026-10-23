@@ -1,7 +1,9 @@
+import { assessUrls } from '@services/urls/upsert'
+import { prepareUrlHostnamesForOwnedMutation } from '@services/urls-hostnames/upsert'
+import { lockHostnameOwnership } from '@services/urls-hostnames/ownership-lock'
 import { beginTransaction } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
 import sql from 'sql-template-strings'
-import { isHttpError } from 'http-errors'
 import onError from '@modules/on-error'
 import { getMembershipByUserId } from '@services/memberships'
 import { hasPlusTier } from '@modules/membership-helpers'
@@ -10,7 +12,7 @@ import { crawlWithBrowser } from '@services/browser-crawl'
 import { validateReferralLinkUrls } from '@services/referral-program-link-validations'
 import {
   getUserReferralLink,
-  createChildReferralLink,
+  createChildReferralLinks,
   reconcileChildrenForParent,
   markReferralLinkUnfurlCompleted,
   markReferralLinkUnfurlFailed,
@@ -113,34 +115,28 @@ export async function runReferralLinkUnfurl(
     return
   }
 
-  const keptUrlIds: string[] = []
+  const assessedUrls = await assessUrls(validCandidates.map(candidate => candidate.url))
   await using query = await beginTransaction()
+  // ast-grep-ignore: no-three-sequential-awaits -- hostname ids must resolve before their ownership locks, which must precede the referral parent row lock.
+  const resolved = await prepareUrlHostnamesForOwnedMutation(
+    parent.user_id,
+    assessedUrls.map(url => url.hostname),
+    query,
+  )
+  await lockHostnameOwnership(query, [...resolved.values()])
   await lockParentForUnfurl(parentLinkId, query)
-
-  for (const { url, referralProgramId } of validCandidates) {
-    try {
-      // Every createChildReferralLink call shares the single transaction connection (`query`);
-      // concurrent writes on one PG client are unsafe, so these must stay sequential.
-      // oxlint-disable-next-line no-await-in-loop
-      const child = await createChildReferralLink(
-        parent.user_id,
-        SYSTEM_PROVENANCE,
-        {
-          userId: parent.user_id,
-          referralProgramId,
-          url,
-          parentLinkId,
-        },
-        { query },
-      )
-      keptUrlIds.push(child.url_id)
-    } catch (err) {
-      // The URL already exists as a manually-added link -- skip this one card rather than
-      // aborting the whole unfurl.
-      if (isHttpError(err) && err.status === 409) continue
-      throw err
-    }
-  }
+  const children = await createChildReferralLinks(
+    parent.user_id,
+    SYSTEM_PROVENANCE,
+    validCandidates.map(candidate => ({
+      userId: parent.user_id,
+      referralProgramId: candidate.referralProgramId,
+      url: candidate.url,
+      parentLinkId,
+    })),
+    { query, assessedUrls },
+  )
+  const keptUrlIds = children.map(child => child.url_id)
 
   if (keptUrlIds.length > 0) {
     await reconcileChildrenForParent(parentLinkId, keptUrlIds, { query })

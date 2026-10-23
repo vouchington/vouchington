@@ -1,10 +1,15 @@
 import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
-import { addUrls } from '@services/urls'
+import { assessUrls } from '@services/urls/upsert'
+import { persistAssessedUrls, type AssessedUrls } from '@services/urls/upsert-persist'
+import { prepareUrlHostnamesForOwnedMutation } from '@services/urls-hostnames/upsert'
 import { writeEntityRelations } from '@services/entity-relations/write-relations'
 import type { EntityRelation } from '@services/entity-relations/upsert-helpers'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
-import { lockHostnameOwnership } from '@services/entity-relations/hostname-ownership-lock'
-import { normalizeUrlHostname } from '@services/urls-hostnames/upsert'
+import {
+  lockHostnameOwnership,
+  lockTopicHostnameMutations,
+} from '@services/urls-hostnames/ownership-lock'
+import { normalizeUrlForUrlTable } from '@modules/utils/urls'
 import type { Topic } from '@services/topics/types'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import assert from 'http-assert'
@@ -18,25 +23,29 @@ const landingPageRelation = getEntityRelationMetadataOrThrow({
 
 export type TopicRecommendationRelationWriteOptions = Omit<QueryOptions, 'query'> & {
   query: TransactionQuery
-  hostnameOwnershipLocked?: boolean
+  assessedUrls?: AssessedUrls
 }
 
 type LinkResult = { relation: EntityRelation | null; urlId: string | null }
 
-export async function createTopicRecommendationLinkRelations(
+export async function createTopicRecommendationRelations(
   currentUser: PrivateUser,
   topic: Topic,
   hostnames: ReadonlyArray<{ id: string; hostname: string }>,
   options: TopicRecommendationRelationWriteOptions,
+  typedUrls: readonly string[] = [],
 ): Promise<LinkResult[]> {
   assert(options.query, 500, 'Query options are required')
-  if (hostnames.length === 0) return []
-  if (!options.hostnameOwnershipLocked) {
-    await lockHostnameOwnership(
-      options.query,
-      hostnames.map(hostname => normalizeUrlHostname(hostname.hostname)),
-    )
-  }
+  const hrefs = [...hostnames.map(hostname => `https://${hostname.hostname}/`), ...typedUrls]
+  if (hrefs.length === 0) return []
+  const assessed = options.assessedUrls ?? (await assessUrls(hrefs))
+  // ast-grep-ignore: no-three-sequential-awaits -- topic ownership precedes resolving transaction-private hostname ids, then the resolved hostname ownership set is locked.
+  await lockTopicHostnameMutations(options.query, [topic.id])
+  const resolved = await prepareUrlHostnamesForOwnedMutation(currentUser.id, hrefs, options.query)
+  await lockHostnameOwnership(options.query, [
+    ...hostnames.map(hostname => hostname.id),
+    ...resolved.values(),
+  ])
 
   const existingRelationQuery = await options.query<{
     subject_id: string
@@ -61,45 +70,23 @@ export async function createTopicRecommendationLinkRelations(
     )
   }
 
-  const urls = await addUrls(
-    currentUser.id,
-    hostnames.map(hostname => `https://${hostname.hostname}/`),
-    { query: options.query, skipCreatedEvents: true },
-  )
-  const urlsByHostname = new Map(
-    urls.map(url => [normalizeUrlHostname(url.hostname.hostname), url]),
-  )
-  const pairs = hostnames.flatMap(hostname => {
-    const url = urlsByHostname.get(normalizeUrlHostname(hostname.hostname))
-    return url ? [{ subject: topic, object: url }] : []
+  const urls = await persistAssessedUrls(currentUser.id, assessed, {
+    query: options.query,
+    skipCreatedEvents: true,
   })
+  const urlsByHref = new Map(urls.map(url => [url.url, url]))
+  const pairs = urls.map(url => ({ subject: topic, object: url }))
   const relations = await writeEntityRelations(landingPageRelation, currentUser, pairs, {
     query: options.query,
     vote: false,
     skipBlockedHostnameGuard: true,
-    skipHostnameOwnershipLock: true,
   })
   const relationsByObject = new Map(relations.map(relation => [relation.object_id, relation]))
-  return hostnames.map(hostname => {
-    const url = urlsByHostname.get(normalizeUrlHostname(hostname.hostname)) ?? null
+  return hrefs.map(href => {
+    const url = urlsByHref.get(normalizeUrlForUrlTable(href).toString()) ?? null
     return {
       relation: url ? (relationsByObject.get(url.id) ?? null) : null,
       urlId: url?.id ?? null,
     }
   })
-}
-
-export async function createTopicRecommendationLinkRelation(
-  currentUser: PrivateUser,
-  topic: Topic,
-  hostname: { id: string; hostname: string },
-  options: TopicRecommendationRelationWriteOptions,
-): Promise<LinkResult> {
-  const [result] = await createTopicRecommendationLinkRelations(
-    currentUser,
-    topic,
-    [hostname],
-    options,
-  )
-  return result ?? { relation: null, urlId: null }
 }

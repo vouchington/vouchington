@@ -4,7 +4,7 @@ import assert from 'node:assert/strict'
 import { createReferralProgramFixture, createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { activateUserReferralLink, deactivateUserReferralLink } from './activate.mts'
 import { createUserReferralLink } from './create.mts'
-import { createChildReferralLink } from './create-child.mts'
+import { createChildReferralLinks } from './create-child.mts'
 
 describe('activate', () => {
   let user: PrivateUser
@@ -72,12 +72,16 @@ describe('activate', () => {
   })
 
   it('activateUserReferralLink forbids activating a child referral link directly', async () => {
-    const child = await createChildReferralLink(user.id, WEB_PROVENANCE, {
-      userId: user.id,
-      referralProgramId: referralProgramId!,
-      url: `https://${hostname}/refer?test=activate-child`,
-      parentLinkId: linkId!,
-    })
+    const child = (
+      await createChildReferralLinks(user.id, WEB_PROVENANCE, [
+        {
+          userId: user.id,
+          referralProgramId: referralProgramId!,
+          url: `https://${hostname}/refer?test=activate-child`,
+          parentLinkId: linkId!,
+        },
+      ])
+    )[0]!
 
     await assert.rejects(() => activateUserReferralLink(user, child.id), {
       status: 403,
@@ -86,12 +90,16 @@ describe('activate', () => {
   })
 
   it('deactivateUserReferralLink forbids deactivating a child referral link directly', async () => {
-    const child = await createChildReferralLink(user.id, WEB_PROVENANCE, {
-      userId: user.id,
-      referralProgramId: referralProgramId!,
-      url: `https://${hostname}/refer?test=deactivate-child`,
-      parentLinkId: linkId!,
-    })
+    const child = (
+      await createChildReferralLinks(user.id, WEB_PROVENANCE, [
+        {
+          userId: user.id,
+          referralProgramId: referralProgramId!,
+          url: `https://${hostname}/refer?test=deactivate-child`,
+          parentLinkId: linkId!,
+        },
+      ])
+    )[0]!
 
     await assert.rejects(() => deactivateUserReferralLink(user, child.id), {
       status: 403,

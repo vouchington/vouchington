@@ -1,3 +1,6 @@
+import { runCrawlerBatchScenario } from './crawler-batch.mts'
+import { runHostnameRelationPolicyScenario } from './hostname-relation-policy.mts'
+import { runHostnameOwnershipScenarios } from './hostname-ownership.mts'
 import { getVoteFollowContextBatch } from '@services/users/follow-context'
 import { getFollowedUsersFollowingTopicIds } from '@services/users/follow-context-topic-query'
 import { getTopicDataPointInsightsBatch } from '@services/data-points/insights'
@@ -22,6 +25,9 @@ import { runRelationRoundTripScenarios } from './relation-round-trips.mts'
 // Budgets are the larger of both plan modes and capture passes, plus 20% rounded up.
 export async function runRelationReadBatchScenarios(): Promise<void> {
   await runRelationRoundTripScenarios()
+  await runHostnameOwnershipScenarios()
+  await runHostnameRelationPolicyScenario()
+  await runCrawlerBatchScenario()
   await runRelatablePostAccessScenario()
   registerScenarioContract('url-blocked-policy-with-values', {
     expectations: [

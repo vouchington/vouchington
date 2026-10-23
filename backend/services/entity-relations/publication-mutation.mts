@@ -12,7 +12,15 @@ import {
   lockTopicAliasPublicationScopes,
 } from '@services/post-publication'
 import { lockActiveUserSubjectsForMutation } from '@services/user-deletions/active-user-mutation-lock'
-import { lockHostnameOwnershipForUrls } from './hostname-ownership-lock.mts'
+import {
+  getHostnamePolicyGroups,
+  getLocalHostnamePolicies,
+} from '@services/urls-hostnames/policies'
+import assert from 'http-assert'
+import {
+  lockHostnameOwnershipForUrls,
+  lockTopicHostnameMutations,
+} from '@services/urls-hostnames/ownership-lock'
 
 type PublicationMutationOptions = UpsertEntityRelationsOptions
 
@@ -21,17 +29,26 @@ export async function runRelationPublicationMutation<
 >(
   options: PublicationMutationOptions | undefined,
   relationTable: string,
+  mutationKind: 'activate' | 'delete',
   subjectIds: readonly string[],
   objectIds: readonly string[],
   activeUserSubjectIds: readonly string[],
   mutation: (query: TransactionQuery) => Promise<T[]>,
 ): Promise<T[]> {
   const run = async (query: TransactionQuery): Promise<T[]> => {
-    if (
-      relationTable === 'relation__topic__landing_page__url' &&
-      !options?.skipHostnameOwnershipLock
-    ) {
-      await lockHostnameOwnershipForUrls(query, objectIds)
+    if (relationTable === 'relation__topic__landing_page__url') {
+      await lockTopicHostnameMutations(query, subjectIds)
+      const hostnames = await lockHostnameOwnershipForUrls(query, objectIds)
+      if (mutationKind === 'activate') {
+        const policies = await getLocalHostnamePolicies(getHostnamePolicyGroups(hostnames), {
+          query,
+        })
+        assert(
+          ![...policies.values()].some(policy => policy.is_blocked),
+          422,
+          'URL hostname is blocked',
+        )
+      }
     }
     await lockActiveUserSubjectsForMutation(query, activeUserSubjectIds)
     const capturePublication = options?.capturePublication !== false

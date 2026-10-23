@@ -7,7 +7,7 @@ import {
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { createUserReferralLink } from '@services/user-referral-program-links/create'
-import { createChildReferralLink } from '@services/user-referral-program-links/create-child'
+import { createChildReferralLinks } from '@services/user-referral-program-links/create-child'
 import { getUserReferralLink } from '@services/user-referral-program-links/get'
 import { deleteUserReferralLink } from '@services/user-referral-program-links/delete'
 import { getActiveChildUrlIdsForParent } from '@services/user-referral-program-links/children'
@@ -15,7 +15,6 @@ import { addUrl } from '@services/urls/upsert'
 import type { PrivateUser } from '@services/users/types'
 import type { BrowserCrawlResult } from '@services/browser-crawl'
 import { suppressedError } from '@voucha/test-helpers/suppressed-error'
-import { withCapturedTestQueries } from '@voucha/test-helpers/query-capture'
 import { constructChildUrls, type AmexCardSlug } from './construct-amex-children.mts'
 import { runReferralLinkUnfurl } from './unfurl.mts'
 
@@ -94,16 +93,10 @@ describe('runReferralLinkUnfurl', () => {
     ]
     await Promise.all(cards.map(card => createAmexCardFixture(owner, card)))
     const finalUrl = `https://redirected.example.com/landed?corid=${randomSlug('corid')}`
-    const { queries } = await withCapturedTestQueries(() =>
-      runReferralLinkUnfurl(parent.id, {
-        crawlWithBrowser: stubCrawl(finalUrl).crawlWithBrowser,
-        getAmexCardSlugCatalog: stubCatalog(cards).getAmexCardSlugCatalog,
-      }),
-    )
-    // Child creation still validates each write; the candidate scan now loads rules once.
-    expect(queries.filter(query => query.text.includes('/* isUrlReferralLink */'))).toHaveLength(
-      cards.length + 1,
-    )
+    await runReferralLinkUnfurl(parent.id, {
+      crawlWithBrowser: stubCrawl(finalUrl).crawlWithBrowser,
+      getAmexCardSlugCatalog: stubCatalog(cards).getAmexCardSlugCatalog,
+    })
     const updated = await getUserReferralLink(parent.id)
     expect(updated?.unfurl_completed_at).toBeTruthy()
     expect(updated?.unfurl_failed_at).toBeNull()
@@ -139,13 +132,17 @@ describe('runReferralLinkUnfurl', () => {
     const card: AmexCardSlug = { kind: 'personal', slug: randomSlug('child-target-card') }
     const cardFixture = await createAmexCardFixture(owner, card)
     const [childUrl] = constructChildUrls('https://redirected.example.com/landed?x=1', [card])
-    const child = await createChildReferralLink(owner.id, WEB_PROVENANCE, {
-      userId: owner.id,
-      referralProgramId: cardFixture.referralProgramId,
-      url: childUrl,
-      parentLinkId: parent.id,
-      label: 'existing child',
-    })
+    const child = (
+      await createChildReferralLinks(owner.id, WEB_PROVENANCE, [
+        {
+          userId: owner.id,
+          referralProgramId: cardFixture.referralProgramId,
+          url: childUrl,
+          parentLinkId: parent.id,
+          label: 'existing child',
+        },
+      ])
+    )[0]!
     const crawl = stubCrawl('https://example.com/never-used')
 
     await expect(

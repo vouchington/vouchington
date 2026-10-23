@@ -216,6 +216,14 @@
     "code": "backend/services/posts/create/community-scope.mts:76"
   },
   {
+    "annotation": "getLocalHostnamePolicies",
+    "route": null,
+    "maxCount": null,
+    "reason": "Provider assessment runs before ownership locks; URL persistence must read local policy again after the lock wait to see blocks committed by the provider or previous holder.",
+    "permanent": true,
+    "code": "backend/services/urls/upsert-persist.mts:63"
+  },
+  {
     "annotation": "getLandingPageRowForUser",
     "route": null,
     "maxCount": null,
@@ -382,6 +390,14 @@
     "reason": "Alias claim re-reads alias rows after topic creation so the lock sees aliases inserted earlier in the transaction.",
     "permanent": true,
     "code": "backend/services/topics/alias-publication-locks.mts:16"
+  },
+  {
+    "annotation": "lockHostnameOwnership",
+    "route": "POST /api/v1/fediverse/instances",
+    "maxCount": 2,
+    "reason": "Two independently committed transactions each need their own transaction-scoped ownership key: createInstanceFromHostname resolves and commits public introduction here; createInstanceInTransaction reacquires ownership before source writes (backend/services/fediverse-instances/create-instance-helpers.mts:73).",
+    "permanent": true,
+    "code": "backend/services/fediverse-instances/create-instance.mts:34"
   },
   {
     "annotation": "lockPostPublicationCaptures",
@@ -683,7 +699,7 @@
     "annotation": "updateTopicRecommendation",
     "route": null,
     "maxCount": null,
-    "reason": "The FOR UPDATE snapshot feeds materialization, so the locked read stays ahead of the folded write.",
+    "reason": "The read after the recommendation mutation fence sees the previous holder's hostname commit before materialization; the folded write remains a separate statement.",
     "permanent": true,
     "code": "backend/services/topic-recommendations/update-topic-recommendation.mts:37"
   },

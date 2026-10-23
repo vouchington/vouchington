@@ -3,7 +3,7 @@ import type { QueryOptions } from '@data-stores/psql/types'
 import { getMinUUIDv7ForParentHistory, getMaxUUIDv7ForDate } from '@modules/utils/ids'
 import sql from 'sql-template-strings'
 import { getUrlHostnameCrawlerDetailsById } from '@services/urls-hostnames'
-import { getOrCreateCrawlerForHostname } from './create-crawler.mts'
+import { getOrCreateCrawlerForHostname } from './get-or-create.mts'
 import { getRetryCrawlUrlCount } from './refresh-limits.mts'
 
 export type HostnameCrawlerRefreshCursor = { sweepStartedAt: string; afterId?: string }

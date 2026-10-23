@@ -2,7 +2,7 @@ import { read } from '@data-stores/psql'
 import type { QueryOptions } from '@data-stores/psql/types'
 import { isUUID } from '@modules/utils'
 import createError from 'http-errors'
-import { getOrCreateCrawlerForHostname } from './create-crawler.mts'
+import { getOrCreateCrawlerForHostname } from './get-or-create.mts'
 import { getCrawlerById, toCrawler } from './get.mts'
 import type { Crawler } from './types.mts'
 

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { createReferralProgramFixture, createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { OFFICIAL_ACCOUNT_TRUST_SIGNAL_FORBIDDEN } from '@modules/on-error/error-codes'
 import { createUserReferralLink } from './create.mts'
-import { createChildReferralLink } from './create-child.mts'
+import { createChildReferralLinks } from './create-child.mts'
 import { updateUserReferralLink } from './update.mts'
 
 describe('update', () => {
@@ -154,12 +154,16 @@ describe('update', () => {
       url: `https://${testHostname}/refer?test=update-child-parent`,
       label: 'Parent link',
     })
-    const child = await createChildReferralLink(regularUser!.id, WEB_PROVENANCE, {
-      userId: regularUser!.id,
-      referralProgramId: referralProgramId!,
-      url: `https://${testHostname}/refer?test=update-child`,
-      parentLinkId: parent.id,
-    })
+    const child = (
+      await createChildReferralLinks(regularUser!.id, WEB_PROVENANCE, [
+        {
+          userId: regularUser!.id,
+          referralProgramId: referralProgramId!,
+          url: `https://${testHostname}/refer?test=update-child`,
+          parentLinkId: parent.id,
+        },
+      ])
+    )[0]!
 
     await assert.rejects(() => updateUserReferralLink(regularUser, child.id, { label: 'Hacked' }), {
       status: 403,

@@ -1,9 +1,20 @@
-import { read, write } from '@data-stores/psql'
-import type { QueryOptions } from '@data-stores/psql/types'
+import {
+  beginTransaction,
+  read,
+  write,
+  withTransactionOptions,
+  registerPostCommitAction,
+} from '@data-stores/psql'
+import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
 import { isUUID } from '@modules/utils'
 import { normalizeHostname } from '@ts-shared/utils/urls'
 import { invalidate } from '@services/entity-cache'
 import { upsertUrlHostnames } from '@services/urls-hostnames'
+import { prepareUrlHostnamesForOwnedMutation } from '@services/urls-hostnames/upsert'
+import {
+  lockHostnameOwnership,
+  lockTopicHostnameMutations,
+} from '@services/urls-hostnames/ownership-lock'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
 
@@ -43,9 +54,39 @@ export const addAdditionalHostname = async (
   const normalizedHostname = normalizeHostname(hostname)
   assert(normalizedHostname !== null, 422, 'Invalid hostname format')
 
-  const hostnameMap = await upsertUrlHostnames(userId, [normalizedHostname!], options)
+  if (!options.query) {
+    if (options.client)
+      return withTransactionOptions(options, query =>
+        addAdditionalHostname(topicId, hostname, userId, { query }),
+      )
+    await using query = await beginTransaction()
+    const result = await addAdditionalHostname(topicId, hostname, userId, { query })
+    await query.commit()
+    return result
+  }
+
+  return withTransactionOptions(options, query =>
+    addAdditionalHostnameInTransaction(topicId, normalizedHostname!, userId, { query }),
+  )
+}
+
+async function addAdditionalHostnameInTransaction(
+  topicId: string,
+  normalizedHostname: string,
+  userId: string,
+  options: { query: TransactionQuery },
+): Promise<TopicAdditionalHostname> {
+  await lockTopicHostnameMutations(options.query, [topicId])
+  // Resolve without promotion so no existing hostname row is locked before ownership.
+  const hostnameMap = await prepareUrlHostnamesForOwnedMutation(
+    userId,
+    [normalizedHostname],
+    options.query,
+  )
   const hostnameId = hostnameMap.values().next().value as string | undefined
   assert(hostnameId, 500, 'Failed to resolve hostname')
+  await lockHostnameOwnership(options.query, [hostnameId])
+  await upsertUrlHostnames(userId, [normalizedHostname!], options)
 
   // Conflict check, update, and hostname fetch in one query.
   // The UPDATE only runs if the hostname is not the topic's own primary, not the primary
@@ -74,7 +115,7 @@ export const addAdditionalHostname = async (
   )
   assert(row.updated, 409, 'Hostname is already linked to another topic')
 
-  await invalidate.url_hostnames(hostnameId)
+  registerPostCommitAction(options.query, () => invalidate.url_hostnames(hostnameId))
 
   return {
     hostname_id: hostnameId,
@@ -92,11 +133,35 @@ export const removeAdditionalHostname = async (
   assert(isUUID(topicId), 422, 'topic_id must be a valid UUID')
   assert(isUUID(hostnameId), 422, 'hostname_id must be a valid UUID')
 
+  if (!options.query) {
+    if (options.client)
+      return withTransactionOptions(options, query =>
+        removeAdditionalHostname(topicId, hostnameId, { query }),
+      )
+    await using query = await beginTransaction()
+    await removeAdditionalHostname(topicId, hostnameId, { query })
+    await query.commit()
+    return
+  }
+  return withTransactionOptions(options, query =>
+    removeAdditionalHostnameInTransaction(topicId, hostnameId, { query }),
+  )
+}
+
+async function removeAdditionalHostnameInTransaction(
+  topicId: string,
+  hostnameId: string,
+  options: { query: TransactionQuery },
+): Promise<void> {
+  // ast-grep-ignore: no-three-sequential-awaits -- topic ownership must precede hostname ownership, and both must precede the release write.
+  await lockTopicHostnameMutations(options.query, [topicId])
+  await lockHostnameOwnership(options.query, [hostnameId])
+
   const { rows } = await write(
     // no-mistakes-disable-next-line postgres-required-predicates: id-scoped hostname_id lookup of the already-validated topic
     sql`/* removeAdditionalHostname */ UPDATE url_hostnames SET topic_id = NULL WHERE id = ${hostnameId} AND topic_id = ${topicId} AND id IS DISTINCT FROM (SELECT hostname_id FROM topics WHERE id = ${topicId}) RETURNING id`,
     options,
   )
   assert(rows.length > 0, 404, 'Additional hostname not found for this topic')
-  await invalidate.url_hostnames(hostnameId)
+  registerPostCommitAction(options.query, () => invalidate.url_hostnames(hostnameId))
 }

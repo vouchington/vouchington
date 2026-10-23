@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { createSourceWithRetry, generateSourceDetails } from '../create-source-helpers.mts'
+import { createSourceWithRetry } from '../create-source-helpers.mts'
+import { generateSourceDetails } from '../generate-source-details.mts'
 import { createRssFeedUrlId } from '../rss-feed-url-id.mts'
 import { upsertUrlHostnames } from '@services/urls-hostnames/upsert'
 import { createTopicAliases } from '@services/topics/aliases'

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import type { PrivateUser } from '@services/users/types'
 import { createReferralProgramFixture, createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { createUserReferralLink } from './create.mts'
-import { createChildReferralLink } from './create-child.mts'
+import { createChildReferralLinks } from './create-child.mts'
 import { getUserReferralLink } from './get.mts'
 
 describe('create-child', () => {
@@ -45,13 +45,17 @@ describe('create-child', () => {
   })
 
   it('creates a child link pointing at its parent', async () => {
-    const child = await createChildReferralLink(userId!, WEB_PROVENANCE, {
-      userId: userId!,
-      referralProgramId: referralProgramId!,
-      url: `https://${testHostname}/refer?test=child1`,
-      parentLinkId: parentLinkId!,
-      label: 'Gold Card',
-    })
+    const child = (
+      await createChildReferralLinks(userId!, WEB_PROVENANCE, [
+        {
+          userId: userId!,
+          referralProgramId: referralProgramId!,
+          url: `https://${testHostname}/refer?test=child1`,
+          parentLinkId: parentLinkId!,
+          label: 'Gold Card',
+        },
+      ])
+    )[0]!
 
     assert.ok(child.id)
     assert.equal(child.user_id, userId)
@@ -64,33 +68,43 @@ describe('create-child', () => {
   it('rejects a URL that does not match the specified referral program', async () => {
     await assert.rejects(
       () =>
-        createChildReferralLink(userId!, WEB_PROVENANCE, {
-          userId: userId!,
-          referralProgramId: otherReferralProgramId!,
-          url: `https://${testHostname}/refer?test=wrong-program`,
-          parentLinkId: parentLinkId!,
-        }),
+        createChildReferralLinks(userId!, WEB_PROVENANCE, [
+          {
+            userId: userId!,
+            referralProgramId: otherReferralProgramId!,
+            url: `https://${testHostname}/refer?test=wrong-program`,
+            parentLinkId: parentLinkId!,
+          },
+        ]),
       { status: 422 },
     )
   })
 
   it('re-running with the same URL is idempotent and re-activates the child', async () => {
     const url = `https://${testHostname}/refer?test=idempotent`
-    const first = await createChildReferralLink(userId!, WEB_PROVENANCE, {
-      userId: userId!,
-      referralProgramId: referralProgramId!,
-      url,
-      parentLinkId: parentLinkId!,
-      label: 'First label',
-    })
+    const first = (
+      await createChildReferralLinks(userId!, WEB_PROVENANCE, [
+        {
+          userId: userId!,
+          referralProgramId: referralProgramId!,
+          url,
+          parentLinkId: parentLinkId!,
+          label: 'First label',
+        },
+      ])
+    )[0]!
 
-    const second = await createChildReferralLink(userId!, WEB_PROVENANCE, {
-      userId: userId!,
-      referralProgramId: referralProgramId!,
-      url,
-      parentLinkId: parentLinkId!,
-      label: 'Second label',
-    })
+    const second = (
+      await createChildReferralLinks(userId!, WEB_PROVENANCE, [
+        {
+          userId: userId!,
+          referralProgramId: referralProgramId!,
+          url,
+          parentLinkId: parentLinkId!,
+          label: 'Second label',
+        },
+      ])
+    )[0]!
 
     assert.equal(second.id, first.id)
     assert.equal(second.parent_link_id, parentLinkId)
@@ -107,17 +121,16 @@ describe('create-child', () => {
       label: 'Manually added',
     })
 
-    await assert.rejects(
-      () =>
-        createChildReferralLink(userId!, WEB_PROVENANCE, {
-          userId: userId!,
-          referralProgramId: referralProgramId!,
-          url,
-          parentLinkId: parentLinkId!,
-          label: 'Should not overwrite',
-        }),
-      { status: 409 },
-    )
+    const children = await createChildReferralLinks(userId!, WEB_PROVENANCE, [
+      {
+        userId: userId!,
+        referralProgramId: referralProgramId!,
+        url,
+        parentLinkId: parentLinkId!,
+        label: 'Should not overwrite',
+      },
+    ])
+    assert.deepEqual(children, [])
 
     const stillManual = await getUserReferralLink(manual.id)
     assert.ok(stillManual)

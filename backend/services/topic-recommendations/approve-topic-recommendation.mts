@@ -5,13 +5,13 @@ import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import { createTopic } from '@services/topics/create'
 import { updateTopic } from '@services/topics/update'
 import type { EntityRelation } from '@services/entity-relations/upsert-helpers'
-import { lockHostnameOwnership } from '@services/entity-relations/hostname-ownership-lock'
-import { normalizeUrlHostname } from '@services/urls-hostnames/upsert'
+import { lockHostnameOwnership } from '@services/urls-hostnames/ownership-lock'
+import { prepareUrlHostnamesForOwnedMutation } from '@services/urls-hostnames/upsert'
 import { getPostByAny } from '@services/posts'
 import assert from 'http-assert'
 import { createTopicAliases } from '@services/topics/aliases'
-import { createTopicRecommendationLinkRelations } from './create-topic-recommendation-link-relation.mts'
-import { createTopicRecommendationUrlRelations } from './create-topic-recommendation-url-relation.mts'
+import { createTopicRecommendationRelations } from './create-topic-recommendation-link-relation.mts'
+import { assessUrls } from '@services/urls/upsert'
 import { getLockedTopicRecommendationApproval } from './get-locked-topic-recommendation-approval.mts'
 import { markTopicRecommendationApproved } from './mark-topic-recommendation-approved.mts'
 import { setTopicRecommendationApprovalError } from './set-topic-recommendation-approval-error.mts'
@@ -26,6 +26,33 @@ export async function approveTopicRecommendationInTransaction(
   options: { query: TransactionQuery },
 ): Promise<TopicRecommendationApprovalTransactionResult> {
   const lockedRecommendation = await getLockedTopicRecommendationApproval(recommendationId, options)
+
+  const typedUrls: string[] = []
+  if (
+    lockedRecommendation.topic_type === 'referral_program' &&
+    lockedRecommendation.example_referral_link
+  ) {
+    typedUrls.push(lockedRecommendation.example_referral_link)
+  } else if (lockedRecommendation.topic_type === 'card') {
+    typedUrls.push(...lockedRecommendation.landing_page_urls)
+  }
+
+  const assessedUrls = await assessUrls([
+    ...lockedRecommendation.hostnames.map(hostname => `https://${hostname.hostname}/`),
+    ...typedUrls,
+  ])
+  const typedHostnameIds = await prepareUrlHostnamesForOwnedMutation(
+    currentUser.id,
+    typedUrls,
+    options.query,
+  )
+  // normalizeUrlForUrlTable and URL.hostname agree on these hostnames, so later
+  // materialization reuses this held set instead of acquiring locks after publication.
+  await lockHostnameOwnership(options.query, [
+    ...lockedRecommendation.hostnames.map(hostname => hostname.id),
+    ...typedHostnameIds.values(),
+    ...(lockedRecommendation.hostname_id ? [lockedRecommendation.hostname_id] : []),
+  ])
 
   const topic = await createTopic(
     currentUser,
@@ -57,34 +84,15 @@ export async function approveTopicRecommendationInTransaction(
 
   const relations: EntityRelation[] = []
   const urlIds: string[] = []
-  const typedUrls: string[] = []
-  if (
-    lockedRecommendation.topic_type === 'referral_program' &&
-    lockedRecommendation.example_referral_link
-  ) {
-    typedUrls.push(lockedRecommendation.example_referral_link)
-  } else if (lockedRecommendation.topic_type === 'card') {
-    typedUrls.push(...lockedRecommendation.landing_page_urls)
-  }
-
-  await lockHostnameOwnership(options.query, [
-    ...lockedRecommendation.hostnames.map(hostname => normalizeUrlHostname(hostname.hostname)),
-    ...typedUrls.map(url => normalizeUrlHostname(url)),
-  ])
-  const relationOptions = { ...options, hostnameOwnershipLocked: true }
-  const linkResults = await createTopicRecommendationLinkRelations(
+  const relationOptions = { ...options, assessedUrls }
+  const results = await createTopicRecommendationRelations(
     currentUser,
     topic,
     lockedRecommendation.hostnames,
     relationOptions,
-  )
-  const urlResults = await createTopicRecommendationUrlRelations(
-    currentUser,
-    topic,
     typedUrls,
-    relationOptions,
   )
-  for (const result of [...linkResults, ...urlResults]) {
+  for (const result of results) {
     if (result.relation) relations.push(result.relation)
     if (result.urlId) urlIds.push(result.urlId)
   }

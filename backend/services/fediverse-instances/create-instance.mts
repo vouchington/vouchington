@@ -1,5 +1,5 @@
 import type { BasicUser } from '@services/users/types'
-import { resolveHostname } from '@services/topics/hostname-link'
+import { resolveHostname } from '@services/topics/resolve-hostname'
 import { upsertAutomaticTopicUpvote } from '@services/elections-votes/topic/automatic-upvote'
 import { normalizeHostname } from '@ts-shared/utils/urls'
 import assert from 'http-assert'

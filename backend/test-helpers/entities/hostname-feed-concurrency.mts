@@ -1,7 +1,7 @@
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import type { DomainBlacklistSourceId } from '@voucha/types/entities/domain-blacklist-source'
 import sql from 'sql-template-strings'
-import { upsertUrlHostnamesForBlocking } from '../../services/urls-hostnames/upsert.mts'
+import { prepareUrlHostnamesForOwnedMutation } from '../../services/urls-hostnames/upsert.mts'
 
 /** Simulate a replica missing this test's already-committed hostname row. */
 export function hideTestHostnameFromReplicaRead(
@@ -56,7 +56,7 @@ export async function stageTestHostnameBeforeBlocking(
   rootId: string,
 ): Promise<void> {
   await using stage = await beginTransaction()
-  await upsertUrlHostnamesForBlocking(userId, [hostname], stage)
+  await prepareUrlHostnamesForOwnedMutation(userId, [hostname], stage)
   await using probe = await beginTransaction()
   await lockTestHostnameNowait(rootId, probe)
   await probe.commit()

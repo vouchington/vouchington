@@ -2,13 +2,15 @@ import { enqueueOnTopicCreated } from '@queues/entity-listeners/enqueues'
 import { topicTypes } from '@voucha/types/entities/topic'
 import type { CreateTopicUpdates, Topic } from './types.mts'
 import { createTopicEmbeddingContent } from './content.mts'
-import { resolveHostname, setTopicHostnameLink } from './hostname-link.mts'
+import { setTopicHostnameLink } from './hostname-link.mts'
+import { prepareTopicHostnameCreation } from './prepare-topic-hostname-creation.mts'
+import { registerCreatedTopicsForHostnameOwnership } from '@services/urls-hostnames/ownership-lock'
 import type { PrivateUser } from '@services/users/types'
 import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
 import type { QueryOptions } from '@data-stores/psql/types'
 import { isUUID, validateSlug } from '@modules/utils'
 import { normalizeKey } from '@ts-shared/utils/strings'
-import { beginTransaction, write } from '@data-stores/psql'
+import { beginTransaction, write, withTransactionOptions } from '@data-stores/psql'
 import { mapTopicWithRedirect, type TopicRedirectRow } from './get-with-redirect-mapping.mts'
 import { currentUserCanCreateTopic } from './authorization.mts'
 import { getUrlById } from '@services/urls'
@@ -65,11 +67,10 @@ export const createTopic = async (
 
   updates.updated_by_id = creator.id
 
-  const queryOptions = options.query ? { query: options.query } : options.client ? options : null
-
-  if (queryOptions) {
-    return createTopicInDatabase(creator, provenance, updates, queryOptions)
-  }
+  if (options.query || options.client)
+    return withTransactionOptions(options, query =>
+      createTopicInDatabase(creator, provenance, updates, { query }),
+    )
 
   await using query = await beginTransaction()
   const createdTopic = await createTopicInDatabase(creator, provenance, updates, { query })
@@ -82,7 +83,7 @@ async function createTopicInDatabase(
   creator: PrivateUser,
   provenance: ContentProvenance,
   updates: CreateTopicUpdates,
-  options: QueryOptions,
+  options: QueryOptions & { query: import('@data-stores/psql').TransactionQuery },
 ): Promise<Topic> {
   const topicType = updates.topic_type || 'topic'
 
@@ -94,6 +95,12 @@ async function createTopicInDatabase(
     assert(url, 422, 'homepage_url_id does not reference a known URL')
   }
 
+  const { hostnameId, revivalIds } = await prepareTopicHostnameCreation(
+    creator.id,
+    updates,
+    options,
+  )
+
   const { rows } = await write(
     sql`/* createTopicInDatabase */
     WITH source_alias_owner AS (
@@ -102,6 +109,7 @@ async function createTopicInDatabase(
       FROM topic_aliases source_alias
       JOIN topics topic ON topic.id = source_alias.topic_id
       WHERE source_alias.id = ${updates.source_topic_alias_id ?? null}
+        AND topic.id = ANY(${revivalIds}::uuid[])
         AND topic.slug = ${updates.slug}
         AND topic.deleted_at IS NOT NULL
         AND topic.merged_into_topic_id IS NULL
@@ -152,6 +160,8 @@ async function createTopicInDatabase(
   )
 
   const topicId = rows[0].id as string
+  if (!revivalIds.includes(topicId))
+    registerCreatedTopicsForHostnameOwnership(options.query, [topicId])
   if (updates.source_topic_alias_id) {
     await linkTopicAlias(topicId, updates.source_topic_alias_id, {
       ...options,
@@ -160,8 +170,7 @@ async function createTopicInDatabase(
   }
   await claimTopicAlias(topicId, updates.slug, options)
   if (updates.hostname !== undefined) {
-    const hostnameId = await resolveHostname(creator.id, updates.hostname, options)
-    await setTopicHostnameLink(topicId, hostnameId, options)
+    await setTopicHostnameLink(topicId, hostnameId ?? null, options)
   }
 
   const topic = await readCreatedTopic(topicId, options)

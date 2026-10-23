@@ -65,6 +65,7 @@
     "@services/tag-limits": "workspace:^",
     "@services/topics": "workspace:^",
     "@services/urls": "workspace:^",
+    "@services/urls-hostnames": "workspace:^",
     "@services/user-deletions": "workspace:^",
     "@services/user-rate-limits": "workspace:^",
     "@services/users": "workspace:^",
@@ -83,6 +84,7 @@
     "@ts-shared/cache": "workspace:^",
     "@types/http-errors": "^2.0.5",
     "@voucha/test-helpers": "workspace:^",
+    "undici": "^8.11.2",
     "vitest": "^5.0.5"
   }
 }

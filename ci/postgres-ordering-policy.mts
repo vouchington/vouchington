@@ -70,7 +70,6 @@ export const expectedDirectiveInventory = [
   'backend/services/oauth-authorization-server/retention-tokens.mts:2',
   'backend/services/oauth-authorization-server/retention.mts:1',
   'backend/services/stripe/membership-provider-facts/context.mts:1',
-  'backend/services/topic-recommendations/update-topic-recommendation.mts:1',
   'backend/services/vote-integrity/create-flag.mts:3',
 ] as const
 

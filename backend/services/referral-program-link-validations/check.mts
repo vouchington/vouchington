@@ -27,12 +27,18 @@ type ReferralLinkValidationOptions = QueryOptions & {
 /** Loads one ordered rule snapshot for an ordered batch of URL checks. */
 export async function validateReferralLinkUrls(
   urls: string[],
+  options: { referralProgramIds?: readonly string[] } = {},
 ): Promise<ReferralLinkValidationResult[]> {
   if (urls.length === 0) return []
+  for (const id of new Set(options.referralProgramIds ?? [])) validateUUID(id)
   const rules = await loadEnabledReferralLinkRules()
-  return urls.map(url => {
+  return urls.map((url, index) => {
     const parsed = parseReferralLinkUrl(url)
-    return parsed instanceof URL ? matchReferralLinkRules(parsed, rules) : parsed
+    const expected = options.referralProgramIds?.[index]
+    const matchingRules = expected
+      ? rules.filter(rule => rule.referral_program_id === expected)
+      : rules
+    return parsed instanceof URL ? matchReferralLinkRules(parsed, matchingRules) : parsed
   })
 }
 

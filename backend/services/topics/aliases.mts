@@ -1,4 +1,4 @@
-import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
+import type { TransactionQuery } from '@data-stores/psql/types'
 import { enqueueBulkTopicAliasesUpdate } from '@queues/rss-feed-maintenance/enqueues/topic-aliases'
 import { addEntityBloomKeys } from '@services/entity-cache/bloom-filter-repair'
 import { invalidate } from '@services/entity-cache/invalidate'
@@ -7,7 +7,7 @@ import { lockTopicAliasPublicationScopes } from '@services/post-publication'
 import { normalizeKey } from '@ts-shared/utils/strings'
 import assert from 'http-assert'
 import { prepareTopicAliasInput } from './alias-preflight.mts'
-import type { TopicAlias, TopicAliasOptions } from './alias-types.mts'
+import type { TopicAlias, TopicAliasOptions, CreateTopicAliasOptions } from './alias-types.mts'
 import { invalidatePostsForTopicAliases } from './invalidate-posts-for-topic-aliases.mts'
 import { recordTopicAliasPublicationChanges } from './publication-change.mts'
 export { unlinkTopicAlias } from './delete-topic-aliases.mts'
@@ -108,13 +108,21 @@ export async function createTopicAliases(
   {
     skipSideEffects = false,
     revisedById = null,
+    preparedPublicationScopes,
     ...queryOptions
-  }: { skipSideEffects?: boolean; revisedById?: string | null } & QueryOptions = {},
+  }: CreateTopicAliasOptions = {},
 ): Promise<TopicAlias[]> {
   const aliasArray = prepareTopicAliasInput(aliases)
   if (aliasArray.length === 0) return []
   const run = async (query: TransactionQuery) => {
-    const existingAliasIds = await lockExistingTopicAliasPublicationScopes(query, aliasArray)
+    assert(
+      !preparedPublicationScopes || preparedPublicationScopes.query === query,
+      500,
+      'Prepared alias scopes require their original transaction',
+    )
+    const existingAliasIds =
+      preparedPublicationScopes?.aliasIds ??
+      (await lockExistingTopicAliasPublicationScopes(query, aliasArray))
     const { rows: topicRows } = await query<{ id: string; merged_into_topic_id: string | null }>(
       `/* createTopicAliases lockTopic */
       SELECT id, merged_into_topic_id

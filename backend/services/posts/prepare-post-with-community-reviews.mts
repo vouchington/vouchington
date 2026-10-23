@@ -11,7 +11,10 @@ import { resolvePostScope } from './create/community-scope.mts'
 import { insertPost } from './create/insert-post.mts'
 import { applyPostTransactionSideEffects } from './create/transaction-side-effects.mts'
 import { validateCreatePostInput, validatePostCategories } from './create/validation.mts'
-import { addUrl } from '@services/urls/upsert'
+import { assessUrls } from '@services/urls/upsert'
+import { persistAssessedUrls } from '@services/urls/upsert-persist'
+import { prepareUrlHostnamesForOwnedMutation } from '@services/urls-hostnames/upsert'
+import { lockHostnameOwnership } from '@services/urls-hostnames/ownership-lock'
 import { prepareDelegatedCreateScope } from './create/delegated-create-scope.mts'
 import { recordCreatedPostPublicationChange } from './create/publication-change.mts'
 import sql from 'sql-template-strings'
@@ -34,6 +37,13 @@ export const preparePostWithCommunityReviews = async (
     readOnly: false,
   })
   const shouldValidateResolvedLinkCategories = defaults.postType === 'link' && !input.title?.trim()
+  const assessment =
+    defaults.postType === 'link' && input.url && !input.url_id
+      ? await assessUrls([input.url]).then(
+          value => ({ value }),
+          (err: unknown) => ({ err }),
+        )
+      : undefined
   let communityReviews: CommunityPostReview[] = []
   let resolvedUrlStrings: string[] = []
   let resolvedUrlHostnameId: string | undefined
@@ -41,6 +51,14 @@ export const preparePostWithCommunityReviews = async (
   let updates: CreatePostInput = input
   const delegated = options.delegated
   const createInTransaction = async (query: TransactionQuery) => {
+    if (assessment && 'value' in assessment) {
+      const resolved = await prepareUrlHostnamesForOwnedMutation(
+        creator.id,
+        assessment.value.map(url => url.hostname),
+        query,
+      )
+      await lockHostnameOwnership(query, [...resolved.values()])
+    }
     await lockActivePostAuthorImageAdmission(
       query,
       creator.id,
@@ -54,15 +72,17 @@ export const preparePostWithCommunityReviews = async (
     const delegatedParent = delegated
       ? await prepareDelegatedCreateScope(query, creator, input, defaults.postType)
       : undefined
-    // Resolve url string → url_id for link posts inside the transaction so the url row
-    // is visible to the INSERT. addUrl returns null for blocked/non-public hosts → 422.
     if (defaults.postType === 'link' && updates.url && !updates.url_id) {
-      const viewUrl = await addUrl(creator.id, updates.url, { ...options, skipCreatedEvents: true })
+      if (assessment && 'err' in assessment) throw assessment.err
+      const [viewUrl] = await persistAssessedUrls(
+        creator.id,
+        assessment && 'value' in assessment ? assessment.value : [],
+        { ...options, skipCreatedEvents: true },
+      )
       if (!viewUrl) throw createHttpError(422, 'URL is blocked or not allowed')
       updates = { ...updates, url_id: viewUrl.canonical_url_id ?? viewUrl.id }
       sourceUrlId = viewUrl.id
       resolvedUrlStrings = [input.url!]
-      // Carry the canonical hostname out for post-commit crawler setup without replica lag.
       resolvedUrlHostnameId = viewUrl.canonical_hostname_id ?? viewUrl.hostname.id
       if (!updates.title?.trim()) {
         updates = { ...updates, title: input.url!.slice(0, 255).trim() }
@@ -164,8 +184,6 @@ export const preparePostWithCommunityReviews = async (
   })
   const response = { post: post!, communityReviews }
   const finalize = async () => {
-    // The records were committed with the placement rows. Queue admission is best-effort only;
-    // the permanent reconciliation schedule owns recovery after a crash or Valkey outage.
     void enqueueReconcileMediaDeliveryRegistry()
     return finalizePreparedPost({
       communityReviews,

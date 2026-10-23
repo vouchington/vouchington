@@ -27,40 +27,21 @@ export async function deletePendingRecommendation(
   const rejectionReason = getWithdrawRejectionReason(currentUser, recommendation)
 
   await using query = await beginTransaction()
+  // The conditional UPDATE supplies the same reviewed-state fence, before publication locks.
+  const reviewed = await query(sql`/* deletePendingRecommendation:review */
+    UPDATE post_topic_recommendations
+    SET reviewed_at = NOW(), reviewed_by_id = ${currentUser.id},
+      approval_error_message = NULL, rejection_reason = ${rejectionReason}, created_topic_id = NULL
+    WHERE post_id = ${recommendation.id} AND reviewed_at IS NULL
+    RETURNING post_id
+  `)
+  assert(reviewed.rowCount === 1, 403, 'Forbidden')
   await lockPostPublication(query, recommendation.id)
-  // The UPDATE re-evaluates reviewed_at after waiting on the row lock. A separate
-  // SELECT FOR UPDATE would snapshot the row from before that wait.
-  const { rows } = await query<{ reviewed_count: number; deleted_count: number }>(
-    sql`/* deletePendingRecommendation */
-      WITH reviewed AS (
-        UPDATE post_topic_recommendations
-        SET reviewed_at = NOW(),
-          reviewed_by_id = ${currentUser.id},
-          approval_error_message = NULL,
-          rejection_reason = ${rejectionReason},
-          created_topic_id = NULL
-        WHERE post_id = ${recommendation.id}
-          AND reviewed_at IS NULL
-        RETURNING post_id
-      ),
-      deleted AS (
-        UPDATE posts
-        SET deleted_at = CURRENT_TIMESTAMP,
-          deleted_by_id = ${currentUser.id}
-        WHERE id IN (SELECT post_id FROM reviewed)
-          AND deleted_at IS NULL
-        RETURNING id
-      )
-      SELECT
-        (SELECT COUNT(*)::int FROM reviewed) AS reviewed_count,
-        (SELECT COUNT(*)::int FROM deleted) AS deleted_count
-    `,
-  )
-  assert(
-    (rows[0]?.reviewed_count ?? 0) === 1 && (rows[0]?.deleted_count ?? 0) === 1,
-    403,
-    'Forbidden',
-  )
+  const deleted = await query(sql`/* deletePendingRecommendation */
+    UPDATE posts SET deleted_at = CURRENT_TIMESTAMP, deleted_by_id = ${currentUser.id}
+    WHERE id = ${recommendation.id} AND deleted_at IS NULL RETURNING id
+  `)
+  assert(deleted.rowCount === 1, 403, 'Forbidden')
 
   await recordPostPublicationChange(query, {
     scope: { type: 'post', postId: recommendation.id },

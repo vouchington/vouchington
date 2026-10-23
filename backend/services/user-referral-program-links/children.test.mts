@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import type { PrivateUser } from '@services/users/types'
 import { createReferralProgramFixture, createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { createUserReferralLink } from './create.mts'
-import { createChildReferralLink } from './create-child.mts'
+import { createChildReferralLinks } from './create-child.mts'
 import {
   getActiveChildUrlIdsForParent,
   reconcileChildrenForParent,
@@ -39,16 +39,16 @@ describe('children', () => {
       label: 'Parent link',
     })
 
-    const children = []
-    for (let i = 0; i < count; i++) {
-      const child = await createChildReferralLink(user.id, WEB_PROVENANCE, {
+    const children = await createChildReferralLinks(
+      user.id,
+      WEB_PROVENANCE,
+      Array.from({ length: count }, (_, i) => ({
         userId: user.id,
         referralProgramId: referralProgramId!,
         url: `https://${testHostname}/refer?test=child-${parent.id}-${i}`,
         parentLinkId: parent.id,
-      })
-      children.push(child)
-    }
+      })),
+    )
 
     return { parent, children }
   }
@@ -86,12 +86,16 @@ describe('children', () => {
       referral_program_id: referralProgramId!,
       url: `https://${testHostname}/refer?test=other-parent-${Math.random().toString(36).slice(7)}`,
     })
-    const otherChild = await createChildReferralLink(otherUser.id, WEB_PROVENANCE, {
-      userId: otherUser.id,
-      referralProgramId: referralProgramId!,
-      url: `https://${testHostname}/refer?test=other-child-${otherParent.id}`,
-      parentLinkId: otherParent.id,
-    })
+    const otherChild = (
+      await createChildReferralLinks(otherUser.id, WEB_PROVENANCE, [
+        {
+          userId: otherUser.id,
+          referralProgramId: referralProgramId!,
+          url: `https://${testHostname}/refer?test=other-child-${otherParent.id}`,
+          parentLinkId: otherParent.id,
+        },
+      ])
+    )[0]!
 
     await softDeleteChildrenForUser(user.id)
 

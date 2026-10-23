@@ -1,13 +1,16 @@
 import type { PrivateUser } from '@services/users/types'
 import type { CreateTopicUpdates, Topic } from './types.mts'
 import { beginTransaction, write, withTransactionOptions } from '@data-stores/psql'
-import type { QueryOptions } from '@data-stores/psql/types'
+import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
 import { getTopicByAny } from './get.mts'
 import assert from 'http-assert'
 import { currentUserCanUpdateTopic } from './authorization.mts'
 import { invalidate } from '@services/entity-cache'
 import { enqueueOnTopicUpdated } from '@queues/entity-listeners/enqueues'
-import { resolveHostname, setTopicHostnameLink } from './hostname-link.mts'
+import { setTopicHostnameLink } from './hostname-link.mts'
+import { prepareHostnameForOwnedMutation } from './resolve-hostname.mts'
+import { lockTopicHostnameMutations } from '@services/urls-hostnames/ownership-lock'
+import { lockTopicHostnameOwnership } from './hostname-ownership-lock.mts'
 import sql from 'sql-template-strings'
 import { createTopicRevision } from '@services/topic-revisions'
 import { buildTopicRevisionChanges } from './update-revision-changes.mts'
@@ -17,6 +20,8 @@ import {
   hasTopicFieldUpdates,
 } from './update-fields.mts'
 import { createTopicAliases, finalizeClaimedTopicAliases } from './aliases.mts'
+import { lockExistingTopicAliasPublicationScopes } from './alias-publication-locks.mts'
+import { prepareTopicAliasInput } from './alias-preflight.mts'
 import { enqueueReconcileMediaDeliveryRegistry } from '@queues/notifications/enqueues'
 import {
   prepublishImageSurfaceDenials,
@@ -36,10 +41,36 @@ export const updateTopic = async (
 ) => {
   assert(currentUserCanUpdateTopic(updater), 403, 'Forbidden')
   let claimedAliases: Awaited<ReturnType<typeof createTopicAliases>> = []
-  async function updateInStore(options: QueryOptions) {
+  async function updateInStore(options: QueryOptions & { query: TransactionQuery }) {
     const hasUpdates = hasTopicFieldUpdates(changes)
     if (hasUpdates) {
       await assertValidTopicFieldUpdates(topic, changes, allowTypeChange, options)
+      let resolvedHostnameId: string | null | undefined
+      if (changes.hostname !== undefined) {
+        const query = options.query!
+        // ast-grep-ignore: no-three-sequential-awaits -- topic ownership stabilizes discovery; resolving the new id must finish before locking the old and new hostname ids.
+        await lockTopicHostnameMutations(query, [topic.id])
+        resolvedHostnameId = await prepareHostnameForOwnedMutation(
+          updater.id,
+          changes.hostname,
+          query,
+        )
+        await lockTopicHostnameOwnership(
+          query,
+          [topic.id],
+          resolvedHostnameId ? [resolvedHostnameId] : [],
+        )
+      }
+      const preparedPublicationScopes =
+        changes.slug === undefined
+          ? undefined
+          : {
+              query: options.query,
+              aliasIds: await lockExistingTopicAliasPublicationScopes(
+                options.query,
+                prepareTopicAliasInput([topic.slug, changes.slug]),
+              ),
+            }
       const references: (ImageSurfaceReference & { nextImageId?: string | null })[] = []
       if (changes.logo_image_id !== undefined)
         references.push({
@@ -76,12 +107,11 @@ export const updateTopic = async (
           )
         }
       }
+
       const updateQuery = sql`/* updateTopicInStore */ UPDATE topics SET updated_by_id = ${updater.id}`
       appendTopicUpdateFields(updateQuery, changes)
-      let resolvedHostnameId: string | null | undefined
       if (changes.hostname !== undefined) {
-        resolvedHostnameId = await resolveHostname(updater.id, changes.hostname, options)
-        await setTopicHostnameLink(topic.id, resolvedHostnameId, options)
+        await setTopicHostnameLink(topic.id, resolvedHostnameId ?? null, options)
       }
 
       updateQuery.append(sql` WHERE id = ${topic.id}`)
@@ -91,6 +121,7 @@ export const updateTopic = async (
         claimedAliases = await createTopicAliases(topic.id, [topic.slug, changes.slug], {
           ...options,
           skipSideEffects: true,
+          preparedPublicationScopes,
         })
       }
 
@@ -103,10 +134,8 @@ export const updateTopic = async (
     return getTopicByAny(topic.id, options)
   }
   let topic2
-  if (queryOptions.query) {
-    topic2 = await updateInStore({ query: queryOptions.query })
-  } else if (queryOptions.client) {
-    topic2 = await withTransactionOptions(queryOptions, updateInStore)
+  if (queryOptions.query || queryOptions.client) {
+    topic2 = await withTransactionOptions(queryOptions, query => updateInStore({ query }))
   } else {
     await using query = await beginTransaction()
     topic2 = await updateInStore({ query })
