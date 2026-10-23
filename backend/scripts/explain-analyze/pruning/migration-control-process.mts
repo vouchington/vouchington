@@ -7,7 +7,7 @@ import type { CommandRunner } from '../benchmarks/topic-metrics/database-lifecyc
 
 interface MigrationChildIdentity {
   name: string
-  role: 'package' | 'concurrent'
+  role: 'concurrent'
   oid: number
   pid: number
   pgid: number
@@ -39,10 +39,7 @@ export async function readMigrationChildIdentity(
   if (complete) {
     assert.ok('status' in evidence && evidence.status === 'closed')
     assert.ok('canonicalClosed' in evidence && evidence.canonicalClosed === true)
-    assert.ok(
-      'alternateClosed' in evidence &&
-        evidence.alternateClosed === (owner.role === 'concurrent' ? true : null),
-    )
+    assert.ok('alternateClosed' in evidence && evidence.alternateClosed === true)
     assert.ok(
       'observedClients' in evidence &&
         typeof evidence.observedClients === 'number' &&

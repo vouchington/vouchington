@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join, resolve } from 'node:path'
+import { join } from 'node:path'
 
 import pg from 'pg'
 import { describe, expect, it, vi } from 'vitest'
@@ -14,7 +14,6 @@ import type { QueryExecutor, QueryInput } from './types.mts'
 import {
   applyAllMigrations,
   runAllMigrations,
-  runMigrations,
   runViews,
   type VerifySchemaAfterMigration,
 } from './migrate.mts'
@@ -154,16 +153,6 @@ describe('applyAllMigrations', () => {
       readPool.options.min = previousMin
       if (!released) client.release()
     }
-  })
-
-  it('forwards the canonical package SQL folder and logger to the public platform runner', async () => {
-    const run = vi
-      .fn<NonNullable<Parameters<typeof runMigrations>[0]>['runMigrations']>()
-      .mockResolvedValue(undefined)
-    await runMigrations({ runMigrations: run })
-    expect(run).toHaveBeenCalledExactlyOnceWith(resolve(import.meta.dirname, 'migrations'), {
-      logger: console,
-    })
   })
 
   it('keeps ordinary view rebuilds on the non-forced path', async () => {
