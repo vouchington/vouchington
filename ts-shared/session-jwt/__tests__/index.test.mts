@@ -118,4 +118,23 @@ describe('@ts-shared/session-jwt', () => {
       'VOUCHA_SESSION_JWT_PRIVATE_KEYS_B64 or VOUCHA_SESSION_JWT_PUBLIC_KEYS_B64 must be configured in production',
     )
   })
+
+  it('rejects an empty configured production verification key set', async () => {
+    const { did, sid } = makeIds()
+    const privateKey = await generatePrivateJwk('empty-public-policy')
+    const token = await signSessionJwt(
+      { did, sid, uid: null },
+      {
+        mode: 'production',
+        env: { VOUCHA_SESSION_JWT_PRIVATE_KEYS_B64: encodeJwkSetForEnv([privateKey]) },
+        expiresIn: '2 days',
+      },
+    )
+    await expect(
+      verifySessionJwt(token, {
+        mode: 'production',
+        env: { VOUCHA_SESSION_JWT_PUBLIC_KEYS_B64: encodeJwkSetForEnv([]) },
+      }),
+    ).rejects.toThrow('VOUCHA_SESSION_JWT_PUBLIC_KEYS_B64 must contain at least one JWK')
+  })
 })
