@@ -1,7 +1,7 @@
 import { defineBackgroundDomain } from './define-job.mts'
 
-// Reserve five worker slots for each delivery direction so inbound traffic cannot occupy all
-// outbound capacity. The worker baseline remains ten slots across the two lanes.
+// Reserve independent delivery and cleanup capacity so inbound traffic cannot occupy outbound
+// or retention slots. The lane cap retains the domain’s worker baseline.
 export const ACTIVITYPUB_DOMAIN = defineBackgroundDomain({
   domain: 'activitypub',
   group: { kind: 'lanes', cap: 10 },

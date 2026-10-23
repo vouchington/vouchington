@@ -23,7 +23,8 @@ const INBOX = {
   removeOnFail: 100,
 } as const
 const OUTBOUND_ORDERING = { key: 'activitypub:outbound', concurrency: 5 } as const
-const INBOUND_ORDERING = { key: 'activitypub:inbound', concurrency: 5 } as const
+const INBOUND_ORDERING = { key: 'activitypub:inbound', concurrency: 4 } as const
+const CLEANUP_ORDERING = { key: 'activitypub:cleanup', concurrency: 1 } as const
 
 export const ACTIVITYPUB_DISTRIBUTE_ACTIVITY_JOB = defineBackgroundJob<DistributeActivityData>(
   DOMAIN,
@@ -60,8 +61,8 @@ export const ACTIVITYPUB_REARM_FAILED_DELIVERIES_JOB =
   })
 export const ACTIVITYPUB_CLEANUP_EXPIRED_DELIVERIES_JOB = defineBackgroundJob<EmptyData>(DOMAIN, {
   name: 'cleanupExpiredDeliveries',
-  priority: 1,
-  ordering: INBOUND_ORDERING,
+  priority: PRIORITY_DISPATCH,
+  ordering: CLEANUP_ORDERING,
   ...INBOX,
 })
 
