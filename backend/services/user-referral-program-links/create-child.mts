@@ -59,15 +59,3 @@ export async function createChildReferralLinks(
   })
   return insertChildReferralLinkRows(provenance, rowsToInsert, options)
 }
-
-/** Retained for callers that create one child and need the existing manual-link 409. */
-export async function createChildReferralLink(
-  currentUserId: string,
-  provenance: ContentProvenance,
-  input: ChildReferralLinkInput,
-  options?: ChildReferralLinkOptions,
-): Promise<UserReferralLink> {
-  const [row] = await createChildReferralLinks(currentUserId, provenance, [input], options)
-  assert(row, 409, 'Referral link already exists as a manually-added link')
-  return row
-}

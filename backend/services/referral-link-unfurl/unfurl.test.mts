@@ -7,7 +7,7 @@ import {
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import { createUserReferralLink } from '@services/user-referral-program-links/create'
-import { createChildReferralLink } from '@services/user-referral-program-links/create-child'
+import { createChildReferralLinks } from '@services/user-referral-program-links/create-child'
 import { getUserReferralLink } from '@services/user-referral-program-links/get'
 import { deleteUserReferralLink } from '@services/user-referral-program-links/delete'
 import { getActiveChildUrlIdsForParent } from '@services/user-referral-program-links/children'
@@ -132,13 +132,17 @@ describe('runReferralLinkUnfurl', () => {
     const card: AmexCardSlug = { kind: 'personal', slug: randomSlug('child-target-card') }
     const cardFixture = await createAmexCardFixture(owner, card)
     const [childUrl] = constructChildUrls('https://redirected.example.com/landed?x=1', [card])
-    const child = await createChildReferralLink(owner.id, WEB_PROVENANCE, {
-      userId: owner.id,
-      referralProgramId: cardFixture.referralProgramId,
-      url: childUrl,
-      parentLinkId: parent.id,
-      label: 'existing child',
-    })
+    const child = (
+      await createChildReferralLinks(owner.id, WEB_PROVENANCE, [
+        {
+          userId: owner.id,
+          referralProgramId: cardFixture.referralProgramId,
+          url: childUrl,
+          parentLinkId: parent.id,
+          label: 'existing child',
+        },
+      ])
+    )[0]!
     const crawl = stubCrawl('https://example.com/never-used')
 
     await expect(

@@ -5,7 +5,7 @@ import {
   registerPostCommitAction,
 } from '@data-stores/psql'
 import { lockHostnameOwnership } from '@services/urls-hostnames/ownership-lock'
-import { upsertUrlHostnames } from '@services/urls-hostnames'
+import { prepareUrlHostnamesForOwnedMutation, upsertUrlHostnames } from '@services/urls-hostnames'
 import {
   getHostnamePolicyGroups,
   getLocalHostnamePolicies,
@@ -54,11 +54,10 @@ async function persistInTransaction(
     ...queryOptions
   } = options
   // ast-grep-ignore: no-three-sequential-awaits -- resolve ids before ownership locks, then reread local policy to observe the previous lock holder's commit.
-  const resolved = await upsertUrlHostnames(
+  const resolved = await prepareUrlHostnamesForOwnedMutation(
     userId,
     uniqueUrls.map(url => url.hostname),
-    queryOptions,
-    'private_email',
+    options.query,
   )
   await lockHostnameOwnership(options.query, [...resolved.values()])
   const policies = await getLocalHostnamePolicies(
@@ -69,6 +68,9 @@ async function persistInTransaction(
     if (policies.get(url.hostname)?.is_blocked)
       throw createError(422, `Hostname ${url.hostname} is blocked`)
   }
+  // In this transaction every cold private insert is now an existing unintroduced row.
+  // Public promotion returns it together with pre-existing private rows, enqueuing their
+  // union once; unchanged public rows do not enqueue. The drain remains post-commit.
   const hostnames = await upsertUrlHostnames(
     userId,
     uniqueUrls.map(url => url.hostname),

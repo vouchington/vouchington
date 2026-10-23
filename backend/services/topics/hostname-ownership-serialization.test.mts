@@ -118,6 +118,7 @@ describe('hostname ownership lifecycle and ancestor serialization', () => {
       await holder.commit()
     }
     expect(await pending).toMatchObject({ status: 422 })
+    await waiter.rollback()
     expect(await getActiveLandingPageHostnameClaims([hostnames.get(child)!])).toEqual([])
     const newChild = `new.${parent}`
     await upsertUrlHostnames(admin.id, [newChild])

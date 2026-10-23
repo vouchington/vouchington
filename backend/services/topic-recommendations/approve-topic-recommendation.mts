@@ -6,7 +6,7 @@ import { createTopic } from '@services/topics/create'
 import { updateTopic } from '@services/topics/update'
 import type { EntityRelation } from '@services/entity-relations/upsert-helpers'
 import { lockHostnameOwnership } from '@services/urls-hostnames/ownership-lock'
-import { upsertUrlHostnames } from '@services/urls-hostnames/upsert'
+import { prepareUrlHostnamesForOwnedMutation } from '@services/urls-hostnames/upsert'
 import { getPostByAny } from '@services/posts'
 import assert from 'http-assert'
 import { createTopicAliases } from '@services/topics/aliases'
@@ -41,11 +41,10 @@ export async function approveTopicRecommendationInTransaction(
     ...lockedRecommendation.hostnames.map(hostname => `https://${hostname.hostname}/`),
     ...typedUrls,
   ])
-  const typedHostnameIds = await upsertUrlHostnames(
+  const typedHostnameIds = await prepareUrlHostnamesForOwnedMutation(
     currentUser.id,
     typedUrls,
-    options,
-    'private_email',
+    options.query,
   )
   // normalizeUrlForUrlTable and URL.hostname agree on these hostnames, so later
   // materialization reuses this held set instead of acquiring locks after publication.

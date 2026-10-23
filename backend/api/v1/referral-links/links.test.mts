@@ -3,7 +3,7 @@ import { createRequest } from '@voucha/test-helpers/api/server'
 import { WEB_PROVENANCE, createTestUserDirect } from '@voucha/test-helpers'
 import { addUserRole } from '@services/users/roles-permissions'
 import { createReferralProgramFixture } from '@voucha/test-helpers/entities/referral-programs'
-import { createChildReferralLink } from '@services/user-referral-program-links'
+import { createChildReferralLinks } from '@services/user-referral-program-links'
 import { OFFICIAL_ACCOUNT_TRUST_SIGNAL_FORBIDDEN } from '@modules/on-error/error-codes'
 
 describe('links', () => {
@@ -160,12 +160,16 @@ describe('links', () => {
         .expect(403)
       expect(officialUpdate.body.code).toBe(OFFICIAL_ACCOUNT_TRUST_SIGNAL_FORBIDDEN)
 
-      const child = await createChildReferralLink(regularUser!.id, WEB_PROVENANCE, {
-        userId: regularUser!.id,
-        referralProgramId: referralProgramId!,
-        url: `https://${testHostname}/ref/preflight-child-${Date.now()}`,
-        parentLinkId: parent.body.referral_link.id,
-      })
+      const child = (
+        await createChildReferralLinks(regularUser!.id, WEB_PROVENANCE, [
+          {
+            userId: regularUser!.id,
+            referralProgramId: referralProgramId!,
+            url: `https://${testHostname}/ref/preflight-child-${Date.now()}`,
+            parentLinkId: parent.body.referral_link.id,
+          },
+        ])
+      )[0]!
       await ownerRequest.patch(`/api/v1/referral-links/${child.id}`).send({ label: 42 }).expect(403)
     })
 

@@ -8,7 +8,7 @@ import { currentUserCanUpdateTopic } from './authorization.mts'
 import { invalidate } from '@services/entity-cache'
 import { enqueueOnTopicUpdated } from '@queues/entity-listeners/enqueues'
 import { setTopicHostnameLink } from './hostname-link.mts'
-import { resolveHostname } from './resolve-hostname.mts'
+import { prepareHostnameForOwnedMutation } from './resolve-hostname.mts'
 import { lockTopicHostnameMutations } from '@services/urls-hostnames/ownership-lock'
 import { lockTopicHostnameOwnership } from './hostname-ownership-lock.mts'
 import sql from 'sql-template-strings'
@@ -50,11 +50,10 @@ export const updateTopic = async (
         const query = options.query!
         // ast-grep-ignore: no-three-sequential-awaits -- topic ownership stabilizes discovery; resolving the new id must finish before locking the old and new hostname ids.
         await lockTopicHostnameMutations(query, [topic.id])
-        resolvedHostnameId = await resolveHostname(
+        resolvedHostnameId = await prepareHostnameForOwnedMutation(
           updater.id,
           changes.hostname,
-          options,
-          'private_email',
+          query,
         )
         await lockTopicHostnameOwnership(
           query,

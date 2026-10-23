@@ -1,7 +1,7 @@
 import { beginTransaction } from '@data-stores/psql'
 import { drainHostnameCacheInvalidationWork } from '@services/entity-cache/hostname-invalidation-drain'
 import onError from '@modules/on-error'
-import { upsertUrlHostnamesForBlocking } from '@services/urls-hostnames/upsert'
+import { prepareUrlHostnamesForOwnedMutation } from '@services/urls-hostnames/upsert'
 import createHttpError from 'http-errors'
 import {
   type BlockHostnameResult,
@@ -19,7 +19,7 @@ export async function upsertAndBlockHostname(
   hostname: string,
 ): Promise<UpsertAndBlockHostnameResult> {
   await using query = await beginTransaction()
-  const hostnameMap = await upsertUrlHostnamesForBlocking(adminUserId, [hostname], query)
+  const hostnameMap = await prepareUrlHostnamesForOwnedMutation(adminUserId, [hostname], query)
   const hostnameId = hostnameMap.get(hostname)
   if (!hostnameId) throw createHttpError(500, 'Failed to upsert hostname')
   const { result, hostnames, creatorIds } = await blockHostnameInTransaction(

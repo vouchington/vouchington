@@ -13,7 +13,7 @@ import { applyPostTransactionSideEffects } from './create/transaction-side-effec
 import { validateCreatePostInput, validatePostCategories } from './create/validation.mts'
 import { assessUrls } from '@services/urls/upsert'
 import { persistAssessedUrls } from '@services/urls/upsert-persist'
-import { upsertUrlHostnames } from '@services/urls-hostnames/upsert'
+import { prepareUrlHostnamesForOwnedMutation } from '@services/urls-hostnames/upsert'
 import { lockHostnameOwnership } from '@services/urls-hostnames/ownership-lock'
 import { prepareDelegatedCreateScope } from './create/delegated-create-scope.mts'
 import { recordCreatedPostPublicationChange } from './create/publication-change.mts'
@@ -52,11 +52,10 @@ export const preparePostWithCommunityReviews = async (
   const delegated = options.delegated
   const createInTransaction = async (query: TransactionQuery) => {
     if (assessment && 'value' in assessment) {
-      const resolved = await upsertUrlHostnames(
+      const resolved = await prepareUrlHostnamesForOwnedMutation(
         creator.id,
         assessment.value.map(url => url.hostname),
-        { query },
-        'private_email',
+        query,
       )
       await lockHostnameOwnership(query, [...resolved.values()])
     }

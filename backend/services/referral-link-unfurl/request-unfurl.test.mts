@@ -10,7 +10,7 @@ import { getPrivateUserByAny } from '@services/users/get'
 import { getTopicBySlug } from '@services/topics/get'
 import { addUserRole } from '@services/users/roles-permissions'
 import { createUserReferralLink } from '@services/user-referral-program-links/create'
-import { createChildReferralLink } from '@services/user-referral-program-links/create-child'
+import { createChildReferralLinks } from '@services/user-referral-program-links/create-child'
 import { getUserReferralLink } from '@services/user-referral-program-links/get'
 import { markReferralLinkUnfurlFailed } from '@services/user-referral-program-links/unfurl-state'
 import { requestReferralLinkUnfurl } from './request-unfurl.mts'
@@ -110,13 +110,17 @@ describe('requestReferralLinkUnfurl', () => {
 
   it('throws 403 for a child referral link', async () => {
     const parentLinkId = await createOwnerParentLink('child-parent')
-    const child = await createChildReferralLink(owner!.id, WEB_PROVENANCE, {
-      userId: owner!.id,
-      referralProgramId: referralProgramId!,
-      url: buildAmexReferralUrl('child'),
-      parentLinkId,
-      label: 'Gold Card',
-    })
+    const child = (
+      await createChildReferralLinks(owner!.id, WEB_PROVENANCE, [
+        {
+          userId: owner!.id,
+          referralProgramId: referralProgramId!,
+          url: buildAmexReferralUrl('child'),
+          parentLinkId,
+          label: 'Gold Card',
+        },
+      ])
+    )[0]!
 
     await expect(requestReferralLinkUnfurl(owner, child.id)).rejects.toMatchObject({
       status: 403,

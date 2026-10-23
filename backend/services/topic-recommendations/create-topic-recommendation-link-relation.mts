@@ -1,7 +1,7 @@
 import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
 import { assessUrls } from '@services/urls/upsert'
 import { persistAssessedUrls, type AssessedUrls } from '@services/urls/upsert-persist'
-import { upsertUrlHostnames } from '@services/urls-hostnames/upsert'
+import { prepareUrlHostnamesForOwnedMutation } from '@services/urls-hostnames/upsert'
 import { writeEntityRelations } from '@services/entity-relations/write-relations'
 import type { EntityRelation } from '@services/entity-relations/upsert-helpers'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
@@ -41,7 +41,7 @@ export async function createTopicRecommendationRelations(
   const assessed = options.assessedUrls ?? (await assessUrls(hrefs))
   // ast-grep-ignore: no-three-sequential-awaits -- topic ownership precedes resolving transaction-private hostname ids, then the resolved hostname ownership set is locked.
   await lockTopicHostnameMutations(options.query, [topic.id])
-  const resolved = await upsertUrlHostnames(currentUser.id, hrefs, options, 'private_email')
+  const resolved = await prepareUrlHostnamesForOwnedMutation(currentUser.id, hrefs, options.query)
   await lockHostnameOwnership(options.query, [
     ...hostnames.map(hostname => hostname.id),
     ...resolved.values(),

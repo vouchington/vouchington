@@ -10,6 +10,7 @@ import { isUUID } from '@modules/utils'
 import { normalizeHostname } from '@ts-shared/utils/urls'
 import { invalidate } from '@services/entity-cache'
 import { upsertUrlHostnames } from '@services/urls-hostnames'
+import { prepareUrlHostnamesForOwnedMutation } from '@services/urls-hostnames/upsert'
 import {
   lockHostnameOwnership,
   lockTopicHostnameMutations,
@@ -77,11 +78,10 @@ async function addAdditionalHostnameInTransaction(
 ): Promise<TopicAdditionalHostname> {
   await lockTopicHostnameMutations(options.query, [topicId])
   // Resolve without promotion so no existing hostname row is locked before ownership.
-  const hostnameMap = await upsertUrlHostnames(
+  const hostnameMap = await prepareUrlHostnamesForOwnedMutation(
     userId,
-    [normalizedHostname!],
-    options,
-    'private_email',
+    [normalizedHostname],
+    options.query,
   )
   const hostnameId = hostnameMap.values().next().value as string | undefined
   assert(hostnameId, 500, 'Failed to resolve hostname')

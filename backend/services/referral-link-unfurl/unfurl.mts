@@ -1,5 +1,5 @@
 import { assessUrls } from '@services/urls/upsert'
-import { upsertUrlHostnames } from '@services/urls-hostnames/upsert'
+import { prepareUrlHostnamesForOwnedMutation } from '@services/urls-hostnames/upsert'
 import { lockHostnameOwnership } from '@services/urls-hostnames/ownership-lock'
 import { beginTransaction } from '@data-stores/psql'
 import type { TransactionQuery } from '@data-stores/psql/types'
@@ -118,11 +118,10 @@ export async function runReferralLinkUnfurl(
   const assessedUrls = await assessUrls(validCandidates.map(candidate => candidate.url))
   await using query = await beginTransaction()
   // ast-grep-ignore: no-three-sequential-awaits -- hostname ids must resolve before their ownership locks, which must precede the referral parent row lock.
-  const resolved = await upsertUrlHostnames(
+  const resolved = await prepareUrlHostnamesForOwnedMutation(
     parent.user_id,
     assessedUrls.map(url => url.hostname),
-    { query },
-    'private_email',
+    query,
   )
   await lockHostnameOwnership(query, [...resolved.values()])
   await lockParentForUnfurl(parentLinkId, query)

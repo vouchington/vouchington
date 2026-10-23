@@ -4,7 +4,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MockAgent, withMockAgentDefaultFetchForTest } from '@voucha/test-helpers/provider-http'
 import { insertTestRssFeedDirect } from '@voucha/test-helpers/entities/rss-feeds'
 import { withPostgresQueryFailureForTest } from '@voucha/test-helpers/postgres-query-failure'
-import { withPostgresPoolQueryFailureForTest } from '@voucha/test-helpers/postgres-pool-query-failure'
 import { sentryCaptureExceptionMock } from '../../../test-helpers/vitest.setup.sentry-mock.mts'
 import { getUrlById } from '@services/urls'
 import { fetchRssFeed } from '../fetch.mts'
@@ -127,7 +126,7 @@ describe('fetchRssFeed redirect persistence failures', () => {
       .reply(301, '', { headers: { location: targetUrl } })
 
     const { result, error } = await withMockAgentDefaultFetchForTest(agent, () =>
-      withPostgresPoolQueryFailureForTest('/* addUrls */', () =>
+      withPostgresQueryFailureForTest('/* addUrls */', () =>
         fetchRssFeed(source.id, 0).catch((err: unknown) => err),
       ),
     )

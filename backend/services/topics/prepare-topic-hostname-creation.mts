@@ -5,7 +5,7 @@ import {
   lockTopicHostnameMutations,
 } from '@services/urls-hostnames/ownership-lock'
 import { lockTopicHostnameOwnership } from './hostname-ownership-lock.mts'
-import { resolveHostname } from './resolve-hostname.mts'
+import { prepareHostnameForOwnedMutation } from './resolve-hostname.mts'
 import sql from 'sql-template-strings'
 import { lockExistingTopicAliasPublicationScopes } from './alias-publication-locks.mts'
 
@@ -27,7 +27,7 @@ export async function prepareTopicHostnameCreation(
   await lockTopicHostnameMutations(options.query, revivalIds)
   const hostnameId =
     updates.hostname !== undefined
-      ? await resolveHostname(creatorId, updates.hostname, options, 'private_email')
+      ? await prepareHostnameForOwnedMutation(creatorId, updates.hostname, options.query)
       : undefined
   if (revivalIds.length)
     await lockTopicHostnameOwnership(options.query, revivalIds, hostnameId ? [hostnameId] : [])

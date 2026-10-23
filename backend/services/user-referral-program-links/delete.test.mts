@@ -2,7 +2,7 @@ import { beforeAll, describe, it } from 'vitest'
 import assert from 'node:assert/strict'
 import { createReferralProgramFixture, createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
 import { createUserReferralLink } from './create.mts'
-import { createChildReferralLink } from './create-child.mts'
+import { createChildReferralLinks } from './create-child.mts'
 import { deleteUserReferralLink } from './delete.mts'
 import { getUserReferralLink } from './get.mts'
 
@@ -77,12 +77,16 @@ describe('delete', () => {
       url: `https://${testHostname}/refer?test=delete-child-parent`,
       label: 'Parent link',
     })
-    const child = await createChildReferralLink(regularUser!.id, WEB_PROVENANCE, {
-      userId: regularUser!.id,
-      referralProgramId: referralProgramId!,
-      url: `https://${testHostname}/refer?test=delete-child`,
-      parentLinkId: parent.id,
-    })
+    const child = (
+      await createChildReferralLinks(regularUser!.id, WEB_PROVENANCE, [
+        {
+          userId: regularUser!.id,
+          referralProgramId: referralProgramId!,
+          url: `https://${testHostname}/refer?test=delete-child`,
+          parentLinkId: parent.id,
+        },
+      ])
+    )[0]!
 
     await assert.rejects(() => deleteUserReferralLink(regularUser, child.id), {
       status: 403,
@@ -97,12 +101,16 @@ describe('delete', () => {
       url: `https://${testHostname}/refer?test=delete-cascade-parent`,
       label: 'Parent link',
     })
-    const child = await createChildReferralLink(regularUser!.id, WEB_PROVENANCE, {
-      userId: regularUser!.id,
-      referralProgramId: referralProgramId!,
-      url: `https://${testHostname}/refer?test=delete-cascade-child`,
-      parentLinkId: parent.id,
-    })
+    const child = (
+      await createChildReferralLinks(regularUser!.id, WEB_PROVENANCE, [
+        {
+          userId: regularUser!.id,
+          referralProgramId: referralProgramId!,
+          url: `https://${testHostname}/refer?test=delete-cascade-child`,
+          parentLinkId: parent.id,
+        },
+      ])
+    )[0]!
 
     await deleteUserReferralLink(regularUser, parent.id)
 
