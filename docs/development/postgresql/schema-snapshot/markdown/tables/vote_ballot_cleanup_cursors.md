@@ -6,13 +6,13 @@ One bounded cyclic UUIDv7 cleanup position per concrete ballot table.
 
 Not partitioned — growth: bounded.
 
-| Column           | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                           |
-| ---------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ----------------------------------------------------------------- |
-| `vote_table`     | `text`                     | no       |                     |          |           |           | Whitelisted concrete ballot table selected by the cleanup worker. |
-| `cursor_vote_id` | `uuid`                     | yes      |                     |          |           |           | Last scanned ballot ID; not a durable relationship to a ballot.   |
-| `updated_at`     | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           | Last committed ballot sweep progress.                             |
+| Column           | Type                           | Nullable | Default             | Identity | Generated | Collation | Comment                                                         |
+| ---------------- | ------------------------------ | -------- | ------------------- | -------- | --------- | --------- | --------------------------------------------------------------- |
+| `family`         | `vote_ballot_cleanup_families` | no       |                     |          |           |           | Concrete ballot family selected by the cleanup worker.          |
+| `cursor_vote_id` | `uuid`                         | yes      |                     |          |           |           | Last scanned ballot ID; not a durable relationship to a ballot. |
+| `updated_at`     | `timestamp with time zone`     | no       | `CURRENT_TIMESTAMP` |          |           |           | Last committed ballot sweep progress.                           |
 
-**Primary key:** `PRIMARY KEY (vote_table)`
+**Primary key:** `PRIMARY KEY (family)`
 
 **Unique constraints:**
 _none_
@@ -25,7 +25,7 @@ _none_
 
 **Indexes:**
 
-- `vote_ballot_cleanup_cursors_pkey`: `CREATE UNIQUE INDEX vote_ballot_cleanup_cursors_pkey ON public.vote_ballot_cleanup_cursors USING btree (vote_table)`
+- `vote_ballot_cleanup_cursors_pkey`: `CREATE UNIQUE INDEX vote_ballot_cleanup_cursors_pkey ON public.vote_ballot_cleanup_cursors USING btree (family)`
 
 **Triggers:**
 
