@@ -3,9 +3,10 @@ import {
   beginBoundedTransaction,
   beginTransaction,
   registerPostCommitAction,
+  registerPostRollbackAction,
   withTransactionOptions,
 } from '@data-stores/psql/setup'
-import { writePool, type PoolClient } from '@data-stores/psql'
+import { write, writePool, type PoolClient } from '@data-stores/psql'
 
 type PostCommitAction = () => Promise<void>
 
@@ -128,4 +129,35 @@ function getExpectedSynchronousError(operation: () => void): Error {
     return err instanceof Error ? err : new Error(String(err))
   }
   throw new Error('Expected post-commit action probe registration to fail')
+}
+
+/** A real committed/rolled-back row distinguishes action failure from transaction failure. */
+export async function runTransactionActionSettlementProbe(
+  outcome: 'commit' | 'rollback',
+  actions: PostCommitAction[],
+): Promise<boolean> {
+  let id: string | undefined
+  try {
+    await using transaction = await beginTransaction()
+    const inserted = await transaction(sql`/* runTransactionActionSettlementProbe insert */
+      INSERT INTO url_hostnames (hostname) VALUES (${`actions-${crypto.randomUUID()}.example.com`})
+      RETURNING id
+    `)
+    id = inserted.rows[0].id
+    for (const action of actions) {
+      if (outcome === 'commit') registerPostCommitAction(transaction, action)
+      else registerPostRollbackAction(transaction, action)
+    }
+    if (outcome === 'commit') await transaction.commit()
+    else await transaction.rollback()
+    const persisted = await write(sql`/* runTransactionActionSettlementProbe read */
+      SELECT id FROM url_hostnames WHERE id = ${id}::uuid
+    `)
+    return persisted.rows.length === 1
+  } finally {
+    if (id)
+      await write(sql`/* runTransactionActionSettlementProbe cleanup */
+      DELETE FROM url_hostnames WHERE id = ${id}::uuid
+    `)
+  }
 }

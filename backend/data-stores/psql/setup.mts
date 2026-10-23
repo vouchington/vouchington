@@ -107,7 +107,7 @@ async function runPostCommitActions(query: QueryExecutor): Promise<void> {
   const actions = postCommitActions.get(query)
   postCommitActions.delete(query)
   if (!actions) return
-  const results = await Promise.allSettled(actions.map(action => action()))
+  const results = await Promise.allSettled(actions.map(async action => action()))
   for (const result of results) {
     if (result.status === 'rejected')
       onError(result.reason instanceof Error ? result.reason : new Error(String(result.reason)))
@@ -117,7 +117,7 @@ async function runPostRollbackActions(query: QueryExecutor): Promise<void> {
   const actions = postRollbackActions.get(query)
   postRollbackActions.delete(query)
   if (!actions) return
-  const results = await Promise.allSettled(actions.map(action => action()))
+  const results = await Promise.allSettled(actions.map(async action => action()))
   for (const result of results) {
     if (result.status === 'rejected')
       onError(result.reason instanceof Error ? result.reason : new Error(String(result.reason)))

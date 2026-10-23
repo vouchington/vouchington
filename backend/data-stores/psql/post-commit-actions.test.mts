@@ -6,16 +6,37 @@ import {
   registerPostRollbackAction,
   withTransactionOptions,
 } from './setup.mts'
+import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
 import type { QueryExecutor, QueryInput, QueryValues } from './types.mts'
 import {
   recordIdleBorrowedTransactionQueries,
   recordNestedOwnedBorrowedClientQueries,
   rejectPostCommitActionOnExternalTransaction,
   runExplicitCommitActionProbe,
+  runTransactionActionSettlementProbe,
   runFailedBoundedPostCommitActionProbe,
 } from '../../test-helpers/data-stores/psql/post-commit-actions.mts'
 
 describe('transaction post-commit actions', () => {
+  it.each(['commit', 'rollback'] as const)(
+    'settles a synchronous action failure and its sibling after %s',
+    async outcome => {
+      const failure = new Error(`Owned synchronous ${outcome} action failure`)
+      const sibling = vi.fn<() => Promise<void>>(async () => undefined)
+      const persisted = await runTransactionActionSettlementProbe(outcome, [
+        () => {
+          throw failure
+        },
+        sibling,
+      ])
+      expect(persisted).toBe(outcome === 'commit')
+      expect(sibling).toHaveBeenCalledOnce()
+      expect(
+        sentryCaptureExceptionMock.mock.calls.filter(([error]) => error === failure),
+      ).toHaveLength(1)
+    },
+  )
+
   it('runs rollback actions after an explicit rollback but never after commit', async () => {
     const rolledBack = vi.fn<() => Promise<void>>(async () => undefined)
     await using rollbackTransaction = await beginTransaction()
