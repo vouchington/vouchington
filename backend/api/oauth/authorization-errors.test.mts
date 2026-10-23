@@ -10,7 +10,7 @@ import {
 
 describe('OAuth authorization error pages', () => {
   afterEach(() => vi.unstubAllEnvs())
-  it('keeps a newly resolved metadata client local when scope validation fails', async () => {
+  it('returns a known native client scope error to its first-party callback', async () => {
     vi.stubEnv('SITE_ORIGIN', `https://native-${crypto.randomUUID()}.example`)
     const document = getNativeOAuthClientDocument('ios')
     const response = await createRequest()
@@ -25,10 +25,10 @@ describe('OAuth authorization error pages', () => {
         scope: 'financial-profile:read',
         state: 'opaque-state',
       })
-      .expect(400)
-    expect(response.headers.location).toBeUndefined()
-    expect(response.headers['content-type']).toContain('text/html')
-    expect(response.text).toContain('Authorization unavailable')
+      .expect(302)
+    const callback = new URL(response.headers.location)
+    expect(`${callback.origin}${callback.pathname}`).toBe(document.redirect_uris[0])
+    expect(callback.searchParams.get('error')).toBe('invalid_scope')
     await expect(getOAuthClient(document.client_id)).resolves.toMatchObject({
       metadata_url: document.client_id,
     })

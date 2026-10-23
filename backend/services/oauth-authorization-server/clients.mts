@@ -8,6 +8,7 @@ import {
   registerClient,
   type NewOAuthClient,
   type RegisteredClient,
+  invalidClientMetadata,
 } from '@vouchington/oauth-server'
 import { OAUTH_SECRET_PURPOSES } from './constants.mts'
 import { OAUTH_SCOPE_POLICY } from './validation.mts'
@@ -48,6 +49,13 @@ export async function insertOAuthClient(
       findClient: createProtocolClientLookup(getOAuthClient, query),
       createClient: async (client: NewOAuthClient) => {
         validateOAuthAppName(client.clientName)
+        if (
+          ownerUserId === null &&
+          client.scopes.some(
+            scope => scope.startsWith('mcp.admin:') || scope.startsWith('copyright-notices:'),
+          )
+        )
+          throw invalidClientMetadata('dynamic clients may not register staff scopes')
         insertedClient = await persistRegisteredClient(client, ownerUserId, query)
       },
     },
