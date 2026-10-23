@@ -1,4 +1,4 @@
-// Interim: remove once jonathanong/no-mistakes#2182 ships the generic rule.
+// See docs/checklists/github-actions.md for when this check can be removed.
 import { readdirSync, readFileSync } from 'node:fs'
 import { parse as load } from 'yaml'
 import { describe, expect, it } from 'vitest'

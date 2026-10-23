@@ -1,3 +1,4 @@
+// See docs/checklists/github-actions.md for when this check can be removed.
 import { describe, expect, it } from 'vitest'
 import {
   dockerfileViolations,

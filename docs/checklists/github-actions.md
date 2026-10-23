@@ -24,7 +24,7 @@ Enforced rules name their check; the check owns the detail. Judgment calls stay 
 - **Local composite actions follow a checkout** — `./` actions resolve from the workspace, which only a checkout fills. `local-action-checkout.test.mts`. Do not add a checkout to a job deliberately kept checkout-free (a required fan-in gate) just to dedupe script; weigh runner demand and registry reachability first.
 - **Workflow syntax** — `actionlint` runs in CI; run it on changed workflows before pushing.
 
-The three interim tests above are deleted once jonathanong/no-mistakes#2182 ships the generic rule.
+Delete `docker-hub-mirror.test.mts`, `draft-event-triggers.test.mts`, or `local-action-checkout.test.mts` only after no-mistakes ships a rule for that check.
 
 ### Judgment
 
