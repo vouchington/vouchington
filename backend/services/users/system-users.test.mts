@@ -1,10 +1,5 @@
 import { expect, it, describe } from 'vitest'
-import {
-  upsertSystemUser,
-  upsertAdminEmailAddresses,
-  getUserByPrimaryEmail,
-  getSystemUserForAuthorization,
-} from './system-users.mts'
+import { upsertSystemUser, getSystemUserForAuthorization } from './system-users.mts'
 import { getPrivateUserByAny } from './get.mts'
 import {
   createTestUserDirect,
@@ -89,59 +84,5 @@ describe('upsertSystemUser', () => {
     const row = await getTestUserRaw(first.id)
     expect(row?.username).toBe(username)
     expect(row?.platform_account_kind).toBe('system')
-  })
-})
-
-describe('upsertAdminEmailAddresses', () => {
-  it('inserts email addresses for a user and is idempotent', async () => {
-    const random = Math.random().toString(36).slice(2, 10)
-    const user = await createTestUserDirect({ administrator: true })
-
-    const emails = [
-      { email: `tests+primary-${random}@voucha.ai`, isPrimary: true },
-      { email: `tests+secondary-${random}@voucha.ai`, isPrimary: false },
-    ]
-
-    // Run twice to verify idempotency
-    await upsertAdminEmailAddresses(user.id, emails)
-    await upsertAdminEmailAddresses(user.id, emails)
-
-    // Primary email is visible via the private user view
-    const refreshed = await getPrivateUserByAny(user.id)
-    expect(refreshed?.email_address).toBe(emails[0]!.email)
-
-    // Secondary email can be used to look up the user
-    const bySecondary = await getPrivateUserByAny(emails[1]!.email)
-    expect(bySecondary?.id).toBe(user.id)
-  })
-})
-
-describe('getUserByPrimaryEmail', () => {
-  it('returns null when no user has the email', async () => {
-    const result = await getUserByPrimaryEmail('tests+no-such-user@voucha.ai')
-    expect(result).toBeNull()
-  })
-
-  it('returns the user when their primary email matches', async () => {
-    const random = Math.random().toString(36).slice(2, 10)
-    const user = await upsertSystemUser(`primary-email-test-${random}`)
-    await upsertAdminEmailAddresses(user.id, [
-      { email: `tests+primary-${random}@voucha.ai`, isPrimary: true },
-    ])
-
-    const found = await getUserByPrimaryEmail(`tests+primary-${random}@voucha.ai`)
-    expect(found?.id).toBe(user.id)
-  })
-
-  it('does not match on non-primary rows', async () => {
-    const random = Math.random().toString(36).slice(2, 10)
-    const user = await upsertSystemUser(`non-primary-test-${random}`)
-    await upsertAdminEmailAddresses(user.id, [
-      { email: `tests+primary-${random}@voucha.ai`, isPrimary: true },
-      { email: `tests+secondary-${random}@voucha.ai`, isPrimary: false },
-    ])
-
-    const result = await getUserByPrimaryEmail(`tests+secondary-${random}@voucha.ai`)
-    expect(result).toBeNull()
   })
 })
