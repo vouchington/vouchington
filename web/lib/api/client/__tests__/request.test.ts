@@ -4,11 +4,103 @@ import { ApiError } from '../../error'
 
 describe('ClientRequest', () => {
   beforeEach(() => {
-    vi.stubGlobal('window', {})
+    vi.stubGlobal('navigator', {
+      locks: {
+        request: async (_name: string, _options: unknown, callback: () => Promise<boolean>) =>
+          callback(),
+      },
+    })
+    vi.stubGlobal('window', {
+      location: {
+        pathname: '/news',
+        search: '?topic=owned',
+        assign: vi.fn<(url: string) => void>(),
+      },
+    })
   })
 
   afterEach(() => {
     vi.unstubAllGlobals()
+  })
+
+  it.each(['/api/v1/posts', '/api/v1/auth/sessions'])(
+    'refreshes cookies and retries %s once after authentication expires',
+    async endpoint => {
+      const fetchMock = vi
+        .fn<typeof fetch>()
+        .mockResolvedValueOnce(
+          errorResponse(401, { code: 'AUTH_REQUIRED', message: 'Unauthorized' }),
+        )
+        .mockResolvedValueOnce(new Response(JSON.stringify({ session: { uid: 'user' } })))
+        .mockResolvedValueOnce(new Response(JSON.stringify({ saved: true })))
+      vi.stubGlobal('fetch', fetchMock)
+      await expect(new ClientRequest().post(endpoint, { value: 'owned' })).resolves.toEqual({
+        saved: true,
+      })
+      expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
+        endpoint,
+        '/api/v1/session',
+        endpoint,
+      ])
+      expect(fetchMock.mock.calls[1]?.[1]).toMatchObject({
+        method: 'PATCH',
+        body: '{}',
+        credentials: 'include',
+      })
+      expect(fetchMock.mock.calls[2]?.[1]).toEqual(fetchMock.mock.calls[0]?.[1])
+    },
+  )
+
+  it('preserves an unstructured unauthorized response without attempting refresh', async () => {
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(new Response('Authentication is required', { status: 401 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(new ClientRequest().post('/api/v1/posts', {})).rejects.toMatchObject({
+      status: 401,
+    })
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('requires login when cookie renewal rejects and never retries the mutation', async () => {
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(errorResponse(401, { code: 'AUTH_REQUIRED', message: 'Unauthorized' }))
+      .mockResolvedValueOnce(
+        errorResponse(401, {
+          code: 'SESSION_USER_AGENT_MISMATCH',
+          message: 'Sign in again after the browser user agent changed',
+        }),
+      )
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(
+      new ClientRequest().post('/api/v1/posts', { value: 'owned' }),
+    ).rejects.toMatchObject({
+      status: 401,
+      code: 'SESSION_USER_AGENT_MISMATCH',
+    })
+    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
+      '/api/v1/posts',
+      '/api/v1/session',
+      '/api/v1/session',
+    ])
+  })
+
+  it('does not retry a user-agent mismatch', async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
+      errorResponse(401, {
+        code: 'SESSION_USER_AGENT_MISMATCH',
+        message: 'Session user agent changed',
+      }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    await expect(new ClientRequest().post('/api/v1/posts', {})).rejects.toMatchObject({
+      code: 'SESSION_USER_AGENT_MISMATCH',
+    })
+    expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
   it('preserves cancellation identity and forwards the caller signal', async () => {

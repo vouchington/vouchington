@@ -1,3 +1,6 @@
+import { withRolledBackSessionMint } from '@voucha/test-helpers/session-mint-transaction'
+import { readAuthSessionRows } from '@voucha/test-helpers/auth-session-events'
+import { readSessionDeviceAuthority } from './device-authority.mts'
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import path from 'node:path'
 import os from 'node:os'
@@ -40,6 +43,18 @@ describe('create', () => {
     }
   })
 
+  it('leaves neither durable authority nor an authentication event when its producer transaction rolls back', async () => {
+    const user = await createTestUser()
+    const tokens = await withRolledBackSessionMint(query =>
+      createDeviceAndSessionTokens({ query, did: v7(), uid: user.id }),
+    )
+    const sid = tokens.sessionToken.payload.sid
+    await expect(readSessionDeviceAuthority(sid)).resolves.toBeNull()
+    await flush()
+    const rows = await readAuthSessionRows(testDir)
+    expect(rows.filter(row => row.session_id === sid)).toEqual([])
+  })
+
   describe('createSessionToken', () => {
     it('rejects invalid device id values', async () => {
       await expect(createSessionToken({ did: 'not-a-uuid' })).rejects.toThrow('Invalid UUIDv7')
@@ -60,7 +75,8 @@ describe('create', () => {
     it('emits the requested auth session event type', async () => {
       const did = v7()
       const sid = v7()
-      const uid = v7()
+      const user = await createTestUser()
+      const uid = user.id
 
       await createSessionToken({
         did,
@@ -91,12 +107,14 @@ describe('create', () => {
     })
 
     it('mints a 30-day token when deviceClass is attested', async () => {
-      const did = v7()
-      const sid = v7()
+      const user = await createTestUser()
+      const { sessionToken } = await createDeviceAndSessionTokens({
+        did: v7(),
+        uid: user.id,
+        deviceClass: 'attested',
+      })
 
-      const { token } = await createSessionToken({ did, sid, deviceClass: 'attested' })
-
-      const decoded = jose.decodeJwt(token)
+      const decoded = jose.decodeJwt(sessionToken.token)
       const lifetimeSeconds = (decoded.exp as number) - (decoded.iat as number)
       expect(lifetimeSeconds).toBeGreaterThanOrEqual(30 * 24 * 60 * 60 - 1)
       expect(lifetimeSeconds).toBeLessThanOrEqual(30 * 24 * 60 * 60 + 1)
@@ -117,7 +135,8 @@ describe('create', () => {
     it('mints authenticated replacement tokens after the user revocation cutoff', async () => {
       const did = v7()
       const sid = v7()
-      const uid = v7()
+      const user = await createTestUser()
+      const uid = user.id
       const cutoffSeconds = Math.floor(Date.now() / 1000) + 60
       await revokeUserSessionsBefore(uid, cutoffSeconds)
 
@@ -128,7 +147,8 @@ describe('create', () => {
 
     it('verifies authenticated replacement tokens minted after the user revocation cutoff', async () => {
       const did = v7()
-      const uid = v7()
+      const user = await createTestUser()
+      const uid = user.id
       const cutoffSeconds = Math.floor(Date.now() / 1000) + 60
       await revokeUserSessionsBefore(uid, cutoffSeconds)
 

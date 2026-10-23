@@ -1,3 +1,4 @@
+import { isNativeClientTransportRequest } from '@modules/request-client-info'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { getExpectedOrigin, setAuthenticationCookies } from '@modules/api-utils'
@@ -71,8 +72,10 @@ app.route('/api/v1/auth/passkeys/authentication/verify').post(async (ctx: Contex
 
   ctx.json({
     user: { id: login.userId },
-    dt: login.deviceToken,
-    st: login.sessionToken,
+    ...(isNativeClientTransportRequest(ctx.req) && {
+      dt: login.deviceToken,
+      st: login.sessionToken,
+    }),
     session: login.sessionToken.payload,
   })
   /* v8 ignore stop */

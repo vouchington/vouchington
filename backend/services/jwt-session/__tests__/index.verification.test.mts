@@ -1,4 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
+import { describe, expect, it, vi } from 'vitest'
 import { createDeviceAndSessionTokens, verifyDeviceAndSessionTokens } from '../index.mts'
 import * as jose from 'jose'
 import { EDGE_ANON_SESSION_JWT_ISSUER, signDeviceJwt, signSessionJwt } from '@ts-shared/session-jwt'
@@ -6,16 +7,6 @@ import { encodeJwkSet as encodeJwkSetForEnv, derivePublicJwk } from '@vouchingto
 import { v7 } from 'uuid'
 
 describe('index.verification', () => {
-  beforeEach(() => {
-    onTestFinished(() => {
-      vi.useRealTimers()
-    })
-    vi.useFakeTimers({ toFake: ['Date'] })
-    vi.setSystemTime(new Date(process.env.VOUCH_PROOF_NOW ?? '2026-10-06T12:00:00.000Z'))
-  })
-
-  afterEach(() => vi.useRealTimers())
-
   async function generatePrivateJwk(kid: string): Promise<jose.JWK> {
     const { privateKey } = await jose.generateKeyPair('RS512', { extractable: true })
     const jwk = await jose.exportJWK(privateKey)
@@ -196,7 +187,8 @@ describe('index.verification', () => {
 
   it('verifyDeviceAndSessionTokens returns enrichment fields when present', async () => {
     const did = v7()
-    const uid = v7()
+    const user = await createTestUserDirect()
+    const uid = user.id
     const roles = ['administrator']
     const result = await createDeviceAndSessionTokens({
       did,
@@ -223,11 +215,13 @@ describe('index.verification', () => {
   })
 
   it('verifyDeviceAndSessionTokens preserves a null UI locale claim', async () => {
-    const did = v7()
-    const sid = v7()
-    const uid = v7()
-    const deviceToken = await signDeviceJwt({ did }, { expiresIn: '30 days' })
-    const sessionToken = await signSessionJwt({ did, sid, uid, uil: null }, { expiresIn: '2 days' })
+    const user = await createTestUserDirect()
+    const tokens = await createDeviceAndSessionTokens({ did: v7(), uid: user.id })
+    const deviceToken = tokens.deviceToken.token
+    const sessionToken = await signSessionJwt(
+      { ...tokens.sessionToken.payload, uil: null },
+      { expiresIn: '10 minutes' },
+    )
 
     const verified = await verifyDeviceAndSessionTokens({ deviceToken, sessionToken })
 

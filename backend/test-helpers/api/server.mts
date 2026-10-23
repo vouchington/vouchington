@@ -186,3 +186,13 @@ export async function withApiRequestQueryOptions<Result>(
   )
   return withOwnedApiServer(listener, address => run(createRequest(address)))
 }
+
+export function createNativeRequest(): AuthenticatedAgent {
+  const agent = createRequest()
+  agent.setClientInfo({
+    'x-voucha-client': 'dotnet',
+    'x-voucha-platform': 'windows',
+    'x-voucha-app-version': 'test',
+  })
+  return agent
+}

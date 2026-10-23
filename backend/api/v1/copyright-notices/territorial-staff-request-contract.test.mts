@@ -22,7 +22,7 @@ describe.each(TERRITORIAL_SURFACES)('$label staff request contracts', surface =>
       const url = `${surface.base}/not-a-uuid/acknowledgment-failures`
 
       const anonymous = await anonymousRequest.post(url).expect(401)
-      expect(anonymous.text).not.toMatch(SCHEMA_DIAGNOSTIC)
+      expect(anonymous.body.message).not.toMatch(SCHEMA_DIAGNOSTIC)
       await strangerRequest.post(url).expect(403)
     })
 
@@ -50,7 +50,7 @@ describe.each(TERRITORIAL_SURFACES)('$label staff request contracts', surface =>
       const url = `${surface.base}/${crypto.randomUUID()}/${surface.determinationPath}`
 
       const anonymous = await anonymousRequest.post(url).send({ injected: true }).expect(401)
-      expect(anonymous.text).not.toMatch(SCHEMA_DIAGNOSTIC)
+      expect(anonymous.body.message).not.toMatch(SCHEMA_DIAGNOSTIC)
       await strangerRequest.post(url).send({ injected: true }).expect(403)
     })
 
@@ -207,7 +207,7 @@ describe.each(TERRITORIAL_SURFACES)('$label staff request contracts', surface =>
       const url = `${surface.base}/${crypto.randomUUID()}/redress-requests/${crypto.randomUUID()}/decisions`
 
       const anonymous = await anonymousRequest.post(url).send({ injected: true }).expect(401)
-      expect(anonymous.text).not.toMatch(SCHEMA_DIAGNOSTIC)
+      expect(anonymous.body.message).not.toMatch(SCHEMA_DIAGNOSTIC)
       await strangerRequest.post(url).send({ injected: true }).expect(403)
     })
 

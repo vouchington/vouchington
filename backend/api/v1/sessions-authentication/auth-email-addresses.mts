@@ -1,3 +1,4 @@
+import { isNativeClientTransportRequest } from '@modules/request-client-info'
 import app from '../../app.mts'
 import {
   requestEmailAddressLoginToken as requestEmailAddressLoginTokenFlow,
@@ -125,8 +126,10 @@ app.route('/api/v1/auth/email-address/login').post(async (ctx: Context) => {
     did: result.deviceToken.payload.did,
     sid: result.sessionToken.payload.sid,
     uid: result.user.id,
-    dt: result.deviceToken,
-    st: result.sessionToken,
+    ...(isNativeClientTransportRequest(ctx.req) && {
+      dt: result.deviceToken,
+      st: result.sessionToken,
+    }),
     session: result.sessionToken.payload,
   })
 })

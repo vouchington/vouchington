@@ -16,56 +16,44 @@ form-specific initial fields to client forms. Server components should continue 
 
 ## Tokens
 
-Every visitor (anonymous or authenticated) holds two HTTP-only cookies:
+Browser authentication separates request authority from refresh authority. The short-lived `st`
+credential authenticates API requests; the longer-lived `dt` can refresh the same web session after
+its access cookie expires. The refresh credential carries identity and binding, never role or
+membership authority. Refresh checks durable revocation and updates current claims under the
+service’s staleness and deadline policy.
 
-| Cookie | Expiry                                                | Contains                                                            |
-| ------ | ----------------------------------------------------- | ------------------------------------------------------------------- |
-| `dt`   | long                                                  | Device JWT — identifies the device                                  |
-| `st`   | default (extended for an attested device — see below) | Session JWT — identifies the session; includes `uid` when logged in |
+Authenticated tokens carry a signed client classification. Browser credentials bind to browser
+family and platform, preserving normal version updates. Optional JA4 binding uses only authenticated
+Worker metadata and is skipped when that metadata is absent. A mismatch clears cookies and makes
+the request anonymous; renewal failures lead to login. These checks constrain copied credentials
+without proving the browser's identity. Only verified App Attest devices receive native lifetimes;
+declared native metadata selects JSON transport alone.
 
-Cookies are `httpOnly`, `sameSite=lax`, and `secure` in production only. The `maxAge` for each cookie is returned by the backend's `PATCH /api/v1/session` response (`dte` for the device token, `ste` for the session token), making expiry backend-controlled. `sameSite=lax` is one layer of CSRF defense — see [CSRF Protection](../../requirements/security/CSRF.md) for the full threat model.
+PostgreSQL stores the current device credential digest, encrypted replay credential, original
+issuance time, binding, expiry and revocation. Ordinary renewal rotates the credential under a row
+lock while preserving its original expiry and identity. Reusing an old credential revokes the
+session. Authentication checks durable state after a revocation-cache miss so cache loss cannot
+restore a revoked session.
 
-Session expiry is computed by `sessionExpiryFor(dc)` / `sessionExpirySecondsFor(dc)`
-(`ts-shared/session-jwt/constants.mts`) from the device token's `dc` claim: the extended lifetime when
-`dc === 'attested'`, the default otherwise. The device token's own expiry never changes. See
-[App Attest](app-attestation.md) for how a device becomes attested.
+Web login delivers credentials through HTTP-only cookies and returns metadata in JSON. The Next.js
+proxy forwards the original user agent but never rotates authenticated credentials during SSR.
+Request-local enrichment preserves claim invalidation while leaving signed identity, assurance and
+credential expiry unchanged.
+Expired navigation hands off to browser renewal; browser callers serialize renewal across tabs
+with Web Locks and share one pending request in each tab. A browser that cannot acquire this lock
+recovers through login. This avoids racing old credentials against strict reuse detection.
+
+Hardware attestation alone does not authenticate a user. The first native upgrade must retain the
+caller's live session authority through its replacement: if logout or another revocation wins
+while hardware proof is being checked, the caller must sign in again.
+
+Cookie attributes and token audiences remain centralized in the shared session package. Device and
+session token audiences differ, and API authentication requires matching device/session identity.
+Logout revokes web refresh authority even after its access cookie has expired, then removes or
+rotates both credentials. See [CSRF Protection](../../requirements/security/CSRF.md) for the browser
+request boundary and [App Attest](app-attestation.md) for attested devices.
 
 JWT cryptography and key validation come from `@vouchington/session-jwt` in both backend and
 Worker runtimes. The shared app adapter owns Voucha issuers, audiences, payload policy and
 environment bindings; session storage, pairing and refresh remain application concerns. Rotation
 keeps usable public keys available even when an unrelated configured candidate cannot be imported.
-
-### JWT Payload
-
-**Device token (`dt`):** `{ did: string, aud: 'voucha:device', dc?: 'attested' }`
-
-`dc` (DeviceClass) is set only once a device completes Apple App Attest key registration (see
-[App Attest](app-attestation.md)); it is never present on the session token payload below — only
-the session token's _expiry_ depends on it.
-
-**Session token (`st`):**
-
-```
-{
-  did: string       // device ID (must match dt)
-  sid: string       // session ID (UUIDv7)
-  uid: string|null  // user ID (valid UUID; null for anonymous)
-  aud: 'voucha:session'
-  // Authenticated-only enrichment fields:
-  rol?: string[]    // user roles (e.g. ['administrator'])
-  mpl?: string|null // membership plan slug ('plus' | 'pro')
-  tt?: number       // pre-computed trust tier (0–5)
-  uil?: string|null // UI locale used by the web session
-  rca?: number      // recheck-after: Unix epoch seconds — re-read user from DB after this time
-  sca?: number      // session-check-after: Unix epoch seconds — check Valkey after this time
-}
-```
-
-Audience (`aud`) scoping prevents a device token from being accepted as a session token and vice
-versa.
-
-Verification also rejects signed tokens whose required payload claims are absent or malformed:
-device tokens must include a UUIDv7 `did`, and session tokens must include UUIDv7 `did` and `sid`
-claims plus `uid` as either a valid UUID string or `null`. Optional enrichment claims are
-type-checked before downstream auth code receives the payload. Signed pre-UUIDv7 device or session
-IDs are rejected; the auth service mints fresh UUIDv7 IDs for unauthenticated requests.

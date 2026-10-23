@@ -28,6 +28,7 @@ export async function loadCurrentUser(context: Context): Promise<PrivateUser | n
 
 async function readCurrentUser(context: Context): Promise<PrivateUser | null> {
   const sessionData = await context.getSessionTokenData()
+  if (context.currentUser !== undefined) return context.currentUser
   if (!sessionData.uid) {
     context.currentUser = null
     return null

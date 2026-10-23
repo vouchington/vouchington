@@ -150,3 +150,13 @@ matching a registered email requires the user to sign in with their existing met
 the provider from settings. Web, Swift, and .NET clients should compose that guidance from the
 factual conflict code and preserve the existing sign-in and connect flows. The producer lands first;
 client copy adoption remains dependent client work.
+
+## Browser session refresh
+
+Browser credentials use cookies, stable browser-family/platform binding, and optional trusted
+Cloudflare fingerprint binding. Renewal rotates the device credential while retaining its original
+expiry; replay requires signing in again. Only verified App Attest devices receive native session
+lifetimes. Swift and .NET retain JSON transport and must coordinate refresh across callers and
+recover through login when renewal fails. Native adoption is tracked in
+[vouchington-clients#487](https://github.com/vouchington/vouchington-clients/issues/487).
+The producer lands first. Device-bound session proof is a separate browser capability.

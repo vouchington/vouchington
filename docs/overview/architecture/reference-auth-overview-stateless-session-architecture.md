@@ -8,6 +8,11 @@ Sessions are mostly stateless by design. The JWT is self-contained and cryptogra
 Every authenticated API request verifies the `dt`/`st` pairing and checks the session ID revocation
 flag before treating the session as authenticated.
 
+Web refresh is a separate authority boundary: after the access cookie expires, its signed device
+credential may request a new access token for the same session. That path checks the original
+user-agent binding, revocation, and the current database user. It never authenticates a normal API
+mutation directly from the device credential.
+
 ### Hot / Warm / Cold Paths (PATCH /api/v1/session)
 
 The `PATCH /api/v1/session` endpoint implements three paths based on freshness timestamps embedded

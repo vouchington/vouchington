@@ -1,3 +1,5 @@
+import { write } from '@data-stores/psql'
+import sql from 'sql-template-strings'
 import { Batch } from '@valkey/valkey-glide'
 import { sessionValkeyClient } from '@data-stores/valkey/clients'
 import { getJwtRevokedKey, getJwtUserRevokedBeforeKey } from './constants.mts'
@@ -7,7 +9,7 @@ export { revokeSession } from './user-session-revocation.mts'
 /** Returns true if the session has been revoked. */
 export async function isSessionRevoked(
   sid: string,
-  options?: { userId?: string | null; issuedAt?: number },
+  options?: { userId?: string | null; deviceId?: string; issuedAt?: number },
 ): Promise<boolean> {
   const sessionRevokedKey = getJwtRevokedKey(sid)
   if (options?.userId && options.issuedAt !== undefined) {
@@ -23,13 +25,26 @@ export async function isSessionRevoked(
     }
     const [sessionRevoked, userRevokedBefore] = batchResult
     if (sessionRevoked !== null) return true
-    if (userRevokedBefore === null) return false
+    if (userRevokedBefore === null) return isDurablyRevoked(sid, options.userId, options.deviceId)
 
     const revokedBeforeSeconds = Number(userRevokedBefore)
-    return Number.isFinite(revokedBeforeSeconds) && options.issuedAt <= revokedBeforeSeconds
+    if (Number.isFinite(revokedBeforeSeconds) && options.issuedAt <= revokedBeforeSeconds)
+      return true
+    return isDurablyRevoked(sid, options.userId, options.deviceId)
   }
 
   const result = await sessionValkeyClient.get(sessionRevokedKey)
   if (result !== null) return true
-  return false
+  return options?.userId ? isDurablyRevoked(sid, options.userId, options.deviceId) : false
+}
+
+async function isDurablyRevoked(sid: string, userId: string, deviceId?: string): Promise<boolean> {
+  const statement = sql`/* isDurablyRevoked */
+    SELECT s.id FROM user_sessions s JOIN users u ON u.id = s.user_id
+    WHERE s.id = ${sid} AND s.user_id = ${userId}
+      AND s.revoked_at IS NULL AND s.expires_at > CURRENT_TIMESTAMP
+      AND s.device_token_digest IS NOT NULL AND u.deleted_at IS NULL`
+  if (deviceId) statement.append(sql` AND s.device_id = ${deviceId}`)
+  const { rows } = await write(statement)
+  return rows.length === 0
 }

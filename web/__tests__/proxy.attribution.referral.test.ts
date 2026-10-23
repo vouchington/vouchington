@@ -22,7 +22,12 @@ describe('proxy attribution', () => {
   })
 
   it('fires attribution for page request with referrer using inbound cookies (anon)', async () => {
-    mockDecodeSessionJwt.mockReturnValue({ uid: null, did: 'did-1', sid: 'sid-1' })
+    mockDecodeSessionJwt.mockReturnValue({
+      uid: null,
+      did: 'did-1',
+      sid: 'sid-1',
+      exp: Math.floor(Date.now() / 1000) + 600,
+    })
     await proxy(
       makeRequest({
         cookies: { dt: 'my-dt', st: 'my-st' },
@@ -46,7 +51,7 @@ describe('proxy attribution', () => {
     )
   })
 
-  it('fires attribution for authenticated session using backend-refreshed cookies', async () => {
+  it('fires attribution for authenticated session using inbound cookies', async () => {
     mockDecodeSessionJwt.mockReturnValue(AUTH_ST_PAYLOAD)
     await proxy(
       makeRequest({
@@ -54,13 +59,13 @@ describe('proxy attribution', () => {
         searchParams: { referrer: 'src123' },
       }) as any,
     )
-    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
     expect(fetchMock).toHaveBeenCalledWith(
       'http://localhost:2900/api/v1/attribution/referrer',
       expect.objectContaining({
         headers: expect.objectContaining({
           Origin: 'http://localhost:2900',
-          cookie: 'dt=new-dt; st=new-st',
+          cookie: 'dt=my-dt; st=my-st',
         }),
       }),
     )
@@ -75,7 +80,7 @@ describe('proxy attribution', () => {
         searchParams: { referrer: 'src123' },
       }) as any,
     )
-    expect(fetchMock).toHaveBeenCalledTimes(1) // session only
+    expect(fetchMock).not.toHaveBeenCalled()
     expect(fetchMock).not.toHaveBeenCalledWith(
       expect.stringContaining('attribution'),
       expect.any(Object),
@@ -85,11 +90,16 @@ describe('proxy attribution', () => {
   it('does not fire attribution without referrer', async () => {
     mockDecodeSessionJwt.mockReturnValue(AUTH_ST_PAYLOAD)
     await proxy(makeRequest({ cookies: { dt: 'my-dt', st: 'my-st' } }) as any)
-    expect(fetchMock).toHaveBeenCalledTimes(1) // session only
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 
   it('fires attribution for landing page visits without explicit referrer query', async () => {
-    mockDecodeSessionJwt.mockReturnValue({ uid: null, did: 'did-1', sid: 'sid-1' })
+    mockDecodeSessionJwt.mockReturnValue({
+      uid: null,
+      did: 'did-1',
+      sid: 'sid-1',
+      exp: Math.floor(Date.now() / 1000) + 600,
+    })
     await proxy(
       makeRequest({
         pathname: '/@tests/bonus',
@@ -113,7 +123,12 @@ describe('proxy attribution', () => {
   })
 
   it('ignores referrer query overrides on landing page routes', async () => {
-    mockDecodeSessionJwt.mockReturnValue({ uid: null, did: 'did-1', sid: 'sid-1' })
+    mockDecodeSessionJwt.mockReturnValue({
+      uid: null,
+      did: 'did-1',
+      sid: 'sid-1',
+      exp: Math.floor(Date.now() / 1000) + 600,
+    })
     await proxy(
       makeRequest({
         pathname: '/@tests/bonus',

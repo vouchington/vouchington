@@ -38,8 +38,6 @@ export async function upsertAuthenticatedSession(
         ${deviceName}, ${userAgentId}, ${ipAddress}, ${options.expiresAt}, CURRENT_TIMESTAMP
       WHERE EXISTS (SELECT 1 FROM users WHERE id = ${currentUserId} AND deleted_at IS NULL)
       ON CONFLICT (id) DO UPDATE SET
-        user_id = EXCLUDED.user_id,
-        device_id = EXCLUDED.device_id,
         device_name = CASE WHEN ${refreshMetadata} AND ${userAgent} <> ''
           AND EXCLUDED.device_name <> 'Unknown device' THEN EXCLUDED.device_name
           ELSE user_sessions.device_name END,
@@ -48,9 +46,11 @@ export async function upsertAuthenticatedSession(
         ip_address = CASE WHEN ${refreshMetadata}
           THEN COALESCE(EXCLUDED.ip_address, user_sessions.ip_address)
           ELSE user_sessions.ip_address END,
-        expires_at = EXCLUDED.expires_at,
+        expires_at = CASE WHEN user_sessions.device_token_digest IS NULL THEN EXCLUDED.expires_at ELSE user_sessions.expires_at END,
         last_seen_at = CURRENT_TIMESTAMP
       WHERE user_sessions.revoked_at IS NULL
+        AND user_sessions.user_id = EXCLUDED.user_id
+        AND user_sessions.device_id = EXCLUDED.device_id
       RETURNING id, user_id, device_id, device_name,
         (SELECT user_agent FROM user_agent_strings
           WHERE id = user_sessions.user_agent_string_id) AS user_agent,
@@ -66,33 +66,40 @@ export async function upsertAuthenticatedSession(
   return session
 }
 
-export async function registerAuthenticatedSession({
-  sid,
-  uid,
-  did,
-  deviceClass,
-  deviceContext,
-  expiresAt,
-  refreshMetadata,
-}: {
-  sid: string
-  uid: string | null
-  did: string
-  deviceClass?: DeviceClass
-  deviceContext?: DeviceContext
-  expiresAt?: Date
-  refreshMetadata?: boolean
-}): Promise<void> {
+export async function registerAuthenticatedSession(
+  {
+    sid,
+    uid,
+    did,
+    deviceClass,
+    deviceContext,
+    expiresAt,
+    refreshMetadata,
+  }: {
+    sid: string
+    uid: string | null
+    did: string
+    deviceClass?: DeviceClass
+    deviceContext?: DeviceContext
+    expiresAt?: Date
+    refreshMetadata?: boolean
+  },
+  queryOptions?: QueryOptions,
+): Promise<void> {
   if (uid === null) return
 
-  await upsertAuthenticatedSession(uid, {
-    sid,
-    deviceId: did,
-    expiresAt: expiresAt ?? new Date(Date.now() + sessionExpirySecondsFor(deviceClass) * 1000),
-    ipAddress: deviceContext?.ip_address,
-    userAgent: deviceContext?.user_agent,
-    refreshMetadata,
-  })
+  await upsertAuthenticatedSession(
+    uid,
+    {
+      sid,
+      deviceId: did,
+      expiresAt: expiresAt ?? new Date(Date.now() + sessionExpirySecondsFor(deviceClass) * 1000),
+      ipAddress: deviceContext?.ip_address,
+      userAgent: deviceContext?.user_agent,
+      refreshMetadata,
+    },
+    queryOptions,
+  )
 }
 
 export async function listActiveUserSessions(

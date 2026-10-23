@@ -1,11 +1,14 @@
 'use client'
 
+import { renewBrowserSession } from '@/lib/api/client/session-renewal'
+
 /**
  * Client-side API request class
  * Used in Client Components for calling Next.js proxy
  */
 
 import { buildQueryString } from '@ts-shared/utils/query-string'
+import { buildLoginHref } from '@/lib/auth/login-url'
 import { ApiError } from '../error'
 import { parseErrorResponseBody } from '../error-helpers'
 
@@ -55,10 +58,31 @@ export class ClientRequest {
     }
 
     try {
-      const response = await fetch(url, fetchOptions)
+      let response = await fetch(url, fetchOptions)
+      if (response.status === 401 && endpoint !== '/api/v1/session') {
+        const originalError = (await response
+          .clone()
+          .json()
+          .catch(() => null)) as unknown
+        if (isErrorCode(originalError, 'AUTH_REQUIRED')) {
+          try {
+            const refreshed = await renewBrowserSession()
+            if (refreshed) response = await fetch(url, fetchOptions)
+            else redirectToLogin()
+          } catch (err) {
+            redirectToLogin()
+            throw err
+          }
+        }
+      }
 
       if (!response.ok) {
         const errorData = await parseErrorResponseBody(response)
+        if (
+          isReloginError(errorData) ||
+          (response.status === 401 && isErrorCode(errorData, 'AUTH_REQUIRED'))
+        )
+          redirectToLogin()
 
         const isAdmissionInProgress =
           response.status === 409 && isErrorCode(errorData, 'CONTRIBUTION_ADMISSION_IN_PROGRESS')
@@ -153,5 +177,20 @@ function isErrorCode(errorData: unknown, code: string): boolean {
     errorData !== null &&
     !Array.isArray(errorData) &&
     (errorData as { code?: unknown }).code === code
+  )
+}
+
+function isReloginError(errorData: unknown): boolean {
+  return [
+    'SESSION_USER_AGENT_MISMATCH',
+    'SESSION_JA4_MISMATCH',
+    'SESSION_RELOGIN_REQUIRED',
+    'SESSION_REFRESH_REUSED',
+  ].some(code => isErrorCode(errorData, code))
+}
+
+function redirectToLogin(): void {
+  window.location.assign(
+    buildLoginHref({ next: `${window.location.pathname}${window.location.search}` }),
   )
 }

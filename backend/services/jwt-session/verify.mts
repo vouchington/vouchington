@@ -23,13 +23,7 @@ export async function verifyDeviceAndSessionTokens({
   }
   if (sessionIssuer === null) return false
 
-  const verified = await verifyDeviceAndSessionTokensWithOptions({
-    deviceToken,
-    sessionToken,
-  })
-  if (verified) return verified
-
-  return false
+  return verifyDeviceAndSessionTokensWithOptions({ deviceToken, sessionToken })
 }
 
 async function verifyDeviceAndSessionTokensWithOptions({
@@ -61,6 +55,25 @@ async function verifyDeviceAndSessionTokensWithOptions({
       return false
     }
 
+    if (
+      sessionPayload.uid &&
+      (!devicePayload.jti ||
+        !sessionPayload.client ||
+        typeof sessionPayload.iat !== 'number' ||
+        typeof sessionPayload.exp !== 'number' ||
+        typeof devicePayload.iat !== 'number' ||
+        typeof devicePayload.exp !== 'number' ||
+        devicePayload.client !== sessionPayload.client ||
+        devicePayload.refresh_uid !== sessionPayload.uid ||
+        devicePayload.refresh_sid !== sessionPayload.sid ||
+        (sessionPayload.client === 'native' && devicePayload.dc !== 'attested') ||
+        (sessionPayload.client === 'web' &&
+          (!sessionPayload.ua_hash ||
+            devicePayload.ua_hash !== sessionPayload.ua_hash ||
+            devicePayload.ja4_hash !== sessionPayload.ja4_hash)))
+    )
+      return false
+
     const membershipEntitlementExpired =
       sessionPayload.mpe !== undefined && Math.floor(Date.now() / 1000) >= sessionPayload.mpe
 
@@ -68,7 +81,12 @@ async function verifyDeviceAndSessionTokensWithOptions({
       did: sessionPayload.did,
       sid: sessionPayload.sid,
       uid: sessionPayload.uid,
+      client: sessionPayload.client,
+      ua_hash: sessionPayload.ua_hash,
+      ja4_hash: sessionPayload.ja4_hash,
       exp: sessionPayload.exp,
+      device_exp: devicePayload.exp,
+      device_iat: devicePayload.iat,
       iat: sessionPayload.iat,
       rol: sessionPayload.rol,
       mpl: membershipEntitlementExpired ? null : sessionPayload.mpl,

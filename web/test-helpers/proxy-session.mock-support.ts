@@ -7,6 +7,8 @@ const {
   mockDecodeSessionJwt,
   mockNextResponseNext,
   mockNextResponseRewrite,
+  mockNextResponseRedirect,
+  mockDecodeDeviceJwt,
 } = vi.hoisted(() => {
   const cookiesSet = vi.fn<VitestLooseMock>()
   const nextResponseNext = vi.fn<VitestLooseMock>(() => ({
@@ -22,6 +24,8 @@ const {
     mockAfter: after,
     mockCookiesSet: cookiesSet,
     mockDecodeSessionJwt: vi.fn<VitestLooseMock>(),
+    mockDecodeDeviceJwt: vi.fn<VitestLooseMock>(),
+    mockNextResponseRedirect: vi.fn<VitestLooseMock>(),
     mockNextResponseNext: nextResponseNext,
     mockNextResponseRewrite: nextResponseRewrite,
   }
@@ -34,6 +38,7 @@ vi.mock(import('next/server'), () => {
   }
   NextResponse.next = mockNextResponseNext
   NextResponse.rewrite = mockNextResponseRewrite
+  NextResponse.redirect = mockNextResponseRedirect
   return {
     NextResponse,
     after: mockAfter,
@@ -46,6 +51,7 @@ vi.mock(import('isbot'), () => ({
 
 vi.mock(import('@ts-shared/session-jwt'), () => ({
   decodeSessionJwt: mockDecodeSessionJwt,
+  decodeDeviceJwt: mockDecodeDeviceJwt,
 }))
 
 // Suppress expected console errors that are tested and handled gracefully
@@ -68,7 +74,12 @@ const proxySessionData = {
   secure: false,
 }
 
-const proxyAuthStPayload = { uid: 'user-1', did: 'did-1', sid: 'sid-1' }
+const proxyAuthStPayload = {
+  uid: 'user-1',
+  did: 'did-1',
+  sid: 'sid-1',
+  exp: Math.floor(Date.now() / 1000) + 600,
+}
 
 function makeRequest({
   pathname = '/',
@@ -102,6 +113,7 @@ function installProxyTestDoubles() {
   vi.stubEnv('CF_WORKER_SECRET', 'test-worker-secret')
   const fetchMock = vi.fn<() => unknown>().mockResolvedValue({
     ok: true,
+    headers: { getSetCookie: () => ['dt=new-dt; HttpOnly', 'st=new-st; HttpOnly'] },
     json: () => Promise.resolve({ session: proxySessionData }),
   })
   vi.stubGlobal('fetch', fetchMock)
@@ -110,6 +122,7 @@ function installProxyTestDoubles() {
   mockNextResponseRewrite.mockReturnValue({ cookies: { set: mockCookiesSet } })
   mockAfter.mockImplementation((fn: () => unknown) => fn())
   mockDecodeSessionJwt.mockReturnValue(null)
+  mockDecodeDeviceJwt.mockReturnValue(null)
   return fetchMock
 }
 
@@ -127,6 +140,8 @@ export {
   mockDecodeSessionJwt,
   mockNextResponseNext,
   mockNextResponseRewrite,
+  mockNextResponseRedirect,
+  mockDecodeDeviceJwt,
   proxyAuthStPayload as AUTH_ST_PAYLOAD,
   resetProxyTestDoubles,
 }

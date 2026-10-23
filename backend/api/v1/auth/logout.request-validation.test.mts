@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 
-import { postLogoutExpectingRejection } from '@voucha/test-helpers/api/v1/auth/logout-rejection'
+import { postLogoutExpectingRejection } from '@voucha/test-helpers/logout-rejection'
 import { isSessionRevoked } from '@services/jwt-session'
 
 // Covers the post-parse runtime request-contract validation added for issue #322, layered on top
@@ -10,16 +10,16 @@ import { isSessionRevoked } from '@services/jwt-session'
 // route's manual parsing/session-lookup logic runs. See
 // backend/services/runtime-request-validation for the shared registry these tests exercise.
 describe('POST /api/v1/auth/logout - request contract validation', () => {
-  it('returns 422 for a wrong-typed push binding field without revoking the session', async () => {
+  it('returns 422 for a wrong-typed push binding field while revoking the owning session', async () => {
     const { sid } = await postLogoutExpectingRejection({
       body: { web_push_endpoint: 123, web_push_subscription_id: 456 },
       expectedStatus: 422,
     })
 
-    await expect(isSessionRevoked(sid)).resolves.toBe(false)
+    await expect(isSessionRevoked(sid)).resolves.toBe(true)
   })
 
-  it('returns 422 for an unknown push binding field before clearing cookies', async () => {
+  it('returns 422 for an unknown push binding field while clearing cookies', async () => {
     await postLogoutExpectingRejection({
       body: {
         web_push_endpoint: 'https://push.example.test/subscription',

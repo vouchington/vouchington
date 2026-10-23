@@ -1,4 +1,8 @@
-import { ensureAnonymousSession } from '@ts-shared/session-jwt'
+import { assertSessionClientBinding } from './client-binding.mts'
+import { refreshWebSessionFromDeviceToken } from './web-refresh.mts'
+import { ensureAnonymousSession, verifyDeviceJwt } from '@ts-shared/session-jwt'
+import { AUTH_REQUIRED } from '@modules/on-error/error-codes'
+import { createCodedError } from '@modules/on-error/create-coded-error'
 import { verifyDeviceAndSessionTokens } from './verify.mts'
 import { trackAuthSessionEvent } from '@services/analytics'
 import type { FetchUserForSession, RefreshedSessionState, SessionTokenPayload } from './types.mts'
@@ -10,7 +14,9 @@ export async function refreshSessionState(options: {
   deviceToken?: string
   sessionToken?: string
   fetchUser: FetchUserForSession
-  verifyRevocationOnHotPath?: boolean
+  userAgent?: string
+  ja4?: string
+  clock?: () => number
 }): Promise<RefreshedSessionState> {
   if (options.deviceToken && options.sessionToken) {
     const verified = await verifyDeviceAndSessionTokens({
@@ -18,6 +24,7 @@ export async function refreshSessionState(options: {
       sessionToken: options.sessionToken,
     })
 
+    if (verified) assertSessionClientBinding(verified, options.userAgent, options.ja4)
     if (verified && !verified.uid) {
       trackAuthSessionEvent({
         did: verified.did,
@@ -38,14 +45,30 @@ export async function refreshSessionState(options: {
 
     if (verified && verified.uid) {
       return applyHotWarmCold(
-        verified,
+        { ...verified, sca: 0 },
         verified.did,
         options.deviceToken,
-        options.sessionToken,
         options.fetchUser,
-        { verifyRevocationOnHotPath: options.verifyRevocationOnHotPath },
+        options.clock,
       )
     }
+  }
+
+  if (options.deviceToken) {
+    const refreshed = await refreshWebSessionFromDeviceToken(
+      options.deviceToken,
+      options.userAgent,
+      options.fetchUser,
+      options.ja4,
+    )
+    if (refreshed) return refreshed
+    const device = await verifyDeviceJwt(options.deviceToken)
+    if (device?.client === 'native' && device.refresh_uid)
+      throw createCodedError(
+        401,
+        'An active access token is required for native renewal',
+        AUTH_REQUIRED,
+      )
   }
 
   const result = await ensureAnonymousSession({

@@ -29,6 +29,7 @@ async function loginAsUser(page: Page, userId: string) {
   const { deviceToken, sessionToken } = await createDeviceAndSessionTokens({
     did: mintUUIDv7(),
     uid: userId,
+    deviceContext: { user_agent: await page.evaluate(() => navigator.userAgent) },
   })
   const origin = new URL(page.url()).origin
 

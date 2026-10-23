@@ -36,11 +36,16 @@ describe('proxy.session', () => {
         expect(headers.get('x-device-token')).toBeNull()
         expect(headers.get('x-session-token')).toBeNull()
         expect(headers.get('x-user-id')).toBeNull()
-        expect(headers.get('cookie')).toBe('dt=new-dt; st=new-st')
+        expect(headers.get('cookie')).toBe('dt=my-dt; st=my-st')
       })
 
       it('sets only cookie from inbound cookies for anon', async () => {
-        mockDecodeSessionJwt.mockReturnValue({ uid: null, did: 'did-1', sid: 'sid-1' })
+        mockDecodeSessionJwt.mockReturnValue({
+          uid: null,
+          did: 'did-1',
+          sid: 'sid-1',
+          exp: Math.floor(Date.now() / 1000) + 600,
+        })
         await proxy(makeRequest({ cookies: { dt: 'my-dt', st: 'my-st' } }) as any)
         const headers = (mockNextResponseNext.mock as any).calls[0][0].request.headers as Headers
         expect(headers.get('x-device-token')).toBeNull()
@@ -63,7 +68,7 @@ describe('proxy.session', () => {
           }) as any,
         )
         const headers = (mockNextResponseNext.mock as any).calls[0][0].request.headers as Headers
-        expect(headers.get('cookie')).toBe('dt=new-dt; st=new-st')
+        expect(headers.get('cookie')).toBe('dt=my-dt; st=my-st')
       })
 
       it('omits x-user-id when uid is null from backend session', async () => {
@@ -87,8 +92,8 @@ describe('proxy.session', () => {
         expect(headers.get('x-user-id')).toBeNull()
       })
 
-      it('drops inbound auth cookies and headers when decoded st looks authenticated but backend validation fails', async () => {
-        mockDecodeSessionJwt.mockReturnValue(AUTH_ST_PAYLOAD)
+      it('drops malformed access cookies and injected authentication headers', async () => {
+        mockDecodeSessionJwt.mockReturnValue(null)
         fetchMock.mockResolvedValue({ ok: false })
 
         await proxy(

@@ -42,8 +42,13 @@ app.route('/api/v1/auth/sessions').get(async (ctx: Context) => {
     : undefined
 
   const deviceClass = 'dc' in sessionData ? sessionData.dc : undefined
-  const expiresAt =
-    'exp' in sessionData && sessionData.exp ? new Date(sessionData.exp * 1000) : undefined
+  const expiry =
+    'client' in sessionData && sessionData.client === 'web' && 'device_exp' in sessionData
+      ? sessionData.device_exp
+      : 'exp' in sessionData
+        ? sessionData.exp
+        : undefined
+  const expiresAt = expiry ? new Date(expiry * 1000) : undefined
 
   if (isUUIDv7(sessionData.did) && isUUIDv7(sessionData.sid)) {
     await registerAuthenticatedSession({

@@ -36,15 +36,25 @@ export function isOptionalDeviceClass(value: unknown): value is DeviceClass | un
   return value === undefined || KNOWN_DEVICE_CLASSES.has(value as DeviceClass)
 }
 
+export type SessionClient = 'web' | 'native'
+
 export interface DeviceTokenPayload extends jose.JWTPayload {
   did: string
   dc?: DeviceClass
+  client?: SessionClient
+  ua_hash?: string
+  ja4_hash?: string
+  refresh_uid?: string
+  refresh_sid?: string
 }
 
 export interface SessionTokenPayload extends jose.JWTPayload {
   did: string
   sid: string
   uid: string | null
+  client?: SessionClient
+  ua_hash?: string
+  ja4_hash?: string
   // Present only when uid is non-null (authenticated sessions)
   rol?: readonly string[] // user roles (e.g. ['administrator'])
   mpl?: string | null // membership plan slug ('plus' | 'pro')

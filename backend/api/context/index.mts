@@ -1,3 +1,4 @@
+import { getTrustedClientJa4 } from '@modules/request-client-info/cloudflare-signals'
 import { verifyDeviceJwt } from '@ts-shared/session-jwt'
 import {
   getCachedBootstrapDeviceId,
@@ -6,17 +7,19 @@ import {
 import type { Application, Context } from '@jongleberry/api-server'
 import {
   createDeviceAndSessionTokens,
+  assertSessionClientBinding,
+  isSessionClientBindingError,
   isSessionRevoked,
-  refreshSessionState,
   verifyDeviceAndSessionTokens,
+  resolveRequestSessionClaims,
   type DeviceTokenPayload,
   type VerifyDeviceAndSessionTokenResult,
 } from '@services/jwt-session'
-import { setAuthenticationCookies } from '@modules/api-utils'
-import { getPrivateUserByAny } from '@services/users/get'
+import { setAuthenticationCookies, clearAuthenticationCookies } from '@modules/api-utils'
 import { loadCurrentUser } from './current-user.mts'
 import { v7 } from 'uuid'
 import type { PrivateUser } from '@services/users/types'
+import { getPrivateUserByAny } from '@services/users/get'
 
 declare module '@jongleberry/api-server' {
   interface Context {
@@ -100,23 +103,25 @@ const extensions = {
 
       const result = await verifyDeviceAndSessionTokens({ deviceToken, sessionToken })
       if (result) {
-        if (result.uid && result.mpe !== undefined && Math.floor(Date.now() / 1000) >= result.mpe) {
-          const refreshed = await refreshSessionState({
-            deviceToken,
-            sessionToken,
-            fetchUser: getPrivateUserByAny,
-          })
-          setAuthenticationCookies(this, {
-            dt: refreshed.dt,
-            st: refreshed.st,
-            deviceClass: refreshed.deviceClass,
-          })
-          this.sessionTokenData = { ...refreshed.session, dc: refreshed.deviceClass }
+        try {
+          assertSessionClientBinding(
+            result,
+            this.req.headers['user-agent'],
+            getTrustedClientJa4(this.req),
+          )
+        } catch (err) {
+          if (!isSessionClientBindingError(err)) throw err
+          clearAuthenticationCookies(this)
+          this.sessionTokenData = { did: deviceData.did, sid: v7(), uid: null }
           return this.sessionTokenData
         }
         if (
           result.uid &&
-          (await isSessionRevoked(result.sid, { userId: result.uid, issuedAt: result.iat }))
+          (await isSessionRevoked(result.sid, {
+            userId: result.uid,
+            deviceId: result.did,
+            issuedAt: result.device_iat,
+          }))
         ) {
           const tokens = await createDeviceAndSessionTokens({
             did: result.did,
@@ -135,6 +140,23 @@ const extensions = {
           return this.sessionTokenData
         }
 
+        if (result.uid) {
+          const inboundIdentity =
+            deviceToken === this.cookies.get('dt') && sessionToken === this.cookies.get('st')
+          const resolved = await resolveRequestSessionClaims(result, userId => {
+            if (inboundIdentity && this.currentUser !== undefined)
+              return Promise.resolve(this.currentUser)
+            return getPrivateUserByAny(userId, { readOnly: false })
+          })
+          if (inboundIdentity && resolved.user !== undefined) this.currentUser = resolved.user
+          if (!resolved.session) {
+            clearAuthenticationCookies(this)
+            this.sessionTokenData = { did: deviceData.did, sid: v7(), uid: null }
+            return this.sessionTokenData
+          }
+          this.sessionTokenData = resolved.session
+          return resolved.session
+        }
         this.sessionTokenData = result
         return result
       }

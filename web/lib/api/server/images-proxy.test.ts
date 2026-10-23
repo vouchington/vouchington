@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { recordProxyReferralAttribution, refreshProxySession } from './proxy'
+import { recordProxyReferralAttribution, getProxyClientHeaders } from './proxy'
 
 describe('server proxy api helpers', () => {
   afterEach(() => {
@@ -18,56 +18,6 @@ describe('server proxy api helpers', () => {
     ).rejects.toThrow('Unsupported backend URL protocol: ftp:')
   })
 
-  it('adds web client metadata to session refresh requests', async () => {
-    const mockFetch = vi
-      .fn<typeof fetch>()
-      .mockResolvedValueOnce(new Response(JSON.stringify({ session: null }), { status: 200 }))
-    vi.stubGlobal('fetch', mockFetch)
-    vi.stubEnv('NEXT_PUBLIC_GIT_COMMIT', 'web-release')
-
-    await refreshProxySession(
-      'https://backend.example.com',
-      { dt: 'device-token', st: 'session-token' },
-      {},
-    )
-
-    const [, init] = mockFetch.mock.calls[0]!
-    expect(init?.headers).toMatchObject({
-      Origin: 'https://backend.example.com',
-      'x-forwarded-proto': 'https',
-      'x-voucha-app-version': 'web-release',
-      'x-voucha-client': 'web',
-      'x-voucha-platform': 'web',
-      cookie: 'dt=device-token; st=session-token',
-    })
-  })
-
-  it('uses the internal backend protocol for session refresh origin validation', async () => {
-    const mockFetch = vi
-      .fn<typeof fetch>()
-      .mockResolvedValueOnce(new Response(JSON.stringify({ session: null }), { status: 200 }))
-    vi.stubGlobal('fetch', mockFetch)
-
-    await refreshProxySession('http://backend:2900', { dt: 'dt', st: 'st' }, {})
-
-    expect(mockFetch.mock.calls[0]?.[1]?.headers).toMatchObject({
-      Origin: 'http://backend:2900',
-      'x-forwarded-proto': 'http',
-    })
-  })
-
-  it('omits the session cookie when refresh has no tokens', async () => {
-    const mockFetch = vi
-      .fn<typeof fetch>()
-      .mockResolvedValueOnce(new Response(JSON.stringify({ session: null }), { status: 200 }))
-    vi.stubGlobal('fetch', mockFetch)
-
-    await refreshProxySession('https://backend.example.com', {}, {})
-
-    const [, init] = mockFetch.mock.calls[0]!
-    expect(init?.headers).not.toHaveProperty('cookie')
-  })
-
   it('adds web client metadata to referral attribution requests', async () => {
     const mockFetch = vi
       .fn<typeof fetch>()
@@ -78,7 +28,15 @@ describe('server proxy api helpers', () => {
       'https://backend.example.com',
       { referrer: 'alice', landing_url: 'https://voucha.ai/landing/alice' },
       { dt: 'dt', st: 'st' },
-      { 'x-forwarded-for': '203.0.113.5' },
+      getProxyClientHeaders({
+        headers: new Headers({
+          'user-agent': 'Browser/127',
+          'x-forwarded-for': '203.0.113.5',
+          'cf-connecting-ip': '198.51.100.8',
+          'x-voucha-client': 'swift',
+          authorization: 'Bearer untrusted-forwarded-value',
+        }),
+      }),
     )
 
     const [, init] = mockFetch.mock.calls[0]!
@@ -87,6 +45,9 @@ describe('server proxy api helpers', () => {
       'x-voucha-client': 'web',
       'x-voucha-platform': 'web',
       'x-forwarded-for': '203.0.113.5',
+      'cf-connecting-ip': '198.51.100.8',
+      'user-agent': 'Browser/127',
     })
+    expect(init?.headers).not.toHaveProperty('authorization')
   })
 })
