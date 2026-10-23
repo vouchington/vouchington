@@ -1,5 +1,5 @@
 {
-  "sessionPrefix": "voucha",
+  "sessionPrefix": "voucha-",
   "readyMarker": "voucha-ready",
   "launcherPidVar": "VOUCHA_LAUNCHER_PID",
   "env": {},
