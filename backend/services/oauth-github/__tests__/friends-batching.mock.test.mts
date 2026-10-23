@@ -15,7 +15,7 @@ import {
   softDeleteUser,
 } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
-import { oauthGithubWorkConfig } from '../work-limits.mts'
+import { getOauthGithubWorkLimit, oauthGithubWorkConfig } from '../work-limits.mts'
 import { syncGithubFriends } from '../friends.mts'
 import { finalizeGithubFriendSync } from '../friends-persistence.mts'
 import { disconnectOAuthAccount } from '../../my/oauth-account.mts'
@@ -92,7 +92,10 @@ describe('syncGithubFriends batching', () => {
     onTestFinished(
       overrideDynamicConfigFieldsForTest(oauthGithubWorkConfig, { friend_mutation_batch_size: 3 }),
     )
-    const friendIds = makeFriendIds('github-stale')
+    const friendIds = makeFriendIds(
+      'github-stale',
+      getOauthGithubWorkLimit('friend_mutation_batch_size') + 1,
+    )
     await insertTestFriends('github', providerUserId, friendIds)
     const rowLock = await acquireTestFriendRowLock('github', providerUserId, friendIds.at(-1)!)
     const secondStalePage = Promise.withResolvers<void>()
@@ -145,10 +148,10 @@ function randomGithubId(offset: number): number {
   return offset + Math.floor(Math.random() * 500_000)
 }
 
-function makeFriendIds(prefix: string): string[] {
+function makeFriendIds(prefix: string, count: number): string[] {
   const suffix = createRandomString(10)
   return Array.from(
-    { length: 4 },
+    { length: count },
     (_, index) => `${prefix}-${suffix}-${String(index).padStart(4, '0')}`,
   )
 }
