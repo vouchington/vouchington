@@ -4,7 +4,6 @@ import {
   runWithTransaction,
   type TransactionQuery,
 } from '@data-stores/psql'
-import onError from '@modules/on-error'
 import { markJwtStale } from '@services/jwt-session/invalidation'
 import createHttpError from 'http-errors'
 import sql from 'sql-template-strings'
@@ -81,7 +80,7 @@ export async function revokeReportAbusePenalty(
     // Invalidate the JWT so the trust-tier penalty is lifted on next refresh.
     if (clearedUserId) {
       registerPostCommitAction(query, async () => {
-        void markJwtStale(clearedUserId).catch(onError)
+        await markJwtStale(clearedUserId)
       })
     }
 
