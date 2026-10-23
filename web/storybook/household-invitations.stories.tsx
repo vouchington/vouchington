@@ -32,7 +32,9 @@ export const Incoming: Story = {
   args: { onResolve: fn() },
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement)
-    await expect(canvas.getByText('Invited by @owner')).toBeVisible()
+    const inviter = canvas.getByRole('link', { name: '@owner' })
+    await expect(inviter).toHaveAttribute('href', '/user/owner')
+    await expect(inviter.parentElement).toHaveTextContent('Invited by @owner')
     await userEvent.click(canvas.getByRole('button', { name: 'Accept' }))
     await expect(args.onResolve).toHaveBeenCalledWith(args.invitations[0], 'accept')
   },
