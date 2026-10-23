@@ -4,12 +4,12 @@ import { checkMonetarySnapshot } from './monetary-contract-guard.mts'
 import { checkMonetaryMigration } from './monetary-migration-guard.mts'
 
 describe('monetary migration storage guard', () => {
-  it('rejects FLOAT declarations for monetary columns', async () => {
+  it('rejects FLOAT and DEC declarations for monetary columns', async () => {
     const errors: string[] = []
 
     await checkMonetaryMigration(
       'backend/data-stores/psql/migrations/9999-money.sql',
-      'CREATE TABLE invoices (annual_fee FLOAT, service_fee FLOAT(24), total_fee FLOAT(53));',
+      'CREATE TABLE invoices (annual_fee FLOAT, service_fee FLOAT(24), total_fee FLOAT(53), renewal_fee DEC(10,2));',
       errors,
     )
 
@@ -17,6 +17,7 @@ describe('monetary migration storage guard', () => {
       expect.stringContaining('invoices.annual_fee'),
       expect.stringContaining('invoices.service_fee'),
       expect.stringContaining('invoices.total_fee'),
+      expect.stringContaining('invoices.renewal_fee'),
     ])
   })
 
