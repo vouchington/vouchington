@@ -1,5 +1,4 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { TestLifecycleReporter } from 'vouchington-tooling/playwright'
 import { createReporter } from '../playwright/config/web-server-command.mts'
 
 const ORIGINAL_PORT = process.env.PORT
@@ -264,6 +263,9 @@ describe('Playwright shared config', () => {
 
     expect(workerServer?.env).toMatchObject({ CSP_ASSET_ORIGIN: 'http://localhost:3000' })
   })
+  // pnpm may install separate peer-variant copies of vouchington-tooling per workspace package, so
+  // the reporter path can resolve to a sibling copy; match the package-relative path instead.
+  const lifecycleReporterPathPattern = /vouchington-tooling\/dist\/playwright\/test-lifecycle-reporter\.mjs$/u
   it.each([
     ['ordinary', () => import('../playwright.config.mts'), ['setup', 'chromium']],
     ['credentialed', () => import('../playwright.credentialed.config.mts'), ['chromium']],
@@ -277,7 +279,7 @@ describe('Playwright shared config', () => {
         expect.arrayContaining([
           ['github'],
           ['junit', { outputFile: expect.any(String) }],
-          [TestLifecycleReporter.modulePath, { failOnSkippedTests: true }],
+          [expect.stringMatching(lifecycleReporterPathPattern), { failOnSkippedTests: true }],
         ]),
       )
       expect(config.projects?.map(project => project.name)).toEqual(projectNames)
