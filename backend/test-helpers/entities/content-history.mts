@@ -1,6 +1,4 @@
-import { beginTransaction, read, write } from '@data-stores/psql'
-import { getMinUUIDv7ForDate } from '@modules/utils/ids'
-import { assertSafeSqlIdentifier } from '@vouchington/postgres/partitions'
+import { read, write } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import { v7 as uuidv7 } from 'uuid'
 
@@ -37,49 +35,26 @@ export async function getTestModerationPassEvidence(
   return rows
 }
 
-/** A one-millisecond old child avoids changing other test records in the shared backend DB. */
-export async function createTestClearanceHistoryRange(occurredAt: Date): Promise<{
-  partition: string
-  fromId: string
-  toId: string
-}> {
-  const partition = assertSafeSqlIdentifier(
-    `post_clearance_changes__test_${crypto.randomUUID().replaceAll('-', '').slice(0, 12)}`,
-  )
-  const fromId = getMinUUIDv7ForDate(occurredAt)
-  const toId = getMinUUIDv7ForDate(new Date(occurredAt.getTime() + 1))
-  await using transaction = await beginTransaction()
-  await transaction(`/* createTestClearanceHistoryRange:lockPost */
-    LOCK TABLE ONLY posts IN EXCLUSIVE MODE`)
-  await transaction(`/* createTestClearanceHistoryRange:lockIdentity */
-    LOCK TABLE retained_post_clearance_change_identities, retained_user_identities
-    IN EXCLUSIVE MODE`)
-  await transaction(`/* createTestClearanceHistoryRange:lockParent */
-    LOCK TABLE ONLY post_clearance_changes IN ACCESS EXCLUSIVE MODE NOWAIT`)
-  await transaction(`/* createTestClearanceHistoryRange */
-    CREATE TABLE ${partition} PARTITION OF post_clearance_changes
-    FOR VALUES FROM ('${fromId}') TO ('${toId}')`)
-  await transaction.commit()
-  return { partition, fromId, toId }
-}
-
-export async function removeTestClearanceHistoryRange(partition: string): Promise<void> {
-  const safePartition = assertSafeSqlIdentifier(partition)
-  const { rows } = await read<{ exists: boolean }>(
-    '/* removeTestClearanceHistoryRange:exists */ SELECT to_regclass($1) IS NOT NULL AS exists',
-    [safePartition],
-  )
-  if (!rows[0]?.exists) return
-  await using transaction = await beginTransaction()
-  await transaction(`/* removeTestClearanceHistoryRange:lockPost */
-    LOCK TABLE ONLY posts IN EXCLUSIVE MODE`)
-  await transaction(`/* removeTestClearanceHistoryRange:lockIdentity */
-    LOCK TABLE retained_post_clearance_change_identities, retained_user_identities
-    IN EXCLUSIVE MODE`)
-  await transaction(`/* removeTestClearanceHistoryRange:lockParent */
-    LOCK TABLE ONLY post_clearance_changes IN ACCESS EXCLUSIVE MODE NOWAIT`)
-  await transaction(`/* removeTestClearanceHistoryRange */ DROP TABLE IF EXISTS ${safePartition}`)
-  await transaction.commit()
+/** The valid state after a raw clearance partition has been retired. */
+export async function seedTestRetiredClearanceProjection(
+  postId: string,
+  changedById: string,
+): Promise<string> {
+  const changeId = uuidv7({ msecs: Date.UTC(2023, 5, 1) })
+  const changedAt = new Date('2023-06-01T00:00:00.000Z')
+  await write(sql`/* seedTestRetiredClearanceProjection:identity */
+    INSERT INTO retained_post_clearance_change_identities (id) VALUES (${changeId}::uuid)`)
+  await write(sql`/* seedTestRetiredClearanceProjection:post */
+    UPDATE posts SET latest_clearance_change_id = ${changeId}::uuid,
+      clearance_changed_at = ${changedAt},
+      clearance_changed_by_id = ${changedById}::uuid,
+      clearance_public_reason_code = 'staff_rejected',
+      clearance_private_note = 'staff-only',
+      clearance_is_platform_override = TRUE,
+      has_creation_moderation_bypass = TRUE,
+      rejected_at = ${changedAt}, approved_at = NULL, in_review_at = NULL
+    WHERE id = ${postId}::uuid`)
+  return changeId
 }
 
 export async function projectTestClearanceHistoryChange(options: {
