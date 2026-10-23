@@ -50,9 +50,12 @@ first. The [scope module](../overview/architecture/backend/README.md) and
 
 ## MCP audience selection
 
-MCP credentials bind to one protected resource, so community moderators and copyright staff use
-the audience that owns their tools. Native agent server selection and credential-picker adoption
-remain dependent client work under [the MCP audience split](https://github.com/vouchington/vouchington/issues/3179).
+MCP API keys choose one eligible server audience, and switching servers clears the prior scope
+selection. OAuth apps may offer scopes across audiences; each eventual authorization and access
+token still binds to one protected resource. The shared scope catalog exposes server eligibility and
+staff-only policy, while web credential pickers and consent group permissions by server with
+localized labels. Native agent server selection and credential-picker adoption remain dependent
+client work under [the MCP audience split](https://github.com/vouchington/vouchington/issues/3179).
 The producer lands first; audience routing does not change tool arguments or results.
 
 ## Direct-message MCP consent

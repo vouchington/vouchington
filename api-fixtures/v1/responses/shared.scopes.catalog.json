@@ -1,4 +1,31 @@
 {
+  "audiences": [
+    {
+      "accepts_api_keys": true,
+      "audience": "user",
+      "requires_administrator": false
+    },
+    {
+      "accepts_api_keys": true,
+      "audience": "community_moderation",
+      "requires_administrator": false
+    },
+    {
+      "accepts_api_keys": true,
+      "audience": "brand",
+      "requires_administrator": false
+    },
+    {
+      "accepts_api_keys": false,
+      "audience": "admin",
+      "requires_administrator": true
+    },
+    {
+      "accepts_api_keys": false,
+      "audience": "legal",
+      "requires_administrator": true
+    }
+  ],
   "scopes": [
     {
       "action": "write",

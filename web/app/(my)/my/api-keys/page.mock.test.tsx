@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react'
 import type { ListResponse } from '@/types/api-responses'
 import type { ApiKey } from '@/types/api-keys'
 import type { OAuthApp } from '@/types/oauth-apps'
-import type { ScopeCatalogEntry, ScopeCatalogResponse } from '@/types/scopes'
+import type { ScopeCatalogResponse } from '@/types/scopes'
 import appsFixture from '../../../../../api-fixtures/v1/responses/web.my.oauth-apps.paginated.json'
 import scopeCatalogFixture from '../../../../../api-fixtures/v1/responses/shared.scopes.catalog.json'
 
@@ -30,10 +30,10 @@ vi.mock(import('@/components/my/api-keys-manager'), () => ({
     scopeCatalog,
   }: {
     initialData?: ListResponse<ApiKey>
-    scopeCatalog: readonly ScopeCatalogEntry[]
+    scopeCatalog: ScopeCatalogResponse
   }) => (
     <div data-testid='api-keys-page-data'>
-      {`${initialData?.results.length}|${scopeCatalog.length}`}
+      {`${initialData?.results.length}|${scopeCatalog.scopes.length}|${scopeCatalog.audiences.length}`}
     </div>
   ),
 }))
@@ -43,10 +43,10 @@ vi.mock(import('@/components/my/oauth-apps-manager'), () => ({
     scopeCatalog,
   }: {
     initialData: ListResponse<OAuthApp>
-    scopeCatalog: readonly ScopeCatalogEntry[]
+    scopeCatalog: ScopeCatalogResponse
   }) => (
     <div data-testid='oauth-apps-page-data'>
-      {`${initialData.results[0]?.client_name}|${scopeCatalog.length}`}
+      {`${initialData.results[0]?.client_name}|${scopeCatalog.scopes.length}|${scopeCatalog.audiences.length}`}
     </div>
   ),
 }))
@@ -66,9 +66,11 @@ describe('ApiKeysPage', () => {
     render(await ApiKeysPage())
 
     expect(screen.getByRole('heading')).toHaveTextContent('extracted.apiKeys.page.apiKeys_c08f17eb')
-    expect(screen.getByTestId('api-keys-page-data')).toHaveTextContent(`0|${catalog.scopes.length}`)
+    expect(screen.getByTestId('api-keys-page-data')).toHaveTextContent(
+      `0|${catalog.scopes.length}|${catalog.audiences.length}`,
+    )
     expect(screen.getByTestId('oauth-apps-page-data')).toHaveTextContent(
-      `Fixture Agent|${catalog.scopes.length}`,
+      `Fixture Agent|${catalog.scopes.length}|${catalog.audiences.length}`,
     )
   })
 })

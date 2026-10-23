@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import type { ReactNode } from 'react'
-import { fn } from 'storybook/test'
+import { expect, fn, within } from 'storybook/test'
 import { OAuthAppsManager } from '@/components/my/oauth-apps-manager'
 import { ClientSecretAlert } from '@/components/my/oauth-apps-manager/client-secret-alert'
 import { EditOAuthAppForm } from '@/components/my/oauth-apps-manager/edit-oauth-app-form'
@@ -8,7 +8,7 @@ import { OAuthAppDetailsFields } from '@/components/my/oauth-apps-manager/oauth-
 import { OAuthAppRow } from '@/components/my/oauth-apps-manager/oauth-app-row'
 import { RegisterOAuthAppForm } from '@/components/my/oauth-apps-manager/register-oauth-app-form'
 import type { OAuthApp } from '@/types/oauth-apps'
-import { storybookScopeCatalog } from './fixtures/scope-catalog'
+import { storybookScopeCatalogResponse } from './fixtures/scope-catalog'
 
 const meta = {
   title: 'My/OAuth Apps',
@@ -57,7 +57,7 @@ export const Manager: Story = {
           results: [confidentialApp, publicApp],
           page_info: { has_next_page: false, end_cursor: null, start_cursor: null },
         }}
-        scopeCatalog={storybookScopeCatalog}
+        scopeCatalog={storybookScopeCatalogResponse}
       />
     </Frame>
   ),
@@ -86,11 +86,28 @@ export const RegisterForm: Story = {
     <Frame>
       <RegisterOAuthAppForm
         isAdmin={false}
-        scopeCatalog={storybookScopeCatalog}
+        scopeCatalog={storybookScopeCatalogResponse}
         onRegister={resolveTrue}
       />
     </Frame>
   ),
+}
+
+export const AdministratorRegisterForm: Story = {
+  render: () => (
+    <Frame>
+      <RegisterOAuthAppForm
+        isAdmin
+        scopeCatalog={storybookScopeCatalogResponse}
+        onRegister={resolveTrue}
+      />
+    </Frame>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getByRole('heading', { name: 'Site administration' })).toBeVisible()
+    await expect(canvas.getByRole('heading', { name: 'Legal requests' })).toBeVisible()
+  },
 }
 
 export const EditVerifiedApp: Story = {

@@ -4,7 +4,7 @@ import { fn } from 'storybook/test'
 import { ChoiceRadioGroup } from '@/components/my/api-keys-manager/choice-radio-group'
 import { CreateApiKeyForm } from '@/components/my/api-keys-manager/create-api-key-form'
 import { ScopePicker } from '@/components/my/api-keys-manager/scope-picker'
-import { scopeResourceRows } from '@/components/my/api-keys-manager/scope-selection'
+import { scopeResourceGroups } from '@/components/my/api-keys-manager/scope-selection'
 import type { ApiKeyScopeSelection } from '@/components/my/api-keys-manager/use-api-key-scope-selection'
 import { storybookScopeCatalog } from './fixtures/scope-catalog'
 
@@ -19,10 +19,13 @@ type Story = StoryObj<typeof meta>
 function selection(overrides: Partial<ApiKeyScopeSelection>): ApiKeyScopeSelection {
   return {
     keyType: 'rss',
-    rows: scopeResourceRows(storybookScopeCatalog, 'api-key', ['user']),
+    audiences: ['user', 'community_moderation', 'brand'],
+    audience: 'user',
+    groups: scopeResourceGroups(storybookScopeCatalog, 'api-key', ['user']),
     mcpScopes: [],
     permissions: ['rss:read'],
     handleKeyTypeChange: fn(),
+    handleAudienceChange: fn(),
     handleScopeToggle: fn(),
     ...overrides,
   }
@@ -77,7 +80,7 @@ export const ScopePickerWithSelection: Story = {
     <Frame>
       <ScopePicker
         idPrefix='storybook'
-        rows={scopeResourceRows(storybookScopeCatalog, 'api-key', ['user'])}
+        groups={scopeResourceGroups(storybookScopeCatalog, 'api-key', ['user'])}
         selected={['mcp.user:read', 'cards:read', 'cards:write']}
         onToggle={fn()}
       />

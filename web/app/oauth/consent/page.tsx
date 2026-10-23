@@ -7,12 +7,10 @@ import { getOAuthAuthorizationRequest } from '@/lib/api/server/oauth-authorizati
 import { createNoIndexMetadata } from '@/lib/seo/metadata'
 import { getTranslations } from '@/lib/i18n/get-translations'
 import { getScopeCatalog } from '@/lib/api/server/scopes'
-import { scopeDescriptionMessageKey } from '@/components/my/api-keys-manager/scope-description'
 import { ConsentActions } from './consent-actions'
+import { ConsentScopeSections } from './consent-scope-sections'
 
 export const dynamic = 'force-dynamic'
-
-const OWN_PRIVATE_POST_RELATIONS_WRITE_SCOPE = 'post-relations.owned-private:write'
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations()
@@ -35,7 +33,6 @@ export default async function OAuthConsentPage({
   if (!response) notFound()
   const request = response.authorization_request
   const catalog = await getScopeCatalog()
-  const descriptions = new Map(catalog.scopes.map(entry => [entry.scope, entry.description_key]))
   const t = await getTranslations()
 
   return (
@@ -68,54 +65,11 @@ export default async function OAuthConsentPage({
               {request.resource}
             </p>
           </section>
-          {[false, true].map(sensitive => {
-            const scopes = request.scopes.filter(
-              scope => request.sensitive_scopes.includes(scope) === sensitive,
-            )
-            if (scopes.length === 0) return null
-            const heading = sensitive
-              ? 'oauth-sensitive-permissions-heading'
-              : 'oauth-permissions-heading'
-            return (
-              <section
-                key={heading}
-                aria-labelledby={heading}
-              >
-                <h2
-                  id={heading}
-                  className='text-sm font-medium'
-                >
-                  {t(
-                    sensitive
-                      ? 'shared.oauth.consent.sensitivePermissionsHeading'
-                      : 'shared.oauth.consent.permissionsHeading',
-                  )}
-                </h2>
-                <ul
-                  className='mt-2 list-disc space-y-1 pl-5 text-sm text-muted-foreground'
-                  // oxlint-disable-next-line no-mistakes/playwright-literals -- both static section identifiers are selected by the sensitivity group
-                  data-pw={sensitive ? 'oauth-consent-sensitive-scopes' : 'oauth-consent-scopes'}
-                >
-                  {scopes.map(scope => {
-                    const descriptionKey = descriptions.get(scope)
-                    return (
-                      <li key={scope}>
-                        <code>{scope}</code>
-                        {descriptionKey && <p>{t(scopeDescriptionMessageKey(descriptionKey))}</p>}
-                        {scope === OWN_PRIVATE_POST_RELATIONS_WRITE_SCOPE && (
-                          <p data-pw='oauth-consent-private-post-relations-permission'>
-                            {t(
-                              'extracted.apiKeysManager.scopePicker.allowOwnPrivatePostRelationsAndTags_1c840aa0',
-                            )}
-                          </p>
-                        )}
-                      </li>
-                    )
-                  })}
-                </ul>
-              </section>
-            )
-          })}
+          <ConsentScopeSections
+            catalog={catalog}
+            scopes={request.scopes}
+            sensitiveScopes={request.sensitive_scopes}
+          />
           <p className='text-sm text-muted-foreground'>
             {t('shared.oauth.consent.passwordNotice')}
           </p>

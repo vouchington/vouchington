@@ -1,6 +1,7 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { listScopeCatalog } from '@modules/scopes'
+import { listScopeAudiencePolicies } from '@services/mcp-tools'
 import { HTTP_CACHE_SHORT_MAX_AGE_SECONDS } from '@voucha/config'
 import { apiResponse } from '@vouchington/utils/api-response-contract'
 import { getOptionalAuthAndRateLimit } from '../../response-helpers.mts'
@@ -11,5 +12,10 @@ app.route('/api/v1/scopes').get(async (ctx: Context) => {
   if (!currentUser) {
     ctx.set('Cache-Control', `public, max-age=${HTTP_CACHE_SHORT_MAX_AGE_SECONDS}`)
   }
-  ctx.json(apiResponse('GET:/api/v1/scopes', { scopes: listScopeCatalog() }))
+  ctx.json(
+    apiResponse('GET:/api/v1/scopes', {
+      scopes: listScopeCatalog(),
+      audiences: listScopeAudiencePolicies(),
+    }),
+  )
 })

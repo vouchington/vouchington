@@ -1,4 +1,6 @@
 import type {
+  McpScopeAudience,
+  ScopeAudiencePolicy,
   ScopeAudience,
   ScopeCatalogEntry,
   ScopeCredentialSurface,
@@ -17,13 +19,36 @@ export interface ScopeResourceRow {
   write: ScopeCatalogEntry | null
 }
 
-/**
- * OAuth tokens are bound to the user or admin MCP resource, so an app may mix only those
- * audiences; admin scopes are offered only to administrators. API keys are user-only, because
- * administrator MCP access is OAuth-only.
- */
-export function oauthScopeAudiences(isAdmin: boolean): Extract<ScopeAudience, 'admin' | 'user'>[] {
-  return isAdmin ? ['user', 'admin'] : ['user']
+export interface ScopeResourceGroup {
+  audience: McpScopeAudience
+  rows: ScopeResourceRow[]
+}
+
+export function availableScopeAudiences(
+  policies: readonly ScopeAudiencePolicy[],
+  surface: ScopeCredentialSurface,
+  isAdministrator: boolean,
+): McpScopeAudience[] {
+  const audiences: McpScopeAudience[] = []
+  for (const policy of policies) {
+    if (surface === 'api-key' && !policy.accepts_api_keys) continue
+    if (policy.requires_administrator && !isAdministrator) continue
+    audiences.push(policy.audience)
+  }
+  return audiences
+}
+
+export function scopeResourceGroups(
+  catalog: readonly ScopeCatalogEntry[],
+  surface: ScopeCredentialSurface,
+  audiences: readonly McpScopeAudience[],
+): ScopeResourceGroup[] {
+  const groups: ScopeResourceGroup[] = []
+  for (const audience of audiences) {
+    const rows = scopeResourceRows(catalog, surface, [audience])
+    if (rows.length > 0) groups.push({ audience, rows })
+  }
+  return groups
 }
 
 export function scopeResourceRows(

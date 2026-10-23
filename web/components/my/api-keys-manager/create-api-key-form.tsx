@@ -3,9 +3,17 @@
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { ChoiceRadioGroup } from './choice-radio-group'
 import { ScopePicker } from './scope-picker'
+import { scopeAudienceLabelKey } from './scope-audience-label'
 import type { ApiKeyScopeSelection } from './use-api-key-scope-selection'
 
 interface CreateApiKeyFormProps {
@@ -63,12 +71,40 @@ export function CreateApiKeyForm({
         onChange={selection.handleKeyTypeChange}
       />
       {selection.keyType === 'mcp' && (
-        <ScopePicker
-          idPrefix='api-key'
-          rows={selection.rows}
-          selected={selection.mcpScopes}
-          onToggle={selection.handleScopeToggle}
-        />
+        <div className='space-y-3'>
+          <div className='space-y-1'>
+            <Label htmlFor='api-key-audience'>{t('settings.apiKeys.audience.server')}</Label>
+            <Select
+              value={selection.audience ?? ''}
+              onValueChange={value =>
+                selection.handleAudienceChange(value as typeof selection.audience & string)
+              }
+            >
+              <SelectTrigger
+                id='api-key-audience'
+                data-pw='api-keys-create-audience-select'
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {selection.audiences.map(audience => (
+                  <SelectItem
+                    key={audience}
+                    value={audience}
+                  >
+                    {t(scopeAudienceLabelKey(audience))}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <ScopePicker
+            idPrefix='api-key'
+            groups={selection.groups}
+            selected={selection.mcpScopes}
+            onToggle={selection.handleScopeToggle}
+          />
+        </div>
       )}
       <div className='space-y-1'>
         <Label htmlFor='api-key-label'>

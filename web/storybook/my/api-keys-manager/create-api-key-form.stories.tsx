@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
+import { expect, within } from 'storybook/test'
 import { CreateApiKeyForm } from '@/components/my/api-keys-manager/create-api-key-form'
 import {
   RSS_KEY_SCOPES,
-  scopeResourceRows,
+  scopeResourceGroups,
   toggleScope,
 } from '@/components/my/api-keys-manager/scope-selection'
 import type {
@@ -22,22 +23,31 @@ function StatefulForm({
   initialLabel,
   initialKeyType,
   initialScopes,
+  initialAudience = 'user',
   submitting,
 }: {
   initialLabel: string
   initialKeyType: ApiKeyType
   initialScopes: string[]
+  initialAudience?: NonNullable<ApiKeyScopeSelection['audience']>
   submitting: boolean
 }) {
   const [label, setLabel] = useState(initialLabel)
   const [keyType, setKeyType] = useState(initialKeyType)
   const [mcpScopes, setMcpScopes] = useState(initialScopes)
+  const [audience, setAudience] = useState<ApiKeyScopeSelection['audience']>(initialAudience)
   const selection: ApiKeyScopeSelection = {
     keyType,
-    rows: scopeResourceRows(storybookScopeCatalog, 'api-key', ['user']),
+    audiences: ['user', 'community_moderation', 'brand'],
+    audience,
+    groups: audience ? scopeResourceGroups(storybookScopeCatalog, 'api-key', [audience]) : [],
     mcpScopes,
     permissions: keyType === 'rss' ? RSS_KEY_SCOPES : mcpScopes,
     handleKeyTypeChange: setKeyType,
+    handleAudienceChange: next => {
+      setAudience(next)
+      setMcpScopes([])
+    },
     handleScopeToggle: (scope, checked) =>
       setMcpScopes(prev => toggleScope(storybookScopeCatalog, prev, scope, checked)),
   }
@@ -78,4 +88,23 @@ export const Submitting: Story = {
       submitting
     />
   ),
+}
+
+export const BrandServer: Story = {
+  render: () => (
+    <StatefulForm
+      initialLabel='Topic claims agent'
+      initialKeyType='mcp'
+      initialAudience='brand'
+      initialScopes={['topic-claims:read']}
+      submitting={false}
+    />
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getByRole('combobox', { name: 'MCP server' })).toHaveTextContent(
+      'Brand tools',
+    )
+    await expect(canvas.getByRole('checkbox', { name: 'topic-claims Read' })).toBeChecked()
+  },
 }

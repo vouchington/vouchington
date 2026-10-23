@@ -180,6 +180,37 @@ test.describe('My API Keys Page', () => {
     await expect(page.getByTestId('api-key-revoked-row').filter({ hasText: label })).toBeVisible()
   })
 
+  test('switches MCP servers without carrying scopes into the new key', async ({ page }) => {
+    const label = `Playwright brand ${randomUUID()}`
+    await page.getByTestId('api-keys-create-button').click()
+    await page.getByTestId('api-keys-create-type-mcp').click()
+    const picker = page.getByTestId('api-key-scope-picker')
+    const audienceSelect = page.getByTestId('api-keys-create-audience-select')
+
+    await picker.getByTestId('scope-checkbox-mcp.user:read').click()
+    await expect(picker.getByTestId('scope-checkbox-mcp.user:read')).toBeChecked()
+    await audienceSelect.click()
+    await page.getByRole('listbox').getByRole('option', { name: 'Brand tools' }).click()
+    await expect(audienceSelect).toContainText('Brand tools')
+    await expect(picker.getByTestId('scope-checkbox-mcp.user:read')).toHaveCount(0)
+    await page.getByTestId('api-keys-create-label-input').pressSequentially(label)
+    await expect(page.getByTestId('api-keys-create-confirm-button')).toBeDisabled()
+
+    await picker.getByTestId('scope-checkbox-topic-claims:read').click()
+    const createResponsePromise = page.waitForResponse(
+      response =>
+        response.url().includes('/api/v1/my/api-keys') && response.request().method() === 'POST',
+    )
+    await page.getByTestId('api-keys-create-confirm-button').click()
+    const createResponse = await createResponsePromise
+    expect(createResponse.status(), await createResponse.text()).toBe(201)
+
+    await page.getByTestId('api-keys-dismiss-raw-key-button').click()
+    const keyRow = page.getByTestId('api-key-active-row').filter({ hasText: label })
+    await expect(keyRow).toContainText('topic-claims:read')
+    await expect(keyRow).not.toContainText('mcp.user:read')
+  })
+
   test('describes the exact own-private relation permission', async ({ page }) => {
     await page.getByTestId('api-keys-create-button').click()
     await page.getByTestId('api-keys-create-type-mcp').click()

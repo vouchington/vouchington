@@ -4,7 +4,7 @@ import { toast } from 'sonner'
 import { createApiKey, getApiKeys, revokeApiKey, rotateApiKey } from '@/lib/api/client/api-keys'
 import { ApiError } from '@/lib/api/error'
 import type { ApiKey } from '@/types/api-keys'
-import type { ScopeCatalogEntry } from '@/types/scopes'
+import type { ScopeCatalogResponse } from '@/types/scopes'
 import { useApiKeyScopeSelection } from './use-api-key-scope-selection'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import type { ListResponse } from '@/types/api-responses'
@@ -16,7 +16,7 @@ const EMPTY_PAGE: ListResponse<ApiKey> = {
   page_info: { has_next_page: false, end_cursor: null, start_cursor: null },
 }
 export function useApiKeysManager(
-  scopeCatalog: readonly ScopeCatalogEntry[],
+  scopeCatalog: ScopeCatalogResponse,
   initialData?: ListResponse<ApiKey>,
 ) {
   const t = useTranslations()
@@ -51,7 +51,7 @@ export function useApiKeysManager(
   const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [creating, setCreating] = useState(false)
   const [newLabel, setNewLabel] = useState('')
-  const { selection, reset: resetSelection } = useApiKeyScopeSelection(scopeCatalog)
+  const { selection, resetSelection } = useApiKeyScopeSelection(scopeCatalog, isAdministrator)
   const [submitting, setSubmitting] = useState(false)
   const [newRawKey, setNewRawKey] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)

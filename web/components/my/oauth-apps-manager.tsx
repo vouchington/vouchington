@@ -5,7 +5,7 @@ import { useOptionalAuth } from '@/lib/auth/context'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import type { ListResponse } from '@/types/api-responses'
 import type { OAuthApp } from '@/types/oauth-apps'
-import type { ScopeCatalogEntry } from '@/types/scopes'
+import type { ScopeCatalogResponse } from '@/types/scopes'
 import { ClientSecretAlert } from './oauth-apps-manager/client-secret-alert'
 import { OAuthAppRow } from './oauth-apps-manager/oauth-app-row'
 import { RegisterOAuthAppForm } from './oauth-apps-manager/register-oauth-app-form'
@@ -13,7 +13,7 @@ import { useOAuthAppsManager } from './oauth-apps-manager/use-oauth-apps-manager
 
 interface OAuthAppsManagerProps {
   initialData: ListResponse<OAuthApp>
-  scopeCatalog: readonly ScopeCatalogEntry[]
+  scopeCatalog: ScopeCatalogResponse
 }
 
 export function OAuthAppsManager({ initialData, scopeCatalog }: OAuthAppsManagerProps) {

@@ -59,7 +59,7 @@ function renderApps(results: OAuthApp[], uiLocale = 'en-US') {
           results,
           page_info: { has_next_page: false, end_cursor: null, start_cursor: null },
         }}
-        scopeCatalog={[]}
+        scopeCatalog={{ scopes: [], audiences: [] }}
       />
     </UiLocaleContext.Provider>,
   )

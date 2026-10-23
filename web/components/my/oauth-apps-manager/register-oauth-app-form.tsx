@@ -4,12 +4,12 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import type { CreateOAuthAppInput, OAuthClientAuthMethod } from '@/types/oauth-apps'
-import type { ScopeCatalogEntry } from '@/types/scopes'
+import type { ScopeCatalogResponse } from '@/types/scopes'
 import { ChoiceRadioGroup } from '../api-keys-manager/choice-radio-group'
 import { ScopePicker } from '../api-keys-manager/scope-picker'
 import {
-  oauthScopeAudiences,
-  scopeResourceRows,
+  availableScopeAudiences,
+  scopeResourceGroups,
   toggleScope,
 } from '../api-keys-manager/scope-selection'
 import { OAuthAppDetailsFields } from './oauth-app-details-fields'
@@ -22,7 +22,7 @@ import {
 
 interface RegisterOAuthAppFormProps {
   isAdmin: boolean
-  scopeCatalog: readonly ScopeCatalogEntry[]
+  scopeCatalog: ScopeCatalogResponse
   /** Resolves `true` once the app is registered, which clears the form. */
   onRegister: (input: CreateOAuthAppInput) => Promise<boolean>
 }
@@ -124,12 +124,16 @@ export function RegisterOAuthAppForm({
       />
       <ScopePicker
         idPrefix='oauth-app-register'
-        rows={scopeResourceRows(scopeCatalog, 'oauth', oauthScopeAudiences(isAdmin))}
+        groups={scopeResourceGroups(
+          scopeCatalog.scopes,
+          'oauth',
+          availableScopeAudiences(scopeCatalog.audiences, 'oauth', isAdmin),
+        )}
         selected={draft.scopes}
         onToggle={(scope, checked) =>
           setDraft(prev => ({
             ...prev,
-            scopes: toggleScope(scopeCatalog, prev.scopes, scope, checked),
+            scopes: toggleScope(scopeCatalog.scopes, prev.scopes, scope, checked),
           }))
         }
       />

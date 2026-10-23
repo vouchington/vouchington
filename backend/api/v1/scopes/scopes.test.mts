@@ -19,6 +19,13 @@ describe('GET /api/v1/scopes', () => {
       requires: 'mcp.user:read',
       surfaces: ['api-key', 'oauth'],
     })
+    expect(response.body.audiences).toEqual([
+      { audience: 'user', accepts_api_keys: true, requires_administrator: false },
+      { audience: 'community_moderation', accepts_api_keys: true, requires_administrator: false },
+      { audience: 'brand', accepts_api_keys: true, requires_administrator: false },
+      { audience: 'admin', accepts_api_keys: false, requires_administrator: true },
+      { audience: 'legal', accepts_api_keys: false, requires_administrator: true },
+    ])
   })
 
   it('does not mark a signed-in response as publicly cacheable', async () => {

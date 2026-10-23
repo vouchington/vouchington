@@ -18,8 +18,11 @@ describe('API key lifetime controls', () => {
     keyType: 'rss',
     permissions: ['rss:read'],
     mcpScopes: [],
-    rows: [],
+    audiences: [],
+    audience: null,
+    groups: [],
     handleKeyTypeChange: () => {},
+    handleAudienceChange: () => {},
     handleScopeToggle: () => {},
   }
   it('restricts administrator choices and sends selected lifetime', () => {

@@ -146,6 +146,27 @@ describe('OAuthConsentPage', () => {
     )
   })
 
+  it('renders one audience section for each requested server with sensitivity inside it', async () => {
+    mockGetAuthorizationRequest.mockResolvedValue({
+      authorization_request: {
+        ...authorizationRequest.authorization_request,
+        scopes: ['mcp.user:read', 'community-moderation:read', 'topic-claims:read'],
+        sensitive_scopes: ['topic-claims:read'],
+      },
+    })
+    render(await OAuthConsentPage({ searchParams: Promise.resolve({ request_id: 'request-1' }) }))
+    const account = screen.getByRole('heading', { name: 'Your account' }).closest('section')!
+    const moderation = screen
+      .getByRole('heading', { name: 'Community moderation' })
+      .closest('section')!
+    const brand = screen.getByRole('heading', { name: 'Brand tools' }).closest('section')!
+    expect(account).toHaveTextContent('mcp.user:read')
+    expect(moderation).toHaveTextContent('community-moderation:read')
+    expect(brand).toHaveTextContent('topic-claims:read')
+    expect(brand).toHaveTextContent('Sensitive permissions')
+    expect(account).not.toHaveTextContent('topic-claims:read')
+  })
+
   it('shows the Client ID Metadata Document hostname with the reviewed client name', async () => {
     mockGetAuthorizationRequest.mockResolvedValue({
       authorization_request: {

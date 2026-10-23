@@ -831,7 +831,7 @@
     },
     "GET:/api/v1/scopes": {
       "fixtureIds": ["shared.scopes.catalog"],
-      "hash": "d7d8ebe853d6cd46b14e57e14d652d80a26f4ef4acd0e2471a63c3bbcd78bc5b"
+      "hash": "e0b5c681dd4de39e06d55f3826114b71bc56601e113497a34cd9487d2fbfd128"
     },
     "GET:/api/v1/stories/:id": {
       "fixtureIds": ["native.stories.get.after", "native.stories.get.default"],
@@ -2752,7 +2752,7 @@
     },
     "shared.scopes.catalog": {
       "fixtureIds": ["shared.scopes.catalog"],
-      "hash": "415fa07d9272d9bba087300d80ce19e0da917d699cded5cc2f2b4ea37dadcd19"
+      "hash": "7afb4112d07808e708325f8e32ad1b6fc85a1a55603b68acaac41a5e0a7691ee"
     },
     "swift.integration.rss-feed-items.audio": {
       "fixtureIds": ["swift.integration.rss-feed-items.audio"],

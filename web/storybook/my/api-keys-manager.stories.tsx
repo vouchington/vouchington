@@ -4,7 +4,7 @@ import { ApiKeysManager } from '../../components/my/api-keys-manager'
 import { clearMyAccountFixture, setMyAccountFixture } from '@/storybook/mocks/my-account-fixture'
 import { StoryFrame } from '@/storybook/story-frame'
 import type { ApiKey } from '@/types/api-keys'
-import { storybookScopeCatalog } from './fixtures/scope-catalog'
+import { storybookScopeCatalogResponse } from './fixtures/scope-catalog'
 
 const meta = {
   title: 'My/Api Keys Manager',
@@ -61,7 +61,7 @@ export const WithKeys: Story = {
     <StoryFrame>
       <ApiKeysManager
         initialData={{ results: keys, page_info: pageInfo }}
-        scopeCatalog={storybookScopeCatalog}
+        scopeCatalog={storybookScopeCatalogResponse}
       />
     </StoryFrame>
   ),
@@ -76,7 +76,7 @@ export const Empty: Story = {
     <StoryFrame>
       <ApiKeysManager
         initialData={{ results: [], page_info: pageInfo }}
-        scopeCatalog={storybookScopeCatalog}
+        scopeCatalog={storybookScopeCatalogResponse}
       />
     </StoryFrame>
   ),
