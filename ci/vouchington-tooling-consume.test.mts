@@ -65,6 +65,11 @@ packages:
             ...process.env,
             DOWNLOAD_PACKAGE: tarball,
             npm_config_cache: join(dir, 'npm-cache'),
+            // This dependency-free tarball is local; registry audits are not this wrapper's contract.
+            npm_config_offline: 'true',
+            npm_config_audit: 'false',
+            npm_config_fund: 'false',
+            npm_config_update_notifier: 'false',
             TMPDIR: dir,
           },
         },
