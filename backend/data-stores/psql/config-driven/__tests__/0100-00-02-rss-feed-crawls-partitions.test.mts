@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import createRssFeedCrawlsPartitions from '../0100-00-02-rss-feed-crawls-partitions.mts'
-import {
-  MONTHLY_PARTITION_RETENTION_TABLES,
-  RSS_PARTITION_TABLES,
-} from '../utils/partition-config.mts'
+import { RSS_PARTITION_TABLES } from '../utils/partition-config.mts'
 
 describe('createRssFeedCrawlsPartitions', () => {
   it('creates monthly range partitions without a default child', () => {
@@ -23,14 +20,5 @@ describe('RSS_PARTITION_TABLES retention', () => {
     expect(RSS_PARTITION_TABLES).toEqual([
       { table: 'rss_feed_crawls', retentionDays: 30, futureMonths: 2 },
     ])
-    expect(MONTHLY_PARTITION_RETENTION_TABLES).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          table: 'rss_feed_crawls',
-          retentionDays: 30,
-          futureMonths: 2,
-        }),
-      ]),
-    )
   })
 })

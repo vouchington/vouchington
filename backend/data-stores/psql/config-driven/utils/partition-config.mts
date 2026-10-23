@@ -7,10 +7,7 @@
  * - Monthly scheduled job (ongoing partition creation for crawl and RSS history tables)
  */
 
-import {
-  filterRetainedMonthlyPartitionTables,
-  type MonthlyPartitionTableConfig,
-} from '@vouchington/postgres/partitions'
+import type { MonthlyPartitionTableConfig } from '@vouchington/postgres/partitions'
 
 function monthlyPartitionTable(
   table: string,
@@ -128,10 +125,6 @@ export const ALL_MONTHLY_PARTITION_TABLES: MonthlyPartitionTableConfig[] = [
   ...CRAWL_PARTITION_TABLES,
   ...RSS_PARTITION_TABLES,
 ]
-
-export const MONTHLY_PARTITION_RETENTION_TABLES = filterRetainedMonthlyPartitionTables(
-  ALL_MONTHLY_PARTITION_TABLES,
-)
 
 export type PartitionDropPolicy = {
   /** Null refuses every drop until the table owner specifies a minimum. */
