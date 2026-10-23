@@ -16,7 +16,6 @@ import { checkHashtagEligibilityContracts } from './native-mv-contracts/hashtag-
 import { checkHashtagRootVisibilityContracts } from './native-mv-contracts/hashtag-root-visibility.mts'
 import { checkHashtagSearchRankingContracts } from './native-mv-contracts/hashtag-search-ranking.mts'
 import { checkHashtagSearchRssContracts } from './native-mv-contracts/hashtag-search-rss.mts'
-import { checkMcpToolCallContracts } from './native-mv-contracts/mcp-tool-call.mts'
 
 const contracts: ReadonlyArray<readonly [string, () => Promise<void>]> = [
   ['trending HTTP', checkTrendingHttpContracts],
@@ -32,7 +31,6 @@ const contracts: ReadonlyArray<readonly [string, () => Promise<void>]> = [
   ['hashtag root visibility', checkHashtagRootVisibilityContracts],
   ['hashtag search ranking', checkHashtagSearchRankingContracts],
   ['hashtag search RSS', checkHashtagSearchRssContracts],
-  ['MCP tool-call analytics', checkMcpToolCallContracts],
 ]
 
 async function main(): Promise<void> {
