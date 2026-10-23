@@ -2,7 +2,7 @@ import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { VerifiedRegistrationResponse } from '@simplewebauthn/server'
 import type { PublicPasskey } from './types.mts'
-import { enqueueRecalculateUserVoteWeight } from '@queues/vote-aggregation/enqueues/vote-weight'
+import { enqueueRecalculateUserVoteWeightBestEffort } from '@queues/vote-aggregation/enqueues/vote-weight'
 
 export async function createPasskey(
   userId: string,
@@ -35,7 +35,6 @@ export async function createPasskey(
   const passkey = rows[0]
   if (!passkey) throw new Error('createPasskey: INSERT returned no rows')
 
-  /* c8 ignore next -- lint-only fire-and-forget enqueue disposition. */
-  void enqueueRecalculateUserVoteWeight(userId)
+  await enqueueRecalculateUserVoteWeightBestEffort(userId)
   return passkey
 }

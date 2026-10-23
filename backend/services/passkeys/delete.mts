@@ -1,7 +1,7 @@
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import assert from 'http-assert'
-import { enqueueRecalculateUserVoteWeight } from '@queues/vote-aggregation/enqueues/vote-weight'
+import { enqueueRecalculateUserVoteWeightBestEffort } from '@queues/vote-aggregation/enqueues/vote-weight'
 
 export async function deletePasskey(
   currentUserId: string,
@@ -25,7 +25,7 @@ export async function deletePasskey(
     assert(rowCount === 1, 404, 'Passkey not found')
     await markPasskeyVoteWeightDirty(currentUserId, query)
     await query.commit()
-    void enqueueRecalculateUserVoteWeight(currentUserId)
+    await enqueueRecalculateUserVoteWeightBestEffort(currentUserId)
   }
 }
 

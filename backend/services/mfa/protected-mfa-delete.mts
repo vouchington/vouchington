@@ -7,7 +7,7 @@ import { getUserMfaStatus } from './status.mts'
 import { verifyAndDeleteReAuthToken } from './re-auth.mts'
 import { deletePasskey } from '@services/passkeys'
 import { deleteTotpAuthenticator } from '@services/totp'
-import { enqueueRecalculateUserVoteWeight } from '@queues/vote-aggregation/enqueues/vote-weight'
+import { enqueueRecalculateUserVoteWeightBestEffort } from '@queues/vote-aggregation/enqueues/vote-weight'
 
 async function lockUserMfaRows(query: TransactionQuery, userId: string): Promise<void> {
   await query(
@@ -65,7 +65,7 @@ export async function deletePasskeyWithMfaProtection(
     await deletePasskey(userId, passkeyId, query)
   })
   // Enqueue after the transaction commits so the job sees the committed delete.
-  void enqueueRecalculateUserVoteWeight(userId)
+  await enqueueRecalculateUserVoteWeightBestEffort(userId)
 }
 
 export async function deleteTotpAuthenticatorWithMfaProtection(
