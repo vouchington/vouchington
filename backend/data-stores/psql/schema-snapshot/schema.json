@@ -90754,8 +90754,8 @@
       "foreignKeys": {
         "fk_remote_follow__inbound_follow_activity_row_id": {
           "columns": ["subject_id", "object_id", "inbound_follow_activity_row_id"],
-          "definition": "FOREIGN KEY (subject_id, object_id, inbound_follow_activity_row_id) REFERENCES activitypub_remote_follow_activities(remote_actor_id, target_user_id, id) ON DELETE SET NULL (inbound_follow_activity_row_id)",
-          "onDelete": "set null",
+          "definition": "FOREIGN KEY (subject_id, object_id, inbound_follow_activity_row_id) REFERENCES activitypub_remote_follow_activities(remote_actor_id, target_user_id, id) DEFERRABLE INITIALLY DEFERRED",
+          "onDelete": "no action",
           "onUpdate": "no action",
           "referencedColumns": ["remote_actor_id", "target_user_id", "id"],
           "referencedTable": "activitypub_remote_follow_activities",

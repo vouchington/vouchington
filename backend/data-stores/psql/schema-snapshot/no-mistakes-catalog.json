@@ -95427,7 +95427,7 @@
       "foreignKeys": {
         "fk_remote_follow__inbound_follow_activity_row_id": {
           "columns": ["subject_id", "object_id", "inbound_follow_activity_row_id"],
-          "onDelete": "SET NULL",
+          "onDelete": "NO ACTION",
           "onUpdate": "NO ACTION",
           "referencedColumns": ["remote_actor_id", "target_user_id", "id"],
           "referencedTable": "activitypub_remote_follow_activities",
