@@ -1,3 +1,6 @@
+import { BedrockControlClient } from '@modules/aws/bedrock-control'
+import { createAwsReplayRequestHandler } from '@voucha/test-helpers/aws-replay-request-handler'
+import { createOwnedBedrockRouterFixtures } from '@voucha/test-helpers/bedrock-router-owned-fixtures'
 import { randomBytes, randomUUID } from 'node:crypto'
 import { mintUUIDv7 } from '../../../modules/utils/ids.mts'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
@@ -170,33 +173,83 @@ describe('bedrock embeddings batch worker processor', () => {
   })
 
   it('routes polling and dispatcher jobs through the real processors', async () => {
-    await expect(
-      processBedrockEmbeddingsBatchJob(
-        makeJob(
-          'bedrock-embeddings.poll_batch',
-          { batch_id: crypto.randomUUID() },
-          'bedrock-embeddings:polling',
+    const owned = await createOwnedBedrockRouterFixtures(replay => {
+      const previousHandler = BedrockControlClient.config.requestHandler
+      const previousCredentials = BedrockControlClient.config.credentials
+      BedrockControlClient.config.requestHandler = createAwsReplayRequestHandler(replay)
+      BedrockControlClient.config.credentials = async () => ({
+        accessKeyId: 'synthetic-test-key',
+        secretAccessKey: 'synthetic-test-secret',
+      })
+      return () => {
+        BedrockControlClient.config.requestHandler = previousHandler
+        BedrockControlClient.config.credentials = previousCredentials
+      }
+    })
+    await owned.withBody(async () => {
+      await expect(
+        owned.run(() =>
+          processBedrockEmbeddingsBatchJob(
+            makeJob(
+              'bedrock-embeddings.poll_batch',
+              { batch_id: crypto.randomUUID() },
+              'bedrock-embeddings:polling',
+            ),
+          ),
         ),
-      ),
-    ).rejects.toThrow('Batch not found')
-
-    await expect(
-      processBedrockEmbeddingsBatchJob(
-        makeJob('bedrock-embeddings.poll_dispatcher', {}, 'bedrock-embeddings:dispatcher'),
-      ),
-    ).resolves.toEqual({ count: expect.any(Number), hasMore: expect.any(Boolean) })
-
-    await expect(
-      processBedrockEmbeddingsBatchJob(
-        makeJob('bedrock-embeddings.backlog_dispatcher', {}, 'bedrock-embeddings:dispatcher'),
-      ),
-    ).resolves.toMatchObject({ triggered: expect.any(Boolean) })
-
-    await expect(
-      processBedrockEmbeddingsBatchJob(
-        makeJob('bedrock-embeddings.stale_cleanup_dispatcher', {}, 'bedrock-embeddings:dispatcher'),
-      ),
-    ).resolves.toEqual(expect.objectContaining({ inspected: expect.any(Number) }))
+      ).rejects.toThrow('Batch not found')
+      await expect(
+        owned.run(() =>
+          processBedrockEmbeddingsBatchJob(
+            makeJob(
+              'bedrock-embeddings.poll_dispatcher',
+              { cursor: owned.pending.cursor },
+              'bedrock-embeddings:dispatcher',
+            ),
+          ),
+        ),
+      ).resolves.toEqual({ count: 1, hasMore: false })
+      expect(
+        owned.receipts.some(
+          job =>
+            job.name === 'bedrock-embeddings.poll_batch' &&
+            (job.data as { batch_id: string }).batch_id === owned.pending.id,
+        ),
+      ).toBe(true)
+      expect(
+        owned.receipts.some(
+          job => (job.data as { batch_id?: string }).batch_id === owned.foreign.id,
+        ),
+      ).toBe(false)
+      await expect(
+        owned.run(() =>
+          processBedrockEmbeddingsBatchJob(
+            makeJob('bedrock-embeddings.backlog_dispatcher', {}, 'bedrock-embeddings:dispatcher'),
+          ),
+        ),
+      ).resolves.toMatchObject({ triggered: expect.any(Boolean) })
+      owned.respondCompleted()
+      await expect(
+        owned.run(() =>
+          processBedrockEmbeddingsBatchJob(
+            makeJob(
+              'bedrock-embeddings.stale_cleanup_dispatcher',
+              { cursor: owned.stale.cursor },
+              'bedrock-embeddings:dispatcher',
+            ),
+          ),
+        ),
+      ).resolves.toMatchObject({
+        inspected: 1,
+        reconciled: 1,
+        hasMore: false,
+        forcedCancellations: [],
+      })
+      owned.assertReplayDrained()
+      expect(owned.requests).toHaveLength(1)
+      expect(decodeURIComponent(owned.requests[0]!.url)).toContain(owned.stale.arn)
+      await expect(owned.readForeign()).resolves.toEqual(owned.foreignBefore)
+    })
   })
 
   it('rejects malformed and unknown jobs through the retry handler', async () => {
