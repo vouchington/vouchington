@@ -90,7 +90,7 @@ EXECUTE FUNCTION fn_update_updated_at();
 COMMENT ON TABLE membership_operational_cleanup_cursors IS 'One persisted keyset position per bounded membership operational retention sweep.';
 COMMENT ON COLUMN membership_operational_cleanup_cursors.kind IS 'Fixed retention family.';
 COMMENT ON COLUMN membership_operational_cleanup_cursors.cursor_at IS 'Last examined due timestamp in the current sweep.';
-COMMENT ON COLUMN membership_operational_cleanup_cursors.cursor_id IS 'Last examined UUIDv7 identity in the current sweep.';
+COMMENT ON COLUMN membership_operational_cleanup_cursors.cursor_id IS 'Deletion-stable UUIDv7 keyset position; it does not reference a surviving row.';
 COMMENT ON COLUMN membership_operational_cleanup_cursors.updated_at IS 'When this cleanup stream last checkpointed.';
 INSERT INTO membership_operational_cleanup_cursors (kind)
 VALUES ('entitlement_effects'), ('renewal_notices'), ('google_acknowledgments')
