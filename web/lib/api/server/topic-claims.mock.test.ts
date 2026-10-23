@@ -41,12 +41,7 @@ describe('topic-claims server api helpers', () => {
       mock: mockGet,
       response: emptyPage,
       call: () =>
-        getMyTopicClaims({
-          topicIds: ['topic-1', 'topic-2'],
-          verifiedOnly: true,
-          limit: 2,
-          after: 'cursor',
-        }) as Promise<typeof emptyPage>,
+        getMyTopicClaims('topic-1,topic-2', true, 'cursor', 2) as Promise<typeof emptyPage>,
       expectedArgs: [
         '/api/v1/my/topic-claims?topic_ids=topic-1%2Ctopic-2&verified_only=true&after=cursor&limit=2',
       ],
@@ -71,7 +66,7 @@ describe('topic-claims server api helpers', () => {
     await expectApiWrapperCall({
       mock: mockGet,
       response: emptyPage,
-      call: () => getTopicClaims('my-topic', { activeOnly: true, mineOnly: true }),
+      call: () => getTopicClaims('my-topic', true, true),
       expectedArgs: ['/api/v1/topics/my-topic/claims?active_only=true&mine_only=true'],
     })
   })

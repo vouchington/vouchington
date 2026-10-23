@@ -22,9 +22,7 @@ export default async function ClaimTopicPage({ params }: Props) {
   const currentUser = await getCurrentUser()
   if (!currentUser) redirect(`/login?next=/topic-claims/${topicId}`)
 
-  const existingClaims = await getTopicClaims(topicId, { activeOnly: true, mineOnly: true }).catch(
-    () => ({ results: [] }),
-  )
+  const existingClaims = await getTopicClaims(topicId, true, true).catch(() => ({ results: [] }))
   const existingClaim = existingClaims.results[0]
 
   return (

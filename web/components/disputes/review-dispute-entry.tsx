@@ -31,12 +31,7 @@ export async function ReviewDisputeEntry({ postId, reviewedTopics }: ReviewDispu
     while (remainingPages > 0) {
       remainingPages -= 1
       // oxlint-disable-next-line no-await-in-loop -- each cursor depends on the previous page
-      const response = await getMyTopicClaims({
-        topicIds: chunk,
-        verifiedOnly: true,
-        limit: 100,
-        ...(after ? { after } : {}),
-      })
+      const response = await getMyTopicClaims(chunk.join(','), true, after, 100)
       if (!response) return null
       for (const claim of response.results) {
         if (getTopicClaimState(claim) === 'verified') verifiedTopicIds.add(claim.topic_id)

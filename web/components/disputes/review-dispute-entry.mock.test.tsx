@@ -68,17 +68,8 @@ describe('ReviewDisputeEntry', () => {
     expect(
       screen.getByRole('button', { name: /dispute this review/i }).getAttribute('data-topic-id'),
     ).toBe('topic-1')
-    expect(mockGetMyTopicClaims).toHaveBeenNthCalledWith(1, {
-      topicIds: ['topic-1', 'topic-2'],
-      verifiedOnly: true,
-      limit: 100,
-    })
-    expect(mockGetMyTopicClaims).toHaveBeenNthCalledWith(2, {
-      topicIds: ['topic-1', 'topic-2'],
-      verifiedOnly: true,
-      limit: 100,
-      after: 'next',
-    })
+    expect(mockGetMyTopicClaims).toHaveBeenNthCalledWith(1, 'topic-1,topic-2', true, undefined, 100)
+    expect(mockGetMyTopicClaims).toHaveBeenNthCalledWith(2, 'topic-1,topic-2', true, 'next', 100)
   })
 
   it('renders the dispute button when the user has a verified claim for a reviewed topic', async () => {

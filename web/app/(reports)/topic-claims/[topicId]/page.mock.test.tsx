@@ -157,9 +157,6 @@ describe('ClaimTopicPage', () => {
     )
 
     expect(container.querySelector('[data-pw="claim-topic-form"]')).not.toBeNull()
-    expect(mockGetTopicClaims).toHaveBeenCalledWith('topic-abc', {
-      activeOnly: true,
-      mineOnly: true,
-    })
+    expect(mockGetTopicClaims).toHaveBeenCalledWith('topic-abc', true, true)
   })
 })
