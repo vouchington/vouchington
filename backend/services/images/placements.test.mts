@@ -246,7 +246,9 @@ describe('withholdImagePlacementsForCopyright', () => {
   it('reports already_applied when the original revision is withheld twice', async () => {
     const live = await livePlacement('batch-again')
     await withholdImagePlacementsForCopyright([live])
-    const [again] = await withholdImagePlacementsForCopyright([live])
+    const [again] = await withholdImagePlacementsForCopyright([
+      { ...live, placementId: live.placementId.toUpperCase() },
+    ])
     expect(again).toMatchObject({
       status: 'already_applied',
       placement: { revision: live.expectedRevision + 1 },
@@ -259,8 +261,11 @@ describe('withholdImagePlacementsForCopyright', () => {
 
   it('rejects a duplicate placement id', async () => {
     const live = await livePlacement('batch-duplicate')
-    await expect(withholdImagePlacementsForCopyright([live, live])).rejects.toThrow(
-      'changeImagePlacementsCopyrightWithholding: duplicate placementId',
-    )
+    await expect(
+      withholdImagePlacementsForCopyright([
+        live,
+        { ...live, placementId: live.placementId.toUpperCase() },
+      ]),
+    ).rejects.toThrow('changeImagePlacementsCopyrightWithholding: duplicate placementId')
   })
 })
