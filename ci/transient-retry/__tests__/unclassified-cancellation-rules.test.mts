@@ -115,6 +115,22 @@ describe('unclassified timeouts and cancellations', () => {
     expect(result.matchedRule).toBe('workflow-cancelled-without-failure-signal')
   })
 
+  it('ignores a jobless Main CI cloudflare-worker cancellation after one prior jobless attempt', async () => {
+    const result = await decide(
+      makeCtx({
+        workflowName: 'Main CI (cloudflare-worker)',
+        conclusion: 'cancelled',
+        runAttempt: 2,
+        retryAttempts: new Map([['cloudflare-worker-cancelled-before-job-signal', 2]]),
+        jobNames: [],
+        failedJobNames: [],
+      }),
+      rules,
+    )
+    expect(result.decision).toBe('ignore')
+    expect(result.matchedRule).toBe('workflow-cancelled-without-failure-signal')
+  })
+
   it('routes jobless Main CI cloudflare-worker cancellations to Harness without known rerun-rule exhaustion', async () => {
     const result = await decide(
       makeCtx({

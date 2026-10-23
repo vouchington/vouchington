@@ -171,7 +171,7 @@
     "syncpack": "^15.3.3",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
     "vitest": "^5.0.5",
-    "vouchington-tooling": "^0.61.1",
+    "vouchington-tooling": "^0.65.1",
     "yaml": "^2.9.1"
   },
   "engines": {
