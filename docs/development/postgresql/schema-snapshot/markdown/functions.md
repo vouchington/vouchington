@@ -1272,14 +1272,6 @@ CREATE OR REPLACE FUNCTION public.fn_reject_purchase_reversal_refund_observation
  LANGUAGE plpgsql
 ```
 
-## `fn_reject_replayed_copyright_email_identity`
-
-```sql
-CREATE OR REPLACE FUNCTION public.fn_reject_replayed_copyright_email_identity()
- RETURNS trigger
- LANGUAGE plpgsql
-```
-
 ## `fn_reject_replayed_copyright_form_identity`
 
 ```sql
@@ -1296,10 +1288,10 @@ CREATE OR REPLACE FUNCTION public.fn_reject_replayed_copyright_submission_identi
  LANGUAGE plpgsql
 ```
 
-## `fn_reject_replayed_stripe_event_identity`
+## `fn_reject_replayed_external_event_identity`
 
 ```sql
-CREATE OR REPLACE FUNCTION public.fn_reject_replayed_stripe_event_identity()
+CREATE OR REPLACE FUNCTION public.fn_reject_replayed_external_event_identity()
  RETURNS trigger
  LANGUAGE plpgsql
 ```

@@ -6,12 +6,12 @@ Compact immutable form admission identity and public receipt IDs; retained IDs d
 
 Not partitioned — growth: bounded.
 
-| Column                      | Type    | Nullable | Default | Identity | Generated | Collation | Comment |
-| --------------------------- | ------- | -------- | ------- | -------- | --------- | --------- | ------- |
-| `requester_identity_sha256` | `bytea` | no       |         |          |           |           |         |
-| `idempotency_key`           | `uuid`  | no       |         |          |           |           |         |
-| `request_sha256`            | `bytea` | no       |         |          |           |           |         |
-| `response_snapshot`         | `jsonb` | no       |         |          |           |           |         |
+| Column                      | Type    | Nullable | Default | Identity | Generated | Collation | Comment                                                                                         |
+| --------------------------- | ------- | -------- | ------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------- |
+| `requester_identity_sha256` | `bytea` | no       |         |          |           |           | Digest that scopes form replay without retaining a raw requester address or account identifier. |
+| `idempotency_key`           | `uuid`  | no       |         |          |           |           | Admission key scoped to the requester digest for exact original form-receipt replay.            |
+| `request_sha256`            | `bytea` | no       |         |          |           |           | Canonical form-request digest used to reject changed content under a reused key.                |
+| `response_snapshot`         | `jsonb` | no       |         |          |           |           | Minimal original public form response; historical identifiers grant no access to a purged case. |
 
 **Primary key:** `PRIMARY KEY (requester_identity_sha256, idempotency_key)`
 

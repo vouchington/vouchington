@@ -633,6 +633,10 @@
 - `exact`
 - `perceptual`
 
+## `copyright_submission_key_retention_cursor_families`
+
+- `submission_request`
+
 ## `copyright_territorial_decision_automation_disclosures`
 
 - `human`

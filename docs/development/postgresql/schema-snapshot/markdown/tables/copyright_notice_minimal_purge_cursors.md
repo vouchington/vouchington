@@ -6,11 +6,11 @@ High-water cursors for bounded, cyclic selection of new cases, unfinished work a
 
 Not partitioned — growth: bounded.
 
-| Column             | Type                                      | Nullable | Default             | Identity | Generated | Collation | Comment |
-| ------------------ | ----------------------------------------- | -------- | ------------------- | -------- | --------- | --------- | ------- |
-| `family`           | `copyright_minimal_purge_cursor_families` | no       |                     |          |           |           |         |
-| `cursor_notice_id` | `uuid`                                    | yes      |                     |          |           |           |         |
-| `updated_at`       | `timestamp with time zone`                | no       | `CURRENT_TIMESTAMP` |          |           |           |         |
+| Column             | Type                                      | Nullable | Default             | Identity | Generated | Collation | Comment                                                                           |
+| ------------------ | ----------------------------------------- | -------- | ------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------- |
+| `family`           | `copyright_minimal_purge_cursor_families` | no       |                     |          |           |           | Selects the independently cycled continuation, new-case, or orphan-identity scan. |
+| `cursor_notice_id` | `uuid`                                    | yes      |                     |          |           |           | High-water case scan position that may refer to a case already deleted.           |
+| `updated_at`       | `timestamp with time zone`                | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                   |
 
 **Primary key:** `PRIMARY KEY (family)`
 

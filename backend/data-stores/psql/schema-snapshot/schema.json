@@ -452,6 +452,9 @@
     "copyright_staydown_match_kinds": {
       "values": ["exact", "perceptual"]
     },
+    "copyright_submission_key_retention_cursor_families": {
+      "values": ["submission_request"]
+    },
     "copyright_territorial_decision_automation_disclosures": {
       "values": ["human"]
     },
@@ -1413,7 +1416,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_copyright_minimal_purge_catalog_complete()\n RETURNS boolean\n LANGUAGE sql\n STABLE\nAS $function$\n  WITH RECURSIVE owned_relations(relid) AS (\n    SELECT 'public.copyright_notices'::regclass::oid\n    UNION\n    SELECT fk.conrelid FROM pg_constraint fk\n    JOIN owned_relations parent ON parent.relid = fk.confrelid\n    WHERE fk.contype = 'f' AND fk.conparentid = 0\n  ), physical_relations(relid) AS (\n    SELECT relid FROM owned_relations\n    UNION\n    SELECT inherited.inhrelid FROM pg_inherits inherited\n    JOIN physical_relations parent ON parent.relid = inherited.inhparent\n  ), actual_edges(signature) AS (\n    SELECT child_namespace.nspname || '.' || child.relname || '|' || fk.conname || '|' ||\n      ARRAY(SELECT attribute.attname\n        FROM unnest(fk.conkey) WITH ORDINALITY AS key(attnum, position)\n        JOIN pg_attribute attribute ON attribute.attrelid = fk.conrelid\n          AND attribute.attnum = key.attnum ORDER BY key.position)::text || '|' ||\n      parent_namespace.nspname || '.' || parent.relname || '|' ||\n      ARRAY(SELECT attribute.attname\n        FROM unnest(fk.confkey) WITH ORDINALITY AS key(attnum, position)\n        JOIN pg_attribute attribute ON attribute.attrelid = fk.confrelid\n          AND attribute.attnum = key.attnum ORDER BY key.position)::text || '|' ||\n      fk.confdeltype::text || '|' || fk.convalidated::text\n    FROM pg_constraint fk\n    JOIN physical_relations rooted_parent ON rooted_parent.relid = fk.confrelid\n    JOIN pg_class child ON child.oid = fk.conrelid\n    JOIN pg_namespace child_namespace ON child_namespace.oid = child.relnamespace\n    JOIN pg_class parent ON parent.oid = fk.confrelid\n    JOIN pg_namespace parent_namespace ON parent_namespace.oid = parent.relnamespace\n    WHERE fk.contype = 'f' AND fk.conparentid = 0\n  ), expected_edges(signature) AS (\n    SELECT unnest(ARRAY[\n      'public.ai_agent_call_receipts|fk_ai_agent_call_receipts__copyright_notice_submission|{copyright_notice_submission_id}|public.copyright_notice_submissions|{id}|c|true',\n      'public.copyright_automatic_withholding_refusals|fk_copyright_automatic_withholding_refusals__notice_submission|{copyright_notice_submission_id}|public.copyright_notice_submissions|{id}|c|true',\n      'public.copyright_claimant_misuse_events|copyright_claimant_misuse_events_copyright_notice_id_fkey|{copyright_notice_id}|public.copyright_notices|{id}|c|true',\n      'public.copyright_claimant_misuse_events|copyright_claimant_misuse_events_copyright_restriction_id_fkey|{copyright_restriction_id}|public.copyright_restrictions|{id}|c|true',\n      'public.copyright_claimant_misuse_events|fk_copyrig_claimant_misuse_events__notice_submission_assessment|{copyright_notice_submission_assessment_id}|public.copyright_notice_submission_assessments|{id}|c|true',\n      'public.copyright_claimant_misuse_events|fk_copyright_claimant_misuse_events__notice_submission|{copyright_notice_submission_id}|public.copyright_notice_submissions|{id}|c|true',\n      'public.copyright_claimant_suspension_reversals|fk_copyright_claimant_suspension_reversals__restriction|{copyright_restriction_id}|public.copyright_restrictions|{id}|c|true',\n      'public.copyright_dsa_statement_submission_attempts|copyright_dsa_statement_submi_copyright_dsa_statement_subm_fkey|{copyright_dsa_statement_submission_id}|public.copyright_dsa_statement_submissions|{id}|c|true',\n      'public.copyright_dsa_statement_submissions|copyright_dsa_statement_submissio_copyright_restriction_id_fkey|{copyright_restriction_id}|public.copyright_restrictions|{id}|r|true',\n      'public.copyright_eu_dispute_settlement_outcomes|fk_copyright_eu_dispute_settlement_outcomes__referral|{copyright_eu_dispute_settlement_referral_id}|public.copyright_eu_dispute_settlement_referrals|{id}|c|true',\n      'public.copyright_eu_dispute_settlement_referrals|fk_copyright_eu_dispute_settlement_referrals__decision|{copyright_notice_id,copyright_territorial_decision_id}|public.copyright_territorial_decisions|{copyright_notice_id,id}|c|true',\n      'public.copyright_eu_dispute_settlement_referrals|fk_copyright_eu_dispute_settlement_referrals__notice|{copyright_notice_id,jurisdiction}|public.copyright_notices|{id,jurisdiction}|c|true',\n      'public.copyright_eu_supervised_complaints|fk_copyright_eu_supervised_complaints__notice|{copyright_notice_id,jurisdiction}|public.copyright_notices|{id,jurisdiction}|c|true',\n      'public.copyright_legal_hold_restrictions|copyright_legal_hold_restrictions_copyright_restriction_id_fkey|{copyright_restriction_id}|public.copyright_restrictions|{id}|r|true',\n      'public.copyright_legal_hold_restrictions|fk_copyright_legal_hold_restricti__notice_legal_hold_assessment|{copyright_notice_legal_hold_assessment_id}|public.copyright_notice_legal_hold_assessments|{id}|r|true',\n      'public.copyright_notice_action_attempt_results|copyright_notice_action_attempt_results_attempt_id_fkey|{attempt_id}|public.copyright_notice_action_attempts|{id}|c|true',\n      'public.copyright_notice_action_attempts|copyright_notice_action_attempts_work_item_id_fkey|{work_item_id}|public.copyright_notice_action_work_items|{id}|c|true',\n      'public.copyright_notice_action_work_items|fk_copyright_action_intents__parent_notice|{copyright_notice_id,copyright_restriction_id}|public.copyright_restrictions|{copyright_notice_id,id}|c|true',\n      'public.copyright_notice_action_work_items|fk_copyright_notice_action_work_items__deadline|{copyright_notice_deadline_id}|public.copyright_notice_deadlines|{id}|c|true',\n      'public.copyright_notice_appeal_recommendations|fk_copyright_notice_appeal_recommendations__submission|{copyright_notice_submission_id}|public.copyright_notice_submissions|{id}|c|true',\n      'public.copyright_notice_appeal_reviews|copyright_notice_appeal_reviews_copyright_restriction_id_fkey|{copyright_restriction_id}|public.copyright_restrictions|{id}|c|true',\n      'public.copyright_notice_appeal_reviews|fk_copyright_notice_appeal_reviews__recommendation__submission|{copyright_notice_appeal_recommendation_id,copyright_notice_submission_id}|public.copyright_notice_appeal_recommendations|{id,copyright_notice_submission_id}|c|true',\n      'public.copyright_notice_appeal_reviews|fk_copyright_notice_appeal_reviews__submission|{copyright_notice_submission_id}|public.copyright_notice_submissions|{id}|c|true',\n      'public.copyright_notice_correspondence_messages|fk_copyright_notice_correspondence_messages__notice|{copyright_notice_id}|public.copyright_notices|{id}|c|true',\n      'public.copyright_notice_correspondence_messages|fk_copyright_notice_correspondence_messages__submission|{copyright_notice_submission_id}|public.copyright_notice_submissions|{id}|c|true',\n      'public.copyright_notice_counter_notice_assessment_targets|fk_copyright_counter_targets__parent_notice|{copyright_notice_id,copyright_notice_submission_assessment_id}|public.copyright_notice_submission_assessments|{copyright_notice_id,id}|c|true',\n      'public.copyright_notice_counter_notice_assessment_targets|fk_copyright_counter_targets__target_notice|{copyright_notice_id,copyright_notice_target_id}|public.copyright_notice_targets|{copyright_notice_id,id}|c|true',\n      'public.copyright_notice_counter_notice_reviews|fk_copyrig_notice_counter_notice_reviews__submission_assessment|{copyright_notice_submission_assessment_id}|public.copyright_notice_submission_assessments|{id}|c|true',\n      'public.copyright_notice_counter_notice_reviews|fk_copyright_notice_counter_notice_reviews__deadline|{copyright_notice_deadline_id}|public.copyright_notice_deadlines|{id}|c|true',\n      'public.copyright_notice_counter_notice_reviews|fk_copyright_notice_counter_notice_reviews__submission|{copyright_notice_submission_id}|public.copyright_notice_submissions|{id}|c|true',\n      'public.copyright_notice_deadlines|copyright_notice_deadlines_copyright_notice_id_fkey|{copyright_notice_id}|public.copyright_notices|{id}|c|true',\n      'public.copyright_notice_deadlines|fk_copyrig_notice_deadlin__qualifying_counter_notice_assessment|{qualifying_counter_notice_assessment_id}|public.copyright_notice_submission_assessments|{id}|c|true',\n      'public.copyright_notice_delivery_attempt_results|copyright_notice_delivery_attempt_results_attempt_id_fkey|{attempt_id}|public.copyright_notice_delivery_attempts|{id}|c|true',\n      'public.copyright_notice_delivery_attempts|copyright_notice_delivery_attempts_work_item_id_fkey|{work_item_id}|public.copyright_notice_delivery_work_items|{id}|c|true',\n      'public.copyright_notice_delivery_recipients|fk_copyright_notice_delivery_recipients__intent|{copyright_notice_delivery_work_item_id}|public.copyright_notice_delivery_work_items|{id}|r|true',\n      'public.copyright_notice_delivery_work_items|copyright_notice_delivery_work_items_copyright_notice_id_fkey|{copyright_notice_id}|public.copyright_notices|{id}|c|true',\n      'public.copyright_notice_delivery_work_items|fk_copyri_notice_delive_intents__correspondence_message__notice|{copyright_notice_correspondence_message_id,copyright_notice_id}|public.copyright_notice_correspondence_messages|{id,copyright_notice_id}|c|true',\n      'public.copyright_notice_delivery_work_items|fk_copyright_notice_delivery_work_items__submission__notice|{copyright_notice_submission_id,copyright_notice_id}|public.copyright_notice_submissions|{id,copyright_notice_id}|c|true',\n      'public.copyright_notice_email_correspondence_reviews|fk_copyright_notice_email_correspondenc_reviews__correspondence|{copyright_notice_correspondence_message_id}|public.copyright_notice_correspondence_messages|{id}|c|true',\n      'public.copyright_notice_email_correspondence_reviews|fk_copyright_notice_email_correspondence_reviews__notice|{copyright_notice_id}|public.copyright_notices|{id}|c|true',\n      'public.copyright_notice_email_correspondence_reviews|fk_copyright_notice_email_correspondence_reviews__submission|{copyright_notice_submission_id}|public.copyright_notice_submissions|{id}|c|true',\n      'public.copyright_notice_email_intake_notice_links|fk_copyright_notice_email_intake_notice_links__notice|{copyright_notice_id}|public.copyright_notices|{id}|c|true',\n      'public.copyright_notice_evidence_artifacts|fk_copyright_artifacts__parent_notice|{copyright_notice_id,copyright_notice_submission_id}|public.copyright_notice_submissions|{copyright_notice_id,id}|c|true',\n      'public.copyright_notice_form_intake_reviews|fk_copyright_notice_form_intake_reviews__intake|{copyright_notice_form_intake_id}|public.copyright_notice_form_intakes|{id}|c|true',\n      'public.copyright_notice_form_intakes|copyright_notice_form_intakes_copyright_notice_id_fkey|{copyright_notice_id}|public.copyright_notices|{id}|c|true',\n      'public.copyright_notice_form_intakes|fk_copyright_notice_form_intakes__submission|{copyright_notice_submission_id}|public.copyright_notice_submissions|{id}|c|true',\n      'public.copyright_notice_form_screening_attempts|fk_copyright_notice_form_screening_attempts__intake__screening|{copyright_notice_form_intake_id,copyright_notice_form_screening_id}|public.copyright_notice_form_screenings|{copyright_notice_form_intake_id,id}|c|true',\n      'public.copyright_notice_form_screening_attempts|fk_copyright_notice_form_screening_attempts__intake|{copyright_notice_form_intake_id}|public.copyright_notice_form_intakes|{id}|c|true',\n      'public.copyright_notice_form_screening_work_items|copyright_notice_form_screen_copyright_notice_form_intake_fkey1|{copyright_notice_form_intake_id,attempt_id}|public.copyright_notice_form_screening_attempts|{copyright_notice_form_intake_id,id}|c|true',\n      'public.copyright_notice_form_screening_work_items|copyright_notice_form_screeni_copyright_notice_form_intake_fkey|{copyright_notice_form_intake_id}|public.copyright_notice_form_intakes|{id}|c|true',\n      'public.copyright_notice_form_screenings|fk_copyright_notice_form_screenings__intake|{copyright_notice_form_intake_id}|public.copyright_notice_form_intakes|{id}|c|true',\n      'public.copyright_notice_guest_capabilities|copyright_notice_guest_capabilities_copyright_notice_id_fkey|{copyright_notice_id}|public.copyright_notices|{id}|c|true',\n      'public.copyright_notice_legal_hold_assessment_targets|fk_copyright_hold_targets__parent_notice|{copyright_notice_id,copyright_notice_legal_hold_assessment_id}|public.copyright_notice_legal_hold_assessments|{copyright_notice_id,id}|c|true',\n      'public.copyright_notice_legal_hold_assessment_targets|fk_copyright_hold_targets__target_notice|{copyright_notice_id,copyright_notice_target_id}|public.copyright_notice_targets|{copyright_notice_id,id}|c|true',\n      'public.copyright_notice_legal_hold_assessments|fk_copyright_hold_assessments__parent_notice|{copyright_notice_id,copyright_notice_submission_id}|public.copyright_notice_submissions|{copyright_notice_id,id}|c|true',\n      'public.copyright_notice_legal_hold_resolutions|fk_copyright_hold_resolutions__parent_notice|{copyright_notice_id,copyright_notice_legal_hold_assessment_id}|public.copyright_notice_legal_hold_assessments|{copyright_notice_id,id}|c|true',\n      'public.copyright_notice_lifecycle_change_rationales|copyright_notice_lifecycle_change_rationales_id_fkey|{id}|public.copyright_notice_lifecycle_changes|{id}|c|true',\n      'public.copyright_notice_lifecycle_change_rationales|fk_copyright_notice_lifecycle_change_rationales__notice__|{copyright_notice_id,id}|public.copyright_notice_lifecycle_changes|{copyright_notice_id,id}|c|true',\n      'public.copyright_notice_lifecycle_changes|copyright_lifecycle_event_action_intent_fk|{copyright_notice_id,copyright_notice_action_intent_id}|public.copyright_notice_action_work_items|{copyright_notice_id,id}|c|true',\n      'public.copyright_notice_lifecycle_changes|copyright_lifecycle_event_delivery_intent_fk|{copyright_notice_delivery_work_item_id}|public.copyright_notice_delivery_work_items|{id}|c|true',\n      'public.copyright_notice_lifecycle_changes|copyright_lifecycle_event_guest_capability_fk|{copyright_notice_guest_capability_id,copyright_notice_id}|public.copyright_notice_guest_capabilities|{id,copyright_notice_id}|r|true',\n      'public.copyright_notice_lifecycle_changes|copyright_notice_lifecycle_changes_copyright_notice_id_fkey|{copyright_notice_id}|public.copyright_notices|{id}|c|true',\n      'public.copyright_notice_lifecycle_changes|fk_copyright_lifecycle_changes__review_rationale|{review_rationale_id}|public.copyright_notice_lifecycle_change_rationales|{id}|a|true',\n      'public.copyright_notice_lifecycle_changes|fk_copyright_lifecycle_events__artifact_notice|{copyright_notice_id,copyright_notice_evidence_artifact_id}|public.copyright_notice_evidence_artifacts|{copyright_notice_id,id}|c|true',\n      'public.copyright_notice_lifecycle_changes|fk_copyright_lifecycle_events__assessment_notice|{copyright_notice_id,copyright_notice_submission_assessment_id}|public.copyright_notice_submission_assessments|{copyright_notice_id,id}|c|true',\n      'public.copyright_notice_lifecycle_changes|fk_copyright_lifecycle_events__correspondence_notice|{copyright_notice_id,copyright_notice_correspondence_id}|public.copyright_notice_correspondence_messages|{copyright_notice_id,id}|c|true',\n      'public.copyright_notice_lifecycle_changes|fk_copyright_lifecycle_events__deadline_notice|{copyright_notice_id,copyright_notice_deadline_id}|public.copyright_notice_deadlines|{copyright_notice_id,id}|c|true',\n      'public.copyright_notice_lifecycle_changes|fk_copyright_lifecycle_events__email_intake_notice|{copyright_notice_id,copyright_notice_email_intake_id}|public.copyright_notice_email_intake_notice_links|{copyright_notice_id,copyright_notice_email_intake_id}|c|true',\n      'public.copyright_notice_lifecycle_changes|fk_copyright_lifecycle_events__hold_assessment_notice|{copyright_notice_id,copyright_notice_legal_hold_assessment_id}|public.copyright_notice_legal_hold_assessments|{copyright_notice_id,id}|c|true',\n      'public.copyright_notice_lifecycle_changes|fk_copyright_lifecycle_events__hold_resolution_notice|{copyright_notice_id,copyright_notice_legal_hold_resolution_id}|public.copyright_notice_legal_hold_resolutions|{copyright_notice_id,id}|c|true',\n      'public.copyright_notice_lifecycle_changes|fk_copyright_lifecycle_events__restriction_notice|{copyright_notice_id,copyright_restriction_id}|public.copyright_restrictions|{copyright_notice_id,id}|c|true',\n      'public.copyright_notice_lifecycle_changes|fk_copyright_lifecycle_events__submission_notice|{copyright_notice_id,copyright_notice_submission_id}|public.copyright_notice_submissions|{copyright_notice_id,id}|c|true',\n      'public.copyright_notice_retention_erasures|copyright_notice_retention_erasures_copyright_notice_id_fkey|{copyright_notice_id}|public.copyright_notices|{id}|c|true',\n      'public.copyright_notice_submission_assessments|fk_copyright_assessments__form_screening|{copyright_notice_form_screening_id}|public.copyright_notice_form_screenings|{id}|c|true',\n      'public.copyright_notice_submission_assessments|fk_copyright_assessments__parent_notice|{copyright_notice_id,copyright_notice_submission_id}|public.copyright_notice_submissions|{copyright_notice_id,id}|c|true',\n      'public.copyright_notice_submission_assessments|fk_copyright_assessments__supersedes_submission|{copyright_notice_submission_id,supersedes_assessment_id}|public.copyright_notice_submission_assessments|{copyright_notice_submission_id,id}|c|true',\n      'public.copyright_notice_submission_guidance|fk_copyright_notice_submission_guidance__submission|{copyright_notice_submission_id}|public.copyright_notice_submissions|{id}|c|true',\n      'public.copyright_notice_submission_requests|fk_copyright_notice_submission_requests__submission|{copyright_notice_submission_id}|public.copyright_notice_submissions|{id}|c|true',\n      'public.copyright_notice_submission_targets|fk_copyright_submission_targets__parent_notice|{copyright_notice_id,copyright_notice_submission_id}|public.copyright_notice_submissions|{copyright_notice_id,id}|c|true',\n      'public.copyright_notice_submission_targets|fk_copyright_submission_targets__target_notice|{copyright_notice_id,copyright_notice_target_id}|public.copyright_notice_targets|{copyright_notice_id,id}|c|true',\n      'public.copyright_notice_submissions|copyright_notice_submissions_copyright_notice_id_fkey|{copyright_notice_id}|public.copyright_notices|{id}|c|true',\n      'public.copyright_notice_submissions|copyright_submission_guest_capability_fk|{copyright_notice_guest_capability_id,copyright_notice_id}|public.copyright_notice_guest_capabilities|{id,copyright_notice_id}|r|true',\n      'public.copyright_notice_target_images|copyright_notice_target_images_copyright_notice_target_id_fkey|{copyright_notice_target_id}|public.copyright_notice_targets|{id}|c|true',\n      'public.copyright_notice_target_images|fk_copyright_notice_target_images__target__placement|{copyright_notice_target_id,placement_id}|public.copyright_notice_targets|{id,placement_id}|c|true',\n      'public.copyright_notice_targets|copyright_notice_targets_copyright_notice_id_fkey|{copyright_notice_id}|public.copyright_notices|{id}|c|true',\n      'public.copyright_notice_urgent_filings|fk_copyright_notice_urgent_filings__submission|{copyright_notice_submission_id}|public.copyright_notice_submissions|{id}|c|true',\n      'public.copyright_repeat_infringer_dispositions|fk_copyright_repeat_infringer_dispositions__incident|{copyright_repeat_infringer_incident_id}|public.copyright_repeat_infringer_incidents|{id}|c|true',\n      'public.copyright_repeat_infringer_incident_targets|fk_copyr_repeat_infringe_incident_targets__incident|{copyright_repeat_infringer_incident_id,copyright_notice_id}|public.copyright_repeat_infringer_incidents|{id,copyright_notice_id}|c|true',\n      'public.copyright_repeat_infringer_incident_targets|fk_copyr_repeat_infringe_incident_targets__target|{copyright_notice_id,copyright_notice_target_id}|public.copyright_notice_targets|{copyright_notice_id,id}|c|true',\n      'public.copyright_repeat_infringer_incidents|copyright_repeat_infringer_incidents_copyright_notice_id_fkey|{copyright_notice_id}|public.copyright_notices|{id}|c|true',\n      'public.copyright_restriction_administrator_lifts|fk_copyright_restriction_administrator_lifts__restriction|{copyright_restriction_id}|public.copyright_restrictions|{id}|c|true',\n      'public.copyright_restrictions|fk_copyright_restrictions__authorizing_assessment|{copyright_notice_id,authorizing_assessment_id}|public.copyright_notice_submission_assessments|{copyright_notice_id,id}|c|true',\n      'public.copyright_restrictions|fk_copyright_restrictions__parent_notice|{copyright_notice_id,copyright_notice_target_id}|public.copyright_notice_targets|{copyright_notice_id,id}|c|true',\n      'public.copyright_staydown_entries|copyright_staydown_entries_copyright_restriction_id_fkey|{copyright_restriction_id}|public.copyright_restrictions|{id}|c|true',\n      'public.copyright_staydown_matches|copyright_staydown_matches_copyright_staydown_entry_id_fkey|{copyright_staydown_entry_id}|public.copyright_staydown_entries|{id}|c|true',\n      'public.copyright_territorial_decisions|fk_copyright_territorial_decisions__assessment|{copyright_notice_submission_assessment_id}|public.copyright_notice_submission_assessments|{id}|c|true',\n      'public.copyright_territorial_decisions|fk_copyright_territorial_decisions__notice|{copyright_notice_id,jurisdiction}|public.copyright_notices|{id,jurisdiction}|c|true',\n      'public.copyright_territorial_decisions|fk_copyright_territorial_decisions__predecessor|{copyright_notice_id,supersedes_decision_id}|public.copyright_territorial_decisions|{copyright_notice_id,id}|c|true',\n      'public.copyright_territorial_escalations|fk_copyright_territorial_escalations__eu_supervised_complaint|{copyright_eu_supervised_complaint_id}|public.copyright_eu_supervised_complaints|{id}|c|true',\n      'public.copyright_territorial_escalations|fk_copyright_territorial_escalations__notice_acknowledgment|{copyright_territorial_notice_acknowledgment_id}|public.copyright_territorial_notice_acknowledgments|{id}|c|true',\n      'public.copyright_territorial_escalations|fk_copyright_territorial_escalations__notice|{copyright_notice_id,jurisdiction}|public.copyright_notices|{id,jurisdiction}|c|true',\n      'public.copyright_territorial_notice_acknowledgments|fk_copyright_territorial_notice_acknowledgments__receipt|{copyright_territorial_notice_receipt_id}|public.copyright_territorial_notice_receipts|{id}|c|true',\n      'public.copyright_territorial_notice_receipts|fk_copyright_territorial_notice_receipts__notice|{copyright_notice_id,jurisdiction}|public.copyright_notices|{id,jurisdiction}|c|true',\n      'public.copyright_territorial_notice_routings|fk_copyright_territorial_notice_routings__receipt|{copyright_territorial_notice_receipt_id}|public.copyright_territorial_notice_receipts|{id}|c|true',\n      'public.copyright_territorial_redress_decisions|fk_copyright_territorial_redress_decisions__revoked_assessment|{revoked_assessment_id}|public.copyright_notice_submission_assessments|{id}|c|true',\n      'public.copyright_territorial_redress_decisions|fk_copyright_territorial_redress_decisions__request|{copyright_territorial_redress_request_id}|public.copyright_territorial_redress_requests|{id}|c|true',\n      'public.copyright_territorial_redress_requests|fk_copyright_territorial_redress_requests__decision|{copyright_notice_id,copyright_territorial_decision_id}|public.copyright_territorial_decisions|{copyright_notice_id,id}|c|true',\n      'public.copyright_territorial_redress_requests|fk_copyright_territorial_redress_requests__notice|{copyright_notice_id,jurisdiction}|public.copyright_notices|{id,jurisdiction}|c|true',\n      'public.copyright_trusted_flagger_matches|copyright_trusted_flagger_matches_copyright_notice_id_fkey|{copyright_notice_id}|public.copyright_notices|{id}|c|true',\n      'public.notification_push_intent_subscription_receipts|notification_push_receipts_intent_fkey|{user_id,notification_id}|public.notification_push_intents|{user_id,notification_id}|c|true',\n      'public.notification_push_intents|notification_push_intents_user_id_notification_id_fkey|{user_id,notification_id}|public.notifications|{user_id,id}|c|true',\n      'public.notifications|fk_notifications__copyright_notice|{copyright_notice_id}|public.copyright_notices|{id}|c|true'\n    ]::text[])\n  )\n  SELECT NOT EXISTS (SELECT signature FROM actual_edges\n    EXCEPT SELECT signature FROM expected_edges)\n    AND NOT EXISTS (SELECT signature FROM expected_edges\n      EXCEPT SELECT signature FROM actual_edges)\n$function$\n"
     },
     "fn_project_copyright_minimal_purge_child_allowed(table_name text, old_row jsonb)": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_copyright_minimal_purge_child_allowed(table_name text, old_row jsonb)\n RETURNS boolean\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  notice_id text := current_setting('app.copyright_minimal_purge_notice_id', true);\n  validated_root_id text := current_setting('app.copyright_minimal_purge_validated_root_id', true);\n  phase_table text := current_setting('app.copyright_minimal_purge_phase_table', true);\n  selected_phase_index text := current_setting('app.copyright_minimal_purge_phase_index', true);\n  row_notice_id text;\n  deleted_count integer;\nBEGIN\n  IF notice_id IS NULL OR notice_id = '' THEN RETURN false; END IF;\n  IF old_row ? 'copyright_notice_id' THEN\n    IF table_name NOT IN (\n      'copyright_claimant_misuse_events', 'copyright_eu_dispute_settlement_referrals', 'copyright_eu_supervised_complaints',\n      'copyright_notice_action_work_items', 'copyright_notice_correspondence_messages', 'copyright_notice_counter_notice_assessment_targets',\n      'copyright_notice_deadlines', 'copyright_notice_delivery_work_items', 'copyright_notice_email_correspondence_reviews',\n      'copyright_notice_email_intake_notice_links', 'copyright_notice_evidence_artifacts', 'copyright_notice_form_intakes',\n      'copyright_notice_guest_capabilities', 'copyright_notice_legal_hold_assessment_targets', 'copyright_notice_legal_hold_assessments',\n      'copyright_notice_legal_hold_resolutions', 'copyright_notice_lifecycle_change_rationales', 'copyright_notice_lifecycle_changes',\n      'copyright_notice_retention_erasures', 'copyright_notice_submission_assessments', 'copyright_notice_submission_targets',\n      'copyright_notice_submissions', 'copyright_notice_targets', 'copyright_repeat_infringer_incident_targets',\n      'copyright_repeat_infringer_incidents', 'copyright_restrictions', 'copyright_territorial_decisions',\n      'copyright_territorial_escalations', 'copyright_territorial_notice_receipts', 'copyright_territorial_redress_requests',\n      'copyright_trusted_flagger_matches', 'notifications'\n    ) THEN RETURN false; END IF;\n    row_notice_id := old_row->>'copyright_notice_id';\n  ELSE\n    CASE table_name\n      WHEN 'ai_agent_call_receipts' THEN\n        SELECT p0.copyright_notice_id::text INTO row_notice_id\n        FROM copyright_notice_submissions p0\n        WHERE p0.id = (old_row->>'copyright_notice_submission_id')::uuid;\n      WHEN 'copyright_automatic_withholding_refusals' THEN\n        SELECT p0.copyright_notice_id::text INTO row_notice_id\n        FROM copyright_notice_submissions p0\n        WHERE p0.id = (old_row->>'copyright_notice_submission_id')::uuid;\n      WHEN 'copyright_claimant_suspension_reversals' THEN\n        SELECT p0.copyright_notice_id::text INTO row_notice_id\n        FROM copyright_restrictions p0\n        WHERE p0.id = (old_row->>'copyright_restriction_id')::uuid;\n      WHEN 'copyright_eu_dispute_settlement_outcomes' THEN\n        SELECT p0.copyright_notice_id::text INTO row_notice_id\n        FROM copyright_eu_dispute_settlement_referrals p0\n        WHERE p0.id = (old_row->>'copyright_eu_dispute_settlement_referral_id')::uuid;\n      WHEN 'copyright_legal_hold_restrictions' THEN\n        SELECT p0.copyright_notice_id::text INTO row_notice_id\n        FROM copyright_restrictions p0\n        WHERE p0.id = (old_row->>'copyright_restriction_id')::uuid;\n      WHEN 'copyright_notice_action_attempt_results' THEN\n        SELECT p1.copyright_notice_id::text INTO row_notice_id\n        FROM copyright_notice_action_attempts p0 JOIN copyright_notice_action_work_items p1 ON p0.work_item_id = p1.id\n        WHERE p0.id = (old_row->>'attempt_id')::uuid;\n      WHEN 'copyright_notice_action_attempts' THEN\n        SELECT p0.copyright_notice_id::text INTO row_notice_id\n        FROM copyright_notice_action_work_items p0\n        WHERE p0.id = (old_row->>'work_item_id')::uuid;\n      WHEN 'copyright_notice_appeal_recommendations' THEN\n        SELECT p0.copyright_notice_id::text INTO row_notice_id\n        FROM copyright_notice_submissions p0\n        WHERE p0.id = (old_row->>'copyright_notice_submission_id')::uuid;\n      WHEN 'copyright_notice_appeal_reviews' THEN\n        SELECT p0.copyright_notice_id::text INTO row_notice_id\n        FROM copyright_restrictions p0\n        WHERE p0.id = (old_row->>'copyright_restriction_id')::uuid;\n      WHEN 'copyright_notice_counter_notice_reviews' THEN\n        SELECT p0.copyright_notice_id::text INTO row_notice_id\n        FROM copyright_notice_submission_assessments p0\n        WHERE p0.id = (old_row->>'copyright_notice_submission_assessment_id')::uuid;\n      WHEN 'copyright_notice_delivery_attempt_results' THEN\n        SELECT p1.copyright_notice_id::text INTO row_notice_id\n        FROM copyright_notice_delivery_attempts p0 JOIN copyright_notice_delivery_work_items p1 ON p0.work_item_id = p1.id\n        WHERE p0.id = (old_row->>'attempt_id')::uuid;\n      WHEN 'copyright_notice_delivery_attempts' THEN\n        SELECT p0.copyright_notice_id::text INTO row_notice_id\n        FROM copyright_notice_delivery_work_items p0\n        WHERE p0.id = (old_row->>'work_item_id')::uuid;\n      WHEN 'copyright_notice_delivery_recipients' THEN\n        SELECT p0.copyright_notice_id::text INTO row_notice_id\n        FROM copyright_notice_delivery_work_items p0\n        WHERE p0.id = (old_row->>'copyright_notice_delivery_work_item_id')::uuid;\n      WHEN 'copyright_notice_form_intake_reviews' THEN\n        SELECT p0.copyright_notice_id::text INTO row_notice_id\n        FROM copyright_notice_form_intakes p0\n        WHERE p0.id = (old_row->>'copyright_notice_form_intake_id')::uuid;\n      WHEN 'copyright_notice_form_screening_attempts' THEN\n        SELECT p0.copyright_notice_id::text INTO row_notice_id\n        FROM copyright_notice_form_intakes p0\n        WHERE p0.id = (old_row->>'copyright_notice_form_intake_id')::uuid;\n      WHEN 'copyright_notice_form_screening_work_items' THEN\n        SELECT p0.copyright_notice_id::text INTO row_notice_id\n        FROM copyright_notice_form_intakes p0\n        WHERE p0.id = (old_row->>'copyright_notice_form_intake_id')::uuid;\n      WHEN 'copyright_notice_form_screenings' THEN\n        SELECT p0.copyright_notice_id::text INTO row_notice_id\n        FROM copyright_notice_form_intakes p0\n        WHERE p0.id = (old_row->>'copyright_notice_form_intake_id')::uuid;\n      WHEN 'copyright_notice_submission_guidance' THEN\n        SELECT p0.copyright_notice_id::text INTO row_notice_id\n        FROM copyright_notice_submissions p0\n        WHERE p0.id = (old_row->>'copyright_notice_submission_id')::uuid;\n      WHEN 'copyright_notice_submission_requests' THEN\n        SELECT p0.copyright_notice_id::text INTO row_notice_id\n        FROM copyright_notice_submissions p0\n        WHERE p0.id = (old_row->>'copyright_notice_submission_id')::uuid;\n      WHEN 'copyright_notice_target_images' THEN\n        SELECT p0.copyright_notice_id::text INTO row_notice_id\n        FROM copyright_notice_targets p0\n        WHERE p0.id = (old_row->>'copyright_notice_target_id')::uuid;\n      WHEN 'copyright_notice_urgent_filings' THEN\n        SELECT p0.copyright_notice_id::text INTO row_notice_id\n        FROM copyright_notice_submissions p0\n        WHERE p0.id = (old_row->>'copyright_notice_submission_id')::uuid;\n      WHEN 'copyright_repeat_infringer_dispositions' THEN\n        SELECT p0.copyright_notice_id::text INTO row_notice_id\n        FROM copyright_repeat_infringer_incidents p0\n        WHERE p0.id = (old_row->>'copyright_repeat_infringer_incident_id')::uuid;\n      WHEN 'copyright_restriction_administrator_lifts' THEN\n        SELECT p0.copyright_notice_id::text INTO row_notice_id\n        FROM copyright_restrictions p0\n        WHERE p0.id = (old_row->>'copyright_restriction_id')::uuid;\n      WHEN 'copyright_staydown_entries' THEN\n        SELECT p0.copyright_notice_id::text INTO row_notice_id\n        FROM copyright_restrictions p0\n        WHERE p0.id = (old_row->>'copyright_restriction_id')::uuid;\n      WHEN 'copyright_staydown_matches' THEN\n        SELECT p1.copyright_notice_id::text INTO row_notice_id\n        FROM copyright_staydown_entries p0 JOIN copyright_restrictions p1 ON p0.copyright_restriction_id = p1.id\n        WHERE p0.id = (old_row->>'copyright_staydown_entry_id')::uuid;\n      WHEN 'copyright_territorial_notice_acknowledgments' THEN\n        SELECT p0.copyright_notice_id::text INTO row_notice_id\n        FROM copyright_territorial_notice_receipts p0\n        WHERE p0.id = (old_row->>'copyright_territorial_notice_receipt_id')::uuid;\n      WHEN 'copyright_territorial_notice_routings' THEN\n        SELECT p0.copyright_notice_id::text INTO row_notice_id\n        FROM copyright_territorial_notice_receipts p0\n        WHERE p0.id = (old_row->>'copyright_territorial_notice_receipt_id')::uuid;\n      WHEN 'copyright_territorial_redress_decisions' THEN\n        SELECT p0.copyright_notice_id::text INTO row_notice_id\n        FROM copyright_territorial_redress_requests p0\n        WHERE p0.id = (old_row->>'copyright_territorial_redress_request_id')::uuid;\n      WHEN 'notification_push_intent_subscription_receipts' THEN\n        SELECT p1.copyright_notice_id::text INTO row_notice_id\n        FROM notification_push_intents p0 JOIN notifications p1 ON p0.user_id = p1.user_id AND p0.notification_id = p1.id\n        WHERE p0.user_id = (old_row->>'user_id')::uuid AND p0.notification_id = (old_row->>'notification_id')::uuid;\n      WHEN 'notification_push_intents' THEN\n        SELECT p0.copyright_notice_id::text INTO row_notice_id\n        FROM notifications p0\n        WHERE p0.user_id = (old_row->>'user_id')::uuid AND p0.id = (old_row->>'notification_id')::uuid;\n      ELSE RETURN false;\n    END CASE;\n  END IF;\n  IF row_notice_id IS DISTINCT FROM notice_id THEN RETURN false; END IF;\n  -- Only the single fixed erasure marker may fall with the final root DELETE.\n  IF validated_root_id = notice_id THEN\n    RETURN table_name = 'copyright_notice_retention_erasures';\n  END IF;\n  IF table_name = 'copyright_notice_retention_erasures' THEN RETURN false; END IF;\n  IF table_name = 'copyright_notice_lifecycle_change_rationales'\n    AND phase_table IS DISTINCT FROM 'copyright_notice_lifecycle_changes' THEN RETURN false; END IF;\n  IF phase_table IS DISTINCT FROM table_name AND NOT (\n    COALESCE(phase_table = 'copyright_notice_lifecycle_changes'\n      AND table_name = 'copyright_notice_lifecycle_change_rationales', false)) THEN RETURN false; END IF;\n  IF selected_phase_index IS NULL OR selected_phase_index = '' OR NOT EXISTS (\n    SELECT 1 FROM copyright_notice_minimal_purge_work work\n    WHERE work.copyright_notice_id = notice_id::uuid\n      AND work.phase_index = selected_phase_index::smallint\n      AND work.root_purged_at IS NULL) THEN RETURN false; END IF;\n  IF NOT fn_project_copyright_minimal_record_purge_eligible(\n    notice_id::uuid,\n    NULLIF(current_setting('app.copyright_minimal_purge_now', true), '')::timestamptz,\n    NULLIF(current_setting('app.copyright_minimal_purge_cutoff', true), '')::timestamptz\n  ) THEN RETURN false; END IF;\n  deleted_count := COALESCE(NULLIF(current_setting('app.copyright_minimal_purge_deleted_count', true), '')::integer, 0) + 1;\n  IF deleted_count > 100 THEN RETURN false; END IF;\n  PERFORM set_config('app.copyright_minimal_purge_deleted_count', deleted_count::text, true);\n  RETURN true;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_copyright_minimal_purge_child_allowed(table_name text, old_row jsonb)\n RETURNS boolean\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  notice_id text := current_setting('app.copyright_minimal_purge_notice_id', true);\n  validated_root_id text := current_setting('app.copyright_minimal_purge_validated_root_id', true);\n  phase_table text := current_setting('app.copyright_minimal_purge_phase_table', true);\n  selected_phase_index text := current_setting('app.copyright_minimal_purge_phase_index', true);\n  row_notice_id text;\n  deleted_count integer;\nBEGIN\n  IF notice_id IS NULL OR notice_id = '' THEN RETURN false; END IF;\n  IF old_row ? 'copyright_notice_id' THEN\n    IF table_name NOT IN (\n      'copyright_claimant_misuse_events', 'copyright_eu_dispute_settlement_referrals', 'copyright_eu_supervised_complaints',\n      'copyright_notice_action_work_items', 'copyright_notice_correspondence_messages', 'copyright_notice_counter_notice_assessment_targets',\n      'copyright_notice_deadlines', 'copyright_notice_delivery_work_items', 'copyright_notice_email_correspondence_reviews',\n      'copyright_notice_email_intake_notice_links', 'copyright_notice_evidence_artifacts', 'copyright_notice_form_intakes',\n      'copyright_notice_guest_capabilities', 'copyright_notice_legal_hold_assessment_targets', 'copyright_notice_legal_hold_assessments',\n      'copyright_notice_legal_hold_resolutions', 'copyright_notice_lifecycle_change_rationales', 'copyright_notice_lifecycle_changes',\n      'copyright_notice_retention_erasures', 'copyright_notice_submission_assessments', 'copyright_notice_submission_targets',\n      'copyright_notice_submissions', 'copyright_notice_targets', 'copyright_repeat_infringer_incident_targets',\n      'copyright_repeat_infringer_incidents', 'copyright_restrictions', 'copyright_territorial_decisions',\n      'copyright_territorial_escalations', 'copyright_territorial_notice_receipts', 'copyright_territorial_redress_requests',\n      'copyright_trusted_flagger_matches', 'notifications'\n    ) THEN RETURN false; END IF;\n    row_notice_id := old_row->>'copyright_notice_id';\n  ELSE\n    CASE table_name\n      WHEN 'ai_agent_call_receipts' THEN\n        SELECT p0.copyright_notice_id::text INTO row_notice_id\n        FROM copyright_notice_submissions p0\n        WHERE p0.id = (old_row->>'copyright_notice_submission_id')::uuid;\n      WHEN 'copyright_automatic_withholding_refusals' THEN\n        SELECT p0.copyright_notice_id::text INTO row_notice_id\n        FROM copyright_notice_submissions p0\n        WHERE p0.id = (old_row->>'copyright_notice_submission_id')::uuid;\n      WHEN 'copyright_claimant_suspension_reversals' THEN\n        SELECT p0.copyright_notice_id::text INTO row_notice_id\n        FROM copyright_restrictions p0\n        WHERE p0.id = (old_row->>'copyright_restriction_id')::uuid;\n      WHEN 'copyright_eu_dispute_settlement_outcomes' THEN\n        SELECT p0.copyright_notice_id::text INTO row_notice_id\n        FROM copyright_eu_dispute_settlement_referrals p0\n        WHERE p0.id = (old_row->>'copyright_eu_dispute_settlement_referral_id')::uuid;\n      WHEN 'copyright_legal_hold_restrictions' THEN\n        SELECT p0.copyright_notice_id::text INTO row_notice_id\n        FROM copyright_restrictions p0\n        WHERE p0.id = (old_row->>'copyright_restriction_id')::uuid;\n      WHEN 'copyright_notice_action_attempt_results' THEN\n        SELECT p1.copyright_notice_id::text INTO row_notice_id\n        FROM copyright_notice_action_attempts p0 JOIN copyright_notice_action_work_items p1 ON p0.work_item_id = p1.id\n        WHERE p0.id = (old_row->>'attempt_id')::uuid;\n      WHEN 'copyright_notice_action_attempts' THEN\n        SELECT p0.copyright_notice_id::text INTO row_notice_id\n        FROM copyright_notice_action_work_items p0\n        WHERE p0.id = (old_row->>'work_item_id')::uuid;\n      WHEN 'copyright_notice_appeal_recommendations' THEN\n        SELECT p0.copyright_notice_id::text INTO row_notice_id\n        FROM copyright_notice_submissions p0\n        WHERE p0.id = (old_row->>'copyright_notice_submission_id')::uuid;\n      WHEN 'copyright_notice_appeal_reviews' THEN\n        SELECT p0.copyright_notice_id::text INTO row_notice_id\n        FROM copyright_restrictions p0\n        WHERE p0.id = (old_row->>'copyright_restriction_id')::uuid;\n      WHEN 'copyright_notice_counter_notice_reviews' THEN\n        SELECT p0.copyright_notice_id::text INTO row_notice_id\n        FROM copyright_notice_submission_assessments p0\n        WHERE p0.id = (old_row->>'copyright_notice_submission_assessment_id')::uuid;\n      WHEN 'copyright_notice_delivery_attempt_results' THEN\n        SELECT p1.copyright_notice_id::text INTO row_notice_id\n        FROM copyright_notice_delivery_attempts p0 JOIN copyright_notice_delivery_work_items p1 ON p0.work_item_id = p1.id\n        WHERE p0.id = (old_row->>'attempt_id')::uuid;\n      WHEN 'copyright_notice_delivery_attempts' THEN\n        SELECT p0.copyright_notice_id::text INTO row_notice_id\n        FROM copyright_notice_delivery_work_items p0\n        WHERE p0.id = (old_row->>'work_item_id')::uuid;\n      WHEN 'copyright_notice_delivery_recipients' THEN\n        SELECT p0.copyright_notice_id::text INTO row_notice_id\n        FROM copyright_notice_delivery_work_items p0\n        WHERE p0.id = (old_row->>'copyright_notice_delivery_work_item_id')::uuid;\n      WHEN 'copyright_notice_form_intake_reviews' THEN\n        SELECT p0.copyright_notice_id::text INTO row_notice_id\n        FROM copyright_notice_form_intakes p0\n        WHERE p0.id = (old_row->>'copyright_notice_form_intake_id')::uuid;\n      WHEN 'copyright_notice_form_screening_attempts' THEN\n        SELECT p0.copyright_notice_id::text INTO row_notice_id\n        FROM copyright_notice_form_intakes p0\n        WHERE p0.id = (old_row->>'copyright_notice_form_intake_id')::uuid;\n      WHEN 'copyright_notice_form_screening_work_items' THEN\n        SELECT p0.copyright_notice_id::text INTO row_notice_id\n        FROM copyright_notice_form_intakes p0\n        WHERE p0.id = (old_row->>'copyright_notice_form_intake_id')::uuid;\n      WHEN 'copyright_notice_form_screenings' THEN\n        SELECT p0.copyright_notice_id::text INTO row_notice_id\n        FROM copyright_notice_form_intakes p0\n        WHERE p0.id = (old_row->>'copyright_notice_form_intake_id')::uuid;\n      WHEN 'copyright_notice_submission_guidance' THEN\n        SELECT p0.copyright_notice_id::text INTO row_notice_id\n        FROM copyright_notice_submissions p0\n        WHERE p0.id = (old_row->>'copyright_notice_submission_id')::uuid;\n      WHEN 'copyright_notice_submission_requests' THEN\n        SELECT p0.copyright_notice_id::text INTO row_notice_id\n        FROM copyright_notice_submissions p0\n        WHERE p0.id = (old_row->>'copyright_notice_submission_id')::uuid;\n      WHEN 'copyright_notice_target_images' THEN\n        SELECT p0.copyright_notice_id::text INTO row_notice_id\n        FROM copyright_notice_targets p0\n        WHERE p0.id = (old_row->>'copyright_notice_target_id')::uuid;\n      WHEN 'copyright_notice_urgent_filings' THEN\n        SELECT p0.copyright_notice_id::text INTO row_notice_id\n        FROM copyright_notice_submissions p0\n        WHERE p0.id = (old_row->>'copyright_notice_submission_id')::uuid;\n      WHEN 'copyright_repeat_infringer_dispositions' THEN\n        SELECT p0.copyright_notice_id::text INTO row_notice_id\n        FROM copyright_repeat_infringer_incidents p0\n        WHERE p0.id = (old_row->>'copyright_repeat_infringer_incident_id')::uuid;\n      WHEN 'copyright_restriction_administrator_lifts' THEN\n        SELECT p0.copyright_notice_id::text INTO row_notice_id\n        FROM copyright_restrictions p0\n        WHERE p0.id = (old_row->>'copyright_restriction_id')::uuid;\n      WHEN 'copyright_staydown_entries' THEN\n        SELECT p0.copyright_notice_id::text INTO row_notice_id\n        FROM copyright_restrictions p0\n        WHERE p0.id = (old_row->>'copyright_restriction_id')::uuid;\n      WHEN 'copyright_staydown_matches' THEN\n        SELECT p1.copyright_notice_id::text INTO row_notice_id\n        FROM copyright_staydown_entries p0 JOIN copyright_restrictions p1 ON p0.copyright_restriction_id = p1.id\n        WHERE p0.id = (old_row->>'copyright_staydown_entry_id')::uuid;\n      WHEN 'copyright_territorial_notice_acknowledgments' THEN\n        SELECT p0.copyright_notice_id::text INTO row_notice_id\n        FROM copyright_territorial_notice_receipts p0\n        WHERE p0.id = (old_row->>'copyright_territorial_notice_receipt_id')::uuid;\n      WHEN 'copyright_territorial_notice_routings' THEN\n        SELECT p0.copyright_notice_id::text INTO row_notice_id\n        FROM copyright_territorial_notice_receipts p0\n        WHERE p0.id = (old_row->>'copyright_territorial_notice_receipt_id')::uuid;\n      WHEN 'copyright_territorial_redress_decisions' THEN\n        SELECT p0.copyright_notice_id::text INTO row_notice_id\n        FROM copyright_territorial_redress_requests p0\n        WHERE p0.id = (old_row->>'copyright_territorial_redress_request_id')::uuid;\n      WHEN 'notification_push_intent_subscription_receipts' THEN\n        SELECT p1.copyright_notice_id::text INTO row_notice_id\n        FROM notification_push_intents p0 JOIN notifications p1 ON p0.user_id = p1.user_id AND p0.notification_id = p1.id\n        WHERE p0.user_id = (old_row->>'user_id')::uuid AND p0.notification_id = (old_row->>'notification_id')::uuid;\n      WHEN 'notification_push_intents' THEN\n        SELECT p0.copyright_notice_id::text INTO row_notice_id\n        FROM notifications p0\n        WHERE p0.user_id = (old_row->>'user_id')::uuid AND p0.id = (old_row->>'notification_id')::uuid;\n      ELSE RETURN false;\n    END CASE;\n  END IF;\n  IF row_notice_id IS DISTINCT FROM notice_id THEN RETURN false; END IF;\n  -- Only the single fixed erasure marker may fall with the final root DELETE.\n  IF validated_root_id = notice_id THEN\n    RETURN table_name = 'copyright_notice_retention_erasures';\n  END IF;\n  IF table_name = 'copyright_notice_retention_erasures' THEN RETURN false; END IF;\n  IF table_name = 'copyright_notice_lifecycle_change_rationales'\n    AND phase_table IS DISTINCT FROM 'copyright_notice_lifecycle_changes' THEN RETURN false; END IF;\n  IF phase_table IS DISTINCT FROM table_name AND NOT (\n    COALESCE(phase_table = 'copyright_notice_lifecycle_changes'\n      AND table_name = 'copyright_notice_lifecycle_change_rationales', false)) THEN RETURN false; END IF;\n  IF selected_phase_index IS NULL OR selected_phase_index = '' OR NOT EXISTS (\n    SELECT 1 FROM copyright_notice_minimal_purge_continuations work\n    WHERE work.copyright_notice_identity_id = notice_id::uuid\n      AND work.phase_index = selected_phase_index::smallint\n      AND work.root_purged_at IS NULL) THEN RETURN false; END IF;\n  IF NOT fn_project_copyright_minimal_record_purge_eligible(\n    notice_id::uuid,\n    NULLIF(current_setting('app.copyright_minimal_purge_now', true), '')::timestamptz,\n    NULLIF(current_setting('app.copyright_minimal_purge_cutoff', true), '')::timestamptz\n  ) THEN RETURN false; END IF;\n  deleted_count := COALESCE(NULLIF(current_setting('app.copyright_minimal_purge_deleted_count', true), '')::integer, 0) + 1;\n  IF deleted_count > 100 THEN RETURN false; END IF;\n  PERFORM set_config('app.copyright_minimal_purge_deleted_count', deleted_count::text, true);\n  RETURN true;\nEND;\n$function$\n"
     },
     "fn_project_copyright_minimal_purge_children_drained(target_notice_id uuid)": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_copyright_minimal_purge_children_drained(target_notice_id uuid)\n RETURNS boolean\n LANGUAGE sql\n STABLE\nAS $function$\n  SELECT true\n    AND NOT EXISTS (SELECT 1 FROM ai_agent_call_receipts child\n      JOIN copyright_notice_submissions p0 ON child.copyright_notice_submission_id = p0.id\n      WHERE p0.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_automatic_withholding_refusals child\n      JOIN copyright_notice_submissions p0 ON child.copyright_notice_submission_id = p0.id\n      WHERE p0.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_claimant_misuse_events child\n\n      WHERE child.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_claimant_suspension_reversals child\n      JOIN copyright_restrictions p0 ON child.copyright_restriction_id = p0.id\n      WHERE p0.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_eu_dispute_settlement_outcomes child\n      JOIN copyright_eu_dispute_settlement_referrals p0 ON child.copyright_eu_dispute_settlement_referral_id = p0.id\n      WHERE p0.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_eu_dispute_settlement_referrals child\n\n      WHERE child.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_eu_supervised_complaints child\n\n      WHERE child.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_legal_hold_restrictions child\n      JOIN copyright_restrictions p0 ON child.copyright_restriction_id = p0.id\n      WHERE p0.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_notice_action_attempt_results child\n      JOIN copyright_notice_action_attempts p0 ON child.attempt_id = p0.id JOIN copyright_notice_action_work_items p1 ON p0.work_item_id = p1.id\n      WHERE p1.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_notice_action_attempts child\n      JOIN copyright_notice_action_work_items p0 ON child.work_item_id = p0.id\n      WHERE p0.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_notice_action_work_items child\n\n      WHERE child.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_notice_appeal_recommendations child\n      JOIN copyright_notice_submissions p0 ON child.copyright_notice_submission_id = p0.id\n      WHERE p0.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_notice_appeal_reviews child\n      JOIN copyright_restrictions p0 ON child.copyright_restriction_id = p0.id\n      WHERE p0.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_notice_correspondence_messages child\n\n      WHERE child.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_notice_counter_notice_assessment_targets child\n\n      WHERE child.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_notice_counter_notice_reviews child\n      JOIN copyright_notice_submission_assessments p0 ON child.copyright_notice_submission_assessment_id = p0.id\n      WHERE p0.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_notice_deadlines child\n\n      WHERE child.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_notice_delivery_attempt_results child\n      JOIN copyright_notice_delivery_attempts p0 ON child.attempt_id = p0.id JOIN copyright_notice_delivery_work_items p1 ON p0.work_item_id = p1.id\n      WHERE p1.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_notice_delivery_attempts child\n      JOIN copyright_notice_delivery_work_items p0 ON child.work_item_id = p0.id\n      WHERE p0.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_notice_delivery_recipients child\n      JOIN copyright_notice_delivery_work_items p0 ON child.copyright_notice_delivery_work_item_id = p0.id\n      WHERE p0.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_notice_delivery_work_items child\n\n      WHERE child.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_notice_email_correspondence_reviews child\n\n      WHERE child.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_notice_email_intake_notice_links child\n\n      WHERE child.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_notice_evidence_artifacts child\n\n      WHERE child.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_notice_form_intake_reviews child\n      JOIN copyright_notice_form_intakes p0 ON child.copyright_notice_form_intake_id = p0.id\n      WHERE p0.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_notice_form_intakes child\n\n      WHERE child.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_notice_form_screening_attempts child\n      JOIN copyright_notice_form_intakes p0 ON child.copyright_notice_form_intake_id = p0.id\n      WHERE p0.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_notice_form_screening_work_items child\n      JOIN copyright_notice_form_intakes p0 ON child.copyright_notice_form_intake_id = p0.id\n      WHERE p0.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_notice_form_screenings child\n      JOIN copyright_notice_form_intakes p0 ON child.copyright_notice_form_intake_id = p0.id\n      WHERE p0.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_notice_guest_capabilities child\n\n      WHERE child.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_notice_legal_hold_assessment_targets child\n\n      WHERE child.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_notice_legal_hold_assessments child\n\n      WHERE child.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_notice_legal_hold_resolutions child\n\n      WHERE child.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_notice_lifecycle_changes child\n\n      WHERE child.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_notice_submission_assessments child\n\n      WHERE child.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_notice_submission_guidance child\n      JOIN copyright_notice_submissions p0 ON child.copyright_notice_submission_id = p0.id\n      WHERE p0.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_notice_submission_requests child\n      JOIN copyright_notice_submissions p0 ON child.copyright_notice_submission_id = p0.id\n      WHERE p0.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_notice_submission_targets child\n\n      WHERE child.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_notice_submissions child\n\n      WHERE child.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_notice_target_images child\n      JOIN copyright_notice_targets p0 ON child.copyright_notice_target_id = p0.id\n      WHERE p0.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_notice_targets child\n\n      WHERE child.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_notice_urgent_filings child\n      JOIN copyright_notice_submissions p0 ON child.copyright_notice_submission_id = p0.id\n      WHERE p0.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_repeat_infringer_dispositions child\n      JOIN copyright_repeat_infringer_incidents p0 ON child.copyright_repeat_infringer_incident_id = p0.id\n      WHERE p0.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_repeat_infringer_incident_targets child\n\n      WHERE child.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_repeat_infringer_incidents child\n\n      WHERE child.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_restriction_administrator_lifts child\n      JOIN copyright_restrictions p0 ON child.copyright_restriction_id = p0.id\n      WHERE p0.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_restrictions child\n\n      WHERE child.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_staydown_entries child\n      JOIN copyright_restrictions p0 ON child.copyright_restriction_id = p0.id\n      WHERE p0.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_staydown_matches child\n      JOIN copyright_staydown_entries p0 ON child.copyright_staydown_entry_id = p0.id JOIN copyright_restrictions p1 ON p0.copyright_restriction_id = p1.id\n      WHERE p1.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_territorial_decisions child\n\n      WHERE child.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_territorial_escalations child\n\n      WHERE child.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_territorial_notice_acknowledgments child\n      JOIN copyright_territorial_notice_receipts p0 ON child.copyright_territorial_notice_receipt_id = p0.id\n      WHERE p0.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_territorial_notice_receipts child\n\n      WHERE child.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_territorial_notice_routings child\n      JOIN copyright_territorial_notice_receipts p0 ON child.copyright_territorial_notice_receipt_id = p0.id\n      WHERE p0.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_territorial_redress_decisions child\n      JOIN copyright_territorial_redress_requests p0 ON child.copyright_territorial_redress_request_id = p0.id\n      WHERE p0.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_territorial_redress_requests child\n\n      WHERE child.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_trusted_flagger_matches child\n\n      WHERE child.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM notification_push_intent_subscription_receipts child\n      JOIN notification_push_intents p0 ON child.user_id = p0.user_id AND child.notification_id = p0.notification_id JOIN notifications p1 ON p0.user_id = p1.user_id AND p0.notification_id = p1.id\n      WHERE p1.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM notification_push_intents child\n      JOIN notifications p0 ON child.user_id = p0.user_id AND child.notification_id = p0.id\n      WHERE p0.copyright_notice_id = target_notice_id)\n    AND NOT EXISTS (SELECT 1 FROM notifications child\n\n      WHERE child.copyright_notice_id = target_notice_id)\n$function$\n"
@@ -1422,7 +1425,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_copyright_minimal_record_legal_clock(target_notice_id uuid)\n RETURNS timestamp with time zone\n LANGUAGE sql\n STABLE\nAS $function$\n  SELECT GREATEST(\n    notice.created_at,\n    (SELECT erased.legal_clock_at FROM copyright_notice_retention_erasures erased\n      WHERE erased.copyright_notice_id = notice.id),\n    (SELECT event.created_at FROM copyright_notice_lifecycle_changes event\n      WHERE event.copyright_notice_id = notice.id ORDER BY event.id DESC LIMIT 1),\n    (SELECT work.updated_at FROM copyright_notice_delivery_work_items work\n      WHERE work.copyright_notice_id = notice.id ORDER BY work.updated_at DESC LIMIT 1),\n    (SELECT incident.updated_at FROM copyright_repeat_infringer_incidents incident\n      WHERE incident.copyright_notice_id = notice.id ORDER BY incident.updated_at DESC LIMIT 1),\n    (SELECT capability.updated_at FROM copyright_notice_guest_capabilities capability\n      WHERE capability.copyright_notice_id = notice.id\n      ORDER BY capability.updated_at DESC LIMIT 1),\n    (SELECT capability.expires_at FROM copyright_notice_guest_capabilities capability\n      WHERE capability.copyright_notice_id = notice.id AND capability.revoked_at IS NULL\n      ORDER BY capability.expires_at DESC LIMIT 1),\n    identity.email_activity_at,\n    (SELECT review.reviewed_at FROM copyright_notice_email_correspondence_reviews review\n      WHERE review.copyright_notice_id = notice.id AND review.reviewed_at IS NOT NULL\n      ORDER BY review.reviewed_at DESC LIMIT 1)\n  ) FROM copyright_notices notice\n  JOIN copyright_notice_retained_identities identity ON identity.id = notice.id\n  WHERE notice.id = target_notice_id\n$function$\n"
     },
     "fn_project_copyright_minimal_record_purge_eligible(target_notice_id uuid, purge_now timestamp with time zone, cutoff timestamp with time zone)": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_copyright_minimal_record_purge_eligible(target_notice_id uuid, purge_now timestamp with time zone, cutoff timestamp with time zone)\n RETURNS boolean\n LANGUAGE sql\n STABLE\nAS $function$\n  SELECT EXISTS (\n    SELECT 1 FROM copyright_notices notice\n    JOIN copyright_notice_retention_erasures erased\n      ON erased.copyright_notice_id = notice.id\n    JOIN copyright_notice_minimal_purge_work work\n      ON work.copyright_notice_id = notice.id\n    JOIN copyright_notice_retained_identities identity ON identity.id = notice.id\n    JOIN copyright_legal_mutation_sequence_state mutation_state ON mutation_state.singleton\n    WHERE notice.id = target_notice_id\n      AND notice.jurisdiction IN ('us_dmca', 'eu_dsa', 'uk')\n      AND purge_now IS NOT NULL AND cutoff IS NOT NULL\n      AND cutoff <= purge_now - INTERVAL '3 years'\n      AND work.party_scan_complete\n      AND work.blocker_scan_complete AND NOT work.blocker_found\n      AND work.proof_generation = identity.proof_generation\n      AND work.mutation_cursor = mutation_state.current_sequence\n      AND work.open_hold_count = 0\n      AND work.unpurged_incident_account_count = 0\n      AND identity.dsa_statement_count = 0\n      AND NOT EXISTS (\n        SELECT 1 FROM copyright_repeat_infringer_incidents incident\n        WHERE incident.copyright_notice_id = notice.id AND incident.is_operative\n      )\n      AND NOT EXISTS (\n        SELECT 1 FROM copyright_restrictions restriction\n        WHERE restriction.copyright_notice_id = notice.id AND restriction.lifted_at IS NULL\n      )\n      -- DSA legal rows remain blocked pending the separate #3628 scope decision.\n      AND NOT EXISTS (SELECT 1 FROM copyright_notice_deadlines deadline\n        WHERE deadline.copyright_notice_id = notice.id\n          AND deadline.resolved_at IS NULL AND deadline.cancelled_at IS NULL)\n      AND NOT EXISTS (SELECT 1 FROM copyright_notice_delivery_work_items work\n        WHERE work.copyright_notice_id = notice.id AND work.state IN ('pending', 'claimed'))\n      AND NOT EXISTS (SELECT 1 FROM copyright_notice_guest_capabilities capability\n        WHERE capability.copyright_notice_id = notice.id\n          AND capability.revoked_at IS NULL AND capability.expires_at > purge_now)\n      AND NOT EXISTS (\n        SELECT 1 FROM copyright_notice_action_work_items work\n        WHERE work.copyright_notice_id = notice.id AND work.state = 'failed'\n      )\n      AND GREATEST(\n        fn_project_copyright_minimal_record_legal_clock(notice.id),\n        work.legal_clock_at, work.party_legal_clock_at\n      ) <= cutoff\n  )\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_project_copyright_minimal_record_purge_eligible(target_notice_id uuid, purge_now timestamp with time zone, cutoff timestamp with time zone)\n RETURNS boolean\n LANGUAGE sql\n STABLE\nAS $function$\n  SELECT EXISTS (\n    SELECT 1 FROM copyright_notices notice\n    JOIN copyright_notice_retention_erasures erased\n      ON erased.copyright_notice_id = notice.id\n    JOIN copyright_notice_minimal_purge_continuations work\n      ON work.copyright_notice_identity_id = notice.id\n    JOIN copyright_notice_retained_identities identity ON identity.id = notice.id\n    JOIN copyright_legal_mutation_sequence_states mutation_state ON mutation_state.is_singleton\n    WHERE notice.id = target_notice_id\n      AND notice.jurisdiction IN ('us_dmca', 'eu_dsa', 'uk')\n      AND purge_now IS NOT NULL AND cutoff IS NOT NULL\n      AND cutoff <= purge_now - INTERVAL '3 years'\n      AND work.is_party_scan_complete\n      AND work.is_blocker_scan_complete AND NOT work.has_blocker\n      AND work.proof_generation = identity.proof_generation\n      AND work.mutation_cursor = mutation_state.current_sequence\n      AND work.open_hold_count = 0\n      AND work.unpurged_incident_account_count = 0\n      AND identity.dsa_statement_count = 0\n      AND NOT EXISTS (\n        SELECT 1 FROM copyright_repeat_infringer_incidents incident\n        WHERE incident.copyright_notice_id = notice.id AND incident.is_operative\n      )\n      AND NOT EXISTS (\n        SELECT 1 FROM copyright_restrictions restriction\n        WHERE restriction.copyright_notice_id = notice.id AND restriction.lifted_at IS NULL\n      )\n      -- DSA legal rows remain blocked pending the separate #3628 scope decision.\n      AND NOT EXISTS (SELECT 1 FROM copyright_notice_deadlines deadline\n        WHERE deadline.copyright_notice_id = notice.id\n          AND deadline.resolved_at IS NULL AND deadline.cancelled_at IS NULL)\n      AND NOT EXISTS (SELECT 1 FROM copyright_notice_delivery_work_items work\n        WHERE work.copyright_notice_id = notice.id AND work.state IN ('pending', 'claimed'))\n      AND NOT EXISTS (SELECT 1 FROM copyright_notice_guest_capabilities capability\n        WHERE capability.copyright_notice_id = notice.id\n          AND capability.revoked_at IS NULL AND capability.expires_at > purge_now)\n      AND NOT EXISTS (\n        SELECT 1 FROM copyright_notice_action_work_items work\n        WHERE work.copyright_notice_id = notice.id AND work.state = 'failed'\n      )\n      AND GREATEST(\n        fn_project_copyright_minimal_record_legal_clock(notice.id),\n        work.legal_clock_at, work.party_legal_clock_at\n      ) <= cutoff\n  )\n$function$\n"
     },
     "fn_project_domain_blocklist_hostname_block_lifts": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_project_domain_blocklist_hostname_block_lifts()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  UPDATE url_hostname_blocks block\n  SET lifted_at = CURRENT_TIMESTAMP\n  FROM deleted_domains deleted\n  WHERE block.url_hostname_id = deleted.url_hostname_id\n    AND block.domain_blocklist_source_id = deleted.source_id\n    AND block.lifted_at IS NULL;\n  RETURN NULL;\nEND;\n$function$\n"
@@ -1503,25 +1506,25 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_register_copyright_email_case_activity()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  target_notice_id uuid;\n  activity_at timestamptz;\nBEGIN\n  IF TG_TABLE_NAME = 'copyright_notice_email_intake_notice_links' THEN\n    target_notice_id := NEW.copyright_notice_id;\n    SELECT GREATEST(uuid_extract_timestamp(NEW.id), intake.received_at, review.reviewed_at)\n      INTO activity_at\n    FROM copyright_notice_email_intakes intake\n    LEFT JOIN copyright_notice_email_intake_reviews review\n      ON review.copyright_notice_email_intake_id = intake.id\n    WHERE intake.id = NEW.copyright_notice_email_intake_id;\n  ELSE\n    SELECT link.copyright_notice_id INTO target_notice_id\n    FROM copyright_notice_email_intake_notice_links link\n    WHERE link.copyright_notice_email_intake_id = NEW.copyright_notice_email_intake_id;\n    activity_at := NEW.reviewed_at;\n  END IF;\n  IF target_notice_id IS NOT NULL AND activity_at IS NOT NULL THEN\n    UPDATE copyright_notice_retained_identities\n      SET email_activity_at = GREATEST(email_activity_at, activity_at),\n        proof_generation = proof_generation + 1\n      WHERE id = target_notice_id;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_register_copyright_legal_mutation_sequence": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_register_copyright_legal_mutation_sequence()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  target_user_id uuid;\n  assigned_sequence bigint;\nBEGIN\n  IF TG_TABLE_NAME = 'retained_user_identities' THEN\n    IF OLD.purged_at IS NOT NULL OR NEW.purged_at IS NULL THEN RETURN NEW; END IF;\n    target_user_id := NEW.id;\n  ELSE\n    target_user_id := NEW.account_user_id;\n  END IF;\n  UPDATE copyright_legal_mutation_sequence_state\n    SET current_sequence = current_sequence + 1 WHERE singleton\n    RETURNING current_sequence INTO assigned_sequence;\n  UPDATE retained_user_identities\n    SET legal_retention_mutation_sequence = assigned_sequence WHERE id = target_user_id;\n  RETURN NEW;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_register_copyright_legal_mutation_sequence()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  target_user_id uuid;\n  assigned_sequence bigint;\nBEGIN\n  IF TG_TABLE_NAME = 'retained_user_identities' THEN\n    IF OLD.purged_at IS NOT NULL OR NEW.purged_at IS NULL THEN RETURN NEW; END IF;\n    target_user_id := NEW.id;\n  ELSE\n    target_user_id := NEW.account_user_id;\n  END IF;\n  UPDATE copyright_legal_mutation_sequence_states\n    SET current_sequence = current_sequence + 1 WHERE is_singleton\n    RETURNING current_sequence INTO assigned_sequence;\n  UPDATE retained_user_identities\n    SET legal_retention_mutation_sequence = assigned_sequence WHERE id = target_user_id;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_register_copyright_minimal_blocker_mutation": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_register_copyright_minimal_blocker_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  source_row jsonb := to_jsonb(NEW);\n  target_notice_id uuid;\nBEGIN\n  CASE TG_ARGV[0]\n    WHEN 'direct' THEN\n      target_notice_id := (source_row->>'copyright_notice_id')::uuid;\n    WHEN 'intake' THEN\n      SELECT intake.copyright_notice_id INTO target_notice_id\n      FROM copyright_notice_form_intakes intake\n      WHERE intake.id = (source_row->>'copyright_notice_form_intake_id')::uuid;\n    WHEN 'submission' THEN\n      SELECT submission.copyright_notice_id INTO target_notice_id\n      FROM copyright_notice_submissions submission\n      WHERE submission.id = (source_row->>'copyright_notice_submission_id')::uuid;\n    WHEN 'redress_request' THEN\n      SELECT request.copyright_notice_id INTO target_notice_id\n      FROM copyright_territorial_redress_requests request\n      WHERE request.id = (source_row->>'copyright_territorial_redress_request_id')::uuid;\n    WHEN 'restriction' THEN\n      SELECT restriction.copyright_notice_id INTO target_notice_id\n      FROM copyright_restrictions restriction\n      WHERE restriction.id = (source_row->>'copyright_restriction_id')::uuid;\n    WHEN 'staydown_entry' THEN\n      SELECT restriction.copyright_notice_id INTO target_notice_id\n      FROM copyright_staydown_entries entry\n      JOIN copyright_restrictions restriction ON restriction.id = entry.copyright_restriction_id\n      WHERE entry.id = (source_row->>'copyright_staydown_entry_id')::uuid;\n    WHEN 'delivery_work' THEN\n      SELECT work.copyright_notice_id INTO target_notice_id\n      FROM copyright_notice_delivery_work_items work\n      WHERE work.id = (source_row->>'copyright_notice_delivery_work_item_id')::uuid;\n    WHEN 'target' THEN\n      SELECT target.copyright_notice_id INTO target_notice_id\n      FROM copyright_notice_targets target\n      WHERE target.id = (source_row->>'copyright_notice_target_id')::uuid;\n    ELSE\n      RAISE EXCEPTION 'Unknown copyright blocker mutation owner path' USING ERRCODE = 'check_violation';\n  END CASE;\n  IF target_notice_id IS NOT NULL THEN\n    UPDATE copyright_notice_retained_identities\n      SET proof_generation = proof_generation + 1 WHERE id = target_notice_id;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_register_copyright_notice_proof_generation": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_register_copyright_notice_proof_generation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  UPDATE copyright_notice_retained_identities\n    SET proof_generation = proof_generation + 1 WHERE id = NEW.copyright_notice_id;\n  RETURN NEW;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_register_copyright_notice_proof_generation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  UPDATE copyright_notice_retained_identities\n    SET proof_generation = proof_generation + 1 WHERE id = NEW.copyright_notice_identity_id;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_register_copyright_notice_retained_identity": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_register_copyright_notice_retained_identity()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  INSERT INTO copyright_notice_retained_identities (id) VALUES (NEW.id);\n  IF NEW.claimant_user_id IS NOT NULL THEN\n    INSERT INTO copyright_notice_retained_parties (copyright_notice_id, account_user_id)\n      VALUES (NEW.id, NEW.claimant_user_id) ON CONFLICT DO NOTHING;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_register_copyright_notice_retained_identity()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  INSERT INTO copyright_notice_retained_identities (id) VALUES (NEW.id);\n  IF NEW.claimant_user_id IS NOT NULL THEN\n    INSERT INTO copyright_notice_retained_parties (copyright_notice_identity_id, account_user_id)\n      VALUES (NEW.id, NEW.claimant_user_id) ON CONFLICT DO NOTHING;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_register_copyright_notice_submission_retained_party": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_register_copyright_notice_submission_retained_party()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.submitted_by_id IS NOT NULL THEN\n    INSERT INTO copyright_notice_retained_parties (copyright_notice_id, account_user_id)\n      VALUES (NEW.copyright_notice_id, NEW.submitted_by_id) ON CONFLICT DO NOTHING;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_register_copyright_notice_submission_retained_party()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.submitted_by_id IS NOT NULL THEN\n    INSERT INTO copyright_notice_retained_parties (copyright_notice_identity_id, account_user_id)\n      VALUES (NEW.copyright_notice_id, NEW.submitted_by_id) ON CONFLICT DO NOTHING;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_register_copyright_notice_target_retained_parties": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_register_copyright_notice_target_retained_parties()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  INSERT INTO copyright_notice_retained_parties (copyright_notice_id, account_user_id)\n  SELECT NEW.copyright_notice_id, party.user_id FROM (\n    SELECT NEW.surface_owner_user_id AS user_id\n    UNION\n    SELECT post.created_by_id FROM image_placements placement\n      JOIN posts post ON post.id = placement.post_id\n      WHERE placement.placement_id = NEW.placement_id\n    UNION\n    SELECT activation.bound_by_id FROM image_surface_placements surface\n      JOIN image_surface_placement_activations activation\n        ON activation.placement_id = surface.placement_id\n        AND activation.placement_revision = NEW.surface_activation_revision\n      WHERE surface.placement_id = NEW.placement_id\n        AND surface.surface_kind IN ('community-profile-image', 'community-banner-image')\n  ) party WHERE party.user_id IS NOT NULL\n  ON CONFLICT DO NOTHING;\n  RETURN NEW;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_register_copyright_notice_target_retained_parties()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  INSERT INTO copyright_notice_retained_parties (copyright_notice_identity_id, account_user_id)\n  SELECT NEW.copyright_notice_id, party.user_id FROM (\n    SELECT NEW.surface_owner_user_id AS user_id\n    UNION\n    SELECT post.created_by_id FROM image_placements placement\n      JOIN posts post ON post.id = placement.post_id\n      WHERE placement.placement_id = NEW.placement_id\n    UNION\n    SELECT activation.bound_by_id FROM image_surface_placements surface\n      JOIN image_surface_placement_activations activation\n        ON activation.placement_id = surface.placement_id\n        AND activation.placement_revision = NEW.surface_activation_revision\n      WHERE surface.placement_id = NEW.placement_id\n        AND surface.surface_kind IN ('community-profile-image', 'community-banner-image')\n  ) party WHERE party.user_id IS NOT NULL\n  ON CONFLICT DO NOTHING;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_register_copyright_repeat_infringer_retained_party": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_register_copyright_repeat_infringer_retained_party()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  INSERT INTO copyright_notice_retained_parties AS party\n    (copyright_notice_id, account_user_id, is_repeat_infringer_account)\n  VALUES (NEW.copyright_notice_id, NEW.account_user_id, true)\n  ON CONFLICT (copyright_notice_id, account_user_id) DO UPDATE\n    SET is_repeat_infringer_account = true\n    WHERE NOT party.is_repeat_infringer_account;\n  RETURN NEW;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_register_copyright_repeat_infringer_retained_party()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  INSERT INTO copyright_notice_retained_parties AS party\n    (copyright_notice_identity_id, account_user_id, is_repeat_infringer_account)\n  VALUES (NEW.copyright_notice_id, NEW.account_user_id, true)\n  ON CONFLICT (copyright_notice_identity_id, account_user_id) DO UPDATE\n    SET is_repeat_infringer_account = true\n    WHERE NOT party.is_repeat_infringer_account;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_register_retained_identity": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_register_retained_identity()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  PERFORM fn_ensure_retained_identity(TG_ARGV[0]::retained_identity_families, NEW.id);\n  RETURN NEW;\nEND;\n$function$\n"
@@ -1590,7 +1593,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_delivery_intent_transition()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE next_state copyright_notice_delivery_intent_states;\nBEGIN\n  next_state := CASE WHEN NEW.bounced_at IS NOT NULL THEN 'bounced'::copyright_notice_delivery_intent_states WHEN NEW.sent_at IS NOT NULL THEN 'sent'::copyright_notice_delivery_intent_states WHEN NEW.failed_at IS NOT NULL THEN 'failed'::copyright_notice_delivery_intent_states WHEN NEW.leased_at IS NOT NULL THEN 'claimed'::copyright_notice_delivery_intent_states ELSE 'pending'::copyright_notice_delivery_intent_states END;\n  IF TG_OP = 'UPDATE' AND current_setting('app.copyright_retention_erasure', true) = 'on' THEN\n    IF fn_copyright_retention_erasure_permitted(TG_TABLE_NAME, to_jsonb(OLD), to_jsonb(NEW)) THEN RETURN NEW; END IF;\n  END IF;\n  IF TG_OP = 'DELETE' THEN\n    IF fn_project_copyright_minimal_purge_child_allowed(TG_TABLE_NAME, to_jsonb(OLD)) THEN RETURN OLD; END IF;\n    RAISE EXCEPTION 'copyright delivery intents are retained' USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.copyright_notice_id IS DISTINCT FROM OLD.copyright_notice_id\n    OR NEW.copyright_notice_email_intake_id IS DISTINCT FROM OLD.copyright_notice_email_intake_id\n    OR NEW.copyright_notice_submission_id IS DISTINCT FROM OLD.copyright_notice_submission_id\n    OR NEW.copyright_notice_correspondence_message_id IS DISTINCT FROM OLD.copyright_notice_correspondence_message_id\n    OR NEW.recipient_role IS DISTINCT FROM OLD.recipient_role\n    OR NEW.delivery_kind IS DISTINCT FROM OLD.delivery_kind\n    OR NEW.target_path IS DISTINCT FROM OLD.target_path\n    OR NEW.channel IS DISTINCT FROM OLD.channel\n    OR NEW.body_ciphertext IS DISTINCT FROM OLD.body_ciphertext\n    OR NEW.idempotency_key IS DISTINCT FROM OLD.idempotency_key THEN\n    RAISE EXCEPTION 'copyright delivery intent facts are immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF (OLD.sent_at IS NOT NULL AND (NEW.sent_at IS DISTINCT FROM OLD.sent_at\n      OR NEW.amazon_ses_message_id IS DISTINCT FROM OLD.amazon_ses_message_id))\n    OR (OLD.bounced_at IS NOT NULL AND NEW.bounced_at IS DISTINCT FROM OLD.bounced_at)\n    OR (OLD.failed_at IS NOT NULL AND NEW.failed_at IS NOT NULL AND NEW.failed_at IS DISTINCT FROM OLD.failed_at) THEN\n    RAISE EXCEPTION 'terminal copyright delivery intent cannot change' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.recipient_user_id IS DISTINCT FROM NEW.recipient_user_id THEN\n    IF OLD.recipient_user_id IS NULL OR NEW.recipient_user_id IS NOT NULL THEN\n      RAISE EXCEPTION 'copyright delivery recipient cannot change' USING ERRCODE = 'check_violation';\n    END IF;\n    NEW.recipient_user_erased_at := CURRENT_TIMESTAMP;\n  ELSIF NEW.recipient_user_erased_at IS DISTINCT FROM OLD.recipient_user_erased_at THEN\n    RAISE EXCEPTION 'copyright delivery recipient erasure is system-managed' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.state = 'bounced' AND next_state IS DISTINCT FROM OLD.state THEN\n    RAISE EXCEPTION 'terminal copyright delivery intent cannot change' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.state = 'failed' AND next_state IS DISTINCT FROM OLD.state\n    AND NOT (\n      next_state = 'pending' AND NEW.leased_at IS NULL AND NEW.failed_at IS NULL\n      AND NEW.available_at IS NOT NULL AND NEW.attempt_count = 0\n    ) THEN\n    RAISE EXCEPTION 'failed copyright delivery intents may only be explicitly replayed'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.state = 'sent' AND next_state NOT IN ('sent', 'bounced') THEN\n    RAISE EXCEPTION 'terminal copyright delivery intent cannot change' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_reject_copyright_email_review_without_live_case": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_email_review_without_live_case()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.promoted_copyright_notice_id IS NULL THEN RETURN NEW; END IF;\n  PERFORM 1 FROM copyright_notices notice\n    WHERE notice.id = NEW.promoted_copyright_notice_id FOR KEY SHARE;\n  IF NOT FOUND OR EXISTS (SELECT 1 FROM copyright_notice_retention_erasures erased\n    WHERE erased.copyright_notice_id = NEW.promoted_copyright_notice_id) THEN\n    RAISE EXCEPTION 'copyright email review cannot promote an erased or deleted case'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_email_review_without_live_case()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.promoted_copyright_notice_identity_id IS NULL THEN RETURN NEW; END IF;\n  PERFORM 1 FROM copyright_notices notice\n    WHERE notice.id = NEW.promoted_copyright_notice_identity_id FOR KEY SHARE;\n  IF NOT FOUND OR EXISTS (SELECT 1 FROM copyright_notice_retention_erasures erased\n    WHERE erased.copyright_notice_id = NEW.promoted_copyright_notice_identity_id) THEN\n    RAISE EXCEPTION 'copyright email review cannot promote an erased or deleted case'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_reject_copyright_email_thread_reference_without_token": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_email_thread_reference_without_token()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.token_id IS NULL AND\n    (TG_OP = 'INSERT' OR current_setting('app.copyright_retention_erasure', true) IS DISTINCT FROM 'on') THEN\n    RAISE EXCEPTION 'Copyright email thread reference token may be cleared only by retention erasure';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -1611,7 +1614,7 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_missing_storage_object()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF to_jsonb(NEW) ->> TG_ARGV[0] IS NOT NULL THEN RETURN NEW; END IF;\n  IF TG_OP = 'UPDATE' AND to_jsonb(OLD) ->> TG_ARGV[0] IS NULL THEN RETURN NEW; END IF;\n  IF TG_OP = 'UPDATE' AND fn_copyright_retention_erasure_permitted(TG_TABLE_NAME, to_jsonb(OLD), to_jsonb(NEW)) THEN\n    RETURN NEW;\n  END IF;\n  RAISE EXCEPTION 'copyright evidence requires a stored object before retention erasure' USING ERRCODE = 'check_violation';\nEND;\n$function$\n"
     },
     "fn_reject_copyright_notice_identity": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_notice_identity()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'UPDATE' AND current_setting('app.copyright_retention_erasure', true) = 'on' THEN\n    IF fn_copyright_retention_erasure_permitted(TG_TABLE_NAME, to_jsonb(OLD), to_jsonb(NEW)) THEN RETURN NEW; END IF;\n  END IF;\n  IF TG_OP = 'DELETE' THEN\n    IF current_setting('app.copyright_minimal_purge_notice_id', true) = OLD.id::text\n      AND EXISTS (SELECT 1 FROM copyright_notice_minimal_purge_work work\n        WHERE work.copyright_notice_id = OLD.id AND work.root_purged_at IS NULL)\n      AND fn_project_copyright_minimal_purge_catalog_complete()\n      AND fn_project_copyright_minimal_purge_children_drained(OLD.id)\n      AND fn_project_copyright_minimal_record_purge_eligible(\n        OLD.id,\n        NULLIF(current_setting('app.copyright_minimal_purge_now', true), '')::timestamptz,\n        NULLIF(current_setting('app.copyright_minimal_purge_cutoff', true), '')::timestamptz\n      ) THEN\n      PERFORM set_config('app.copyright_minimal_purge_validated_root_id', OLD.id::text, true);\n      RETURN OLD;\n    END IF;\n    RAISE EXCEPTION 'copyright notices are retained legal records' USING ERRCODE = 'check_violation';\n  END IF;\n  IF ROW(\n    OLD.jurisdiction,\n    OLD.legal_basis,\n    OLD.received_at,\n    OLD.claimant_display_name,\n    OLD.claimant_contact_ciphertext,\n    OLD.work_description,\n    OLD.policy_version\n  ) IS DISTINCT FROM ROW(\n    NEW.jurisdiction,\n    NEW.legal_basis,\n    NEW.received_at,\n    NEW.claimant_display_name,\n    NEW.claimant_contact_ciphertext,\n    NEW.work_description,\n    NEW.policy_version\n  ) THEN\n    RAISE EXCEPTION 'copyright notice identity and receipt snapshot are immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.claimant_user_id IS DISTINCT FROM NEW.claimant_user_id AND NEW.claimant_user_id IS NOT NULL THEN\n    RAISE EXCEPTION 'copyright notice claimant account cannot be reassigned' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_notice_identity()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'UPDATE' AND current_setting('app.copyright_retention_erasure', true) = 'on' THEN\n    IF fn_copyright_retention_erasure_permitted(TG_TABLE_NAME, to_jsonb(OLD), to_jsonb(NEW)) THEN RETURN NEW; END IF;\n  END IF;\n  IF TG_OP = 'DELETE' THEN\n    IF current_setting('app.copyright_minimal_purge_notice_id', true) = OLD.id::text\n      AND EXISTS (SELECT 1 FROM copyright_notice_minimal_purge_continuations work\n        WHERE work.copyright_notice_identity_id = OLD.id AND work.root_purged_at IS NULL)\n      AND fn_project_copyright_minimal_purge_catalog_complete()\n      AND fn_project_copyright_minimal_purge_children_drained(OLD.id)\n      AND fn_project_copyright_minimal_record_purge_eligible(\n        OLD.id,\n        NULLIF(current_setting('app.copyright_minimal_purge_now', true), '')::timestamptz,\n        NULLIF(current_setting('app.copyright_minimal_purge_cutoff', true), '')::timestamptz\n      ) THEN\n      PERFORM set_config('app.copyright_minimal_purge_validated_root_id', OLD.id::text, true);\n      RETURN OLD;\n    END IF;\n    RAISE EXCEPTION 'copyright notices are retained legal records' USING ERRCODE = 'check_violation';\n  END IF;\n  IF ROW(\n    OLD.jurisdiction,\n    OLD.legal_basis,\n    OLD.received_at,\n    OLD.claimant_display_name,\n    OLD.claimant_contact_ciphertext,\n    OLD.work_description,\n    OLD.policy_version\n  ) IS DISTINCT FROM ROW(\n    NEW.jurisdiction,\n    NEW.legal_basis,\n    NEW.received_at,\n    NEW.claimant_display_name,\n    NEW.claimant_contact_ciphertext,\n    NEW.work_description,\n    NEW.policy_version\n  ) THEN\n    RAISE EXCEPTION 'copyright notice identity and receipt snapshot are immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.claimant_user_id IS DISTINCT FROM NEW.claimant_user_id AND NEW.claimant_user_id IS NOT NULL THEN\n    RAISE EXCEPTION 'copyright notice claimant account cannot be reassigned' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_reject_copyright_notice_immutable_evidence": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_notice_immutable_evidence()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' AND fn_project_copyright_minimal_purge_child_allowed(TG_TABLE_NAME, to_jsonb(OLD)) THEN\n    RETURN OLD;\n  END IF;\n  IF TG_OP = 'UPDATE' AND current_setting('app.copyright_retention_erasure', true) = 'on' THEN\n    IF fn_copyright_retention_erasure_permitted(TG_TABLE_NAME, to_jsonb(OLD), to_jsonb(NEW)) THEN RETURN NEW; END IF;\n  END IF;\n  RAISE EXCEPTION 'copyright legal receipt and evidence records are immutable' USING ERRCODE = 'check_violation';\nEND;\n$function$\n"
@@ -1620,10 +1623,10 @@
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_notice_lifecycle()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    RAISE EXCEPTION 'copyright restrictions are append-only legal blockers' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.accepted_at IS NOT NULL AND OLD.accepted_at IS DISTINCT FROM NEW.accepted_at THEN\n    RAISE EXCEPTION 'copyright notice acceptance is irreversible' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.provisional_withholding_at IS NOT NULL\n    AND OLD.provisional_withholding_at IS DISTINCT FROM NEW.provisional_withholding_at THEN\n    RAISE EXCEPTION 'copyright notice provisional withholding timestamp is immutable' USING ERRCODE = 'check_violation';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
     },
     "fn_reject_copyright_notice_retained_identity_mutation": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_notice_retained_identity_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'UPDATE' AND NEW.id = OLD.id\n    AND NEW.proof_generation = OLD.proof_generation + 1\n    AND NEW.email_activity_at IS NOT DISTINCT FROM OLD.email_activity_at\n    AND NEW.dsa_statement_count = OLD.dsa_statement_count THEN RETURN NEW; END IF;\n  IF TG_OP = 'UPDATE' AND NEW.id = OLD.id\n    AND NEW.proof_generation = OLD.proof_generation + 1\n    AND NEW.dsa_statement_count = OLD.dsa_statement_count\n    AND NEW.email_activity_at IS NOT NULL\n    AND (OLD.email_activity_at IS NULL OR NEW.email_activity_at >= OLD.email_activity_at)\n    THEN RETURN NEW; END IF;\n  IF TG_OP = 'UPDATE' AND NEW.id = OLD.id\n    AND NEW.proof_generation = OLD.proof_generation + 1\n    AND NEW.email_activity_at IS NOT DISTINCT FROM OLD.email_activity_at\n    AND abs(NEW.dsa_statement_count - OLD.dsa_statement_count) = 1 THEN RETURN NEW; END IF;\n  IF TG_OP = 'DELETE'\n    AND current_setting('app.copyright_minimal_purge_notice_id', true) = OLD.id::text\n    AND NOT EXISTS (SELECT 1 FROM copyright_notices notice WHERE notice.id = OLD.id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_notice_minimal_purge_work work\n      WHERE work.copyright_notice_id = OLD.id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_notice_retained_parties party\n      WHERE party.copyright_notice_id = OLD.id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_notice_email_intake_reviews review\n      WHERE review.promoted_copyright_notice_id = OLD.id) THEN\n    RETURN OLD;\n  END IF;\n  RAISE EXCEPTION 'copyright retained case identity is still referenced by its lifecycle'\n    USING ERRCODE = 'check_violation';\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_notice_retained_identity_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'UPDATE' AND NEW.id = OLD.id\n    AND NEW.proof_generation = OLD.proof_generation + 1\n    AND NEW.email_activity_at IS NOT DISTINCT FROM OLD.email_activity_at\n    AND NEW.dsa_statement_count = OLD.dsa_statement_count THEN RETURN NEW; END IF;\n  IF TG_OP = 'UPDATE' AND NEW.id = OLD.id\n    AND NEW.proof_generation = OLD.proof_generation + 1\n    AND NEW.dsa_statement_count = OLD.dsa_statement_count\n    AND NEW.email_activity_at IS NOT NULL\n    AND (OLD.email_activity_at IS NULL OR NEW.email_activity_at >= OLD.email_activity_at)\n    THEN RETURN NEW; END IF;\n  IF TG_OP = 'UPDATE' AND NEW.id = OLD.id\n    AND NEW.proof_generation = OLD.proof_generation + 1\n    AND NEW.email_activity_at IS NOT DISTINCT FROM OLD.email_activity_at\n    AND abs(NEW.dsa_statement_count - OLD.dsa_statement_count) = 1 THEN RETURN NEW; END IF;\n  IF TG_OP = 'DELETE'\n    AND current_setting('app.copyright_minimal_purge_notice_id', true) = OLD.id::text\n    AND NOT EXISTS (SELECT 1 FROM copyright_notices notice WHERE notice.id = OLD.id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_notice_minimal_purge_continuations work\n      WHERE work.copyright_notice_identity_id = OLD.id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_notice_retained_parties party\n      WHERE party.copyright_notice_identity_id = OLD.id)\n    AND NOT EXISTS (SELECT 1 FROM copyright_notice_email_intake_reviews review\n      WHERE review.promoted_copyright_notice_identity_id = OLD.id) THEN\n    RETURN OLD;\n  END IF;\n  RAISE EXCEPTION 'copyright retained case identity is still referenced by its lifecycle'\n    USING ERRCODE = 'check_violation';\nEND;\n$function$\n"
     },
     "fn_reject_copyright_notice_retained_party_mutation": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_notice_retained_party_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'UPDATE'\n    AND NEW.copyright_notice_id = OLD.copyright_notice_id\n    AND NEW.account_user_id = OLD.account_user_id\n    AND NEW.is_repeat_infringer_account = OLD.is_repeat_infringer_account\n    AND NEW.created_at = OLD.created_at\n    AND current_setting('app.copyright_minimal_purge_notice_id', true) = OLD.copyright_notice_id::text\n    AND current_setting('app.copyright_minimal_purge_proof_update', true) = 'on'\n    AND EXISTS (SELECT 1 FROM copyright_notice_minimal_purge_work work\n      WHERE work.copyright_notice_id = OLD.copyright_notice_id AND work.root_purged_at IS NULL) THEN\n    RETURN NEW;\n  END IF;\n  IF TG_OP = 'UPDATE' AND NOT OLD.is_repeat_infringer_account\n    AND NEW.is_repeat_infringer_account\n    AND NEW.copyright_notice_id = OLD.copyright_notice_id\n    AND NEW.account_user_id = OLD.account_user_id\n    AND NEW.created_at = OLD.created_at\n    AND EXISTS (SELECT 1 FROM copyright_repeat_infringer_incidents incident\n      WHERE incident.copyright_notice_id = OLD.copyright_notice_id\n        AND incident.account_user_id = OLD.account_user_id) THEN\n    RETURN NEW;\n  END IF;\n  IF TG_OP = 'DELETE'\n    AND current_setting('app.copyright_minimal_purge_notice_id', true) = OLD.copyright_notice_id::text\n    AND EXISTS (SELECT 1 FROM copyright_notice_minimal_purge_work work\n      WHERE work.copyright_notice_id = OLD.copyright_notice_id\n        AND work.root_purged_at IS NOT NULL)\n    AND NOT EXISTS (SELECT 1 FROM copyright_notices notice\n      WHERE notice.id = OLD.copyright_notice_id) THEN\n    RETURN OLD;\n  END IF;\n  RAISE EXCEPTION 'copyright retained parties are preserved until bounded post-purge cleanup'\n    USING ERRCODE = 'check_violation';\nEND;\n$function$\n"
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_notice_retained_party_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'UPDATE'\n    AND NEW.copyright_notice_identity_id = OLD.copyright_notice_identity_id\n    AND NEW.account_user_id = OLD.account_user_id\n    AND NEW.is_repeat_infringer_account = OLD.is_repeat_infringer_account\n    AND NEW.created_at = OLD.created_at\n    AND current_setting('app.copyright_minimal_purge_notice_id', true) = OLD.copyright_notice_identity_id::text\n    AND current_setting('app.copyright_minimal_purge_proof_update', true) = 'on'\n    AND EXISTS (SELECT 1 FROM copyright_notice_minimal_purge_continuations work\n      WHERE work.copyright_notice_identity_id = OLD.copyright_notice_identity_id AND work.root_purged_at IS NULL) THEN\n    RETURN NEW;\n  END IF;\n  IF TG_OP = 'UPDATE' AND NOT OLD.is_repeat_infringer_account\n    AND NEW.is_repeat_infringer_account\n    AND NEW.copyright_notice_identity_id = OLD.copyright_notice_identity_id\n    AND NEW.account_user_id = OLD.account_user_id\n    AND NEW.created_at = OLD.created_at\n    AND EXISTS (SELECT 1 FROM copyright_repeat_infringer_incidents incident\n      WHERE incident.copyright_notice_id = OLD.copyright_notice_identity_id\n        AND incident.account_user_id = OLD.account_user_id) THEN\n    RETURN NEW;\n  END IF;\n  IF TG_OP = 'DELETE'\n    AND current_setting('app.copyright_minimal_purge_notice_id', true) = OLD.copyright_notice_identity_id::text\n    AND EXISTS (SELECT 1 FROM copyright_notice_minimal_purge_continuations work\n      WHERE work.copyright_notice_identity_id = OLD.copyright_notice_identity_id\n        AND work.root_purged_at IS NOT NULL)\n    AND NOT EXISTS (SELECT 1 FROM copyright_notices notice\n      WHERE notice.id = OLD.copyright_notice_identity_id) THEN\n    RETURN OLD;\n  END IF;\n  RAISE EXCEPTION 'copyright retained parties are preserved until bounded post-purge cleanup'\n    USING ERRCODE = 'check_violation';\nEND;\n$function$\n"
     },
     "fn_reject_copyright_notice_submission": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_copyright_notice_submission()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_OP = 'UPDATE' AND current_setting('app.copyright_retention_erasure', true) = 'on' THEN\n    IF fn_copyright_retention_erasure_permitted(TG_TABLE_NAME, to_jsonb(OLD), to_jsonb(NEW)) THEN RETURN NEW; END IF;\n  END IF;\n  IF TG_OP = 'DELETE' THEN\n    IF fn_project_copyright_minimal_purge_child_allowed(TG_TABLE_NAME, to_jsonb(OLD)) THEN RETURN OLD; END IF;\n    RAISE EXCEPTION 'copyright legal receipt records are retained' USING ERRCODE = 'check_violation';\n  END IF;\n  IF OLD.submitted_by_id IS NOT NULL\n    AND NEW.submitted_by_id IS NULL\n    AND ROW(\n      OLD.id,\n      OLD.copyright_notice_id,\n      OLD.kind,\n      OLD.received_at,\n      OLD.source_kind,\n      OLD.body_ciphertext,\n      OLD.copyright_notice_guest_capability_id,\n      OLD.created_at\n    ) IS NOT DISTINCT FROM ROW(\n      NEW.id,\n      NEW.copyright_notice_id,\n      NEW.kind,\n      NEW.received_at,\n      NEW.source_kind,\n      NEW.body_ciphertext,\n      NEW.copyright_notice_guest_capability_id,\n      NEW.created_at\n    ) THEN\n    RETURN NEW;\n  END IF;\n  RAISE EXCEPTION 'copyright legal receipt records are immutable' USING ERRCODE = 'check_violation';\nEND;\n$function$\n"
@@ -1748,17 +1751,14 @@
     "fn_reject_purchase_reversal_refund_observation_currency": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_purchase_reversal_refund_observation_currency()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n  scan_currency currency_codes;\nBEGIN\n  SELECT currency_code INTO scan_currency\n  FROM membership_ineligible_purchase_reversal_refund_scans\n  WHERE id = NEW.membership_ineligible_purchase_reversal_refund_scan_id;\n  IF scan_currency IS DISTINCT FROM NEW.currency_code THEN\n    RAISE EXCEPTION 'succeeded refund observation currency does not match its scan'\n      USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
     },
-    "fn_reject_replayed_copyright_email_identity": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_replayed_copyright_email_identity()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  PERFORM pg_advisory_xact_lock(hashtextextended(\n    'copyright-email:' || NEW.amazon_ses_message_id, 0));\n  IF EXISTS (SELECT 1 FROM copyright_notice_email_retained_identities identity\n    WHERE identity.amazon_ses_message_id = NEW.amazon_ses_message_id) THEN\n    RAISE EXCEPTION 'copyright email identity is retained' USING ERRCODE = 'unique_violation';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
-    },
     "fn_reject_replayed_copyright_form_identity": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_replayed_copyright_form_identity()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  PERFORM pg_advisory_xact_lock(hashtextextended(encode(NEW.requester_identity_sha256, 'hex'), 0));\n  IF EXISTS (SELECT 1 FROM copyright_notice_form_retained_identities identity\n    WHERE identity.requester_identity_sha256 = NEW.requester_identity_sha256\n      AND identity.idempotency_key = NEW.idempotency_key) THEN\n    RAISE EXCEPTION 'copyright form identity is retained' USING ERRCODE = 'unique_violation';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
     },
     "fn_reject_replayed_copyright_submission_identity": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_replayed_copyright_submission_identity()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.idempotency_key IS NULL THEN\n    RAISE EXCEPTION 'new copyright submissions require a replay key'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  IF NEW.requester_user_id IS NULL THEN\n    RAISE EXCEPTION 'new copyright submissions require a requester'\n      USING ERRCODE = 'check_violation';\n  END IF;\n  PERFORM pg_advisory_xact_lock(hashtextextended(\n    'copyright-submission:' || NEW.requester_user_id::text || ':' || NEW.idempotency_key::text, 0));\n  IF EXISTS (SELECT 1 FROM copyright_notice_submission_retained_identities identity\n    WHERE identity.requester_identity_sha256 = sha256(convert_to(NEW.requester_user_id::text, 'UTF8'))\n      AND identity.idempotency_key = NEW.idempotency_key) THEN\n    RAISE EXCEPTION 'copyright submission identity is retained'\n      USING ERRCODE = 'unique_violation';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
     },
-    "fn_reject_replayed_stripe_event_identity": {
-      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_replayed_stripe_event_identity()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  PERFORM pg_advisory_xact_lock(hashtextextended('stripe-event:' || NEW.stripe_event_id, 0));\n  IF EXISTS (SELECT 1 FROM stripe_event_retained_identities identity\n    WHERE identity.stripe_event_id = NEW.stripe_event_id) THEN\n    RAISE EXCEPTION 'terminal Stripe event identity is retained'\n      USING ERRCODE = 'unique_violation';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
+    "fn_reject_replayed_external_event_identity": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_replayed_external_event_identity()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF TG_TABLE_NAME = 'stripe_events' THEN\n    PERFORM pg_advisory_xact_lock(hashtextextended('stripe-event:' || NEW.stripe_event_id, 0));\n    IF EXISTS (SELECT 1 FROM stripe_event_retained_identities identity\n      WHERE identity.stripe_event_id = NEW.stripe_event_id) THEN\n      RAISE EXCEPTION 'terminal Stripe event identity is retained'\n        USING ERRCODE = 'unique_violation';\n    END IF;\n  ELSIF TG_TABLE_NAME = 'copyright_notice_email_intakes' THEN\n    PERFORM pg_advisory_xact_lock(hashtextextended(\n      'copyright-email:' || NEW.amazon_ses_message_id, 0));\n    IF EXISTS (SELECT 1 FROM copyright_notice_email_retained_identities identity\n      WHERE identity.amazon_ses_message_id = NEW.amazon_ses_message_id) THEN\n      RAISE EXCEPTION 'copyright email identity is retained'\n        USING ERRCODE = 'unique_violation';\n    END IF;\n  ELSE\n    RAISE EXCEPTION 'Unsupported replay identity admission table %', TG_TABLE_NAME;\n  END IF;\n  RETURN NEW;\nEND $function$\n"
     },
     "fn_reject_replayed_territorial_notice_identity": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_reject_replayed_territorial_notice_identity()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  PERFORM pg_advisory_xact_lock(hashtextextended(\n    encode(NEW.requester_identity_sha256, 'hex') || ':' || NEW.idempotency_key, 0));\n  IF EXISTS (SELECT 1 FROM copyright_territorial_notice_retained_identities identity\n    WHERE identity.requester_identity_sha256 = NEW.requester_identity_sha256\n      AND identity.jurisdiction = NEW.jurisdiction\n      AND identity.idempotency_key = NEW.idempotency_key) THEN\n    RAISE EXCEPTION 'territorial copyright notice identity is retained'\n      USING ERRCODE = 'unique_violation';\n  END IF;\n  RETURN NEW;\nEND $function$\n"
@@ -24975,15 +24975,15 @@
         }
       }
     },
-    "copyright_legal_mutation_sequence_state": {
+    "copyright_legal_mutation_sequence_states": {
       "checkConstraints": {
-        "copyright_legal_mutation_sequence_state_current_sequence_check": "CHECK ((current_sequence >= 0))",
-        "copyright_legal_mutation_sequence_state_singleton_check": "CHECK (singleton)"
+        "copyright_legal_mutation_sequence_states_current_sequence_check": "CHECK ((current_sequence >= 0))",
+        "copyright_legal_mutation_sequence_states_is_singleton_check": "CHECK (is_singleton)"
       },
       "columns": {
         "current_sequence": {
           "collation": null,
-          "comment": null,
+          "comment": "Commit-order sequence for preservation-hold changes and final account purges, used to invalidate stale party proofs.",
           "defaultExpression": "0",
           "generated": null,
           "generatedExpression": null,
@@ -24992,9 +24992,9 @@
           "ordinalPosition": 2,
           "type": "bigint"
         },
-        "singleton": {
+        "is_singleton": {
           "collation": null,
-          "comment": null,
+          "comment": "Identifies the one row that serializes legal-retention mutation sequence allocation.",
           "defaultExpression": "true",
           "generated": null,
           "generatedExpression": null,
@@ -25019,16 +25019,16 @@
       "foreignKeys": {},
       "growth": "bounded",
       "indexes": {
-        "copyright_legal_mutation_sequence_state_pkey": {
+        "copyright_legal_mutation_sequence_states_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX copyright_legal_mutation_sequence_state_pkey ON public.copyright_legal_mutation_sequence_state USING btree (singleton)",
+          "definition": "CREATE UNIQUE INDEX copyright_legal_mutation_sequence_states_pkey ON public.copyright_legal_mutation_sequence_states USING btree (is_singleton)",
           "includedColumns": [],
           "keys": [
             {
-              "column": "singleton",
+              "column": "is_singleton",
               "descending": false,
-              "expression": "singleton",
+              "expression": "is_singleton",
               "nullsFirst": false,
               "opclass": "bool_ops"
             }
@@ -25043,12 +25043,12 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["singleton"],
-        "definition": "PRIMARY KEY (singleton)"
+        "columns": ["is_singleton"],
+        "definition": "PRIMARY KEY (is_singleton)"
       },
       "relationKind": "table",
       "triggers": {
-        "trigger_copyright_legal_mutation_sequence_state_updated_at": "CREATE TRIGGER trigger_copyright_legal_mutation_sequence_state_updated_at BEFORE UPDATE ON public.copyright_legal_mutation_sequence_state FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        "trigger_copyright_legal_mutation_sequence_states_updated_at": "CREATE TRIGGER trigger_copyright_legal_mutation_sequence_states_updated_at BEFORE UPDATE ON public.copyright_legal_mutation_sequence_states FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
       },
       "uniqueConstraints": {}
     },
@@ -25650,26 +25650,6 @@
           "unique": true,
           "valid": true
         },
-        "idx_copyright_action_work__purge_failed": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_copyright_action_work__purge_failed ON public.copyright_notice_action_work_items USING btree (copyright_notice_id) WHERE (state = 'failed'::copyright_notice_action_intent_states)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "copyright_notice_id",
-              "descending": false,
-              "expression": "copyright_notice_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "(state = 'failed'::copyright_notice_action_intent_states)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
         "idx_copyright_notice_action_work_items__available": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -25759,6 +25739,26 @@
             }
           ],
           "predicate": "(completed_at IS NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_notice_action_work_items__purge_failed": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_notice_action_work_items__purge_failed ON public.copyright_notice_action_work_items USING btree (copyright_notice_id) WHERE (state = 'failed'::copyright_notice_action_intent_states)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_id",
+              "descending": false,
+              "expression": "copyright_notice_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(state = 'failed'::copyright_notice_action_intent_states)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -27377,26 +27377,6 @@
           "unique": true,
           "valid": true
         },
-        "idx_copyright_deadlines__purge_open": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_copyright_deadlines__purge_open ON public.copyright_notice_deadlines USING btree (copyright_notice_id) WHERE ((resolved_at IS NULL) AND (cancelled_at IS NULL))",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "copyright_notice_id",
-              "descending": false,
-              "expression": "copyright_notice_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "((resolved_at IS NULL) AND (cancelled_at IS NULL))",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
         "idx_copyright_notice_deadlines__notice": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -27441,6 +27421,26 @@
               "column": "id",
               "descending": false,
               "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "((resolved_at IS NULL) AND (cancelled_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_notice_deadlines__purge_open": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_notice_deadlines__purge_open ON public.copyright_notice_deadlines USING btree (copyright_notice_id) WHERE ((resolved_at IS NULL) AND (cancelled_at IS NULL))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_id",
+              "descending": false,
+              "expression": "copyright_notice_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             }
@@ -28353,26 +28353,6 @@
           "unique": true,
           "valid": true
         },
-        "idx_copyright_delivery_work__purge_pending": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_copyright_delivery_work__purge_pending ON public.copyright_notice_delivery_work_items USING btree (copyright_notice_id) WHERE (state = ANY (ARRAY['pending'::copyright_notice_delivery_intent_states, 'claimed'::copyright_notice_delivery_intent_states]))",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "copyright_notice_id",
-              "descending": false,
-              "expression": "copyright_notice_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "(state = ANY (ARRAY['pending'::copyright_notice_delivery_intent_states, 'claimed'::copyright_notice_delivery_intent_states]))",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
         "idx_copyright_notice_delivery_work_items__amazon_ses_message": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -28550,6 +28530,26 @@
             }
           ],
           "predicate": "(copyright_notice_id IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_notice_delivery_work_items__purge_pending": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_notice_delivery_work_items__purge_pending ON public.copyright_notice_delivery_work_items USING btree (copyright_notice_id) WHERE (state = ANY (ARRAY['pending'::copyright_notice_delivery_intent_states, 'claimed'::copyright_notice_delivery_intent_states]))",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_id",
+              "descending": false,
+              "expression": "copyright_notice_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "(state = ANY (ARRAY['pending'::copyright_notice_delivery_intent_states, 'claimed'::copyright_notice_delivery_intent_states]))",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -30095,7 +30095,7 @@
     "copyright_notice_email_intake_reviews": {
       "checkConstraints": {
         "chk_copyright_notice_email_intake_reviews__rationale_ciphertext": "CHECK (((char_length(rationale_ciphertext) >= 1) AND (char_length(rationale_ciphertext) <= 1048576)))",
-        "copyright_notice_email_intake_reviews_check": "CHECK (((decision = 'approved'::copyright_notice_email_intake_review_decisions) = (promoted_copyright_notice_id IS NOT NULL)))",
+        "copyright_notice_email_intake_reviews_check": "CHECK (((decision = 'approved'::copyright_notice_email_intake_review_decisions) = (promoted_copyright_notice_identity_id IS NOT NULL)))",
         "copyright_notice_email_intake_reviews_decision_check": "CHECK ((decision = ANY (ARRAY['approved'::copyright_notice_email_intake_review_decisions, 'rejected'::copyright_notice_email_intake_review_decisions, 'legal_process'::copyright_notice_email_intake_review_decisions])))"
       },
       "columns": {
@@ -30154,7 +30154,7 @@
           "ordinalPosition": 1,
           "type": "uuid"
         },
-        "promoted_copyright_notice_id": {
+        "promoted_copyright_notice_identity_id": {
           "collation": null,
           "comment": "Retained identity of the case created by an approved review; null for other decisions and never authority to use a deleted case.",
           "defaultExpression": null,
@@ -30211,8 +30211,8 @@
           "validated": true
         },
         "fk_copyri_notice_email_intake_review__promoted_copyright_notice": {
-          "columns": ["promoted_copyright_notice_id"],
-          "definition": "FOREIGN KEY (promoted_copyright_notice_id) REFERENCES copyright_notice_retained_identities(id) ON DELETE RESTRICT",
+          "columns": ["promoted_copyright_notice_identity_id"],
+          "definition": "FOREIGN KEY (promoted_copyright_notice_identity_id) REFERENCES copyright_notice_retained_identities(id) ON DELETE RESTRICT",
           "onDelete": "restrict",
           "onUpdate": "no action",
           "referencedColumns": ["id"],
@@ -30337,16 +30337,16 @@
           "unique": false,
           "valid": true
         },
-        "uq_copyr_notic_email_intak_review__promoted_copyright_notice_id": {
+        "uq_copyr_notic_email_intak_review__promoted_identity": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX uq_copyr_notic_email_intak_review__promoted_copyright_notice_id ON public.copyright_notice_email_intake_reviews USING btree (promoted_copyright_notice_id)",
+          "definition": "CREATE UNIQUE INDEX uq_copyr_notic_email_intak_review__promoted_identity ON public.copyright_notice_email_intake_reviews USING btree (promoted_copyright_notice_identity_id)",
           "includedColumns": [],
           "keys": [
             {
-              "column": "promoted_copyright_notice_id",
+              "column": "promoted_copyright_notice_identity_id",
               "descending": false,
-              "expression": "promoted_copyright_notice_id",
+              "expression": "promoted_copyright_notice_identity_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             }
@@ -30392,9 +30392,9 @@
         "trigger_register_copyright_email_review_activity": "CREATE TRIGGER trigger_register_copyright_email_review_activity AFTER INSERT ON public.copyright_notice_email_intake_reviews FOR EACH ROW EXECUTE FUNCTION fn_register_copyright_email_case_activity()"
       },
       "uniqueConstraints": {
-        "uq_copyr_notic_email_intak_review__promoted_copyright_notice_id": {
-          "columns": ["promoted_copyright_notice_id"],
-          "definition": "UNIQUE (promoted_copyright_notice_id)"
+        "uq_copyr_notic_email_intak_review__promoted_identity": {
+          "columns": ["promoted_copyright_notice_identity_id"],
+          "definition": "UNIQUE (promoted_copyright_notice_identity_id)"
         },
         "uq_copyright_notice_email_intake_reviews__intake_id": {
           "columns": ["copyright_notice_email_intake_id"],
@@ -30699,7 +30699,7 @@
       "triggers": {
         "trigger_copyright_email_intakes_immutable": "CREATE TRIGGER trigger_copyright_email_intakes_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_email_intakes FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_notice_immutable_evidence()",
         "trigger_copyright_email_intakes_require_storage_object": "CREATE TRIGGER trigger_copyright_email_intakes_require_storage_object BEFORE INSERT OR UPDATE ON public.copyright_notice_email_intakes FOR EACH ROW EXECUTE FUNCTION fn_reject_copyright_missing_storage_object('raw_storage_object_id')",
-        "trigger_copyright_notice_email_intakes_retained_identity": "CREATE TRIGGER trigger_copyright_notice_email_intakes_retained_identity BEFORE INSERT ON public.copyright_notice_email_intakes FOR EACH ROW EXECUTE FUNCTION fn_reject_replayed_copyright_email_identity()"
+        "trigger_copyright_notice_email_intakes_retained_identity": "CREATE TRIGGER trigger_copyright_notice_email_intakes_retained_identity BEFORE INSERT ON public.copyright_notice_email_intakes FOR EACH ROW EXECUTE FUNCTION fn_reject_replayed_external_event_identity()"
       },
       "uniqueConstraints": {
         "copyright_notice_email_intakes_amazon_ses_message_id_key": {
@@ -30847,35 +30847,46 @@
       "columns": {
         "amazon_ses_message_id": {
           "collation": null,
-          "comment": null,
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1,
-          "type": "text"
-        },
-        "raw_byte_size": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3,
-          "type": "integer"
-        },
-        "raw_sha256": {
-          "collation": null,
-          "comment": null,
+          "comment": "Provider delivery identity retained as the replay fence after raw MIME erasure, without message content.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
           "ordinalPosition": 2,
+          "type": "text"
+        },
+        "id": {
+          "collation": null,
+          "comment": "Internal UUIDv7 row identity; provider message identity remains unique separately.",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "raw_byte_size": {
+          "collation": null,
+          "comment": "Original MIME byte length paired with the digest, without retaining the MIME content.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4,
+          "type": "integer"
+        },
+        "raw_sha256": {
+          "collation": null,
+          "comment": "Digest of the original MIME bytes used to verify the identity of erased evidence.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
           "type": "bytea"
         }
       },
@@ -30883,10 +30894,10 @@
       "foreignKeys": {},
       "growth": "bounded",
       "indexes": {
-        "copyright_notice_email_retained_identities_pkey": {
+        "copyright_notice_email_retained_ident_amazon_ses_message_id_key": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX copyright_notice_email_retained_identities_pkey ON public.copyright_notice_email_retained_identities USING btree (amazon_ses_message_id)",
+          "definition": "CREATE UNIQUE INDEX copyright_notice_email_retained_ident_amazon_ses_message_id_key ON public.copyright_notice_email_retained_identities USING btree (amazon_ses_message_id)",
           "includedColumns": [],
           "keys": [
             {
@@ -30895,6 +30906,26 @@
               "expression": "amazon_ses_message_id",
               "nullsFirst": false,
               "opclass": "text_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "copyright_notice_email_retained_identities_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_notice_email_retained_identities_pkey ON public.copyright_notice_email_retained_identities USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
             }
           ],
           "predicate": null,
@@ -30907,14 +30938,19 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["amazon_ses_message_id"],
-        "definition": "PRIMARY KEY (amazon_ses_message_id)"
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
       "triggers": {
         "trigger_copyright_notice_email_retained_identities_immutable": "CREATE TRIGGER trigger_copyright_notice_email_retained_identities_immutable BEFORE DELETE OR UPDATE ON public.copyright_notice_email_retained_identities FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()"
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "copyright_notice_email_retained_ident_amazon_ses_message_id_key": {
+          "columns": ["amazon_ses_message_id"],
+          "definition": "UNIQUE (amazon_ses_message_id)"
+        }
+      }
     },
     "copyright_notice_email_thread_references": {
       "checkConstraints": {
@@ -31967,7 +32003,7 @@
       "columns": {
         "idempotency_key": {
           "collation": null,
-          "comment": null,
+          "comment": "Admission key scoped to the requester digest for exact original form-receipt replay.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -31978,7 +32014,7 @@
         },
         "request_sha256": {
           "collation": null,
-          "comment": null,
+          "comment": "Canonical form-request digest used to reject changed content under a reused key.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -31989,7 +32025,7 @@
         },
         "requester_identity_sha256": {
           "collation": null,
-          "comment": null,
+          "comment": "Digest that scopes form replay without retaining a raw requester address or account identifier.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -32000,7 +32036,7 @@
         },
         "response_snapshot": {
           "collation": null,
-          "comment": null,
+          "comment": "Minimal original public form response; historical identifiers grant no access to a purged case.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -34693,12 +34729,321 @@
         }
       }
     },
+    "copyright_notice_minimal_purge_continuations": {
+      "checkConstraints": {
+        "copyright_notice_minimal_pur_unpurged_incident_account_co_check": "CHECK ((unpurged_incident_account_count >= 0))",
+        "copyright_notice_minimal_purge_contin_blocker_phase_index_check": "CHECK ((blocker_phase_index >= 0))",
+        "copyright_notice_minimal_purge_continuati_open_hold_count_check": "CHECK ((open_hold_count >= 0))",
+        "copyright_notice_minimal_purge_continuations_phase_index_check": "CHECK ((phase_index >= 0))"
+      },
+      "columns": {
+        "blocker_cursor": {
+          "collation": null,
+          "comment": "Keyset position within the current blocker phase; its child row may since have been deleted.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 11,
+          "type": "uuid"
+        },
+        "blocker_generation": {
+          "collation": null,
+          "comment": "Case generation snapshot used to discard stale legal-blocker scan progress.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 12,
+          "type": "bigint"
+        },
+        "blocker_phase_index": {
+          "collation": null,
+          "comment": "Next bounded legal-blocker query in the fixed phase sequence.",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 10,
+          "type": "smallint"
+        },
+        "copyright_notice_identity_id": {
+          "collation": null,
+          "comment": "Case identity whose bounded physical purge this continuation advances.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
+        "has_blocker": {
+          "collation": null,
+          "comment": "Sticky proof result that at least one legal blocker was found for the current generation.",
+          "defaultExpression": "false",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 14,
+          "type": "boolean"
+        },
+        "has_claimant_receipt": {
+          "collation": null,
+          "comment": "Current proof found the required claimant receipt.",
+          "defaultExpression": "false",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 17,
+          "type": "boolean"
+        },
+        "has_compliant_form_assessment": {
+          "collation": null,
+          "comment": "Current proof found a qualifying form assessment under the applicable rules.",
+          "defaultExpression": "false",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 19,
+          "type": "boolean"
+        },
+        "has_compliant_notice_assessment": {
+          "collation": null,
+          "comment": "Current proof found a qualifying notice assessment under the applicable rules.",
+          "defaultExpression": "false",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 18,
+          "type": "boolean"
+        },
+        "has_unrestricted_target": {
+          "collation": null,
+          "comment": "Current proof found a target that remains unrestricted under purge eligibility rules.",
+          "defaultExpression": "false",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 16,
+          "type": "boolean"
+        },
+        "has_valid_target": {
+          "collation": null,
+          "comment": "Current proof found a target satisfying the case validity conditions.",
+          "defaultExpression": "false",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 15,
+          "type": "boolean"
+        },
+        "is_blocker_scan_complete": {
+          "collation": null,
+          "comment": "Whether all blocker phases finished for the current proof generation.",
+          "defaultExpression": "false",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 13,
+          "type": "boolean"
+        },
+        "is_party_scan_complete": {
+          "collation": null,
+          "comment": "Whether the bounded retained-party scan reached its end for the current proof generation.",
+          "defaultExpression": "false",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 9,
+          "type": "boolean"
+        },
+        "legal_clock_at": {
+          "collation": null,
+          "comment": "Original legal clock captured before erasure changes activity stamps; purge progress does not restart it.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "timestamp with time zone"
+        },
+        "mutation_cursor": {
+          "collation": null,
+          "comment": "Commit-order sequence through which account-hold and purge mutations have been reconciled.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5,
+          "type": "bigint"
+        },
+        "open_hold_count": {
+          "collation": null,
+          "comment": "Current open preservation holds among retained case parties in the completed proof.",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 6,
+          "type": "integer"
+        },
+        "party_legal_clock_at": {
+          "collation": null,
+          "comment": "Latest hold-release or final-account-purge legal clock observed across retained parties.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 8,
+          "type": "timestamp with time zone"
+        },
+        "party_scan_cursor": {
+          "collation": null,
+          "comment": "High-water retained-party account already included in the bounded proof; the live account may later be deleted.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3,
+          "type": "uuid"
+        },
+        "phase_index": {
+          "collation": null,
+          "comment": "Next bounded physical-deletion phase for this case.",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 20,
+          "type": "smallint"
+        },
+        "proof_generation": {
+          "collation": null,
+          "comment": "Case generation snapshot used to invalidate accumulated party and blocker proof after relevant writes.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4,
+          "type": "bigint"
+        },
+        "root_purged_at": {
+          "collation": null,
+          "comment": "Time the case root was removed; bounded retained-party cleanup can continue afterward.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 22,
+          "type": "timestamp with time zone"
+        },
+        "started_at": {
+          "collation": null,
+          "comment": "Creation time of the operational continuation, not a legal retention clock.",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 21,
+          "type": "timestamp with time zone"
+        },
+        "unpurged_incident_account_count": {
+          "collation": null,
+          "comment": "Retained repeat-infringer accounts still awaiting their final account-purge legal clock.",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 7,
+          "type": "integer"
+        },
+        "updated_at": {
+          "collation": null,
+          "comment": null,
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 23,
+          "type": "timestamp with time zone"
+        }
+      },
+      "comment": "Durable continuation for bounded physical deletion of an eligible copyright case; it preserves the original legal clock while case-owned children are drained.",
+      "foreignKeys": {
+        "copyright_notice_minimal_purg_copyright_notice_identity_id_fkey": {
+          "columns": ["copyright_notice_identity_id"],
+          "definition": "FOREIGN KEY (copyright_notice_identity_id) REFERENCES copyright_notice_retained_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_notice_retained_identities",
+          "validated": true
+        }
+      },
+      "growth": "bounded",
+      "indexes": {
+        "copyright_notice_minimal_purge_continuations_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_notice_minimal_purge_continuations_pkey ON public.copyright_notice_minimal_purge_continuations USING btree (copyright_notice_identity_id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_identity_id",
+              "descending": false,
+              "expression": "copyright_notice_identity_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "partition": null,
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["copyright_notice_identity_id"],
+        "definition": "PRIMARY KEY (copyright_notice_identity_id)"
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_copyright_notice_minimal_purge_continuations_updated_at": "CREATE TRIGGER trigger_copyright_notice_minimal_purge_continuations_updated_at BEFORE UPDATE ON public.copyright_notice_minimal_purge_continuations FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      },
+      "uniqueConstraints": {}
+    },
     "copyright_notice_minimal_purge_cursors": {
       "checkConstraints": {},
       "columns": {
         "cursor_notice_id": {
           "collation": null,
-          "comment": null,
+          "comment": "High-water case scan position that may refer to a case already deleted.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -34709,7 +35054,7 @@
         },
         "family": {
           "collation": null,
-          "comment": null,
+          "comment": "Selects the independently cycled continuation, new-case, or orphan-identity scan.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -34767,315 +35112,6 @@
       },
       "uniqueConstraints": {}
     },
-    "copyright_notice_minimal_purge_work": {
-      "checkConstraints": {
-        "copyright_notice_minimal_pur_unpurged_incident_account_co_check": "CHECK ((unpurged_incident_account_count >= 0))",
-        "copyright_notice_minimal_purge_work_blocker_phase_index_check": "CHECK ((blocker_phase_index >= 0))",
-        "copyright_notice_minimal_purge_work_open_hold_count_check": "CHECK ((open_hold_count >= 0))",
-        "copyright_notice_minimal_purge_work_phase_index_check": "CHECK ((phase_index >= 0))"
-      },
-      "columns": {
-        "blocker_cursor": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 11,
-          "type": "uuid"
-        },
-        "blocker_found": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "false",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 14,
-          "type": "boolean"
-        },
-        "blocker_generation": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 12,
-          "type": "bigint"
-        },
-        "blocker_phase_index": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "0",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 10,
-          "type": "smallint"
-        },
-        "blocker_scan_complete": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "false",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 13,
-          "type": "boolean"
-        },
-        "claimant_receipt_found": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "false",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 17,
-          "type": "boolean"
-        },
-        "compliant_form_assessment_found": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "false",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 19,
-          "type": "boolean"
-        },
-        "compliant_notice_assessment_found": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "false",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 18,
-          "type": "boolean"
-        },
-        "copyright_notice_id": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1,
-          "type": "uuid"
-        },
-        "legal_clock_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2,
-          "type": "timestamp with time zone"
-        },
-        "mutation_cursor": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 5,
-          "type": "bigint"
-        },
-        "open_hold_count": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "0",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 6,
-          "type": "integer"
-        },
-        "party_legal_clock_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 8,
-          "type": "timestamp with time zone"
-        },
-        "party_scan_complete": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "false",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 9,
-          "type": "boolean"
-        },
-        "party_scan_cursor": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 3,
-          "type": "uuid"
-        },
-        "phase_index": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "0",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 20,
-          "type": "smallint"
-        },
-        "proof_generation": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 4,
-          "type": "bigint"
-        },
-        "root_purged_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 22,
-          "type": "timestamp with time zone"
-        },
-        "started_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 21,
-          "type": "timestamp with time zone"
-        },
-        "unpurged_incident_account_count": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "0",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 7,
-          "type": "integer"
-        },
-        "unrestricted_target_found": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "false",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 16,
-          "type": "boolean"
-        },
-        "updated_at": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "CURRENT_TIMESTAMP",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 23,
-          "type": "timestamp with time zone"
-        },
-        "valid_target_found": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": "false",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 15,
-          "type": "boolean"
-        }
-      },
-      "comment": "Durable continuation for bounded physical deletion of an eligible copyright case; it preserves the original legal clock while case-owned children are drained.",
-      "foreignKeys": {
-        "copyright_notice_minimal_purge_work_copyright_notice_id_fkey": {
-          "columns": ["copyright_notice_id"],
-          "definition": "FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notice_retained_identities(id) ON DELETE RESTRICT",
-          "onDelete": "restrict",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "copyright_notice_retained_identities",
-          "validated": true
-        }
-      },
-      "growth": "bounded",
-      "indexes": {
-        "copyright_notice_minimal_purge_work_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX copyright_notice_minimal_purge_work_pkey ON public.copyright_notice_minimal_purge_work USING btree (copyright_notice_id)",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "copyright_notice_id",
-              "descending": false,
-              "expression": "copyright_notice_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        }
-      },
-      "partition": null,
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["copyright_notice_id"],
-        "definition": "PRIMARY KEY (copyright_notice_id)"
-      },
-      "relationKind": "table",
-      "triggers": {
-        "trigger_copyright_notice_minimal_purge_work_updated_at": "CREATE TRIGGER trigger_copyright_notice_minimal_purge_work_updated_at BEFORE UPDATE ON public.copyright_notice_minimal_purge_work FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
-      },
-      "uniqueConstraints": {}
-    },
     "copyright_notice_retained_identities": {
       "checkConstraints": {
         "copyright_notice_retained_identities_dsa_statement_count_check": "CHECK ((dsa_statement_count >= 0))"
@@ -35094,7 +35130,7 @@
         },
         "dsa_statement_count": {
           "collation": null,
-          "comment": null,
+          "comment": "Current count of public DSA statement records attached to this case, excluding submission attempts.",
           "defaultExpression": "0",
           "generated": null,
           "generatedExpression": null,
@@ -35105,7 +35141,7 @@
         },
         "email_activity_at": {
           "collation": null,
-          "comment": null,
+          "comment": "Latest linked designated-email receipt or review time, retained as a legal clock after raw evidence erasure.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -35127,7 +35163,7 @@
         },
         "proof_generation": {
           "collation": null,
-          "comment": null,
+          "comment": "Monotonic case-evidence generation that invalidates accumulated bounded purge proofs after a relevant mutation.",
           "defaultExpression": "0",
           "generated": null,
           "generatedExpression": null,
@@ -35191,7 +35227,7 @@
       "columns": {
         "account_user_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Retained party identity used for hold and incident legal clocks, never authorization of the account or deleted case.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -35200,9 +35236,9 @@
           "ordinalPosition": 2,
           "type": "uuid"
         },
-        "copyright_notice_id": {
+        "copyright_notice_identity_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Retained case identity that owns this party relation after the live case is purged.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -35235,7 +35271,7 @@
         },
         "proof_has_open_hold": {
           "collation": null,
-          "comment": null,
+          "comment": "Cached result of the latest bounded proof check for an active preservation hold on this party.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -35244,9 +35280,9 @@
           "ordinalPosition": 4,
           "type": "boolean"
         },
-        "proof_incident_account_unpurged": {
+        "proof_has_unpurged_incident_account": {
           "collation": null,
-          "comment": null,
+          "comment": "Cached proof that a repeat-infringer account still lacks its final-account-purge clock event.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -35269,6 +35305,15 @@
       },
       "comment": "Opaque retained user relations for preservation-hold and repeat-infringer account-clock checks after case evidence or incident rows are erased; never a case authorization relation.",
       "foreignKeys": {
+        "copyright_notice_retained_par_copyright_notice_identity_id_fkey": {
+          "columns": ["copyright_notice_identity_id"],
+          "definition": "FOREIGN KEY (copyright_notice_identity_id) REFERENCES copyright_notice_retained_identities(id) ON DELETE RESTRICT",
+          "onDelete": "restrict",
+          "onUpdate": "no action",
+          "referencedColumns": ["id"],
+          "referencedTable": "copyright_notice_retained_identities",
+          "validated": true
+        },
         "copyright_notice_retained_parties_account_user_id_fkey": {
           "columns": ["account_user_id"],
           "definition": "FOREIGN KEY (account_user_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT",
@@ -35277,15 +35322,6 @@
           "referencedColumns": ["id"],
           "referencedTable": "retained_user_identities",
           "validated": true
-        },
-        "copyright_notice_retained_parties_copyright_notice_id_fkey": {
-          "columns": ["copyright_notice_id"],
-          "definition": "FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notice_retained_identities(id) ON DELETE RESTRICT",
-          "onDelete": "restrict",
-          "onUpdate": "no action",
-          "referencedColumns": ["id"],
-          "referencedTable": "copyright_notice_retained_identities",
-          "validated": true
         }
       },
       "growth": "bounded",
@@ -35293,13 +35329,13 @@
         "copyright_notice_retained_parties_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX copyright_notice_retained_parties_pkey ON public.copyright_notice_retained_parties USING btree (copyright_notice_id, account_user_id)",
+          "definition": "CREATE UNIQUE INDEX copyright_notice_retained_parties_pkey ON public.copyright_notice_retained_parties USING btree (copyright_notice_identity_id, account_user_id)",
           "includedColumns": [],
           "keys": [
             {
-              "column": "copyright_notice_id",
+              "column": "copyright_notice_identity_id",
               "descending": false,
-              "expression": "copyright_notice_id",
+              "expression": "copyright_notice_identity_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             },
@@ -35320,7 +35356,7 @@
         "idx_copyright_notice_retained_parties__account_user": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_copyright_notice_retained_parties__account_user ON public.copyright_notice_retained_parties USING btree (account_user_id, copyright_notice_id)",
+          "definition": "CREATE INDEX idx_copyright_notice_retained_parties__account_user ON public.copyright_notice_retained_parties USING btree (account_user_id, copyright_notice_identity_id)",
           "includedColumns": [],
           "keys": [
             {
@@ -35331,9 +35367,9 @@
               "opclass": "uuid_ops"
             },
             {
-              "column": "copyright_notice_id",
+              "column": "copyright_notice_identity_id",
               "descending": false,
-              "expression": "copyright_notice_id",
+              "expression": "copyright_notice_identity_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             }
@@ -35347,13 +35383,13 @@
         "idx_copyright_notice_retained_parties__repeat_account": {
           "accessMethod": "btree",
           "constraintBacked": false,
-          "definition": "CREATE INDEX idx_copyright_notice_retained_parties__repeat_account ON public.copyright_notice_retained_parties USING btree (copyright_notice_id, account_user_id) WHERE is_repeat_infringer_account",
+          "definition": "CREATE INDEX idx_copyright_notice_retained_parties__repeat_account ON public.copyright_notice_retained_parties USING btree (copyright_notice_identity_id, account_user_id) WHERE is_repeat_infringer_account",
           "includedColumns": [],
           "keys": [
             {
-              "column": "copyright_notice_id",
+              "column": "copyright_notice_identity_id",
               "descending": false,
-              "expression": "copyright_notice_id",
+              "expression": "copyright_notice_identity_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             },
@@ -35375,8 +35411,8 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["copyright_notice_id", "account_user_id"],
-        "definition": "PRIMARY KEY (copyright_notice_id, account_user_id)"
+        "columns": ["copyright_notice_identity_id", "account_user_id"],
+        "definition": "PRIMARY KEY (copyright_notice_identity_id, account_user_id)"
       },
       "relationKind": "table",
       "triggers": {
@@ -36364,7 +36400,7 @@
       "columns": {
         "idempotency_key": {
           "collation": null,
-          "comment": null,
+          "comment": "Authenticated submission key scoped to requester digest for exact response replay.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -36375,7 +36411,7 @@
         },
         "request_sha256": {
           "collation": null,
-          "comment": null,
+          "comment": "Canonical request digest that detects changed content under a reused requester key.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -36386,7 +36422,7 @@
         },
         "requester_identity_sha256": {
           "collation": null,
-          "comment": null,
+          "comment": "Digest scoping submission replay without retaining the raw requester account identifier here.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -36397,7 +36433,7 @@
         },
         "response_snapshot": {
           "collation": null,
-          "comment": null,
+          "comment": "Minimal original appeal or counter-notice receipt; its historical IDs grant no case authority.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -38313,26 +38349,6 @@
           "unique": true,
           "valid": true
         },
-        "idx_copyright_incidents__purge_operative": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_copyright_incidents__purge_operative ON public.copyright_repeat_infringer_incidents USING btree (copyright_notice_id) WHERE is_operative",
-          "includedColumns": [],
-          "keys": [
-            {
-              "column": "copyright_notice_id",
-              "descending": false,
-              "expression": "copyright_notice_id",
-              "nullsFirst": false,
-              "opclass": "uuid_ops"
-            }
-          ],
-          "predicate": "is_operative",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
         "idx_copyright_repeat_infringer_incidents__legal_clock": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -38370,6 +38386,26 @@
               "column": "account_user_id",
               "descending": false,
               "expression": "account_user_id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": "is_operative",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_copyright_repeat_infringer_incidents__purge_operative": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_copyright_repeat_infringer_incidents__purge_operative ON public.copyright_repeat_infringer_incidents USING btree (copyright_notice_id) WHERE is_operative",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "copyright_notice_id",
+              "descending": false,
+              "expression": "copyright_notice_id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             }
@@ -39792,9 +39828,7 @@
       }
     },
     "copyright_submission_key_retention_cursors": {
-      "checkConstraints": {
-        "copyright_submission_key_retention_cursors_family_check": "CHECK ((family = 'submission_request'::text))"
-      },
+      "checkConstraints": {},
       "columns": {
         "cursor_record_id": {
           "collation": null,
@@ -39816,7 +39850,7 @@
           "identity": null,
           "nullable": false,
           "ordinalPosition": 1,
-          "type": "text"
+          "type": "copyright_submission_key_retention_cursor_families"
         },
         "updated_at": {
           "collation": null,
@@ -39845,7 +39879,7 @@
               "descending": false,
               "expression": "family",
               "nullsFirst": false,
-              "opclass": "text_ops"
+              "opclass": "enum_ops"
             }
           ],
           "predicate": null,
@@ -39876,7 +39910,7 @@
       "columns": {
         "notice_lookup_sha256": {
           "collation": null,
-          "comment": null,
+          "comment": "Digest of the external notice lookup token used to resolve a terminal acknowledgment without the raw token.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -39887,7 +39921,7 @@
         },
         "requester_user_sha256": {
           "collation": null,
-          "comment": null,
+          "comment": "Optional linkable requester digest used for replay scope, never live case authorization.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -39898,7 +39932,7 @@
         },
         "response_snapshot": {
           "collation": null,
-          "comment": null,
+          "comment": "Compact terminal public outcome retained for exact protocol replay without granting case authority.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -39941,7 +39975,7 @@
       },
       "relationKind": "table",
       "triggers": {
-        "trigger_copyright_territorial_ack_retained_immutable": "CREATE TRIGGER trigger_copyright_territorial_ack_retained_immutable BEFORE DELETE OR UPDATE ON public.copyright_territorial_acknowledgment_retained_identities FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()"
+        "trigger_copyright_territorial_acknowledgment_retained_immutable": "CREATE TRIGGER trigger_copyright_territorial_acknowledgment_retained_immutable BEFORE DELETE OR UPDATE ON public.copyright_territorial_acknowledgment_retained_identities FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()"
       },
       "uniqueConstraints": {}
     },
@@ -41041,15 +41075,26 @@
     "copyright_territorial_notice_retained_identities": {
       "checkConstraints": {
         "copyright_territorial_notice_re_requester_identity_sha256_check": "CHECK ((octet_length(requester_identity_sha256) = 32))",
+        "copyright_territorial_notice_retained_i_response_snapshot_check": "CHECK (((jsonb_typeof(response_snapshot) = 'object'::text) AND (response_snapshot ?& ARRAY['notice_id'::text, 'receipt_id'::text, 'acknowledgment_id'::text, 'route_destination'::text]) AND (jsonb_typeof((response_snapshot -> 'notice_id'::text)) = 'string'::text) AND (jsonb_typeof((response_snapshot -> 'receipt_id'::text)) = 'string'::text) AND (jsonb_typeof((response_snapshot -> 'acknowledgment_id'::text)) = 'string'::text) AND ((response_snapshot ->> 'route_destination'::text) = 'staff_queue'::text)))",
         "copyright_territorial_notice_retained_ide_idempotency_key_check": "CHECK ((char_length(idempotency_key) = 36))",
         "copyright_territorial_notice_retained_iden_request_sha256_check": "CHECK ((octet_length(request_sha256) = 32))",
-        "copyright_territorial_notice_retained_identi_jurisdiction_check": "CHECK ((jurisdiction = ANY (ARRAY['eu_dsa'::copyright_jurisdictions, 'uk'::copyright_jurisdictions])))",
-        "copyright_territorial_notice_retained_identities_check": "CHECK (((jsonb_typeof(response_snapshot) = 'object'::text) AND (response_snapshot ?& ARRAY['notice_id'::text, 'receipt_id'::text, 'acknowledgment_id'::text, 'route_destination'::text]) AND (jsonb_typeof((response_snapshot -> 'notice_id'::text)) = 'string'::text) AND (jsonb_typeof((response_snapshot -> 'receipt_id'::text)) = 'string'::text) AND (jsonb_typeof((response_snapshot -> 'acknowledgment_id'::text)) = 'string'::text) AND ((response_snapshot ->> 'route_destination'::text) = 'staff_queue'::text) AND ((response_snapshot ->> 'receipt_id'::text) = (receipt_id)::text)))"
+        "copyright_territorial_notice_retained_identi_jurisdiction_check": "CHECK ((jurisdiction = ANY (ARRAY['eu_dsa'::copyright_jurisdictions, 'uk'::copyright_jurisdictions])))"
       },
       "columns": {
+        "id": {
+          "collation": null,
+          "comment": "Internal UUIDv7 row identity; public receipt ID remains only in the response snapshot.",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
         "idempotency_key": {
           "collation": null,
-          "comment": null,
+          "comment": "Admission key scoped to requester digest and jurisdiction to prevent a second notice on replay.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -41060,7 +41105,7 @@
         },
         "jurisdiction": {
           "collation": null,
-          "comment": null,
+          "comment": "Legal protocol scope that prevents idempotency keys from crossing jurisdictions.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -41069,20 +41114,9 @@
           "ordinalPosition": 2,
           "type": "copyright_jurisdictions"
         },
-        "receipt_id": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1,
-          "type": "uuid"
-        },
         "request_sha256": {
           "collation": null,
-          "comment": null,
+          "comment": "Canonical request digest that rejects changed content under a reused scoped key.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -41093,7 +41127,7 @@
         },
         "requester_identity_sha256": {
           "collation": null,
-          "comment": null,
+          "comment": "Digest that scopes admission replay without retaining raw requester contact data.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -41104,7 +41138,7 @@
         },
         "response_snapshot": {
           "collation": null,
-          "comment": null,
+          "comment": "Minimal original admission response; embedded case and receipt IDs do not authorize the expired case.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -41155,13 +41189,13 @@
         "copyright_territorial_notice_retained_identities_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX copyright_territorial_notice_retained_identities_pkey ON public.copyright_territorial_notice_retained_identities USING btree (receipt_id)",
+          "definition": "CREATE UNIQUE INDEX copyright_territorial_notice_retained_identities_pkey ON public.copyright_territorial_notice_retained_identities USING btree (id)",
           "includedColumns": [],
           "keys": [
             {
-              "column": "receipt_id",
+              "column": "id",
               "descending": false,
-              "expression": "receipt_id",
+              "expression": "id",
               "nullsFirst": false,
               "opclass": "uuid_ops"
             }
@@ -41176,8 +41210,8 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["receipt_id"],
-        "definition": "PRIMARY KEY (receipt_id)"
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
       "triggers": {
@@ -41362,7 +41396,7 @@
         },
         "revoked_assessment_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Assessment whose territorial restriction this staff redress decision revoked; directly indexed for bounded purge eligibility.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -41902,48 +41936,59 @@
         "copyright_territorial_redress_retained_ident_jurisdiction_check": "CHECK ((jurisdiction = ANY (ARRAY['eu_dsa'::copyright_jurisdictions, 'uk'::copyright_jurisdictions])))"
       },
       "columns": {
-        "idempotency_key": {
+        "id": {
           "collation": null,
-          "comment": null,
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3,
-          "type": "text"
-        },
-        "jurisdiction": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2,
-          "type": "copyright_jurisdictions"
-        },
-        "requester_identity_sha256": {
-          "collation": null,
-          "comment": null,
-          "defaultExpression": null,
+          "comment": "Internal UUIDv7 row identity, separate from the public redress receipt in the response snapshot.",
+          "defaultExpression": "uuidv7()",
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
           "ordinalPosition": 1,
-          "type": "bytea"
+          "type": "uuid"
         },
-        "response_snapshot": {
+        "idempotency_key": {
           "collation": null,
-          "comment": null,
+          "comment": "Authenticated submission key scoped to requester digest and jurisdiction for receipt replay.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
           "ordinalPosition": 4,
+          "type": "text"
+        },
+        "jurisdiction": {
+          "collation": null,
+          "comment": "Legal process scope for the retained redress replay key.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3,
+          "type": "copyright_jurisdictions"
+        },
+        "requester_identity_sha256": {
+          "collation": null,
+          "comment": "Submitting account digest used to scope replay without retaining raw requester data here.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2,
+          "type": "bytea"
+        },
+        "response_snapshot": {
+          "collation": null,
+          "comment": "Compact original redress receipt; historical IDs grant no case authority.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 5,
           "type": "jsonb"
         }
       },
@@ -41951,10 +41996,10 @@
       "foreignKeys": {},
       "growth": "bounded",
       "indexes": {
-        "copyright_territorial_redress_retained_identities_pkey": {
+        "copyright_territorial_redress_requester_identity_sha256_jur_key": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX copyright_territorial_redress_retained_identities_pkey ON public.copyright_territorial_redress_retained_identities USING btree (requester_identity_sha256, jurisdiction, idempotency_key)",
+          "definition": "CREATE UNIQUE INDEX copyright_territorial_redress_requester_identity_sha256_jur_key ON public.copyright_territorial_redress_retained_identities USING btree (requester_identity_sha256, jurisdiction, idempotency_key)",
           "includedColumns": [],
           "keys": [
             {
@@ -41980,6 +42025,26 @@
             }
           ],
           "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "copyright_territorial_redress_retained_identities_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX copyright_territorial_redress_retained_identities_pkey ON public.copyright_territorial_redress_retained_identities USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
           "primary": true,
           "ready": true,
           "unique": true,
@@ -41989,14 +42054,19 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["requester_identity_sha256", "jurisdiction", "idempotency_key"],
-        "definition": "PRIMARY KEY (requester_identity_sha256, jurisdiction, idempotency_key)"
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
       "triggers": {
         "trigger_copyright_territorial_redress_retained_immutable": "CREATE TRIGGER trigger_copyright_territorial_redress_retained_immutable BEFORE DELETE OR UPDATE ON public.copyright_territorial_redress_retained_identities FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()"
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "copyright_territorial_redress_requester_identity_sha256_jur_key": {
+          "columns": ["requester_identity_sha256", "jurisdiction", "idempotency_key"],
+          "definition": "UNIQUE (requester_identity_sha256, jurisdiction, idempotency_key)"
+        }
+      }
     },
     "copyright_trusted_flagger_changes": {
       "checkConstraints": {
@@ -57946,7 +58016,7 @@
       "columns": {
         "administrator_issuer_sha256": {
           "collation": null,
-          "comment": null,
+          "comment": "Digest of the staff issuer used to reject replay by a different issuer without retaining the raw identifier.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -57957,7 +58027,7 @@
         },
         "administrator_membership_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Retained membership identity needed to validate an administrator refund replay, not live authorization.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -57968,7 +58038,7 @@
         },
         "administrator_request_fingerprint": {
           "collation": null,
-          "comment": null,
+          "comment": "Canonical refund request fingerprint used to reject changed parameters under a retained key.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -57979,7 +58049,7 @@
         },
         "administrator_response_snapshot": {
           "collation": null,
-          "comment": null,
+          "comment": "Minimal terminal administrator refund response returned on exact replay after detailed ledger deletion.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -58001,7 +58071,7 @@
         },
         "idempotency_key": {
           "collation": null,
-          "comment": null,
+          "comment": "Terminal provider operation key retained to prevent repeat financial effects on replay.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -58012,7 +58082,7 @@
         },
         "membership_lineage_binding_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Historical lineage binding used to validate exact cancellation replay, never current membership authority.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -58023,7 +58093,7 @@
         },
         "membership_provider_context_id": {
           "collation": null,
-          "comment": null,
+          "comment": "Provider application and environment that scopes the operation replay key.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -58034,7 +58104,7 @@
         },
         "operation_kind": {
           "collation": null,
-          "comment": null,
+          "comment": "Terminal operation family that determines replay fingerprint and response interpretation.",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -120561,6 +120631,17 @@
     "stripe_event_retained_identities": {
       "checkConstraints": {},
       "columns": {
+        "id": {
+          "collation": null,
+          "comment": "Internal UUIDv7 row identity, separate from the exact provider event key.",
+          "defaultExpression": "uuidv7()",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1,
+          "type": "uuid"
+        },
         "stripe_event_id": {
           "collation": null,
           "comment": "Provider event identity only; no payload, account identifier, amount, or processing history.",
@@ -120569,7 +120650,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 1,
+          "ordinalPosition": 2,
           "type": "text"
         }
       },
@@ -120580,7 +120661,27 @@
         "stripe_event_retained_identities_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX stripe_event_retained_identities_pkey ON public.stripe_event_retained_identities USING btree (stripe_event_id)",
+          "definition": "CREATE UNIQUE INDEX stripe_event_retained_identities_pkey ON public.stripe_event_retained_identities USING btree (id)",
+          "includedColumns": [],
+          "keys": [
+            {
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "uuid_ops"
+            }
+          ],
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "stripe_event_retained_identities_stripe_event_id_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX stripe_event_retained_identities_stripe_event_id_key ON public.stripe_event_retained_identities USING btree (stripe_event_id)",
           "includedColumns": [],
           "keys": [
             {
@@ -120592,7 +120693,7 @@
             }
           ],
           "predicate": null,
-          "primary": true,
+          "primary": false,
           "ready": true,
           "unique": true,
           "valid": true
@@ -120601,12 +120702,17 @@
       "partition": null,
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["stripe_event_id"],
-        "definition": "PRIMARY KEY (stripe_event_id)"
+        "columns": ["id"],
+        "definition": "PRIMARY KEY (id)"
       },
       "relationKind": "table",
       "triggers": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {
+        "stripe_event_retained_identities_stripe_event_id_key": {
+          "columns": ["stripe_event_id"],
+          "definition": "UNIQUE (stripe_event_id)"
+        }
+      }
     },
     "stripe_event_types": {
       "checkConstraints": {},
@@ -120997,7 +121103,7 @@
       "relationKind": "table",
       "triggers": {
         "trigger_stripe_events_reject_mutation": "CREATE TRIGGER trigger_stripe_events_reject_mutation BEFORE UPDATE ON public.stripe_events FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()",
-        "trigger_stripe_events_retained_identity": "CREATE TRIGGER trigger_stripe_events_retained_identity BEFORE INSERT ON public.stripe_events FOR EACH ROW EXECUTE FUNCTION fn_reject_replayed_stripe_event_identity()",
+        "trigger_stripe_events_retained_identity": "CREATE TRIGGER trigger_stripe_events_retained_identity BEFORE INSERT ON public.stripe_events FOR EACH ROW EXECUTE FUNCTION fn_reject_replayed_external_event_identity()",
         "trigger_stripe_events_retention_delete": "CREATE TRIGGER trigger_stripe_events_retention_delete BEFORE DELETE ON public.stripe_events FOR EACH ROW EXECUTE FUNCTION fn_reject_unretained_stripe_event_delete()"
       },
       "uniqueConstraints": {}

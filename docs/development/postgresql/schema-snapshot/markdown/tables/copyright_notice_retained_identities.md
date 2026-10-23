@@ -6,14 +6,14 @@ Case identity retained only while a minimal-record purge and its bounded party c
 
 Not partitioned — growth: bounded.
 
-| Column                | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment |
-| --------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------- |
-| `id`                  | `uuid`                     | no       |                              |          |           |           |         |
-| `proof_generation`    | `bigint`                   | no       | `0`                          |          |           |           |         |
-| `email_activity_at`   | `timestamp with time zone` | yes      |                              |          |           |           |         |
-| `dsa_statement_count` | `integer`                  | no       | `0`                          |          |           |           |         |
-| `created_at`          | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |         |
-| `updated_at`          | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |         |
+| Column                | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                         |
+| --------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------------------------------- |
+| `id`                  | `uuid`                     | no       |                              |          |           |           |                                                                                                                 |
+| `proof_generation`    | `bigint`                   | no       | `0`                          |          |           |           | Monotonic case-evidence generation that invalidates accumulated bounded purge proofs after a relevant mutation. |
+| `email_activity_at`   | `timestamp with time zone` | yes      |                              |          |           |           | Latest linked designated-email receipt or review time, retained as a legal clock after raw evidence erasure.    |
+| `dsa_statement_count` | `integer`                  | no       | `0`                          |          |           |           | Current count of public DSA statement records attached to this case, excluding submission attempts.             |
+| `created_at`          | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                 |
+| `updated_at`          | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           |                                                                                                                 |
 
 **Primary key:** `PRIMARY KEY (id)`
 

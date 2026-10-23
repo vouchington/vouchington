@@ -56,11 +56,11 @@ Not partitioned — growth: unbounded.
 
 - `copyright_notice_action_work_items_copyright_notice_id_id_key`: `CREATE UNIQUE INDEX copyright_notice_action_work_items_copyright_notice_id_id_key ON public.copyright_notice_action_work_items USING btree (copyright_notice_id, id)`
 - `copyright_notice_action_work_items_pkey`: `CREATE UNIQUE INDEX copyright_notice_action_work_items_pkey ON public.copyright_notice_action_work_items USING btree (id)`
-- `idx_copyright_action_work__purge_failed`: `CREATE INDEX idx_copyright_action_work__purge_failed ON public.copyright_notice_action_work_items USING btree (copyright_notice_id) WHERE (state = 'failed'::copyright_notice_action_intent_states)`
 - `idx_copyright_notice_action_work_items__available`: `CREATE INDEX idx_copyright_notice_action_work_items__available ON public.copyright_notice_action_work_items USING btree (available_at, id) WHERE ((lease_token IS NULL) AND (state = 'pending'::copyright_notice_action_intent_states))`
 - `idx_copyright_notice_action_work_items__deadline`: `CREATE INDEX idx_copyright_notice_action_work_items__deadline ON public.copyright_notice_action_work_items USING btree (copyright_notice_deadline_id) WHERE (copyright_notice_deadline_id IS NOT NULL)`
 - `idx_copyright_notice_action_work_items__expired`: `CREATE INDEX idx_copyright_notice_action_work_items__expired ON public.copyright_notice_action_work_items USING btree (lease_expires_at, id) WHERE (lease_token IS NOT NULL)`
 - `idx_copyright_notice_action_work_items__pending`: `CREATE INDEX idx_copyright_notice_action_work_items__pending ON public.copyright_notice_action_work_items USING btree (id) WHERE (completed_at IS NULL)`
+- `idx_copyright_notice_action_work_items__purge_failed`: `CREATE INDEX idx_copyright_notice_action_work_items__purge_failed ON public.copyright_notice_action_work_items USING btree (copyright_notice_id) WHERE (state = 'failed'::copyright_notice_action_intent_states)`
 - `uq_copyright_action_work__restriction_revision_action`: `CREATE UNIQUE INDEX uq_copyright_action_work__restriction_revision_action ON public.copyright_notice_action_work_items USING btree (copyright_restriction_id, expected_placement_revision, action)`
 
 **Triggers:**

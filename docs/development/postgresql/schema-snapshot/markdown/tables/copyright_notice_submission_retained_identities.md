@@ -6,12 +6,12 @@ Compact authenticated appeal/counter-notice replay identity and public receipt m
 
 Not partitioned — growth: bounded.
 
-| Column                      | Type    | Nullable | Default | Identity | Generated | Collation | Comment |
-| --------------------------- | ------- | -------- | ------- | -------- | --------- | --------- | ------- |
-| `requester_identity_sha256` | `bytea` | no       |         |          |           |           |         |
-| `idempotency_key`           | `uuid`  | no       |         |          |           |           |         |
-| `request_sha256`            | `bytea` | no       |         |          |           |           |         |
-| `response_snapshot`         | `jsonb` | no       |         |          |           |           |         |
+| Column                      | Type    | Nullable | Default | Identity | Generated | Collation | Comment                                                                                        |
+| --------------------------- | ------- | -------- | ------- | -------- | --------- | --------- | ---------------------------------------------------------------------------------------------- |
+| `requester_identity_sha256` | `bytea` | no       |         |          |           |           | Digest scoping submission replay without retaining the raw requester account identifier here.  |
+| `idempotency_key`           | `uuid`  | no       |         |          |           |           | Authenticated submission key scoped to requester digest for exact response replay.             |
+| `request_sha256`            | `bytea` | no       |         |          |           |           | Canonical request digest that detects changed content under a reused requester key.            |
+| `response_snapshot`         | `jsonb` | no       |         |          |           |           | Minimal original appeal or counter-notice receipt; its historical IDs grant no case authority. |
 
 **Primary key:** `PRIMARY KEY (requester_identity_sha256, idempotency_key)`
 

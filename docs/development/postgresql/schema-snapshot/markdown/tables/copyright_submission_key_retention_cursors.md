@@ -6,11 +6,11 @@ Cyclic UUIDv7 progress for clearing the 30-day raw submission key while compact 
 
 Not partitioned — growth: bounded.
 
-| Column             | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                    |
-| ------------------ | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------- |
-| `family`           | `text`                     | no       |                     |          |           |           | The one raw submission-key family tracked by this cursor.                  |
-| `cursor_record_id` | `uuid`                     | yes      |                     |          |           |           | Last scanned raw request UUIDv7 identity, independent of its nullable key. |
-| `updated_at`       | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           | Last committed scan progress.                                              |
+| Column             | Type                                                 | Nullable | Default             | Identity | Generated | Collation | Comment                                                                    |
+| ------------------ | ---------------------------------------------------- | -------- | ------------------- | -------- | --------- | --------- | -------------------------------------------------------------------------- |
+| `family`           | `copyright_submission_key_retention_cursor_families` | no       |                     |          |           |           | The one raw submission-key family tracked by this cursor.                  |
+| `cursor_record_id` | `uuid`                                               | yes      |                     |          |           |           | Last scanned raw request UUIDv7 identity, independent of its nullable key. |
+| `updated_at`       | `timestamp with time zone`                           | no       | `CURRENT_TIMESTAMP` |          |           |           | Last committed scan progress.                                              |
 
 **Primary key:** `PRIMARY KEY (family)`
 
@@ -18,8 +18,7 @@ Not partitioned — growth: bounded.
 _none_
 
 **Check constraints:**
-
-- `copyright_submission_key_retention_cursors_family_check`: `CHECK ((family = 'submission_request'::text))`
+_none_
 
 **Foreign keys:**
 _none_

@@ -15,26 +15,26 @@ Not partitioned — growth: unbounded.
 | `reviewed_by_id`                                  | `uuid`                                           | yes      |                              |          |           |           | Staff member who decided the intake; erased on account deletion.                                                                                                                                                                   |
 | `decision`                                        | `copyright_notice_email_intake_review_decisions` | no       |                              |          |           |           | Staff decision: approved opened a case, rejected declined the email as a copyright notice and may have queued a reply, legal_process closed it as legal process such as a subpoena with no reply, case, or claimant-visible event. |
 | `rationale_ciphertext`                            | `text`                                           | no       |                              |          |           |           | Encrypted staff rationale, or for legal_process the encrypted reason; it can name a legal matter and is never logged or returned.                                                                                                  |
-| `promoted_copyright_notice_id`                    | `uuid`                                           | yes      |                              |          |           |           | Retained identity of the case created by an approved review; null for other decisions and never authority to use a deleted case.                                                                                                   |
+| `promoted_copyright_notice_identity_id`           | `uuid`                                           | yes      |                              |          |           |           | Retained identity of the case created by an approved review; null for other decisions and never authority to use a deleted case.                                                                                                   |
 | `created_at`                                      | `timestamp with time zone`                       | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                                                                                                                                                    |
 
 **Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
 
-- `uq_copyr_notic_email_intak_review__promoted_copyright_notice_id`: `UNIQUE (promoted_copyright_notice_id)`
+- `uq_copyr_notic_email_intak_review__promoted_identity`: `UNIQUE (promoted_copyright_notice_identity_id)`
 - `uq_copyright_notice_email_intake_reviews__intake_id`: `UNIQUE (copyright_notice_email_intake_id)`
 
 **Check constraints:**
 
 - `chk_copyright_notice_email_intake_reviews__rationale_ciphertext`: `CHECK (((char_length(rationale_ciphertext) >= 1) AND (char_length(rationale_ciphertext) <= 1048576)))`
-- `copyright_notice_email_intake_reviews_check`: `CHECK (((decision = 'approved'::copyright_notice_email_intake_review_decisions) = (promoted_copyright_notice_id IS NOT NULL)))`
+- `copyright_notice_email_intake_reviews_check`: `CHECK (((decision = 'approved'::copyright_notice_email_intake_review_decisions) = (promoted_copyright_notice_identity_id IS NOT NULL)))`
 - `copyright_notice_email_intake_reviews_decision_check`: `CHECK ((decision = ANY (ARRAY['approved'::copyright_notice_email_intake_review_decisions, 'rejected'::copyright_notice_email_intake_review_decisions, 'legal_process'::copyright_notice_email_intake_review_decisions])))`
 
 **Foreign keys:**
 
 - `copyright_notice_email_intake_reviews_reviewed_by_id_fkey`: `FOREIGN KEY (reviewed_by_id) REFERENCES users(id) ON DELETE SET NULL`
-- `fk_copyri_notice_email_intake_review__promoted_copyright_notice`: `FOREIGN KEY (promoted_copyright_notice_id) REFERENCES copyright_notice_retained_identities(id) ON DELETE RESTRICT`
+- `fk_copyri_notice_email_intake_review__promoted_copyright_notice`: `FOREIGN KEY (promoted_copyright_notice_identity_id) REFERENCES copyright_notice_retained_identities(id) ON DELETE RESTRICT`
 - `fk_copyright_email_reviews__recommendation_intake`: `FOREIGN KEY (copyright_notice_email_intake_id, copyright_notice_email_intake_recommendation_id) REFERENCES copyright_notice_email_intake_recommendations(copyright_notice_email_intake_id, id) ON DELETE RESTRICT`
 - `fk_copyright_notice_email_intake_reviews__intake`: `FOREIGN KEY (copyright_notice_email_intake_id) REFERENCES copyright_notice_email_intakes(id) ON DELETE RESTRICT`
 
@@ -44,7 +44,7 @@ Not partitioned — growth: unbounded.
 - `idx_copyright_notice_email_intake_reviews__intake`: `CREATE INDEX idx_copyright_notice_email_intake_reviews__intake ON public.copyright_notice_email_intake_reviews USING btree (copyright_notice_email_intake_id, id DESC)`
 - `idx_copyright_notice_email_intake_reviews__recommendation`: `CREATE INDEX idx_copyright_notice_email_intake_reviews__recommendation ON public.copyright_notice_email_intake_reviews USING btree (copyright_notice_email_intake_recommendation_id) WHERE (copyright_notice_email_intake_recommendation_id IS NOT NULL)`
 - `idx_copyright_notice_email_intake_reviews__reviewer`: `CREATE INDEX idx_copyright_notice_email_intake_reviews__reviewer ON public.copyright_notice_email_intake_reviews USING btree (reviewed_by_id, id DESC)`
-- `uq_copyr_notic_email_intak_review__promoted_copyright_notice_id`: `CREATE UNIQUE INDEX uq_copyr_notic_email_intak_review__promoted_copyright_notice_id ON public.copyright_notice_email_intake_reviews USING btree (promoted_copyright_notice_id)`
+- `uq_copyr_notic_email_intak_review__promoted_identity`: `CREATE UNIQUE INDEX uq_copyr_notic_email_intak_review__promoted_identity ON public.copyright_notice_email_intake_reviews USING btree (promoted_copyright_notice_identity_id)`
 - `uq_copyright_notice_email_intake_reviews__intake_id`: `CREATE UNIQUE INDEX uq_copyright_notice_email_intake_reviews__intake_id ON public.copyright_notice_email_intake_reviews USING btree (copyright_notice_email_intake_id)`
 
 **Triggers:**

@@ -6,11 +6,11 @@ Compact terminal acknowledgment result retained for exact replay under the curre
 
 Not partitioned — growth: bounded.
 
-| Column                  | Type    | Nullable | Default | Identity | Generated | Collation | Comment |
-| ----------------------- | ------- | -------- | ------- | -------- | --------- | --------- | ------- |
-| `notice_lookup_sha256`  | `bytea` | no       |         |          |           |           |         |
-| `requester_user_sha256` | `bytea` | yes      |         |          |           |           |         |
-| `response_snapshot`     | `jsonb` | no       |         |          |           |           |         |
+| Column                  | Type    | Nullable | Default | Identity | Generated | Collation | Comment                                                                                                     |
+| ----------------------- | ------- | -------- | ------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------------- |
+| `notice_lookup_sha256`  | `bytea` | no       |         |          |           |           | Digest of the external notice lookup token used to resolve a terminal acknowledgment without the raw token. |
+| `requester_user_sha256` | `bytea` | yes      |         |          |           |           | Optional linkable requester digest used for replay scope, never live case authorization.                    |
+| `response_snapshot`     | `jsonb` | no       |         |          |           |           | Compact terminal public outcome retained for exact protocol replay without granting case authority.         |
 
 **Primary key:** `PRIMARY KEY (notice_lookup_sha256)`
 
@@ -32,4 +32,4 @@ _none_
 
 **Triggers:**
 
-- `trigger_copyright_territorial_ack_retained_immutable`: `CREATE TRIGGER trigger_copyright_territorial_ack_retained_immutable BEFORE DELETE OR UPDATE ON public.copyright_territorial_acknowledgment_retained_identities FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`
+- `trigger_copyright_territorial_acknowledgment_retained_immutable`: `CREATE TRIGGER trigger_copyright_territorial_acknowledgment_retained_immutable BEFORE DELETE OR UPDATE ON public.copyright_territorial_acknowledgment_retained_identities FOR EACH ROW EXECUTE FUNCTION fn_reject_mutation()`

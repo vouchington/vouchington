@@ -6,14 +6,16 @@ Minimal terminal Stripe protocol identity written with processed or ignored outc
 
 Not partitioned — growth: bounded.
 
-| Column            | Type   | Nullable | Default | Identity | Generated | Collation | Comment                                                                                      |
-| ----------------- | ------ | -------- | ------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------------- |
-| `stripe_event_id` | `text` | no       |         |          |           |           | Provider event identity only; no payload, account identifier, amount, or processing history. |
+| Column            | Type   | Nullable | Default    | Identity | Generated | Collation | Comment                                                                                      |
+| ----------------- | ------ | -------- | ---------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------------- |
+| `id`              | `uuid` | no       | `uuidv7()` |          |           |           | Internal UUIDv7 row identity, separate from the exact provider event key.                    |
+| `stripe_event_id` | `text` | no       |            |          |           |           | Provider event identity only; no payload, account identifier, amount, or processing history. |
 
-**Primary key:** `PRIMARY KEY (stripe_event_id)`
+**Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
-_none_
+
+- `stripe_event_retained_identities_stripe_event_id_key`: `UNIQUE (stripe_event_id)`
 
 **Check constraints:**
 _none_
@@ -23,7 +25,8 @@ _none_
 
 **Indexes:**
 
-- `stripe_event_retained_identities_pkey`: `CREATE UNIQUE INDEX stripe_event_retained_identities_pkey ON public.stripe_event_retained_identities USING btree (stripe_event_id)`
+- `stripe_event_retained_identities_pkey`: `CREATE UNIQUE INDEX stripe_event_retained_identities_pkey ON public.stripe_event_retained_identities USING btree (id)`
+- `stripe_event_retained_identities_stripe_event_id_key`: `CREATE UNIQUE INDEX stripe_event_retained_identities_stripe_event_id_key ON public.stripe_event_retained_identities USING btree (stripe_event_id)`
 
 **Triggers:**
 _none_

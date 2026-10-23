@@ -6,16 +6,16 @@ Compact exact replay result after a territorial case expires; historical ids do 
 
 Not partitioned — growth: bounded.
 
-| Column                      | Type                      | Nullable | Default | Identity | Generated | Collation | Comment |
-| --------------------------- | ------------------------- | -------- | ------- | -------- | --------- | --------- | ------- |
-| `receipt_id`                | `uuid`                    | no       |         |          |           |           |         |
-| `jurisdiction`              | `copyright_jurisdictions` | no       |         |          |           |           |         |
-| `requester_identity_sha256` | `bytea`                   | no       |         |          |           |           |         |
-| `idempotency_key`           | `text`                    | no       |         |          |           |           |         |
-| `request_sha256`            | `bytea`                   | no       |         |          |           |           |         |
-| `response_snapshot`         | `jsonb`                   | no       |         |          |           |           |         |
+| Column                      | Type                      | Nullable | Default    | Identity | Generated | Collation | Comment                                                                                               |
+| --------------------------- | ------------------------- | -------- | ---------- | -------- | --------- | --------- | ----------------------------------------------------------------------------------------------------- |
+| `id`                        | `uuid`                    | no       | `uuidv7()` |          |           |           | Internal UUIDv7 row identity; public receipt ID remains only in the response snapshot.                |
+| `jurisdiction`              | `copyright_jurisdictions` | no       |            |          |           |           | Legal protocol scope that prevents idempotency keys from crossing jurisdictions.                      |
+| `requester_identity_sha256` | `bytea`                   | no       |            |          |           |           | Digest that scopes admission replay without retaining raw requester contact data.                     |
+| `idempotency_key`           | `text`                    | no       |            |          |           |           | Admission key scoped to requester digest and jurisdiction to prevent a second notice on replay.       |
+| `request_sha256`            | `bytea`                   | no       |            |          |           |           | Canonical request digest that rejects changed content under a reused scoped key.                      |
+| `response_snapshot`         | `jsonb`                   | no       |            |          |           |           | Minimal original admission response; embedded case and receipt IDs do not authorize the expired case. |
 
-**Primary key:** `PRIMARY KEY (receipt_id)`
+**Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
 
@@ -24,10 +24,10 @@ Not partitioned — growth: bounded.
 **Check constraints:**
 
 - `copyright_territorial_notice_re_requester_identity_sha256_check`: `CHECK ((octet_length(requester_identity_sha256) = 32))`
+- `copyright_territorial_notice_retained_i_response_snapshot_check`: `CHECK (((jsonb_typeof(response_snapshot) = 'object'::text) AND (response_snapshot ?& ARRAY['notice_id'::text, 'receipt_id'::text, 'acknowledgment_id'::text, 'route_destination'::text]) AND (jsonb_typeof((response_snapshot -> 'notice_id'::text)) = 'string'::text) AND (jsonb_typeof((response_snapshot -> 'receipt_id'::text)) = 'string'::text) AND (jsonb_typeof((response_snapshot -> 'acknowledgment_id'::text)) = 'string'::text) AND ((response_snapshot ->> 'route_destination'::text) = 'staff_queue'::text)))`
 - `copyright_territorial_notice_retained_ide_idempotency_key_check`: `CHECK ((char_length(idempotency_key) = 36))`
 - `copyright_territorial_notice_retained_iden_request_sha256_check`: `CHECK ((octet_length(request_sha256) = 32))`
 - `copyright_territorial_notice_retained_identi_jurisdiction_check`: `CHECK ((jurisdiction = ANY (ARRAY['eu_dsa'::copyright_jurisdictions, 'uk'::copyright_jurisdictions])))`
-- `copyright_territorial_notice_retained_identities_check`: `CHECK (((jsonb_typeof(response_snapshot) = 'object'::text) AND (response_snapshot ?& ARRAY['notice_id'::text, 'receipt_id'::text, 'acknowledgment_id'::text, 'route_destination'::text]) AND (jsonb_typeof((response_snapshot -> 'notice_id'::text)) = 'string'::text) AND (jsonb_typeof((response_snapshot -> 'receipt_id'::text)) = 'string'::text) AND (jsonb_typeof((response_snapshot -> 'acknowledgment_id'::text)) = 'string'::text) AND ((response_snapshot ->> 'route_destination'::text) = 'staff_queue'::text) AND ((response_snapshot ->> 'receipt_id'::text) = (receipt_id)::text)))`
 
 **Foreign keys:**
 _none_
@@ -35,7 +35,7 @@ _none_
 **Indexes:**
 
 - `copyright_territorial_notice__requester_identity_sha256_jur_key`: `CREATE UNIQUE INDEX copyright_territorial_notice__requester_identity_sha256_jur_key ON public.copyright_territorial_notice_retained_identities USING btree (requester_identity_sha256, jurisdiction, idempotency_key)`
-- `copyright_territorial_notice_retained_identities_pkey`: `CREATE UNIQUE INDEX copyright_territorial_notice_retained_identities_pkey ON public.copyright_territorial_notice_retained_identities USING btree (receipt_id)`
+- `copyright_territorial_notice_retained_identities_pkey`: `CREATE UNIQUE INDEX copyright_territorial_notice_retained_identities_pkey ON public.copyright_territorial_notice_retained_identities USING btree (id)`
 
 **Triggers:**
 

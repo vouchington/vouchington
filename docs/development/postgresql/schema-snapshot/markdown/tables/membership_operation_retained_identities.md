@@ -6,17 +6,17 @@ Compact terminal provider operation identity and exact administrator replay resu
 
 Not partitioned — growth: bounded.
 
-| Column                              | Type                         | Nullable | Default | Identity | Generated | Collation | Comment |
-| ----------------------------------- | ---------------------------- | -------- | ------- | -------- | --------- | --------- | ------- |
-| `id`                                | `uuid`                       | no       |         |          |           |           |         |
-| `membership_provider_context_id`    | `uuid`                       | no       |         |          |           |           |         |
-| `membership_lineage_binding_id`     | `uuid`                       | no       |         |          |           |           |         |
-| `idempotency_key`                   | `text`                       | no       |         |          |           |           |         |
-| `operation_kind`                    | `membership_operation_kinds` | no       |         |          |           |           |         |
-| `administrator_membership_id`       | `uuid`                       | yes      |         |          |           |           |         |
-| `administrator_issuer_sha256`       | `bytea`                      | yes      |         |          |           |           |         |
-| `administrator_request_fingerprint` | `text`                       | yes      |         |          |           |           |         |
-| `administrator_response_snapshot`   | `jsonb`                      | yes      |         |          |           |           |         |
+| Column                              | Type                         | Nullable | Default | Identity | Generated | Collation | Comment                                                                                                      |
+| ----------------------------------- | ---------------------------- | -------- | ------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------------ |
+| `id`                                | `uuid`                       | no       |         |          |           |           |                                                                                                              |
+| `membership_provider_context_id`    | `uuid`                       | no       |         |          |           |           | Provider application and environment that scopes the operation replay key.                                   |
+| `membership_lineage_binding_id`     | `uuid`                       | no       |         |          |           |           | Historical lineage binding used to validate exact cancellation replay, never current membership authority.   |
+| `idempotency_key`                   | `text`                       | no       |         |          |           |           | Terminal provider operation key retained to prevent repeat financial effects on replay.                      |
+| `operation_kind`                    | `membership_operation_kinds` | no       |         |          |           |           | Terminal operation family that determines replay fingerprint and response interpretation.                    |
+| `administrator_membership_id`       | `uuid`                       | yes      |         |          |           |           | Retained membership identity needed to validate an administrator refund replay, not live authorization.      |
+| `administrator_issuer_sha256`       | `bytea`                      | yes      |         |          |           |           | Digest of the staff issuer used to reject replay by a different issuer without retaining the raw identifier. |
+| `administrator_request_fingerprint` | `text`                       | yes      |         |          |           |           | Canonical refund request fingerprint used to reject changed parameters under a retained key.                 |
+| `administrator_response_snapshot`   | `jsonb`                      | yes      |         |          |           |           | Minimal terminal administrator refund response returned on exact replay after detailed ledger deletion.      |
 
 **Primary key:** `PRIMARY KEY (id)`
 

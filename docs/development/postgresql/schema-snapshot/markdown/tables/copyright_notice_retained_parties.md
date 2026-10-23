@@ -6,17 +6,17 @@ Opaque retained user relations for preservation-hold and repeat-infringer accoun
 
 Not partitioned — growth: bounded.
 
-| Column                            | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                                                                  |
-| --------------------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `copyright_notice_id`             | `uuid`                     | no       |                     |          |           |           |                                                                                                                                          |
-| `account_user_id`                 | `uuid`                     | no       |                     |          |           |           |                                                                                                                                          |
-| `is_repeat_infringer_account`     | `boolean`                  | no       | `false`             |          |           |           | Incident account relation retained after raw incident deletion so final account purge remains a legal clock anchor; never grants access. |
-| `proof_has_open_hold`             | `boolean`                  | yes      |                     |          |           |           |                                                                                                                                          |
-| `proof_incident_account_unpurged` | `boolean`                  | yes      |                     |          |           |           |                                                                                                                                          |
-| `created_at`                      | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                                                          |
-| `updated_at`                      | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                                                          |
+| Column                                | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                                                                  |
+| ------------------------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `copyright_notice_identity_id`        | `uuid`                     | no       |                     |          |           |           | Retained case identity that owns this party relation after the live case is purged.                                                      |
+| `account_user_id`                     | `uuid`                     | no       |                     |          |           |           | Retained party identity used for hold and incident legal clocks, never authorization of the account or deleted case.                     |
+| `is_repeat_infringer_account`         | `boolean`                  | no       | `false`             |          |           |           | Incident account relation retained after raw incident deletion so final account purge remains a legal clock anchor; never grants access. |
+| `proof_has_open_hold`                 | `boolean`                  | yes      |                     |          |           |           | Cached result of the latest bounded proof check for an active preservation hold on this party.                                           |
+| `proof_has_unpurged_incident_account` | `boolean`                  | yes      |                     |          |           |           | Cached proof that a repeat-infringer account still lacks its final-account-purge clock event.                                            |
+| `created_at`                          | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                                                          |
+| `updated_at`                          | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                                                          |
 
-**Primary key:** `PRIMARY KEY (copyright_notice_id, account_user_id)`
+**Primary key:** `PRIMARY KEY (copyright_notice_identity_id, account_user_id)`
 
 **Unique constraints:**
 _none_
@@ -26,14 +26,14 @@ _none_
 
 **Foreign keys:**
 
+- `copyright_notice_retained_par_copyright_notice_identity_id_fkey`: `FOREIGN KEY (copyright_notice_identity_id) REFERENCES copyright_notice_retained_identities(id) ON DELETE RESTRICT`
 - `copyright_notice_retained_parties_account_user_id_fkey`: `FOREIGN KEY (account_user_id) REFERENCES retained_user_identities(id) ON DELETE RESTRICT`
-- `copyright_notice_retained_parties_copyright_notice_id_fkey`: `FOREIGN KEY (copyright_notice_id) REFERENCES copyright_notice_retained_identities(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
-- `copyright_notice_retained_parties_pkey`: `CREATE UNIQUE INDEX copyright_notice_retained_parties_pkey ON public.copyright_notice_retained_parties USING btree (copyright_notice_id, account_user_id)`
-- `idx_copyright_notice_retained_parties__account_user`: `CREATE INDEX idx_copyright_notice_retained_parties__account_user ON public.copyright_notice_retained_parties USING btree (account_user_id, copyright_notice_id)`
-- `idx_copyright_notice_retained_parties__repeat_account`: `CREATE INDEX idx_copyright_notice_retained_parties__repeat_account ON public.copyright_notice_retained_parties USING btree (copyright_notice_id, account_user_id) WHERE is_repeat_infringer_account`
+- `copyright_notice_retained_parties_pkey`: `CREATE UNIQUE INDEX copyright_notice_retained_parties_pkey ON public.copyright_notice_retained_parties USING btree (copyright_notice_identity_id, account_user_id)`
+- `idx_copyright_notice_retained_parties__account_user`: `CREATE INDEX idx_copyright_notice_retained_parties__account_user ON public.copyright_notice_retained_parties USING btree (account_user_id, copyright_notice_identity_id)`
+- `idx_copyright_notice_retained_parties__repeat_account`: `CREATE INDEX idx_copyright_notice_retained_parties__repeat_account ON public.copyright_notice_retained_parties USING btree (copyright_notice_identity_id, account_user_id) WHERE is_repeat_infringer_account`
 
 **Triggers:**
 

@@ -6,17 +6,19 @@ Compact authenticated redress receipt identity; no explanation, decision text, o
 
 Not partitioned — growth: bounded.
 
-| Column                      | Type                      | Nullable | Default | Identity | Generated | Collation | Comment |
-| --------------------------- | ------------------------- | -------- | ------- | -------- | --------- | --------- | ------- |
-| `requester_identity_sha256` | `bytea`                   | no       |         |          |           |           |         |
-| `jurisdiction`              | `copyright_jurisdictions` | no       |         |          |           |           |         |
-| `idempotency_key`           | `text`                    | no       |         |          |           |           |         |
-| `response_snapshot`         | `jsonb`                   | no       |         |          |           |           |         |
+| Column                      | Type                      | Nullable | Default    | Identity | Generated | Collation | Comment                                                                                          |
+| --------------------------- | ------------------------- | -------- | ---------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------ |
+| `id`                        | `uuid`                    | no       | `uuidv7()` |          |           |           | Internal UUIDv7 row identity, separate from the public redress receipt in the response snapshot. |
+| `requester_identity_sha256` | `bytea`                   | no       |            |          |           |           | Submitting account digest used to scope replay without retaining raw requester data here.        |
+| `jurisdiction`              | `copyright_jurisdictions` | no       |            |          |           |           | Legal process scope for the retained redress replay key.                                         |
+| `idempotency_key`           | `text`                    | no       |            |          |           |           | Authenticated submission key scoped to requester digest and jurisdiction for receipt replay.     |
+| `response_snapshot`         | `jsonb`                   | no       |            |          |           |           | Compact original redress receipt; historical IDs grant no case authority.                        |
 
-**Primary key:** `PRIMARY KEY (requester_identity_sha256, jurisdiction, idempotency_key)`
+**Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
-_none_
+
+- `copyright_territorial_redress_requester_identity_sha256_jur_key`: `UNIQUE (requester_identity_sha256, jurisdiction, idempotency_key)`
 
 **Check constraints:**
 
@@ -30,7 +32,8 @@ _none_
 
 **Indexes:**
 
-- `copyright_territorial_redress_retained_identities_pkey`: `CREATE UNIQUE INDEX copyright_territorial_redress_retained_identities_pkey ON public.copyright_territorial_redress_retained_identities USING btree (requester_identity_sha256, jurisdiction, idempotency_key)`
+- `copyright_territorial_redress_requester_identity_sha256_jur_key`: `CREATE UNIQUE INDEX copyright_territorial_redress_requester_identity_sha256_jur_key ON public.copyright_territorial_redress_retained_identities USING btree (requester_identity_sha256, jurisdiction, idempotency_key)`
+- `copyright_territorial_redress_retained_identities_pkey`: `CREATE UNIQUE INDEX copyright_territorial_redress_retained_identities_pkey ON public.copyright_territorial_redress_retained_identities USING btree (id)`
 
 **Triggers:**
 

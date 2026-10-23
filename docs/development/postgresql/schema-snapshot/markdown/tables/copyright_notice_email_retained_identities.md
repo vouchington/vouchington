@@ -6,16 +6,18 @@ Minimal provider replay fence after original MIME evidence is erased; no email b
 
 Not partitioned — growth: bounded.
 
-| Column                  | Type      | Nullable | Default | Identity | Generated | Collation | Comment |
-| ----------------------- | --------- | -------- | ------- | -------- | --------- | --------- | ------- |
-| `amazon_ses_message_id` | `text`    | no       |         |          |           |           |         |
-| `raw_sha256`            | `bytea`   | no       |         |          |           |           |         |
-| `raw_byte_size`         | `integer` | no       |         |          |           |           |         |
+| Column                  | Type      | Nullable | Default    | Identity | Generated | Collation | Comment                                                                                                  |
+| ----------------------- | --------- | -------- | ---------- | -------- | --------- | --------- | -------------------------------------------------------------------------------------------------------- |
+| `id`                    | `uuid`    | no       | `uuidv7()` |          |           |           | Internal UUIDv7 row identity; provider message identity remains unique separately.                       |
+| `amazon_ses_message_id` | `text`    | no       |            |          |           |           | Provider delivery identity retained as the replay fence after raw MIME erasure, without message content. |
+| `raw_sha256`            | `bytea`   | no       |            |          |           |           | Digest of the original MIME bytes used to verify the identity of erased evidence.                        |
+| `raw_byte_size`         | `integer` | no       |            |          |           |           | Original MIME byte length paired with the digest, without retaining the MIME content.                    |
 
-**Primary key:** `PRIMARY KEY (amazon_ses_message_id)`
+**Primary key:** `PRIMARY KEY (id)`
 
 **Unique constraints:**
-_none_
+
+- `copyright_notice_email_retained_ident_amazon_ses_message_id_key`: `UNIQUE (amazon_ses_message_id)`
 
 **Check constraints:**
 
@@ -28,7 +30,8 @@ _none_
 
 **Indexes:**
 
-- `copyright_notice_email_retained_identities_pkey`: `CREATE UNIQUE INDEX copyright_notice_email_retained_identities_pkey ON public.copyright_notice_email_retained_identities USING btree (amazon_ses_message_id)`
+- `copyright_notice_email_retained_ident_amazon_ses_message_id_key`: `CREATE UNIQUE INDEX copyright_notice_email_retained_ident_amazon_ses_message_id_key ON public.copyright_notice_email_retained_identities USING btree (amazon_ses_message_id)`
+- `copyright_notice_email_retained_identities_pkey`: `CREATE UNIQUE INDEX copyright_notice_email_retained_identities_pkey ON public.copyright_notice_email_retained_identities USING btree (id)`
 
 **Triggers:**
 
