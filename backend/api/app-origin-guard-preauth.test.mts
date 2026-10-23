@@ -9,6 +9,34 @@ const WORKER_HEADER_VALUE = '0123456789abcdef0123456789abcdef'
 // Sec-Fetch-Site), not only cookie-bearing ones, so it covers pre-auth routes (login/signup).
 // Requests with no browser signal are treated as server-to-server and allowed through.
 describe('API origin guard — pre-auth and server-to-server coverage', () => {
+  it.each(['/api/v1/auth/device-bound-sessions', '/api/v1/auth/device-bound-sessions/refreshes'])(
+    'admits an originless browser-managed POST %s only through the Worker boundary',
+    async path => {
+      const app = createVouchaApiApp()
+      app.route(path).post(ctx => ctx.json({ reached: true }))
+      const allowed = await guardedRequest(app)
+        .post(path)
+        .set('x-cf-worker-secret', WORKER_HEADER_VALUE)
+        .set('Cookie', 'dt=device')
+      expect(allowed.status).toBe(200)
+      const rejected = await guardedRequest(app).post(path).set('Cookie', 'dt=device')
+      expect(rejected.status).toBe(403)
+    },
+  )
+
+  it.each([
+    '/api/v1/auth/device-bound-sessions/refreshes/extra',
+    '/api/v1/auth/device-bound-sessions-extra',
+  ])('keeps origin checks for adjacent POST %s', async path => {
+    const app = createVouchaApiApp()
+    app.route(path).post(ctx => ctx.json({ reached: true }))
+    const response = await guardedRequest(app)
+      .post(path)
+      .set('x-cf-worker-secret', WORKER_HEADER_VALUE)
+      .set('Cookie', 'dt=device')
+    expect(response.status).toBe(403)
+  })
+
   it('rejects cross-site mutations even without a session cookie', async () => {
     const app = createVouchaApiApp()
     app.route('/api/private').post(ctx => ctx.json({ ok: true }))

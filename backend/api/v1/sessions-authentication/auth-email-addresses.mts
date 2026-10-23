@@ -1,3 +1,4 @@
+import { advertiseDbscRegistration } from './dbsc-registration-helpers.mts'
 import { isNativeClientTransportRequest } from '@modules/request-client-info'
 import app from '../../app.mts'
 import {
@@ -140,6 +141,7 @@ async function loginWithEmailToken(ctx: Context, routeKey: string, native: boole
     st: result.sessionToken.token,
     deviceClass: result.deviceToken.payload.dc,
   })
+  await advertiseDbscRegistration(ctx, result.deviceToken)
 
   ctx.json({
     user: result.user,

@@ -1,271 +1,250 @@
+import { authorizeDbscProof } from './dbsc-proof.mts'
 import { describe, expect, it } from 'vitest'
-import { v7 } from 'uuid'
-import { exportJWK, generateKeyPair, SignJWT } from 'jose'
-import { serializeItem } from 'structured-headers'
+import { exportJWK, SignJWT } from 'jose'
 import {
-  createTestUserDirect,
-  getTestPrivateUserById,
-  softDeleteUser,
-} from '@voucha/test-helpers/entities/users'
-import { verifyDeviceJwt, verifySessionJwt, signSessionJwt } from '@ts-shared/session-jwt'
+  createDbscTestSession,
+  DBSC_TEST_REGISTRATION_URL,
+} from '@voucha/test-helpers/dbsc-session'
+import { verifyDeviceJwt } from '@ts-shared/session-jwt'
 import { sessionValkeyClient } from '@data-stores/valkey/clients'
-import { createDeviceAndSessionTokens, refreshSessionState, revokeSession } from './index.mts'
-import { authorizeDbscProof, getWebRefreshAuthority } from './dbsc-proof.mts'
-import { createDbscRegistrationOffer, createDbscRefreshChallenge } from './dbsc-registration.mts'
-import { getWebSessionAuthorityKey, getDbscChallengeKey } from './dbsc-state.mts'
+import { refreshSessionState } from './flows.mts'
+import { readSessionDeviceAuthority } from './device-authority.mts'
+import { getDbscChallengeKey } from './dbsc-state.mts'
 
-const origin = 'https://dbsc.example'
-const userAgent = 'Synthetic browser/1.0'
-
-async function setupSession() {
-  const user = await createTestUserDirect()
-  const tokens = await createDeviceAndSessionTokens({
-    did: v7(),
-    uid: user.id,
-    deviceContext: { user_agent: userAgent, origin },
-  })
-  const key = await generateKeyPair('ES256')
-  const publicKey = await exportJWK(key.publicKey)
-  const nonce = await createDbscRegistrationOffer({
-    deviceToken: tokens.deviceToken.token,
-    userAgent,
-    origin,
-  })
-  expect(nonce).toBeTruthy()
-  const proofOptions = {
-    deviceToken: tokens.deviceToken.token,
-    userAgent,
-    origin,
-    fetchUser: getTestPrivateUserById,
-  }
-  async function sign(nonceValue: string, registration = false) {
-    return serializeItem(
-      await new SignJWT({ jti: nonceValue })
-        .setProtectedHeader({
-          alg: 'ES256',
-          typ: 'dbsc+jwt',
-          ...(registration && { jwk: publicKey }),
-        })
-        .sign(key.privateKey),
-    )
-  }
-  async function register() {
-    return authorizeDbscProof({
-      ...proofOptions,
-      purpose: 'registration',
-      proofHeader: await sign(nonce!, true),
-    })
-  }
-  return { user, tokens, key, publicKey, nonce: nonce!, proofOptions, sign, register }
-}
-
-describe('DBSC session authority', () => {
-  it('binds the initial credential-completion challenge once and preserves the original refresh lifetime', async () => {
-    const fixture = await setupSession()
-    const before = (await verifyDeviceJwt(fixture.tokens.deviceToken.token))!
-    const proof = await fixture.register()
-    const refreshed = await refreshSessionState({ ...fixture.proofOptions, dbscProof: proof })
-    expect(refreshed.sid).toBe(fixture.tokens.sessionToken.payload.sid)
-    expect((await verifySessionJwt(refreshed.st))?.dbsc).toBe(true)
-    expect(refreshed.dt).toBe(fixture.tokens.deviceToken.token)
-    const { authority } = await getWebRefreshAuthority(refreshed.dt, userAgent)
-    expect(authority).toMatchObject({
-      kind: 'bound',
-      publicKey: fixture.publicKey,
-      origin,
-      deviceExpiresAt: before.exp,
-      deviceIssuedAt: before.iat,
-    })
-    expect(await createDbscRegistrationOffer(fixture.proofOptions)).toBeNull()
-    await expect(fixture.register()).rejects.toMatchObject({ code: 'DBSC_PROOF_INVALID' })
+describe('durable browser device-bound session authority', () => {
+  it('accepts Chromium registration without iat/sub/aud and preserves original lifetime', async () => {
+    const fixture = await createDbscTestSession()
+    const before = await verifyDeviceJwt(fixture.tokens.deviceToken.token)
+    const registered = await fixture.register()
+    const after = await verifyDeviceJwt(registered.dt)
+    expect(after).toMatchObject({ iat: before!.iat, exp: before!.exp })
+    expect(after!.jti).not.toBe(before!.jti)
+    expect(
+      (await readSessionDeviceAuthority(registered.sid))!.device_bound_session_binding,
+    ).toMatchObject({ publicKey: fixture.publicKey, origin: fixture.base.origin })
   })
 
-  it('requires proof for older device cookies and every paired hot, warm and cold refresh', async () => {
-    const fixture = await setupSession()
-    await fixture.register()
-    for (const freshness of [{}, { sca: 0 }, { sca: 0, rca: 0 }]) {
-      const access = await signSessionJwt(
-        { ...fixture.tokens.sessionToken.payload, ...freshness },
-        { expiresIn: '10 minutes' },
-      )
-      await expect(
-        refreshSessionState({ ...fixture.proofOptions, sessionToken: access }),
-      ).rejects.toMatchObject({ code: 'DBSC_PROOF_REQUIRED' })
-    }
-    await expect(refreshSessionState(fixture.proofOptions)).rejects.toMatchObject({
-      code: 'DBSC_PROOF_REQUIRED',
-    })
+  it('requires stored-key proof to rotate a bound session without changing authority on rejection', async () => {
+    const fixture = await createDbscTestSession()
+    const registered = await fixture.register()
+    const before = await readSessionDeviceAuthority(registered.sid)
     await expect(
-      refreshSessionState({
-        ...fixture.proofOptions,
-        dbscProof: { sid: fixture.tokens.sessionToken.payload.sid },
-      }),
-    ).rejects.toMatchObject({ code: 'DBSC_PROOF_REQUIRED' })
+      refreshSessionState({ ...fixture.base, deviceToken: registered.dt }),
+    ).rejects.toMatchObject({ status: 403, code: 'DBSC_PROOF_REQUIRED' })
+    expect(await readSessionDeviceAuthority(registered.sid)).toMatchObject({
+      device_token_digest: before!.device_token_digest,
+      device_bound_session_binding: before!.device_bound_session_binding,
+    })
   })
 
-  it('consumes a refresh proof once, including concurrent attempts, and keeps current-user authority', async () => {
-    const fixture = await setupSession()
-    await fixture.register()
-    const sid = fixture.tokens.sessionToken.payload.sid
-    const nonce = (await createDbscRefreshChallenge({ ...fixture.proofOptions, sessionId: sid }))!
-    const proofHeader = await fixture.sign(nonce)
-    const results = await Promise.allSettled(
-      [0, 1].map(() =>
-        authorizeDbscProof({
-          ...fixture.proofOptions,
-          purpose: 'refresh',
-          sessionHeader: serializeItem(sid),
-          proofHeader,
-        }),
-      ),
-    )
-    expect(results.filter(result => result.status === 'fulfilled')).toHaveLength(1)
-    const winner = results.find(result => result.status === 'fulfilled')!
-    if (winner.status !== 'fulfilled') throw new Error('Expected one proof authorization')
+  it('renews with a raw identifier and stored-key proof', async () => {
+    const fixture = await createDbscTestSession()
+    const registered = await fixture.register()
+    const nonce = await fixture.challenge(registered.dt)
+    const proof = await fixture.authorizeRefresh(registered.dt, nonce)
     const refreshed = await refreshSessionState({
-      ...fixture.proofOptions,
-      dbscProof: winner.value,
+      ...fixture.base,
+      deviceToken: registered.dt,
+      dbscProof: proof,
     })
     expect(refreshed.uid).toBe(fixture.user.id)
-    expect(refreshed.session).toMatchObject({ dbsc: true, client: 'web' })
+    expect(refreshed.dt).not.toBe(registered.dt)
+    const [before, after] = await Promise.all([
+      verifyDeviceJwt(registered.dt),
+      verifyDeviceJwt(refreshed.dt),
+    ])
+    expect(after).toMatchObject({ iat: before!.iat, exp: before!.exp })
   })
 
-  it('rejects a registration proof for another origin and an expired initial challenge', async () => {
-    const fixture = await setupSession()
+  it('retains binding through challenge eviction and accepts a fresh challenge', async () => {
+    const fixture = await createDbscTestSession()
+    const registered = await fixture.register()
+    const nonce = await fixture.challenge(registered.dt)
+    await sessionValkeyClient.unlink([getDbscChallengeKey(nonce)])
+    await expect(fixture.authorizeRefresh(registered.dt, nonce)).rejects.toMatchObject({
+      status: 403,
+      code: 'DBSC_PROOF_REQUIRED',
+    })
+    expect(
+      (await readSessionDeviceAuthority(registered.sid))!.device_bound_session_binding,
+    ).toMatchObject({ publicKey: fixture.publicKey })
+    const fresh = await fixture.challenge(registered.dt)
+    const proof = await fixture.authorizeRefresh(registered.dt, fresh)
+    await expect(
+      refreshSessionState({ ...fixture.base, deviceToken: registered.dt, dbscProof: proof }),
+    ).resolves.toMatchObject({ uid: fixture.user.id })
+  })
+
+  it('renews an unbound session without a Valkey authority document', async () => {
+    const fixture = await createDbscTestSession()
+    await sessionValkeyClient.unlink([getDbscChallengeKey(fixture.nonce)])
+    const refreshed = await refreshSessionState(fixture.base)
+    expect(refreshed.uid).toBe(fixture.user.id)
+    expect(
+      (await readSessionDeviceAuthority(refreshed.sid))!.device_bound_session_binding,
+    ).toBeNull()
+  })
+
+  it('rejects a quoted compact proof without consuming the registration nonce', async () => {
+    const fixture = await createDbscTestSession()
+    const raw = await fixture.sign(fixture.nonce, true)
+    await expect(fixture.authorizeRegistration(`"${raw}"`)).rejects.toMatchObject({
+      status: 400,
+      code: 'DBSC_PROOF_INVALID',
+    })
+    await expect(fixture.authorizeRegistration(raw)).resolves.toMatchObject({
+      sid: fixture.tokens.sessionToken.payload.sid,
+    })
+  })
+
+  it('validates optional audiences when present', async () => {
+    const fixture = await createDbscTestSession()
+    const sign = (aud: string) =>
+      new SignJWT({ jti: fixture.nonce, aud })
+        .setProtectedHeader({ alg: 'ES256', typ: 'dbsc+jwt', jwk: fixture.publicKey })
+        .sign(fixture.key.privateKey)
+    await expect(
+      fixture.authorizeRegistration(await sign('https://other.example/')),
+    ).rejects.toMatchObject({ status: 400 })
+    await expect(
+      fixture.authorizeRegistration(await sign(DBSC_TEST_REGISTRATION_URL)),
+    ).resolves.toMatchObject({ sid: fixture.tokens.sessionToken.payload.sid })
+  })
+
+  it('rejects a private registration JWK without binding or rotating, then accepts the original nonce', async () => {
+    const fixture = await createDbscTestSession()
+    const sid = fixture.tokens.sessionToken.payload.sid
+    const before = await readSessionDeviceAuthority(sid)
+    const privateJwk = await exportJWK(fixture.key.privateKey)
+    expect(privateJwk.d).toBeDefined()
+    const proof = await fixture.sign(fixture.nonce, true, {
+      ...fixture.publicKey,
+      d: privateJwk.d!,
+    })
+
+    await expect(fixture.authorizeRegistration(proof)).rejects.toMatchObject({
+      status: 400,
+      code: 'DBSC_PROOF_INVALID',
+    })
+    expect(await readSessionDeviceAuthority(sid)).toMatchObject({
+      device_token_digest: before!.device_token_digest,
+      device_bound_session_binding: null,
+    })
+
+    const registered = await fixture.register()
+    expect(registered.dt).not.toBe(fixture.tokens.deviceToken.token)
+    expect(await readSessionDeviceAuthority(sid)).toMatchObject({
+      device_bound_session_binding: { publicKey: fixture.publicKey },
+    })
+  })
+
+  it('rejects a refresh proof carrying a replacement JWK without consuming its challenge', async () => {
+    const fixture = await createDbscTestSession()
+    const other = await createDbscTestSession()
+    const registered = await fixture.register()
+    const before = await readSessionDeviceAuthority(registered.sid)
+    const nonce = await fixture.challenge(registered.dt)
+    // The proof signature matches the registered key; only the injected header key differs.
+    const injectedJwkProof = await fixture.sign(nonce, false, other.publicKey)
+
+    await expect(
+      fixture.authorizeRefresh(registered.dt, nonce, injectedJwkProof),
+    ).rejects.toMatchObject({ status: 400, code: 'DBSC_PROOF_INVALID' })
+    expect(await readSessionDeviceAuthority(registered.sid)).toMatchObject({
+      device_token_digest: before!.device_token_digest,
+      device_bound_session_binding: before!.device_bound_session_binding,
+    })
+
+    const correctedProof = await fixture.authorizeRefresh(registered.dt, nonce)
+    const refreshed = await refreshSessionState({
+      ...fixture.base,
+      deviceToken: registered.dt,
+      dbscProof: correctedProof,
+    })
+    expect(refreshed.dt).not.toBe(registered.dt)
+    expect(await readSessionDeviceAuthority(registered.sid)).toMatchObject({
+      device_bound_session_binding: before!.device_bound_session_binding,
+    })
+  })
+
+  it('rejects another key without consuming the stored-key challenge', async () => {
+    const fixture = await createDbscTestSession()
+    const other = await createDbscTestSession()
+    const registered = await fixture.register()
+    const nonce = await fixture.challenge(registered.dt)
+    await expect(
+      fixture.authorizeRefresh(registered.dt, nonce, await other.sign(nonce)),
+    ).rejects.toMatchObject({ status: 400 })
+    await expect(fixture.authorizeRefresh(registered.dt, nonce)).resolves.toMatchObject({
+      sid: registered.sid,
+    })
+  })
+
+  it('rejects forged proof objects at the locked renewal boundary', async () => {
+    const fixture = await createDbscTestSession()
+    const registered = await fixture.register()
+    const row = await readSessionDeviceAuthority(registered.sid)
+    await expect(
+      refreshSessionState({
+        ...fixture.base,
+        deviceToken: registered.dt,
+        dbscProof: { sid: registered.sid, deviceTokenDigest: row!.device_token_digest! },
+      }),
+    ).rejects.toMatchObject({ status: 403, code: 'DBSC_PROOF_REQUIRED' })
+  })
+
+  it('serializes concurrent registrations against the same row', async () => {
+    const fixture = await createDbscTestSession()
+    const results = await Promise.allSettled([
+      fixture.authorizeRegistration(),
+      fixture.authorizeRegistration(),
+    ])
+    expect(results.filter(result => result.status === 'fulfilled')).toHaveLength(1)
+    expect(results.filter(result => result.status === 'rejected')).toHaveLength(1)
+    const winner = results.find(result => result.status === 'fulfilled')!
+    if (winner.status !== 'fulfilled') throw new Error('No winning registration')
+    await expect(
+      refreshSessionState({ ...fixture.base, dbscProof: winner.value }),
+    ).resolves.toMatchObject({ uid: fixture.user.id })
+  })
+
+  it('rejects and revokes when ordinary rotation wins after the registration authority read', async () => {
+    const fixture = await createDbscTestSession()
+    let rotated: Awaited<ReturnType<typeof refreshSessionState>> | undefined
     const proofHeader = await fixture.sign(fixture.nonce, true)
     await expect(
       authorizeDbscProof({
-        ...fixture.proofOptions,
-        origin: 'https://another.example',
+        ...fixture.base,
         purpose: 'registration',
+        requestUrl: DBSC_TEST_REGISTRATION_URL,
         proofHeader,
+        fetchUser: async uid => {
+          const user = await fixture.base.fetchUser(uid)
+          // This is a real competing committed renewal after the optimistic read, before its lock.
+          rotated = await refreshSessionState(fixture.base)
+          return user
+        },
       }),
-    ).rejects.toMatchObject({ code: 'DBSC_PROOF_INVALID' })
-    await sessionValkeyClient.unlink([getDbscChallengeKey(fixture.nonce)])
-    await expect(fixture.register()).rejects.toMatchObject({ code: 'DBSC_PROOF_INVALID' })
-    expect(
-      (await getWebRefreshAuthority(fixture.tokens.deviceToken.token, userAgent)).authority.kind,
-    ).toBe('unbound')
+    ).rejects.toMatchObject({ status: 401, code: 'SESSION_REFRESH_REUSED' })
+    expect(rotated).toBeDefined()
+    expect(await readSessionDeviceAuthority(fixture.tokens.sessionToken.payload.sid)).toMatchObject(
+      {
+        revoked_at: expect.any(Date),
+        device_bound_session_binding: null,
+      },
+    )
+    await expect(
+      refreshSessionState({ ...fixture.base, deviceToken: rotated!.dt }),
+    ).resolves.toMatchObject({ uid: null })
   })
 
-  it('rejects a wrong key and cross-session refresh proof without consuming the legitimate challenge', async () => {
-    const [fixture, other] = await Promise.all([setupSession(), setupSession()])
-    await fixture.register()
-    const sid = fixture.tokens.sessionToken.payload.sid
-    const nonce = (await createDbscRefreshChallenge({ ...fixture.proofOptions, sessionId: sid }))!
-    await expect(
-      authorizeDbscProof({
-        ...fixture.proofOptions,
-        purpose: 'refresh',
-        sessionHeader: serializeItem(sid),
-        proofHeader: await other.sign(nonce),
-      }),
-    ).rejects.toMatchObject({ code: 'DBSC_PROOF_INVALID' })
-    await expect(
-      authorizeDbscProof({
-        ...fixture.proofOptions,
-        purpose: 'refresh',
-        sessionHeader: serializeItem(v7()),
-        proofHeader: await fixture.sign(nonce),
-      }),
-    ).rejects.toMatchObject({ code: 'DBSC_PROOF_INVALID' })
-    await expect(
-      authorizeDbscProof({
-        ...fixture.proofOptions,
-        purpose: 'refresh',
-        sessionHeader: serializeItem(sid),
-        proofHeader: await fixture.sign(nonce),
-      }),
-    ).resolves.toMatchObject({ sid })
-  })
-
-  it('fails closed for lost authority and never recreates it during credential replay', async () => {
-    const fixture = await setupSession()
-    const sid = fixture.tokens.sessionToken.payload.sid
-    await sessionValkeyClient.unlink([getWebSessionAuthorityKey(sid)])
-    await expect(refreshSessionState(fixture.proofOptions)).rejects.toMatchObject({
-      code: 'SESSION_RELOGIN_REQUIRED',
+  it('durably revokes a rotated device credential reused after registration', async () => {
+    const fixture = await createDbscTestSession()
+    const registered = await fixture.register()
+    await expect(refreshSessionState(fixture.base)).rejects.toMatchObject({
+      status: 401,
+      code: 'SESSION_REFRESH_REUSED',
     })
-    await expect(
-      createDeviceAndSessionTokens({
-        did: fixture.tokens.deviceToken.payload.did,
-        sid,
-        uid: fixture.user.id,
-        credentialReplay: true,
-        deviceContext: { user_agent: userAgent, origin },
-      }),
-    ).rejects.toMatchObject({ code: 'SESSION_RELOGIN_REQUIRED' })
-    expect(await sessionValkeyClient.get(getWebSessionAuthorityKey(sid))).toBeNull()
-  })
-
-  it('preserves bound authority and original device epoch on secure credential completion replay', async () => {
-    const fixture = await setupSession()
-    await fixture.register()
-    const before = (await verifyDeviceJwt(fixture.tokens.deviceToken.token))!
-    const replay = await createDeviceAndSessionTokens({
-      did: before.did,
-      sid: before.refresh_sid,
-      uid: fixture.user.id,
-      credentialReplay: true,
-      deviceContext: { user_agent: userAgent, origin, isNativeClient: true },
-    })
-    expect(replay.deviceToken.registrationEligible).toBe(false)
-    expect(replay.sessionToken.payload.dbsc).toBe(true)
-    expect(await verifyDeviceJwt(replay.deviceToken.token)).toMatchObject({
-      exp: before.exp,
-      iat: before.iat,
-    })
-    await expect(
-      refreshSessionState({ ...fixture.proofOptions, deviceToken: replay.deviceToken.token }),
-    ).rejects.toMatchObject({ code: 'DBSC_PROOF_REQUIRED' })
-    await expect(
-      createDeviceAndSessionTokens({
-        did: before.did,
-        sid: before.refresh_sid,
-        uid: fixture.user.id,
-        credentialReplay: true,
-        deviceContext: { user_agent: userAgent, origin: 'https://other.example' },
-      }),
-    ).rejects.toMatchObject({ code: 'SESSION_RELOGIN_REQUIRED' })
-  })
-
-  it('rejects private registration keys and wrong JWT types without consuming the challenge', async () => {
-    const fixture = await setupSession()
-    const privateKey = { ...fixture.publicKey, d: 'synthetic-private-field' }
-    for (const header of [
-      { alg: 'ES256', typ: 'dbsc+jwt', jwk: privateKey },
-      { alg: 'ES256', typ: 'JWT', jwk: fixture.publicKey },
-    ]) {
-      const proofHeader = serializeItem(
-        await new SignJWT({ jti: fixture.nonce })
-          .setProtectedHeader(header)
-          .sign(fixture.key.privateKey),
-      )
-      await expect(
-        authorizeDbscProof({ ...fixture.proofOptions, purpose: 'registration', proofHeader }),
-      ).rejects.toMatchObject({ status: 400, code: 'DBSC_PROOF_INVALID' })
-    }
-    await expect(fixture.register()).resolves.toBeDefined()
-  })
-
-  it('cannot bind a deleted user or refresh a revoked bound session', async () => {
-    const fixture = await setupSession()
-    await softDeleteUser(fixture.user.id)
-    await expect(fixture.register()).rejects.toMatchObject({ code: 'SESSION_RELOGIN_REQUIRED' })
-    const bound = await setupSession()
-    await bound.register()
-    await revokeSession(bound.tokens.sessionToken.payload.sid)
-    await expect(
-      createDbscRefreshChallenge({
-        ...bound.proofOptions,
-        sessionId: bound.tokens.sessionToken.payload.sid,
-      }),
-    ).rejects.toMatchObject({ status: 401, code: 'SESSION_RELOGIN_REQUIRED' })
-  })
-
-  it('cannot bind a revoked session', async () => {
-    const fixture = await setupSession()
-    await revokeSession(fixture.tokens.sessionToken.payload.sid)
-    await expect(fixture.register()).rejects.toMatchObject({ code: 'SESSION_RELOGIN_REQUIRED' })
+    expect((await readSessionDeviceAuthority(registered.sid))!.revoked_at).toBeInstanceOf(Date)
   })
 })

@@ -1,3 +1,5 @@
+import { assertDeviceBoundRefreshAllowed } from './dbsc-proof.mts'
+import type { DbscAuthorization } from './types.mts'
 import { randomUUID } from 'node:crypto'
 import { beginTransaction, registerPostCommitAction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
@@ -20,6 +22,7 @@ export async function rotateAuthenticatedDeviceToken(options: {
   uid: string
   did: string
   sid: string
+  dbscProof?: DbscAuthorization
 }): Promise<string> {
   const device = await verifyDeviceJwt(options.deviceToken)
   if (
@@ -93,6 +96,7 @@ export async function rotateAuthenticatedDeviceToken(options: {
     device.exp !== Math.floor(row.expires_at.getTime() / 1000)
   )
     throw sessionReloginRequired()
+  assertDeviceBoundRefreshAllowed(row, options.dbscProof)
   const payload = {
     ...device,
     jti: randomUUID(),

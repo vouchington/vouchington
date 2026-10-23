@@ -79,7 +79,6 @@ export async function issuePreparedOAuthFlowResult(options: {
   const tokens = await createDeviceAndSessionTokens({
     did: options.deviceId,
     sid: options.authenticatedSessionId,
-    credentialReplay: options.refreshAuthenticatedSession,
     uid: options.user.id,
     eventType: options.refreshAuthenticatedSession ? 'refreshed_authenticated' : 'created',
     // A completed authorization can be observed concurrently before its first caller mints.

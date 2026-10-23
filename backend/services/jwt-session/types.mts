@@ -25,6 +25,11 @@ export interface DeviceContext {
 
 export type { DeviceClass, DeviceTokenPayload, SessionTokenPayload }
 
+export interface DbscAuthorization {
+  readonly sid: string
+  readonly deviceTokenDigest: string
+}
+
 export interface DeviceTokenResult {
   token: string
   payload: DeviceTokenPayload

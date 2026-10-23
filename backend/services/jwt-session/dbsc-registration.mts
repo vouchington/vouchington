@@ -1,26 +1,40 @@
 import { getWebRefreshAuthority } from './dbsc-proof.mts'
 import { issueDbscChallenge } from './dbsc-state.mts'
 
-/** Call only immediately after successful credential completion, never on cookie refresh. */
+/** Only a just-completed credential exchange may advertise initial registration. */
 export async function createDbscRegistrationOffer(options: {
   deviceToken: string
   userAgent?: string
+  ja4?: string
   origin: string
 }): Promise<string | null> {
-  const { authority } = await getWebRefreshAuthority(options.deviceToken, options.userAgent)
-  if (authority.kind !== 'unbound' || authority.origin !== options.origin) return null
-  return authority.registrationExpiresAt > Math.floor(Date.now() / 1000)
-    ? authority.registrationNonce
-    : null
+  const { authority } = await getWebRefreshAuthority(
+    options.deviceToken,
+    options.userAgent,
+    options.ja4,
+  )
+  if (authority.kind !== 'unbound') return null
+  return issueDbscChallenge({
+    purpose: 'registration',
+    uid: authority.uid,
+    did: authority.did,
+    sid: authority.sid,
+    origin: options.origin,
+  })
 }
 
 export async function createDbscRefreshChallenge(options: {
   deviceToken: string
   userAgent?: string
+  ja4?: string
   origin: string
   sessionId: string
 }): Promise<string | null> {
-  const { authority } = await getWebRefreshAuthority(options.deviceToken, options.userAgent)
+  const { authority } = await getWebRefreshAuthority(
+    options.deviceToken,
+    options.userAgent,
+    options.ja4,
+  )
   if (
     authority.kind !== 'bound' ||
     authority.origin !== options.origin ||

@@ -22,6 +22,7 @@ export async function applyHotWarmCold(
   dt: string,
   fetchUser: FetchUserForSession,
   clock: () => number = Date.now,
+  dbscProof?: DbscAuthorization,
 ): Promise<RefreshedSessionState> {
   const uid = verified.uid!
   const now = Math.floor(clock() / 1000)
@@ -50,6 +51,7 @@ export async function applyHotWarmCold(
     const refreshed = await createRefreshedAuthenticatedSession({
       did,
       dt,
+      dbscProof,
       clock,
       sid: verified.sid,
       uid,
@@ -89,6 +91,7 @@ export async function applyHotWarmCold(
   const refreshed = await createRefreshedAuthenticatedSession({
     did,
     dt,
+    dbscProof,
     clock,
     sid: verified.sid,
     uid,

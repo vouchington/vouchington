@@ -1,3 +1,4 @@
+import { advertiseDbscRegistration } from '../dbsc-registration-helpers.mts'
 import { isNativeClientTransportRequest } from '@modules/request-client-info'
 import type { Context } from '@jongleberry/api-server'
 import { setAuthenticationCookies } from '@modules/api-utils'
@@ -36,6 +37,7 @@ export async function completeMfaVerification(
     st: login.sessionToken.token,
     deviceClass: login.deviceClass,
   })
+  await advertiseDbscRegistration(ctx, login.deviceToken)
   return {
     user: { id: login.userId },
     ...(isNativeClientTransportRequest(ctx.req) && {

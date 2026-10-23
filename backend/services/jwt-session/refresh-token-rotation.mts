@@ -1,6 +1,7 @@
 import { rotateAuthenticatedDeviceToken } from './device-authority-rotation.mts'
 import { verifyDeviceJwt, signDeviceJwt, DEVICE_EXPIRATION_STRING } from '@ts-shared/session-jwt'
 import type {
+  DbscAuthorization,
   SessionClientBinding,
   DeviceClass,
   RefreshedSessionState,
@@ -49,6 +50,7 @@ export async function createRefreshedAuthenticatedSession(options: {
   clock?: () => number
   clientBinding: SessionClientBinding
   deviceExpiresAt?: number
+  dbscProof?: DbscAuthorization
 }): Promise<{
   did: string
   dt: string
@@ -58,6 +60,7 @@ export async function createRefreshedAuthenticatedSession(options: {
 }> {
   const dt = await rotateAuthenticatedDeviceToken({
     deviceToken: options.dt,
+    dbscProof: options.dbscProof,
     uid: options.uid,
     did: options.did,
     sid: options.sid,
