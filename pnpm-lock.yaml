@@ -8497,8 +8497,8 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1
       valkyries:
-        specifier: ^0.10.0
-        version: 0.10.0
+        specifier: ^0.11.1
+        version: 0.11.1
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5

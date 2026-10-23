@@ -50,10 +50,6 @@ export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
     'Subscription partition tie-breaker survives deletion of its user and subscription rows.',
   ],
   [
-    'security_retention_cleanup_cursors.cursor_id',
-    'Deletion-stable keyset position; the scanned source row can be deleted before the next pass.',
-  ],
-  [
     'retained_image_placement_binding_cleanup_cursors.cursor_placement_id',
     'Operational placement UUIDv7 position survives deletion of the swept binding; it is not a relationship.',
   ],
