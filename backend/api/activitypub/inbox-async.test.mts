@@ -6,7 +6,7 @@ import { activityPubInboxConfig } from '@services/ap-inbox-activities'
 import {
   claimTestDelivery,
   rejectTestDelivery,
-} from '@voucha/test-helpers/services/ap-inbox-activities/durable-delivery-transitions.test-support'
+} from '@voucha/test-helpers/activitypub-inbox-transitions'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { activityPubInboxDeliveryExistsOnPrimaryForTest } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'

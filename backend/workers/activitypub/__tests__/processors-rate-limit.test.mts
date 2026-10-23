@@ -4,7 +4,7 @@ import { activitypub } from '@queues/activitypub/queues'
 import {
   claimTestDelivery,
   rejectTestDelivery,
-} from '@voucha/test-helpers/services/ap-inbox-activities/durable-delivery-transitions.test-support'
+} from '@voucha/test-helpers/activitypub-inbox-transitions'
 import {
   recordActivityPubInboxSenderDelivery,
   recordActivityPubInboxSenderDeliveryOnce,
