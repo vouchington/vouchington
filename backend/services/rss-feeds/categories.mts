@@ -75,7 +75,7 @@ export async function backfillCategoriesForTopicAlias(
   topicId: string,
 ): Promise<{ updated: number; hasMore: boolean }> {
   const RSS_FEED_CATEGORY_BACKFILL_BATCH_SIZE = getRssFeedsWorkLimit('category_backfill_batch_size')
-  const { rows: priorMappings } = await read<{
+  const { rows: priorMappings } = await write<{
     topic_id: string | null
   }>(sql`/* backfillCategoriesForTopicAlias:priorMappings */
     SELECT category.topic_id

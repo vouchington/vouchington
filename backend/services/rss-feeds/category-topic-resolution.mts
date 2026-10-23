@@ -1,4 +1,4 @@
-import { read, type TransactionQuery } from '@data-stores/psql'
+import { write, type TransactionQuery } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 
 export type FeedCategoryTopic = {
@@ -12,7 +12,7 @@ export async function resolveRssFeedCategoryTopics(
   categories: string[],
   query?: TransactionQuery,
 ): Promise<FeedCategoryTopic[]> {
-  const { rows } = await read<FeedCategoryTopic>(
+  const { rows } = await write<FeedCategoryTopic>(
     sql`/* resolveRssFeedCategoryTopics */
       SELECT identity.id AS category_identity_id,
         COALESCE(t_alias.id, t_name.id, t_slug.id) AS topic_id,
