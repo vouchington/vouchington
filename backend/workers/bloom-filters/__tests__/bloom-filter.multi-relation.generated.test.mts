@@ -9,7 +9,6 @@ import {
   checkBookmarkBloomCandidatesByRelations,
   deleteUserBookmarkBloomFilter,
 } from '@services/bookmarks/bloom-filter'
-import { checkBookmarkBloomCandidates } from '@services/bookmarks/bloom-filter-candidates'
 import { insertTestTopic, insertTestRssFeed, insertTestRssFeedItem } from '@voucha/test-helpers'
 import { addUrl } from '@services/urls'
 import { createHash } from 'node:crypto'
@@ -171,13 +170,13 @@ describe('bloom-filter.generated (multi-relation)', () => {
     await bookmarkEntity(fixture.user, 'rss_feed_item', { id: savedItemId }, 'save')
     await backfillUserBookmarkBloomFilter(fixture.user.id)
 
-    const bloomCandidates = await checkBookmarkBloomCandidates(
+    const bloomCandidates = await checkBookmarkBloomCandidatesByRelations(
       fixture.user.id,
-      fixture.rssFeedItemSaveRelationTableName,
+      [fixture.rssFeedItemSaveRelationTableName],
       [savedItemId, unsavedItemId],
     )
-    expect(bloomCandidates.ready).toBe(true)
-    expect(bloomCandidates.results[0]).toBe(true)
+    expect(bloomCandidates[fixture.rssFeedItemSaveRelationTableName]?.ready).toBe(true)
+    expect(bloomCandidates[fixture.rssFeedItemSaveRelationTableName]?.results[0]).toBe(true)
 
     const bookmarks = await getBookmarksForEntities(fixture.user, 'rss_feed_item', [
       savedItemId,

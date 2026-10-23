@@ -108,8 +108,7 @@ When a bloom filter is not ready, a background job (`enqueueBackfillUserBookmark
 
 ## Bookmark Counts
 
-- `getUserBookmarkCounts(userId)` -- counts of entities bookmarked by the user, grouped by entity type and predicate
-- `getTopicBookmarkCounts(entityId)` / `getPostBookmarkCounts(entityId)` / `getRssFeedBookmarkCounts(entityId)` -- how many users bookmarked a given entity
+Bookmark counts are user-scoped metrics: they group the user's active outgoing bookmark relations by entity type and predicate, and count incoming bookmarks for user relations. They do not represent an all-user total for an arbitrary entity.
 
 ## Related Services
 

@@ -1,7 +1,5 @@
 import { entityRelationMetadatum } from '@services/entity-relations/metadata'
-import type { EntityRelationEntityType } from '@services/entity-relations/config'
 import { read } from '@data-stores/psql'
-import assert from 'http-assert'
 
 // get how many entities this user bookmarked
 export const getUserBookmarkCounts = async (userId: string) => {
@@ -79,49 +77,3 @@ export const getUserBookmarkCounts = async (userId: string) => {
 
   return output
 }
-
-// get how many people bookmarked this entity and by type
-const getEntityBookmarkCounts =
-  (entityType: EntityRelationEntityType) => async (entityId: string) => {
-    const relations = entityRelationMetadatum.filter(
-      r => r.subject_type === 'user' && r.object_type === entityType && r.is_bookmark,
-    )
-    assert(relations.length > 0, 500, `No relation found for ${entityType}`)
-
-    const selects = relations.map(
-      (relationData, index) => `${index === 0 ? '' : '\n    SELECT\n'}      COUNT(*)::INT AS count,
-      '${relationData.predicate}' AS bookmark_type
-    FROM ${relationData.table_name}
-    WHERE object_id = $1
-      AND deleted_at IS NULL
-  `,
-    )
-
-    const { rows } = await read(
-      `/* getEntityBookmarkCounts */ \n    SELECT\n${selects.join(' UNION ALL ')}`,
-      [entityId],
-    )
-
-    const output: Record<string, number> = {}
-    for (const row of rows) {
-      output[row.bookmark_type] = row.count
-    }
-
-    return output
-  }
-
-/**
- * @public Documented contract; production use is unconfirmed and this export may be
- * removed after intended-use review. Evidence: `docs/overview/architecture/bookmarks.md`.
- */
-export const getTopicBookmarkCounts = getEntityBookmarkCounts('topic')
-/**
- * @public Documented contract; production use is unconfirmed and this export may be
- * removed after intended-use review. Evidence: `docs/overview/architecture/bookmarks.md`.
- */
-export const getPostBookmarkCounts = getEntityBookmarkCounts('post')
-/**
- * @public Documented contract; production use is unconfirmed and this export may be
- * removed after intended-use review. Evidence: `docs/overview/architecture/bookmarks.md`.
- */
-export const getRssFeedBookmarkCounts = getEntityBookmarkCounts('rss_feed')

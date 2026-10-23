@@ -7,7 +7,7 @@ import {
   deleteUserBookmarkBloomFilter,
   getUserBookmarkRelationsForEntityType,
 } from '@services/bookmarks/bloom-filter'
-import { checkBookmarkBloomCandidates } from '@services/bookmarks/bloom-filter-candidates'
+import { checkBookmarkBloomCandidatesByRelations } from '@services/bookmarks/bloom-filter-candidates'
 import { bookmarkEntity } from '@services/bookmarks/upsert'
 import { bloomFilterConfig } from '@services/bloom-filter-config'
 import {
@@ -43,10 +43,12 @@ describe('deleteUser bookmark bloom filter cleanup', () => {
       await bookmarkEntity(user, 'topic', { id: topicId }, 'follow')
       await backfillUserBookmarkBloomFilter(user.id)
 
-      const beforeDelete = await checkBookmarkBloomCandidates(user.id, topicRelation.table_name, [
-        topicId,
-      ])
-      expect(beforeDelete.ready).toBe(true)
+      const beforeDelete = await checkBookmarkBloomCandidatesByRelations(
+        user.id,
+        [topicRelation.table_name],
+        [topicId],
+      )
+      expect(beforeDelete[topicRelation.table_name]?.ready).toBe(true)
 
       const completion = Promise.withResolvers<void>()
       const completionOutcome = Promise.allSettled([completion.promise] as const)
@@ -77,10 +79,12 @@ describe('deleteUser bookmark bloom filter cleanup', () => {
         await deleteUser(user, user)
         const [outcome] = await completionOutcome
         if (outcome.status === 'rejected') throw outcome.reason
-        const afterDelete = await checkBookmarkBloomCandidates(user.id, topicRelation.table_name, [
-          topicId,
-        ])
-        expect(afterDelete).toMatchObject({ ready: false })
+        const afterDelete = await checkBookmarkBloomCandidatesByRelations(
+          user.id,
+          [topicRelation.table_name],
+          [topicId],
+        )
+        expect(afterDelete[topicRelation.table_name]?.ready).toBe(false)
       } finally {
         cleanup()
       }
@@ -111,10 +115,12 @@ describe('deleteUser bookmark bloom filter cleanup', () => {
       await bookmarkEntity(user, 'topic', { id: topicId }, 'follow')
       await backfillUserBookmarkBloomFilter(user.id)
 
-      const beforeDelete = await checkBookmarkBloomCandidates(user.id, topicRelation.table_name, [
-        topicId,
-      ])
-      expect(beforeDelete.ready).toBe(true)
+      const beforeDelete = await checkBookmarkBloomCandidatesByRelations(
+        user.id,
+        [topicRelation.table_name],
+        [topicId],
+      )
+      expect(beforeDelete[topicRelation.table_name]?.ready).toBe(true)
 
       // Soft-delete directly (not deleteUser()), which does not race the fire-and-forget
       // processDeleteUserBookmarkBloomFilter enqueue -- this test asserts the backfill-side fence
@@ -129,12 +135,12 @@ describe('deleteUser bookmark bloom filter cleanup', () => {
       // must not recreate the filter or ready markers for a now-deleted user.
       await backfillUserBookmarkBloomFilter(user.id)
 
-      const afterStrayBackfill = await checkBookmarkBloomCandidates(
+      const afterStrayBackfill = await checkBookmarkBloomCandidatesByRelations(
         user.id,
-        topicRelation.table_name,
+        [topicRelation.table_name],
         [topicId],
       )
-      expect(afterStrayBackfill.ready).toBe(false)
+      expect(afterStrayBackfill[topicRelation.table_name]?.ready).toBe(false)
     } finally {
       restoreBloomFilterConfig()
     }

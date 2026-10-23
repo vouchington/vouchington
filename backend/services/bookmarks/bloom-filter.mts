@@ -57,8 +57,8 @@ export async function addBookmarkBloomEntries(
   // filter.add() absorbs all errors internally via .catch(onError); it never throws.
   // If the filter key doesn't exist, add() is a no-op (bloom-filter-add.lua guards both
   // live and building keys with EXISTS checks). The ready-marker check in
-  // checkBookmarkBloomCandidates gates read-side usage until backfill completes and sets
-  // the marker; any items missed during the cold window are recovered by the next rebuild.
+  // checkBookmarkBloomCandidatesByRelations gates read-side usage until backfill completes
+  // and sets the marker; any items missed during the cold window are recovered by the next rebuild.
   const filter = getBookmarkBloomFilter(userId)
   await filter.add(items)
 }

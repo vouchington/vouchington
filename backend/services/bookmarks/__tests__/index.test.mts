@@ -4,12 +4,7 @@ import { bookmarkEntity, unbookmarkEntity } from '../upsert.mts'
 
 import { getBookmarksForEntity, getBookmarksForEntities } from '../get.mts'
 
-import {
-  getUserBookmarkCounts,
-  getTopicBookmarkCounts,
-  getPostBookmarkCounts,
-  getRssFeedBookmarkCounts,
-} from '../counts.mts'
+import { getUserBookmarkCounts } from '../counts.mts'
 
 import type { EntityRelationPredicateType } from '@services/entity-relations/config'
 
@@ -143,56 +138,23 @@ describe('index', () => {
           slug: `test-topic-${random}`,
           createdById: user!.id,
         })
-        // Bookmark the topic
-        await bookmarkEntity(user!, 'topic', { id: topicId }, 'follow')
-
-        const counts = await getUserBookmarkCounts(user!.id)
-
-        expect(counts.bookmarks.topics.follow).toBeGreaterThanOrEqual(1)
-      })
-    })
-
-    describe('getTopicBookmarkCounts', () => {
-      it('returns bookmark counts for a topic', async () => {
-        const random = Math.random().toString(36).slice(2, 15)
-        const topicId = await insertTestTopic({
-          name: `Test Topic ${random}`,
-          slug: `test-topic-${random}`,
-          createdById: user!.id,
-        })
-        // Bookmark the topic
-        await bookmarkEntity(user!, 'topic', { id: topicId }, 'follow')
-
-        const counts = await getTopicBookmarkCounts(topicId)
-
-        expect(counts.follow).toBeGreaterThanOrEqual(1)
-      })
-    })
-
-    describe('getPostBookmarkCounts', () => {
-      it('returns bookmark counts for a post', async () => {
-        const random = Math.random().toString(36).slice(2, 15)
-        await insertTestTopic({
-          name: `Test Topic ${random}`,
-          slug: `test-topic-${random}`,
-          createdById: user!.id,
-        })
         const postId = await insertTestPost({
           createdById: user!.id,
           slug: `test-post-${random}`,
           title: `Test Post ${random}`,
           markdown: 'Test body',
         })
-        // Bookmark the post
+        // Bookmark the topic
+        await bookmarkEntity(user!, 'topic', { id: topicId }, 'follow')
         await bookmarkEntity(user!, 'post', { id: postId }, 'save')
 
-        const counts = await getPostBookmarkCounts(postId)
+        const counts = await getUserBookmarkCounts(user!.id)
 
-        expect(counts.save).toBeGreaterThanOrEqual(1)
+        expect(counts.bookmarks.topics.follow).toBeGreaterThanOrEqual(1)
+        expect(counts.bookmarks.posts.save).toBeGreaterThanOrEqual(1)
       })
     })
   })
   // keep generated shard bindings live for typecheck
-  void (0 as unknown as typeof getRssFeedBookmarkCounts)
   void (0 as unknown as typeof insertTestRssFeed)
 })
