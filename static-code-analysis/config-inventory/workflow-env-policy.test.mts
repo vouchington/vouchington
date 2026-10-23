@@ -43,6 +43,10 @@ describe('workflow env policy', () => {
         '          USED_BY_SHELL: value',
         '          POSTGRES_DB: postgres',
         '          VITEST_REPORT_EXPECTATIONS: context',
+        '          VITEST_FILE_PROGRESS_FILE: progress.log',
+        '          VITEST_JUNIT_OUTPUT_FILE: report.xml',
+        '          VITEST_FILE_PROGRESS_FILE_CUSTOM: stale',
+        '          VITEST_JUNIT_OUTPUT_FILE_CUSTOM: stale',
         '          NODE_DISABLE_COMPILE_CACHE: "1"',
         '          NODE_DISABLE_COMPILE_CACHE_CUSTOM: stale',
         '        run: echo "$USED_BY_SHELL $PORT_NUMBER"',
@@ -73,6 +77,8 @@ describe('workflow env policy', () => {
       'PROTECTED_TAG_PREFIX',
       'NODE_DISABLE_COMPILE_CACHE_CUSTOM',
       'GHCR_KEEP_STALE',
+      'VITEST_FILE_PROGRESS_FILE_CUSTOM',
+      'VITEST_JUNIT_OUTPUT_FILE_CUSTOM',
     ]) {
       expect(errors).toContain(
         `workflow env ${name} in .github/workflows/ci.yml is not referenced by repo code; remove it or add an explicit config-inventory allowlist reason`,
@@ -88,6 +94,8 @@ describe('workflow env policy', () => {
       'USED_BY_SHELL',
       'POSTGRES_DB',
       'VITEST_REPORT_EXPECTATIONS',
+      'VITEST_FILE_PROGRESS_FILE',
+      'VITEST_JUNIT_OUTPUT_FILE',
       'NODE_DISABLE_COMPILE_CACHE',
       'GHCR_KEEP_MAIN',
       'GHCR_OWNER',
