@@ -1,5 +1,6 @@
 import { describe, expect, it, onTestFinished } from 'vitest'
 import {
+  acquireModerationOperationRetentionTestLock,
   createTestExpiryWindow,
   createTestUser,
   deleteTestBlueskyLinkFixtures,
@@ -21,6 +22,8 @@ const DAY_MS = 24 * 60 * 60 * 1000
 
 describe('runDataRetentionCleanup', () => {
   it('returns per-cleanup deletion summaries', async () => {
+    const moderationLock = await acquireModerationOperationRetentionTestLock()
+    onTestFinished(() => moderationLock.release())
     const lock = await acquirePaymentOperationRetentionTestLock()
     onTestFinished(() => lock.release())
     const now = new Date()

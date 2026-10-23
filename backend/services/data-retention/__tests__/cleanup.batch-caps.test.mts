@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import {
+  acquireModerationOperationRetentionTestLock,
   createTestRetentionWindow,
   createTestUserDirect,
   insertReferralAttributionAt,
@@ -73,6 +74,8 @@ describe('data retention per-run caps', () => {
     [1, 1],
     [DATA_RETENTION_MAX_VALUES.batch_size, 1_000],
   ])('uses a bounded retained page for batch size %i', async (batchSize, pageSize) => {
+    const moderationLock = await acquireModerationOperationRetentionTestLock()
+    onTestFinished(() => moderationLock.release())
     const lock = await acquirePaymentOperationRetentionTestLock()
     onTestFinished(() => lock.release())
     const roots = vi.spyOn(retainedRoots, 'cleanupRetainedIdentityRoots')
@@ -155,6 +158,8 @@ describe('data retention per-run caps', () => {
   })
 
   it('stops after max_batches_per_run batches and reports hasMore while rows remain', async () => {
+    const moderationLock = await acquireModerationOperationRetentionTestLock()
+    onTestFinished(() => moderationLock.release())
     const lock = await acquirePaymentOperationRetentionTestLock()
     onTestFinished(() => lock.release())
     const window = createTestRetentionWindow()
@@ -207,6 +212,8 @@ describe('data retention per-run caps', () => {
   })
 
   it('lets a per-cleanup override replace the run limits', async () => {
+    const moderationLock = await acquireModerationOperationRetentionTestLock()
+    onTestFinished(() => moderationLock.release())
     const lock = await acquirePaymentOperationRetentionTestLock()
     onTestFinished(() => lock.release())
     const window = createTestRetentionWindow()
