@@ -43,6 +43,7 @@ export interface DeviceTokenPayload extends jose.JWTPayload {
   dc?: DeviceClass
   client?: SessionClient
   ua_hash?: string
+  ja4_hash?: string
   refresh_uid?: string
   refresh_sid?: string
 }
@@ -53,6 +54,7 @@ export interface SessionTokenPayload extends jose.JWTPayload {
   uid: string | null
   client?: SessionClient
   ua_hash?: string
+  ja4_hash?: string
   // Present only when uid is non-null (authenticated sessions)
   rol?: readonly string[] // user roles (e.g. ['administrator'])
   mpl?: string | null // membership plan slug ('plus' | 'pro')

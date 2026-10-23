@@ -50,7 +50,9 @@ export class ServerRequest {
       headers: {
         'Content-Type': 'application/json',
         ...requestIdHeader,
-        ...headers,
+        ...Object.fromEntries(
+          Object.entries(headers).filter(([name]) => name.toLowerCase() !== 'x-voucha-client-ja4'),
+        ),
         ...forwardedIpHeaders,
         ...buildWebClientInfoHeaders(),
         ...buildWorkerSecretHeader(),

@@ -4,7 +4,19 @@ import { ApiError } from '../../error'
 
 describe('ClientRequest', () => {
   beforeEach(() => {
-    vi.stubGlobal('window', {})
+    vi.stubGlobal('navigator', {
+      locks: {
+        request: async (_name: string, _options: unknown, callback: () => Promise<boolean>) =>
+          callback(),
+      },
+    })
+    vi.stubGlobal('window', {
+      location: {
+        pathname: '/news',
+        search: '?topic=owned',
+        assign: vi.fn<(url: string) => void>(),
+      },
+    })
   })
 
   afterEach(() => {
@@ -61,6 +73,7 @@ describe('ClientRequest', () => {
           message: 'Sign in again after the browser user agent changed',
         }),
       )
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
     vi.stubGlobal('fetch', fetchMock)
 
     await expect(
@@ -69,7 +82,11 @@ describe('ClientRequest', () => {
       status: 401,
       code: 'SESSION_USER_AGENT_MISMATCH',
     })
-    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual(['/api/v1/posts', '/api/v1/session'])
+    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
+      '/api/v1/posts',
+      '/api/v1/session',
+      '/api/v1/session',
+    ])
   })
 
   it('does not retry a user-agent mismatch', async () => {

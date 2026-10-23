@@ -1,4 +1,4 @@
-import { beginTransaction, write } from '@data-stores/psql'
+import { beginTransaction } from '@data-stores/psql'
 import sql from 'sql-template-strings'
 import type { QueryExecutor } from '@data-stores/psql/types'
 import {
@@ -13,7 +13,7 @@ export async function revokeAuthenticatedSession(
 ): Promise<boolean> {
   await using query = await beginTransaction()
   await query(
-    sql`/* revokeAuthenticatedSession */ SELECT fn_lock_active_user_for_mutation(${currentUserId})`,
+    sql`/* revokeAuthenticatedSession:userFence */ SELECT fn_lock_active_user_for_mutation(${currentUserId})`,
   )
   const result = await query(sql`/* revokeAuthenticatedSession */
       UPDATE user_sessions
@@ -56,31 +56,42 @@ export async function revokeAllAuthenticatedSessions(currentUserId: string): Pro
 export async function revokeSession(
   sessionId: string,
   options?: {
-    registryFailureMode?: 'throw' | 'ignore'
     query?: QueryExecutor
   },
 ): Promise<void> {
-  await revokeSessionKey(sessionId)
-  await updateSessionRevocationRegistry(sessionId, options)
+  let registryFailed = false
+  let registryError: unknown
+  try {
+    await updateSessionRevocationRegistry(sessionId, options)
+  } catch (err) {
+    registryFailed = true
+    registryError = err
+  }
+  try {
+    await revokeSessionKey(sessionId)
+  } catch (err) {
+    if (registryFailed)
+      throw new AggregateError([registryError, err], 'Session revocation failed', { cause: err })
+    throw err
+  }
+  if (registryFailed) throw registryError
 }
 
 async function updateSessionRevocationRegistry(
   sessionId: string,
   options?: {
-    registryFailureMode?: 'throw' | 'ignore'
     query?: QueryExecutor
   },
 ): Promise<void> {
-  try {
-    await (options?.query ?? write)(sql`/* revokeSession */
-      UPDATE user_sessions
-      SET revoked_at = CURRENT_TIMESTAMP,
-          last_seen_at = CURRENT_TIMESTAMP
-      WHERE id = ${sessionId}
-        AND revoked_at IS NULL
-    `)
-  } catch (err) {
-    if (options?.registryFailureMode === 'ignore') return
-    throw err
+  const revokeInTransaction = async (query: QueryExecutor) => {
+    await query(sql`/* updateSessionRevocationRegistry:sessionFence */
+      SELECT pg_advisory_xact_lock(hashtextextended(${sessionId}, 1))`)
+    await query(sql`/* updateSessionRevocationRegistry */
+      UPDATE user_sessions SET revoked_at = CURRENT_TIMESTAMP, last_seen_at = CURRENT_TIMESTAMP
+      WHERE id = ${sessionId} AND revoked_at IS NULL`)
   }
+  if (options?.query) return revokeInTransaction(options.query)
+  await using query = await beginTransaction()
+  await revokeInTransaction(query)
+  await query.commit()
 }

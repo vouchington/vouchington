@@ -5,6 +5,8 @@ import {
   makeRequest,
   mockCookiesSet,
   mockDecodeSessionJwt,
+  mockDecodeDeviceJwt,
+  mockNextResponseRedirect,
   mockNextResponseNext,
   mockNextResponseRewrite,
   resetProxyTestDoubles,
@@ -71,17 +73,12 @@ describe('proxy.session', () => {
     })
 
     describe('session fetching', () => {
-      it('prefers API_BASE_URL over NEXT_PUBLIC_API_BASE_URL', async () => {
+      it('never renews authenticated credentials during SSR even with a configured backend', async () => {
         vi.stubEnv('API_BASE_URL', 'http://localhost:3101')
         mockDecodeSessionJwt.mockReturnValue(AUTH_ST_PAYLOAD)
         await proxy(makeRequest({ cookies: { dt: 'my-dt', st: 'my-st' } }) as any)
-        expect(fetchMock).toHaveBeenCalledWith(
-          'http://localhost:3101/api/v1/session',
-          expect.objectContaining({
-            method: 'PATCH',
-            body: JSON.stringify({ dt: 'my-dt', st: 'my-st' }),
-          }),
-        )
+        expect(fetchMock).not.toHaveBeenCalled()
+        expect(mockCookiesSet).not.toHaveBeenCalled()
       })
 
       it('skips /api/v1/session when no cookies and no referrer', async () => {
@@ -96,19 +93,12 @@ describe('proxy.session', () => {
         expect(fetchMock).not.toHaveBeenCalled()
       })
 
-      it('calls /api/v1/session when st has uid (authenticated)', async () => {
+      it('forwards authenticated access cookies without rotating them', async () => {
         mockDecodeSessionJwt.mockReturnValue(AUTH_ST_PAYLOAD)
         await proxy(makeRequest({ cookies: { dt: 'my-dt', st: 'my-st' } }) as any)
-        expect(fetchMock).toHaveBeenCalledWith(
-          'http://localhost:2900/api/v1/session',
-          expect.objectContaining({
-            method: 'PATCH',
-            body: JSON.stringify({ dt: 'my-dt', st: 'my-st' }),
-            headers: expect.objectContaining({
-              'x-cf-worker-secret': 'test-worker-secret',
-            }),
-          }),
-        )
+        expect(fetchMock).not.toHaveBeenCalled()
+        const headers = mockNextResponseNext.mock.calls[0]![0].request.headers as Headers
+        expect(headers.get('cookie')).toBe('dt=my-dt; st=my-st')
       })
 
       it('forwards a hot authenticated cookie without renewing it', async () => {
@@ -122,26 +112,36 @@ describe('proxy.session', () => {
         expect(mockCookiesSet).not.toHaveBeenCalled()
       })
 
-      it.each(['recheck due', 'access expired'])(
-        'renews an authenticated cookie when %s',
-        async reason => {
-          const now = Math.floor(Date.now() / 1000)
-          mockDecodeSessionJwt.mockReturnValue({
-            ...AUTH_ST_PAYLOAD,
-            sca: reason === 'recheck due' ? 0 : now + 300,
-            exp: reason === 'access expired' ? 0 : now + 600,
-          })
-          await proxy(makeRequest({ cookies: { dt: 'my-dt', st: 'my-st' } }) as any)
+      it('forwards an access cookie with a due recheck without rotating during SSR', async () => {
+        mockDecodeSessionJwt.mockReturnValue({
+          ...AUTH_ST_PAYLOAD,
+          sca: 0,
+          exp: Math.floor(Date.now() / 1000) + 600,
+        })
+        await proxy(makeRequest({ cookies: { dt: 'my-dt', st: 'my-st' } }) as any)
+        expect(fetchMock).not.toHaveBeenCalled()
+        expect(mockCookiesSet).not.toHaveBeenCalled()
+        const headers = mockNextResponseNext.mock.calls[0]![0].request.headers as Headers
+        expect(headers.get('cookie')).toBe('dt=my-dt; st=my-st')
+      })
 
-          expect(fetchMock).toHaveBeenCalledTimes(1)
-          const headers = (mockNextResponseNext.mock as any).calls[0][0].request.headers as Headers
-          expect(headers.get('cookie')).toBe('dt=new-dt; st=new-st')
-          expect(mockCookiesSet).toHaveBeenCalledTimes(2)
-        },
-      )
+      it('hands expired access to browser renewal without rotating during SSR', async () => {
+        mockDecodeSessionJwt.mockReturnValue({ ...AUTH_ST_PAYLOAD, exp: 0 })
+        await proxy(makeRequest({ cookies: { dt: 'my-dt', st: 'my-st' } }) as any)
+        expect(fetchMock).not.toHaveBeenCalled()
+        expect(mockCookiesSet).not.toHaveBeenCalled()
+        expect(mockNextResponseRedirect).toHaveBeenCalledWith(
+          new URL('http://localhost/session-renewal?next=%2F'),
+        )
+      })
 
       it('skips /api/v1/session when st is anonymous (uid null)', async () => {
-        mockDecodeSessionJwt.mockReturnValue({ uid: null, did: 'did-1', sid: 'sid-1' })
+        mockDecodeSessionJwt.mockReturnValue({
+          uid: null,
+          did: 'did-1',
+          sid: 'sid-1',
+          exp: Math.floor(Date.now() / 1000) + 600,
+        })
         await proxy(makeRequest({ cookies: { dt: 'my-dt', st: 'my-st' } }) as any)
         expect(fetchMock).not.toHaveBeenCalled()
       })
@@ -154,23 +154,45 @@ describe('proxy.session', () => {
         expect(headers.get('cookie')).toBeNull()
       })
 
+      it('hands off expired navigation using authenticated device identity when access is absent', async () => {
+        mockDecodeDeviceJwt.mockReturnValue({ client: 'web', refresh_uid: 'owned-user' })
+        await proxy(
+          makeRequest({
+            pathname: '/news',
+            cookies: { dt: 'my-dt' },
+            searchParams: { topic: 'owned' },
+          }) as any,
+        )
+        expect(fetchMock).not.toHaveBeenCalled()
+        expect(mockNextResponseRedirect).toHaveBeenCalledWith(
+          new URL('http://localhost/session-renewal?next=%2Fnews%3Ftopic%3Downed'),
+        )
+      })
+
       it('skips /api/v1/session when st is absent', async () => {
         await proxy(makeRequest({ cookies: { dt: 'my-dt' } }) as any)
         expect(fetchMock).not.toHaveBeenCalled()
       })
 
-      it('continues without session when /api/v1/session throws', async () => {
+      it('renders the renewal page without a redirect loop', async () => {
         mockDecodeSessionJwt.mockReturnValue(AUTH_ST_PAYLOAD)
-        fetchMock.mockRejectedValue(new Error('Network error'))
-        await proxy(makeRequest({ cookies: { dt: 'my-dt', st: 'my-st' } }) as any)
+        mockDecodeSessionJwt.mockReturnValue({ ...AUTH_ST_PAYLOAD, exp: 0 })
+        await proxy(
+          makeRequest({
+            pathname: '/session-renewal',
+            cookies: { dt: 'my-dt', st: 'my-st' },
+          }) as any,
+        )
         expect(mockNextResponseNext).toHaveBeenCalled()
         expect(mockCookiesSet).not.toHaveBeenCalled()
       })
 
-      it('continues without session when /api/v1/session returns non-ok', async () => {
+      it('renders login without a renewal redirect', async () => {
         mockDecodeSessionJwt.mockReturnValue(AUTH_ST_PAYLOAD)
-        fetchMock.mockResolvedValue({ ok: false })
-        await proxy(makeRequest({ cookies: { dt: 'my-dt', st: 'my-st' } }) as any)
+        mockDecodeSessionJwt.mockReturnValue({ ...AUTH_ST_PAYLOAD, exp: 0 })
+        await proxy(
+          makeRequest({ pathname: '/login', cookies: { dt: 'my-dt', st: 'my-st' } }) as any,
+        )
         expect(mockCookiesSet).not.toHaveBeenCalled()
       })
     })
@@ -206,18 +228,23 @@ describe('proxy.session', () => {
         expect(headers.get('x-session-token')).toBeNull()
       })
 
-      it('strips injected auth headers even when session fetch fails', async () => {
+      it('strips injected auth and JA4 headers while forwarding a valid session', async () => {
         mockDecodeSessionJwt.mockReturnValue(AUTH_ST_PAYLOAD)
         fetchMock.mockRejectedValue(new Error('Network error'))
         await proxy(
           makeRequest({
             cookies: { dt: 'my-dt', st: 'my-st' },
-            headers: { 'x-user-id': 'injected-id', 'x-device-token': 'injected' },
+            headers: {
+              'x-user-id': 'injected-id',
+              'x-device-token': 'injected',
+              'x-voucha-client-ja4': 'forged',
+            },
           }) as any,
         )
         const headers = (mockNextResponseNext.mock as any).calls[0][0].request.headers as Headers
         expect(headers.get('x-user-id')).toBeNull()
         expect(headers.get('x-device-token')).toBeNull()
+        expect(headers.get('x-voucha-client-ja4')).toBeNull()
       })
     })
   })

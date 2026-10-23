@@ -48,6 +48,8 @@ export function isValidSessionPayload(payload: JWTPayload): payload is SessionTo
 function isValidClientBinding(payload: JWTPayload): boolean {
   return (
     (payload.client === undefined || payload.client === 'web' || payload.client === 'native') &&
+    (payload.ja4_hash === undefined ||
+      (typeof payload.ja4_hash === 'string' && /^[a-f0-9]{64}$/u.test(payload.ja4_hash))) &&
     (payload.ua_hash === undefined ||
       (typeof payload.ua_hash === 'string' && /^[a-f0-9]{64}$/u.test(payload.ua_hash)))
   )

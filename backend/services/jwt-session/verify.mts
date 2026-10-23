@@ -57,17 +57,20 @@ async function verifyDeviceAndSessionTokensWithOptions({
 
     if (
       sessionPayload.uid &&
-      (!sessionPayload.client ||
+      (!devicePayload.jti ||
+        !sessionPayload.client ||
         typeof sessionPayload.iat !== 'number' ||
         typeof sessionPayload.exp !== 'number' ||
         typeof devicePayload.iat !== 'number' ||
         typeof devicePayload.exp !== 'number' ||
         devicePayload.client !== sessionPayload.client ||
+        devicePayload.refresh_uid !== sessionPayload.uid ||
+        devicePayload.refresh_sid !== sessionPayload.sid ||
+        (sessionPayload.client === 'native' && devicePayload.dc !== 'attested') ||
         (sessionPayload.client === 'web' &&
           (!sessionPayload.ua_hash ||
             devicePayload.ua_hash !== sessionPayload.ua_hash ||
-            devicePayload.refresh_uid !== sessionPayload.uid ||
-            devicePayload.refresh_sid !== sessionPayload.sid)))
+            devicePayload.ja4_hash !== sessionPayload.ja4_hash)))
     )
       return false
 
@@ -80,6 +83,7 @@ async function verifyDeviceAndSessionTokensWithOptions({
       uid: sessionPayload.uid,
       client: sessionPayload.client,
       ua_hash: sessionPayload.ua_hash,
+      ja4_hash: sessionPayload.ja4_hash,
       exp: sessionPayload.exp,
       device_exp: devicePayload.exp,
       device_iat: devicePayload.iat,

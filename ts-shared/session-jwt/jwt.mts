@@ -1,4 +1,10 @@
-import { decodeJwt, signJwt, verifyJwt, type JwtKeySet, validateUuidv7 as validateUUIDv7 } from '@vouchington/session-jwt'
+import {
+  decodeJwt,
+  signJwt,
+  verifyJwt,
+  type JwtKeySet,
+  validateUuidv7 as validateUUIDv7,
+} from '@vouchington/session-jwt'
 import { isValidDevicePayload, isValidSessionPayload } from './payload-validation.mts'
 import { decodeProtectedHeader } from 'jose'
 import { validate as isUUID } from 'uuid'

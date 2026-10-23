@@ -1,28 +1,28 @@
-import { createSessionClientBinding, type SessionClientBinding } from './client-binding.mts'
+import { mintAuthenticatedDeviceAuthority } from './device-authority-mint.mts'
+import { createSessionClientBinding } from './client-binding.mts'
+import type {
+  DeviceAndSessionTokenResult,
+  SessionTokenResult,
+  SessionMintOptions,
+} from './types.mts'
 import {
   signDeviceJwt,
   signSessionJwt,
   sessionExpiryFor,
   DEVICE_EXPIRATION_STRING,
   DEVICE_EXPIRATION_SECONDS,
-  RECHECK_AFTER_SECONDS,
-  SESSION_CHECK_AFTER_SECONDS,
 } from '@ts-shared/session-jwt'
 import {
   mintUuidv7 as mintUUIDv7,
   validateUuidv7 as validateUUIDv7,
 } from '@vouchington/session-jwt'
 import { validate as isUUID } from 'uuid'
-import type {
-  DeviceAndSessionTokenResult,
-  DeviceClass,
-  DeviceContext,
-  SessionTokenResult,
-} from './types.mts'
-import { trackAuthSessionEvent } from '@services/analytics'
-import type { AuthSessionRecord } from '@data-stores/analytics'
 import { registerAuthenticatedSession } from './user-sessions.mts'
-import { getMembershipExpiryClaim, getSessionIssuedAt } from './session-state-helpers.mts'
+import {
+  getSessionEnrichment,
+  getSessionIssuedAt,
+  recordSessionMintEvent,
+} from './session-state-helpers.mts'
 
 export async function createDeviceAndSessionTokens({
   did,
@@ -39,77 +39,86 @@ export async function createDeviceAndSessionTokens({
   recheckAfter,
   clientBinding,
   sessionExpiresAt,
-}: {
-  did: string
-  sid?: string
-  uid?: string | null
-  roles?: readonly string[]
-  membershipPlan?: string | null
-  membershipExpiresAt?: Date | null
-  trustTier?: number
-  uiLocale?: string | null
-  eventType?: AuthSessionRecord['event_type']
-  deviceClass?: DeviceClass
-  deviceContext?: DeviceContext
-  recheckAfter?: number
-  clientBinding?: SessionClientBinding
-  sessionExpiresAt?: Date
-}): Promise<DeviceAndSessionTokenResult> {
+  credentialReplay,
+  deviceRenewal,
+  clock,
+  query,
+}: SessionMintOptions): Promise<DeviceAndSessionTokenResult> {
   validateUUIDv7(did)
   validateUUIDv7(sid)
   if (uid !== null) validateExistingUserId(uid)
-  const binding = uid
+  let binding = uid
     ? (clientBinding ?? createSessionClientBinding(deviceClass, deviceContext))
     : undefined
-  const now = await getSessionIssuedAt(uid)
-  const sessionPayloadExtra =
-    uid !== null
-      ? {
-          ...(roles !== undefined && { rol: roles }),
-          ...(membershipPlan !== undefined && { mpl: membershipPlan }),
-          ...getMembershipExpiryClaim(membershipExpiresAt),
-          ...(trustTier !== undefined && { tt: trustTier }),
-          ...(uiLocale !== undefined && uiLocale !== null && { uil: uiLocale }),
-          rca: recheckAfter ?? now + RECHECK_AFTER_SECONDS,
-          sca: now + SESSION_CHECK_AFTER_SECONDS,
-        }
-      : {}
+  const now = await getSessionIssuedAt(uid, clock)
+  const authority =
+    uid && binding
+      ? await mintAuthenticatedDeviceAuthority({
+          query,
+          uid,
+          did,
+          sid,
+          binding,
+          deviceClass,
+          deviceContext,
+          issuedAt: now,
+          credentialReplay,
+          deviceRenewal,
+        })
+      : undefined
+  if (authority) binding = authority.binding
+  const sessionPayloadExtra = getSessionEnrichment({
+    uid,
+    roles,
+    membershipPlan,
+    membershipExpiresAt,
+    trustTier,
+    uiLocale,
+    recheckAfter,
+    now,
+  })
 
   const devicePayloadExtra = {
     ...(deviceClass !== undefined && { dc: deviceClass }),
     ...binding,
-    ...(binding?.client === 'web' && uid && { refresh_uid: uid, refresh_sid: sid }),
+    ...(uid && { refresh_uid: uid, refresh_sid: sid }),
   }
 
   const [deviceToken, sessionToken] = await Promise.all([
-    signDeviceJwt(
-      { did, ...devicePayloadExtra },
-      { expiresIn: DEVICE_EXPIRATION_STRING, issuedAt: now },
-    ),
+    authority
+      ? Promise.resolve(authority.token)
+      : signDeviceJwt(
+          { did, ...devicePayloadExtra },
+          { expiresIn: DEVICE_EXPIRATION_STRING, issuedAt: now },
+        ),
     signSessionJwt(
       { did, sid, uid: uid ?? null, ...binding, ...sessionPayloadExtra },
       { expiresIn: sessionExpiryFor(deviceClass, binding?.client), issuedAt: now },
     ),
   ])
 
-  trackAuthSessionEvent({ did, sid, uid, eventType })
-  await registerAuthenticatedSession({
-    did,
-    sid,
-    uid,
-    deviceClass,
-    deviceContext,
-    expiresAt:
-      sessionExpiresAt ??
-      (binding?.client === 'web'
-        ? new Date(Date.now() + DEVICE_EXPIRATION_SECONDS * 1000)
-        : undefined),
-  })
+  recordSessionMintEvent({ did, sid, uid, eventType }, query)
+  if (!authority)
+    await registerAuthenticatedSession(
+      {
+        did,
+        sid,
+        uid,
+        deviceClass,
+        deviceContext,
+        expiresAt:
+          sessionExpiresAt ??
+          (binding?.client === 'web'
+            ? new Date(Date.now() + DEVICE_EXPIRATION_SECONDS * 1000)
+            : undefined),
+      },
+      { query },
+    )
 
   return {
     deviceToken: {
       token: deviceToken,
-      payload: { did, ...devicePayloadExtra },
+      payload: authority?.payload ?? { did, ...devicePayloadExtra },
     },
     sessionToken: {
       token: sessionToken,
@@ -133,22 +142,9 @@ export async function createSessionToken({
   recheckAfter,
   clientBinding,
   sessionExpiresAt,
-}: {
-  did: string
-  sid?: string
-  uid?: string | null
-  roles?: readonly string[]
-  membershipPlan?: string | null
-  membershipExpiresAt?: Date | null
-  trustTier?: number
-  uiLocale?: string | null
-  eventType?: AuthSessionRecord['event_type']
-  deviceClass?: DeviceClass
-  deviceContext?: DeviceContext
-  recheckAfter?: number
-  clientBinding?: SessionClientBinding
-  sessionExpiresAt?: Date
-}): Promise<SessionTokenResult> {
+  clock,
+  query,
+}: Omit<SessionMintOptions, 'credentialReplay' | 'deviceRenewal'>): Promise<SessionTokenResult> {
   validateUUIDv7(did)
   validateUUIDv7(sid)
   if (uid !== null) validateExistingUserId(uid)
@@ -156,20 +152,18 @@ export async function createSessionToken({
   const binding = uid
     ? (clientBinding ?? createSessionClientBinding(deviceClass, deviceContext))
     : undefined
-  const now = await getSessionIssuedAt(uid)
+  const now = await getSessionIssuedAt(uid, clock)
 
-  const sessionPayloadExtra =
-    uid !== null
-      ? {
-          ...(roles !== undefined && { rol: roles }),
-          ...(membershipPlan !== undefined && { mpl: membershipPlan }),
-          ...getMembershipExpiryClaim(membershipExpiresAt),
-          ...(trustTier !== undefined && { tt: trustTier }),
-          ...(uiLocale !== undefined && uiLocale !== null && { uil: uiLocale }),
-          rca: recheckAfter ?? now + RECHECK_AFTER_SECONDS,
-          sca: now + SESSION_CHECK_AFTER_SECONDS,
-        }
-      : {}
+  const sessionPayloadExtra = getSessionEnrichment({
+    uid,
+    roles,
+    membershipPlan,
+    membershipExpiresAt,
+    trustTier,
+    uiLocale,
+    recheckAfter,
+    now,
+  })
 
   const payload = { did, sid, uid: uid ?? null, ...binding, ...sessionPayloadExtra }
 
@@ -177,19 +171,22 @@ export async function createSessionToken({
     expiresIn: sessionExpiryFor(deviceClass, binding?.client),
     issuedAt: now,
   })
-  trackAuthSessionEvent({ did, sid, uid, eventType })
-  await registerAuthenticatedSession({
-    did,
-    sid,
-    uid,
-    deviceClass,
-    deviceContext,
-    expiresAt:
-      sessionExpiresAt ??
-      (binding?.client === 'web'
-        ? new Date(Date.now() + DEVICE_EXPIRATION_SECONDS * 1000)
-        : undefined),
-  })
+  recordSessionMintEvent({ did, sid, uid, eventType }, query)
+  await registerAuthenticatedSession(
+    {
+      did,
+      sid,
+      uid,
+      deviceClass,
+      deviceContext,
+      expiresAt:
+        sessionExpiresAt ??
+        (binding?.client === 'web'
+          ? new Date(Date.now() + DEVICE_EXPIRATION_SECONDS * 1000)
+          : undefined),
+    },
+    { query },
+  )
 
   return { token, payload }
 }

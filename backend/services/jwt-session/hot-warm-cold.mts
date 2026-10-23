@@ -5,7 +5,6 @@ import { createRefreshedAuthenticatedSession, issueAnonSession } from './refresh
 import type {
   FetchUserForSession,
   RefreshedSessionState,
-  SessionTokenPayload,
   VerifyDeviceAndSessionTokenResult,
 } from './types.mts'
 import { sessionValkeyClient } from '@data-stores/valkey/clients'
@@ -20,40 +19,16 @@ export async function applyHotWarmCold(
   verified: VerifyDeviceAndSessionTokenResult,
   did: string,
   dt: string,
-  sessionToken: string,
   fetchUser: FetchUserForSession,
-  options?: { verifyRevocationOnHotPath?: boolean },
+  clock: () => number = Date.now,
 ): Promise<RefreshedSessionState> {
   const uid = verified.uid!
-  const now = Math.floor(Date.now() / 1000)
+  const now = Math.floor(clock() / 1000)
   const membershipEntitlementExpired = verified.mpe !== undefined && now >= verified.mpe
-  const canUseHotPath =
-    !options?.verifyRevocationOnHotPath &&
-    !membershipEntitlementExpired &&
-    verified.rca !== undefined &&
-    now < verified.rca &&
-    verified.sca !== undefined &&
-    now < verified.sca
-
-  // Hot path: sca not reached → return session as-is (0 Valkey calls). Callers that pass
-  // verifyRevocationOnHotPath (e.g. direct backend callers of PATCH /api/v1/session and the
-  // App Attest attest endpoint) always fall through to the warm check below instead.
-  if (canUseHotPath) {
-    return {
-      did,
-      dt,
-      st: sessionToken,
-      sid: verified.sid,
-      uid,
-      session: verified as SessionTokenPayload,
-      deviceClass: verified.dc,
-    }
-  }
-
   // Warm path: check Valkey for revocation and staleness (single Lua roundtrip)
   const warmResult = await sessionValkeyClient.invokeScript(checkRevokedAndStaleScript, {
     keys: [getJwtRevokedKey(verified.sid), getJwtStaleKey(uid), getJwtUserRevokedBeforeKey(uid)],
-    args: [String((verified.client === 'web' ? verified.device_iat : verified.iat) ?? 0)],
+    args: [String(verified.device_iat ?? 0)],
   })
   const [revokedRaw, staleRaw] = Array.isArray(warmResult) ? warmResult : [0, null]
   const revoked = Number(revokedRaw) !== 0
@@ -74,6 +49,7 @@ export async function applyHotWarmCold(
     const refreshed = await createRefreshedAuthenticatedSession({
       did,
       dt,
+      clock,
       sid: verified.sid,
       uid,
       roles: verified.rol,
@@ -85,7 +61,7 @@ export async function applyHotWarmCold(
       deviceExpiresAt: verified.device_exp,
       clientBinding:
         verified.client === 'web'
-          ? { client: 'web', ua_hash: verified.ua_hash! }
+          ? { client: 'web', ua_hash: verified.ua_hash!, ja4_hash: verified.ja4_hash }
           : { client: 'native' },
       freshness: { type: 'preserve', recheckAfter: verified.rca },
     })
@@ -112,6 +88,7 @@ export async function applyHotWarmCold(
   const refreshed = await createRefreshedAuthenticatedSession({
     did,
     dt,
+    clock,
     sid: verified.sid,
     uid,
     roles: claims.roles,
@@ -123,7 +100,7 @@ export async function applyHotWarmCold(
     deviceExpiresAt: verified.device_exp,
     clientBinding:
       verified.client === 'web'
-        ? { client: 'web', ua_hash: verified.ua_hash! }
+        ? { client: 'web', ua_hash: verified.ua_hash!, ja4_hash: verified.ja4_hash }
         : { client: 'native' },
     freshness: { type: 'reset' },
   })

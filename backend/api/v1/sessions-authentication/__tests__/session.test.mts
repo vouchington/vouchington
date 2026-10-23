@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
+import { createTestUserDirect } from '@voucha/test-helpers/entities/users'
 
 import {
   createNativeRequest as createRequest,
@@ -61,12 +62,12 @@ describe('Session Routes', () => {
       const request = createRequest()
       const did = v7()
       const sid = v7()
-      const uid = v7()
+      const { id: uid } = await createTestUserDirect()
       const { sessionToken } = await createDeviceAndSessionTokens({
         did,
         sid,
         uid,
-        deviceContext: { isNativeClient: true },
+        deviceClass: 'attested',
       })
 
       const response = await request

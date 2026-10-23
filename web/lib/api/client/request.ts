@@ -1,11 +1,14 @@
 'use client'
 
+import { renewBrowserSession } from '@/lib/api/client/session-renewal'
+
 /**
  * Client-side API request class
  * Used in Client Components for calling Next.js proxy
  */
 
 import { buildQueryString } from '@ts-shared/utils/query-string'
+import { buildLoginHref } from '@/lib/auth/login-url'
 import { ApiError } from '../error'
 import { parseErrorResponseBody } from '../error-helpers'
 
@@ -62,13 +65,24 @@ export class ClientRequest {
           .json()
           .catch(() => null)) as unknown
         if (isErrorCode(originalError, 'AUTH_REQUIRED')) {
-          const refreshed = await refreshBrowserSession()
-          if (refreshed) response = await fetch(url, fetchOptions)
+          try {
+            const refreshed = await renewBrowserSession()
+            if (refreshed) response = await fetch(url, fetchOptions)
+            else redirectToLogin()
+          } catch (err) {
+            redirectToLogin()
+            throw err
+          }
         }
       }
 
       if (!response.ok) {
         const errorData = await parseErrorResponseBody(response)
+        if (
+          isReloginError(errorData) ||
+          (response.status === 401 && isErrorCode(errorData, 'AUTH_REQUIRED'))
+        )
+          redirectToLogin()
 
         const isAdmissionInProgress =
           response.status === 409 && isErrorCode(errorData, 'CONTRIBUTION_ADMISSION_IN_PROGRESS')
@@ -166,27 +180,17 @@ function isErrorCode(errorData: unknown, code: string): boolean {
   )
 }
 
-let refreshInFlight: Promise<boolean> | undefined
+function isReloginError(errorData: unknown): boolean {
+  return [
+    'SESSION_USER_AGENT_MISMATCH',
+    'SESSION_JA4_MISMATCH',
+    'SESSION_RELOGIN_REQUIRED',
+    'SESSION_REFRESH_REUSED',
+  ].some(code => isErrorCode(errorData, code))
+}
 
-function refreshBrowserSession(): Promise<boolean> {
-  refreshInFlight ??= fetch('/api/v1/session', {
-    method: 'PATCH',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: '{}',
-  })
-    .then(async response => {
-      if (!response.ok)
-        throw new ApiError(
-          'Session refresh failed',
-          response.status,
-          await parseErrorResponseBody(response),
-        )
-      const body = (await response.json()) as { session?: { uid?: unknown } }
-      return typeof body.session?.uid === 'string'
-    })
-    .finally(() => {
-      refreshInFlight = undefined
-    })
-  return refreshInFlight
+function redirectToLogin(): void {
+  window.location.assign(
+    buildLoginHref({ next: `${window.location.pathname}${window.location.search}` }),
+  )
 }

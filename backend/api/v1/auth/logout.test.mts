@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers'
 import { createTestSessionCookies } from '@voucha/test-helpers/services/jwt-session/index'
-import { postLogoutExpectingRejection } from '@voucha/test-helpers/api/v1/auth/logout-rejection'
+import { postLogoutExpectingRejection } from '@voucha/test-helpers/logout-rejection'
 import { getTestUserSessionById } from '../../../test-helpers/entities/user-sessions.mts'
 import {
   createDeviceAndSessionTokens,
@@ -33,7 +33,7 @@ describe('POST /api/v1/auth/logout', () => {
       .expect(204)
   })
 
-  it('rejects malformed JSON before clearing cookies', async () => {
+  it('rejects malformed JSON while clearing cookies', async () => {
     await postLogoutExpectingRejection({
       body: '{',
       contentType: 'application/json',
@@ -41,7 +41,7 @@ describe('POST /api/v1/auth/logout', () => {
     })
   })
 
-  it('rejects a partial web push binding before clearing cookies', async () => {
+  it('rejects a partial web push binding while clearing cookies', async () => {
     await postLogoutExpectingRejection({
       body: { web_push_endpoint: 'https://push.example.test/subscription' },
       expectedStatus: 400,
@@ -58,7 +58,7 @@ describe('POST /api/v1/auth/logout', () => {
     })
   })
 
-  it('rejects JSON null before revoking the session or clearing cookies', async () => {
+  it('rejects JSON null while revoking the owning session', async () => {
     const { dtCookie, stCookie } = await postLogoutExpectingRejection({
       body: 'null',
       contentType: 'application/json',
@@ -71,7 +71,7 @@ describe('POST /api/v1/auth/logout', () => {
     })
     expect(verified).not.toBe(false)
     await expect(isSessionRevoked((verified as Exclude<typeof verified, false>).sid)).resolves.toBe(
-      false,
+      true,
     )
   })
 

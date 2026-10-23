@@ -1,7 +1,12 @@
+import { rotateAuthenticatedDeviceToken } from './device-authority-rotation.mts'
 import { verifyDeviceJwt, signDeviceJwt, DEVICE_EXPIRATION_STRING } from '@ts-shared/session-jwt'
-import type { SessionClientBinding } from './client-binding.mts'
+import type {
+  SessionClientBinding,
+  DeviceClass,
+  RefreshedSessionState,
+  SessionTokenPayload,
+} from './types.mts'
 import { createSessionToken } from './create.mts'
-import type { DeviceClass, RefreshedSessionState, SessionTokenPayload } from './types.mts'
 
 type RefreshFreshness = { type: 'preserve'; recheckAfter: number } | { type: 'reset' }
 
@@ -41,6 +46,7 @@ export async function createRefreshedAuthenticatedSession(options: {
   uiLocale?: string | null
   deviceClass?: DeviceClass
   freshness: RefreshFreshness
+  clock?: () => number
   clientBinding: SessionClientBinding
   deviceExpiresAt?: number
 }): Promise<{
@@ -50,9 +56,16 @@ export async function createRefreshedAuthenticatedSession(options: {
   session: SessionTokenPayload
   deviceClass?: DeviceClass
 }> {
+  const dt = await rotateAuthenticatedDeviceToken({
+    deviceToken: options.dt,
+    uid: options.uid,
+    did: options.did,
+    sid: options.sid,
+  })
   const token = await createSessionToken({
     did: options.did,
     sid: options.sid,
+    clock: options.clock,
     uid: options.uid,
     roles: options.roles,
     membershipPlan: options.membershipPlan,
@@ -72,7 +85,7 @@ export async function createRefreshedAuthenticatedSession(options: {
   })
   return {
     did: options.did,
-    dt: options.dt,
+    dt,
     st: token.token,
     session: token.payload,
     deviceClass: options.deviceClass,

@@ -76,6 +76,11 @@ export function buildWorkerOriginRequest({
 
   const appHeaders = new Headers(originRequestSource.headers)
   stripStagingControlHeaders(appHeaders)
+  appHeaders.delete('x-voucha-client-ja4')
+  const ja4 = (request as Request & { cf?: { botManagement?: { ja4?: string } } }).cf?.botManagement
+    ?.ja4
+  if (target === 'backend' && typeof ja4 === 'string' && ja4.length > 0)
+    appHeaders.set('x-voucha-client-ja4', ja4)
   appHeaders.delete('x-user-id')
   appHeaders.delete('x-device-token')
   appHeaders.delete('x-session-token')

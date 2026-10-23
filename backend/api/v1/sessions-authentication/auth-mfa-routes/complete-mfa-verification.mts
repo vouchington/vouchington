@@ -1,3 +1,4 @@
+import { isNativeClientTransportRequest } from '@modules/request-client-info'
 import type { Context } from '@jongleberry/api-server'
 import { setAuthenticationCookies } from '@modules/api-utils'
 import {
@@ -37,7 +38,7 @@ export async function completeMfaVerification(
   })
   return {
     user: { id: login.userId },
-    ...(login.sessionToken.payload.client === 'native' && {
+    ...(isNativeClientTransportRequest(ctx.req) && {
       dt: login.deviceToken,
       st: login.sessionToken,
     }),

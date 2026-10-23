@@ -1,4 +1,6 @@
 import { createHash } from 'node:crypto'
+import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
+import sql from 'sql-template-strings'
 import { TimeUnit } from '@valkey/valkey-glide'
 import { sessionValkeyClient } from '@data-stores/valkey/clients'
 import { releaseIdempotencyKey, reserveIdempotencyKey } from '@data-stores/valkey/idempotency-key'
@@ -14,7 +16,7 @@ import {
   getJwtUserRevokedBeforeKey,
 } from './constants.mts'
 import { REVOCATION_EXPIRATION_SECONDS } from './session-revocation-keys.mts'
-import { revokeSession } from './user-session-revocation.mts'
+import { revokeSession, revokeAuthenticatedSession } from './user-session-revocation.mts'
 
 // Production PostgreSQL statements are bounded at 30s. Cleanup and its following registry write
 // can run serially, so the lease exceeds both bounds with room for the Valkey operations.
@@ -52,9 +54,19 @@ export async function runLogoutPushCleanupAndRevoke(
   cleanup: () => Promise<void>,
   exactBinding?: ExactPushBinding,
 ): Promise<void> {
-  const admitted = await admitLogoutCleanup(sessionId, revocationOptions)
-  if (!admitted) return
-  return attempt()
+  try {
+    const admitted = await admitLogoutCleanup(sessionId, revocationOptions)
+    if (!admitted) return await revokeSession(sessionId)
+    return await attempt()
+  } catch (err) {
+    // Cleanup or its cache coordination cannot prevent durable logout. Preserve the
+    // original failure so callers never mistake unavailable cleanup for success.
+    onError(err instanceof Error ? err : new Error(String(err)))
+    await revokeAuthenticatedSession(revocationOptions.userId, sessionId).catch(err =>
+      onError(err instanceof Error ? err : new Error(String(err))),
+    )
+    throw err
+  }
 
   async function attempt(attemptNumber = 0): Promise<void> {
     const completionKey = exactBinding
@@ -101,6 +113,17 @@ async function admitLogoutCleanup(
   sessionId: string,
   revocationOptions: SessionRevocationOptions,
 ): Promise<boolean> {
+  await using query = await beginTransaction()
+  // Share the user and SID fences with deletion, minting and revocation. No lock
+  // survives admission: the capability, not a database transaction, covers cleanup.
+  await lockLogoutCleanupAdmission(query, revocationOptions.userId, sessionId)
+  const { rows } = await query(sql`/* admitLogoutCleanup */
+    SELECT s.id FROM user_sessions s JOIN users u ON u.id = s.user_id
+    WHERE s.id = ${sessionId} AND s.user_id = ${revocationOptions.userId}
+      AND s.revoked_at IS NULL AND s.expires_at > CURRENT_TIMESTAMP
+      AND s.device_token_digest IS NOT NULL AND u.deleted_at IS NULL
+    FOR UPDATE OF s`)
+  if (rows.length === 0) return false
   const result = await sessionValkeyClient.invokeScript(admitLogoutCleanupScript, {
     keys: [
       getJwtLogoutCleanupAdmissionKey(sessionId),
@@ -117,7 +140,20 @@ async function admitLogoutCleanup(
   if (!Number.isSafeInteger(Number(result[0]))) {
     throw new Error('logout cleanup admission returned an invalid sequence')
   }
+  await query.commit()
   return true
+}
+
+/** Keep the established user-before-SID lock order without requiring a still-live account. */
+async function lockLogoutCleanupAdmission(
+  query: TransactionQuery,
+  userId: string,
+  sessionId: string,
+): Promise<void> {
+  await query(sql`/* admitLogoutCleanup:userFence */
+    SELECT pg_advisory_xact_lock(hashtextextended(${userId}, 0))`)
+  await query(sql`/* admitLogoutCleanup:sessionFence */
+    SELECT pg_advisory_xact_lock(hashtextextended(${sessionId}, 1))`)
 }
 
 async function commitLogoutRevocation(sessionId: string): Promise<void> {
@@ -129,7 +165,7 @@ async function commitLogoutRevocation(sessionId: string): Promise<void> {
     ],
     args: [String(REVOCATION_EXPIRATION_SECONDS)],
   })
-  await revokeSession(sessionId, { registryFailureMode: 'ignore' })
+  await revokeSession(sessionId)
 }
 
 function digestExactPushBinding(binding: ExactPushBinding): string {

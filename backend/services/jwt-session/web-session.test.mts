@@ -7,7 +7,7 @@ import {
   signSessionJwt,
   verifySessionJwt,
   WEB_SESSION_EXPIRATION_SECONDS,
-  SESSION_EXPIRATION_SECONDS,
+  ATTESTED_SESSION_EXPIRATION_SECONDS,
 } from '@ts-shared/session-jwt'
 import { createTestUserDirect, getTestPrivateUserById } from '@voucha/test-helpers/entities/users'
 import {
@@ -44,12 +44,15 @@ describe('web session authority', () => {
     const native = await createDeviceAndSessionTokens({
       did: v7(),
       uid: user.id,
-      deviceContext: { isNativeClient: true },
+      deviceClass: 'attested',
     })
     const nativeSession = await verifySessionJwt(native.sessionToken.token)
-    expect(nativeSession!.exp! - nativeSession!.iat!).toBe(SESSION_EXPIRATION_SECONDS)
+    expect(nativeSession!.exp! - nativeSession!.iat!).toBe(ATTESTED_SESSION_EXPIRATION_SECONDS)
     expect(nativeSession?.client).toBe('native')
-    expect(await verifyDeviceJwt(native.deviceToken.token)).not.toHaveProperty('refresh_uid')
+    expect(await verifyDeviceJwt(native.deviceToken.token)).toMatchObject({
+      refresh_uid: user.id,
+      dc: 'attested',
+    })
   })
 
   it('refreshes through the device credential after the access cookie is gone, with current user claims', async () => {
@@ -143,7 +146,6 @@ describe('web session authority', () => {
       sessionToken: newerAccess,
       userAgent,
       fetchUser: getTestPrivateUserById,
-      verifyRevocationOnHotPath: true,
     })
     expect(refreshed.uid).toBeNull()
   })
@@ -155,7 +157,7 @@ describe('web session authority', () => {
       uid: user.id,
       deviceContext: { user_agent: userAgent },
     })
-    const reset = await resetSessionState({ deviceToken: tokens.deviceToken.token, userAgent })
+    const reset = await resetSessionState({ deviceToken: tokens.deviceToken.token })
     expect(reset.uid).toBeNull()
     expect(await verifyDeviceJwt(reset.dt)).not.toHaveProperty('refresh_uid')
     const replay = await refreshSessionState({

@@ -54,4 +54,24 @@ test.describe('Session Persistence', () => {
     await expect(page).toHaveURL(/\/discussion\//)
     await expect(page.getByRole('heading', { level: 1 })).toContainText(title)
   })
+
+  test.describe('Automatic session renewal', () => {
+    test.beforeEach(async ({ page }) => {
+      const user = requireTestValue(
+        await createTestUserWithAge(CONTRIBUTING_USER_AGE_MS),
+        'Failed to create renewal contributor',
+      )
+      await loginAsUser(page, user.id)
+    })
+
+    test('returns to an interactive protected form after coordinated renewal', async ({ page }) => {
+      await navigateTo(page, '/session-renewal?next=%2Fdiscussions%2Fcreate')
+      await expect(page).toHaveURL('/discussions/create')
+      await expect(page.getByRole('heading', { level: 1 })).toContainText('New Discussion')
+      await waitForBelowFoldHydration(page)
+      const title = `Renewed session ${randomSuffix()}`
+      await page.getByTestId('post-form-title-input').pressSequentially(title)
+      await expect(page.getByTestId('post-form-title-input')).toHaveValue(title)
+    })
+  })
 })

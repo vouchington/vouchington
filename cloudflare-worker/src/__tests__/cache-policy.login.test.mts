@@ -1,16 +1,18 @@
 import { describe, expect, it } from 'vitest'
 import { expectCachePolicyBypassesBeforeAnonymousOrBotCaching } from '../../test-helpers/src/cache-policy-route-bypass.mts'
-import { isLoginRoute } from '../cache-route-policy.mts'
+import { isSessionEntryRoute } from '../cache-route-policy.mts'
 
-describe('isLoginRoute', () => {
+describe('isSessionEntryRoute', () => {
   it('matches the login page with or without trailing slash', () => {
-    expect(isLoginRoute('/login')).toBe(true)
-    expect(isLoginRoute('/login/')).toBe(true)
+    expect(isSessionEntryRoute('/login')).toBe(true)
+    expect(isSessionEntryRoute('/login/')).toBe(true)
+    expect(isSessionEntryRoute('/session-renewal')).toBe(true)
+    expect(isSessionEntryRoute('/session-renewal/')).toBe(true)
   })
 
   it('does not match login-adjacent routes', () => {
-    expect(isLoginRoute('/login/help')).toBe(false)
-    expect(isLoginRoute('/auth/login')).toBe(false)
+    expect(isSessionEntryRoute('/login/help')).toBe(false)
+    expect(isSessionEntryRoute('/auth/login')).toBe(false)
   })
 })
 
