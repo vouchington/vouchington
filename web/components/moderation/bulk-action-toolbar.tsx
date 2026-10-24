@@ -74,6 +74,7 @@ export function BulkActionToolbar({
           {t('extracted.moderation.bulkActionToolbar.remove_c3812fc4')}
         </Button>
         <Button
+          data-pw='bulk-action-toolbar-ban-user'
           size='sm'
           variant='outline'
           disabled
@@ -83,6 +84,7 @@ export function BulkActionToolbar({
           {t('extracted.moderation.bulkActionToolbar.banUser_29b589a6')}
         </Button>
         <Button
+          data-pw='bulk-action-toolbar-escalate'
           size='sm'
           variant='outline'
           disabled
@@ -94,6 +96,7 @@ export function BulkActionToolbar({
           {t('extracted.moderation.bulkActionToolbar.escalate_d563aaf7')}
         </Button>
         <Button
+          data-pw='bulk-action-toolbar-clear'
           size='sm'
           variant='ghost'
           disabled={disabled}
@@ -123,6 +126,7 @@ export function BulkActionToolbar({
           ) : null}
           <div className='flex flex-wrap gap-2'>
             <Button
+              data-pw='bulk-action-toolbar-confirm'
               size='sm'
               variant={action === 'remove' ? 'destructive' : 'default'}
               disabled={disabled}
@@ -131,6 +135,7 @@ export function BulkActionToolbar({
               {t('extracted.moderation.bulkActionToolbar.confirm_eebdd24a')}
             </Button>
             <Button
+              data-pw='bulk-action-toolbar-cancel'
               size='sm'
               variant='outline'
               disabled={disabled}

@@ -97,6 +97,7 @@ test.describe('Appeals — staff view', () => {
 
     // Action UI renders only for pending appeals; our seeded appeal is always pending
     await expect(smokeRow.getByTestId('appeal-public-response')).toBeVisible()
+    await expect(smokeRow.getByTestId('appeal-row-re-run-ai')).toBeVisible()
     await expect(smokeRow.getByTestId('appeal-approve')).toBeVisible()
     await expect(smokeRow.getByTestId('appeal-send')).toBeVisible()
     await expect(smokeRow.getByTestId('appeal-accept')).toBeVisible()

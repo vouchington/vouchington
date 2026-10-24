@@ -108,6 +108,7 @@ function CommunityMemberOwnerActions({
     <>
       {member.role === 'moderator' && (
         <Button
+          data-pw='community-member-row-remove-moderator'
           size='sm'
           variant='outline'
           loading={roleLoading}
@@ -121,6 +122,7 @@ function CommunityMemberOwnerActions({
       )}
       {member.role === 'member' && (
         <Button
+          data-pw='community-member-row-make-moderator'
           size='sm'
           variant='outline'
           loading={roleLoading}
@@ -141,6 +143,7 @@ function CommunityMemberOwnerActions({
         />
       )}
       <Button
+        data-pw='community-member-row-remove'
         size='sm'
         variant='destructive'
         loading={removeLoading}

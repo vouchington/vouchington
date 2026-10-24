@@ -113,6 +113,7 @@ export function PinnedPostsManager({ communitySlug, posts, initialPinnedPosts }:
               />
               <div className='flex items-center gap-1'>
                 <Button
+                  data-pw='pinned-posts-manager-move-up'
                   variant='ghost'
                   size='icon'
                   className='h-7 w-7'
@@ -123,6 +124,7 @@ export function PinnedPostsManager({ communitySlug, posts, initialPinnedPosts }:
                   <ArrowUp className='h-4 w-4' />
                 </Button>
                 <Button
+                  data-pw='pinned-posts-manager-move-down'
                   variant='ghost'
                   size='icon'
                   className='h-7 w-7'
@@ -133,6 +135,7 @@ export function PinnedPostsManager({ communitySlug, posts, initialPinnedPosts }:
                   <ArrowDown className='h-4 w-4' />
                 </Button>
                 <Button
+                  data-pw='pinned-posts-manager-remove-pin'
                   variant='ghost'
                   size='icon'
                   className='h-7 w-7'
@@ -169,6 +172,7 @@ export function PinnedPostsManager({ communitySlug, posts, initialPinnedPosts }:
                   }}
                 />
                 <Button
+                  data-pw='pinned-posts-manager-pin-post'
                   variant='ghost'
                   size='icon'
                   className='h-7 w-7'

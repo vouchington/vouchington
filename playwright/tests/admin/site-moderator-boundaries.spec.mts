@@ -182,6 +182,16 @@ test.describe('admin positive controls', () => {
     await expect(page.getByTestId('moderation-selected-count')).toBeVisible()
     await expect(page.getByTestId('bulk-remove-button')).toBeEnabled()
     await expect(page.getByTestId('bulk-dismiss-button')).toBeEnabled()
+    await expect(page.getByTestId('bulk-action-toolbar-ban-user')).toBeVisible()
+    await expect(page.getByTestId('bulk-action-toolbar-escalate')).toBeVisible()
+    await expect(page.getByTestId('bulk-action-toolbar-clear')).toBeVisible()
+
+    await page.getByTestId('bulk-dismiss-button').click()
+    await expect(page.getByTestId('bulk-action-toolbar-confirm')).toBeVisible()
+    await expect(page.getByTestId('bulk-action-toolbar-cancel')).toBeVisible()
+    await page.getByTestId('bulk-action-toolbar-cancel').click()
+    await page.getByTestId('bulk-action-toolbar-clear').click()
+    await expect(page.getByTestId('moderation-selected-count')).toBeHidden()
   })
 
   test('admin sees the appeals page heading', async ({ page }) => {

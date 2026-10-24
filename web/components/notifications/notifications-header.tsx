@@ -40,6 +40,7 @@ export function NotificationsHeader({ canMarkAllRead, onMarkAllRead }: Notificat
           </Link>
         </Button>
         <Button
+          data-pw='notifications-header-mark-all-as-read'
           type='button'
           variant='outline'
           onClick={onMarkAllRead}

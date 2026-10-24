@@ -148,6 +148,7 @@ function CommunityContributeActions({
       >
         <Link
           href={`/discussions/create?${communityParam}`}
+          data-pw='community-feed-start-discussion'
           prefetch={false}
         >
           <StartDiscussionIcon data-icon='inline-start' />
@@ -162,6 +163,7 @@ function CommunityContributeActions({
         >
           <Link
             href={`/reviews/create?${communityParam}`}
+            data-pw='community-feed-write-review'
             prefetch={false}
           >
             <WriteReviewIcon data-icon='inline-start' />
@@ -177,6 +179,7 @@ function CommunityContributeActions({
         >
           <Link
             href={`/data-points/create?${communityParam}`}
+            data-pw='community-feed-share-data-point'
             prefetch={false}
           >
             <ShareDataPointIcon data-icon='inline-start' />

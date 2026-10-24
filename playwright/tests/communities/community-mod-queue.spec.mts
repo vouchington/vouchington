@@ -191,6 +191,7 @@ test.describe('Community mod queue', () => {
 
     const reasonTextarea = postCard.getByTestId('mod-queue-rejection-reason')
     await expect(reasonTextarea).toBeVisible()
+    await expect(postCard.getByTestId('mod-queue-posts-cancel')).toBeVisible()
     await reasonTextarea.pressSequentially('Does not meet community guidelines.')
 
     const confirmButton = postCard.getByTestId('mod-queue-reject-confirm')
@@ -230,5 +231,7 @@ test.describe('Community mod queue', () => {
     await expect(page.getByTestId('community-moderation-heading')).toBeVisible()
     await expect(page.getByTestId('mod-queue-reports')).toBeVisible()
     await expect(page.getByTestId('community-report-sort')).toBeVisible()
+    await expect(page.getByTestId('mod-queue-reports-reviewed').first()).toBeVisible()
+    await expect(page.getByTestId('mod-queue-reports-dismiss').first()).toBeVisible()
   })
 })

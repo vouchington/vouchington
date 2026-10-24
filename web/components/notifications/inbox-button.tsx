@@ -68,6 +68,7 @@ export function InboxButton() {
                 {t('extracted.notifications.inboxButton.inbox_94835ea2')}
               </DropdownMenuLabel>
               <Button
+                data-pw='inbox-button-mark-all-as-read'
                 type='button'
                 variant='ghost'
                 size='sm'

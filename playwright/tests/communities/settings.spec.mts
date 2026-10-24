@@ -130,6 +130,9 @@ test.describe('Community Settings', () => {
   test('moderation page has heading', async ({ page }) => {
     await navigateTo(page, `/communities/${COMMUNITY_SLUG}/settings/moderation`)
     await expect(page.getByTestId('community-moderation-heading')).toBeVisible()
+    await expect(
+      page.getByTestId('community-post-type-settings-form-save-post-types'),
+    ).toBeVisible()
   })
 
   test('moderation page exposes community AI agent toggles', async ({ page }) => {

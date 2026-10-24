@@ -48,6 +48,7 @@ test.describe('Community agent prompts', () => {
     await navigateTo(page, `/communities/${communitySlug}/settings/moderation`)
 
     await expect(page.getByTestId('community-agent-prompt-form')).toBeVisible()
+    await expect(page.getByTestId('community-agent-prompt-form-create-prompt')).toBeVisible()
   })
 
   test('creates a prompt, shows it in the list, and records a history entry', async ({ page }) => {
@@ -63,7 +64,7 @@ test.describe('Community agent prompts', () => {
     const textarea = form.getByLabel('New agent prompt')
     await textarea.pressSequentially(promptText)
 
-    const submitButton = form.getByRole('button', { name: 'Create Prompt' })
+    const submitButton = form.getByTestId('community-agent-prompt-form-create-prompt')
     const responsePromise = page.waitForResponse(
       response =>
         response.url().includes('/agent-prompts') && response.request().method() === 'POST',
@@ -73,6 +74,21 @@ test.describe('Community agent prompts', () => {
 
     await expect(page.getByTestId('community-agent-prompt-list')).toBeVisible()
     await expect(page.getByTestId('community-agent-prompt-item').first()).toBeVisible()
+    const actions = page.getByTestId('community-agent-prompt-item').first()
+    await expect(actions.getByTestId('community-agent-prompt-item-actions-edit')).toBeVisible()
+    await expect(
+      actions.getByTestId('community-agent-prompt-item-actions-toggle-allocation'),
+    ).toBeVisible()
+    await expect(actions.getByTestId('community-agent-prompt-item-actions-test')).toBeVisible()
+    await expect(actions.getByTestId('community-agent-prompt-item-actions-delete')).toBeVisible()
+    await actions.getByTestId('community-agent-prompt-item-actions-edit').click()
+    await expect(actions.getByTestId('community-agent-prompt-item-actions-save')).toBeVisible()
+    await expect(actions.getByTestId('community-agent-prompt-item-actions-cancel')).toBeVisible()
+    await actions.getByTestId('community-agent-prompt-item-actions-cancel').click()
+    await actions.getByTestId('community-agent-prompt-item-actions-delete').click()
+    await expect(
+      actions.getByTestId('community-agent-prompt-item-actions-confirm-delete'),
+    ).toBeVisible()
 
     // Reload to get server-rendered history (SSR re-fetches after mutation completes)
     await navigateTo(page, `/communities/${communitySlug}/settings/moderation`)
@@ -103,12 +119,13 @@ test.describe('Community agent prompts', () => {
 
     const promptItem = page.getByTestId('community-agent-prompt-item').first()
     await expect(promptItem).toBeVisible()
-    await promptItem.getByRole('button', { name: 'Test' }).click()
+    await promptItem.getByTestId('community-agent-prompt-item-actions-test').click()
 
     await expect(page.getByTestId('community-agent-prompt-test-panel')).toBeVisible()
     await expect(page.getByLabel('Simulation prompt')).toBeVisible()
 
-    await promptItem.getByRole('button', { name: 'Run Test' }).click()
+    await expect(page.getByTestId('community-agent-prompt-test-panel-run-test')).toBeVisible()
+    await page.getByTestId('community-agent-prompt-test-panel-run-test').click()
     await expect(page.getByTestId('community-agent-prompt-test-results')).toBeVisible()
     await expect(page.getByTestId('community-agent-prompt-test-empty')).toBeVisible()
   })

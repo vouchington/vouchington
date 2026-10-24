@@ -79,6 +79,7 @@ export function ApplicationForm({ communitySlug, questions }: ApplicationFormPro
           <div className='rounded-md bg-destructive/10 p-3 text-sm text-destructive'>{error}</div>
         )}
         <Button
+          data-pw='application-form-apply-to-join'
           type='submit'
           loading={loading}
           disabled={loading}
@@ -227,6 +228,7 @@ export function ApplicationForm({ communitySlug, questions }: ApplicationFormPro
       </div>
 
       <Button
+        data-pw='application-form-submit-application'
         type='submit'
         loading={loading}
         disabled={loading}

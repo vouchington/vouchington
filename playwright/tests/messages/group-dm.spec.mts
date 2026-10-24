@@ -112,6 +112,7 @@ test.describe('Group DM thread — owner view', () => {
     await navigateTo(page, `/messages/${addParticipantConvId}`)
 
     await page.getByTestId('add-participant-button').click()
+    await expect(page.getByTestId('participants-panel-cancel-add')).toBeVisible()
     await page
       .getByTestId('add-participant-input')
       .pressSequentially(`gdm-invitee-${inviteeSuffix}`)
@@ -128,6 +129,7 @@ test.describe('Group DM thread — owner view', () => {
     await expect(page.getByTestId('participant-item')).toHaveCount(2)
     await page.getByTestId('remove-participant-button').first().click()
     await expect(page.getByTestId('confirm-remove-participant')).toBeVisible()
+    await expect(page.getByTestId('participants-panel-cancel-remove')).toBeVisible()
     await page.getByTestId('confirm-remove-participant').click()
 
     await expect(page.getByTestId('participant-item')).toHaveCount(1)
