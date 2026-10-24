@@ -1,6 +1,6 @@
 import { it, expect, describe, beforeAll } from 'vitest'
 import { createTestUser, insertTestTopic } from '@voucha/test-helpers'
-import { getTopicElectionById } from './get-election.mts'
+import { getTopicElectionsByIdBatch } from './get-election-batch.mts'
 import type { PrivateUser } from '@services/users/types'
 
 describe('get-election', () => {
@@ -9,7 +9,7 @@ describe('get-election', () => {
   beforeAll(async () => {
     user = await createTestUser()
   })
-  describe('getTopicElectionById', () => {
+  describe('getTopicElectionsByIdBatch', () => {
     it('retrieves topic election by UUID', async () => {
       const random = Math.random().toString(36).slice(2, 15)
       const topicId = await insertTestTopic({
@@ -18,7 +18,7 @@ describe('get-election', () => {
         createdById: user.id,
       })
 
-      const election = await getTopicElectionById(topicId)
+      const [election] = await getTopicElectionsByIdBatch([topicId])
 
       expect(election).toMatchObject({
         __entity_type: 'topic_election',
@@ -31,7 +31,7 @@ describe('get-election', () => {
 
     it('returns null for non-existent UUID', async () => {
       const nonExistentId = '00000000-0000-0000-0000-000000000000'
-      const election = await getTopicElectionById(nonExistentId)
+      const [election] = await getTopicElectionsByIdBatch([nonExistentId])
       expect(election).toBeNull()
     })
   })

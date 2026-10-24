@@ -9,7 +9,7 @@ import {
 } from '@voucha/test-helpers'
 import { onceElectionVoteStatsCompleted } from '@voucha/test-helpers/election-vote-stats'
 import { caches } from '@services/entity-cache/caches'
-import { getAgentModerationElectionById } from './get-election.mts'
+import { getAgentModerationElectionsByIdBatch } from './get-election-batch.mts'
 import { upsertAgentModerationElectionVotes } from './votes-upsert.mts'
 import type { PrivateUser } from '@services/users/types'
 
@@ -17,9 +17,8 @@ import type { PrivateUser } from '@services/users/types'
 // depends on @services/elections-votes, so importing entity-fetch's cached getter back into
 // elections-votes would create a fresh elections-votes<->entity-fetch cycle. Same cache
 // instance/TTL/invalidation-keys as the agent-moderation batch cache.
-const getAgentModerationElectionByIdCached = caches.agent_moderation_elections.cacheGetByAny(
-  getAgentModerationElectionById,
-)
+const getAgentModerationElectionsByIdCachedBatch =
+  caches.agent_moderation_elections.cacheGetByAnyBatch(getAgentModerationElectionsByIdBatch)
 
 describe('votes-upsert.generated', () => {
   const touchedModerationIds = new Set<string>()
@@ -69,7 +68,9 @@ describe('votes-upsert.generated', () => {
       votes_count_up: 0,
       votes_count_down: 25,
     })
-    expect((await getAgentModerationElectionByIdCached(moderationId))?.votes_score_net).toBe(-25)
+    expect(
+      (await getAgentModerationElectionsByIdCachedBatch([moderationId]))[0]?.votes_score_net,
+    ).toBe(-25)
 
     await upsertAgentModerationElectionVotes(user.id, [{ entityId: moderationId, score: 1 }])
 
@@ -179,7 +180,7 @@ describe('votes-upsert.generated', () => {
     })
 
     await caches.agent_moderation_elections.invalidateCacheGetByAny(moderationId)
-    const latest = await getAgentModerationElectionByIdCached(moderationId)
+    const [latest] = await getAgentModerationElectionsByIdCachedBatch([moderationId])
     expect(latest).toMatchObject(expected)
     return latest
   }
