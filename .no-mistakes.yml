@@ -5340,7 +5340,6 @@ rules:
         - 'storybook/**'
         - 'test-helpers/**'
         # pending backfill batches (#3761): remove each line as its stories land
-        - 'components/copyright/**'
         - 'components/topics/**'
         - 'components/asides/**'
         - 'components/communities/**'
