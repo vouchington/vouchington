@@ -179,13 +179,16 @@ jobs:
           persist-credentials: false
       - name: Download exact generated snapshot
         timeout-minutes: 2
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
-        with:
-          name: postgresql-snapshot-pr-${{ needs.prepare.outputs.pr_number }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/postgresql-snapshot-download
-          github-token: ${{ github.token }}
-          repository: ${{ github.repository }}
-          run-id: ${{ github.run_id }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SNAPSHOT_ARTIFACT_NAME: postgresql-snapshot-pr-${{ needs.prepare.outputs.pr_number }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+          SNAPSHOT_ARTIFACT_DIR: ${{ runner.temp }}/postgresql-snapshot-download
+          SNAPSHOT_RUN_ID: ${{ github.run_id }}
+        run: |
+          timeout --signal=TERM --kill-after=5s 90s gh run download "$SNAPSHOT_RUN_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name "$SNAPSHOT_ARTIFACT_NAME" \
+            --dir "$SNAPSHOT_ARTIFACT_DIR"
       - name: Validate and publish generated snapshot
         timeout-minutes: 3
         env:

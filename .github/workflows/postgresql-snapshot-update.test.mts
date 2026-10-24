@@ -72,18 +72,24 @@ describe('PostgreSQL snapshot update workflow', () => {
   it('publishes only after a successful artifact handoff through trusted default-branch code', () => {
     expect(publish?.needs).toEqual(['prepare', 'generate'])
     expect(publish?.if).toContain("needs.generate.result == 'success'")
-    const download = publish?.steps?.find(step =>
-      step.uses?.startsWith('actions/download-artifact@'),
-    )
-    expect(download?.with).toMatchObject({
-      name: 'postgresql-snapshot-pr-${{ needs.prepare.outputs.pr_number }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}',
-      'github-token': '${{ github.token }}',
-      repository: '${{ github.repository }}',
-      'run-id': '${{ github.run_id }}',
+    const download = publish?.steps?.find(step => step.name === 'Download exact generated snapshot')
+    expect(download?.uses).toBeUndefined()
+    expect(download?.env).toEqual({
+      GH_TOKEN: '${{ github.token }}',
+      SNAPSHOT_ARTIFACT_NAME:
+        'postgresql-snapshot-pr-${{ needs.prepare.outputs.pr_number }}-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}',
+      SNAPSHOT_ARTIFACT_DIR: '${{ runner.temp }}/postgresql-snapshot-download',
+      SNAPSHOT_RUN_ID: '${{ github.run_id }}',
     })
+    expect(download?.run).toContain(
+      'timeout --signal=TERM --kill-after=5s 90s gh run download "$SNAPSHOT_RUN_ID"',
+    )
+    expect(download?.run).toContain('--repo "$GITHUB_REPOSITORY"')
+    expect(download?.run).toContain('--name "$SNAPSHOT_ARTIFACT_NAME"')
+    expect(download?.run).toContain('--dir "$SNAPSHOT_ARTIFACT_DIR"')
     expect(
       generate?.steps?.find(step => step.uses?.startsWith('actions/upload-artifact@'))?.with?.name,
-    ).toBe(download?.with?.name)
+    ).toBe(download?.env?.SNAPSHOT_ARTIFACT_NAME)
     const publication = publish?.steps?.find(
       step => step.name === 'Validate and publish generated snapshot',
     )
