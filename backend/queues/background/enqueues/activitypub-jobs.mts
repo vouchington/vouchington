@@ -22,12 +22,16 @@ const INBOX = {
   removeOnComplete: 100,
   removeOnFail: 100,
 } as const
+const OUTBOUND_ORDERING = { key: 'activitypub:outbound', concurrency: 5 } as const
+const INBOUND_ORDERING = { key: 'activitypub:inbound', concurrency: 4 } as const
+const CLEANUP_ORDERING = { key: 'activitypub:cleanup', concurrency: 1 } as const
 
 export const ACTIVITYPUB_DISTRIBUTE_ACTIVITY_JOB = defineBackgroundJob<DistributeActivityData>(
   DOMAIN,
   {
     name: 'distributeActivity',
     priority: PRIORITY_DISPATCH,
+    ordering: OUTBOUND_ORDERING,
     ...DELIVERY,
     ...pagedDispatchJobOptions('activitypub'),
   },
@@ -35,26 +39,30 @@ export const ACTIVITYPUB_DISTRIBUTE_ACTIVITY_JOB = defineBackgroundJob<Distribut
 export const ACTIVITYPUB_DELIVER_ACTIVITY_JOB = defineBackgroundJob<DeliverActivityData>(DOMAIN, {
   name: 'deliverActivity',
   priority: PRIORITY_TASK,
+  ordering: OUTBOUND_ORDERING,
   ...DELIVERY,
 })
 export const ACTIVITYPUB_PROCESS_DELIVERY_JOB = defineBackgroundJob<ActivityPubInboxDeliveryJob>(
   DOMAIN,
-  { name: 'processDelivery', priority: PRIORITY_TASK, ...INBOX },
+  { name: 'processDelivery', priority: PRIORITY_TASK, ordering: INBOUND_ORDERING, ...INBOX },
 )
 export const ACTIVITYPUB_RECOVER_DELIVERIES_JOB = defineBackgroundJob<EmptyData>(DOMAIN, {
   name: 'recoverDeliveries',
   priority: PRIORITY_DISPATCH,
+  ordering: INBOUND_ORDERING,
   ...INBOX,
 })
 export const ACTIVITYPUB_REARM_FAILED_DELIVERIES_JOB =
   defineBackgroundJob<RearmFailedDeliveriesData>(DOMAIN, {
     name: 'rearmFailedDeliveries',
     priority: PRIORITY_DISPATCH,
+    ordering: INBOUND_ORDERING,
     ...INBOX,
   })
 export const ACTIVITYPUB_CLEANUP_EXPIRED_DELIVERIES_JOB = defineBackgroundJob<EmptyData>(DOMAIN, {
   name: 'cleanupExpiredDeliveries',
   priority: PRIORITY_DISPATCH,
+  ordering: CLEANUP_ORDERING,
   ...INBOX,
 })
 

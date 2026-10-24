@@ -5,8 +5,8 @@ type GroupRateLimit = { readonly max: number; readonly duration: number }
 
 /**
  * How a domain limits itself. A job has one ordering key, so a domain is either capped as a whole
- * (`domain`: every job shares the key named after the domain, and a job may keep its own singleton
- * key outside the group) or runs in a fixed set of singleton lanes (`lanes`: every job supplies
+ * (`domain`: every job shares the key named after the domain) or runs in a fixed set of singleton
+ * lanes (`lanes`: every job supplies
  * its own namespaced lane key and `cap` is the sum of the lane concurrencies), never per-entity
  * keys beside a domain-wide cap. A domain that needs those keeps its own queue.
  */
@@ -36,6 +36,8 @@ export type BackgroundJobSpec = {
   /** Local name, unique inside the domain; the queue-wide name is `<domain>.<name>`. */
   readonly name: string
   readonly priority: number
+  /** Fixed lane for a domain that partitions its concurrency by job family. */
+  readonly ordering?: JobOptions['ordering']
   readonly attempts?: number
   readonly backoff?: NonNullable<JobOptions['backoff']>
   /** Lock and heartbeat window for this job alone, for domains whose work outlasts the default. */
