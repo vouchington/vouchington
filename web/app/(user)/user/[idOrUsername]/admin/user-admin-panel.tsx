@@ -179,6 +179,7 @@ export function UserAdminPanel({ user }: UserAdminPanelProps) {
                 />
               </div>
               <Button
+                data-pw='user-admin-panel-suspend'
                 type='submit'
                 variant='destructive'
                 className='self-start'

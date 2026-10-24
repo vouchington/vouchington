@@ -112,6 +112,7 @@ export function PageDetailsForm({
         <div className='flex gap-2'>
           {!selectedPage.is_default ? (
             <Button
+              data-pw='page-forms-make-default'
               type='button'
               variant='outline'
               onClick={onSetDefault}
@@ -121,6 +122,7 @@ export function PageDetailsForm({
             </Button>
           ) : null}
           <Button
+            data-pw='page-forms-delete'
             type='button'
             variant='destructive'
             onClick={onDelete}
@@ -157,6 +159,7 @@ export function PageDetailsForm({
         />
       </div>
       <Button
+        data-pw='page-forms-save-page-details'
         type='submit'
         loading={loading}
         disabled={loading}

@@ -73,7 +73,10 @@ export function ModerationTransparencyPanel({
               'extracted.moderationAnalytics.moderationTransparencyPanel.upgradeToViewDelayedPrivacyProtectedAggregateData_c5a3b0a7',
             )}
           </p>
-          <Button asChild>
+          <Button
+            data-pw='moderation-transparency-panel-view-plans'
+            asChild
+          >
             <Link
               href='/plans'
               prefetch={false}

@@ -64,6 +64,7 @@ function ModeratorGroup({ title, data }: { title: string; data: CommunityMembers
                 size='sm'
               />
               <UserLink
+                data-pw='community-moderators-aside-user-link'
                 user={user}
                 className='font-medium hover:underline'
               />

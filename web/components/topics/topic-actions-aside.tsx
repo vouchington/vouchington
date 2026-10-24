@@ -66,6 +66,7 @@ export function TopicActionsAside({
           />
         ) : (
           <Button
+            data-pw='topic-actions-aside-mute'
             variant='outline'
             size='touchSm'
             asChild
@@ -87,6 +88,7 @@ export function TopicActionsAside({
           <div className='flex flex-col gap-1'>
             {showReview && (
               <Button
+                data-pw='topic-actions-aside-write-areview'
                 variant='ghost'
                 size='sm'
                 className='h-auto justify-start gap-2 px-2 py-2'
@@ -103,6 +105,7 @@ export function TopicActionsAside({
             )}
             {showDataPoint && (
               <Button
+                data-pw='topic-actions-aside-share-adata-point'
                 variant='ghost'
                 size='sm'
                 className='h-auto justify-start gap-2 px-2 py-2'
@@ -118,6 +121,7 @@ export function TopicActionsAside({
               </Button>
             )}
             <Button
+              data-pw='topic-actions-aside-start-adiscussion'
               variant='ghost'
               size='sm'
               className='h-auto justify-start gap-2 px-2 py-2'

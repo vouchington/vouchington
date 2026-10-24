@@ -31,6 +31,7 @@ export function CopyrightRepeatInfringerActions({
       <section className='space-y-2'>
         <h3 className='font-medium'>Repeat-infringer review</h3>
         <Button
+          data-pw='copyright-repeat-infringer-actions-show-repeat-infringer-record'
           disabled={pending}
           onClick={() => {
             setError(null)

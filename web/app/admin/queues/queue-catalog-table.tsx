@@ -101,6 +101,7 @@ export function QueueCatalogTable<Row extends { id: string }>({
                       </td>
                       <td className='px-4 py-3'>
                         <Button
+                          data-pw='queue-catalog-table-activate'
                           variant='outline'
                           size='touchSm'
                           disabled={busy}

@@ -13,7 +13,10 @@ export function HomePageCta({ t }: { t: Translate }) {
       <p className='mx-auto max-w-lg text-muted-foreground'>
         {t('extracted.app.page.joinPeopleWhoShareRealExperiences_2c516363')}
       </p>
-      <Button asChild>
+      <Button
+        data-pw='home-page-cta-get-started-for-free'
+        asChild
+      >
         <Link
           href='/login'
           prefetch={false}

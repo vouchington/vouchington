@@ -78,7 +78,12 @@ export default async function FediversePage({ searchParams }: PageProps) {
               value={providerParam}
             />
           ) : null}
-          <Button type='submit'>Search</Button>
+          <Button
+            data-pw='fediverse-submit'
+            type='submit'
+          >
+            Search
+          </Button>
         </form>
         <nav
           className='flex flex-wrap gap-2'
@@ -136,6 +141,7 @@ function ProviderLink({
   const href = `/fediverse${params.size > 0 ? `?${params.toString()}` : ''}`
   return (
     <Button
+      data-pw='fediverse-filter-link'
       asChild
       variant={active ? 'default' : 'outline'}
       size='sm'

@@ -64,6 +64,7 @@ export function CategorySummary({
                 {t('extracted.spendingCategoriesManager.categorySummary.remove_9fe2f243')}
               </span>
               <Button
+                data-pw='category-summary-confirm'
                 size='sm'
                 variant='destructive'
                 onClick={onConfirmDelete}
@@ -72,6 +73,7 @@ export function CategorySummary({
                 {t('extracted.spendingCategoriesManager.categorySummary.confirm_eebdd24a')}
               </Button>
               <Button
+                data-pw='category-summary-cancel'
                 size='sm'
                 variant='outline'
                 onClick={onCancelDelete}

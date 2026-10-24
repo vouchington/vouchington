@@ -68,6 +68,7 @@ export function UserSearchListItemContent({
                 : t('extracted.users.userList.active_92340695')}
             </Badge>
             <Button
+              data-pw='user-search-list-item-content-manage'
               asChild
               variant='outline'
             >

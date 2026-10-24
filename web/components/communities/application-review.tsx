@@ -202,6 +202,7 @@ export function ApplicationReview({ data, communitySlug, users }: ApplicationRev
                       />
                       <div className='flex gap-2'>
                         <Button
+                          data-pw='application-review-confirm-reject'
                           size='sm'
                           variant='destructive'
                           loading={loading === application.id}
@@ -213,6 +214,7 @@ export function ApplicationReview({ data, communitySlug, users }: ApplicationRev
                             : t('extracted.communities.applicationReview.confirmReject_48426f9f')}
                         </Button>
                         <Button
+                          data-pw='application-review-cancel'
                           size='sm'
                           variant='outline'
                           onClick={() => {
@@ -227,6 +229,7 @@ export function ApplicationReview({ data, communitySlug, users }: ApplicationRev
                   ) : (
                     <div className='mt-4 flex gap-2'>
                       <Button
+                        data-pw='application-review-approve'
                         size='sm'
                         loading={loading === application.id}
                         disabled={loading === application.id}
@@ -237,6 +240,7 @@ export function ApplicationReview({ data, communitySlug, users }: ApplicationRev
                           : t('extracted.communities.applicationReview.approve_6007acbe')}
                       </Button>
                       <Button
+                        data-pw='application-review-reject'
                         size='sm'
                         variant='outline'
                         disabled={loading === application.id}

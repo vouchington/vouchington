@@ -46,6 +46,7 @@ export function CopyrightEmailNoticeAssociation({
       />
       {searchFailed && <p role='alert'>We could not find that notice.</p>}
       <Button
+        data-pw='copyright-email-notice-association-associate-with-notice'
         disabled={loading || !noticeId.trim()}
         onClick={() => onAssociateWithNotice(noticeId.trim())}
         variant='outline'

@@ -44,6 +44,7 @@ export function PaginatedListFooter({
         </p>
       )}
       <Button
+        data-pw='paginated-list-footer-load-more'
         variant='outline'
         size='sm'
         disabled={loadingMore}

@@ -39,7 +39,7 @@ test.describe('Admin URLs', () => {
 
     // URL text opens externally
     const urlExternalLink = page
-      .getByTestId('external-link')
+      .getByTestId('url-list-page-external-link')
       .filter({ hasText: 'https://example.com/page1' })
       .first()
     await expect(urlExternalLink).toHaveAttribute('href', 'https://example.com/page1')

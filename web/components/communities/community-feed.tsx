@@ -143,6 +143,7 @@ function CommunityContributeActions({
   return (
     <div className='flex flex-wrap gap-2'>
       <Button
+        data-pw='community-feed-start-discussion'
         asChild
         size='sm'
       >
@@ -156,6 +157,7 @@ function CommunityContributeActions({
       </Button>
       {allowReviewPosts && (
         <Button
+          data-pw='community-feed-write-review'
           asChild
           size='sm'
           variant='outline'
@@ -171,6 +173,7 @@ function CommunityContributeActions({
       )}
       {allowDataPointPosts && (
         <Button
+          data-pw='community-feed-share-data-point'
           asChild
           size='sm'
           variant='outline'

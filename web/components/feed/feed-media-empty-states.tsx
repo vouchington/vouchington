@@ -118,6 +118,7 @@ function renderEmptyState({ title, description, actions }: EmptyStateSpec): Reac
       <div className='flex gap-2'>
         {actions.map(({ label, href }) => (
           <Button
+            data-pw='feed-media-empty-states-action'
             key={href}
             asChild
             variant='outline'

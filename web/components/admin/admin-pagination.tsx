@@ -20,6 +20,7 @@ export function AdminPagination({ nextHref, previousHref }: AdminPaginationProps
     >
       {previousHref ? (
         <Button
+          data-pw='admin-pagination-previous'
           asChild
           size='touchSm'
           variant='outline'
@@ -34,6 +35,7 @@ export function AdminPagination({ nextHref, previousHref }: AdminPaginationProps
       ) : null}
       {nextHref ? (
         <Button
+          data-pw='admin-pagination-next'
           asChild
           size='touchSm'
           variant='outline'

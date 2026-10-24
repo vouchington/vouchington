@@ -47,6 +47,7 @@ export function FollowButton({
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
+              data-pw='follow-button-sign-in'
               variant='default'
               size='touchSm'
               asChild

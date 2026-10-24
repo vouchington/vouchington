@@ -32,12 +32,14 @@ export function ReviewButtons({
       <p className='text-sm'>{description}</p>
       <div className='flex gap-2'>
         <Button
+          data-pw='copyright-staff-review-buttons-submit'
           disabled={pending || !canSubmit}
           onClick={() => submit(approve, `${approveLabel} recorded.`)}
         >
           {approveLabel}
         </Button>
         <Button
+          data-pw='copyright-staff-review-buttons-submit-2'
           variant='destructive'
           disabled={pending || !canSubmit}
           onClick={() => submit(reject, `${rejectLabel} recorded.`)}

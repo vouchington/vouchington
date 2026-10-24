@@ -38,6 +38,7 @@ export function FreePlanCard({
       <PlanFeatureList features={features} />
       {freeCurrent ? (
         <Button
+          data-pw='free-plan-card-current-plan'
           variant='outline'
           className='w-full'
           disabled
@@ -46,6 +47,7 @@ export function FreePlanCard({
         </Button>
       ) : membership === undefined ? (
         <Button
+          data-pw='free-plan-card-get-started'
           asChild
           variant='default'
           className='w-full'

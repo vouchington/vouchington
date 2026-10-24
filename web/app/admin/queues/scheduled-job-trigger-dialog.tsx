@@ -52,7 +52,10 @@ export function ScheduledJobTriggerDialog({
           <AlertDialogCancel>
             {t('extracted.queues.scheduledJobTriggerDialog.cancel_19766ed6')}
           </AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm}>
+          <AlertDialogAction
+            data-pw='scheduled-job-trigger-dialog-trigger'
+            onClick={onConfirm}
+          >
             {t('extracted.queues.scheduledJobTriggerDialog.trigger_8b9c6437')}
           </AlertDialogAction>
         </AlertDialogFooter>

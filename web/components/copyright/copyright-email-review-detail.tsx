@@ -125,6 +125,7 @@ export function CopyrightEmailReviewDetail({
         {separateCase ? (
           <>
             <Button
+              data-pw='copyright-email-review-detail-approve-initial'
               disabled={
                 loading ||
                 !rationale.trim() ||
@@ -137,6 +138,7 @@ export function CopyrightEmailReviewDetail({
               Approve structured intake
             </Button>
             <Button
+              data-pw='copyright-email-review-detail-request-information'
               disabled={
                 loading ||
                 !rationale.trim() ||
@@ -149,6 +151,7 @@ export function CopyrightEmailReviewDetail({
               Request information
             </Button>
             <Button
+              data-pw='copyright-email-review-detail-reject-initial'
               disabled={loading || !rationale.trim() || requiresFallback}
               onClick={onRejectInitial}
               variant='destructive'

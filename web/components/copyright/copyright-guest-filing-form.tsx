@@ -95,6 +95,7 @@ export function CopyrightGuestFilingForm({ noticeId }: { noticeId: string }) {
       />
       <TurnstileField turnstile={turnstile} />
       <Button
+        data-pw='copyright-guest-filing-form-submit'
         type='submit'
         disabled={pending}
       >

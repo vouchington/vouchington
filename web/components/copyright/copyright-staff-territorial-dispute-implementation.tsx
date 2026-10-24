@@ -33,6 +33,7 @@ export function CopyrightStaffTerritorialImplementationFields({
       />
       <ButtonGroup>
         <Button
+          data-pw='copyright-staff-territorial-dispute-implementation-review'
           disabled={pending || !implementedAt}
           onClick={() =>
             onReview(

@@ -143,6 +143,7 @@ function OutcomeFields({
       />
       <ButtonGroup>
         <Button
+          data-pw='copyright-staff-territorial-dispute-record-review'
           disabled={pending || !decidedAt}
           onClick={() =>
             onReview(

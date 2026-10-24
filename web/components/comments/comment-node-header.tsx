@@ -43,6 +43,7 @@ export function CommentNodeHeader(props: CommentNodeHeaderProps) {
   return (
     <div className='relative mb-1 flex select-none items-center gap-2 text-xs text-muted-foreground'>
       <Button
+        data-pw='comment-node-header-expand-comment-thread'
         type='button'
         variant='ghost'
         aria-label={
@@ -126,6 +127,7 @@ function CommentAuthorAvatar(props: CommentNodeHeaderProps) {
   if (props.isDeleted || props.isAnonymous || !post.created_by) return null
   return (
     <UserLink
+      data-pw='comment-node-header-user-link'
       user={post.created_by}
       tab={userTabForPostType('comment')}
       onClick={stopCommentHeaderLinkClickPropagation}
@@ -152,6 +154,7 @@ function CommentAuthorName(props: CommentNodeHeaderProps) {
   if (!props.isAnonymous && post.created_by) {
     return (
       <UserLink
+        data-pw='comment-node-header-user-link-2'
         user={post.created_by}
         tab={userTabForPostType('comment')}
         className='relative z-10 inline-flex min-h-6 min-w-6 shrink-0 items-center font-medium text-foreground hover:underline'

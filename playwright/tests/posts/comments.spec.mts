@@ -185,7 +185,7 @@ test.describe('Comments', () => {
     await expect(commentBodies.filter({ hasText: 'This is Comment A' })).toBeVisible()
 
     // Seeded comments are authored by 'tests' — click the first user-link
-    const usernameLink = page.getByTestId('user-link').first()
+    const usernameLink = page.getByTestId('comment-node-header-user-link').first()
     await expect(usernameLink).toBeVisible()
     await usernameLink.click()
 

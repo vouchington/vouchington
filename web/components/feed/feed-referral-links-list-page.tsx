@@ -42,6 +42,7 @@ export async function FeedReferralLinksListPage({ config }: FeedReferralLinksLis
     >
       <div className='flex gap-2'>
         <Button
+          data-pw='feed-referral-links-list-page-find-friends'
           asChild
           variant='outline'
           size='default'
@@ -54,6 +55,7 @@ export async function FeedReferralLinksListPage({ config }: FeedReferralLinksLis
           </Link>
         </Button>
         <Button
+          data-pw='feed-referral-links-list-page-share-your-links'
           asChild
           variant='outline'
           size='default'

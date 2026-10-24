@@ -89,6 +89,7 @@ export function CopyrightStaffTerritorialComplaintReview({
           </div>
           <ButtonGroup>
             <Button
+              data-pw='copyright-staff-territorial-complaint-review-review'
               disabled={pending || trimmedRationale.length === 0}
               onClick={() =>
                 onReview(

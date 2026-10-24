@@ -44,6 +44,7 @@ export async function LandingPageAnalyticsCard({ landingPages }: LandingPageAnal
                   </p>
                 </div>
                 <Button
+                  data-pw='landing-page-analytics-card-view-analytics'
                   asChild
                   variant='outline'
                   size='sm'

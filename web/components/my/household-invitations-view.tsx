@@ -84,6 +84,7 @@ export function HouseholdInvitationsView(props: HouseholdInvitationsViewProps) {
             />
           </div>
           <Button
+            data-pw='household-invitations-view-send-invitation'
             type='submit'
             disabled={props.pending || !props.selectedUserId}
           >
@@ -98,6 +99,7 @@ export function HouseholdInvitationsView(props: HouseholdInvitationsViewProps) {
         >
           <p>{t('settings.householdInvitations.loadFailed')}</p>
           <Button
+            data-pw='household-invitations-view-retry'
             variant='outline'
             onClick={props.onRetry}
             disabled={props.pending}
@@ -148,6 +150,7 @@ export function HouseholdInvitationsView(props: HouseholdInvitationsViewProps) {
               <div className='flex gap-2'>
                 {sent ? (
                   <Button
+                    data-pw='household-invitations-view-revoke-invitation'
                     variant='outline'
                     disabled={props.pending}
                     onClick={() => props.onResolve(invitation, 'revoke')}
@@ -157,12 +160,14 @@ export function HouseholdInvitationsView(props: HouseholdInvitationsViewProps) {
                 ) : (
                   <>
                     <Button
+                      data-pw='household-invitations-view-accept'
                       disabled={props.pending}
                       onClick={() => props.onResolve(invitation, 'accept')}
                     >
                       {t('settings.householdInvitations.accept')}
                     </Button>
                     <Button
+                      data-pw='household-invitations-view-decline'
                       variant='outline'
                       disabled={props.pending}
                       onClick={() => props.onResolve(invitation, 'decline')}
@@ -178,6 +183,7 @@ export function HouseholdInvitationsView(props: HouseholdInvitationsViewProps) {
       )}
       {!props.loadError && (props.hasMore || props.pageError) && (
         <Button
+          data-pw='household-invitations-view-load-more'
           variant='outline'
           disabled={props.pending || props.loadingMore}
           onClick={props.onLoadMore}

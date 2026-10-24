@@ -34,6 +34,7 @@ export function FlushConcernsCard({ flushLoading, setPendingAction }: FlushConce
                 </p>
               </div>
               <Button
+                data-pw='flush-concerns-card-flush'
                 size='sm'
                 variant={FLUSH_CONCERN_METADATA[concern].requiresForce ? 'destructive' : 'outline'}
                 loading={flushLoading[concern]}

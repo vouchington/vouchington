@@ -56,6 +56,7 @@ function buildEmptyState(
         icon='pen-line'
       >
         <Button
+          data-pw='post-list-page-create'
           asChild
           size='sm'
         >
@@ -78,6 +79,7 @@ function buildEmptyState(
         icon='pen-line'
       >
         <Button
+          data-pw='post-list-page-sign-in'
           asChild
           size='sm'
           variant='outline'

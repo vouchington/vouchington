@@ -46,6 +46,7 @@ export async function ContributeCtaAside() {
         {contributionLinks.map(({ href, label, description, icon: Icon }) => (
           <li key={href}>
             <Button
+              data-pw='contribute-cta-aside-item'
               asChild
               variant='ghost'
               className='h-auto w-full justify-start px-2 py-2'

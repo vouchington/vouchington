@@ -90,7 +90,10 @@ export default async function TopicRecommendationsPage({
               )}
             </p>
           </div>
-          <Button asChild>
+          <Button
+            data-pw='topic-recommendations-new-recommendation'
+            asChild
+          >
             <Link
               href='/topic-recommendations/create'
               prefetch={false}

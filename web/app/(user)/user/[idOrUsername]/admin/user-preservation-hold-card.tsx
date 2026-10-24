@@ -40,7 +40,6 @@ export function UserPreservationHoldCard({
   const [reference, setReference] = useState('')
   const [isBusy, setIsBusy] = useState(false)
   const [isRefreshing, startRefresh] = useTransition()
-
   useEffect(() => {
     let cancelled = false
     listUserPreservationHolds(userId)
@@ -64,7 +63,6 @@ export function UserPreservationHoldCard({
       cancelled = true
     }
   }, [userId, t, isAccountDeleted, router])
-
   const holds = state.status === 'loaded' ? state.holds : []
   const accountIsDeleted =
     isAccountDeleted || (loadedAccount?.userId === userId && loadedAccount.deletedAt !== null)
@@ -153,6 +151,7 @@ export function UserPreservationHoldCard({
           <div className='flex flex-col gap-3'>
             <p className='break-words text-sm font-medium'>{openHold.reference}</p>
             <Button
+              data-pw='user-preservation-hold-card-release-hold'
               type='button'
               variant='outline'
               className='self-start'
@@ -183,6 +182,7 @@ export function UserPreservationHoldCard({
               />
             </div>
             <Button
+              data-pw='user-preservation-hold-card-place-hold'
               type='submit'
               variant='destructive'
               className='self-start'

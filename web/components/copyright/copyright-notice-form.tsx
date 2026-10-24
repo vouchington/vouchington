@@ -162,6 +162,7 @@ export function CopyrightNoticeForm() {
       <CopyrightMisrepresentationWarning kind='notice' />
       <TurnstileField turnstile={turnstile} />
       <Button
+        data-pw='copyright-notice-form-submit'
         type='submit'
         disabled={
           pending ||

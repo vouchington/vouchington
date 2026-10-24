@@ -28,6 +28,7 @@ export function StatusPage({ status, title, description, t }: StatusPageProps) {
       </p>
       <div className='mt-8 flex flex-wrap justify-center gap-3'>
         <Button
+          data-pw='status-page-home'
           asChild
           className='min-h-11'
         >
@@ -41,6 +42,7 @@ export function StatusPage({ status, title, description, t }: StatusPageProps) {
           </Link>
         </Button>
         <Button
+          data-pw='status-page-topics'
           asChild
           variant='outline'
           className='min-h-11'
@@ -55,6 +57,7 @@ export function StatusPage({ status, title, description, t }: StatusPageProps) {
           </Link>
         </Button>
         <Button
+          data-pw='status-page-discussions'
           asChild
           variant='outline'
           className='min-h-11'
@@ -69,6 +72,7 @@ export function StatusPage({ status, title, description, t }: StatusPageProps) {
           </Link>
         </Button>
         <Button
+          data-pw='status-page-reviews'
           asChild
           variant='outline'
           className='min-h-11'

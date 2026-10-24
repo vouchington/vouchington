@@ -47,6 +47,7 @@ export default async function MessagesPage() {
             description={t('extracted.messages.page.yourDirectMessageConversations_4d5e6f7a')}
           />
           <Button
+            data-pw='messages-new-message'
             asChild
             variant='outline'
             size='sm'

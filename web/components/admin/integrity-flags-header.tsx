@@ -60,6 +60,7 @@ export function IntegrityFlagsHeader({
       >
         <ButtonGroup>
           <Button
+            data-pw='integrity-flags-header-flags-link'
             asChild
             variant='secondary'
             size='touchSm'
@@ -72,6 +73,7 @@ export function IntegrityFlagsHeader({
             </Link>
           </Button>
           <Button
+            data-pw='integrity-flags-header-penalties-link'
             asChild
             variant='outline'
             size='touchSm'
@@ -106,6 +108,7 @@ export function IntegrityFlagsHeader({
           </SelectContent>
         </Select>
         <Button
+          data-pw='integrity-flags-header-refresh'
           variant='outline'
           size='touchIcon'
           onClick={onRefresh}

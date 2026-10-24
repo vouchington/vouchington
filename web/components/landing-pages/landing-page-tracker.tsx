@@ -47,7 +47,7 @@ export function LandingPageTracker({ landingPageId, children }: Props) {
   }
 
   return (
-    /* oxlint-disable jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events -- anchor elements inside handle keyboard events natively */
+    /* oxlint-disable jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events, no-mistakes/playwright-require-interactive-test-id -- anchor elements inside handle keyboard events natively; the display:contents wrapper only observes bubbled clicks and is not itself a test target */
     /* ast-grep-ignore: web-clickable-needs-pointer -- display:contents wrapper, no box to show a cursor */
     <div
       onClick={trackItemClick}
@@ -55,6 +55,6 @@ export function LandingPageTracker({ landingPageId, children }: Props) {
     >
       {children}
     </div>
-    /* oxlint-enable jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events */
+    /* oxlint-enable jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events, no-mistakes/playwright-require-interactive-test-id */
   )
 }

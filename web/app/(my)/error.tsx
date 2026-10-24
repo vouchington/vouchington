@@ -21,6 +21,7 @@ export default function SettingsError({ error, reset }: SettingsErrorProps) {
         {t('extracted.my.error.somethingWentWrongLoadingThisPage_476320a5')}
       </p>
       <Button
+        data-pw='app-try-again'
         variant='outline'
         onClick={reset}
       >

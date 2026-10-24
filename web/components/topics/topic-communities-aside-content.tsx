@@ -31,6 +31,7 @@ export function TopicCommunitiesAsideContent({
           {t('extracted.topics.topicCommunitiesAsideContent.communitiesAboutThisTopic_cc0f36b8')}
         </h3>
         <Button
+          data-pw='topic-communities-aside-content-see-all'
           asChild
           variant='ghost'
           size='sm'

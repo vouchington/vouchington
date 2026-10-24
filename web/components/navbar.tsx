@@ -104,6 +104,7 @@ export function Navbar({
             {isAuthenticated && currentUser && profileMenuUser ? (
               <>
                 <Button
+                  data-pw='navbar-messages'
                   variant='ghost'
                   size='touchSm'
                   asChild
@@ -128,6 +129,7 @@ export function Navbar({
               </>
             ) : pathname !== '/login' ? (
               <Button
+                data-pw='navbar-sign-in'
                 variant='ghost'
                 size='touchSm'
                 asChild

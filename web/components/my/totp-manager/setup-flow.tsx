@@ -78,6 +78,7 @@ export function TotpSetupFlow({
               : t('extracted.totpManager.setupFlow.startSetup_76e684d8')}
           </Button>
           <Button
+            data-pw='setup-flow-cancel'
             type='button'
             variant='outline'
             onClick={() => {
@@ -145,6 +146,7 @@ export function TotpSetupFlow({
       </div>
       <div className='flex gap-2'>
         <Button
+          data-pw='setup-flow-verify-and-save'
           onClick={() => onVerifySetup(setupCode)}
           loading={loading}
           disabled={loading || setupCode.length < 6}
@@ -154,6 +156,7 @@ export function TotpSetupFlow({
             : t('extracted.totpManager.setupFlow.verifyAndSave_42090fcb')}
         </Button>
         <Button
+          data-pw='setup-flow-cancel-2'
           type='button'
           variant='outline'
           onClick={() => {

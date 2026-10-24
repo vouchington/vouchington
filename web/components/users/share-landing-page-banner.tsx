@@ -56,6 +56,7 @@ export function ShareLandingPageBanner({ username }: ShareLandingPageBannerProps
       </div>
       <div className='flex items-center gap-2'>
         <Button
+          data-pw='share-landing-page-banner-copied'
           type='button'
           variant='outline'
           size='sm'
@@ -67,6 +68,7 @@ export function ShareLandingPageBanner({ username }: ShareLandingPageBannerProps
             : t('extracted.users.shareLandingPageBanner.copy_e21f935f')}
         </Button>
         <Button
+          data-pw='share-landing-page-banner-edit'
           asChild
           variant='outline'
           size='sm'

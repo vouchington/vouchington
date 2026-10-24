@@ -27,6 +27,7 @@ export function NotificationsHeader({ canMarkAllRead, onMarkAllRead }: Notificat
       </div>
       <ButtonGroup>
         <Button
+          data-pw='notifications-header-settings'
           asChild
           type='button'
           variant='outline'
@@ -40,6 +41,7 @@ export function NotificationsHeader({ canMarkAllRead, onMarkAllRead }: Notificat
           </Link>
         </Button>
         <Button
+          data-pw='notifications-header-mark-all-as-read'
           type='button'
           variant='outline'
           onClick={onMarkAllRead}

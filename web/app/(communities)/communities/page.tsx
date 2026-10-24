@@ -132,6 +132,7 @@ export default async function CommunitiesPage({ searchParams }: PageProps) {
           />
           {currentUser && (
             <Button
+              data-pw='communities-create-community'
               asChild
               className='shrink-0'
             >

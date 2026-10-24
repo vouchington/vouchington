@@ -12,7 +12,6 @@ import {
   type SubmitRecovery,
   type SubmitReview,
 } from './copyright-staff-review-buttons'
-
 type Props = {
   canSubmit: boolean
   notice: CopyrightStaffQueueItem
@@ -190,6 +189,7 @@ function RecoveryRow({
     <div className='flex items-center justify-between gap-2 text-sm'>
       <span>{children}</span>
       <Button
+        data-pw='copyright-staff-case-detail-submit-recovery'
         disabled={pending}
         onClick={() => submitRecovery(retry, success)}
       >

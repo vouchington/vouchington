@@ -48,6 +48,7 @@ export function IntegrityPenaltiesHeader({
     >
       <ButtonGroup>
         <Button
+          data-pw='integrity-penalties-header-flags'
           asChild
           variant='outline'
           size='touchSm'
@@ -61,6 +62,7 @@ export function IntegrityPenaltiesHeader({
           </Link>
         </Button>
         <Button
+          data-pw='integrity-penalties-header-penalties'
           asChild
           variant='secondary'
           size='touchSm'
@@ -98,6 +100,7 @@ export function IntegrityPenaltiesHeader({
         </SelectContent>
       </Select>
       <Button
+        data-pw='integrity-penalties-header-refresh'
         variant='outline'
         size='touchIcon'
         onClick={props.onRefresh}

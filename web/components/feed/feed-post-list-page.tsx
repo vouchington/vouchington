@@ -70,6 +70,7 @@ export async function FeedPostListPage({ config, searchParams }: FeedPostListPag
       >
         <div className='flex gap-2'>
           <Button
+            data-pw='feed-post-list-page-browse-topics'
             asChild
             variant='outline'
             size='default'
@@ -82,6 +83,7 @@ export async function FeedPostListPage({ config, searchParams }: FeedPostListPag
             </Link>
           </Button>
           <Button
+            data-pw='feed-post-list-page-find-friends'
             asChild
             variant='outline'
             size='default'
@@ -104,6 +106,7 @@ export async function FeedPostListPage({ config, searchParams }: FeedPostListPag
         description={t('extracted.feed.feedPostListPage.followPeopleToSeeTheirPosts_87fa9671')}
       >
         <Button
+          data-pw='feed-post-list-page-find-friends-2'
           asChild
           variant='outline'
           size='default'
@@ -125,6 +128,7 @@ export async function FeedPostListPage({ config, searchParams }: FeedPostListPag
         description={t('extracted.feed.feedPostListPage.followSomeTopicsToSeePosts_75c6faaf')}
       >
         <Button
+          data-pw='feed-post-list-page-browse-topics-2'
           asChild
           variant='outline'
           size='default'

@@ -97,6 +97,7 @@ export function PaidPlanCard({
           <BillingPortalButton />
         ) : isCurrent ? (
           <Button
+            data-pw='paid-plan-card-current-plan'
             variant='outline'
             className='w-full'
             disabled
@@ -135,6 +136,7 @@ function SignedOutSubscribeButton({ planSlug }: { planSlug: string }) {
 
   return planSlug === 'plus' ? (
     <Button
+      data-pw='paid-plan-card-subscribe-to-plus'
       asChild
       className='w-full'
     >
@@ -148,6 +150,7 @@ function SignedOutSubscribeButton({ planSlug }: { planSlug: string }) {
     </Button>
   ) : (
     <Button
+      data-pw='paid-plan-card-subscribe-to-pro'
       asChild
       className='w-full'
     >

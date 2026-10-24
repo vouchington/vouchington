@@ -31,6 +31,7 @@ export function PostgreSQLHeader({
         title={t('extracted.postgresql.postgresqlHeader.postgresql_cc52d032')}
       >
         <Button
+          data-pw='postgresql-header-refresh'
           disabled={loading}
           loading={loading}
           onClick={loadData}

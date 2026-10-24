@@ -117,6 +117,7 @@ export function DomainTrustBadge({
   ) : (
     <HoverCardTrigger asChild>
       <Button
+        data-pw='domain-trust-badge-label-trust-badge'
         variant='ghost'
         type='button'
         className='h-auto p-0 cursor-default'

@@ -69,6 +69,7 @@ export function WriteDialog({ open, onOpenChange }: WriteDialogProps) {
         <div className='flex flex-col gap-2'>
           {writeOptions.map(option => (
             <Button
+              data-pw='write-dialog-option'
               key={option.href}
               variant='ghost'
               className='h-auto justify-start'

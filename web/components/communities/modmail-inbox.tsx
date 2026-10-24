@@ -154,6 +154,7 @@ export function ModmailInbox({ communitySlug, initialData }: Props) {
             {t('extracted.communities.modmailInbox.failedToLoadModmailInbox_b0fe8c15')}
           </p>
           <Button
+            data-pw='modmail-inbox-retry'
             variant='outline'
             size='sm'
             disabled={loadingMore}

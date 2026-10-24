@@ -42,6 +42,7 @@ export function ReferralLinksAsideContent({
           </p>
         </div>
         <Button
+          data-pw='referral-links-aside-content-view-all'
           asChild
           variant='ghost'
           size='sm'

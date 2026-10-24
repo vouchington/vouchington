@@ -74,6 +74,7 @@ export default function JoinButton({
   if (!isMember && isPrivate) {
     return (
       <Button
+        data-pw='join-button-apply-to-join'
         asChild
         size='touchSm'
         variant='outline'
@@ -117,6 +118,7 @@ export default function JoinButton({
   if (isMember) {
     return (
       <Button
+        data-pw='join-button-leave'
         variant='outline'
         size='touchSm'
         loading={loading}

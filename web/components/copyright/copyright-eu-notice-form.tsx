@@ -146,6 +146,7 @@ export function CopyrightEuNoticeForm() {
       </DeclarationCheckbox>
       <TurnstileField turnstile={turnstile} />
       <Button
+        data-pw='copyright-eu-notice-form-submit'
         type='submit'
         disabled={pending || !turnstile.token || !values.goodFaith}
       >

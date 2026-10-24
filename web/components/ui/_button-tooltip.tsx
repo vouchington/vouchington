@@ -31,6 +31,7 @@ export function TooltipButton({ tooltip, ref, ...props }: TooltipButtonProps) {
   return (
     <ButtonTooltip tooltip={tooltip}>
       <Button
+        data-pw='tooltip-button'
         ref={ref}
         {...props}
       />

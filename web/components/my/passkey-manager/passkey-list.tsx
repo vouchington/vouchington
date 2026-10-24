@@ -64,6 +64,7 @@ export function PasskeyList({
                 data-pw='passkey-rename-input'
               />
               <Button
+                data-pw='passkey-list-save'
                 type='submit'
                 size='sm'
                 loading={loading}
@@ -72,6 +73,7 @@ export function PasskeyList({
                 {t('extracted.passkeyManager.passkeyList.save_1509f561')}
               </Button>
               <Button
+                data-pw='passkey-list-cancel'
                 type='button'
                 variant='outline'
                 size='sm'
@@ -143,6 +145,7 @@ export function PasskeyList({
                       {t('extracted.passkeyManager.passkeyList.confirm_eebdd24a')}
                     </Button>
                     <Button
+                      data-pw='passkey-list-cancel-2'
                       variant='outline'
                       size='sm'
                       onClick={() => setConfirmingDeleteId(null)}

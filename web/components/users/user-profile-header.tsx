@@ -139,6 +139,7 @@ export function UserProfileHeader({
             )}
             {isAdmin && (
               <Button
+                data-pw='user-profile-header-admin'
                 asChild
                 variant='outline'
               >

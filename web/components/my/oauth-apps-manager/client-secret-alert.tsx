@@ -65,6 +65,7 @@ export function ClientSecretAlert({ clientId, clientSecret, onDismiss }: ClientS
             data-pw='oauth-app-client-secret-input'
           />
           <Button
+            data-pw='client-secret-alert-copied'
             type='button'
             size='sm'
             variant='outline'

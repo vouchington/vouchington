@@ -57,6 +57,7 @@ export function PostgreSQLActionsCard({
             <Tooltip key={action}>
               <TooltipTrigger asChild>
                 <Button
+                  data-pw='postgresql-actions-card-set-pending-action'
                   variant='outline'
                   loading={actionLoading[action]}
                   disabled={actionLoading[action]}
@@ -91,6 +92,7 @@ function PsqlActionButton({
 }) {
   return (
     <Button
+      data-pw='postgresql-actions-card-action'
       variant={variant}
       loading={loading}
       disabled={loading}

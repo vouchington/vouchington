@@ -28,6 +28,7 @@ export function FollowerSendSelectedBadges({
           >
             @{name}
             <Button
+              data-pw='follower-send-selected-badges-remove-name'
               type='button'
               variant='ghost'
               size='icon'

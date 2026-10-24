@@ -32,6 +32,7 @@ export default async function VideosPage({
         <div className='flex flex-wrap gap-2'>
           {fediverseEnabled ? (
             <Button
+              data-pw='videos-search-peer-tube'
               asChild
               variant='outline'
             >

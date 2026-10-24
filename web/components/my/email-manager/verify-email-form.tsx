@@ -75,6 +75,7 @@ export function VerifyEmailForm({
       </div>
       <div className='flex gap-2'>
         <Button
+          data-pw='verify-email-form-verify'
           type='submit'
           loading={loading}
           disabled={loading || token.length < 8}
@@ -84,6 +85,7 @@ export function VerifyEmailForm({
             : t('extracted.emailManager.verifyEmailForm.verify_eea2745e')}
         </Button>
         <Button
+          data-pw='verify-email-form-cancel'
           type='button'
           variant='outline'
           onClick={onCancel}

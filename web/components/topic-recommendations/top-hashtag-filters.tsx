@@ -35,6 +35,7 @@ export function TopHashtagFilters({
       >
         {(['all', 'linked', 'unlinked'] as const).map(value => (
           <Button
+            data-pw='top-hashtag-filters-all'
             key={value}
             type='button'
             variant={mapping === value ? 'default' : 'outline'}

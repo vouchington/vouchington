@@ -92,6 +92,7 @@ export default async function ModmailThreadPage({ params }: PageProps) {
         />
 
         <Button
+          data-pw='modmail-back-to-moderation'
           asChild
           variant='outline'
         >

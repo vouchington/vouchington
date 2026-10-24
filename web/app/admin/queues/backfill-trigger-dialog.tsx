@@ -51,7 +51,10 @@ export function BackfillTriggerDialog({
           <AlertDialogCancel>
             {t('extracted.queues.backfillTriggerDialog.cancel_19766ed6')}
           </AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm}>
+          <AlertDialogAction
+            data-pw='backfill-trigger-dialog-run-backfill'
+            onClick={onConfirm}
+          >
             {t('extracted.queues.backfillTriggerDialog.runBackfill_625fd5e1')}
           </AlertDialogAction>
         </AlertDialogFooter>

@@ -40,6 +40,7 @@ export function ImageUploadButton({
   return (
     <>
       <Button
+        data-pw='image-upload-button-current'
         type='button'
         variant='outline'
         size='sm'

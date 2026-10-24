@@ -38,7 +38,7 @@ test.describe('Discussions Page', () => {
 
     await navigateTo(page, '/discussions?sort=new')
 
-    await expect(page.getByTestId('user-link').first()).toBeVisible()
+    await expect(page.getByTestId('post-card-footer-user-link').first()).toBeVisible()
   })
 
   test('/discussions text search updates URL', async ({ page }) => {

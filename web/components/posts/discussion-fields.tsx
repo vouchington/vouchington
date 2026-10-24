@@ -65,6 +65,7 @@ export function DiscussionFields({
         >
           <div className='flex flex-col gap-0.5'>
             <Button
+              data-pw='discussion-fields-move-category-up'
               type='button'
               variant='ghost'
               size='sm'
@@ -76,6 +77,7 @@ export function DiscussionFields({
               <ChevronUp className='h-4 w-4' />
             </Button>
             <Button
+              data-pw='discussion-fields-move-category-down'
               type='button'
               variant='ghost'
               size='sm'
@@ -111,6 +113,7 @@ export function DiscussionFields({
           </div>
 
           <Button
+            data-pw='discussion-fields-remove-category'
             type='button'
             variant='ghost'
             size='sm'
@@ -124,6 +127,7 @@ export function DiscussionFields({
         </div>
       ))}
       <Button
+        data-pw='discussion-fields-add-category'
         type='button'
         variant='outline'
         size='sm'

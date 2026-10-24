@@ -35,6 +35,7 @@ export function TotpVerificationPane({
         onComplete={handleTotpVerify}
       />
       <Button
+        data-pw='verification-panes-verify'
         onClick={() => handleTotpVerify(totpCode)}
         loading={loading}
         disabled={loading || totpCode.length < 6}
@@ -78,6 +79,7 @@ export function EmailVerificationPane({
           {t('extracted.mfaReauthDialog.verificationPanes.weLlSendAVerificationCode_fc0ed3b9')}
         </p>
         <Button
+          data-pw='verification-panes-send-code'
           onClick={handleSendEmail}
           loading={loading}
           disabled={loading}
@@ -108,6 +110,7 @@ export function EmailVerificationPane({
       />
       <div className='flex gap-2'>
         <Button
+          data-pw='verification-panes-verify-2'
           onClick={() => handleEmailVerify(emailCode)}
           loading={loading}
           disabled={loading || emailCode.length < 6}
@@ -117,6 +120,7 @@ export function EmailVerificationPane({
             : t('extracted.mfaReauthDialog.verificationPanes.verify_eea2745e')}
         </Button>
         <Button
+          data-pw='verification-panes-resend'
           variant='outline'
           onClick={handleResendEmail}
           disabled={loading}

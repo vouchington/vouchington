@@ -32,6 +32,7 @@ export function ShowMoreLink({ href }: { href: string }) {
   const t = useTranslations()
   return (
     <Button
+      data-pw='news-item-cluster-meta-show-more'
       variant='ghost'
       size='sm'
       className='h-auto min-h-11 px-2 text-xs text-muted-foreground hover:text-foreground'

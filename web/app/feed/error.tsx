@@ -21,6 +21,7 @@ export default function FeedError({ error, reset }: FeedErrorProps) {
         {t('extracted.feed.error.somethingWentWrongLoadingYourFeed_41f0c3bb')}
       </p>
       <Button
+        data-pw='feed-try-again'
         variant='outline'
         onClick={reset}
       >

@@ -129,6 +129,7 @@ export function AddCategoryForm({
       </div>
       <div className='flex gap-2'>
         <Button
+          data-pw='add-category-form-add'
           size='sm'
           type='submit'
           loading={loading}

@@ -96,7 +96,7 @@ test.describe('Post Images', () => {
     await expect(page.getByRole('dialog')).toBeHidden()
 
     // Click the image button to open lightbox
-    await page.getByTestId('post-detail-image-button').click()
+    await page.getByTestId('post-detail-images-single-image').click()
 
     // Lightbox dialog should open
     await expect(page.getByRole('dialog')).toBeVisible()

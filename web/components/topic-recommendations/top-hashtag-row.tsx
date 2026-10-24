@@ -47,6 +47,7 @@ export function TopHashtagRow({
             item.topic_id ? (
               normalizeHashtag(item.hashtag)?.key !== linkedTopic?.slug ? (
                 <Button
+                  data-pw='top-hashtag-row-unlink'
                   type='button'
                   variant='outline'
                   onClick={() => onUnlink(item)}
@@ -57,13 +58,17 @@ export function TopHashtagRow({
             ) : (
               <>
                 <Button
+                  data-pw='top-hashtag-row-link-topic'
                   type='button'
                   variant='outline'
                   onClick={onStartLink}
                 >
                   {t('extracted.topicRecommendations.topHashtags.linkTopic_4d3e8c3d')}
                 </Button>
-                <Button asChild>
+                <Button
+                  data-pw='top-hashtag-row-create-topic'
+                  asChild
+                >
                   <Link href={topicCreationHref(item)}>
                     {t('extracted.topicRecommendations.topHashtags.createTopic_15c75a49')}
                   </Link>

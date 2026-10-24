@@ -29,6 +29,7 @@ export function ScheduledJobsHeader({
         title={t('extracted.queues.scheduledJobsHeader.queues_be77db11')}
       >
         <Button
+          data-pw='scheduled-jobs-header-refresh'
           disabled={loading}
           loading={loading}
           onClick={onRefresh}
@@ -40,6 +41,7 @@ export function ScheduledJobsHeader({
             : t('extracted.queues.scheduledJobsHeader.refresh_0e916101')}
         </Button>
         <Button
+          data-pw='scheduled-jobs-header-open-glidemq-dashboard'
           asChild
           size='touch'
           variant='outline'

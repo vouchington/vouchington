@@ -41,6 +41,7 @@ export function ProfileLinkRow({
       </div>
       <div className='flex shrink-0 gap-1'>
         <Button
+          data-pw='profile-link-row-move-up'
           variant='ghost'
           size='sm'
           onClick={onMoveUp}
@@ -50,6 +51,7 @@ export function ProfileLinkRow({
           {t('extracted.my.profileLinks.text_d2e966bf')}
         </Button>
         <Button
+          data-pw='profile-link-row-move-down'
           variant='ghost'
           size='sm'
           onClick={onMoveDown}
@@ -59,6 +61,7 @@ export function ProfileLinkRow({
           {t('extracted.my.profileLinks.text_07a2abcd')}
         </Button>
         <Button
+          data-pw='profile-link-row-edit-name-link'
           variant='ghost'
           size='sm'
           onClick={onEdit}
@@ -70,6 +73,7 @@ export function ProfileLinkRow({
           {t('extracted.my.profileLinks.edit_464c4ffd')}
         </Button>
         <Button
+          data-pw='profile-link-row-delete-name-link'
           variant='ghost'
           size='sm'
           onClick={onDelete}

@@ -32,16 +32,19 @@ export function RepeatInfringerAccount({
       {account.is_operative ? (
         <div className='flex flex-wrap gap-2'>
           <DecisionButton
+            data-pw='copyright-repeat-infringer-account-disposition-click'
             disabled={disabled}
             label='Mark withdrawn'
             onClick={dispositionClick(submit, account.incident_id, 'withdrawn', rationale)}
           />
           <DecisionButton
+            data-pw='copyright-repeat-infringer-account-disposition-click-2'
             disabled={disabled}
             label='Mark duplicate'
             onClick={dispositionClick(submit, account.incident_id, 'duplicate', rationale)}
           />
           <DecisionButton
+            data-pw='copyright-repeat-infringer-account-disposition-click-3'
             disabled={disabled}
             label='Mark abusive'
             onClick={dispositionClick(submit, account.incident_id, 'abusive', rationale)}
@@ -61,6 +64,7 @@ export function RepeatInfringerAccount({
       ) : null}
       {canAdminister && account.termination_in_effect ? (
         <DecisionButton
+          data-pw='copyright-repeat-infringer-account-submit'
           disabled={disabled}
           label='Record reinstatement'
           onClick={() =>
@@ -91,11 +95,13 @@ function OpenReviewDecisions({
   return (
     <div className='flex flex-wrap gap-2'>
       <DecisionButton
+        data-pw='copyright-repeat-infringer-account-outcome-click'
         disabled={disabled}
         label='Record warning'
         onClick={outcomeClick(submit, reviewId, 'warning', rationale, 'Warning recorded.')}
       />
       <DecisionButton
+        data-pw='copyright-repeat-infringer-account-outcome-click-2'
         disabled={disabled}
         label='Record no action'
         onClick={outcomeClick(submit, reviewId, 'no_action', rationale, 'No action recorded.')}
@@ -103,11 +109,13 @@ function OpenReviewDecisions({
       {canAdminister ? (
         <>
           <DecisionButton
+            data-pw='copyright-repeat-infringer-account-outcome-click-3'
             disabled={disabled}
             label='Restrict account'
             onClick={outcomeClick(submit, reviewId, 'restrict', rationale, 'Restriction recorded.')}
           />
           <DecisionButton
+            data-pw='copyright-repeat-infringer-account-outcome-click-4'
             disabled={disabled}
             label='Terminate account'
             onClick={outcomeClick(
@@ -160,13 +168,17 @@ function DecisionButton({
   disabled,
   label,
   onClick,
+  'data-pw': dataPw,
 }: {
   disabled: boolean
   label: string
   onClick: () => void
+  'data-pw': string
 }) {
   return (
     <Button
+      // oxlint-disable-next-line no-mistakes/playwright-literals, no-mistakes/playwright-defaults -- every DecisionButton call site passes its own literal id
+      data-pw={dataPw}
       disabled={disabled}
       onClick={onClick}
     >

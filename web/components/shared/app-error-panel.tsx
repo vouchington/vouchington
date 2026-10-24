@@ -73,6 +73,7 @@ export function AppErrorPanel({
           {retryLabel}
         </Button>
         <Button
+          data-pw='app-error-panel-home'
           asChild
           variant='outline'
           className='min-h-11'

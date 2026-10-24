@@ -64,6 +64,7 @@ export default async function AdminOAuthClientsPage({
         <ButtonGroup aria-label={t('extracted.oauthClients.page.verificationStatus_aedfff7e')}>
           {filters.map(filter => (
             <Button
+              data-pw='oauth-clients-verification-filter'
               key={filter.value}
               asChild
               variant={filter.value === verification ? 'secondary' : 'outline'}

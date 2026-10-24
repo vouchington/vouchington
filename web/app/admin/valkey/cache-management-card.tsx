@@ -22,6 +22,7 @@ export function CacheManagementCard(props: CacheManagementCardProps) {
             {t('extracted.valkey.cacheManagementCard.cacheManagement_4c879c23')}
           </CardTitle>
           <Button
+            data-pw='cache-management-card-clear-all-caches'
             size='sm'
             variant='destructive'
             loading={props.clearLoading['all']}
@@ -74,6 +75,7 @@ function CacheGroupRow({
         </span>
       </div>
       <Button
+        data-pw='cache-management-card-clear'
         size='sm'
         variant='outline'
         loading={loading}

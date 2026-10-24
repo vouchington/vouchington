@@ -54,6 +54,7 @@ export function AddPasskeyForm({
             : t('extracted.passkeyManager.addPasskeyForm.createPasskey_fb92febd')}
         </Button>
         <Button
+          data-pw='add-passkey-form-cancel'
           type='button'
           variant='outline'
           onClick={() => {

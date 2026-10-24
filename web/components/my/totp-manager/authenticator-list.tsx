@@ -68,6 +68,7 @@ export function AuthenticatorList({
                 data-pw='totp-rename-input'
               />
               <Button
+                data-pw='authenticator-list-save'
                 type='submit'
                 size='sm'
                 loading={loading}
@@ -76,6 +77,7 @@ export function AuthenticatorList({
                 {t('extracted.totpManager.authenticatorList.save_1509f561')}
               </Button>
               <Button
+                data-pw='authenticator-list-cancel'
                 type='button'
                 variant='outline'
                 size='sm'
@@ -127,6 +129,7 @@ export function AuthenticatorList({
                       {t('extracted.totpManager.authenticatorList.confirm_eebdd24a')}
                     </Button>
                     <Button
+                      data-pw='authenticator-list-cancel-2'
                       variant='outline'
                       size='sm'
                       onClick={() => setConfirmingDeleteId(null)}

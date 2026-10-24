@@ -60,6 +60,7 @@ export function InviteRedemption({ code }: InviteRedemptionProps) {
         {t('extracted.communities.inviteRedemption.youHaveBeenInvitedToJoin_6562fdfe')}
       </p>
       <Button
+        data-pw='invite-redemption-redeem'
         onClick={handleRedeem}
         loading={loading}
         disabled={loading}
