@@ -1,10 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import type { BilledModelResponse } from './types.mts'
-import {
-  getHeaderValue,
-  getRetryAfterDurationMs,
-  isAmbiguousBilledHttpStatus,
-} from '@modules/utils/http'
+import { isAmbiguousBilledHttpStatus } from '@modules/utils/http'
+import { getHeaderValue, parseRetryAfter } from '@jongleberry/api-server/http-retry'
 
 export type ModelProviderErrorCode =
   | 'client-unavailable'
@@ -97,7 +94,7 @@ export function classifyAnthropicError(error: unknown): unknown {
   const code = statusCode(status, error.message)
   const retryClass = status === 408 || status === 429 || status >= 500 ? 'transient' : 'permanent'
   const header = getHeaderValue(error.headers, 'retry-after')
-  const retryAfterMs = getRetryAfterDurationMs(Array.isArray(header) ? header[0] : header)
+  const retryAfterMs = parseRetryAfter(Array.isArray(header) ? header[0] : header)
   return new ModelProviderError(code, `Anthropic returned HTTP ${status} (${code}).`, {
     retryClass,
     status,

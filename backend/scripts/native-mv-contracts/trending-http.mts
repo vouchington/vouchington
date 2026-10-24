@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { v7 } from 'uuid'
 import { refreshMaterializedView } from '@data-stores/psql/migrate'
-import { getExternalFetch } from '@modules/utils/http-dispatchers'
+import { getExternalFetch } from '@modules/utils/http'
 import { encodeCursor } from '@modules/pagination'
 import { createDeviceAndSessionTokens } from '@services/jwt-session'
 import { getRssFeedsByIdBatch } from '@services/rss-feeds/get-batch'

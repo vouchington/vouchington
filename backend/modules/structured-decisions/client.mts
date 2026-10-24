@@ -1,4 +1,5 @@
-import { isAmbiguousBilledHttpStatus, isNetworkError } from '@modules/utils/http'
+import { isAmbiguousBilledHttpStatus } from '@modules/utils/http'
+import { isNetworkError } from '@vouchington/http-transport/fetch'
 import type { Response } from 'undici'
 import { decodeResult } from './decode.mts'
 import { describeProviderErrorDetail, readProviderErrorDetail } from './provider-error-detail.mts'

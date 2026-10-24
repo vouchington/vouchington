@@ -4,7 +4,7 @@ import {
   CrawlerSsrfError,
   CrawlerTimeoutError,
 } from '@modules/on-error/errors'
-import { isTimeoutError } from '@modules/utils/http'
+import { isTimeoutError } from '@vouchington/http-transport/fetch'
 
 // ssrf-guard@1.0.0's validateUrl short-circuits to no timeout when both `signal` and `timeoutMs`
 // are undefined, so a caller that passes no `timeoutMs` must still get a bounded DNS/SSRF

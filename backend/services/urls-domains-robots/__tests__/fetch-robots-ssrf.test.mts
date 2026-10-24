@@ -1,11 +1,10 @@
 import {
   cancelResponseBody,
-  isNetworkError,
-  isRetryableError,
-  readResponseBody as readResponseBodyFn,
   fetchWithTimeoutSimple as fetchWithTimeoutSimpleFn,
   type fetchWithTimeout as fetchWithTimeoutFn,
 } from '@modules/utils/http'
+import { isNetworkError, isRetryableError } from '@vouchington/http-transport/fetch'
+import { readResponseBody as readResponseBodyFn } from '@modules/utils/http-body'
 import type { validateUrl as validateUrlFn } from 'ssrf-guard/node'
 import { describe, expect, it, vi } from 'vitest'
 import { RobotsUnsafeTargetError } from '../fetch-pinned.mts'

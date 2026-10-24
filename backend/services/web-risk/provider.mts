@@ -1,4 +1,4 @@
-import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
+import { getExternalRequestDispatcher } from '@modules/utils/http'
 import undici from 'undici'
 import type { WebRiskState } from './state.mts'
 
@@ -49,7 +49,7 @@ export async function checkWebRiskUrl(
 
   if (response.status === 429 || response.status === 403) {
     // Ambient and package `Response` declarations have version-skewed types but describe the same
-    // Undici-backed WHATWG runtime object (see http-dispatchers.mts), so this cast has no
+    // Undici-backed WHATWG runtime object (see @vouchington/http-transport), so this cast has no
     // behavioral effect. Needed for programs that also load the "dom" lib (playwright,
     // integration-tests), where the ambient global `Response` resolves to lib.dom's incompatible
     // type instead of undici's — the two types don't overlap enough for a direct assertion.

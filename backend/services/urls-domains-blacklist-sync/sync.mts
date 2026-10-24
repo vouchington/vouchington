@@ -1,6 +1,6 @@
 import onError from '@modules/on-error'
 import undici from 'undici'
-import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
+import { getExternalRequestDispatcher } from '@modules/utils/http'
 import {
   getSourceCacheHeaders,
   updateSourceCacheHeaders,

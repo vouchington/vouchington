@@ -1,7 +1,7 @@
 import { BedrockRuntimeClient } from '@aws-sdk/client-bedrock-runtime'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApiEgressProxyTransport } from '@modules/api-egress-proxy'
-import { createHttpDispatchers } from '@modules/utils'
+import { createHttpDispatchers } from '@vouchington/http-transport/dispatchers'
 import { createBedrockRuntimeClients } from './bedrock-runtime.mts'
 
 describe('BedrockEmbeddingsClient', () => {
@@ -10,7 +10,7 @@ describe('BedrockEmbeddingsClient', () => {
   let clients: ReturnType<typeof createBedrockRuntimeClients>
 
   beforeEach(() => {
-    direct = createHttpDispatchers()
+    direct = createHttpDispatchers({ onError: () => undefined })
     transport = createApiEgressProxyTransport(direct)
     clients = createBedrockRuntimeClients(transport)
   })

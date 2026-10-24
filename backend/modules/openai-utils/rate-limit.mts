@@ -5,7 +5,7 @@ import {
   deferJobForRateLimit,
   throwRateLimited,
 } from '@vouchington/queue-errors'
-import { getHeaderValue, getRetryAfterDurationMs } from '@modules/utils'
+import { getHeaderValue, parseRetryAfter } from '@jongleberry/api-server/http-retry'
 
 export function isOpenAIRateLimitError(error?: unknown): boolean {
   if (error instanceof RateLimitError) {
@@ -44,7 +44,7 @@ export function getRetryAfterDuration(error: unknown): number {
   if (error instanceof APIError && error.headers) {
     const retryAfter = getHeaderValue(error.headers, 'retry-after')
     const retryAfterStr = Array.isArray(retryAfter) ? retryAfter[0] : retryAfter
-    const durationMs = getRetryAfterDurationMs(retryAfterStr)
+    const durationMs = parseRetryAfter(retryAfterStr)
     if (durationMs !== null) return durationMs
   }
   return 60 * 1000

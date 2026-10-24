@@ -1,14 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createApiEgressProxyTransport, getApiEgressProxyUrl } from './transport.mts'
-import { createHttpDispatchers } from '@modules/utils'
+import { createHttpDispatchers } from '@vouchington/http-transport/dispatchers'
 
 describe('API egress proxy transport', () => {
   let direct: ReturnType<typeof createHttpDispatchers>
   let transport: ReturnType<typeof createApiEgressProxyTransport>
 
   beforeEach(() => {
-    direct = createHttpDispatchers()
+    direct = createHttpDispatchers({ onError: () => undefined })
     transport = createApiEgressProxyTransport(direct)
   })
 

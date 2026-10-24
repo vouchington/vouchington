@@ -3,7 +3,7 @@ import createHttpError from 'http-errors'
 import { describe, expect, it, vi } from 'vitest'
 import Sentry from '@modules/on-error/sentry'
 import { createTestUser } from '@voucha/test-helpers'
-import { getExternalFetch } from '@modules/utils/http-dispatchers'
+import { getExternalFetch } from '@modules/utils/http'
 import {
   createTestCopyrightImageFixture,
   createTestCopyrightRestrictionForImage,

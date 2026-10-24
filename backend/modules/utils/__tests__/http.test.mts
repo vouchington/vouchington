@@ -1,28 +1,33 @@
 import { describe, expect, it } from 'vitest'
-import { isRetryableError } from '../http.mts'
+import { HttpRateLimitError, HttpServerError } from '@modules/on-error/errors'
+import { handleHttpErrors, isAmbiguousBilledHttpStatus } from '../http.mts'
 
-describe('isRetryableError', () => {
-  it('returns true for 500 status', () => {
-    expect(isRetryableError(new Error(), 500)).toBe(true)
+function createResponse(status: number, headers: Record<string, string> = {}): Response {
+  return { status, headers: new Headers(headers), body: null } as unknown as Response
+}
+
+describe('handleHttpErrors', () => {
+  it('throws the app rate-limit error with the parsed retry delay', () => {
+    const response = createResponse(429, { 'retry-after': '60' })
+    expect(() => handleHttpErrors({ response, url: 'https://example.com' })).toThrow(
+      expect.objectContaining({ constructor: HttpRateLimitError, retryAfterMs: 60_000 }),
+    )
   })
 
-  it('returns false for 429 status (rate limit is not a server error)', () => {
-    expect(isRetryableError(new Error(), 429)).toBe(false)
+  it('throws the app server error for 5xx responses', () => {
+    const response = createResponse(503)
+    expect(() => handleHttpErrors({ response, url: 'https://example.com' })).toThrow(
+      HttpServerError,
+    )
+  })
+})
+
+describe('isAmbiguousBilledHttpStatus', () => {
+  it.each([408, 409, 429, 500, 503])('treats %i as possibly billed', status => {
+    expect(isAmbiguousBilledHttpStatus(status)).toBe(true)
   })
 
-  it('combines known network error codes with HTTP status policy', () => {
-    const err = Object.assign(new Error('connection failed'), { code: 'ECONNREFUSED' })
-    expect(isRetryableError(err)).toBe(true)
-  })
-
-  it('retries local timeout errors', () => {
-    const err = new DOMException('The operation timed out', 'TimeoutError')
-    expect(isRetryableError(err)).toBe(true)
-  })
-
-  it('does not retry caller aborts', () => {
-    const err = new Error('The operation was aborted')
-    err.name = 'AbortError'
-    expect(isRetryableError(err)).toBe(false)
+  it.each([200, 400, 401, 404])('treats %i as not billed', status => {
+    expect(isAmbiguousBilledHttpStatus(status)).toBe(false)
   })
 })

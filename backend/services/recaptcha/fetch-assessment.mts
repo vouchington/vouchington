@@ -1,5 +1,5 @@
 import { fetch } from 'undici'
-import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
+import { getExternalRequestDispatcher } from '@modules/utils/http'
 import { readOptionalConfigEnv } from '@voucha/config/env'
 
 // Result of a reCAPTCHA Enterprise assessment, normalised to the few fields we act on.

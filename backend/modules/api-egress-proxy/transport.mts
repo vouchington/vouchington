@@ -1,17 +1,19 @@
 import { addGracefulShutdownDrainCallback } from '@data-stores/graceful-shutdown'
 import onError from '@modules/on-error'
 import {
+  getExternalFetch,
+  getExternalRequestDispatcher,
+  getLongRunningExternalFetch,
+  getLongRunningExternalRequestDispatcher,
+} from '@modules/utils'
+import {
   EXTERNAL_DISPATCHER_BODY_TIMEOUT_MS,
   EXTERNAL_DISPATCHER_CONNECT_TIMEOUT_MS,
   EXTERNAL_DISPATCHER_HEADERS_TIMEOUT_MS,
   EXTERNAL_DISPATCHER_KEEP_ALIVE_MAX_TIMEOUT_MS,
   EXTERNAL_DISPATCHER_KEEP_ALIVE_TIMEOUT_MS,
   LONG_RUNNING_EXTERNAL_DISPATCHER_HEADERS_TIMEOUT_MS,
-  getExternalFetch,
-  getExternalRequestDispatcher,
-  getLongRunningExternalFetch,
-  getLongRunningExternalRequestDispatcher,
-} from '@modules/utils'
+} from '@vouchington/http-transport/dispatchers'
 import { isDeployedEnvironment } from '@ts-shared/deploy-environment'
 import { ProxyAgent, fetch as undiciFetch, type Dispatcher } from 'undici'
 export type ApiEgressProxyProvider =

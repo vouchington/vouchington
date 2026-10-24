@@ -32,6 +32,7 @@
     "@voucha/config": "workspace:^",
     "@vouchington/crawler-html": "^0.0.1",
     "@vouchington/embeds": "^0.0.2",
+    "@vouchington/http-transport": "^0.1.0",
     "ssrf-guard": "^1.0.0"
   },
   "devDependencies": {
