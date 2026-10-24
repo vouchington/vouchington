@@ -1,11 +1,10 @@
 import { randomUUID } from 'node:crypto'
 import { buildSignatureHeaders, generateRsaSha256KeyPair } from '@modules/http-signatures'
-import {
-  activityPubInboxDeliveryTransitions,
-  type ActivityPubInboxEnvelope,
-} from '../../../services/ap-inbox-activities/index.mts'
-import { getOrFetchRemoteActorByKeyId } from '../../../services/remote-actors/index.mts'
-import { insertApprovedTestFediverseInstance as approveInstance } from '@voucha/test-helpers'
+import type { ActivityPubInboxEnvelope } from '../services/ap-inbox-activities/index.mts'
+import { getOrFetchRemoteActorByKeyId } from '../services/remote-actors/index.mts'
+import { insertApprovedTestFediverseInstance as approveInstance } from './entities/fediverse-instances.mts'
+import { acceptTestDelivery } from './activitypub-inbox-transitions.mts'
+import { registerActivityPubInboxJobCleanup } from './activitypub-inbox-test-jobs.mts'
 
 export { approveInstance }
 
@@ -89,7 +88,7 @@ export async function createSignedDelivery(
     claimedActorUri,
     senderHostname: actor.hostname,
   }
-  const result = await activityPubInboxDeliveryTransitions.accept(envelope)
-  if (result.outcome !== 'applied') throw new Error('Test delivery unexpectedly exceeded capacity')
-  return result.value
+  const delivery = await acceptTestDelivery(envelope)
+  registerActivityPubInboxJobCleanup(delivery.deliveryId, delivery.leaseToken, activityId)
+  return delivery
 }
