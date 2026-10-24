@@ -45,9 +45,20 @@ test.describe('Official Referral Links — admin management', () => {
     // Navigate to the public referral-links tab to verify the badge
     await navigateTo(page, `/referral-program/${program.referralProgramTopicSlug}/referral-links`)
     // The card root, official badge, and clickable ExternalLink anchor should all be present
-    await expect(page.getByTestId('referral-link-card').first()).toBeVisible()
-    await expect(page.getByTestId('official-voucha-badge').first()).toBeVisible()
-    await expect(page.getByTestId('external-link').first()).toBeVisible()
+    const externalLinkForProgram = page
+      .getByTestId('referral-link-card-external-link')
+      .and(page.locator(`[href="${program.url}"]`))
+    const officialCard = page
+      .getByTestId('referral-link-card')
+      .filter({ has: externalLinkForProgram })
+    await expect(officialCard).toHaveCount(1)
+    await expect(officialCard).toBeVisible()
+    await expect(officialCard.getByTestId('official-voucha-badge')).toBeVisible()
+    await expect(officialCard.getByTestId('referral-link-card-external-link')).toBeVisible()
+    await expect(officialCard.getByTestId('referral-link-card-external-link')).toHaveAttribute(
+      'href',
+      program.url,
+    )
   })
 
   test('non-admin does not see official-referral-link-form on referral-links tab', async ({
