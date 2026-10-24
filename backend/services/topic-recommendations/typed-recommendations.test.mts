@@ -193,7 +193,7 @@ describe('typed-recommendations', () => {
         expect(committed?.topic_recommendation?.status).toBe('approved')
         const persistedUrl = await getUrlByAny(landingPageUrl)
         expect(persistedUrl).not.toBeNull()
-        expect(approvedHandlerCalled).toBe(false)
+        expect(approvedHandlerCalled).toBe(true)
         expect(settled).toBe(false)
 
         admission.release()

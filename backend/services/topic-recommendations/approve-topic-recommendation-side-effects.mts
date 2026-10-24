@@ -76,9 +76,10 @@ export async function runApprovedTopicRecommendationSideEffects(
     }),
   )
 
-  await enqueueBulkOnUrlCreatedBestEffort(transactionResult.urlIds)
-
-  await runBestEffort(() =>
-    getRegisteredRecommendationApprovedHandler()(recommendationId, transactionResult.topic.id),
-  )
+  await Promise.all([
+    enqueueBulkOnUrlCreatedBestEffort(transactionResult.urlIds),
+    runBestEffort(() =>
+      getRegisteredRecommendationApprovedHandler()(recommendationId, transactionResult.topic.id),
+    ),
+  ])
 }
