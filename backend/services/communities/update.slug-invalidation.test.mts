@@ -1,10 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { randomUUID } from 'node:crypto'
-import { createTestUser, insertTestCommunity, readEnqueuedJob } from '@voucha/test-helpers'
+import { createTestUser, insertTestCommunity } from '@voucha/test-helpers'
 import { CACHE_PURGE_TAGS_JOB } from '@queues/background/enqueues/cache-purge-jobs'
 import { cachePurge } from '@queues/cache-purge/queues'
 import { communityTag } from '../../../ts-shared/cache/cache-tags.mts'
-import { onEnqueueAdmission } from '../../data-stores/valkey-glide-mq/glide-mq-admission.mts'
 import { getCommunity } from './get.mts'
 import { updateCommunity } from './update.mts'
 
@@ -18,32 +17,30 @@ describe('community slug invalidation with a stale loaded community', () => {
     const finalSlug = `final-${randomUUID()}`
     await updateCommunity(user, community.id, { slug: intermediateSlug })
 
-    const admissions: Promise<unknown>[] = []
-    const off = onEnqueueAdmission(event => {
+    const admissions: string[] = []
+    const onAdded = (job: { id: string; name: string; data: unknown }) => {
+      const data = job.data
       if (
-        event.queue === cachePurge &&
-        event.jobName === CACHE_PURGE_TAGS_JOB.name &&
-        event.inputs.some(
-          input =>
-            typeof input === 'object' &&
-            input !== null &&
-            'tags' in input &&
-            Array.isArray(input.tags) &&
-            input.tags.includes(communityTag(finalSlug)),
-        )
+        job.name === CACHE_PURGE_TAGS_JOB.name &&
+        typeof data === 'object' &&
+        data !== null &&
+        'tags' in data &&
+        Array.isArray(data.tags) &&
+        data.tags.includes(communityTag(finalSlug))
       )
-        admissions.push(event.completion)
-      return undefined
-    })
+        admissions.push(job.id)
+    }
+    cachePurge.on('added', onAdded)
     try {
       await updateCommunity(user, community.id, { slug: finalSlug }, undefined, {
         community: loaded,
       })
       expect(admissions.length).toBeGreaterThan(0)
-      const accepted = (await Promise.all(admissions)).flatMap(result =>
-        Array.isArray(result) ? result : [result],
+      const jobs = (await Promise.all(admissions.map(jobId => cachePurge.getJob(jobId)))).filter(
+        (job): job is NonNullable<typeof job> => job !== null,
       )
-      const jobs = await Promise.all(accepted.map(job => readEnqueuedJob(cachePurge, job)))
+      if (jobs.length !== admissions.length)
+        throw new Error('Missing persisted community purge job')
       const tags = jobs.flatMap(job => (job.data as { tags: string[] }).tags)
       expect(tags).toEqual(
         expect.arrayContaining(
@@ -52,8 +49,7 @@ describe('community slug invalidation with a stale loaded community', () => {
       )
       expect((await getCommunity(community.id))?.slug).toBe(finalSlug)
     } finally {
-      off()
-      await Promise.allSettled(admissions)
+      cachePurge.off('added', onAdded)
     }
   })
 })

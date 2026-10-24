@@ -1,4 +1,3 @@
-import { onEnqueueAdmission } from '@data-stores/valkey-glide-mq/glide-mq-admission'
 import type { Job } from 'glide-mq'
 import { getSharedBackgroundWorker } from '../../../test-helpers/shared-background-worker.mts'
 import { randomBytes, randomUUID } from 'node:crypto'
@@ -56,18 +55,41 @@ describe('enqueueElectionUpdatesForUser', () => {
     await insertPostElectionVote(user!.id, postId, 1)
 
     const admitted: string[] = []
-    const off = onEnqueueAdmission(event => {
-      if (event.jobName === ELECTION_JOB_NAME)
-        for (const input of event.inputs) {
-          const id = (input as { electionId?: string }).electionId
-          if (id === postId) admitted.push(id)
-        }
-    })
+    const onAdded = (job: { id: string; name: string; data: unknown }) => {
+      if (
+        job.name === ELECTION_JOB_NAME &&
+        typeof job.data === 'object' &&
+        job.data !== null &&
+        'electionId' in job.data &&
+        job.data.electionId === postId &&
+        typeof job.id === 'string'
+      )
+        admitted.push(job.id)
+    }
+    const completed = Promise.withResolvers<void>()
+    const worker = getSharedBackgroundWorker()
+    const onCompleted = (job: Job) => {
+      if (
+        job.name === 'vote-aggregation.enqueueUserElectionUpdates' &&
+        job.data.userId === user!.id &&
+        (job.returnvalue as ElectionUpdatePage | undefined)?.nextCursor === null
+      )
+        completed.resolve()
+    }
+    worker.on('completed', onCompleted)
+    voteAggregation.on('added', onAdded)
     try {
       await expect(enqueueElectionUpdatesForUser(user!.id)).resolves.toBeUndefined()
-      expect(admitted).toEqual([postId])
+      await completed.promise
+      expect(admitted).toHaveLength(1)
+      const [jobId] = admitted
+      if (!jobId) throw new Error('Missing owned election job id')
+      const job = await voteAggregation.getJob(jobId)
+      if (!job) throw new Error('Missing persisted owned election job')
+      expect(job.data).toMatchObject({ electionId: postId })
     } finally {
-      off()
+      worker.off('completed', onCompleted)
+      voteAggregation.off('added', onAdded)
     }
   })
 
@@ -77,13 +99,19 @@ describe('enqueueElectionUpdatesForUser', () => {
     for (const postId of postIds) await insertPostElectionVote(user!.id, postId, 1)
 
     const admitted: string[] = []
-    const off = onEnqueueAdmission(event => {
-      if (event.jobName === ELECTION_JOB_NAME)
-        for (const input of event.inputs) {
-          const id = (input as { electionId?: string }).electionId
-          if (id && postIds.includes(id)) admitted.push(id)
-        }
-    })
+    const onAdded = (job: { id: string; name: string; data: unknown }) => {
+      if (
+        job.name === ELECTION_JOB_NAME &&
+        typeof job.data === 'object' &&
+        job.data !== null &&
+        'electionId' in job.data &&
+        typeof job.data.electionId === 'string' &&
+        postIds.includes(job.data.electionId) &&
+        typeof job.id === 'string'
+      )
+        admitted.push(job.id)
+    }
+    voteAggregation.on('added', onAdded)
     const restore = overrideDynamicConfigFieldsForTest(pagedDispatchConfig, {
       elections_page_size: 2,
     })
@@ -107,10 +135,17 @@ describe('enqueueElectionUpdatesForUser', () => {
       }
     } finally {
       restore()
-      off()
+      voteAggregation.off('added', onAdded)
     }
 
-    expect(admitted.toSorted()).toEqual(postIds.toSorted())
+    expect(admitted).toHaveLength(postIds.length)
+    const jobs = (await Promise.all(admitted.map(jobId => voteAggregation.getJob(jobId)))).filter(
+      (job): job is NonNullable<typeof job> => job !== null,
+    )
+    expect(jobs).toHaveLength(postIds.length)
+    expect(jobs.map(job => (job.data as { electionId: string }).electionId).toSorted()).toEqual(
+      postIds.toSorted(),
+    )
   })
 })
 
