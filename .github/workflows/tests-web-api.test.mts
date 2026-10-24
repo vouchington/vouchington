@@ -22,7 +22,7 @@ describe('web API workflow', () => {
     expect(workflow).toContain('uses: ./.github/actions/setup-backend')
     expect(workflow).toContain('node data-stores/psql/migrate.mts')
     expect(workflow).not.toContain('build-web-targets')
-    expect(workflow).toContain('--project web-api --shard ${{ matrix.shard }}')
+    expect(workflow).toContain('--project web-api --shard "$CI_SHARD"')
     expect(workflow).not.toContain('--project web-integration')
     expect(workflow).not.toContain('max-parallel')
   })

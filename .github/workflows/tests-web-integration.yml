@@ -122,7 +122,9 @@ jobs:
 
       - name: Clear stale web integration JUnit report
         timeout-minutes: 1
-        run: rm -f web-integration-shard-${{ matrix.shard }}.junit.xml
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: rm -f "web-integration-shard-$SHARD.junit.xml"
       - name: Run web integration tests
         env:
           IMAGE_ORIGIN: http://127.0.0.1:3100
@@ -132,7 +134,7 @@ jobs:
           VITEST_DIAGNOSTICS: ${{ vars.VITEST_DIAGNOSTICS == '1' && '1' || '0' }}
           VITEST_COVERAGE_ENABLED: ${{ inputs.publish_coverage && 'true' || 'false' }}
           VITEST_JUNIT_OUTPUT_FILE: web-integration-shard-${{ matrix.shard }}.junit.xml
-        run: pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project web-integration --shard ${{ matrix.shard }}/${{ needs.prep.outputs.shard-total }}
+        run: pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project web-integration --shard "$CI_SHARD"
         # Fewer, longer-running shards (see ci/vitest/project-ownership.mts) push real per-shard
         # test-execution time higher than the old <5m-per-shard target tolerated; this watchdog
         # now matches the repo's 10-minute-hard-ceiling CI runtime target instead of the stale 5m.

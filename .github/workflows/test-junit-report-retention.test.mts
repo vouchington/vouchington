@@ -79,7 +79,11 @@ describe('JUnit report retention', () => {
     }
     const steps = workflow.jobs[report.job]?.steps ?? []
     const writerIndex = steps.findIndex(step => step.env?.[report.variable] === report.report)
-    const clearIndex = steps.findIndex(step => step.run === `rm -f ${report.report}`)
+    // Sharded report names reach the script through the step's SHARD env, not an inline expression.
+    const clearRun = report.report.includes('${{ matrix.shard }}')
+      ? `rm -f "${report.report.replace('${{ matrix.shard }}', '$SHARD')}"`
+      : `rm -f ${report.report}`
+    const clearIndex = steps.findIndex(step => step.run === clearRun)
     const uploaderIndex = steps.findIndex(
       step =>
         step.uses?.startsWith('actions/upload-artifact@') && step.with?.path === report.report,

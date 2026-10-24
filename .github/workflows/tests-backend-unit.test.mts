@@ -84,7 +84,7 @@ describe('backend uncredentialed Docker test workflow', () => {
 
   it('combines service-backed backend Vitest projects in one sharded command', () => {
     const backendCommand =
-      'pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend/analytics-integration --project backend-data-stores --project backend-platform-stats-cache --project backend-mocks --project backend-migration-initializers --project backend-real-glide-mq --shard ${{ matrix.shard }}/${{ needs.prep.outputs.shard-total }}'
+      'pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project backend/analytics-integration --project backend-data-stores --project backend-platform-stats-cache --project backend-mocks --project backend-migration-initializers --project backend-real-glide-mq --shard "$CI_SHARD"'
     expect(workflow).toContain(backendCommand)
     expect(
       runBackendTestsScript?.match(/--project backend-migration-initializers\b/g),
