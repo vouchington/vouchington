@@ -1,18 +1,28 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
+import { holdQueueBulkAdmission } from '@voucha/test-helpers/queue-admission-hold'
 import { getPostByAny } from '@services/posts'
 import { getTopicByAny } from '@services/topics'
+import { getUrlByAny } from '@services/urls'
 import { getReferralProgramAttributes } from '@services/topics/referral-programs'
 import { getCardAttributes } from '@services/topics/cards'
+import { ENTITY_LISTENERS_URL_CREATED_JOB } from '../../queues/background/enqueues/entity-listeners-jobs.mts'
+import { entitiesListeners } from '@queues/entity-listeners/queues'
 import type { Topic } from '@services/topics/types'
 import type { PrivateUser } from '@voucha/types/entities/user'
 import { approveTopicRecommendation, createTopicRecommendation } from './index.mts'
+import {
+  getRegisteredRecommendationApprovedHandler,
+  registerRecommendationApprovedHandler,
+} from './recommendation-approved-handler-registry.mts'
+import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
 
 describe('typed-recommendations', () => {
   let user: PrivateUser
   let admin: PrivateUser
 
   beforeAll(async () => {
+    await import('../user-import-export/register-auto-follow-on-approval-handler.mts')
     user = await createTestUser()
     admin = await createTestUser({ administrator: true })
   })
@@ -138,6 +148,83 @@ describe('typed-recommendations', () => {
 
       const attributes = await getCardAttributes(createdTopic as Topic)
       expect(attributes).not.toBeNull()
+    })
+
+    it('waits for URL-created bulk admission after recommendation approval commits', async () => {
+      const random = Math.random().toString(36).slice(2, 10)
+      const landingPageUrl = `https://admission-${random}.example.com/cards`
+      const recommendation = await createTopicRecommendation(user, WEB_PROVENANCE, {
+        markdown: `Admission boundary ${random}`,
+        topic_title: `Admission Boundary ${random}`,
+        topic_slug: `admission-boundary-${Date.now()}-${random}`,
+        topic_type: 'card',
+        landing_page_urls: [landingPageUrl],
+      })
+      const admission = holdQueueBulkAdmission(
+        entitiesListeners,
+        ENTITY_LISTENERS_URL_CREATED_JOB.name,
+        data => typeof data === 'object' && data !== null && 'id' in data,
+      )
+      const previousApprovedHandler = getRegisteredRecommendationApprovedHandler()
+      const handlerFailure = new Error('Recommendation-approved handler failed')
+      const reportsBefore = sentryCaptureExceptionMock.mock.calls.length
+      let approvedHandlerCalled = false
+      registerRecommendationApprovedHandler(async () => {
+        approvedHandlerCalled = true
+        throw handlerFailure
+      })
+      let settled = false
+      const operation = approveTopicRecommendation(admin, WEB_PROVENANCE, recommendation).finally(
+        () => {
+          settled = true
+        },
+      )
+      let admittedJobs: Awaited<typeof admission.admitted> = []
+      let admissionStarted = false
+      try {
+        const entered = await Promise.race([
+          admission.entered.then(() => true),
+          operation.then(() => false),
+        ])
+        admissionStarted = entered
+        expect(entered).toBe(true)
+
+        const committed = await getPostByAny(recommendation.id)
+        expect(committed?.topic_recommendation?.status).toBe('approved')
+        const persistedUrl = await getUrlByAny(landingPageUrl)
+        expect(persistedUrl).not.toBeNull()
+        expect(approvedHandlerCalled).toBe(true)
+        expect(settled).toBe(false)
+
+        admission.release()
+        const [result, jobs] = await Promise.all([operation, admission.admitted])
+        admittedJobs = jobs
+        expect(result.topic_type).toBe('card')
+        expect(approvedHandlerCalled).toBe(true)
+        expect(
+          sentryCaptureExceptionMock.mock.calls
+            .slice(reportsBefore)
+            .filter(([error]) => error === handlerFailure),
+        ).toHaveLength(1)
+        expect(jobs).toHaveLength(1)
+        expect(jobs[0]).toMatchObject({
+          name: ENTITY_LISTENERS_URL_CREATED_JOB.name,
+          data: { id: persistedUrl!.id },
+        })
+      } finally {
+        admission.release()
+        try {
+          await operation.catch(() => undefined)
+          if (admissionStarted) admittedJobs = await admission.admitted.catch(() => [])
+          await Promise.all(admittedJobs.map(job => job.remove()))
+        } finally {
+          try {
+            registerRecommendationApprovedHandler(previousApprovedHandler)
+          } finally {
+            admission.restore()
+          }
+        }
+      }
     })
   })
 

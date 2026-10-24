@@ -221,7 +221,7 @@ describe('update.generated', () => {
       queueGate.release()
       const admittedJob = await queueGate.admitted
       expect(admittedJob?.data).toEqual({ id: user.id })
-      await new Promise<void>(resolve => setImmediate(resolve))
+      expect((await getPrivateUserByAny(user.id))?.username).toBe(username)
       expect(updateSettled).toBe(false)
 
       releaseBloom.resolve()
