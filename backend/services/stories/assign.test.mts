@@ -1,7 +1,7 @@
 import { it, expect, beforeAll, describe, vi } from 'vitest'
 import * as storyLifecycleLock from '@services/post-publication/story-lifecycle-lock'
 import { adminAssignItemToStory, adminRemoveItemFromStory } from './assign.mts'
-import { getStoryItemIds, getStoryWithItemCount } from './get.mts'
+import { getStoryItemIds } from './get.mts'
 import {
   beginTransaction,
   createTestUserDirect,
@@ -207,12 +207,11 @@ describe('assign', () => {
     expect(result).toBe(newItemId)
   })
 
-  it('getStoryWithItemCount reflects assigned items', async () => {
+  it('adminAssignItemToStory makes the assigned item visible in membership reads', async () => {
     const story = await insertTestStory()
     const newItemId = await makeTestItem()
     await adminAssignItemToStory(storyPostUser.id, story.id, newItemId)
-    const result = await getStoryWithItemCount(story.id)
-    expect(result!.item_count).toBeGreaterThanOrEqual(1)
+    await expect(getStoryItemIds(story.id)).resolves.toContain(newItemId)
   })
 
   it('refreshes moved story posts before invalidating their caches', async () => {

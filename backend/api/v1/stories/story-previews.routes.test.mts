@@ -97,7 +97,6 @@ describe('bounded story routes', () => {
       response = await request.get(`/api/v1/stories/${fixture.story.id}`).expect(200)
     } finally {
       const queries = stopTestQueryCapture()
-      expect(queries.some(query => query.text.includes('/* getStoryWithItemCount */'))).toBe(false)
       expect(queries.some(query => query.text.includes('/* getStoryItemIds */'))).toBe(false)
     }
     expect(response.body.item_ids).toEqual(fixture.itemIds.slice(0, 25))

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { createTestPost } from '@voucha/test-helpers'
+import { getTestApPostLikesTally } from '@voucha/test-helpers/entities/ap-post-likes'
 import { recordLike } from './record-like.mts'
 import { undoLike } from './undo-like.mts'
-import { getApPostLikesTally } from './get-tally.mts'
 import { createRemoteActorFixture } from '@voucha/test-helpers/ap-post-likes-fixtures'
 
 describe('undoLike', () => {
@@ -13,7 +13,7 @@ describe('undoLike', () => {
 
     await undoLike(post.id, remoteActor.id)
 
-    expect(await getApPostLikesTally(post.id)).toEqual({
+    expect(await getTestApPostLikesTally(post.id)).toEqual({
       activitypub_likes_score: 0,
       activitypub_likes_count: 0,
     })
@@ -25,7 +25,7 @@ describe('undoLike', () => {
 
     await expect(undoLike(post.id, remoteActor.id)).resolves.toBeUndefined()
 
-    expect(await getApPostLikesTally(post.id)).toBeNull()
+    expect(await getTestApPostLikesTally(post.id)).toBeNull()
   })
 
   it('is a no-op for a redelivered Undo after the Like was already undone', async () => {
@@ -36,7 +36,7 @@ describe('undoLike', () => {
 
     await expect(undoLike(post.id, remoteActor.id)).resolves.toBeUndefined()
 
-    expect(await getApPostLikesTally(post.id)).toEqual({
+    expect(await getTestApPostLikesTally(post.id)).toEqual({
       activitypub_likes_score: 0,
       activitypub_likes_count: 0,
     })
@@ -51,7 +51,7 @@ describe('undoLike', () => {
 
     await undoLike(post.id, first.id)
 
-    expect(await getApPostLikesTally(post.id)).toEqual({
+    expect(await getTestApPostLikesTally(post.id)).toEqual({
       activitypub_likes_score: 1,
       activitypub_likes_count: 1,
     })

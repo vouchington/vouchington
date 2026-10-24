@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { getActorUri, getPostUri } from '@modules/activitypub-uris'
-import { getApPostLikesTally } from '@services/ap-post-likes'
+import { getTestApPostLikesTally } from '@voucha/test-helpers/entities/ap-post-likes'
 import { getEntityRelationMetadataOrThrow, upsertEntityRelation } from '@services/entity-relations'
 import {
   createTestPost,
@@ -91,7 +91,7 @@ describe('inbound ActivityPub transaction rollback', () => {
       }),
     ).rejects.toThrow('Injected transaction rollback for test')
 
-    expect(await getApPostLikesTally(post.id)).toBeNull()
+    expect(await getTestApPostLikesTally(post.id)).toBeNull()
     expect(await recordInboxActivity(activity.id, activity.type, activity.actor)).toBe(true)
   })
 
@@ -118,7 +118,7 @@ describe('inbound ActivityPub transaction rollback', () => {
       }),
     ).rejects.toThrow('Injected transaction rollback for test')
 
-    expect(await getApPostLikesTally(post.id)).toEqual({
+    expect(await getTestApPostLikesTally(post.id)).toEqual({
       activitypub_likes_score: 1,
       activitypub_likes_count: 1,
     })
