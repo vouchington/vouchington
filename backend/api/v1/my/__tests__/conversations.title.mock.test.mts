@@ -87,7 +87,9 @@ describe('POST /api/v1/my/conversations/:conversationId/title', () => {
           .map(([chunk]) => String(chunk))
           .filter(line => line.startsWith('[pg-request-profile]'))
         expect(profileLines).toHaveLength(1)
-        expect(profileLines[0]).toContain('route=POST /api/v1/my/conversations/:id/title ')
+        expect(profileLines[0]).toContain(
+          'route=POST /api/v1/my/conversations/:conversationId/title ',
+        )
         expect(profileLines[0]).not.toContain('fetchConversationById')
       } finally {
         stderr.mockRestore()
@@ -186,7 +188,7 @@ describe('PATCH /api/v1/my/conversations/:conversationId', () => {
         .map(([chunk]) => String(chunk))
         .filter(line => line.startsWith('[pg-request-profile]'))
       expect(profileLines).toHaveLength(1)
-      expect(profileLines[0]).toContain('route=PATCH /api/v1/my/conversations/:id ')
+      expect(profileLines[0]).toContain('route=PATCH /api/v1/my/conversations/:conversationId ')
       expect(profileLines[0]).not.toContain('fetchConversationById')
     } finally {
       stderr.mockRestore()

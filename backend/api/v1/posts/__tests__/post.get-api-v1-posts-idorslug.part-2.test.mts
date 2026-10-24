@@ -141,7 +141,7 @@ describe('post', () => {
             .map(([chunk]) => String(chunk))
             .filter(line => line.startsWith('[pg-request-profile]'))
           expect(profileLines).toHaveLength(1)
-          expect(profileLines[0]).toContain('route=GET /api/v1/posts/:id/follow-context ')
+          expect(profileLines[0]).toContain('route=GET /api/v1/posts/:idOrSlug/follow-context ')
           expect(profileLines[0]).not.toContain('getPublicUsersByAnyBatch')
 
           expect(response.body.positive_by_following.total).toBe(1)
