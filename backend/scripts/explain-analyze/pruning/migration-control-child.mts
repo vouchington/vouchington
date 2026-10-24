@@ -31,7 +31,6 @@ try {
   await checkpoint('application-import')
   const { psql } = await import('@data-stores/psql/setup')
   closeCanonical = observeMigrationPools(psql)
-  const { applyAllMigrations } = await import('@data-stores/psql/migrate')
   shutdown = (await import('@data-stores/graceful-shutdown')).shutdownDataStoresForOneOffCommand
   await checkpoint('database-identity')
   const { rows } = await psql.read<{ name: string; oid: number }>(
@@ -39,8 +38,8 @@ try {
   )
   assert.equal(rows[0]?.name, name)
   assert.equal(rows[0]?.oid, oid)
-  await checkpoint('canonical-bootstrap')
-  await applyAllMigrations()
+  // The fixture owns its fixed/config/view migrations. The pruning runner separately proves
+  // a full canonical bootstrap and live schema verification after this control completes.
   await checkpoint('alternate-platform-startup')
   alternateClosed = false
   const { createPsql } = await import('@vouchington/postgres')

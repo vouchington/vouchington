@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
-import { mkdir, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { basename, join, resolve } from 'node:path'
+import { join } from 'node:path'
 import type { Psql } from '@vouchington/postgres'
 import { applyAllMigrations } from '@data-stores/psql/migrate'
 
-/** Original whole native case9, on an independently owned, canonically initialized sibling. */
+/** Exercise the application runner with only its owned fixed, generated, and view fixture. */
 export async function assertSerializedMigrationRunner(platform: Psql): Promise<void> {
   const root = await mkdtemp(join(tmpdir(), 'voucha-all-migrations-'))
   const suffix = randomUUID().replaceAll('-', '')
@@ -29,14 +29,6 @@ export async function assertSerializedMigrationRunner(platform: Psql): Promise<v
       join(root, 'views', '9999-view.sql'),
       `CREATE OR REPLACE VIEW ${view} AS SELECT id FROM ${baseTable};`,
     )
-    const { rows: applied } = await platform.read<{ id: string }>(
-      '/* listAppliedFixedMigrations */ SELECT id FROM migrations ORDER BY id',
-    )
-    const sourceDir = resolve(import.meta.dirname, '../../../data-stores/psql/migrations')
-    for (const row of applied) {
-      assert.equal(row.id, basename(row.id), 'Applied migration id must be a file name')
-      await symlink(join(sourceDir, row.id), join(root, 'migrations', row.id))
-    }
     const logger = { error: () => {}, log: () => {} }
     const settled = await Promise.allSettled([
       applyAllMigrations(root, { logger, platform }),
@@ -51,14 +43,19 @@ export async function assertSerializedMigrationRunner(platform: Psql): Promise<v
       settled.map(result => (result.status === 'fulfilled' ? result.value : undefined)),
       [undefined, undefined],
     )
-    const { rows } = await platform.read<{ ledger_count: number; relations_present: boolean }>(
+    const { rows } = await platform.read<{
+      ledger_count: number
+      total_migrations: number
+      relations_present: boolean
+    }>(
       `/* verifyAllMigrationRunnerState */
         SELECT
           (SELECT count(*)::integer FROM migrations WHERE id = $1) AS ledger_count,
+          (SELECT count(*)::integer FROM migrations) AS total_migrations,
           to_regclass($2) IS NOT NULL AND to_regclass($3) IS NOT NULL AS relations_present`,
       [migration, generatedTable, view],
     )
-    assert.deepEqual(rows, [{ ledger_count: 1, relations_present: true }])
+    assert.deepEqual(rows, [{ ledger_count: 1, total_migrations: 1, relations_present: true }])
   } catch (err) {
     errors.push(err)
   }
