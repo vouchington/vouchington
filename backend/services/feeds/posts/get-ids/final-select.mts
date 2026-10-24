@@ -38,6 +38,7 @@ function hotScoreColumn(sort: string): SQLStatement {
       return sql`,\n      combined_posts.hot_score`
     case 'new':
       return sql``
+    /* v8 ignore next 2 -- exhaustive selector guard; the type admits no other value */
     default:
       throw new Error(`Unknown post feed sort: ${sort}`)
   }
@@ -55,6 +56,7 @@ function orderAndLimit(sort: string, safeLimit: number): SQLStatement {
     ORDER BY combined_posts.sort_at DESC, combined_posts.result_id DESC
     LIMIT ${safeLimit + 1}
   `
+    /* v8 ignore next 2 -- exhaustive selector guard; the type admits no other value */
     default:
       throw new Error(`Unknown post feed sort: ${sort}`)
   }

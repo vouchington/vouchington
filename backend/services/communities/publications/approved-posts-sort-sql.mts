@@ -4,6 +4,7 @@ import {
   type CommunityPostSort,
 } from './approved-posts-support.mts'
 
+/* v8 ignore next 3 -- exhaustive selector guard; the type admits no other value */
 function unknownSort(sort: never): never {
   throw new Error(`Unknown community post sort: ${String(sort)}`)
 }
@@ -17,6 +18,7 @@ export function communityPostSortColumn(sort: CommunityPostSort): SQLStatement {
         .append(sql` AS hot_score`)
     case 'new':
       return sql``
+    /* v8 ignore next 2 -- exhaustive selector guard; the type admits no other value */
     default:
       return unknownSort(sort)
   }
@@ -31,6 +33,7 @@ export function communityPostSortJoin(sort: CommunityPostSort): SQLStatement {
   `
     case 'new':
       return sql``
+    /* v8 ignore next 2 -- exhaustive selector guard; the type admits no other value */
     default:
       return unknownSort(sort)
   }
@@ -52,6 +55,7 @@ export function communityPostSortCursor(
       return cursorId === undefined ? sql`` : sql` AND posts.id < ${cursorId}`
     case 'new':
       return cursorId === undefined ? sql`` : sql` AND posts.id < ${cursorId}`
+    /* v8 ignore next 2 -- exhaustive selector guard; the type admits no other value */
     default:
       return unknownSort(sort)
   }
@@ -70,6 +74,7 @@ export function communityPostSortOrderLimit(sort: CommunityPostSort, limit: numb
       ORDER BY posts.id DESC
       LIMIT ${limit + 1}
     `
+    /* v8 ignore next 2 -- exhaustive selector guard; the type admits no other value */
     default:
       return unknownSort(sort)
   }
@@ -82,6 +87,7 @@ export function communityPostSortHydratedColumn(sort: CommunityPostSort): SQLSta
       return sql`, candidates.hot_score`
     case 'new':
       return sql``
+    /* v8 ignore next 2 -- exhaustive selector guard; the type admits no other value */
     default:
       return unknownSort(sort)
   }
@@ -94,6 +100,7 @@ export function communityPostSortHydratedOrder(sort: CommunityPostSort): SQLStat
       return sql` ORDER BY candidates.hot_score DESC, candidates.id DESC`
     case 'new':
       return sql` ORDER BY candidates.id DESC`
+    /* v8 ignore next 2 -- exhaustive selector guard; the type admits no other value */
     default:
       return unknownSort(sort)
   }

@@ -106,6 +106,7 @@ function banEvasionAfterCursor(
     case 'created_at_desc':
     case undefined:
       return sql` AND r.id < ${afterCursor.id}::uuid`
+    /* v8 ignore next 2 -- exhaustive selector guard; the type admits no other value */
     default:
       throw new Error(`Unknown moderation report sort: ${String(sort)}`)
   }
@@ -123,6 +124,7 @@ function banEvasionOrderAndLimit(
     case 'created_at_desc':
     case undefined:
       return sql` ORDER BY r.id DESC LIMIT ${limit}`
+    /* v8 ignore next 2 -- exhaustive selector guard; the type admits no other value */
     default:
       throw new Error(`Unknown moderation report sort: ${String(sort)}`)
   }

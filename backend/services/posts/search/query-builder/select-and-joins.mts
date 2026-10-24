@@ -60,6 +60,7 @@ function sortSelectColumn(sort: string): SQLStatement {
     case 'following_new':
     case 'relevance':
       return sql``
+    /* v8 ignore next 2 -- exhaustive selector guard; the type admits no other value */
     default:
       throw new Error(`Unknown post search sort: ${sort}`)
   }

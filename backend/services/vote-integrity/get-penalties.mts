@@ -141,6 +141,7 @@ function penaltyStatusPredicate(status: 'active' | 'revoked' | undefined): SQLSt
       return sql` AND revoked_at IS NULL`
     case 'revoked':
       return sql` AND revoked_at IS NOT NULL`
+    /* v8 ignore next 2 -- exhaustive selector guard; the type admits no other value */
     default:
       throw new Error(`Unknown penalty status: ${String(status)}`)
   }

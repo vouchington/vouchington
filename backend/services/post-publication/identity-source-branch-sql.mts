@@ -38,6 +38,7 @@ export function sourceBranchSql(
       return slugSourceSql(postId, cursor, limit)
     case 'static':
       return staticSourceSql(postId, cursor, limit)
+    /* v8 ignore next 2 -- exhaustive selector guard; the type admits no other value */
     default:
       throw new Error(`Unknown publication source branch: ${String(branch)}`)
   }
@@ -151,6 +152,7 @@ function aliasRelationPredicate(branch: 'relation' | 'alias_relation'): SQLState
       return sql``
     case 'alias_relation':
       return sql`AND page.votes_score_net > 0 AND alias.topic_id IS NOT NULL `
+    /* v8 ignore next 2 -- exhaustive selector guard; the type admits no other value */
     default:
       throw new Error(`Unknown relation branch: ${String(branch)}`)
   }
@@ -162,6 +164,7 @@ function aliasRelationJoin(branch: 'relation' | 'alias_relation'): SQLStatement 
       return sql``
     case 'alias_relation':
       return sql` LEFT JOIN topic_aliases alias ON alias.id = page.object_id`
+    /* v8 ignore next 2 -- exhaustive selector guard; the type admits no other value */
     default:
       throw new Error(`Unknown relation branch: ${String(branch)}`)
   }

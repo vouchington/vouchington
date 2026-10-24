@@ -22,6 +22,7 @@ function clearanceChangeType(status: TestClearanceStatus): string {
       return 'mark_in_review'
     case 'pending':
       return 'reset_to_pending'
+    /* v8 ignore next 2 -- exhaustive selector guard; the type admits no other value */
     default:
       throw new Error(`Unknown clearance status: ${String(status)}`)
   }

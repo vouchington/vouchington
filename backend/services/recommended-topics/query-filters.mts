@@ -81,6 +81,7 @@ function recommendationNameColumn(sort: 'score' | 'best' | undefined): SQLStatem
     case 'score':
     case undefined:
       return sql``
+    /* v8 ignore next 2 -- exhaustive selector guard; the type admits no other value */
     default:
       throw new Error(`Unknown recommendation sort: ${String(sort)}`)
   }
@@ -95,6 +96,7 @@ function recommendationOrderBy(sort: 'score' | 'best' | undefined): SQLStatement
     case undefined:
       return sql`
     ORDER BY total_score DESC, topic_id ASC`
+    /* v8 ignore next 2 -- exhaustive selector guard; the type admits no other value */
     default:
       throw new Error(`Unknown recommendation sort: ${String(sort)}`)
   }

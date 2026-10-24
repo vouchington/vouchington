@@ -114,6 +114,7 @@ function flagStatusPredicate(status: IntegrityFlagStatus | undefined): SQLStatem
       return sql` AND resolved_at IS NULL`
     case 'resolved':
       return sql` AND resolved_at IS NOT NULL`
+    /* v8 ignore next 2 -- exhaustive selector guard; the type admits no other value */
     default:
       throw new Error(`Unknown integrity flag status: ${String(status)}`)
   }

@@ -45,6 +45,7 @@ function feedCategoryFilter(feedCategory: CommunityFeedCategory | undefined): SQ
             AND clir.removed_at IS NULL
         )
       )`
+    /* v8 ignore next 2 -- exhaustive selector guard; the type admits no other value */
     default:
       throw new Error(`Unknown community feed category: ${String(feedCategory)}`)
   }

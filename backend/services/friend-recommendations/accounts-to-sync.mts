@@ -20,6 +20,7 @@ function providerUserIdColumn(provider: FriendSyncProvider): string {
       return 'x_user_id'
     case 'github':
       return 'github_user_id'
+    /* v8 ignore next 2 -- exhaustive selector guard; the type admits no other value */
     default:
       throw new Error(`Unknown friend sync provider: ${String(provider)}`)
   }

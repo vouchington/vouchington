@@ -34,6 +34,20 @@ describe('getVoteWeightPenalties', () => {
     await expect(getVoteWeightPenaltyByIdFromPrimary(uuidv7())).resolves.toBeNull()
   })
 
+  it('filters penalties by lifecycle status', async () => {
+    const user = await createTestUser({ username: randomUsername() })
+    const penaltyId = await insertTestVoteWeightPenaltyRecord({
+      userId: user.id,
+      createdById: admin.id,
+    })
+
+    const active = await getVoteWeightPenalties({ userId: user.id, status: 'active' })
+    expect(active.results.map(penalty => penalty.id)).toEqual([penaltyId])
+    const revoked = await getVoteWeightPenalties({ userId: user.id, status: 'revoked' })
+    expect(revoked.results).toEqual([])
+  })
+
+
   it('preserves all-source behavior when source is omitted', async () => {
     const user = await createTestUser({ username: randomUsername() })
     const ringId = await insertTestVoteWeightPenaltyRecord({

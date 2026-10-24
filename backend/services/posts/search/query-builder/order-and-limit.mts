@@ -74,6 +74,7 @@ function orderByClause({
     ORDER BY ranking_score DESC, posts.id DESC`
         : sql`
     ORDER BY posts.id DESC`
+    /* v8 ignore next 2 -- exhaustive selector guard; the type admits no other value */
     default:
       throw new Error(`Unknown post search sort: ${sort}`)
   }

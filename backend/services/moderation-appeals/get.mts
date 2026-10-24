@@ -103,6 +103,7 @@ function moderationAppealStatusPredicate(status: ModerationAppealStatus): SQLSta
       return sql`ma.resolved_at IS NOT NULL AND ma.resolution_action = 'deny'`
     case 'resolved':
       return sql`ma.resolved_at IS NOT NULL AND ma.resolution_action != 'deny'`
+    /* v8 ignore next 2 -- exhaustive selector guard; the type admits no other value */
     default:
       throw new Error(`Unknown moderation appeal status: ${String(status)}`)
   }

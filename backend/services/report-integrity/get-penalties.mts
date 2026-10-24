@@ -82,6 +82,7 @@ export async function getReportAbusePenalties(
     case 'revoked':
       query.append(sql` AND revoked_at IS NOT NULL`)
       break
+    /* v8 ignore next 2 -- exhaustive selector guard; the type admits no other value */
     default:
       throw new Error(`Unknown penalty status: ${String(status)}`)
   }

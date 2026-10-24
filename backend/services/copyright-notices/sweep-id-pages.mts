@@ -91,6 +91,7 @@ function copyrightSweepKeyset(
       return afterId
         ? sql`\n      AND id > ${afterId}\n    ORDER BY id LIMIT ${limit + 1}`
         : sql`\n    ORDER BY id LIMIT ${limit + 1}`
+    /* v8 ignore next 2 -- exhaustive selector guard; the type admits no other value */
     default:
       throw new Error(`Unknown copyright sweep id column: ${String(column)}`)
   }

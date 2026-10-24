@@ -15,6 +15,7 @@ function countQuery(relation: CountRelation): string {
       return '/* countTestActionRestrictions */ SELECT count(*)::int AS n FROM moderator_action_community_restrictions WHERE moderator_action_id = $1'
     case 'consumptions':
       return '/* countTestReservationConsumptions */ SELECT count(*)::int AS n FROM post_admission_quota_consumptions WHERE reservation_id = $1'
+    /* v8 ignore next 2 -- exhaustive selector guard; the type admits no other value */
     default:
       throw new Error(`Unknown relation: ${String(relation)}`)
   }

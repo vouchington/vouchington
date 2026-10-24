@@ -34,6 +34,7 @@ function postTypeAllowanceFilter(eligiblePostType: CommunityRootPostType): SQLSt
       return sql` AND c.should_allow_data_point_posts = TRUE`
     case 'discussion':
       return sql``
+    /* v8 ignore next 2 -- exhaustive selector guard; the type admits no other value */
     default:
       throw new Error(`Unknown eligible post type: ${String(eligiblePostType)}`)
   }
