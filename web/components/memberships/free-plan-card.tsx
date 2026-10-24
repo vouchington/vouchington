@@ -38,6 +38,7 @@ export function FreePlanCard({
       <PlanFeatureList features={features} />
       {freeCurrent ? (
         <Button
+          data-pw='free-plan-card-current-plan'
           variant='outline'
           className='w-full'
           disabled

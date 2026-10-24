@@ -66,6 +66,7 @@ export function DataRequestSection({ userId }: Props) {
                 {t('extracted.data.dataRequestSection.yourPreviousExportExpiredRequestA_4c2f6899')}
               </p>
               <Button
+                data-pw='data-request-section-request-data-export'
                 variant='outline'
                 loading={requesting}
                 disabled={requesting}
@@ -78,6 +79,7 @@ export function DataRequestSection({ userId }: Props) {
             </div>
           ) : (
             <Button
+              data-pw='data-request-section-request-export'
               variant='outline'
               disabled={requesting}
               onClick={handleRequest}

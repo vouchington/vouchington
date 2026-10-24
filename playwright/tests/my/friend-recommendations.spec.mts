@@ -1,6 +1,13 @@
 import { test, expect } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
-import { navigateTo } from 'vouchington-tooling/playwright'
+import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
+import { withCleanUser } from '../../helpers/auth.mts'
+import { createTestUserDirect } from '../../../backend/test-helpers/entities/users-direct.mts'
+import { insertTestFriend } from '../../../backend/test-helpers/entities/friends.mts'
+import {
+  connectTestOAuthAccount,
+  insertTestOAuthAccount,
+} from '../../../backend/test-helpers/entities/oauth-accounts.mts'
 
 test.describe('My Friend Recommendations', () => {
   test.use({ storageState: AUTH_STATE })
@@ -45,6 +52,24 @@ test.describe('My Friend Recommendations', () => {
 
     test('shows Dismissed tab', async ({ page }) => {
       await expect(page.getByTestId('find-friends-tab-dismissed')).toBeVisible()
+    })
+  })
+
+  test.describe('Suggestions with a recommendation', () => {
+    test('shows follow and dismiss controls', async ({ page }) => {
+      const user = await withCleanUser(page)
+      const friend = await createTestUserDirect()
+      const userGithubId = `pw-friend-${randomSuffix()}`
+      const friendGithubId = `pw-friend-${randomSuffix()}`
+      await insertTestOAuthAccount('github', userGithubId, null)
+      await connectTestOAuthAccount('github', user.id, userGithubId)
+      await insertTestOAuthAccount('github', friendGithubId, null)
+      await connectTestOAuthAccount('github', friend!.id, friendGithubId)
+      await insertTestFriend('github', userGithubId, friendGithubId)
+      await navigateTo(page, '/my/friend-recommendations')
+
+      await expect(page.getByTestId('friend-recommendations-list-follow')).toBeVisible()
+      await expect(page.getByTestId('friend-recommendations-list-dismiss')).toBeVisible()
     })
   })
 

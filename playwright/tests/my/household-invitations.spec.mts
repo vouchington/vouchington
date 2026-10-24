@@ -1,5 +1,9 @@
 import { createTestUserDirect } from '../../../backend/test-helpers/entities/users-direct.mts'
-import { insertTestHousehold } from '../../../backend/test-helpers/entities/households.mts'
+import {
+  insertTestHousehold,
+  insertTestHouseholdInvitation,
+  insertTestHouseholdsForOwner,
+} from '../../../backend/test-helpers/entities/households.mts'
 import { navigateTo, randomSuffix, requireTestValue } from 'vouchington-tooling/playwright'
 import { loginAsUser } from '../../helpers/auth.mts'
 import { test, expect } from '../../helpers/test.mts'
@@ -46,6 +50,7 @@ test('owner invites an existing user and revokes the pending invitation', async 
     .filter({ has: page.getByTestId('household-invitation-form') })
   const form = sent.getByTestId('household-invitation-form')
   await expect(form).toBeVisible()
+  await expect(form.getByTestId('household-invitations-view-send-invitation')).toBeVisible()
   const username = form.getByTestId('household-invitation-user')
   await expect(username).toBeEnabled()
   await expect(username).toHaveValue('')
@@ -64,6 +69,8 @@ test('owner invites an existing user and revokes the pending invitation', async 
   const row = sent.getByTestId('household-invitation-row')
   await expect(row).toHaveCount(1)
   await expect(row).toContainText(`@${inviteeUsername}`)
+  await expect(row.getByTestId('household-invitation-message-user-link')).toBeVisible()
+  await expect(row.getByTestId('household-invitations-view-revoke-invitation')).toBeVisible()
   await expect(row).toContainText(relationship)
   await expect(page.locator('body')).not.toContainText(/[0-9a-f]{8}-[0-9a-f]{4}-/)
 
@@ -75,6 +82,8 @@ test('owner invites an existing user and revokes the pending invitation', async 
   await expect(received.getByTestId('household-invitation-row')).toContainText(
     `Invited by @${ownerUsername}`,
   )
+  await expect(received.getByTestId('household-invitations-view-accept')).toBeVisible()
+  await expect(received.getByTestId('household-invitations-view-decline')).toBeVisible()
   await expect(page.locator('body')).not.toContainText(/[0-9a-f]{8}-[0-9a-f]{4}-/)
 
   await loginAsUser(page, ownerId)
@@ -95,4 +104,23 @@ test('owner invites an existing user and revokes the pending invitation', async 
   expect((await revokeResponse).status()).toBe(204)
   await expect(ownerRow).toHaveCount(0)
   await expect(sent).toContainText('No pending invitations.')
+})
+
+test('invitee with many received invitations sees a load-more control', async ({ page }) => {
+  const { ownerId, inviteeId } = fixture
+  const households = await insertTestHouseholdsForOwner(ownerId, 26)
+  await Promise.all(
+    households.map(household =>
+      insertTestHouseholdInvitation({
+        householdId: household.id,
+        invitedUserId: inviteeId,
+        invitedById: ownerId,
+      }),
+    ),
+  )
+
+  await loginAsUser(page, inviteeId)
+  await navigateTo(page, '/my/household')
+
+  await expect(page.getByTestId('household-invitations-view-load-more')).toBeVisible()
 })

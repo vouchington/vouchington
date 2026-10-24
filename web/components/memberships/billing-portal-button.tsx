@@ -32,6 +32,7 @@ export function BillingPortalButton() {
   return (
     <div className='w-full'>
       <Button
+        data-pw='billing-portal-button-open-billing-portal'
         variant='outline'
         className='w-full'
         loading={loading}

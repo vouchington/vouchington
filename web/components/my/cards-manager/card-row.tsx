@@ -88,6 +88,7 @@ export function CardDisplayRow({
               {t('extracted.cardsManager.cardRow.removeCard_ce640ee3')}
             </span>
             <Button
+              data-pw='card-row-confirm'
               size='sm'
               variant='destructive'
               onClick={onConfirmDelete}
@@ -96,6 +97,7 @@ export function CardDisplayRow({
               {t('extracted.cardsManager.cardRow.confirm_eebdd24a')}
             </Button>
             <Button
+              data-pw='card-row-cancel'
               size='sm'
               variant='outline'
               onClick={onCancelDelete}
@@ -115,6 +117,7 @@ export function CardDisplayRow({
               {t('extracted.cardsManager.cardRow.edit_464c4ffd')}
             </Button>
             <Button
+              data-pw='card-row-remove'
               size='sm'
               variant='outline'
               onClick={onStartDelete}

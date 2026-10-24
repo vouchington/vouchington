@@ -26,6 +26,7 @@ export function MethodSelector({
   return (
     <div className='flex gap-2'>
       <Button
+        data-pw='method-selector-authenticator-app'
         variant={method === 'totp' ? 'default' : 'outline'}
         size='sm'
         onClick={() => setMethod('totp')}
@@ -34,6 +35,7 @@ export function MethodSelector({
         {t('extracted.mfaReauthDialog.methodSelector.authenticatorApp_09a12ace')}
       </Button>
       <Button
+        data-pw='method-selector-email-verification'
         variant={method === 'email' ? 'default' : 'outline'}
         size='sm'
         onClick={() => {

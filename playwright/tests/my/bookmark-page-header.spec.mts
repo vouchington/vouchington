@@ -17,5 +17,6 @@ test.describe('BookmarkPageHeader', () => {
 
     await expect(page.getByTestId('bookmark-page-heading')).toBeVisible()
     await expect(page.getByTestId('bookmark-title-dropdown-trigger')).toBeVisible()
+    await expect(page.getByTestId('rss-bookmark-type-filter-tab').first()).toBeVisible()
   })
 })

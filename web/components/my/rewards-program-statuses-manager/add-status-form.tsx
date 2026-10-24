@@ -54,6 +54,7 @@ export function AddStatusForm({
         disabled={loading}
       />
       <Button
+        data-pw='add-status-form-add'
         type='submit'
         size='sm'
         className='sr-only'

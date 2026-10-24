@@ -97,6 +97,7 @@ export function PaidPlanCard({
           <BillingPortalButton />
         ) : isCurrent ? (
           <Button
+            data-pw='paid-plan-card-current-plan'
             variant='outline'
             className='w-full'
             disabled

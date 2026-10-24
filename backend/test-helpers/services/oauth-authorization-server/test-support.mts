@@ -10,6 +10,7 @@ import {
   registerOAuthClient,
   type OAuthResourceAudience,
 } from '../../../services/oauth-authorization-server/index.mts'
+import { mintNativeSessionMcpToken } from '../../../services/oauth-authorization-server/native-session-tokens.mts'
 
 type TestUser = Pick<Awaited<ReturnType<typeof createTestUserDirect>>, 'id'>
 
@@ -105,4 +106,17 @@ export async function createTestPendingOAuthAuthorization(
 export function randomTestOAuthRedirectUri(): string {
   const port = 30_000 + (randomBytes(2).readUInt16BE(0) % 20_000)
   return `http://127.0.0.1:${port}/callback/${randomBytes(6).toString('hex')}`
+}
+
+// Binds a native MCP grant to an existing native user session, as the native app does.
+export async function mintTestNativeSessionMcpGrant(
+  user: TestUser,
+  session: { id: string; device_id: string },
+) {
+  return mintNativeSessionMcpToken(user.id, {
+    did: session.device_id,
+    sid: session.id,
+    clientApp: 'ios',
+    attestationStatus: 'unattested',
+  })
 }

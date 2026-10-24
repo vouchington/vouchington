@@ -17,6 +17,7 @@ export function renderInvitationMessage(
     if (!user) return part
     return user.username ? (
       <UserLink
+        data-pw='household-invitation-message-user-link'
         key={part}
         user={user}
         className='underline'
