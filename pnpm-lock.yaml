@@ -2429,7 +2429,7 @@ importers:
         specifier: ^0.135.0
         version: 0.135.0(zod@4.6.5)
       '@jongleberry/api-server':
-        specifier: ^3.0.1
+        specifier: ^3.1.0
         version: 3.1.0
       '@modules/openai-utils':
         specifier: workspace:^
@@ -2466,7 +2466,7 @@ importers:
   backend/modules/openai-utils:
     dependencies:
       '@jongleberry/api-server':
-        specifier: ^3.0.1
+        specifier: ^3.1.0
         version: 3.1.0
       '@modules/api-egress-proxy':
         specifier: workspace:^
@@ -2519,7 +2519,7 @@ importers:
   backend/modules/queue-errors:
     dependencies:
       '@jongleberry/api-server':
-        specifier: ^3.0.1
+        specifier: ^3.1.0
         version: 3.1.0
       '@modules/on-error':
         specifier: workspace:^
@@ -2639,7 +2639,7 @@ importers:
   backend/modules/structured-decisions:
     dependencies:
       '@jongleberry/api-server':
-        specifier: ^3.0.1
+        specifier: ^3.1.0
         version: 3.1.0
       '@modules/utils':
         specifier: workspace:^
@@ -12128,7 +12128,7 @@ importers:
         specifier: workspace:^
         version: link:../../data-stores/valkey-rate-limiter
       '@jongleberry/api-server':
-        specifier: ^3.0.1
+        specifier: ^3.1.0
         version: 3.1.0
       '@modules/on-error':
         specifier: workspace:^

@@ -21,7 +21,7 @@
   },
   "scripts": {},
   "dependencies": {
-    "@jongleberry/api-server": "^3.0.1",
+    "@jongleberry/api-server": "^3.1.0",
     "@modules/utils": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/types": "workspace:^",
