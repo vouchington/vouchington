@@ -80,12 +80,14 @@ export async function createTestBlacklistSource(
  */
 export async function countBlacklistEntriesBySource(
   sourceId: DomainBlacklistSourceId,
+  options: QueryOptions = {},
 ): Promise<number> {
   const result = await read(
     allowUnannotatedQuery(sql`
     SELECT COUNT(*)::int as count FROM blocklisted_domains
     WHERE source_id = ${sourceId}
   `),
+    options,
   )
   return result.rows[0].count
 }
@@ -110,6 +112,7 @@ export async function deleteTestBlacklistSource(sourceId: DomainBlacklistSourceI
  */
 export async function listBlacklistDomainsBySource(
   sourceId: DomainBlacklistSourceId,
+  options: QueryOptions = {},
 ): Promise<string[]> {
   const result = await read<{ domain: string }>(
     allowUnannotatedQuery(sql`
@@ -118,6 +121,7 @@ export async function listBlacklistDomainsBySource(
     WHERE source_id = ${sourceId}
     ORDER BY domain
   `),
+    options,
   )
   return result.rows.map(row => row.domain)
 }

@@ -70,30 +70,11 @@ export async function syncDomainsWithDatabase(
   }
 }
 
-/**
- * Stage only the diff. A lagging membership snapshot can omit a domain the writer
- * still has: that removal is absent from the diff and the domain stays blocked
- * until the next run. A repeated addition hits ON CONFLICT DO NOTHING.
- * @internal Stale-membership tests apply a prepared diff without the reader copy.
- */
-export async function applyDomainDiffFiles(
-  sourceId: DomainBlacklistSourceId,
-  sourceType: 'url' | 'email',
-  addedPath: string,
-  removedPath: string,
-): Promise<SyncBlacklistSourceResult> {
-  const result = await applyLockedDomainDiff(sourceId, sourceType, client =>
-    stageBothDiffFiles(client, addedPath, removedPath),
-  )
-  if (!result) throw new Error('Unexpected domain blacklist membership conflict')
-  return result
-}
-
 async function applyLockedDomainDiff(
   sourceId: DomainBlacklistSourceId,
   sourceType: 'url' | 'email',
   stage: (client: PoolClient) => Promise<void>,
-  expectedVersion?: string | null,
+  expectedVersion: string | null,
 ): Promise<SyncBlacklistSourceResult | null> {
   await entityCacheWorkConfig.waitForInitialization()
   const client = await writePool.connect()
@@ -125,11 +106,11 @@ async function stageLockedDiff(
   sourceId: DomainBlacklistSourceId,
   sourceType: 'url' | 'email',
   stage: (client: PoolClient) => Promise<void>,
-  expectedVersion?: string | null,
+  expectedVersion: string | null,
 ): Promise<AppliedDomainDiff | null> {
   await stage(client)
   const version = await lockSourceForDiff(transaction, sourceId, sourceType)
-  if (expectedVersion !== undefined && version !== expectedVersion) return null
+  if (version !== expectedVersion) return null
   const applied = await applyPreparedDomainDiff(transaction, sourceId, sourceType)
   // Advance the generation atomically with membership writes. Source metadata
   // updates already change xmin, so they also invalidate in-flight diffs.
