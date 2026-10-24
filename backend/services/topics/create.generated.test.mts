@@ -7,6 +7,7 @@ import { notifications } from '@queues/notifications/queues'
 import { getTopicByAny } from './get.mts'
 import { createTopic } from './create.mts'
 import { createUnlinkedTopicAlias } from './aliases.mts'
+import { getTopicAliasRecordByValue } from './get-topic-aliases.mts'
 import {
   createTestPost,
   createTestUser,
@@ -18,6 +19,7 @@ import {
   holdQueueBulkAdmission,
 } from '@voucha/test-helpers/queue-admission-hold'
 import { readEnqueuedJob, removeEnqueuedJobs } from '@voucha/test-helpers/queue-jobs'
+import { withPostgresPoolQueryFailureForTest } from '@voucha/test-helpers/postgres-pool-query-failure'
 import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
 
 describe('create.generated', () => {
@@ -216,6 +218,29 @@ describe('create.generated', () => {
     } finally {
       await cleanup()
     }
+  })
+
+  it('keeps a topic and its source alias linked when post-commit alias reading fails', async () => {
+    const user = await createTestUser({ administrator: true })
+    const slug = `topic-alias-read-failure-${randomUUID()}`
+    const alias = await createUnlinkedTopicAlias(`source-${slug}`)
+    const { result: topic, error } = await withPostgresPoolQueryFailureForTest(
+      '/* invalidatePostsForTopicAliases */',
+      () =>
+        createTopic(user, WEB_PROVENANCE, { name: slug, slug, source_topic_alias_id: alias.id }),
+      { command: 'SELECT' },
+    )
+
+    expect(error).toMatchObject({ code: '25P02' })
+    expect(topic).toMatchObject({ slug })
+    await expect(getTopicByAny(topic.id)).resolves.toMatchObject({ id: topic.id, slug })
+    await expect(getTopicAliasRecordByValue(topic.id, alias.alias)).resolves.toMatchObject({
+      id: alias.id,
+      topic_id: topic.id,
+    })
+    expect(
+      sentryCaptureExceptionMock.mock.calls.filter(([reported]) => reported === error),
+    ).toHaveLength(1)
   })
 
   it('createTopic with hostname string resolves and links hostname', async () => {
