@@ -113,6 +113,7 @@ export function PartitionConfirmDialog({
             {t('extracted.postgresql.partitionConfirmDialog.cancel_19766ed6')}
           </AlertDialogCancel>
           <AlertDialogAction
+            data-pw='partition-confirm-dialog-confirm'
             disabled={pendingAction === 'cleanupPartitions' && !partitionStatus}
             onClick={confirmPartitionAction}
           >

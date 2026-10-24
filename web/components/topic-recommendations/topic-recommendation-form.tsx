@@ -155,6 +155,7 @@ export function TopicRecommendationForm({ recommendation, initialType }: Props) 
           {submitLabel}
         </Button>
         <Button
+          data-pw='topic-recommendation-form-cancel'
           type='button'
           variant='outline'
           onClick={() => push('/topic-recommendations')}

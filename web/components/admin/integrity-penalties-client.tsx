@@ -101,6 +101,7 @@ function IntegrityPenaltiesClientInner<P extends IntegrityPenaltyRecord>(
             {t('extracted.flags.integrityPenalties.failedToLoadMore_e1499d61')}
           </p>
           <Button
+            data-pw='integrity-penalties-client-retry'
             variant='outline'
             size='touchSm'
             onClick={() => {

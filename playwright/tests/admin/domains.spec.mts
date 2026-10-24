@@ -1,9 +1,33 @@
-import { test, expect } from '../../helpers/test.mts'
-import { navigateTo, waitForBelowFoldHydration } from 'vouchington-tooling/playwright'
+import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
+import { navigateTo, randomSuffix, waitForBelowFoldHydration } from 'vouchington-tooling/playwright'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
+import { insertTestCrawler, insertTestUrlHostname } from '../../../backend/test-helpers/index.mts'
 
 test.describe('Admin Domains', () => {
   test.use({ storageState: AUTH_STATE })
+  let blockedHostname = ''
+  let detailHostname = ''
+  let quickAddHostname = ''
+
+  test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
+    const suffix = randomSuffix()
+    blockedHostname = `pw-unblock-${suffix}.example.net`
+    detailHostname = `pw-domain-${suffix}.example.net`
+    quickAddHostname = `pw-quick-block-${suffix}.example.net`
+    const [hostnameId] = await Promise.all([
+      insertTestUrlHostname({ hostname: detailHostname }),
+      insertTestUrlHostname({ hostname: blockedHostname, is_blocked: true }),
+    ])
+    await insertTestCrawler({ hostnameId, description: 'Owned domain crawler' })
+  })
+
+  test('shows the unblock confirmation for an isolated blocked hostname', async ({ page }) => {
+    await navigateTo(page, `/domain/${blockedHostname}`)
+    await page.getByTestId('domain-tab-moderation').click()
+    await page.getByTestId('hostname-blocked-switch').click()
+    await expect(page.getByTestId('hostname-moderation-controls-unblock')).toBeVisible()
+  })
 
   test('allows anonymous users to view domains list without admin filters', async ({ page }) => {
     await page.context().clearCookies()
@@ -35,6 +59,14 @@ test.describe('Admin Domains', () => {
 
     // Quick-add block form is visible for admins
     await expect(page.getByTestId('block-hostname-quick-add')).toBeVisible()
+    await expect(page.getByTestId('block-hostname-quick-add-block-hostname')).toBeVisible()
+    await page
+      .getByTestId('block-hostname-quick-add')
+      .locator('input')
+      .pressSequentially(quickAddHostname)
+    await page.getByTestId('block-hostname-quick-add-block-hostname').click()
+    await expect(page.getByTestId('block-hostname-quick-add-confirm-block-hostname')).toBeVisible()
+    await page.getByRole('alertdialog').press('Escape')
 
     await expect(page.getByTestId('domains-search-input')).toBeVisible()
   })
@@ -42,26 +74,24 @@ test.describe('Admin Domains', () => {
   test('should filter domains by search query', async ({ page }) => {
     await navigateTo(page, '/domains')
 
-    // Search for a seeded hostname that is not shared by generated test data.
     await waitForBelowFoldHydration(page)
-    await page.getByTestId('domains-search-input').pressSequentially('test.org')
+    await page.getByTestId('domains-search-input').pressSequentially(detailHostname)
     const searchButton = page.getByTestId('domains-search-submit')
     await searchButton.click()
-    await expect(page).toHaveURL(/query=test\.org/)
+    await expect(page).toHaveURL(/query=/)
 
-    // Should see test.org
     await expect(
-      page.getByTestId('domains-list-hostname-link').filter({ hasText: /^test\.org$/ }),
+      page.getByTestId('domains-list-hostname-link').filter({ hasText: detailHostname }),
     ).toBeVisible()
   })
 
   test('should view domain detail with Moderation and Crawlers tabs', async ({ page }) => {
-    await navigateTo(page, '/domain/example.com')
+    await navigateTo(page, `/domain/${detailHostname}`)
 
-    await expect(page).toHaveURL('/domain/example.com')
+    await expect(page).toHaveURL(`/domain/${detailHostname}`)
 
     // Check hostname heading
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('example.com')
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(detailHostname)
 
     // Click the Moderation menubar item to reveal moderation controls
     const moderationTab = page.getByTestId('domain-tab-moderation')
@@ -74,6 +104,9 @@ test.describe('Admin Domains', () => {
     // Moderation controls should be visible with interactive switches
     await expect(page.getByTestId('hostname-moderation-controls')).toBeVisible()
     await expect(page.getByTestId('hostname-blocked-switch')).toBeVisible()
+    await page.getByTestId('hostname-blocked-switch').click()
+    await expect(page.getByTestId('hostname-moderation-controls-block-hostname')).toBeVisible()
+    await page.getByRole('alertdialog').press('Escape')
     await expect(page.getByTestId('hostname-crawlable-switch')).toBeVisible()
     await expect(page.getByTestId('hostname-link-rel-follow-switch')).toBeVisible()
 
@@ -89,7 +122,7 @@ test.describe('Admin Domains', () => {
     const crawlersHeading = page.getByRole('heading', { level: 2 }).filter({ hasText: 'Crawlers' })
     await expect(crawlersHeading).toBeVisible()
     await expect(
-      page.getByTestId('domain-crawler-description').filter({ hasText: 'Example.com crawler' }),
+      page.getByTestId('domain-crawler-description').filter({ hasText: 'Owned domain crawler' }),
     ).toBeVisible()
   })
 
@@ -97,8 +130,8 @@ test.describe('Admin Domains', () => {
     await navigateTo(page, '/domains')
 
     // Go to detail
-    await navigateTo(page, '/domain/example.com')
-    await expect(page).toHaveURL('/domain/example.com')
+    await navigateTo(page, `/domain/${detailHostname}`)
+    await expect(page).toHaveURL(`/domain/${detailHostname}`)
 
     // Back to list
     await page.goBack()

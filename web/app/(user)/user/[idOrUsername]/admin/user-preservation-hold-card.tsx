@@ -70,7 +70,6 @@ export function UserPreservationHoldCard({
     isAccountDeleted || (loadedAccount?.userId === userId && loadedAccount.deletedAt !== null)
   const openHold = holds.find(hold => hold.released_at === null)
   const history = holds.filter(hold => hold.released_at !== null)
-
   async function handlePlace(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const trimmed = reference.trim()
@@ -112,7 +111,6 @@ export function UserPreservationHoldCard({
       setIsBusy(false)
     }
   }
-
   return (
     <Card>
       <CardHeader>
@@ -153,6 +151,7 @@ export function UserPreservationHoldCard({
           <div className='flex flex-col gap-3'>
             <p className='break-words text-sm font-medium'>{openHold.reference}</p>
             <Button
+              data-pw='user-preservation-hold-card-release-hold'
               type='button'
               variant='outline'
               className='self-start'
@@ -183,6 +182,7 @@ export function UserPreservationHoldCard({
               />
             </div>
             <Button
+              data-pw='user-preservation-hold-card-place-hold'
               type='submit'
               variant='destructive'
               className='self-start'

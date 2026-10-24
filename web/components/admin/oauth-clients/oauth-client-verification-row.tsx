@@ -67,7 +67,10 @@ export function OAuthClientVerificationRow({ client }: { client: AdminOAuthClien
       </td>
       <td className={CELL_CLASS}>
         {client.owner ? (
-          <UserLink user={client.owner} />
+          <UserLink
+            data-pw='oauth-client-verification-row-user-link'
+            user={client.owner}
+          />
         ) : (
           <span className='text-muted-foreground'>
             {t('extracted.oauthClients.oauthClientVerificationRow.noOwner_4339bb43')}

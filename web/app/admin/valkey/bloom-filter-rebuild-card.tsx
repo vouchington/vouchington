@@ -31,6 +31,7 @@ export function BloomFilterRebuildCard({
             >
               <span className='text-sm font-medium text-foreground'>{filter}</span>
               <Button
+                data-pw='bloom-filter-rebuild-card-rebuild'
                 size='sm'
                 variant='outline'
                 loading={rebuildLoading[filter]}

@@ -43,7 +43,10 @@ export function ValkeyConfirmDialog({
           <AlertDialogCancel>
             {t('extracted.valkey.valkeyConfirmDialog.cancel_19766ed6')}
           </AlertDialogCancel>
-          <AlertDialogAction onClick={confirmAction}>
+          <AlertDialogAction
+            data-pw='valkey-confirm-dialog-confirm'
+            onClick={confirmAction}
+          >
             {t('extracted.valkey.valkeyConfirmDialog.confirm_eebdd24a')}
           </AlertDialogAction>
         </AlertDialogFooter>

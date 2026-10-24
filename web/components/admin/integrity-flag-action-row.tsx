@@ -70,6 +70,7 @@ export function IntegrityFlagUnresolvedActions({
       : t('extracted.flags.voteIntegrityFlagsTable.resolution_3da993e6')
   const reconcileButton = (
     <Button
+      data-pw='integrity-flag-action-row-reconcile'
       size='touchSm'
       variant='outline'
       onClick={onRetryReconciliation}

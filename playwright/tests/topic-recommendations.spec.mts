@@ -71,6 +71,9 @@ test.describe('Topic Recommendations', () => {
     await expect(search).toHaveValue('credit-cards')
     await search.press('Enter')
     await expect(hashtags.getByTestId('top-hashtags-mapping')).toBeVisible()
+    await expect(hashtags.getByTestId('top-hashtag-filters-all')).toBeVisible()
+    await expect(hashtags.getByTestId('top-hashtag-filters-linked')).toBeVisible()
+    await expect(hashtags.getByTestId('top-hashtag-filters-unlinked')).toBeVisible()
   })
 
   test('logged-in user can create and approve a topic recommendation', async ({ page }) => {
@@ -84,6 +87,7 @@ test.describe('Topic Recommendations', () => {
     await expect(page.getByTestId('topic-recommendations-table')).toBeVisible()
 
     await page.getByTestId('new-topic-recommendation-link').click()
+    await expect(page.getByTestId('topic-recommendation-form-cancel')).toBeVisible()
     await page.getByTestId('topic-recommendation-form-topic-title').fill(topicTitle)
     await page.getByTestId('topic-recommendation-form-topic-slug').fill(topicSlug)
     await page
@@ -91,10 +95,10 @@ test.describe('Topic Recommendations', () => {
       .fill('A topic created from the browser test.')
     await page
       .getByTestId('topic-recommendation-form-topic-hostname')
-      .fill(`playwright-${stamp}.example.com`)
+      .fill(`playwright-${stamp}.example.net`)
     await page
       .getByTestId('topic-recommendation-form-topic-hostnames')
-      .fill(`playwright-${stamp}.example.com`)
+      .fill(`playwright-${stamp}.example.net`)
     await page
       .getByTestId('topic-recommendation-form-markdown')
       .fill('This topic is repeatedly discussed and should be promoted into the topic catalog.')
@@ -280,7 +284,7 @@ test.describe('Topic Recommendations', () => {
       // The landing page URLs field should now be visible — fill it before other fields
       const landingPageUrlsField = page.getByTestId('topic-recommendation-form-landing-page-urls')
       await expect(landingPageUrlsField).toBeVisible()
-      await landingPageUrlsField.fill(`https://bank-${stamp}.example.com/card-apply`)
+      await landingPageUrlsField.fill(`https://bank-${stamp}.example.net/card-apply`)
 
       await page.getByTestId('topic-recommendation-form-topic-title').pressSequentially(topicTitle)
       await page.getByTestId('topic-recommendation-form-topic-slug').fill(topicSlug)

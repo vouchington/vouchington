@@ -291,6 +291,7 @@ export function AdminReportRow({
               {ordinaryPending ? (
                 <>
                   <Button
+                    data-pw='admin-report-row-reviewed'
                     size='touchSm'
                     disabled={disabled}
                     aria-label={t(
@@ -305,6 +306,7 @@ export function AdminReportRow({
                     {t('extracted.admin.adminReportRow.reviewed_fad6057b')}
                   </Button>
                   <Button
+                    data-pw='admin-report-row-dismiss'
                     size='touchSm'
                     variant='outline'
                     disabled={disabled}
@@ -337,6 +339,7 @@ export function AdminReportRow({
             </>
           ) : null}
           <Button
+            data-pw='admin-report-row-rerun-ai-judgement'
             size='touchSm'
             variant='outline'
             disabled={disabled}

@@ -77,6 +77,7 @@ export function ReportClusterCard({
         <div className='flex flex-wrap items-start justify-between gap-3 p-4'>
           <CollapsibleTrigger asChild>
             <Button
+              data-pw='report-cluster-card-toggle'
               type='button'
               variant='ghost'
               data-moderation-queue-key={cluster.id}

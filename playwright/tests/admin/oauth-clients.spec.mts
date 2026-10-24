@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '../../helpers/test.mts'
+import { expect, test, protectPlaywrightHookTimeouts, type Page } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 import { createTestUser } from '../../../backend/test-helpers/index.mts'
@@ -33,7 +33,21 @@ function waitForVerificationChange(page: Page, method: 'PUT' | 'DELETE') {
 }
 
 test.describe('Admin OAuth Clients', () => {
+  test.describe.configure({ mode: 'serial' })
   test.use({ storageState: AUTH_STATE })
+
+  test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
+    await Promise.all(Array.from({ length: 26 }, () => registerOwnedApp()))
+  })
+
+  test('shows both pagination links for an owned-app list spanning pages', async ({ page }) => {
+    await navigateTo(page, '/admin/oauth-clients?verification=all')
+    const next = page.getByTestId('admin-pagination-next')
+    await expect(next).toBeVisible()
+    await next.click()
+    await expect(page.getByTestId('admin-pagination-previous')).toBeVisible()
+  })
 
   test('verifies an owned app and removes the verification', async ({ page }) => {
     const { app } = await registerOwnedApp()
@@ -44,6 +58,7 @@ test.describe('Admin OAuth Clients', () => {
     await expect(row).toContainText(app.client_id)
     await expect(row).toContainText('mcp.user:read')
     await expect(row).toContainText('Unverified')
+    await expect(row.getByTestId('oauth-client-verification-row-user-link')).toBeVisible()
 
     const verification = waitForVerificationChange(page, 'PUT')
     await row.getByTestId('admin-oauth-client-verification-button').click()

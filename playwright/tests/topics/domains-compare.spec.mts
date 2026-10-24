@@ -1,7 +1,21 @@
-import { test, expect } from '../../helpers/test.mts'
-import { navigateTo } from 'vouchington-tooling/playwright'
+import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
+import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
+import { insertTestUrlHostname } from '../../../backend/test-helpers/index.mts'
 
 test.describe('Domains Compare page', () => {
+  let comparedHostname = ''
+
+  test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
+    comparedHostname = `pw-compare-${randomSuffix()}.example.net`
+    await insertTestUrlHostname({ hostname: comparedHostname })
+  })
+
+  test('shows trust details for a compared domain', async ({ page }) => {
+    await navigateTo(page, `/domains/compare?ids=${comparedHostname}`)
+    await expect(page.getByTestId('domain-trust-badge-show-details')).toBeVisible()
+  })
+
   test('/domains/compare without IDs shows empty state', async ({ page }) => {
     await navigateTo(page, '/domains/compare')
 

@@ -8,6 +8,7 @@ let targetUsername = ''
 let targetEmail = ''
 let landingPageId = ''
 let viewerId = ''
+let holdTargetId = ''
 
 test.beforeAll(async () => {
   protectPlaywrightHookTimeouts(test.info())
@@ -23,6 +24,9 @@ test.beforeAll(async () => {
   const viewer = await createTestUser({ username: `users-viewer-${suffix}` })
   if (!viewer) throw new Error('Failed to create viewer user')
   viewerId = viewer.id
+  const holdTarget = await createTestUser({ username: `users-hold-${suffix}` })
+  if (!holdTarget) throw new Error('Failed to create preservation-hold user')
+  holdTargetId = holdTarget.id
 })
 
 test.describe('Users search and admin management', () => {
@@ -55,6 +59,7 @@ test.describe('Users search and admin management', () => {
     await userCard.getByTestId('user-card-manage-link').click()
     await expect(page).toHaveURL(new RegExp(`/user/${targetUsername}/admin`))
     await expect(page.getByTestId('user-administration-title')).toBeVisible()
+    await expect(page.getByTestId('user-admin-panel-suspend')).toBeVisible()
     await expect(page.getByTestId('user-admin-grant-identity-attempt-button')).toBeVisible()
     await expect(page.getByTestId('admin-user-landing-page')).toBeVisible()
     await expect(page.getByTestId('admin-user-landing-page-analytics-link')).toHaveAttribute(
@@ -94,5 +99,21 @@ test.describe('Users search and admin management', () => {
 
     await page.reload()
     await expect(page.getByTestId('user-admin-status-badge')).toHaveText('Active')
+  })
+
+  test('shows place and release actions for an isolated preservation hold', async ({ page }) => {
+    await loginAsAdmin(page)
+    await navigateTo(page, `/user/${holdTargetId}/admin`)
+    const placeHold = page.getByTestId('user-preservation-hold-card-place-hold')
+    await expect(placeHold).toBeVisible()
+    await page
+      .locator('form', { has: placeHold })
+      .locator('input')
+      .pressSequentially(`Playwright hold ${randomSuffix()}`)
+    await placeHold.click()
+    const releaseHold = page.getByTestId('user-preservation-hold-card-release-hold')
+    await expect(releaseHold).toBeVisible()
+    await releaseHold.click()
+    await expect(placeHold).toBeVisible()
   })
 })
