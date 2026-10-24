@@ -6,6 +6,7 @@ import { Play } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useDidHydrate } from '@/hooks/use-did-hydrate'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { ExternalLink } from '@/components/ui/external-link'
 
 interface VideoEmbedProps {
   platform: string
@@ -98,14 +99,13 @@ export function VideoEmbed({
           />
         )}
         {safeItemUrl && (
-          <a
+          <ExternalLink
+            data-pw='video-embed-watch-on-platform'
             href={safeItemUrl}
-            target='_blank'
-            rel='nofollow noopener noreferrer'
             className='text-sm text-primary hover:underline'
           >
             {t('extracted.feed.videoEmbed.watchOnPlatformlabel_e12193fa', { platformLabel })}
-          </a>
+          </ExternalLink>
         )}
       </div>
     )

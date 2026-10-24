@@ -101,6 +101,7 @@ export function EntityBookmarkButton({
   const tooltipTrigger =
     resolvedLoadingTooltip && !canToggle ? (
       <Button
+        data-pw='entity-bookmark-button-disabled'
         type='button'
         variant={buttonVariant}
         size={size}

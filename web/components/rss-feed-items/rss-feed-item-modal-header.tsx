@@ -1,6 +1,6 @@
 'use client'
 
-import { ExternalLink } from 'lucide-react'
+import { ExternalLinkIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { RssFeedItemTitle } from './rss-feed-item-title'
@@ -44,7 +44,7 @@ export function RssFeedItemModalHeader({
           >
             {titleText}
             {' '}
-            <ExternalLink className='inline-block h-4 w-4 shrink-0 align-baseline text-muted-foreground' />
+            <ExternalLinkIcon className='inline-block h-4 w-4 shrink-0 align-baseline text-muted-foreground' />
           </a>
         ) : (
           titleText

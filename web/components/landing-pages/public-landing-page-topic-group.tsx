@@ -3,6 +3,7 @@ import type { PublicLandingPage } from '@/types/landing-pages'
 import { PostContentText } from '@/components/posts/post-content-text'
 import { getReviewHref } from './public-landing-page-routes'
 import type { getTranslations } from '@/lib/i18n/get-translations'
+import { ExternalLink } from '@/components/ui/external-link'
 
 type PublicLandingPageItem = PublicLandingPage['landing_page']['items'][number]
 type TopicGroupItem = Extract<PublicLandingPageItem, { type: 'topic_group' }>
@@ -98,10 +99,9 @@ function TopicGroupReferralEntry({
   t: Translate
 }) {
   return (
-    <a
+    <ExternalLink
+      data-pw='public-landing-page-referral-link'
       href={entry.referral_link.url}
-      target='_blank'
-      rel='nofollow noopener noreferrer'
       data-item-id={itemId}
       data-group-member-id={entry.id}
       className='flex min-h-11 items-center rounded-xl border border-border px-4 py-3 transition-colors hover:bg-accent'
@@ -110,6 +110,6 @@ function TopicGroupReferralEntry({
         {entry.referral_link.label ||
           t('extracted.landingPages.publicLandingPageTopicGroup.referralLink_441c6d0e')}
       </p>
-    </a>
+    </ExternalLink>
   )
 }

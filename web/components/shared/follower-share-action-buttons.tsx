@@ -94,6 +94,7 @@ export function FollowerShareActionButtons({
   return (
     <div className={cn('flex flex-wrap items-center justify-end gap-2', className)}>
       <Button
+        data-pw='follower-share-action-buttons-share-with-followers'
         type='button'
         variant='outline'
         size='sm'
@@ -106,6 +107,7 @@ export function FollowerShareActionButtons({
         {t('extracted.shared.followerShareActionButtons.shareWithFollowers_17e9713e')}
       </Button>
       <Button
+        data-pw='follower-share-action-buttons-send-to-followers'
         type='button'
         variant='outline'
         size='sm'

@@ -59,6 +59,18 @@ export const ActivePlus: Story = {
   ),
 }
 
+export const ManagedByAppStore: Story = {
+  args: {
+    membership: plusMembership,
+    management: { provider: 'apple_app_store', destination: 'apple_subscriptions' },
+  },
+  render: args => (
+    <StoryFrame width='max-w-md'>
+      <MembershipStatus {...args} />
+    </StoryFrame>
+  ),
+}
+
 export const CancelsAtPeriodEnd: Story = {
   args: { membership: { ...plusMembership, should_cancel_at_period_end: true } },
   render: args => (

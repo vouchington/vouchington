@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { createCommunityPathname } from '@/lib/links/entity-href'
 import { getPreference, setPreference } from '@/lib/preferences/storage'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { TextLink } from '@/components/ui/text-link'
 
 interface Props {
   communitySlug: string
@@ -150,12 +151,13 @@ function ChecklistItem({ done, label, description, dataPw, href, onAck }: Checkl
             {label}
           </span>
           {!done && href && (
-            <a
+            <TextLink
+              data-pw='community-onboarding-checklist-go'
               href={href}
               className='text-xs text-primary underline-offset-2 hover:underline'
             >
               {t('extracted.communities.communityOnboardingChecklist.go_1a3aa4c6')}
-            </a>
+            </TextLink>
           )}
           {!done && onAck && (
             <Button

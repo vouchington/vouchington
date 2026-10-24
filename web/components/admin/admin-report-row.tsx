@@ -2,7 +2,7 @@
 /* oxlint-disable max-lines -- the table row owns the complete moderation report presentation; action request logic lives in focused child components */
 
 import Link from 'next/link'
-import { Check, ExternalLink, RefreshCw, ShieldAlert, X } from 'lucide-react'
+import { Check, ExternalLinkIcon, RefreshCw, ShieldAlert, X } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -150,7 +150,7 @@ export function AdminReportRow({
               prefetch={false}
             >
               {t('extracted.admin.adminReportRow.moderationSurface_452781a6')}
-              <ExternalLink className='size-3' />
+              <ExternalLinkIcon className='size-3' />
             </Link>
           ) : null}
           <ReportCountBadge count={report.report_count} />

@@ -13,6 +13,7 @@ import { SequentialAsideSuspense } from '@/components/asides/sequential-aside-su
 import { PageWithAside } from '@/components/page-with-aside'
 import { domainHref, urlHref } from '@/lib/links/entity-href'
 import { buildBreadcrumbsForPath } from '@/lib/navigation/breadcrumbs'
+import { ExternalLink } from '@/components/ui/external-link'
 
 export const dynamic = 'force-dynamic'
 
@@ -63,14 +64,13 @@ export default async function UrlDetailPage({ params }: { params: Promise<{ id: 
       <div>
         <Breadcrumbs items={breadcrumbs} />
         <h1 className='mb-8 break-all text-xl font-semibold text-foreground sm:text-2xl md:text-3xl'>
-          <a
+          <ExternalLink
+            data-pw='url-page-source-link'
             href={url.url}
-            target='_blank'
-            rel='nofollow noopener noreferrer'
             className='hover:text-foreground/80'
           >
             {url.url}
-          </a>
+          </ExternalLink>
         </h1>
         <UrlCrawlsPage
           data={crawls}

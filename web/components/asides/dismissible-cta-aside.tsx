@@ -39,6 +39,7 @@ export function DismissibleCtaAside({
         </h3>
         <p className='mb-3 text-xs text-muted-foreground'>{description}</p>
         <Button
+          data-pw='dismissible-cta-aside-action'
           asChild
           size='sm'
           variant={variant}

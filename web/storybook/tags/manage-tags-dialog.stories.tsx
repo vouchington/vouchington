@@ -32,6 +32,7 @@ export const RelatedTopics: Story = {
         heading='Related topics'
         dialogTitle='Manage related topics'
         triggerLabel='Manage tags'
+        manageHref='/topic/storybook-topic/tags/related'
         loadingText='Loading related topics'
         errorText='Could not load related topics'
         isAuthenticated={false}
