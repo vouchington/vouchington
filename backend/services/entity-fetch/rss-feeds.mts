@@ -6,7 +6,7 @@ import { getRssFeedsByIdBatch } from '@services/rss-feeds/get-batch'
 import { searchRssFeeds, type SearchRssFeedsOptions } from '@services/rss-feeds/search'
 
 // Do not import search-caches.mts here. It eagerly loads the other search domains.
-// RSS_FEEDS_ANON_CACHE is the same prefix invalidateAnonymousSearchCaches sweeps.
+// Import this prefix directly to avoid eagerly loading the other search domains.
 
 export const getRssFeedByIdCached = caches.rss_feeds.cacheGetByAny(getRssFeedById)
 export const getRssFeedByIdCachedBatch = caches.rss_feeds.cacheGetByAnyBatch(getRssFeedsByIdBatch)

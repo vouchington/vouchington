@@ -25,10 +25,6 @@ export function createSearchCache<O extends object, R>(
   return async (options: O): Promise<R> => (await cached(options)) as R
 }
 
-export async function invalidateSearchCache(prefix: string): Promise<void> {
-  await ValkeyCache.invalidate(prefix)
-}
-
 export function stableSerialize(options: object): string {
   const entries = Object.entries(options as Record<string, unknown>)
     .filter(([, v]) => v !== undefined)

@@ -114,7 +114,9 @@ describe('no-mistakes config', () => {
       expect.objectContaining({ name: 'vouchington', specifier: 'eslint-plugin-vouchington' }),
     )
     expect(oxlint.rules['vouchington/typescript-program-location']).toHaveProperty('0', 'error')
-    expect(oxlint.rules['vouchington/banned-member-read']).toHaveProperty('0', 'error')
+    const bannedMemberRead = oxlint.rules['vouchington/banned-member-read']
+    expect(bannedMemberRead).toHaveProperty('0', 'error')
+    expect(bannedMemberRead).toHaveProperty('1.members', ['invalidate', 'invalidateMany'])
     expect(oxlint.rules['no-mistakes/playwright-literals']).toBe('error')
     expect(oxlint.rules).not.toHaveProperty('no-mistakes/playwright-no-set-timeout')
     expect(readRepoFile('playwright/.oxlintrc.json')).not.toContain(
