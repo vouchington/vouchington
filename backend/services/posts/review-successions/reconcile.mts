@@ -1,12 +1,12 @@
 import { getPostsWorkLimit } from '@services/posts/work-limits'
 import { beginTransaction, withTransactionOptions } from '@data-stores/psql'
 import type { QueryOptions, TransactionQuery } from '@data-stores/psql/types'
+import { isUUID } from '@modules/utils'
 import {
   listLockedReviewSuccessionCandidates,
   lockReviewSuccessionCandidates,
 } from './candidates.mts'
 import { listReviewSuccessionGroups, lockReviewSuccessionGroups } from './groups.mts'
-import { normalizeReviewSuccessionPostIds } from './list.mts'
 import { applyReviewSuccessionMutations } from './mutations.mts'
 import { planReviewSuccessionMutations } from './plan.mts'
 import type { ReviewSuccessionReconciliationResult } from './types.mts'
@@ -46,4 +46,11 @@ export async function reconcileReviewSuccessionsForPostIds(
   const result = await run(transaction)
   await transaction.commit()
   return result
+}
+
+function normalizeReviewSuccessionPostIds(postIds: readonly string[]): string[] {
+  const ids = [...new Set(postIds)]
+  if (ids.some(postId => !isUUID(postId)))
+    throw new TypeError('Review succession post IDs must be UUIDs')
+  return ids.toSorted()
 }

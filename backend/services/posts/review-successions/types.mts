@@ -1,14 +1,3 @@
-export type ReviewSuccession = {
-  id: string
-  predecessor_post_id: string
-  successor_post_id: string
-  author_user_id: string
-  topic_ids: string[]
-  predecessor_archived_at: Date
-  automatically_restored_at: Date | null
-  manual_override_at: Date | null
-}
-
 export type ReviewSuccessionReconciliationResult = {
   changedPostIds: string[]
 }

@@ -1,10 +1,9 @@
 import type { PrivateUser } from '@services/users/types'
 import type { ContentProvenance } from '@voucha/types/entities/content-provenance'
-import type { Post } from './types.mts'
 import { read, type TransactionQuery } from '@data-stores/psql'
 import { getMinUUIDv7ForParentHistory } from '@modules/utils/ids'
 import sql from 'sql-template-strings'
-import { createPost, preparePostWithCommunityReviews } from './create.mts'
+import { preparePostWithCommunityReviews } from './create.mts'
 
 export type CreateLinkPostInput = {
   /** Resolved URL id. Pass either url_id or url, not both. */
@@ -15,42 +14,6 @@ export type CreateLinkPostInput = {
   title?: string
   /** Optional user commentary in markdown. */
   markdown?: string
-}
-
-/**
- * Create a link post that links a single external URL.
- * Any non-blocked URL is valid (no discoverability gate).
- * The URL may be resolved from a raw href via addUrl inside the post transaction.
- *
- * @public Documented contract; production use is unconfirmed and this export may be
- * removed after intended-use review. Evidence: `docs/requirements/content/stories.md`.
- */
-export async function createLinkPost(
-  creator: PrivateUser,
-  provenance: ContentProvenance,
-  input: CreateLinkPostInput,
-  options: { query?: TransactionQuery } = {},
-): Promise<Post> {
-  const { url_id, url, markdown } = input
-
-  // Resolve title: use supplied title, then fall back to DB-resolved title from the URL.
-  // We resolve before the transaction using url_id when available (url-only goes through
-  // addUrl inside create.mts and the title fallback uses hostname/pathname from the raw URL).
-  const title = input.title?.trim() || (url_id ? await resolveLinkPostTitle(url_id) : null) || ''
-
-  return createPost(
-    creator,
-    provenance,
-    {
-      post_type: 'link',
-      url_id,
-      url: url_id ? undefined : url,
-      title,
-      markdown: markdown ?? '',
-    },
-    undefined,
-    options,
-  )
 }
 
 export async function prepareLinkPost(

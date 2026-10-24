@@ -2,7 +2,7 @@ import { it, expect, beforeAll, describe, vi } from 'vitest'
 import '@services/referral-program-link-validations'
 import '../register-post-related-urls-guard.mts'
 import { createPost } from '../create.mts'
-import { createLinkPost } from '../create-link-post.mts'
+import { prepareLinkPost } from '../create-link-post.mts'
 import { getPostByAny } from '../get.mts'
 import { updatePost } from '../update.mts'
 import {
@@ -64,11 +64,12 @@ describe('create.generated', () => {
     expect(retrieved).toBeDefined()
   })
 
-  it('createLinkPost resolves title from URL when no title provided', async () => {
+  it('prepareLinkPost resolves title from URL when no title provided', async () => {
     const random = Math.random().toString(36).slice(2, 15)
     const href = `https://example-${random}.com/article`
     const url = await addUrl(null, href)
-    const post = await createLinkPost(user, WEB_PROVENANCE, { url_id: url!.id })
+    const prepared = await prepareLinkPost(user, WEB_PROVENANCE, { url_id: url!.id })
+    const { post } = await prepared.finalize()
     expect(post.post_type).toBe('link')
     expect(post.title).toBe(href)
   })
