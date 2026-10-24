@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { getAndDeleteLoginAttempt, peekLoginAttempt } from '@services/mfa/login-attempt'
 import { upsertUser } from '@services/users/create'
 import { getTestOAuthAuthorization, insertTestTotpAuthenticator } from '@voucha/test-helpers'
+import { connectTestOAuthAccount } from '@voucha/test-helpers/entities/oauth-accounts'
 import { completeOAuthAuthorizationTransaction } from '../authorization-completion-transaction.mts'
 import {
   createOAuthAccount,
@@ -25,6 +26,7 @@ describe('OAuth authorization completion MFA', () => {
         sessionId: randomUUID(),
       })
       cleanup.userIds.push(user.id)
+      await connectTestOAuthAccount(provider, user.id, account.provider_user_id)
       await insertTestTotpAuthenticator(user.id, `broker-completion-${randomUUID()}`)
       const deviceId = randomUUID()
       const sessionId = randomUUID()

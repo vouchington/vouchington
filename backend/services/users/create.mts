@@ -1,15 +1,10 @@
 import { getPrivateUserByAny } from './get.mts'
-import {
-  connectOAuthAccountToUser,
-  getOAuthAccountByProviderUserId,
-  runOAuthAccountConnectionPostCommitEffects,
-} from '@services/oauth-accounts'
+import { getOAuthAccountByProviderUserId } from '@services/oauth-accounts'
 import { isHttpError } from 'http-errors'
 import assert from 'http-assert'
 import {
   enqueueOnUserCreated,
   enqueueOnUserLoggedIn,
-  enqueueOnUserUpdated,
   enqueueAutoFollowReferrer,
 } from '@queues/entity-listeners/enqueues'
 import { enqueueReferralSignupNotification } from '@queues/notifications/enqueues'
@@ -17,7 +12,8 @@ import { enqueueSendWelcomeEmail } from '@queues/emails/enqueues'
 import { getReferrerIdForSession, updateAttributionSignup } from '@services/attribution'
 import { addEntityBloomKeys } from '@services/entity-cache/bloom-filter-repair'
 import { normalizeKey } from '@ts-shared/utils/strings'
-import { USER_CREATION_RACE } from '@modules/on-error/error-codes'
+import { createCodedError } from '@modules/on-error/create-coded-error'
+import { OAUTH_ACCOUNT_EMAIL_CONFLICT, USER_CREATION_RACE } from '@modules/on-error/error-codes'
 import type { PrivateUser, UpsertUserOptions } from './types.mts'
 import {
   createUser,
@@ -33,52 +29,26 @@ export const upsertUser = async ({
   phoneNumber,
   sessionId,
 }: UpsertUserOptions): Promise<PrivateUser> => {
-  const effectiveEmailAddress =
-    (emailAddress || oauthAccount?.account.provider_user_email_address) ?? undefined
+  const effectiveEmailAddress = oauthAccount
+    ? (oauthAccount.account.provider_user_email_address ?? undefined)
+    : emailAddress
 
-  const existingUser = await getUser({
-    oauthAccount,
-    emailAddress: effectiveEmailAddress,
-    phoneNumber,
-  })
+  const existingUser = await getUser({ oauthAccount, emailAddress, phoneNumber })
   if (existingUser) {
-    if (oauthAccount && !oauthAccount.account.user_id) {
-      try {
-        await connectOAuthAccountToUser(
-          oauthAccount.provider,
-          existingUser.id,
-          oauthAccount.account.provider_user_id,
-        )
-        await runOAuthAccountConnectionPostCommitEffects(existingUser.id)
-      } catch (err) {
-        // Handle race condition: account was connected to another user in parallel request
-        if (isHttpError(err) && err.status === 409) {
-          const currentAccount = await getOAuthAccountByProviderUserId(
-            oauthAccount.provider,
-            oauthAccount.account.provider_user_id,
-          )
-          if (currentAccount?.user_id) {
-            const connectedUser = await getPrivateUserByAny(currentAccount.user_id)
-            assert(connectedUser, 500, 'User not found for concurrently connected account')
-            await ensureCurrentConsents(connectedUser.id)
-            /* c8 ignore next -- lint-only fire-and-forget enqueue disposition. */
-            void enqueueOnUserLoggedIn(connectedUser.id)
-            return connectedUser
-          }
-        }
-        throw err
-      }
-      const user = await getPrivateUserByAny(existingUser.id)
-      assert(user, 500, 'User not found after connecting oauth account')
-      await ensureCurrentConsents(user.id)
-      void enqueueOnUserUpdated(user.id)
-      void enqueueOnUserLoggedIn(user.id)
-      return user
-    }
-
     await ensureCurrentConsents(existingUser.id)
     void enqueueOnUserLoggedIn(existingUser.id)
     return existingUser
+  }
+
+  if (oauthAccount && effectiveEmailAddress) {
+    const emailUser = await getPrivateUserByAny(effectiveEmailAddress, { readOnly: false })
+    if (emailUser) {
+      throw createCodedError(
+        409,
+        'OAuth account email conflicts with an existing user',
+        OAUTH_ACCOUNT_EMAIL_CONFLICT,
+      )
+    }
   }
 
   const referrerId = sessionId ? await getReferrerIdForSession(sessionId) : null
@@ -91,10 +61,23 @@ export const upsertUser = async ({
       referrerId,
     })
   } catch (err) {
+    if (oauthAccount && isHttpError(err) && err.status === 409) {
+      const currentAccount = await getOAuthAccountByProviderUserId(
+        oauthAccount.provider,
+        oauthAccount.account.provider_user_id,
+      )
+      if (currentAccount?.user_id) {
+        const connectedUser = await getPrivateUserByAny(currentAccount.user_id, { readOnly: false })
+        assert(connectedUser, 500, 'User not found for concurrently connected account')
+        await ensureCurrentConsents(connectedUser.id)
+        void enqueueOnUserLoggedIn(connectedUser.id)
+        return connectedUser
+      }
+    }
     // Handle race condition: a concurrent request created the same email/phone user.
     // Wrap the refetch in its own try/catch so a validation error from getPrivateUserByAny
     // (e.g. 422 invalid identifier) does not mask the original USER_CREATION_RACE error.
-    if ((err as { code?: string }).code === USER_CREATION_RACE) {
+    if (!oauthAccount && (err as { code?: string }).code === USER_CREATION_RACE) {
       const identifier = effectiveEmailAddress ?? phoneNumber
       if (identifier) {
         let racedUser: PrivateUser | null = null

@@ -48,6 +48,7 @@ export const POST_THREAD_LOCKED = 'POST_THREAD_LOCKED'
 export const RATE_LIMIT = 'RATE_LIMIT'
 
 // User creation
+export const OAUTH_ACCOUNT_EMAIL_CONFLICT = 'OAUTH_ACCOUNT_EMAIL_CONFLICT'
 export const USER_CREATION_RACE = 'USER_CREATION_RACE'
 
 // Server errors

@@ -21,43 +21,12 @@ const getUserByAnyArguments = (
     filters.push(`id = $${values.push(string)}`)
   } else if (options.private && isEmailAddress(string)) {
     const normalizedEmail = string.toLowerCase()
-    // NOTE: look up users by email from OAuth providers that return verified emails only.
-    // Facebook and Apple always return verified emails.
-    // Google and LinkedIn require email_verified=true (enforced in their services).
-    // Microsoft uses mail (verified SMTP address), not userPrincipalName.
-    // X stores null email (no email scope in OAuth flow).
-    filters.push(`(
-      EXISTS (
-        SELECT 1
-        FROM user_email_addresses
-        WHERE user_email_addresses.email_address = $${values.push(normalizedEmail)}
-          AND user_email_addresses.user_id = users.id
-      ) OR EXISTS (
-        SELECT 1
-        FROM facebook_accounts
-        WHERE facebook_user_email_address = $${values.push(normalizedEmail)}
-          AND user_id = users.id
-      ) OR EXISTS (
-        SELECT 1
-        FROM apple_accounts
-        WHERE apple_user_email_address = $${values.push(normalizedEmail)}
-          AND user_id = users.id
-      ) OR EXISTS (
-        SELECT 1
-        FROM google_accounts
-        WHERE google_user_email_address = $${values.push(normalizedEmail)}
-          AND user_id = users.id
-      ) OR EXISTS (
-        SELECT 1
-        FROM linkedin_accounts
-        WHERE linkedin_user_email_address = $${values.push(normalizedEmail)}
-          AND user_id = users.id
-      ) OR EXISTS (
-        SELECT 1
-        FROM microsoft_accounts
-        WHERE microsoft_user_email_address = $${values.push(normalizedEmail)}
-          AND user_id = users.id
-      )
+    // Email authentication resolves only explicitly registered email identities.
+    filters.push(`EXISTS (
+      SELECT 1
+      FROM user_email_addresses
+      WHERE user_email_addresses.email_address = $${values.push(normalizedEmail)}
+        AND user_email_addresses.user_id = users.id
     )`)
   } else if (isUsername(string)) {
     filters.push(`LOWER(username) = LOWER($${values.push(string)})`)
