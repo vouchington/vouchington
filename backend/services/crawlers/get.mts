@@ -117,54 +117,6 @@ export const getCrawlersForHostname = async (
   return rows.map(toCrawler)
 }
 
-/**
- * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
- * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
- */
-export const getCrawlerForUrl = async (
-  url: string,
-  options: QueryOptions = {},
-): Promise<Crawler | null> => {
-  let urlObj: URL
-  try {
-    urlObj = new URL(url)
-  } catch {
-    throw createError(422, `Invalid URL: ${url}`)
-  }
-
-  const { rows } = await read(
-    `/* getCrawlerForUrl */
-    SELECT
-      c.id,
-      c.hostname_id,
-      c.description,
-      c.crawler_type,
-      c.priority,
-      c.css_selectors_to_remove,
-      c.link_text_content_to_remove,
-      c.link_hrefs_to_remove,
-      c.content_selectors,
-      c.referral_program_topic_id AS referral_program_id,
-      c.created_at,
-      c.updated_at,
-      c.deleted_at
-    FROM hostname_crawler_configurations c
-    JOIN url_hostnames h
-      ON h.id = c.hostname_id
-    WHERE h.hostname = $1
-      AND c.deleted_at IS NULL
-    ORDER BY c.priority DESC, c.id ASC
-    LIMIT 1
-  `,
-    [urlObj.hostname.toLowerCase()],
-    options,
-  )
-
-  if (rows.length === 0) return null
-
-  return toCrawler(rows[0])
-}
-
 export function toCrawler(row: Record<string, unknown>): Crawler {
   return {
     __entity_type: 'crawler',
