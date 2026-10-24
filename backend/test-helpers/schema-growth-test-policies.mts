@@ -1,11 +1,11 @@
 import { entityRelationMetadatum } from '@voucha/types/entities/entity-relations-metadata'
 import {
-  CLASSIFIER_RETENTION_POLICIES,
   PARTITION_POLICIES,
   UNBOUNDED_UNPARTITIONED_TABLES,
   type PartitionPolicy,
 } from '../data-stores/psql/schema-growth-registry.mts'
 import { EXPLICIT_BOUNDED_TABLES } from './schema-growth-bounded-policies.mts'
+import { CLASSIFIER_RETENTION_POLICIES } from './schema-growth-classifier-retention.mts'
 
 export type SchemaGrowthClass = 'bounded' | 'unbounded'
 export type SchemaIdPolicy = 'uuidv7' | 'natural-or-provider' | 'static-identity' | 'no-id'

@@ -15,6 +15,7 @@ import {
 import { getClassifierRunHandler } from '../workers/ai-agents/processors/classifier-run-registry.mts'
 import { processClassifierRun } from '../workers/ai-agents/processors/process-classifier-run.mts'
 import { classifierRunJobFor } from './classifier-run-worker.mts'
+import { withRealClassifierClock } from './classifier-retention-clock.mts'
 
 /** One content version of one scope, seeded with the work its classifier fans out over. */
 export type EfficiencySeed = {
@@ -70,9 +71,12 @@ export async function reserveSeededRun(
     inputSha256: seed.inputSha256,
     classifierSlugs: [slug],
   })
-  const reserved = await getClassifierRunHandler(slug).reserve(seed.subject)
-  if (reserved.kind !== 'reserved') throw new Error(`Expected a reservation, got ${reserved.kind}`)
-  return reserved.run
+  return withRealClassifierClock(async () => {
+    const reserved = await getClassifierRunHandler(slug).reserve(seed.subject)
+    if (reserved.kind !== 'reserved')
+      throw new Error(`Expected a reservation, got ${reserved.kind}`)
+    return reserved.run
+  })
 }
 
 /** One queue delivery of the run, through the same worker path production uses. */
@@ -116,7 +120,7 @@ export async function reportedContentVersion(
   slug: string,
   seed: Pick<EfficiencySeed, 'subject' | 'inputSha256'>,
 ) {
-  const report = await readClassifierUsageReport(window)
+  const report = await withRealClassifierClock(() => readClassifierUsageReport(window))
   const subjectId = seed.subject.postId ?? seed.subject.rssFeedItemId
   const inputSha256 = seed.inputSha256.toString('hex')
   const own = { classifier: slug, subjectId, inputSha256 }

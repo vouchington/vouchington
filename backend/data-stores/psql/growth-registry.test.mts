@@ -10,12 +10,9 @@ import {
   NON_DEFAULT_ID_EXCEPTIONS,
   type SchemaIdPolicy,
 } from '../../test-helpers/schema-growth-test-policies.mts'
-import {
-  CLASSIFIER_RETENTION_POLICIES,
-  PARTITION_POLICIES,
-  UNBOUNDED_UNPARTITIONED_TABLES,
-} from './schema-growth-registry.mts'
+import { PARTITION_POLICIES, UNBOUNDED_UNPARTITIONED_TABLES } from './schema-growth-registry.mts'
 import { EXTRA_UNBOUNDED_TABLES } from './schema-growth-unbounded-extra.mts'
+import { CLASSIFIER_RETENTION_POLICIES } from '../../test-helpers/schema-growth-classifier-retention.mts'
 
 const uuidv7Identity = {
   idPolicy: 'uuidv7' as SchemaIdPolicy,
