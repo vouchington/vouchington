@@ -5352,6 +5352,8 @@ rules:
   - name: Actions checkout does not persist credentials
     rule: github-actions-checkout-credentials
     scope: repository
+    options:
+      defaultBranch: main
 
   - name: Actions services avoid fixed host ports
     rule: github-actions-docker-host-ports
