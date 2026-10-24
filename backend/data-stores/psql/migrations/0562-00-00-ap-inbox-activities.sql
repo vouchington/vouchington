@@ -23,8 +23,8 @@ CREATE TABLE IF NOT EXISTS activitypub_remote_follow_activities (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   activity_id TEXT NOT NULL UNIQUE CHECK (char_length(activity_id) BETWEEN 1 AND 2048),
-  remote_actor_id UUID NOT NULL REFERENCES remote_actors(id) ON DELETE CASCADE,
-  target_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  remote_actor_id UUID NOT NULL,
+  target_user_id UUID NOT NULL,
   undone_at TIMESTAMPTZ,
   CONSTRAINT uq_ap_remote_follow_activities__scope_id
     UNIQUE (remote_actor_id, target_user_id, id)

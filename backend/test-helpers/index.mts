@@ -110,6 +110,7 @@ export {
   insertCompletedFederationReplayForTest,
   readFederationReplayFloorForTest,
   advanceFederationReplayFloorForTest,
+  ensureFederationReplayCursorForTest,
   isReplayFloorLockedForTest,
   deleteFederationInboxFixturesForTest,
   deleteFederationInboxActivityForTest,

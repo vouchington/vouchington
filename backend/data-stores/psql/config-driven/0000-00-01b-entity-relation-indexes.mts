@@ -108,6 +108,41 @@ END $$;
   if (metadata.table_name === 'relation__remote_actor__follow__user') {
     const relation = metadata.table_name
     const constraint = 'fk_remote_follow__inbound_follow_activity_row_id'
+    // The retained Follow identity is created in a fixed migration, while these parents live
+    // in separate files. Attach and validate their foreign keys after all tables exist.
+    for (const parent of [
+      {
+        name: 'activitypub_remote_follow_activities_remote_actor_id_fkey',
+        table: 'remote_actors',
+        definition: 'FOREIGN KEY (remote_actor_id) REFERENCES remote_actors(id) ON DELETE CASCADE',
+      },
+      {
+        name: 'activitypub_remote_follow_activities_target_user_id_fkey',
+        table: 'users',
+        definition: 'FOREIGN KEY (target_user_id) REFERENCES users(id) ON DELETE CASCADE',
+      },
+    ]) {
+      query += `\n${buildConstraintAddAndValidateSql(
+        'activitypub_remote_follow_activities',
+        parent.name,
+        parent.definition,
+        parent.table,
+      ).join('\n')}\n`
+      query += `
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conrelid = 'activitypub_remote_follow_activities'::regclass
+      AND conname = '${parent.name}'
+      AND convalidated
+      AND pg_get_constraintdef(oid, true) = '${parent.definition}'
+  ) THEN
+    RAISE EXCEPTION 'Remote Follow identity parent FK is missing, unvalidated, or has an unexpected definition: ${parent.name}';
+  END IF;
+END $$;
+`
+    }
     // A referenced Follow identity survives relation cleanup. Deferred NO ACTION also lets
     // remote-actor or target-user deletion cascade through both tables in one statement.
     const definition =
