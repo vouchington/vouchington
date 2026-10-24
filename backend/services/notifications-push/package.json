@@ -26,7 +26,7 @@
     "@data-stores/psql": "workspace:^",
     "@modules/feed-query-builders": "workspace:^",
     "@services/notifications": "workspace:^",
-    "@vouchington/postgres": "^0.0.17",
+    "@vouchington/postgres": "^0.0.18",
     "p-map": "^7.1.0",
     "sql-template-strings": "^2.2.2",
     "web-push": "^3.6.7"

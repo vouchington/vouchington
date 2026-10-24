@@ -46,10 +46,10 @@
     "@ts-shared/url-signing": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "@voucha/config": "workspace:^",
-    "@vouchington/edge": "^0.2.0",
+    "@vouchington/edge": "^0.3.0",
     "@vouchington/rate-limit": "^0.3.0",
     "@vouchington/session-jwt": "^0.0.2",
-    "@vouchington/utils": "^0.7.5",
+    "@vouchington/utils": "^0.8.0",
     "isbot": "^5.2.2"
   },
   "devDependencies": {
