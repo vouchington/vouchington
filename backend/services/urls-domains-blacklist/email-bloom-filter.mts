@@ -75,7 +75,6 @@ export async function checkEmailBloomFilter(
  * Only adds items that pass domain format validation.
  * If the filter is absent, addOrThrow() is a no-op and reads keep falling back
  * until a completed rebuild sets the ready marker.
- * @public #1360: external production use is unconfirmed; may be removed after intended-use review.
  */
 export async function addDomainsToEmailBloomFilter(
   domains: string[],
