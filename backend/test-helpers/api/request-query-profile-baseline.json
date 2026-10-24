@@ -170,7 +170,10 @@
     "reason": "Recheck the active version FOR UPDATE after the optimistic read, then revoke the old active row before inserting its unique-active replacement",
     "permanent": true,
     "code": "backend/services/user-consents/create.mts:13",
-    "routes": ["POST /api/v1/auth/email-address/login"]
+    "routes": [
+      "POST /api/v1/auth/email-address/login",
+      "POST /api/v1/auth/native/email-address/login"
+    ]
   },
   {
     "annotation": "extendContributionAdmissionReplay",
@@ -990,7 +993,8 @@
       "POST /api/v1/auth/email-address/login",
       "POST /api/v1/auth/mfa/totp/verification",
       "POST /api/v1/auth/oauth/:provider/continue",
-      "POST /api/v1/auth/oauth/authorizations/:flowId/complete"
+      "POST /api/v1/auth/oauth/authorizations/:flowId/complete",
+      "POST /api/v1/auth/native/email-address/login"
     ]
   },
   {
