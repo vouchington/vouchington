@@ -1,7 +1,7 @@
 'use client'
 
 import { ProxiedImage as Image } from '@/components/shared/proxied-image'
-import { ExternalLink } from 'lucide-react'
+import { ExternalLinkIcon } from 'lucide-react'
 import { formatDomainForDisplay } from '@ts-shared/utils/format'
 
 interface LatestCrawl {
@@ -49,7 +49,7 @@ export function UrlEmbedRow({ url, latestCrawl }: UrlEmbedRowProps) {
           </>
         ) : (
           <p className='flex min-w-0 items-center gap-1 text-sm'>
-            <ExternalLink className='h-3 w-3 shrink-0 text-muted-foreground' />
+            <ExternalLinkIcon className='h-3 w-3 shrink-0 text-muted-foreground' />
             <span className='truncate'>{displayUrl}</span>
           </p>
         )}

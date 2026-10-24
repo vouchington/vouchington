@@ -106,6 +106,7 @@ export function LoginCodeStep({
       <p className='text-center text-xs text-muted-foreground'>
         {t('extracted.auth.loginCodeStep.didnTReceiveACode_dcbabd0d')}{' '}
         <Button
+          data-pw='login-code-step-resend-code'
           type='button'
           variant='link'
           size='sm'

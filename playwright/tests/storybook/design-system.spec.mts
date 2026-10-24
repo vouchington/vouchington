@@ -53,6 +53,20 @@ test.describe('Storybook design system component stories', () => {
     await expect(page.getByTestId('card-footer')).toBeVisible()
   })
 
+  test('renders shared link, tooltip button, and sidebar rail defaults', async ({ page }) => {
+    await requireCurrentStorybookBundle(page)
+
+    await openStory(page, 'design-system-components-textlink--default')
+    await expect(page.getByTestId('text-link')).toBeVisible()
+    await expect(page.getByTestId('text-link-anchor')).toHaveCount(2)
+
+    await openStory(page, 'design-system-components-button--with-tooltip')
+    await expect(page.getByTestId('tooltip-button')).toHaveCount(2)
+
+    await openStory(page, 'design-system-components-sidebar--expanded')
+    await expect(page.getByTestId('sidebar-rail')).toBeAttached()
+  })
+
   test('renders skeleton and empty state', async ({ page }) => {
     await requireCurrentStorybookBundle(page)
 

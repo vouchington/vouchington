@@ -160,15 +160,18 @@ function DecisionButton({
   disabled,
   label,
   onClick,
+  ...testIdProps
 }: {
   disabled: boolean
   label: string
   onClick: () => void
+  'data-pw'?: string
 }) {
   return (
     <Button
       disabled={disabled}
       onClick={onClick}
+      {...testIdProps}
     >
       {label}
     </Button>

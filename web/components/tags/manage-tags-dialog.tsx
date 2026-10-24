@@ -115,6 +115,7 @@ export function ManageTagsDialog({
       {manageHref ? (
         <DialogFooter>
           <Button
+            data-pw='manage-tags-dialog-manage-all-tags'
             asChild
             variant='ghost'
             size='sm'
@@ -142,6 +143,7 @@ export function ManageTagsDialog({
         trigger(openDialog)
       ) : (
         <Button
+          data-pw='manage-tags-dialog-trigger'
           type='button'
           variant='ghost'
           size='sm'

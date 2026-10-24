@@ -145,6 +145,7 @@ export default function MfaStep({ loginAttemptId, onSuccess, onBack }: Props) {
           </InputOTP>
         </div>
         <Button
+          data-pw='mfa-step-continue'
           type='submit'
           className='h-11 w-full'
           loading={loading}

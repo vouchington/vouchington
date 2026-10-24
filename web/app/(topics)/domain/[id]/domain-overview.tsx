@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { topicHref } from '@/lib/links/entity-href'
 import type { ViewRssFeed } from '@/types/rss-feeds'
 import { getTranslations } from '@/lib/i18n/get-translations'
+import { ExternalLink } from '@/components/ui/external-link'
 
 interface DomainOverviewProps {
   rss_feeds: ViewRssFeed[]
@@ -27,14 +28,13 @@ export async function DomainOverview({ rss_feeds, top_urls }: DomainOverviewProp
                   <div>
                     <p className='font-medium'>{feed.title}</p>
                     <p className='text-sm text-muted-foreground'>
-                      <a
+                      <ExternalLink
+                        data-pw='domain-rss-feed-url'
                         href={feed.rss_feed_url.url}
-                        target='_blank'
-                        rel='nofollow noopener noreferrer'
                         className='hover:underline'
                       >
                         {feed.rss_feed_url.url}
-                      </a>
+                      </ExternalLink>
                     </p>
                   </div>
                   <Link
@@ -68,14 +68,13 @@ export async function DomainOverview({ rss_feeds, top_urls }: DomainOverviewProp
                   key={url.id}
                   className='p-4'
                 >
-                  <a
+                  <ExternalLink
+                    data-pw='domain-url-link'
                     href={url.url}
-                    target='_blank'
-                    rel='nofollow noopener noreferrer'
                     className='font-medium hover:underline'
                   >
                     {url.pathname || url.url}
-                  </a>
+                  </ExternalLink>
                   <p className='mt-1 text-sm text-muted-foreground'>{url.url}</p>
                 </li>
               ))}

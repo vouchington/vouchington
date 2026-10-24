@@ -2,10 +2,10 @@
 
 import { Suspense, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import Link from 'next/link'
 import { X, UserPlus, Globe } from 'lucide-react'
 import { EntityActionIcons } from '@/components/shared/entity-action-icons'
 import { Card } from '@/components/ui/card'
+import { TextLink } from '@/components/ui/text-link'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/lib/auth/context'
 import { useTranslations } from '@/lib/i18n/use-translations'
@@ -64,6 +64,7 @@ function ReferralCtaAsideContent() {
           {t('extracted.components.referralCtaAside.getStarted_61e8d44a')}
         </h3>
         <Button
+          data-pw='referral-cta-aside-dismiss'
           type='button'
           variant='ghost'
           size='icon'
@@ -82,7 +83,8 @@ function ReferralCtaAsideContent() {
               variant='ghost'
               className='h-auto w-full justify-start px-2 py-2'
             >
-              <Link
+              <TextLink
+                data-pw='referral-cta-aside-link'
                 href={href}
                 prefetch={false}
                 onClick={handleDismiss}
@@ -92,7 +94,7 @@ function ReferralCtaAsideContent() {
                   <p className='text-sm font-medium'>{t(labelKey)}</p>
                   <p className='text-xs text-muted-foreground'>{t(descriptionKey)}</p>
                 </div>
-              </Link>
+              </TextLink>
             </Button>
           </li>
         ))}

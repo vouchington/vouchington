@@ -116,6 +116,7 @@ export function RecommendedTopicsAsideContent({
             </Link>
             <div className='flex shrink-0 gap-1'>
               <Button
+                data-pw='recommended-topics-aside-content-follow'
                 size='touchSm'
                 variant='outline'
                 onClick={() => handleFollow(topic.id)}
@@ -124,6 +125,7 @@ export function RecommendedTopicsAsideContent({
                 {t('extracted.asides.recommendedTopicsAsideContent.follow_641d1ef6')}
               </Button>
               <Button
+                data-pw='recommended-topics-aside-content-dismiss'
                 size='touchSm'
                 variant='ghost'
                 aria-label={t(

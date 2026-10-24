@@ -55,6 +55,7 @@ function SidebarRail({
       type='button'
       ref={ref}
       data-sidebar='rail'
+      data-pw='sidebar-rail'
       aria-label={t('extracted.sidebar.layout.toggleSidebar_1d4c17db')}
       tabIndex={-1}
       onClick={toggleSidebar}

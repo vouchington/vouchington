@@ -13,6 +13,7 @@ interface ImageButtonProps {
   onClick: () => void
   priority: boolean
   children?: ReactNode
+  'data-pw'?: string
 }
 
 export function ImageButton({
@@ -23,6 +24,7 @@ export function ImageButton({
   onClick,
   priority,
   children,
+  ...testIdProps
 }: ImageButtonProps) {
   const t = useTranslations()
   return (
@@ -34,6 +36,7 @@ export function ImageButton({
         ariaLabel ?? t('extracted.posts.postDetailImageButton.viewFullSizeImage_bc5ba906')
       }
       data-pw='post-detail-image-button'
+      {...testIdProps}
     >
       {children !== undefined ? (
         children

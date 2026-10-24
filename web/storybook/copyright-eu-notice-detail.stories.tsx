@@ -23,3 +23,19 @@ export const Reopened: Story = {
     }),
   },
 }
+export const WithHostedMaterial: Story = {
+  args: {
+    notice: {
+      ...makeCopyrightEuParticipantNotice(),
+      target_count: 1,
+      targets: [
+        {
+          id: '019f0000-0000-7000-8000-000000000004',
+          hosted_use_url: 'https://voucha.ai/discussion/019f0000-0000-7000-8000-000000000005',
+          surface: 'post-image',
+          restriction_status: 'active',
+        },
+      ],
+    },
+  },
+}

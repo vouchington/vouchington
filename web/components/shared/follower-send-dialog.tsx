@@ -71,6 +71,7 @@ export function FollowerSendDialog({
         </div>
         <DialogFooter>
           <Button
+            data-pw='follower-send-dialog-cancel'
             type='button'
             variant='outline'
             onClick={() => onOpenChange(false)}

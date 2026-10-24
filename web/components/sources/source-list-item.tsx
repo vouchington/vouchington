@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ExternalLink } from 'lucide-react'
+import { ExternalLinkIcon } from 'lucide-react'
 import { domainHref, topicHref } from '@/lib/links/entity-href'
 import { getRssFeedDisplayTitle } from '@/lib/topics/display-name'
 import type { RssFeedTopicElection, ViewRssFeed } from '@/types/rss-feeds'
@@ -9,6 +9,7 @@ import type { HostnameElection } from '@/types/hostnames'
 import type { RssFeedListItemAction } from './rss-feed-action-slot'
 import { SourceListItemMeta } from './source-list-item-meta'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { ExternalLink } from '@/components/ui/external-link'
 
 interface SourceListItemProps {
   feed: ViewRssFeed
@@ -62,17 +63,16 @@ export function SourceListItem({
             {(feed.home_page_url?.url || feed.hostname) && (
               <>
                 {' '}
-                <a
+                <ExternalLink
+                  data-pw='source-list-item-homepage'
                   href={feed.home_page_url?.url ?? `https://${feed.hostname!.hostname}/`}
-                  target='_blank'
-                  rel='nofollow noopener noreferrer'
                   aria-label={t('extracted.sources.sourceListItem.openHostnameHomepage_6967d82f', {
                     hostname: feed.hostname?.hostname ?? title,
                   })}
                   className='inline-flex min-h-6 min-w-6 items-center justify-center'
                 >
-                  <ExternalLink className='h-3 w-3 shrink-0 text-muted-foreground' />
-                </a>
+                  <ExternalLinkIcon className='h-3 w-3 shrink-0 text-muted-foreground' />
+                </ExternalLink>
               </>
             )}
           </p>

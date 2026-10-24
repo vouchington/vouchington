@@ -2,10 +2,11 @@
 'use client'
 
 import { useRef } from 'react'
-import Link from 'next/link'
 import { CommandItem } from '@/components/ui/command'
+import { TextLink } from '@/components/ui/text-link'
 import { PostContentText, type PostContentTextValue } from '@/components/posts/post-content-text'
 import { RssFeedItemTitle } from '@/components/rss-feed-items/rss-feed-item-title'
+import { ExternalLink } from '@/components/ui/external-link'
 
 type InteractionKind = 'keyboard' | 'plain' | 'modified'
 
@@ -110,15 +111,15 @@ export function CommandLinkItem({
         data-pw={dataPw}
         onSelect={handleSelect}
       >
-        <a
+        <ExternalLink
+          data-pw={dataPw}
           ref={externalAnchorRef}
           href={href}
-          target='_blank'
           rel='noopener noreferrer'
           onClick={captureClickModifier}
         >
           {content}
-        </a>
+        </ExternalLink>
       </CommandItem>
     )
   }
@@ -129,14 +130,15 @@ export function CommandLinkItem({
       data-pw={dataPw}
       onSelect={handleSelect}
     >
-      <Link
+      <TextLink
+        data-pw={dataPw}
         href={href}
         // Search lists many results; opt out of hover prefetch to avoid wasted bandwidth.
         prefetch={false}
         onClick={captureClickModifier}
       >
         {content}
-      </Link>
+      </TextLink>
     </CommandItem>
   )
 }

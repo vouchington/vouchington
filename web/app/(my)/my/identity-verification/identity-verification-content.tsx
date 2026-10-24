@@ -16,6 +16,7 @@ import {
   isEmailVerificationRequired,
   useEmailVerificationRecovery,
 } from '@/lib/email-verification-recovery-context'
+import { TextLink } from '@/components/ui/text-link'
 
 interface IdentityVerificationContentProps {
   verificationStatus: IdentityVerificationStatus
@@ -181,11 +182,14 @@ export function IdentityVerificationContent({
           variant='outline'
           asChild
         >
-          <a href='mailto:support@voucha.ai'>
+          <TextLink
+            data-pw='identity-verification-contact-support'
+            href='mailto:support@voucha.ai'
+          >
             {t(
               'extracted.identityVerification.identityVerificationContent.contactSupport_f8d47b82',
             )}
-          </a>
+          </TextLink>
         </Button>
       </Card>
     )

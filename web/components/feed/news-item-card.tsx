@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { ProxiedImage as Image } from '@/components/shared/proxied-image'
 import dynamic from 'next/dynamic'
 import { usePathname, useSearchParams } from 'next/navigation'
-import { ExternalLink } from 'lucide-react'
+import { ExternalLinkIcon } from 'lucide-react'
 import { useAuth } from '@/lib/auth/context'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { SharedByline } from '@/components/shared/shared-byline'
@@ -148,7 +148,7 @@ function NewsItemCardContent({
               detectedLanguage={item.lingua_rs_detected_language}
               fallback='Untitled'
             />{' '}
-            <ExternalLink className='inline-block h-3 w-3 shrink-0 align-baseline text-muted-foreground' />
+            <ExternalLinkIcon className='inline-block h-3 w-3 shrink-0 align-baseline text-muted-foreground' />
           </Link>
         </div>
         <NewsItemHeader item={item} />

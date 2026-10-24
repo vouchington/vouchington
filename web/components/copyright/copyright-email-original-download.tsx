@@ -6,6 +6,7 @@ import {
   sesMalwareState,
   sesVerdictLabel,
 } from './copyright-email-ses-verdicts-model'
+import { TextLink } from '@/components/ui/text-link'
 
 /**
  * The staff link to the raw `.eml`. SES reporting malware (`fail`) withholds the link and says why;
@@ -51,7 +52,13 @@ export function CopyrightEmailOriginalDownload({
         asChild
         variant='outline'
       >
-        <a href={originalUrl}>Download original email and attachments</a>
+        <TextLink
+          data-pw='copyright-email-original-download'
+          download
+          href={originalUrl}
+        >
+          Download original email and attachments
+        </TextLink>
       </Button>
     </div>
   )

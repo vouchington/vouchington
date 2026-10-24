@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ExternalLink } from 'lucide-react'
+import { ExternalLinkIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { createMyLandingPage } from '@/lib/api/client'
 import { landingPageHref, landingPageNamedHref, myLandingPageHref } from '@/lib/links/entity-href'
@@ -139,7 +139,7 @@ export function LandingPagesIndex({ username, initialPages }: Props) {
                       rel='noopener noreferrer'
                       data-pw='landing-pages-view-live-link'
                     >
-                      <ExternalLink className='size-4' />
+                      <ExternalLinkIcon className='size-4' />
                     </a>
                   </Button>
                 </div>

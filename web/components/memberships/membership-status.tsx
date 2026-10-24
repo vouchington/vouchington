@@ -13,6 +13,7 @@ import type {
 import { useUiLocale } from '@/lib/i18n/ui-locale-context'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { formatMoney } from '@/lib/money'
+import { ExternalLink } from '@/components/ui/external-link'
 
 interface MembershipStatusProps {
   membership: SubscriptionMembership | EffectiveMembership
@@ -121,13 +122,13 @@ export function MembershipStatus({ membership, management = null }: MembershipSt
             asChild
             variant='outline'
           >
-            <a
+            <ExternalLink
+              data-pw='membership-status-manage-billing'
               href={managementHref}
               rel='noopener noreferrer'
-              target='_blank'
             >
               {t('extracted.memberships.membershipStatus.manageBilling_6d3a16f5')}
-            </a>
+            </ExternalLink>
           </Button>
         ) : management?.provider === 'stripe' ||
           ('has_stripe_subscription' in membership && membership.has_stripe_subscription) ? (
