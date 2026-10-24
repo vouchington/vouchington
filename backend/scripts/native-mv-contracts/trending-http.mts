@@ -56,6 +56,7 @@ async function verifyOrdinaryReadProfileThreshold(
             },
           )
         },
+        app,
         async address => {
           const host = address.host === '::1' ? '[::1]' : address.host
           const response = await requestFetch(
@@ -100,7 +101,7 @@ export async function checkTrendingHttpContracts(): Promise<void> {
   let requestCounter = 0
 
   await withRequestQueryProfileGuard(() =>
-    withOwnedApiServer(createApiRequestGuardedListener(app.callback()), async address => {
+    withOwnedApiServer(createApiRequestGuardedListener(app.callback()), app, async address => {
       const host = address.host === '::1' ? '[::1]' : address.host
       const origin = `http://${host}:${address.port}`
       async function getTrending(

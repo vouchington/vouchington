@@ -4,11 +4,12 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 type HttpListener<Result> = (request: IncomingMessage, response: ServerResponse) => Result
 
 /**
- * Per-request store. The only field today is the acting user. Tracing fields can be added later.
+ * Per-request store for the acting user and committed user-agent string IDs.
  * Communities, posts, topics, URLs, and target users stay out of this store.
  */
 export type RequestContextStore = {
   currentUser?: unknown
+  userAgentStringIds?: Map<string, string>
 }
 
 const requestContext = new AsyncLocalStorage<RequestContextStore>()
@@ -22,6 +23,10 @@ export function createRequestContextListener<Result>(
 /** Runs `fn` inside an empty request store. Workers and scripts stay outside it. */
 export function runWithRequestContext<T>(fn: () => T): T {
   return requestContext.run({}, fn)
+}
+
+export function hasRequestContext(): boolean {
+  return requestContext.getStore() !== undefined
 }
 
 /**
@@ -46,4 +51,16 @@ export function clearRequestCurrentUser(userId: string): void {
   if (!store || !Object.hasOwn(store, 'currentUser')) return
   if ((store.currentUser as { id?: string } | null)?.id !== userId) return
   store.currentUser = undefined
+}
+
+/** Returns only a committed ID previously resolved for this normalized agent in this request. */
+export function getRequestUserAgentStringId(normalizedUserAgent: string): string | undefined {
+  return requestContext.getStore()?.userAgentStringIds?.get(normalizedUserAgent)
+}
+
+export function setRequestUserAgentStringId(normalizedUserAgent: string, id: string): void {
+  const store = requestContext.getStore()
+  if (!store) return
+  store.userAgentStringIds ??= new Map()
+  store.userAgentStringIds.set(normalizedUserAgent, id)
 }

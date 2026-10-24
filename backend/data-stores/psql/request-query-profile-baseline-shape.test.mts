@@ -13,14 +13,14 @@ const BASELINE_URL = new URL(
 )
 const temporary = {
   annotation: 'a',
-  route: null,
+  routes: ['GET /a'],
   maxCount: null,
   reason: 'covered by the owning issue',
   issue: 1,
 }
 const permanent = {
   annotation: 'b',
-  route: null,
+  routes: ['GET /b'],
   maxCount: null,
   reason: 'rereads after a lock',
   permanent: true as const,
@@ -68,26 +68,63 @@ describe('request query profile baseline shapes', () => {
     expect(temporaryBaselineEntries([temporary, permanent])).toEqual([temporary])
   })
 
-  it('accepts only a precise route/count pair or an explicit all-route/unbounded pair', () => {
+  it('requires named scopes and validates route, worker, and count shapes', () => {
     const scoped = {
       ...permanent,
       annotation: 'getRssFeedsByIdBatch',
-      route: 'GET /api/v1/rss-feeds/trending',
+      routes: ['GET /api/v1/rss-feeds/trending'],
       maxCount: 2,
     }
     expect(parseRepeatBaseline([scoped, permanent])).toEqual([scoped, permanent])
+    expect(
+      parseRepeatBaseline([
+        {
+          ...scoped,
+          annotation: 'worker-only',
+          routes: [],
+          workers: [{ queue: 'background', job: 'refresh' }],
+          maxCount: null,
+        },
+      ]),
+    ).toHaveLength(1)
+    expect(
+      parseRepeatBaseline([{ ...scoped, routes: ['POST /api/v1/mcp tools/call addListItem'] }]),
+    ).toHaveLength(1)
     for (const bad of [
-      { ...scoped, route: null },
-      { ...scoped, maxCount: null },
+      { ...scoped, routes: [] },
+      { ...scoped, routes: null },
+      { ...scoped, routes: ['GET /api/v1/rss-feeds/trending?limit=1'] },
+      { ...scoped, routes: ['*'] },
+      { ...scoped, routes: [''] },
+      { ...scoped, workers: [{ queue: '*', job: 'refresh' }] },
+      { ...scoped, workers: [{ queue: 'background', job: '' }] },
+      { ...scoped, workers: [{ queue: 'background', job: 'refresh', extra: true }] },
       { ...scoped, maxCount: 1 },
       { ...scoped, maxCount: 2.5 },
       { ...scoped, maxCount: Number.POSITIVE_INFINITY },
-      { ...scoped, route: 'GET /api/v1/rss-feeds/trending?limit=1' },
-      { ...scoped, route: '' },
     ])
       expect(parseError([bad])).not.toBe('')
-    expect(parseError([{ ...scoped, route: undefined }])).not.toBe('')
+    expect(parseError([{ ...scoped, routes: undefined }])).not.toBe('')
     expect(parseError([{ ...scoped, maxCount: undefined }])).not.toBe('')
+    expect(parseError([{ ...scoped, route: scoped.routes[0] }])).not.toBe('')
+    expect(parseRepeatBaseline([{ ...scoped, routes: ['GET /api/v1/*'] }])).toHaveLength(1)
+  })
+
+  it('accepts the same annotation on disjoint scopes but rejects overlapping keys', () => {
+    const first = { ...permanent, annotation: 'same', routes: ['GET /one'] }
+    const second = { ...first, routes: ['GET /two'] }
+    expect(parseRepeatBaseline([first, second])).toEqual([first, second])
+    expect(parseError([first, first])).toContain('duplicate scope')
+    expect(parseError([{ ...first, routes: ['GET /one', 'GET /one'] }])).toContain(
+      'duplicate scope',
+    )
+    const worker = {
+      ...first,
+      routes: [],
+      workers: [{ queue: 'background', job: 'refresh' }],
+    }
+    expect(parseRepeatBaseline([first, worker])).toEqual([first, worker])
+    expect(parseError([worker, worker])).toContain('duplicate scope')
   })
 
   it('rejects permanent pointers outside the repository', () => {
@@ -110,7 +147,7 @@ describe('request query profile baseline shapes', () => {
   })
 
   it('rejects malformed and duplicate entries with a message naming each', () => {
-    const base = { annotation: 'a', route: null, maxCount: null, reason: 'r' }
+    const base = { annotation: 'a', routes: ['GET /a'], maxCount: null, reason: 'r' }
     const shape =
       'must be temporary { annotation, reason, issue } or permanent { annotation, reason, permanent: true, code }'
     const message = parseError([
@@ -134,7 +171,7 @@ describe('request query profile baseline shapes', () => {
       'entry 4 ("e") needs `permanent: true`',
       'entry 5 ("f") needs a non-empty reason',
       'entry 6 ("") needs a non-empty annotation',
-      'entry 8 ("g") is a duplicate',
+      'entry 8 ("g") has a duplicate scope ["g","route","GET /a"]',
       'entry 9 (undefined) is not an object',
     ])
     expect(parseError({})).toContain('must be an array')
@@ -142,9 +179,9 @@ describe('request query profile baseline shapes', () => {
 
   it('names each temporary entry whose issue is closed or missing', () => {
     const entries = parseRepeatBaseline([
-      { annotation: 'open', route: null, maxCount: null, reason: 'r', issue: 1 },
-      { annotation: 'closed', route: null, maxCount: null, reason: 'r', issue: 2 },
-      { annotation: 'gone', route: null, maxCount: null, reason: 'r', issue: 3 },
+      { annotation: 'open', routes: ['GET /open'], maxCount: null, reason: 'r', issue: 1 },
+      { annotation: 'closed', routes: ['GET /closed'], maxCount: null, reason: 'r', issue: 2 },
+      { annotation: 'gone', routes: ['GET /gone'], maxCount: null, reason: 'r', issue: 3 },
       permanent,
     ])
     const states = new Map([

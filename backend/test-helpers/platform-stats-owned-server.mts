@@ -56,7 +56,7 @@ export async function withOwnedPlatformStatsServer<Result>(
     })
     responses.push(settle(completed))
     try {
-      handlers.push(settle(profileRequestQueries(req, res, () => listener(req, res))))
+      handlers.push(settle(profileRequestQueries(req, res, () => listener(req, res), app)))
     } catch (err) {
       handlers.push(Promise.resolve({ status: 'rejected' as const, reason: err }))
       res.destroy(err instanceof Error ? err : new Error(String(err)))

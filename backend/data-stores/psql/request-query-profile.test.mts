@@ -6,54 +6,13 @@ import {
   findUnbaselinedRepeats,
   formatUnbaselinedRepeats,
 } from '../../test-helpers/request-query-profile-baseline.mts'
-import {
-  createRequestQueryProfile,
-  type RequestQuerySummary,
-} from '../../test-helpers/query-profiles.mts'
-import { formatRequestProfileLine } from '../../test-helpers/request-query-profile-line.mts'
+import { createRequestQueryProfile } from '../../test-helpers/query-profiles.mts'
 import { recordQueryTiming } from './query-timing.mts'
+import { createVouchaApiApp } from '../../api/app.mts'
 
-const summary = (repeats: RequestQuerySummary['repeats']): RequestQuerySummary => ({
-  totalQueries: 2,
-  serialDepth: 2,
-  repeats,
-})
-
-describe('request profile line', () => {
-  it('stays quiet without repeats unless all profiles are requested', () => {
-    expect(formatRequestProfileLine('GET /x', summary([]), { all: false })).toBeNull()
-    expect(formatRequestProfileLine('GET /x', summary([]), { all: true })).toBe(
-      '[pg-request-profile] route=GET /x queries=2 serialDepth=2 repeats=none\n',
-    )
-    expect(
-      formatRequestProfileLine('GET /x', summary([{ annotation: 'a', count: 2 }]), { all: false }),
-    ).toBe('[pg-request-profile] route=GET /x queries=2 serialDepth=2 repeats=a(x2)\n')
-  })
-})
-
-describe('request query profile attribution', () => {
-  const timing = { pool: 'read', durationMs: 0, rowCount: 0, error: false } as const
-
-  it('attributes timing-hook queries to the active scope only', async () => {
-    const first = createRequestQueryProfile()
-    const second = createRequestQueryProfile()
-    recordQueryTiming({ ...timing, annotation: 'outside' })
-    await Promise.all([
-      first.run(async () => {
-        await Promise.resolve()
-        recordQueryTiming({ ...timing, annotation: 'one' })
-        recordQueryTiming({ ...timing, annotation: 'one', cursorBatches: 3 })
-      }),
-      second.run(async () => {
-        await Promise.resolve()
-        recordQueryTiming({ ...timing, annotation: 'two' })
-      }),
-    ])
-    expect(first.summarize().totalQueries).toBe(2)
-    expect(first.summarize().repeats).toEqual([])
-    expect(second.summarize().totalQueries).toBe(1)
-  })
-})
+const matcher = createVouchaApiApp()
+matcher.route('/api/v1/rss-feeds/trending').get(() => {})
+matcher.route('/api/v1/mcp').post(() => {})
 
 const BASELINE_URL = new URL(
   '../../test-helpers/api/request-query-profile-baseline.json',
@@ -62,11 +21,17 @@ const BASELINE_URL = new URL(
 
 describe('request query profile baseline', () => {
   const baseline = [
-    { annotation: 'knownRepeat', route: null, maxCount: null, reason: 'r', issue: 1 },
+    {
+      annotation: 'knownRepeat',
+      routes: ['GET /v1/things/:id'],
+      maxCount: null,
+      reason: 'r',
+      issue: 1,
+    },
   ]
   const repeat = (annotation: string, count = 2) => ({ annotation, count })
 
-  it('allows a baselined repeat and reports a new one naming route and annotation', () => {
+  it('allows an exact route and reports new annotations and unlisted routes', () => {
     expect(
       findUnbaselinedRepeats('GET /v1/things/:id', [repeat('knownRepeat', 5)], baseline),
     ).toEqual([])
@@ -79,13 +44,16 @@ describe('request query profile baseline', () => {
     expect(formatUnbaselinedRepeats('GET /v1/things/:id', fresh)).toContain(
       'GET /v1/things/:id: newRepeat (x3)',
     )
+    expect(findUnbaselinedRepeats('GET /v1/other', [repeat('knownRepeat')], baseline)).toEqual([
+      repeat('knownRepeat'),
+    ])
   })
 
   it('allows exactly two on the named route while guarding other routes and a third query', () => {
     const scoped = [
       {
         annotation: 'getRssFeedsByIdBatch',
-        route: 'GET /api/v1/rss-feeds/trending',
+        routes: ['GET /api/v1/rss-feeds/trending'],
         maxCount: 2,
         reason: 'r',
         permanent: true as const,
@@ -93,12 +61,43 @@ describe('request query profile baseline', () => {
       },
     ]
     const repeats = [repeat('getRssFeedsByIdBatch', 2)]
-    expect(findUnbaselinedRepeats(scoped[0]!.route, repeats, scoped)).toEqual([])
+    expect(findUnbaselinedRepeats(scoped[0]!.routes[0]!, repeats, scoped)).toEqual([])
     expect(findUnbaselinedRepeats('GET /api/v1/rss-feeds/recommended', repeats, scoped)).toEqual(
       repeats,
     )
     const three = [repeat('getRssFeedsByIdBatch', 3)]
-    expect(findUnbaselinedRepeats(scoped[0]!.route, three, scoped)).toEqual(three)
+    expect(findUnbaselinedRepeats(scoped[0]!.routes[0]!, three, scoped)).toEqual(three)
+  })
+
+  it('keeps worker-only annotations out of request matching', () => {
+    const workerOnly = [
+      {
+        annotation: 'workerRepeat',
+        routes: [],
+        workers: [{ queue: 'background', job: 'refresh' }],
+        maxCount: null,
+        reason: 'r',
+        permanent: true as const,
+        code: 'backend/workers/refresh.mts:12',
+      },
+    ]
+    expect(findUnbaselinedRepeats('GET /v1/things', [repeat('workerRepeat')], workerOnly)).toEqual([
+      repeat('workerRepeat'),
+    ])
+  })
+
+  it('applies separate counts to disjoint routes of the same annotation', () => {
+    const entries = [
+      { annotation: 'recheck', routes: ['GET /one'], maxCount: 2, reason: 'r', issue: 1 },
+      { annotation: 'recheck', routes: ['GET /two'], maxCount: 3, reason: 'r', issue: 1 },
+    ]
+    expect(findUnbaselinedRepeats('GET /one', [repeat('recheck', 3)], entries)).toEqual([
+      repeat('recheck', 3),
+    ])
+    expect(findUnbaselinedRepeats('GET /two', [repeat('recheck', 3)], entries)).toEqual([])
+    expect(findUnbaselinedRepeats('GET /unknown', [repeat('recheck', 2)], entries)).toEqual([
+      repeat('recheck', 2),
+    ])
   })
 
   it('attributes queries recorded by a module instance loaded after vi.resetModules()', async () => {
@@ -126,17 +125,22 @@ describe('request query profile baseline', () => {
       withRequestQueryProfileGuard(async () => {
         const res = new EventEmitter() as unknown as http.ServerResponse
         const req = { method: 'GET', url, headers: {} } as http.IncomingMessage
-        profileRequestQueries(req, res, () => {
-          for (let i = 0; i < count; i++) {
-            recordQueryTiming({
-              pool: 'read',
-              durationMs: 0,
-              rowCount: 0,
-              error: false,
-              annotation: 'getRssFeedsByIdBatch',
-            })
-          }
-        })
+        profileRequestQueries(
+          req,
+          res,
+          () => {
+            for (let i = 0; i < count; i++) {
+              recordQueryTiming({
+                pool: 'read',
+                durationMs: 0,
+                rowCount: 0,
+                error: false,
+                annotation: 'getRssFeedsByIdBatch',
+              })
+            }
+          },
+          matcher,
+        )
         res.emit('finish')
       })
     await expect(serve('/api/v1/rss-feeds/trending?limit=30', 2)).resolves.toBeUndefined()
@@ -156,13 +160,21 @@ describe('request query profile baseline', () => {
     const serve = (annotation: string, method = 'GET', url = '/v1/x?y=1') => {
       const res = new EventEmitter() as unknown as http.ServerResponse
       const req = { method, url, headers: {} } as http.IncomingMessage
-      profileRequestQueries(req, res, () => {
-        recordQueryTiming({ pool: 'read', durationMs: 0, rowCount: 0, error: false, annotation })
-        recordQueryTiming({ pool: 'read', durationMs: 0, rowCount: 0, error: false, annotation })
-      })
+      profileRequestQueries(
+        req,
+        res,
+        () => {
+          recordQueryTiming({ pool: 'read', durationMs: 0, rowCount: 0, error: false, annotation })
+          recordQueryTiming({ pool: 'read', durationMs: 0, rowCount: 0, error: false, annotation })
+        },
+        matcher,
+      )
       res.emit('finish')
     }
-    const committed = JSON.parse(readFileSync(BASELINE_URL, 'utf8')) as { annotation: string }[]
+    const committed = JSON.parse(readFileSync(BASELINE_URL, 'utf8')) as {
+      annotation: string
+      routes: string[]
+    }[]
     const stderrSpy = vi.spyOn(process.stderr, 'write').mockReturnValue(true)
     vi.stubEnv('VITEST_DIAGNOSTICS', undefined)
     try {
@@ -189,15 +201,20 @@ describe('request query profile baseline', () => {
     try {
       const res = new EventEmitter() as unknown as http.ServerResponse
       const req = { method: 'GET', url: '/v1/quiet', headers: {} } as http.IncomingMessage
-      profileRequestQueries(req, res, () => {
-        recordQueryTiming({
-          pool: 'read',
-          durationMs: 0,
-          rowCount: 0,
-          error: false,
-          annotation: 'once',
-        })
-      })
+      profileRequestQueries(
+        req,
+        res,
+        () => {
+          recordQueryTiming({
+            pool: 'read',
+            durationMs: 0,
+            rowCount: 0,
+            error: false,
+            annotation: 'once',
+          })
+        },
+        matcher,
+      )
       res.emit('finish')
       expect(stderrSpy).toHaveBeenCalledWith(
         '[pg-request-profile] route=GET /v1/quiet queries=1 serialDepth=1 repeats=none\n',
@@ -215,17 +232,22 @@ describe('request query profile baseline', () => {
       await import('../../test-helpers/api/request-query-profile-violations.mts')
     const res = new EventEmitter() as unknown as http.ServerResponse
     const req = { method: 'GET', url: '/v1/aborted', headers: {} } as http.IncomingMessage
-    profileRequestQueries(req, res, () => {
-      for (let i = 0; i < 2; i++) {
-        recordQueryTiming({
-          pool: 'read',
-          durationMs: 0,
-          rowCount: 0,
-          error: false,
-          annotation: 'repeatBeforeDisconnect',
-        })
-      }
-    })
+    profileRequestQueries(
+      req,
+      res,
+      () => {
+        for (let i = 0; i < 2; i++) {
+          recordQueryTiming({
+            pool: 'read',
+            durationMs: 0,
+            rowCount: 0,
+            error: false,
+            annotation: 'repeatBeforeDisconnect',
+          })
+        }
+      },
+      matcher,
+    )
     res.emit('close')
     expect(takeRequestQueryProfileViolations()).toEqual([
       expect.stringContaining('GET /v1/aborted: repeatBeforeDisconnect (x2)'),

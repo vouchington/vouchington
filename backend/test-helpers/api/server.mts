@@ -30,10 +30,12 @@ type ApiTestServerState = {
 
 const API_TEST_SERVER_STATE_KEY = '__vouchaApiTestServerState'
 const API_TEST_SERVER_LISTENER_KEY = '__vouchaApiTestServerListener'
+const API_TEST_SERVER_MATCHER_KEY = '__vouchaApiTestServerMatcher'
 
 type ApiTestServerGlobal = typeof globalThis & {
   [API_TEST_SERVER_STATE_KEY]?: ApiTestServerState
   [API_TEST_SERVER_LISTENER_KEY]?: ApiTestListener
+  [API_TEST_SERVER_MATCHER_KEY]?: typeof fn
 }
 
 // Exercise api-server's media-type enforcement and the client-information listener guard without
@@ -140,6 +142,7 @@ function sharedApiTestServerAddress(): Promise<ApiTestServerAddress> {
   // evaluation so the one persistent per-fork server never keeps forwarding to a
   // stale pre-reset app.
   state[API_TEST_SERVER_LISTENER_KEY] = createApiRequestGuardedListener(fn.callback())
+  state[API_TEST_SERVER_MATCHER_KEY] = fn
   state[API_TEST_SERVER_STATE_KEY] ??= createSharedApiTestServer(state)
   // A rejected addressPromise (e.g. transient bind failure) would otherwise stay cached forever,
   // permanently failing every subsequent test in this fork. Clear the cached state on rejection
@@ -152,7 +155,12 @@ function sharedApiTestServerAddress(): Promise<ApiTestServerAddress> {
 
 function createSharedApiTestServer(state: ApiTestServerGlobal): ApiTestServerState {
   const testServer = http.createServer((req, res) =>
-    profileRequestQueries(req, res, () => state[API_TEST_SERVER_LISTENER_KEY]?.(req, res)),
+    profileRequestQueries(
+      req,
+      res,
+      () => state[API_TEST_SERVER_LISTENER_KEY]?.(req, res),
+      state[API_TEST_SERVER_MATCHER_KEY]!,
+    ),
   )
   testServer.keepAliveTimeout = 30_000
   // Listen on IPv6 loopback (::1) — macOS has a kernel-level limit on concurrent
@@ -184,5 +192,5 @@ export async function withApiRequestQueryOptions<Result>(
     createApiRequestGuardedListener(fn.callback()),
     options,
   )
-  return withOwnedApiServer(listener, address => run(createRequest(address)))
+  return withOwnedApiServer(listener, fn, address => run(createRequest(address)))
 }

@@ -1,6 +1,7 @@
 import { EventEmitter } from 'node:events'
 import type http from 'node:http'
 import { describe, expect, it } from 'vitest'
+import { createApp } from '@jongleberry/api-server'
 import { observeQueryProfile } from '../query-profiles.mts'
 import { withBatchRequestMarker, withToolCallProfile } from './mcp-tool-call-profile.mts'
 import { profileRequestQueries } from './request-query-profile.mts'
@@ -8,6 +9,8 @@ import { takeRequestQueryProfileViolations } from './request-query-profile-viola
 
 const query = (annotation: string) => observeQueryProfile({ annotation, durationMs: 0 })
 const probe = 'mcpToolCallProfileProbe'
+const matcher = createApp()
+matcher.route('/api/v1/mcp').post(() => {})
 
 async function serve(handle: () => Promise<unknown>): Promise<string[]> {
   takeRequestQueryProfileViolations()
@@ -19,6 +22,7 @@ async function serve(handle: () => Promise<unknown>): Promise<string[]> {
     () => {
       done = handle()
     },
+    matcher,
   )
   await done
   res.emit('finish')

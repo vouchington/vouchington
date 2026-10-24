@@ -27,6 +27,7 @@
     "@data-stores/psql": "workspace:^",
     "@data-stores/valkey": "workspace:^",
     "@modules/on-error": "workspace:^",
+    "@modules/utils": "workspace:^",
     "@services/analytics": "workspace:^",
     "@services/user-rate-limits": "workspace:^",
     "@ts-shared/deploy-environment": "workspace:^",

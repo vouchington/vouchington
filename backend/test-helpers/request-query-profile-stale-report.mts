@@ -1,90 +1,101 @@
-import { REQUEST_PROFILE_PREFIX } from './request-query-profile-line.mts'
 import type { RepeatBaselineEntry } from './request-query-profile-baseline.mts'
+import { collectProfileObservations } from './request-query-profile-observations.mts'
 
-/**
- * Baseline entries whose annotation was not observed repeating. Report-only: a stale entry means
- * the fix landed, so the entry should be deleted, but it never fails a run.
- *
- * Used by the stale-entry report in backend/test-helpers.
- */
-export function findStaleBaselineEntries(
-  baseline: readonly RepeatBaselineEntry[],
-  observedAnnotations: ReadonlySet<string>,
-  observedScopedRepeats: ReadonlySet<string>,
-): RepeatBaselineEntry[] {
-  return baseline.filter(entry =>
-    entry.route === null
-      ? !observedAnnotations.has(entry.annotation)
-      : !observedScopedRepeats.has(`${entry.route}\0${entry.annotation}`),
-  )
+/** A report-only candidate containing only the absent scopes from one baseline entry. */
+export interface StaleBaselineCandidate {
+  index: number
+  entry: RepeatBaselineEntry
+  fullyStale: boolean
 }
 
-/** Completed main merge-group Backend runs a stale report needs before it is safe to act on. */
-export const MIN_STALE_EVIDENCE_LOGS = 5
-
+/** Report-only candidates. Missing diagnostic kinds are never treated as evidence of absence. */
 export interface StaleReport {
   logCount: number
-  /** False when fewer than {@link MIN_STALE_EVIDENCE_LOGS} logs were given. */
+  requestProfileCount: number
+  workerProfileCount: number
+  malformedRequestProfileCount: number
+  malformedWorkerProfileCount: number
   sufficient: boolean
-  stale: RepeatBaselineEntry[]
+  stale: StaleBaselineCandidate[]
 }
 
-/**
- * Stale entries across independent run logs (one log text per run): an entry is stale only when it
- * is absent from every log, because a data-dependent repeat can miss any single run.
- *
- * Used by the stale-entry report in backend/test-helpers.
- */
+/** One complete run is sufficient when it contains every diagnostic kind the baseline uses. */
+export const MIN_STALE_EVIDENCE_LOGS = 1
+
+/** Report scopes absent from complete-run request and worker profile logs. */
 export function buildStaleReport(
   baseline: readonly RepeatBaselineEntry[],
   logTexts: readonly string[],
+  resolveRoute: (route: string) => string,
 ): StaleReport {
-  const observed = new Set<string>()
-  const observedScoped = new Set<string>()
-  for (const text of logTexts) {
-    for (const annotation of observedRepeatAnnotations(text)) observed.add(annotation)
-    for (const key of observedScopedRepeatKeys(text)) observedScoped.add(key)
-  }
+  const observed = collectProfileObservations(logTexts, resolveRoute)
+  const requiresRequests = baseline.some(entry => entry.routes.length > 0)
+  const requiresWorkers = baseline.some(entry => (entry.workers?.length ?? 0) > 0)
+  const sufficient =
+    logTexts.length >= MIN_STALE_EVIDENCE_LOGS &&
+    (observed.requestProfileCount > 0 || observed.workerProfileCount > 0) &&
+    (!requiresRequests || observed.requestProfileCount > 0) &&
+    (!requiresWorkers || observed.workerProfileCount > 0) &&
+    observed.malformedRequestProfileCount === 0 &&
+    observed.malformedWorkerProfileCount === 0
+  const routeScopes =
+    observed.requestProfileCount > 0 && observed.malformedRequestProfileCount === 0
+      ? observed.routeScopes
+      : new Set(
+          baseline.flatMap(entry =>
+            entry.routes.map(route => JSON.stringify([entry.annotation, route])),
+          ),
+        )
+  const workerScopes =
+    observed.workerProfileCount > 0 && observed.malformedWorkerProfileCount === 0
+      ? observed.workerScopes
+      : new Set(
+          baseline.flatMap(entry =>
+            (entry.workers ?? []).map(worker =>
+              JSON.stringify([entry.annotation, worker.queue, worker.job]),
+            ),
+          ),
+        )
+
   return {
     logCount: logTexts.length,
-    sufficient: logTexts.length >= MIN_STALE_EVIDENCE_LOGS,
-    stale: findStaleBaselineEntries(baseline, observed, observedScoped),
+    requestProfileCount: observed.requestProfileCount,
+    workerProfileCount: observed.workerProfileCount,
+    malformedRequestProfileCount: observed.malformedRequestProfileCount,
+    malformedWorkerProfileCount: observed.malformedWorkerProfileCount,
+    sufficient,
+    stale: findStaleBaselineEntries(baseline, routeScopes, workerScopes),
   }
 }
 
-/**
- * Annotations that repeated in `[pg-request-profile]` lines of CI log text (one run, any shard).
- *
- * Used by the stale-entry report in backend/test-helpers.
- */
-export function observedRepeatAnnotations(logText: string): Set<string> {
-  const observed = new Set<string>()
-  for (const line of logText.split('\n')) {
-    const start = line.indexOf(REQUEST_PROFILE_PREFIX)
-    if (start === -1) continue
-    // Annotations may contain spaces ("fn variant"), so the list runs to the end of the line.
-    const repeats = / repeats=(.*)$/.exec(line.slice(start).trimEnd())?.[1]
-    if (!repeats || repeats === 'none') continue
-    for (const match of repeats.matchAll(/([^,]+?)\(x\d+\)(?:,|$)/g)) {
-      if (match[1]) observed.add(match[1])
-    }
-  }
-  return observed
-}
+/** Return copies of entries with only missing named scopes, preserving baseline order. */
+export function findStaleBaselineEntries(
+  baseline: readonly RepeatBaselineEntry[],
+  observedRouteScopes: ReadonlySet<string>,
+  observedWorkerScopes: ReadonlySet<string>,
+): StaleBaselineCandidate[] {
+  return baseline.flatMap((entry, index) => {
+    const routes = entry.routes.filter(
+      route => !observedRouteScopes.has(JSON.stringify([entry.annotation, route])),
+    )
+    const workers = (entry.workers ?? []).filter(
+      worker =>
+        !observedWorkerScopes.has(JSON.stringify([entry.annotation, worker.queue, worker.job])),
+    )
+    if (routes.length === 0 && workers.length === 0) return []
 
-/** Exact route/annotation observations for scoped baseline entries. */
-export function observedScopedRepeatKeys(logText: string): Set<string> {
-  const observed = new Set<string>()
-  for (const line of logText.split('\n')) {
-    const start = line.indexOf(REQUEST_PROFILE_PREFIX)
-    if (start === -1) continue
-    const profile = line.slice(start).trimEnd()
-    const route = / route=(.+?) queries=/.exec(profile)?.[1]
-    const repeats = / repeats=(.*)$/.exec(profile)?.[1]
-    if (!route || !repeats || repeats === 'none') continue
-    for (const match of repeats.matchAll(/([^,]+?)\(x\d+\)(?:,|$)/g)) {
-      if (match[1]) observed.add(`${route}\0${match[1]}`)
-    }
-  }
-  return observed
+    const total = entry.routes.length + (entry.workers?.length ?? 0)
+    const stale = routes.length + workers.length
+    return [
+      {
+        index,
+        entry: {
+          ...entry,
+          routes,
+          ...(entry.workers === undefined ? {} : { workers }),
+        } as RepeatBaselineEntry,
+        fullyStale: stale === total,
+      },
+    ]
+  })
 }

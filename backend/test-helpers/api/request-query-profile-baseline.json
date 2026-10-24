@@ -1,778 +1,1074 @@
 [
   {
     "annotation": "addListItem",
-    "route": "POST /api/v1/mcp",
     "maxCount": 100,
     "reason": "The recorded #3345 decision keeps these writes per target so each batch result retains its own persisted row; the delegated batch contract caps the loop at 100 items.",
     "permanent": true,
-    "code": "backend/mcp/add-list-items.mts:82"
+    "code": "backend/mcp/add-list-items.mts:82",
+    "routes": ["POST /api/v1/mcp"]
   },
   {
     "annotation": "allocateCommunityAgentPromptSlot",
-    "route": null,
     "maxCount": null,
     "reason": "The slot UPDATE runs after FOR UPDATE locks all of the creator's prompts and the slot-count check made under that lock, so concurrent allocations serialize",
     "permanent": true,
-    "code": "backend/services/community-agent-prompts/allocate.mts:38"
+    "code": "backend/services/community-agent-prompts/allocate.mts:38",
+    "routes": ["POST /api/v1/communities/:idOrSlug/agent-prompts/:promptId/allocations"]
   },
   {
     "annotation": "assertContributionAdmissionCapacity.count",
-    "route": null,
     "maxCount": null,
     "reason": "A preflight check before beforeCommit and execute, then a re-check after the actor row lock must see consumption committed before that lock (admission.mts:70 and :87)",
     "permanent": true,
-    "code": "backend/services/contribution-gating/admission.mts:70"
+    "code": "backend/services/contribution-gating/admission.mts:70",
+    "routes": [
+      "POST /api/v1/communities/:idOrSlug/posts",
+      "POST /api/v1/mcp",
+      "POST /api/v1/posts",
+      "POST /api/v1/rss-feed-items/:id/discussions",
+      "POST /api/v1/stories/:storyId/discussions",
+      "POST /api/v1/topic-recommendations"
+    ]
   },
   {
     "annotation": "assertPostMutationAccess",
-    "route": null,
     "maxCount": null,
     "reason": "The preflight and the re-read after the publication lock must see a root or privacy change committed while waiting.",
     "permanent": true,
-    "code": "backend/services/entity-relations/post-access-visibility.mts:36"
+    "code": "backend/services/entity-relations/post-access-visibility.mts:36",
+    "routes": [
+      "POST /api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType",
+      "POST /api/v1/mcp"
+    ]
   },
   {
     "annotation": "assertTopicMergeParentCompatibility",
-    "route": null,
-    "maxCount": null,
-    "reason": "The bounded batched ancestor walk runs before merge capture and again after locking topic rows and reachable ancestors, so a parent edge committed during the lock wait cannot create a cycle unnoticed.",
+    "maxCount": 2,
+    "reason": "The batched ancestor walk runs before merge capture (merge-aliases.mts:52) and again after locking topic rows and reachable ancestors (:69), so a parent edge committed during the lock wait cannot create a cycle unnoticed. Each call issues one statement.",
     "permanent": true,
-    "code": "backend/services/topics/merge-aliases.mts:53"
+    "code": "backend/services/topics/merge-aliases.mts:52-72",
+    "routes": ["POST /api/v1/topics/:sourceIdOrSlug/merges"]
   },
   {
     "annotation": "assertReferralProgramExists",
-    "route": null,
     "maxCount": null,
     "reason": "Two allowed mechanisms: the check at backend/services/referral-program-link-validations/create-and-link.mts:76 runs before slug validation and the insert, so it sets which 4xx a request gets (a bad or duplicate slug with a missing program); the check at backend/services/topics/validation.mts:127-146 runs after the validation-row insert and must see that new row",
     "permanent": true,
-    "code": "backend/services/referral-program-link-validations/create-and-link.mts:76"
+    "code": "backend/services/referral-program-link-validations/create-and-link.mts:76",
+    "routes": ["POST /api/v1/topics/:referralProgramId/referral-program/validations"]
   },
   {
     "annotation": "associateCopyrightEmailIntakeWithNotice:decision",
-    "route": null,
     "maxCount": null,
     "reason": "Manual association rereads link and review state after the intake row lock and again after the notice row lock, so a link or review committed while it waited rejects the association",
     "permanent": true,
-    "code": "backend/services/copyright-notices/email-manual-association.mts:52"
-  },
-  {
-    "annotation": "backfillCategoriesForTopicAliases.candidateItems",
-    "route": null,
-    "maxCount": null,
-    "reason": "The next candidate page is a new statement after the bounded category update. Under READ COMMITTED it must see rows past LIMIT and category rows a concurrent writer committed after the previous page.",
-    "permanent": true,
-    "code": "backend/services/rss-feed-items/backfill-categories-for-topic-aliases.mts:38"
+    "code": "backend/services/copyright-notices/email-manual-association.mts:52",
+    "routes": ["POST /api/v1/copyright-email-intakes/:id/notice-associations"]
   },
   {
     "annotation": "blockHostname_findPostRelatedUrlPosts",
-    "route": null,
     "maxCount": null,
     "reason": "Discovery takes no lock because publication locks must come before relation-row locks. The terminal read catches rows committed during the lock wait.",
     "permanent": true,
-    "code": "backend/services/hostname-blocking/soft-delete-relations.mts:81"
-  },
-  {
-    "annotation": "canViewDelegatedPostsBatch",
-    "route": null,
-    "maxCount": null,
-    "reason": "loadWritablePost re-reads thread visibility after lockDelegatedPostThread takes FOR NO KEY UPDATE, so it sees the previous lock holder's commit",
-    "permanent": true,
-    "code": "backend/services/posts/authorization.mts:126"
+    "code": "backend/services/hostname-blocking/soft-delete-relations.mts:81",
+    "routes": ["PATCH /api/v1/hostnames/:id"]
   },
   {
     "annotation": "canViewPostsBatch",
-    "route": null,
     "maxCount": null,
     "reason": "The voter visibility precheck admits the ballot; after the vote commits, one batched anonymous visibility check gates the conditional federated Like or UndoLike for the voted post and root. It cannot reuse the voter's access result or move before the commit",
     "permanent": true,
-    "code": "backend/services/posts/vote-handler-options.mts:97"
+    "code": "backend/services/posts/vote-handler-options.mts:97",
+    "routes": ["DELETE /api/v1/posts/:id/vote", "POST /api/v1/mcp", "PUT /api/v1/posts/:id/vote"]
   },
   {
     "annotation": "claimContributionAdmission.insert",
-    "route": null,
     "maxCount": null,
     "reason": "Each imported topic is its own reservation, idempotency key and claim transaction, and the loop stops at the first in-progress item (import-topics.mts:78-92, admission-reservations.mts:37)",
     "permanent": true,
-    "code": "backend/services/user-import-export/import-topics.mts:78-92"
+    "code": "backend/services/user-import-export/import-topics.mts:78-92",
+    "routes": ["POST /api/v1/my/import/topics"]
   },
   {
     "annotation": "claimContributionAdmission.liveClaim",
-    "route": null,
     "maxCount": null,
     "reason": "Each imported topic is its own reservation, idempotency key and claim transaction, and the loop stops at the first in-progress item (import-topics.mts:78-92, admission-reservations.mts:85)",
     "permanent": true,
-    "code": "backend/services/user-import-export/import-topics.mts:78-92"
+    "code": "backend/services/user-import-export/import-topics.mts:78-92",
+    "routes": ["POST /api/v1/my/import/topics"]
   },
   {
     "annotation": "claimContributionAdmission.reservation",
-    "route": null,
     "maxCount": null,
     "reason": "Each imported topic is its own reservation, idempotency key and claim transaction, and the loop stops at the first in-progress item (import-topics.mts:78-92, admission-reservations.mts:48)",
     "permanent": true,
-    "code": "backend/services/user-import-export/import-topics.mts:78-92"
+    "code": "backend/services/user-import-export/import-topics.mts:78-92",
+    "routes": ["POST /api/v1/my/import/topics"]
   },
   {
     "annotation": "createCopyrightDeliveryIntents",
-    "route": null,
     "maxCount": null,
     "reason": "Email approval admits the notice in one transaction and enforces each owed target in its own later transaction, so the receipt intents and the restriction-notice intents commit separately",
     "permanent": true,
-    "code": "backend/services/copyright-notices/email-promotion.mts:356"
+    "code": "backend/services/copyright-notices/email-promotion.mts:356",
+    "routes": ["POST /api/v1/copyright-email-intakes/:id/approvals"]
   },
   {
     "annotation": "createDeterministicCopyrightCorrespondencesInTransaction",
-    "route": null,
     "maxCount": null,
     "reason": "Email approval admits the notice in one transaction and enforces each owed target in its own later transaction, so the receipt message and the restriction-notice messages commit separately",
     "permanent": true,
-    "code": "backend/services/copyright-notices/email-promotion.mts:345"
+    "code": "backend/services/copyright-notices/email-promotion.mts:345",
+    "routes": ["POST /api/v1/copyright-email-intakes/:id/approvals"]
   },
   {
     "annotation": "createEmailVerificationToken",
-    "route": null,
     "maxCount": null,
     "reason": "The token upsert runs after fn_lock_active_user_for_mutation so account deletion cannot race credential creation",
     "permanent": true,
-    "code": "backend/services/my/email-address-verification.mts:54"
+    "code": "backend/services/my/email-address-verification.mts:54",
+    "routes": ["POST /api/v1/my/email-addresses"]
   },
   {
     "annotation": "createTopicRevision",
-    "route": null,
     "maxCount": null,
     "reason": "Approval records topic-create and alias-link revisions (backend/services/topics/create.mts:169 and aliases.mts:176); merge records source and destination revisions as distinct documents in one transaction",
     "permanent": true,
-    "code": "backend/services/topics/merge-alias-revisions.mts:36"
+    "code": "backend/services/topics/merge-alias-revisions.mts:36",
+    "routes": [
+      "POST /api/v1/topic-recommendations/:id/approvals",
+      "POST /api/v1/topics/:sourceIdOrSlug/merges"
+    ]
   },
   {
     "annotation": "createTotpAuthenticator",
-    "route": null,
     "maxCount": null,
     "reason": "The authenticator insert runs after fn_lock_active_user_for_mutation so account deletion cannot race factor creation",
     "permanent": true,
-    "code": "backend/services/totp/create.mts:25"
+    "code": "backend/services/totp/create.mts:25",
+    "routes": ["POST /api/v1/auth/totp"]
   },
   {
     "annotation": "deleteProfileLink",
-    "route": null,
     "maxCount": null,
     "reason": "The owned profile-link row is locked before its image placement is cleared and the row is deleted (backend/services/my/profile-links.mts:154-169)",
     "permanent": true,
-    "code": "backend/services/my/profile-links.mts:154"
+    "code": "backend/services/my/profile-links.mts:154",
+    "routes": ["DELETE /api/v1/my/profile/links/:id"]
   },
   {
     "annotation": "disconnectOAuthAccount",
-    "route": null,
     "maxCount": null,
     "reason": "Lock users before the provider row, then check remaining auth methods before ordered display-name reset and provider detachment",
     "permanent": true,
-    "code": "backend/services/my/oauth-account.mts:17"
+    "code": "backend/services/my/oauth-account.mts:17",
+    "routes": ["DELETE /api/v1/auth/oauth/:provider/connect"]
   },
   {
     "annotation": "ensureConsentVersion",
-    "route": null,
     "maxCount": null,
     "reason": "Recheck the active version FOR UPDATE after the optimistic read, then revoke the old active row before inserting its unique-active replacement",
     "permanent": true,
-    "code": "backend/services/user-consents/create.mts:13"
+    "code": "backend/services/user-consents/create.mts:13",
+    "routes": [
+      "POST /api/v1/auth/email-address/login",
+      "POST /api/v1/auth/native/email-address/login"
+    ]
   },
   {
     "annotation": "extendContributionAdmissionReplay",
-    "route": null,
     "maxCount": null,
     "reason": "Each imported topic replays its own committed reservation under that reservation row lock, in per-item order (import-topics.mts:78-92, admission-reservations.mts:80)",
     "permanent": true,
-    "code": "backend/services/user-import-export/import-topics.mts:78-92"
+    "code": "backend/services/user-import-export/import-topics.mts:78-92",
+    "routes": ["POST /api/v1/my/import/topics"]
   },
   {
     "annotation": "fencePublicationIdentityBridgeCapture",
-    "route": null,
     "maxCount": null,
     "reason": "Prepare locks each identity family in global order before dirty work is written, then the scope upsert locks that same bridge again before the foreign-key insert.",
     "permanent": true,
-    "code": "backend/services/post-publication/identity-bridges.mts:72"
+    "code": "backend/services/post-publication/identity-bridges.mts:72",
+    "routes": [
+      "DELETE /api/v1/communities/:idOrSlug",
+      "DELETE /api/v1/posts/:idOrSlug",
+      "DELETE /api/v1/rss-feeds/:id",
+      "DELETE /api/v1/topic-recommendations/:id",
+      "DELETE /api/v1/topics/:idOrSlug/aliases/:aliasId",
+      "DELETE /api/v1/users/:userId/suspension",
+      "PATCH /api/v1/communities/:idOrSlug",
+      "PATCH /api/v1/communities/:idOrSlug/posts/:postId",
+      "PATCH /api/v1/my/identity",
+      "PATCH /api/v1/posts/:idOrSlug",
+      "PATCH /api/v1/posts/:idOrSlug/ratings/:topicId",
+      "PATCH /api/v1/rss-feeds/:id",
+      "PATCH /api/v1/topic-recommendations/:id",
+      "PATCH /api/v1/users/:idOrSlug",
+      "POST /api/v1/communities/:idOrSlug/posts",
+      "POST /api/v1/disputes/:id/resolution",
+      "POST /api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType",
+      "POST /api/v1/fediverse/instances",
+      "POST /api/v1/mcp",
+      "POST /api/v1/my/import/topics",
+      "POST /api/v1/posts",
+      "POST /api/v1/posts/:idOrSlug/clearances",
+      "POST /api/v1/posts/:idOrSlug/ratings",
+      "POST /api/v1/rss-feed-categories/assignments",
+      "POST /api/v1/rss-feed-items/:id/discussions",
+      "POST /api/v1/stories/:storyId/discussions",
+      "POST /api/v1/topic-recommendations",
+      "POST /api/v1/topic-recommendations/:id/approvals",
+      "POST /api/v1/topics",
+      "POST /api/v1/topics/:idOrSlug/aliases",
+      "POST /api/v1/topics/:sourceIdOrSlug/merges",
+      "PUT /api/v1/posts/:idOrSlug/images",
+      "PUT /api/v1/users/:userId/suspension"
+    ]
   },
   {
     "annotation": "fetchElectionVoteRowsByUser",
-    "route": null,
     "maxCount": null,
     "reason": "The caller's own vote is re-read under the election request lock after the pre-lock ballot admission. Visibility changes do not take that lock.",
     "permanent": true,
-    "code": "backend/services/elections-votes/shared/vote-queries.mts:34"
+    "code": "backend/services/elections-votes/shared/vote-queries.mts:34",
+    "routes": ["DELETE /api/v1/hostnames/:id/vote"]
   },
   {
     "annotation": "findAutomaticWithholdingSwitchOnTime",
-    "route": null,
     "maxCount": null,
     "reason": "The form review reads the switch-on time before its transaction and enforcement rereads it after that transaction commits, so a switch-off or flip in between stops automation instead of enforcing on the earlier answer",
     "permanent": true,
-    "code": "backend/services/copyright-notices/form-reviews.mts:20"
+    "code": "backend/services/copyright-notices/form-reviews.mts:20",
+    "routes": ["POST /api/v1/copyright-form-intakes/:id/reviews"]
   },
   {
     "annotation": "getAutomodFeedbackContext:agent",
-    "route": null,
     "maxCount": null,
     "reason": "The feedback transaction re-reads the automod action after taking its locks to reject a concurrent change (backend/services/moderation-training/automod-feedback.mts:48-70)",
     "permanent": true,
-    "code": "backend/services/moderation-training/automod-feedback.mts:48-70"
+    "code": "backend/services/moderation-training/automod-feedback.mts:48-70",
+    "routes": ["POST /api/v1/communities/:idOrSlug/automod/recent-actions/:sourceKey/feedback"]
   },
   {
     "annotation": "getCommunityWithViewerById",
-    "route": null,
     "maxCount": null,
     "reason": "Community post creation re-reads community and membership inside the execution transaction after CAPTCHA and admission, so an archive or ban that committed while admission waited is rejected",
     "permanent": true,
-    "code": "backend/services/posts/create/community-scope.mts:76"
+    "code": "backend/services/posts/create/community-scope.mts:76",
+    "routes": ["POST /api/v1/mcp"]
   },
   {
     "annotation": "getLocalHostnamePolicies",
-    "route": null,
     "maxCount": null,
     "reason": "Provider assessment runs before ownership locks; URL persistence must read local policy again after the lock wait to see blocks committed by the provider or previous holder.",
     "permanent": true,
-    "code": "backend/services/urls/upsert-persist.mts:63"
+    "code": "backend/services/urls/upsert-persist.mts:63",
+    "routes": [
+      "PATCH /api/v1/my/profile/links/:id",
+      "POST /api/v1/my/profile/links",
+      "POST /api/v1/referral-links",
+      "POST /api/v1/referral-programs/:id/official-referral-links",
+      "POST /api/v1/topic-recommendations/:id/approvals"
+    ]
   },
   {
     "annotation": "getLandingPageRowForUser",
-    "route": null,
     "maxCount": null,
     "reason": "PATCH is_default rereads the owned page after acquiring the per-user landing-page advisory lock, so a concurrent deletion or ownership change is rejected before default writes (backend/services/my/landing-pages/reads.mts:14-15, backend/services/my/landing-pages/set-default.mts:26)",
     "permanent": true,
-    "code": "backend/services/my/landing-pages/reads.mts:14"
+    "code": "backend/services/my/landing-pages/reads.mts:14",
+    "routes": [
+      "PATCH /api/v1/my/landing-pages/:pageId",
+      "PUT /api/v1/my/landing-pages/:pageId/items"
+    ]
   },
   {
     "annotation": "getMembershipPurchaseIntent",
-    "route": null,
     "maxCount": null,
     "reason": "Idempotency is checked before locking and rechecked under the user row lock; the inserted intent is hydrated for admission checks and reread after the external provider launch (backend/services/memberships/purchase-intents.mts:55-140)",
     "permanent": true,
-    "code": "backend/services/memberships/purchase-intents.mts:55"
+    "code": "backend/services/memberships/purchase-intents.mts:55",
+    "routes": ["POST /api/v1/membership-purchase-intents"]
   },
   {
     "annotation": "getOAuthClient",
-    "route": null,
     "maxCount": null,
     "reason": "Authorization rechecks client revocation and owner activity after locking participant users, rejecting changes since initial parameter validation",
     "permanent": true,
-    "code": "backend/services/oauth-authorization-server/authorization.mts:73"
+    "code": "backend/services/oauth-authorization-server/authorization.mts:73",
+    "routes": ["GET /authorize"]
   },
   {
     "annotation": "getPostByAny",
-    "route": null,
     "maxCount": null,
     "reason": "Post update re-reads the row after SELECT FOR UPDATE, and delete re-reads after lockDelegatedPostThread's FOR NO KEY UPDATE, so each sees the previous lock holder's commit",
     "permanent": true,
-    "code": "backend/services/posts/update.mts:63"
+    "code": "backend/services/posts/update.mts:63",
+    "routes": [
+      "PATCH /api/v1/posts/:idOrSlug",
+      "PATCH /api/v1/topic-recommendations/:id",
+      "POST /api/v1/mcp",
+      "POST /api/v1/posts",
+      "POST /api/v1/posts/:idOrSlug/sends",
+      "POST /api/v1/topic-recommendations/:id/approvals",
+      "PUT /api/v1/posts/:id/vote"
+    ]
   },
   {
     "annotation": "getPrivateUserByAny",
-    "route": null,
     "maxCount": null,
     "reason": "Delegated post mutations re-read the actor after lockAuthorPublicationLifecycle, the same fence ensureUserSuspendedInTransaction takes before writing user_suspensions (backend/services/users/suspension.mts:59), so a suspension that committed while this transaction waited is visible. A profile update reads the private projection in the next statement after its UPDATE (backend/services/users/update-fields.mts:141), because view_users_private scans users and cannot see that UPDATE in the same statement",
     "permanent": true,
-    "code": "backend/services/posts/authorization.mts:162"
+    "code": "backend/services/posts/authorization.mts:162",
+    "routes": [
+      "DELETE /api/v1/communities/:idOrSlug/restrictions/:id",
+      "DELETE /api/v1/users/:idOrSlug",
+      "DELETE /api/v1/users/:userId/suspension",
+      "GET /api/v1/admin/users/:userId/landing-pages",
+      "GET /api/v1/my/identity",
+      "GET /api/v1/my/identity-verification/session-url",
+      "GET /api/v1/users/:idOrSlug",
+      "GET /api/v1/users/:idOrSlug/data-request",
+      "GET /api/v1/users/:idOrSlug/data-request/stream",
+      "GET /api/v1/users/:idOrSlug/posts/:listType",
+      "GET /api/v1/users/:idOrSlug/topics/:listType",
+      "GET /api/v1/users/:userId/moderation-context",
+      "PATCH /api/v1/communities/:idOrSlug/applications/:id",
+      "PATCH /api/v1/communities/:idOrSlug/members/:userId",
+      "PATCH /api/v1/my/email-preferences",
+      "PATCH /api/v1/my/identity",
+      "PATCH /api/v1/my/identity-verification/display-preferences",
+      "PATCH /api/v1/users/:idOrSlug",
+      "POST /api/v1/auth/email-address/login",
+      "POST /api/v1/auth/oauth/:provider/continue",
+      "POST /api/v1/brand/mcp",
+      "POST /api/v1/communities/:idOrSlug/modmail",
+      "POST /api/v1/communities/:idOrSlug/ownership-transfers",
+      "POST /api/v1/communities/:idOrSlug/reports/:reportId/modmail",
+      "POST /api/v1/communities/:idOrSlug/restrictions",
+      "POST /api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType",
+      "POST /api/v1/legal/mcp",
+      "POST /api/v1/mcp",
+      "POST /api/v1/mcp tools/call create_content_report",
+      "POST /api/v1/referral-programs/:id/official-referral-links",
+      "POST /api/v1/reports",
+      "POST /api/v1/rss-feed-categories/assignments",
+      "POST /api/v1/users/:idOrSlug/data-request",
+      "PUT /api/v1/entity-relations/:id/vote",
+      "PUT /api/v1/users/:userId/suspension"
+    ]
   },
   {
     "annotation": "getPublicUserByAny",
-    "route": null,
     "maxCount": null,
     "reason": "Follow commits before its best-effort trust vote loads the target (backend/services/bookmarks/upsert.mts:134). Ban-evasion confirm loads the source user only after the flag-claim transaction commits, then the ban loads the target in its own transaction (backend/services/communities/ban-evasion/confirm.mts:44)",
     "permanent": true,
-    "code": "backend/services/communities/ban-evasion/confirm.mts:44"
+    "code": "backend/services/communities/ban-evasion/confirm.mts:44",
+    "routes": [
+      "POST /api/v1/communities/:idOrSlug/ban-evasion/:userId",
+      "PUT /api/v1/bookmarks/:entityType/:entityId/:predicate"
+    ]
   },
   {
     "annotation": "getRssFeedsByIdBatch",
-    "route": "GET /api/v1/rss-feeds/trending",
     "maxCount": 2,
     "reason": "A mixed stale-hit and true-miss RSS feed batch can issue one refresh-ahead SQL batch and one miss SQL batch for disjoint feed IDs in this route; no third batch is expected",
     "permanent": true,
-    "code": "backend/services/entity-fetch/rss-feeds.mts:12"
+    "code": "backend/services/entity-fetch/rss-feeds.mts:12",
+    "routes": ["GET /api/v1/rss-feeds/trending"]
   },
   {
     "annotation": "getTopicAliasesForMergeRevision",
-    "route": null,
     "maxCount": null,
     "reason": "The destination alias list is read again after the alias move and source-slug insert, so the merge revision's after snapshot includes those writes.",
     "permanent": true,
-    "code": "backend/services/topics/merge-alias-revisions.mts:35"
+    "code": "backend/services/topics/merge-alias-revisions.mts:35",
+    "routes": ["POST /api/v1/topics/:sourceIdOrSlug/merges"]
   },
   {
     "annotation": "getTopicByAny",
-    "route": null,
     "maxCount": null,
     "reason": "Topic update returns the row after alias and field writes, and merge reloads the destination after the merge transaction commits",
     "permanent": true,
-    "code": "backend/services/topics/update.mts:95"
+    "code": "backend/services/topics/update.mts:95",
+    "routes": [
+      "PATCH /api/v1/topics/:idOrSlug",
+      "POST /api/v1/fediverse/instances",
+      "POST /api/v1/my/import/topics",
+      "PUT /api/v1/bookmarks/:entityType/:entityId/:predicate"
+    ]
+  },
+  {
+    "annotation": "getTopicMetricsByAnyBatch",
+    "routes": ["GET /api/v1/fediverse/instances"],
+    "maxCount": 2,
+    "reason": "One cached metrics call launches disjoint stale-hit refresh and cold-miss batches. The detached refresh inherits request AsyncLocalStorage until issue 3754 separates its attribution (backend/api/v1/fediverse/instances.mts:146; backend/services/entity-fetch/get.mts:50-51).",
+    "issue": 3754
   },
   {
     "annotation": "getTopicsByAnyBatch",
-    "route": null,
     "maxCount": null,
     "reason": "Post creation rechecks active topics on the primary execution transaction after the replica preamble read, so an archive or merge that committed during CAPTCHA or admission is rejected",
     "permanent": true,
-    "code": "backend/services/posts/create/validation-categories.mts:50"
+    "code": "backend/services/posts/create/validation-categories.mts:50",
+    "routes": ["GET /rss/news", "POST /api/v1/communities/:idOrSlug/posts", "POST /api/v1/posts"]
   },
   {
     "annotation": "getUrlById",
-    "route": null,
     "maxCount": null,
     "reason": "Link creation rechecks the stored URL in the execution transaction after CAPTCHA and the committed capacity transaction, so a URL removed in between is rejected before the post insert",
     "permanent": true,
-    "code": "backend/services/posts/create/validation.mts:66"
+    "code": "backend/services/posts/create/validation.mts:66",
+    "routes": ["POST /api/v1/posts"]
   },
   {
     "annotation": "grantConsent",
-    "route": null,
     "maxCount": null,
     "reason": "Revoke the active consent before inserting its replacement to satisfy the unique active user/type constraint",
     "permanent": true,
-    "code": "backend/services/user-consents/create.mts:62"
+    "code": "backend/services/user-consents/create.mts:62",
+    "routes": ["POST /api/v1/my/consents"]
   },
   {
     "annotation": "insertCopyrightDeliveryRecipients",
-    "route": null,
     "maxCount": null,
     "reason": "Email approval admits the notice in one transaction and enforces each owed target in its own later transaction, so the receipt recipient and the claimant decision recipient commit separately",
     "permanent": true,
-    "code": "backend/services/copyright-notices/email-promotion.mts:356"
+    "code": "backend/services/copyright-notices/email-promotion.mts:356",
+    "routes": ["POST /api/v1/copyright-email-intakes/:id/approvals"]
   },
   {
     "annotation": "lockApiKeyOwner",
-    "route": null,
     "maxCount": null,
     "reason": "Read administrator roles after fn_lock_active_user_for_mutation to observe role changes that completed while acquiring the owner lock",
     "permanent": true,
-    "code": "backend/services/api-keys/lifetime.mts:8"
+    "code": "backend/services/api-keys/lifetime.mts:8",
+    "routes": ["POST /api/v1/my/api-keys", "POST /api/v1/my/api-keys/:id/rotate"]
   },
   {
     "annotation": "lockAssessmentForm",
-    "route": null,
     "maxCount": null,
     "reason": "The assessment is appended in its own transaction and each owed target is restricted in its own later transaction, and each takes the form review fence for its own transaction",
     "permanent": true,
-    "code": "backend/services/copyright-notices/compliance.mts:14"
+    "code": "backend/services/copyright-notices/compliance.mts:14",
+    "routes": ["POST /api/v1/copyright-email-intakes/:id/approvals"]
   },
   {
     "annotation": "lockBlueskyLinkAuthorization",
-    "route": null,
     "maxCount": null,
     "reason": "A failed web attachment releases its transaction before rejected-generation cleanup starts a new transaction and reacquires the authorization row lock",
     "permanent": true,
-    "code": "backend/services/bluesky-accounts/callback-completion.mts:62"
+    "code": "backend/services/bluesky-accounts/callback-completion.mts:62",
+    "routes": ["GET /api/v1/auth/bluesky/callback"]
   },
   {
     "annotation": "lockBlueskySessionOwner:did",
-    "route": null,
     "maxCount": null,
     "reason": "Each SDK session write or deletion and durable completion owns a transaction; acquire the user advisory lock before the DID advisory lock",
     "permanent": true,
-    "code": "backend/services/bluesky-accounts/session-generation.mts:lockBlueskySessionOwner"
+    "code": "backend/services/bluesky-accounts/session-generation.mts:lockBlueskySessionOwner",
+    "routes": ["GET /api/v1/auth/bluesky/callback"]
   },
   {
     "annotation": "lockBlueskySessionOwner:user",
-    "route": null,
     "maxCount": null,
     "reason": "Each SDK session write or deletion and durable completion owns a transaction; acquire the user advisory lock before the DID advisory lock",
     "permanent": true,
-    "code": "backend/services/bluesky-accounts/session-generation.mts:lockBlueskySessionOwner"
+    "code": "backend/services/bluesky-accounts/session-generation.mts:lockBlueskySessionOwner",
+    "routes": ["GET /api/v1/auth/bluesky/callback"]
   },
   {
     "annotation": "lockCopyrightRepeatInfringerNoticeAccounts",
-    "route": null,
     "maxCount": null,
     "reason": "Recording a disposition locks the notice owners before taking the incident row lock, then the incident resync recomputes the owner set after the disposition insert so an owner added since the first lock is locked too",
     "permanent": true,
-    "code": "backend/services/copyright-notices/repeat-infringer-incidents.mts:138"
+    "code": "backend/services/copyright-notices/repeat-infringer-incidents.mts:138",
+    "routes": ["POST /api/v1/copyright-repeat-infringer-incidents/:id/dispositions"]
   },
   {
     "annotation": "lockEntityRelationVoteStatsPostPublicationScopes",
-    "route": null,
     "maxCount": null,
     "reason": "Publication scopes are locked before the relation FOR UPDATE, and the lookup is chunked with bounded iteration.",
     "permanent": true,
-    "code": "backend/services/elections-votes/entity-relation/vote-stats-batch-publication-locks.mts:33"
+    "code": "backend/services/elections-votes/entity-relation/vote-stats-batch-publication-locks.mts:33",
+    "routes": ["POST /api/v1/posts"]
   },
   {
     "annotation": "lockExistingTopicAliasPublicationScopes",
-    "route": null,
     "maxCount": null,
     "reason": "Alias claim re-reads alias rows after topic creation so the lock sees aliases inserted earlier in the transaction.",
     "permanent": true,
-    "code": "backend/services/topics/alias-publication-locks.mts:16"
+    "code": "backend/services/topics/alias-publication-locks.mts:16",
+    "routes": ["POST /api/v1/topic-recommendations/:id/approvals", "POST /api/v1/topics"]
   },
   {
     "annotation": "lockHostnameOwnership",
-    "route": "POST /api/v1/fediverse/instances",
     "maxCount": 2,
     "reason": "Two independently committed transactions each need their own transaction-scoped ownership key: createInstanceFromHostname resolves and commits public introduction here; createInstanceInTransaction reacquires ownership before source writes (backend/services/fediverse-instances/create-instance-helpers.mts:73).",
     "permanent": true,
-    "code": "backend/services/fediverse-instances/create-instance.mts:34"
+    "code": "backend/services/fediverse-instances/create-instance.mts:34",
+    "routes": ["POST /api/v1/fediverse/instances"]
   },
   {
     "annotation": "lockPostPublicationCaptures",
-    "route": null,
     "maxCount": null,
     "reason": "Post-scope advisory locks stay in one sorted order when the id set is split across capture-batch pages.",
     "permanent": true,
-    "code": "backend/services/post-publication/capture-posts.mts:100"
+    "code": "backend/services/post-publication/capture-posts.mts:100",
+    "routes": [
+      "POST /api/v1/communities/:idOrSlug/posts",
+      "POST /api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType",
+      "POST /api/v1/mcp",
+      "POST /api/v1/posts"
+    ]
   },
   {
     "annotation": "lockPostPublicationScope",
-    "route": null,
     "maxCount": null,
     "reason": "Distinct scope families take separate advisory locks, and a nested author or feed change re-locks its own scope as its entry point.",
     "permanent": true,
-    "code": "backend/services/post-publication/lock.mts:29"
+    "code": "backend/services/post-publication/lock.mts:29",
+    "routes": [
+      "PATCH /api/v1/communities/:idOrSlug/posts/:postId",
+      "PATCH /api/v1/posts/:idOrSlug",
+      "PATCH /api/v1/rss-feeds/:id",
+      "POST /api/v1/communities/:idOrSlug/posts",
+      "POST /api/v1/copyright-repeat-infringer-incidents/:id/dispositions",
+      "POST /api/v1/mcp",
+      "POST /api/v1/posts",
+      "POST /api/v1/rss-feed-items/:id/discussions",
+      "POST /api/v1/stories/:storyId/discussions",
+      "PUT /api/v1/posts/:idOrSlug/images"
+    ]
   },
   {
     "annotation": "lockPreparedPublicationScopes",
-    "route": null,
     "maxCount": null,
     "reason": "A multi-scope capture takes the sorted advisory locks for its whole declared set before the first dirty-work write.",
     "permanent": true,
-    "code": "backend/services/post-publication/prepare-identity-bridges.mts:21"
+    "code": "backend/services/post-publication/prepare-identity-bridges.mts:21",
+    "routes": [
+      "PATCH /api/v1/posts/:idOrSlug",
+      "PATCH /api/v1/rss-feeds/:id",
+      "POST /api/v1/communities/:idOrSlug/posts",
+      "POST /api/v1/mcp",
+      "POST /api/v1/posts",
+      "POST /api/v1/rss-feed-items/:id/discussions",
+      "POST /api/v1/stories/:storyId/discussions",
+      "POST /api/v1/topic-recommendations/:id/approvals",
+      "PUT /api/v1/posts/:idOrSlug/images"
+    ]
   },
   {
     "annotation": "lockRssFeedHardDeleteTopicAliasPublicationScopes",
-    "route": null,
     "maxCount": null,
     "reason": "The hard-delete capture re-reads category aliases after the feed row lock so it sees aliases committed by the previous lock holder.",
     "permanent": true,
-    "code": "backend/services/post-publication/capture-rss-feed-hard-delete-aliases.mts:13"
+    "code": "backend/services/post-publication/capture-rss-feed-hard-delete-aliases.mts:13",
+    "routes": ["DELETE /api/v1/rss-feeds/:id"]
   },
   {
     "annotation": "lockSurfaceOwnerDomains",
-    "route": null,
     "maxCount": null,
     "reason": "User deletion locks the user image-owner domain first (users/delete.mts:77), then locks the profile-link domains it discovers by reading user_profile_links under that lock (users/delete.mts:86-89); the second lock needs ids only readable after the first",
     "permanent": true,
-    "code": "backend/services/users/delete.mts:77"
+    "code": "backend/services/users/delete.mts:77",
+    "routes": ["DELETE /api/v1/users/:idOrSlug"]
   },
   {
     "annotation": "lockTopicRssFeedAttachmentLifecycles",
-    "route": null,
     "maxCount": null,
     "reason": "Each transaction owns its attachment lifecycle locks: a topic merge fences both topics before publication capture, then the primary metric refresh must reacquire the destination fence in a new transaction after the merge commits. Transaction-scoped locks cannot be reused across that commit.",
     "permanent": true,
-    "code": "backend/services/topics/merge-aliases-finalize.mts:refreshMergedTopicMetrics"
+    "code": "backend/services/topics/merge-aliases-finalize.mts:refreshMergedTopicMetrics",
+    "routes": ["POST /api/v1/topics/:sourceIdOrSlug/merges"]
   },
   {
     "annotation": "maybeResolveCases",
-    "route": null,
     "maxCount": null,
     "reason": "Issuing a warning commits the warning in its own transaction before the report resolution runs its own, so a failed resolution leaves a retryable pending report (backend/services/user-warnings/issue-warning.mts:26-34)",
     "permanent": true,
-    "code": "backend/services/user-warnings/issue-warning.mts:26-34"
+    "code": "backend/services/user-warnings/issue-warning.mts:26-34",
+    "routes": ["POST /api/v1/admin/warnings", "POST /api/v1/communities/:idOrSlug/warnings"]
   },
   {
     "annotation": "orderPostPublicationRetainedKeyInput",
-    "route": null,
     "maxCount": null,
     "reason": "Each scope orders its retained keys only after that scope's advisory lock and dirty-work row exist.",
     "permanent": true,
-    "code": "backend/services/post-publication/retained-key-writes.mts:107"
+    "code": "backend/services/post-publication/retained-key-writes.mts:107",
+    "routes": [
+      "PATCH /api/v1/posts/:idOrSlug",
+      "POST /api/v1/communities/:idOrSlug/posts",
+      "POST /api/v1/mcp",
+      "POST /api/v1/posts",
+      "POST /api/v1/rss-feed-categories/assignments",
+      "POST /api/v1/topic-recommendations/:id/approvals"
+    ]
   },
   {
     "annotation": "readBlueskyLinkAuthorization",
-    "route": null,
     "maxCount": null,
     "reason": "Reread after SDK session persistence claims or rejects the authorization in its own transaction; reuse the pre-write row through route and completion checks",
     "permanent": true,
-    "code": "backend/services/bluesky-accounts/link.mts:133"
+    "code": "backend/services/bluesky-accounts/link.mts:133",
+    "routes": ["GET /api/v1/auth/bluesky/callback"]
   },
   {
     "annotation": "readCopyrightEmailGraphTokens:matchedLinks",
-    "route": null,
     "maxCount": null,
     "reason": "Promotion rereads the bounded token membership after the token and intake locks to reject a concurrently threaded reply",
     "permanent": true,
-    "code": "backend/services/copyright-notices/email-promotion.mts:74"
+    "code": "backend/services/copyright-notices/email-promotion.mts:74",
+    "routes": ["POST /api/v1/copyright-email-intakes/:id/approvals"]
   },
   {
     "annotation": "readCopyrightEmailGraphTokens:references",
-    "route": null,
     "maxCount": null,
     "reason": "Promotion rereads the bounded token membership after the token and intake locks to reject a concurrently threaded reply",
     "permanent": true,
-    "code": "backend/services/copyright-notices/email-promotion.mts:74"
+    "code": "backend/services/copyright-notices/email-promotion.mts:74",
+    "routes": ["POST /api/v1/copyright-email-intakes/:id/approvals"]
   },
   {
     "annotation": "readCopyrightEmailThreadGraph:incoming",
-    "route": null,
     "maxCount": null,
     "reason": "Promotion rereads the bounded ancestry graph after locking the intakes to reject a concurrently added edge",
     "permanent": true,
-    "code": "backend/services/copyright-notices/email-promotion.mts:65"
+    "code": "backend/services/copyright-notices/email-promotion.mts:65",
+    "routes": ["POST /api/v1/copyright-email-intakes/:id/approvals"]
   },
   {
     "annotation": "readCopyrightEmailThreadGraph:outgoing",
-    "route": null,
     "maxCount": null,
     "reason": "Promotion rereads the bounded ancestry graph after locking the intakes to reject a concurrently added edge",
     "permanent": true,
-    "code": "backend/services/copyright-notices/email-promotion.mts:65"
+    "code": "backend/services/copyright-notices/email-promotion.mts:65",
+    "routes": ["POST /api/v1/copyright-email-intakes/:id/approvals"]
   },
   {
     "annotation": "readFirstOwedCopyrightEnforcementTarget",
-    "route": null,
     "maxCount": null,
     "reason": "Each owed target is restricted in its own transaction, and the next owed target is read only after that commit so a concurrent restriction or superseding decision settles it",
     "permanent": true,
-    "code": "backend/services/copyright-notices/enforce-assessment.mts:32"
+    "code": "backend/services/copyright-notices/enforce-assessment.mts:32",
+    "routes": [
+      "POST /api/v1/copyright-email-intakes/:id/approvals",
+      "POST /api/v1/copyright-eu-notices/:id/statements-of-reasons",
+      "POST /api/v1/copyright-form-intakes/:id/reviews",
+      "POST /api/v1/copyright-uk-notices/:id/reviews"
+    ]
   },
   {
     "annotation": "receiveOAuthAuthorizationCallback",
-    "route": null,
     "maxCount": null,
     "reason": "Lock the authorization row before branching on status and writing callback secrets or terminal expiry, preserving exact callback replay",
     "permanent": true,
-    "code": "backend/services/oauth/authorization-callback.mts:60"
+    "code": "backend/services/oauth/authorization-callback.mts:60",
+    "routes": ["GET /api/v1/auth/oauth/:provider/broker-callback"]
   },
   {
     "annotation": "recordMcpCallAudit",
-    "route": null,
     "maxCount": null,
     "reason": "The write-ahead audit row commits before the MCP call runs and the tool_error or rate_limited follow-up row is written after the call (backend/api/mcp-audit-helpers.mts:40-62)",
     "permanent": true,
-    "code": "backend/api/mcp-audit-helpers.mts:40-62"
+    "code": "backend/api/mcp-audit-helpers.mts:40-62",
+    "routes": ["POST /api/v1/admin/mcp", "POST /api/v1/legal/mcp", "POST /api/v1/mcp"]
   },
   {
     "annotation": "recordModeratorAction",
-    "route": null,
     "maxCount": null,
     "reason": "A staff operation writes its requested row before the external side effect and its finished row after it, and issuing a warning commits the warning and the report resolution in separate transactions (backend/services/moderator-actions/operation.mts:15-38, backend/services/user-warnings/issue-warning.mts:26-34)",
     "permanent": true,
-    "code": "backend/services/moderator-actions/operation.mts:15-38"
+    "code": "backend/services/moderator-actions/operation.mts:15-38",
+    "routes": [
+      "POST /api/v1/admin/warnings",
+      "POST /api/v1/appeals/:id/resolution-drafts",
+      "POST /api/v1/article-syncs",
+      "POST /api/v1/communities/:idOrSlug/warnings",
+      "POST /api/v1/disputes/:id/resolution-drafts",
+      "POST /api/v1/mq/backfills/:id/runs",
+      "POST /api/v1/mq/queues/:name/domains/:domain/pause",
+      "POST /api/v1/mq/queues/:name/domains/:domain/resume",
+      "POST /api/v1/mq/queues/:name/domains/:domain/retry-failed",
+      "POST /api/v1/mq/queues/:name/pause",
+      "POST /api/v1/mq/queues/:name/resume",
+      "POST /api/v1/mq/queues/:name/retry-failed",
+      "POST /api/v1/mq/scheduled-jobs/:id/runs",
+      "POST /api/v1/reports/:id/judgements"
+    ]
   },
   {
     "annotation": "recordPostTopicRelationPublicationChanges:aliases",
-    "route": null,
     "maxCount": null,
     "reason": "A later relation mutation resolves canonical topics after its own write so it sees aliases inserted earlier in the request.",
     "permanent": true,
-    "code": "backend/services/entity-relations/post-topic-publication.mts:169"
+    "code": "backend/services/entity-relations/post-topic-publication.mts:169",
+    "routes": ["POST /api/v1/mcp", "POST /api/v1/posts"]
   },
   {
     "annotation": "recordTerritorialCopyrightRedressDecision:request",
-    "route": null,
     "maxCount": null,
     "reason": "The complaint row is rechecked after the placement advisory locks and the notice row lock to reject a decision superseded while it waited",
     "permanent": true,
-    "code": "backend/services/copyright-notices/territorial-redress.mts:54"
+    "code": "backend/services/copyright-notices/territorial-redress.mts:54",
+    "routes": [
+      "POST /api/v1/copyright-eu-notices/:id/redress-requests/:redressId/decisions",
+      "POST /api/v1/copyright-uk-notices/:id/redress-requests/:redressId/decisions"
+    ]
   },
   {
     "annotation": "recordTopicImportRequest",
-    "route": null,
     "maxCount": null,
     "reason": "Recommendation audits commit before topic follows, and follow audits commit only after those follows succeed, because the follow writes outside the import transaction (backend/services/user-import-export/import-topics.mts:finalizeTopicImportAttempt)",
     "permanent": true,
-    "code": "backend/services/user-import-export/import-topics.mts:finalizeTopicImportAttempt"
+    "code": "backend/services/user-import-export/import-topics.mts:finalizeTopicImportAttempt",
+    "routes": ["POST /api/v1/my/import/topics"]
   },
   {
     "annotation": "removeEmailAddress",
-    "route": null,
     "maxCount": null,
     "reason": "Lock the active user then email rows before checking last-auth-method and primary-address guards and deleting the target",
     "permanent": true,
-    "code": "backend/services/my/email-addresses.mts:78"
+    "code": "backend/services/my/email-addresses.mts:78",
+    "routes": ["DELETE /api/v1/my/email-addresses/:email"]
   },
   {
     "annotation": "renameTotpAuthenticator",
-    "route": null,
     "maxCount": null,
     "reason": "The authenticator update runs after fn_lock_active_user_for_mutation so account deletion cannot race factor mutation",
     "permanent": true,
-    "code": "backend/services/totp/update.mts:13"
+    "code": "backend/services/totp/update.mts:13",
+    "routes": ["PATCH /api/v1/auth/totp/:id"]
   },
   {
     "annotation": "renewContributionAdmissionLease",
-    "route": null,
     "maxCount": null,
     "reason": "Lease fences run after the claim, after beforeCapacity and as the commit fence returning the database-clock committed_at inside the final transaction (admission.mts:49-51, :64 and :93)",
     "permanent": true,
-    "code": "backend/services/contribution-gating/admission.mts:49-51"
+    "code": "backend/services/contribution-gating/admission.mts:49-51",
+    "routes": [
+      "POST /api/v1/communities/:idOrSlug/posts",
+      "POST /api/v1/mcp",
+      "POST /api/v1/mcp tools/call create_content_report",
+      "POST /api/v1/my/import/topics",
+      "POST /api/v1/posts",
+      "POST /api/v1/rss-feed-items/:id/discussions",
+      "POST /api/v1/stories/:storyId/discussions",
+      "POST /api/v1/topic-recommendations"
+    ]
   },
   {
     "annotation": "replayClientGeneratedTurn",
-    "route": null,
     "maxCount": null,
     "reason": "The route reads an acknowledged turn before any safety provider is called, and the transaction reads it again after locking the conversation so concurrent retries replay one turn",
     "permanent": true,
-    "code": "backend/services/conversations-messages/client-generated-chat.mts:54"
+    "code": "backend/services/conversations-messages/client-generated-chat.mts:54",
+    "routes": ["POST /api/v1/conversations/:conversationId/client-generated-chat"]
   },
   {
     "annotation": "resolveEntityRelationElectionTargetById",
-    "route": null,
     "maxCount": null,
     "reason": "The in-lock resolve sees a soft-delete committed after preflight. Reusing that earlier target lets a neutral PUT write a zero vote and return 204 instead of 422.",
     "permanent": true,
-    "code": "backend/services/elections-votes/entity-relation/resolve-election-target.mts:28"
+    "code": "backend/services/elections-votes/entity-relation/resolve-election-target.mts:28",
+    "routes": [
+      "DELETE /api/v1/entity-relations/:id/vote",
+      "POST /api/v1/mcp",
+      "POST /api/v1/mcp tools/call withdraw_entity_relation_vote",
+      "PUT /api/v1/entity-relations/:id/vote"
+    ]
   },
   {
     "annotation": "retainCurrentRssFeedPublicationKeys",
-    "route": null,
     "maxCount": null,
     "reason": "The topic-change capture reads the feed after the topic update, so it sees the topic the earlier state-change capture did not.",
     "permanent": true,
-    "code": "backend/services/post-publication/capture-rss-feeds.mts:153"
+    "code": "backend/services/post-publication/capture-rss-feeds.mts:153",
+    "routes": ["PATCH /api/v1/rss-feeds/:id"]
   },
   {
     "annotation": "retainPostPublicationDirtyWorkKeys",
-    "route": null,
     "maxCount": null,
     "reason": "Each scope inserts its retained keys only after that scope's advisory lock and dirty-work row exist.",
     "permanent": true,
-    "code": "backend/services/post-publication/retained-key-writes.mts:92"
+    "code": "backend/services/post-publication/retained-key-writes.mts:92",
+    "routes": [
+      "PATCH /api/v1/posts/:idOrSlug",
+      "POST /api/v1/communities/:idOrSlug/posts",
+      "POST /api/v1/mcp",
+      "POST /api/v1/posts",
+      "POST /api/v1/rss-feed-categories/assignments",
+      "POST /api/v1/topic-recommendations/:id/approvals"
+    ]
   },
   {
     "annotation": "retainPublicationIdentityBridges",
-    "route": null,
     "maxCount": null,
     "reason": "Prepare locks each identity family in global order before dirty work is written, then the scope upsert locks that same bridge again before the foreign-key insert.",
     "permanent": true,
-    "code": "backend/services/post-publication/identity-bridges.mts:98"
+    "code": "backend/services/post-publication/identity-bridges.mts:98",
+    "routes": [
+      "DELETE /api/v1/communities/:idOrSlug",
+      "DELETE /api/v1/posts/:idOrSlug",
+      "DELETE /api/v1/rss-feeds/:id",
+      "DELETE /api/v1/topic-recommendations/:id",
+      "DELETE /api/v1/topics/:idOrSlug/aliases/:aliasId",
+      "DELETE /api/v1/users/:userId/suspension",
+      "PATCH /api/v1/communities/:idOrSlug",
+      "PATCH /api/v1/communities/:idOrSlug/posts/:postId",
+      "PATCH /api/v1/my/identity",
+      "PATCH /api/v1/posts/:idOrSlug",
+      "PATCH /api/v1/posts/:idOrSlug/ratings/:topicId",
+      "PATCH /api/v1/rss-feeds/:id",
+      "PATCH /api/v1/topic-recommendations/:id",
+      "PATCH /api/v1/users/:idOrSlug",
+      "POST /api/v1/communities/:idOrSlug/posts",
+      "POST /api/v1/disputes/:id/resolution",
+      "POST /api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType",
+      "POST /api/v1/fediverse/instances",
+      "POST /api/v1/mcp",
+      "POST /api/v1/my/import/topics",
+      "POST /api/v1/posts",
+      "POST /api/v1/posts/:idOrSlug/clearances",
+      "POST /api/v1/posts/:idOrSlug/ratings",
+      "POST /api/v1/rss-feed-categories/assignments",
+      "POST /api/v1/rss-feed-items/:id/discussions",
+      "POST /api/v1/stories/:storyId/discussions",
+      "POST /api/v1/topic-recommendations",
+      "POST /api/v1/topic-recommendations/:id/approvals",
+      "POST /api/v1/topics",
+      "POST /api/v1/topics/:idOrSlug/aliases",
+      "POST /api/v1/topics/:sourceIdOrSlug/merges",
+      "PUT /api/v1/posts/:idOrSlug/images",
+      "PUT /api/v1/users/:userId/suspension"
+    ]
   },
   {
     "annotation": "retainPublicationIdentityRoots",
-    "route": null,
     "maxCount": null,
     "reason": "Prepare locks each identity family in global order before dirty work is written, then the scope upsert locks that same bridge again before the foreign-key insert.",
     "permanent": true,
-    "code": "backend/services/post-publication/identity-bridges.mts:80"
+    "code": "backend/services/post-publication/identity-bridges.mts:80",
+    "routes": [
+      "DELETE /api/v1/posts/:idOrSlug",
+      "DELETE /api/v1/topic-recommendations/:id",
+      "DELETE /api/v1/users/:userId/suspension",
+      "PATCH /api/v1/communities/:idOrSlug/posts/:postId",
+      "PATCH /api/v1/my/identity",
+      "PATCH /api/v1/posts/:idOrSlug",
+      "PATCH /api/v1/posts/:idOrSlug/ratings/:topicId",
+      "PATCH /api/v1/topic-recommendations/:id",
+      "PATCH /api/v1/users/:idOrSlug",
+      "POST /api/v1/communities/:idOrSlug/posts",
+      "POST /api/v1/disputes/:id/resolution",
+      "POST /api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType",
+      "POST /api/v1/mcp",
+      "POST /api/v1/my/import/topics",
+      "POST /api/v1/posts",
+      "POST /api/v1/posts/:idOrSlug/clearances",
+      "POST /api/v1/posts/:idOrSlug/ratings",
+      "POST /api/v1/rss-feed-items/:id/discussions",
+      "POST /api/v1/stories/:storyId/discussions",
+      "POST /api/v1/topic-recommendations",
+      "PUT /api/v1/posts/:idOrSlug/images",
+      "PUT /api/v1/users/:userId/suspension"
+    ]
   },
   {
     "annotation": "revokeAllAuthenticatedSessions",
-    "route": null,
     "maxCount": null,
     "reason": "The session update runs after fn_lock_active_user_for_mutation to serialize revocation with session creation and account deletion",
     "permanent": true,
-    "code": "backend/services/jwt-session/user-session-revocation.mts:37"
+    "code": "backend/services/jwt-session/user-session-revocation.mts:37",
+    "routes": ["POST /api/v1/auth/sessions/revocations"]
   },
   {
     "annotation": "revokeApiKey",
-    "route": null,
     "maxCount": null,
     "reason": "The key update runs after fn_lock_active_user_for_mutation to serialize revocation with key rotation and account deletion",
     "permanent": true,
-    "code": "backend/services/api-keys/revoke.mts:8"
+    "code": "backend/services/api-keys/revoke.mts:8",
+    "routes": ["DELETE /api/v1/my/api-keys/:id"]
   },
   {
     "annotation": "revokeAuthenticatedSession",
-    "route": null,
     "maxCount": null,
     "reason": "The session update runs after fn_lock_active_user_for_mutation to serialize revocation with session creation and account deletion",
     "permanent": true,
-    "code": "backend/services/jwt-session/user-session-revocation.mts:16"
+    "code": "backend/services/jwt-session/user-session-revocation.mts:16",
+    "routes": ["DELETE /api/v1/auth/sessions/:id"]
   },
   {
     "annotation": "rotateApiKey",
-    "route": null,
     "maxCount": null,
     "reason": "Lock and validate the old key FOR UPDATE before inserting its replacement and linking the old key to it",
     "permanent": true,
-    "code": "backend/services/api-keys/rotate.mts:45"
+    "code": "backend/services/api-keys/rotate.mts:45",
+    "routes": ["POST /api/v1/my/api-keys/:id/rotate"]
   },
   {
     "annotation": "setMyLandingPageDefault",
-    "route": null,
     "maxCount": null,
     "reason": "The current default must be cleared before setting the selected page because the partial unique index permits only one default per user (backend/services/my/landing-pages/set-default.mts:35-44)",
     "permanent": true,
-    "code": "backend/services/my/landing-pages/set-default.mts:35"
+    "code": "backend/services/my/landing-pages/set-default.mts:35",
+    "routes": ["PATCH /api/v1/my/landing-pages/:pageId"]
   },
   {
     "annotation": "setPrimaryEmailAddress",
-    "route": null,
     "maxCount": null,
     "reason": "After locking the active user, clear the old primary before setting its replacement to satisfy the unique primary-address constraint",
     "permanent": true,
-    "code": "backend/services/my/email-addresses.mts:21"
+    "code": "backend/services/my/email-addresses.mts:21",
+    "routes": ["PATCH /api/v1/my/email-addresses/:email"]
   },
   {
     "annotation": "sharePublicationIdentityBridgeOwnership",
-    "route": null,
     "maxCount": null,
     "reason": "Prepare locks each identity family in global order before dirty work is written, then the scope upsert locks that same bridge again before the foreign-key insert.",
     "permanent": true,
-    "code": "backend/services/post-publication/identity-bridges.mts:106"
+    "code": "backend/services/post-publication/identity-bridges.mts:106",
+    "routes": [
+      "DELETE /api/v1/communities/:idOrSlug",
+      "DELETE /api/v1/posts/:idOrSlug",
+      "DELETE /api/v1/rss-feeds/:id",
+      "DELETE /api/v1/topic-recommendations/:id",
+      "DELETE /api/v1/topics/:idOrSlug/aliases/:aliasId",
+      "DELETE /api/v1/users/:userId/suspension",
+      "PATCH /api/v1/communities/:idOrSlug",
+      "PATCH /api/v1/communities/:idOrSlug/posts/:postId",
+      "PATCH /api/v1/my/identity",
+      "PATCH /api/v1/posts/:idOrSlug",
+      "PATCH /api/v1/posts/:idOrSlug/ratings/:topicId",
+      "PATCH /api/v1/rss-feeds/:id",
+      "PATCH /api/v1/topic-recommendations/:id",
+      "PATCH /api/v1/users/:idOrSlug",
+      "POST /api/v1/communities/:idOrSlug/posts",
+      "POST /api/v1/disputes/:id/resolution",
+      "POST /api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType",
+      "POST /api/v1/fediverse/instances",
+      "POST /api/v1/mcp",
+      "POST /api/v1/my/import/topics",
+      "POST /api/v1/posts",
+      "POST /api/v1/posts/:idOrSlug/clearances",
+      "POST /api/v1/posts/:idOrSlug/ratings",
+      "POST /api/v1/rss-feed-categories/assignments",
+      "POST /api/v1/rss-feed-items/:id/discussions",
+      "POST /api/v1/stories/:storyId/discussions",
+      "POST /api/v1/topic-recommendations",
+      "POST /api/v1/topic-recommendations/:id/approvals",
+      "POST /api/v1/topics",
+      "POST /api/v1/topics/:idOrSlug/aliases",
+      "POST /api/v1/topics/:sourceIdOrSlug/merges",
+      "PUT /api/v1/posts/:idOrSlug/images",
+      "PUT /api/v1/users/:userId/suspension"
+    ]
   },
   {
     "annotation": "updateEntityRelationElectionVoteStatsFromPrimaryBatch",
-    "route": null,
     "maxCount": null,
     "reason": "Stats refresh is chunked with bounded iteration, and publication scopes are locked before the relation FOR UPDATE.",
     "permanent": true,
-    "code": "backend/services/elections-votes/entity-relation/vote-stats-batch.mts:131"
+    "code": "backend/services/elections-votes/entity-relation/vote-stats-batch.mts:131",
+    "routes": ["POST /api/v1/posts"]
   },
   {
     "annotation": "updateTopicRecommendation",
-    "route": null,
     "maxCount": null,
     "reason": "The read after the recommendation mutation fence sees the previous holder's hostname commit before materialization; the folded write remains a separate statement.",
     "permanent": true,
-    "code": "backend/services/topic-recommendations/update-topic-recommendation.mts:37"
+    "code": "backend/services/topic-recommendations/update-topic-recommendation.mts:37",
+    "routes": ["PATCH /api/v1/topic-recommendations/:id"]
   },
   {
     "annotation": "upsertAuthenticatedSession",
-    "route": null,
     "maxCount": null,
     "reason": "The session upsert runs after the user advisory lock and user-agent persistence, seeing any revocation or deletion that won the lock",
     "permanent": true,
-    "code": "backend/services/jwt-session/user-sessions.mts:25"
+    "code": "backend/services/jwt-session/user-sessions.mts:writeAuthenticatedSession",
+    "routes": [
+      "GET /api/v1/auth/sessions",
+      "POST /api/v1/app-attestation/attest",
+      "POST /api/v1/auth/email-address/login",
+      "POST /api/v1/auth/mfa/totp/verification",
+      "POST /api/v1/auth/oauth/:provider/continue",
+      "POST /api/v1/auth/oauth/authorizations/:flowId/complete",
+      "POST /api/v1/auth/native/email-address/login"
+    ]
   },
   {
     "annotation": "upsertPostPublicationDirtyWork",
-    "route": null,
     "maxCount": null,
     "reason": "Each scope family upserts through its own conflict column, after that family's identity lock and before its keys.",
     "permanent": true,
-    "code": "backend/services/post-publication/upsert-dirty-work.mts:30"
+    "code": "backend/services/post-publication/upsert-dirty-work.mts:30",
+    "routes": [
+      "PATCH /api/v1/posts/:idOrSlug",
+      "PATCH /api/v1/rss-feeds/:id",
+      "POST /api/v1/communities/:idOrSlug/posts",
+      "POST /api/v1/mcp",
+      "POST /api/v1/posts",
+      "POST /api/v1/rss-feed-categories/assignments",
+      "POST /api/v1/rss-feed-items/:id/discussions",
+      "POST /api/v1/stories/:storyId/discussions",
+      "POST /api/v1/topic-recommendations/:id/approvals",
+      "PUT /api/v1/posts/:idOrSlug/images"
+    ]
   },
   {
     "annotation": "upsertUrlHostnames",
-    "route": null,
     "maxCount": null,
     "reason": "Within one call the INSERT parent-block snapshot is taken after the promotion-lock wait, so the preceding read stays.",
     "permanent": true,
-    "code": "backend/services/urls-hostnames/upsert.mts:105"
-  },
-  {
-    "annotation": "upsertUserAgentString",
-    "route": null,
-    "maxCount": null,
-    "reason": "On a miss INSERT ON CONFLICT may wait for another transaction; the following SELECT needs a new snapshot to see its committed row",
-    "permanent": true,
-    "code": "backend/data-stores/psql/upsert-user-agent-string.mts:15"
+    "code": "backend/services/urls-hostnames/upsert.mts:105",
+    "routes": [
+      "PATCH /api/v1/my/profile/links/:id",
+      "POST /api/v1/my/profile/links",
+      "POST /api/v1/referral-links",
+      "POST /api/v1/referral-programs/:id/official-referral-links",
+      "POST /api/v1/topic-recommendations/:id/approvals",
+      "POST /api/v1/topics/:idOrSlug/additional-hostnames"
+    ]
   },
   {
     "annotation": "upsertUserFinancialProfile",
-    "route": null,
     "maxCount": null,
     "reason": "The owner individual and existing financial-profile row are locked in the transaction before validating currency-dependent patches; the second lock read prevents concurrent updates from validating against stale profile data (backend/services/user-financial-profiles/upsert.mts:17-39)",
     "permanent": true,
-    "code": "backend/services/user-financial-profiles/upsert.mts:17"
+    "code": "backend/services/user-financial-profiles/upsert.mts:17",
+    "routes": ["PUT /api/v1/my/financial-profile"]
   },
   {
     "annotation": "verifyEmailVerificationToken",
-    "route": null,
     "maxCount": null,
     "reason": "After the active-user lock, consume the valid token before a fresh-snapshot address-ownership check and verified-address insert, preserving code-error precedence",
     "permanent": true,
-    "code": "backend/services/my/email-address-verification.mts:93"
+    "code": "backend/services/my/email-address-verification.mts:93",
+    "routes": ["POST /api/v1/my/email-addresses/:email/verifications"]
   },
   {
     "annotation": "verifyTotpSetup",
-    "route": null,
     "maxCount": null,
     "reason": "After the optimistic code check, lock the active user then update only an unverified factor so concurrent verification returns the existing 422",
     "permanent": true,
-    "code": "backend/services/totp/verify-setup.mts:14"
+    "code": "backend/services/totp/verify-setup.mts:14",
+    "routes": ["POST /api/v1/auth/totp/setup/verification"]
   },
   {
     "annotation": "withMfaLock",
-    "route": null,
     "maxCount": null,
     "reason": "Lock the active user, then passkey rows, then TOTP rows before counting methods and consuming reauthentication to prevent concurrent last-factor deletions",
     "permanent": true,
-    "code": "backend/services/mfa/protected-mfa-delete.mts:14"
+    "code": "backend/services/mfa/protected-mfa-delete.mts:14",
+    "routes": ["DELETE /api/v1/auth/passkeys/:id", "DELETE /api/v1/auth/totp/:id"]
+  },
+  {
+    "annotation": "expireElapsedMemberships",
+    "routes": ["DELETE /api/v1/membership-grants/:grantId"],
+    "maxCount": null,
+    "reason": "Expiring one projection can activate an already elapsed queued grant, so revocation must normalize through a variable number of rechecks before locking and checking the grant.",
+    "permanent": true,
+    "code": "backend/services/memberships/grants/expire-elapsed.mts:39-75"
   }
 ]

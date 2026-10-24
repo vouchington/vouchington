@@ -3,9 +3,11 @@ import { baselineEntryProblem } from './request-query-profile-baseline-validatio
 
 /** A repeat tolerated until the open `issue` removes it. */
 interface BaselineScope {
-  /** Null preserves an intentional exception on every route. */
-  route: string | null
-  /** Null preserves an intentional unbounded exception. A bounded exception names one route. */
+  /** Exact request identities, including MCP tool-call identities. */
+  routes: string[]
+  /** Exact worker identities. Worker scopes never excuse a request repeat. */
+  workers?: Array<{ queue: string; job: string }>
+  /** Null preserves an intentional unbounded exception within the named scopes. */
   maxCount: number | null
 }
 
@@ -35,14 +37,25 @@ export type RepeatBaselineEntry = TemporaryBaselineEntry | PermanentBaselineEntr
 export function parseRepeatBaseline(raw: unknown): RepeatBaselineEntry[] {
   if (!Array.isArray(raw)) throw new Error('Query-profile baseline must be an array of entries')
   const problems: string[] = []
-  const seen = new Set<unknown>()
+  const seenScopes = new Set<string>()
   raw.forEach((entry: unknown, index) => {
     const problem = baselineEntryProblem(entry)
     const name = (entry as { annotation?: unknown } | null)?.annotation
     if (problem) problems.push(`entry ${index} (${JSON.stringify(name)}) ${problem}`)
-    else if (seen.has(name))
-      problems.push(`entry ${index} (${JSON.stringify(name)}) is a duplicate`)
-    seen.add(name)
+    else {
+      const scoped = entry as RepeatBaselineEntry
+      const scopes = [
+        ...scoped.routes.map(route => JSON.stringify([scoped.annotation, 'route', route])),
+        ...(scoped.workers ?? []).map(({ queue, job }) =>
+          JSON.stringify([scoped.annotation, 'worker', queue, job]),
+        ),
+      ]
+      for (const scope of scopes) {
+        if (seenScopes.has(scope))
+          problems.push(`entry ${index} (${JSON.stringify(name)}) has a duplicate scope ${scope}`)
+        seenScopes.add(scope)
+      }
+    }
   })
   if (problems.length > 0) {
     throw new Error(`Malformed query-profile baseline:\n${problems.join('\n')}`)
@@ -67,13 +80,12 @@ export function findUnbaselinedRepeats(
   repeats: readonly RepeatedAnnotation[],
   baseline: readonly RepeatBaselineEntry[],
 ): RepeatedAnnotation[] {
-  const known = new Map(baseline.map(entry => [entry.annotation, entry]))
   return repeats.filter(({ annotation, count }) => {
-    const entry = known.get(annotation)
-    return (
-      !entry ||
-      (entry.route !== null && entry.route !== route) ||
-      (entry.maxCount !== null && count > entry.maxCount)
+    return !baseline.some(
+      entry =>
+        entry.annotation === annotation &&
+        entry.routes.includes(route) &&
+        (entry.maxCount === null || count <= entry.maxCount),
     )
   })
 }

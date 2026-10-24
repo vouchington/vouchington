@@ -4,10 +4,12 @@ import {
   type LoopbackHost,
 } from 'vouchington-tooling/runner-port-policy'
 import { profileRequestQueries } from './api/request-query-profile.mts'
+import type { RouteMatcher } from './request-query-profile-route.mts'
 
 /** Real HTTP dispatch on an owned listener; inherited transaction ownership stays with the caller. */
 export async function withOwnedApiServer<Result>(
   listener: (request: http.IncomingMessage, response: http.ServerResponse) => void,
+  matcher: RouteMatcher,
   run: (address: { host: LoopbackHost; port: number }) => Promise<Result>,
 ): Promise<Result> {
   const responses: Promise<void>[] = []
@@ -37,7 +39,7 @@ export async function withOwnedApiServer<Result>(
     })
     void completed.catch(() => undefined)
     responses.push(completed)
-    profileRequestQueries(req, res, () => listener(req, res))
+    profileRequestQueries(req, res, () => listener(req, res), matcher)
   })
   const serverErrors: unknown[] = []
   const observeServerError = (error: Error) => {
