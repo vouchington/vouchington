@@ -25,6 +25,7 @@ import {
   processDistributeActivityJob,
 } from '@workers/activitypub/processors'
 import { createTestUserDirect, readAllQueueJobs } from '@voucha/test-helpers'
+import { mintDistributionActivityIdForTest } from '@voucha/test-helpers/activitypub-distribution-worker-fixtures'
 import {
   startBackgroundHarness,
   type BackgroundHarness,
@@ -137,7 +138,7 @@ describe('activitypub through the production background processor', () => {
     const source = await createFederatedUser()
     const target = await createFederatedUser()
     const remote = await createRemoteFollower(source.id)
-    const activityId = randomUUID()
+    const activityId = mintDistributionActivityIdForTest()
     const captured: CapturedRequest[] = []
     const started = await startWith(job =>
       processDeliverActivityJob(job, {
@@ -192,7 +193,7 @@ describe('activitypub through the production background processor', () => {
   it('delays a distribution job while its durable page lease is held', async () => {
     const source = await createFederatedUser()
     const target = await createFederatedUser()
-    const activityId = randomUUID()
+    const activityId = mintDistributionActivityIdForTest()
     const page = await prepareActivityDistributionPage(activityId, source.id)
     if (page.status !== 'ready') throw new Error('Expected to claim a distribution page')
     try {

@@ -50,6 +50,12 @@ CREATE TABLE IF NOT EXISTS "${metadata.table_name}" (\n`
     outbound_activitypub_follow_activity_id UUID DEFAULT uuidv7()`
   }
 
+  const storesInboundFollowActivityRowId =
+    metadata.table_name === 'relation__remote_actor__follow__user'
+  if (storesInboundFollowActivityRowId) {
+    query += `,\n    inbound_follow_activity_row_id UUID`
+  }
+
   if (metadata.election) {
     query += `,
     id UUID NOT NULL DEFAULT uuidv7()`

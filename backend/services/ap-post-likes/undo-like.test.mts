@@ -9,9 +9,10 @@ describe('undoLike', () => {
   it('soft-deletes the active Like, dropping the tally to zero', async () => {
     const post = await createTestPost()
     const remoteActor = await createRemoteActorFixture()
-    await recordLike(post.id, remoteActor.id, `https://remote.example/activities/${remoteActor.id}`)
+    const likeId = `https://remote.example/activities/${remoteActor.id}`
+    await recordLike(post.id, remoteActor.id, likeId)
 
-    await undoLike(post.id, remoteActor.id)
+    await undoLike(post.id, remoteActor.id, likeId)
 
     expect(await getApPostLikesTally(post.id)).toEqual({
       activitypub_likes_score: 0,
@@ -23,7 +24,9 @@ describe('undoLike', () => {
     const post = await createTestPost()
     const remoteActor = await createRemoteActorFixture()
 
-    await expect(undoLike(post.id, remoteActor.id)).resolves.toBeUndefined()
+    await expect(
+      undoLike(post.id, remoteActor.id, `https://remote.example/activities/${remoteActor.id}`),
+    ).resolves.toBeUndefined()
 
     expect(await getApPostLikesTally(post.id)).toBeNull()
   })
@@ -31,10 +34,11 @@ describe('undoLike', () => {
   it('is a no-op for a redelivered Undo after the Like was already undone', async () => {
     const post = await createTestPost()
     const remoteActor = await createRemoteActorFixture()
-    await recordLike(post.id, remoteActor.id, `https://remote.example/activities/${remoteActor.id}`)
-    await undoLike(post.id, remoteActor.id)
+    const likeId = `https://remote.example/activities/${remoteActor.id}`
+    await recordLike(post.id, remoteActor.id, likeId)
+    await undoLike(post.id, remoteActor.id, likeId)
 
-    await expect(undoLike(post.id, remoteActor.id)).resolves.toBeUndefined()
+    await expect(undoLike(post.id, remoteActor.id, likeId)).resolves.toBeUndefined()
 
     expect(await getApPostLikesTally(post.id)).toEqual({
       activitypub_likes_score: 0,
@@ -49,7 +53,7 @@ describe('undoLike', () => {
     await recordLike(post.id, first.id, `https://remote.example/activities/${first.id}`)
     await recordLike(post.id, second.id, `https://remote.example/activities/${second.id}`)
 
-    await undoLike(post.id, first.id)
+    await undoLike(post.id, first.id, `https://remote.example/activities/${first.id}`)
 
     expect(await getApPostLikesTally(post.id)).toEqual({
       activitypub_likes_score: 1,

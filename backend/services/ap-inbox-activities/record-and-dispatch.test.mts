@@ -1,8 +1,15 @@
 import { randomUUID } from 'node:crypto'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import { getActorUri } from '@modules/activitypub-uris'
 import { generateRsaSha256KeyPair } from '@modules/http-signatures'
-import { getEntityRelation, readAllQueueJobs, readEnqueuedJob } from '@voucha/test-helpers'
+import {
+  advanceFederationReplayFloorForTest,
+  deleteFederationInboxActivityForTest,
+  getEntityRelation,
+  readAllQueueJobs,
+  readEnqueuedJob,
+} from '@voucha/test-helpers'
+import { withCommittedPostgresTransactionForTest } from '@voucha/test-helpers/postgres-transaction'
 import { recordAndDispatchInboundActivity } from './record-and-dispatch.mts'
 import { recordInboxActivity } from './record-activity.mts'
 import {
@@ -20,6 +27,8 @@ import {
 } from '@voucha/test-helpers/activitypub-inbox-transitions'
 
 registerActivityPubInboxAdmission()
+import { activityPubInboxConfig, getMaximumActivityAgeDays } from './config.mts'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 
 const randomSuffix = () => Math.random().toString(36).slice(2, 10)
 
@@ -40,12 +49,76 @@ function makeUnpersistedRemoteActor(): RemoteActorRow {
 }
 
 describe('recordAndDispatchInboundActivity', () => {
+  it('rejects a retired signed date after the configured age is widened', async () => {
+    const remoteActor = makeUnpersistedRemoteActor()
+    const id = `https://remote.example/activities/${randomSuffix()}`
+    const signedAt = new Date(Date.now() - 40 * 86_400_000)
+    await withCommittedPostgresTransactionForTest(query =>
+      advanceFederationReplayFloorForTest(query, 'inbox', signedAt),
+    )
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(activityPubInboxConfig, {
+        maximum_activity_age_days: 60,
+      }),
+    )
+    await expect(
+      recordAndDispatchInboundActivity(remoteActor, {
+        id,
+        type: 'Announce',
+        actor: remoteActor.actor_uri,
+        object: 'https://voucha.test/ap/posts/some-post',
+        signedAt,
+      }),
+    ).rejects.toMatchObject({ status: 401, message: 'Activity signature date is retired' })
+  })
+
+  it('rejects a signed request beyond the configured age before reserving its identity', async () => {
+    const remoteActor = makeUnpersistedRemoteActor()
+    const id = `https://remote.example/activities/${randomSuffix()}`
+    const signedAt = new Date(Date.now() - (getMaximumActivityAgeDays() + 1) * 86_400_000)
+    await expect(
+      recordAndDispatchInboundActivity(remoteActor, {
+        id,
+        type: 'Announce',
+        actor: remoteActor.actor_uri,
+        object: 'https://voucha.test/ap/posts/some-post',
+        signedAt,
+      }),
+    ).rejects.toMatchObject({ status: 401 })
+    expect(await recordInboxActivity(id, 'Announce', remoteActor.actor_uri)).toBe(true)
+  })
+
+  it('accepts and deduplicates a signed request inside the configured age', async () => {
+    const remoteActor = makeUnpersistedRemoteActor()
+    const activity = {
+      id: `https://remote.example/activities/${randomSuffix()}`,
+      type: 'Announce',
+      actor: remoteActor.actor_uri,
+      object: 'https://voucha.test/ap/posts/some-post',
+      signedAt: new Date(Date.now() - (getMaximumActivityAgeDays() - 1) * 86_400_000),
+    }
+    expect(await recordAndDispatchInboundActivity(remoteActor, activity)).toMatchObject({
+      duplicate: false,
+    })
+    expect(await recordAndDispatchInboundActivity(remoteActor, activity)).toMatchObject({
+      duplicate: true,
+    })
+    await withCommittedPostgresTransactionForTest(query =>
+      deleteFederationInboxActivityForTest(query, activity.id),
+    )
+    await expect(
+      recordAndDispatchInboundActivity(remoteActor, {
+        ...activity,
+        signedAt: new Date(Date.now() - (getMaximumActivityAgeDays() + 1) * 86_400_000),
+      }),
+    ).rejects.toMatchObject({ status: 401 })
+    expect(await recordInboxActivity(activity.id, activity.type, activity.actor)).toBe(true)
+  })
   it('reports a replay as duplicate without re-dispatching', async () => {
     const remoteActor = makeUnpersistedRemoteActor()
     const activityId = `https://remote.example/activities/${randomSuffix()}`
-    // First call must succeed all the way through so the dedup marker is durably left in place —
-    // an unsupported activity type dispatches to a no-op, never throwing.
     const first = await recordAndDispatchInboundActivity(remoteActor, {
+      signedAt: new Date(),
       id: activityId,
       type: 'Announce',
       actor: remoteActor.actor_uri,
@@ -54,6 +127,7 @@ describe('recordAndDispatchInboundActivity', () => {
     expect(first).toEqual({ outcome: 'applied', duplicate: false })
 
     const replay = await recordAndDispatchInboundActivity(remoteActor, {
+      signedAt: new Date(),
       id: activityId,
       type: 'Announce',
       actor: remoteActor.actor_uri,
@@ -68,6 +142,7 @@ describe('recordAndDispatchInboundActivity', () => {
     const user = await createFederatedUser()
     const activityId = `https://remote.example/activities/${randomSuffix()}`
     const activity = {
+      signedAt: new Date(),
       id: activityId,
       type: 'Follow',
       actor: remoteActor.actor_uri,
@@ -78,7 +153,6 @@ describe('recordAndDispatchInboundActivity', () => {
       'foreign key constraint',
     )
 
-    // The failed relation write and reservation share a transaction, so the retry can reserve it.
     const isFirstSeenAgain = await recordInboxActivity(activityId, activity.type, activity.actor)
     expect(isFirstSeenAgain).toBe(true)
   })
@@ -88,6 +162,7 @@ describe('recordAndDispatchInboundActivity', () => {
     const user = await createFederatedUser()
     const activityId = `https://remote.example/activities/${randomSuffix()}`
     const activity = {
+      signedAt: new Date(),
       id: activityId,
       type: 'Follow',
       actor: remoteActor.actor_uri,
@@ -132,6 +207,7 @@ describe('recordAndDispatchInboundActivity duplicate Follow Accept resend', () =
     const user = await createFederatedUser()
     const followActivityId = `https://remote.example/activities/${randomSuffix()}`
     const activity = {
+      signedAt: new Date(),
       id: followActivityId,
       type: 'Follow',
       actor: remoteActor.actor_uri,
@@ -164,14 +240,12 @@ describe('recordAndDispatchInboundActivity duplicate Follow Accept resend', () =
     })
   })
 
-  // Round-7 re-review fix: a stale/out-of-order redelivery of the *original* Follow id, arriving
-  // after the sender already sent Undo(Follow), must not resurrect the relation just because the
-  // dedup ledger treats it as a duplicate delivery.
   it('does not resurrect a relation, or resend an Accept, for a stale duplicate Follow after Undo(Follow)', async () => {
     const remoteActor = await createRemoteActorFixture()
     const user = await createFederatedUser()
     const followActivityId = `https://remote.example/activities/${randomSuffix()}`
     const followActivity = {
+      signedAt: new Date(),
       id: followActivityId,
       type: 'Follow',
       actor: remoteActor.actor_uri,
@@ -186,10 +260,11 @@ describe('recordAndDispatchInboundActivity duplicate Follow Accept resend', () =
     expect(ownedAcceptJobsBeforeUndo).toHaveLength(1)
 
     const undoActivity = {
+      signedAt: new Date(),
       id: `https://remote.example/activities/${randomSuffix()}`,
       type: 'Undo',
       actor: remoteActor.actor_uri,
-      object: { type: 'Follow', object: getActorUri(user.id) },
+      object: { id: followActivityId, type: 'Follow', object: getActorUri(user.id) },
     }
     const undoResult = await recordAndDispatchInboundActivity(remoteActor, undoActivity)
     expect(undoResult).toEqual({ outcome: 'applied', duplicate: false })
@@ -197,6 +272,16 @@ describe('recordAndDispatchInboundActivity duplicate Follow Accept resend', () =
     const staleReplay = await recordAndDispatchInboundActivity(remoteActor, followActivity)
     expect(staleReplay).toMatchObject({ outcome: 'applied', duplicate: true })
     expect(staleReplay).not.toHaveProperty('postCommitEnqueue')
+
+    await withCommittedPostgresTransactionForTest(query =>
+      deleteFederationInboxActivityForTest(query, followActivityId),
+    )
+    const freshSignatureReplay = await recordAndDispatchInboundActivity(remoteActor, {
+      ...followActivity,
+      signedAt: new Date(),
+    })
+    expect(freshSignatureReplay).toMatchObject({ outcome: 'applied', duplicate: false })
+    expect(freshSignatureReplay).not.toHaveProperty('postCommitEnqueue')
 
     const followRelation = getEntityRelationMetadataOrThrow({
       subjectType: 'remote_actor',

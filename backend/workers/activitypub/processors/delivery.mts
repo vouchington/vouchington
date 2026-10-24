@@ -1,5 +1,8 @@
 import { getActorKeyId } from '@modules/activitypub-uris'
+import { getDateFromUUIDv7 } from '@modules/utils/ids'
 import { wrapHttpForRetry } from '@modules/queue-errors'
+import { getMaximumActivityAgeDays } from '@services/ap-inbox-activities/config'
+import { readOutboundReplayFloor } from '@services/ap-inbox-activities/replay-floor'
 import {
   buildActivityJson,
   commitActivityDistributionPage,
@@ -28,6 +31,7 @@ type DeliverActivityDependencies = {
   deliverActivityToInbox: typeof deliverActivityToInbox
   getActorPrivateKeyPem: typeof getActorPrivateKeyPem
   isFederationEnabledForUser: typeof isFederationEnabledForUser
+  readOutboundReplayFloor: typeof readOutboundReplayFloor
 }
 
 function isUndoMissingOriginalActivityId(
@@ -36,6 +40,16 @@ function isUndoMissingOriginalActivityId(
   if (data.activityType !== 'UndoFollow' && data.activityType !== 'UndoLike') return false
   const originalActivityId = (data as { originalActivityId?: unknown }).originalActivityId
   return typeof originalActivityId !== 'string' || originalActivityId.trim().length === 0
+}
+
+function activityAgeRejectionReason(
+  activityId: string,
+): 'unsupported-activity-id' | 'expired-activity' | null {
+  const activityCreatedAt = getDateFromUUIDv7(activityId)
+  if (!activityCreatedAt) return 'unsupported-activity-id'
+  return Date.now() - activityCreatedAt.getTime() > getMaximumActivityAgeDays() * 86_400_000
+    ? 'expired-activity'
+    : null
 }
 
 // Fans a social action out to a bounded page of the acting user's remote followers. The durable
@@ -59,6 +73,9 @@ export async function distributeActivity(
   if (isUndoMissingOriginalActivityId(data)) {
     return { enqueued: 0, reason: 'missing-original-activity-id' as const }
   }
+  // UUIDv7 age prevents delayed retries from recreating an expired checkpoint.
+  const ageRejection = activityAgeRejectionReason(data.activityId)
+  if (ageRejection) return { enqueued: 0, reason: ageRejection }
   if (!(await deps.isFederationEnabledForUser(data.sourceUserId))) {
     return { enqueued: 0 }
   }
@@ -87,6 +104,7 @@ export async function distributeActivity(
     {},
     pageSize,
   )
+  if (page.status === 'expired') return { enqueued: 0, reason: 'expired-activity' as const }
   if (page.status === 'completed') return { enqueued: 0, completed: true }
   if (page.status === 'busy') {
     return { enqueued: 0, busy: true, retryAfterMs: page.retryAfterMs }
@@ -120,13 +138,8 @@ export async function distributeActivity(
   }
 }
 
-// Delivers one previously-built activity to one follower inbox (Phase C4). Drops the job (does
-// not throw, so it is not retried) when the sending user has no actor keypair — federation was
-// toggled on and then off, or the keypair row was never created — since there is nothing to sign
-// with and retrying cannot change that. Also re-checks federation-enabled here, not just at
-// distributeActivity's fan-out time: toggling the preference off does not delete the actor
-// keypair, so a job enqueued before the user disabled federation would otherwise still deliver
-// after the toggle, silently violating the opt-in.
+// Recheck the sender's opt-in and keypair before HTTP: disabling federation leaves keys intact,
+// while a missing key cannot recover through retries.
 export async function deliverActivity(
   data: DeliverActivityData,
   dependencies?: Partial<DeliverActivityDependencies>,
@@ -136,11 +149,22 @@ export async function deliverActivity(
     deliverActivityToInbox,
     getActorPrivateKeyPem,
     isFederationEnabledForUser,
+    readOutboundReplayFloor,
     ...dependencies,
   }
 
   if (isUndoMissingOriginalActivityId(data)) {
     return { delivered: false, reason: 'missing-original-activity-id' as const }
+  }
+  // Accept is a direct response with a stable UUIDv5 wire identity, not a distribution job.
+  // Every other production delivery shares the UUIDv7 source event and its maximum age.
+  if (data.activityType !== 'Accept') {
+    const ageRejection = activityAgeRejectionReason(data.activityId)
+    if (ageRejection) return { delivered: false, reason: ageRejection }
+    const rejectionFloor = await deps.readOutboundReplayFloor()
+    if (rejectionFloor && getDateFromUUIDv7(data.activityId)! <= rejectionFloor) {
+      return { delivered: false, reason: 'expired-activity' as const }
+    }
   }
   if (!(await deps.isFederationEnabledForUser(data.sourceUserId))) {
     return { delivered: false, reason: 'federation-disabled' as const }

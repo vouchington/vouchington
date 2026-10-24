@@ -7,12 +7,20 @@ import { recordLike, undoLike } from '@services/ap-post-likes'
 import { enqueueDeliverAcceptActivity } from '@queues/activitypub/enqueues/delivery'
 import type { RemoteActorRow } from '@services/remote-actors'
 import type { InboundActivity } from './parse-activity.mts'
-import type { QueryOptions } from '@data-stores/psql'
+import { beginTransaction, type QueryOptions } from '@data-stores/psql'
 import {
   getEmbeddedActivity,
   resolveFederatedTargetUserId,
   resolveLikeTargetPostId,
+  resolveUndoLikeTargetPostId,
+  resolveUndoTargetUserId,
 } from './dispatch-targets.mts'
+import {
+  isCurrentRemoteFollowCycle,
+  markRemoteFollowUndone,
+  reserveRemoteFollowCycle,
+  setCurrentRemoteFollowCycle,
+} from './follow-cycles.mts'
 
 export type InboundPostCommitAction = {
   type: 'send-follow-accept'
@@ -42,8 +50,14 @@ export async function dispatchInboundActivity(
   activity: InboundActivity,
   options: QueryOptions = {},
 ): Promise<InboundPostCommitAction | undefined> {
+  if (!options.query) {
+    await using query = await beginTransaction()
+    const action = await dispatchInboundActivity(remoteActor, activity, { query })
+    await query.commit()
+    return action
+  }
   if (activity.type === 'Follow') {
-    return handleFollow(remoteActor, activity, options)
+    return recoverDuplicateFollow(remoteActor, activity, options)
   }
   if (activity.type === 'Like') {
     await handleLike(remoteActor, activity, options)
@@ -53,46 +67,18 @@ export async function dispatchInboundActivity(
 
   const embeddedFollow = getEmbeddedActivity(activity.object, 'Follow')
   if (embeddedFollow) {
-    await handleUndoFollow(remoteActor, embeddedFollow.object, options)
+    await handleUndoFollow(remoteActor, embeddedFollow.id, embeddedFollow.object, options)
     return
   }
   const embeddedLike = getEmbeddedActivity(activity.object, 'Like')
   if (embeddedLike) {
-    await handleUndoLike(remoteActor, embeddedLike.object, options)
+    await handleUndoLike(remoteActor, embeddedLike.id, embeddedLike.object, options)
   }
   return undefined
 }
 
-async function handleFollow(
-  remoteActor: RemoteActorRow,
-  activity: InboundActivity,
-  options: QueryOptions,
-): Promise<InboundPostCommitAction | undefined> {
-  const targetUserId = await resolveFederatedTargetUserId(activity.object, options)
-  if (!targetUserId) return
-  await upsertEntityRelation(
-    null,
-    getEntityRelationMetadataOrThrow(FOLLOW_RELATION),
-    { id: remoteActor.id },
-    [{ id: targetUserId }],
-    { origin: 'remote', ...options },
-  )
-  return { type: 'send-follow-accept', remoteActor, activity, targetUserId }
-}
-
-// Recovers the relation and post-commit Accept action for a duplicate delivery of a
-// previously-processed Follow. The guarded relation write shares the dedup/envelope transaction;
-// only the queue enqueue remains post-commit.
-// Replays the same relation write handleFollow performs (round-3 re-review follow-up): the first delivery may have recorded the dedup row but no-oped the relation write entirely, e.g. because the target hadn't opted into federation yet. A retry after opt-in must not resend an Accept over a relation that was never created, or the remote server ends up believing the follow succeeded while Voucha has no relation to back it. upsertEntityRelation is an idempotent upsert gated on `newly_active` for its outbound side effects, so replaying it for an already-active relation is a harmless no-op. Re-resolves the target (and its current opt-in) rather than trusting stale state, mirroring every other re-check-at-use-time gate in this feature.
-// Round-9 re-review fix: the round-7 fix above only read deletion state before writing, and a
-// separate read can't close the race — a concurrent Undo(Follow) can commit between the read and
-// this write and get silently overwritten by the unconditional ON CONFLICT DO UPDATE. skipIfDeleted
-// makes the write itself atomic: Postgres locks the conflicting row and re-checks deleted_at as
-// part of the same statement, so a row soft-deleted by a concurrent Undo is left alone (zero rows
-// returned) no matter how the two writes interleave. Zero rows means an Undo won the race — skip
-// the Accept rather than sending one for a relation this call did not actually resurrect. 'absent'
-// (never created, e.g. the round-3 case above) still inserts normally: the guard only suppresses
-// the DO UPDATE branch, not the initial INSERT attempt.
+// A duplicate may become applicable after target opt-in. The per-activity cycle preserves
+// earlier Undo state and fences a concurrent Undo before any relation write or Accept.
 export async function recoverDuplicateFollow(
   remoteActor: RemoteActorRow,
   activity: InboundActivity,
@@ -100,14 +86,21 @@ export async function recoverDuplicateFollow(
 ): Promise<InboundPostCommitAction | undefined> {
   const targetUserId = await resolveFederatedTargetUserId(activity.object, options)
   if (!targetUserId) return
-  const relations = await upsertEntityRelation(
+  const cycle = await reserveRemoteFollowCycle(activity.id, remoteActor.id, targetUserId, options)
+  if (cycle.isUndone) return
+  if (!cycle.isNew) {
+    return (await isCurrentRemoteFollowCycle(remoteActor.id, targetUserId, cycle.id, options))
+      ? { type: 'send-follow-accept', remoteActor, activity, targetUserId }
+      : undefined
+  }
+  await upsertEntityRelation(
     null,
     getEntityRelationMetadataOrThrow(FOLLOW_RELATION),
     { id: remoteActor.id },
     [{ id: targetUserId }],
-    { origin: 'remote', skipIfDeleted: true, ...options },
+    { origin: 'remote', ...options },
   )
-  if (relations.length === 0) return
+  await setCurrentRemoteFollowCycle(remoteActor.id, targetUserId, cycle.id, options)
   return { type: 'send-follow-accept', remoteActor, activity, targetUserId }
 }
 
@@ -142,17 +135,25 @@ export function dispatchInboundPostCommitAction(
 
 async function handleUndoFollow(
   remoteActor: RemoteActorRow,
+  followActivityId: string,
   followObject: unknown,
   options: QueryOptions,
 ): Promise<void> {
-  const targetUserId = await resolveFederatedTargetUserId(followObject, options)
+  const targetUserId = await resolveUndoTargetUserId(followObject, options)
   if (!targetUserId) return
+  const cycleId = await markRemoteFollowUndone(
+    followActivityId,
+    remoteActor.id,
+    targetUserId,
+    options,
+  )
+  if (!cycleId) return
   await softDeleteEntityRelation(
     null,
     getEntityRelationMetadataOrThrow(FOLLOW_RELATION),
     { id: remoteActor.id },
     [{ id: targetUserId }],
-    { origin: 'remote', ...options },
+    { origin: 'remote', expectedInboundFollowActivityRowId: cycleId, ...options },
   )
 }
 
@@ -168,10 +169,11 @@ async function handleLike(
 
 async function handleUndoLike(
   remoteActor: RemoteActorRow,
+  likeActivityId: string,
   likeObject: unknown,
   options: QueryOptions,
 ): Promise<void> {
-  const postId = await resolveLikeTargetPostId(likeObject, options)
+  const postId = await resolveUndoLikeTargetPostId(likeObject, options)
   if (!postId) return
-  await undoLike(postId, remoteActor.id, options)
+  await undoLike(postId, remoteActor.id, likeActivityId, options)
 }
