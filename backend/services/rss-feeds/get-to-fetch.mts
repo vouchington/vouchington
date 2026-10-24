@@ -88,7 +88,10 @@ async function getRssFeedsTiered(
 
   const query = `/* getRssFeedsTiered */
     WITH raw AS MATERIALIZED (
-      SELECT * FROM rss_feeds WHERE id > $1::uuid ORDER BY id LIMIT $2::integer
+      SELECT id, rss_feed_url_id, title, declared_language, last_modified_at,
+        etag, last_fetched_at, feed_type, should_ignore_robots_txt,
+        unreliable_status_codes, deleted_at, is_enabled
+      FROM rss_feeds WHERE id > $1::uuid ORDER BY id LIMIT $2::integer
     )
     SELECT${FEED_COLUMNS}, ${scoreExpr} AS crawl_score, ${tierExpr} AS crawl_tier,
       CASE WHEN ${isDueExpr} THEN 1 WHEN ${isBackfillExpr} THEN 2 ELSE NULL END AS priority_group,
