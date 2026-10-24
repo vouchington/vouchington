@@ -122,6 +122,7 @@ test.describe('Admin moderation reports', () => {
     })
 
     test.afterAll(async () => {
+      protectPlaywrightHookTimeouts(test.info())
       if (duplicateReportIds.length > 0) await reviewTestModerationReports(duplicateReportIds)
     })
 

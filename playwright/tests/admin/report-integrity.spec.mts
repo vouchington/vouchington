@@ -56,6 +56,7 @@ test.describe('Admin Report Integrity', () => {
     let penaltyId = ''
 
     test.beforeAll(async () => {
+      protectPlaywrightHookTimeouts(test.info())
       const user = requireTestValue(await createTestUser(), 'Failed to create penalized user')
       const flagId = await insertTestReportIntegrityFlag({ reportedUserId: user.id })
       penaltyId = await insertTestReportAbusePenalty({
@@ -142,6 +143,7 @@ test.describe('Admin Report Integrity — flag actions', () => {
     let flagId = ''
 
     test.beforeAll(async () => {
+      protectPlaywrightHookTimeouts(test.info())
       const reportedUser = requireTestValue(
         await createTestUser(),
         'Failed to create reported user',
