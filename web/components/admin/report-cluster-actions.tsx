@@ -28,6 +28,7 @@ export function ReportClusterActions({
   return (
     <div className='flex flex-wrap gap-2'>
       <Button
+        data-pw='report-cluster-actions-review-loaded'
         size='touchSm'
         disabled={disabled}
         onClick={onReview}
@@ -42,6 +43,7 @@ export function ReportClusterActions({
           : t('extracted.admin.reportClusterActions.reviewAll_d05163fa')}
       </Button>
       <Button
+        data-pw='report-cluster-actions-dismiss-loaded'
         size='touchSm'
         variant='outline'
         disabled={disabled}
@@ -58,6 +60,7 @@ export function ReportClusterActions({
       </Button>
       {canRemoveTarget ? (
         <Button
+          data-pw='report-cluster-actions-remove-target'
           size='touchSm'
           variant='destructive'
           disabled={disabled}
