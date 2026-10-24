@@ -72,7 +72,6 @@ describe('owned entity listener completion', () => {
         [{ jobName: 'processPostUpdated', postSlug: slug }],
         async () => {
           await settlePostCommitEffects(
-            { postId: id, slug, kind: 'updated' },
             [
               {
                 start: () => {

@@ -5,7 +5,6 @@ import * as purgeEnqueues from '@queues/cache-purge/enqueues'
 import { postTag } from '@ts-shared/cache'
 import { invalidate } from '@services/entity-cache/invalidate'
 import { applyPostCommitSideEffects } from './post-commit-side-effects.mts'
-import { onPostCommitCompletion, type PostCommitCompletion } from '../post-commit-completion.mts'
 import {
   createPostCompletionFixture,
   drainOwnedTestAction,
@@ -14,13 +13,6 @@ import {
 async function fixture() {
   const { creator, post } = await createPostCompletionFixture()
   return { creator, post, postType: 'discussion' as const, updates: {} }
-}
-
-function observe(postId: string, events: PostCommitCompletion[]) {
-  return onPostCommitCompletion(event => {
-    if (event.postId === postId) events.push(event)
-    return undefined
-  })
 }
 
 describe('applyPostCommitSideEffects', () => {
@@ -65,86 +57,45 @@ describe('applyPostCommitSideEffects', () => {
     const bloom = Promise.withResolvers<void>()
     const error = new Error('admission failed')
     const report = vi.fn<typeof onError>()
-    const events: PostCommitCompletion[] = []
-    const off = observe(input.post.id, events)
-    try {
-      const operation = () =>
-        applyPostCommitSideEffects(input, {
-          addEntityBloomKeys: () => bloom.promise,
-          enqueueOnPostCreated: () => {
-            throw error
-          },
-          onError: report,
-        })
-      await drainOwnedTestAction(
-        operation,
-        () => bloom.resolve(),
-        async () => {
-          expect(report).not.toHaveBeenCalled()
-          expect(events).toHaveLength(1)
+    const operation = () =>
+      applyPostCommitSideEffects(input, {
+        addEntityBloomKeys: () => bloom.promise,
+        enqueueOnPostCreated: () => {
+          throw error
         },
-      )
-      expect((await events[0]!.completion).operations[1]).toEqual({
-        status: 'rejected',
-        reason: error,
+        onError: report,
       })
-      expect(report).toHaveBeenCalledExactlyOnceWith(error)
-    } finally {
-      bloom.resolve()
-      off()
-    }
+    await drainOwnedTestAction(
+      operation,
+      () => bloom.resolve(),
+      async () => {
+        expect(report).not.toHaveBeenCalled()
+      },
+    )
+    expect(report).toHaveBeenCalledExactlyOnceWith(error)
   })
 
-  it('preserves an undefined admission rejection in the public settlement', async () => {
+  it('does not reject the committed result when error reporting throws', async () => {
     const input = await fixture()
-    const events: PostCommitCompletion[] = []
-    const off = observe(input.post.id, events)
-    try {
-      await applyPostCommitSideEffects(input, {
-        enqueueOnPostCreated: () => {
+    const reporterError = new Error('reporter failed')
+    const report = vi.fn<typeof onError>(() => {
+      throw reporterError
+    })
+    await expect(
+      applyPostCommitSideEffects(input, {
+        addEntityBloomKeys: () => {
           const failure = Promise.withResolvers<void>()
           failure.reject(undefined)
           return failure.promise
         },
-        onError: vi.fn<typeof onError>(),
-      })
-      expect(events).toHaveLength(1)
-      expect((await events[0]!.completion).operations[1]).toEqual({
-        status: 'rejected',
-        reason: undefined,
-      })
-    } finally {
-      off()
-    }
-  })
-
-  it('continues listeners and preserves observer and reporting failures after commit', async () => {
-    const input = await fixture()
-    const reporterError = new Error('reporter failed')
-    const observerError = new Error('observer failed')
-    const events: PostCommitCompletion[] = []
-    const offThrowing = onPostCommitCompletion(event => {
-      if (event.postId === input.post.id) throw observerError
-      return undefined
-    })
-    const offRecording = observe(input.post.id, events)
-    try {
-      await expect(
-        applyPostCommitSideEffects(input, {
-          enqueueOnPostCreated: () => Promise.resolve(),
-          onError: () => {
-            throw reporterError
-          },
-        }),
-      ).resolves.toBeUndefined()
-      expect(events).toHaveLength(1)
-      const settlement = await events[0]!.completion
-      expect(settlement.observerErrors).toEqual([observerError])
-      expect(settlement.reportingErrors).toEqual([reporterError])
-    } finally {
-      offRecording()
-      offThrowing()
-    }
+        enqueueOnPostCreated: () => Promise.resolve(),
+        onError: report,
+      }),
+    ).resolves.toBeUndefined()
+    expect(report).toHaveBeenCalledOnce()
+    const reported = report.mock.calls[0]?.[0]
+    expect(reported).toBeInstanceOf(Error)
+    expect(reported).toMatchObject({ message: 'Post-commit effect failed', cause: undefined })
   })
 
   it('includes owned purge-tag admission in post cache invalidation completion', async () => {
