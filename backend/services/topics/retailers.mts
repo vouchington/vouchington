@@ -62,9 +62,6 @@ export async function updateRetailerCountries(
     'country_ids must contain positive integers',
   )
 
-  // Ensure the extension row exists before inserting retailer_countries (FK dependency)
-  await upsertTopicAttributes<RetailerAttributes>('retailer_topics', topic.id, [], [])
-
   const uniqueCountryIds = [...new Set(countryIds)]
 
   if (uniqueCountryIds.length > 0) {
@@ -79,6 +76,8 @@ export async function updateRetailerCountries(
 
   await using query = await beginTransaction()
   await lockTopicRssFeedAttachmentLifecycle(query, topic.id)
+  // Keep the extension and its country references in the same fenced transaction.
+  await upsertTopicAttributes<RetailerAttributes>('retailer_topics', topic.id, [], [], { query })
   await query(sql`/* updateRetailerCountries delete */
     DELETE FROM retailer_countries
     WHERE retailer_topic_id = ${topic.id}
