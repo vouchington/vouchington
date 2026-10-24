@@ -21,6 +21,7 @@
   },
   "scripts": {},
   "dependencies": {
+    "@jongleberry/api-server": "^3.0.1",
     "@modules/on-error": "workspace:^",
     "@modules/utils": "workspace:^",
     "@vouchington/queue-errors": "^0.1.3",

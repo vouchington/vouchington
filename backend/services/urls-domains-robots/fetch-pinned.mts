@@ -1,4 +1,5 @@
-import { cancelResponseBody, fetchWithTimeout, isTimeoutError } from '@modules/utils/http'
+import { cancelResponseBody, fetchWithTimeout } from '@modules/utils/http'
+import { isTimeoutError } from '@vouchington/http-transport/fetch'
 import { UnsafeUrlError, validateUrl } from 'ssrf-guard/node'
 
 // ssrf-guard@1.0.0's validateUrl short-circuits to no timeout when both `signal` and `timeoutMs`

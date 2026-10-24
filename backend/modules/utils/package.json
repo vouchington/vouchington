@@ -32,6 +32,7 @@
     "@ts-shared/utils": "workspace:^",
     "@voucha/types": "workspace:^",
     "@vouchington/frontmatter": "^0.0.0",
+    "@vouchington/http-transport": "^0.1.0",
     "@vouchington/utils": "^0.7.5",
     "@vouchington/uuid-v7": "^0.0.0",
     "http-assert": "^1.5.0",

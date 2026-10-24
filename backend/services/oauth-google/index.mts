@@ -9,7 +9,7 @@ import {
 } from '@services/oauth-accounts'
 import { decodeJwtPart } from '@services/oauth-accounts/jwt'
 import { fetch } from 'undici'
-import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
+import { getExternalRequestDispatcher } from '@modules/utils/http'
 
 type GoogleJWTPayload = {
   iss: string

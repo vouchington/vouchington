@@ -13,7 +13,7 @@
 - Sanitize and wrap external LLM content with `sanitizePromptInjection()` and `wrapExternalContent()` from `@jongleberry/vurst-prompt`; see [AI protection](../docs/overview/architecture/ai-agents.md#prompt-injection-protection).
 - Use `node:` imports and `index.mts` barrels; backend has no build process. Generic utilities belong in `backend/modules/` (`@modules/foo`), never `backend/lib/`. Prefer named functions/early returns without overloads; put main exports before utilities. Functions receiving a user take `currentUser`/`currentUserId` first; follow [naming prefixes](../docs/overview/architecture/typescript-standards.md#function-naming-prefixes).
 - Never import `vitest/config` or its dependency closure, even type-only: backend must not load `lib.dom`. `backend/types/lib-dom-absent.mts` enforces this; see [static-analysis reference](../docs/development/reference-tests-linters-and-static-analysis.md).
-- Backend fetch uses `undici` and `@modules/utils/http-dispatchers`; SSRF crawlers use `@modules/utils/http`. Follow [timeout/dispatcher classification](../docs/development/runtime-timeouts.md).
+- Backend fetch uses `undici` dispatchers and SSRF-safe helpers from `@modules/utils/http`. Follow [timeout/dispatcher classification](../docs/development/runtime-timeouts.md).
 - Each direct external API call has its own function tagged `/* no-mistakes: integration=<provider> */`; [mock typing exceptions](../docs/development/tests.md#vitest-mock-typing) remain scoped.
 - Import Valkey's [per-concern packages](data-stores/valkey/AGENTS.md); never route pub/sub, rate limiting, or GlideMQ through its general barrel.
 - Backend returns structured entity references, never frontend routes; the web resolves URLs with `web/lib/links/entity-href.ts`.

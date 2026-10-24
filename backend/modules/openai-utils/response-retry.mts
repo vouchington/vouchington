@@ -4,11 +4,8 @@ import type {
   ResponseCreateParamsStreaming,
   ResponseStreamEvent,
 } from 'openai/resources/responses/responses'
-import {
-  getHeaderValue,
-  getRetryAfterDurationMs,
-  isAmbiguousBilledHttpStatus,
-} from '@modules/utils'
+import { isAmbiguousBilledHttpStatus } from '@modules/utils'
+import { getHeaderValue, parseRetryAfter } from '@jongleberry/api-server/http-retry'
 import openai from './client.mts'
 import { getOpenAIResponseAttemptHooks } from './response-attempt-context.mts'
 import { isOpenAIFlexResourceUnavailableError } from './rate-limit.mts'
@@ -104,7 +101,7 @@ function getRetryAfterMs(error: unknown): number | null {
   if (Number.isFinite(retryAfterMs) && retryAfterMs >= 0) return retryAfterMs
   const retryAfter = getHeaderValue(error.headers, 'retry-after')
   const value = Array.isArray(retryAfter) ? retryAfter[0] : retryAfter
-  return getRetryAfterDurationMs(value) ?? null
+  return parseRetryAfter(value) ?? null
 }
 
 function isUnknownBilledOpenAIResponseAttempt(error: unknown): boolean {

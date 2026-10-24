@@ -12,7 +12,7 @@ import {
 } from '@voucha/test-helpers/lemmy-no-data-fixtures'
 import { createLemmyAdapter } from './lemmy.mts'
 import { decodeFediverseCursor } from '../cursor.mts'
-import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
+import { getExternalRequestDispatcher } from '@modules/utils/http'
 
 describe('createLemmyAdapter', () => {
   beforeEach(() => {

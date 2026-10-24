@@ -1,4 +1,4 @@
-import { getLongRunningExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
+import { getLongRunningExternalRequestDispatcher } from '@modules/utils/http'
 import { fetch as undiciFetch, type Response } from 'undici'
 import type {
   StructuredDecisionQuestion,

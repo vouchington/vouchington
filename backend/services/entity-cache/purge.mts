@@ -1,6 +1,6 @@
 import createHttpError from 'http-errors'
 import { fetch } from 'undici'
-import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
+import { getExternalRequestDispatcher } from '@modules/utils/http'
 import { CACHE_PURGE_SECRET_HEADER, MAX_TAGS_PER_REQUEST } from '@ts-shared/cache'
 
 function isCachePurgeSkipped(): boolean {

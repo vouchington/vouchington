@@ -13,22 +13,24 @@ import {
 import { validateUrl, UnsafeUrlError } from 'ssrf-guard/node'
 import { trackCrawlerRequest } from '@services/analytics'
 import { extractDomain } from '@ts-shared/utils/urls'
-import * as httpUtils from '@modules/utils/http'
+import { fetchWithTimeout, handleHttpErrors } from '@modules/utils/http'
+import { readResponseBodyAsBuffer } from '@modules/utils/http-body'
+import { isTimeoutError } from '@vouchington/http-transport/fetch'
 
 type CrawlerUtilsDependencies = {
   validateUrl: typeof validateUrl
   unsafeUrlError: typeof UnsafeUrlError
-  fetchWithTimeout: typeof httpUtils.fetchWithTimeout
-  readResponseBodyAsBuffer: typeof httpUtils.readResponseBodyAsBuffer
-  handleHttpErrors: typeof httpUtils.handleHttpErrors
+  fetchWithTimeout: typeof fetchWithTimeout
+  readResponseBodyAsBuffer: typeof readResponseBodyAsBuffer
+  handleHttpErrors: typeof handleHttpErrors
 }
 
 const defaultDependencies: CrawlerUtilsDependencies = {
   validateUrl,
   unsafeUrlError: UnsafeUrlError,
-  fetchWithTimeout: httpUtils.fetchWithTimeout,
-  readResponseBodyAsBuffer: httpUtils.readResponseBodyAsBuffer,
-  handleHttpErrors: httpUtils.handleHttpErrors,
+  fetchWithTimeout: fetchWithTimeout,
+  readResponseBodyAsBuffer: readResponseBodyAsBuffer,
+  handleHttpErrors: handleHttpErrors,
 }
 type CrawlerFailureType = NonNullable<Parameters<typeof trackCrawlerRequest>[5]>
 const trackCrawlerFailure = (
@@ -75,7 +77,7 @@ export const fetchUrl = async (
     })
   } catch (err: unknown) {
     const duration = Date.now() - startedAt.getTime()
-    if (httpUtils.isTimeoutError(err)) {
+    if (isTimeoutError(err)) {
       trackCrawlerFailure(crawlerType, domain, 0, duration, 'CrawlerTimeoutError')
       throw new CrawlerTimeoutError(url, timeoutMs, duration, err)
     }
@@ -129,7 +131,7 @@ export const readBodyAsBuffer = async (options: ReadBodyOptions): Promise<Buffer
       trackCrawlerFailure(crawlerType, domain, response.status, duration, 'NoResponseBody')
       throw err
     }
-    if (httpUtils.isTimeoutError(err)) {
+    if (isTimeoutError(err)) {
       trackCrawlerFailure(crawlerType, domain, response.status, duration, 'CrawlerTimeoutError')
       throw new CrawlerTimeoutError(url, timeoutMs, duration, err)
     }

@@ -10,7 +10,7 @@
   [Finite Enum Ripple Checklist](../../development/finite-enum-ripple-checklist.md).
 - Pre-launch: **edit migrations in place**; no new ALTER-TABLE migrations for the enum/columns.
 - External calls: `/* no-mistakes: integration=<provider> */`, `undici` +
-  `@modules/utils/http-dispatchers` (or SSRF-safe `@modules/utils/http`), **queued** (no for-loop /
+  `@modules/utils/http`, **queued** (no for-loop /
   `Promise.all` fan-out of external calls) — request-path fediverse search is the documented exception;
   see below.
 - The product `fediverse` flag is **frontend-only**; backend routes stay mounted. Separate

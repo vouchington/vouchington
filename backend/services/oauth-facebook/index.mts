@@ -2,7 +2,7 @@ import createHttpError from 'http-errors'
 import { FACEBOOK_APP_ID, FACEBOOK_APP_SECRET, FACEBOOK_GRAPHQL_VERSION } from '@voucha/config'
 import { upsertOAuthAccount, type OAuthAccount } from '@services/oauth-accounts'
 import { fetch } from 'undici'
-import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
+import { getExternalRequestDispatcher } from '@modules/utils/http'
 
 const fields = 'name'
 

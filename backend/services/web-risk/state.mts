@@ -5,7 +5,7 @@ import {
   rateLimiterValkeyClient,
 } from '@data-stores/valkey-rate-limiter'
 import { Batch, TimeUnit } from '@valkey/valkey-glide'
-import { getRetryAfterDurationMs } from '@modules/utils/http'
+import { parseRetryAfter } from '@jongleberry/api-server/http-retry'
 import onError from '@modules/on-error'
 
 const CLEAN_CACHE_TTL_SECONDS = 7 * 24 * 60 * 60
@@ -71,7 +71,7 @@ export function createWebRiskState({
   }
 
   async function setProviderCooldownFromResponse(response: Response): Promise<void> {
-    const retryAfterMs = getRetryAfterDurationMs(response.headers.get('retry-after'), now())
+    const retryAfterMs = parseRetryAfter(response.headers.get('retry-after'), now())
     const seconds = Math.max(1, Math.ceil((retryAfterMs ?? DEFAULT_COOLDOWN_SECONDS * 1000) / 1000))
     await setProviderCooldown(seconds)
   }

@@ -1,7 +1,7 @@
 import { Readable } from 'node:stream'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { fetchFeedList } from './fetch-feed-list.mts'
-import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
+import { getExternalRequestDispatcher } from '@modules/utils/http'
 
 async function readStream(stream: Readable): Promise<string> {
   const chunks: Buffer[] = []

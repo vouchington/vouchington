@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import undici from 'undici'
-import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
+import { getExternalRequestDispatcher } from '@modules/utils/http'
 import { BLACKLISTS } from '@services/urls-domains-blacklist/sources-constants'
 import { createBlacklistFetchHeaders, syncBlacklistSource } from './sync.mts'
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { Response as UndiciResponse } from 'undici'
-import { readResponseBody } from './http.mts'
+import { readResponseBody } from './http-body.mts'
 
 describe('readResponseBody response compatibility', () => {
   it('preserves native response bodies without a compatibility bridge', async () => {

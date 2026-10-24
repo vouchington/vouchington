@@ -29,6 +29,7 @@
     "@modules/utils": "workspace:^",
     "@services/urls-hostnames": "workspace:^",
     "@ts-shared/utils": "workspace:^",
+    "@vouchington/http-transport": "^0.1.0",
     "http-errors": "^2.0.1",
     "sql-template-strings": "^2.2.2",
     "ssrf-guard": "^1.0.0",

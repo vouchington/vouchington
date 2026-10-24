@@ -1,4 +1,4 @@
-import { getHeaderValue, getRetryAfterDurationMs } from '@modules/utils/http'
+import { getHeaderValue, parseRetryAfter } from '@jongleberry/api-server/http-retry'
 import type { Response } from 'undici'
 import type {
   ProviderErrorDetail,
@@ -73,7 +73,7 @@ export function classifyProviderResponse(
 ): StructuredDecisionProviderFailure {
   const retryClass = classifyProviderFailure(transport, response.status, detail)
   const header = getHeaderValue(response.headers, 'retry-after')
-  const retryAfterMs = getRetryAfterDurationMs(Array.isArray(header) ? header[0] : header)
+  const retryAfterMs = parseRetryAfter(Array.isArray(header) ? header[0] : header)
   return {
     retryClass,
     ...(retryClass === 'transient' && retryAfterMs !== null ? { retryAfterMs } : {}),

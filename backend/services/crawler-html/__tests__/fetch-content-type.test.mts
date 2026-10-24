@@ -1,4 +1,5 @@
 import undici from 'undici'
+import * as http from '@modules/utils/http'
 import { readFile } from 'node:fs/promises'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -50,6 +51,11 @@ function createReadableBody(chunks: Uint8Array[], rejectOnRead?: Error): MockBod
   }
 }
 
+const fetched = (response: unknown) => ({
+  response: response as Response,
+  responseSignal: new AbortController().signal,
+})
+
 describe('fetchCrawlerHtml content-type and response handling', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
@@ -60,9 +66,8 @@ describe('fetchCrawlerHtml content-type and response handling', () => {
   })
 
   it('handles 304 Not Modified responses', async () => {
-    const fetchSpy = vi.spyOn(undici, 'fetch')
     const mockResponse = createResponse(304)
-    fetchSpy.mockResolvedValue(mockResponse)
+    vi.spyOn(http, 'fetchWithTimeout').mockResolvedValue(fetched(mockResponse))
 
     const options: CrawlerHtmlOptions = {
       url: 'https://example.com',
@@ -77,9 +82,8 @@ describe('fetchCrawlerHtml content-type and response handling', () => {
   })
 
   it('handles 204 No Content responses', async () => {
-    const fetchSpy = vi.spyOn(undici, 'fetch')
     const mockResponse = createResponse(204)
-    fetchSpy.mockResolvedValue(mockResponse)
+    vi.spyOn(http, 'fetchWithTimeout').mockResolvedValue(fetched(mockResponse))
 
     const result = await fetchCrawlerHtml({ url: 'https://example.com' }, {})
 
@@ -89,14 +93,13 @@ describe('fetchCrawlerHtml content-type and response handling', () => {
   })
 
   it('processes application/xhtml+xml content', async () => {
-    const fetchSpy = vi.spyOn(undici, 'fetch')
     const html = '<html><body><h1>XHTML Test</h1></body></html>'
     const mockResponse = createResponse(
       200,
       { 'content-type': 'application/xhtml+xml; charset=utf-8' },
       createReadableBody([Buffer.from(html, 'utf8')]),
     )
-    fetchSpy.mockResolvedValue(mockResponse)
+    vi.spyOn(http, 'fetchWithTimeout').mockResolvedValue(fetched(mockResponse))
 
     const result = await fetchCrawlerHtml({ url: 'https://example.com' }, {})
 
@@ -107,11 +110,13 @@ describe('fetchCrawlerHtml content-type and response handling', () => {
 
   it('records a successful no-embed plan as an authoritative null', async () => {
     vi.spyOn(embedResolver, 'planCrawlerEmbed').mockResolvedValueOnce(null)
-    vi.spyOn(undici, 'fetch').mockResolvedValue(
-      createResponse(
-        200,
-        { 'content-type': 'text/html' },
-        createReadableBody([Buffer.from('<p>No embed</p>')]),
+    vi.spyOn(http, 'fetchWithTimeout').mockResolvedValue(
+      fetched(
+        createResponse(
+          200,
+          { 'content-type': 'text/html' },
+          createReadableBody([Buffer.from('<p>No embed</p>')]),
+        ),
       ),
     )
     const result = await fetchCrawlerHtml({ url: 'https://example.com' }, {})
@@ -121,13 +126,14 @@ describe('fetchCrawlerHtml content-type and response handling', () => {
   })
 
   it('skips optional embed resolution when the caller only needs crawl metadata', async () => {
-    const fetchSpy = vi.spyOn(undici, 'fetch')
     const html = '<html><body><h1>Health check</h1></body></html>'
-    fetchSpy.mockResolvedValue(
-      createResponse(
-        200,
-        { 'content-type': 'text/html; charset=utf-8' },
-        createReadableBody([Buffer.from(html, 'utf8')]),
+    vi.spyOn(http, 'fetchWithTimeout').mockResolvedValue(
+      fetched(
+        createResponse(
+          200,
+          { 'content-type': 'text/html; charset=utf-8' },
+          createReadableBody([Buffer.from(html, 'utf8')]),
+        ),
       ),
     )
 
@@ -143,7 +149,6 @@ describe('fetchCrawlerHtml content-type and response handling', () => {
   })
 
   it('decodes non-UTF-8 HTML using the response charset before processing it', async () => {
-    const fetchSpy = vi.spyOn(undici, 'fetch')
     const cp1252Html = Buffer.from([
       ...Buffer.from('<html><head><title>Legacy Page</title></head><body><h1>'),
       0x93,
@@ -156,7 +161,7 @@ describe('fetchCrawlerHtml content-type and response handling', () => {
       { 'content-type': 'text/html; charset=windows-1252' },
       createReadableBody([cp1252Html]),
     )
-    fetchSpy.mockResolvedValue(mockResponse)
+    vi.spyOn(http, 'fetchWithTimeout').mockResolvedValue(fetched(mockResponse))
 
     const result = await fetchCrawlerHtml({ url: 'https://example.com' }, {})
 
@@ -167,7 +172,6 @@ describe('fetchCrawlerHtml content-type and response handling', () => {
   })
 
   it('decodes non-UTF-8 HTML using meta charset before processing it', async () => {
-    const fetchSpy = vi.spyOn(undici, 'fetch')
     const cp1252Html = Buffer.from([
       ...Buffer.from(
         '<html><head><meta charset="windows-1252"><title>Meta Charset</title></head><body><p>',
@@ -182,7 +186,7 @@ describe('fetchCrawlerHtml content-type and response handling', () => {
       { 'content-type': 'text/html' },
       createReadableBody([cp1252Html]),
     )
-    fetchSpy.mockResolvedValue(mockResponse)
+    vi.spyOn(http, 'fetchWithTimeout').mockResolvedValue(fetched(mockResponse))
 
     const result = await fetchCrawlerHtml({ url: 'https://example.com' }, {})
 
@@ -191,14 +195,13 @@ describe('fetchCrawlerHtml content-type and response handling', () => {
   })
 
   it('falls back safely when the response declares an unsupported charset', async () => {
-    const fetchSpy = vi.spyOn(undici, 'fetch')
     const html = '<html><head><title>Résumé</title></head><body><p>ok</p></body></html>'
     const mockResponse = createResponse(
       200,
       { 'content-type': 'text/html; charset=unsupported-charset' },
       createReadableBody([Buffer.from(html, 'utf8')]),
     )
-    fetchSpy.mockResolvedValue(mockResponse)
+    vi.spyOn(http, 'fetchWithTimeout').mockResolvedValue(fetched(mockResponse))
 
     const result = await fetchCrawlerHtml({ url: 'https://example.com' }, {})
 
@@ -206,9 +209,8 @@ describe('fetchCrawlerHtml content-type and response handling', () => {
   })
 
   it('skips text/plain content', async () => {
-    const fetchSpy = vi.spyOn(undici, 'fetch')
     const mockResponse = createResponse(200, { 'content-type': 'text/plain; charset=utf-8' })
-    fetchSpy.mockResolvedValue(mockResponse)
+    vi.spyOn(http, 'fetchWithTimeout').mockResolvedValue(fetched(mockResponse))
 
     const result = await fetchCrawlerHtml({ url: 'https://example.com' }, {})
 
@@ -217,9 +219,8 @@ describe('fetchCrawlerHtml content-type and response handling', () => {
   })
 
   it('skips non-text content', async () => {
-    const fetchSpy = vi.spyOn(undici, 'fetch')
     const mockResponse = createResponse(200, { 'content-type': 'application/json' })
-    fetchSpy.mockResolvedValue(mockResponse)
+    vi.spyOn(http, 'fetchWithTimeout').mockResolvedValue(fetched(mockResponse))
 
     const result = await fetchCrawlerHtml({ url: 'https://example.com' }, {})
 
@@ -227,9 +228,8 @@ describe('fetchCrawlerHtml content-type and response handling', () => {
   })
 
   it('skips responses without a content-type header', async () => {
-    const fetchSpy = vi.spyOn(undici, 'fetch')
     const mockResponse = createResponse(200)
-    fetchSpy.mockResolvedValue(mockResponse)
+    vi.spyOn(http, 'fetchWithTimeout').mockResolvedValue(fetched(mockResponse))
 
     const result = await fetchCrawlerHtml({ url: 'https://example.com' }, {})
 
@@ -237,13 +237,12 @@ describe('fetchCrawlerHtml content-type and response handling', () => {
   })
 
   it('re-throws when body reading fails for HTML and cancels the locked body', async () => {
-    const fetchSpy = vi.spyOn(undici, 'fetch')
     const mockResponse = createResponse(
       200,
       { 'content-type': 'text/html' },
       createReadableBody([], new Error('Read failed')),
     )
-    fetchSpy.mockResolvedValue(mockResponse)
+    vi.spyOn(http, 'fetchWithTimeout').mockResolvedValue(fetched(mockResponse))
 
     await expect(fetchCrawlerHtml({ url: 'https://example.com' }, {})).rejects.toThrow(
       'Read failed',
@@ -252,9 +251,8 @@ describe('fetchCrawlerHtml content-type and response handling', () => {
   })
 
   it('skips non-HTML content without reading the body', async () => {
-    const fetchSpy = vi.spyOn(undici, 'fetch')
     const mockResponse = createResponse(200, { 'content-type': 'application/json' })
-    fetchSpy.mockResolvedValue(mockResponse)
+    vi.spyOn(http, 'fetchWithTimeout').mockResolvedValue(fetched(mockResponse))
 
     const result = await fetchCrawlerHtml({ url: 'https://example.com' }, {})
 
@@ -263,14 +261,13 @@ describe('fetchCrawlerHtml content-type and response handling', () => {
   })
 
   it('matches content-type values case-insensitively', async () => {
-    const fetchSpy = vi.spyOn(undici, 'fetch')
     const html = '<html><body>Test</body></html>'
     const mockResponse = createResponse(
       200,
       { 'content-type': 'TEXT/HTML; charset=UTF-8' },
       createReadableBody([Buffer.from(html, 'utf8')]),
     )
-    fetchSpy.mockResolvedValue(mockResponse)
+    vi.spyOn(http, 'fetchWithTimeout').mockResolvedValue(fetched(mockResponse))
 
     const result = await fetchCrawlerHtml({ url: 'https://example.com' }, {})
 
@@ -278,7 +275,6 @@ describe('fetchCrawlerHtml content-type and response handling', () => {
   })
 
   it('passes markdown options to the Rust parser', async () => {
-    const fetchSpy = vi.spyOn(undici, 'fetch')
     const html =
       '<html><body><nav>Site navigation menu links</nav><article>Test article body with multiple sentences of real prose so that the text-density filter selects this element as the main content area and not the surrounding navigation or footer boilerplate.</article><footer>Site footer copyright notice</footer></body></html>'
     const markdownOptions: CrawlerHtmlToMarkdownOptions = {
@@ -290,7 +286,7 @@ describe('fetchCrawlerHtml content-type and response handling', () => {
       { 'content-type': 'text/html' },
       createReadableBody([Buffer.from(html, 'utf8')]),
     )
-    fetchSpy.mockResolvedValue(mockResponse)
+    vi.spyOn(http, 'fetchWithTimeout').mockResolvedValue(fetched(mockResponse))
 
     const result = await fetchCrawlerHtml({ url: 'https://example.com' }, markdownOptions)
 

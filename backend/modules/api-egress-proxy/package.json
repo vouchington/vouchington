@@ -24,6 +24,7 @@
     "@modules/on-error": "workspace:^",
     "@modules/utils": "workspace:^",
     "@ts-shared/deploy-environment": "workspace:^",
+    "@vouchington/http-transport": "^0.1.0",
     "http-errors": "^2.0.1",
     "undici": "^8.12.3"
   },

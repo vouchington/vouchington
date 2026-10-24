@@ -1,6 +1,6 @@
 import createHttpError from 'http-errors'
 import { fetch } from 'undici'
-import { getExternalRequestDispatcher } from '@modules/utils/http-dispatchers'
+import { getExternalRequestDispatcher } from '@modules/utils/http'
 import { isTurnstileAlwaysApprove, logTurnstileAlwaysApproveSkip } from './config.mts'
 
 interface TurnstileResponse {

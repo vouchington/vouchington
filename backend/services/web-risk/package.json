@@ -25,6 +25,7 @@
   "dependencies": {
     "@data-stores/valkey": "workspace:^",
     "@data-stores/valkey-rate-limiter": "workspace:^",
+    "@jongleberry/api-server": "^3.0.1",
     "@modules/on-error": "workspace:^",
     "@modules/utils": "workspace:^",
     "@services/hostname-blocking": "workspace:^",

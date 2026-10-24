@@ -1,5 +1,6 @@
 import { validateUrl, UnsafeUrlError } from 'ssrf-guard/node'
-import { cancelResponseBody, fetchWithTimeout, readResponseBody } from '@modules/utils/http'
+import { cancelResponseBody, fetchWithTimeout } from '@modules/utils/http'
+import { readResponseBody } from '@modules/utils/http-body'
 import { assertPublicKeyPem } from '@modules/http-signatures'
 import createHttpError from 'http-errors'
 import {

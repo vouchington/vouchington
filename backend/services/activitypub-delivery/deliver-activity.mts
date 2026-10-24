@@ -3,8 +3,8 @@ import onError from '@modules/on-error'
 import {
   getExternalRequestDispatcher,
   getPinnedRequestDispatcher,
-} from '@modules/utils/http-dispatchers'
-import { handleHttpErrors } from '@modules/utils/http'
+  handleHttpErrors,
+} from '@modules/utils/http'
 import { buildSignatureHeaders, withSignatureHeaders } from '@modules/http-signatures'
 import createHttpError from 'http-errors'
 import undici from 'undici'

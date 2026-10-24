@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { createTestUser } from '@voucha/test-helpers'
-import { getExternalFetch } from '@modules/utils/http-dispatchers'
+import { getExternalFetch } from '@modules/utils/http'
 import {
   createTestCopyrightImageFixture,
   createTestCopyrightRestrictionForImage,
