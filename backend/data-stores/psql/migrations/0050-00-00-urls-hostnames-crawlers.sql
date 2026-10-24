@@ -574,6 +574,13 @@ CREATE INDEX IF NOT EXISTS idx_crawls__old_invalid
 ON crawls (id)
 WHERE network_error IS NOT NULL OR completed_at IS NULL;
 
+-- Recent completed HTML snapshots are selected by completion time even when
+-- their crawl IDs belong to an older partition.
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_crawls__recent_html_completion
+ON crawls (completed_at, url_id, id)
+WHERE response_status_code = 200 AND html_sha256 IS NOT NULL;
+
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_crawls__crawler_id
 ON crawls (hostname_crawler_configuration_id)

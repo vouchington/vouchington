@@ -15,6 +15,18 @@ reclamation also bounds examined headers before ownership checks. Its snapshot-o
 concrete FK identity ownership, and bounded reclamation are owned by
 `backend/services/post-publication`.
 
+Publication reconciliation scopes page through physical post IDs before testing membership. Sparse
+pages still advance the work cursor, so a scope with few matches can require many queue
+continuations. A comment can inherit an affected ancestor even when that ancestor was on an
+earlier page; the work row retains one pending comment and the next parent to inspect when an
+ancestor walk reaches its per-run read budget. Generation and lease fencing keep that progress
+with the current repair request. Pending comments and ancestors reference retained post identities; deletion clears their live links, and a resumed walk skips a deleted candidate while advancing its stable UUID cursor. A capped read of retained post impacts identifies possible
+ancestor roots for post, community, RSS, and story scopes, so unrelated comment trees can be
+skipped. The read falls back to the full bounded walk if its impact set is too large; author and
+alias scopes always use that walk because their ancestors can be in any root. This favors bounded
+work and exact nested-comment coverage over finishing every sparse scope in one job. Work-scoped
+selection reads the primary database, so replica lag cannot make a claimed generation appear empty.
+
 ## Predicates
 
 - **Core public state**: candidate and root are not deleted and are approved; the root has

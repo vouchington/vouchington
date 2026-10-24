@@ -60,7 +60,9 @@ describe('runStaleCleanup', () => {
     vi.mocked(BedrockControlClient.send).mockResolvedValue({ status: 'Completed' } as never)
     const first = await runStaleCleanup(1, {
       afterId: getMinUUIDv7ForDate(new Date(timestamp - 1)),
+      afterStaleAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
       throughId: getMinUUIDv7ForDate(new Date(timestamp + 2)),
+      cutoffAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
     })
     expect(first).toMatchObject({ inspected: 1, hasMore: true, reconciled: 1 })
     expect(first.nextCursor?.afterId).toBe(ids[0])

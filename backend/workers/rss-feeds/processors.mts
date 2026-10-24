@@ -24,17 +24,18 @@ type FetchRssFeedDependencies = {
 export async function processRssFeedsDispatcher(
   dependencies?: Partial<RssFeedsDispatcherDependencies>,
   page?: { cursor?: RssFeedDispatchCursor; asOf: Date; limit: number },
-): Promise<{ count: number; nextCursor?: RssFeedDispatchCursor }> {
+): Promise<{ count: number; scannedCount: number; nextCursor?: RssFeedDispatchCursor }> {
   const deps = {
     enqueueBulkFetchRssFeeds,
     getRssFeedsToFetch,
     getTierSlaMs,
     ...dependencies,
   }
-  const feeds = await deps.getRssFeedsToFetch(
+  const pageResult = await deps.getRssFeedsToFetch(
     page ? { limit: page.limit, cursor: page.cursor, asOf: page.asOf } : {},
   )
-  if (feeds.length === 0) return { count: 0 }
+  const { feeds, scannedCount, nextCursor } = pageResult
+  if (feeds.length === 0) return { count: 0, scannedCount, ...(nextCursor && { nextCursor }) }
 
   // Group feeds by (tier, ttl) so each group shares one priority value and TTL.
   // Backfill feeds use ttl=undefined so the worker does not reapply the full tier SLA check.
@@ -62,12 +63,10 @@ export async function processRssFeedsDispatcher(
     ),
   )
 
-  const last = feeds.at(-1)
   return {
     count: feeds.length,
-    ...(page && feeds.length === page.limit && last
-      ? { nextCursor: { lane: last.dispatch_lane, afterId: last.id } }
-      : {}),
+    scannedCount,
+    ...(nextCursor && { nextCursor }),
   }
 }
 

@@ -1,4 +1,24 @@
 import { runRelationReadBatchScenarios } from './run-scenarios/relation-read-batches.mts'
+import { runSelectionWork3511Scenarios } from './run-scenarios/selection-work-3511.mts'
+import { runBedrockSelection3511Scenarios } from './run-scenarios/bedrock-selection-3511.mts'
+import { runStoryClaim3511Scenario } from './run-scenarios/story-claim-3511.mts'
+import { runCrawlSelection3511Scenarios } from './run-scenarios/crawl-selection-3511.mts'
+import { runAppleSelection3511Scenario } from './run-scenarios/apple-selection-3511.mts'
+import { runMailSelection3511Scenarios } from './run-scenarios/mail-selection-3511.mts'
+import { runGoogleSelection3511Scenarios } from './run-scenarios/google-selection-3511.mts'
+import { runCopyrightSelection3511Scenario } from './run-scenarios/copyright-selection-3511.mts'
+import { runProviderSourceSelection3511Scenarios } from './run-scenarios/provider-source-selection-3511.mts'
+import {
+  runNewRootPostPublicationScenario,
+  runPostPublicationSelection3511Scenarios,
+} from './run-scenarios/post-publication-selection-3511.mts'
+import { runCategorySelection3511Scenarios } from './run-scenarios/category-selection-3511.mts'
+import { runMediaStaging3511Scenario } from './run-scenarios/media-staging-3511.mts'
+import { runMembershipVerificationSelection3511Scenario } from './run-scenarios/membership-verification-selection-3511.mts'
+import { runRetentionSelection3511Scenario } from './run-scenarios/retention-selection-3511.mts'
+import { runMembershipExpirySelection3511Scenario } from './run-scenarios/membership-expiry-selection-3511.mts'
+import { seedSelectionWork3511 } from './seed-data/selection-work-3511.mts'
+import { runAnalyze } from './seed-data/maintenance.mts'
 import { runDispatchWorkPlanScenarios } from './run-scenarios/dispatch-work-plans.mts'
 import { runMediaDeliveryReplayScenarios } from './run-scenarios/media-delivery-replay.mts'
 import { seedMediaDeliveryReplay } from './seed-data/media-delivery-replay.mts'
@@ -54,6 +74,13 @@ import {
   runHardDeletedPostPublicationScenarios,
 } from './run-scenarios/hard-deleted-post-publication.mts'
 
+async function seedSelectionWork3511AndAnalyze(): Promise<void> {
+  // Keep sparse 10k-row selector backlogs out of the earlier legacy plan corpus.
+  // A selected-only probe must call this idempotent seed before its scenario group.
+  await seedSelectionWork3511()
+  await runAnalyze()
+}
+
 // A failing step is recorded and the run continues, so one run reports every failure.
 const RUN_STEPS: readonly (() => Promise<unknown>)[] = [
   runBloomReconciliationScenarios,
@@ -95,6 +122,24 @@ const RUN_STEPS: readonly (() => Promise<unknown>)[] = [
   // Keep the mixed membership corpus out of unrelated aggregate and candidate plans.
   seedVoteWeightDispatch,
   runVoteWeightDispatchScenarios,
+  // A current new root must precede the late synthetic future-ID Bedrock posts.
+  runNewRootPostPublicationScenario,
+  seedSelectionWork3511AndAnalyze,
+  runSelectionWork3511Scenarios,
+  runBedrockSelection3511Scenarios,
+  runStoryClaim3511Scenario,
+  runCrawlSelection3511Scenarios,
+  runAppleSelection3511Scenario,
+  runMailSelection3511Scenarios,
+  runGoogleSelection3511Scenarios,
+  runMembershipVerificationSelection3511Scenario,
+  runRetentionSelection3511Scenario,
+  runMembershipExpirySelection3511Scenario,
+  runCopyrightSelection3511Scenario,
+  runProviderSourceSelection3511Scenarios,
+  runCategorySelection3511Scenarios,
+  runMediaStaging3511Scenario,
+  runPostPublicationSelection3511Scenarios,
 ]
 
 async function main() {

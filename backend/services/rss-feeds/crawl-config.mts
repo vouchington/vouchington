@@ -8,6 +8,7 @@ export type RssFeedCrawlNumberField =
   | 'tier4_sla_ms'
   | 'tier5_sla_ms'
   | 'capacity_budget'
+  | 'selection_scan_page_size'
 
 const DEFAULTS = {
   should_ignore_robots_txt: true,
@@ -17,6 +18,7 @@ const DEFAULTS = {
   tier4_sla_ms: 2 * 60 * 60_000,
   tier5_sla_ms: 24 * 60 * 60_000,
   capacity_budget: 100,
+  selection_scan_page_size: 1_000,
 }
 
 export const RSS_FEED_CRAWL_MIN_VALUES: Record<RssFeedCrawlNumberField, number> = {
@@ -26,6 +28,7 @@ export const RSS_FEED_CRAWL_MIN_VALUES: Record<RssFeedCrawlNumberField, number> 
   tier4_sla_ms: 1,
   tier5_sla_ms: 1,
   capacity_budget: 1,
+  selection_scan_page_size: 1,
 }
 
 export const RSS_FEED_CRAWL_MAX_VALUES: Record<RssFeedCrawlNumberField, number> = {
@@ -35,6 +38,7 @@ export const RSS_FEED_CRAWL_MAX_VALUES: Record<RssFeedCrawlNumberField, number> 
   tier4_sla_ms: 7 * 24 * 60 * 60_000,
   tier5_sla_ms: 7 * 24 * 60 * 60_000,
   capacity_budget: 10_000,
+  selection_scan_page_size: 10_000,
 }
 
 export const rssFeedCrawlConfig = new DynamicConfig({
@@ -47,6 +51,7 @@ export const rssFeedCrawlConfig = new DynamicConfig({
     tier4_sla_ms: 'number',
     tier5_sla_ms: 'number',
     capacity_budget: 'number',
+    selection_scan_page_size: 'number',
   },
   defaultFields: DEFAULTS,
 })
@@ -67,6 +72,14 @@ export function getTierSlaMs(tier: RssFeedCrawlTier): number {
 export function getCrawlCapacityBudget(): number {
   const v = rssFeedCrawlConfig.getFields().capacity_budget
   return isValidNumberField('capacity_budget', v) ? v : DEFAULTS.capacity_budget
+}
+
+/** Raw feed identities read for one lane continuation, including ineligible rows. */
+export function getSelectionScanPageSize(): number {
+  const value = rssFeedCrawlConfig.getFields().selection_scan_page_size
+  return isValidNumberField('selection_scan_page_size', value)
+    ? value
+    : DEFAULTS.selection_scan_page_size
 }
 
 function isValidNumberField(field: RssFeedCrawlNumberField, value: unknown): value is number {

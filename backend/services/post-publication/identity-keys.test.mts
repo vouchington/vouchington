@@ -22,9 +22,11 @@ import {
 } from './dirty-work.mts'
 import {
   reconcileTestPublicationUntilSnapshotsComplete as reconcilePostPublicationDirtyWork,
+  reconcileTestPublicationThroughPostSweep,
   getTestPublicationProjectionIdentity,
 } from '@voucha/test-helpers/post-publication-fixtures'
 import { recordPostPublicationChange } from './capture.mts'
+import { listPostPublicationIdentityKeys } from './identity-keys.mts'
 import { retainPostPublicationKeys } from './retained-key-writes.mts'
 import { postPublicationWorkConfig } from './work-limits.mts'
 
@@ -93,7 +95,7 @@ describe('post publication retained identity keys', () => {
     const work = await claimPostPublicationDirtyWork(pendingWork, 60)
     if (!work) throw new Error('Expected scrubbed author work lease')
 
-    await expect(reconcilePostPublicationDirtyWork(work)).resolves.toMatchObject({
+    await expect(listPostPublicationIdentityKeys(work, 100)).resolves.toMatchObject({
       identityKeys: expect.arrayContaining([
         expect.objectContaining({ kind: 'author', value: user.username }),
       ]),
@@ -167,7 +169,8 @@ describe('post publication retained identity keys', () => {
     await query.commit()
     const claimed = await claimPostPublicationDirtyWork(work, 60)
     if (!claimed) throw new Error('Expected current identity work lease')
-    const selected = await reconcilePostPublicationDirtyWork(claimed)
+    const selected = await reconcileTestPublicationThroughPostSweep(claimed, undefined, post.id)
+    expect(selected.posts.map(candidate => candidate.id)).toEqual([post.id])
     const canonical = await reconcilePostPublicationDirtyWork(
       claimed,
       undefined,
@@ -178,6 +181,9 @@ describe('post publication retained identity keys', () => {
       expect.arrayContaining([expect.objectContaining({ kind: 'author', value: user.id })]),
     )
     expect(canonical.identityKeys).toEqual(
+      expect.arrayContaining([expect.objectContaining({ kind: 'author', value: user.id })]),
+    )
+    expect(selected.final.identityKeys).toEqual(
       expect.arrayContaining([expect.objectContaining({ kind: 'author', value: user.id })]),
     )
   })

@@ -105,6 +105,13 @@ export const workDynamicConfigRegistryEntries = [
           },
         ]),
       ),
+      source_recovery_batch_size: {
+        description:
+          'Maximum raw membership source rows scanned per Google Play recovery page and maximum eligible Microsoft Store sources selected per page.',
+        minValue: 1,
+        maxValue: membershipAdditionalWorkMaxValues.source_recovery_batch_size,
+        integer: true,
+      },
       batch_size: {
         description: 'Maximum rows per page.',
         minValue: 1,

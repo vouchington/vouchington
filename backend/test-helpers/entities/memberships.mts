@@ -157,16 +157,19 @@ export async function createTestMembership(options: CreateTestMembershipOptions)
           SELECT id, ${options.user_id}, ${effectiveAt} FROM grant_row
         )
         INSERT INTO memberships (
-          user_id, membership_source_id, membership_product_id, effective_at,
+          user_id, membership_source_id, source_kind, membership_product_id, effective_at,
           cancelled_at, expired_at, past_due_at, paused_at
         )
         SELECT
-          ${options.user_id}, id, ${skuId}, ${effectiveAt},
+          ${options.user_id}, id,
+          CASE WHEN ${stripeSubscriptionId}::text IS NULL THEN 'admin_grant'::membership_source_kinds ELSE 'direct'::membership_source_kinds END,
+          ${skuId}, ${effectiveAt},
           ${lifecycle.cancelledAt}, ${lifecycle.expiredAt}, ${lifecycle.pastDueAt}, ${lifecycle.pausedAt}
         FROM source
         ON CONFLICT (user_id) WHERE projection_ended_at IS NULL
         DO UPDATE SET
           membership_source_id = EXCLUDED.membership_source_id,
+          source_kind = EXCLUDED.source_kind,
           membership_product_id = EXCLUDED.membership_product_id,
           effective_at = EXCLUDED.effective_at,
           cancelled_at = EXCLUDED.cancelled_at,

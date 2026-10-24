@@ -11,11 +11,13 @@ export const pagedDispatchRegistryEntry = defineBoundedWorkNamespace({
   descriptions: Object.fromEntries(
     Object.keys(pagedDispatchConfig.defaultFields).map(key => [
       key,
-      key.endsWith('_page_size')
-        ? 'Rows admitted by one dispatcher page.'
-        : key.endsWith('_backoff_ms')
-          ? 'Maximum retry and queue-capacity delay in milliseconds.'
-          : 'Whole target queue waiting, active and delayed depth limit.',
+      key === 'engagement_page_size'
+        ? 'Raw engagement candidate rows scanned by one continuation, including excluded recipients.'
+        : key.endsWith('_page_size')
+          ? 'Rows admitted by one dispatcher page.'
+          : key.endsWith('_backoff_ms')
+            ? 'Maximum retry and queue-capacity delay in milliseconds.'
+            : 'Whole target queue waiting, active and delayed depth limit.',
     ]),
   ),
 })

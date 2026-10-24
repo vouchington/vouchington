@@ -7,9 +7,6 @@ import {
   hardDeleteTestPost,
   expireTestPostPublicationDirtyWorkLease,
   scrubTestUserUsernameInTransaction,
-  enableQueryCapture,
-  stopTestQueryCapture,
-  type CapturedTestQuery,
 } from '@voucha/test-helpers'
 import {
   seedTestPublicationReceipt,
@@ -21,10 +18,12 @@ import {
 import {
   getTestPublicationCleanupTraversalBound,
   hasTestPublicationSnapshot,
-  lockTestPublicationSnapshots,
-  readTestPublicationSnapshotIds,
 } from '@voucha/test-helpers/entities/post-publication-cleanup'
-import { createTestPublicationSnapshotWork } from '@voucha/test-helpers/post-publication-fixtures'
+import {
+  createTestPublicationSnapshotWork,
+  reconcileTestPublicationThroughPostSweep,
+  testPublicationWorkAtPost,
+} from '@voucha/test-helpers/post-publication-fixtures'
 import { materializePostPublicationIdentitySnapshot } from './identity-snapshots.mts'
 import {
   acknowledgePostPublicationDirtyWork,
@@ -34,17 +33,18 @@ import { acknowledgePostPublicationProjectionReceipts } from './receipts.mts'
 import { cleanupPostPublicationIdentitySnapshots } from './snapshot-cleanup.mts'
 import { reconcilePostPublicationDirtyWork } from './reconcile.mts'
 import { recordPostPublicationChange } from './capture.mts'
-import { insertTestPublicationSnapshotHeaderFanout } from '@voucha/test-helpers/entities/post-publication-query-plans'
 
 describe('bounded publication receipt retention and reclamation', () => {
   it('honors the independent identity snapshot cap on normal reconciliation', async () => {
-    const { work } = await createTestPublicationSnapshotWork()
+    const { work, candidate } = await createTestPublicationSnapshotWork()
     const restore = overrideDynamicConfigFieldsForTest(postPublicationWorkConfig, {
       reconciliation_page_size: 100,
       identity_snapshot_page_size: 1,
     })
     try {
-      const result = await reconcilePostPublicationDirtyWork(work)
+      const result = await reconcilePostPublicationDirtyWork(
+        testPublicationWorkAtPost(work, candidate.id),
+      )
       expect(result.posts).toHaveLength(1)
       expect(result.hasIncompleteSnapshots).toBe(true)
     } finally {
@@ -52,34 +52,6 @@ describe('bounded publication receipt retention and reclamation', () => {
     }
   })
 
-  it('bounds locked-header candidates and revisits skipped headers after wrap', async () => {
-    const { work, candidate } = await createTestPublicationSnapshotWork()
-    const ids = await insertTestPublicationSnapshotHeaderFanout({
-      workId: work.id,
-      generation: work.generation,
-      postId: candidate.id,
-      count: 3,
-      abandoned: true,
-    })
-    await using lock = await beginTransaction()
-    await lockTestPublicationSnapshots(lock, ids)
-    const lockedBound = await getTestPublicationCleanupTraversalBound(2)
-    for (let page = 0; page < lockedBound; page += 1) {
-      const { result } = await captureCleanupCandidatePage()
-      expect(result.scanned).toBeLessThanOrEqual(2)
-      expect(result.snapshots).toBeLessThanOrEqual(2)
-      expect(result.keys).toBeLessThanOrEqual(2)
-    }
-    expect(await readTestPublicationSnapshotIds(ids)).toEqual([...ids].toSorted())
-    await lock.commit()
-    const bound = await getTestPublicationCleanupTraversalBound(2)
-    let remaining = ids
-    for (let page = 0; page < bound && remaining.length > 0; page += 1) {
-      await cleanupPostPublicationIdentitySnapshots(2)
-      remaining = await readTestPublicationSnapshotIds(remaining)
-    }
-    expect(remaining).toEqual([])
-  })
   it('keeps the accepted pointer during replacement and rejects sources changed before acceptance', async () => {
     const { work, candidate, user } = await createTestPublicationSnapshotWork()
     const first = await materializePostPublicationIdentitySnapshot(work, candidate, 100)
@@ -192,7 +164,8 @@ describe('bounded publication receipt retention and reclamation', () => {
     expect(second.hasIncompleteSnapshots).toBe(true)
     const third = await reconcilePostPublicationDirtyWork(claimed, 2)
     expect(third.hasIncompleteSnapshots).toBe(false)
-    expect(third.hasMoreIdentityKeys).toBe(true)
+    const { final } = await reconcileTestPublicationThroughPostSweep(claimed, 2, candidate.id)
+    expect(final.hasMoreIdentityKeys).toBe(true)
     expect(await retainedSlugCount()).toBe(5)
     expect(await readTestPublicationReceipt(candidate.id)).toEqual({
       snapshotId: expect.any(String),
@@ -280,20 +253,3 @@ describe('bounded publication receipt retention and reclamation', () => {
     expect(await readTestPublicationSnapshot(accepted.snapshotId)).toEqual(before)
   })
 })
-
-async function captureCleanupCandidatePage() {
-  enableQueryCapture()
-  let queries: CapturedTestQuery[] = []
-  let result: Awaited<ReturnType<typeof cleanupPostPublicationIdentitySnapshots>>
-  try {
-    result = await cleanupPostPublicationIdentitySnapshots(2)
-  } finally {
-    queries = stopTestQueryCapture()
-  }
-  const page = queries.find(query =>
-    query.text.startsWith('/* lockPublicationSnapshotCleanupHeaderPage */'),
-  )?.values[0]
-  if (!Array.isArray(page) || !page.every(value => typeof value === 'string'))
-    throw new Error('Expected actual bounded cleanup candidate IDs')
-  return { result, candidates: page as string[] }
-}

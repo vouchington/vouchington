@@ -5,9 +5,10 @@ import { countEnabledRssFeedsForTest } from '@voucha/test-helpers/sql-rss-feeds'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import { updateRssFeedTiming } from '@voucha/test-helpers/entities/rss-feeds-state'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
-import { getRssFeedsToFetch } from '@services/rss-feeds/get-to-fetch'
+import { getRssFeedsToFetch, type RssFeedDispatchCandidate } from '@services/rss-feeds/get-to-fetch'
 import { updateRssFeedById } from '@services/rss-feeds/update'
 import {
+  getCrawlCapacityBudget,
   getTierSlaMs,
   RSS_FEED_CRAWL_MAX_VALUES,
   rssFeedCrawlConfig,
@@ -27,10 +28,31 @@ const UTC_ROLLOVERS = [
   '2025-01-01T00:00:00.001Z',
 ] as const
 
+async function collectTieredFeeds(
+  options: { limit?: number; asOf?: Date } = {},
+): Promise<RssFeedDispatchCandidate[]> {
+  const budget = Math.min(options.limit ?? getCrawlCapacityBudget(), getCrawlCapacityBudget())
+  const feeds: RssFeedDispatchCandidate[] = []
+  let cursor: { lane: number; afterId: string } | undefined
+  let pages = 0
+  do {
+    const page = await getRssFeedsToFetch({
+      ...options,
+      ...(cursor && { cursor }),
+      limit: budget - feeds.length,
+    })
+    feeds.push(...page.feeds)
+    cursor = page.nextCursor
+    if (++pages > 1_000) throw new Error('RSS tier contract exceeded its fixture page budget')
+  } while (cursor && feeds.length < budget)
+  return feeds
+}
+
 export async function checkTieredContract(ownedFeedIds: string[]): Promise<void> {
   await rssFeedCrawlConfig.waitForInitialization()
   const restoreBudget = overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, {
     capacity_budget: RSS_FEED_CRAWL_MAX_VALUES.capacity_budget,
+    selection_scan_page_size: RSS_FEED_CRAWL_MAX_VALUES.selection_scan_page_size,
   })
   try {
     const neverFetched = await createTestRssFeed({})
@@ -57,12 +79,12 @@ export async function checkTieredContract(ownedFeedIds: string[]): Promise<void>
       capacity_budget: 2,
     })
     try {
-      assert.ok((await getRssFeedsToFetch()).length <= 2, 'capacity budget must cap results')
+      assert.ok((await collectTieredFeeds()).length <= 2, 'capacity budget must cap results')
     } finally {
       restoreTwo()
     }
 
-    const initial = await getRssFeedsToFetch({ limit: LIMIT })
+    const initial = await collectTieredFeeds({ limit: LIMIT })
     assert.ok(
       initial.some(feed => feed.id === neverFetched.id),
       'never fetched must be due',
@@ -76,7 +98,7 @@ export async function checkTieredContract(ownedFeedIds: string[]): Promise<void>
 
     await updateRssFeedById(neverFetched.id, { declared_language: 'fr' })
     try {
-      const feeds = await getRssFeedsToFetch({ limit: LIMIT })
+      const feeds = await collectTieredFeeds({ limit: LIMIT })
       assert.equal(feeds.find(feed => feed.id === neverFetched.id)?.declared_language, 'fr')
     } finally {
       await updateRssFeedById(neverFetched.id, { declared_language: null })
@@ -84,7 +106,7 @@ export async function checkTieredContract(ownedFeedIds: string[]): Promise<void>
 
     await updateRssFeedById(neverFetched.id, { should_ignore_robots_txt: false })
     try {
-      const feeds = await getRssFeedsToFetch({ limit: LIMIT })
+      const feeds = await collectTieredFeeds({ limit: LIMIT })
       assert.equal(feeds.find(feed => feed.id === neverFetched.id)?.feed_ignore_robots_txt, false)
     } finally {
       await updateRssFeedById(neverFetched.id, { should_ignore_robots_txt: null })
@@ -92,7 +114,7 @@ export async function checkTieredContract(ownedFeedIds: string[]): Promise<void>
 
     await updateRssFeedById(neverFetched.id, { unreliable_status_codes: [404, 410] })
     try {
-      const feeds = await getRssFeedsToFetch({ limit: LIMIT })
+      const feeds = await collectTieredFeeds({ limit: LIMIT })
       assert.deepEqual(
         feeds.find(feed => feed.id === neverFetched.id)?.feed_unreliable_status_codes,
         [404, 410],
@@ -105,7 +127,8 @@ export async function checkTieredContract(ownedFeedIds: string[]): Promise<void>
       const asOf = new Date(instant)
       try {
         await updateRssFeedTiming(recentFetched.id, new Date(asOf.getTime() - 8 * DAY_MS))
-        const aged = (await getRssFeedsToFetch({ limit: LIMIT, asOf })).find(
+        // no-mistakes-disable-next-line query-reached-per-item: fixed UTC rollover fixtures each verify one bounded tier page after its own timing mutation.
+        const aged = (await collectTieredFeeds({ limit: LIMIT, asOf })).find(
           feed => feed.id === recentFetched.id,
         )
         assert.ok(aged, `aged owned feed must be selected at ${instant}`)
@@ -114,7 +137,8 @@ export async function checkTieredContract(ownedFeedIds: string[]): Promise<void>
         const cutoff = asOf.getTime() - getTierSlaMs(expectedTier.crawl_tier as RssFeedCrawlTier)
         for (const delta of [-1, 0, 1] as const) {
           await updateRssFeedTiming(recentFetched.id, new Date(cutoff + delta))
-          const found = (await getRssFeedsToFetch({ limit: LIMIT, asOf })).find(
+          // no-mistakes-disable-next-line query-reached-per-item: three fixed SLA boundary mutations each require a separate capped tier read.
+          const found = (await collectTieredFeeds({ limit: LIMIT, asOf })).find(
             feed => feed.id === recentFetched.id,
           )
           const expectedPriorityGroup =
@@ -143,7 +167,7 @@ export async function checkTieredContract(ownedFeedIds: string[]): Promise<void>
       capacity_budget: (await countEnabledRssFeedsForTest()) + 100,
     })
     try {
-      const found = (await getRssFeedsToFetch({ limit: LIMIT })).find(
+      const found = (await collectTieredFeeds({ limit: LIMIT })).find(
         feed => feed.id === newFeed.id,
       )
       assert.ok(found, 'new feed absent from MV must be dispatched')

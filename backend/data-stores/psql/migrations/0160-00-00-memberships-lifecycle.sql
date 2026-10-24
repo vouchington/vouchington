@@ -22,6 +22,8 @@ CREATE TABLE IF NOT EXISTS membership_provider_contexts (
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   CONSTRAINT uq_membership_provider_contexts__identity UNIQUE (provider, environment, application_id)
 );
+CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_provider_contexts__id_provider
+  ON membership_provider_contexts (id, provider);
 COMMENT ON TABLE membership_provider_contexts IS 'Canonical identity for a configured membership provider, environment, and application.';
 COMMENT ON COLUMN membership_provider_contexts.provider IS 'Provider that owns this membership context.';
 COMMENT ON COLUMN membership_provider_contexts.environment IS 'Provider environment for this membership context.';
@@ -144,13 +146,15 @@ COMMENT ON COLUMN membership_lineage_bindings.originating_invoice_id IS 'Stripe 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_provider_evidence_records (
   id UUID PRIMARY KEY DEFAULT uuidv7(), membership_provider_context_id UUID NOT NULL REFERENCES membership_provider_contexts(id) ON DELETE RESTRICT,
+  provider membership_provider_kinds NOT NULL,
   membership_provider_lineage_id UUID, provider_event_id TEXT, evidence_lookup_sha256 TEXT NOT NULL CONSTRAINT chk_membershi_provider_evidence_records__evidence_lookup_sha256 CHECK (evidence_lookup_sha256 ~ '^[a-f0-9]{64}$'), encrypted_evidence BYTEA NOT NULL,
   received_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, verified_at TIMESTAMPTZ, rejected_at TIMESTAMPTZ, rejection_reason TEXT,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   CHECK (octet_length(encrypted_evidence) BETWEEN 1 AND 65536), CHECK (num_nonnulls(verified_at, rejected_at) <= 1),
   CHECK (rejection_reason IS NULL OR (rejected_at IS NOT NULL AND char_length(rejection_reason) BETWEEN 1 AND 1000 AND rejection_reason = TRIM(rejection_reason))),
   CHECK (provider_event_id IS NULL OR (char_length(provider_event_id) BETWEEN 1 AND 255 AND provider_event_id = TRIM(provider_event_id))),
-  CONSTRAINT fk_membership_provider_evidence_records__lineage_context FOREIGN KEY (membership_provider_lineage_id, membership_provider_context_id) REFERENCES membership_provider_lineages(id, membership_provider_context_id) ON DELETE RESTRICT
+  CONSTRAINT fk_membership_provider_evidence_records__lineage_context FOREIGN KEY (membership_provider_lineage_id, membership_provider_context_id) REFERENCES membership_provider_lineages(id, membership_provider_context_id) ON DELETE RESTRICT,
+  CONSTRAINT fk_membership_provider_evidence_records__context_provider FOREIGN KEY (membership_provider_context_id, provider) REFERENCES membership_provider_contexts(id, provider) ON DELETE RESTRICT
 );
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_provider_evidence_records__id_context ON membership_provider_evidence_records (id, membership_provider_context_id);
@@ -166,6 +170,16 @@ CREATE INDEX IF NOT EXISTS idx_membership_provider_evidence_records__lineage_id 
 CREATE INDEX IF NOT EXISTS idx_membership_provider_evidence_records__rejected_at
   ON membership_provider_evidence_records (rejected_at, id)
   WHERE rejected_at IS NOT NULL;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_membership_provider_evidence_records__pending_notification
+  ON membership_provider_evidence_records (membership_provider_context_id, received_at, id)
+  WHERE provider_event_id IS NOT NULL AND verified_at IS NULL AND rejected_at IS NULL;
+-- Google recovery keeps a global evidence-id cursor within its provider.
+CREATE INDEX IF NOT EXISTS idx_mbrshp_prvdr_evdnc_rcrds__google_pending_id
+  ON membership_provider_evidence_records (id, membership_provider_context_id)
+  WHERE provider = 'google_play' AND provider_event_id IS NOT NULL
+    AND verified_at IS NULL AND rejected_at IS NULL;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TABLE IF NOT EXISTS membership_provider_observations (
@@ -420,6 +434,10 @@ CREATE INDEX IF NOT EXISTS idx_membership_source_states__lineage_id ON membershi
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_source_states__observation_id ON membership_source_states (membership_provider_observation_id) WHERE membership_provider_observation_id IS NOT NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
+CREATE INDEX IF NOT EXISTS idx_membership_source_states__active_direct_recovery
+  ON membership_source_states (membership_source_id)
+  WHERE source_kind = 'direct' AND cancelled_at IS NULL AND expired_at IS NULL;
+-- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_membership_source_states__family_updated_at
   ON membership_source_states (updated_at, membership_source_id) WHERE source_kind = 'family';
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -489,12 +507,14 @@ $$;
 CREATE TABLE IF NOT EXISTS memberships (
   id UUID PRIMARY KEY DEFAULT uuidv7() REFERENCES retained_membership_identities(id) ON DELETE RESTRICT, user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   membership_source_id UUID NOT NULL REFERENCES membership_sources(id) ON DELETE RESTRICT,
+  source_kind membership_source_kinds NOT NULL,
   membership_product_id UUID NOT NULL REFERENCES membership_products(id) ON DELETE RESTRICT,
   effective_at TIMESTAMPTZ NOT NULL, expires_at TIMESTAMPTZ, cancelled_at TIMESTAMPTZ, expired_at TIMESTAMPTZ, past_due_at TIMESTAMPTZ, paused_at TIMESTAMPTZ,
   should_cancel_at_period_end BOOLEAN NOT NULL DEFAULT false, latest_change_id UUID,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL, updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, projection_ended_at TIMESTAMPTZ,
   CHECK (num_nonnulls(cancelled_at, expired_at, past_due_at, paused_at) <= 1),
-  CONSTRAINT fk_memberships__source_user FOREIGN KEY (membership_source_id, user_id) REFERENCES membership_sources(id, user_id) ON DELETE RESTRICT
+  CONSTRAINT fk_memberships__source_user FOREIGN KEY (membership_source_id, user_id) REFERENCES membership_sources(id, user_id) ON DELETE RESTRICT,
+  CONSTRAINT fk_memberships__source_kind FOREIGN KEY (membership_source_id, source_kind) REFERENCES membership_sources(id, source_kind) ON DELETE RESTRICT
 );
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE TRIGGER trigger_memberships_register_retained_identity
@@ -514,6 +534,11 @@ CREATE INDEX IF NOT EXISTS idx_memberships__live_source
 CREATE INDEX IF NOT EXISTS idx_memberships__product_id ON memberships (membership_product_id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_memberships__expires_at ON memberships (expires_at, id) WHERE projection_ended_at IS NULL AND expires_at IS NOT NULL;
+-- Expiry dispatch selects only administrator grants before applying its ordered limit.
+CREATE INDEX IF NOT EXISTS idx_memberships__admin_grant_expires_at ON memberships (expires_at, id)
+  INCLUDE (user_id)
+  WHERE source_kind = 'admin_grant' AND projection_ended_at IS NULL
+    AND cancelled_at IS NULL AND expired_at IS NULL AND expires_at IS NOT NULL;
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_memberships__vote_weight_expiry
   ON memberships (expires_at, id)
@@ -1116,6 +1141,7 @@ COMMENT ON COLUMN membership_lineage_bindings.release_reason IS 'Auditable reaso
 
 COMMENT ON TABLE membership_provider_evidence_records IS 'Encrypted provider evidence retained for verification, replay protection, and audit.';
 COMMENT ON COLUMN membership_provider_evidence_records.membership_provider_context_id IS 'Provider, environment, and application that produced the evidence.';
+COMMENT ON COLUMN membership_provider_evidence_records.provider IS 'Provider copied under a composite foreign key so recovery can page one provider in global evidence ID order.';
 COMMENT ON COLUMN membership_provider_evidence_records.membership_provider_lineage_id IS 'Provider lineage asserted by the evidence, when known.';
 COMMENT ON COLUMN membership_provider_evidence_records.provider_event_id IS 'Optional provider event identity used for replay protection.';
 COMMENT ON COLUMN membership_provider_evidence_records.evidence_lookup_sha256 IS 'SHA-256 lookup digest for deduplicating encrypted evidence.';
@@ -1218,6 +1244,7 @@ COMMENT ON COLUMN membership_grant_activation_periods.ended_at IS 'When this act
 COMMENT ON TABLE memberships IS 'Current and retained historical user-facing access projection rows derived from a single membership source.';
 COMMENT ON COLUMN memberships.user_id IS 'User currently receiving projected membership access.';
 COMMENT ON COLUMN memberships.membership_source_id IS 'Source that currently owns this access projection.';
+COMMENT ON COLUMN memberships.source_kind IS 'Source category copied under a composite foreign key so ordered expiry work can select administrator grants before its limit.';
 COMMENT ON COLUMN memberships.membership_product_id IS 'Canonical product currently projected as access.';
 COMMENT ON COLUMN memberships.effective_at IS 'When the projected membership became effective.';
 COMMENT ON COLUMN memberships.expires_at IS 'When the projected membership expires, if finite.';

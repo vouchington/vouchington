@@ -1,11 +1,40 @@
 import { describe, expect, it } from 'vitest'
-import { pageGooglePlayRecoveryItems } from './recovery-cursor.mts'
+import {
+  advanceGooglePlayRecoverySweep,
+  beginGooglePlayRecoverySweep,
+  pageGooglePlayRecoveryItems,
+} from './recovery-cursor.mts'
 
 describe('Google Play recovery sweep pages', () => {
+  it.each(['active_sources', 'notifications', 'acknowledgements'] as const)(
+    'rejects stale reset replay and admits a fresh %s sweep',
+    async cursorId => {
+      const findUpperBound = async () => '00000000-0000-7000-8000-000000000900'
+      const first = await beginGooglePlayRecoverySweep({ cursorId, findUpperBound })
+      const completed = { ...first, cursorId, nextCursor: null, completesSweep: true }
+      await expect(advanceGooglePlayRecoverySweep(completed)).resolves.toBe(true)
+      await expect(advanceGooglePlayRecoverySweep(completed)).resolves.toBe(false)
+
+      const next = await beginGooglePlayRecoverySweep({ cursorId, findUpperBound })
+      expect(next.previousCursor).toBeNull()
+      expect(next.previousUpperBound).toBeNull()
+      expect(next.previousRevision).not.toBe(first.previousRevision)
+      await expect(
+        advanceGooglePlayRecoverySweep({
+          ...next,
+          cursorId,
+          nextCursor: null,
+          completesSweep: true,
+        }),
+      ).resolves.toBe(true)
+    },
+  )
+
   it('holds a captured high-water mark until a bounded multi-page sweep completes', () => {
     const cursor = {
       previousCursor: '00000000-0000-7000-8000-000000000100',
       previousUpperBound: '00000000-0000-7000-8000-000000000900',
+      previousRevision: '1',
       sweepUpperBound: '00000000-0000-7000-8000-000000000900',
     }
 
@@ -36,6 +65,7 @@ describe('Google Play recovery sweep pages', () => {
         {
           previousCursor: '00000000-0000-7000-8000-000000000102',
           previousUpperBound: '00000000-0000-7000-8000-000000000900',
+          previousRevision: '1',
           sweepUpperBound: '00000000-0000-7000-8000-000000000900',
         },
         [{ id: '00000000-0000-7000-8000-000000000103' }],

@@ -14,6 +14,8 @@ CREATE TABLE IF NOT EXISTS post_publication_dirty_work (
   reasons post_publication_reasons[] NOT NULL CHECK (cardinality(reasons) > 0),
   generation BIGINT NOT NULL DEFAULT 1 CHECK (generation > 0),
   cursor_post_id UUID,
+  pending_post_identity_id UUID,
+  pending_ancestor_post_identity_id UUID,
   cursor_topic_id UUID,
   cursor_key_id UUID,
   lease_token UUID,
@@ -24,7 +26,8 @@ CREATE TABLE IF NOT EXISTS post_publication_dirty_work (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CHECK (num_nonnulls(post_identity_id, author_identity_id, community_identity_id, rss_feed_identity_id, topic_alias_identity_id, story_identity_id) = 1),
   CHECK ((lease_token IS NULL) = (leased_at IS NULL)),
-  CHECK ((lease_token IS NULL) = (lease_expires_at IS NULL))
+  CHECK ((lease_token IS NULL) = (lease_expires_at IS NULL)),
+  CHECK ((pending_post_identity_id IS NULL) = (pending_ancestor_post_identity_id IS NULL))
 );
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
@@ -119,6 +122,8 @@ COMMENT ON COLUMN post_publication_dirty_work.story_identity_id IS 'Exact story 
 COMMENT ON COLUMN post_publication_dirty_work.reasons IS 'Finite set of coalesced eligibility-change reasons requiring the same current-state repair.';
 COMMENT ON COLUMN post_publication_dirty_work.generation IS 'Monotonic compare-and-set generation incremented whenever the scope becomes dirty again.';
 COMMENT ON COLUMN post_publication_dirty_work.cursor_post_id IS 'Last post UUID completed by the current generation; NULL starts or restarts post expansion.';
+COMMENT ON COLUMN post_publication_dirty_work.pending_post_identity_id IS 'Retained identity of a live candidate whose ancestor walk continues across bounded pages; deletion clears only its live link.';
+COMMENT ON COLUMN post_publication_dirty_work.pending_ancestor_post_identity_id IS 'Retained identity of the next ancestor to inspect; deletion clears only its live link.';
 COMMENT ON COLUMN post_publication_dirty_work.cursor_topic_id IS 'Last topic UUID completed by the current generation; NULL starts or restarts topic expansion.';
 COMMENT ON COLUMN post_publication_dirty_work.cursor_key_id IS 'Last retained-key UUID completed by the current generation; NULL starts or restarts key repair.';
 COMMENT ON COLUMN post_publication_dirty_work.lease_token IS 'Worker ownership token rotated by each successful lease claim.';

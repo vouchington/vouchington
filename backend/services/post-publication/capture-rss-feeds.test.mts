@@ -17,7 +17,9 @@ import {
   recordRssFeedDiscoverabilityChanges,
 } from './capture-rss-feeds.mts'
 import { recordPostPublicationChange } from './capture.mts'
-import { claimPostPublicationDirtyWork, reconcilePostPublicationDirtyWork } from './public.mts'
+import { claimPostPublicationDirtyWork } from './public.mts'
+import { listPostPublicationIdentityKeys } from './identity-keys.mts'
+import { reconcileTestPublicationThroughPostSweep } from '@voucha/test-helpers/post-publication-fixtures'
 import { postPublicationWorkConfig } from './work-limits.mts'
 
 describe('RSS-feed publication capture', () => {
@@ -45,8 +47,8 @@ describe('RSS-feed publication capture', () => {
 
     const claimed = await claimPostPublicationDirtyWork(work, 60)
     if (!claimed) throw new Error('Expected RSS publication work lease')
-    const result = await reconcilePostPublicationDirtyWork(claimed)
-    expect(result.rssFeedItemIds).toContain(item.id)
+    const { final } = await reconcileTestPublicationThroughPostSweep(claimed)
+    expect(final.rssFeedItemIds).toContain(item.id)
   })
 
   it('retains only the RSS items explicitly changed by source ingestion', async () => {
@@ -68,7 +70,7 @@ describe('RSS-feed publication capture', () => {
     const claimed = await claimPostPublicationDirtyWork(work, 60)
     if (!claimed) throw new Error('Expected RSS source work lease')
 
-    const result = await reconcilePostPublicationDirtyWork(claimed)
+    const result = await listPostPublicationIdentityKeys(claimed, 100)
     expect(result.rssFeedItemIds).toEqual([changedItem.id])
     expect(result.rssFeedItemIds).not.toContain(unchangedItem.id)
   })

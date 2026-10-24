@@ -3,6 +3,7 @@ import onError from '@modules/on-error'
 
 export type UserImportExportConfig = {
   sync_export_max_items: number
+  sync_export_cursor_batch_size: number
   /** Largest JSON body, in bytes, the RSS feed import endpoint reads. */
   import_max_body_bytes: number
   /** Pending rows one dispatcher page puts on the queue before it continues. */
@@ -11,6 +12,7 @@ export type UserImportExportConfig = {
   import_insert_chunk_size: number
   /** Stalled imports one recovery sweep re-dispatches; the next sweep takes the rest. */
   import_recovery_batch_size: number
+  topic_attempt_prune_batch_size: number
   /** Rows one page of an import's status lists. */
   import_status_page_size: number
   /** Time one imported feed gets, from Web Risk through both protocol attempts. */
@@ -21,20 +23,24 @@ export const USER_IMPORT_EXPORT_CONFIG_KEY = 'user-import-export-config'
 
 export const DEFAULT_USER_IMPORT_EXPORT_CONFIG: UserImportExportConfig = {
   sync_export_max_items: 1_000,
+  sync_export_cursor_batch_size: 1_000,
   import_max_body_bytes: 2 * 1024 * 1024,
   import_dispatch_page_size: 100,
   import_insert_chunk_size: 1_000,
   import_recovery_batch_size: 100,
+  topic_attempt_prune_batch_size: 100,
   import_status_page_size: 100,
   rss_feed_import_budget_ms: 15_000,
 }
 
 export const USER_IMPORT_EXPORT_MIN_VALUES: UserImportExportConfig = {
   sync_export_max_items: 1,
+  sync_export_cursor_batch_size: 1,
   import_max_body_bytes: 1_024,
   import_dispatch_page_size: 1,
   import_insert_chunk_size: 1,
   import_recovery_batch_size: 1,
+  topic_attempt_prune_batch_size: 1,
   import_status_page_size: 1,
   rss_feed_import_budget_ms: 1_000,
 }
@@ -43,20 +49,24 @@ export const USER_IMPORT_EXPORT_MIN_VALUES: UserImportExportConfig = {
 // before its lock expires.
 export const USER_IMPORT_EXPORT_MAX_VALUES: UserImportExportConfig = {
   sync_export_max_items: 50_000,
+  sync_export_cursor_batch_size: 10_000,
   import_max_body_bytes: 16 * 1024 * 1024,
   import_dispatch_page_size: 1_000,
   import_insert_chunk_size: 10_000,
   import_recovery_batch_size: 1_000,
+  topic_attempt_prune_batch_size: 1_000,
   import_status_page_size: 1_000,
   rss_feed_import_budget_ms: 25_000,
 }
 
 const fieldTypes: Record<keyof UserImportExportConfig, 'number'> = {
   sync_export_max_items: 'number',
+  sync_export_cursor_batch_size: 'number',
   import_max_body_bytes: 'number',
   import_dispatch_page_size: 'number',
   import_insert_chunk_size: 'number',
   import_recovery_batch_size: 'number',
+  topic_attempt_prune_batch_size: 'number',
   import_status_page_size: 'number',
   rss_feed_import_budget_ms: 'number',
 }

@@ -1,9 +1,13 @@
 import sql from 'sql-template-strings'
 import { buildPublicPostEligibilityFilter } from '@modules/feed-query-builders'
 
-export function buildLandingPagesQuery() {
+export function buildLandingPagesQuery(options?: {
+  highWaterId?: string
+  afterId?: string
+  limit: number
+}) {
   const query = sql`/* buildSitemapLandingPagesQuery */
-    SELECT
+    SELECT ulp.id,
       CASE
         WHEN ulp.is_default THEN CONCAT('/@', u.username)
         ELSE CONCAT('/@', u.username, '/', ulp.slug)
@@ -154,7 +158,9 @@ export function buildLandingPagesQuery() {
             )
           )
       )
-    ORDER BY ulp.id DESC
   `)
+  if (options?.highWaterId) query.append(sql` AND ulp.id <= ${options.highWaterId}`)
+  if (options?.afterId) query.append(sql` AND ulp.id < ${options.afterId}`)
+  if (options) query.append(sql` ORDER BY ulp.id DESC LIMIT ${options.limit}`)
   return query
 }

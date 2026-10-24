@@ -4,6 +4,7 @@ import {
   createTestMembershipProviderContext,
   deleteTestMembershipProviderContext,
   rejectTestGoogleRowsOnStripeContext,
+  rejectTestEvidenceProviderMismatch,
   rejectTestMicrosoftCredentialOnStripeContext,
   rejectTestStripeDeletionWorkOnGoogleLineage,
   updateTestMembershipProviderContext,
@@ -30,6 +31,13 @@ describe('membership provider context integrity', () => {
     const invalidWrites = await rejectTestGoogleRowsOnStripeContext(contextId)
     await expect(invalidWrites.token()).rejects.toMatchObject({ code: '23514' })
     await expect(invalidWrites.acknowledgment()).rejects.toMatchObject({ code: '23514' })
+  })
+
+  it('rejects evidence whose copied provider differs from its context', async () => {
+    const contextId = await createTestMembershipProviderContext()
+    await expect(rejectTestEvidenceProviderMismatch(contextId)).rejects.toMatchObject({
+      code: '23503',
+    })
   })
 
   it('rejects Microsoft Store credentials on a Stripe context', async () => {

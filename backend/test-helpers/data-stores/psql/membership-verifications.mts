@@ -12,9 +12,9 @@ export async function createMembershipProviderEvidence(
 ): Promise<string> {
   const { rows } = await write<{ id: string }>(sql`/* createMembershipVerificationEvidence */
     INSERT INTO membership_provider_evidence_records (
-      membership_provider_context_id, evidence_lookup_sha256, encrypted_evidence
+      membership_provider_context_id, provider, evidence_lookup_sha256, encrypted_evidence
     ) VALUES (fn_upsert_membership_provider_context_id('stripe', 'test', ${fixture.applicationId}),
-      ${randomUUID().replaceAll('-', '').padEnd(64, 'b')}, '\x01'::bytea) RETURNING id`)
+      'stripe', ${randomUUID().replaceAll('-', '').padEnd(64, 'b')}, '\x01'::bytea) RETURNING id`)
   return rows[0]!.id
 }
 

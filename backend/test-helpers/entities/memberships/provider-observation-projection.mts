@@ -75,10 +75,10 @@ export async function createTestUnprojectedProviderObservation(options: {
   const { rows: evidenceRows } =
     await query(sql`/* createTestUnprojectedProviderObservation: evidence */
     INSERT INTO membership_provider_evidence_records (
-      membership_provider_context_id, membership_provider_lineage_id,
+      membership_provider_context_id, provider, membership_provider_lineage_id,
       evidence_lookup_sha256, encrypted_evidence, verified_at
     ) VALUES (
-      ${contextId}, ${lineage.id},
+      ${contextId}, ${options.provider}, ${lineage.id},
       ${randomBytes(32).toString('hex')}, ${randomBytes(32)}, CURRENT_TIMESTAMP
     ) RETURNING id`)
   const evidence = evidenceRows[0] as { id: string }

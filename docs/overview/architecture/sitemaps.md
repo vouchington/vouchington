@@ -18,6 +18,13 @@ flowchart TD
   R -- no --> NF[404 at the edge]
 ```
 
+Day and family rebuilds stage child files under an opaque generation ID. Each job reads one bounded
+keyset page and persists its position and fixed source ID ceiling before the next job runs. The
+ceiling excludes newly created identities from an in-progress generation; visibility and content
+updates are observed when each page is read. The stable index is written only after every staged
+child exists, so failed or unfinished rebuilds leave the prior public index intact. Child URLs
+include the generation ID so cached old indexes continue to resolve to their original files.
+
 The Worker only maps supported sitemap XML paths to S3 object keys. Unsupported paths, including
 paths with impossible `YYYY-MM-DD` dates or URL-encoded dot, slash, or backslash octets, return 404
 at the edge and are not fetched from S3.
@@ -51,6 +58,9 @@ Dynamic non-post sitemap families are generated separately:
 - **`generated-paths.mts`** — path enumeration for static pages
 - **`daily-queries.mts`** — queries to fetch eligible entities for daily generation
 - **`family-queries.mts`** / **`family-generation.mts`** — non-post dynamic sitemap families
+- Generation cleanup delays removal of replaced child objects until the Worker cache lifetime,
+  stale revalidation window, and stale error allowance have elapsed. The Worker caps the sitemap
+  cache TTL; the cleanup grace has a matching minimum in DynamicConfig.
 - **`tracked-range-cache.mts`** / **`tracked-range-discovery.mts`** — tracks which UUIDv7 ranges have
   been included, enabling incremental updates without full regeneration. Post-day generation uses
   one atomic Lua upsert on the warm-cache path; the script returns both the previous and next range
@@ -63,9 +73,9 @@ A sitemap index at `/sitemap.xml` links to per-category sitemaps under `/sitemap
 - `/sitemaps/static.xml` — static public navigation pages
 - `/sitemaps/posts.xml` — index of post type sitemap indexes
 - `/sitemaps/{post_type}.xml` — index of daily post sitemap pages for one post type
-- `/sitemaps/{post_type}/YYYY-MM-DD/{page}.xml` — daily post sitemap pages
+- `/sitemaps/{post_type}/YYYY-MM-DD/{generation_id}/{page}.xml` — daily post sitemap pages
 - `/sitemaps/{family}.xml` — index for a dynamic non-post family
-- `/sitemaps/{family}/{page}.xml` — dynamic family sitemap pages
+- `/sitemaps/{family}/{generation_id}/{page}.xml` — dynamic family sitemap pages
 
 Static pages included in `/sitemaps/static.xml.gz`:
 `/`, `/news`, `/stories`, `/plans`, `/articles`, `/blog`, `/channels`, `/communities`, `/topics`, `/cards`, `/domains`, `/domains/compare`, `/sources`, `/news-sources`, `/podcasts`, `/podcast-episodes`, `/videos`, `/web-search`, `/reviews`, `/discussions`, `/posts`, `/data-points`, `/referral-programs`, `/rewards-programs`, `/spending-categories`, `/rewards-program-statuses`

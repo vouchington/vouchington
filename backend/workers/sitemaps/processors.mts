@@ -14,9 +14,12 @@ import {
 } from '@services/sitemaps/generation'
 import { getTrackedDayRange } from '@services/sitemaps/storage'
 import { getSitemapsWorkLimit } from '@services/sitemaps/work-limits'
+import { cleanupRetiredSitemapGenerations } from '@services/sitemaps/retired-generation-cleanup'
 import {
   enqueueBulkUpdatePostDaySitemaps,
+  enqueueFamilySitemapContinuation,
   enqueueMonthlyBackfillArchiveContinuation,
+  enqueuePostDaySitemapContinuation,
   enqueueUpdateFamilySitemap,
   enqueueUpdatePostTypeIndex,
   enqueueUpdatePostsIndex,
@@ -26,6 +29,7 @@ import { invalidate } from '@services/entity-cache/invalidate'
 
 type UpdatePostDaySitemapDependencies = {
   generatePostDaySitemapFiles: typeof generatePostDaySitemapFiles
+  enqueuePostDaySitemapContinuation: typeof enqueuePostDaySitemapContinuation
   enqueueUpdatePostTypeIndex: typeof enqueueUpdatePostTypeIndex
   enqueueUpdatePostsIndex: typeof enqueueUpdatePostsIndex
   enqueueUpdateRootIndex: typeof enqueueUpdateRootIndex
@@ -39,6 +43,7 @@ type UpdatePostDaySitemapDependencies = {
  */
 export const updatePostDaySitemapDependencies: UpdatePostDaySitemapDependencies = {
   generatePostDaySitemapFiles,
+  enqueuePostDaySitemapContinuation,
   enqueueUpdatePostTypeIndex,
   enqueueUpdatePostsIndex,
   enqueueUpdateRootIndex,
@@ -49,6 +54,7 @@ type UpdateSitemapIndexDependencies = {
   generatePostTypeIndex: typeof generatePostTypeIndex
   generatePostsIndex: typeof generatePostsIndex
   generateSitemapFamilyFiles: typeof generateSitemapFamilyFiles
+  enqueueFamilySitemapContinuation: typeof enqueueFamilySitemapContinuation
   generateRootIndex: typeof generateRootIndex
   enqueueUpdateRootIndex: typeof enqueueUpdateRootIndex
   invalidateSitemaps: typeof invalidate.sitemaps
@@ -62,6 +68,7 @@ export const updateSitemapIndexDependencies: UpdateSitemapIndexDependencies = {
   generatePostTypeIndex,
   generatePostsIndex,
   generateSitemapFamilyFiles,
+  enqueueFamilySitemapContinuation,
   generateRootIndex,
   enqueueUpdateRootIndex,
   invalidateSitemaps: invalidate.sitemaps,
@@ -76,6 +83,7 @@ export const backfillDispatcherDependencies = {
   enqueueBulkUpdatePostDaySitemaps,
   enqueueMonthlyBackfillArchiveContinuation,
   enqueueUpdateFamilySitemap,
+  cleanupRetiredSitemapGenerations,
 }
 
 export async function processUpdatePostDaySitemap(
@@ -88,7 +96,11 @@ export async function processUpdatePostDaySitemap(
   },
   dependencies = updatePostDaySitemapDependencies,
 ): Promise<void> {
-  await dependencies.generatePostDaySitemapFiles(postType, day)
+  const result = await dependencies.generatePostDaySitemapFiles(postType, day)
+  if (result.hasMore && result.continuationId) {
+    await dependencies.enqueuePostDaySitemapContinuation({ postType, day }, result.continuationId)
+    return
+  }
   await dependencies.invalidateSitemaps()
   await Promise.all([
     dependencies.enqueueUpdatePostTypeIndex(postType),
@@ -116,7 +128,11 @@ export async function processUpdateFamilySitemap(
   family: (typeof SITEMAP_CONFIG.FAMILY_TYPES)[number],
   dependencies = updateSitemapIndexDependencies,
 ): Promise<void> {
-  await dependencies.generateSitemapFamilyFiles(family)
+  const result = await dependencies.generateSitemapFamilyFiles(family)
+  if (result.hasMore && result.continuationId) {
+    await dependencies.enqueueFamilySitemapContinuation(family, result.continuationId)
+    return
+  }
   await Promise.all([dependencies.invalidateSitemaps(), dependencies.enqueueUpdateRootIndex()])
 }
 
@@ -128,7 +144,12 @@ export async function processUpdateRootIndex(
 }
 
 export async function processNightlyBackfillWeekDispatcher(
-  dependencies = backfillDispatcherDependencies,
+  dependencies: Pick<
+    typeof backfillDispatcherDependencies,
+    | 'enqueueBulkUpdatePostDaySitemaps'
+    | 'enqueueUpdateFamilySitemap'
+    | 'cleanupRetiredSitemapGenerations'
+  > = backfillDispatcherDependencies,
 ): Promise<void> {
   const now = new Date()
   const entries = getNightlyBackfillEntries(now, SITEMAP_CONFIG.POST_TYPES)
@@ -136,6 +157,7 @@ export async function processNightlyBackfillWeekDispatcher(
     dependencies.enqueueBulkUpdatePostDaySitemaps(entries),
     ...SITEMAP_CONFIG.FAMILY_TYPES.map(family => dependencies.enqueueUpdateFamilySitemap(family)),
   ])
+  await dependencies.cleanupRetiredSitemapGenerations(now)
 }
 
 export async function processWeeklyBackfillMonthDispatcher(): Promise<void> {
@@ -150,7 +172,10 @@ export async function processWeeklyBackfillMonthDispatcher(): Promise<void> {
  */
 export async function processMonthlyBackfillArchiveDispatcher(
   afterDay?: string,
-  dependencies = backfillDispatcherDependencies,
+  dependencies: Pick<
+    typeof backfillDispatcherDependencies,
+    'enqueueBulkUpdatePostDaySitemaps' | 'enqueueMonthlyBackfillArchiveContinuation'
+  > = backfillDispatcherDependencies,
 ): Promise<{ enqueued: number; hasMore: boolean }> {
   const trackedRange = (await getTrackedDayRange()) as TrackedDayRange | null
   const page = getMonthlyBackfillPage(new Date(), trackedRange, SITEMAP_CONFIG.POST_TYPES, {

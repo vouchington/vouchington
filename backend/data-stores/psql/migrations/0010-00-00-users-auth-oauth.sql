@@ -336,6 +336,7 @@ CREATE TABLE IF NOT EXISTS user_engagement_email_sends (
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   email_type engagement_email_types NOT NULL,
   claimed_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  claim_owner_job_id TEXT,
   delivery_attempted_at TIMESTAMPTZ,
   sent_at TIMESTAMPTZ,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -352,6 +353,7 @@ COMMENT ON TABLE user_engagement_email_sends IS 'One row per user and one-time e
 COMMENT ON COLUMN user_engagement_email_sends.user_id IS 'The recipient user.';
 COMMENT ON COLUMN user_engagement_email_sends.email_type IS 'The one-time engagement email type.';
 COMMENT ON COLUMN user_engagement_email_sends.claimed_at IS 'When the send was first claimed by the dispatcher.';
+COMMENT ON COLUMN user_engagement_email_sends.claim_owner_job_id IS 'The dispatcher page that owns a nonterminal queue admission; the same page may safely replay its claim.';
 COMMENT ON COLUMN user_engagement_email_sends.delivery_attempted_at IS 'When delivery of the engagement email was attempted.';
 COMMENT ON COLUMN user_engagement_email_sends.sent_at IS 'When the email processor marked the send as delivered.';
 
@@ -1293,3 +1295,27 @@ CREATE INDEX IF NOT EXISTS idx_user_role_permissions__permission_type_id
   WHERE permission_type_id IS NOT NULL;
 
 COMMENT ON COLUMN facebook_friends.last_observed_at IS 'Database timestamp of the latest provider friend-sync observation; stale observations are removed against the exact sync-start clock.';
+
+-- Current, derived admission state for the three one-time engagement emails. The
+-- send receipt remains authoritative for claims and delivery. This table contains
+-- only recipients that pass the non-time-based eligibility checks, so an hourly
+-- dispatcher can seek through the ordered candidates without reading every user.
+CREATE TABLE IF NOT EXISTS user_engagement_email_candidates (
+  user_id UUID NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+  email_type engagement_email_types NOT NULL,
+  claimed_at TIMESTAMPTZ,
+  PRIMARY KEY (email_type, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_engagement_email_candidates__user_id
+  ON user_engagement_email_candidates (user_id);
+CREATE INDEX IF NOT EXISTS idx_user_engagement_email_candidates__unclaimed
+  ON user_engagement_email_candidates (email_type, user_id) WHERE claimed_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_user_engagement_email_candidates__claimed
+  ON user_engagement_email_candidates (email_type, claimed_at, user_id)
+  WHERE claimed_at IS NOT NULL;
+
+COMMENT ON TABLE user_engagement_email_candidates IS 'Transactionally maintained admission projection for one-time engagement mail; a row exists only while the recipient passes static eligibility and has no terminal send receipt.';
+COMMENT ON COLUMN user_engagement_email_candidates.user_id IS 'Live recipient; deletion cascades this admission state.';
+COMMENT ON COLUMN user_engagement_email_candidates.email_type IS 'One-time email type whose static eligibility currently holds.';
+COMMENT ON COLUMN user_engagement_email_candidates.claimed_at IS 'Exact claimed_at of the authoritative send receipt, or NULL before the first claim or after release; hourly eligibility is checked at read time.';

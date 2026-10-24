@@ -6,9 +6,8 @@ import type { PostDayManifest } from './storage.mts'
 
 const manifest: PostDayManifest = {
   active_page_count: 1,
-  highest_written_page: 1,
+  generation_id: '11111111-1111-4111-8111-111111111111',
   generated_at: '2026-06-10T00:00:00.000Z',
-  content_hashes: { 'index.xml': 'hash' },
 }
 
 describe('sitemap index generation entries', () => {

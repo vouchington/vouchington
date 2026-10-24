@@ -51,6 +51,7 @@ const enqueueActiveSourceRecovery = createEnqueueFunction<Record<string, never>,
   jobName: 'recoverGooglePlayActiveSources',
   defaults,
 })
+const activeSourceRecoveryOrdering = { key: 'google-play-active-source-recovery', concurrency: 1 }
 const enqueueAcknowledgementRecovery = createEnqueueFunction<
   Record<string, never>,
   MembershipsJobs
@@ -90,10 +91,21 @@ export function enqueueRecoverGooglePlayNotifications(): EnqueueReturnType {
 export function enqueueRecoverGooglePlayActiveSources(): EnqueueReturnType {
   return enqueueActiveSourceRecovery(
     {},
-    recoveryOptions(
-      'google-play-active-source-recovery',
-      GOOGLE_PLAY_ACTIVE_SOURCE_RECOVERY_INTERVAL_MS,
-    ),
+    {
+      ...recoveryOptions(
+        'google-play-active-source-recovery',
+        GOOGLE_PLAY_ACTIVE_SOURCE_RECOVERY_INTERVAL_MS,
+      ),
+      ordering: activeSourceRecoveryOrdering,
+    },
+  )
+}
+
+/** Each raw source page gets a new job identity inside one fixed recovery sweep. */
+export function enqueueContinueRecoverGooglePlayActiveSources(): EnqueueReturnType {
+  return enqueueActiveSourceRecovery(
+    {},
+    { priority: PRIORITY_DISPATCHER, ordering: activeSourceRecoveryOrdering },
   )
 }
 

@@ -94,6 +94,7 @@ export async function processReconcilePostPublication(
   const limit = getPostPublicationWorkLimit('reconciliation_page_size')
   const snapshotLimit = getPostPublicationWorkLimit('identity_snapshot_page_size')
   const deps = { ...defaultDependencies, ...dependencies }
+  const reconcile = deps.reconcilePostPublicationDirtyWork
   const [available] = await deps.listAvailablePostPublicationDirtyWork(1)
   if (!available) return { reconciled: 0 }
   const work = await deps.claimPostPublicationDirtyWork(available, LEASE_SECONDS)
@@ -107,90 +108,78 @@ export async function processReconcilePostPublication(
         ? `post-publication-work:${work.id}`
         : postPublicationScopeLockKey(scope),
       async () => {
-        const selected = await deps.reconcilePostPublicationDirtyWork(
-          work,
-          limit,
-          undefined,
-          snapshotLimit,
-        )
-        if (
-          await reconcileReviewSuccessionBeforePostPublication(
-            selected.posts.map(post => post.id),
-            deps,
-          )
-        )
-          return
-        await deps.withPostPublicationReconciliationLocks(
-          selected.posts.map(post => post.id),
-          async () => {
-            const result = await deps.reconcilePostPublicationDirtyWork(
+        const selected = await reconcile(work, limit, undefined, snapshotLimit)
+        const selectedPostIds = selected.posts.map(post => post.id)
+        if (await reconcileReviewSuccessionBeforePostPublication(selectedPostIds, deps)) return
+        await deps.withPostPublicationReconciliationLocks(selectedPostIds, async () => {
+          const result = await reconcile(work, limit, selectedPostIds, snapshotLimit)
+          // The first pass owns the scanned cursor, even for an empty eligible page.
+          result.hasMorePosts = selected.hasMorePosts
+          result.cursorPostId = selected.cursorPostId
+          result.pendingPostId = selected.pendingPostId
+          result.pendingAncestorId = selected.pendingAncestorId
+          if (result.hasIncompleteSnapshots) {
+            await deps.enqueueContinuePostPublicationReconciliation()
+            return
+          }
+          await applyPostPublicationProjectionEffects(result, deps)
+          await enqueuePostPublicationNotificationEffects(result, deps)
+          if (!(await deps.acknowledgePostPublicationProjectionReceipts(work, result.posts))) return
+          if (
+            !(await deps.deleteOrphanPostPublicationProjectionReceipts(
               work,
-              limit,
-              selected.posts.map(post => post.id),
-              snapshotLimit,
-            )
-            if (result.hasIncompleteSnapshots) {
-              await deps.enqueueContinuePostPublicationReconciliation()
-              return
-            }
-            await applyPostPublicationProjectionEffects(result, deps)
-            await enqueuePostPublicationNotificationEffects(result, deps)
-            if (!(await deps.acknowledgePostPublicationProjectionReceipts(work, result.posts)))
-              return
+              result.orphanReceiptPostIds,
+            ))
+          )
+            return
+          if (!(await deps.renewPostPublicationDirtyWorkLease(fence, LEASE_SECONDS))) return
+          if (result.hasMorePosts) {
+            await deps.enqueueContinuePostPublicationReconciliation()
             if (
-              !(await deps.deleteOrphanPostPublicationProjectionReceipts(
-                work,
-                result.orphanReceiptPostIds,
-              ))
+              !(await deps.updatePostPublicationDirtyWorkCursors(fence, {
+                postId: result.cursorPostId,
+                pendingPostId: result.pendingPostId,
+                pendingAncestorId: result.pendingAncestorId,
+              }))
             )
               return
-            if (!(await deps.renewPostPublicationDirtyWorkLease(fence, LEASE_SECONDS))) return
-            if (result.hasMorePosts) {
-              await deps.enqueueContinuePostPublicationReconciliation()
-              if (
-                !(await deps.updatePostPublicationDirtyWorkCursors(fence, {
-                  postId: result.cursorPostId,
-                }))
-              )
-                return
-            } else if (result.hasMoreOrphanReceipts) {
-              await deps.enqueueContinuePostPublicationReconciliation()
-              if (
-                !(await deps.updatePostPublicationDirtyWorkCursors(fence, {
-                  postId: result.cursorPostId,
-                }))
-              )
-                return
-            } else if (result.hasMoreTopics) {
-              const topicId = result.topicIds.at(-1)
-              if (!topicId) throw new TypeError('Publication topic page requires a cursor topic ID')
-              await deps.enqueueContinuePostPublicationReconciliation()
-              if (
-                !(await deps.updatePostPublicationDirtyWorkCursors(fence, {
-                  postId: result.cursorPostId,
-                  topicId,
-                }))
-              )
-                return
-            } else if (result.hasMoreIdentityKeys) {
-              if (!result.cursorKeyId)
-                throw new TypeError('Publication key page requires a cursor key ID')
-              await deps.enqueueContinuePostPublicationReconciliation()
-              if (
-                !(await deps.updatePostPublicationDirtyWorkCursors(fence, {
-                  postId: result.cursorPostId,
-                  ...(result.topicIds.length > 0 ? { topicId: result.topicIds.at(-1)! } : {}),
-                  keyId: result.cursorKeyId,
-                }))
-              )
-                return
-            } else {
-              await deps.enqueueContinuePostPublicationReconciliation()
-              await deps.acknowledgePostPublicationDirtyWork(fence)
-            }
-            reconciled = result.processed
-          },
-        )
+          } else if (result.hasMoreOrphanReceipts) {
+            await deps.enqueueContinuePostPublicationReconciliation()
+            if (
+              !(await deps.updatePostPublicationDirtyWorkCursors(fence, {
+                postId: result.cursorPostId,
+              }))
+            )
+              return
+          } else if (result.hasMoreTopics) {
+            const topicId = result.topicIds.at(-1)
+            if (!topicId) throw new TypeError('Publication topic page requires a cursor topic ID')
+            await deps.enqueueContinuePostPublicationReconciliation()
+            if (
+              !(await deps.updatePostPublicationDirtyWorkCursors(fence, {
+                postId: result.cursorPostId,
+                topicId,
+              }))
+            )
+              return
+          } else if (result.hasMoreIdentityKeys) {
+            if (!result.cursorKeyId)
+              throw new TypeError('Publication key page requires a cursor key ID')
+            await deps.enqueueContinuePostPublicationReconciliation()
+            if (
+              !(await deps.updatePostPublicationDirtyWorkCursors(fence, {
+                postId: result.cursorPostId,
+                ...(result.topicIds.length > 0 ? { topicId: result.topicIds.at(-1)! } : {}),
+                keyId: result.cursorKeyId,
+              }))
+            )
+              return
+          } else {
+            await deps.enqueueContinuePostPublicationReconciliation()
+            await deps.acknowledgePostPublicationDirtyWork(fence)
+          }
+          reconciled = result.processed
+        })
       },
     )
     return { reconciled }

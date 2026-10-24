@@ -17,6 +17,7 @@
   },
   "scripts": {},
   "dependencies": {
+    "@data-stores/valkey-glide-mq": "workspace:^",
     "@email-templates/core": "workspace:^",
     "@modules/aws": "workspace:^",
     "@modules/on-error": "workspace:^",

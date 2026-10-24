@@ -21,7 +21,12 @@ WHERE u.username = 'jong' AND u.platform_account_kind = 'official'
     SELECT 1 FROM user_email_addresses
     WHERE email_address = 'jong@voucha.ai' AND is_primary = TRUE
   )
-ON CONFLICT (user_id, email_address) DO UPDATE SET is_primary = TRUE;`)
+ON CONFLICT (user_id, email_address) DO NOTHING;
+UPDATE user_email_addresses SET is_primary = TRUE
+WHERE email_address = 'jong@voucha.ai' AND is_primary IS DISTINCT FROM TRUE
+  AND user_id = (
+    SELECT id FROM users WHERE username = 'jong' AND platform_account_kind = 'official'
+  );`)
 
   parts.push(`
 INSERT INTO user_roles (user_id, role_type_id)

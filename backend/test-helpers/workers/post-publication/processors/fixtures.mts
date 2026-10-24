@@ -45,6 +45,8 @@ export const work: ClaimedPostPublicationDirtyWork = {
   reasons: ['post_created'],
   generation: '1',
   cursor_post_id: null,
+  pending_post_identity_id: null,
+  pending_ancestor_post_identity_id: null,
   cursor_topic_id: null,
   cursor_key_id: null,
   lease_token: '00000000-0000-7000-8000-000000000004',
@@ -70,6 +72,8 @@ export function makeResult(
     posts?: ReconciliationPost[]
     hasMorePosts?: boolean
     cursorPostId?: string | null
+    pendingPostId?: string | null
+    pendingAncestorId?: string | null
     orphanReceiptPostIds?: string[]
     missingPostIds?: string[]
     hasMoreOrphanReceipts?: boolean
@@ -90,6 +94,8 @@ export function makeResult(
     missingPostIds: options.missingPostIds ?? [],
     hasMoreOrphanReceipts: options.hasMoreOrphanReceipts ?? false,
     cursorPostId: options.cursorPostId === undefined ? post.id : options.cursorPostId,
+    pendingPostId: options.pendingPostId === undefined ? null : options.pendingPostId,
+    pendingAncestorId: options.pendingAncestorId === undefined ? null : options.pendingAncestorId,
     topicIds: options.topicIds ?? ['00000000-0000-7000-8000-000000000006'],
     hasMoreTopics: options.hasMoreTopics ?? false,
     sitemapTargets: options.sitemapTargets ?? [{ postType: 'discussion', day: '2026-09-01' }],

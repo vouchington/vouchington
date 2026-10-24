@@ -104,8 +104,8 @@ async function seedMembershipSignals(): Promise<void> {
     await transaction(
       `/* seedVoteWeightDispatch */ ${requested}
        INSERT INTO membership_provider_evidence_records
-         (id, membership_provider_context_id, membership_provider_lineage_id, evidence_lookup_sha256, encrypted_evidence, verified_at)
-       SELECT evidence_id, $${values.length + 1}::uuid, lineage_id,
+         (id, membership_provider_context_id, provider, membership_provider_lineage_id, evidence_lookup_sha256, encrypted_evidence, verified_at)
+       SELECT evidence_id, $${values.length + 1}::uuid, 'stripe', lineage_id,
          encode(sha256(evidence_id::text::bytea), 'hex'), '\\x01'::bytea, effective_at
        FROM requested ON CONFLICT (id) DO NOTHING`,
       [...values, contextId],
@@ -138,8 +138,8 @@ async function seedMembershipSignals(): Promise<void> {
     await transaction(
       `/* seedVoteWeightDispatch */ ${requested}
        INSERT INTO memberships
-         (id, user_id, membership_source_id, membership_product_id, effective_at, expires_at)
-       SELECT membership_id, user_id, source_id, $${values.length + 1}::uuid, effective_at, event_at
+         (id, user_id, membership_source_id, source_kind, membership_product_id, effective_at, expires_at)
+       SELECT membership_id, user_id, source_id, source_kind, $${values.length + 1}::uuid, effective_at, event_at
        FROM requested ON CONFLICT (id) DO NOTHING`,
       [...values, productId],
     )
@@ -190,8 +190,8 @@ async function seedMembershipSignals(): Promise<void> {
   await transaction(
     `/* seedVoteWeightDispatch */ ${requested}
      INSERT INTO memberships
-       (id, user_id, membership_source_id, membership_product_id, effective_at, expires_at)
-     SELECT membership_id, user_id, source_id, $${sharedValues.length + 1}::uuid,
+       (id, user_id, membership_source_id, source_kind, membership_product_id, effective_at, expires_at)
+     SELECT membership_id, user_id, source_id, 'family', $${sharedValues.length + 1}::uuid,
        $${sharedValues.length + 2}::timestamptz, $${sharedValues.length + 3}::timestamptz
      FROM requested ON CONFLICT (id) DO NOTHING`,
     [...sharedValues, productId, effectiveAt, expiresAt],

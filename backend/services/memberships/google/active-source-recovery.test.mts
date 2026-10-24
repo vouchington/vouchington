@@ -34,17 +34,22 @@ describe('Google Play active-source recovery', () => {
     expect(batch.nextCursor).toBeTruthy()
     expect(batch.completesSweep).toBe(true)
 
-    await advanceGooglePlayActiveSourceRecoveryCursor(batch)
+    await expect(advanceGooglePlayActiveSourceRecoveryCursor(batch)).resolves.toBe(true)
     const afterAdvance = await findRecoverableGooglePlayActiveSourceJobs()
     expect(afterAdvance.previousCursor).toBeNull()
+    expect(afterAdvance.previousRevision).not.toBe(batch.previousRevision)
 
-    await advanceGooglePlayActiveSourceRecoveryCursor({
-      ...batch,
-      nextCursor: randomUUID(),
-    })
+    await expect(
+      advanceGooglePlayActiveSourceRecoveryCursor({
+        ...batch,
+        nextCursor: randomUUID(),
+      }),
+    ).resolves.toBe(false)
     await expect(findRecoverableGooglePlayActiveSourceJobs()).resolves.toMatchObject({
       previousCursor: null,
     })
+    await expect(advanceGooglePlayActiveSourceRecoveryCursor(afterAdvance)).resolves.toBe(true)
+    await expect(advanceGooglePlayActiveSourceRecoveryCursor(afterAdvance)).resolves.toBe(false)
   })
 
   it('revalidates and decrypts the latest token before converging a missed expiry', async () => {

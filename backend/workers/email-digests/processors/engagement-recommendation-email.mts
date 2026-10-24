@@ -49,7 +49,7 @@ type RenderedRecommendationEmail = {
 
 type EngagementRecommendationEmailOptions<Variables extends RecommendationEmailVariables> =
   EngagementRecommendationEmailKind & {
-    input: EmailTemplateInput
+    input: EmailTemplateInput & { claimOwnerJobId?: string }
     variables: Variables
     isStillEligible: (userId: string) => Promise<boolean>
     render: (
@@ -63,7 +63,7 @@ export async function processEngagementRecommendationEmail<
   const { input, variables, emailType, processorName, isStillEligible, render } = options
   const recipient = await resolveEmailRecipient(input)
   if (recipient.status === 'skipped') {
-    await releaseUnsentEngagementEmailClaim(recipient.userId, emailType)
+    await releaseUnsentEngagementEmailClaim(recipient.userId, emailType, input.claimOwnerJobId)
     return recipient
   }
   const emailAddress = recipient.emailAddress
@@ -83,7 +83,9 @@ export async function processEngagementRecommendationEmail<
       : {}),
   })
   if (input.userId) {
-    if (!(await markEngagementEmailDeliveryAttempted(input.userId, emailType))) {
+    if (
+      !(await markEngagementEmailDeliveryAttempted(input.userId, emailType, input.claimOwnerJobId))
+    ) {
       /* c8 ignore next -- Defensive observability for concurrent processor races. */
       reportEngagementMarkSkipped(input.userId, emailType)
       return null
@@ -98,7 +100,7 @@ export async function processEngagementRecommendationEmail<
   })
   if (input.userId) {
     try {
-      if (!(await markEngagementEmailSent(input.userId, emailType))) {
+      if (!(await markEngagementEmailSent(input.userId, emailType, input.claimOwnerJobId))) {
         /* c8 ignore next -- Defensive observability for concurrent processor races. */
         reportEngagementMarkSkipped(input.userId, emailType)
       }

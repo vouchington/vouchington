@@ -50,6 +50,7 @@ _none_
 - `idx_membership_microsoft_store_credentials__due`: `CREATE INDEX idx_membership_microsoft_store_credentials__due ON public.membership_microsoft_store_credentials USING btree (next_reconciliation_at, id)`
 - `idx_membership_microsoft_store_credentials__provider_context`: `CREATE INDEX idx_membership_microsoft_store_credentials__provider_context ON public.membership_microsoft_store_credentials USING btree (membership_provider_context_id)`
 - `idx_membership_microsoft_store_credentials__user_context`: `CREATE UNIQUE INDEX idx_membership_microsoft_store_credentials__user_context ON public.membership_microsoft_store_credentials USING btree (user_id, membership_provider_context_id)`
+- `idx_mmbrshp_mcrsft_str_crdntls__unexpired_collections`: `CREATE INDEX idx_mmbrshp_mcrsft_str_crdntls__unexpired_collections ON public.membership_microsoft_store_credentials USING btree (collections_expires_at, user_id, membership_provider_context_id) INCLUDE (purchase_expires_at)`
 - `membership_microsoft_store_credentials_pkey`: `CREATE UNIQUE INDEX membership_microsoft_store_credentials_pkey ON public.membership_microsoft_store_credentials USING btree (id)`
 
 **Triggers:**

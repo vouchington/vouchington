@@ -156,9 +156,9 @@ async function upsertVerifiedEvidence(
   )
   const { rows } = await query(sql`/* upsertVerifiedStripeMembershipEvidence */
     INSERT INTO membership_provider_evidence_records (
-      membership_provider_context_id, membership_provider_lineage_id,
+      membership_provider_context_id, provider, membership_provider_lineage_id,
       provider_event_id, evidence_lookup_sha256, encrypted_evidence, received_at, verified_at
-    ) VALUES (${contextId}, ${fact.membership_provider_lineage_id}, ${eventId}, ${evidenceLookupSha256},
+    ) VALUES (${contextId}, 'stripe', ${fact.membership_provider_lineage_id}, ${eventId}, ${evidenceLookupSha256},
       ${encryptedEvidence}, ${fact.received_at}, CURRENT_TIMESTAMP)
     ON CONFLICT (membership_provider_context_id, provider_event_id)
       WHERE provider_event_id IS NOT NULL DO NOTHING

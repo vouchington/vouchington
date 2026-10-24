@@ -1,19 +1,23 @@
-import { createAsyncGeneratorFromCursor } from '@data-stores/psql'
+import { read } from '@data-stores/psql'
 import { getUtcDayUuidv7Bounds } from '@vouchington/postgres/partitions'
 import sql from 'sql-template-strings'
 import { buildPublicPostEligibilityFilter } from '@modules/feed-query-builders'
 import type { SitemapPostType, SitemapPostWithId } from './types.mts'
 
-export function iteratePostsForDay(
+export async function readPostsForDayPage(
   postType: SitemapPostType,
   day: string,
-): AsyncIterable<SitemapPostWithId> {
-  const statement = sql`/* iteratePostsForDay */`
-  statement.append(buildPostsForDayQuery(postType, day))
-  return createAsyncGeneratorFromCursor<SitemapPostWithId>(statement)
+  options: { highWaterId?: string; afterId?: string; limit: number },
+): Promise<SitemapPostWithId[]> {
+  const { rows } = await read(buildPostsForDayQuery(postType, day, options))
+  return rows as SitemapPostWithId[]
 }
 
-export function buildPostsForDayQuery(postType: SitemapPostType, day: string) {
+export function buildPostsForDayQuery(
+  postType: SitemapPostType,
+  day: string,
+  options?: { highWaterId?: string; afterId?: string; limit: number },
+) {
   const bounds = getUtcDayUuidv7Bounds(day)
 
   const query = sql`/* buildPostsForDayQuery */
@@ -42,7 +46,10 @@ export function buildPostsForDayQuery(postType: SitemapPostType, day: string) {
   query.append(buildLatestPostSlugJoinSql())
   query.append(buildEligiblePostsForDayWhereSql(postType, bounds))
   query.append(buildPostHasSlugExistsPredicateSql())
+  if (options?.highWaterId) query.append(sql` AND p.id <= ${options.highWaterId}`)
+  if (options?.afterId) query.append(sql` AND p.id < ${options.afterId}`)
   query.append(sql` ORDER BY p.id DESC `)
+  if (options) query.append(sql` LIMIT ${options.limit}`)
 
   return query
 }

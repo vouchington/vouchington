@@ -11,8 +11,7 @@ export async function expireElapsedMembershipsBatch(
   const result = await expireSelectedMembershipUsers(batchSize, limits)
   const { rows } = await write(sql`/* expireElapsedMembershipsBatch:hasMore */
     SELECT 1 FROM memberships membership
-    JOIN membership_sources source ON source.id = membership.membership_source_id
-    WHERE source.source_kind = 'admin_grant'
+    WHERE membership.source_kind = 'admin_grant'
       AND membership.projection_ended_at IS NULL AND membership.cancelled_at IS NULL
       AND membership.expired_at IS NULL AND membership.expires_at IS NOT NULL
       AND membership.expires_at <= CURRENT_TIMESTAMP
@@ -35,8 +34,7 @@ export async function getElapsedMembershipUserIdsBatch(batchSize: number): Promi
   const { rows } = await query(sql`/* expireElapsedMembershipsBatch: candidates */
       WITH candidates AS MATERIALIZED (
         SELECT membership.user_id FROM memberships membership
-        INNER JOIN membership_sources source ON source.id = membership.membership_source_id
-        WHERE source.source_kind = 'admin_grant'
+        WHERE membership.source_kind = 'admin_grant'
           AND membership.projection_ended_at IS NULL AND membership.cancelled_at IS NULL
           AND membership.expired_at IS NULL AND membership.expires_at IS NOT NULL
           AND membership.expires_at <= CURRENT_TIMESTAMP

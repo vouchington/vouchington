@@ -119,10 +119,10 @@ export async function attachTestStripeProductionProviderObservation(
   const { rows: evidenceRows } =
     await query(sql`/* attachTestStripeProductionProviderObservation: evidence */
       INSERT INTO membership_provider_evidence_records (
-        membership_provider_context_id, membership_provider_lineage_id,
+        membership_provider_context_id, provider, membership_provider_lineage_id,
         evidence_lookup_sha256, encrypted_evidence, verified_at
       ) VALUES (
-        ${target.membership_provider_context_id},
+        ${target.membership_provider_context_id}, 'stripe',
         ${target.membership_provider_lineage_id}, ${evidenceLookupSha256},
         ${encryptedEvidence}, CURRENT_TIMESTAMP
       )
