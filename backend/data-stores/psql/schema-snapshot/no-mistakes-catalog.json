@@ -3581,6 +3581,16 @@
           "nullable": false,
           "ordinalPosition": 1
         },
+        "rejection_floor_at": {
+          "comment": "Monotonic admission floor advanced before an inbox or outbound replay identity is purged; independent of sweep pagination and current policy.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7
+        },
         "sweep_cutoff_at": {
           "comment": "Fixed maximum-activity-age cutoff for one cleanup pass.",
           "dataType": "timestamp with time zone",
@@ -3599,7 +3609,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7
+          "ordinalPosition": 8
         },
         "upper_bound_at": {
           "comment": "Timestamp component of the captured pass high-water key.",

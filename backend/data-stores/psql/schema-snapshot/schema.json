@@ -3482,6 +3482,17 @@
           "ordinalPosition": 1,
           "type": "boolean"
         },
+        "rejection_floor_at": {
+          "collation": null,
+          "comment": "Monotonic admission floor advanced before an inbox or outbound replay identity is purged; independent of sweep pagination and current policy.",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 7,
+          "type": "timestamp with time zone"
+        },
         "sweep_cutoff_at": {
           "collation": null,
           "comment": "Fixed maximum-activity-age cutoff for one cleanup pass.",
@@ -3501,7 +3512,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7,
+          "ordinalPosition": 8,
           "type": "timestamp with time zone"
         },
         "upper_bound_at": {
