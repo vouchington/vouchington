@@ -1,4 +1,4 @@
-import { describe, expect, it, onTestFinished } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { overrideUncheckedDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 import {
   ACTIVITYPUB_INBOX_LIMITS,
@@ -15,6 +15,22 @@ import {
 } from './config.mts'
 
 describe('route rate-limit config values', () => {
+  it('ignores the Playwright bypass in deployed environments', () => {
+    onTestFinished(() => {
+      vi.unstubAllEnvs()
+    })
+    onTestFinished(
+      overrideUncheckedDynamicConfigFieldsForTest(routeRateLimitConfig, { enabled: true }),
+    )
+    vi.stubEnv('PLAYWRIGHT_TEST', 'true')
+    vi.stubEnv('ENVIRONMENT', 'development')
+    expect(isRouteRateLimitEnabled()).toBe(false)
+    for (const environment of ['staging', 'production']) {
+      vi.stubEnv('ENVIRONMENT', environment)
+      expect(isRouteRateLimitEnabled()).toBe(true)
+    }
+  })
+
   it('keeps route limiting enabled when the kill-switch value is malformed', () => {
     for (const value of [null, 0, 'false']) {
       const restore = overrideUncheckedDynamicConfigFieldsForTest(routeRateLimitConfig, {

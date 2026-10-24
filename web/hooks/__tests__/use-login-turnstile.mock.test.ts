@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { TURNSTILE_ALWAYS_APPROVE_TOKEN } from '@/hooks/use-turnstile-always-approve'
 
-vi.mock(import('@vouchington/script-loader/turnstile'), () => ({
-  useTurnstile: () => ({ ref: () => {}, reset: () => {}, isError: false }),
+vi.mock(import('@/hooks/use-turnstile-action'), () => ({
+  useTurnstileAction: () => ({ ref: () => {}, reset: () => {}, isError: false }),
 }))
 
 const fetchCaptchaConfigMock = vi.hoisted(() =>

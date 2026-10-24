@@ -1,3 +1,4 @@
+import { configuredSessionKeys } from '../../test-helpers/session-keys.mts'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   createContext,
@@ -77,6 +78,7 @@ describe('worker secret warning deduplication', () => {
     const env: Env = {
       BACKEND_ORIGIN: 'https://b.example.com',
       WEB_ORIGIN: 'https://w.example.com',
+      ...configuredSessionKeys,
       PRODUCTION: '1',
       CACHE_PLACEHOLDER_NONCE: cachePlaceholderNonce,
     }

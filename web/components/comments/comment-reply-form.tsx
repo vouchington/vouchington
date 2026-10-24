@@ -48,7 +48,7 @@ export function CommentReplyForm({
   // Lazily mount the Turnstile widget once the user starts composing so a page
   // with many reply forms doesn't render dozens of widgets up front.
   const [showTurnstile, setShowTurnstile] = useState(initialMarkdown.trim().length > 0)
-  const turnstile = useTurnstileToken()
+  const turnstile = useTurnstileToken('posts.create')
   const recaptcha = useRecaptchaToken()
   const [previewHtml, setPreviewHtml] = useState('')
   const [previewLoading, setPreviewLoading] = useState(false)

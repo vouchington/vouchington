@@ -206,3 +206,14 @@ authenticated state without requiring a full-page browser navigation. The defaul
 Client-side: call `logout` from `web/lib/auth/logout.ts`. It posts to the logout API, throws on API
 or network failure so the caller can show an error, and performs a full-page reload of the current
 URL on success. Pages then handle any signed-out redirects themselves.
+
+### Challenge and deployment boundaries
+
+Browser challenges are scoped to their originating site and operation. The server derives the
+trusted site from server configuration, while the browser and server share operation mapping;
+native attestation keeps its own payload format. This prevents a successful challenge in another
+context from satisfying the current operation.
+
+Staging and production both require explicitly configured session signing and verification keys.
+Startup rejects test bypasses before serving requests. Deployed API errors omit internal details;
+local development retains diagnostics for debugging.

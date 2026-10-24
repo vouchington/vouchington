@@ -27,3 +27,7 @@ export function shouldRejectTurnstileTestSecret(
 export function shouldRejectSkipCaptchaVerification(env: NodeJS.ProcessEnv = process.env): boolean {
   return isDeployedEnvironment(env) && env.SKIP_CAPTCHA_VERIFICATION === 'true'
 }
+
+export function shouldRejectPlaywrightTest(env: NodeJS.ProcessEnv = process.env): boolean {
+  return isDeployedEnvironment(env) && env.PLAYWRIGHT_TEST === 'true'
+}

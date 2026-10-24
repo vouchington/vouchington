@@ -1,3 +1,5 @@
+import { derivePublicJwk, encodeJwkSet as encodeJwkSetForEnv } from '@vouchington/session-jwt'
+import testPrivateKey from '@ts-shared/session-jwt/test-jwt-private-key'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { TEST_CAPTCHA_TOKEN } from '@voucha/test-helpers/captcha/test-captcha-token'
@@ -35,6 +37,13 @@ describe('POST /api/v1/posts reCAPTCHA capacity ordering', () => {
       recaptchaConfig,
     ])
     vi.stubEnv('ENVIRONMENT', 'staging')
+    vi.stubEnv('VOUCHA_SESSION_JWT_PRIVATE_KEYS_B64', encodeJwkSetForEnv([testPrivateKey]))
+    vi.stubEnv(
+      'VOUCHA_SESSION_JWT_PUBLIC_KEYS_B64',
+      encodeJwkSetForEnv([derivePublicJwk(testPrivateKey)]),
+    )
+    vi.stubEnv('CLOUDFLARE_TURNSTILE_SECRET_KEY', 'tests-turnstile-secret')
+    vi.stubEnv('SITE_ORIGIN', 'https://turnstile.example.test')
     vi.stubEnv('GOOGLE_RECAPTCHA_PROJECT_ID', 'test-project')
     vi.stubEnv('GOOGLE_RECAPTCHA_API_KEY', 'test-api-key')
     vi.stubEnv('GOOGLE_RECAPTCHA_SITE_KEY', 'test-site-key')
@@ -51,7 +60,7 @@ describe('POST /api/v1/posts reCAPTCHA capacity ordering', () => {
             tokenProperties: { valid: true, action: 'create_post' },
             riskAnalysis: { score: 0.9, reasons: [] },
           }
-        : { success: true }
+        : { success: true, hostname: 'turnstile.example.test', action: 'posts-create' }
       return new UndiciResponse(JSON.stringify(body))
     })
 

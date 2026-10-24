@@ -1,3 +1,4 @@
+import { assertWorkerSessionJwtConfiguration } from './auth/configuration.mts'
 import { withSentry } from '@sentry/cloudflare'
 import { getBotTier, isVerifiedBotRequest } from './bot-tier.mts'
 import { logCacheDiagnostic } from './cache-diagnostics.mts'
@@ -43,6 +44,7 @@ export function createWorker(
   const captureException = dependencies.captureException ?? captureWorkerException
   const resolveRoute = dependencies.resolveRoute ?? getRouteTarget
   const serveDocsRequest = dependencies.serveDocs ?? serveDocs
+  const configurationChecks = new WeakMap<Env, Promise<void>>()
   return {
     async fetch(request: Request, env: Env, context: EdgeExecutionContext): Promise<Response> {
       // Generate per-request ID here so every response path — including errors, rate-limits,
@@ -53,6 +55,9 @@ export function createWorker(
       let botTier: ReturnType<typeof getBotTier> = null
       let isOauthCallback = false
       try {
+        if (typeof env !== 'object' || env === null) {
+          throw new TypeError('Worker bindings must be an object')
+        }
         // The private docs deployment binds DOCS_BUCKET plus required Basic Auth, and nothing else this gateway
         // depends on (CF_WORKER_SECRET, CSP, bot tiers, rate limiters). Branch before them.
         if (env?.DOCS_BUCKET) {
@@ -61,6 +66,13 @@ export function createWorker(
             production: true,
           })
         }
+        // Worker bindings are available only at fetch time; validate before origin dispatch.
+        let configurationCheck = configurationChecks.get(env)
+        if (!configurationCheck) {
+          configurationCheck = assertWorkerSessionJwtConfiguration(env)
+          configurationChecks.set(env, configurationCheck)
+        }
+        await configurationCheck
         warnIfWorkerSecretMisconfigured(env)
         warnIfProductionValueInvalid(env)
         warnIfSentryConfigurationInvalid(env)

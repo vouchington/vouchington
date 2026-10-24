@@ -1670,6 +1670,9 @@ importers:
         specifier: ^0.19.0
         version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     devDependencies:
+      '@ts-shared/session-jwt':
+        specifier: workspace:^
+        version: link:../../../ts-shared/session-jwt
       '@types/express':
         specifier: ^5.0.6
         version: 5.0.6
@@ -4787,6 +4790,9 @@ importers:
       '@ts-shared/deploy-environment':
         specifier: workspace:^
         version: link:../../../ts-shared/deploy-environment
+      '@ts-shared/utils':
+        specifier: workspace:^
+        version: link:../../../ts-shared/utils
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -9991,6 +9997,9 @@ importers:
       '@services/users':
         specifier: workspace:^
         version: link:../users
+      '@ts-shared/deploy-environment':
+        specifier: workspace:^
+        version: link:../../../ts-shared/deploy-environment
       '@ts-shared/session-jwt':
         specifier: workspace:^
         version: link:../../../ts-shared/session-jwt

@@ -114,7 +114,7 @@ describe('index', () => {
             expiresIn: '2 days',
           },
         ),
-      ).rejects.toThrow('must be configured in production')
+      ).rejects.toThrow('must be configured in a deployed environment')
     })
 
     it('falls back to development mode in test environment', async () => {

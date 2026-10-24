@@ -1,6 +1,9 @@
 import type http from 'node:http'
+import { assertBackendSessionJwtConfiguration } from '@services/jwt-session/configuration'
+import { shouldRejectPlaywrightTest } from './boot-guards.mts'
 
 type ApiStartupDeps = {
+  prepare: () => Promise<void>
   exitWithFailure: () => void
   flushErrorReporting: () => Promise<void>
   logError: (error: Error) => void
@@ -17,11 +20,23 @@ export function exitAfterErrorReporting(
   flushErrorReporting().then(exitWithFailure, exitWithFailure)
 }
 
-export function startApiServer(
+export async function startApiServer(
   server: http.Server,
   port: number,
-  { exitWithFailure, flushErrorReporting, logError, logListening, reportError }: ApiStartupDeps,
-): void {
+  {
+    prepare,
+    exitWithFailure,
+    flushErrorReporting,
+    logError,
+    logListening,
+    reportError,
+  }: ApiStartupDeps,
+): Promise<void> {
+  await assertBackendSessionJwtConfiguration()
+  if (shouldRejectPlaywrightTest())
+    throw new Error('PLAYWRIGHT_TEST must not be enabled in a deployed environment')
+  await prepare()
+
   function handleServerStartupError(error: Error) {
     logError(error)
     reportError(error)

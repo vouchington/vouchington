@@ -30,6 +30,7 @@ export const storybookBrowserOptimizeDeps = [
   '@ts-shared/session-jwt > uuid',
   '@ts-shared/money > @vouchington/utils/money',
   '@ts-shared/session-jwt > @vouchington/utils/cookies',
+  '@ts-shared/session-jwt > @vouchington/utils/deploy-environment',
   '@ts-shared/url-signing > @vouchington/utils/url-signing',
   // The root fake-timer guard setup file imports it in every project, including the browser.
   'vouchington-tooling/vitest-diagnostics/browser',

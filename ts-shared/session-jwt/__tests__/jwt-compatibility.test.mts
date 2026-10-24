@@ -49,7 +49,7 @@ describe('JWT compatibility', () => {
       () => verifySessionJwt('eyJhbGciOiJSUzUxMiJ9.eyJkaWQiOiJ4In0.signature', emptyProductionEnv),
     ],
   ])('keeps well-formed %s token configuration failures observable', async (_name, verify) => {
-    await expect(verify()).rejects.toThrow('must be configured in production')
+    await expect(verify()).rejects.toThrow('must be configured in a deployed environment')
   })
 
   it.each(['device', 'session'] as const)('verifies a legacy empty-kid %s token', async kind => {
