@@ -68,15 +68,17 @@ describe('crawlWithBrowser', () => {
     )
   })
 
-  it('throws Error (not CrawlerNetworkError) when LIGHTPANDA_TOKEN is not set', async () => {
+  it.each([undefined, '', ' \t '])('throws Error before connecting with token %s', async token => {
     process.env.LIGHTPANDA_CDP_URL = 'wss://uswest.cloud.lightpanda.io/ws'
-    delete process.env.LIGHTPANDA_TOKEN
+    if (token === undefined) delete process.env.LIGHTPANDA_TOKEN
+    else process.env.LIGHTPANDA_TOKEN = token
     await expect(crawlWithBrowserForTest('https://example.com')).rejects.toThrow(
       'LIGHTPANDA_TOKEN is not set',
     )
     await expect(crawlWithBrowserForTest('https://example.com')).rejects.not.toBeInstanceOf(
       errors.CrawlerNetworkError,
     )
+    expect(mockConnectOverCDP).not.toHaveBeenCalled()
   })
 
   it('throws CrawlerConnectError when chromium.connectOverCDP throws', async () => {
