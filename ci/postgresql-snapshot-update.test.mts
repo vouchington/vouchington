@@ -233,10 +233,11 @@ describe('PostgreSQL snapshot controller process', () => {
   })
 
   it('rejects a stale PR before publishing', async () => {
-    const { root, pr, publishEnv } = await publicationFixture()
+    const { root, candidate, actualHead, pr, publishEnv } = await publicationFixture()
     pr.head.sha = 'd'.repeat(40)
     await writeFile(join(root, 'pr.json'), JSON.stringify(pr))
     await expect(runController('publish', publishEnv)).rejects.toThrow(/identity/)
+    expect(await git(candidate, 'rev-parse', 'HEAD')).toBe(actualHead)
   })
 
   it('rejects an unsafe snapshot destination before publishing', async () => {
