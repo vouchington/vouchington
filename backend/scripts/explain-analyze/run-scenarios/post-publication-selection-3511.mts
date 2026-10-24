@@ -118,6 +118,12 @@ export async function runPostPublicationSelection3511Scenarios(): Promise<void> 
     )
   }
 
+  await runBroadPublicationScopeScenarios(postId)
+  await runDeepPublicationAncestry3511Scenario()
+}
+
+/** Measure a current new root after the anchored corpus, before future-ID sparse fixtures. */
+export async function runNewRootPostPublicationScenario(): Promise<void> {
   // A fresh UUIDv7 root sits after the 100k anchored posts and any local
   // development fixtures, matching the ordinary new-post admission path.
   const newRoot = await createTestPost()
@@ -160,9 +166,6 @@ export async function runPostPublicationSelection3511Scenarios(): Promise<void> 
     )
     await hardDeleteTestPost(newRootId)
   }
-
-  await runBroadPublicationScopeScenarios(postId)
-  await runDeepPublicationAncestry3511Scenario()
 }
 
 function uuidPredecessor(uuid: string): string {
