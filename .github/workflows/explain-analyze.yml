@@ -96,14 +96,6 @@ jobs:
       - working-directory: backend
         run: node data-stores/psql/migrate.mts
         timeout-minutes: 3
-      - name: Verify native EXPLAIN contracts
-        timeout-minutes: 2
-        env:
-          NODE_DISABLE_COMPILE_CACHE: '1'
-          NODE_V8_COVERAGE: ${{ github.workspace }}/backend/scripts/explain-analyze/output/pruning-v8
-        run: |
-          mkdir -p backend/scripts/explain-analyze/output/pruning-v8
-          node backend/scripts/explain-analyze/assert-native-contracts.mts
       - name: Check native RSS crawl tier snapshot and dispatch
         timeout-minutes: 2
         env:

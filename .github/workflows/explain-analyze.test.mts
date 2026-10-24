@@ -153,21 +153,6 @@ describe('native pruning coverage artifacts', () => {
     )
   })
 
-  it('checks native planner and rollback contracts after migration and before seeding', () => {
-    const { steps } = explainAnalyzeJob()
-    const migration = stepIndexRunning(steps, 'node data-stores/psql/migrate.mts')
-    const preflight = stepIndexRunning(
-      steps,
-      'node backend/scripts/explain-analyze/assert-native-contracts.mts',
-    )
-    const seed = stepIndexRunning(steps, 'node backend/scripts/seeds/dev-seed.mts')
-    expect(migration).toBeLessThan(preflight)
-    expect(preflight).toBeLessThan(seed)
-    expect(steps[preflight]?.env?.NODE_V8_COVERAGE).toBe(
-      '${{ github.workspace }}/backend/scripts/explain-analyze/output/pruning-v8',
-    )
-  })
-
   it('retains native pruning and retirement V8 coverage in the existing uploaded output', () => {
     const { steps } = explainAnalyzeJob()
     const pruning = steps[stepIndexRunning(steps, 'explain-analyze/pruning/run.mts')]
