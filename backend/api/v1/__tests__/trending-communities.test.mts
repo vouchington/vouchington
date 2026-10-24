@@ -52,7 +52,7 @@ describe('GET /api/v1/trending-communities', () => {
       await createRequest().get('/api/v1/trending-communities').query(options).expect(200)
       await cached.done
 
-      expect(await cacheValkeyClient.get(trendingCache.getKey(options))).not.toBeNull()
+      expect(await cacheValkeyClient.exists([trendingCache.getKey(options)])).toBe(1)
     } finally {
       cached.stop()
       await trendingCache.delete(options)
@@ -92,7 +92,7 @@ describe('GET /api/v1/trending-communities', () => {
       await siblingCached.done
 
       expect(authWriteSeen).toBe(false)
-      expect(await cacheValkeyClient.get(trendingCache.getKey(authOptions))).toBeNull()
+      expect(await cacheValkeyClient.exists([trendingCache.getKey(authOptions)])).toBe(0)
     } finally {
       valkeyEvents.off('cache:set', onSet)
       siblingCached.stop()
