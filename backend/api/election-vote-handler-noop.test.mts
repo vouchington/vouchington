@@ -8,7 +8,10 @@ import {
   insertTopicElectionVote,
   getTopicElectionVoteEventCount,
 } from '@voucha/test-helpers'
-import { getTopicElectionById, upsertTopicElectionVotes } from '@services/elections-votes/topic'
+import {
+  getTopicElectionsByIdBatch,
+  upsertTopicElectionVotes,
+} from '@services/elections-votes/topic'
 import { onceElectionVoteStatsCompleted } from '@voucha/test-helpers/election-vote-stats'
 import { setAccountTypeTestUserKind } from '@voucha/test-helpers/account-types'
 
@@ -23,9 +26,9 @@ describe('election vote no-op reconciliation', () => {
     await request.put(`/api/v1/topics/${topicId}/vote`).send({ choice: 'like' }).expect(204)
     await onceElectionVoteStatsCompleted({ electionId: topicId, orderingKey: 'topic' })
 
-    await expect(getTopicElectionById(topicId)).resolves.toEqual(
+    await expect(getTopicElectionsByIdBatch([topicId])).resolves.toEqual([
       expect.objectContaining({ votes_count_up: 1, votes_count_down: 0, votes_score_net: 1 }),
-    )
+    ])
   }, 30_000)
 
   it('reconciles aggregate stats when an official Clear retry follows a missed enqueue', async () => {
@@ -42,9 +45,9 @@ describe('election vote no-op reconciliation', () => {
     await request.delete(`/api/v1/topics/${topicId}/vote`).expect(204)
     await onceElectionVoteStatsCompleted({ electionId: topicId, orderingKey: 'topic' })
 
-    await expect(getTopicElectionById(topicId)).resolves.toEqual(
+    await expect(getTopicElectionsByIdBatch([topicId])).resolves.toEqual([
       expect.objectContaining({ votes_count_up: 0, votes_count_down: 0, votes_score_net: 0 }),
-    )
+    ])
   }, 30_000)
 
   it('does not append a Clear event for an official retry of a legacy zero ballot', async () => {

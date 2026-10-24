@@ -1,7 +1,7 @@
 import { expect, it, beforeAll, describe } from 'vitest'
 import { createTestUser, insertTestTopic } from '@voucha/test-helpers'
 import { onceElectionVoteStatsCompleted } from '@voucha/test-helpers/election-vote-stats'
-import { getTopicElectionById } from './get-election.mts'
+import { getTopicElectionsByIdBatch } from './get-election-batch.mts'
 import { getTopicElectionVote } from './votes-get.mts'
 import { upsertTopicElectionVotes } from './votes-upsert.mts'
 import type { PrivateUser } from '@services/users/types'
@@ -24,7 +24,7 @@ describe('votes-upsert.generated', () => {
 
     await onceElectionVoteStatsCompleted({ electionId: topicId, orderingKey: 'topic' })
 
-    const refreshed = await getTopicElectionById(topicId)
+    const [refreshed] = await getTopicElectionsByIdBatch([topicId])
     expect(refreshed?.votes_count_up).toBe(1)
     expect(refreshed?.votes_count_down).toBe(0)
     expect(refreshed?.votes_score_net).toBe(1)
