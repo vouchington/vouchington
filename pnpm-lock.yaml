@@ -12146,9 +12146,6 @@ importers:
       '@queues/background':
         specifier: workspace:^
         version: link:../queues/background
-      '@queues/background-cpu':
-        specifier: workspace:^
-        version: link:../queues/background-cpu
       '@queues/entity-listeners':
         specifier: workspace:^
         version: link:../queues/entity-listeners

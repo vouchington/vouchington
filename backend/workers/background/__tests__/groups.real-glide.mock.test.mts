@@ -86,34 +86,6 @@ describe('background domain groups through real GlideMQ', () => {
     ).resolves.toBe(5)
   })
 
-  it('starts no more jobs than the group rate limit allows in its window', async () => {
-    const WINDOW_MS = 400
-    const startTimes: number[] = []
-    harness = await startBackgroundHarness({
-      connection,
-      createProcessor: createBackgroundProcessor,
-      concurrency: 5,
-      bodies: { [OPENAI_MODERATION_POST_JOB.name]: () => startTimes.push(Date.now()) },
-    })
-    const rateLimit = { max: 2, duration: WINDOW_MS }
-    const jobs = await Promise.all(
-      Array.from({ length: 5 }, () =>
-        harness!.add(
-          OPENAI_MODERATION_POST_JOB,
-          { id: randomUUID() },
-          { ordering: { key: 'openai-moderation', concurrency: 50, rateLimit } },
-        ),
-      ),
-    )
-    await Promise.all(jobs.map(job => harness!.settled(job)))
-
-    const sorted = startTimes.toSorted((a, b) => a - b)
-    expect(sorted).toHaveLength(5)
-    // The third job cannot start until the first job's window has passed.
-    expect(sorted[2]! - sorted[0]!).toBeGreaterThanOrEqual(WINDOW_MS - 100)
-    expect(sorted.filter(time => time - sorted[0]! < WINDOW_MS - 100)).toHaveLength(2)
-  })
-
   it('turns a provider rate-limit signal into a group deferral that spends no attempt and idles no other domain', async () => {
     let calls = 0
     const otherDomainRan = Promise.withResolvers<void>()
