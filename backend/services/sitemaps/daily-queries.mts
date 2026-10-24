@@ -1,6 +1,6 @@
 import { createAsyncGeneratorFromCursor } from '@data-stores/psql'
 import { getUtcDayUuidv7Bounds } from '@vouchington/postgres/partitions'
-import sql from 'sql-template-strings'
+import sql, { type SQLStatement } from 'sql-template-strings'
 import { buildPublicPostEligibilityFilter } from '@modules/feed-query-builders'
 import type { SitemapPostType, SitemapPostWithId } from './types.mts'
 
@@ -23,28 +23,40 @@ export function buildPostsForDayQuery(postType: SitemapPostType, day: string) {
       p.post_type,
       p.updated_at,
   `
-  if (postType === 'review') {
-    query.append(sql`pr.updated_at AS review_updated_at`)
-  } else {
-    query.append(sql`NULL::TIMESTAMPTZ AS review_updated_at`)
-  }
+  query.append(reviewUpdatedAtColumn(postType))
   query.append(sql`
     FROM posts p
     JOIN posts root_post ON root_post.id = COALESCE(p.root_post_id, p.id)
 `)
-  if (postType === 'review') {
-    query.append(sql`LEFT JOIN LATERAL (
-      SELECT MAX(prtr.updated_at) AS updated_at
-      FROM post_review_topic_ratings prtr
-      WHERE prtr.post_id = p.id
-    ) pr ON TRUE`)
-  }
+  query.append(reviewRatingsJoin(postType))
   query.append(buildLatestPostSlugJoinSql())
   query.append(buildEligiblePostsForDayWhereSql(postType, bounds))
   query.append(buildPostHasSlugExistsPredicateSql())
   query.append(sql` ORDER BY p.id DESC `)
 
   return query
+}
+
+function reviewUpdatedAtColumn(postType: SitemapPostType): SQLStatement {
+  switch (postType) {
+    case 'review':
+      return sql`pr.updated_at AS review_updated_at`
+    default:
+      return sql`NULL::TIMESTAMPTZ AS review_updated_at`
+  }
+}
+
+function reviewRatingsJoin(postType: SitemapPostType): SQLStatement {
+  switch (postType) {
+    case 'review':
+      return sql`LEFT JOIN LATERAL (
+      SELECT MAX(prtr.updated_at) AS updated_at
+      FROM post_review_topic_ratings prtr
+      WHERE prtr.post_id = p.id
+    ) pr ON TRUE`
+    default:
+      return sql``
+  }
 }
 
 function buildLatestPostSlugJoinSql() {

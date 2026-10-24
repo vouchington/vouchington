@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { encodeCursor } from '@modules/pagination'
-import { parseCopyrightSweepPageOptions, toCopyrightSweepIdPage } from './sweep-id-pages.mts'
+import { createTestSqlStatement } from '@voucha/test-helpers/sql-query-inputs'
+import {
+  parseCopyrightSweepPageOptions,
+  queryCopyrightSweepIdPage,
+  toCopyrightSweepIdPage,
+} from './sweep-id-pages.mts'
 
 const CURSOR_MESSAGE = 'Invalid copyright sweep cursor'
 const FIRST_ID = '00000000-0000-7000-8000-000000000001'
@@ -16,6 +21,19 @@ function thrownBy(run: () => unknown): unknown {
 }
 
 describe('copyright sweep ID pages', () => {
+  it('rejects an unknown runtime ID column before querying', async () => {
+    await expect(
+      queryCopyrightSweepIdPage(
+        { after: encodeCursor({ id: FIRST_ID }) },
+        CURSOR_MESSAGE,
+        'searchPendingCopyrightEnforcementAssessmentIds',
+        'unknown' as Parameters<typeof queryCopyrightSweepIdPage>[3],
+        createTestSqlStatement(),
+        async () => ({ rows: [] }),
+      ),
+    ).rejects.toThrow('Unknown copyright sweep id column')
+  })
+
   it('defaults to a full first page', () => {
     expect(parseCopyrightSweepPageOptions({}, CURSOR_MESSAGE)).toEqual({
       limit: 100,

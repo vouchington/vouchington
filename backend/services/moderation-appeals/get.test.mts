@@ -22,6 +22,12 @@ describe('getModerationAppealById', () => {
     appellant = await createTestUser()
   })
 
+  it('rejects an unknown runtime list status before reading appeals', async () => {
+    await expect(listModerationAppeals({ status: 'unknown' as 'pending' })).rejects.toThrow(
+      'Unknown moderation appeal status',
+    )
+  })
+
   it('returns appeal by id', async () => {
     const warning = await insertTestUserWarning({
       userId: appellant.id,

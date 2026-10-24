@@ -1,9 +1,10 @@
+import { assertNever } from '@modules/utils/assert-never'
 import { createHash } from 'node:crypto'
 import createHttpError from 'http-errors'
 import { isUUID } from '@modules/utils'
 import { read, write } from '@data-stores/psql'
 import { buildPageInfo, decodeScopedUuidCursor } from '@modules/pagination'
-import sql from 'sql-template-strings'
+import sql, { type SQLStatement } from 'sql-template-strings'
 import type { PageInfo } from '@voucha/types/pagination'
 import type { VoteIntegrityFlag } from './create-flag.mts'
 import type { IntegrityFlagStatus } from '@ts-shared/utils/moderation-catalogs'
@@ -59,11 +60,7 @@ export async function getVoteIntegrityFlags(
 
   if (ids !== undefined) query.append(sql` AND id = ANY(${ids}::uuid[])`)
 
-  if (status === 'pending') {
-    query.append(sql` AND resolved_at IS NULL`)
-  } else if (status === 'resolved') {
-    query.append(sql` AND resolved_at IS NOT NULL`)
-  }
+  query.append(flagStatusPredicate(status))
 
   if (afterId) {
     query.append(sql` AND id < ${afterId}`)
@@ -108,4 +105,17 @@ function normalizeFlagIds(ids: readonly string[] | undefined): string[] | undefi
     normalized.add(id.toLowerCase())
   }
   return [...normalized].toSorted()
+}
+
+function flagStatusPredicate(status: IntegrityFlagStatus | undefined): SQLStatement {
+  switch (status) {
+    case undefined:
+      return sql``
+    case 'pending':
+      return sql` AND resolved_at IS NULL`
+    case 'resolved':
+      return sql` AND resolved_at IS NOT NULL`
+    default:
+      return assertNever(status, 'Unknown integrity flag status')
+  }
 }

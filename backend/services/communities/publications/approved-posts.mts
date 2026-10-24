@@ -12,7 +12,14 @@ import sql from 'sql-template-strings'
 import assert from 'http-assert'
 import { appendHashtagFilters, appendUniversalTopicFilters } from './search-filters.mts'
 import {
-  buildCommunityPostHotScoreExpression,
+  communityPostSortColumn,
+  communityPostSortCursor,
+  communityPostSortHydratedColumn,
+  communityPostSortHydratedOrder,
+  communityPostSortJoin,
+  communityPostSortOrderLimit,
+} from './approved-posts-sort-sql.mts'
+import {
   encodeCommunityPostCursor,
   type CommunityFeedPost,
   type CommunityPostSort,
@@ -58,21 +65,13 @@ export async function searchCommunityPosts(
   const query = sql`/* searchCommunityPosts */
     WITH candidate_posts AS MATERIALIZED (
     SELECT posts.id`
-  if (sort === 'hot') {
-    query.append(sql`,\n      `)
-    query.append(buildCommunityPostHotScoreExpression())
-    query.append(sql` AS hot_score`)
-  }
+  query.append(communityPostSortColumn(sort))
   query.append(sql`
     FROM community_post_reviews cpr
     JOIN posts ON posts.id = cpr.post_id
     JOIN posts root_post ON root_post.id = COALESCE(posts.root_post_id, posts.id)
   `)
-  if (sort === 'hot') {
-    query.append(sql`
-    JOIN posts post_scores ON post_scores.id = posts.id
-  `)
-  }
+  query.append(communityPostSortJoin(sort))
   query.append(sql`
     WHERE cpr.community_id = ${communityId}
       AND posts.community_id = ${communityId}
@@ -148,38 +147,17 @@ export async function searchCommunityPosts(
       })
   query.append(sql` AND `).append(eligibility)
 
-  if (sort === 'hot' && cursorHotScore !== undefined && cursorId) {
-    query.append(sql` AND (`)
-    query.append(buildCommunityPostHotScoreExpression())
-    query.append(sql`, posts.id) < (${cursorHotScore}, ${cursorId})`)
-  } else if (cursorId !== undefined) {
-    query.append(sql` AND posts.id < ${cursorId}`)
-  }
-
-  if (sort === 'hot') {
-    query.append(sql`
-      ORDER BY hot_score DESC, posts.id DESC
-      LIMIT ${limit + 1}
-    `)
-  } else {
-    query.append(sql`
-      ORDER BY posts.id DESC
-      LIMIT ${limit + 1}
-    `)
-  }
+  query.append(communityPostSortCursor(sort, cursorHotScore, cursorId))
+  query.append(communityPostSortOrderLimit(sort, limit))
 
   query.append(sql`
     )
     SELECT hydrated.*`)
-  if (sort === 'hot') query.append(sql`, candidates.hot_score`)
+  query.append(communityPostSortHydratedColumn(sort))
   query.append(sql`
     FROM candidate_posts candidates
     JOIN view_posts hydrated ON hydrated.id = candidates.id`)
-  if (sort === 'hot') {
-    query.append(sql` ORDER BY candidates.hot_score DESC, candidates.id DESC`)
-  } else {
-    query.append(sql` ORDER BY candidates.id DESC`)
-  }
+  query.append(communityPostSortHydratedOrder(sort))
   const { rows } = await read(query, options)
 
   const hasNextPage = rows.length > limit

@@ -33,6 +33,12 @@ describe('streamFacebookAccountsToSync', () => {
     await setTestOAuthAccountTokens('facebook', facebookUserId, { accessToken: 'test_token' })
   })
 
+  it('rejects an unknown runtime provider when reading a linked account', async () => {
+    await expect(
+      getFriendSyncProviderUserId('unknown' as 'facebook', crypto.randomUUID()),
+    ).rejects.toThrow('Unknown friend sync provider')
+  })
+
   it('yields accounts that have never synced', async () => {
     const results = await collectStream(streamFacebookAccountsToSync())
     const ids = results.map(r => r.id)

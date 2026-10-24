@@ -1,7 +1,14 @@
 import { it, expect, describe } from 'vitest'
 import { buildPostSearchQuery } from '../query-builder.mts'
+import type { PostSearchOptions } from '../types.mts'
 
 describe('query-builder (basic)', () => {
+  it('rejects an unexpected runtime search sort', () => {
+    expect(() =>
+      buildPostSearchQuery(undefined, { sort: 'unexpected' } as unknown as PostSearchOptions),
+    ).toThrow('Unknown post search sort')
+  })
+
   it('buildPostSearchQuery generates valid SQL for basic search', () => {
     const query = buildPostSearchQuery(undefined, { limit: 10 })
 

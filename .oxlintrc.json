@@ -46,6 +46,30 @@
     "respectEslintDisableDirectives": true
   },
   "rules": {
+    "no-mistakes/gh-api-argument-safety": "error",
+    "no-mistakes/no-argv-main-guard": "error",
+    "no-mistakes/no-comment-phrases": [
+      "error",
+      {
+        "patterns": [
+          {
+            "pattern": "\\b(?:kept|keep|retained|retain|preserved|preserve)\\b[^.\\n]{0,40}\\bcompat",
+            "flags": "i",
+            "message": "Delete the compatibility tombstone and update its callers (AGENTS.md: one current contract)."
+          },
+          {
+            "pattern": "\\bbackwards?[- ]compat",
+            "flags": "i",
+            "message": "Delete the backward-compatibility path and update its callers (AGENTS.md: one current contract)."
+          },
+          {
+            "pattern": "\\bfor (?:legacy|old) (?:clients|callers|readers)\\b",
+            "flags": "i",
+            "message": "Delete the path kept for old callers and update them (AGENTS.md: one current contract)."
+          }
+        ]
+      }
+    ],
     "no-mistakes/vitest-timeout-cap": [
       "error",
       { "defaultMax": 30000, "overrideMax": 30000, "unknownValues": "finding" }
@@ -1309,6 +1333,14 @@
             "executorFactoryNames": ["beginTransaction", "beginBoundedTransaction"],
             "executorTypeNames": ["TransactionQuery", "QueryExecutor"]
           }
+        ],
+        "no-mistakes/postgres-no-nonliteral-sql-registry-key": [
+          "error",
+          { "importSpecifier": "@data-stores/psql" }
+        ],
+        "no-mistakes/postgres-no-correlated-sql-builder": [
+          "error",
+          { "builderMethods": ["append"], "tagNames": ["sql"] }
         ]
       }
     },

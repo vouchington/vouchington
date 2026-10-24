@@ -1,3 +1,4 @@
+import { assertNever } from '@modules/utils/assert-never'
 import { read, write } from '@data-stores/psql'
 import { decodeScopedUuidCursor, encodeScopedUuidCursor } from '@modules/pagination'
 import sql from 'sql-template-strings'
@@ -73,8 +74,18 @@ export async function getReportAbusePenalties(
     WHERE TRUE
   `
 
-  if (status === 'active') query.append(sql` AND revoked_at IS NULL`)
-  if (status === 'revoked') query.append(sql` AND revoked_at IS NOT NULL`)
+  switch (status) {
+    case undefined:
+      break
+    case 'active':
+      query.append(sql` AND revoked_at IS NULL`)
+      break
+    case 'revoked':
+      query.append(sql` AND revoked_at IS NOT NULL`)
+      break
+    default:
+      return assertNever(status, 'Unknown penalty status')
+  }
   if (userId) query.append(sql` AND user_id = ${userId}`)
   if (sourceFlagId) query.append(sql` AND source_flag_id = ${sourceFlagId}`)
   if (afterId) query.append(sql` AND id < ${afterId}`)

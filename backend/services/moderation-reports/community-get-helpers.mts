@@ -1,5 +1,6 @@
+import { assertNever } from '@modules/utils/assert-never'
 import { read } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import sql, { type SQLStatement } from 'sql-template-strings'
 import { BAN_EVASION_SYSTEM_USERNAME } from '@services/users/constants'
 import type { PendingModerationReport } from './pending-moderation-report.mts'
 import type { ModerationReportCursor, ModerationReportSort } from './sort-sql.mts'
@@ -81,29 +82,49 @@ export async function fetchBanEvasionReports(
       AND r.reported_user_id IS NOT NULL
       AND r.community_id = ${communityId}
   `
-  if (afterCursor) {
-    if (sort === 'severity') {
-      const severityRank = afterCursor.severityRank ?? 0
-      const reportCount = afterCursor.reportCount ?? 0
-      query.append(
-        sql` AND (0 < ${severityRank} OR (0 = ${severityRank} AND (1 < ${reportCount} OR (1 = ${reportCount} AND r.id > ${afterCursor.id}::uuid))))`,
-      )
-    } else if (sort === 'most_reported') {
-      const reportCount = afterCursor.reportCount ?? 0
-      query.append(
-        sql` AND (1 < ${reportCount} OR (1 = ${reportCount} AND r.id > ${afterCursor.id}::uuid))`,
-      )
-    } else {
-      const comparator = sort === 'created_at_asc' ? sql`>` : sql`<`
-      query.append(sql` AND r.id `)
-      query.append(comparator)
-      query.append(sql` ${afterCursor.id}::uuid`)
-    }
-  }
-  const direction = sort === 'created_at_asc' ? sql` ASC` : sql` DESC`
-  query.append(sql` ORDER BY r.id`)
-  query.append(direction)
-  query.append(sql` LIMIT ${limit}`)
+  if (afterCursor) query.append(banEvasionAfterCursor(sort, afterCursor))
+  query.append(banEvasionOrderAndLimit(sort, limit))
   const { rows } = await read(query)
   return rows as PendingModerationReport[]
+}
+
+function banEvasionAfterCursor(
+  sort: ModerationReportSort | undefined,
+  afterCursor: Exclude<ModerationReportCursor, null>,
+): SQLStatement {
+  switch (sort) {
+    case 'severity': {
+      const severityRank = afterCursor.severityRank ?? 0
+      const reportCount = afterCursor.reportCount ?? 0
+      return sql` AND (0 < ${severityRank} OR (0 = ${severityRank} AND (1 < ${reportCount} OR (1 = ${reportCount} AND r.id > ${afterCursor.id}::uuid))))`
+    }
+    case 'most_reported': {
+      const reportCount = afterCursor.reportCount ?? 0
+      return sql` AND (1 < ${reportCount} OR (1 = ${reportCount} AND r.id > ${afterCursor.id}::uuid))`
+    }
+    case 'created_at_asc':
+      return sql` AND r.id > ${afterCursor.id}::uuid`
+    case 'created_at_desc':
+    case undefined:
+      return sql` AND r.id < ${afterCursor.id}::uuid`
+    default:
+      return assertNever(sort, 'Unknown moderation report sort')
+  }
+}
+
+function banEvasionOrderAndLimit(
+  sort: ModerationReportSort | undefined,
+  limit: number,
+): SQLStatement {
+  switch (sort) {
+    case 'created_at_asc':
+      return sql` ORDER BY r.id ASC LIMIT ${limit}`
+    case 'severity':
+    case 'most_reported':
+    case 'created_at_desc':
+    case undefined:
+      return sql` ORDER BY r.id DESC LIMIT ${limit}`
+    default:
+      return assertNever(sort, 'Unknown moderation report sort')
+  }
 }

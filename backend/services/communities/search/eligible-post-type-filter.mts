@@ -1,3 +1,4 @@
+import { assertNever } from '@modules/utils/assert-never'
 import assert from 'http-assert'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import type { PrivateUser } from '@services/users/types'
@@ -23,9 +24,18 @@ export function appendEligiblePostTypeFilter(
           AND cm.removed_at IS NULL
       )
     )`)
-  if (eligiblePostType === 'review') {
-    searchQuery.append(sql` AND c.should_allow_review_posts = TRUE`)
-  } else if (eligiblePostType === 'data_point') {
-    searchQuery.append(sql` AND c.should_allow_data_point_posts = TRUE`)
+  searchQuery.append(postTypeAllowanceFilter(eligiblePostType))
+}
+
+function postTypeAllowanceFilter(eligiblePostType: CommunityRootPostType): SQLStatement {
+  switch (eligiblePostType) {
+    case 'review':
+      return sql` AND c.should_allow_review_posts = TRUE`
+    case 'data_point':
+      return sql` AND c.should_allow_data_point_posts = TRUE`
+    case 'discussion':
+      return sql``
+    default:
+      return assertNever(eligiblePostType, 'Unknown eligible post type')
   }
 }

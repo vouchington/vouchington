@@ -1,5 +1,6 @@
+import { assertNever } from '@modules/utils/assert-never'
 import { query as executeQuery, read, type QueryOptions } from '@data-stores/psql'
-import sql from 'sql-template-strings'
+import sql, { type SQLStatement } from 'sql-template-strings'
 import assert from 'http-assert'
 import { APPEAL_SLA_HOURS, type ModerationAppealStatus } from './config.mts'
 import type { ModerationAppealResponse } from './types.mts'
@@ -78,7 +79,7 @@ export async function listModerationAppeals(
     `)
     .append(APPEAL_JOINS).append(sql`
     WHERE `)
-  appendModerationAppealStatusPredicate(query, status)
+  query.append(moderationAppealStatusPredicate(status))
   query.append(sql`
   `)
   if (appellantUserId) {
@@ -95,15 +96,15 @@ export async function listModerationAppeals(
   return { appeals: appeals.slice(0, limit), hasNextPage }
 }
 
-function appendModerationAppealStatusPredicate(
-  query: ReturnType<typeof sql>,
-  status: ModerationAppealStatus,
-): void {
-  if (status === 'pending') {
-    query.append(sql`ma.resolved_at IS NULL`)
-  } else if (status === 'dismissed') {
-    query.append(sql`ma.resolved_at IS NOT NULL AND ma.resolution_action = 'deny'`)
-  } else {
-    query.append(sql`ma.resolved_at IS NOT NULL AND ma.resolution_action != 'deny'`)
+function moderationAppealStatusPredicate(status: ModerationAppealStatus): SQLStatement {
+  switch (status) {
+    case 'pending':
+      return sql`ma.resolved_at IS NULL`
+    case 'dismissed':
+      return sql`ma.resolved_at IS NOT NULL AND ma.resolution_action = 'deny'`
+    case 'resolved':
+      return sql`ma.resolved_at IS NOT NULL AND ma.resolution_action != 'deny'`
+    default:
+      return assertNever(status, 'Unknown moderation appeal status')
   }
 }

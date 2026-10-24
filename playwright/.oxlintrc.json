@@ -18,6 +18,8 @@
     "node"
   ],
   "rules": {
+    // Matches the 30,000 ms Playwright test cap enforced by config/test-timeout.mts.
+    "no-mistakes/playwright-test-timeout-cap": ["error", { "max": 30000 }],
     "playwright/consistent-spacing-between-blocks": "error",
     "playwright/expect-expect": [
       "error",
