@@ -96,4 +96,17 @@ test.describe('Storybook shared interactive test ids', () => {
     await openStory(page, 'copyright-eu-notice-detail--with-hosted-material')
     await expect(page.getByTestId('copyright-eu-notice-hosted-use-url').first()).toBeAttached()
   })
+
+  test('new coverage stories render their controls', async ({ page }) => {
+    await openStory(page, 'shared-follower-send-selected-badges--two-selected')
+    await expect(
+      page.getByTestId('follower-send-selected-badges-remove-follower').first(),
+    ).toBeAttached()
+
+    await openStory(page, 'copyright-notice-detail--restricted-material')
+    await expect(page.getByTestId('copyright-notice-hosted-use-url')).toBeAttached()
+
+    await openStory(page, 'copyright-repeat-infringer-account--operative-incident')
+    await expect(page.getByTestId('button').first()).toBeAttached()
+  })
 })
