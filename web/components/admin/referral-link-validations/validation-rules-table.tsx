@@ -162,7 +162,10 @@ export function ValidationRulesTable({ validationId, initialRules }: ValidationR
             <AlertDialogCancel>
               {t('extracted.referralLinkValidations.validationRulesTable.cancel_19766ed6')}
             </AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete}>
+            <AlertDialogAction
+              data-pw='validation-rules-table-delete'
+              onClick={confirmDelete}
+            >
               {t('extracted.referralLinkValidations.validationRulesTable.delete_e2d0a549')}
             </AlertDialogAction>
           </AlertDialogFooter>

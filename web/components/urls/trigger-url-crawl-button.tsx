@@ -44,6 +44,7 @@ export function TriggerUrlCrawlButton({ id, urlType, rssFeedId }: TriggerUrlCraw
   return (
     <div className='flex flex-col gap-2'>
       <Button
+        data-pw='trigger-url-crawl-button-crawl'
         type='button'
         loading={isCrawling}
         disabled={isCrawling || isSyncing}
@@ -54,6 +55,7 @@ export function TriggerUrlCrawlButton({ id, urlType, rssFeedId }: TriggerUrlCraw
       </Button>
       {urlType === 'rss_feed' && rssFeedId && (
         <Button
+          data-pw='trigger-url-crawl-button-rss-sync'
           type='button'
           variant='secondary'
           loading={isSyncing}

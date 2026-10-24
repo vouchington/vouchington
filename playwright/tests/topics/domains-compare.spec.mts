@@ -2,6 +2,11 @@ import { test, expect } from '../../helpers/test.mts'
 import { navigateTo } from 'vouchington-tooling/playwright'
 
 test.describe('Domains Compare page', () => {
+  test('shows trust details for a compared domain', async ({ page }) => {
+    await navigateTo(page, '/domains/compare?ids=example.com')
+    await expect(page.getByTestId('domain-trust-badge-show-details')).toBeVisible()
+  })
+
   test('/domains/compare without IDs shows empty state', async ({ page }) => {
     await navigateTo(page, '/domains/compare')
 

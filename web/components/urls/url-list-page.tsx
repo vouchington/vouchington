@@ -60,6 +60,7 @@ export function UrlListPage({ data, nextPageParams }: UrlListPageProps) {
               <tr key={url.id}>
                 <td className='px-6 py-4 text-sm text-foreground'>
                   <ExternalLink
+                    data-pw='url-list-page-external-link'
                     href={url.url}
                     className='text-primary hover:text-primary/80'
                   >
@@ -80,6 +81,7 @@ export function UrlListPage({ data, nextPageParams }: UrlListPageProps) {
                 </td>
                 <td className='whitespace-nowrap px-6 py-4 text-sm text-muted-foreground'>
                   <ExternalLink
+                    data-pw='url-list-page-view'
                     href={url.url}
                     className='text-primary hover:text-primary/80'
                   >

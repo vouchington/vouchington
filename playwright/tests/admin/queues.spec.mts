@@ -67,6 +67,7 @@ test.describe('Queue Dashboard', () => {
   })
 
   test('displays trigger buttons for each job', async ({ page }) => {
+    await expect(page.getByTestId('scheduled-jobs-header-refresh')).toBeVisible()
     const table = page.getByTestId('scheduled-jobs-table')
     await expect(table).toBeVisible({ timeout: 10_000 })
     const triggerButtons = table.locator('tbody button')
@@ -82,6 +83,7 @@ test.describe('Queue Dashboard', () => {
 
     const confirmationDialog = page.getByRole('alertdialog')
     await expect(confirmationDialog).toBeVisible({ timeout: 5000 })
+    await expect(page.getByTestId('scheduled-job-trigger-dialog-trigger')).toBeVisible()
     const buttons = confirmationDialog.locator('button')
     await expect(buttons).toHaveCount(2, { timeout: 5000 })
   })
@@ -104,6 +106,9 @@ test.describe('Queue Dashboard', () => {
   test('displays backfills table with expected columns', async ({ page }) => {
     const table = page.getByTestId('backfills-table')
     await expect(table).toBeVisible({ timeout: 10_000 })
+    await expect(table.getByTestId('queue-catalog-table-activate').first()).toBeVisible()
+    await table.getByTestId('queue-catalog-table-activate').first().click()
+    await expect(page.getByTestId('backfill-trigger-dialog-run-backfill')).toBeVisible()
     const headers = table.locator('th')
     await expect(headers).toContainText(['Queue', 'Description', 'Source Table', 'Action'], {
       timeout: 10_000,
