@@ -76,9 +76,9 @@ When a server returns 429, the domain is locked in Valkey with a TTL:
 
 ## Triggered Crawls
 
-Crawls are enqueued immediately (fire-and-forget, debounced by `urlId`) in these cases:
+Crawl work is triggered through these paths:
 
-- **URL row first created** — `addUrls` in `backend/services/urls/upsert.mts` calls `enqueueBulkOnUrlCreated` when running outside a transaction (the non-transactional path), which creates or retrieves the crawler record for the URL's hostname and triggers boilerplate removal. When running inside a transaction it calls `processUrlCreatedInline` instead, which only creates the hostname crawler record. Neither path immediately enqueues a crawl for the URL itself; scheduled dispatchers handle that.
+- **URL row first created** — `addUrls` in `backend/services/urls/upsert.mts` awaits the debounced URL-created job admission after its transaction commits; an admission failure is reported without failing the committed URL write. Borrowed transactions still call `processUrlCreatedInline`, which only creates the hostname crawler record. Neither path immediately enqueues a crawl for the URL itself; scheduled dispatchers handle that.
 - **URL entity-relation upserted** — `upsertEntityRelation` in `backend/services/entity-relations/upsert.mts` calls `enqueueBulkCrawlUrls` for every object with `object_type === 'url'`. This ensures a fresh crawl is enqueued even when an existing URL row is attached to a post or other entity as a related link.
 - **Manual admin trigger** — `POST /api/v1/urls/:id/crawl` in `backend/api/v1/urls/url.mts`.
 

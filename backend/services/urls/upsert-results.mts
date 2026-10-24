@@ -1,7 +1,7 @@
 import { registerPostCommitAction, type QueryOptions } from '@data-stores/psql'
 import type { ViewUrl } from './types.mts'
 import { getOrCreateCrawlersForHostnames } from '@services/crawlers'
-import { enqueueBulkOnUrlCreated } from '@queues/entity-listeners/enqueues'
+import { enqueueBulkOnUrlCreatedBestEffort } from '@queues/entity-listeners/enqueues'
 import type { upsertUrlRows } from './upsert-write.mts'
 type TransactionQueryWithClient = NonNullable<QueryOptions['query']> & { client: object }
 
@@ -29,7 +29,7 @@ export async function dispatchUrlCreatedEvents(
 
   if (ownsTransaction && queryOptions.query) {
     registerPostCommitAction(queryOptions.query, async () => {
-      void enqueueBulkOnUrlCreated(insertedIds)
+      await enqueueBulkOnUrlCreatedBestEffort(insertedIds)
     })
     return
   }
@@ -38,7 +38,7 @@ export async function dispatchUrlCreatedEvents(
     return
   }
 
-  void enqueueBulkOnUrlCreated(insertedIds)
+  await enqueueBulkOnUrlCreatedBestEffort(insertedIds)
 }
 
 async function processUrlCreatedInline(

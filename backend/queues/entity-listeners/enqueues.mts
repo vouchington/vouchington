@@ -1,4 +1,4 @@
-import type { EnqueueReturnType } from '@voucha/types'
+import { awaitReportedEnqueueAdmission } from '@queues/background/enqueues'
 import {
   enqueueProcessPostCreated,
   enqueueProcessPostUpdated,
@@ -49,8 +49,11 @@ export const enqueueOnConversationMessageCreated = (
 ) => {
   return enqueueProcessConversationMessageCreated({ conversationId, messageId, senderId }, priority)
 }
-export const enqueueBulkOnUrlCreated = (ids: string[], priority?: number): EnqueueReturnType => {
-  return enqueueBulkProcessUrlCreated(ids, priority === undefined ? undefined : { priority })
+/** Awaits URL-created job admission; committed URL writes remain successful on enqueue failure. */
+export function enqueueBulkOnUrlCreatedBestEffort(ids: string[], priority?: number): Promise<void> {
+  return awaitReportedEnqueueAdmission(() =>
+    enqueueBulkProcessUrlCreated(ids, priority === undefined ? undefined : { priority }),
+  )
 }
 export const enqueueOnCommunityAgentPromptsDeactivated = (
   actorUserId: string,

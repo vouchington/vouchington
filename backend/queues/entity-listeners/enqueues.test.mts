@@ -10,7 +10,7 @@ import {
 import { readEnqueuedJob } from '../../test-helpers/queue-jobs.mts'
 import {
   enqueueBulkOnPostUpdated,
-  enqueueBulkOnUrlCreated,
+  enqueueBulkOnUrlCreatedBestEffort,
   enqueueBulkReconcileEntities,
   enqueueOnPostCreated,
   enqueueOnTopicDeleted,
@@ -81,7 +81,7 @@ describe('entity listener enqueues', () => {
 
   it('debounces a created url per id and defaults to the task priority', async () => {
     const urlId = randomUUID()
-    await enqueueBulkOnUrlCreated([urlId])
+    await enqueueBulkOnUrlCreatedBestEffort([urlId])
     const [job] = await entitiesListeners.searchJobs({
       name: ENTITY_LISTENERS_URL_CREATED_JOB.name,
       data: { id: urlId },
@@ -97,7 +97,7 @@ describe('entity listener enqueues', () => {
 
   it('enqueues a created url at the requested priority', async () => {
     const urlId = randomUUID()
-    await enqueueBulkOnUrlCreated([urlId], 41)
+    await enqueueBulkOnUrlCreatedBestEffort([urlId], 41)
     const [job] = await entitiesListeners.searchJobs({
       name: ENTITY_LISTENERS_URL_CREATED_JOB.name,
       data: { id: urlId },

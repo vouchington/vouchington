@@ -1,10 +1,14 @@
-import { it, expect, describe } from 'vitest'
+import { it, expect, describe, vi } from 'vitest'
 import crypto from 'node:crypto'
 import { addUrl, addUrls } from './upsert.mts'
-import { extractInsertedUrlIds } from './upsert-results.mts'
+import { dispatchUrlCreatedEvents, extractInsertedUrlIds } from './upsert-results.mts'
 import { getUrlByAny } from './get.mts'
 import { beginTransaction } from '@voucha/test-helpers'
+import { holdQueueBulkAdmission } from '@voucha/test-helpers/queue-admission-hold'
 import { getCrawlersForHostname } from '@services/crawlers'
+import { ENTITY_LISTENERS_URL_CREATED_JOB } from '../../queues/background/enqueues/entity-listeners-jobs.mts'
+import { entitiesListeners } from '@queues/entity-listeners/queues'
+import { sentryCaptureExceptionMock as captureException } from '../../test-helpers/vitest.setup.sentry-mock.mts'
 
 describe('upsert.generated', () => {
   it('addUrl creates a new URL', async () => {
@@ -86,6 +90,88 @@ describe('upsert.generated', () => {
     expect(urls[0].url).toBe(`https://${hostnameOne}/test1`)
     expect(urls[1].url).toBe(`https://${hostnameOne}/test2`)
     expect(urls[2].url).toBe(`https://${hostnameTwo}/test3`)
+  })
+
+  it('waits for post-commit URL-created bulk admission', async () => {
+    const hostname = `admission-${crypto.randomUUID()}.example.com`
+    await addUrl(null, `https://${hostname}/existing`, { skipCreatedEvents: true })
+    const href = `https://${hostname}/article`
+    await using query = await beginTransaction()
+    const created = await addUrl(null, href, {
+      query,
+      client: query.client,
+      skipCreatedEvents: true,
+    })
+    expect(created).not.toBeNull()
+    expect(await getUrlByAny(created!.id)).toBeNull()
+    const admission = holdQueueBulkAdmission(
+      entitiesListeners,
+      ENTITY_LISTENERS_URL_CREATED_JOB.name,
+      data => typeof data === 'object' && data !== null && 'id' in data && data.id === created!.id,
+    )
+    let settled = false
+    let operation: Promise<void> | undefined
+    let admittedJobs: Awaited<typeof admission.admitted> = []
+    let admissionStarted = false
+    try {
+      await dispatchUrlCreatedEvents(
+        [created!.id],
+        new Map([[created!.id, created!]]),
+        { query },
+        false,
+        true,
+      )
+      const commit = query.commit().finally(() => {
+        settled = true
+      })
+      operation = commit
+      const entered = await Promise.race([
+        admission.entered.then(() => true),
+        commit.then(() => false),
+      ])
+      admissionStarted = entered
+      expect(entered).toBe(true)
+
+      const persisted = await getUrlByAny(created!.id)
+      expect(persisted).toMatchObject({ id: created!.id, url: href })
+      expect(settled).toBe(false)
+
+      admission.release()
+      const [, jobs] = await Promise.all([commit, admission.admitted])
+      admittedJobs = jobs
+      expect(jobs).toHaveLength(1)
+      expect(jobs[0]).toMatchObject({
+        name: ENTITY_LISTENERS_URL_CREATED_JOB.name,
+        data: { id: persisted!.id },
+      })
+    } finally {
+      admission.release()
+      await operation?.catch(() => undefined)
+      if (admissionStarted) admittedJobs = await admission.admitted.catch(() => [])
+      await Promise.all(admittedJobs.map(job => job.remove()))
+      admission.restore()
+    }
+  })
+
+  it('reports URL-created admission failure without failing the committed URL write', async () => {
+    const href = `https://admission-failure-${crypto.randomUUID()}.example.com/article`
+    const admissionError = new Error('URL-created queue admission failed')
+    const originalAddBulk = entitiesListeners.addBulk
+    const addBulk = vi.spyOn(entitiesListeners, 'addBulk').mockImplementation(jobs => {
+      if (jobs.some(job => job.name === ENTITY_LISTENERS_URL_CREATED_JOB.name))
+        return Promise.reject(admissionError)
+      return originalAddBulk.call(entitiesListeners, jobs)
+    })
+    captureException.mockClear()
+    try {
+      const created = await addUrl(null, href)
+      expect(created).toMatchObject({ url: href })
+      expect(await getUrlByAny(created!.id)).toMatchObject({ id: created!.id, url: href })
+      expect(captureException).toHaveBeenCalledTimes(1)
+      expect(captureException.mock.calls[0]![0]).toBe(admissionError)
+    } finally {
+      addBulk.mockRestore()
+    }
   })
 
   it('creates crawlers for newly inserted URLs within the same transaction', async () => {

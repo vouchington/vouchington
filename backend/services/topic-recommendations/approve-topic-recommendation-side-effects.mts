@@ -2,7 +2,10 @@ import type { PrivateUser } from '@voucha/types/entities/user'
 import { handleElectionVotes } from '@services/entity-relations/upsert-helpers'
 import { getEntityRelationMetadataOrThrow } from '@services/entity-relations/metadata'
 import onError from '@modules/on-error'
-import { enqueueBulkOnUrlCreated, enqueueOnPostUpdated } from '@queues/entity-listeners/enqueues'
+import {
+  enqueueBulkOnUrlCreatedBestEffort,
+  enqueueOnPostUpdated,
+} from '@queues/entity-listeners/enqueues'
 import { enqueueTopicAliasesUpdate } from '@queues/rss-feed-maintenance/enqueues/topic-aliases'
 import { addEntityBloomKeys } from '@services/entity-cache/bloom-filter-repair'
 import { normalizeKey } from '@ts-shared/utils/strings'
@@ -73,7 +76,7 @@ export async function runApprovedTopicRecommendationSideEffects(
     }),
   )
 
-  void enqueueBulkOnUrlCreated(transactionResult.urlIds)
+  await enqueueBulkOnUrlCreatedBestEffort(transactionResult.urlIds)
 
   await runBestEffort(() =>
     getRegisteredRecommendationApprovedHandler()(recommendationId, transactionResult.topic.id),
