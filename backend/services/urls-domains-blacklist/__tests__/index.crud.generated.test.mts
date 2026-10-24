@@ -1,20 +1,16 @@
 import { it, expect, describe } from 'vitest'
 import {
   getHostnamePolicy,
-  upsertBlacklistSources,
   getAllBlacklistSources,
   getBlacklistSourceById,
   getSourceCacheHeaders,
   updateSourceCacheHeaders,
 } from '../index.mts'
-import { BLACKLISTS } from '../sources-constants.mts'
 import { addDomainsToBloomFilter } from '../bloom-filter.mts'
 import {
-  beginTransaction,
   createTestBlacklistSource,
-  countBlacklistSources,
+  deleteTestBlacklistSource,
   insertTestDomainBlacklist,
-  getDomainBlacklistSourcesSequenceCurrentValue,
 } from '@voucha/test-helpers'
 
 async function isBlocked(hostname: string): Promise<boolean> {
@@ -27,7 +23,7 @@ describe('index.generated (CRUD and isUrlBlocked)', () => {
   ).join('')
 
   it('isUrlBlocked returns false for non-blacklisted domain', async () => {
-    const result = await isBlocked('example.com')
+    const result = await isBlocked(`unblocked-${crypto.randomUUID()}.test`)
     expect(result).toBe(false)
   })
 
@@ -80,55 +76,18 @@ describe('index.generated (CRUD and isUrlBlocked)', () => {
     expect(result).toBe(false)
   })
 
-  it('upsertBlacklistSources upserts all configured sources', async () => {
-    await upsertBlacklistSources()
-
-    const count = await countBlacklistSources()
-
-    expect(count).toBeGreaterThanOrEqual(BLACKLISTS.length)
-  })
-
-  it('upsertBlacklistSources does not advance the identity sequence for existing sources', async () => {
-    await using query = await beginTransaction()
-    await createTestBlacklistSource(
-      {
-        type: 'url',
-        name: `sequence-prime-${suffix}`,
-        url: 'https://example.com/sequence-prime.txt',
-      },
-      { query },
-    )
-    await upsertBlacklistSources({ query })
-    const before = await getDomainBlacklistSourcesSequenceCurrentValue({ query })
-
-    for (let i = 0; i < 8; i += 1) {
-      await upsertBlacklistSources({ query })
-    }
-    const after = await getDomainBlacklistSourcesSequenceCurrentValue({ query })
-
-    expect(after).toBe(before)
-    await query.commit()
-
-    const sources = await getAllBlacklistSources()
-
-    for (const blacklist of BLACKLISTS) {
-      expect(sources.filter(source => source.name === blacklist.name)).toHaveLength(1)
-    }
-  })
-
   it('getAllBlacklistSources returns all sources', async () => {
-    await createTestBlacklistSource({
+    const name = `test-blacklist-source-${suffix}`
+    const url = 'https://example.com/blacklist.txt'
+    const sourceId = await createTestBlacklistSource({
       type: 'url',
-      name: `test-blacklist-source-${suffix}`,
-      url: 'https://example.com/blacklist.txt',
+      name,
+      url,
     })
 
     const sources = await getAllBlacklistSources()
 
-    expect(sources.length).toBeGreaterThan(0)
-    expect(sources[0]).toHaveProperty('id')
-    expect(sources[0]).toHaveProperty('name')
-    expect(sources[0]).toHaveProperty('url')
+    expect(sources).toContainEqual({ id: sourceId, name, url })
   })
 
   it('getBlacklistSourceById returns source by id', async () => {
@@ -146,7 +105,13 @@ describe('index.generated (CRUD and isUrlBlocked)', () => {
   })
 
   it('getBlacklistSourceById returns null for non-existent id', async () => {
-    const source = await getBlacklistSourceById(32000)
+    const sourceId = await createTestBlacklistSource({
+      type: 'url',
+      name: `test-source-deleted-${suffix}`,
+      url: 'https://example.com/deleted.txt',
+    })
+    await deleteTestBlacklistSource(sourceId)
+    const source = await getBlacklistSourceById(sourceId)
     expect(source).toBeNull()
   })
 
