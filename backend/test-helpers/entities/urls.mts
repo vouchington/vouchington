@@ -9,6 +9,7 @@ import { isPublicHostname, normalizeUrlForUrlTable } from '@modules/utils/urls'
 
 type InsertTestUrlDirectOptions = {
   content_type?: string
+  id?: string
   preserveHttp?: boolean
 }
 
@@ -82,9 +83,9 @@ export async function insertTestUrlDirect(
   })
 
   const urlResult = await write(sql`/* insertTestUrlDirect */
-    INSERT INTO urls (url, hostname_id, pathname, search_params, created_by_id, media_type_id)
+    INSERT INTO urls (id, url, hostname_id, pathname, search_params, created_by_id, media_type_id)
     VALUES (
-      ${normalizedUrl.toString()}, ${hostnameId}, ${pathname},
+      COALESCE(${options.id ?? null}::uuid, uuidv7()), ${normalizedUrl.toString()}, ${hostnameId}, ${pathname},
       ${JSON.stringify(searchParams)}::jsonb, ${userId}, ${urlContentTypeId}
     )
     ON CONFLICT (url) DO UPDATE SET hostname_id = EXCLUDED.hostname_id

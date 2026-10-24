@@ -4,7 +4,7 @@ import {
   type fetchWithTimeoutSimple as fetchWithTimeoutSimpleFn,
 } from '@modules/utils/http'
 import { describe, expect, it, vi } from 'vitest'
-import { defaultRobotsDependencies, fetchRobotsTxtWithRetry } from '../fetch-retry.mts'
+import { defaultRobotsDependencies, fetchRobotsTxtWithRetryOutcome } from '../fetch-retry.mts'
 
 type CancelResponseBodyFn = typeof cancelResponseBodyFn
 type ReadResponseBodyFn = typeof readResponseBodyFn
@@ -42,7 +42,7 @@ function retryDependencies(
   }
 }
 
-describe('fetchRobotsTxtWithRetry unread bodies', () => {
+describe('robots fetch unread bodies', () => {
   it('reads a 200 body without cancelling it', async () => {
     const response = ignoredRobotsResponse(200, 'OK')
     const fetchWithTimeoutSimple = vi.fn<FetchWithTimeoutSimpleFn>().mockResolvedValue(response)
@@ -50,9 +50,12 @@ describe('fetchRobotsTxtWithRetry unread bodies', () => {
       retryDependencies(fetchWithTimeoutSimple)
     readResponseBody.mockResolvedValue(ALLOW_ROBOTS_TXT)
 
-    await expect(fetchRobotsTxtWithRetry('example.com', dependencies)).resolves.toBe(
-      ALLOW_ROBOTS_TXT,
-    )
+    await expect(
+      fetchRobotsTxtWithRetryOutcome('example.com', dependencies),
+    ).resolves.toMatchObject({
+      body: ALLOW_ROBOTS_TXT,
+      kind: 'rules',
+    })
 
     expect(readResponseBody).toHaveBeenCalledWith(
       expect.objectContaining({ response, url: 'https://example.com/robots.txt' }),
@@ -66,9 +69,12 @@ describe('fetchRobotsTxtWithRetry unread bodies', () => {
     const { dependencies, cancelResponseBody, readResponseBody } =
       retryDependencies(fetchWithTimeoutSimple)
 
-    await expect(fetchRobotsTxtWithRetry('example.com', dependencies)).resolves.toBe(
-      ALLOW_ROBOTS_TXT,
-    )
+    await expect(
+      fetchRobotsTxtWithRetryOutcome('example.com', dependencies),
+    ).resolves.toMatchObject({
+      body: ALLOW_ROBOTS_TXT,
+      kind: 'unavailable',
+    })
 
     expect(cancelResponseBody).toHaveBeenCalledTimes(1)
     expect(cancelResponseBody).toHaveBeenCalledWith(response)
@@ -85,9 +91,12 @@ describe('fetchRobotsTxtWithRetry unread bodies', () => {
     const { dependencies, cancelResponseBody, readResponseBody } =
       retryDependencies(fetchWithTimeoutSimple)
 
-    await expect(fetchRobotsTxtWithRetry('example.com', dependencies)).resolves.toBe(
-      'User-agent: *\nDisallow: /',
-    )
+    await expect(
+      fetchRobotsTxtWithRetryOutcome('example.com', dependencies),
+    ).resolves.toMatchObject({
+      body: 'User-agent: *\nDisallow: /',
+      kind: 'unreachable',
+    })
 
     expect(fetchWithTimeoutSimple).toHaveBeenCalledTimes(3)
     expect(cancelResponseBody).toHaveBeenCalledTimes(3)
@@ -103,7 +112,7 @@ describe('fetchRobotsTxtWithRetry unread bodies', () => {
     const { dependencies, cancelResponseBody, readResponseBody } =
       retryDependencies(fetchWithTimeoutSimple)
 
-    await expect(fetchRobotsTxtWithRetry('example.com', dependencies)).rejects.toThrow(
+    await expect(fetchRobotsTxtWithRetryOutcome('example.com', dependencies)).rejects.toThrow(
       'Failed to fetch robots.txt for example.com: 301 Moved Permanently',
     )
     expect(cancelResponseBody).toHaveBeenCalledWith(response)

@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto'
 import { Queue, Worker, type Job } from 'glide-mq'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { workerQueueConnection, workerQueuePrefix } from '@data-stores/valkey-glide-mq'
-import { getMinUUIDv7ForDate } from '@modules/utils'
+import { getMaxUUIDv7ForDate } from '@modules/utils'
 import { BACKGROUND_CPU_QUEUE_NAME as QUEUE_NAME } from '@queues/background-cpu/config'
 import { deleteOldInvalidCrawls } from '@services/crawls/cleanup'
 import { addUrl } from '@services/urls/upsert'
@@ -30,22 +30,11 @@ import { insertTestCrawlDispatchPlanUrls } from '@voucha/test-helpers/entities/c
 import { processCrawlDispatchJob } from '../processors.mts'
 import { processCrawlHostnamesJob } from './hostnames.mts'
 vi.mock<typeof import('glide-mq')>(import('glide-mq'), importOriginal => importOriginal())
-const fetchWithTimeoutSimpleMock = vi.hoisted(() =>
-  vi.fn<typeof import('@modules/utils/http').fetchWithTimeoutSimple>(),
-)
-vi.mock<typeof import('@modules/utils/http')>(
-  import('@modules/utils/http'),
-  async importOriginal => ({
-    ...(await importOriginal()),
-    fetchWithTimeoutSimple: fetchWithTimeoutSimpleMock,
-  }),
-)
-fetchWithTimeoutSimpleMock.mockImplementation(
-  async () => new Response('User-agent: *\nAllow: /', { status: 200 }),
-)
 async function crawlableUrl(path: string) {
   const user = await createTestUser()
   const hostname = `dispatch-${randomUUID()}.example.com`
+  await setTestRobotsTxtCache(hostname, 'User-agent: *\nAllow: /')
+  onTestFinished(() => deleteTestRobotsTxtCache(hostname))
   const url = await addUrl(user.id, `https://${hostname}/${path}`)
   if (!url) throw new Error('Expected crawl URL')
   await updateUrlHostname(url.hostname.id, { is_crawlable: true })
@@ -60,18 +49,24 @@ async function crawlableUrl(path: string) {
       await Promise.all(ownedJobs.map(job => job.remove()))
     }
   })
-  await setTestRobotsTxtCache(hostname, 'User-agent: *\nAllow: /')
-  onTestFinished(() => deleteTestRobotsTxtCache(hostname))
   return { user, url, hostname }
 }
 async function isolatedTierUrl() {
   const user = await createTestUser()
   const hostname = `tier-${randomUUID()}.example.com`
-  const hostnameId = await insertTestUrlHostname({ hostname, is_crawlable: true })
-  const msecs = Date.UTC(1971, 0, 1) + parseInt(randomUUID().slice(0, 7), 16)
-  const urlId = getMinUUIDv7ForDate(new Date(msecs))
-  await insertTestCrawlDispatchPlanUrls({ ids: [urlId], hostname, hostnameId, actorId: user.id })
   await setTestRobotsTxtCache(hostname, 'User-agent: *\nAllow: /')
+  onTestFinished(() => deleteTestRobotsTxtCache(hostname))
+  const hostnameId = await insertTestUrlHostname({ hostname, is_crawlable: true })
+  const historicalRangeMs = Date.UTC(2021, 0, 1) - Date.UTC(1971, 0, 1)
+  const msecs =
+    Date.UTC(1971, 0, 1) +
+    Number(BigInt(`0x${randomUUID().replaceAll('-', '').slice(0, 12)}`) % BigInt(historicalRangeMs))
+  const upperId = getMaxUUIDv7ForDate(new Date(msecs))
+  const upper = BigInt(`0x${upperId.replaceAll('-', '')}`)
+  const previous = (upper - 1n).toString(16).padStart(32, '0')
+  const afterId = `${previous.slice(0, 8)}-${previous.slice(8, 12)}-${previous.slice(12, 16)}-${previous.slice(16, 20)}-${previous.slice(20)}`
+  const urlId = upperId
+  await insertTestCrawlDispatchPlanUrls({ ids: [urlId], hostname, hostnameId, actorId: user.id })
   onTestFinished(async () => {
     await updateUrlHostname(hostnameId, { is_crawlable: false })
     const ownedJobs = await backgroundCpu.searchJobs({
@@ -83,7 +78,7 @@ async function isolatedTierUrl() {
   })
   const cursor = {
     sweepStartedAt: new Date(msecs + 1).toISOString(),
-    afterId: getMinUUIDv7ForDate(new Date(msecs - 1)),
+    afterId,
   }
   return { user, urlId, cursor }
 }
@@ -130,6 +125,8 @@ describe('crawl-dispatch hostname jobs through real GlideMQ', () => {
   })
   it('dispatches a due hostname into the per-hostname queue job', async () => {
     const hostname = `sweep-${randomUUID()}.example.com`
+    await setTestRobotsTxtCache(hostname, 'User-agent: *\nAllow: /')
+    onTestFinished(() => deleteTestRobotsTxtCache(hostname))
     const hostnameId = await insertTestUrlHostname({ hostname, is_crawlable: true })
     await insertTestUrl({ url: `https://${hostname}/crawlable`, hostnameId })
     onTestFinished(async () => {
@@ -191,6 +188,8 @@ describe('crawl-dispatch hostname jobs through real GlideMQ', () => {
   })
   it('refreshes crawler configuration and schedules sampled URLs', async () => {
     const hostname = `refresh-job-${randomUUID()}.example.com`
+    await setTestRobotsTxtCache(hostname, 'User-agent: *\nAllow: /')
+    onTestFinished(() => deleteTestRobotsTxtCache(hostname))
     const hostnameId = await insertTestUrlHostname({ hostname, is_crawlable: true })
     const ids = await Promise.all(
       [1, 2, 3].map(index =>
@@ -209,8 +208,6 @@ describe('crawl-dispatch hostname jobs through real GlideMQ', () => {
         await Promise.all(ownedJobs.flat().map(job => job.remove()))
       }
     })
-    await setTestRobotsTxtCache(hostname, 'User-agent: *\nAllow: /')
-    onTestFinished(() => deleteTestRobotsTxtCache(hostname))
     const result = await runJob('crawl.refresh_hostname_crawler', { hostname_id: hostnameId })
     expect(result).toMatchObject({ hostname_crawler_configuration_id: expect.any(String) })
     const { url: singleUrl } = await crawlableUrl('refresh-single')

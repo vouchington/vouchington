@@ -1,12 +1,12 @@
 import { cacheValkeyClient } from '@data-stores/valkey/clients'
 import { ValkeyCache } from '@data-stores/valkey/cache'
 import { describe, expect, it, vi } from 'vitest'
+import { fetchRobotsTxtCached } from '../index.mts'
 import {
-  fetchRobotsTxtCached,
   ROBOTS_RULES_CACHE_PREFIX,
   ROBOTS_UNREACHABLE_CACHE_PREFIX,
   ROBOTS_UNREACHABLE_MARKER,
-} from '../index.mts'
+} from '../fetch-cache.mts'
 
 const ALLOW_ROBOTS_TXT = 'User-agent: *\nAllow: /'
 const DISALLOW_ROBOTS_TXT = 'User-agent: *\nDisallow: /'

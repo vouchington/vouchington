@@ -64,15 +64,6 @@ export async function fetchRobotsTxtOutcome(
   return fetchRobotsTxtWithRetryOutcome(domain, dependencies)
 }
 
-/** @internal Body-only retry entrypoint for transport tests. */
-export async function fetchRobotsTxtWithRetry(
-  domain: string,
-  dependencies: RobotsDependencies,
-): Promise<string> {
-  const outcome = await fetchRobotsTxtWithRetryOutcome(domain, dependencies)
-  return outcome.body
-}
-
 export async function fetchRobotsTxtWithRetryOutcome(
   domain: string,
   dependencies: RobotsDependencies,
@@ -165,12 +156,6 @@ function fetchRobotsResponse(
   if (dependencies.fetchWithTimeoutSimple !== defaultRobotsDependencies.fetchWithTimeoutSimple) {
     return plainRobotsResponse(dependencies.fetchWithTimeoutSimple(url, FETCH_TIMEOUT_MS))
   }
-  // Crawl tests replace this integration fetch and then select dirty-database hostnames.
-  // Pinning behind that replacement resolves those names for real. A Vitest mock carries
-  // `mock.calls`; the production function does not, so a rename still pins.
-  if (integrationFetchWasReplaced(fetchWithTimeoutSimple)) {
-    return plainRobotsResponse(fetchWithTimeoutSimple(url, FETCH_TIMEOUT_MS))
-  }
   return fetchPinnedRobotsTxt(url, FETCH_TIMEOUT_MS, dependencies)
 }
 
@@ -182,10 +167,4 @@ function plainRobotsResponse(
   pending: Promise<Response>,
 ): Promise<{ response: Response; bodySignal?: AbortSignal }> {
   return pending.then(response => ({ response }))
-}
-
-function integrationFetchWasReplaced(fetchImpl: unknown): boolean {
-  if (typeof fetchImpl !== 'function' || !('mock' in fetchImpl)) return false
-  const mockState = fetchImpl.mock
-  return typeof mockState === 'object' && mockState !== null && 'calls' in mockState
 }
