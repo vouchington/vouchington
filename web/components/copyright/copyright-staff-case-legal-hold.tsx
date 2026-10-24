@@ -146,6 +146,7 @@ function LegalHoldAssessmentFields({
     rationale.trim().length > 0 &&
     selectedTargetIds.length > 0 &&
     (proceedingKind === 'none' || (commencedAt.length > 0 && receivedAt.length > 0))
+  const hasProceeding = proceedingKind !== 'none'
   return (
     <div className='space-y-2 rounded border p-3'>
       <CopyrightStaffProceedingFields
@@ -169,6 +170,7 @@ function LegalHoldAssessmentFields({
         targets={targets}
       />
       <Button
+        data-pw='copyright-staff-case-legal-hold-submit'
         disabled={!canRecord}
         onClick={() =>
           submit(
@@ -179,13 +181,9 @@ function LegalHoldAssessmentFields({
                 proceeding_kind: proceedingKind === 'none' ? null : proceedingKind,
                 ccb_claim_kind: proceedingKind === 'ccb' ? ccbClaimKind : null,
                 commenced_at:
-                  proceedingKind === 'none' || !commencedAt
-                    ? null
-                    : new Date(commencedAt).toISOString(),
+                  hasProceeding && commencedAt ? new Date(commencedAt).toISOString() : null,
                 received_by_designated_agent_at:
-                  proceedingKind === 'none' || !receivedAt
-                    ? null
-                    : new Date(receivedAt).toISOString(),
+                  hasProceeding && receivedAt ? new Date(receivedAt).toISOString() : null,
                 is_same_material: sameMaterial,
                 target_ids: selectedTargetIds,
               }),

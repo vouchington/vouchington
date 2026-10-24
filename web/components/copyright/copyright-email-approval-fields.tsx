@@ -60,6 +60,7 @@ export function CopyrightEmailApprovalFields({
         onChange={onChange}
       />
       <Button
+        data-pw='copyright-email-approval-add-hosted-image'
         disabled={draft.targets.length >= MAX_EMAIL_APPROVAL_TARGETS}
         onClick={() => onChange(addCopyrightEmailApprovalTarget(draft))}
         type='button'

@@ -111,6 +111,7 @@ export function CopyrightStaffTerritorial({
         {!acknowledgmentTerminal ? (
           <ButtonGroup>
             <Button
+              data-pw='copyright-staff-territorial-record-failure'
               disabled={pending}
               onClick={() =>
                 onReview(
