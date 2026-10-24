@@ -6,19 +6,20 @@ Encrypted provider evidence retained for verification, replay protection, and au
 
 Not partitioned — growth: unbounded.
 
-| Column                           | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                            |
-| -------------------------------- | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------ |
-| `id`                             | `uuid`                     | no       | `uuidv7()`                   |          |           |           |                                                                    |
-| `membership_provider_context_id` | `uuid`                     | no       |                              |          |           |           | Provider, environment, and application that produced the evidence. |
-| `membership_provider_lineage_id` | `uuid`                     | yes      |                              |          |           |           | Provider lineage asserted by the evidence, when known.             |
-| `provider_event_id`              | `text`                     | yes      |                              |          |           |           | Optional provider event identity used for replay protection.       |
-| `evidence_lookup_sha256`         | `text`                     | no       |                              |          |           |           | SHA-256 lookup digest for deduplicating encrypted evidence.        |
-| `encrypted_evidence`             | `bytea`                    | no       |                              |          |           |           | Encrypted provider payload; plaintext is never persisted.          |
-| `received_at`                    | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP`          |          |           |           | When the evidence was durably received.                            |
-| `verified_at`                    | `timestamp with time zone` | yes      |                              |          |           |           | When provider verification accepted the evidence.                  |
-| `rejected_at`                    | `timestamp with time zone` | yes      |                              |          |           |           | When provider verification rejected the evidence.                  |
-| `rejection_reason`               | `text`                     | yes      |                              |          |           |           | Bounded reason for rejecting the evidence.                         |
-| `created_at`                     | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                    |
+| Column                           | Type                        | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                                      |
+| -------------------------------- | --------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------------ |
+| `id`                             | `uuid`                      | no       | `uuidv7()`                   |          |           |           |                                                                                                              |
+| `membership_provider_context_id` | `uuid`                      | no       |                              |          |           |           | Provider, environment, and application that produced the evidence.                                           |
+| `provider`                       | `membership_provider_kinds` | no       |                              |          |           |           | Provider copied under a composite foreign key so recovery can page one provider in global evidence ID order. |
+| `membership_provider_lineage_id` | `uuid`                      | yes      |                              |          |           |           | Provider lineage asserted by the evidence, when known.                                                       |
+| `provider_event_id`              | `text`                      | yes      |                              |          |           |           | Optional provider event identity used for replay protection.                                                 |
+| `evidence_lookup_sha256`         | `text`                      | no       |                              |          |           |           | SHA-256 lookup digest for deduplicating encrypted evidence.                                                  |
+| `encrypted_evidence`             | `bytea`                     | no       |                              |          |           |           | Encrypted provider payload; plaintext is never persisted.                                                    |
+| `received_at`                    | `timestamp with time zone`  | no       | `CURRENT_TIMESTAMP`          |          |           |           | When the evidence was durably received.                                                                      |
+| `verified_at`                    | `timestamp with time zone`  | yes      |                              |          |           |           | When provider verification accepted the evidence.                                                            |
+| `rejected_at`                    | `timestamp with time zone`  | yes      |                              |          |           |           | When provider verification rejected the evidence.                                                            |
+| `rejection_reason`               | `text`                      | yes      |                              |          |           |           | Bounded reason for rejecting the evidence.                                                                   |
+| `created_at`                     | `timestamp with time zone`  | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           |                                                                                                              |
 
 **Primary key:** `PRIMARY KEY (id)`
 
@@ -35,11 +36,13 @@ _none_
 
 **Foreign keys:**
 
+- `fk_membership_provider_evidence_records__context_provider`: `FOREIGN KEY (membership_provider_context_id, provider) REFERENCES membership_provider_contexts(id, provider) ON DELETE RESTRICT`
 - `fk_membership_provider_evidence_records__lineage_context`: `FOREIGN KEY (membership_provider_lineage_id, membership_provider_context_id) REFERENCES membership_provider_lineages(id, membership_provider_context_id) ON DELETE RESTRICT`
 - `membership_provider_evidence__membership_provider_context__fkey`: `FOREIGN KEY (membership_provider_context_id) REFERENCES membership_provider_contexts(id) ON DELETE RESTRICT`
 
 **Indexes:**
 
+- `idx_mbrshp_prvdr_evdnc_rcrds__google_pending_id`: `CREATE INDEX idx_mbrshp_prvdr_evdnc_rcrds__google_pending_id ON public.membership_provider_evidence_records USING btree (id, membership_provider_context_id) WHERE ((provider = 'google_play'::membership_provider_kinds) AND (provider_event_id IS NOT NULL) AND (verified_at IS NULL) AND (rejected_at IS NULL))`
 - `idx_membership_provider_evidence_records__context_event`: `CREATE UNIQUE INDEX idx_membership_provider_evidence_records__context_event ON public.membership_provider_evidence_records USING btree (membership_provider_context_id, provider_event_id) WHERE (provider_event_id IS NOT NULL)`
 - `idx_membership_provider_evidence_records__context_lookup`: `CREATE UNIQUE INDEX idx_membership_provider_evidence_records__context_lookup ON public.membership_provider_evidence_records USING btree (membership_provider_context_id, evidence_lookup_sha256)`
 - `idx_membership_provider_evidence_records__id_context`: `CREATE UNIQUE INDEX idx_membership_provider_evidence_records__id_context ON public.membership_provider_evidence_records USING btree (id, membership_provider_context_id)`

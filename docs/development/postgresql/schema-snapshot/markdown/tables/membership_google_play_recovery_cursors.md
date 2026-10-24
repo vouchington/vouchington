@@ -6,12 +6,13 @@ Bounded Google Play notification, acknowledgement, and active-source recovery sc
 
 Not partitioned — growth: bounded.
 
-| Column                          | Type                                     | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                                         |
-| ------------------------------- | ---------------------------------------- | -------- | ------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------------------------------- |
-| `recovery_sweep`                | `membership_google_play_recovery_sweeps` | no       |                     |          |           |           | Concrete recovery sweep sharing one compare-and-set cursor across dispatchers.                                  |
-| `cursor_evidence_id`            | `uuid`                                   | yes      |                     |          |           |           | Durable UUIDv7 keyset position within the current bounded recovery sweep.                                       |
-| `sweep_upper_bound_evidence_id` | `uuid`                                   | yes      |                     |          |           |           | Inclusive UUIDv7 high-water mark captured before a sweep so sustained inserts cannot starve older pending work. |
-| `updated_at`                    | `timestamp with time zone`               | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                                 |
+| Column                          | Type                                     | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                                             |
+| ------------------------------- | ---------------------------------------- | -------- | ------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------------------------------- |
+| `recovery_sweep`                | `membership_google_play_recovery_sweeps` | no       |                     |          |           |           | Concrete recovery sweep sharing one compare-and-set cursor across dispatchers.                                      |
+| `cursor_evidence_id`            | `uuid`                                   | yes      |                     |          |           |           | Durable UUIDv7 keyset position within the current bounded recovery sweep.                                           |
+| `sweep_upper_bound_evidence_id` | `uuid`                                   | yes      |                     |          |           |           | Inclusive UUIDv7 high-water mark captured before a sweep so sustained inserts cannot starve older pending work.     |
+| `revision`                      | `bigint`                                 | no       | `0`                 |          |           |           | Monotonic compare-and-set version that fences replay even after a completed sweep resets both UUID cursors to null. |
+| `updated_at`                    | `timestamp with time zone`               | no       | `CURRENT_TIMESTAMP` |          |           |           |                                                                                                                     |
 
 **Primary key:** `PRIMARY KEY (recovery_sweep)`
 
@@ -19,7 +20,8 @@ Not partitioned — growth: bounded.
 _none_
 
 **Check constraints:**
-_none_
+
+- `membership_google_play_recovery_cursors_revision_check`: `CHECK ((revision >= 0))`
 
 **Foreign keys:**
 _none_

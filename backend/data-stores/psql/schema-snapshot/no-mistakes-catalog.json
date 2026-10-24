@@ -56165,7 +56165,12 @@
       }
     },
     "membership_google_play_recovery_cursors": {
-      "checkConstraints": {},
+      "checkConstraints": {
+        "membership_google_play_recovery_cursors_revision_check": {
+          "definition": "CHECK ((revision >= 0))",
+          "validated": true
+        }
+      },
       "columns": {
         "cursor_evidence_id": {
           "comment": "Durable UUIDv7 keyset position within the current bounded recovery sweep.",
@@ -56187,6 +56192,16 @@
           "nullable": false,
           "ordinalPosition": 1
         },
+        "revision": {
+          "comment": "Monotonic compare-and-set version that fences replay even after a completed sweep resets both UUID cursors to null.",
+          "dataType": "bigint",
+          "defaultExpression": "0",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4
+        },
         "sweep_upper_bound_evidence_id": {
           "comment": "Inclusive UUIDv7 high-water mark captured before a sweep so sustained inserts cannot starve older pending work.",
           "dataType": "uuid",
@@ -56205,7 +56220,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4
+          "ordinalPosition": 5
         }
       },
       "comment": "Bounded Google Play notification, acknowledgement, and active-source recovery scans advance only after their queue fan-out succeeds.",
@@ -60105,6 +60120,38 @@
       "comment": "Canonical identity for a configured membership provider, environment, and application.",
       "foreignKeys": {},
       "indexes": {
+        "idx_membership_provider_contexts__id_provider": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE UNIQUE INDEX idx_membership_provider_contexts__id_provider ON public.membership_provider_contexts USING btree (id, provider)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "provider",
+              "descending": false,
+              "expression": "provider",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.enum_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
         "membership_provider_contexts_pkey": {
           "accessMethod": "btree",
           "constraintBacked": true,
@@ -60218,7 +60265,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 11
+          "ordinalPosition": 12
         },
         "encrypted_evidence": {
           "comment": "Encrypted provider payload; plaintext is never persisted.",
@@ -60228,7 +60275,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 6
+          "ordinalPosition": 7
         },
         "evidence_lookup_sha256": {
           "comment": "SHA-256 lookup digest for deduplicating encrypted evidence.",
@@ -60238,7 +60285,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5
+          "ordinalPosition": 6
         },
         "id": {
           "comment": null,
@@ -60268,6 +60315,16 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
+          "ordinalPosition": 4
+        },
+        "provider": {
+          "comment": "Provider copied under a composite foreign key so recovery can page one provider in global evidence ID order.",
+          "dataType": "membership_provider_kinds",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
           "ordinalPosition": 3
         },
         "provider_event_id": {
@@ -60278,7 +60335,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4
+          "ordinalPosition": 5
         },
         "received_at": {
           "comment": "When the evidence was durably received.",
@@ -60288,7 +60345,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7
+          "ordinalPosition": 8
         },
         "rejected_at": {
           "comment": "When provider verification rejected the evidence.",
@@ -60298,7 +60355,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9
+          "ordinalPosition": 10
         },
         "rejection_reason": {
           "comment": "Bounded reason for rejecting the evidence.",
@@ -60308,7 +60365,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10
+          "ordinalPosition": 11
         },
         "verified_at": {
           "comment": "When provider verification accepted the evidence.",
@@ -60318,11 +60375,19 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8
+          "ordinalPosition": 9
         }
       },
       "comment": "Encrypted provider evidence retained for verification, replay protection, and audit.",
       "foreignKeys": {
+        "fk_membership_provider_evidence_records__context_provider": {
+          "columns": ["membership_provider_context_id", "provider"],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id", "provider"],
+          "referencedTable": "membership_provider_contexts",
+          "validated": true
+        },
         "fk_membership_provider_evidence_records__lineage_context": {
           "columns": ["membership_provider_lineage_id", "membership_provider_context_id"],
           "onDelete": "RESTRICT",
@@ -60341,6 +60406,38 @@
         }
       },
       "indexes": {
+        "idx_mbrshp_prvdr_evdnc_rcrds__google_pending_id": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_mbrshp_prvdr_evdnc_rcrds__google_pending_id ON public.membership_provider_evidence_records USING btree (id, membership_provider_context_id) WHERE ((provider = 'google_play'::membership_provider_kinds) AND (provider_event_id IS NOT NULL) AND (verified_at IS NULL) AND (rejected_at IS NULL))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "membership_provider_context_id",
+              "descending": false,
+              "expression": "membership_provider_context_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "((provider = 'google_play'::membership_provider_kinds) AND (provider_event_id IS NOT NULL) AND (verified_at IS NULL) AND (rejected_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_membership_provider_evidence_records__context_event": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -64925,7 +65022,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 7
+          "ordinalPosition": 8
         },
         "created_at": {
           "comment": null,
@@ -64935,7 +65032,7 @@
           "generatedExpression": "uuid_extract_timestamp(id)",
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 13
+          "ordinalPosition": 14
         },
         "effective_at": {
           "comment": "When the projected membership became effective.",
@@ -64945,7 +65042,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 5
+          "ordinalPosition": 6
         },
         "expired_at": {
           "comment": "When the projection entered an expired state.",
@@ -64955,7 +65052,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 8
+          "ordinalPosition": 9
         },
         "expires_at": {
           "comment": "When the projected membership expires, if finite.",
@@ -64965,7 +65062,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6
+          "ordinalPosition": 7
         },
         "id": {
           "comment": null,
@@ -64985,7 +65082,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 12
+          "ordinalPosition": 13
         },
         "membership_product_id": {
           "comment": "Canonical product currently projected as access.",
@@ -64995,7 +65092,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 4
+          "ordinalPosition": 5
         },
         "membership_source_id": {
           "comment": "Source that currently owns this access projection.",
@@ -65015,7 +65112,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9
+          "ordinalPosition": 10
         },
         "paused_at": {
           "comment": "When the projection entered a paused state.",
@@ -65025,7 +65122,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10
+          "ordinalPosition": 11
         },
         "projection_ended_at": {
           "comment": "When this projection stopped being the user's live membership projection; its historical ID remains retained.",
@@ -65035,7 +65132,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 15
+          "ordinalPosition": 16
         },
         "should_cancel_at_period_end": {
           "comment": "Whether cancellation takes effect after the current period.",
@@ -65045,7 +65142,17 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 11
+          "ordinalPosition": 12
+        },
+        "source_kind": {
+          "comment": "Source category copied under a composite foreign key so ordered expiry work can select administrator grants before its limit.",
+          "dataType": "membership_source_kinds",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4
         },
         "updated_at": {
           "comment": null,
@@ -65055,7 +65162,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 14
+          "ordinalPosition": 15
         },
         "user_id": {
           "comment": "User currently receiving projected membership access.",
@@ -65070,6 +65177,14 @@
       },
       "comment": "Current and retained historical user-facing access projection rows derived from a single membership source.",
       "foreignKeys": {
+        "fk_memberships__source_kind": {
+          "columns": ["membership_source_id", "source_kind"],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id", "source_kind"],
+          "referencedTable": "membership_sources",
+          "validated": true
+        },
         "fk_memberships__source_user": {
           "columns": ["membership_source_id", "user_id"],
           "onDelete": "RESTRICT",
@@ -65120,6 +65235,38 @@
         }
       },
       "indexes": {
+        "idx_memberships__admin_grant_expires_at": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_memberships__admin_grant_expires_at ON public.memberships USING btree (expires_at, id) INCLUDE (user_id) WHERE ((source_kind = 'admin_grant'::membership_source_kinds) AND (projection_ended_at IS NULL) AND (cancelled_at IS NULL) AND (expired_at IS NULL) AND (expires_at IS NOT NULL))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "expires_at",
+              "descending": false,
+              "expression": "expires_at",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "((source_kind = 'admin_grant'::membership_source_kinds) AND (projection_ended_at IS NULL) AND (cancelled_at IS NULL) AND (expired_at IS NULL) AND (expires_at IS NOT NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_memberships__effective_user": {
           "accessMethod": "btree",
           "constraintBacked": false,
