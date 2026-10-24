@@ -61,6 +61,12 @@ removed; verification-linked purchase intents remain because their accounting ev
 a valid reference. Failed Stripe processing work remains recoverable until it reaches a completed
 or ignored outcome.
 
+Deleted chat and direct-message conversations are retired after pending push delivery finishes.
+Retention drains delivery receipts, intents, notifications, messages, and participants in bounded
+pages before deleting the conversation; modmail and internal moderation conversations follow their
+case lifecycle. App Attest key retention tracks successful per-request use without advancing the
+challenge-path sign count, so an active signing key remains available while abandoned keys expire.
+
 Moderation reconciliation admits expired and retryable work through the same bounded candidate
 page. Terminal dispositions are written only for that admitted page; lease and disposition updates
 commit together. Batch embedding listings use a fixed ID boundary and keyset continuation because
@@ -88,6 +94,13 @@ outbound UUIDv7 identity; admission and cleanup serialize on the floor row befor
 delivery. Announce has no local entity effect. Terminal follower distribution intents
 also expire through a persisted keyset sweep; their delivery identities and recipient snapshots
 cascade from the parent, while unfinished intents remain available for retries.
+
+Like and Follow replay identities retain exact activity URI, actor and target identity, and Undo
+date after a Like tombstone or remote signing-key cache is removed. Those compact identities retain
+the existing exact replay boundary indefinitely; a retained actor URI is never signing authority.
+An evicted actor must pass a fresh document fetch and HTTP signature verification before it can
+write again. An actor cache stays while any follow relation, Like payload, or verified inbox work
+item references it.
 
 - **Authorization lives in `authorization.mts` as `currentUserCan*`.** One file per service means
   the REST route, the MCP tool and the worker ask the same question. SQL visibility filters belong

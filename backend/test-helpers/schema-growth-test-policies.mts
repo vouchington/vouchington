@@ -66,6 +66,8 @@ export const NON_DEFAULT_ID_EXCEPTIONS = new Map<string, NonDefaultIdException>(
   ['membership_google_play_recovery_cursors', naturalOrProviderId('Singleton recovery scan.')],
   ['membership_microsoft_store_recovery_cursors', naturalOrProviderId('Singleton recovery scan.')],
   ['community_agent_prompts', sharedParentUuidv7('agent_prompts')],
+  ['remote_actors', sharedParentUuidv7('remote_actor_identities')],
+  ['activitypub_post_likes', sharedParentUuidv7('activitypub_post_like_activities')],
   ['rss_feed_items', sharedParentUuidv7('rss_feed_item_guids')],
   ['migrations', naturalOrProviderId('The checked-in migration filename is the key.')],
   ['auth_session_retention_cleanup_cursors', naturalOrProviderId('Finite cleanup-name key.')],

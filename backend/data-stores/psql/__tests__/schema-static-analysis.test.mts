@@ -23,6 +23,22 @@ describe('PostgreSQL schema static analysis', () => {
     await onGracefulShutdown()
   })
 
+  it.each([
+    ['activitypub_replay_retention_cursors', 'cursor_position'],
+    ['activitypub_replay_retention_cursors', 'upper_bound_position'],
+    ['follower_distribution_retention_cursors', 'cursor_distribution_position'],
+    ['follower_distribution_retention_cursors', 'sweep_upper_bound_distribution_position'],
+    ['operational_tombstone_retention_cursors', 'cursor_id'],
+  ])('limits the reviewed %s.%s UUID cursor exception to its exact table', (table, name) => {
+    const problem = 'uuid-column-without-key-constraint'
+    expect(
+      isAllowedUuidConventionViolation({ table_name: table, column_name: name, problem }),
+    ).toBe(true)
+    expect(
+      isAllowedUuidConventionViolation({ table_name: 'new_records', column_name: name, problem }),
+    ).toBe(false)
+  })
+
   it('uses jsonb instead of json columns', async () => {
     const violations = await getTypeViolations('json')
 

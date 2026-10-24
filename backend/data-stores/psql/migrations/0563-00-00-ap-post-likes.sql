@@ -28,18 +28,48 @@ COMMENT ON COLUMN post_activitypub_like_tallies.activitypub_likes_score IS 'COUN
 COMMENT ON COLUMN post_activitypub_like_tallies.activitypub_likes_count IS 'Same value as activitypub_likes_score, stored separately as a plain display count in case score gains per-actor weighting later.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE TABLE IF NOT EXISTS activitypub_post_likes (
+CREATE TABLE IF NOT EXISTS activitypub_post_like_activities (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
-  post_id UUID NOT NULL REFERENCES posts ON DELETE CASCADE,
-  remote_actor_id UUID NOT NULL REFERENCES remote_actors ON DELETE CASCADE,
-  like_activitypub_id TEXT NOT NULL,
-  CHECK (char_length(like_activitypub_id) > 0 AND char_length(like_activitypub_id) <= 2048),
+  activity_id TEXT NOT NULL UNIQUE CHECK (char_length(activity_id) BETWEEN 1 AND 2048),
+  post_id UUID NOT NULL,
+  remote_actor_identity_id UUID NOT NULL,
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
-  deleted_at TIMESTAMPTZ
+  undone_at TIMESTAMPTZ,
+  CONSTRAINT uq_ap_post_like_activities__scope_id UNIQUE (id, post_id, remote_actor_identity_id)
+);
+ALTER TABLE activitypub_post_like_activities
+  ADD CONSTRAINT fk_ap_post_like_activities__post_identity
+  FOREIGN KEY (post_id) REFERENCES retained_post_identities(id)
+  ON DELETE RESTRICT NOT VALID;
+ALTER TABLE activitypub_post_like_activities
+  VALIDATE CONSTRAINT fk_ap_post_like_activities__post_identity;
+ALTER TABLE activitypub_post_like_activities
+  ADD CONSTRAINT fk_ap_post_like_activities__remote_actor_identity
+  FOREIGN KEY (remote_actor_identity_id) REFERENCES remote_actor_identities(id)
+  ON DELETE RESTRICT NOT VALID;
+ALTER TABLE activitypub_post_like_activities
+  VALIDATE CONSTRAINT fk_ap_post_like_activities__remote_actor_identity;
+CREATE INDEX IF NOT EXISTS idx_activitypub_post_like_activities__post_id
+  ON activitypub_post_like_activities (post_id);
+CREATE INDEX IF NOT EXISTS idx_activitypub_post_like_activities__remote_actor_identity_id
+  ON activitypub_post_like_activities (remote_actor_identity_id);
+COMMENT ON TABLE activitypub_post_like_activities IS 'Exact immutable Like activity identity and Undo scope retained after the tally payload and remote signing-key cache expire; never authorizes an actor.';
+COMMENT ON COLUMN activitypub_post_like_activities.activity_id IS 'Exact external Like activity URI; unique across active and undone cycles.';
+COMMENT ON COLUMN activitypub_post_like_activities.post_id IS 'Retained local post identity of the Like target.';
+COMMENT ON COLUMN activitypub_post_like_activities.remote_actor_identity_id IS 'Retained signing actor identity, checked against a live verified actor before any mutation.';
+COMMENT ON COLUMN activitypub_post_like_activities.undone_at IS 'When this Like activity was undone or replaced; an undone activity never reactivates.';
+
+CREATE TABLE IF NOT EXISTS activitypub_post_likes (
+  id UUID PRIMARY KEY,
+  post_id UUID NOT NULL REFERENCES posts ON DELETE CASCADE,
+  remote_actor_id UUID NOT NULL REFERENCES remote_actors ON DELETE RESTRICT,
+  created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
+  deleted_at TIMESTAMPTZ,
+  CONSTRAINT fk_activitypub_post_likes__activity_scope
+    FOREIGN KEY (id, post_id, remote_actor_id)
+    REFERENCES activitypub_post_like_activities(id, post_id, remote_actor_identity_id) ON DELETE RESTRICT
 );
 
--- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
-CREATE UNIQUE INDEX IF NOT EXISTS idx_activitypub_post_likes__like_activitypub_id ON activitypub_post_likes (like_activitypub_id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_activitypub_post_likes__post_remote_actor ON activitypub_post_likes (post_id, remote_actor_id) WHERE deleted_at IS NULL;
 -- RI-usable leading indexes for the post_id/remote_actor_id FKs — the unique index above is
@@ -49,12 +79,13 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_activitypub_post_likes__post_remote_actor 
 CREATE INDEX IF NOT EXISTS idx_activitypub_post_likes__post_id ON activitypub_post_likes (post_id);
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE INDEX IF NOT EXISTS idx_activitypub_post_likes__remote_actor_id ON activitypub_post_likes (remote_actor_id);
+CREATE INDEX IF NOT EXISTS idx_activitypub_post_likes__undone_retention
+  ON activitypub_post_likes (deleted_at, id) WHERE deleted_at IS NOT NULL;
 
-COMMENT ON TABLE activitypub_post_likes IS 'Append-only ledger of remote ActivityPub Like/Undo(Like) activity against local posts. FKs post_id directly (not post_activitypub_like_tallies) so writes never depend on post_activitypub_like_tallies row-creation order; the sync trigger below lazily creates it.';
+COMMENT ON TABLE activitypub_post_likes IS 'Live Like tally payload and recent Undo tombstones. Old tombstones expire while exact replay scope remains in activitypub_post_like_activities.';
 COMMENT ON COLUMN activitypub_post_likes.post_id IS 'The local post that was liked.';
 COMMENT ON COLUMN activitypub_post_likes.remote_actor_id IS 'The remote actor who sent the Like. One active row per (post_id, remote_actor_id) — see idx_activitypub_post_likes__post_remote_actor.';
-COMMENT ON COLUMN activitypub_post_likes.like_activitypub_id IS 'The inbound Like activity''s ActivityPub id; unique across active and undone cycles so an old Like cannot reactivate after inbox dedup expiry.';
-COMMENT ON COLUMN activitypub_post_likes.deleted_at IS 'Set by Undo(Like), including an Undo received before its Like. A fresh Like id inserts a new cycle; an undone id is never reactivated.';
+COMMENT ON COLUMN activitypub_post_likes.deleted_at IS 'Set by Undo(Like), including Undo before Like, or by a fresh replacement Like; tombstones expire after 30 days.';
 
 -- Keeps post_activitypub_like_tallies in sync with the count of active (deleted_at IS NULL) activitypub_post_likes rows for the
 -- affected post via an atomic delta-based upsert, not a read-then-write COUNT: two concurrent

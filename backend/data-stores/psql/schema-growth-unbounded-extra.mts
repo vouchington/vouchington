@@ -9,7 +9,6 @@ export const EXTRA_UNBOUNDED_TABLES = [
   'activitypub_actor_keys',
   'post_activitypub_like_tallies',
   'api_keys',
-  'app_attestation_keys',
   'apple_accounts',
   'bedrock_embedding_batch_entities',
   'bedrock_embedding_batches',
