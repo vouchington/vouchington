@@ -1,10 +1,6 @@
 import { enqueueContinueStoryPostRelatedUrlProjectionReconciliation } from '@queues/story-post-related-url-projections/enqueues'
 import { reconcileStoryPostRelatedUrlProjection } from '@services/stories/story-post-related-url-projection'
 
-/**
- * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
- * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/queues/README.md`.
- */
 export async function processReconcileStoryPostRelatedUrlProjections(
   dependencies: {
     reconcileStoryPostRelatedUrlProjection: typeof reconcileStoryPostRelatedUrlProjection
