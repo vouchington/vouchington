@@ -34,6 +34,14 @@
         ]
       }
     ],
+    "no-mistakes/postgres-no-nonliteral-sql-registry-key": [
+      "error",
+      { "importSpecifier": "@data-stores/psql" }
+    ],
+    "no-mistakes/postgres-no-correlated-sql-builder": [
+      "error",
+      { "builderMethods": ["append"], "tagNames": ["sql"] }
+    ],
     "no-mistakes/postgres-no-manual-transaction": [
       "error",
       {
