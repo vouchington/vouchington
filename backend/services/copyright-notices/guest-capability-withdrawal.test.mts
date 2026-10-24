@@ -13,7 +13,6 @@ import {
   issueCopyrightGuestCapability,
   revokeCopyrightGuestCapability,
 } from './index.mts'
-import { authorizeCopyrightGuestCapability } from './guest-capabilities.mts'
 
 const dayMs = 24 * 60 * 60 * 1000
 
@@ -61,8 +60,14 @@ describe('copyright guest capability revocation on withdrawal', () => {
         { change_type: 'guest_capability_revoked_by_withdrawal', changed_by_id: null },
       ])
       await expect(
-        authorizeCopyrightGuestCapability({ noticeId, token: capability.token, now }),
-      ).resolves.toBeNull()
+        appendCopyrightGuestFiling({
+          noticeId,
+          token: capability.token,
+          now,
+          kind: 'supplement',
+          statement: `revoked-${crypto.randomUUID()}`,
+        }),
+      ).rejects.toMatchObject({ status: 403 })
     }
     expect((await readCopyrightGuestCapabilityState(alreadyRevoked.id)).revoked_at).toEqual(
       staffRevokedAt,
@@ -72,12 +77,14 @@ describe('copyright guest capability revocation on withdrawal', () => {
       { change_type: 'guest_capability_revoked', changed_by_id: staff.id },
     ])
     await expect(
-      authorizeCopyrightGuestCapability({
+      appendCopyrightGuestFiling({
         noticeId: otherNoticeId,
         token: otherCase.token,
         now,
+        kind: 'supplement',
+        statement: `other-case-${crypto.randomUUID()}`,
       }),
-    ).resolves.toBe(otherCase.id)
+    ).resolves.toMatchObject({ kind: 'supplement' })
   })
 
   it('revokes the case tokens when staff admit an emailed withdrawal', async () => {
@@ -98,7 +105,13 @@ describe('copyright guest capability revocation on withdrawal', () => {
       { change_type: 'guest_capability_revoked_by_withdrawal', changed_by_id: null },
     ])
     await expect(
-      authorizeCopyrightGuestCapability({ noticeId, token: capability.token, now: new Date() }),
-    ).resolves.toBeNull()
+      appendCopyrightGuestFiling({
+        noticeId,
+        token: capability.token,
+        now: new Date(),
+        kind: 'supplement',
+        statement: `withdrawn-${crypto.randomUUID()}`,
+      }),
+    ).rejects.toMatchObject({ status: 403 })
   })
 })

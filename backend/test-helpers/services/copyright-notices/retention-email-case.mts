@@ -1,9 +1,7 @@
+import { readTestRepeatInfringerIncidents } from '../../copyright-repeat-infringer.mts'
 import { randomBytes, randomUUID } from 'node:crypto'
 import { promoteCopyrightEmailIntake } from '../../../services/copyright-notices/email-promotion.mts'
-import {
-  getCopyrightRepeatInfringerAccount,
-  recordCopyrightRepeatInfringerDisposition,
-} from '../../../services/copyright-notices/repeat-infringer-incidents.mts'
+import { recordCopyrightRepeatInfringerDisposition } from '../../../services/copyright-notices/repeat-infringer-incidents.mts'
 import { appendCopyrightEmailIntakeRecommendation } from '../../../services/copyright-notices/email-recommendations.mts'
 import { liftTestCopyrightRestriction } from '../../data-stores/psql/copyright-form-reviews.mts'
 import {
@@ -77,7 +75,7 @@ export async function createRetentionEmailCase(
   const noticeId = promoted.noticeId
   const restriction = (await getCopyrightNoticePrivateAggregate(noticeId))?.restrictions[0]
   if (!restriction) throw new Error('fixture restriction missing')
-  const incident = (await getCopyrightRepeatInfringerAccount(poster.id)).incidents.find(
+  const incident = (await readTestRepeatInfringerIncidents(poster.id)).find(
     entry => entry.copyright_notice_id === noticeId,
   )
   if (!incident) throw new Error('fixture repeat-infringer incident missing')

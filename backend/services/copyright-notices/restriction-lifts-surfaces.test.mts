@@ -9,7 +9,10 @@ import {
 } from '@voucha/test-helpers/copyright-administrator-lift-fixtures'
 import { createTestCopyrightImageFixture } from '@voucha/test-helpers/copyright-surface-target-fixtures'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
-import { getCopyrightRepeatInfringerAccount } from './repeat-infringer-incidents.mts'
+import {
+  readTestRepeatInfringerIncidents,
+  readTestRepeatInfringerOpenReviewIds,
+} from '@voucha/test-helpers/copyright-repeat-infringer'
 import { liftCopyrightRestrictionWithoutSetter } from './restriction-lifts.mts'
 import { processCopyrightActionIntent } from './index.mts'
 
@@ -58,7 +61,8 @@ describe('administrator lift for images without a live responder', () => {
     const withhold = actionIntents.find(row => row.action === 'withhold')
     if (!withhold) throw new Error('Withhold intent missing')
     await expect(processCopyrightActionIntent(withhold.id)).resolves.toBe('applied')
-    const beforeIncidents = await getCopyrightRepeatInfringerAccount(fixture.actorUserId)
+    const beforeIncidents = await readTestRepeatInfringerIncidents(fixture.actorUserId)
+    const beforeOpenReviewIds = await readTestRepeatInfringerOpenReviewIds(fixture.actorUserId)
     const administrator = await createTestUserDirect({ administrator: true })
     await liftCopyrightRestrictionWithoutSetter({
       currentUser: administrator,
@@ -92,7 +96,10 @@ describe('administrator lift for images without a live responder', () => {
       ]),
     )
     expect(restoration.some(row => row.recipient_user_id === fixture.actorUserId)).toBe(false)
-    expect(await getCopyrightRepeatInfringerAccount(fixture.actorUserId)).toEqual(beforeIncidents)
+    expect(await readTestRepeatInfringerIncidents(fixture.actorUserId)).toEqual(beforeIncidents)
+    expect(await readTestRepeatInfringerOpenReviewIds(fixture.actorUserId)).toEqual(
+      beforeOpenReviewIds,
+    )
     const statement = (await readTestCopyrightStatementIntents(noticeId)).find(
       row => row.delivery_kind === 'poster_restoration_notice' && row.channel === 'email',
     )

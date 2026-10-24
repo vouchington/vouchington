@@ -20,7 +20,7 @@ import {
 } from '@voucha/test-helpers/copyright-surface-target-fixtures'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
 import { liftCopyrightRestrictionWithoutSetter } from './restriction-lifts.mts'
-import { getCopyrightRepeatInfringerAccount } from './repeat-infringer-incidents.mts'
+import { readTestRepeatInfringerIncidents } from '@voucha/test-helpers/copyright-repeat-infringer'
 import { applyNonSpamSignedInCopyrightFormScreening } from './form-screenings.mts'
 import {
   completeCopyrightMandatoryHumanReview,
@@ -93,9 +93,9 @@ describe('independent copyright reversal sources', () => {
       rationale: 'Confirm the restriction before the appeal.',
       reviewedAt: new Date(),
     })
-    const beforeIncident = (
-      await getCopyrightRepeatInfringerAccount(fixture.actorUserId)
-    ).incidents.find(incident => incident.copyright_notice_id === restricted.noticeId)
+    const beforeIncident = (await readTestRepeatInfringerIncidents(fixture.actorUserId)).find(
+      incident => incident.copyright_notice_id === restricted.noticeId,
+    )
     expect(beforeIncident?.is_operative).toBe(true)
     const appellant = await getPrivateUserByAny(fixture.actorUserId)
     if (!appellant) throw new Error('Appellant disappeared')
@@ -119,9 +119,9 @@ describe('independent copyright reversal sources', () => {
     expect(await readTestLiftReversalFacts(restricted.restrictionId)).toMatchObject(
       onlySource('appeal'),
     )
-    const afterIncident = (
-      await getCopyrightRepeatInfringerAccount(fixture.actorUserId)
-    ).incidents.find(incident => incident.copyright_notice_id === restricted.noticeId)
+    const afterIncident = (await readTestRepeatInfringerIncidents(fixture.actorUserId)).find(
+      incident => incident.copyright_notice_id === restricted.noticeId,
+    )
     expect(afterIncident?.is_operative).toBe(false)
     await expect(applyRestore(restricted.noticeId)).resolves.toBe('applied')
     const text = (await readTestCopyrightStatementIntents(restricted.noticeId)).find(

@@ -31,7 +31,10 @@ import {
   loadCopyrightEmailRawEvidence,
   sweepCopyrightEvidenceRetention,
 } from './index.mts'
-import { getCopyrightRepeatInfringerAccount } from './repeat-infringer-incidents.mts'
+import {
+  readTestRepeatInfringerIncidents,
+  readTestRepeatInfringerOpenReviewIds,
+} from '@voucha/test-helpers/copyright-repeat-infringer'
 import { linkCopyrightEmailIntakeToNotice } from './email-threading.mts'
 import { normalizeCopyrightEmailReference } from './email-thread-references.mts'
 
@@ -79,7 +82,10 @@ describe('copyright evidence retention sweep', () => {
     )
     const skeletons = await Promise.all(noticeIds.map(id => readCopyrightRetentionSkeleton(id)))
     const incidents = await Promise.all(
-      cases.map(entry => getCopyrightRepeatInfringerAccount(entry.posterId)),
+      cases.map(entry => readTestRepeatInfringerIncidents(entry.posterId)),
+    )
+    const openReviewIds = await Promise.all(
+      cases.map(entry => readTestRepeatInfringerOpenReviewIds(entry.posterId)),
     )
     // The form case holds a finished but failed delivery, which the staff queue lists.
     const [, formCase] = cases
@@ -118,8 +124,11 @@ describe('copyright evidence retention sweep', () => {
       await expect(
         readCopyrightRetentionSkeleton(entry.noticeId, skeletons[index]),
       ).resolves.toEqual(skeletons[index])
-      await expect(getCopyrightRepeatInfringerAccount(entry.posterId)).resolves.toEqual(
+      await expect(readTestRepeatInfringerIncidents(entry.posterId)).resolves.toEqual(
         incidents[index],
+      )
+      await expect(readTestRepeatInfringerOpenReviewIds(entry.posterId)).resolves.toEqual(
+        openReviewIds[index],
       )
       await expect(readCopyrightRetentionMarker(entry.noticeId)).resolves.toEqual({
         retention_days: 30,

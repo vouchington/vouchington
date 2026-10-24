@@ -15,7 +15,10 @@ import { useStaydownMatching } from '@voucha/test-helpers/services/copyright-not
 import type { PrivateUser } from '@services/users/types'
 import { processCopyrightActionIntent, resolveCopyrightLegalHold } from './index.mts'
 import { readTestClaimantMisuseSummary } from '@voucha/test-helpers/services/copyright-notices/claimant-abuse-fixtures'
-import { getCopyrightRepeatInfringerAccount } from './repeat-infringer-incidents.mts'
+import {
+  readTestRepeatInfringerIncidents,
+  readTestRepeatInfringerOpenReviewIds,
+} from '@voucha/test-helpers/copyright-repeat-infringer'
 import {
   openHeldCounterNoticeRestore,
   recordOrdinaryCopyrightHold,
@@ -36,8 +39,8 @@ function openScene(): Promise<Scene> {
 }
 
 async function readIncident(accountUserId: string, noticeId: string) {
-  const account = await getCopyrightRepeatInfringerAccount(accountUserId)
-  return account.incidents.find(incident => incident.copyright_notice_id === noticeId)
+  const account = await readTestRepeatInfringerIncidents(accountUserId)
+  return account.find(incident => incident.copyright_notice_id === noticeId)
 }
 
 async function readRestoreState(noticeId: string): Promise<string | undefined> {
@@ -82,11 +85,11 @@ describe('statutory restoration and repeat-infringer incidents', () => {
       'statutory restoration',
     )
 
-    const account = await getCopyrightRepeatInfringerAccount(accountId)
+    const account = await readTestRepeatInfringerIncidents(accountId)
     expect(
-      account.incidents.filter(incident => incident.is_operative).map(i => i.copyright_notice_id),
+      account.filter(incident => incident.is_operative).map(i => i.copyright_notice_id),
     ).toEqual([secondNoticeId])
-    expect(account.open_review_id).toBeNull()
+    expect(await readTestRepeatInfringerOpenReviewIds(accountId)).toEqual([])
   })
 
   it('keeps counting the incident while a court hold blocks the restoration', async () => {

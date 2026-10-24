@@ -103,3 +103,17 @@ export async function readTestRepeatInfringerOpenReviewIds(accountId: string): P
   )
   return rows.map(row => row.id)
 }
+
+export async function readTestRepeatInfringerIncidents(accountId: string) {
+  const { rows } = await read<{
+    id: string
+    copyright_notice_id: string
+    is_operative: boolean
+  }>(sql`/* readTestRepeatInfringerIncidents */
+    SELECT id, copyright_notice_id, is_operative
+    FROM copyright_repeat_infringer_incidents
+    WHERE account_user_id = ${accountId}
+    ORDER BY copyright_notice_id
+  `)
+  return rows
+}

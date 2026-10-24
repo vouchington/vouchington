@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { listCopyrightRepeatInfringerAccountsForNotice } from '@services/copyright-notices'
-import { getCopyrightRepeatInfringerAccount } from '@services/copyright-notices/repeat-infringer-incidents'
+import { readTestRepeatInfringerOpenReviewIds } from '@voucha/test-helpers/copyright-repeat-infringer'
 import { createTestUser } from '@voucha/test-helpers'
 import { createRequest } from '@voucha/test-helpers/api/server'
 import { confirmTestRepeatInfringerNotice } from '@voucha/test-helpers/services/copyright-notices/repeat-infringer'
@@ -94,7 +94,6 @@ describe('copyright repeat-infringer routes', () => {
     expect(warning.body.copyright_repeat_infringer_review).toEqual(
       expect.objectContaining({ id: reviewId, outcome: 'no_action' }),
     )
-    const after = await getCopyrightRepeatInfringerAccount(poster.id)
-    expect(after.open_review_id).toBeNull()
+    expect(await readTestRepeatInfringerOpenReviewIds(poster.id)).toEqual([])
   })
 })

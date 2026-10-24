@@ -20,10 +20,7 @@ import {
   requestCopyrightGuestInformation,
   revokeCopyrightGuestCapability,
 } from './index.mts'
-import {
-  authorizeCopyrightGuestCapability,
-  copyrightGuestCapabilityMaxLifetimeMs,
-} from './guest-capabilities.mts'
+import { copyrightGuestCapabilityMaxLifetimeMs } from './guest-capabilities.mts'
 
 import { createCopyrightNoticeAggregate } from '@voucha/test-helpers/services/copyright-notices/create-notice-aggregate'
 import { getCopyrightNoticePrivateAggregate } from '@voucha/test-helpers/services/copyright-notices/private-aggregate'
@@ -81,40 +78,32 @@ describe('copyright guest capabilities', () => {
       noticeId: first.notice.id,
       expiresAt,
     })
-    await expect(
-      authorizeCopyrightGuestCapability({
-        noticeId: first.notice.id,
-        token: capability.token,
-        now,
-      }),
-    ).resolves.toBe(capability.id)
-    await expect(
-      authorizeCopyrightGuestCapability({
-        noticeId: second.notice.id,
-        token: capability.token,
-        now,
-      }),
-    ).resolves.toBeNull()
-    await expect(
-      authorizeCopyrightGuestCapability({
-        noticeId: first.notice.id,
-        token: capability.token,
-        now: expiresAt,
-      }),
-    ).resolves.toBeNull()
+    const file = (noticeId: string, token: string, filedAt: Date) =>
+      appendCopyrightGuestFiling({
+        noticeId,
+        token,
+        now: filedAt,
+        kind: 'supplement',
+        statement: `guest-capability-${crypto.randomUUID()}`,
+      })
+    await expect(file(first.notice.id, capability.token, now)).resolves.toMatchObject({
+      kind: 'supplement',
+    })
+    await expect(file(second.notice.id, capability.token, now)).rejects.toMatchObject({
+      status: 403,
+    })
+    await expect(file(first.notice.id, capability.token, expiresAt)).rejects.toMatchObject({
+      status: 403,
+    })
     await revokeCopyrightGuestCapability({
       currentUser: staff,
       noticeId: first.notice.id,
       capabilityId: capability.id,
       revokedAt: now,
     })
-    await expect(
-      authorizeCopyrightGuestCapability({
-        noticeId: first.notice.id,
-        token: capability.token,
-        now,
-      }),
-    ).resolves.toBeNull()
+    await expect(file(first.notice.id, capability.token, now)).rejects.toMatchObject({
+      status: 403,
+    })
   })
 
   it('records the issuing and revoking staff member as lifecycle events', async () => {

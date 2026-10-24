@@ -22,7 +22,7 @@ import {
   reviewCopyrightCounterNotice,
 } from './index.mts'
 import { calculateUsCounterNoticeRestorationWindow } from './deadlines.mts'
-import { getCopyrightRepeatInfringerAccount } from './repeat-infringer-incidents.mts'
+import { readTestRepeatInfringerIncidents } from '@voucha/test-helpers/copyright-repeat-infringer'
 import {
   createDueStatutoryCopyrightRestoreIntentsForDeadline,
   searchDueStatutoryCopyrightRestorationDeadlineIds,
@@ -67,9 +67,7 @@ describe('deleted community image setters and copyright response flows', () => {
     )
     const participant = await getCopyrightParticipantNoticeDetail(restricted.noticeId, setter)
     expect(participant).toBeNull()
-    await expect(getCopyrightRepeatInfringerAccount(fixture.actorUserId)).resolves.toMatchObject({
-      incidents: [],
-    })
+    await expect(readTestRepeatInfringerIncidents(fixture.actorUserId)).resolves.toEqual([])
     const withheld = await getImagePlacementForCopyright(fixture.placementId)
     expect(withheld).toMatchObject({ withheld: true, imageId: fixture.imageId })
     const withheldRecordId = await getTestMediaDeliveryRegistryRecordId({
@@ -159,9 +157,9 @@ describe('deleted community image setters and copyright response flows', () => {
         rationale: 'The restriction was reviewed and confirmed.',
         reviewedAt: new Date(),
       })
-      const incident = (
-        await getCopyrightRepeatInfringerAccount(fixture.actorUserId)
-      ).incidents.find(row => row.copyright_notice_id === restricted.noticeId)
+      const incident = (await readTestRepeatInfringerIncidents(fixture.actorUserId)).find(
+        row => row.copyright_notice_id === restricted.noticeId,
+      )
       if (!incident?.is_operative) throw new Error('Confirmed setter incident missing')
 
       const counterNotice = await createCopyrightCounterNotice(
@@ -194,11 +192,9 @@ describe('deleted community image setters and copyright response flows', () => {
         await deleteUserAndDrainForTest(setter, setter)
       }
 
-      await expect(getCopyrightRepeatInfringerAccount(fixture.actorUserId)).resolves.toMatchObject({
-        incidents: expect.arrayContaining([
-          expect.objectContaining({ id: incident.id, is_operative: true }),
-        ]),
-      })
+      await expect(readTestRepeatInfringerIncidents(fixture.actorUserId)).resolves.toEqual(
+        expect.arrayContaining([expect.objectContaining({ id: incident.id, is_operative: true })]),
+      )
 
       const window = calculateUsCounterNoticeRestorationWindow(receivedAt)
       const reviewed = await getCopyrightNoticePrivateAggregate(restricted.noticeId)
