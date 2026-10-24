@@ -128379,7 +128379,7 @@
           "validated": true
         }
       },
-      "growth": "bounded",
+      "growth": "unbounded",
       "indexes": {
         "idx_user_engagement_email_candidates__claimed": {
           "accessMethod": "btree",
