@@ -1,14 +1,12 @@
 import { existsSync } from 'node:fs'
 import { FEED_LIST_SOURCES } from './sources.mts'
 import { fetchFeedList, forgetFeedListValidators, type FeedListRead } from './fetch-feed-list.mts'
-import type { ParsedFeedEntry } from './parse.mts'
 import { getKagiCandidateBatchSize, isKagiSmallWebImportEnabled } from './import-config.mts'
 import { enqueueBulkProcessKagiFeeds } from '@queues/kagi-smallweb/enqueues'
 import onError from '@modules/on-error'
 import {
   createFeedListDirectory,
   prepareFeedListDiff,
-  prepareParsedEntriesDiff,
   readFeedListPage,
   removeFeedListDirectory,
   type FeedListChunkSource,
@@ -69,25 +67,6 @@ export async function dispatchKagiSmallWeb(
     if (cursor !== undefined)
       await forgetFeedListValidators(FEED_LIST_SOURCES.map(source => source.name))
     throw err
-  }
-}
-
-/**
- * Enqueues the new entries of the next page. Callers that already hold entries share this diff.
- * @internal Tests pass an already-built list. Production streams the download.
- */
-export async function dispatchKagiSmallWebPage(
-  allEntries: readonly ParsedFeedEntry[],
-  cursor?: string,
-  options: { incomplete?: boolean; pageSize?: number } = {},
-): Promise<DispatchKagiSmallWebResult> {
-  const pageSize = options.pageSize ?? getKagiCandidateBatchSize()
-  const directory = await createFeedListDirectory()
-  try {
-    await prepareParsedEntriesDiff(allEntries, directory)
-    return await enqueueFeedListPage(directory, cursor, pageSize, Boolean(options.incomplete))
-  } finally {
-    await removeFeedListDirectory(directory)
   }
 }
 

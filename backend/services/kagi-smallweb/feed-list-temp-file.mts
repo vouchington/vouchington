@@ -50,19 +50,6 @@ export async function prepareFeedListDiff(
   await sortAndDiff(numbered, directory)
 }
 
-/** Same diff for entries the caller already parsed. Later array entries win. */
-export async function prepareParsedEntriesDiff(
-  entries: readonly ParsedFeedEntry[],
-  directory: string,
-): Promise<void> {
-  const numbered = join(directory, 'numbered')
-  await pipeline(
-    Readable.from(entries.map((entry, index) => numberedLine(entry, index + 1))),
-    createWriteStream(numbered),
-  )
-  await sortAndDiff(numbered, directory)
-}
-
 /** One pass over the deduped file. `total` includes feeds the reader already has. */
 export async function readFeedListPage(
   directory: string,

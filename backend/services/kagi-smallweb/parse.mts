@@ -24,8 +24,7 @@ function hostnameToSlug(hostname: string): string {
 }
 
 /**
- * One list line, including a repeated URL. The file dedupe keeps the later entry; the array
- * parsers below keep the first so their existing fixtures stay stable.
+ * One list line, including a repeated URL. The file diff keeps the later entry.
  */
 function parseFeedListLine(line: string, sourceType: FeedListSourceType): ParsedFeedEntry | null {
   const trimmed = line.trim()
@@ -73,45 +72,5 @@ export async function* iterateFeedListEntries(
   if (pending.length > 0) {
     const entry = parseFeedListLine(pending, sourceType)
     if (entry) yield entry
-  }
-}
-
-function parseFeedListText(text: string, sourceType: FeedListSourceType): ParsedFeedEntry[] {
-  const seen = new Set<string>()
-  const entries: ParsedFeedEntry[] = []
-  for (const line of text.split('\n')) {
-    const entry = parseFeedListLine(line, sourceType)
-    if (!entry || seen.has(entry.feedUrl)) continue
-    seen.add(entry.feedUrl)
-    entries.push(entry)
-  }
-  return entries
-}
-
-export function parseWebFeedList(text: string): ParsedFeedEntry[] {
-  return parseFeedListText(text, 'web')
-}
-
-export function parseComicFeedList(text: string): ParsedFeedEntry[] {
-  return parseFeedListText(text, 'comic')
-}
-
-export function parseYouTubeFeedList(text: string): ParsedFeedEntry[] {
-  return parseFeedListText(text, 'youtube')
-}
-
-/** @internal Tests dispatch one source type. Production parses each list with its own parser. */
-export function parseFeedList(text: string, sourceType: FeedListSourceType): ParsedFeedEntry[] {
-  switch (sourceType) {
-    case 'web':
-      return parseWebFeedList(text)
-    case 'comic':
-      return parseComicFeedList(text)
-    case 'youtube':
-      return parseYouTubeFeedList(text)
-    default: {
-      const exhaustiveCheck: never = sourceType
-      throw new Error(`Unsupported sourceType: ${exhaustiveCheck}`)
-    }
   }
 }

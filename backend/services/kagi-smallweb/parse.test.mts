@@ -1,18 +1,15 @@
 import { describe, it, expect } from 'vitest'
-import {
-  iterateFeedListEntries,
-  parseWebFeedList,
-  parseComicFeedList,
-  parseYouTubeFeedList,
-  parseFeedList,
-} from './parse.mts'
+import { Readable } from 'node:stream'
+import { iterateFeedListEntries, type ParsedFeedEntry } from './parse.mts'
 
-describe('parseWebFeedList', () => {
-  it('parses valid feed URLs', () => {
+describe('web feed list entries', () => {
+  it('parses valid feed URLs', async () => {
     const text = `http://0x80.pl/feed.xml
 https://example.com/rss`
 
-    const entries = parseWebFeedList(text)
+    const entries: ParsedFeedEntry[] = []
+    for await (const entry of iterateFeedListEntries(Readable.from([text]), 'web'))
+      entries.push(entry)
 
     expect(entries).toHaveLength(2)
     expect(entries[0]).toEqual({
@@ -29,49 +26,58 @@ https://example.com/rss`
     })
   })
 
-  it('returns empty array for empty input', () => {
-    expect(parseWebFeedList('')).toEqual([])
+  it('returns empty array for empty input', async () => {
+    const entries: ParsedFeedEntry[] = []
+    for await (const entry of iterateFeedListEntries(Readable.from(['']), 'web'))
+      entries.push(entry)
+    expect(entries).toEqual([])
   })
 
-  it('skips blank lines', () => {
+  it('skips blank lines', async () => {
     const text = `https://a.com/feed
 
 https://b.com/feed
    `
 
-    expect(parseWebFeedList(text)).toHaveLength(2)
+    const entries: ParsedFeedEntry[] = []
+    for await (const entry of iterateFeedListEntries(Readable.from([text]), 'web'))
+      entries.push(entry)
+    expect(entries).toHaveLength(2)
   })
 
-  it('skips comment lines starting with #', () => {
+  it('skips comment lines starting with #', async () => {
     const text = `# This is a comment
 https://a.com/feed
 # Another comment
 https://b.com/feed`
 
-    expect(parseWebFeedList(text)).toHaveLength(2)
+    const entries: ParsedFeedEntry[] = []
+    for await (const entry of iterateFeedListEntries(Readable.from([text]), 'web'))
+      entries.push(entry)
+    expect(entries).toHaveLength(2)
   })
 
-  it('skips invalid URLs', () => {
+  it('skips invalid URLs', async () => {
     const text = `not-a-url
 https://valid.com/feed
 ftp://invalid.com/feed`
 
-    const entries = parseWebFeedList(text)
+    const entries: ParsedFeedEntry[] = []
+    for await (const entry of iterateFeedListEntries(Readable.from([text]), 'web'))
+      entries.push(entry)
     expect(entries).toHaveLength(1)
     expect(entries[0].feedUrl).toBe('https://valid.com/feed')
   })
-
-  it('deduplicates same URL', () => {
-    const text = `https://a.com/feed
-https://a.com/feed`
-
-    expect(parseWebFeedList(text)).toHaveLength(1)
-  })
 })
 
-describe('parseComicFeedList', () => {
-  it('parses comic feed URLs', () => {
-    const entries = parseComicFeedList('http://amphibian.com/feeds/atom')
+describe('comic feed list entries', () => {
+  it('parses comic feed URLs', async () => {
+    const entries: ParsedFeedEntry[] = []
+    for await (const entry of iterateFeedListEntries(
+      Readable.from(['http://amphibian.com/feeds/atom']),
+      'comic',
+    ))
+      entries.push(entry)
 
     expect(entries).toHaveLength(1)
     expect(entries[0]).toEqual({
@@ -83,11 +89,13 @@ describe('parseComicFeedList', () => {
   })
 })
 
-describe('parseYouTubeFeedList', () => {
-  it('parses YouTube feed format with channel names', () => {
+describe('YouTube feed list entries', () => {
+  it('parses YouTube feed format with channel names', async () => {
     const text = 'https://www.youtube.com/feeds/videos.xml?channel_id=UC_abc # Tom Scott'
 
-    const entries = parseYouTubeFeedList(text)
+    const entries: ParsedFeedEntry[] = []
+    for await (const entry of iterateFeedListEntries(Readable.from([text]), 'youtube'))
+      entries.push(entry)
 
     expect(entries).toHaveLength(1)
     expect(entries[0].feedUrl).toBe('https://www.youtube.com/feeds/videos.xml?channel_id=UC_abc')
@@ -96,39 +104,22 @@ describe('parseYouTubeFeedList', () => {
     expect(entries[0].sourceType).toBe('youtube')
   })
 
-  it('skips lines without # separator', () => {
+  it('skips lines without # separator', async () => {
     const text = 'https://www.youtube.com/feeds/videos.xml?channel_id=UC_abc'
 
-    expect(parseYouTubeFeedList(text)).toEqual([])
+    const entries: ParsedFeedEntry[] = []
+    for await (const entry of iterateFeedListEntries(Readable.from([text]), 'youtube'))
+      entries.push(entry)
+    expect(entries).toEqual([])
   })
 
-  it('skips lines with empty channel name', () => {
+  it('skips lines with empty channel name', async () => {
     const text = 'https://www.youtube.com/feeds/videos.xml?channel_id=UC_abc # '
 
-    expect(parseYouTubeFeedList(text)).toEqual([])
-  })
-
-  it('deduplicates same YouTube URL', () => {
-    const text = `https://www.youtube.com/feeds/videos.xml?channel_id=UC_abc # Channel A
-https://www.youtube.com/feeds/videos.xml?channel_id=UC_abc # Channel A`
-
-    expect(parseYouTubeFeedList(text)).toHaveLength(1)
-  })
-})
-
-describe('parseFeedList', () => {
-  it('dispatches to correct parser by source type', () => {
-    const webEntries = parseFeedList('https://a.com/feed', 'web')
-    expect(webEntries[0].sourceType).toBe('web')
-
-    const comicEntries = parseFeedList('https://b.com/feed', 'comic')
-    expect(comicEntries[0].sourceType).toBe('comic')
-
-    const ytEntries = parseFeedList(
-      'https://www.youtube.com/feeds/videos.xml?channel_id=UC_abc # Test',
-      'youtube',
-    )
-    expect(ytEntries[0].sourceType).toBe('youtube')
+    const entries: ParsedFeedEntry[] = []
+    for await (const entry of iterateFeedListEntries(Readable.from([text]), 'youtube'))
+      entries.push(entry)
+    expect(entries).toEqual([])
   })
 })
 
