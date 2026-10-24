@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import type { ActiveClassifierConfiguration } from '@services/classifiers'
-import { assertClassifierContextPolicy, requestFitsClassifierContext } from './context-policy.mts'
 import { classifierChoiceKey, classifierPrompt } from './safe-content.mts'
 import {
   configuration,
@@ -12,7 +11,7 @@ import {
 } from '@voucha/test-helpers/agents/classifiers/fixtures'
 import type {
   ChoiceClassifierBinding,
-  ExecuteClassifierDecisionInput,
+  ClassifierDecisionRequestInput,
   NoulClassifierBinding,
   TopicClassifierCandidate,
 } from './types.mts'
@@ -29,8 +28,6 @@ describe('classifier input validation', () => {
       configuration,
     ],
     ['primitive', {}, { ...configuration, primitive: 'choice' as const }],
-    ['transport', {}, { ...configuration, modelProvider: 'openrouter' as const }],
-    ['model', {}, { ...configuration, modelName: 'other-model' }],
     ['state', { state: classifierPrompt`` }, configuration],
     ['bindings', { bindings: [] }, configuration],
   ])('rejects a mismatched %s', (_name, overrides, active) => {
@@ -195,39 +192,9 @@ describe('classifier input validation', () => {
   })
 })
 
-describe('classifier context policy validation', () => {
-  it('rejects an empty model and missing exact measurer', () => {
-    expect(() =>
-      assertClassifierContextPolicy({
-        ...makeInput({}).contextPolicy,
-        model: ' ',
-      }),
-    ).toThrow('requires a model')
-    expect(() =>
-      assertClassifierContextPolicy({
-        ...makeInput({}).contextPolicy,
-        measure: null as never,
-      }),
-    ).toThrow('exact request measurer')
-  })
-
-  it.each([Number.NaN, -1, 1.5])('rejects an invalid measured token count %s', totalTokens => {
-    expect(() =>
-      requestFitsClassifierContext(
-        { state: 'state', questions: [] },
-        {
-          transport: 'openrouter',
-          model: 'typesafe/jev-1.13',
-          measure: () => ({ totalTokens }),
-        },
-      ),
-    ).toThrow('invalid totalTokens')
-  })
-})
-
 function storyInput(
-  overrides: Partial<ExecuteClassifierDecisionInput>,
-): ExecuteClassifierDecisionInput {
+  overrides: Partial<ClassifierDecisionRequestInput>,
+): ClassifierDecisionRequestInput {
   return makeInput({
     subject: { postId: null, rssFeedItemId },
     scope: {

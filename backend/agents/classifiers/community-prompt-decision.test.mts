@@ -5,7 +5,7 @@ import { assertCompleteCandidateCoverage } from './results.mts'
 import { classifierPrompt } from './safe-content.mts'
 import type {
   CommunityPromptClassifierCandidate,
-  ExecuteClassifierDecisionInput,
+  ClassifierDecisionRequestInput,
   NoulClassifierBinding,
 } from './types.mts'
 import {
@@ -16,7 +16,6 @@ import {
   configuration as topicConfiguration,
   makeClient,
   makeInput,
-  makeSingleCallInput,
   rssFeedItemId,
   topicAId,
 } from '@voucha/test-helpers/agents/classifiers/fixtures'
@@ -44,7 +43,7 @@ const promptBinding = (
 const promptBindings = (count: number) =>
   Array.from({ length: count }, (_value, index) => promptBinding(index))
 
-const promptInput = (overrides: Partial<ExecuteClassifierDecisionInput> = {}) =>
+const promptInput = (overrides: Partial<ClassifierDecisionRequestInput> = {}) =>
   makeInput({ scope: communityScope, bindings: promptBindings(2), ...overrides })
 
 describe('community prompt classifier decisions', () => {
@@ -63,7 +62,7 @@ describe('community prompt classifier decisions', () => {
     }))
 
     const prepared = await prepareSingleCallClassifierDecision(
-      makeSingleCallInput({ client, scope: communityScope, bindings: promptBindings(10) }),
+      makeInput({ client, scope: communityScope, bindings: promptBindings(10) }),
       {
         getActiveClassifierConfiguration: async () => configuration,
       },

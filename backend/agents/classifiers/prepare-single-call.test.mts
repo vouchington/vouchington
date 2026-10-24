@@ -9,7 +9,7 @@ import { classifierChoiceKey, classifierPrompt } from './safe-content.mts'
 import {
   configuration,
   makeClient,
-  makeSingleCallInput,
+  makeInput,
   rssFeedItemId,
   storyAId,
   storyBId,
@@ -32,7 +32,7 @@ describe('prepareSingleCallClassifierDecision', () => {
       raw: {},
       usage: null,
     }))
-    const prepared = await prepareSingleCallClassifierDecision(makeSingleCallInput({ client }), {
+    const prepared = await prepareSingleCallClassifierDecision(makeInput({ client }), {
       getActiveClassifierConfiguration: async () => configuration,
     })
     expect(client.requests).toHaveLength(1)
@@ -85,7 +85,7 @@ describe('prepareSingleCallClassifierDecision', () => {
     }))
     const prepared = await prepareSingleCallClassifierDecision(
       {
-        ...makeSingleCallInput({ client }),
+        ...makeInput({ client }),
         subject: { postId: null, rssFeedItemId },
         bindings: [
           {
@@ -177,7 +177,7 @@ describe('prepareSingleCallClassifierDecision', () => {
   ])('rejects %s after exactly one provider call', async (_name, response, error) => {
     const client = makeClient(response)
     await expect(
-      prepareSingleCallClassifierDecision(makeSingleCallInput({ client }), {
+      prepareSingleCallClassifierDecision(makeInput({ client }), {
         getActiveClassifierConfiguration: async () => configuration,
       }),
     ).rejects.toThrow(error)
@@ -189,12 +189,12 @@ describe('prepareSingleCallClassifierDecision', () => {
       throw new Error('must not dispatch')
     })
     await expect(
-      prepareSingleCallClassifierDecision(makeSingleCallInput({ client }), {
+      prepareSingleCallClassifierDecision(makeInput({ client }), {
         getActiveClassifierConfiguration: async () => null,
       }),
     ).rejects.toThrow('active configuration')
     await expect(
-      prepareSingleCallClassifierDecision(makeSingleCallInput({ client }), {
+      prepareSingleCallClassifierDecision(makeInput({ client }), {
         getActiveClassifierConfiguration: async () => ({
           ...configuration,
           promptVersionId: '018f9f8e-7c49-7b88-8c4a-5f8a7d586eff',
@@ -209,7 +209,7 @@ describe('prepareSingleCallClassifierDecision', () => {
       throw new StructuredDecisionError('provider-error', 'context too large', 413)
     })
     await expect(
-      prepareSingleCallClassifierDecision(makeSingleCallInput({ client }), {
+      prepareSingleCallClassifierDecision(makeInput({ client }), {
         getActiveClassifierConfiguration: async () => configuration,
       }),
     ).rejects.toThrow('context too large')
@@ -221,12 +221,12 @@ describe('prepareSingleCallClassifierDecision', () => {
       throw new Error('must not dispatch')
     })
     await expect(
-      prepareSingleCallClassifierDecision(makeSingleCallInput({ client }), {
+      prepareSingleCallClassifierDecision(makeInput({ client }), {
         getActiveClassifierConfiguration: async () => ({ ...configuration, primitive: 'score' }),
       }),
     ).rejects.toThrow('Score persistence')
     await expect(
-      prepareSingleCallClassifierDecision(makeSingleCallInput({ client, batchId: 'not-a-uuid' }), {
+      prepareSingleCallClassifierDecision(makeInput({ client, batchId: 'not-a-uuid' }), {
         getActiveClassifierConfiguration: async () => configuration,
       }),
     ).rejects.toThrow('UUIDv7')

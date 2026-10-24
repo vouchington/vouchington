@@ -91,17 +91,8 @@ State and question text are branded safe values: callers sanitize and wrap every
 then interpolate those fragments through a static template tag. Choice criteria are opaque keys,
 not user-authored labels.
 
-The caller supplies an exact, synchronous context measurer for the active provider and model. There
-is deliberately no character, byte, or candidate-count approximation. Direct TypeSafe requests are
-bounded by the documented 64,000-token request limit and the 32,000-token state-plus-longest-question
-limit. OpenRouter requests use its advertised 32,000-token model context. Questions are indivisible
-and packed by deterministic first fit in input order; a single question that cannot fit fails before
-any provider request.
-
-Shards execute sequentially through one supplied C1 client, which makes exactly one attempt per
-shard and never retries a same-route call. Every answer must map back to exactly one requested
-question and every bound
-candidate must appear exactly once across the batch. Provider calls finish before persistence begins.
+Every answer must map back to exactly one requested question and every bound candidate must appear
+exactly once across the batch. Provider calls finish before persistence begins.
 The caller supplies the prompt version it rendered; execution rejects if that version is no longer
 the classifier's active prompt before any provider call. Topic classifiers accept either a post or
 an RSS feed item subject; story classifiers accept RSS-item subjects only. `@services/classifiers`
@@ -111,10 +102,10 @@ prefiltered candidates use prompt defaults. A repeated identical batch ID return
 decision; conflicting reuse fails closed. No generic classifier code casts votes, applies labels,
 tags topics, or changes story membership.
 
-### Measurer-less single-call preparation
+### Single-call preparation
 
-The classifier-run lifecycle uses `prepareSingleCallClassifierDecision` when its provider path has
-no exact synchronous context measurer. It sends every binding in one request without inventing a
+The classifier-run lifecycle uses `prepareSingleCallClassifierDecision`. It sends every binding in
+one request without inventing a
 character, byte, or candidate-count estimate. It validates the configuration, bindings, provider
 response, and complete candidate coverage, then returns the fully bound persistence input without
 writing it. The classifier-run owner persists that input with its durable receipt transaction.
