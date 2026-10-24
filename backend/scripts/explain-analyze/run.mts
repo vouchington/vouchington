@@ -8,7 +8,10 @@ import { runMailSelection3511Scenarios } from './run-scenarios/mail-selection-35
 import { runGoogleSelection3511Scenarios } from './run-scenarios/google-selection-3511.mts'
 import { runCopyrightSelection3511Scenario } from './run-scenarios/copyright-selection-3511.mts'
 import { runProviderSourceSelection3511Scenarios } from './run-scenarios/provider-source-selection-3511.mts'
-import { runPostPublicationSelection3511Scenarios } from './run-scenarios/post-publication-selection-3511.mts'
+import {
+  runNewRootPostPublicationScenario,
+  runPostPublicationSelection3511Scenarios,
+} from './run-scenarios/post-publication-selection-3511.mts'
 import { runCategorySelection3511Scenarios } from './run-scenarios/category-selection-3511.mts'
 import { runMediaStaging3511Scenario } from './run-scenarios/media-staging-3511.mts'
 import { runMembershipVerificationSelection3511Scenario } from './run-scenarios/membership-verification-selection-3511.mts'
@@ -119,6 +122,8 @@ const RUN_STEPS: readonly (() => Promise<unknown>)[] = [
   // Keep the mixed membership corpus out of unrelated aggregate and candidate plans.
   seedVoteWeightDispatch,
   runVoteWeightDispatchScenarios,
+  // A current new root must precede the late synthetic future-ID Bedrock posts.
+  runNewRootPostPublicationScenario,
   seedSelectionWork3511AndAnalyze,
   runSelectionWork3511Scenarios,
   runBedrockSelection3511Scenarios,
