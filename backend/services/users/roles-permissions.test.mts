@@ -101,6 +101,42 @@ describe('roles-permissions', () => {
       }
     })
 
+    it('keeps a committed role grant when vote-weight admission fails', async () => {
+      const grantedUser = await createTestUser()
+      const admissionError = new Error('Injected vote-weight queue admission failure')
+      const originalAdd = voteAggregation.add
+      const reportsBefore = sentryCaptureExceptionMock.mock.calls.length
+      let matchingAdmissions = 0
+      const addSpy = vi.spyOn(voteAggregation, 'add').mockImplementation((name, data, options) => {
+        if (
+          name === jobName &&
+          typeof data === 'object' &&
+          data !== null &&
+          'userId' in data &&
+          data.userId === grantedUser.id
+        ) {
+          matchingAdmissions += 1
+          return Promise.reject(admissionError)
+        }
+        return originalAdd.call(voteAggregation, name, data, options)
+      })
+
+      try {
+        await expect(addUserRole(grantedUser.id, 'administrator')).resolves.toBeUndefined()
+
+        expect(matchingAdmissions).toBe(1)
+        expect(await countUserRoleAssignments(grantedUser.id, 'administrator')).toBe(1)
+        expect((await getTestUserRaw(grantedUser.id))?.vote_weight_recalculated_at).toBeNull()
+        expect(
+          sentryCaptureExceptionMock.mock.calls
+            .slice(reportsBefore)
+            .filter(([error]) => error === admissionError),
+        ).toHaveLength(1)
+      } finally {
+        addSpy.mockRestore()
+      }
+    })
+
     it('is idempotent for the same user and role', async () => {
       await addUserRole(user.id, 'administrator')
       await addUserRole(user.id, 'administrator')
