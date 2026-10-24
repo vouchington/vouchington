@@ -1,8 +1,5 @@
 import { TestQueue, TestWorker } from 'glide-mq/testing'
-import {
-  onEnqueueAdmission,
-  type EnqueueAdmission,
-} from '../data-stores/valkey-glide-mq/glide-mq-admission.mts'
+import { onEnqueueAdmission, type EnqueueAdmission } from '@vouchington/worker-runtime/glide-mq'
 import {
   getSharedBackgroundWorker,
   holdBackgroundDomain,

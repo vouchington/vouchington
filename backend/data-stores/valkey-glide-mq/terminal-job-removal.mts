@@ -1,7 +1,7 @@
 import { Batch } from '@glidemq/speedkey'
-import type { RetryingCommandClient } from './glide-mq-command-client.mts'
+import type { createRetryingCommandClient } from './glide-mq-command-client.mts'
 
-type CommandClient = RetryingCommandClient['client']
+type CommandClient = ReturnType<typeof createRetryingCommandClient>['client']
 
 /** Hold WATCH on one dedicated connection until native removal or explicit release. */
 export async function acquireTerminalJobRemoval(

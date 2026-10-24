@@ -3,9 +3,12 @@ import { WORKER_DEFINITIONS } from './worker-definitions.mts'
 
 type WorkerConstructor = typeof import('glide-mq').Worker
 
-const workerMock = vi.hoisted(
-  () => vi.fn<WorkerConstructor>() as Mock<WorkerConstructor> & WorkerConstructor,
-)
+const workerMock = vi.hoisted(() => {
+  const worker = vi.fn<WorkerConstructor>() as Mock<WorkerConstructor> & WorkerConstructor
+  // A worker built with a dedicated command client wraps its close() while it is constructed.
+  worker.prototype.close = vi.fn<typeof import('glide-mq').Worker.prototype.close>()
+  return worker
+})
 
 // The constructor is mocked so loading a definition starts no consumer: a live worker would drain
 // jobs that earlier files left in the in-memory queues of this fork.

@@ -17,15 +17,15 @@
   },
   "scripts": {},
   "dependencies": {
-    "@backend/worker-runtime": "workspace:^",
+    "@modules/aws": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@queues/background-cpu": "workspace:^",
     "@queues/bedrock-embeddings-batch": "workspace:^",
-    "@services/bedrock-embeddings": "workspace:^"
+    "@services/bedrock-embeddings": "workspace:^",
+    "@vouchington/worker-runtime": "^0.2.0"
   },
   "devDependencies": {
     "@aws-sdk/client-sqs": "^3.1155.0",
-    "@modules/aws": "workspace:^",
     "@voucha/test-helpers": "workspace:^"
   }
 }

@@ -137,49 +137,4 @@ describe('createWorker command client', () => {
 
     expect(getGlideMQInstances()).toContain(worker)
   })
-
-  it('closes the dedicated client when its worker closes, once', async () => {
-    const { createWorker } = await importFactory()
-    const worker = createWorker('dedicated-queue', processor, { dedicatedCommandClient: true })
-    await lastWorkerOptions().commandClient.ping()
-
-    await worker.close()
-    await worker.close(true)
-
-    expect(mockWorker.prototype.close).toHaveBeenCalledTimes(2)
-    expect(mockSpeedkeyClient.close).toHaveBeenCalledOnce()
-  })
-
-  it('closes the dedicated client even when closing the worker fails', async () => {
-    const { createWorker } = await importFactory()
-    const closeError = new Error('worker close failed')
-    vi.mocked(mockWorker.prototype.close).mockRejectedValueOnce(closeError)
-    const worker = createWorker('dedicated-queue', processor, { dedicatedCommandClient: true })
-    await lastWorkerOptions().commandClient.ping()
-
-    await expect(worker.close()).rejects.toBe(closeError)
-
-    expect(mockSpeedkeyClient.close).toHaveBeenCalledOnce()
-  })
-
-  it('opens no connection just to close a dedicated client that was never used', async () => {
-    const { createWorker } = await importFactory()
-    const worker = createWorker('dedicated-queue', processor, { dedicatedCommandClient: true })
-
-    await worker.close()
-
-    expect(mockCreateSpeedkeyClient).not.toHaveBeenCalled()
-    expect(mockSpeedkeyClient.close).not.toHaveBeenCalled()
-  })
-
-  it('leaves a shared-client worker close untouched', async () => {
-    const { createWorker, workerQueueCommandClient } = await importFactory()
-    const worker = createWorker('shared-queue', processor)
-    await workerQueueCommandClient.ping()
-
-    await worker.close()
-
-    expect(worker.close).toBe(mockWorker.prototype.close)
-    expect(mockSpeedkeyClient.close).not.toHaveBeenCalled()
-  })
 })

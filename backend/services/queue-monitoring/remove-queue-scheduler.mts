@@ -2,7 +2,7 @@ import {
   closeAndUnregisterGlideMQInstance,
   createMaintenanceQueue,
 } from '@data-stores/valkey-glide-mq'
-import { removeScheduledJobScheduler } from '@modules/scheduled-job-manifest'
+import { removeScheduledJobScheduler } from '@vouchington/worker-runtime/schedule-manifest'
 
 /**
  * @public Retained provisionally under issue #1360; external production use is unconfirmed and this

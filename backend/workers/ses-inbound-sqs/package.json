@@ -17,15 +17,15 @@
   },
   "scripts": {},
   "dependencies": {
-    "@backend/worker-runtime": "workspace:^",
+    "@modules/aws": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@queues/background": "workspace:^",
     "@queues/ses-inbound": "workspace:^",
     "@ts-shared/ses-inbound-contract": "workspace:^",
+    "@vouchington/worker-runtime": "^0.2.0",
     "http-assert": "^1.5.0"
   },
   "devDependencies": {
-    "@aws-sdk/client-sqs": "^3.1155.0",
-    "@modules/aws": "workspace:^"
+    "@aws-sdk/client-sqs": "^3.1155.0"
   }
 }

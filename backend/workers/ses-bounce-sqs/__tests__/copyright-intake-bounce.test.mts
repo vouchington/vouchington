@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as ses from '@modules/aws/ses'
-import type { SqsMessage } from '@backend/worker-runtime'
+import type { SqsMessage } from '@vouchington/worker-runtime/sqs'
 import {
   createTestRejectedCopyrightResponse,
   readTestCopyrightDeliveryIntentState,

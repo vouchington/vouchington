@@ -1,7 +1,7 @@
 /* oxlint-disable vitest/consistent-test-it, jest/consistent-test-it -- oxfmt rewrites it() to test() outside *.test.* files, and jest/no-export forbids exporting this registrar from a test file */
 import { expect, test } from 'vitest'
 
-import { WorkerQueueClassError } from '../modules/worker-queue-inventory/worker-queue-class.mts'
+import { WorkerQueueClassError } from '@vouchington/worker-runtime'
 import { workerQueuePolicy } from '../worker-runtime/index.mts'
 import {
   loadedQueues,

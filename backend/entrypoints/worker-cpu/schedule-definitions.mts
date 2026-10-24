@@ -1,4 +1,4 @@
-import type { ScheduleDefinition } from '@backend/worker-runtime'
+import type { ScheduleDefinition } from '@vouchington/worker-runtime'
 import { SCHEDULE_DEFINITIONS as IO_SCHEDULE_DEFINITIONS } from '@entrypoints/worker-io/definitions'
 import { BACKGROUND_CPU_QUEUE_NAME } from '@queues/background-cpu/config'
 

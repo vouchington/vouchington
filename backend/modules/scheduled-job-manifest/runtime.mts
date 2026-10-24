@@ -3,23 +3,22 @@ import {
   isProductionEnvironment,
   type DeployEnvironmentSource,
 } from '@ts-shared/deploy-environment'
+import {
+  upsertScheduledJobManifest as upsertSharedManifest,
+  type ScheduledJobQueue,
+} from '@vouchington/worker-runtime/schedule-manifest'
 import { clampScheduledJobRepeatToHourlyFloor } from './hourly-clamp.mts'
-import type {
-  ScheduledJobManifest,
-  ScheduledJobQueue,
-  ScheduledJobRuntimeOptions,
-} from './types.mts'
-import { validateScheduledJobRepeat } from './validation.mts'
+import type { ScheduledJobManifest } from './types.mts'
 
 export async function upsertScheduledJobManifest(
   queue: ScheduledJobQueue,
   manifest: ScheduledJobManifest,
-  // `env` and `applyHourlyFloor` are runtime.mts-local extensions (not part of the shared
-  // ScheduledJobRuntimeOptions type): `env` lets tests pin ENVIRONMENT/NODE_ENV per call instead
-  // of mutating the ambient process.env, which leaks across parallel Vitest files;
-  // `applyHourlyFloor` lets tests drive the floor directly. The real default -- staging only, via
-  // the deploy-environment accessor -- is derived from `env` below.
-  options: ScheduledJobRuntimeOptions & {
+  // `env` and `applyHourlyFloor` let tests pin ENVIRONMENT/NODE_ENV per call instead of mutating
+  // the ambient process.env, which leaks across parallel Vitest files, and drive the floor
+  // directly. The real default -- staging only, via the deploy-environment accessor -- is derived
+  // from `env` below.
+  options: {
+    nodeEnv?: string
     env?: DeployEnvironmentSource
     applyHourlyFloor?: boolean
   } = {},
@@ -35,108 +34,21 @@ export async function upsertScheduledJobManifest(
     options.nodeEnv === undefined
       ? ['production', 'staging'].includes(getDeployEnvironment(options.env))
       : ['production', 'staging'].includes(options.nodeEnv)
-  const jobs = manifest.jobs.filter(
-    job =>
+  const applyHourlyFloor =
+    options.applyHourlyFloor ?? getDeployEnvironment(options.env) === 'staging'
+  await upsertSharedManifest(queue, manifest, {
+    include: job =>
       (job.environment !== 'production' && job.environment !== 'deployed') ||
       (job.environment === 'production' && isProduction) ||
       (job.environment === 'deployed' && isDeployed),
-  )
-  const applyHourlyFloor =
-    options.applyHourlyFloor ?? getDeployEnvironment(options.env) === 'staging'
-  await registerJobs(queue, jobs, applyHourlyFloor)
-  await removeExtraSchedulers(queue, jobs)
-}
-
-export async function removeScheduledJobScheduler(
-  queue: Pick<ScheduledJobQueue, 'getRepeatableJobs' | 'removeJobScheduler'>,
-  schedulerId: string,
-): Promise<{ before: readonly string[]; after: readonly string[]; removed: boolean }> {
-  const before = (await queue.getRepeatableJobs()).map(entry => entry.name)
-  const removed = before.includes(schedulerId)
-  if (removed) await queue.removeJobScheduler(schedulerId)
-  const after = (await queue.getRepeatableJobs()).map(entry => entry.name)
-  return { before, after, removed }
-}
-
-async function registerJobs(
-  queue: ScheduledJobQueue,
-  jobs: ScheduledJobManifest['jobs'],
-  applyHourlyFloor: boolean,
-): Promise<void> {
-  const batches: { parallel: boolean; jobs: ScheduledJobManifest['jobs'][number][] }[] = []
-  for (const job of jobs) {
-    if (job.registration === 'sequential') {
-      batches.push({ parallel: false, jobs: [job] })
-    } else {
-      const batch = batches.at(-1)
-      if (batch?.parallel) batch.jobs.push(job)
-      else batches.push({ parallel: true, jobs: [job] })
-    }
-  }
-  await batches.reduce<Promise<void>>(
-    (completion, batch) => completion.then(() => registerBatch(queue, batch, applyHourlyFloor)),
-    Promise.resolve(),
-  )
-}
-
-function registerBatch(
-  queue: ScheduledJobQueue,
-  batch: { parallel: boolean; jobs: ScheduledJobManifest['jobs'][number][] },
-  applyHourlyFloor: boolean,
-): Promise<void> {
-  const registrations = batch.jobs.map(job =>
-    Promise.resolve().then(() => register(queue, job, applyHourlyFloor)),
-  )
-  return batch.parallel
-    ? Promise.all(registrations).then(() => undefined)
-    : registrations[0]!.then(() => undefined)
-}
-
-function register(
-  queue: ScheduledJobQueue,
-  job: ScheduledJobManifest['jobs'][number],
-  applyHourlyFloor: boolean,
-): Promise<unknown> {
-  const resolvedRepeat = resolve(job.repeat)
-  validateScheduledJobRepeat(resolvedRepeat, job.schedulerId, job.subMinuteJustification)
-  // The floor aligns the resolved value, not the definition: a thunk must re-resolve to its
-  // real interval on every call, and only the interval actually about to be registered matters.
-  // glide-mq keeps a stored next run only when the upserted schedule is identical, so moving an
-  // existing scheduler to :00 needs no remove-and-re-add (see the manifest docs).
-  // `environment: 'production'` jobs are excluded here too,
-  // even though the upstream filter above already excludes them whenever applyHourlyFloor would
-  // correctly be true (on staging): this is intentional defense-in-depth. It decouples "a
-  // production-flagged job is never clamped" from correct derivation of applyHourlyFloor by the
-  // caller -- the two booleans are computed independently and aren't causally linked.
-  const repeat =
-    applyHourlyFloor && job.environment !== 'production'
-      ? clampScheduledJobRepeatToHourlyFloor(resolvedRepeat).repeat
-      : resolvedRepeat
-  const data =
-    job.template.dataFactory === undefined ? job.template.data : job.template.dataFactory()
-  const template = {
-    name: job.template.name,
-    opts: resolve(job.template.opts),
-    ...(data === undefined ? {} : { data }),
-  }
-  return queue.upsertJobScheduler(job.schedulerId, repeat, template)
-}
-
-async function removeExtraSchedulers(
-  queue: ScheduledJobQueue,
-  jobs: ScheduledJobManifest['jobs'],
-): Promise<void> {
-  const desired = new Set(jobs.map(job => job.schedulerId))
-  const existing = await queue.getRepeatableJobs()
-  const extras: string[] = []
-  for (const entry of existing) {
-    if (!desired.has(entry.name)) extras.push(entry.name)
-  }
-  await Promise.all(extras.map(name => queue.removeJobScheduler(name)))
-}
-
-function resolve<T>(value: T | (() => T)): T
-function resolve<T>(value: T | (() => T) | undefined): T | undefined
-function resolve<T>(value: T | (() => T) | undefined): T | undefined {
-  return typeof value === 'function' ? (value as () => T)() : value
+    // The floor aligns the resolved value, not the definition: a thunk re-resolves to its real
+    // interval on every call, and only the interval about to be registered matters. glide-mq keeps
+    // a stored next run only when the upserted schedule is identical, so moving an existing
+    // scheduler to :00 needs no remove-and-re-add. `environment: 'production'` jobs are never
+    // clamped, decoupling that rule from how `applyHourlyFloor` was derived.
+    transformRepeat: (repeat, job) =>
+      applyHourlyFloor && job.environment !== 'production'
+        ? clampScheduledJobRepeatToHourlyFloor(repeat).repeat
+        : repeat,
+  })
 }

@@ -1,4 +1,4 @@
-import type { SqsConsumerDefinition } from '@backend/worker-runtime'
+import type { SqsConsumerDefinition } from '@vouchington/worker-runtime/sqs'
 
 export const SQS_CONSUMER_DEFINITIONS = [
   {

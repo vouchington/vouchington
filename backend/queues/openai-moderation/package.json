@@ -19,6 +19,7 @@
   "dependencies": {
     "@modules/scheduled-job-manifest": "workspace:^",
     "@queues/background": "workspace:^",
+    "@vouchington/worker-runtime": "^0.2.0",
     "glide-mq": "^0.19.0"
   }
 }
