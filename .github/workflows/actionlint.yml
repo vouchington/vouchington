@@ -22,4 +22,4 @@ concurrency:
 
 jobs:
   actionlint:
-    uses: vouchington/vouchington-tooling/.github/workflows/actionlint.yml@0e848b873d1e3302ea54141537b94bc7fbbd05fe # v0.66.0
+    uses: vouchington/vouchington-tooling/.github/workflows/actionlint.yml@f0f8a576e3dc51bb38c1bca80d2046c5124637a2 # v0.67.0
