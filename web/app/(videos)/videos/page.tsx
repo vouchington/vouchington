@@ -32,11 +32,15 @@ export default async function VideosPage({
         <div className='flex flex-wrap gap-2'>
           {fediverseEnabled ? (
             <Button
-              data-pw='videos-search-peertube'
               asChild
               variant='outline'
             >
-              <Link href='/fediverse?provider=peertube'>Search PeerTube</Link>
+              <Link
+                data-pw='videos-search-peertube'
+                href='/fediverse?provider=peertube'
+              >
+                Search PeerTube
+              </Link>
             </Button>
           ) : null}
           <AddSourceButton kind='video' />

@@ -84,6 +84,7 @@ test.describe('contribution gating — email_verification_required', () => {
 
     await expect(page.getByTestId('contribution-gated-cta')).toBeVisible()
     await expect(page.getByTestId('contribution-gated-cta-secondary')).toBeVisible()
+    await expect(page.getByTestId('contribution-gated-cta-email-recovery')).toBeVisible()
     await expect(page.getByTestId('post-form')).not.toBeAttached()
   })
 
@@ -121,9 +122,14 @@ test.describe('contribution gating — eligible user sees form', () => {
     await navigateTo(page, '/discussions/create')
 
     await expect(page.getByTestId('post-form')).toBeVisible()
+    await expect(page.getByTestId('form-actions-cancel')).toBeVisible()
     await expect(page.getByTestId('contribution-gated-cta')).not.toBeAttached()
-    await page.getByRole('button', { name: 'Add Category' }).click()
+    await page.getByTestId('discussion-fields-add-category').click()
     await expect(page.getByTestId('discussion-hashtag-category').first()).toBeVisible()
+    await expect(page.getByTestId('discussion-fields-add-category')).toBeVisible()
+    await expect(page.getByTestId('discussion-fields-move-category-up').first()).toBeVisible()
+    await expect(page.getByTestId('discussion-fields-move-category-down').first()).toBeVisible()
+    await expect(page.getByTestId('discussion-fields-remove-category').first()).toBeVisible()
   })
 })
 

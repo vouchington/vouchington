@@ -33,7 +33,10 @@ export function ReferralLinkFeedCard({ item, user }: ReferralLinkFeedCardProps) 
                 username={user.username}
                 size='sm'
               />
-              <UserLink user={user} />
+              <UserLink
+                data-pw='referral-link-feed-card-user-link'
+                user={user}
+              />
             </div>
           )}
           <div className='flex flex-col gap-1'>
@@ -54,6 +57,7 @@ export function ReferralLinkFeedCard({ item, user }: ReferralLinkFeedCardProps) 
               size='sm'
             >
               <ExternalLink
+                data-pw='referral-link-feed-card-open'
                 href={item.url}
                 ugc
               >

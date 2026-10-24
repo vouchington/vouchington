@@ -88,6 +88,7 @@ export function CommentNodeActions({
             {t('extracted.comments.commentNodeActions.reply_c253f451')}
           </Button>
           <Button
+            data-pw='comment-node-actions-quote'
             type='button'
             variant='ghost'
             onClick={() => onQuote(post)}

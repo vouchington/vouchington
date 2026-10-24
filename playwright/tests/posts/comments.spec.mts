@@ -52,6 +52,8 @@ test.describe('Comments', () => {
     await expect(commentBodies.filter({ hasText: 'This is Reply B' })).toBeVisible()
     await expect(commentBodies.filter({ hasText: 'This is Reply D' })).toBeVisible()
     await expect(commentBodies.filter({ hasText: 'This is Reply C' })).toBeVisible()
+    await expect(page.getByTestId('comment-node-actions-quote').first()).toBeVisible()
+    await expect(page.getByTestId('post-lock-button-toggle').first()).toBeVisible()
   })
 
   test('comment collapse hides children', async ({ page }) => {
@@ -100,6 +102,10 @@ test.describe('Comments', () => {
     // Reply form should appear
     await expect(page.getByTestId('comment-reply-textarea')).toBeVisible()
     await expect(page.getByTestId('comment-reply-cancel')).toBeVisible()
+    const replyForm = page
+      .locator('form')
+      .filter({ has: page.getByTestId('comment-reply-textarea') })
+    await expect(replyForm.getByTestId('comment-reply-form-edit')).toBeVisible()
   })
 
   test('cancel button hides reply form', async ({ page }) => {
@@ -185,7 +191,8 @@ test.describe('Comments', () => {
     await expect(commentBodies.filter({ hasText: 'This is Comment A' })).toBeVisible()
 
     // Seeded comments are authored by 'tests' — click the first user-link
-    const usernameLink = page.getByTestId('user-link').first()
+    const usernameLink = page.getByTestId('comment-node-header-author-name').first()
+    await expect(page.getByTestId('comment-node-header-author-avatar').first()).toBeVisible()
     await expect(usernameLink).toBeVisible()
     await usernameLink.click()
 
@@ -206,7 +213,9 @@ test.describe('Comments', () => {
         has: page.getByTestId('comment-node-content').filter({ hasText: 'This is Comment A' }),
       })
       .first()
-    await commentA.getByLabel('Collapse comment metadata row').first().click()
+    const toggle = commentA.getByTestId('comment-node-header-toggle-thread').first()
+    await expect(toggle).toBeVisible()
+    await toggle.click()
 
     await expect(commentBodies.filter({ hasText: 'This is Reply B' })).toBeHidden()
     await expect(commentBodies.filter({ hasText: 'This is Reply C' })).toBeHidden()

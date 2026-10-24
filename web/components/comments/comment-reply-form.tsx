@@ -188,6 +188,7 @@ export function CommentReplyForm({
             : t('extracted.comments.commentReplyForm.reply_c253f451')}
         </Button>
         <Button
+          data-pw='comment-reply-form-edit'
           type='button'
           variant='ghost'
           size='sm'

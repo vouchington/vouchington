@@ -3,7 +3,6 @@
  * Fetches posts data and renders filters, sort, and list
  */
 
-import Link from 'next/link'
 import { getPosts } from '@/lib/api/server'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { canCurrentUserSeeDownvotes } from '@/lib/permissions/can-see-downvotes'
@@ -14,92 +13,14 @@ import type { PostRouteConfig } from '@/lib/route-configs'
 import { AnonymousStructuredDataScript } from '@/components/seo/anonymous-structured-data-script'
 import { buildBreadcrumbsForPath } from '@/lib/navigation/breadcrumbs'
 import { createBreadcrumbSchema, createCollectionPageSchema } from '@/lib/seo/structured-data'
-import { EmptyState } from '@/components/shared/empty-state'
 import { ListSearchError } from '@/components/shared/list-search-error'
 import { getListSearchErrorMessage, isListSearchErrorResult } from '@/lib/api/list-search-error'
 import { getTranslations } from '@/lib/i18n/get-translations'
-import { Button } from '@/components/ui/button'
 import { PageWithAside } from '@/components/page-with-aside'
 import { PostsDiscoveryAside } from '@/components/asides/posts-discovery-aside'
 import { PostListTopSection } from './post-list-top-section'
+import { PostListEmptyState } from './post-list-empty-state'
 import { joinSearchParamValues } from '@/lib/search-param-values'
-
-const createRoutes: Partial<Record<string, string>> = {
-  reviews: '/reviews/create',
-  discussions: '/discussions/create',
-  'data-points': '/data-points/create',
-}
-
-function buildEmptyState(
-  config: PostRouteConfig,
-  isAuthenticated: boolean,
-  hasSearch: boolean,
-): React.ReactNode {
-  if (hasSearch) {
-    return (
-      <EmptyState
-        title='No results found'
-        description='Try adjusting your search or filters'
-        icon='search'
-      />
-    )
-  }
-
-  const createPath = createRoutes[config.pluralPath]
-  const singularLabel = config.singularPath.replace(/-/g, ' ')
-
-  if (createPath && isAuthenticated) {
-    return (
-      <EmptyState
-        title={`No ${config.pluralPath.replace(/-/g, ' ')} yet`}
-        description={`Be the first to share a ${singularLabel}.`}
-        icon='pen-line'
-      >
-        <Button
-          asChild
-          size='sm'
-        >
-          <Link
-            href={createPath}
-            prefetch={false}
-          >
-            Create {singularLabel}
-          </Link>
-        </Button>
-      </EmptyState>
-    )
-  }
-
-  if (createPath && !isAuthenticated) {
-    return (
-      <EmptyState
-        title={`No ${config.pluralPath.replace(/-/g, ' ')} yet`}
-        description={`Sign in to share a ${singularLabel}.`}
-        icon='pen-line'
-      >
-        <Button
-          asChild
-          size='sm'
-          variant='outline'
-        >
-          <Link
-            href='/login'
-            prefetch={false}
-          >
-            Sign in
-          </Link>
-        </Button>
-      </EmptyState>
-    )
-  }
-
-  return (
-    <EmptyState
-      title={`No ${config.pluralPath.replace(/-/g, ' ')} found`}
-      description='Try adjusting your search or filters'
-    />
-  )
-}
 
 interface PostListPageProps {
   config: PostRouteConfig
@@ -136,7 +57,13 @@ export async function PostListPage({ config, searchParams }: PostListPageProps) 
   const searchError = hasSearchError ? dataResult.error : null
   const data = hasSearchError ? null : dataResult
 
-  const emptyState = buildEmptyState(config, !!currentUser, !!q || !!topics)
+  const emptyState = (
+    <PostListEmptyState
+      config={config}
+      isAuthenticated={!!currentUser}
+      hasSearch={!!q || !!topics}
+    />
+  )
 
   const breadcrumbItems = buildBreadcrumbsForPath(`/${config.pluralPath}`, {
     isAuthenticated: !!currentUser,

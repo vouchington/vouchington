@@ -40,6 +40,7 @@ export function DnsInstructions({
         </p>
       </div>
       <Button
+        data-pw='verification-token-instructions-copy-dns-value'
         size='sm'
         variant='outline'
         onClick={() => onCopy(token.dns_instructions.value)}
@@ -91,6 +92,7 @@ export function WellKnownInstructions({
         {token.well_known_instructions.file_content}
       </p>
       <Button
+        data-pw='verification-token-instructions-verify-now'
         onClick={onVerify}
         loading={loadingVerify}
         disabled={loadingVerify}

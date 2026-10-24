@@ -110,8 +110,10 @@ test.describe('Discuss — IDENTITY_REQUIRED gate (community)', () => {
     await page.getByTestId('news-community-discuss-menu-item').first().click()
 
     // Wait for Turnstile stub token and submit
-    await expect(page.getByRole('button', { name: 'Start discussion' })).toBeEnabled()
-    await page.getByRole('button', { name: 'Start discussion' }).click()
+    await expect(
+      page.getByTestId('news-community-discussion-dialog-start-discussion'),
+    ).toBeEnabled()
+    await page.getByTestId('news-community-discussion-dialog-start-discussion').click()
 
     // Username dialog must appear — not an error toast
     await expect(page.getByTestId('username-required-dialog')).toBeVisible()
@@ -126,8 +128,10 @@ test.describe('Discuss — IDENTITY_REQUIRED gate (community)', () => {
     await page.getByTestId('news-discuss-button').first().click()
     await page.getByTestId('news-community-discuss-menu-item').first().click()
 
-    await expect(page.getByRole('button', { name: 'Start discussion' })).toBeEnabled()
-    await page.getByRole('button', { name: 'Start discussion' }).click()
+    await expect(
+      page.getByTestId('news-community-discussion-dialog-start-discussion'),
+    ).toBeEnabled()
+    await page.getByTestId('news-community-discussion-dialog-start-discussion').click()
 
     await expect(page.getByTestId('username-required-dialog')).toBeVisible()
 

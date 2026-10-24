@@ -32,6 +32,7 @@ export function FormActions({
             : t('extracted.postForm.formActions.post_a5554622')}
       </Button>
       <Button
+        data-pw='form-actions-cancel'
         type='button'
         variant='outline'
         className='w-full sm:w-auto'

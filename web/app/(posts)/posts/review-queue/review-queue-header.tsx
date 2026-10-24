@@ -36,6 +36,7 @@ export function ReviewQueueHeader({ reviewCount, flaggedCount, isPending, onRefr
         </p>
       </div>
       <Button
+        data-pw='review-queue-header-refresh-review-queue'
         variant='outline'
         size='sm'
         onClick={onRefresh}

@@ -107,6 +107,7 @@ export function ContributionGatedCta({ status, admission, actionNoun }: Contribu
         <div className='flex flex-col gap-2'>
           {status.reason === 'email_verification_required' ? (
             <Button
+              data-pw='contribution-gated-cta-email-recovery'
               onClick={() =>
                 emailRecovery?.openEmailVerificationRecovery({ onVerified: () => router.refresh() })
               }

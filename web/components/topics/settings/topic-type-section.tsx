@@ -78,6 +78,7 @@ export function TopicTypeSection({
           <p>{t('extracted.settings.topicTypeSection.sourceTopicsCannotChangeType_576b1ce8')}</p>
         )}
         <Button
+          data-pw='topic-type-section-save-topic-type'
           type='submit'
           loading={typeSaving}
           disabled={disabled || typeSaving}

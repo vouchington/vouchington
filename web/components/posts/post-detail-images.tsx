@@ -116,6 +116,7 @@ function SinglePostImage({
   return (
     <div className='flex flex-col gap-2'>
       <ImageButton
+        data-pw='post-detail-images-single-image'
         alt={image.caption || heading}
         imageId={image.imageId}
         placement={{ id: image.placementId, revision: image.placementRevision }}
@@ -155,6 +156,7 @@ function PostCarouselImage({
   return (
     <div className='flex flex-col gap-2'>
       <ImageButton
+        data-pw='post-detail-images-carousel-image'
         alt={image.caption || heading}
         imageId={image.imageId}
         placement={{ id: image.placementId, revision: image.placementRevision }}

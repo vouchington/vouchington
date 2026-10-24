@@ -41,6 +41,7 @@ export function PodcastEpisodePlayer({ episode }: PodcastEpisodePlayerProps) {
       data-pw='podcast-episode-player'
     >
       <Button
+        data-pw='podcast-episode-player-play-episode'
         variant='outline'
         size='sm'
         className='gap-2'
