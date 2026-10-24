@@ -1313,7 +1313,7 @@ importers:
         version: 0.0.3
       '@vouchington/rate-limit':
         specifier: ^0.3.0
-        version: 0.3.0(@jongleberry/api-server@3.0.1)(valkyries@0.11.1)
+        version: 0.3.0(@jongleberry/api-server@3.0.1)(valkyries@0.11.2)
       '@vouchington/session-jwt':
         specifier: ^0.0.2
         version: 0.0.2
@@ -1342,8 +1342,8 @@ importers:
         specifier: ^14.0.3
         version: 14.0.3
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@aws-sdk/client-cloudfront':
         specifier: ^3.1154.0
@@ -1498,8 +1498,8 @@ importers:
         specifier: ^2.5.3
         version: 2.5.3
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       uuid:
         specifier: ^14.0.3
@@ -1520,8 +1520,8 @@ importers:
         specifier: workspace:^
         version: link:../../config
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
 
   backend/data-stores/valkey-glide-mq:
     dependencies:
@@ -1547,8 +1547,8 @@ importers:
         specifier: ^7.1.0
         version: 7.1.0
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
 
   backend/data-stores/valkey-pubsub:
     dependencies:
@@ -1565,8 +1565,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
 
   backend/data-stores/valkey-rate-limiter:
     dependencies:
@@ -1574,8 +1574,8 @@ importers:
         specifier: workspace:^
         version: link:../valkey-core
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
 
   backend/entrypoints/api:
     dependencies:
@@ -2164,8 +2164,8 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -2757,8 +2757,8 @@ importers:
         specifier: ^0.19.0
         version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
 
   backend/queues/ai-agents:
     dependencies:
@@ -2822,8 +2822,8 @@ importers:
         specifier: ^0.19.0
         version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
 
   backend/queues/background-cpu:
     dependencies:
@@ -2840,8 +2840,8 @@ importers:
         specifier: ^0.19.0
         version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
 
   backend/queues/bedrock-embeddings:
     dependencies:
@@ -2986,8 +2986,8 @@ importers:
         specifier: ^0.19.0
         version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
 
   backend/queues/crawl-embeds:
     dependencies:
@@ -3102,8 +3102,8 @@ importers:
         specifier: ^0.19.0
         version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
 
   backend/queues/follower-distributions:
     dependencies:
@@ -3761,8 +3761,8 @@ importers:
         specifier: ^14.0.3
         version: 14.0.3
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@services/openai-agents':
         specifier: workspace:^
@@ -3841,8 +3841,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
       yazl:
         specifier: ^3.3.1
         version: 3.3.1
@@ -4027,8 +4027,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@services/users':
         specifier: workspace:^
@@ -4122,8 +4122,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -4190,8 +4190,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -4273,8 +4273,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@services/markdown':
         specifier: workspace:^
@@ -4451,8 +4451,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@types/pg-copy-streams':
         specifier: ^1.2.5
@@ -4649,8 +4649,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -4741,8 +4741,8 @@ importers:
         specifier: ^1.5.0
         version: 1.5.0
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -4825,8 +4825,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -4856,8 +4856,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       uuid:
         specifier: ^14.0.3
@@ -5020,8 +5020,8 @@ importers:
         specifier: ^14.0.3
         version: 14.0.3
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@queues/background':
         specifier: workspace:^
@@ -5309,8 +5309,8 @@ importers:
         specifier: ^14.0.3
         version: 14.0.3
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@services/ai-usage':
         specifier: workspace:^
@@ -5397,8 +5397,8 @@ importers:
         specifier: ^1.0.0
         version: 1.0.0
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -5477,8 +5477,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@services/urls':
         specifier: workspace:^
@@ -5593,8 +5593,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -5699,8 +5699,8 @@ importers:
         specifier: ^1.0.0
         version: 1.0.0
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@queues/background':
         specifier: workspace:^
@@ -5862,8 +5862,8 @@ importers:
         specifier: ^14.0.3
         version: 14.0.3
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@services/oauth-accounts':
         specifier: workspace:^
@@ -6156,7 +6156,7 @@ importers:
         version: link:../../config
       '@vouchington/dynamic-config':
         specifier: ^0.3.0
-        version: 0.3.0(valkyries@0.11.1)
+        version: 0.3.0(valkyries@0.11.2)
       '@workers/ses-inbound':
         specifier: workspace:^
         version: link:../../workers/ses-inbound
@@ -6164,8 +6164,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -6262,8 +6262,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -6306,8 +6306,8 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
 
   backend/services/email-classification:
     dependencies:
@@ -6376,8 +6376,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -6434,8 +6434,8 @@ importers:
         specifier: ^14.0.3
         version: 14.0.3
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -6586,8 +6586,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@services/post-revisions':
         specifier: workspace:^
@@ -6726,8 +6726,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -6934,8 +6934,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@services/bookmarks':
         specifier: workspace:^
@@ -6968,8 +6968,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@services/entity-relations':
         specifier: workspace:^
@@ -7054,8 +7054,8 @@ importers:
         specifier: ^14.0.3
         version: 14.0.3
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -7188,8 +7188,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
@@ -7347,8 +7347,8 @@ importers:
         specifier: ^8.12.2
         version: 8.12.2
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@services/topics':
         specifier: workspace:^
@@ -7418,8 +7418,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@services/urls':
         specifier: workspace:^
@@ -7467,8 +7467,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -7600,7 +7600,7 @@ importers:
         version: link:../../test-helpers
       '@vouchington/rate-limit':
         specifier: ^0.3.0
-        version: 0.3.0(@jongleberry/api-server@3.0.1)(valkyries@0.11.1)
+        version: 0.3.0(@jongleberry/api-server@3.0.1)(valkyries@0.11.2)
 
   backend/services/media-delivery-safety:
     dependencies:
@@ -7632,8 +7632,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@aws-sdk/client-cloudfront':
         specifier: ^3.1154.0
@@ -7708,8 +7708,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@data-stores/valkey-glide-mq':
         specifier: workspace:^
@@ -7904,8 +7904,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@services/communities':
         specifier: workspace:^
@@ -8113,8 +8113,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -8344,8 +8344,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@services/bookmarks':
         specifier: workspace:^
@@ -8457,8 +8457,8 @@ importers:
         specifier: ^14.0.3
         version: 14.0.3
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -8593,8 +8593,8 @@ importers:
         specifier: ^8.12.2
         version: 8.12.2
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -8639,8 +8639,8 @@ importers:
         specifier: ^8.12.2
         version: 8.12.2
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -8754,8 +8754,8 @@ importers:
         specifier: ^8.12.2
         version: 8.12.2
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -8837,8 +8837,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -8892,8 +8892,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -8917,8 +8917,8 @@ importers:
         specifier: ^0.0.3
         version: 0.0.3
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -9086,8 +9086,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -9148,8 +9148,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -9333,8 +9333,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@queues/cache-purge':
         specifier: workspace:^
@@ -9707,8 +9707,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -9771,8 +9771,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -9851,8 +9851,8 @@ importers:
         specifier: ^1.0.0
         version: 1.0.0
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@services/entity-relations':
         specifier: workspace:^
@@ -9906,8 +9906,8 @@ importers:
         specifier: ^14.0.3
         version: 14.0.3
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -9999,10 +9999,10 @@ importers:
         version: link:../../../ts-shared/session-jwt
       '@vouchington/rate-limit':
         specifier: ^0.3.0
-        version: 0.3.0(@jongleberry/api-server@3.0.1)(valkyries@0.11.1)
+        version: 0.3.0(@jongleberry/api-server@3.0.1)(valkyries@0.11.2)
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -10134,8 +10134,8 @@ importers:
         specifier: ^14.0.3
         version: 14.0.3
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@services/read-states':
         specifier: workspace:^
@@ -10270,8 +10270,8 @@ importers:
         specifier: ^14.0.3
         version: 14.0.3
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@queues/background':
         specifier: workspace:^
@@ -10495,8 +10495,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
 
   backend/services/spam-detection:
     dependencies:
@@ -10628,8 +10628,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -10674,8 +10674,8 @@ importers:
         specifier: ^23.0.0
         version: 23.0.0(@types/node@26.6.5)
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@services/users':
         specifier: workspace:^
@@ -10983,8 +10983,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -11284,8 +11284,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@valkey/valkey-glide':
         specifier: ^2.5.3
@@ -11433,8 +11433,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -11802,8 +11802,8 @@ importers:
         specifier: ^14.0.3
         version: 14.0.3
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@modules/csv':
         specifier: workspace:^
@@ -11854,8 +11854,8 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@services/entity-cache':
         specifier: workspace:^
@@ -11952,8 +11952,8 @@ importers:
         specifier: ^14.0.3
         version: 14.0.3
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -12148,7 +12148,7 @@ importers:
         version: 0.0.17
       '@vouchington/rate-limit':
         specifier: ^0.3.0
-        version: 0.3.0(@jongleberry/api-server@3.0.1)(valkyries@0.11.1)
+        version: 0.3.0(@jongleberry/api-server@3.0.1)(valkyries@0.11.2)
       '@vouchington/utils':
         specifier: ^0.7.5
         version: 0.7.5
@@ -12189,8 +12189,8 @@ importers:
         specifier: ^14.0.3
         version: 14.0.3
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
       vouchington-tooling:
         specifier: ^0.66.1
         version: 0.66.1(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.64.1)(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.2(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.97.0(vitest@5.0.5))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.0.5)(zod@4.6.5)
@@ -14034,8 +14034,8 @@ importers:
         specifier: ^3.9.41
         version: 3.9.41
       valkyries:
-        specifier: ^0.11.1
-        version: 0.11.1
+        specifier: ^0.11.2
+        version: 0.11.2
     devDependencies:
       '@types/mailparser':
         specifier: ^3.9.0
@@ -14337,7 +14337,7 @@ importers:
         version: 0.2.0(@cloudflare/workers-types@5.20261021.1)
       '@vouchington/rate-limit':
         specifier: ^0.3.0
-        version: 0.3.0(@jongleberry/api-server@3.0.1)(valkyries@0.11.1)
+        version: 0.3.0(@jongleberry/api-server@3.0.1)(valkyries@0.11.2)
       '@vouchington/session-jwt':
         specifier: ^0.0.2
         version: 0.0.2
@@ -23608,8 +23608,8 @@ packages:
     resolution: {integrity: sha512-TQ5pAGhd5whStmqWvYF4OjQROlmv9SMFVt37qoCBdqRffuuklWYQlCNnEs2ZaIBD1kZRNnikiZOS1eqgkar0iw==}
     engines: {node: '>= 0.10'}
 
-  valkyries@0.11.1:
-    resolution: {integrity: sha512-2pef1ePU4TCwQEWjcAlGIATfgiHwh/TNDX3ETm4C32ac/bW8gFVWbaZoopHrQCs8RebuohUsFC0EJA2XP3yfTQ==}
+  valkyries@0.11.2:
+    resolution: {integrity: sha512-0uWkJa8Q0gguMW9X3BTLk6bKjpG4HNnNvl8dfYxrQcnHoOoaDKBpzPb0gnIU/Bm604z05KQhKU/oxP3Ez3PkdA==}
     engines: {node: '>=24.0.0'}
 
   vary@1.1.2:
@@ -28840,9 +28840,9 @@ snapshots:
 
   '@vouchington/domain-verification@0.0.0': {}
 
-  '@vouchington/dynamic-config@0.3.0(valkyries@0.11.1)':
+  '@vouchington/dynamic-config@0.3.0(valkyries@0.11.2)':
     dependencies:
-      valkyries: 0.11.1
+      valkyries: 0.11.2
 
   '@vouchington/edge@0.2.0(@cloudflare/workers-types@5.20261021.1)':
     dependencies:
@@ -28928,10 +28928,10 @@ snapshots:
     dependencies:
       glide-mq: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
-  '@vouchington/rate-limit@0.3.0(@jongleberry/api-server@3.0.1)(valkyries@0.11.1)':
+  '@vouchington/rate-limit@0.3.0(@jongleberry/api-server@3.0.1)(valkyries@0.11.2)':
     dependencies:
       '@jongleberry/api-server': 3.0.1
-      valkyries: 0.11.1
+      valkyries: 0.11.2
 
   '@vouchington/request-contract-validation@0.0.3':
     dependencies:
@@ -32956,7 +32956,7 @@ snapshots:
 
   validator@13.15.35: {}
 
-  valkyries@0.11.1:
+  valkyries@0.11.2:
     dependencies:
       '@valkey/valkey-glide': 2.5.3
 

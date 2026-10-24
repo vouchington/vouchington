@@ -27,7 +27,7 @@
     "@services/entity-relations": "workspace:^",
     "@voucha/types": "workspace:^",
     "sql-template-strings": "^2.2.2",
-    "valkyries": "^0.11.1"
+    "valkyries": "^0.11.2"
   },
   "devDependencies": {
     "uuid": "^14.0.3"

@@ -32,7 +32,7 @@
     "@voucha/types": "workspace:^",
     "pg-copy-streams": "^7.0.0",
     "undici": "^8.12.2",
-    "valkyries": "^0.11.1"
+    "valkyries": "^0.11.2"
   },
   "devDependencies": {
     "@services/topics": "workspace:^",
