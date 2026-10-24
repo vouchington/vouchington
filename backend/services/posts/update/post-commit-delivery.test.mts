@@ -3,7 +3,6 @@ import { finalizePostUpdateAndDeliver } from './post-commit-delivery.mts'
 import type { enqueueOnPostUpdated } from '@queues/entity-listeners/enqueues'
 import { startPostCacheInvalidation } from '@services/entity-cache/invalidate'
 import type onError from '@modules/on-error'
-import { onPostCommitCompletion, type PostCommitCompletion } from '../post-commit-completion.mts'
 import {
   createPostCompletionFixture,
   drainOwnedTestAction,
@@ -99,36 +98,5 @@ describe('finalizePostUpdateAndDeliver', () => {
     )
     expect(bloom).toHaveBeenCalledOnce()
     expect(enqueueUpdate).not.toHaveBeenCalled()
-  })
-
-  it('retains raw cache and reporting failures while returning the durable update', async () => {
-    const input = await fixture()
-    const reportingError = new Error('reporting unavailable')
-    const events: PostCommitCompletion[] = []
-    const off = onPostCommitCompletion(event => {
-      if (event.postId === input.updatedPost.id) events.push(event)
-      return undefined
-    })
-    try {
-      await expect(
-        finalizePostUpdateAndDeliver(input, {
-          invalidatePosts: () => {
-            const failure = Promise.withResolvers<void>()
-            failure.reject(undefined)
-            return { completion: failure.promise, rejectionReported: false }
-          },
-          enqueueOnPostUpdated: () => Promise.resolve(),
-          onError: () => {
-            throw reportingError
-          },
-        }),
-      ).resolves.toBe(input.updatedPost)
-      expect(events).toHaveLength(1)
-      const settlement = await events[0]!.completion
-      expect(settlement.operations[0]).toEqual({ status: 'rejected', reason: undefined })
-      expect(settlement.reportingErrors).toEqual([reportingError])
-    } finally {
-      off()
-    }
   })
 })

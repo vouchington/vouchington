@@ -3,10 +3,7 @@ import {
   onEnqueueAdmission,
   type EnqueueAdmission,
 } from '../data-stores/valkey-glide-mq/glide-mq-admission.mts'
-import {
-  onPostCommitCompletion,
-  type PostCommitCompletion,
-} from '../services/posts/post-commit-completion.mts'
+import { getPostByAny } from '../services/posts/get.mts'
 import { getSharedBackgroundWorker } from '../../test-helpers/shared-background-worker.mts'
 import onError from '@modules/on-error'
 import {
@@ -43,7 +40,6 @@ export async function withEntityListenerCompletion<T>(
   const deadline = lifetime.signal
   const expected = targets.map(target => ({ ...target }))
   const admissions: { event: EnqueueAdmission; direct: boolean }[] = []
-  const posts: PostCommitCompletion[] = []
   const { errors, takeCleanupErrors, attempt } = createEntityListenerErrorLedger()
   const physical = new Set<string>()
   const observed = new Set<string>()
@@ -53,7 +49,6 @@ export async function withEntityListenerCompletion<T>(
   let actionSettlement: Promise<PromiseSettledResult<T>[]> | undefined
   let prepared: Promise<void> | undefined
   let offAdmission = () => {}
-  let offPost = () => {}
   let closed = false
   let cleanup: Promise<void> | undefined
   const owns = (event: EnqueueAdmission) =>
@@ -68,26 +63,23 @@ export async function withEntityListenerCompletion<T>(
       closed = true
       await attempt(() => options.release?.())
       if (prepared) await attempt(() => observeEntityListenerWork(prepared!, deadline))
-      if (actionSettlement)
-        await attempt(() => observeEntityListenerWork(actionSettlement!, deadline))
-      let postCursor = 0
+      if (actionSettlement) {
+        let settled = false
+        await attempt(async () => {
+          await observeEntityListenerWork(actionSettlement!, deadline)
+          settled = true
+        })
+        if (settled)
+          await attempt(async () => {
+            for (const target of expected) {
+              if (target.entityId || !target.postSlug) continue
+              const post = await observeEntityListenerWork(getPostByAny(target.postSlug), deadline)
+              if (post) target.entityId = post.id
+            }
+          })
+      }
       const consumed = new Set<EnqueueAdmission>()
       for (;;) {
-        while (postCursor < posts.length) {
-          const post = posts[postCursor++]!
-          const [outcome] = await Promise.allSettled([
-            observeEntityListenerWork(post.completion, deadline),
-          ])
-          if (outcome!.status === 'rejected') errors.push(outcome!.reason)
-          else
-            errors.push(
-              ...outcome!.value.operations.flatMap(result =>
-                result.status === 'rejected' ? [result.reason] : [],
-              ),
-              ...outcome!.value.observerErrors,
-              ...outcome!.value.reportingErrors,
-            )
-        }
         const batch = admissions.filter(
           ({ event, direct }) => !consumed.has(event) && (direct || owns(event)),
         )
@@ -117,7 +109,6 @@ export async function withEntityListenerCompletion<T>(
             )
         }
         if (
-          postCursor === posts.length &&
           !admissions.some(
             ({ event, direct }) => !consumed.has(event) && (direct || owns(event)),
           ) &&
@@ -128,7 +119,6 @@ export async function withEntityListenerCompletion<T>(
       recordMissingEntityTargets(expected, observed, errors)
       await attempt(() => options.restore?.())
       await attempt(offAdmission)
-      await attempt(offPost)
       await attempt(() => observer?.close())
     })())
   lifetime.register(async () => {
@@ -144,19 +134,6 @@ export async function withEntityListenerCompletion<T>(
   let result: T | undefined
   try {
     observer = observeEntityListenerTerminals()
-    offPost = onPostCommitCompletion(event => {
-      if (
-        expected.some(
-          target =>
-            target.entityId === event.postId || (target.postSlug && target.postSlug === event.slug),
-        )
-      ) {
-        for (const target of expected)
-          if (target.postSlug === event.slug) target.entityId = event.postId
-        posts.push(event)
-      }
-      return undefined
-    })
     offAdmission = onEnqueueAdmission(event => {
       const direct = context.getStore() === token
       if (

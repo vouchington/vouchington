@@ -32,7 +32,6 @@ export async function applyPostCommitSideEffects(
   const bloomKeys = [normalizeKey(post.id)]
   if (post.slug) bloomKeys.push(normalizeKey(post.slug))
   await settlePostCommitEffects(
-    { postId: post.id, slug: post.slug, kind: 'created' },
     [
       { start: () => resolvedDependencies.addEntityBloomKeys('posts', bloomKeys) },
       {

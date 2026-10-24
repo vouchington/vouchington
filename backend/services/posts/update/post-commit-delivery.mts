@@ -58,11 +58,7 @@ export async function finalizePostUpdateAndDeliver(
       isRejectionReported: () => true,
     })
   }
-  await settlePostCommitEffects(
-    { postId: updatedPost.id, slug: updatedPost.slug, kind: 'updated' },
-    operations,
-    resolvedDependencies.onError,
-  )
+  await settlePostCommitEffects(operations, resolvedDependencies.onError)
 
   return updatedPost
 }
