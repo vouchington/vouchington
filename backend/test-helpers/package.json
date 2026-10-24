@@ -48,7 +48,6 @@
     "@modules/utils": "workspace:^",
     "@modules/worker-queue-inventory": "workspace:^",
     "@queues/background": "workspace:^",
-    "@queues/background-cpu": "workspace:^",
     "@queues/entity-listeners": "workspace:^",
     "@queues/notifications": "workspace:^",
     "@queues/post-publication": "workspace:^",

@@ -9,8 +9,10 @@ import {
   getCpuProviderCooldownRemainingMs,
 } from '@services/bedrock-embeddings/provider-cooldown'
 import type { BackgroundCpuHandler, BackgroundCpuJobDefinition } from '@queues/background-cpu/types'
-import { startRealGlideBackgroundLifecycle } from '@voucha/test-helpers/real-glide-background-lifecycle'
-import type { BackgroundCpuHarness } from '@voucha/test-helpers/real-glide-background-cpu'
+import {
+  startRealGlideBackgroundLifecycle,
+  type RealGlideBackgroundHarness,
+} from '@voucha/test-helpers/real-glide-background-lifecycle'
 import {
   acquireContentAnalysisTestReservation,
   waitForQueueDomainTestResult,
@@ -25,7 +27,7 @@ const singleTopic = requireBackgroundCpuJob('bedrock-embeddings.topic')
 const contentPost = requireBackgroundCpuJob('content-analysis.post')
 
 describe('background-cpu groups through real GlideMQ', () => {
-  let harness: BackgroundCpuHarness | undefined
+  let harness: RealGlideBackgroundHarness<BackgroundCpuJobDefinition> | undefined
   let events: QueueEvents | undefined
   let reservation: ReturnType<typeof acquireContentAnalysisTestReservation> | undefined
   let pendingWork: Promise<unknown> | undefined
