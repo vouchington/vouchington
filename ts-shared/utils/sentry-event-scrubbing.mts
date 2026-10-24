@@ -5,6 +5,11 @@ import {
   scrubSpanAttributes as scrubSpans,
 } from '@vouchington/utils/observability'
 import { redactObservabilityUrl } from './observability-scrubbing.mts'
+import {
+  VOUCHA_BOT_CHALLENGE_APP_ATTEST_ASSERTION_HEADER,
+  VOUCHA_BOT_CHALLENGE_APP_ATTEST_CHALLENGE_ID_HEADER,
+  VOUCHA_BOT_CHALLENGE_TOKEN_HEADER,
+} from './bot-challenge.mts'
 
 const CREDENTIAL_HEADER_NAMES: readonly string[] = Object.freeze([
   'authorization',
@@ -17,6 +22,9 @@ const CREDENTIAL_HEADER_NAMES: readonly string[] = Object.freeze([
   'x-app-attest-assertion',
   'x-app-attest-nonce',
   'x-app-attest-challenge-id',
+  VOUCHA_BOT_CHALLENGE_TOKEN_HEADER,
+  VOUCHA_BOT_CHALLENGE_APP_ATTEST_ASSERTION_HEADER,
+  VOUCHA_BOT_CHALLENGE_APP_ATTEST_CHALLENGE_ID_HEADER,
   'stripe-signature',
   'signature',
   'copyright-guest-capability',

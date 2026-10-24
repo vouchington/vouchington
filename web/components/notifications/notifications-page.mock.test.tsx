@@ -9,13 +9,13 @@ const mockReceiveLoadMore = vi.fn<VitestLooseMock>()
 
 const {
   mockMarkAllMyNotificationsRead,
-  mockMarkMyNotificationReadKeepalive,
+  mockMarkMyNotificationRead,
   mockDeleteMyNotification,
   mockCreateMyWebPushSubscription,
   mockDeleteMyWebPushSubscription,
 } = vi.hoisted(() => ({
   mockMarkAllMyNotificationsRead: vi.fn<VitestLooseMock>(),
-  mockMarkMyNotificationReadKeepalive: vi.fn<VitestLooseMock>(),
+  mockMarkMyNotificationRead: vi.fn<VitestLooseMock>(),
   mockDeleteMyNotification: vi.fn<VitestLooseMock>(),
   mockCreateMyWebPushSubscription: vi.fn<VitestLooseMock>(),
   mockDeleteMyWebPushSubscription: vi.fn<VitestLooseMock>(),
@@ -58,7 +58,7 @@ vi.mock(import('@/lib/api/client'), () => ({
 
 vi.mock(import('@/lib/api/client/my'), () => ({
   markAllMyNotificationsRead: mockMarkAllMyNotificationsRead,
-  markMyNotificationReadKeepalive: mockMarkMyNotificationReadKeepalive,
+  markMyNotificationRead: mockMarkMyNotificationRead,
   deleteMyNotification: mockDeleteMyNotification,
   createMyWebPushSubscription: mockCreateMyWebPushSubscription,
   deleteMyWebPushSubscription: mockDeleteMyWebPushSubscription,
@@ -98,8 +98,8 @@ describe('notifications-page', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockMarkAllMyNotificationsRead.mockReset()
-    mockMarkMyNotificationReadKeepalive.mockReset()
-    mockMarkMyNotificationReadKeepalive.mockResolvedValue(undefined)
+    mockMarkMyNotificationRead.mockReset()
+    mockMarkMyNotificationRead.mockResolvedValue(undefined)
     mockDeleteMyNotification.mockReset()
     mockCreateMyWebPushSubscription.mockReset()
     mockDeleteMyWebPushSubscription.mockReset()
@@ -173,9 +173,14 @@ describe('notifications-page', () => {
       await waitFor(() => expect(mockDeleteMyNotification).toHaveBeenCalledWith('n1'))
     })
 
-    it('reports a failed best-effort read receipt without interrupting notification opening', async () => {
-      const receiptError = new Error('read receipt failed')
-      mockMarkMyNotificationReadKeepalive.mockRejectedValue(receiptError)
+    it('waits for the read receipt before opening a notification', async () => {
+      let resolveReceipt: (() => void) | undefined
+      mockMarkMyNotificationRead.mockImplementation(
+        () =>
+          new Promise<void>(resolve => {
+            resolveReceipt = resolve
+          }),
+      )
       render(
         <NotificationsPage
           initialNotifications={initialNotifications}
@@ -185,9 +190,35 @@ describe('notifications-page', () => {
 
       const onOpen = mockReceiveOpenNotification.mock.calls.at(-1)![0] as (notification: {
         id: string
-      }) => void
-      expect(() => onOpen(initialNotifications.notifications.n1)).not.toThrow()
+      }) => Promise<void>
+      const opening = onOpen(initialNotifications.notifications.n1)
+      expect(mockNavigateToTarget).not.toHaveBeenCalled()
+
+      await act(async () => {
+        resolveReceipt!()
+        await opening
+      })
+
+      expect(mockMarkMyNotificationRead).toHaveBeenCalledWith('n1')
       expect(mockNavigateToTarget).toHaveBeenCalledWith('/discussion/root-post/comment/p1')
+    })
+
+    it('reports a failed read receipt without navigating away', async () => {
+      const receiptError = new Error('read receipt failed')
+      mockMarkMyNotificationRead.mockRejectedValue(receiptError)
+      render(
+        <NotificationsPage
+          initialNotifications={initialNotifications}
+          initialSubscriptions={[]}
+        />,
+      )
+
+      const onOpen = mockReceiveOpenNotification.mock.calls.at(-1)![0] as (notification: {
+        id: string
+      }) => Promise<void>
+      await onOpen(initialNotifications.notifications.n1)
+
+      expect(mockNavigateToTarget).not.toHaveBeenCalled()
 
       await waitFor(() => {
         expect(mockCaptureException).toHaveBeenCalledWith(receiptError)

@@ -9295,6 +9295,8 @@
 {"alias":"shared.accountType.aiAgent","consumer":"web","copyId":"copy.shared.accountType.aiAgent"},
 {"alias":"shared.accountType.official","consumer":"web","copyId":"copy.shared.accountType.official"},
 {"alias":"shared.accountType.system","consumer":"web","copyId":"copy.shared.accountType.system"},
+{"alias":"shared.botChallenge.completeToContinue","consumer":"web","copyId":"copy.botChallenge.completeToContinue"},
+{"alias":"shared.botChallenge.securityVerification","consumer":"web","copyId":"copy.botChallenge.securityVerification"},
 {"alias":"shared.countLabel.format","consumer":"web","copyId":"copy.shared.countLabel.format"},
 {"alias":"shared.images.uploadPreviewUnavailable","consumer":"web","copyId":"copy.images.uploadPreviewUnavailable"},
 {"alias":"shared.oauth.consent.allow","consumer":"web","copyId":"copy.oauth.consent.allow"},

@@ -10,6 +10,7 @@ import {
   signLegacySessionJwt,
 } from '@voucha/test-helpers/services/jwt-session/index'
 import { cacheBootstrapDeviceId } from '@modules/request-client-info'
+import { hasVerifiedSessionCredential } from '@modules/request-client-info/session-credential'
 import { ATTESTED_SESSION_EXPIRATION_SECONDS } from '@ts-shared/session-jwt'
 import {
   createTestMembership,
@@ -80,6 +81,7 @@ describe('server request context', () => {
 
     await expect(context.getCurrentUser()).resolves.toBeNull()
     expect(cookieWrites).toEqual([])
+    expect(hasVerifiedSessionCredential(context.req)).toBe(false)
   })
 
   it('preserves an attested device class and session cookie lifetime when re-minting', async () => {
@@ -113,6 +115,7 @@ describe('server request context', () => {
 
     await expect(context.getCurrentUser()).resolves.toBeNull()
     expect(cookieWrites).toEqual([])
+    expect(hasVerifiedSessionCredential(context.req)).toBe(true)
   })
 
   it('downgrades and memoizes a revoked session with one replacement cookie pair', async () => {
@@ -190,6 +193,7 @@ describe('server request context', () => {
     expectUuidV7(deviceData.did)
     expect(sessionData.uid).toBeNull()
     expect(cookieWrites).toEqual([])
+    expect(hasVerifiedSessionCredential(context.req)).toBe(false)
   })
 
   it('reuses the listener bootstrap device id for an invalid device token', async () => {
