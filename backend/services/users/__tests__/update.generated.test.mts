@@ -6,7 +6,7 @@ import { getPrivateUserByAny } from '../get.mts'
 
 import assert from 'node:assert'
 
-import { it, expect, beforeAll, describe, vi } from 'vitest'
+import { it, expect, beforeAll, describe, onTestFinished, vi } from 'vitest'
 
 import type { PrivateUser } from '@services/users/types'
 
@@ -15,6 +15,12 @@ import { entityCacheBloomFilters } from '@services/entity-cache/backfill-bloom-f
 import { getUserIdByAnyCached } from '@services/entity-cache/lookups'
 
 import { ValkeyBloomFilter } from '@data-stores/valkey'
+
+import { entitiesListeners } from '@queues/entity-listeners/queues'
+
+import { holdQueueAdmission } from '@voucha/test-helpers/queue-admission-hold'
+
+import { holdBackgroundDomain } from '../../../../test-helpers/shared-background-worker.mts'
 
 describe('update.generated', () => {
   let user: PrivateUser
@@ -148,9 +154,10 @@ describe('update.generated', () => {
     assert.strictEqual(updatedUser.username, username)
   })
 
-  it('updateUserFields adds new username to users bloom filter', async () => {
+  it('waits for username Bloom write and listener admission after commit', async () => {
     const random = createRandomString(10)
     const username = safeUsername('test-user')
+    const normalizedUsername = username.toLowerCase()
     const originalUsersBloomFilter = entityCacheBloomFilters.users
     const originalConfig = originalUsersBloomFilter.getConfig()
     const testUsersBloomFilter = new ValkeyBloomFilter({
@@ -161,18 +168,69 @@ describe('update.generated', () => {
     })
 
     entityCacheBloomFilters.users = testUsersBloomFilter
+    const bloomEntered = Promise.withResolvers<void>()
+    const releaseBloom = Promise.withResolvers<void>()
+    const originalAddOrThrow = testUsersBloomFilter.addOrThrow
+    const bloomSpy = vi.spyOn(testUsersBloomFilter, 'addOrThrow').mockImplementation(async keys => {
+      if (keys.length !== 1 || keys[0] !== normalizedUsername) {
+        return originalAddOrThrow.call(testUsersBloomFilter, keys)
+      }
+      bloomEntered.resolve()
+      await releaseBloom.promise
+      await originalAddOrThrow.call(testUsersBloomFilter, keys)
+    })
+    const queueGate = holdQueueAdmission(
+      entitiesListeners,
+      'entity-listeners.processUserUpdated',
+      data => typeof data === 'object' && data !== null && 'id' in data && data.id === user.id,
+    )
+    const releaseWorker = holdBackgroundDomain('entity-listeners')
+    let update: Promise<PrivateUser | undefined> | undefined
+    let updateSettled = false
+    let cleanupPromise: Promise<void> | undefined
+    const cleanup = () => {
+      cleanupPromise ??= (async () => {
+        releaseBloom.resolve()
+        queueGate.release()
+        try {
+          await update?.catch(() => undefined)
+          await releaseWorker()
+        } finally {
+          queueGate.restore()
+          bloomSpy.mockRestore()
+          entityCacheBloomFilters.users = originalUsersBloomFilter
+          await testUsersBloomFilter.delete().catch(() => {})
+        }
+      })()
+      return cleanupPromise
+    }
+    onTestFinished(cleanup)
+
     try {
       await testUsersBloomFilter.delete()
       await testUsersBloomFilter.ensureExists()
 
-      const bloomAdds = vi.spyOn(testUsersBloomFilter, 'add')
-      await updateUserFields(user.id, { username })
-      await Promise.all(bloomAdds.mock.results.map(result => result.value))
+      update = updateUserFields(user.id, { username }).finally(() => {
+        updateSettled = true
+      })
+      await Promise.all([bloomEntered.promise, queueGate.entered])
 
-      expect(await testUsersBloomFilter.exists(username.toLowerCase())).toBe(true)
+      expect((await getPrivateUserByAny(user.id))?.username).toBe(username)
+      expect(updateSettled).toBe(false)
+
+      queueGate.release()
+      const admittedJob = await queueGate.admitted
+      expect(admittedJob?.data).toEqual({ id: user.id })
+      await new Promise<void>(resolve => setImmediate(resolve))
+      expect(updateSettled).toBe(false)
+
+      releaseBloom.resolve()
+      await update
+      expect(updateSettled).toBe(true)
+
+      expect(await testUsersBloomFilter.exists(normalizedUsername)).toBe(true)
     } finally {
-      entityCacheBloomFilters.users = originalUsersBloomFilter
-      await testUsersBloomFilter.delete().catch(() => {})
+      await cleanup()
     }
   })
 
