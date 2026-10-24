@@ -1,5 +1,6 @@
 import { expect, it, describe } from 'vitest'
 import buildCommentTreeQuery from './query-builder.mts'
+import type { CommentTreeOptions } from './types.mts'
 
 const rootId = '123e4567-e89b-12d3-a456-426614174000'
 
@@ -38,5 +39,11 @@ describe('query-builder.generated', () => {
 
     expect(sql).toContain('ORDER BY posts.votes_score_sort DESC, posts.id DESC')
     expect(sql).toContain('comment_tree.votes_score_sort AS vote_score')
+  })
+
+  it('rejects an unexpected runtime comment sort', () => {
+    expect(() =>
+      buildCommentTreeQuery(rootId, { sort: 'unexpected' } as unknown as CommentTreeOptions),
+    ).toThrow('Unknown comment sort')
   })
 })

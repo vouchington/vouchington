@@ -15,6 +15,12 @@ describe('getReportIntegrityFlags / getReportIntegrityFlagByIdFromPrimary', () =
     targetUser = await createTestUserDirect({ username: randomUsername() })
   })
 
+  it('rejects an unknown runtime status before reading flags', async () => {
+    await expect(getReportIntegrityFlags({ status: 'unknown' as 'pending' })).rejects.toThrow(
+      'Unknown integrity flag status',
+    )
+  })
+
   async function createFlag(): Promise<string> {
     const target = await createTestUserDirect({ username: randomUsername() })
     return insertTestReportIntegrityFlag({ reportedUserId: target.id, reporterCount: 5 })

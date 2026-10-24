@@ -1,3 +1,4 @@
+import { assertNever } from '@modules/utils/assert-never'
 import { query as executeQuery, read, type QueryOptions } from '@data-stores/psql'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import assert from 'http-assert'
@@ -103,8 +104,7 @@ function moderationAppealStatusPredicate(status: ModerationAppealStatus): SQLSta
       return sql`ma.resolved_at IS NOT NULL AND ma.resolution_action = 'deny'`
     case 'resolved':
       return sql`ma.resolved_at IS NOT NULL AND ma.resolution_action != 'deny'`
-    /* v8 ignore next 2 -- exhaustive selector guard; the type admits no other value */
     default:
-      throw new Error(`Unknown moderation appeal status: ${String(status)}`)
+      return assertNever(status, 'Unknown moderation appeal status')
   }
 }

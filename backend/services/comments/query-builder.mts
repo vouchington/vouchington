@@ -1,3 +1,4 @@
+import { assertNever } from '@modules/utils/assert-never'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import type { CommentTreeOptions } from './types.mts'
 import type { CommentSort } from '@voucha/types/entities/comment'
@@ -93,9 +94,8 @@ function rootCommentOrderBy(sort: CommentSort): SQLStatement {
       return sql` ORDER BY posts.votes_score_sort DESC, posts.id DESC`
     case 'new':
       return sql` ORDER BY posts.id DESC`
-    /* v8 ignore next 2 -- exhaustive selector guard; the type admits no other value */
     default:
-      throw new Error(`Unknown comment sort: ${String(sort)}`)
+      return assertNever(sort, 'Unknown comment sort')
   }
 }
 
@@ -107,9 +107,8 @@ function voteScoreColumn(sort: CommentSort): SQLStatement {
   `
     case 'new':
       return sql``
-    /* v8 ignore next 2 -- exhaustive selector guard; the type admits no other value */
     default:
-      throw new Error(`Unknown comment sort: ${String(sort)}`)
+      return assertNever(sort, 'Unknown comment sort')
   }
 }
 
@@ -119,8 +118,7 @@ function commentTreeOrderBy(sort: CommentSort): SQLStatement {
       return sql` ORDER BY comment_tree.votes_score_sort DESC, comment_tree.id DESC`
     case 'new':
       return sql` ORDER BY comment_tree.id DESC`
-    /* v8 ignore next 2 -- exhaustive selector guard; the type admits no other value */
     default:
-      throw new Error(`Unknown comment sort: ${String(sort)}`)
+      return assertNever(sort, 'Unknown comment sort')
   }
 }

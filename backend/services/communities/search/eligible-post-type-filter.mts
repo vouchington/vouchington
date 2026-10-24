@@ -1,3 +1,4 @@
+import { assertNever } from '@modules/utils/assert-never'
 import assert from 'http-assert'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import type { PrivateUser } from '@services/users/types'
@@ -34,8 +35,7 @@ function postTypeAllowanceFilter(eligiblePostType: CommunityRootPostType): SQLSt
       return sql` AND c.should_allow_data_point_posts = TRUE`
     case 'discussion':
       return sql``
-    /* v8 ignore next 2 -- exhaustive selector guard; the type admits no other value */
     default:
-      throw new Error(`Unknown eligible post type: ${String(eligiblePostType)}`)
+      return assertNever(eligiblePostType, 'Unknown eligible post type')
   }
 }

@@ -1,3 +1,4 @@
+import { assertNever } from '@modules/utils/assert-never'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import type { CommunitySortMode } from '../search-types.mts'
 import type { CommunitySearchCursor } from './cursor.mts'
@@ -29,9 +30,8 @@ export function communityCandidateSortTail(
     LIMIT ${limit + 1}`
     case 'virtual_subscriptions':
       return virtualSubscriptionTail(cursorScore, cursorId, limit, listedVirtual)
-    /* v8 ignore next 2 -- exhaustive selector guard; the type admits no other value */
     default:
-      throw new Error(`Unknown community sort: ${String(sort)}`)
+      return assertNever(sort, 'Unknown community sort')
   }
 }
 
@@ -63,8 +63,7 @@ export function communitySelectedSortOrder(sort: CommunitySortMode): SQLStatemen
       return sql` ORDER BY selected.member_count DESC, selected.id DESC`
     case 'virtual_subscriptions':
       return sql` ORDER BY selected.virtual_subscription_count DESC, selected.id DESC`
-    /* v8 ignore next 2 -- exhaustive selector guard; the type admits no other value */
     default:
-      throw new Error(`Unknown community sort: ${String(sort)}`)
+      return assertNever(sort, 'Unknown community sort')
   }
 }

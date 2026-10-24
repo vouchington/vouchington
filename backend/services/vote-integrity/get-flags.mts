@@ -1,3 +1,4 @@
+import { assertNever } from '@modules/utils/assert-never'
 import { createHash } from 'node:crypto'
 import createHttpError from 'http-errors'
 import { isUUID } from '@modules/utils'
@@ -114,8 +115,7 @@ function flagStatusPredicate(status: IntegrityFlagStatus | undefined): SQLStatem
       return sql` AND resolved_at IS NULL`
     case 'resolved':
       return sql` AND resolved_at IS NOT NULL`
-    /* v8 ignore next 2 -- exhaustive selector guard; the type admits no other value */
     default:
-      throw new Error(`Unknown integrity flag status: ${String(status)}`)
+      return assertNever(status, 'Unknown integrity flag status')
   }
 }

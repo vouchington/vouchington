@@ -1,3 +1,4 @@
+import { assertNever } from '@modules/utils/assert-never'
 import { mintUUIDv7 } from '@modules/utils/ids'
 import { beginTransaction, read, write, type QueryOptions } from '@data-stores/psql'
 import {
@@ -30,9 +31,8 @@ function retainedRootTable(family: RetainedIdentityFamily): string {
       return 'retained_rss_feed_item_identities'
     case 'image':
       return 'retained_image_identities'
-    /* v8 ignore next 2 -- exhaustive selector guard; the type admits no other value */
     default:
-      throw new Error(`Unknown retained identity family: ${String(family)}`)
+      return assertNever(family, 'Unknown retained identity family')
   }
 }
 

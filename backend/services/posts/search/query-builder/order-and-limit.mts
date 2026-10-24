@@ -1,4 +1,6 @@
+import { assertNever } from '@modules/utils/assert-never'
 import sql, { type SQLStatement } from 'sql-template-strings'
+import type { PostSearchSort } from '../types.mts'
 
 export function appendPostSearchOrderAndLimit(
   query: SQLStatement,
@@ -17,7 +19,7 @@ export function appendPostSearchOrderAndLimit(
     limit?: number
     omitLimit: boolean
     omitOrderBy: boolean
-    sort: string
+    sort: PostSearchSort
   },
 ): void {
   if (!omitOrderBy)
@@ -35,7 +37,7 @@ function appendOrderBy(
     followingRankExpression: SQLStatement | null
     hasSemanticSearch: boolean
     hasTextSearch: boolean
-    sort: string
+    sort: PostSearchSort
   },
 ): void {
   query.append(orderByClause(options))
@@ -50,7 +52,7 @@ function orderByClause({
   followingRankExpression: SQLStatement | null
   hasSemanticSearch: boolean
   hasTextSearch: boolean
-  sort: string
+  sort: PostSearchSort
 }): SQLStatement {
   switch (sort) {
     case 'new':
@@ -74,8 +76,7 @@ function orderByClause({
     ORDER BY ranking_score DESC, posts.id DESC`
         : sql`
     ORDER BY posts.id DESC`
-    /* v8 ignore next 2 -- exhaustive selector guard; the type admits no other value */
     default:
-      throw new Error(`Unknown post search sort: ${sort}`)
+      return assertNever(sort, 'Unknown post search sort')
   }
 }

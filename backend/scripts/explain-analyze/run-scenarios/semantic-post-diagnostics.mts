@@ -30,7 +30,7 @@ function eligibleQuery(options: PostSearchOptions) {
     hasTextSearch: Boolean(options.text_search_query),
     options: { ...options, sort: 'new' as const, ranking_lt: undefined, vote_score_lt: undefined },
     rankingScoreExpression: null,
-    sort: 'new',
+    sort: 'new' as const,
   }
   appendPostSearchSelectAndJoins(query, context)
   appendPostSearchWhereClause(query, context)

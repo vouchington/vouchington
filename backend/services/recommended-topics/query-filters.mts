@@ -1,3 +1,4 @@
+import { assertNever } from '@modules/utils/assert-never'
 import type { TopicTypes } from '@services/topics'
 import sql, { type SQLStatement } from 'sql-template-strings'
 
@@ -81,9 +82,8 @@ function recommendationNameColumn(sort: 'score' | 'best' | undefined): SQLStatem
     case 'score':
     case undefined:
       return sql``
-    /* v8 ignore next 2 -- exhaustive selector guard; the type admits no other value */
     default:
-      throw new Error(`Unknown recommendation sort: ${String(sort)}`)
+      return assertNever(sort, 'Unknown recommendation sort')
   }
 }
 
@@ -96,9 +96,8 @@ function recommendationOrderBy(sort: 'score' | 'best' | undefined): SQLStatement
     case undefined:
       return sql`
     ORDER BY total_score DESC, topic_id ASC`
-    /* v8 ignore next 2 -- exhaustive selector guard; the type admits no other value */
     default:
-      throw new Error(`Unknown recommendation sort: ${String(sort)}`)
+      return assertNever(sort, 'Unknown recommendation sort')
   }
 }
 

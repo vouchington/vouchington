@@ -1,7 +1,8 @@
+import { assertNever } from '@modules/utils/assert-never'
 import type { BasicUser } from '@services/users/types'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import { buildHotScoreExpression } from '../query-builder-utils.mts'
-import type { PostSearchOptions } from '../types.mts'
+import type { PostSearchOptions, PostSearchSort } from '../types.mts'
 
 export function appendPostSearchSelectAndJoins(
   query: SQLStatement,
@@ -21,7 +22,7 @@ export function appendPostSearchSelectAndJoins(
     hasTextSearch: boolean
     options: PostSearchOptions
     rankingScoreExpression: SQLStatement | null
-    sort: string
+    sort: PostSearchSort
     useSemanticCandidates?: boolean
   },
 ): void {
@@ -50,7 +51,7 @@ export function appendPostSearchSelectAndJoins(
   if (sort === 'following_new' && currentUser) appendFollowingJoin(query, currentUser.id)
 }
 
-function sortSelectColumn(sort: string): SQLStatement {
+function sortSelectColumn(sort: PostSearchSort): SQLStatement {
   switch (sort) {
     case 'best':
       return sql`,\n      posts.votes_score_sort AS vote_score\n    `
@@ -60,9 +61,8 @@ function sortSelectColumn(sort: string): SQLStatement {
     case 'following_new':
     case 'relevance':
       return sql``
-    /* v8 ignore next 2 -- exhaustive selector guard; the type admits no other value */
     default:
-      throw new Error(`Unknown post search sort: ${sort}`)
+      return assertNever(sort, 'Unknown post search sort')
   }
 }
 

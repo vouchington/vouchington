@@ -4,6 +4,16 @@ import { fetchBanEvasionReports } from './community-get-helpers.mts'
 import type { ModerationReportSort } from './sort-sql.mts'
 
 describe('fetchBanEvasionReports', () => {
+  it('rejects an unknown runtime sort with and without a cursor', async () => {
+    const sort = 'unknown' as ModerationReportSort
+    await expect(fetchBanEvasionReports(randomUUID(), 5, sort)).rejects.toThrow(
+      'Unknown moderation report sort',
+    )
+    await expect(
+      fetchBanEvasionReports(randomUUID(), 5, sort, { id: randomUUID() }),
+    ).rejects.toThrow('Unknown moderation report sort')
+  })
+
   const sorts: Array<ModerationReportSort | undefined> = [
     undefined,
     'severity',

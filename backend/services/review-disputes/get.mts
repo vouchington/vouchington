@@ -1,3 +1,4 @@
+import { assertNever } from '@modules/utils/assert-never'
 import { read, write, type QueryExecutor, type QueryOptions } from '@data-stores/psql'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import assert from 'http-assert'
@@ -161,9 +162,8 @@ function reviewDisputeStatusPredicate(status: ReviewDisputeStatus): SQLStatement
       return sql`rd.resolved_at IS NOT NULL AND rd.resolution_action = 'dismiss'`
     case 'resolved':
       return sql`rd.resolved_at IS NOT NULL AND rd.resolution_action != 'dismiss'`
-    /* v8 ignore next 2 -- exhaustive selector guard; the type admits no other value */
     default:
-      throw new Error(`Unknown review dispute status: ${String(status)}`)
+      return assertNever(status, 'Unknown review dispute status')
   }
 }
 

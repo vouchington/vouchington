@@ -1,3 +1,4 @@
+import { assertNever } from '@modules/utils/assert-never'
 import { read, write, type QueryExecutor } from '@data-stores/psql'
 import { decodeScopedUuidCursor, encodeScopedUuidCursor } from '@modules/pagination'
 import sql, { type SQLStatement } from 'sql-template-strings'
@@ -141,8 +142,7 @@ function penaltyStatusPredicate(status: 'active' | 'revoked' | undefined): SQLSt
       return sql` AND revoked_at IS NULL`
     case 'revoked':
       return sql` AND revoked_at IS NOT NULL`
-    /* v8 ignore next 2 -- exhaustive selector guard; the type admits no other value */
     default:
-      throw new Error(`Unknown penalty status: ${String(status)}`)
+      return assertNever(status, 'Unknown penalty status')
   }
 }

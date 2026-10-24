@@ -20,6 +20,12 @@ describe('getVoteWeightPenalties', () => {
     admin = await createTestUser({ administrator: true, username: randomUsername() })
   }, 5_000)
 
+  it('rejects an unknown runtime status before reading penalties', async () => {
+    await expect(getVoteWeightPenalties({ status: 'unknown' as 'active' })).rejects.toThrow(
+      'Unknown penalty status',
+    )
+  })
+
   it('gets one penalty by ID and returns null for an unknown ID', async () => {
     const user = await createTestUser({ username: randomUsername() })
     const penaltyId = await insertTestVoteWeightPenaltyRecord({

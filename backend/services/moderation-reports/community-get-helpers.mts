@@ -1,3 +1,4 @@
+import { assertNever } from '@modules/utils/assert-never'
 import { read } from '@data-stores/psql'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import { BAN_EVASION_SYSTEM_USERNAME } from '@services/users/constants'
@@ -106,9 +107,8 @@ function banEvasionAfterCursor(
     case 'created_at_desc':
     case undefined:
       return sql` AND r.id < ${afterCursor.id}::uuid`
-    /* v8 ignore next 2 -- exhaustive selector guard; the type admits no other value */
     default:
-      throw new Error(`Unknown moderation report sort: ${String(sort)}`)
+      return assertNever(sort, 'Unknown moderation report sort')
   }
 }
 
@@ -124,8 +124,7 @@ function banEvasionOrderAndLimit(
     case 'created_at_desc':
     case undefined:
       return sql` ORDER BY r.id DESC LIMIT ${limit}`
-    /* v8 ignore next 2 -- exhaustive selector guard; the type admits no other value */
     default:
-      throw new Error(`Unknown moderation report sort: ${String(sort)}`)
+      return assertNever(sort, 'Unknown moderation report sort')
   }
 }

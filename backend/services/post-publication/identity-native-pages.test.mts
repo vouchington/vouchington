@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { beginTransaction } from '@voucha/test-helpers'
 import { createTestPublicationSnapshotWork } from '@voucha/test-helpers/post-publication-fixtures'
 import { listPublicationIdentitySourcePage } from './identity-source-paging.mts'
+import { sourceBranchSql, type PublicationSourceBranch } from './identity-source-branch-sql.mts'
 import { retainStoredPublicationIdentityPage } from './retain-stored-identities.mts'
 import { createTestTopicAliasForCategoryMapping } from '@voucha/test-helpers/entities/topic-alias-category-mappings'
 import { insertTestPostTopicAliasSourceBatch } from '@voucha/test-helpers/entities/post-publication-dirty-work-batches'
@@ -22,6 +23,12 @@ import {
 } from '@voucha/test-helpers/query-capture'
 
 describe('native publication identity page progress', () => {
+  it('rejects an unexpected runtime publication source branch', () => {
+    expect(() =>
+      sourceBranchSql('unexpected' as PublicationSourceBranch, 'post-id', null, 10),
+    ).toThrow('Unknown publication source branch')
+  })
+
   it('skips source-less item pages without per-item roundtrips or losing later sources', async () => {
     const { candidate, user } = await createTestPublicationSnapshotWork()
     const { topicIds } = await insertTestPublicationTopicSlugFanout(candidate.id, user.id, 1)

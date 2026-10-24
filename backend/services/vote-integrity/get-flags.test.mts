@@ -14,6 +14,12 @@ describe('getVoteIntegrityFlags pagination compatibility', () => {
     user = await createTestUser({ username: `test-vi-flags-${randomSuffix()}` })
   })
 
+  it('rejects an unknown runtime status before reading flags', async () => {
+    await expect(getVoteIntegrityFlags({ status: 'unknown' as 'pending' })).rejects.toThrow(
+      'Unknown integrity flag status',
+    )
+  })
+
   async function createFlag(): Promise<string> {
     const suffix = randomSuffix()
     const postId = await insertTestPost({

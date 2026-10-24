@@ -6967,6 +6967,9 @@ importers:
       '@modules/pagination':
         specifier: workspace:^
         version: link:../../modules/pagination
+      '@modules/utils':
+        specifier: workspace:^
+        version: link:../../modules/utils
       '@services/pagination':
         specifier: workspace:^
         version: link:../pagination
@@ -7949,6 +7952,9 @@ importers:
       '@modules/pagination':
         specifier: workspace:^
         version: link:../../modules/pagination
+      '@modules/utils':
+        specifier: workspace:^
+        version: link:../../modules/utils
       '@queues/ai-agents':
         specifier: workspace:^
         version: link:../../queues/ai-agents
@@ -9156,6 +9162,9 @@ importers:
       '@modules/feed-query-builders':
         specifier: workspace:^
         version: link:../../modules/feed-query-builders
+      '@modules/utils':
+        specifier: workspace:^
+        version: link:../../modules/utils
       '@voucha/config':
         specifier: workspace:^
         version: link:../../config
@@ -9706,6 +9715,9 @@ importers:
       '@modules/pagination':
         specifier: workspace:^
         version: link:../../modules/pagination
+      '@modules/utils':
+        specifier: workspace:^
+        version: link:../../modules/utils
       '@services/entity-relations':
         specifier: workspace:^
         version: link:../entity-relations
@@ -9954,6 +9966,9 @@ importers:
       '@modules/pagination':
         specifier: workspace:^
         version: link:../../modules/pagination
+      '@modules/utils':
+        specifier: workspace:^
+        version: link:../../modules/utils
       '@queues/ai-agents':
         specifier: workspace:^
         version: link:../../queues/ai-agents

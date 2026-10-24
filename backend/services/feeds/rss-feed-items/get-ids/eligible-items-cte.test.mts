@@ -71,6 +71,12 @@ function communityScopedText(feedType: RssFeedItemFeedOptions['feed_type']): str
 const SOURCE_SCOPE = 'rss_feed_item_sources scope_rfis'
 
 describe('appendEligibleRssFeedItemsCTE community scope', () => {
+  it('rejects an unexpected runtime feed type for a community scope', () => {
+    expect(() => communityScopedText('unexpected' as RssFeedItemFeedOptions['feed_type'])).toThrow(
+      'Unknown RSS feed item feed type',
+    )
+  })
+
   it('scopes follow_rss_feeds feeds to followed sources only', () => {
     expect(communityScopedText('follow_rss_feeds')).toContain(SOURCE_SCOPE)
   })

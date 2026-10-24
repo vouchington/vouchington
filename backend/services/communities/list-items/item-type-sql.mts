@@ -1,3 +1,4 @@
+import { assertNever } from '@modules/utils/assert-never'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import {
   buildPublicPostEligibilityFilter,
@@ -32,9 +33,8 @@ export function listItemJoins(itemType: CommunityListItemType): SQLStatement {
     case 'rss_feed':
     case 'url':
       return sql``
-    /* v8 ignore next 2 -- exhaustive selector guard; the type admits no other value */
     default:
-      throw new Error(`Unknown community list item type: ${String(itemType)}`)
+      return assertNever(itemType, 'Unknown community list item type')
   }
 }
 
@@ -55,9 +55,8 @@ export function listItemEligibility(
     case 'rss_feed':
     case 'url':
       return sql``
-    /* v8 ignore next 2 -- exhaustive selector guard; the type admits no other value */
     default:
-      throw new Error(`Unknown community list item type: ${String(itemType)}`)
+      return assertNever(itemType, 'Unknown community list item type')
   }
 }
 
@@ -99,8 +98,7 @@ export function listItemCountBody(
       return sql` list_item
         WHERE list_item.community_id = ${communityId}
           AND list_item.removed_at IS NULL`
-    /* v8 ignore next 2 -- exhaustive selector guard; the type admits no other value */
     default:
-      throw new Error(`Unknown community list item type: ${String(itemType)}`)
+      return assertNever(itemType, 'Unknown community list item type')
   }
 }

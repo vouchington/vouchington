@@ -1,3 +1,4 @@
+import { assertNever } from '@modules/utils/assert-never'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import type { RssFeedItemFeedOptions } from '../../types.mts'
 import { appendRssFeedItemEligibilityFilters } from './eligibility-filters.mts'
@@ -93,9 +94,8 @@ function communityScopeClause(feedType: RssFeedItemFeedOptions['feed_type']): SQ
     case 'follow_users':
     case undefined:
       return sql``
-    /* v8 ignore next 2 -- exhaustive selector guard; the type admits no other value */
     default:
-      throw new Error(`Unknown RSS feed item feed type: ${String(feedType)}`)
+      return assertNever(feedType, 'Unknown RSS feed item feed type')
   }
 }
 

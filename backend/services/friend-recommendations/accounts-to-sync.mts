@@ -1,3 +1,4 @@
+import { assertNever } from '@modules/utils/assert-never'
 import { createAsyncGeneratorFromCursor, read } from '@data-stores/psql'
 import { getFriendsDispatchLimits } from './work-limits.mts'
 import type { CursorRunResult } from '@data-stores/psql/bounded-cursor-api'
@@ -20,9 +21,8 @@ function providerUserIdColumn(provider: FriendSyncProvider): string {
       return 'x_user_id'
     case 'github':
       return 'github_user_id'
-    /* v8 ignore next 2 -- exhaustive selector guard; the type admits no other value */
     default:
-      throw new Error(`Unknown friend sync provider: ${String(provider)}`)
+      return assertNever(provider, 'Unknown friend sync provider')
   }
 }
 

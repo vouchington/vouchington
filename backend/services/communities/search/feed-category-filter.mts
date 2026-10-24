@@ -1,3 +1,4 @@
+import { assertNever } from '@modules/utils/assert-never'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import type { CommunityFeedCategory } from '../search-types.mts'
 
@@ -45,8 +46,7 @@ function feedCategoryFilter(feedCategory: CommunityFeedCategory | undefined): SQ
             AND clir.removed_at IS NULL
         )
       )`
-    /* v8 ignore next 2 -- exhaustive selector guard; the type admits no other value */
     default:
-      throw new Error(`Unknown community feed category: ${String(feedCategory)}`)
+      return assertNever(feedCategory, 'Unknown community feed category')
   }
 }
