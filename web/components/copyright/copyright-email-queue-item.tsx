@@ -31,6 +31,7 @@ export function CopyrightEmailQueueItem({
   return (
     <li>
       <Button
+        data-pw='copyright-email-queue-item-select'
         disabled={disabled}
         onClick={() => onSelect(item.id)}
         variant='link'

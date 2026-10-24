@@ -43,6 +43,7 @@ export function CopyrightStaffStaydownMatches({
             <TimeAgo date={match.matched_at} />.
           </span>
           <Button
+            data-pw='copyright-staff-staydown-matches-mark-reviewed'
             disabled={pending}
             onClick={() =>
               submitRecovery(

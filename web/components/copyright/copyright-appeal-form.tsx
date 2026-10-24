@@ -70,6 +70,7 @@ export function CopyrightAppealForm({
       />
       <TurnstileField turnstile={turnstile} />
       <Button
+        data-pw='copyright-appeal-form-submit'
         type='submit'
         disabled={pending || !reason.trim() || selectedTargetIds.length === 0 || !turnstile.token}
       >

@@ -140,6 +140,7 @@ export function CopyrightStaffTerritorialReferralFields({
       )}
       <ButtonGroup>
         <Button
+          data-pw='copyright-staff-territorial-dispute-referral-submit'
           disabled={pending || !canSubmit}
           size='touchSm'
           type='submit'
