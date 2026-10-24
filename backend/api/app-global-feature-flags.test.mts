@@ -22,7 +22,7 @@ function guardedRequest(
       createRequestClientInfoListener(
         (req, res) => {
           observeClientInfo?.(getOptionalRequestClientInfo())
-          apiListener(req, res)
+          return apiListener(req, res)
         },
         {
           isEnforced: () => true,

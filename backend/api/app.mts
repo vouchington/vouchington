@@ -15,7 +15,7 @@ import { VOUCHA_API_SECURITY_HEADERS } from './security-header-helpers.mts'
 import { installRequestContractEnforcement } from './request-contract-enforcement-helpers.mts'
 import { buildApiErrorEnvelope, normalizeErrorForLogging } from '@vouchington/utils/api-errors'
 
-type HttpListener = (req: IncomingMessage, res: ServerResponse) => void
+type HttpListener = (req: IncomingMessage, res: ServerResponse) => void | Promise<void>
 
 const cfWorkerSecret = process.env.CF_WORKER_SECRET
 const isDev = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test'
@@ -67,7 +67,9 @@ export function createOriginGuardedListener(
   return createListenerWithOriginGuard(createApiRequestGuardedListener(listener), secret)
 }
 
-export function createApiRequestGuardedListener(listener: HttpListener): HttpListener {
+export function createApiRequestGuardedListener(
+  listener: HttpListener,
+): (req: IncomingMessage, res: ServerResponse) => Promise<void> {
   return createRequestContextListener(
     createRequestClientInfoListener(listener, {
       isEnforced: isRequestClientInfoEnforced,

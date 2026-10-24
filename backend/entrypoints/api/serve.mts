@@ -88,6 +88,7 @@ async function handleApiRequest(req: http.IncomingMessage, res: http.ServerRespo
     dashboardApp(req, res)
     return
   }
+  // oxlint-disable-next-line typescript/no-floating-promises -- Node discards RequestListener returns; the existing unhandledRejection handler reports escaped failures.
   apiCallback(req, res)
 }
 

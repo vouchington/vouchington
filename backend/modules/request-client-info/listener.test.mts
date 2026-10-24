@@ -212,26 +212,26 @@ describe('request client information listener', () => {
       mintDeviceId: mintUUIDv7,
       verifyDeviceIdentity: async () => null,
     })
-    listener({ method: 'GET', headers: {}, socket: {} } as IncomingMessage, {} as ServerResponse)
+    await listener(
+      { method: 'GET', headers: {}, socket: {} } as IncomingMessage,
+      {} as ServerResponse,
+    )
     expect(next).toHaveBeenCalledOnce()
 
-    await new Promise<void>(resolve => {
-      listener(
-        {
-          method: 'GET',
-          url: '/api/v1/posts',
-          headers: {
-            ...validHeaders(),
-            'x-voucha-request-kind': ['bot', 'cache-fill'],
-          },
-          socket: { remoteAddress: '127.0.0.1' },
-        } as unknown as IncomingMessage,
-        {
-          writeHead: vi.fn<ServerResponse['writeHead']>(),
-          end: () => resolve(),
-        } as unknown as ServerResponse,
-      )
-    })
+    const end = vi.fn<ServerResponse['end']>()
+    await listener(
+      {
+        method: 'GET',
+        url: '/api/v1/posts',
+        headers: {
+          ...validHeaders(),
+          'x-voucha-request-kind': ['bot', 'cache-fill'],
+        },
+        socket: { remoteAddress: '127.0.0.1' },
+      } as unknown as IncomingMessage,
+      { writeHead: vi.fn<ServerResponse['writeHead']>(), end } as unknown as ServerResponse,
+    )
+    expect(end).toHaveBeenCalledOnce()
     expect(next).toHaveBeenCalledOnce()
   })
 })

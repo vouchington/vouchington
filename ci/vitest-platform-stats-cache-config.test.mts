@@ -20,8 +20,9 @@ describe('platform-stats cache project', () => {
     expect(project).toMatchObject({
       pool: 'forks',
       isolate: true,
-      testTimeout: 30_000,
-      hookTimeout: 30_000,
+      testTimeout: 5_000,
+      hookTimeout: 5_000,
+      env: { PG_TEST_STATEMENT_TIMEOUT_MS: '2000' },
       runner: './test-helpers/vitest.runner.shared-db-scope-guard.mts',
       include: [routeTest],
       exclude: ['**/node_modules/**', '**/.git/**'],

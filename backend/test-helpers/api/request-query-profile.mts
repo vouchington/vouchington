@@ -41,11 +41,11 @@ export function requestProfileRoute(req: http.IncomingMessage): string {
  * it. Never throws into the request. Queries that complete after the response is flushed are not
  * attributed.
  */
-export function profileRequestQueries(
+export function profileRequestQueries<Result>(
   req: http.IncomingMessage,
   res: http.ServerResponse,
-  handle: () => void,
-): void {
+  handle: () => Result,
+): Result {
   const profile = createRequestQueryProfile()
   const route = requestProfileRoute(req)
   let finalized = false
@@ -61,7 +61,9 @@ export function profileRequestQueries(
     route === 'POST /ap/inbox' && typeof requestId === 'string' && isUuid(requestId)
       ? requestId
       : undefined
-  requestScopes.run({ route, splitToolCalls: false, inboxRequestId }, () => profile.run(handle))
+  return requestScopes.run({ route, splitToolCalls: false, inboxRequestId }, () =>
+    profile.run(handle),
+  )
 }
 
 /** Actual test-server ingress identity for the exempt federation route, never client-side ALS. */
