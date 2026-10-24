@@ -95,10 +95,10 @@ test.describe('Topic Recommendations', () => {
       .fill('A topic created from the browser test.')
     await page
       .getByTestId('topic-recommendation-form-topic-hostname')
-      .fill(`playwright-${stamp}.example.com`)
+      .fill(`playwright-${stamp}.example.net`)
     await page
       .getByTestId('topic-recommendation-form-topic-hostnames')
-      .fill(`playwright-${stamp}.example.com`)
+      .fill(`playwright-${stamp}.example.net`)
     await page
       .getByTestId('topic-recommendation-form-markdown')
       .fill('This topic is repeatedly discussed and should be promoted into the topic catalog.')
@@ -284,7 +284,7 @@ test.describe('Topic Recommendations', () => {
       // The landing page URLs field should now be visible — fill it before other fields
       const landingPageUrlsField = page.getByTestId('topic-recommendation-form-landing-page-urls')
       await expect(landingPageUrlsField).toBeVisible()
-      await landingPageUrlsField.fill(`https://bank-${stamp}.example.com/card-apply`)
+      await landingPageUrlsField.fill(`https://bank-${stamp}.example.net/card-apply`)
 
       await page.getByTestId('topic-recommendation-form-topic-title').pressSequentially(topicTitle)
       await page.getByTestId('topic-recommendation-form-topic-slug').fill(topicSlug)

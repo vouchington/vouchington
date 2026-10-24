@@ -1,14 +1,69 @@
-import { test, expect } from '../../helpers/test.mts'
+import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import {
   navigateTo,
+  randomSuffix,
   requireTestValue,
   waitForBelowFoldHydration,
 } from 'vouchington-tooling/playwright'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
-import { recentSeedCrawlId } from '../../../backend/scripts/seeds/crawl-ids.mts'
+import {
+  createTestUser,
+  insertTestCrawl,
+  insertTestRssFeedWithUrlId,
+  insertTestTopic,
+  insertTestUrl,
+  insertTestUrlHostname,
+} from '../../../backend/test-helpers/index.mts'
 
 test.describe('Admin URLs', () => {
   test.use({ storageState: AUTH_STATE })
+  let hostname = ''
+  let page1Url = ''
+  let page2Url = ''
+  let page1Id = ''
+  let crawlId = ''
+  let rssUrlId = ''
+  let searchToken = ''
+
+  test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
+    const suffix = randomSuffix()
+    hostname = `pw-urls-${suffix}.example.net`
+    searchToken = `pw-url-${suffix}-page1`
+    page1Url = `https://${hostname}/${searchToken}`
+    page2Url = `https://${hostname}/pw-url-${suffix}-page2`
+    const [hostnameId, maybeOwner] = await Promise.all([
+      insertTestUrlHostname({ hostname }),
+      createTestUser(),
+    ])
+    const owner = requireTestValue(maybeOwner, 'Failed to create RSS feed owner')
+    const [firstUrlId, , topicId] = await Promise.all([
+      insertTestUrl({ url: page1Url, hostnameId }),
+      insertTestUrl({ url: page2Url, hostnameId }),
+      insertTestTopic({
+        name: `Playwright URL feed ${suffix}`,
+        slug: `pw-url-feed-${suffix}`,
+        createdById: owner.id,
+      }),
+    ])
+    page1Id = firstUrlId
+    const [crawl, feed] = await Promise.all([
+      insertTestCrawl({
+        urlId: page1Id,
+        statusCode: 200,
+        markdown: '# Test Page 1',
+        title: 'Test Page 1',
+      }),
+      insertTestRssFeedWithUrlId({
+        topicId,
+        title: `Playwright URL feed ${suffix}`,
+        rssFeedUrl: `https://feed-${suffix}.example.net/feed.xml`,
+        homePageUrl: `https://feed-${suffix}.example.net/`,
+      }),
+    ])
+    crawlId = crawl.id
+    rssUrlId = feed.rssFeedUrlId
+  })
 
   test('should redirect unauthenticated users to login', async ({ page }) => {
     await page.context().clearCookies()
@@ -24,50 +79,49 @@ test.describe('Admin URLs', () => {
     // Check page title
     await expect(page.getByTestId('page-header-title')).toContainText('URLs')
 
-    // Search for a specific seed URL to verify it exists
-    // (seed URLs have older IDs than vitest test data, so they may not appear on page 1 without filtering)
+    // Search for this spec's URL so pagination cannot hide it.
     const searchInput = page.getByTestId('client-search-input')
     await searchInput.scrollIntoViewIfNeeded()
     await waitForBelowFoldHydration(page)
-    await searchInput.pressSequentially('https://example.com/page1')
+    await searchInput.pressSequentially(page1Url)
     await page.getByTestId('client-search-submit').click()
 
     // Check that test URL is visible
-    await expect(page.locator('main')).toContainText('https://example.com/page1')
+    await expect(page.locator('main')).toContainText(page1Url)
     const nextPageLinks = page.locator('a').filter({ hasText: 'Next Page' })
     await expect(nextPageLinks).toHaveCount(0)
 
     // URL text opens externally
     const urlExternalLink = page
       .getByTestId('url-list-page-external-link')
-      .filter({ hasText: 'https://example.com/page1' })
+      .filter({ hasText: page1Url })
       .first()
-    await expect(urlExternalLink).toHaveAttribute('href', 'https://example.com/page1')
+    await expect(urlExternalLink).toHaveAttribute('href', page1Url)
     await expect(urlExternalLink).toHaveAttribute('target', '_blank')
     await expect(page.getByTestId('url-list-page-view').first()).toBeVisible()
 
     // Hostname links to the in-app domain page
     await expect(page.getByTestId('url-hostname-link').first()).toHaveAttribute(
       'href',
-      '/domain/example.com',
+      `/domain/${hostname}`,
     )
   })
 
   test('should search URLs by query', async ({ page }) => {
     await navigateTo(page, '/urls')
 
-    // Search for 'page1'
+    // Search for this spec's unique page path.
     const searchInput = page.getByTestId('client-search-input')
     await searchInput.scrollIntoViewIfNeeded()
     await waitForBelowFoldHydration(page)
-    await searchInput.pressSequentially('page1')
+    await searchInput.pressSequentially(searchToken)
     await page.evaluate(() => {
       ;(window as typeof window & { __clientSearchMarker?: string }).__clientSearchMarker =
         'urls-search'
     })
     await page.getByTestId('client-search-submit').click()
 
-    await expect(page).toHaveURL(/\/urls\?query=page1/)
+    await expect(page).toHaveURL(/\/urls\?query=pw-url-/)
     await expect
       .poll(() =>
         page.evaluate(
@@ -75,21 +129,17 @@ test.describe('Admin URLs', () => {
         ),
       )
       .toBe('urls-search')
-    // Should see page1
-    await expect(page.locator('main')).toContainText('https://example.com/page1')
-    // Should not see page2
-    await expect(page.locator('main')).not.toContainText('https://example.com/page2')
+    await expect(page.locator('main')).toContainText(page1Url)
+    await expect(page.locator('main')).not.toContainText(page2Url)
   })
 
   test('should view URL detail with inline crawls list', async ({ page }) => {
-    // Navigate directly to avoid pagination issues (seed URLs are not on page 1 of the list)
-    const urlId = '019c64e6-2000-7000-8000-000000000001'
-    await navigateTo(page, `/url/${urlId}`)
+    await navigateTo(page, `/url/${page1Id}`)
 
     await expect(page).toHaveURL(/\/url\/[a-f0-9-]+/)
 
     // h1 is the URL string itself
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('https://example.com/page1')
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(page1Url)
 
     // Breadcrumbs: Web Search (link), Domains (link), URL (current page — span)
     const breadcrumbNav = page.getByTestId('breadcrumb-nav')
@@ -108,14 +158,12 @@ test.describe('Admin URLs', () => {
   })
 
   test('shows the RSS sync control on a feed URL', async ({ page }) => {
-    await navigateTo(page, '/url/019c64e6-f8b0-7000-b000-000000000001')
+    await navigateTo(page, `/url/${rssUrlId}`)
     await expect(page.getByTestId('trigger-url-crawl-button-rss-sync')).toBeVisible()
   })
 
   test('should trigger URL crawl', async ({ page }) => {
-    // Navigate directly to avoid pagination issues (seed URLs are not on page 1 of the list)
-    const urlId = '019c64e6-2000-7000-8000-000000000001'
-    await navigateTo(page, `/url/${urlId}`)
+    await navigateTo(page, `/url/${page1Id}`)
     await expect(page).toHaveURL(/\/url\/[a-f0-9-]+/)
 
     // Click trigger crawl button
@@ -132,16 +180,11 @@ test.describe('Admin URLs', () => {
     // URL should not have changed
     await expect(page).toHaveURL(/\/url\/[a-f0-9-]+/)
     // h1 still shows the URL
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('https://example.com/page1')
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(page1Url)
   })
 
   test('should view individual crawl detail', async ({ page }) => {
-    // Navigate directly to a known seed crawl to avoid interference from triggered crawls.
-    // crawlId comes from crawl-ids.mts, which uses a guarded recent UTC day so it
-    // matches what seedPlaywrightTestData() inserts across UTC midnight.
-    const urlId = '019c64e6-2000-7000-8000-000000000001'
-    const crawlId = recentSeedCrawlId(2)
-    await navigateTo(page, `/url/${urlId}/crawls/${crawlId}`)
+    await navigateTo(page, `/url/${page1Id}/crawls/${crawlId}`)
 
     await expect(page).toHaveURL(/\/url\/[a-f0-9-]+\/crawls\/[a-f0-9-]+/)
 
