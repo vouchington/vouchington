@@ -2418,7 +2418,7 @@ importers:
         version: 0.135.0(zod@4.6.5)
       '@jongleberry/api-server':
         specifier: ^3.0.1
-        version: 3.0.1
+        version: 3.1.0
       '@modules/openai-utils':
         specifier: workspace:^
         version: link:../openai-utils
@@ -2455,7 +2455,7 @@ importers:
     dependencies:
       '@jongleberry/api-server':
         specifier: ^3.0.1
-        version: 3.0.1
+        version: 3.1.0
       '@modules/api-egress-proxy':
         specifier: workspace:^
         version: link:../api-egress-proxy
@@ -2508,7 +2508,7 @@ importers:
     dependencies:
       '@jongleberry/api-server':
         specifier: ^3.0.1
-        version: 3.0.1
+        version: 3.1.0
       '@modules/on-error':
         specifier: workspace:^
         version: link:../on-error
@@ -2628,7 +2628,7 @@ importers:
     dependencies:
       '@jongleberry/api-server':
         specifier: ^3.0.1
-        version: 3.0.1
+        version: 3.1.0
       '@modules/utils':
         specifier: workspace:^
         version: link:../utils
@@ -12032,7 +12032,7 @@ importers:
         version: link:../../data-stores/valkey-rate-limiter
       '@jongleberry/api-server':
         specifier: ^3.0.1
-        version: 3.0.1
+        version: 3.1.0
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
@@ -28952,7 +28952,7 @@ snapshots:
 
   '@vouchington/http-transport@0.1.0':
     dependencies:
-      '@jongleberry/api-server': 3.0.1
+      '@jongleberry/api-server': 3.1.0
       ssrf-guard: 1.0.0
       undici: 8.12.3
 
