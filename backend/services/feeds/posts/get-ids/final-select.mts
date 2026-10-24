@@ -1,6 +1,10 @@
+import { assertNever } from '@modules/utils/assert-never'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import { appendTimestampCursorFilter } from './cursor-filter.mts'
 import type { PostFeedCursor } from './feed-cursor.mts'
+import type { PostFeedOptions } from '../../types.mts'
+
+type PostFeedSort = NonNullable<PostFeedOptions['sort']>
 
 export function appendPostFeedFinalSelect(
   query: SQLStatement,
@@ -11,7 +15,7 @@ export function appendPostFeedFinalSelect(
   }: {
     cursor: PostFeedCursor
     safeLimit: number
-    sort: string
+    sort: PostFeedSort
   },
 ): void {
   query.append(sql`
@@ -23,28 +27,46 @@ export function appendPostFeedFinalSelect(
       combined_posts.delivery_type,
       combined_posts.shared_by_id,
       combined_posts.shared_at`)
-  if (sort === 'hot') query.append(sql`,\n      combined_posts.hot_score`)
+  query.append(hotScoreColumn(sort))
   query.append(sql`
     FROM combined_posts
     WHERE 1 = 1
   `)
   appendCursorFilter(query, { cursor, sort })
-  if (sort === 'hot') {
-    query.append(sql`
+  query.append(orderAndLimit(sort, safeLimit))
+}
+
+function hotScoreColumn(sort: PostFeedSort): SQLStatement {
+  switch (sort) {
+    case 'hot':
+      return sql`,\n      combined_posts.hot_score`
+    case 'new':
+      return sql``
+    default:
+      return assertNever(sort, 'Unknown post feed sort')
+  }
+}
+
+function orderAndLimit(sort: PostFeedSort, safeLimit: number): SQLStatement {
+  switch (sort) {
+    case 'hot':
+      return sql`
     ORDER BY combined_posts.hot_score DESC, combined_posts.result_id DESC
     LIMIT ${safeLimit + 1}
-  `)
-  } else {
-    query.append(sql`
+  `
+    case 'new':
+      return sql`
     ORDER BY combined_posts.sort_at DESC, combined_posts.result_id DESC
     LIMIT ${safeLimit + 1}
-  `)
+  `
+    default:
+      return assertNever(sort, 'Unknown post feed sort')
   }
 }
 
 function appendCursorFilter(
   query: SQLStatement,
-  { cursor, sort }: { cursor: PostFeedCursor; sort: string },
+  { cursor, sort }: { cursor: PostFeedCursor; sort: PostFeedSort },
 ): void {
   if (sort === 'hot' && cursor.hot_score_lt !== undefined && cursor.id_lt) {
     query.append(sql`

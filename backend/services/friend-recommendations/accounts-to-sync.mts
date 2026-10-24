@@ -1,3 +1,4 @@
+import { assertNever } from '@modules/utils/assert-never'
 import { createAsyncGeneratorFromCursor, read } from '@data-stores/psql'
 import { getFriendsDispatchLimits } from './work-limits.mts'
 import type { CursorRunResult } from '@data-stores/psql/bounded-cursor-api'
@@ -10,12 +11,20 @@ export type AccountSyncSweepOptions = {
   limits?: ReturnType<typeof getFriendsDispatchLimits>
   onComplete?: (result: CursorRunResult<AccountToSync>) => void
 }
-const PROVIDERS = {
-  facebook: 'facebook_user_id',
-  x: 'x_user_id',
-  github: 'github_user_id',
-} as const
-export type FriendSyncProvider = keyof typeof PROVIDERS
+export type FriendSyncProvider = 'facebook' | 'x' | 'github'
+
+function providerUserIdColumn(provider: FriendSyncProvider): string {
+  switch (provider) {
+    case 'facebook':
+      return 'facebook_user_id'
+    case 'x':
+      return 'x_user_id'
+    case 'github':
+      return 'github_user_id'
+    default:
+      return assertNever(provider, 'Unknown friend sync provider')
+  }
+}
 
 export async function getFriendAccountSweepUpperId(
   provider: FriendSyncProvider,
@@ -31,7 +40,7 @@ export async function getFriendSyncProviderUserId(
   accountId: string,
 ): Promise<string | null> {
   const { rows } = await read<{ provider_user_id: string }>(
-    `/* getFriendSyncProviderUserId */ SELECT account.${PROVIDERS[provider]} AS provider_user_id
+    `/* getFriendSyncProviderUserId */ SELECT account.${providerUserIdColumn(provider)} AS provider_user_id
      FROM ${provider}_accounts account
      JOIN users linked_user ON linked_user.id = account.user_id
      WHERE account.id = $1::uuid AND linked_user.deleted_at IS NULL`,

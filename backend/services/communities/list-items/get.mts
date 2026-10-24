@@ -7,10 +7,7 @@ import { communityListItemStorageCatalog, getCommunityListItemStorageConfig } fr
 import type { CommunityListItem, CommunityListItemType } from './types.mts'
 import type { BasicUser } from '@services/users/types'
 import sql from 'sql-template-strings'
-import {
-  buildPublicPostEligibilityFilter,
-  buildViewerPostDiscoveryEligibilityFilter,
-} from '@modules/feed-query-builders'
+import { listItemCountBody, listItemEligibility, listItemJoins } from './item-type-sql.mts'
 
 export async function searchCommunityListItems(
   communityId: string,
@@ -47,34 +44,11 @@ export async function searchCommunityListItems(
       list_item.created_at
     FROM `)
   query.append(table).append(sql` list_item`)
-  if (itemType === 'post') {
-    query.append(sql`
-      JOIN posts candidate_post ON candidate_post.id = list_item.post_id
-      JOIN posts root_post ON root_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)`)
-  }
-  if (itemType === 'url_hostname') {
-    query.append(sql`
-      JOIN url_hostnames candidate_hostname ON candidate_hostname.id = list_item.url_hostname_id`)
-  }
+  query.append(listItemJoins(itemType))
   query.append(sql`
     WHERE list_item.community_id = ${communityId}
       AND list_item.removed_at IS NULL`)
-  if (itemType === 'post') {
-    const eligibility = options?.currentUser
-      ? buildViewerPostDiscoveryEligibilityFilter('candidate_post', 'root_post', {
-          currentUserId: options.currentUser.id,
-          includeArchivedCommunities: true,
-          isAdministrator: options.currentUser.roles.includes('administrator'),
-        })
-      : buildPublicPostEligibilityFilter('candidate_post', 'root_post', {
-          includeArchivedCommunities: true,
-        })
-    query.append(sql` AND `).append(eligibility)
-  }
-  if (itemType === 'url_hostname' && !options?.currentUser?.roles.includes('administrator')) {
-    query.append(sql` AND candidate_hostname.publicly_introduced_at IS NOT NULL
-      AND NOT candidate_hostname.is_blocked`)
-  }
+  query.append(listItemEligibility(itemType, options?.currentUser))
 
   if (cursorOrderIndex !== undefined && cursorId !== undefined) {
     query.append(
@@ -131,41 +105,7 @@ export async function getCommunityListItemCounts(
     if (index > 0) query.append(sql`, `)
     const { table, entityColumn } = communityListItemStorageCatalog[itemType]
     query.append(sql`(SELECT COUNT(*)::int FROM `).append(table)
-    if (itemType === 'post') {
-      const eligibility = options?.currentUser
-        ? buildViewerPostDiscoveryEligibilityFilter('candidate_post', 'root_post', {
-            currentUserId: options.currentUser.id,
-            includeArchivedCommunities: true,
-            isAdministrator: options.currentUser.roles.includes('administrator'),
-          })
-        : buildPublicPostEligibilityFilter('candidate_post', 'root_post', {
-            includeArchivedCommunities: true,
-          })
-      query
-        .append(sql` list_item
-          JOIN posts candidate_post ON candidate_post.id = `)
-        .append(`list_item.${entityColumn}`)
-        .append(sql`
-          JOIN posts root_post
-            ON root_post.id = COALESCE(candidate_post.root_post_id, candidate_post.id)
-          WHERE list_item.community_id = ${communityId}
-            AND list_item.removed_at IS NULL
-            AND `)
-        .append(eligibility)
-    } else if (itemType === 'url_hostname') {
-      query.append(sql` list_item
-        JOIN url_hostnames candidate_hostname ON candidate_hostname.id = list_item.url_hostname_id
-        WHERE list_item.community_id = ${communityId}
-          AND list_item.removed_at IS NULL`)
-      if (!options?.currentUser?.roles.includes('administrator')) {
-        query.append(sql` AND candidate_hostname.publicly_introduced_at IS NOT NULL
-          AND NOT candidate_hostname.is_blocked`)
-      }
-    } else {
-      query.append(sql` list_item
-        WHERE list_item.community_id = ${communityId}
-          AND list_item.removed_at IS NULL`)
-    }
+    query.append(listItemCountBody(itemType, communityId, entityColumn, options?.currentUser))
     query.append(`) AS ${itemType}`)
   }
 

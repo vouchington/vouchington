@@ -1,3 +1,4 @@
+import { assertNever } from '@modules/utils/assert-never'
 import { read, write } from '@data-stores/psql'
 
 /**
@@ -5,20 +6,26 @@ import { read, write } from '@data-stores/psql'
  * because @data-stores/psql tests cannot depend on @voucha/test-helpers (workspace cycle).
  */
 
-const COUNT_QUERIES = {
-  flagReporters:
-    '/* countTestFlagReporters */ SELECT count(*)::int AS n FROM report_integrity_flag_reporters WHERE flag_id = $1',
-  actionRestrictions:
-    '/* countTestActionRestrictions */ SELECT count(*)::int AS n FROM moderator_action_community_restrictions WHERE moderator_action_id = $1',
-  consumptions:
-    '/* countTestReservationConsumptions */ SELECT count(*)::int AS n FROM post_admission_quota_consumptions WHERE reservation_id = $1',
-} as const
+type CountRelation = 'flagReporters' | 'actionRestrictions' | 'consumptions'
+
+function countQuery(relation: CountRelation): string {
+  switch (relation) {
+    case 'flagReporters':
+      return '/* countTestFlagReporters */ SELECT count(*)::int AS n FROM report_integrity_flag_reporters WHERE flag_id = $1'
+    case 'actionRestrictions':
+      return '/* countTestActionRestrictions */ SELECT count(*)::int AS n FROM moderator_action_community_restrictions WHERE moderator_action_id = $1'
+    case 'consumptions':
+      return '/* countTestReservationConsumptions */ SELECT count(*)::int AS n FROM post_admission_quota_consumptions WHERE reservation_id = $1'
+    default:
+      return assertNever(relation, 'Unknown relation')
+  }
+}
 
 export async function countTestRelationRows(
-  relation: keyof typeof COUNT_QUERIES,
+  relation: CountRelation,
   ownerId: string,
 ): Promise<number> {
-  const { rows } = await read<{ n: number }>(COUNT_QUERIES[relation], [ownerId])
+  const { rows } = await read<{ n: number }>(countQuery(relation), [ownerId])
   return rows[0]!.n
 }
 

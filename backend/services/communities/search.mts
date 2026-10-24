@@ -9,6 +9,7 @@ import { appendTopicIdsFilter } from './search/topic-ids-filter.mts'
 import { mapCommunitySearchResult } from './search/result-mapper.mts'
 import { appendEligiblePostTypeFilter } from './search/eligible-post-type-filter.mts'
 import { parseCommunitySearchCursor } from './search/cursor.mts'
+import { communityCandidateSortTail, communitySelectedSortOrder } from './search/sort-tail.mts'
 import { buildCommunityImagePlacementSelect } from './search/image-placements.mts'
 import { startCommunityCandidates } from './search/candidate-query.mts'
 import { communityColumns } from './columns.mts'
@@ -122,31 +123,9 @@ export async function searchCommunities(
 
   appendFeedCategoryFilter(searchQuery, options?.feedCategory)
   appendTopicIdsFilter(searchQuery, options?.topicIds)
-  if (sort === 'name') {
-    if (cursorName !== undefined && cursorId !== undefined) {
-      searchQuery.append(sql` AND (c.name, c.id) > (${cursorName}, ${cursorId})`)
-    }
-    searchQuery.append(sql`
-    ORDER BY c.name ASC, c.id ASC
-    LIMIT ${limit + 1}`)
-  } else if (sort === 'members') {
-    if (cursorScore !== undefined && cursorId !== undefined) {
-      searchQuery.append(sql` AND (counts.member_count, c.id) < (${cursorScore}, ${cursorId})`)
-    }
-    searchQuery.append(sql`
-    ORDER BY counts.member_count DESC, c.id DESC
-    LIMIT ${limit + 1}`)
-  } else {
-    // virtual_subscriptions
-    if (cursorScore !== undefined && cursorId !== undefined) {
-      searchQuery.append(
-        sql` AND (counts.virtual_subscription_count, c.id) < (${cursorScore}, ${cursorId})`,
-      )
-    }
-    searchQuery.append(sql` ORDER BY counts.virtual_subscription_count DESC, c.id DESC`)
-    if (listedVirtual) searchQuery.append(sql` LIMIT search_input.page_limit`)
-    else searchQuery.append(sql` LIMIT ${limit + 1}`)
-  }
+  searchQuery.append(
+    communityCandidateSortTail(sort, { cursorName, cursorId, cursorScore }, limit, listedVirtual),
+  )
 
   if (listedVirtual) searchQuery.append(sql` ) picked`)
   searchQuery.append(sql`
@@ -172,10 +151,7 @@ export async function searchCommunities(
     WITH keyed_metrics AS MATERIALIZED (SELECT * FROM view_community_metrics WHERE id = selected.id)
     SELECT * FROM keyed_metrics
   ) vm ON TRUE`)
-  if (sort === 'name') searchQuery.append(sql` ORDER BY selected.name ASC, selected.id ASC`)
-  else if (sort === 'members')
-    searchQuery.append(sql` ORDER BY selected.member_count DESC, selected.id DESC`)
-  else searchQuery.append(sql` ORDER BY selected.virtual_subscription_count DESC, selected.id DESC`)
+  searchQuery.append(communitySelectedSortOrder(sort))
   const { rows } = await read(searchQuery, options)
   return mapCommunitySearchResult(rows, { limit, needsMetrics: true, sort })
 }

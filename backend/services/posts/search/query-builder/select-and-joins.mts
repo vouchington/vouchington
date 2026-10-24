@@ -1,7 +1,8 @@
+import { assertNever } from '@modules/utils/assert-never'
 import type { BasicUser } from '@services/users/types'
 import sql, { type SQLStatement } from 'sql-template-strings'
 import { buildHotScoreExpression } from '../query-builder-utils.mts'
-import type { PostSearchOptions } from '../types.mts'
+import type { PostSearchOptions, PostSearchSort } from '../types.mts'
 
 export function appendPostSearchSelectAndJoins(
   query: SQLStatement,
@@ -21,7 +22,7 @@ export function appendPostSearchSelectAndJoins(
     hasTextSearch: boolean
     options: PostSearchOptions
     rankingScoreExpression: SQLStatement | null
-    sort: string
+    sort: PostSearchSort
     useSemanticCandidates?: boolean
   },
 ): void {
@@ -32,12 +33,7 @@ export function appendPostSearchSelectAndJoins(
   if (rankingScoreExpression) appendSelectExpression(query, rankingScoreExpression, 'ranking_score')
   if (followingRankExpression)
     appendSelectExpression(query, followingRankExpression, 'following_rank')
-  if (sort === 'best') query.append(sql`,\n      posts.votes_score_sort AS vote_score\n    `)
-  if (sort === 'hot') {
-    query.append(sql`,\n    `)
-    query.append(buildHotScoreExpression())
-    query.append(sql` AS hot_score`)
-  }
+  query.append(sortSelectColumn(sort))
   if (useSemanticCandidates) {
     // Keep ranking/filter distance work bounded even when a full-table join looks cheaper.
     query.append(sql`
@@ -53,6 +49,21 @@ export function appendPostSearchSelectAndJoins(
   }
   appendSearchJoins(query, { hasSemanticSearch, hasTextSearch, options })
   if (sort === 'following_new' && currentUser) appendFollowingJoin(query, currentUser.id)
+}
+
+function sortSelectColumn(sort: PostSearchSort): SQLStatement {
+  switch (sort) {
+    case 'best':
+      return sql`,\n      posts.votes_score_sort AS vote_score\n    `
+    case 'hot':
+      return sql`,\n    `.append(buildHotScoreExpression()).append(sql` AS hot_score`)
+    case 'new':
+    case 'following_new':
+    case 'relevance':
+      return sql``
+    default:
+      return assertNever(sort, 'Unknown post search sort')
+  }
 }
 
 function appendSelectExpression(

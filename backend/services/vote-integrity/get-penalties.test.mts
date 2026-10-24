@@ -20,6 +20,12 @@ describe('getVoteWeightPenalties', () => {
     admin = await createTestUser({ administrator: true, username: randomUsername() })
   }, 5_000)
 
+  it('rejects an unknown runtime status before reading penalties', async () => {
+    await expect(getVoteWeightPenalties({ status: 'unknown' as 'active' })).rejects.toThrow(
+      'Unknown penalty status',
+    )
+  })
+
   it('gets one penalty by ID and returns null for an unknown ID', async () => {
     const user = await createTestUser({ username: randomUsername() })
     const penaltyId = await insertTestVoteWeightPenaltyRecord({
@@ -32,6 +38,19 @@ describe('getVoteWeightPenalties', () => {
       reason: 'voting_ring',
     })
     await expect(getVoteWeightPenaltyByIdFromPrimary(uuidv7())).resolves.toBeNull()
+  })
+
+  it('filters penalties by lifecycle status', async () => {
+    const user = await createTestUser({ username: randomUsername() })
+    const penaltyId = await insertTestVoteWeightPenaltyRecord({
+      userId: user.id,
+      createdById: admin.id,
+    })
+
+    const active = await getVoteWeightPenalties({ userId: user.id, status: 'active' })
+    expect(active.results.map(penalty => penalty.id)).toEqual([penaltyId])
+    const revoked = await getVoteWeightPenalties({ userId: user.id, status: 'revoked' })
+    expect(revoked.results).toEqual([])
   })
 
   it('preserves all-source behavior when source is omitted', async () => {

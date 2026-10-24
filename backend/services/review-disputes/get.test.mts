@@ -57,6 +57,12 @@ describe('getReviewDisputeById', () => {
     staff = await createTestUser()
   })
 
+  it('rejects an unknown runtime list status before reading disputes', async () => {
+    await expect(listReviewDisputes({ status: 'unknown' as 'pending' })).rejects.toThrow(
+      'Unknown review dispute status',
+    )
+  })
+
   it('returns a dispute by id', async () => {
     const { dispute } = await makeDisputeFixture(staff.id)
     const found = await getReviewDisputeById(dispute.id)
