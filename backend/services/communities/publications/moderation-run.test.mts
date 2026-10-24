@@ -118,7 +118,7 @@ describe('community moderation requests are written with the publication change'
       const postId = await insertPendingPost()
       await approvePublication(owner, approvalCommunity.id, postId)
 
-      expect(await requestsOf(postId)).toMatchObject([{ run_id: null, stale_at: null }])
+      expect(await requestsOf(postId)).toMatchObject([{ run_identity_id: null, stale_at: null }])
       expect(await communityDispatchers(postId)).toHaveLength(1)
     })
   })

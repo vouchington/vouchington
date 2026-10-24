@@ -29,13 +29,15 @@ export default function PostgreSQLPage() {
       <PostgreSQLActionsCard
         actionLoading={state.actionLoading}
         onAction={state.handleAction}
-        setPendingAction={state.setPendingAction}
+        setPendingAction={state.choosePartitionAction}
+        setPendingClassifierAction={state.chooseClassifierPartitionAction}
       />
       <SyncArticlesCard />
       <PartitionConfirmDialog
         confirmPartitionAction={state.confirmPartitionAction}
         pendingAction={state.pendingAction}
-        setPendingAction={state.setPendingAction}
+        pendingClassifierRange={state.pendingClassifierRange}
+        setPendingAction={state.choosePartitionAction}
       />
     </div>
   )

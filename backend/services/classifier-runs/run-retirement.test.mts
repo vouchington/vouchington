@@ -43,7 +43,7 @@ describe('terminal ineligibility of classifier run requests (real PG)', () => {
 
     const request = await onlyRequest(setup)
     expect(request.stale_at).not.toBeNull()
-    expect(request.run_id).toBeNull()
+    expect(request.run_identity_id).toBeNull()
     expect(request.no_work_at).toBeNull()
   })
 
@@ -55,7 +55,7 @@ describe('terminal ineligibility of classifier run requests (real PG)', () => {
     expect(await sweptPostIds(waiting.adapter)).toEqual([])
     expect(await onlyRequest(setup)).toMatchObject({
       stale_at: null,
-      run_id: null,
+      run_identity_id: null,
       no_work_at: null,
     })
 
@@ -116,7 +116,7 @@ describe('terminal ineligibility of classifier run requests (real PG)', () => {
 
     const requests = await getClassifierRunRequestFacts(setup.post.id, setup.slug)
     const current = requests.find(request => request.input_sha256.equals(revised))
-    expect(current).toMatchObject({ stale_at: null, run_id: null, no_work_at: null })
+    expect(current).toMatchObject({ stale_at: null, run_identity_id: null, no_work_at: null })
     expect(await sweptPostIds(setup.adapter)).toEqual([setup.post.id])
   })
 

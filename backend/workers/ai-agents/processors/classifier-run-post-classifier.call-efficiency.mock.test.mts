@@ -10,14 +10,13 @@ import {
   reserveSeededRun,
 } from '@voucha/test-helpers/classifier-call-efficiency-run'
 import { describeClassifierCallEfficiency } from '@voucha/test-helpers/classifier-call-efficiency-tests'
-import { DAILY_CAP_MICROUNITS } from '@voucha/test-helpers/classifier-provider-failure-scenarios'
 import { getSubjectClassifierRunFacts } from '@voucha/test-helpers/data-stores/psql/classifier-runs/run-facts'
 import {
   createApprovedClassifierPost,
   initializePostClassifierExecutionTests,
 } from '@voucha/test-helpers/data-stores/psql/post-classifier/execution'
 import { listAiUsageRecordsForClassifierRun } from '@voucha/test-helpers/entities/ai-usage'
-import { withReservedAiUsageDay } from '@voucha/test-helpers/with-reserved-ai-usage-day'
+import { withCurrentClassifierUsage } from '@voucha/test-helpers/classifier-current-usage'
 import * as vurst from '@jongleberry/vurst-ai'
 import { getCurrentPostClassifierActorId } from '@services/post-classifier/configuration-data'
 import { getPostClassifierLocalOutcomeFacts } from '@voucha/test-helpers/data-stores/psql/post-classifier/run-facts'
@@ -77,8 +76,9 @@ describe('C5 post classifier local-only call efficiency (real PG, deterministic 
     const window = efficiencyWindow()
     const { post, inputSha256 } = await createApprovedClassifierPost(false, true)
     const seed = { subject: { postId: post.id, rssFeedItemId: null }, inputSha256 } as const
-    await withReservedAiUsageDay(DAILY_CAP_MICROUNITS, async () => {
+    await withCurrentClassifierUsage(async trackRunId => {
       const run = await reserveSeededRun(POST_CLASSIFIER_SLUG, seed)
+      trackRunId(run.runId)
       expect(await deliverRun(POST_CLASSIFIER_SLUG, run)).toBe('completed')
       expect(await deliverRun(POST_CLASSIFIER_SLUG, run)).toBe('replay')
 
@@ -114,8 +114,9 @@ describe('C5 post classifier local-only call efficiency (real PG, deterministic 
     const provider = installEfficiencyProvider()
     const { post, inputSha256 } = await createApprovedClassifierPost(false, true)
     const seed = { subject: { postId: post.id, rssFeedItemId: null }, inputSha256 } as const
-    await withReservedAiUsageDay(DAILY_CAP_MICROUNITS, async () => {
+    await withCurrentClassifierUsage(async trackRunId => {
       const run = await reserveSeededRun(POST_CLASSIFIER_SLUG, seed)
+      trackRunId(run.runId)
       expect(await deliverRun(POST_CLASSIFIER_SLUG, run)).toBe('completed')
       const outcome = await getPostClassifierLocalOutcomeFacts(run.runId)
       expect(outcome).toMatchObject({
@@ -159,11 +160,13 @@ describe('C5 post classifier local-only call efficiency (real PG, deterministic 
       true,
     )
     const seed = { subject: { postId: post.id, rssFeedItemId: null }, inputSha256 } as const
-    await withReservedAiUsageDay(DAILY_CAP_MICROUNITS, async () => {
+    await withCurrentClassifierUsage(async trackRunId => {
       const first = await reserveSeededRun(POST_CLASSIFIER_SLUG, seed)
+      trackRunId(first.runId)
       expect(await deliverRun(POST_CLASSIFIER_SLUG, first)).toBe('completed')
       await setPostClassifierToggleForTest(community.id, 'politics-averse', true)
       const second = await reserveSeededRun(POST_CLASSIFIER_SLUG, seed)
+      trackRunId(second.runId)
       expect(second.runId).not.toBe(first.runId)
       expect(second.configurationSha256.equals(first.configurationSha256)).toBe(false)
       expect(second.inputSha256.equals(first.inputSha256)).toBe(true)

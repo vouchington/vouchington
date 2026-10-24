@@ -90,7 +90,7 @@ describe('C6 configuration failure never blocks approval (real PG)', () => {
 
     expect(await getSubjectClassifierRunFacts(fixture.subject)).toEqual([])
     expect(await getSubjectClassifierRunRequestFacts(fixture.subject)).toMatchObject([
-      { run_id: null, no_work_at: null, stale_at: null },
+      { run_identity_id: null, no_work_at: null, stale_at: null },
     ])
     expect((await reserveClassifierRun(adapter, fixture.subject)).kind).toBe('reserved')
   })

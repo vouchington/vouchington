@@ -1164,19 +1164,23 @@
           "behaviorTests": []
         },
         "swift": {
-          "status": "full",
+          "status": "partial",
           "uiEvidence": [
             "swift-clients/ui/Sources/VouchaFeatures/NativeParity/NativeEngineeringQueuesSurface.swift"
           ],
           "behaviorTests": ["swift-clients/ui/Tests/VouchaUITests/EngineeringOpsSurfaceTests.swift"]
         },
         "dotnet": {
-          "status": "full",
+          "status": "partial",
           "uiEvidence": ["dotnet-clients/src/Voucha.Client.App/Pages/EngineeringPage.xaml"],
           "behaviorTests": [
             "dotnet-clients/tests/Voucha.Client.Core.Tests/Engineering/EngineeringViewModelTests.cs"
           ]
         }
+      },
+      "gap": {
+        "summary": "Swift and .NET render engineering operations but do not yet send or confirm operator-managed classifier partition ranges; existing monthly crawl actions remain available.",
+        "trackingIssue": "https://github.com/vouchington/vouchington-clients/issues/497"
       }
     },
     {

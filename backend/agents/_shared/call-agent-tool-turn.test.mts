@@ -38,7 +38,7 @@ describe('callAgentToolTurn (real PG)', () => {
       openaiTransport: expect.any(String),
     })
     expect(await listAiUsageRecordsForClassifierRun(classifierRunId)).toMatchObject([
-      { agent_slug: 'autotagger-agent', classifier_run_id: classifierRunId },
+      { agent_slug: 'autotagger-agent', classifier_run_identity_id: classifierRunId },
     ])
     expect(result.responseId).toMatch(/^resp-/)
   })

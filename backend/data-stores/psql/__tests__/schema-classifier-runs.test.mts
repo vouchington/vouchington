@@ -244,19 +244,19 @@ describe('classifier run schema', () => {
     expect((await fixture.read())?.superseded_at).toBeNull()
   })
 
-  it('keeps a usage ledger row when its run is deleted, dropping only the attribution', async () => {
+  it('keeps usage attribution to the retained identity after run payload deletion', async () => {
     const { classifierId } = await createClassifierFixture()
     const fixture = await createFixture({ classifierId })
     const ledgerId = await insertTestAiUsageRecord({ classifierRunId: fixture.id, latencyMs: 40 })
 
     await expect(findAiUsageRecordById(ledgerId)).resolves.toEqual({
-      classifier_run_id: fixture.id,
+      classifier_run_identity_id: fixture.id,
       latency_milliseconds: 40,
     })
     await deleteClassifierRunForSchemaTest(fixture.id)
 
     await expect(findAiUsageRecordById(ledgerId)).resolves.toEqual({
-      classifier_run_id: null,
+      classifier_run_identity_id: fixture.id,
       latency_milliseconds: 40,
     })
   })

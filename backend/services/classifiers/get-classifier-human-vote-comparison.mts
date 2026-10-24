@@ -16,6 +16,7 @@ import {
   type ClassifierHumanVoteComparisonOptions,
   type ClassifierHumanVoteComparisonResult,
 } from './human-vote-comparison-types.mts'
+import { classifierRetentionCutoff } from './retention-window.mts'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
@@ -65,6 +66,9 @@ export async function getClassifierHumanVoteComparison(
 function validateWindowAndItem(options: ClassifierHumanVoteComparisonOptions): string | null {
   const span = options.to.getTime() - options.from.getTime()
   if (!(span > 0)) return 'The window must end after it starts'
+  if (options.from.getTime() < classifierRetentionCutoff().getTime()) {
+    return 'The window cannot start before the classifier retention cutoff'
+  }
   if (span > CLASSIFIER_COMPARISON_MAX_WINDOW_DAYS * DAY_MS) {
     return `The window cannot exceed ${CLASSIFIER_COMPARISON_MAX_WINDOW_DAYS} days`
   }

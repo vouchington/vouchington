@@ -14,7 +14,6 @@ import {
   reserveSeededRun,
 } from '@voucha/test-helpers/classifier-call-efficiency-run'
 import { describeClassifierCallEfficiency } from '@voucha/test-helpers/classifier-call-efficiency-tests'
-import { DAILY_CAP_MICROUNITS } from '@voucha/test-helpers/classifier-provider-failure-scenarios'
 import {
   COMMUNITY_MODERATION_CLASSIFIER_SLUG as SLUG,
   createCommunityModerationFixture,
@@ -22,7 +21,7 @@ import {
   reviseCommunityModerationFixturePost,
 } from '@voucha/test-helpers/data-stores/psql/classifier-runs/community-moderation-fixture'
 import { listAiUsageRecordsForClassifierRun } from '@voucha/test-helpers/entities/ai-usage'
-import { withReservedAiUsageDay } from '@voucha/test-helpers/with-reserved-ai-usage-day'
+import { withCurrentClassifierUsage } from '@voucha/test-helpers/classifier-current-usage'
 import { fetchStructuredDecisionProvider } from '@modules/structured-decisions/transport'
 
 vi.mock<typeof import('@modules/structured-decisions/transport')>(
@@ -48,11 +47,13 @@ describe('C8 community moderation content and rule versions (real PG, determinis
     const provider = installEfficiencyProvider()
     const window = efficiencyWindow()
     const fixture = await createCommunityModerationFixture()
-    await withReservedAiUsageDay(DAILY_CAP_MICROUNITS, async () => {
+    await withCurrentClassifierUsage(async trackRunId => {
       const first = await reserveSeededRun(SLUG, fixture)
+      trackRunId(first.runId)
       expect(await deliverRun(SLUG, first)).toBe('completed')
       await editTestCommunityRule(fixture.prompts[0]!.id, 'No spam of any kind, ever')
       const second = await reserveSeededRun(SLUG, fixture)
+      trackRunId(second.runId)
       expect(await deliverRun(SLUG, second)).toBe('completed')
       expect(await deliverRun(SLUG, second)).toBe('replay')
 
@@ -78,12 +79,14 @@ describe('C8 community moderation content and rule versions (real PG, determinis
     const provider = installEfficiencyProvider()
     const window = efficiencyWindow()
     const fixture = await createCommunityModerationFixture()
-    await withReservedAiUsageDay(DAILY_CAP_MICROUNITS, async () => {
+    await withCurrentClassifierUsage(async trackRunId => {
       const first = await reserveSeededRun(SLUG, fixture)
+      trackRunId(first.runId)
       expect(await deliverRun(SLUG, first)).toBe('completed')
       const inputSha256 = await reviseCommunityModerationFixturePost(fixture, 'A revised post')
       const revised = { subject: fixture.subject, inputSha256 }
       const second = await reserveSeededRun(SLUG, revised)
+      trackRunId(second.runId)
       expect(await deliverRun(SLUG, second)).toBe('completed')
 
       expect(second.runId).not.toBe(first.runId)
@@ -103,8 +106,9 @@ describe('C8 community moderation content and rule versions (real PG, determinis
     const window = efficiencyWindow()
     const fixture = await createCommunityModerationFixture({ automodAction: 'unpublish' })
     const reviewOf = () => getCommunityPostReviewStatus(fixture.community.id, fixture.postId)
-    await withReservedAiUsageDay(DAILY_CAP_MICROUNITS, async () => {
+    await withCurrentClassifierUsage(async trackRunId => {
       const run = await reserveSeededRun(SLUG, fixture)
+      trackRunId(run.runId)
       expect(await deliverRun(SLUG, run)).toBe('completed')
       const unpublished = await reviewOf()
       expect(unpublished).toMatchObject({

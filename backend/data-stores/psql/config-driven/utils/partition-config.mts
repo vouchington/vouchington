@@ -32,13 +32,10 @@ export const POST_PARTITION_TABLES: string[] = [
 
 /**
  * Classifier results retain one row per candidate. Topic and story-family ownership use
- * separate parents; topic results prune by topic_id, while story-family results hold either a
- * story or a standalone RSS item (so no single entity column can be the key) and prune by the
- * UUIDv7 decision batch_id instead. Community prompt results have no stable per-prompt key worth
- * pruning on, so they range over their decision batch too.
+ * separate parents. All result families range by the UUIDv7 decision batch so batch-scoped replay
+ * and retention share one time key. Topic and story lookups also have entity-leading indexes.
  */
 export const CLASSIFIER_RESULT_PARTITION_TABLES: string[] = [
-  'classifier_decision_batch_candidates',
   'topic_classifier_results',
   'story_classifier_results',
   'community_prompt_classifier_results',
@@ -159,5 +156,12 @@ for (const config of ALL_MONTHLY_PARTITION_TABLES) {
     ...(config.table === 'crawl_chunks' && {
       inFlightPredicates: ['bedrock_nova_multimodal_v1_embedding_created_at IS NULL'],
     }),
+  }
+}
+
+for (const table of CLASSIFIER_RESULT_PARTITION_TABLES) {
+  PARTITION_DROP_POLICIES[table] = {
+    minimumRetentionDays: 90,
+    legalBasis: 'docs/overview/architecture/partitioning-strategy.md',
   }
 }

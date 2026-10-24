@@ -34,5 +34,12 @@ export const dataRetentionRegistryEntry = defineDynamicConfigNamespace({
       maxValue: DATA_RETENTION_MAX_VALUES.partition_status_probe_limit,
       integer: true,
     },
+    classifier_retention_days: {
+      description:
+        'Minimum age in days for retiring completed classifier payloads and result ranges.',
+      minValue: 90,
+      maxValue: DATA_RETENTION_MAX_VALUES.classifier_retention_days,
+      integer: true,
+    },
   },
 })

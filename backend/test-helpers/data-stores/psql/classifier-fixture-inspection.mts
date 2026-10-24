@@ -90,7 +90,6 @@ export function buildClassifierFixtureInspection(data: ClassifierFixtureData) {
         JOIN pg_class parent ON parent.oid = pg_inherits.inhparent
         JOIN pg_class child ON child.oid = pg_inherits.inhrelid
         WHERE parent.relname IN (
-          'classifier_decision_batch_candidates',
           'community_prompt_classifier_results',
           'topic_classifier_results',
           'story_classifier_results'

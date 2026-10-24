@@ -53,6 +53,7 @@ describe('PartitionConfirmDialog', () => {
       <PartitionConfirmDialog
         confirmPartitionAction={confirmPartitionAction}
         pendingAction='cleanupPartitions'
+        pendingClassifierRange={null}
         setPendingAction={setPendingAction}
       />,
     )
@@ -87,6 +88,7 @@ describe('PartitionConfirmDialog', () => {
       <PartitionConfirmDialog
         confirmPartitionAction={confirmPartitionAction}
         pendingAction='cleanupPartitions'
+        pendingClassifierRange={null}
         setPendingAction={setPendingAction}
       />,
     )
@@ -107,6 +109,7 @@ describe('PartitionConfirmDialog', () => {
       <PartitionConfirmDialog
         confirmPartitionAction={confirmPartitionAction}
         pendingAction='createPartitions'
+        pendingClassifierRange={null}
         setPendingAction={vi.fn<
           (action: 'createPartitions' | 'cleanupPartitions' | null) => void
         >()}
@@ -114,6 +117,54 @@ describe('PartitionConfirmDialog', () => {
     )
 
     expect(mockedFetchPartitions).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm' }))
+    expect(confirmPartitionAction).toHaveBeenCalledOnce()
+  })
+
+  it('previews only the requested classifier range before retirement', async () => {
+    mockedFetchPartitions.mockResolvedValue({
+      tables: [
+        ...partitionStatus.tables,
+        {
+          name: 'topic_classifier_results',
+          partition_count: 2,
+          total_size_bytes: 0,
+          partitions: [
+            {
+              name: 'topic_classifier_results__r_20200201_20200202',
+              size_bytes: 0,
+              drop_refusal: 'check-pending',
+            },
+            {
+              name: 'topic_classifier_results__r_20200101_20200102',
+              size_bytes: 0,
+              drop_refusal: 'inside-retention',
+            },
+          ],
+        },
+      ],
+    })
+    const confirmPartitionAction = vi.fn<() => void>()
+
+    render(
+      <PartitionConfirmDialog
+        confirmPartitionAction={confirmPartitionAction}
+        pendingAction='cleanupPartitions'
+        pendingClassifierRange={{ fromDate: '2020-02-01', toDate: '2020-02-02' }}
+        setPendingAction={vi.fn<
+          (action: 'createPartitions' | 'cleanupPartitions' | null) => void
+        >()}
+      />,
+    )
+
+    expect(await screen.findByText('Retire Classifier Range')).toBeVisible()
+    expect(
+      screen.getByText('topic_classifier_results.topic_classifier_results__r_20200201_20200202'),
+    ).toBeVisible()
+    expect(screen.queryByText('crawls.crawls_2026_01')).toBeNull()
+    expect(
+      screen.queryByText('topic_classifier_results.topic_classifier_results__r_20200101_20200102'),
+    ).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: 'Confirm' }))
     expect(confirmPartitionAction).toHaveBeenCalledOnce()
   })

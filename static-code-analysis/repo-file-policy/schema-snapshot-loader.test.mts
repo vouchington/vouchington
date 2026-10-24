@@ -21,7 +21,7 @@ describe('schema snapshot loader', () => {
     })
   })
 
-  it('accepts daily row cleanup as a partition retention owner and rejects unknown owners', () => {
+  it('accepts scheduled and operator partition owners and rejects unknown owners', () => {
     const table = partitionedSnapshotTable()
     const snapshotWithOwner = (retentionOwner: string) => ({
       ...minimalSnapshot,
@@ -42,6 +42,12 @@ describe('schema snapshot loader', () => {
     expect(
       loadSchemaSnapshot('/missing', new Set(), snapshotWithOwner('runDataRetentionCleanup'))
         .errors,
+    ).toEqual([])
+    expect(
+      loadSchemaSnapshot('/missing', new Set(), snapshotWithOwner('cleanupPartitions')).errors,
+    ).toEqual([])
+    expect(
+      loadSchemaSnapshot('/missing', new Set(), snapshotWithOwner('operatorPartitionDrop')).errors,
     ).toEqual([])
     expect(loadSchemaSnapshot('/missing', new Set(), snapshotWithOwner('unknown')).errors).toEqual([
       expect.stringContaining('tables.user_sessions.partition.retentionOwner'),

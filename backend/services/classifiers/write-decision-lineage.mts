@@ -7,6 +7,7 @@ import {
   type NormalizedClassifierDecisionInput,
 } from './decision-input.mts'
 import { assertCandidateKindMatchesSubject } from './classifier-decision-persistence-validation.mts'
+import { assertClassifierBatchWithinRetention } from './retention-window.mts'
 import type { ClassifierDecisionSnapshot } from './classifier-decision-snapshot.mts'
 import type {
   ClassifierDecisionReservationInput,
@@ -36,6 +37,7 @@ export async function insertClassifierDecisionBatch(
     'batchId' | 'classifierId' | 'promptVersionId' | 'scope' | 'subject'
   >,
 ): Promise<boolean> {
+  assertClassifierBatchWithinRetention(input.batchId)
   // ON CONFLICT (id) misses a concurrent duplicate on a composite unique index. Hash
   // canonical uuid text so mixed-case spellings of one batch take that same lock.
   await query(sql`/* insertClassifierDecisionBatch:lock */
@@ -177,7 +179,6 @@ export async function captureClassifierDecisionStoredCandidateSnapshots(
   }
   return new Map(rows.map(row => [row.candidate_id, row]))
 }
-
 export async function insertClassifierDecisionCalls(
   query: OwnedTransaction,
   input: NormalizedClassifierDecisionInput,

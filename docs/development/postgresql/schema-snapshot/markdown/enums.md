@@ -210,6 +210,16 @@
 - `score`
 - `agent`
 
+## `classifier_retention_sweeps`
+
+- `run_candidates`
+- `agent_topics`
+- `local_outcomes`
+- `runs`
+- `calls`
+- `batch_candidates`
+- `batches`
+
 ## `classifier_run_terminal_failure_kinds`
 
 - `provider-error`
