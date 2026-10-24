@@ -5,7 +5,9 @@
   and review (`node_modules/vouchington-tooling/skills/agent-workflow/references/review.md`).
   For client/API changes, use the relevant [impact recipe](impact-recipes.md).
 - Follow the [commit checklist](../../../docs/checklists/commit.md): type-aware lint for changed
-  TypeScript, directly changed tests, scope inspection, and formatting. CI owns full area suites;
+  TypeScript and its direct dependents, directly changed tests, scope inspection, and formatting.
+  The listed `oxlint-type-aware` gate appends changed files only, so add the dependents yourself;
+  CI's whole-repository lint remains the backstop. CI owns full area suites;
   run broader local checks when the change or a failure requires them. List the static gates CI
   will run for the diff with `pnpm exec no-mistakes impacted-checks --generic-only --changed-files
   <manifest>` ([planning § Static gate planning](../planning/references/impact-discovery.md#static-gate-planning)).

@@ -71,4 +71,13 @@ describe('CI-only static gates are listed by impacted-checks', () => {
     expect(entry.include).toContain('backend/**/*.mts')
     expect(entry.exclude).toEqual(expect.arrayContaining(['**/*.test.mts', '**/test-helpers/**']))
   })
+
+  it('lists the typed Oxlint step with changed TypeScript files appended, never the whole repo', () => {
+    const entry = find('oxlint-type-aware')
+
+    expect(entry.command).toEqual(['pnpm', 'exec', 'oxlint', '--type-aware', '--deny-warnings'])
+    expect(workflow).toContain(`run: ${entry.command?.join(' ')}\n`)
+    expect([entry.always, entry.fileArgs]).toEqual([undefined, 'append'])
+    expect(entry.include).toEqual(['**/*.ts', '**/*.tsx', '**/*.mts', '**/*.cts'])
+  })
 })
