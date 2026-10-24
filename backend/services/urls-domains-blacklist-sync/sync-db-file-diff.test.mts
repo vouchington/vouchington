@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
+  beginTransaction,
   countBlacklistEntriesBySource,
   createTestBlacklistSource,
   deleteTestBlacklistSource,
@@ -13,11 +14,9 @@ import {
 } from '@voucha/test-helpers'
 import { ADDED_DOMAINS_TABLE } from './sync-cache.mts'
 import { writeCommDiff, writeSortedDesiredDomains } from './diff-files.mts'
-import {
-  applyDomainDiffFiles,
-  BLOCKLIST_DIFF_DIRECTORY_PREFIX,
-  syncDomainsWithDatabase,
-} from './sync-db.mts'
+import { BLOCKLIST_DIFF_DIRECTORY_PREFIX, syncDomainsWithDatabase } from './sync-db.mts'
+import { stageBothDiffFiles } from './membership-diff-stage.mts'
+import { persistDomainDiff } from './sync-db-domain-diff.mts'
 
 describe('blocklist file diff', () => {
   it('reads membership from the replica and stages only the diff', async () => {
@@ -60,10 +59,11 @@ describe('blocklist file diff', () => {
     }
   })
 
-  it('keeps a domain the stale membership snapshot omitted and absorbs a repeated addition', async () => {
+  it('persists staged additions idempotently without removing an omitted writer domain', async () => {
     const suffix = sourceNameSuffix()
     const kept = `kept-${suffix}.example`
     const present = `present-${suffix}.example`
+    const added = `added-${suffix}.example`
     const name = `stale-diff-${suffix}`
     const sourceId = await createTestBlacklistSource({
       type: 'url',
@@ -74,18 +74,16 @@ describe('blocklist file diff', () => {
     try {
       await insertTestDomainBlacklist(kept, name)
       await insertTestDomainBlacklist(present, name)
-      const membershipPath = join(directory, 'membership')
-      const desiredPath = join(directory, 'desired')
       const addedPath = join(directory, 'added')
       const removedPath = join(directory, 'removed')
-      writeFileSync(membershipPath, '')
-      writeFileSync(desiredPath, `${present}\n`)
-      await writeCommDiff({ membershipPath, desiredPath, addedPath, removedPath })
-      const result = await applyDomainDiffFiles(sourceId, 'url', addedPath, removedPath)
-      expect(result).toEqual({ skipped: false, domainsAdded: 1, domainsRemoved: 0 })
-      expect(await countBlacklistEntriesBySource(sourceId)).toBe(2)
-      await expect(listBlacklistDomainsBySource(sourceId)).resolves.toEqual(
-        [kept, present].toSorted(),
+      writeFileSync(addedPath, `${added}\n${present}\n`)
+      writeFileSync(removedPath, '')
+      await using query = await beginTransaction()
+      await stageBothDiffFiles(query.client, addedPath, removedPath)
+      await persistDomainDiff(query, sourceId, 'url')
+      expect(await countBlacklistEntriesBySource(sourceId, { query })).toBe(3)
+      await expect(listBlacklistDomainsBySource(sourceId, { query })).resolves.toEqual(
+        [kept, present, added].toSorted(),
       )
     } finally {
       rmSync(directory, { recursive: true, force: true })
