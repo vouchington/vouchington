@@ -29,7 +29,7 @@ For each URL crawl:
 4. **Crawler rule lookup** — fetch per-hostname rules (`css_selectors_to_remove`, `link_*_to_remove`)
 5. **Google Web Risk** — optional lookup runs only after local blocklist, rate-limit, robots, and crawler-rule checks pass. Provider failures/rate limits fail open; risky verdicts block the registrable domain locally.
 6. **Conditional HTTP fetch** — send `If-None-Match`/`If-Modified-Since` from last successful crawl
-7. **Redirect handling** — follow up to 10 hops; 301/308 redirects set `canonical_url_id`; loops detected via visited URL set; redirect targets that normalize to the source URL are treated as self-redirects
+7. **Redirect handling** — follow up to 10 hops; 301/308 redirects set `canonical_url_id`; loops detected via visited URL set; redirect targets that normalize to the source URL are treated as self-redirects. Redirect bodies are cancelled before handoff because only status and headers determine routing; an unused body must not prevent following the destination.
 8. **noindex detection** — check `<meta name="robots">` and `X-Robots-Tag`; noindex pages stored with empty markdown, no embeddings
 9. **Embed extraction** — pass the already-extracted document to `@vouchington/embeds` (no second
    document fetch or remote oEmbed request), store the normalized local `embed_metadata` and the
