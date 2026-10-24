@@ -7,10 +7,11 @@ import {
   waitForTestPostgresLockWaiter,
   withCapturedTestQueries,
 } from '@voucha/test-helpers'
-import { withTransactionOptions } from '@data-stores/psql'
 import { lockTopicRssFeedAttachmentLifecycles } from './lock.mts'
 import {
   createFailOnceAttachmentFenceQuery,
+  lockAttachmentFenceBeforeFollowingStatement,
+  lockAttachmentFenceInNestedCallback,
   withRolledBackBorrowedAttachmentFenceScope,
 } from '@voucha/test-helpers/post-publication-attachment-fence'
 
@@ -23,9 +24,7 @@ describe('topic RSS feed attachment lifecycle fence', () => {
     await using query = await beginTransaction()
     const { queries } = await withCapturedTestQueries(async () => {
       await lockTopicRssFeedAttachmentLifecycles(query, [second, first, first.toUpperCase()])
-      await withTransactionOptions({ query }, nested =>
-        lockTopicRssFeedAttachmentLifecycles(nested, [second, first]),
-      )
+      await lockAttachmentFenceInNestedCallback(query, [second, first])
       await lockTopicRssFeedAttachmentLifecycles(query, [])
     })
     expect(countCapturedQueriesByAnnotation(queries, annotation)).toBe(1)
@@ -54,6 +53,19 @@ describe('topic RSS feed attachment lifecycle fence', () => {
       lockTopicRssFeedAttachmentLifecycles(failingQuery, [topicId]),
     )
     expect(countCapturedQueriesByAnnotation(queries, annotation)).toBe(1)
+  })
+
+  it('submits the first fence before a following statement on the same query', async () => {
+    await using query = await beginTransaction()
+    const { queries } = await withCapturedTestQueries(() =>
+      lockAttachmentFenceBeforeFollowingStatement(query, randomUUID()),
+    )
+    const order = queries.flatMap(({ text }) => {
+      if (text.includes(`/* ${annotation} */`)) return ['fence']
+      if (text.includes('/* attachmentFenceFollowingStatement */')) return ['following']
+      return []
+    })
+    expect(order).toEqual(['fence', 'following'])
   })
 
   it('makes a different transaction wait for the held topic fence', async () => {

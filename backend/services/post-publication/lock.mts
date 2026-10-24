@@ -58,7 +58,7 @@ export async function lockTopicRssFeedAttachmentLifecycles(
   if (topicIds.length === 0) return
   const previous = pendingTopicRssFeedAttachmentLocks.get(query)
   const pending = (async () => {
-    await previous?.catch(continueAfterAttachmentFenceFailure)
+    if (previous) await previous.catch(continueAfterAttachmentFenceFailure)
     const held = topicRssFeedAttachmentIdsLockedInQuery.get(query) ?? new Set<string>()
     const ids = [...new Set(topicIds.map(id => id.toLowerCase()))]
       .toSorted()
