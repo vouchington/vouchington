@@ -122,6 +122,10 @@ export function buildUnboundedUnpartitionedTables(
         'One projected row per community grows with community adoption; indexed count order and keyed hydration bound search reads.',
       ],
       [
+        'user_engagement_email_candidates',
+        'At most one current candidate per engagement email type and live user (three types); the user foreign key cascades deletion, while eligibility and terminal sends remove rows. Aggregate cardinality grows with live users, and the unpartitioned email-type/claimed-at/user-id indexes preserve global oldest-claim order with bounded pages.',
+      ],
+      [
         'activitypub_inbox_delivery_work_items',
         'Bounded ActivityPub inbox delivery queue: terminal outcomes delete rows, unverified rows expire after one hour, operational failures expire seven days after their immutable first failure, and bounded cleanup removes expired rows. Size tracks recent inbox backlog, not retained history.',
       ],
