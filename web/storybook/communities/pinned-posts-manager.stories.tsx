@@ -54,3 +54,16 @@ export const OnePinnedTwoAvailable: Story = {
     </StoryFrame>
   ),
 }
+
+export const NoPins: Story = {
+  args: {
+    communitySlug: community.slug,
+    posts: postData,
+    initialPinnedPosts: [],
+  },
+  render: args => (
+    <StoryFrame>
+      <PinnedPostsManager {...args} />
+    </StoryFrame>
+  ),
+}

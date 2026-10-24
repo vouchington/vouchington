@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { CommunityMemberRow } from '@/components/communities/community-member-row'
+import { TransferOwnershipDialog } from '@/components/communities/community-transfer-ownership-dialog'
 import { useCommunityMembersManager } from '@/components/communities/use-community-members-manager'
 import type { CommunityMember, CommunityMembersResponseBody } from '@/types/api-responses'
 import { makeCommunity } from '@/test-helpers/api-responses'
@@ -61,7 +62,13 @@ const data: CommunityMembersResponseBody = {
   users: { [member.user_id]: publicUsers[0]! },
 }
 
-function OwnerView({ memberRole }: { memberRole: 'member' | 'moderator' }) {
+function OwnerView({
+  memberRole,
+  transferDialog = false,
+}: {
+  memberRole: 'member' | 'moderator'
+  transferDialog?: boolean
+}) {
   const row = { ...member, role: memberRole }
   const state = useCommunityMembersManager({
     community,
@@ -70,13 +77,22 @@ function OwnerView({ memberRole }: { memberRole: 'member' | 'moderator' }) {
   })
   return (
     <StoryFrame>
-      <CommunityMemberRow
-        community={community}
-        currentUserMembership={ownerMembership}
-        isOwner
-        member={row}
-        state={state}
-      />
+      {transferDialog ? (
+        <TransferOwnershipDialog
+          community={community}
+          member={row}
+          state={state}
+          username={publicUsers[0]!.username}
+        />
+      ) : (
+        <CommunityMemberRow
+          community={community}
+          currentUserMembership={ownerMembership}
+          isOwner
+          member={row}
+          state={state}
+        />
+      )}
     </StoryFrame>
   )
 }
@@ -87,4 +103,8 @@ export const ModeratorManagedByOwner: Story = {
 
 export const MemberManagedByOwner: Story = {
   render: () => <OwnerView memberRole='member' />,
+}
+
+export const OwnershipTransfer: Story = {
+  render: () => <OwnerView memberRole='moderator' transferDialog />,
 }
