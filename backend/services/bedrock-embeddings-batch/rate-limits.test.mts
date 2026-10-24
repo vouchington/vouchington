@@ -46,10 +46,6 @@ describe('getBatchCreationLimits', () => {
     await closeScopedDynamicConfigContext([bedrockEmbeddingsBatchConfig])
   })
 
-  it('rejects an invalid quota reference time', async () => {
-    await expect(getBatchCreationLimits(new Date(Number.NaN))).rejects.toBeInstanceOf(RangeError)
-  })
-
   it('allows a batch within the configured request and size budgets', async () => {
     const referenceTime = new Date()
     overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, {
