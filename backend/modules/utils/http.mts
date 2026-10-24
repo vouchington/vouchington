@@ -32,17 +32,20 @@ export const {
 
 addGracefulShutdownDrainCallback(closeHttpDispatchers)
 
+/* no-mistakes: integration=http */
 export const fetchWithTimeout = (
   options: Omit<transport.FetchWithTimeoutOptions, 'dispatchers'>,
 ): Promise<transport.FetchWithTimeoutResult> =>
   transport.fetchWithTimeout({ ...options, dispatchers })
 
+/* no-mistakes: integration=http */
 export const fetchWithTimeoutSimple = (url: string, timeoutMs: number): Promise<Response> =>
   transport.fetchWithTimeoutSimple(url, timeoutMs, getExternalRequestDispatcher())
 
 export const cancelResponseBody = (response: Parameters<typeof transport.cancelResponseBody>[0]) =>
   transport.cancelResponseBody(response, reportError)
 
+/* no-mistakes: integration=http */
 export const handleHttpErrors = (options: { response: Response; url: string }): void =>
   transport.handleHttpErrors({
     ...options,
