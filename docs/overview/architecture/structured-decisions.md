@@ -111,29 +111,18 @@ prefiltered candidates use prompt defaults. A repeated identical batch ID return
 decision; conflicting reuse fails closed. No generic classifier code casts votes, applies labels,
 tags topics, or changes story membership.
 
-### Measurer-less single-call executor
+### Measurer-less single-call preparation
 
-`executeSingleCallClassifierDecision` (`@agents/classifiers/execute-single-call.mts`) is a
-sharding-free twin of `executeClassifierDecision` for classifier families that have no exact,
-synchronous context measurer for their active provider/model. The C6 tagging autotagger's Noul
-classifier run is a documented intended use; production use of this exported helper is unconfirmed.
-The export is retained provisionally under issue #1360 and may be removed after intended-use review.
-It shares validation, mapping, and persistence with the sharded executor through a common
-base input type, but sends every binding as a single request instead of packing shards against a
-token budget: it makes no character, byte, or candidate-count estimate at all, rather than
-approximating one. The tradeoff this accepts: an oversized-context provider rejection is not
-caught or packed around ahead of time — it surfaces as an ordinary `StructuredDecisionError`
-classified from its status (a 400 or 413 is permanent, so a classifier run ends terminal
-`provider-error` rather than retrying a request that can never fit), rather than the call layer
-itself ever splitting an over-budget request into shards. A transient failure is retried by the
-caller's own queue semantics; see
-provider failures.
+The classifier-run lifecycle uses `prepareSingleCallClassifierDecision` when its provider path has
+no exact synchronous context measurer. It sends every binding in one request without inventing a
+character, byte, or candidate-count estimate. It validates the configuration, bindings, provider
+response, and complete candidate coverage, then returns the fully bound persistence input without
+writing it. The classifier-run owner persists that input with its durable receipt transaction.
 
-`prepareSingleCallClassifierDecision` performs that same configuration, binding, provider, and
-coverage validation but returns the fully bound persistence input without writing it. A caller
-that needs one transaction for classifier results and another durable receipt can persist the
-prepared input through its owned transaction; `executeSingleCallClassifierDecision` remains the
-ordinary convenience wrapper that prepares once and calls classifier persistence once.
+An oversized-context provider rejection remains an ordinary provider error for the caller's retry
+policy; this path does not split or approximate the request. A transient failure follows the
+caller's queue semantics, while a permanent provider rejection ends the run through its recorded
+failure path.
 
 ## Related
 
