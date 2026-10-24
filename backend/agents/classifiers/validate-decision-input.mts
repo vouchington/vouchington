@@ -35,16 +35,6 @@ export function assertConfigurationIdentity(
     throw new Error('Classifier decision requires at least one binding')
   if (configuration.primitive !== input.bindings[0]?.type)
     throw new Error('Classifier bindings do not match the active classifier primitive')
-  // Single-call classifier families (no exact context measurer) omit
-  // `contextPolicy` entirely; there is nothing to cross-check it against.
-  if (input.contextPolicy) {
-    if (configuration.modelProvider !== input.contextPolicy.transport)
-      throw new Error(
-        'Classifier context policy transport does not match the active model provider',
-      )
-    if (configuration.modelName !== input.contextPolicy.model)
-      throw new Error('Classifier context policy model does not match the active model')
-  }
   if (input.state.trim().length === 0) throw new Error('Classifier decision state is required')
 }
 

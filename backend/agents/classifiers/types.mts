@@ -1,13 +1,5 @@
-import type {
-  StructuredDecisionClient,
-  StructuredDecisionRequest,
-} from '@modules/structured-decisions'
-import type {
-  ActiveClassifierConfiguration,
-  ClassifierDecisionScope,
-  PersistClassifierDecisionInput,
-  PersistClassifierDecisionResult,
-} from '@services/classifiers'
+import type { StructuredDecisionClient } from '@modules/structured-decisions'
+import type { ClassifierDecisionScope } from '@services/classifiers'
 import type { ClassifierChoiceKey, ClassifierSafeText } from './safe-content.mts'
 
 export type ClassifierDecisionSubject =
@@ -70,25 +62,6 @@ export type ChoiceClassifierBinding = {
 
 export type ClassifierQuestionBinding = NoulClassifierBinding | ChoiceClassifierBinding
 
-export type TypesafeClassifierContextPolicy = {
-  transport: 'typesafe'
-  model: string
-  measure: (request: StructuredDecisionRequest) => {
-    totalTokens: number
-    stateAndLongestQuestionTokens: number
-  }
-}
-
-export type OpenRouterClassifierContextPolicy = {
-  transport: 'openrouter'
-  model: string
-  measure: (request: StructuredDecisionRequest) => { totalTokens: number }
-}
-
-export type ClassifierContextPolicy =
-  | TypesafeClassifierContextPolicy
-  | OpenRouterClassifierContextPolicy
-
 export type ClassifierDecisionRequestInput = {
   batchId: string
   classifierId: string
@@ -97,31 +70,9 @@ export type ClassifierDecisionRequestInput = {
   scope: ClassifierDecisionScope
   state: ClassifierSafeText
   bindings: readonly ClassifierQuestionBinding[]
-  contextPolicy?: ClassifierContextPolicy
   client: StructuredDecisionClient
   signal?: AbortSignal
 }
 
-export type ExecuteClassifierDecisionInput = ClassifierDecisionRequestInput & {
-  contextPolicy: ClassifierContextPolicy
-}
-
-/**
- * Input for `prepareSingleCallClassifierDecision`, the sharding-free path for
- * classifier families with no exact context measurer. It omits `contextPolicy`
- * entirely rather than accepting one that would never be consulted; see
- * `docs/overview/architecture/structured-decisions.md`.
- */
-export type ExecuteSingleCallClassifierDecisionInput = Omit<
-  ClassifierDecisionRequestInput,
-  'contextPolicy'
->
-
-export type ExecuteClassifierDecisionDependencies = {
-  getActiveClassifierConfiguration?: (
-    classifierId: string,
-  ) => Promise<ActiveClassifierConfiguration | null>
-  persistClassifierDecision?: (
-    input: PersistClassifierDecisionInput,
-  ) => Promise<PersistClassifierDecisionResult>
-}
+/** Input prepared before the classifier-run owner persists its durable receipt. */
+export type ExecuteSingleCallClassifierDecisionInput = ClassifierDecisionRequestInput
