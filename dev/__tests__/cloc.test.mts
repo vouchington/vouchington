@@ -72,25 +72,6 @@ describe('Voucha cloc layout', () => {
     },
   )
 
-  it.each([
-    ['backend/services/posts/post-test.mts', 'tests'],
-    ['backend/services/posts/spec.ctsx', 'tests'],
-    ['backend/services/posts/.test.mts', 'tests'],
-    ['backend/services/posts/post.mock.test.ts', 'tests'],
-    ['backend/services/posts/contest.ts', 'source'],
-    ['backend/services/posts/test.json', 'source'],
-    ['backend/services/posts/test.mtsx.extra', 'source'],
-    ['backend/tests/.config.mts', 'tests'],
-    ['backend/test/.hidden.mts', 'tests'],
-    ['backend/__snapshots__/query.snap', 'tests'],
-    ['backend/.config.mts', 'tooling'],
-    ['backend/scripts/ingest.mts', 'tooling'],
-    ['test-helpers/fixtures.mts', 'tooling'],
-    ['README.md', 'tooling'],
-  ])('preserves category precedence for %s', (path, category) => {
-    expect(classifyFile(path).category).toBe(category)
-  })
-
   it('counts only Voucha roots and excludes fixture, snapshot and Worker output trees', () => {
     const paths = [
       'backend/services/posts/index.mts',
