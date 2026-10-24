@@ -1,4 +1,4 @@
-import type { ScheduleDefinition } from '@backend/worker-runtime'
+import type { ScheduleDefinition } from '@vouchington/worker-runtime'
 
 export const SCHEDULE_DEFINITIONS: ScheduleDefinition[] = [
   {

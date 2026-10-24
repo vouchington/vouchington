@@ -1,4 +1,4 @@
-import type { EnqueueAdmission } from '../data-stores/valkey-glide-mq/glide-mq-admission.mts'
+import type { EnqueueAdmission } from '@vouchington/worker-runtime/glide-mq'
 import {
   observeElectionTerminalSource,
   observeElectionQueueTerminals,

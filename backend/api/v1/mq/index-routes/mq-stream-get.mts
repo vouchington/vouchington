@@ -1,5 +1,6 @@
 import { apiSseFrame } from '@vouchington/utils/api-response-contract'
-import { aggregateQueueStats, getAllQueueStats } from '@data-stores/valkey-glide-mq/get-queue-stats'
+import { getAllQueueStats } from '@data-stores/valkey-glide-mq/get-queue-stats'
+import { aggregateQueueStats } from '@vouchington/worker-runtime/glide-mq'
 import type { Context } from '@jongleberry/api-server'
 import onError from '@modules/on-error'
 import { currentUserCanAccessQueueStats } from '@services/queue-monitoring'

@@ -1,4 +1,4 @@
-import { SCHEDULING_FLOOR_MS } from '@modules/scheduled-job-manifest'
+import { SCHEDULING_FLOOR_MS } from '@vouchington/worker-runtime/schedule-manifest'
 import { entityOrderingKey } from '@queues/background/enqueues/define-job'
 
 // Recovery-only path (catches enqueues that failed post-commit, not the latency-critical one).

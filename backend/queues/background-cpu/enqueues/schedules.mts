@@ -2,8 +2,8 @@ import {
   defineScheduledJobManifest,
   upsertScheduledJobManifest,
   type ScheduledJobManifest,
-  type ScheduledJobQueue,
 } from '@modules/scheduled-job-manifest'
+import type { ScheduledJobQueue } from '@vouchington/worker-runtime/schedule-manifest'
 import { BACKGROUND_CPU_QUEUE_NAME } from '../config.mts'
 import { backgroundCpu } from '../queues.mts'
 

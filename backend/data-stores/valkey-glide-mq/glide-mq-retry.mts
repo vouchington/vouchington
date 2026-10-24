@@ -1,6 +1,6 @@
 import { randomInt } from 'node:crypto'
 
-import { retryValkeyOperation } from 'valkyries'
+import { isSaturationError, retrySaturationError, retryValkeyOperation } from 'valkyries'
 import onError, { recordValkeySaturation } from '@modules/on-error'
 
 // Only "Reached maximum inflight requests" is safe to retry for non-idempotent queues (e.g.
@@ -9,55 +9,37 @@ import onError, { recordValkeySaturation } from '@modules/on-error'
 // Other transient errors (connection closed, timeout) are ambiguous: the command may have
 // already been executed, so retrying could create duplicate jobs.
 // See docs/requirements/platform/JOB-REPLAYABILITY.md for the non-replayable queue list.
-function isInflightSaturationError(error: unknown): boolean {
-  return error instanceof Error && error.message.includes('Reached maximum inflight requests')
-}
-
 export function retryTransientEnqueue<T>(fn: () => Promise<T>): Promise<T> {
   return retryValkeyOperation(fn, {
     attempts: 3,
     delayMs: randomInt(800, 1_200),
-    shouldRetry: isInflightSaturationError,
+    shouldRetry: isSaturationError,
   })
 }
 
 /**
- * Wrap a Valkey command with retry logic specific to inflight-saturation errors.
- * Used by the glide-mq command-client Proxy so all worker-internal Valkey commands
- * (XADD, XREADGROUP, XACK, etc.) retry instead of failing jobs immediately.
- *
- * ~5s jittered delay — long enough to let other in-flight commands drain before retrying.
- * Saturation-only shouldRetry — connection/timeout errors are ambiguous and are not retried here.
+ * Retry a worker-internal Valkey command (XADD, XREADGROUP, XACK, etc.) on inflight saturation,
+ * so a saturated client delays a job instead of failing it. Connection and timeout errors are
+ * ambiguous and are not retried. Each retry is recorded, and an exhausted retry is tagged and
+ * reported before it is rethrown.
  */
 export async function retryOnInflightSaturation<T>(
   fn: () => Promise<T>,
   context: { command: string; client: string },
 ): Promise<T> {
-  const attempts = (() => {
-    const parsed = parseInt(process.env.VALKEY_INFLIGHT_RETRY_ATTEMPTS ?? '', 10)
-    return parsed > 0 ? parsed : 3
-  })()
-
   let attempt = 0
 
   try {
-    return await retryValkeyOperation(
-      () => {
-        if (attempt > 0) {
-          recordValkeySaturation({ client: context.client, command: context.command, attempt })
-        }
-        attempt++
-        return fn()
-      },
-      {
-        attempts,
-        delayMs: randomInt(4_500, 5_500),
-        shouldRetry: isInflightSaturationError,
-      },
-    )
+    return await retrySaturationError(() => {
+      if (attempt > 0) {
+        recordValkeySaturation({ client: context.client, command: context.command, attempt })
+      }
+      attempt++
+      return fn()
+    })
   } catch (err: unknown) {
-    // Non-saturation errors are rethrown immediately by retryValkeyOperation — pass through.
-    if (!isInflightSaturationError(err)) throw err
+    // Non-saturation errors are rethrown immediately by the retry — pass through.
+    if (!isSaturationError(err)) throw err
 
     // Saturation exhaustion: all retry attempts failed. Decorate and report.
     const localErr = err instanceof Error ? err : new Error(String(err))
@@ -71,7 +53,7 @@ export async function retryOnInflightSaturation<T>(
       client: context.client,
       command: context.command,
     }
-    decorated.extra = { ...decorated.extra, attempts }
+    decorated.extra = { ...decorated.extra, attempts: attempt }
     onError(decorated)
     throw decorated
   }

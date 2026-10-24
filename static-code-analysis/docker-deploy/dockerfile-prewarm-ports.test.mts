@@ -9,7 +9,7 @@ import {
 const repoRoot = path.resolve(import.meta.dirname, '..', '..')
 const dockerfilePath = path.join(repoRoot, 'backend', 'Dockerfile')
 
-// registerWorkerServe (backend/worker-runtime/serve-runtime.mts) only binds a real prewarm
+// registerWorkerServe (@vouchington/worker-runtime) only binds a real prewarm
 // listener when NODE_PREWARM_PORT is set, so a worker prewarm stage that forgets it hangs
 // node-prewarm until timeout instead of binding a default port. `/prod/worker-` is a proxy for
 // "this stage runs a worker entrypoint" — the exhaustiveness test below keeps a future renamed

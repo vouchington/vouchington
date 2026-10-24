@@ -1,4 +1,4 @@
-import { SCHEDULING_FLOOR_MS } from '@modules/scheduled-job-manifest'
+import { SCHEDULING_FLOOR_MS } from '@vouchington/worker-runtime/schedule-manifest'
 import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
 import { describe, expect, it } from 'vitest'
 import { scheduledJobManifest } from './schedules.mts'

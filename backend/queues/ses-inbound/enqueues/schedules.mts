@@ -1,7 +1,5 @@
-import {
-  defineScheduledJobManifest,
-  toSchedulerTemplateOptions,
-} from '@modules/scheduled-job-manifest'
+import { defineScheduledJobManifest } from '@modules/scheduled-job-manifest'
+import { toSchedulerTemplateOptions } from '@vouchington/worker-runtime/schedule-manifest'
 import { BACKGROUND_QUEUE_NAME } from '@queues/background/config'
 import { SES_INBOUND_RECONCILE_JOB } from '@queues/background/enqueues/ses-inbound-jobs'
 import { SES_INBOUND_RECONCILE_INTERVAL_MS } from '../config.mts'

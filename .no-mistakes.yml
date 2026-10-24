@@ -1916,7 +1916,6 @@ rules:
       - 'backend/test-helpers/rest-usage-meter.mts'
       - 'backend/test-helpers/services/oauth/friends-batch-sync.mts'
       - 'backend/mcp/__tests__/create-community.ledger.test.mts'
-      - 'backend/worker-runtime/sqs-consumer.no-data.mock.test.mts'
       - 'backend/workers/activitypub-delivery/__tests__/e2e-round-trip.test.mts'
       - 'backend/workers/ai-agents/processors/classifier-run-autotagger-agent.mock.test.mts'
       - 'backend/workers/ai-agents/processors/process-classifier-run.real-glide.mock.test.mts'
@@ -2026,7 +2025,6 @@ rules:
       - 'backend/test-helpers/entities/memberships/locks/stripe-catalog-fk-hold.mts'
       - 'backend/test-helpers/entities/oauth-authorization-recovery.mts'
       - 'backend/test-helpers/entities/user-deletion-actor-locks.mts'
-      - 'backend/test-helpers/entrypoints/worker-serve-harness.mts'
       - 'backend/test-helpers/feeds.mts'
       - 'backend/test-helpers/notification-push-fixtures.mts'
       - 'backend/test-helpers/polling.mts'
@@ -2741,7 +2739,7 @@ rules:
         - name: '@vouchington/uuid-v7'
           reason: First-party UUIDv7 generation, validation, bounds, and conversion primitives published by the repo author.
         - name: '@vouchington/worker-runtime'
-          reason: First-party generic worker queue-selection, loading, and scheduling runtime published by the repo author.
+          reason: First-party generic worker runtime (queue selection, GlideMQ factory and enqueue helpers, SQS consumers, lifecycle, schedule manifests) published by the repo author.
         - name: agent-blackboard
           reason: First-party agent session client and MCP server published by the repo author.
         - name: coverage-check

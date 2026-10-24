@@ -4,15 +4,12 @@ import { workerQueueCommandClient } from './glide-mq-shared-client.mts'
 import { addGracefulShutdownCallback } from '@data-stores/graceful-shutdown'
 import onError from '@modules/on-error'
 import { Queue } from 'glide-mq'
-export interface QueueStats {
-  name: string
-  waiting: number
-  active: number
-  delayed: number
-  completed: number
-  failed: number
-  paused: boolean
-}
+import {
+  aggregateQueueStats,
+  getQueueStats as readQueueStats,
+  type AggregatedQueueStats,
+  type QueueStats,
+} from '@vouchington/worker-runtime/glide-mq'
 
 // The metric path folds due priority jobs from the scheduled ZSet into `waiting`, and `delayed` is
 // that whole ZSet, so it has no `delayed` of its own: one job must not count in two buckets.
@@ -52,26 +49,10 @@ function getQueueInstance(name: string): Queue {
   return queueInstances.get(name)!
 }
 
-// `delayed` is glide-mq's scheduled ZSet size, which `getJobCounts()` already reads, so it adds no
-// command. `waiting` excludes the ZSet, so `waiting + active + delayed` is the unfinished backlog.
-async function readQueueStats(name: string, queue: Queue): Promise<QueueStats> {
-  const [counts, isPaused] = await Promise.all([queue.getJobCounts(), queue.isPaused()])
-
-  return {
-    name,
-    waiting: counts.waiting,
-    active: counts.active,
-    delayed: counts.delayed,
-    completed: counts.completed,
-    failed: counts.failed,
-    paused: isPaused,
-  }
-}
-
 // Get statistics for a single queue
 export async function getQueueStats(name: string): Promise<QueueStats> {
   try {
-    return await readQueueStats(name, getQueueInstance(name))
+    return await readQueueStats(getQueueInstance(name), name)
   } catch (err) {
     const localErr = err as Error & { extra?: Record<string, unknown> }
     localErr.extra = { queueName: name, operation: 'getQueueStats' }
@@ -87,7 +68,7 @@ async function getQueueMetricStats(name: string): Promise<QueueMetricStats> {
     const scheduledKey = `${workerQueuePrefix ?? 'glide'}:{${name}}:scheduled`
     const [{ delayed: _scheduled, ...stats }, fifoWaitingJobs, queueMetricResult] =
       await Promise.all([
-        readQueueStats(name, queue),
+        readQueueStats(queue, name),
         // Pinned GlideMQ reads its waiting stream with XRANGE - + (oldest-first), an invariant
         // locked by get-queue-stats.real-glide.mock.test.mts. Fetch only one metadata record, and
         // keep this extra read exclusive to the five-minute publisher rather than admin polling.
@@ -126,35 +107,13 @@ export async function getAllQueueStats(queueNames: readonly string[]): Promise<Q
   return results.toSorted((a, b) => a.name.localeCompare(b.name))
 }
 
-export interface AggregatedQueueStats {
-  totalWaiting: number
-  totalActive: number
-  totalDelayed: number
-  totalCompleted: number
-  totalFailed: number
-  queueCount: number
-}
-
 type MetricAggregate = Omit<AggregatedQueueStats, 'totalDelayed'>
 
 function sumActionableQueueStats(stats: readonly Omit<QueueStats, 'delayed'>[]): MetricAggregate {
-  return stats.reduce<MetricAggregate>(
-    (aggregate, queue) => ({
-      totalWaiting: aggregate.totalWaiting + queue.waiting,
-      totalActive: aggregate.totalActive + queue.active,
-      totalCompleted: aggregate.totalCompleted + queue.completed,
-      totalFailed: aggregate.totalFailed + queue.failed,
-      queueCount: aggregate.queueCount + 1,
-    }),
-    { totalWaiting: 0, totalActive: 0, totalCompleted: 0, totalFailed: 0, queueCount: 0 },
+  const { totalDelayed: _delayed, ...totals } = aggregateQueueStats(
+    stats.map(queue => ({ ...queue, delayed: 0 })),
   )
-}
-
-export function aggregateQueueStats(stats: readonly QueueStats[]): AggregatedQueueStats {
-  return {
-    ...sumActionableQueueStats(stats),
-    totalDelayed: stats.reduce((total, queue) => total + queue.delayed, 0),
-  }
+  return totals
 }
 
 // Get the inexpensive aggregate used by admin API surfaces.

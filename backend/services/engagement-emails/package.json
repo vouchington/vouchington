@@ -35,6 +35,7 @@
     "valkyries": "^0.11.2"
   },
   "devDependencies": {
-    "@voucha/test-helpers": "workspace:^"
+    "@voucha/test-helpers": "workspace:^",
+    "@vouchington/worker-runtime": "^0.2.0"
   }
 }

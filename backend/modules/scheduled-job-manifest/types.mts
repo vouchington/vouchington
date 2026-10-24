@@ -1,10 +1,9 @@
-import type { JobTemplate } from 'glide-mq'
+import type {
+  ScheduledJobDefinition as SharedScheduledJobDefinition,
+  ScheduledJobManifest as SharedScheduledJobManifest,
+} from '@vouchington/worker-runtime/schedule-manifest'
 
 export type ScheduledJobEnvironment = 'all' | 'production' | 'deployed'
-
-export type ScheduledJobRepeat = { pattern: string } | { every: number }
-
-type ScheduledJobRepeatDefinition = ScheduledJobRepeat | (() => ScheduledJobRepeat)
 
 export type ScheduledJobTrigger = () => unknown | Promise<unknown>
 
@@ -37,58 +36,12 @@ export type ScheduledJobOperatorSurfaceDefinition =
   | PsqlAdminOperatorSurface
   | ValkeyBloomOperatorSurface
 
-export type NonEmptyOperatorSurfaces = readonly [
-  ScheduledJobOperatorSurfaceDefinition,
-  ...ScheduledJobOperatorSurfaceDefinition[],
-]
+export type ScheduledJobDefinition =
+  SharedScheduledJobDefinition<ScheduledJobOperatorSurfaceDefinition> & {
+    environment?: ScheduledJobEnvironment
+  }
 
-/**
- * Job options a scheduler template may carry. The scheduler tick never applies `delay`,
- * `deduplication`, `parent` or a fixed `jobId`, so glide-mq rejects them at `upsertJobScheduler`;
- * the type excludes them. Dedup for a scheduled job belongs on the manual-trigger enqueue.
- */
-export type SchedulerTemplateJobOptions = NonNullable<JobTemplate['opts']>
-
-type ScheduledJobTemplate = {
-  name: string
-  opts: SchedulerTemplateJobOptions | (() => SchedulerTemplateJobOptions)
-} & ({ data?: unknown; dataFactory?: never } | { data?: never; dataFactory: () => unknown })
-
-export type ScheduledJobDefinition = {
-  schedulerId: string
-  repeat: ScheduledJobRepeatDefinition
-  template: ScheduledJobTemplate
-  environment?: ScheduledJobEnvironment
-  registration?: 'sequential'
-  operatorSurfaces: NonEmptyOperatorSurfaces
-  /**
-   * Required whenever the resolved `repeat` cadence is faster than the global 1-minute scheduling
-   * floor. Optional in the type because the requirement depends on a resolved (possibly
-   * thunk-computed) value that TypeScript cannot see; it is enforced at runtime by
-   * `validateScheduledJobRepeat` in `./validation.mts`, which throws a manifest-validation error
-   * when a sub-minute cadence has no justification. No job is justified today.
-   */
-  subMinuteJustification?: string
-}
-
-export type ScheduledJobManifest = {
-  queueName: string
-  jobs: readonly ScheduledJobDefinition[]
-}
-
-export type ScheduledJobQueue = {
-  upsertJobScheduler: (
-    schedulerId: string,
-    repeat: ScheduledJobRepeat,
-    template: { name: string; data?: unknown; opts: SchedulerTemplateJobOptions },
-  ) => Promise<unknown>
-  getRepeatableJobs: () => Promise<ReadonlyArray<{ name: string }>>
-  removeJobScheduler: (schedulerId: string) => Promise<unknown>
-}
-
-export type ScheduledJobRuntimeOptions = {
-  nodeEnv?: string
-}
+export type ScheduledJobManifest = SharedScheduledJobManifest<ScheduledJobDefinition>
 
 export type ProjectedScheduledJob = {
   id: string

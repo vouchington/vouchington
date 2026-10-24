@@ -21,9 +21,6 @@
   },
   "scripts": {},
   "dependencies": {
-    "@aws-sdk/client-sqs": "^3.1154.0",
-    "@data-stores/graceful-shutdown": "workspace:^",
-    "@modules/aws": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/worker-queue-inventory": "workspace:^",
     "@services/analytics": "workspace:^",
@@ -33,8 +30,8 @@
     "@services/entity-cache": "workspace:^",
     "@services/urls-domains-blacklist": "workspace:^",
     "@ts-shared/deploy-environment": "workspace:^",
-    "@vouchington/utils": "^0.7.5",
-    "@vouchington/worker-runtime": "^0.1.3",
+    "@vouchington/utils": "^0.8.0",
+    "@vouchington/worker-runtime": "^0.2.0",
     "@workers/heartbeat": "workspace:^",
     "glide-mq": "^0.19.0"
   }

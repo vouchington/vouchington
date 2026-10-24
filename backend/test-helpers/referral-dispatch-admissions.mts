@@ -1,7 +1,4 @@
-import {
-  onEnqueueAdmission,
-  type EnqueueAdmission,
-} from '../data-stores/valkey-glide-mq/glide-mq-admission.mts'
+import { onEnqueueAdmission, type EnqueueAdmission } from '@vouchington/worker-runtime/glide-mq'
 import { BACKGROUND_CPU_QUEUE_NAME } from '../queues/background-cpu/config.mts'
 import { backgroundCpu } from '../queues/background-cpu/queues.mts'
 import { readEnqueuedJob } from './queue-jobs.mts'

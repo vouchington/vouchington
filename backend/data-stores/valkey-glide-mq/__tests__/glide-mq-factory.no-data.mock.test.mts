@@ -171,7 +171,7 @@ describe('glide-mq-factory', () => {
 
     await expect(enqueue({ id: '1' })).rejects.toThrow(error)
 
-    expect(mockTrackJobEnqueue).toHaveBeenCalledWith('queue', 'job')
+    expect(mockTrackJobEnqueue).toHaveBeenCalledWith('queue', 'job', 1)
     expect(captureException).toHaveBeenCalledWith(error, expect.anything())
   })
 
@@ -230,7 +230,7 @@ describe('glide-mq-factory', () => {
 
       expect(stub.getCalls()).toBe(2)
       expect(captureException).not.toHaveBeenCalled()
-      expect(mockTrackJobEnqueue).toHaveBeenCalledWith('q', 'j')
+      expect(mockTrackJobEnqueue).toHaveBeenCalledWith('q', 'j', 1)
     })
 
     it('createEnqueueFunction reports to onError after exhausting all retry attempts', async () => {
