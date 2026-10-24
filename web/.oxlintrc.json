@@ -84,6 +84,34 @@
       }
     },
     {
+      // Owner rule: interactive elements are shared components that carry data-pw. Every call site
+      // of a registered component must pass its own literal test id.
+      "files": ["app/**/*.tsx", "components/**/*.tsx"],
+      "rules": {
+        "no-mistakes/playwright-require-interactive-test-id": [
+          "error",
+          {
+            "selectorAttributes": ["data-pw"],
+            "interactiveComponents": [
+              "Button",
+              "AlertDialogAction",
+              "DecisionButton",
+              "ImageButton",
+              "UserLink",
+              "ExternalLink",
+              "TextLink"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["**/__tests__/**", "**/*.test.tsx", "**/*.mock.test.tsx", "**/*.stories.tsx"],
+      "rules": {
+        "no-mistakes/playwright-require-interactive-test-id": "off"
+      }
+    },
+    {
       "files": [
         "app/**/page.{ts,tsx}",
         "app/**/layout.{ts,tsx}",
