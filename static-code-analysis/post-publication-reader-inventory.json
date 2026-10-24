@@ -257,6 +257,13 @@
       "owner_classification": "mixed-discovery-sql"
     },
     {
+      "path": "backend/services/communities/publications/approved-posts-sort-sql.mts",
+      "classification": "raw-hydrator",
+      "reason": "Sort fragments; approved-posts owns public eligibility composition for the assembled query.",
+      "owner_path": "backend/services/communities/publications/approved-posts.mts",
+      "owner_classification": "mixed-discovery-sql"
+    },
+    {
       "path": "backend/services/entity-relations/build-select-query.mts",
       "classification": "raw-hydrator",
       "reason": "Relation read assembler delegates its subject and object post predicates to post-access.",
