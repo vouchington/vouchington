@@ -32,6 +32,7 @@ import { isAdminUser } from '@services/users'
 import { apiResponse } from '@vouchington/utils/api-response-contract'
 import { apiQuery } from '../../api-query-contract.mts'
 import {
+  parseJsonBody,
   getOptionalAuthAndRateLimit,
   setAnonymousPublicCacheHeaders,
   requireAuthAndRateLimit,
@@ -128,7 +129,7 @@ app.route('/api/v1/hostnames/:id').patch(async (ctx: Context) => {
   const currentUser = await requireAuthAndRateLimit(ctx, isAdminUser, 'PATCH:/api/v1/hostnames/:id')
   ctx.assert(isUUID(ctx.params.id!), 422, 'Invalid ID')
 
-  const body = (await ctx.request.json('10kb')) as UpdateHostnameBody
+  const body = (await parseJsonBody(ctx, '10kb')) as UpdateHostnameBody
   validateRequestContract(ctx, 'PATCH:/api/v1/hostnames/:id', { body, path: ctx.params })
   const changes = readHostnameChanges(body)
 

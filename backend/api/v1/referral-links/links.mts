@@ -1,7 +1,12 @@
 import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { requireAuth, validateRequestContract, validateUUIDParam } from '../../response-helpers.mts'
+import {
+  parseJsonBody,
+  requireAuth,
+  validateRequestContract,
+  validateUUIDParam,
+} from '../../response-helpers.mts'
 import {
   getUserReferralLinks,
   getUserReferralLink,
@@ -82,7 +87,7 @@ app
     const provenance = getRequestContentProvenance()
     assertNotSuspended(currentUser)
 
-    const body = (await ctx.request.json('1mb')) as CreateReferralLinkBody
+    const body = (await parseJsonBody(ctx, '1mb')) as CreateReferralLinkBody
     ctx.assert(body !== null && typeof body === 'object', 422, 'Invalid request body')
     const userId = typeof body.user_id === 'string' && body.user_id ? body.user_id : currentUser.id
     assertCurrentUserCanCreateUserReferralLink(currentUser, userId)
@@ -115,7 +120,7 @@ app
     ctx.assert(existing, 404, 'Referral link not found')
     assertCurrentUserCanUpdateUserReferralLink(currentUser, existing)
 
-    const body = (await ctx.request.json('1mb')) as UpdateReferralLinkBody
+    const body = (await parseJsonBody(ctx, '1mb')) as UpdateReferralLinkBody
     validateRequestContract(ctx, 'PATCH:/api/v1/referral-links/:linkId', {
       body,
       path: ctx.params,

@@ -45,6 +45,7 @@ import {
 } from '@services/copyright-notices/copyright-mcp-case-input'
 import { assertNotSuspended } from '@services/users'
 import {
+  parseJsonBody,
   requireAuthAndRateLimit,
   validateRequestContract,
   validateUUIDParam,
@@ -239,8 +240,7 @@ app
     assertNotSuspended(currentUser)
     const noticeId = validateUUIDParam(ctx, 'id')
     const restrictionId = validateUUIDParam(ctx, 'restrictionId')
-    const body = (await ctx.request.json('1mb')) as CopyrightRestrictionReviewRequest
-    assertObjectBody(ctx, body)
+    const body = (await parseJsonBody(ctx, '1mb')) as CopyrightRestrictionReviewRequest
     ctx.assert(boundedString(body.rationale, 10_000), 422, 'rationale is required')
     ctx.assert(
       body.action === 'confirm' || body.action === 'reverse',
@@ -280,8 +280,7 @@ app
     ctx.assert(ctx.request.is('json'), 415, 'Invalid Content-Type')
     const noticeId = validateUUIDParam(ctx, 'id')
     const restrictionId = validateUUIDParam(ctx, 'restrictionId')
-    const body = (await ctx.request.json('1mb')) as CopyrightRestrictionLiftRequest
-    assertObjectBody(ctx, body)
+    const body = (await parseJsonBody(ctx, '1mb')) as CopyrightRestrictionLiftRequest
     ctx.assert(boundedString(body.rationale, 10_000), 422, 'rationale is required')
     validateRequestContract(
       ctx,
@@ -384,8 +383,7 @@ app.route('/api/v1/copyright-email-intakes/:id/notice-associations').post(async 
   )
   assertNotSuspended(currentUser)
   const intakeId = validateUUIDParam(ctx, 'id')
-  const parsedBody: unknown = await ctx.request.json('1mb')
-  assertObjectBody(ctx, parsedBody)
+  const parsedBody: unknown = await parseJsonBody(ctx, '1mb')
   const body = parsedBody as Record<string, unknown>
   ctx.assert(typeof body.copyright_notice_id === 'string', 422, 'copyright_notice_id is required')
   validateRequestContract(ctx, 'POST:/api/v1/copyright-email-intakes/:id/notice-associations', {
@@ -707,21 +705,10 @@ async function parseCopyrightReviewRequest(ctx: Context, routeId: string) {
   )
   assertNotSuspended(currentUser)
   const intakeId = validateUUIDParam(ctx, 'id')
-  const parsedBody: unknown = await ctx.request.json('1mb')
-  assertObjectBody(ctx, parsedBody)
+  const parsedBody: unknown = await parseJsonBody(ctx, '1mb')
   const body = parsedBody as Record<string, unknown>
   ctx.assert(boundedString(body.rationale, 10_000), 422, 'rationale is required')
   return { currentUser, intakeId, body }
-}
-
-// A JSON `null`, array or scalar has no fields to read; refuse it before the first field read so it
-// answers 422 instead of throwing a TypeError (500).
-function assertObjectBody(ctx: Context, body: unknown) {
-  ctx.assert(
-    body !== null && typeof body === 'object' && !Array.isArray(body),
-    422,
-    'Invalid request body',
-  )
 }
 
 async function enqueueMissingSourceImageEmbedding(): Promise<void> {

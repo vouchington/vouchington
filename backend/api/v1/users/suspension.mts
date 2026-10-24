@@ -1,6 +1,10 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { requireAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
+import {
+  parseJsonBody,
+  requireAuthAndRateLimit,
+  validateRequestContract,
+} from '../../response-helpers.mts'
 import { isAdminUser, suspendUser, unsuspendUser } from '@services/users'
 
 type SuspendUserRequest = { reason?: string }
@@ -14,7 +18,7 @@ app
       'PUT:/api/v1/users/:userId/suspension',
     )
 
-    const body = (await ctx.request.json('1kb')) as SuspendUserRequest
+    const body = (await parseJsonBody(ctx, '1kb')) as SuspendUserRequest
     validateRequestContract(ctx, 'PUT:/api/v1/users/:userId/suspension', {
       body,
       path: ctx.params,

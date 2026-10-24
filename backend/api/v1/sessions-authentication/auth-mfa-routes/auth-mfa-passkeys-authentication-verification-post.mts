@@ -7,13 +7,13 @@ import {
 } from '@services/mfa'
 import { verifyPasskeyAuthentication } from '@services/passkeys'
 import app from '../../../app.mts'
-import { validateRequestContract } from '../../../response-helpers.mts'
+import { parseJsonBody, validateRequestContract } from '../../../response-helpers.mts'
 import { completeMfaVerification } from './complete-mfa-verification.mts'
 
 app.route('/api/v1/auth/mfa/passkeys/authentication/verification').post(async (ctx: Context) => {
   await ctx.applyRouteRateLimit('POST:/api/v1/auth/mfa/passkeys/authentication/verification')
 
-  const body = (await ctx.request.json('100kb')) as {
+  const body = (await parseJsonBody(ctx, '100kb')) as {
     login_attempt_id?: string
     response?: unknown
   }

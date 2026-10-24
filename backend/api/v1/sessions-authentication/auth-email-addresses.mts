@@ -7,7 +7,7 @@ import { setAuthenticationCookies } from '@modules/api-utils'
 import { isHoneypotTriggered } from '@services/honeypot'
 import { verifyCaptchaOrAttestation } from '@services/captcha'
 import { getDeviceContext } from './device-context.mts'
-import { validateRequestContract } from '../../response-helpers.mts'
+import { parseJsonBody, validateRequestContract } from '../../response-helpers.mts'
 import { assertNativeRequest } from './native-request.mts'
 
 import type { Context } from '@jongleberry/api-server'
@@ -48,7 +48,9 @@ async function requestEmailToken(ctx: Context, routeKey: string, native: boolean
   ctx.assert(ctx.request.is('json'), 415, 'Invalid Content-Type')
   let body: EmailAddressTokenBody
   try {
-    body = normalizeEmailAddressJsonBody((await ctx.request.json('100kb')) as EmailAddressTokenBody)
+    body = normalizeEmailAddressJsonBody(
+      (await parseJsonBody(ctx, '100kb')) as EmailAddressTokenBody,
+    )
   } catch (err) {
     await ctx.applyRouteRateLimit(routeKey)
     throw err
@@ -95,7 +97,9 @@ async function loginWithEmailToken(ctx: Context, routeKey: string, native: boole
   ctx.assert(ctx.request.is('json'), 415, 'Invalid Content-Type')
   let body: EmailAddressLoginBody
   try {
-    body = normalizeEmailAddressJsonBody((await ctx.request.json('100kb')) as EmailAddressLoginBody)
+    body = normalizeEmailAddressJsonBody(
+      (await parseJsonBody(ctx, '100kb')) as EmailAddressLoginBody,
+    )
   } catch (err) {
     await ctx.applyRouteRateLimit(routeKey)
     throw err

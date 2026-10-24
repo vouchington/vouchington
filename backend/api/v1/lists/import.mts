@@ -1,6 +1,11 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { requireAuth, validateRequestContract, validateUUIDParam } from '../../response-helpers.mts'
+import {
+  parseJsonBody,
+  requireAuth,
+  validateRequestContract,
+  validateUUIDParam,
+} from '../../response-helpers.mts'
 import { loadCommunityForViewer } from '@services/communities'
 import { getManageableList, importCommunityList } from '@services/lists'
 import { assertNotSuspended, entityRelationViewerFor } from '@services/users'
@@ -13,7 +18,7 @@ app.route('/api/v1/lists/:id/import').post(async (ctx: Context) => {
   const listId = validateUUIDParam(ctx, 'id')
   const list = await getManageableList(currentUser.id, listId)
 
-  const body = (await ctx.request.json('1mb')) as ImportCommunityListBody
+  const body = (await parseJsonBody(ctx, '1mb')) as ImportCommunityListBody
   validateRequestContract(ctx, 'POST:/api/v1/lists/:id/import', { path: ctx.params, body })
   ctx.assert(body.community_slug.length > 0, 422, 'community_slug is required')
 

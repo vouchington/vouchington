@@ -1,7 +1,7 @@
 import app from '../app.mts'
 import { RateLimiter } from '@data-stores/valkey-rate-limiter'
 import createHttpError from 'http-errors'
-import { requireAuth, validateRequestContract } from '../response-helpers.mts'
+import { parseJsonBody, requireAuth, validateRequestContract } from '../response-helpers.mts'
 import { assertNativeRequest } from '../v1/sessions-authentication/native-request.mts'
 import {
   hasAttestationKeyForDevice,
@@ -67,7 +67,7 @@ app.route('/api/v1/oauth/native-session-tokens').post(async (ctx: Context) => {
     attestationStatus = 'unattested'
   }
 
-  const body = (await ctx.request.json('1mb')) as { client_app?: unknown }
+  const body = await parseJsonBody<{ client_app?: unknown }>(ctx)
   validateRequestContract(ctx, ROUTE, { body })
   ctx.assert(
     typeof body.client_app === 'string' &&

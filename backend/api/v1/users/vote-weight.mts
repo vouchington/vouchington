@@ -1,6 +1,7 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import {
+  parseJsonBody,
   requireAuthAndRateLimit,
   validateRequestContract,
   validateUUIDParam,
@@ -21,7 +22,7 @@ app
     )
 
     const userId = validateUUIDParam(ctx, 'userId')
-    const body = (await ctx.request.json('1kb')) as SetVoteWeightRequest
+    const body = (await parseJsonBody(ctx, '1kb')) as SetVoteWeightRequest
     validateRequestContract(ctx, 'PUT:/api/v1/users/:userId/vote-weight', {
       body,
       path: ctx.params,

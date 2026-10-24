@@ -4,6 +4,7 @@ import { grantIdentityVerificationAttempt } from '@services/identity-verificatio
 import { assertNotSuspended, isAdminUser } from '@services/users'
 import { apiRequest } from '@vouchington/utils/api-response-contract'
 import {
+  parseJsonBody,
   requireAuthAndRateLimit,
   validateRequestContract,
   validateUUIDParam,
@@ -20,7 +21,7 @@ app
     )
     assertNotSuspended(currentUser)
     const userId = validateUUIDParam(ctx, 'userId')
-    const rawBody = await ctx.request.json('10kb')
+    const rawBody = await parseJsonBody(ctx, '10kb')
     validateRequestContract(
       ctx,
       'POST:/api/v1/admin/users/:userId/identity-verification-attempts',

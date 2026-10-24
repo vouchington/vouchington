@@ -1,3 +1,4 @@
+import { isHttpError } from 'http-errors'
 import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import type { Context } from '@jongleberry/api-server'
 import type { QueryContract } from '@vouchington/pagination'
@@ -10,7 +11,7 @@ import type { PageInfo } from '@voucha/types/pagination'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import type { PrivateUser } from '@services/users/types'
 import { assertNotSuspended } from '@services/users/suspension'
-import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
+import { parseJsonBody, requireAuth, validateRequestContract } from '../../response-helpers.mts'
 
 // Shared by the passkey and TOTP-authenticator management routes (list, rename, and delete): the
 // auth/id preamble, body validation, and the service call. Each route makes its own
@@ -44,7 +45,7 @@ export async function renameMfaFactor(
   rename: (userId: string, itemId: string, name: string) => Promise<void>,
 ): Promise<void> {
   const { currentUser, id } = await requireAuthAndItemId(ctx, operation)
-  const body = (await ctx.request.json('100kb')) as { name?: string }
+  const body = (await parseJsonBody(ctx, '100kb')) as { name?: string }
   validateRequestContract(ctx, operation, { body })
   const name = (body.name ?? '').trim()
   ctx.assert(name.length > 0 && name.length <= 100, 422, 'name must be 1–100 characters')
@@ -64,7 +65,10 @@ export async function deleteMfaFactor(
 ): Promise<void> {
   const { currentUser, id } = await requireAuthAndItemId(ctx, operation)
   const body = ctx.request.is('json')
-    ? ((await ctx.request.json('100kb').catch(() => ({}))) as { re_auth_token?: string })
+    ? ((await parseJsonBody(ctx, '100kb').catch(err => {
+        if (isHttpError(err) && err.status === 422) throw err
+        return {}
+      })) as { re_auth_token?: string })
     : {}
   validateRequestContract(ctx, operation, { body })
   await deleteFactor(currentUser.id, id, body.re_auth_token)

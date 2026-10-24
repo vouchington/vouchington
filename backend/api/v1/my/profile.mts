@@ -2,7 +2,7 @@ import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import { getProfile, updateProfileMarkdown } from '@services/my/profile'
 import { assertNotSuspended } from '@services/users/suspension'
-import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
+import { parseJsonBody, requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import type { ApiArrayContract } from '@vouchington/utils/api-response-contract'
 import type { ApiUuidContract } from '../../request-contract-types.mts'
 import {
@@ -46,7 +46,7 @@ app.route('/api/v1/my/profile').patch(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'PATCH:/api/v1/my/profile')
   assertNotSuspended(currentUser)
 
-  const body = (await ctx.request.json('100kb')) as UpdateProfileRequest
+  const body = (await parseJsonBody(ctx, '100kb')) as UpdateProfileRequest
   validateRequestContract(ctx, 'PATCH:/api/v1/my/profile', { body })
 
   await updateProfileMarkdown(currentUser.id, body.markdown)
@@ -68,7 +68,7 @@ app.route('/api/v1/my/profile/links').post(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/my/profile/links')
   assertNotSuspended(currentUser)
 
-  const body = (await ctx.request.json('10kb')) as CreateProfileLinkRequest
+  const body = (await parseJsonBody(ctx, '10kb')) as CreateProfileLinkRequest
   validateRequestContract(ctx, 'POST:/api/v1/my/profile/links', { body })
 
   const link = await createProfileLink(currentUser.id, body)
@@ -82,7 +82,7 @@ app.route('/api/v1/my/profile/links/order').put(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'PUT:/api/v1/my/profile/links/order')
   assertNotSuspended(currentUser)
 
-  const body = (await ctx.request.json('50kb')) as ReorderProfileLinksRequest
+  const body = (await parseJsonBody(ctx, '50kb')) as ReorderProfileLinksRequest
   validateRequestContract(ctx, 'PUT:/api/v1/my/profile/links/order', { body })
 
   await reorderProfileLinks(currentUser.id, body.ids)
@@ -96,7 +96,7 @@ app.route('/api/v1/my/profile/links/:id').patch(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'PATCH:/api/v1/my/profile/links/:id')
   assertNotSuspended(currentUser)
 
-  const body = (await ctx.request.json('10kb')) as UpdateProfileLinkRequest
+  const body = (await parseJsonBody(ctx, '10kb')) as UpdateProfileLinkRequest
   validateRequestContract(ctx, 'PATCH:/api/v1/my/profile/links/:id', { path: ctx.params, body })
 
   const link = await updateProfileLink(currentUser.id, ctx.params.id!, body)

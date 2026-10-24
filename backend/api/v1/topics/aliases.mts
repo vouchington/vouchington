@@ -15,6 +15,7 @@ import {
 import { currentUserCanManageTopicAliases } from '@services/topics/authorization'
 import { assertNotSuspended } from '@services/users'
 import {
+  parseJsonBody,
   requireAuthAndRateLimit,
   validateRequestContract,
   validateUUIDParam,
@@ -131,7 +132,7 @@ app
     const topic = await getTopicByAny(ctx.params.idOrSlug!)
     ctx.assert(topic, 404, 'Topic not found')
 
-    const body = (await ctx.request.json('1mb')) as CreateTopicAliasesBody
+    const body = (await parseJsonBody(ctx, '1mb')) as CreateTopicAliasesBody
     validateRequestContract(ctx, 'POST:/api/v1/topics/:idOrSlug/aliases', {
       body,
     })

@@ -1,6 +1,6 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
+import { parseJsonBody, requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { assertDailySpendCapNotBreached } from '@services/ai-usage'
 import { currentUserCanModerateCommunity, loadCommunityWithViewer } from '@services/communities'
 import {
@@ -20,7 +20,7 @@ app.route('/api/v1/communities/:idOrSlug/automod/simulate').post(async (ctx: Con
 
   ctx.assert(currentUserCanModerateCommunity(currentUser, community, membership), 403, 'Forbidden')
 
-  const body = (await ctx.request.json('1mb')) as {
+  const body = (await parseJsonBody(ctx, '1mb')) as {
     prompt_id?: unknown
     prompt?: unknown
     time_window_hours?: unknown

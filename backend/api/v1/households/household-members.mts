@@ -1,7 +1,7 @@
 import type { Context } from '@jongleberry/api-server'
 import app from '../../app.mts'
 import type { ApiUuidContract } from '../../request-contract-types.mts'
-import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
+import { parseJsonBody, requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { apiQuery } from '../../api-query-contract.mts'
 import {
   listMyHouseholdMemberships,
@@ -29,7 +29,7 @@ app
     const result = await addMyHouseholdMembership(
       currentUser,
       ctx.params,
-      async () => (await ctx.request.json('1mb')) as AddHouseholdMembershipBody,
+      async () => (await parseJsonBody(ctx, '1mb')) as AddHouseholdMembershipBody,
       input => validateRequestContract(ctx, 'POST:/api/v1/households/:id/memberships', input),
     )
     ctx.setStatus(201)

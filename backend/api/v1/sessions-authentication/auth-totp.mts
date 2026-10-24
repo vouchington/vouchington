@@ -1,6 +1,6 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
+import { parseJsonBody, requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { deleteTotpAuthenticatorWithMfaProtection } from '@services/mfa'
 import { assertNotSuspended } from '@services/users/suspension'
 import {
@@ -25,7 +25,7 @@ app.route('/api/v1/auth/totp').post(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/auth/totp')
   assertNotSuspended(currentUser)
 
-  const body = (await ctx.request.json('100kb')) as { name?: string }
+  const body = (await parseJsonBody(ctx, '100kb')) as { name?: string }
   validateRequestContract(ctx, 'POST:/api/v1/auth/totp', { body })
   const name = (body.name ?? 'My Authenticator').trim()
 
@@ -41,7 +41,7 @@ app.route('/api/v1/auth/totp/setup/verification').post(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/auth/totp/setup/verification')
   assertNotSuspended(currentUser)
 
-  const body = (await ctx.request.json('100kb')) as {
+  const body = (await parseJsonBody(ctx, '100kb')) as {
     authenticator_id?: string
     code?: string
   }

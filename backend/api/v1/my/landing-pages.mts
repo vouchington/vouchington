@@ -1,6 +1,6 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
+import { parseJsonBody, requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import type { ApiUuidContract } from '../../request-contract-types.mts'
 import {
   getLandingPageRowForUser,
@@ -54,7 +54,7 @@ async function handleListMyLandingPages(ctx: Context) {
 async function handleCreateMyLandingPage(ctx: Context) {
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/my/landing-pages')
 
-  const body = (await ctx.request.json('100kb')) as CreateLandingPageRequest
+  const body = (await parseJsonBody(ctx, '100kb')) as CreateLandingPageRequest
   validateRequestContract(ctx, 'POST:/api/v1/my/landing-pages', { body })
   const landingPage = await createMyLandingPage(currentUser.id, body)
 
@@ -67,7 +67,7 @@ async function handleReplaceMyLandingPageItems(ctx: Context) {
   // Check ownership before parsing the body, then pass the row down to avoid reading it again.
   const page = await getLandingPageRowForUser(currentUser.id, ctx.params.pageId!)
 
-  const body = (await ctx.request.json('1mb')) as ReplaceLandingPageItemsRequest
+  const body = (await parseJsonBody(ctx, '1mb')) as ReplaceLandingPageItemsRequest
   validateRequestContract(ctx, 'PUT:/api/v1/my/landing-pages/:pageId/items', {
     path: ctx.params,
     body,
@@ -96,7 +96,7 @@ async function handleUpdateMyLandingPage(ctx: Context) {
   // Check ownership before parsing the body, then pass the row down to avoid reading it again.
   const page = await getLandingPageRowForUser(currentUser.id, ctx.params.pageId!)
 
-  const body = (await ctx.request.json('100kb')) as UpdateLandingPageRequest
+  const body = (await parseJsonBody(ctx, '100kb')) as UpdateLandingPageRequest
   validateRequestContract(ctx, 'PATCH:/api/v1/my/landing-pages/:pageId', {
     path: ctx.params,
     body,

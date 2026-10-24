@@ -5,6 +5,7 @@ import { getActiveConsents } from '@services/user-consents/get'
 import { revokeConsent } from '@services/user-consents/revoke'
 import type { ConsentType } from '@services/user-consents/types'
 import {
+  parseJsonBody,
   requireAuth,
   requireAuthForSuspendedException,
   validateRequestContract,
@@ -34,7 +35,7 @@ app.route('/api/v1/my/consents').get(async (ctx: Context) => {
 app.route('/api/v1/my/consents').post(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/my/consents')
 
-  const body = (await ctx.request.json('10kb')) as GrantConsentRequest
+  const body = (await parseJsonBody(ctx, '10kb')) as GrantConsentRequest
   validateRequestContract(ctx, 'POST:/api/v1/my/consents', { body })
   const version = body.version.trim()
   ctx.assert(version.length > 0, 400, 'version is required')

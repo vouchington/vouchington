@@ -1,4 +1,5 @@
 import app from '../../app.mts'
+import { setPrivateNoStoreCacheHeaders } from '../../cache-headers.mts'
 import type { Context } from '@jongleberry/api-server'
 import {
   parseJsonBody,
@@ -22,6 +23,7 @@ type PlacePreservationHoldRequest = { reference: string }
 app
   .route('/api/v1/users/:userId/preservation-hold')
   .get(async (ctx: Context) => {
+    setPrivateNoStoreCacheHeaders(ctx)
     const currentUser = await requireAuthAndRateLimit(
       ctx,
       user => isAdminUser(user),
@@ -36,6 +38,7 @@ app
     ctx.json({ account_deleted_at: state.accountDeletedAt, holds: state.holds })
   })
   .put(async (ctx: Context) => {
+    setPrivateNoStoreCacheHeaders(ctx)
     const currentUser = await requireAuthAndRateLimit(
       ctx,
       user => isAdminUser(user),
@@ -56,6 +59,7 @@ app
     ctx.json({ account_deleted_at: accountDeletedAt, hold })
   })
   .delete(async (ctx: Context) => {
+    setPrivateNoStoreCacheHeaders(ctx)
     const currentUser = await requireAuthAndRateLimit(
       ctx,
       user => isAdminUser(user),

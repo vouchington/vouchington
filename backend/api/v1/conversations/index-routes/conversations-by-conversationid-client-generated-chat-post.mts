@@ -21,6 +21,7 @@ import { toMessageTranscript } from '@services/conversations-messages/transcript
 import { assertNotSuspended } from '@services/users'
 import app from '../../../app.mts'
 import {
+  parseJsonBody,
   requireAuth,
   validateRequestContract,
   validateUUIDParam,
@@ -70,7 +71,7 @@ app
       ctx.throw(403, 'Access denied')
     }
 
-    const body = (await ctx.request.json('1mb')) as Record<string, unknown>
+    const body = (await parseJsonBody(ctx, '1mb')) as Record<string, unknown>
     validateRequestContract(
       ctx,
       'POST:/api/v1/conversations/:conversationId/client-generated-chat',

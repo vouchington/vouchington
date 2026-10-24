@@ -1,6 +1,6 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
+import { parseJsonBody, requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import {
   listMyConversationMessages,
   sendMyConversationMessage,
@@ -24,7 +24,7 @@ app.route('/api/v1/my/messages/:conversationId/messages').post(async (ctx: Conte
   const result = await sendMyConversationMessage(
     currentUser,
     ctx.params,
-    async () => (await ctx.request.json('10kb')) as SendMessageRequest,
+    async () => (await parseJsonBody(ctx, '10kb')) as SendMessageRequest,
     input =>
       validateRequestContract(ctx, 'POST:/api/v1/my/messages/:conversationId/messages', input),
   )

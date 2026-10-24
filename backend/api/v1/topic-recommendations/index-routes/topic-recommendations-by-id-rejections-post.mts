@@ -6,7 +6,7 @@ import {
   rejectTopicRecommendation,
 } from '@services/topic-recommendations'
 import app from '../../../app.mts'
-import { requireAuth, validateRequestContract } from '../../../response-helpers.mts'
+import { parseJsonBody, requireAuth, validateRequestContract } from '../../../response-helpers.mts'
 
 app.route('/api/v1/topic-recommendations/:id/rejections').post(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/topic-recommendations/:id/rejections')
@@ -15,7 +15,7 @@ app.route('/api/v1/topic-recommendations/:id/rejections').post(async (ctx: Conte
   const post = asTopicRecommendationPost(await getPostByAnyCached(ctx.params.id!))
   ctx.assert(post, 404, 'Recommendation not found')
 
-  const body = (await ctx.request.json('1mb')) as { reason?: string }
+  const body = (await parseJsonBody(ctx, '1mb')) as { reason?: string }
   validateRequestContract(ctx, 'POST:/api/v1/topic-recommendations/:id/rejections', {
     body,
     path: ctx.params,

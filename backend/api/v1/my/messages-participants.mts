@@ -1,6 +1,6 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
+import { parseJsonBody, requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import {
   getMyMessageConversation,
   addMyConversationParticipant,
@@ -27,7 +27,7 @@ app.route('/api/v1/my/messages/:conversationId/participants').post(async (ctx: C
   const result = await addMyConversationParticipant(
     currentUser,
     ctx.params,
-    async () => (await ctx.request.json('10kb')) as AddParticipantRequest,
+    async () => (await parseJsonBody(ctx, '10kb')) as AddParticipantRequest,
     input =>
       validateRequestContract(ctx, 'POST:/api/v1/my/messages/:conversationId/participants', input),
   )
@@ -57,7 +57,7 @@ app.route('/api/v1/my/messages/:conversationId').patch(async (ctx: Context) => {
   const result = await updateMyConversationPolicy(
     currentUser,
     ctx.params,
-    async () => (await ctx.request.json('10kb')) as UpdateParticipantAddPolicyRequest,
+    async () => (await parseJsonBody(ctx, '10kb')) as UpdateParticipantAddPolicyRequest,
     input => validateRequestContract(ctx, 'PATCH:/api/v1/my/messages/:conversationId', input),
   )
   ctx.json(result)

@@ -2,7 +2,12 @@ import './index-routes/images-by-imageid-state-stream-get.mts'
 
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { validateUUIDParam, requireAuth, validateRequestContract } from '../../response-helpers.mts'
+import {
+  parseJsonBody,
+  validateUUIDParam,
+  requireAuth,
+  validateRequestContract,
+} from '../../response-helpers.mts'
 import { createImageUploadUrl } from '@services/images/create-upload-url'
 import { completeImageUpload } from '@services/images/complete-upload'
 import { getImageUploadState, deriveUploadStatus } from '@services/images/get-upload-state'
@@ -17,7 +22,7 @@ app.route('/api/v1/images/upload-url').post(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/images/upload-url')
   assertNotSuspended(currentUser)
 
-  const body = (await ctx.request.json('1kb')) as CreateImageUploadUrlRequest
+  const body = (await parseJsonBody(ctx, '1kb')) as CreateImageUploadUrlRequest
   validateRequestContract(ctx, 'POST:/api/v1/images/upload-url', { body })
 
   const result = await createImageUploadUrl(currentUser, {

@@ -9,7 +9,7 @@ import { parseEntityRelationSearchInput } from '@services/entity-relations'
 import { indexById } from '@modules/utils'
 import { entityRelationViewerFor, getPublicUserByIdOrSlug } from '@services/users'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
-import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
+import { parseJsonBody, requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { apiQuery } from '../../api-query-contract.mts'
 import {
   defineQueryContract,
@@ -168,7 +168,7 @@ app
       ctx.params.entityType!,
       ctx.params.objectType!,
     )
-    const body = (await ctx.request.json('1mb')) as { objectId?: string }
+    const body = (await parseJsonBody(ctx, '1mb')) as { objectId?: string }
     validateRequestContract(
       ctx,
       'POST:/api/v1/entity-relations/:entityType/:entityId/:predicate/:objectType',

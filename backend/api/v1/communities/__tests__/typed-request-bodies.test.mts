@@ -84,6 +84,10 @@ describe('typed request bodies reject unknown fields after authorization', () =>
     await request.authenticateAs(outsider)
     for (const body of [
       null,
+      [],
+      'text',
+      1,
+      true,
       { archive: 'yes' },
       { list_type: 'invalid' },
       { member_roster_visibility: 'invalid' },

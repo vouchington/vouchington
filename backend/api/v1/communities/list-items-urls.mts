@@ -3,6 +3,7 @@ import { apiQuery } from '../../api-query-contract.mts'
 import { communityPageQuery, communityPageQueryInput } from './query-contracts-helpers.mts'
 import { streamJsonObject, type Context } from '@jongleberry/api-server'
 import {
+  parseJsonBody,
   getOptionalAuthAndRateLimit,
   requireAuth,
   validateRequestContract,
@@ -76,7 +77,7 @@ app
       'Forbidden',
     )
 
-    const body = (await ctx.request.json('1mb')) as { url_id: string }
+    const body = (await parseJsonBody(ctx, '1mb')) as { url_id: string }
     validateRequestContract(ctx, 'POST:/api/v1/communities/:idOrSlug/list-items/urls', {
       path: ctx.params,
       body,

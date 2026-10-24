@@ -28,6 +28,7 @@ import { apiQuery } from '../../api-query-contract.mts'
 import type { ElectionVoteRequest } from '@voucha/types/entities/election'
 import { userProfileQueryContract } from './user-profile-query-helpers.mts'
 import {
+  parseJsonBody,
   getOptionalAuthAndRateLimit,
   requireAuth,
   requireAuthForSuspendedException,
@@ -102,7 +103,7 @@ app
   .patch(async (ctx: Context) => {
     const currentUser = await requireAuth(ctx, 'PATCH:/api/v1/users/:idOrSlug')
     assertNotSuspended(currentUser)
-    const body = (await ctx.request.json('1mb')) as UpdateUserOptions
+    const body = (await parseJsonBody(ctx, '1mb')) as UpdateUserOptions
     validateRequestContract(ctx, 'PATCH:/api/v1/users/:idOrSlug', { path: ctx.params, body })
     const updated = await updateUser(currentUser, ctx.params.idOrSlug!, body)
     ctx.json({ user: updated })

@@ -16,7 +16,7 @@ import {
   type CreateTopicRecommendationInput,
 } from '@services/topic-recommendations'
 import app from '../../../app.mts'
-import { requireAuth, validateRequestContract } from '../../../response-helpers.mts'
+import { parseJsonBody, requireAuth, validateRequestContract } from '../../../response-helpers.mts'
 import { apiHeaders } from '@vouchington/utils/api-response-contract'
 import { getRequestContentProvenance } from '@modules/request-client-info/content-provenance'
 import { attachWrittenPostProvenance } from '@services/content-provenance'
@@ -61,7 +61,7 @@ app.route('/api/v1/topic-recommendations').post(async (ctx: Context) => {
   }
 
   const membershipPlan = await getAuthorizedPostContributionMembershipPlan(currentUser)
-  const body: unknown = await ctx.request.json<CreateTopicRecommendationRequest>('1mb')
+  const body: unknown = await parseJsonBody<CreateTopicRecommendationRequest>(ctx, '1mb')
   // The Idempotency-Key header is not run through the contract: the admission layer answers a
   // malformed key with its coded 400, which is the documented status.
   validateRequestContract(ctx, 'POST:/api/v1/topic-recommendations', { body })

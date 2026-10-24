@@ -20,6 +20,7 @@ import { currentUserCanUpdateTopic } from '@services/topics/authorization'
 import app from '../../../app.mts'
 import { apiQuery } from '../../../api-query-contract.mts'
 import {
+  parseJsonBody,
   requireAuth,
   requireAuthAndRateLimit,
   validateRequestContract,
@@ -85,7 +86,7 @@ app
     const topic = await getTopicByAny(ctx.params.idOrSlug!)
     if (!topic) ctx.throw(404, 'Topic not found')
 
-    const body = (await ctx.request.json('1mb')) as { country_ids: number[] }
+    const body = (await parseJsonBody(ctx, '1mb')) as { country_ids: number[] }
     validateRequestContract(ctx, 'PUT:/api/v1/topics/:idOrSlug/retailer/countries', {
       body,
     })

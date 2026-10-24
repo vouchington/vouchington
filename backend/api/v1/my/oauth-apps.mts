@@ -13,7 +13,12 @@ import {
 } from '@services/oauth-authorization-server'
 import { assertNotSuspended } from '@services/users'
 import { buildPageInfo, createPaginationParser, decodeScopedUuidCursor } from '@modules/pagination'
-import { requireAuth, validateRequestContract, validateUUIDParam } from '../../response-helpers.mts'
+import {
+  parseJsonBody,
+  requireAuth,
+  validateRequestContract,
+  validateUUIDParam,
+} from '../../response-helpers.mts'
 import {
   apiNoRequestBody,
   apiResponse,
@@ -79,7 +84,7 @@ app.route('/api/v1/my/oauth-apps').post(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/my/oauth-apps')
   assertNotSuspended(currentUser)
 
-  const body = (await ctx.request.json('10kb')) as CreateOAuthAppRequest
+  const body = (await parseJsonBody(ctx, '10kb')) as CreateOAuthAppRequest
   validateRequestContract(ctx, 'POST:/api/v1/my/oauth-apps', { body })
 
   const issued = await withClientMetadataErrors(ctx, () =>
@@ -95,7 +100,7 @@ app.route('/api/v1/my/oauth-apps/:id').patch(async (ctx: Context) => {
   assertNotSuspended(currentUser)
 
   const id = validateUUIDParam(ctx, 'id')
-  const body = (await ctx.request.json('10kb')) as UpdateOAuthAppRequest
+  const body = (await parseJsonBody(ctx, '10kb')) as UpdateOAuthAppRequest
   validateRequestContract(ctx, 'PATCH:/api/v1/my/oauth-apps/:id', { path: ctx.params, body })
 
   const oauthApp = await withClientMetadataErrors(ctx, () =>

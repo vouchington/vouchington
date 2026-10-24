@@ -1,7 +1,7 @@
 import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
+import { parseJsonBody, requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { apiQuery } from '../../api-query-contract.mts'
 import type { ApiUuidContract } from '../../request-contract-types.mts'
 import { createPaginationParser } from '@modules/pagination'
@@ -53,7 +53,7 @@ app.route('/api/v1/my/spending-categories').post(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/my/spending-categories')
   assertNotSuspended(currentUser)
 
-  const body = (await ctx.request.json('10kb')) as CreateSpendingCategoryRequest
+  const body = (await parseJsonBody(ctx, '10kb')) as CreateSpendingCategoryRequest
   validateRequestContract(ctx, 'POST:/api/v1/my/spending-categories', { body })
 
   const spendingCategory = await createHouseholdSpendingCategory(
@@ -73,7 +73,7 @@ app.route('/api/v1/my/spending-categories/:id').patch(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'PATCH:/api/v1/my/spending-categories/:id')
   assertNotSuspended(currentUser)
 
-  const body = (await ctx.request.json('10kb')) as UpdateSpendingCategoryRequest
+  const body = (await parseJsonBody(ctx, '10kb')) as UpdateSpendingCategoryRequest
   validateRequestContract(ctx, 'PATCH:/api/v1/my/spending-categories/:id', {
     path: ctx.params,
     body,

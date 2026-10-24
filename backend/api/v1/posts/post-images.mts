@@ -5,6 +5,7 @@ import { getPostImages, setPostImages, type PostImageInput } from '@services/pos
 import { assertNotSuspended } from '@services/users'
 import { getRouteAccessPost, getRoutePostByAnyCached } from '@services/posts/route-access'
 import {
+  parseJsonBody,
   getOptionalAuthAndRateLimit,
   requireAuth,
   validateRequestContract,
@@ -41,7 +42,7 @@ app.route('/api/v1/posts/:idOrSlug/images').put(async (ctx: Context) => {
   ctx.assert(await getRouteAccessPost(post, root), 404, 'Post not found')
   ctx.assert(currentUserCanUpdatePost(currentUser, post), 403, 'Forbidden')
 
-  const body = (await ctx.request.json('1mb')) as { images: PostImageInput[] }
+  const body = (await parseJsonBody(ctx, '1mb')) as { images: PostImageInput[] }
   validateRequestContract(ctx, 'PUT:/api/v1/posts/:idOrSlug/images', {
     body,
     path: ctx.params,

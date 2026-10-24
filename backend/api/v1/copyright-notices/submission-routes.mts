@@ -18,6 +18,7 @@ import { assertNotSuspended } from '@services/users'
 import { enqueueCopyrightFormScreening } from '@queues/ai-agents/enqueues/copyright-form-screening'
 import { enqueueCopyrightAppealRecommendation } from '@queues/ai-agents/enqueues/copyright-appeal-recommendation'
 import {
+  parseJsonBody,
   getOptionalAuthAndRateLimit,
   requireAuth,
   validateRequestContract,
@@ -40,7 +41,7 @@ app.route('/api/v1/copyright-notices').post(async (ctx: Context) => {
   ctx.assert(ctx.request.is('json'), 415, 'Invalid Content-Type')
   const currentUser = await getOptionalAuthAndRateLimit(ctx, 'POST:/api/v1/copyright-notices')
   if (currentUser) assertNotSuspended(currentUser)
-  const body = (await ctx.request.json('1mb')) as CopyrightNoticeFormRequest
+  const body = (await parseJsonBody(ctx, '1mb')) as CopyrightNoticeFormRequest
   await verifyCaptchaOrAttestation(ctx, body, { actionTag: 'copyright-notices.create' })
   const input = parseCopyrightNoticeForm(body)
   const idempotencyKey = requireIdempotencyKey(ctx)
@@ -70,7 +71,7 @@ app.route('/api/v1/copyright-notices/:id/appeals').post(async (ctx: Context) => 
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/copyright-notices/:id/appeals')
   assertNotSuspended(currentUser)
   const noticeId = validateUUIDParam(ctx, 'id')
-  const body = (await ctx.request.json('1mb')) as CopyrightAppealRequest
+  const body = (await parseJsonBody(ctx, '1mb')) as CopyrightAppealRequest
   await verifyCaptchaOrAttestation(ctx, body, { actionTag: 'copyright-notices.appeal' })
   const idempotencyKey = requireIdempotencyKey(ctx)
   const input = parseCopyrightAppealForm(body)
@@ -90,7 +91,7 @@ app.route('/api/v1/copyright-notices/:id/counter-notices').post(async (ctx: Cont
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/copyright-notices/:id/counter-notices')
   assertNotSuspended(currentUser)
   const noticeId = validateUUIDParam(ctx, 'id')
-  const body = (await ctx.request.json('1mb')) as CopyrightCounterNoticeRequest
+  const body = (await parseJsonBody(ctx, '1mb')) as CopyrightCounterNoticeRequest
   await verifyCaptchaOrAttestation(ctx, body, { actionTag: 'copyright-notices.counter-notice' })
   const idempotencyKey = requireIdempotencyKey(ctx)
   const input = parseCopyrightCounterNoticeForm(body)

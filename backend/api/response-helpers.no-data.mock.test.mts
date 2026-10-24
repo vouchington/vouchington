@@ -2,7 +2,7 @@
    object (vi.fn), it does not mock a module; the .no-data.mock suffix is load-bearing because it
    routes the test to the DB/Valkey-free project (validateRequestContract needs neither). */
 import { describe, expect, it, vi } from 'vitest'
-import { validateRequestContract } from './response-helpers.mts'
+import { parseJsonBody, validateRequestContract } from './response-helpers.mts'
 
 function createContext(requestContractOperation: string) {
   const ctx = {
@@ -61,5 +61,32 @@ describe('validateRequestContract', () => {
       validateRequestContract(ctx as never, 'GET:/api/v1/does-not-exist', { query: {} }),
     ).toThrow(/No generated runtime request contract/)
     expect(ctx.throw).not.toHaveBeenCalled()
+  })
+})
+
+describe('parseJsonBody', () => {
+  it.each([null, [], 'text', 42, true])('rejects a non-object JSON body: %#', async body => {
+    const ctx = {
+      request: { json: vi.fn<() => Promise<unknown>>().mockResolvedValue(body) },
+      assert: (condition: unknown, status: number, message: string) => {
+        if (!condition) throw Object.assign(new Error(message), { status })
+      },
+    }
+    await expect(parseJsonBody(ctx as never)).rejects.toMatchObject({
+      status: 422,
+      message: 'Invalid request body',
+    })
+  })
+
+  it('returns the object body with its nested JSON values and applies the route byte limit', async () => {
+    const body = { reason: 'Review', metadata: { values: [null, true, 42] } }
+    const ctx = {
+      request: { json: vi.fn<(maxSize: string) => Promise<unknown>>().mockResolvedValue(body) },
+      assert: (condition: unknown, status: number, message: string) => {
+        if (!condition) throw Object.assign(new Error(message), { status })
+      },
+    }
+    await expect(parseJsonBody(ctx as never, '4kb')).resolves.toBe(body)
+    expect(ctx.request.json).toHaveBeenCalledWith('4kb')
   })
 })

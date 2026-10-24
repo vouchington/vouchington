@@ -1,5 +1,6 @@
 import app from '../../app.mts'
 import {
+  parseJsonBody,
   getOptionalProtocolAuthAndRateLimit,
   requireAuth,
   validateRequestContract,
@@ -21,7 +22,7 @@ app.route('/api/v1/auth/oauth/:provider/connect').put(async ctx => {
   assertNotSuspended(currentUser)
   const provider = assertValidProvider(ctx.params.provider ?? '')
 
-  const body = (await ctx.request.json('100kb')) as Record<string, unknown>
+  const body = (await parseJsonBody(ctx, '100kb')) as Record<string, unknown>
   validateRequestContract(ctx, 'PUT:/api/v1/auth/oauth/:provider/connect', {
     path: ctx.params,
     body,
@@ -82,7 +83,7 @@ app.route('/api/v1/auth/oauth/:provider/continue').post(async ctx => {
     return
   }
 
-  const body = (await ctx.request.json('100kb')) as Record<string, unknown>
+  const body = (await parseJsonBody(ctx, '100kb')) as Record<string, unknown>
   validateRequestContract(ctx, 'POST:/api/v1/auth/oauth/:provider/continue', {
     path: ctx.params,
     body,

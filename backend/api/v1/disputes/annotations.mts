@@ -1,6 +1,7 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import {
+  parseJsonBody,
   requireAuth,
   requireAuthAndRateLimit,
   validateRequestContract,
@@ -47,7 +48,7 @@ app.route('/api/v1/posts/:postId/disputes').get(async (ctx: Context) => {
 // GET /api/v1/posts/batch-dispute-annotations — batch annotation lookup for post lists
 app.route('/api/v1/posts/batch-dispute-annotations').post(async (ctx: Context) => {
   await requireAuth(ctx, 'POST:/api/v1/posts/batch-dispute-annotations')
-  const body = (await ctx.request.json('100kb')) as BatchDisputeAnnotationsRequest
+  const body = (await parseJsonBody(ctx, '100kb')) as BatchDisputeAnnotationsRequest
   validateRequestContract(ctx, 'POST:/api/v1/posts/batch-dispute-annotations', { body })
   const annotations = await getActiveAnnotationsForPosts(body.post_ids)
   ctx.json({ annotations })
@@ -61,7 +62,7 @@ app.route('/api/v1/disputes/:id/annotation').delete(async (ctx: Context) => {
     'DELETE:/api/v1/disputes/:id/annotation',
   )
   validateUUIDParam(ctx, 'id')
-  const body = (await ctx.request.json('10kb')) as RemoveDisputeAnnotationRequest
+  const body = (await parseJsonBody(ctx, '10kb')) as RemoveDisputeAnnotationRequest
   validateRequestContract(ctx, 'DELETE:/api/v1/disputes/:id/annotation', {
     body,
     path: ctx.params,

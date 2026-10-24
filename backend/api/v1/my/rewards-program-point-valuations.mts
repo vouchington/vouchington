@@ -1,7 +1,7 @@
 import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
+import { parseJsonBody, requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { apiQuery } from '../../api-query-contract.mts'
 import { createPaginationParser } from '@modules/pagination'
 import {
@@ -48,7 +48,7 @@ app.route('/api/v1/my/rewards-program-point-valuations').post(async (ctx: Contex
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/my/rewards-program-point-valuations')
   assertNotSuspended(currentUser)
 
-  const body = (await ctx.request.json('10kb')) as CreatePointValuationRequest
+  const body = (await parseJsonBody(ctx, '10kb')) as CreatePointValuationRequest
   validateRequestContract(ctx, 'POST:/api/v1/my/rewards-program-point-valuations', { body })
 
   const valuation = await createIndividualRewardsProgramPointValuation(
@@ -70,7 +70,7 @@ app.route('/api/v1/my/rewards-program-point-valuations/:id').patch(async (ctx: C
   )
   assertNotSuspended(currentUser)
 
-  const body = (await ctx.request.json('10kb')) as UpdatePointValuationRequest
+  const body = (await parseJsonBody(ctx, '10kb')) as UpdatePointValuationRequest
   validateRequestContract(ctx, 'PATCH:/api/v1/my/rewards-program-point-valuations/:id', {
     path: ctx.params,
     body,

@@ -6,7 +6,7 @@ import { getUserPrivateByAnyCached } from '@services/entity-fetch'
 import { updateUserFields } from '@services/users/update-fields'
 import type { OAuthProvider } from '@services/oauth'
 import type { ApiUuidContract } from '../../request-contract-types.mts'
-import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
+import { parseJsonBody, requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { apiResponse } from '@vouchington/utils/api-response-contract'
 
 type UpdateIdentityRequest = {
@@ -34,7 +34,7 @@ app.route('/api/v1/my/identity').patch(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'PATCH:/api/v1/my/identity')
   assertNotSuspended(currentUser)
 
-  const body = (await ctx.request.json('10kb')) as UpdateIdentityRequest
+  const body = (await parseJsonBody(ctx, '10kb')) as UpdateIdentityRequest
   validateRequestContract(ctx, 'PATCH:/api/v1/my/identity', { body })
 
   if (body.username !== undefined) {

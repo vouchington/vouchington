@@ -28,12 +28,13 @@ app.route('/api/v1/copyright-email-intakes/:id/legal-process').post(async (ctx: 
   ctx.assert(ctx.request.is('json'), 415, 'Invalid Content-Type')
   const body = await parseJsonBody<CopyrightEmailLegalProcessRequest>(ctx)
   const intakeId = validateUUIDParam(ctx, 'id')
-  ctx.assert(typeof body.reason === 'string', 422, 'reason is required')
+  const request = body as CopyrightEmailLegalProcessRequest
+  ctx.assert(typeof request.reason === 'string', 422, 'reason is required')
   validateRequestContract(ctx, 'POST:/api/v1/copyright-email-intakes/:id/legal-process', {
     path: ctx.params,
-    body,
+    body: request,
   })
-  await recordCopyrightEmailIntakeLegalProcess({ currentUser, intakeId, reason: body.reason })
+  await recordCopyrightEmailIntakeLegalProcess({ currentUser, intakeId, reason: request.reason })
   ctx.setStatus(201)
   ctx.json({ decision: 'legal_process' })
 })

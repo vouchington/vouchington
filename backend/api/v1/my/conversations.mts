@@ -15,7 +15,7 @@ import {
   currentUserCanDeleteConversation,
 } from '@services/conversations-messages'
 import { getConversationMessagesByConversationId } from '@services/conversations-messages/messages'
-import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
+import { parseJsonBody, requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { apiQuery } from '../../api-query-contract.mts'
 import { prepareQueryForValidation } from '@services/search-params/prepare-query'
 import { assertNotSuspended } from '@services/users'
@@ -113,7 +113,7 @@ app.route('/api/v1/my/conversations/:conversationId').patch(async (ctx: Context)
   if (!(await currentUserCanUpdateConversation(currentUser, conversation)))
     ctx.throw(403, 'Access denied')
 
-  const body = (await ctx.request.json('10kb')) as UpdateConversationTitleRequest
+  const body = (await parseJsonBody(ctx, '10kb')) as UpdateConversationTitleRequest
   validateRequestContract(ctx, 'PATCH:/api/v1/my/conversations/:conversationId', {
     path: ctx.params,
     body,

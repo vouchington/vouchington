@@ -1,7 +1,7 @@
 import { parseRuntimePagination } from '@voucha/api/runtime-pagination'
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
+import { parseJsonBody, requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { apiQuery } from '../../api-query-contract.mts'
 import { createPaginationParser } from '@modules/pagination'
 import {
@@ -42,7 +42,7 @@ app.route('/api/v1/my/rewards-program-statuses').post(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'POST:/api/v1/my/rewards-program-statuses')
   assertNotSuspended(currentUser)
 
-  const body = (await ctx.request.json('10kb')) as CreateRewardsProgramStatusRequest
+  const body = (await parseJsonBody(ctx, '10kb')) as CreateRewardsProgramStatusRequest
   validateRequestContract(ctx, 'POST:/api/v1/my/rewards-program-statuses', { body })
 
   const status = await createIndividualRewardsProgramStatus(
@@ -60,7 +60,7 @@ app.route('/api/v1/my/rewards-program-statuses/:id').patch(async (ctx: Context) 
   const currentUser = await requireAuth(ctx, 'PATCH:/api/v1/my/rewards-program-statuses/:id')
   assertNotSuspended(currentUser)
 
-  const body = (await ctx.request.json('10kb')) as UpdateRewardsProgramStatusRequest
+  const body = (await parseJsonBody(ctx, '10kb')) as UpdateRewardsProgramStatusRequest
   validateRequestContract(ctx, 'PATCH:/api/v1/my/rewards-program-statuses/:id', {
     path: ctx.params,
     body,

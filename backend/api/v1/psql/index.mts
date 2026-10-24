@@ -10,7 +10,11 @@ import {
   enqueueCreatePartitions,
   enqueueCleanupPartitions,
 } from '@queues/psql/enqueues'
-import { requireAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
+import {
+  parseJsonBody,
+  requireAuthAndRateLimit,
+  validateRequestContract,
+} from '../../response-helpers.mts'
 import type { PsqlAdminJobType } from '@queues/psql/types'
 
 type PsqlJobRequest = { type: PsqlAdminJobType }
@@ -35,7 +39,7 @@ app.route('/api/v1/psql/migrations').get(async (ctx: Context) => {
 app.route('/api/v1/psql/jobs').post(async (ctx: Context) => {
   await requireAuthAndRateLimit(ctx, currentUserCanAccessPsqlAdmin, 'POST:/api/v1/psql/jobs')
 
-  const body = (await ctx.request.json('1mb')) as PsqlJobRequest
+  const body = (await parseJsonBody(ctx, '1mb')) as PsqlJobRequest
   validateRequestContract(ctx, 'POST:/api/v1/psql/jobs', { body })
   const { type } = body
 

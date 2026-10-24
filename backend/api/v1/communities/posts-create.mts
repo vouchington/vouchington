@@ -1,6 +1,6 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { requireAuth, validateRequestContract } from '../../response-helpers.mts'
+import { parseJsonBody, requireAuth, validateRequestContract } from '../../response-helpers.mts'
 import { apiHeaders } from '@vouchington/utils/api-response-contract'
 import {
   communityAllowsPostType,
@@ -71,7 +71,7 @@ app.route('/api/v1/communities/:idOrSlug/posts').post(async (ctx: Context) => {
 
   const membershipPlan = await getAuthorizedPostContributionMembershipPlan(currentUser)
 
-  const body = (await ctx.request.json('1mb')) as CreatePostInput & {
+  const body = (await parseJsonBody(ctx, '1mb')) as CreatePostInput & {
     hp_website?: string
     hp_phone?: string
     cf_turnstile_response?: string

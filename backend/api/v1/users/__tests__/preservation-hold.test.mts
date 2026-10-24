@@ -73,6 +73,7 @@ describe('user preservation hold routes', () => {
         released_by_id: null,
       })
       expect(placed.body.account_deleted_at).toBeNull()
+      expect(placed.headers['cache-control']).toBe('private, no-store')
 
       const blocked = await userRequest.delete(`/api/v1/users/${user.id}`).expect(409)
       expect(blocked.body.message ?? blocked.text).toContain('Account deletion is blocked')
@@ -84,6 +85,7 @@ describe('user preservation hold routes', () => {
         .expect(200)
       expect(listed.body.holds).toEqual([placed.body.hold])
       expect(listed.body.account_deleted_at).toBeNull()
+      expect(listed.headers['cache-control']).toBe('private, no-store')
 
       const released = await adminRequest
         .delete(`/api/v1/users/${user.id}/preservation-hold`)
@@ -93,6 +95,7 @@ describe('user preservation hold routes', () => {
         released_by_id: admin.id,
         released_at: expect.any(String),
       })
+      expect(released.headers['cache-control']).toBe('private, no-store')
       await userRequest.delete(`/api/v1/users/${user.id}`).expect(202)
     })
 

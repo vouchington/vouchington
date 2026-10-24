@@ -1,6 +1,7 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import {
+  parseJsonBody,
   requireAuth,
   requireAuthAndRateLimit,
   validateRequestContract,
@@ -50,7 +51,7 @@ app.route('/api/v1/topics/:idOrSlug/claims').post(async (ctx: Context) => {
   const idOrSlug = ctx.params.idOrSlug ?? ''
   ctx.assert(idOrSlug.length > 0, 422, 'idOrSlug is required')
 
-  const body = (await ctx.request.json('1mb')) as CreateTopicClaimBody
+  const body = (await parseJsonBody(ctx, '1mb')) as CreateTopicClaimBody
   validateRequestContract(ctx, 'POST:/api/v1/topics/:idOrSlug/claims', {
     body,
   })
@@ -131,7 +132,7 @@ app
       'Claim not found or already resolved',
     )
 
-    const body = (await ctx.request.json('1mb')) as SubmitTopicClaimManualReviewBody
+    const body = (await parseJsonBody(ctx, '1mb')) as SubmitTopicClaimManualReviewBody
     validateRequestContract(
       ctx,
       'POST:/api/v1/topics/:idOrSlug/claims/:claimId/manual-review-submission',

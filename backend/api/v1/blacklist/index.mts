@@ -6,7 +6,11 @@ import {
 } from '@queues/urls-domains-blacklist/enqueues'
 import { currentUserCanManageBlacklist } from '@services/urls-domains-blacklist/authorization'
 import { parsePositiveBigintId } from '@ts-shared/utils/bigint-ids'
-import { requireAuthAndRateLimit, validateRequestContract } from '../../response-helpers.mts'
+import {
+  parseJsonBody,
+  requireAuthAndRateLimit,
+  validateRequestContract,
+} from '../../response-helpers.mts'
 
 type SourceSyncBody = Parameters<typeof enqueueSourceSync>[0]
 type SourceSyncRequest = { sourceId: string | number }
@@ -29,7 +33,7 @@ app.route('/api/v1/blacklist/source-sync').post(async (ctx: Context) => {
     currentUserCanManageBlacklist,
     'POST:/api/v1/blacklist/source-sync',
   )
-  const body = (await ctx.request.json('100kb')) as SourceSyncRequest
+  const body = (await parseJsonBody(ctx, '100kb')) as SourceSyncRequest
   validateRequestContract(ctx, 'POST:/api/v1/blacklist/source-sync', { body })
   const sourceId = parsePositiveBigintId(body.sourceId)
   ctx.assert(sourceId, 400, 'sourceId must be a positive integer')

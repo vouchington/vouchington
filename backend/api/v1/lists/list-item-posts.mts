@@ -1,6 +1,11 @@
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
-import { requireAuth, validateRequestContract, validateUUIDParam } from '../../response-helpers.mts'
+import {
+  parseJsonBody,
+  requireAuth,
+  validateRequestContract,
+  validateUUIDParam,
+} from '../../response-helpers.mts'
 import type { ApiUuidContract } from '../../request-contract-types.mts'
 import {
   addListItem,
@@ -18,7 +23,7 @@ app.route('/api/v1/lists/:id/items/posts').post(async (ctx: Context) => {
   const listId = validateUUIDParam(ctx, 'id')
   const list = await getManageableList(currentUser.id, listId)
 
-  const body = (await ctx.request.json('1mb')) as AddListPostBody
+  const body = (await parseJsonBody(ctx, '1mb')) as AddListPostBody
   validateRequestContract(ctx, 'POST:/api/v1/lists/:id/items/posts', { path: ctx.params, body })
 
   await assertListablePostId(entityRelationViewerFor(currentUser), null, body.post_id)

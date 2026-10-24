@@ -13,6 +13,7 @@ import { assertNotSuspended } from '@services/users'
 import { defineQueryContract, queryEnum } from '@vouchington/pagination'
 import { buildPageInfo, createPaginationParser, decodeScopedUuidCursor } from '@modules/pagination'
 import {
+  parseJsonBody,
   requireAuthAndRateLimit,
   validateRequestContract,
   validateUUIDParam,
@@ -81,7 +82,7 @@ app.route('/api/v1/admin/oauth-clients/:id/verification').put(async (ctx: Contex
   assertNotSuspended(currentUser)
 
   const id = validateUUIDParam(ctx, 'id')
-  const body = (await ctx.request.json('10kb')) as VerifyOAuthClientRequest
+  const body = (await parseJsonBody(ctx, '10kb')) as VerifyOAuthClientRequest
   validateRequestContract(ctx, 'PUT:/api/v1/admin/oauth-clients/:id/verification', {
     path: ctx.params,
     body,

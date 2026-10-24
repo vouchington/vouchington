@@ -9,7 +9,12 @@ import {
 } from '@services/follower-distributions'
 import { assertNotSuspended } from '@services/users'
 import { enqueueProcessFollowerDistribution } from '@queues/follower-distributions/enqueues'
-import { requireAuth, validateRequestContract, validateUUIDParam } from '../../response-helpers.mts'
+import {
+  parseJsonBody,
+  requireAuth,
+  validateRequestContract,
+  validateUUIDParam,
+} from '../../response-helpers.mts'
 import {
   apiNoRequestBody,
   apiRequestContract,
@@ -77,7 +82,7 @@ async function readSendFollowersInput(
   ctx: Context,
 ): Promise<ReturnType<typeof parseSendFollowersInput> | Error> {
   try {
-    const body = await ctx.request.json('128kb')
+    const body = await parseJsonBody(ctx, '128kb')
     validateRequestContract(ctx, 'POST:/api/v1/rss-feed-items/:rssFeedItemId/sends', { body })
     return parseSendFollowersInput(body)
   } catch (err) {

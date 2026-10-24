@@ -10,7 +10,7 @@ import {
   type UpdateTopicRecommendationInput,
 } from '@services/topic-recommendations'
 import app from '../../../app.mts'
-import { requireAuth, validateRequestContract } from '../../../response-helpers.mts'
+import { parseJsonBody, requireAuth, validateRequestContract } from '../../../response-helpers.mts'
 
 app.route('/api/v1/topic-recommendations/:id').patch(async (ctx: Context) => {
   const currentUser = await requireAuth(ctx, 'PATCH:/api/v1/topic-recommendations/:id')
@@ -20,7 +20,7 @@ app.route('/api/v1/topic-recommendations/:id').patch(async (ctx: Context) => {
   ctx.assert(post, 404, 'Recommendation not found')
   ctx.assert(currentUserCanEditTopicRecommendation(currentUser, post), 403, 'Forbidden')
 
-  const body = (await ctx.request.json('1mb')) as UpdateTopicRecommendationInput
+  const body = (await parseJsonBody(ctx, '1mb')) as UpdateTopicRecommendationInput
   validateRequestContract(ctx, 'PATCH:/api/v1/topic-recommendations/:id', {
     body,
     path: ctx.params,

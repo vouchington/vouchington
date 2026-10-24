@@ -2,6 +2,7 @@ import { listModerationAppealPage } from '@services/moderation-appeals/list-page
 import app from '../../app.mts'
 import type { Context } from '@jongleberry/api-server'
 import {
+  parseJsonBody,
   requireAuth,
   requireAuthForSuspendedException,
   validateRequestContract,
@@ -58,7 +59,7 @@ const appealDetailQuery = defineQueryContract({
 app.route('/api/v1/appeals').post(async (ctx: Context) => {
   const currentUser = await requireAuthForSuspendedException(ctx, 'POST:/api/v1/appeals')
   const provenance = getRequestContentProvenance()
-  const body = (await ctx.request.json('1mb')) as CreateModerationAppealRequest
+  const body = (await parseJsonBody(ctx, '1mb')) as CreateModerationAppealRequest
   validateRequestContract(ctx, 'POST:/api/v1/appeals', { body })
   await verifyCaptchaOrAttestation(ctx, body, { actionTag: 'appeals.create' })
   const input = parseCreateModerationAppealInput(body)

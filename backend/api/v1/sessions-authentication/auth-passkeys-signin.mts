@@ -8,7 +8,7 @@ import {
 } from '@services/passkeys'
 import { getPrivateUserByAny } from '@services/users/get'
 import { getDeviceContext } from './device-context.mts'
-import { validateRequestContract } from '../../response-helpers.mts'
+import { parseJsonBody, validateRequestContract } from '../../response-helpers.mts'
 
 // ─── Discoverable passkey sign-in (no auth required) ─────────────────────────
 //
@@ -44,7 +44,7 @@ app.route('/api/v1/auth/passkeys/authentication/verify').post(async (ctx: Contex
   ctx.assert(ctx.request.is('json'), 415, 'Invalid Content-Type')
   await ctx.applyRouteRateLimit('POST:/api/v1/auth/passkeys/authentication/verify')
 
-  const body = (await ctx.request.json('100kb')) as { response?: unknown }
+  const body = (await parseJsonBody(ctx, '100kb')) as { response?: unknown }
   validateRequestContract(ctx, 'POST:/api/v1/auth/passkeys/authentication/verify', { body })
   ctx.assert(body.response, 422, 'response is required')
 
