@@ -5319,6 +5319,21 @@ rules:
         'components/sources/browse-feed-page.tsx#BrowseFeedPage': >-
           Async server component that fetches feeds and the current user; its rendered body is
           covered by the BrowseFeedResults, BrowsePageHeader, and PageWithAside stories.
+        'components/users/user-community-relation-route.tsx#UserCommunityRelationRoute': >-
+          Async server component that fetches the user's communities; its rendered body is covered by
+          the CommunityCard story and the RelationManagementAction stories.
+        'components/users/user-rss-feed-route.tsx#UserViewedRssFeedRoute': >-
+          Async server component that fetches the viewed feeds; its rendered body is covered by the
+          RssFeedListItem and PaginatedUserRssFeedList stories.
+        'components/users/user-user-relation-route.tsx#UserUserRelationRoute': >-
+          Async server component that fetches the related users and current user; its rendered body
+          is covered by the UserList stories.
+        'components/users/user-tags-aside.tsx#UserTagsAside': >-
+          Async server component that fetches relations and the tag catalog; its rendered body is
+          covered by the UserTagsAsideView stories.
+        'components/users/user-vouch-election-aside.tsx#UserVouchElectionAside': >-
+          Async server component that fetches the vouch context; its rendered body is covered by
+          the UserVouchElectionCard stories.
       exclude:
         - 'app/**'
         - 'lib/**'
@@ -5326,8 +5341,6 @@ rules:
         - 'test-helpers/**'
         # pending backfill batches (#3761): remove each line as its stories land
         - 'components/copyright/**'
-        - 'components/users/**'
-        - 'components/my/**'
         - 'components/topics/**'
         - 'components/asides/**'
         - 'components/communities/**'
