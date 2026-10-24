@@ -12297,6 +12297,9 @@ importers:
       '@voucha/types':
         specifier: workspace:^
         version: link:../types
+      '@vouchington/http-transport':
+        specifier: ^0.1.0
+        version: 0.1.0
       '@vouchington/localization':
         specifier: ^0.2.1
         version: 0.2.1(react@19.3.1)
