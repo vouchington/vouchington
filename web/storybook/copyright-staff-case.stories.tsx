@@ -52,13 +52,14 @@ const meta = {
     submitRecovery: () => undefined,
   },
   beforeEach() {
-    spyOn(ClientRequest.prototype, 'get').mockImplementation((endpoint: string) => {
+    const get = spyOn(ClientRequest.prototype, 'get').mockImplementation((endpoint: string) => {
       if (endpoint.endsWith('/guest-capabilities')) return Promise.resolve(guestCapabilities)
       if (endpoint.endsWith('/repeat-infringer-accounts')) {
         return Promise.resolve(repeatInfringerAccounts)
       }
       return Promise.reject(new Error(`Unexpected story request ${endpoint}`))
     })
+    return () => get.mockRestore()
   },
 } satisfies Meta<typeof CopyrightStaffCase>
 
