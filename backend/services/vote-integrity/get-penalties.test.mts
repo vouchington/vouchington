@@ -47,7 +47,6 @@ describe('getVoteWeightPenalties', () => {
     expect(revoked.results).toEqual([])
   })
 
-
   it('preserves all-source behavior when source is omitted', async () => {
     const user = await createTestUser({ username: randomUsername() })
     const ringId = await insertTestVoteWeightPenaltyRecord({
