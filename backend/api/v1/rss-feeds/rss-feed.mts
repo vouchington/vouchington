@@ -89,13 +89,9 @@ app
     const id = validateUUIDParam(ctx, 'id')
     const rssFeed = await getRssFeedByIdCached(id)
     ctx.assert(rssFeed, 404, 'RSS feed not found')
-    const rawBody = (await parseJsonBody(ctx, '1mb')) as UpdateRssFeedBody
-    if (rawBody && typeof rawBody === 'object' && !Array.isArray(rawBody)) {
-      const bodyRecord = rawBody as Record<string, unknown>
-      if ('should_ignore_robots_txt' in bodyRecord || 'unreliable_status_codes' in bodyRecord) {
-        ctx.assert(isAdminUser(currentUser), 403, 'Unauthorized')
-      }
-    }
+    const rawBody = await parseJsonBody<UpdateRssFeedBody>(ctx, '1mb')
+    if ('should_ignore_robots_txt' in rawBody || 'unreliable_status_codes' in rawBody)
+      ctx.assert(isAdminUser(currentUser), 403, 'Unauthorized')
     validateRequestContract(ctx, 'PATCH:/api/v1/rss-feeds/:id', { body: rawBody })
     const { is_enabled, discoverable, reason, ...changes } = parseUpdateRssFeedBody(rawBody)
 

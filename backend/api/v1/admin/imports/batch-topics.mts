@@ -21,11 +21,6 @@ app.route('/api/v1/imports/topics').post(async (ctx: Context) => {
   // rejecting valid admin batches, while staying well under the former 10mb cap. The endpoint
   // is admin-only and rate-limited, so the event-loop cost of parsing is bounded.
   const body = await parseJsonBody<{ csv: string }>(ctx, '4mb')
-  ctx.assert(
-    body !== null && typeof body === 'object' && !Array.isArray(body),
-    400,
-    'Invalid JSON body',
-  )
   validateRequestContract(ctx, 'POST:/api/v1/imports/topics', { body })
   const { csv } = body
   ctx.assert(typeof csv === 'string', 400, 'csv must be a string')
