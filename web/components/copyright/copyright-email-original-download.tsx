@@ -55,6 +55,7 @@ export function CopyrightEmailOriginalDownload({
       >
         <TextLink
           data-pw='copyright-email-original-download'
+          download
           href={originalUrl}
         >
           Download original email and attachments
