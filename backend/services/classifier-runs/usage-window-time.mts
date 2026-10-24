@@ -2,7 +2,7 @@
 const UTC_ISO_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/
 
 /**
- * @public Cross-workspace read boundary: `backend/scripts/classifier-call-efficiency.mts` parses
+ * Cross-workspace read boundary: `backend/scripts/classifier-call-efficiency.mts` parses
  * its window edges with it.
  *
  * A window edge as an instant, or null when the text is not exactly a UTC ISO time such as

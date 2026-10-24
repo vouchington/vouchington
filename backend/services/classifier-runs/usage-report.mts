@@ -10,7 +10,7 @@ import { summarizeClassifierUsage } from './usage-report-summary.mts'
 import type { ClassifierUsageReport, ClassifierUsageWindow } from './usage-report-types.mts'
 
 /**
- * @public Cross-workspace read boundary: `backend/scripts/classifier-call-efficiency.mts` runs it
+ * Cross-workspace read boundary: `backend/scripts/classifier-call-efficiency.mts` runs it
  * against an environment for the Epic C KPI check (C10, #223).
  *
  * The one cost, latency and fan-out report for every fixed classifier: one row per run reserved in

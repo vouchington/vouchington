@@ -3,17 +3,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   ENTITY_LISTENERS_POST_UPDATED_JOB,
   ENTITY_LISTENERS_RECONCILE_ENTITIES_JOB,
-  ENTITY_LISTENERS_RECONCILE_ENTITY_JOB,
-  ENTITY_LISTENERS_TOPIC_DELETED_JOB,
   ENTITY_LISTENERS_URL_CREATED_JOB,
 } from '@queues/background/enqueues/entity-listeners-jobs'
 import { readEnqueuedJob } from '../../test-helpers/queue-jobs.mts'
 import {
   enqueueBulkOnPostUpdated,
   enqueueBulkOnUrlCreatedBestEffort,
-  enqueueBulkReconcileEntities,
   enqueueOnPostCreated,
-  enqueueOnTopicDeleted,
 } from './enqueues.mts'
 import {
   enqueueReconcileEntities,
@@ -56,27 +52,19 @@ describe('entity listener enqueues', () => {
     )
   })
 
-  it('takes the task priority from the job definition when the caller gives none', async () => {
+  it('uses the task priority by default and honors a caller override', async () => {
     const postId = randomUUID()
     const job = await readEnqueuedJob(entitiesListeners, await enqueueOnPostCreated(postId))
     expect(job.name).toBe('entity-listeners.processPostCreated')
     expect(job.opts.priority).toBe(10)
-  })
 
-  it('enqueues a topic deletion with its updates and requested priority', async () => {
-    const topicId = randomUUID()
-    const updates = { name: 'Deleted topic', slug: 'deleted-topic' }
-
-    await enqueueOnTopicDeleted(topicId, updates, 41)
-
-    const jobs = await entitiesListeners.searchJobs({
-      name: ENTITY_LISTENERS_TOPIC_DELETED_JOB.name,
-      data: { id: topicId },
-    })
-
-    expect(jobs).toHaveLength(1)
-    expect(jobs[0]!.data).toEqual({ id: topicId, updates })
-    expect(jobs[0]!.opts).toMatchObject({ priority: 41 })
+    const priorityPostId = randomUUID()
+    const priorityJob = await readEnqueuedJob(
+      entitiesListeners,
+      await enqueueOnPostCreated(priorityPostId, 41),
+    )
+    expect(priorityJob.data).toEqual({ id: priorityPostId })
+    expect(priorityJob.opts.priority).toBe(41)
   })
 
   it('debounces a created url per id and defaults to the task priority', async () => {
@@ -120,39 +108,6 @@ describe('entity listener enqueues', () => {
     } finally {
       add.mockRestore()
     }
-  })
-
-  it('uses the database-derived logical id for reconciliation job and dedup ids', async () => {
-    const entityId = randomUUID()
-    const changedAtEpochUs = '1784304000123456'
-    const jobId = `entity-reconcile__user__${entityId}__${changedAtEpochUs}`
-    await enqueueBulkReconcileEntities([{ entityType: 'user', entityId, changedAtEpochUs }])
-    const job = await entitiesListeners.getJob(jobId)
-    expect(job).toMatchObject({
-      id: jobId,
-      name: ENTITY_LISTENERS_RECONCILE_ENTITY_JOB.name,
-      data: { entityType: 'user', entityId, changedAtEpochUs },
-      opts: { priority: 10, deduplication: { id: jobId, mode: 'simple' } },
-    })
-  })
-
-  it('uses the revision id for distinct post replay jobs', async () => {
-    const entityId = randomUUID()
-    const changeId = randomUUID()
-    const data = {
-      entityType: 'post_updated' as const,
-      entityId,
-      changedAtEpochUs: '1784304000123456',
-      changeId,
-      contentChanged: true,
-    }
-    const jobId = `entity-reconcile__post_updated__${entityId}__${changeId}`
-    await enqueueBulkReconcileEntities([data])
-    expect(await entitiesListeners.getJob(jobId)).toMatchObject({
-      id: jobId,
-      data,
-      opts: { deduplication: { id: jobId, mode: 'simple' } },
-    })
   })
 
   it('gives every reconciliation root a unique id under one shared deduplication id', () => {

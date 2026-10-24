@@ -19,7 +19,6 @@ import {
   ENTITY_LISTENERS_POST_DELETED_JOB,
   ENTITY_LISTENERS_POST_UPDATED_JOB,
   ENTITY_LISTENERS_TOPIC_CREATED_JOB,
-  ENTITY_LISTENERS_TOPIC_DELETED_JOB,
   ENTITY_LISTENERS_TOPIC_UPDATED_JOB,
   ENTITY_LISTENERS_URL_CREATED_JOB,
   ENTITY_LISTENERS_USER_CREATED_JOB,
@@ -55,7 +54,6 @@ export const enqueueProcessUserLoggedIn = createEntityEnqueue(ENTITY_LISTENERS_U
 export const enqueueProcessUserUpdated = createEntityEnqueue(ENTITY_LISTENERS_USER_UPDATED_JOB)
 export const enqueueProcessTopicCreated = createEntityEnqueue(ENTITY_LISTENERS_TOPIC_CREATED_JOB)
 export const enqueueProcessTopicUpdated = createEntityEnqueue(ENTITY_LISTENERS_TOPIC_UPDATED_JOB)
-export const enqueueProcessTopicDeleted = createEntityEnqueue(ENTITY_LISTENERS_TOPIC_DELETED_JOB)
 export const enqueueProcessPostCreated = createEntityEnqueue(ENTITY_LISTENERS_POST_CREATED_JOB)
 export const enqueueProcessPostUpdated = createEntityEnqueue(ENTITY_LISTENERS_POST_UPDATED_JOB)
 export const enqueueBulkProcessPostUpdated = createBackgroundBulkEnqueue(
