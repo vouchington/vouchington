@@ -1,38 +1,9 @@
-export type BedrockBatchStatus =
-  | 'preparing'
-  | 'submitted'
-  | 'in_progress'
-  | 'completed'
-  | 'failed'
-  | 'cancelled'
-
-type Lifecycle = {
-  submitted_at: Date | null
-  in_progress_at: Date | null
-  completed_at: Date | null
-  failed_at: Date | null
-  cancelled_at: Date | null
-}
-
 type LifecycleColumn =
   | 'submitted_at'
   | 'in_progress_at'
   | 'completed_at'
   | 'failed_at'
   | 'cancelled_at'
-
-/**
- * @public Documented contract; production use is unconfirmed and this export may be
- * removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
- */
-export function deriveBedrockBatchStatus(row: Lifecycle): BedrockBatchStatus {
-  if (row.completed_at) return 'completed'
-  if (row.failed_at) return 'failed'
-  if (row.cancelled_at) return 'cancelled'
-  if (row.in_progress_at) return 'in_progress'
-  if (row.submitted_at) return 'submitted'
-  return 'preparing'
-}
 
 export function lifecycleColumnForBedrockStatus(bedrockStatus: string): LifecycleColumn | null {
   if (

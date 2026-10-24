@@ -1,9 +1,7 @@
 // Internal support module (leading underscore = not part of the public barrel).
-// Duplicates the bedrock-embeddings-batch domain's status-derivation logic so test-helpers does
-// not depend on that service package, which would otherwise create a workspace dependency cycle
-// (every backend service devDeps test-helpers for its tests). This module has zero imports in
-// its source of truth — it is pure lifecycle-column-derivation logic — so the duplication cannot
-// drift into a data-store/service dependency.
+// Owns fixture-only status derivation so test-helpers does not depend on the
+// bedrock-embeddings-batch service package. That dependency would create a workspace cycle
+// because backend services depend on test-helpers for their tests.
 
 export type BedrockBatchStatus =
   | 'preparing'
