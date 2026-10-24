@@ -42,16 +42,21 @@ describe('topic RSS feed attachment lifecycle fence', () => {
     expect(countCapturedQueriesByAnnotation(queries, annotation)).toBe(1)
   })
 
-  it('does not treat a failed lock statement as held', async () => {
+  it('preserves a failed acquisition and lets a queued caller acquire the fence', async () => {
     const topicId = randomUUID()
     await using transaction = await beginTransaction()
     const failingQuery = createFailOnceAttachmentFenceQuery(transaction)
-    await expect(lockTopicRssFeedAttachmentLifecycles(failingQuery, [topicId])).rejects.toThrow(
-      'Injected attachment fence query failure',
+    const { result, queries } = await withCapturedTestQueries(() =>
+      Promise.allSettled([
+        lockTopicRssFeedAttachmentLifecycles(failingQuery, [topicId]),
+        lockTopicRssFeedAttachmentLifecycles(failingQuery, [topicId]),
+      ]),
     )
-    const { queries } = await withCapturedTestQueries(() =>
-      lockTopicRssFeedAttachmentLifecycles(failingQuery, [topicId]),
-    )
+    expect(result[0]).toMatchObject({
+      status: 'rejected',
+      reason: expect.objectContaining({ message: 'Injected attachment fence query failure' }),
+    })
+    expect(result[1]).toEqual({ status: 'fulfilled', value: undefined })
     expect(countCapturedQueriesByAnnotation(queries, annotation)).toBe(1)
   })
 
