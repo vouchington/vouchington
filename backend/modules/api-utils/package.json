@@ -26,6 +26,6 @@
     "@ts-shared/session-jwt": "workspace:^"
   },
   "devDependencies": {
-    "@jongleberry/api-server": "^3.0.1"
+    "@jongleberry/api-server": "^3.1.0"
   }
 }

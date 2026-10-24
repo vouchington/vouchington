@@ -17,7 +17,7 @@ import {
 } from './index.mts'
 import { isAuthenticatedOriginRequest } from './authenticated-origin.mts'
 
-type HttpListener = (req: IncomingMessage, res: ServerResponse) => void
+type HttpListener = (req: IncomingMessage, res: ServerResponse) => void | Promise<void>
 const TRUSTED_REQUEST_KINDS = new Set(['bot', 'cache-fill'])
 const GLOBAL_FEATURE_FLAGS_REQUEST_KIND = 'global-feature-flags'
 const EXEMPT_API_PREFIXES = [
@@ -54,10 +54,8 @@ export function createRequestClientInfoListener(
     mintDeviceId: mintUUIDv7,
     verifyDeviceIdentity: deviceToken => verifyDeviceJwt(deviceToken),
   },
-): HttpListener {
-  return (req, res) => {
-    void handleRequest(req, res, listener, dependencies)
-  }
+): (req: IncomingMessage, res: ServerResponse) => Promise<void> {
+  return (req, res) => handleRequest(req, res, listener, dependencies)
 }
 
 async function handleRequest(
@@ -67,10 +65,8 @@ async function handleRequest(
   dependencies: ListenerDependencies,
 ): Promise<void> {
   const path = new URL(req.url ?? '/', 'http://localhost').pathname
-  if (isExempt(req, path)) {
-    listener(req, res)
-    return
-  }
+  if (isExempt(req, path)) return listener(req, res)
+  let value: RequestClientInfo | null
   try {
     const headers = parseClientHeaders(req.headers)
     const deviceToken = await getTrustedDeviceToken(req, dependencies.verifyDeviceIdentity)
@@ -81,21 +77,21 @@ async function handleRequest(
     if (!deviceToken && !bootstrapDeviceId) {
       throw new ClientInfoValidationError('a verified device token is required')
     }
-    const value: RequestClientInfo = {
+    value = {
       ...headers,
       deviceId: deviceToken?.did ?? bootstrapDeviceId!,
       ipAddress: getTrustedIpAddress(req),
       ...(requestId ? { requestId } : {}),
     }
-    runWithSessionRequestContext(value, () => listener(req, res))
   } catch (err) {
     logInvalidClientInfo(path, err)
-    if (!dependencies.isEnforced()) {
-      runWithSessionRequestContext(null, () => listener(req, res))
+    if (dependencies.isEnforced()) {
+      if (!res.headersSent) writeInvalidClientInfo(res, req, err)
       return
     }
-    if (!res.headersSent) writeInvalidClientInfo(res, req, err)
+    value = null
   }
+  return runWithSessionRequestContext(value, () => listener(req, res))
 }
 
 function getBootstrapDeviceId(

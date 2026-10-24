@@ -3,13 +3,11 @@ import { acquirePlatformStatsRefreshReservation } from './platform-stats-refresh
 import { withOwnedPlatformStatsServer } from './platform-stats-owned-server.mts'
 import { enableQueryCapture, stopTestQueryCapture } from './query-capture.mts'
 
-/** A timeout-safe owner: drain all servers and observers before releasing the shared refresh lock. */
+/** Own one Stats listener and its refresh reservation through test timeout cleanup. */
 export async function createPlatformStatsLifecycle() {
-  const servers: (() => Promise<void>)[] = []
-  const observers: (() => void)[] = []
+  let serverDrain: (() => Promise<void>) | undefined
+  let observerCleanup: (() => void) | undefined
   let closing = false
-  let reservationReleased = false
-  let serversDrained = 0
   let closeTask: Promise<void> | undefined
   let captured = false
   let queries: ReturnType<typeof stopTestQueryCapture> = []
@@ -24,41 +22,36 @@ export async function createPlatformStatsLifecycle() {
   const close = () => {
     closing = true
     closeTask ??= (async () => {
-      const failures: unknown[] = []
-      for (const drain of servers) {
+      const errors: unknown[] = []
+      if (serverDrain) {
         try {
-          await drain()
-          serversDrained++
+          await serverDrain()
         } catch (err) {
-          failures.push(err)
+          errors.push(err)
         }
       }
-      for (const cleanup of observers) {
-        try {
-          cleanup()
-        } catch (err) {
-          failures.push(err)
-        }
+      try {
+        observerCleanup?.()
+      } catch (err) {
+        errors.push(err)
       }
       try {
         stopQueries()
       } catch (err) {
-        failures.push(err)
+        errors.push(err)
       }
       if (reservation) {
         try {
           await (await reservation).release()
-          reservationReleased = true
         } catch (err) {
-          failures.push(err)
+          errors.push(err)
         }
       }
-      if (failures.length)
-        throw new AggregateError(failures, 'Stats lifecycle cleanup failed', { cause: failures[0] })
+      if (errors.length)
+        throw new AggregateError(errors, 'Stats lifecycle cleanup failed', { cause: errors[0] })
     })()
     return closeTask
   }
-  // The registration precedes even refresh-lock acquisition; a late acquisition is drained too.
   onTestFinished(close)
   reservation = acquirePlatformStatsRefreshReservation()
   await reservation
@@ -67,14 +60,6 @@ export async function createPlatformStatsLifecycle() {
     throw new Error('Stats lifecycle closed during reservation acquisition')
   }
   return {
-    close,
-    observations: () => ({
-      closing,
-      reservationReleased,
-      servers: servers.length,
-      serversDrained,
-      queryCaptureActive: captured,
-    }),
     captureQueries() {
       if (closing || captured) throw new Error('Stats query capture cannot start')
       enableQueryCapture()
@@ -82,15 +67,14 @@ export async function createPlatformStatsLifecycle() {
     },
     stopQueries,
     cleanupAfterDrain(cleanup: () => void) {
-      if (closing) throw new Error('Stats lifecycle is closing')
-      observers.push(cleanup)
+      if (closing || observerCleanup) throw new Error('Stats lifecycle cannot register cleanup')
+      observerCleanup = cleanup
     },
-    withServer<Result>(
-      run: Parameters<typeof withOwnedPlatformStatsServer<Result>>[0],
-      holdWrite = false,
-    ) {
-      if (closing) throw new Error('Stats lifecycle is closing')
-      return withOwnedPlatformStatsServer(run, holdWrite, drain => servers.push(drain))
+    withServer<Result>(run: Parameters<typeof withOwnedPlatformStatsServer<Result>>[0]) {
+      if (closing || serverDrain) throw new Error('Stats listener cannot start')
+      return withOwnedPlatformStatsServer(run, drain => {
+        serverDrain = drain
+      })
     },
   }
 }

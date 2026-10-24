@@ -12,13 +12,13 @@ export const WORKER_SECRET_EXEMPT_PATHS = new Set(['/infra/ping'])
 export const CROSS_SITE_OAUTH_PROTOCOL_PATHS = new Set(['/register', '/revoke', '/token'])
 const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
 
-type HttpListener = (req: IncomingMessage, res: ServerResponse) => void
+type HttpListener = (req: IncomingMessage, res: ServerResponse) => void | Promise<void>
 
 export function createOriginGuardedListener(listener: HttpListener, secret?: string): HttpListener {
   const secretHash = hashWorkerSecret(secret)
   return (req, res) => {
     if (!preflightOriginRequest(req, res, secretHash)) return
-    listener(req, res)
+    return listener(req, res)
   }
 }
 

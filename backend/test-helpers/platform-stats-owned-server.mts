@@ -1,34 +1,17 @@
 import { onTestFinished } from 'vitest'
 import http from 'node:http'
-import { getCapturedQueries } from '@data-stores/psql'
-import { listenOnLoopbackEphemeralPort, type LoopbackHost } from '@ts-shared/utils/ephemeral-ports'
+import { listenOnLoopbackEphemeralPort } from 'vouchington-tooling/runner-port-policy'
 import app, { createApiRequestGuardedListener } from '../api/app.mts'
 import '../api/index.mts'
 import { profileRequestQueries } from './api/request-query-profile.mts'
 import { observePlatformStatsCache } from './platform-stats-cache-lifecycle.mts'
 
-type AdmissionReceipt = {
-  method: string | undefined
-  path: string | undefined
-  requestId: string | string[] | undefined
-  hasCookie: boolean
-  aggregateQueriesAtAdmission: number
-}
-type StatsLifecycle = {
-  nextAdmission(): Promise<AdmissionReceipt>
-  closeAndDrain(): Promise<void>
-  trackWork<Result>(run: () => Promise<Result>): Promise<Result>
-  observations(): { cleanupStarted: boolean; responsesFinishedAfterCleanup: boolean[] }
-}
+type StatsAddress = Awaited<ReturnType<typeof listenOnLoopbackEphemeralPort>>
+type TrackWork = <Result>(run: () => Promise<Result>) => Promise<Result>
 
-/** Own Stats HTTP responses and the real conditional cache write on a private listener. */
+/** Own actual Stats responses, SDK handlers, and conditional cache commands. */
 export async function withOwnedPlatformStatsServer<Result>(
-  run: (
-    address: { host: LoopbackHost; port: number },
-    cache: ReturnType<typeof observePlatformStatsCache>,
-    lifecycle: StatsLifecycle,
-  ) => Promise<Result>,
-  holdWrite: boolean,
+  run: (address: StatsAddress, trackWork: TrackWork) => Promise<Result>,
   registerCleanup: (cleanup: () => Promise<void>) => void,
 ): Promise<Result> {
   const settle = (task: Promise<unknown>) =>
@@ -37,11 +20,9 @@ export async function withOwnedPlatformStatsServer<Result>(
       err => ({ status: 'rejected' as const, reason: err }),
     )
   const responses: Promise<PromiseSettledResult<unknown>>[] = []
+  const handlers: Promise<PromiseSettledResult<unknown>>[] = []
   const ownedWork: Promise<PromiseSettledResult<unknown>>[] = []
-  const receipt = Promise.withResolvers<AdmissionReceipt>()
-  void receipt.promise.catch(() => undefined)
-  const responsesFinishedAfterCleanup: boolean[] = []
-  let cleanupStarted = false
+  const cleanupErrors: unknown[] = []
   let accepting = true
   const listener = createApiRequestGuardedListener(app.callback())
   const server = http.createServer((req, res) => {
@@ -53,7 +34,6 @@ export async function withOwnedPlatformStatsServer<Result>(
     const completed = new Promise<void>((resolve, reject) => {
       const finish = () => {
         detach()
-        responsesFinishedAfterCleanup.push(cleanupStarted)
         resolve()
       }
       const close = () => {
@@ -75,34 +55,26 @@ export async function withOwnedPlatformStatsServer<Result>(
       res.once('error', error)
     })
     responses.push(settle(completed))
-    receipt.resolve({
-      method: req.method,
-      path: req.url,
-      requestId: req.headers['x-request-id'],
-      hasCookie: req.headers.cookie !== undefined,
-      aggregateQueriesAtAdmission: getCapturedQueries().filter(query =>
-        query.text.includes('/* getPlatformStats */'),
-      ).length,
-    })
     try {
-      profileRequestQueries(req, res, () => listener(req, res))
+      handlers.push(settle(profileRequestQueries(req, res, () => listener(req, res))))
     } catch (err) {
+      handlers.push(Promise.resolve({ status: 'rejected' as const, reason: err }))
       res.destroy(err instanceof Error ? err : new Error(String(err)))
     }
   })
-  let cache: ReturnType<typeof observePlatformStatsCache> | undefined
-  const errors: unknown[] = []
-  const cleanupErrors: unknown[] = []
   server.on('error', err => cleanupErrors.push(err))
-  let startup:
-    | Promise<Awaited<ReturnType<typeof listenOnLoopbackEphemeralPort>> | undefined>
-    | undefined
+  const trackWork: TrackWork = runWork => {
+    if (!accepting) return Promise.reject(new Error('Stats server is closing'))
+    const task = Promise.resolve().then(runWork)
+    ownedWork.push(settle(task))
+    return task
+  }
+  let cache: ReturnType<typeof observePlatformStatsCache> | undefined
+  let startup: Promise<StatsAddress | undefined> | undefined
   let cleanupTask: Promise<void> | undefined
   const closeAndDrain = () => {
     cleanupTask ??= (async () => {
-      cleanupStarted = true
       accepting = false
-      receipt.reject(new Error('Stats server closed before request admission'))
       if (startup) {
         try {
           await startup
@@ -111,24 +83,16 @@ export async function withOwnedPlatformStatsServer<Result>(
         }
       }
       const closed = server.listening
-        ? new Promise<void>((resolve, reject) =>
-            server.close(error => (error ? reject(error) : resolve())),
+        ? settle(
+            new Promise<void>((resolve, reject) =>
+              server.close(err => (err ? reject(err) : resolve())),
+            ),
           )
-        : Promise.resolve()
-      const closedOutcome = settle(closed)
-      // This route awaits the stats read and JSON pipeline before response finish.
-      // Its conditional cache write is detached and joined separately below.
-      for (const outcome of await Promise.all(responses))
-        if (outcome.status === 'rejected') cleanupErrors.push(outcome.reason)
-      for (const outcome of await Promise.all(ownedWork))
+        : Promise.resolve({ status: 'fulfilled' as const })
+      // A response can close before its handler settles and admits a cache write.
+      for (const outcome of await Promise.all([...responses, ...handlers, ...ownedWork]))
         if (outcome.status === 'rejected') cleanupErrors.push(outcome.reason)
       if (cache) {
-        try {
-          await cache.fence()
-        } catch (err) {
-          cleanupErrors.push(err)
-        }
-        cache.release()
         try {
           await cache.drain()
         } catch (err) {
@@ -136,20 +100,17 @@ export async function withOwnedPlatformStatsServer<Result>(
         }
         try {
           await cache.clear()
-          await cache.assertMarkerRemoved()
         } catch (err) {
           cleanupErrors.push(err)
         }
-      }
-      const outcome = await closedOutcome
-      if (outcome.status === 'rejected') cleanupErrors.push(outcome.reason)
-      if (cache) {
         try {
           cache.restore()
         } catch (err) {
           cleanupErrors.push(err)
         }
       }
+      const outcome = await closed
+      if (outcome.status === 'rejected') cleanupErrors.push(outcome.reason)
       if (cleanupErrors.length)
         throw new AggregateError(cleanupErrors, 'Stats server cleanup failed', {
           cause: cleanupErrors[0],
@@ -157,34 +118,20 @@ export async function withOwnedPlatformStatsServer<Result>(
     })()
     return cleanupTask
   }
-  // Registered before cache setup, bind, identity work, or caller admission.
+  // Register before cache setup, bind, identity work, or caller admission.
   onTestFinished(closeAndDrain)
   registerCleanup(closeAndDrain)
-  const lifecycle: StatsLifecycle = {
-    nextAdmission: () => receipt.promise,
-    trackWork(run) {
-      if (!accepting) return Promise.reject(new Error('Stats server is closing'))
-      const task = Promise.resolve().then(run)
-      ownedWork.push(settle(task))
-      return task
-    },
-    closeAndDrain,
-    observations: () => ({
-      cleanupStarted,
-      responsesFinishedAfterCleanup: [...responsesFinishedAfterCleanup],
-    }),
-  }
+  const errors: unknown[] = []
   let value: Result | undefined
   try {
-    const observedCache = observePlatformStatsCache(holdWrite)
-    cache = observedCache
-    startup = observedCache.clear().then(() => {
+    cache = observePlatformStatsCache()
+    startup = cache.clear().then(() => {
       if (!accepting) return undefined
       return listenOnLoopbackEphemeralPort(server)
     })
     const address = await startup
     if (!address || !accepting) throw new Error('Stats server closed during startup')
-    value = await run(address, observedCache, lifecycle)
+    value = await run(address, trackWork)
   } catch (err) {
     errors.push(err)
   } finally {

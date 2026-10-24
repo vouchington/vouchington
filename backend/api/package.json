@@ -50,7 +50,7 @@
     "@data-stores/valkey-glide-mq": "workspace:^",
     "@data-stores/valkey-pubsub": "workspace:^",
     "@data-stores/valkey-rate-limiter": "workspace:^",
-    "@jongleberry/api-server": "^3.0.1",
+    "@jongleberry/api-server": "^3.1.0",
     "@modules/activitypub-inbox-storage-policy": "workspace:^",
     "@modules/activitypub-uris": "workspace:^",
     "@modules/api-utils": "workspace:^",

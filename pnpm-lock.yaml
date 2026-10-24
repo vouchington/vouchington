@@ -715,8 +715,8 @@ importers:
         specifier: workspace:^
         version: link:../data-stores/valkey-rate-limiter
       '@jongleberry/api-server':
-        specifier: ^3.0.1
-        version: 3.0.1
+        specifier: ^3.1.0
+        version: 3.1.0
       '@modules/activitypub-inbox-storage-policy':
         specifier: workspace:^
         version: link:../modules/activitypub-inbox-storage-policy
@@ -1310,7 +1310,7 @@ importers:
         version: 0.0.3
       '@vouchington/rate-limit':
         specifier: ^0.3.0
-        version: 0.3.0(@jongleberry/api-server@3.0.1)(valkyries@0.11.2)
+        version: 0.3.0(@jongleberry/api-server@3.1.0)(valkyries@0.11.2)
       '@vouchington/session-jwt':
         specifier: ^0.0.2
         version: 0.0.2
@@ -2174,8 +2174,8 @@ importers:
   backend/md:
     dependencies:
       '@jongleberry/api-server':
-        specifier: ^3.0.1
-        version: 3.0.1
+        specifier: ^3.1.0
+        version: 3.1.0
       '@modules/utils':
         specifier: workspace:^
         version: link:../modules/utils
@@ -2257,8 +2257,8 @@ importers:
         version: link:../../../ts-shared/session-jwt
     devDependencies:
       '@jongleberry/api-server':
-        specifier: ^3.0.1
-        version: 3.0.1
+        specifier: ^3.1.0
+        version: 3.1.0
 
   backend/modules/aws:
     dependencies:
@@ -2639,8 +2639,8 @@ importers:
         specifier: workspace:^
         version: link:../../data-stores/graceful-shutdown
       '@jongleberry/api-server':
-        specifier: ^3.0.1
-        version: 3.0.1
+        specifier: ^3.1.0
+        version: 3.1.0
       '@modules/on-error':
         specifier: workspace:^
         version: link:../on-error
@@ -3460,8 +3460,8 @@ importers:
   backend/rss:
     dependencies:
       '@jongleberry/api-server':
-        specifier: ^3.0.1
-        version: 3.0.1
+        specifier: ^3.1.0
+        version: 3.1.0
       '@services/api-keys':
         specifier: workspace:^
         version: link:../services/api-keys
@@ -4773,8 +4773,8 @@ importers:
         specifier: workspace:^
         version: link:../../data-stores/valkey
       '@jongleberry/api-server':
-        specifier: ^3.0.1
-        version: 3.0.1
+        specifier: ^3.1.0
+        version: 3.1.0
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
@@ -6196,8 +6196,8 @@ importers:
         specifier: workspace:^
         version: link:../../data-stores/valkey-rate-limiter
       '@jongleberry/api-server':
-        specifier: ^3.0.1
-        version: 3.0.1
+        specifier: ^3.1.0
+        version: 3.1.0
       '@modules/on-error':
         specifier: workspace:^
         version: link:../../modules/on-error
@@ -7597,7 +7597,7 @@ importers:
         version: link:../../test-helpers
       '@vouchington/rate-limit':
         specifier: ^0.3.0
-        version: 0.3.0(@jongleberry/api-server@3.0.1)(valkyries@0.11.2)
+        version: 0.3.0(@jongleberry/api-server@3.1.0)(valkyries@0.11.2)
 
   backend/services/media-delivery-safety:
     dependencies:
@@ -9996,7 +9996,7 @@ importers:
         version: link:../../../ts-shared/session-jwt
       '@vouchington/rate-limit':
         specifier: ^0.3.0
-        version: 0.3.0(@jongleberry/api-server@3.0.1)(valkyries@0.11.2)
+        version: 0.3.0(@jongleberry/api-server@3.1.0)(valkyries@0.11.2)
       valkyries:
         specifier: ^0.11.2
         version: 0.11.2
@@ -12145,7 +12145,7 @@ importers:
         version: 0.0.17
       '@vouchington/rate-limit':
         specifier: ^0.3.0
-        version: 0.3.0(@jongleberry/api-server@3.0.1)(valkyries@0.11.2)
+        version: 0.3.0(@jongleberry/api-server@3.1.0)(valkyries@0.11.2)
       '@vouchington/utils':
         specifier: ^0.7.5
         version: 0.7.5
@@ -14334,7 +14334,7 @@ importers:
         version: 0.2.0(@cloudflare/workers-types@5.20261021.1)
       '@vouchington/rate-limit':
         specifier: ^0.3.0
-        version: 0.3.0(@jongleberry/api-server@3.0.1)(valkyries@0.11.2)
+        version: 0.3.0(@jongleberry/api-server@3.1.0)(valkyries@0.11.2)
       '@vouchington/session-jwt':
         specifier: ^0.0.2
         version: 0.0.2
@@ -16088,8 +16088,8 @@ packages:
     resolution: {integrity: sha512-O8jcjabXaleOG9DQ0+ARXWZBTfnP4WNAqzuiJK7ll44AmxGKv/J2M4TPjxjY3znBCfvBXFzucm1twdyFybFqEA==}
     engines: {node: '>=12'}
 
-  '@jongleberry/api-server@3.0.1':
-    resolution: {integrity: sha512-0LRSCERVQ03Uy/LVlc1tuFYNLwc1vIPaMNUcACIxi3fVUQnxDKzu1gpnszXnxNHtQFcsi/xSmjt5edXUsafWsg==}
+  '@jongleberry/api-server@3.1.0':
+    resolution: {integrity: sha512-19sc3Fj1XUDR8WISg7Pn1EfDgIBCUWqJSRm+0eXc4m1EOuZYv70bI0Jbca9i+42LUZD5IBmfUfc2XNQPH+vTxQ==}
     engines: {node: '>=24.0.0'}
 
   '@jongleberry/vurst-ai-darwin-arm64@0.4.3':
@@ -25359,7 +25359,7 @@ snapshots:
       wrap-ansi: 8.1.0
       wrap-ansi-cjs: wrap-ansi@7.0.0
 
-  '@jongleberry/api-server@3.0.1':
+  '@jongleberry/api-server@3.1.0':
     dependencies:
       bytes: 3.1.2
       compressible: 2.0.18
@@ -28880,9 +28880,9 @@ snapshots:
     dependencies:
       glide-mq: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
-  '@vouchington/rate-limit@0.3.0(@jongleberry/api-server@3.0.1)(valkyries@0.11.2)':
+  '@vouchington/rate-limit@0.3.0(@jongleberry/api-server@3.1.0)(valkyries@0.11.2)':
     dependencies:
-      '@jongleberry/api-server': 3.0.1
+      '@jongleberry/api-server': 3.1.0
       valkyries: 0.11.2
 
   '@vouchington/request-contract-validation@0.0.3':

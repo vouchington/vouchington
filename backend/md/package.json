@@ -21,7 +21,7 @@
     "./*/__tests__/*": null
   },
   "dependencies": {
-    "@jongleberry/api-server": "^3.0.1",
+    "@jongleberry/api-server": "^3.1.0",
     "@modules/utils": "workspace:^",
     "@services/elections-votes": "workspace:^",
     "@services/entity-cache": "workspace:^",

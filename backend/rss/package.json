@@ -20,7 +20,7 @@
     "./*/__tests__/*": null
   },
   "dependencies": {
-    "@jongleberry/api-server": "^3.0.1",
+    "@jongleberry/api-server": "^3.1.0",
     "@services/api-keys": "workspace:^",
     "@services/rss-xml": "workspace:^",
     "@voucha/api": "workspace:^"
