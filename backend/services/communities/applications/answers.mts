@@ -44,7 +44,7 @@ function assertAnswer(question: CommunityApplicationQuestion, answer: unknown): 
   }
   if (question.field_type === 'single_select') {
     assert(typeof answer === 'string', 422, `Expected string for question: ${question.question}`)
-    assert(question.options?.includes(answer), 422, 'Unknown option')
+    assert(new Set(question.options).has(answer), 422, 'Unknown option')
     return
   }
 
@@ -54,13 +54,14 @@ function assertAnswer(question: CommunityApplicationQuestion, answer: unknown): 
     `Expected array for multi_select question: ${question.question}`,
   )
   const seen = new Set<string>()
+  const options = new Set(question.options)
   for (const label of answer) {
     assert(
       typeof label === 'string',
       422,
       `Expected string options for multi_select question: ${question.question}`,
     )
-    assert(question.options?.includes(label), 422, 'Unknown option')
+    assert(options.has(label), 422, 'Unknown option')
     assert(!seen.has(label), 422, 'Duplicate option')
     seen.add(label)
   }

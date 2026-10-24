@@ -120,6 +120,20 @@ describe('RSS feed import status and line-list parsing', () => {
       .expect(422)
   })
 
+  it.each(['csv', 'opml'] as const)('rejects an over-500-item %s import', async format => {
+    const request = createRequest()
+    await request.authenticateAs(user)
+    const urls = Array.from({ length: 501 }, feedUrl)
+    const body =
+      format === 'csv'
+        ? { csv: `url\n${urls.join('\n')}` }
+        : {
+            opml: `<opml version="2.0"><body>${urls.map(url => `<outline xmlUrl="${url}"/>`).join('')}</body></opml>`,
+          }
+
+    await request.post('/api/v1/my/import/rss-feeds').send(body).expect(422)
+  })
+
   it('reads the body limit from config on every request', async () => {
     onTestFinished(
       overrideDynamicConfigFieldsForTest(userImportExportConfig, { import_max_body_bytes: 1_024 }),

@@ -807,8 +807,8 @@
       },
       "update_community_moderation": {
         "measured": {
-          "list": 14581,
-          "core": 6467
+          "list": 14598,
+          "core": 6484
         },
         "max": {
           "list": 15000,

@@ -55,6 +55,7 @@ app.route('/api/v1/my/import/rss-feeds').post(async (ctx: Context) => {
   // The schema fixes which source key is present and its type; counts are semantic checks.
   const urls = parseImportUrls(ctx, body)
   ctx.assert(urls.length > 0, 400, 'At least one URL is required')
+  ctx.assert(urls.length <= 500, 422, 'No more than 500 URLs may be imported')
 
   const submitted = await submitAndDispatchRssFeedImport(currentUser, provenance, urls, {
     should_follow_imported_feeds: body.should_follow_imported_feeds,

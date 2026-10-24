@@ -55,6 +55,18 @@ async function readMessages(user: PrivateUser, communitySlug: string, conversati
 }
 
 describe('participate_in_community(reply_modmail) — REST twin and real PostgreSQL', () => {
+  it('rejects a reply whose serialized REST body exceeds 10 KB', async () => {
+    const { subject, community, conversationId } = await threadFixture()
+    const text = 'x'.repeat(10 * 1024)
+    await expectMcpToolFunctionThrows(
+      subject,
+      TOOL,
+      replyArgs(community.slug, conversationId, text),
+      { status: 413, message: 'Request entity too large' },
+    )
+    expect((await readMessages(subject, community.slug, conversationId)).body.results).toEqual([])
+  })
+
   it('persists member, moderator, and subject replies across REST and MCP, including after removal', async () => {
     const { subject, community, conversationId } = await threadFixture()
     const mcpText = `MCP member reply ${crypto.randomUUID()}`

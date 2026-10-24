@@ -12228,6 +12228,7 @@
               "items": {
                 "type": "string"
               },
+              "maxItems": 32768,
               "type": "array"
             },
             {

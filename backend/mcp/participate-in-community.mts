@@ -15,6 +15,7 @@ import { adminOutputSchema, wrapAdminOutput } from './untrusted-output.mts'
 import { requireActiveToolUser } from './private-user.mts'
 import { communityReferenceSchema, userReferenceSchema } from './entity-reference-schema.mts'
 import { entityIdOrMissing } from './resolve-entity-reference.mts'
+import { readMessageBody } from './my-message-tool.mts'
 
 type Option = 'join' | 'open_modmail' | 'reply_modmail'
 type Args = {
@@ -22,6 +23,15 @@ type Args = {
   subject_user_id?: string
   conversationId?: string
   text?: string
+}
+
+async function admitModmailReply(
+  user: Parameters<typeof loadModmailReplyAccess>[0],
+  args: Args,
+): Promise<void> {
+  const access = await loadModmailReplyAccess(user, args.community_id, args.conversationId!)
+  await readMessageBody({ text: args.text })
+  return admitModmailReplyParticipant(user, access)
 }
 
 const endpoints: Record<Option, ToolApiEndpoint> = {
@@ -91,6 +101,7 @@ function source(option: Option): MergedToolSource<Args> {
       }
       if (option === 'open_modmail') {
         const access = await loadModmailOpeningAccess(user, args.community_id)
+        await readMessageBody({ subject_user_id: args.subject_user_id })
         const subjectUserId = args.subject_user_id
           ? await entityIdOrMissing('user', args.subject_user_id)
           : undefined
@@ -98,8 +109,7 @@ function source(option: Option): MergedToolSource<Args> {
           thread: await openAuthorizedModmailThread(user, access, subjectUserId),
         })
       }
-      const access = await loadModmailReplyAccess(user, args.community_id, args.conversationId!)
-      await admitModmailReplyParticipant(user, access)
+      await admitModmailReply(user, args)
       return wrapAdminOutput({
         message: await createConversationMessage(
           user.id,
