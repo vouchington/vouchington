@@ -34,28 +34,3 @@ export async function searchInvites(
   const { rows } = await read(query, options)
   return buildCommunityIdCursorPage(rows as CommunityInvite[], limit)
 }
-
-/**
- * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
- * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
- */
-export async function getMyInvites(
-  currentUserId: string,
-  options?: QueryOptions,
-): Promise<CommunityInvite[]> {
-  const { rows } = await read(
-    sql`/* getMyInvites */
-    SELECT 'community_invite'::text AS __entity_type,
-      id, community_id, invited_user_id, invited_email, invited_by_id,
-      accepted_at, accepted_by_id, declined_at, revoked_at, created_at
-    FROM community_invites
-    WHERE invited_user_id = ${currentUserId}
-      AND accepted_at IS NULL
-      AND declined_at IS NULL
-      AND revoked_at IS NULL
-    ORDER BY id DESC
-    `,
-    options,
-  )
-  return rows as CommunityInvite[]
-}

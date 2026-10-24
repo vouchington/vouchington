@@ -8,7 +8,6 @@ import type { PrivateUser } from '@services/users/types'
 import {
   setMyCommunityVacation,
   clearMyCommunityVacation,
-  getMyCommunityVacation,
   getMyCommunityVacationSettings,
   setSuppressCommunityDigestsWhileOnVacation,
 } from '../manage.mts'
@@ -75,33 +74,28 @@ describe('setMyCommunityVacation', () => {
   })
 })
 
-describe('getMyCommunityVacation', () => {
+describe('getMyCommunityVacationSettings', () => {
   let mod: PrivateUser
 
   beforeAll(async () => {
     mod = await createTestUser()
   })
 
-  it('returns null when no vacation row exists', async () => {
-    const community = await createTestCommunity(mod.id)
-    const result = await getMyCommunityVacation(mod.id, { communityId: community.id })
-    expect(result).toBeNull()
-  })
-
   it('returns the active vacation row', async () => {
     const community = await createTestCommunity(mod.id)
     await setMyCommunityVacation(mod.id, { communityId: community.id }, { clock })
 
-    const result = await getMyCommunityVacation(mod.id, { communityId: community.id }, { clock })
-    expect(result).not.toBeNull()
-    expect(result!.user_id).toBe(mod.id)
-    expect(result!.ends_at).toBeNull()
     const settings = await getMyCommunityVacationSettings(
       mod.id,
       { communityId: community.id },
       { clock },
     )
-    expect(settings.vacation).toEqual(result)
+    expect(settings.vacation).toMatchObject({
+      community_id: community.id,
+      user_id: mod.id,
+      starts_at: logicalTime,
+      ends_at: null,
+    })
     expect(settings.should_suppress_community_digests_while_on_vacation).toBe(false)
 
     const endsAt = new Date(logicalTime.getTime() + 86_400_000)
@@ -110,20 +104,19 @@ describe('getMyCommunityVacation', () => {
       { communityId: community.id, endsAt: endsAt.toISOString() },
       { clock },
     )
-    const finite = await getMyCommunityVacation(mod.id, { communityId: community.id }, { clock })
-    expect(finite).not.toBeNull()
-    expect(finite!.ends_at).toEqual(endsAt)
     const finiteSettings = await getMyCommunityVacationSettings(
       mod.id,
       { communityId: community.id },
       { clock },
     )
-    expect(finiteSettings.vacation).toEqual(finite)
+    expect(finiteSettings.vacation).toMatchObject({
+      community_id: community.id,
+      user_id: mod.id,
+      starts_at: logicalTime,
+      ends_at: endsAt,
+    })
 
     const endClock = () => new Date(endsAt)
-    expect(
-      await getMyCommunityVacation(mod.id, { communityId: community.id }, { clock: endClock }),
-    ).toBeNull()
     const endedSettings = await getMyCommunityVacationSettings(
       mod.id,
       { communityId: community.id },
@@ -142,8 +135,6 @@ describe('getMyCommunityVacation', () => {
       { clock },
     )
 
-    const result = await getMyCommunityVacation(mod.id, { communityId: community.id }, { clock })
-    expect(result).toBeNull()
     const settings = await getMyCommunityVacationSettings(
       mod.id,
       { communityId: community.id },
@@ -166,15 +157,15 @@ describe('clearMyCommunityVacation', () => {
     await setMyCommunityVacation(mod.id, { communityId: community.id })
     await clearMyCommunityVacation(mod.id, { communityId: community.id })
 
-    const result = await getMyCommunityVacation(mod.id, { communityId: community.id })
-    expect(result).toBeNull()
+    const settings = await getMyCommunityVacationSettings(mod.id, { communityId: community.id })
+    expect(settings.vacation).toBeNull()
   })
 
   it('is a no-op when no vacation exists', async () => {
     const community = await createTestCommunity(mod.id)
     await clearMyCommunityVacation(mod.id, { communityId: community.id })
-    const result = await getMyCommunityVacation(mod.id, { communityId: community.id })
-    expect(result).toBeNull()
+    const settings = await getMyCommunityVacationSettings(mod.id, { communityId: community.id })
+    expect(settings.vacation).toBeNull()
   })
 })
 
@@ -243,7 +234,6 @@ describe('community vacation clock validation', () => {
     await expect(
       setMyCommunityVacation(mod.id, { communityId: community.id }, { clock: invalidClock }),
     ).rejects.toThrow(error)
-    expect(await getMyCommunityVacation(mod.id, { communityId: community.id })).toBeNull()
     const settings = await getMyCommunityVacationSettings(mod.id, { communityId: community.id })
     expect(settings.vacation).toBeNull()
     expect(settings.should_suppress_community_digests_while_on_vacation).toBe(false)

@@ -36,28 +36,6 @@ export async function clearMyCommunityVacation(
   `)
 }
 
-/**
- * @public Documented contract; production use is unconfirmed and this export may be
- * removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
- */
-export async function getMyCommunityVacation(
-  currentUserId: string,
-  options: { communityId: string },
-  dependencies: CommunityVacationDependencies = {},
-): Promise<CommunityMemberVacation | null> {
-  const observedTime = observeCommunityVacationTime(dependencies)
-  const { rows } = await read<CommunityMemberVacation>(sql`/* getMyCommunityVacation */
-    SELECT community_id, user_id, starts_at, ends_at, created_at, updated_at
-    FROM community_member_vacations
-    WHERE community_id = ${options.communityId}
-      AND user_id      = ${currentUserId}
-      AND starts_at    <= COALESCE(${observedTime}::timestamptz, now())
-      AND (ends_at IS NULL OR ends_at > COALESCE(${observedTime}::timestamptz, now()))
-    LIMIT 1
-  `)
-  return rows[0] ?? null
-}
-
 export async function getMyCommunityVacationSettings(
   currentUserId: string,
   options: { communityId: string },

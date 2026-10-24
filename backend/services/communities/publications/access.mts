@@ -1,7 +1,6 @@
 import { read } from '@data-stores/psql'
 import assert from 'http-assert'
 import sql from 'sql-template-strings'
-import { getMinUUIDv7ForParentHistory } from '@modules/utils/ids'
 import type { PrivateUser } from '@services/users/types'
 import { isModerationStaff } from '@services/users'
 import {
@@ -30,40 +29,6 @@ export async function getPublicationReview(
     `,
   )
   return (rows[0] as CommunityPostReview) ?? null
-}
-
-export type CommunityPublicationReviewChange = {
-  id: string
-  community_id: string
-  post_id: string
-  actor_user_id: string | null
-  action: 'approve' | 'reject' | 'unpublish' | 'restore'
-  is_platform_override: boolean
-  reason_code: string | null
-  private_note: string | null
-  created_at: Date
-}
-
-/**
- * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
- * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
- */
-export async function getPublicationReviewChanges(
-  communityId: string,
-  postId: string,
-): Promise<CommunityPublicationReviewChange[]> {
-  const minHistoryId = getMinUUIDv7ForParentHistory(postId)
-  const { rows } = await read(
-    sql`/* getPublicationReviewChanges */
-      SELECT id, community_id, post_id, changed_by_id AS actor_user_id, change_type AS action,
-        is_platform_override, reason_code, private_note, created_at
-      FROM community_post_review_changes
-      WHERE community_id = ${communityId}
-        AND post_id = ${postId}
-        AND id >= ${minHistoryId}::uuid
-      ORDER BY id ASC`,
-  )
-  return rows as CommunityPublicationReviewChange[]
 }
 
 export async function assertModeratorAccess(
