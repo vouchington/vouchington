@@ -25,7 +25,7 @@
   "scripts": {},
   "dependencies": {
     "@anthropic-ai/sdk": "^0.135.0",
-    "@jongleberry/api-server": "^3.0.1",
+    "@jongleberry/api-server": "^3.1.0",
     "@modules/openai-utils": "workspace:^",
     "@modules/openrouter-utils": "workspace:^",
     "@modules/utils": "workspace:^",
