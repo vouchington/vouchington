@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   gitleaks-scan:
-    uses: vouchington/vouchington-tooling/.github/workflows/gitleaks.yml@0e848b873d1e3302ea54141537b94bc7fbbd05fe # v0.66.0
+    uses: vouchington/vouchington-tooling/.github/workflows/gitleaks.yml@ea0e428bb29bff5cb6409316cb9c5da40a2b3f15 # v0.66.2
     with:
       version: 8.30.1
 
