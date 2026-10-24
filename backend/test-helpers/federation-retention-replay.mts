@@ -117,6 +117,18 @@ export async function advanceFederationReplayFloorForTest(
   )
 }
 
+export async function ensureFederationReplayCursorForTest(
+  query: TransactionQuery,
+  kind: 'inbox' | 'outbound',
+): Promise<void> {
+  await query(
+    `/* ensureFederationReplayCursorForTest */
+     INSERT INTO activitypub_replay_retention_cursors (is_outbound) VALUES ($1)
+     ON CONFLICT (is_outbound) DO NOTHING`,
+    [kind === 'outbound'],
+  )
+}
+
 /** Probe an already-held cursor lock from another transaction without waiting or polling. */
 export async function isReplayFloorLockedForTest(kind: 'inbox' | 'outbound'): Promise<boolean> {
   await using query = await beginTransaction()

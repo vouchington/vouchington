@@ -9,21 +9,24 @@ export async function advanceReplayRejectionFloor(
 ): Promise<void> {
   // A verified signed date is at most one hour after inbox receipt. An outbound UUIDv7 event
   // can precede its delivery completion by arbitrarily long, so use the identity timestamp.
-  const floorAt =
-    kind === 'inbox'
-      ? page.at(-1)!.at
-      : page.reduce<Date | null>((latest, item) => {
+  const outboundFloor =
+    kind === 'outbound'
+      ? page.reduce<Date | null>((latest, item) => {
           const createdAt = getDateFromUUIDv7(item.id)
           return createdAt && (!latest || createdAt > latest) ? createdAt : latest
         }, null)
-  if (!floorAt) return // Unsupported outbound identities are already rejected on admission.
+      : null
+  const floorInputs =
+    kind === 'inbox' ? page.map(item => item.at) : outboundFloor ? [outboundFloor] : []
+  if (floorInputs.length === 0) return // Unsupported outbound IDs are rejected on admission.
   await query(
     `/* advanceActivityPubReplayRejectionFloor */
      UPDATE activitypub_replay_retention_cursors
      SET rejection_floor_at = GREATEST(
        COALESCE(rejection_floor_at, '-infinity'::timestamptz),
-       $2::timestamptz + $3::interval
+       (SELECT MAX(receipt_at) FROM unnest($2::timestamptz[]) AS receipts(receipt_at))
+         + $3::interval
      ) WHERE is_outbound = $1`,
-    [kind === 'outbound', floorAt, kind === 'outbound' ? '0 seconds' : '1 hour'],
+    [kind === 'outbound', floorInputs, kind === 'outbound' ? '0 seconds' : '1 hour'],
   )
 }
