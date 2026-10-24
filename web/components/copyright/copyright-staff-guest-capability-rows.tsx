@@ -27,6 +27,7 @@ export function CopyrightGuestCapabilityRows({
       <p className='text-sm text-destructive'>
         Could not load guest access.{' '}
         <Button
+          data-pw='copyright-staff-guest-capability-rows-reload'
           type='button'
           size='sm'
           variant='link'
@@ -55,6 +56,7 @@ export function CopyrightGuestCapabilityRows({
             {row.status === 'active' && (
               <span className='flex gap-2'>
                 <Button
+                  data-pw='copyright-staff-guest-capability-rows-request'
                   type='button'
                   size='sm'
                   variant='outline'
@@ -64,6 +66,7 @@ export function CopyrightGuestCapabilityRows({
                   Request information
                 </Button>
                 <Button
+                  data-pw='copyright-staff-guest-capability-rows-revoke'
                   type='button'
                   size='sm'
                   variant='outline'
@@ -79,6 +82,7 @@ export function CopyrightGuestCapabilityRows({
       </ul>
       {list.hasNextPage && (
         <Button
+          data-pw='copyright-staff-guest-capability-rows-load-older'
           type='button'
           size='sm'
           variant='ghost'

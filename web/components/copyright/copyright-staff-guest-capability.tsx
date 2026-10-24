@@ -96,6 +96,7 @@ export function CopyrightStaffGuestCapability({ noticeId }: { noticeId: string }
         onChange={event => setExpiresAt(event.target.value)}
       />
       <Button
+        data-pw='copyright-staff-guest-capability-issue'
         type='button'
         disabled={pending}
         onClick={issue}
@@ -126,6 +127,7 @@ export function CopyrightStaffGuestCapability({ noticeId }: { noticeId: string }
             onChange={event => setStatement(event.target.value)}
           />
           <Button
+            data-pw='copyright-staff-guest-capability-request-information'
             type='button'
             disabled={pending}
             onClick={requestInformation}
