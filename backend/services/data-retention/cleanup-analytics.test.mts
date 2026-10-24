@@ -66,6 +66,7 @@ describe('cleanupAnalyticsLocalFiles', () => {
     }
 
     await withPostgresTransactionForTest(async query => {
+      const emptyOperationalWindow = { ...emptyWindow, borrowedQuery: query }
       await expect(
         runDataRetentionCleanup(limits, {
           retainedIdentityRootIds: {},
@@ -92,6 +93,12 @@ describe('cleanupAnalyticsLocalFiles', () => {
           oldModerationQueueClaims: emptyWindow,
           oldModerationMediaReveals: emptyWindow,
           federationRetention: { borrowedQuery: query, scope: { followerDistributionIds: [] } },
+          undoneActivityPubLikes: emptyOperationalWindow,
+          staleRemoteActors: emptyOperationalWindow,
+          feedHostnameBlocks: emptyOperationalWindow,
+          otherHostnameBlocks: emptyOperationalWindow,
+          deletedConversations: emptyOperationalWindow,
+          appAttestationKeys: emptyOperationalWindow,
         }),
       ).resolves.toEqual({
         retainedIdentityRoots: [],
@@ -122,6 +129,12 @@ describe('cleanupAnalyticsLocalFiles', () => {
           inboxReplay: { deleted: 0, hasMore: false, continuationPosition: null },
           outboundReplay: { deleted: 0, hasMore: false, continuationPosition: null },
         },
+        undoneActivityPubLikes: { deleted: 0, hasMore: false, continuation: null },
+        staleRemoteActors: { deleted: 0, hasMore: false, continuation: null },
+        feedHostnameBlocks: { deleted: 0, hasMore: false, continuation: null },
+        otherHostnameBlocks: { deleted: 0, hasMore: false, continuation: null },
+        deletedConversations: { deleted: 0, hasMore: false, continuation: null },
+        appAttestationKeys: { deleted: 0, hasMore: false, continuation: null },
       })
     })
   })
