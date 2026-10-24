@@ -15,6 +15,7 @@ export function InviteCodeNotice({ code, onDismiss }: InviteCodeNoticeProps) {
       <p className='text-sm'>{t('extracted.communities.inviteManager.oneTimeCodeNotice')}</p>
       <p className='mt-2 font-mono text-sm'>{code}</p>
       <Button
+        data-pw='invite-code-notice-dismiss'
         type='button'
         variant='ghost'
         size='sm'

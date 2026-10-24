@@ -71,7 +71,12 @@ export function DisputeForm({
           </Link>
           {t('extracted.disputes.disputeForm.text_cdb4ee2a')}
         </p>
-        <Button onClick={onClose}>{t('extracted.disputes.disputeForm.close_7d9eb7ac')}</Button>
+        <Button
+          data-pw='dispute-form-close'
+          onClick={onClose}
+        >
+          {t('extracted.disputes.disputeForm.close_7d9eb7ac')}
+        </Button>
       </div>
     )
   }
@@ -142,6 +147,7 @@ export function DisputeForm({
             : t('extracted.disputes.disputeForm.submitDispute_4562c32e')}
         </Button>
         <Button
+          data-pw='dispute-form-cancel'
           type='button'
           variant='outline'
           onClick={onClose}

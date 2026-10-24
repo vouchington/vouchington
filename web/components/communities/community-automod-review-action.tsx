@@ -88,6 +88,7 @@ export function CommunityAutomodReviewAction({
         <div className='flex flex-wrap gap-2'>
           {AUTOMOD_REVIEW_REASON_CODES.map(reasonOption => (
             <Button
+              data-pw='community-automod-review-action-reason-select'
               key={reasonOption.value}
               type='button'
               variant={reason === reasonOption.value ? 'default' : 'outline'}

@@ -24,6 +24,7 @@ test.describe('Community Pinned Posts', () => {
   test.use({ storageState: AUTH_STATE })
 
   let postId: string
+  let availablePostId: string
 
   test.beforeAll(async () => {
     protectPlaywrightHookTimeouts(test.info())
@@ -53,6 +54,18 @@ test.describe('Community Pinned Posts', () => {
       postId,
       submittedById: TEST_USER_ID,
     })
+    availablePostId = await insertTestPost({
+      communityId: community.id,
+      createdById: TEST_USER_ID,
+      markdown: 'This post can be pinned.',
+      slug: `pin-available-post-${randomSuffix()}`,
+      title: 'Available Pin Test Post',
+    })
+    await insertTestCommunityPostReview({
+      communityId: community.id,
+      postId: availablePostId,
+      submittedById: TEST_USER_ID,
+    })
     await write(
       `/* community-pinned-posts-spec pinPost */
       INSERT INTO community_pinned_posts (community_id, post_id, order_index, pinned_by_id)
@@ -70,5 +83,9 @@ test.describe('Community Pinned Posts', () => {
   test('settings pinned-posts page accessible to moderators', async ({ page }) => {
     await navigateTo(page, `/communities/${COMMUNITY_SLUG}/settings/pinned-posts`)
     await expect(page.getByTestId('pinned-posts-page-heading')).toBeVisible()
+    await expect(page.getByTestId('pinned-posts-manager-move-up')).toBeVisible()
+    await expect(page.getByTestId('pinned-posts-manager-move-down')).toBeVisible()
+    await expect(page.getByTestId('pinned-posts-manager-remove-pin')).toBeVisible()
+    await expect(page.getByTestId('pinned-posts-manager-pin-post')).toBeVisible()
   })
 })

@@ -39,6 +39,7 @@ export function TransferOwnershipDialog({ community, member, state, username }: 
     >
       <AlertDialogTrigger asChild>
         <Button
+          data-pw='community-transfer-ownership-dialog-transfer-ownership'
           size='sm'
           variant='outline'
         >
@@ -70,6 +71,7 @@ export function TransferOwnershipDialog({ community, member, state, username }: 
             {t('extracted.communities.communityTransferOwnershipDialog.cancel_19766ed6')}
           </AlertDialogCancel>
           <AlertDialogAction
+            data-pw='community-transfer-ownership-dialog-confirm-transfer'
             disabled={transferLoading}
             onClick={e => {
               e.preventDefault()

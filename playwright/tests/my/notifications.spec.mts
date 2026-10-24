@@ -34,7 +34,7 @@ const PUSH_SUBSCRIPTION_STUB = `
     }
   }
 
-  var fakeEndpoint = 'https://push.example.com/playwright-push-test-fake-key-2634'
+  var fakeEndpoint = 'https://push.invalid/playwright-push-test-fake-key-2634'
   var activeSubscription = null
   var fakeSubscription = {
     endpoint: fakeEndpoint,
@@ -75,11 +75,17 @@ test.describe('My Notifications', () => {
 
     await page.getByTestId('inbox-open-button').click()
     await expect(page.getByTestId('inbox-view-all-button')).toBeVisible()
+    await expect(page.getByTestId('inbox-button-mark-all-as-read')).toBeVisible()
+    await expect(page.getByTestId('notification-row-open-compact').first()).toBeVisible()
+    await expect(page.getByTestId('notification-row-delete-compact').first()).toBeVisible()
 
     await page.getByTestId('inbox-view-all-button').click()
     await expect(page).toHaveURL(/\/my\/notifications/)
     await expect(page.getByTestId('notifications-page-heading')).toBeVisible()
     await expect(page.getByTestId('notification-list')).toBeVisible()
+    await expect(page.getByTestId('notifications-header-mark-all-as-read')).toBeVisible()
+    await expect(page.getByTestId('notification-row-open-full').first()).toBeVisible()
+    await expect(page.getByTestId('notification-row-delete-full').first()).toBeVisible()
     await expect(page.getByTestId('push-notifications-heading')).toBeVisible()
 
     await page.getByTestId('notification-settings-link').click()

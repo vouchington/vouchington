@@ -80,6 +80,7 @@ export default function JoinButton({
       >
         <Link
           href={createCommunityPathname(communitySlug, '/apply')}
+          data-pw='join-button-apply-to-join'
           prefetch={false}
         >
           {t('extracted.communities.joinButton.applyToJoin_8e81ad87')}
@@ -117,6 +118,7 @@ export default function JoinButton({
   if (isMember) {
     return (
       <Button
+        data-pw='join-button-leave'
         variant='outline'
         size='touchSm'
         loading={loading}

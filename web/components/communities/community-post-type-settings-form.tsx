@@ -94,6 +94,7 @@ export function CommunityPostTypeSettingsForm({ community }: CommunityPostTypeSe
         </div>
       </div>
       <Button
+        data-pw='community-post-type-settings-form-save-post-types'
         type='submit'
         size='sm'
         loading={isBusy}
