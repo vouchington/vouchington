@@ -37,7 +37,7 @@
     "@voucha/types": "workspace:^",
     "http-errors": "^2.0.1",
     "sql-template-strings": "^2.2.2",
-    "undici": "^8.12.2",
+    "undici": "^8.12.3",
     "uuid": "^14.0.3",
     "valkyries": "^0.11.2"
   },

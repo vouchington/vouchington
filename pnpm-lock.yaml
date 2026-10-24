@@ -226,7 +226,7 @@ importers:
         version: link:../../test-helpers
       openai:
         specifier: ^7.38.0
-        version: 7.38.0(@aws-sdk/credential-provider-node@3.972.86)(@smithy/signature-v4@5.7.4)(undici@8.12.2)(ws@8.21.3)(zod@4.6.5)
+        version: 7.38.0(@aws-sdk/credential-provider-node@3.972.86)(@smithy/signature-v4@5.7.4)(undici@8.12.3)(ws@8.21.3)(zod@4.6.5)
 
   backend/agents/appeal-resolution:
     dependencies:
@@ -262,7 +262,7 @@ importers:
         version: link:../../services/users
       openai:
         specifier: ^7.38.0
-        version: 7.38.0(@aws-sdk/credential-provider-node@3.972.86)(@smithy/signature-v4@5.7.4)(undici@8.12.2)(ws@8.21.3)(zod@4.6.5)
+        version: 7.38.0(@aws-sdk/credential-provider-node@3.972.86)(@smithy/signature-v4@5.7.4)(undici@8.12.3)(ws@8.21.3)(zod@4.6.5)
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -320,8 +320,8 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
       undici:
-        specifier: ^8.12.2
-        version: 8.12.2
+        specifier: ^8.12.3
+        version: 8.12.3
 
   backend/agents/classifier-runs:
     dependencies:
@@ -426,7 +426,7 @@ importers:
         version: link:../../test-helpers
       openai:
         specifier: ^7.38.0
-        version: 7.38.0(@aws-sdk/credential-provider-node@3.972.86)(@smithy/signature-v4@5.7.4)(undici@8.12.2)(ws@8.21.3)(zod@4.6.5)
+        version: 7.38.0(@aws-sdk/credential-provider-node@3.972.86)(@smithy/signature-v4@5.7.4)(undici@8.12.3)(ws@8.21.3)(zod@4.6.5)
 
   backend/agents/copyright-appeal-recommendation:
     dependencies:
@@ -540,7 +540,7 @@ importers:
         version: link:../../services/topic-claims
       openai:
         specifier: ^7.38.0
-        version: 7.38.0(@aws-sdk/credential-provider-node@3.972.86)(@smithy/signature-v4@5.7.4)(undici@8.12.2)(ws@8.21.3)(zod@4.6.5)
+        version: 7.38.0(@aws-sdk/credential-provider-node@3.972.86)(@smithy/signature-v4@5.7.4)(undici@8.12.3)(ws@8.21.3)(zod@4.6.5)
     devDependencies:
       '@services/users':
         specifier: workspace:^
@@ -589,8 +589,8 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
       undici:
-        specifier: ^8.12.2
-        version: 8.12.2
+        specifier: ^8.12.3
+        version: 8.12.3
 
   backend/agents/report-judgement:
     dependencies:
@@ -620,7 +620,7 @@ importers:
         version: link:../../services/moderation-reports
       openai:
         specifier: ^7.38.0
-        version: 7.38.0(@aws-sdk/credential-provider-node@3.972.86)(@smithy/signature-v4@5.7.4)(undici@8.12.2)(ws@8.21.3)(zod@4.6.5)
+        version: 7.38.0(@aws-sdk/credential-provider-node@3.972.86)(@smithy/signature-v4@5.7.4)(undici@8.12.3)(ws@8.21.3)(zod@4.6.5)
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -666,8 +666,8 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
       undici:
-        specifier: ^8.12.2
-        version: 8.12.2
+        specifier: ^8.12.3
+        version: 8.12.3
 
   backend/agents/story-post:
     dependencies:
@@ -688,7 +688,7 @@ importers:
         version: link:../../services/stories
       openai:
         specifier: ^7.38.0
-        version: 7.38.0(@aws-sdk/credential-provider-node@3.972.86)(@smithy/signature-v4@5.7.4)(undici@8.12.2)(ws@8.21.3)(zod@4.6.5)
+        version: 7.38.0(@aws-sdk/credential-provider-node@3.972.86)(@smithy/signature-v4@5.7.4)(undici@8.12.3)(ws@8.21.3)(zod@4.6.5)
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -1336,8 +1336,8 @@ importers:
         specifier: ^7.1.0
         version: 7.1.0
       undici:
-        specifier: ^8.12.2
-        version: 8.12.2
+        specifier: ^8.12.3
+        version: 8.12.3
       uuid:
         specifier: ^14.0.3
         version: 14.0.3
@@ -1683,8 +1683,8 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
       undici:
-        specifier: ^8.12.2
-        version: 8.12.2
+        specifier: ^8.12.3
+        version: 8.12.3
 
   backend/entrypoints/worker-cpu:
     dependencies:
@@ -2243,8 +2243,8 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1
       undici:
-        specifier: ^8.12.2
-        version: 8.12.2
+        specifier: ^8.12.3
+        version: 8.12.3
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -2467,7 +2467,7 @@ importers:
         version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
       openai:
         specifier: ^7.38.0
-        version: 7.38.0(@aws-sdk/credential-provider-node@3.972.86)(@smithy/signature-v4@5.7.4)(undici@8.12.2)(ws@8.21.3)(zod@4.6.5)
+        version: 7.38.0(@aws-sdk/credential-provider-node@3.972.86)(@smithy/signature-v4@5.7.4)(undici@8.12.3)(ws@8.21.3)(zod@4.6.5)
 
   backend/modules/openrouter-utils:
     dependencies:
@@ -2479,7 +2479,7 @@ importers:
         version: link:../utils
       openai:
         specifier: ^7.38.0
-        version: 7.38.0(@aws-sdk/credential-provider-node@3.972.86)(@smithy/signature-v4@5.7.4)(undici@8.12.2)(ws@8.21.3)(zod@4.6.5)
+        version: 7.38.0(@aws-sdk/credential-provider-node@3.972.86)(@smithy/signature-v4@5.7.4)(undici@8.12.3)(ws@8.21.3)(zod@4.6.5)
 
   backend/modules/pagination:
     dependencies:
@@ -2627,8 +2627,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       undici:
-        specifier: ^8.12.2
-        version: 8.12.2
+        specifier: ^8.12.3
+        version: 8.12.3
 
   backend/modules/token-secrets:
     dependencies:
@@ -2681,8 +2681,8 @@ importers:
         specifier: ^1.0.0
         version: 1.0.0
       undici:
-        specifier: ^8.12.2
-        version: 8.12.2
+        specifier: ^8.12.3
+        version: 8.12.3
       validator:
         specifier: ^13.15.35
         version: 13.15.35
@@ -3893,8 +3893,8 @@ importers:
         specifier: ^1.0.0
         version: 1.0.0
       undici:
-        specifier: ^8.12.2
-        version: 8.12.2
+        specifier: ^8.12.3
+        version: 8.12.3
     devDependencies:
       '@services/entity-relations':
         specifier: workspace:^
@@ -4794,8 +4794,8 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1
       undici:
-        specifier: ^8.12.2
-        version: 8.12.2
+        specifier: ^8.12.3
+        version: 8.12.3
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -5407,8 +5407,8 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
       undici:
-        specifier: ^8.12.2
-        version: 8.12.2
+        specifier: ^8.12.3
+        version: 8.12.3
 
   backend/services/crawler-html:
     dependencies:
@@ -5444,8 +5444,8 @@ importers:
         version: 1.0.0
     devDependencies:
       undici:
-        specifier: ^8.12.2
-        version: 8.12.2
+        specifier: ^8.12.3
+        version: 8.12.3
 
   backend/services/crawler-referral-links:
     dependencies:
@@ -6428,8 +6428,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       undici:
-        specifier: ^8.12.2
-        version: 8.12.2
+        specifier: ^8.12.3
+        version: 8.12.3
       uuid:
         specifier: ^14.0.3
         version: 14.0.3
@@ -6833,8 +6833,8 @@ importers:
         specifier: ^1.5.0
         version: 1.5.0
       undici:
-        specifier: ^8.12.2
-        version: 8.12.2
+        specifier: ^8.12.3
+        version: 8.12.3
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -7344,8 +7344,8 @@ importers:
         specifier: ^7.0.0
         version: 7.0.0
       undici:
-        specifier: ^8.12.2
-        version: 8.12.2
+        specifier: ^8.12.3
+        version: 8.12.3
       valkyries:
         specifier: ^0.11.2
         version: 0.11.2
@@ -8516,8 +8516,8 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1
       undici:
-        specifier: ^8.12.2
-        version: 8.12.2
+        specifier: ^8.12.3
+        version: 8.12.3
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -8590,8 +8590,8 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1
       undici:
-        specifier: ^8.12.2
-        version: 8.12.2
+        specifier: ^8.12.3
+        version: 8.12.3
       valkyries:
         specifier: ^0.11.2
         version: 0.11.2
@@ -8636,8 +8636,8 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1
       undici:
-        specifier: ^8.12.2
-        version: 8.12.2
+        specifier: ^8.12.3
+        version: 8.12.3
       valkyries:
         specifier: ^0.11.2
         version: 0.11.2
@@ -8667,8 +8667,8 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1
       undici:
-        specifier: ^8.12.2
-        version: 8.12.2
+        specifier: ^8.12.3
+        version: 8.12.3
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -8692,8 +8692,8 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1
       undici:
-        specifier: ^8.12.2
-        version: 8.12.2
+        specifier: ^8.12.3
+        version: 8.12.3
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -8714,8 +8714,8 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1
       undici:
-        specifier: ^8.12.2
-        version: 8.12.2
+        specifier: ^8.12.3
+        version: 8.12.3
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -8751,8 +8751,8 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1
       undici:
-        specifier: ^8.12.2
-        version: 8.12.2
+        specifier: ^8.12.3
+        version: 8.12.3
       valkyries:
         specifier: ^0.11.2
         version: 0.11.2
@@ -8832,7 +8832,7 @@ importers:
         version: link:../../../ts-shared/utils
       openai:
         specifier: ^7.38.0
-        version: 7.38.0(@aws-sdk/credential-provider-node@3.972.86)(@smithy/signature-v4@5.7.4)(undici@8.12.2)(ws@8.21.3)(zod@4.6.5)
+        version: 7.38.0(@aws-sdk/credential-provider-node@3.972.86)(@smithy/signature-v4@5.7.4)(undici@8.12.3)(ws@8.21.3)(zod@4.6.5)
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -9352,8 +9352,8 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
       undici:
-        specifier: ^8.12.2
-        version: 8.12.2
+        specifier: ^8.12.3
+        version: 8.12.3
       vitest:
         specifier: ^5.0.5
         version: 5.0.5(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.5)(jsdom@30.1.3(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
@@ -9620,8 +9620,8 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1
       undici:
-        specifier: ^8.12.2
-        version: 8.12.2
+        specifier: ^8.12.3
+        version: 8.12.3
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -10865,8 +10865,8 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
       undici:
-        specifier: ^8.12.2
-        version: 8.12.2
+        specifier: ^8.12.3
+        version: 8.12.3
 
   backend/services/topic-revisions:
     dependencies:
@@ -11251,8 +11251,8 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
       undici:
-        specifier: ^8.12.2
-        version: 8.12.2
+        specifier: ^8.12.3
+        version: 8.12.3
 
   backend/services/urls-domains-blacklist:
     dependencies:
@@ -11318,8 +11318,8 @@ importers:
         specifier: ^7.0.0
         version: 7.0.0
       undici:
-        specifier: ^8.12.2
-        version: 8.12.2
+        specifier: ^8.12.3
+        version: 8.12.3
     devDependencies:
       '@types/pg-copy-streams':
         specifier: ^1.2.5
@@ -11995,8 +11995,8 @@ importers:
         specifier: ^7.4.18
         version: 7.4.18
       undici:
-        specifier: ^8.12.2
-        version: 8.12.2
+        specifier: ^8.12.3
+        version: 8.12.3
     devDependencies:
       '@types/http-errors':
         specifier: ^2.0.5
@@ -12166,7 +12166,7 @@ importers:
         version: 0.97.0(vitest@5.0.5)
       openai:
         specifier: ^7.38.0
-        version: 7.38.0(@aws-sdk/credential-provider-node@3.972.86)(@smithy/signature-v4@5.7.4)(undici@8.12.2)(ws@8.21.3)(zod@4.6.5)
+        version: 7.38.0(@aws-sdk/credential-provider-node@3.972.86)(@smithy/signature-v4@5.7.4)(undici@8.12.3)(ws@8.21.3)(zod@4.6.5)
       otpauth:
         specifier: ^9.5.2
         version: 9.5.2
@@ -12183,8 +12183,8 @@ importers:
         specifier: ^7.3.1
         version: 7.3.1(supports-color@10.2.2)
       undici:
-        specifier: ^8.12.2
-        version: 8.12.2
+        specifier: ^8.12.3
+        version: 8.12.3
       uuid:
         specifier: ^14.0.3
         version: 14.0.3
@@ -12563,7 +12563,7 @@ importers:
         version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
       openai:
         specifier: ^7.38.0
-        version: 7.38.0(@aws-sdk/credential-provider-node@3.972.86)(@smithy/signature-v4@5.7.4)(undici@8.12.2)(ws@8.21.3)(zod@4.6.5)
+        version: 7.38.0(@aws-sdk/credential-provider-node@3.972.86)(@smithy/signature-v4@5.7.4)(undici@8.12.3)(ws@8.21.3)(zod@4.6.5)
       p-map:
         specifier: ^7.1.0
         version: 7.1.0
@@ -12572,8 +12572,8 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
       undici:
-        specifier: ^8.12.2
-        version: 8.12.2
+        specifier: ^8.12.3
+        version: 8.12.3
       vitest:
         specifier: ^5.0.5
         version: 5.0.5(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.5)(jsdom@30.1.3(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
@@ -12777,8 +12777,8 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
       undici:
-        specifier: ^8.12.2
-        version: 8.12.2
+        specifier: ^8.12.3
+        version: 8.12.3
 
   backend/workers/background-cpu:
     dependencies:
@@ -13520,8 +13520,8 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
       undici:
-        specifier: ^8.12.2
-        version: 8.12.2
+        specifier: ^8.12.3
+        version: 8.12.3
 
   backend/workers/follower-distributions:
     dependencies:
@@ -13633,8 +13633,8 @@ importers:
         version: link:../../services/kagi-smallweb
     devDependencies:
       undici:
-        specifier: ^8.12.2
-        version: 8.12.2
+        specifier: ^8.12.3
+        version: 8.12.3
 
   backend/workers/memberships:
     dependencies:
@@ -13827,7 +13827,7 @@ importers:
         version: link:../../test-helpers
       openai:
         specifier: ^7.38.0
-        version: 7.38.0(@aws-sdk/credential-provider-node@3.972.86)(@smithy/signature-v4@5.7.4)(undici@8.12.2)(ws@8.21.3)(zod@4.6.5)
+        version: 7.38.0(@aws-sdk/credential-provider-node@3.972.86)(@smithy/signature-v4@5.7.4)(undici@8.12.3)(ws@8.21.3)(zod@4.6.5)
 
   backend/workers/post-mentions:
     dependencies:
@@ -23523,8 +23523,8 @@ packages:
     resolution: {integrity: sha512-RYONW2MeafgYlkVOKYKkA/Ag7BmXqgIWCa8t1m0JcxrQg9pI9lEqRhAOruOBCbAohOa/gkCF+iPi9hrgvTzu6Q==}
     engines: {node: '>=20.18.1'}
 
-  undici@8.12.2:
-    resolution: {integrity: sha512-XtuDWVdqTLr3NAxm2ly9/hU6kUsJOgGh1RASzMBbsw6aWCOaQzHdW+QQDfdERjfJ2V5vL5pRPa4RetO9UfivDg==}
+  undici@8.12.3:
+    resolution: {integrity: sha512-+fdndUTwBP86cVjihTp21hZHo7d6oj1c/47XPA3lL8mM0XHs+C4EkcjmgRsFnFk2f/UONGDy9ItBItmXsLOQHw==}
     engines: {node: '>=22.19.0'}
 
   unenv@2.0.0-rc.24:
@@ -24076,7 +24076,7 @@ snapshots:
       ipaddr.js: 2.5.0
       undici_v6: undici@6.28.1
       undici_v7: undici@7.29.1
-      undici_v8: undici@8.12.2
+      undici_v8: undici@8.12.3
 
   '@atproto-labs/fetch@0.3.6':
     dependencies:
@@ -30540,7 +30540,7 @@ snapshots:
       parse5: 8.0.1
       saxes: 6.0.0
       tough-cookie: 6.0.2
-      undici: 8.12.2
+      undici: 8.12.3
       w3c-xmlserializer: 6.0.0
       webidl-conversions: 8.0.1
       whatwg-mimetype: 5.0.0
@@ -31403,11 +31403,11 @@ snapshots:
       is-inside-container: 1.0.0
       wsl-utils: 0.1.0
 
-  openai@7.38.0(@aws-sdk/credential-provider-node@3.972.86)(@smithy/signature-v4@5.7.4)(undici@8.12.2)(ws@8.21.3)(zod@4.6.5):
+  openai@7.38.0(@aws-sdk/credential-provider-node@3.972.86)(@smithy/signature-v4@5.7.4)(undici@8.12.3)(ws@8.21.3)(zod@4.6.5):
     optionalDependencies:
       '@aws-sdk/credential-provider-node': 3.972.86
       '@smithy/signature-v4': 5.7.4
-      undici: 8.12.2
+      undici: 8.12.3
       ws: 8.21.3
       zod: 4.6.5
 
@@ -31813,7 +31813,7 @@ snapshots:
     dependencies:
       '@modelcontextprotocol/sdk': 1.32.1(supports-color@10.2.2)(zod@4.6.5)
       picomatch: 4.0.7
-      undici: 8.12.2
+      undici: 8.12.3
       yaml: 2.9.1
       zod: 4.6.5
     transitivePeerDependencies:
@@ -32458,7 +32458,7 @@ snapshots:
   ssrf-guard@1.0.0:
     dependencies:
       ipaddr.js: 2.5.0
-      undici: 8.12.2
+      undici: 8.12.3
 
   stacktrace-parser@0.1.11:
     dependencies:
@@ -32824,7 +32824,7 @@ snapshots:
 
   undici@7.29.1: {}
 
-  undici@8.12.2: {}
+  undici@8.12.3: {}
 
   unenv@2.0.0-rc.24:
     dependencies:
