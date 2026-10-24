@@ -59,7 +59,7 @@ describe('buildPublicPostEligibilityFilter — authorship and type/state cross',
       insertTestPost({
         createdById: author.id,
         title: `${postType} ${id}`,
-        slug: `${postType.replace('_', '-')}-${id}-${Math.random().toString(36).slice(2, 5)}`,
+        slug: `${postType.replace('_', '-')}-${id}-${crypto.randomUUID()}`,
         markdown: 'public',
         postType,
         ...overrides,

@@ -54,7 +54,7 @@ describe('buildPublicPostEligibilityFilter — persisted publication state', () 
       insertTestPost({
         createdById: author.id,
         title: `public matrix ${suffix}`,
-        slug: `public-matrix-${suffix}-${Math.random().toString(36).slice(2, 6)}`,
+        slug: `public-matrix-${suffix}-${crypto.randomUUID()}`,
         markdown: 'public',
         ...overrides,
       })
@@ -138,7 +138,7 @@ describe('buildPublicPostEligibilityFilter — persisted publication state', () 
       insertTestPost({
         createdById: author.id,
         title: `public transitions ${suffix}`,
-        slug: `public-transitions-${suffix}-${Math.random().toString(36).slice(2, 6)}`,
+        slug: `public-transitions-${suffix}-${crypto.randomUUID()}`,
         markdown: 'public',
         ...overrides,
       })
@@ -208,7 +208,7 @@ describe('buildPublicPostEligibilityFilter — persisted publication state', () 
       const postId = await insertTestPost({
         createdById: author.id,
         title: `public community ${suffix}`,
-        slug: `public-community-${suffix}-${Math.random().toString(36).slice(2, 6)}`,
+        slug: `public-community-${suffix}-${crypto.randomUUID()}`,
         markdown: 'public',
         communityId: community.id,
       })
@@ -257,7 +257,7 @@ describe('buildPublicPostEligibilityFilter — persisted publication state', () 
       insertTestPost({
         createdById: author.id,
         title: `public nested ${suffix}`,
-        slug: `public-nested-${suffix}-${Math.random().toString(36).slice(2, 6)}`,
+        slug: `public-nested-${suffix}-${crypto.randomUUID()}`,
         markdown: 'public',
         ...overrides,
       })
