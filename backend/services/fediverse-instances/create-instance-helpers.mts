@@ -158,7 +158,7 @@ export async function createFediverseInstance(
   if (!result) return null
   await finalizeClaimedTopicAliases(result.topicId, [result.claimedAlias])
   const topic = (await getTopicByAny(result.topicId))!
-  finalizeCreatedTopic(topic, {
+  await finalizeCreatedTopic(topic, {
     name: args.name,
     slug: args.slug,
     topic_type: 'fediverse_instance',
