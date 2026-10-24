@@ -11027,8 +11027,12 @@
     "GET:/api/v1/reports/:id/judgements/:runId": {
       "additionalProperties": false,
       "properties": {
-        "completed": { "type": "boolean" },
-        "judgement_id": { "type": ["string", "null"] }
+        "completed": {
+          "type": "boolean"
+        },
+        "judgement_id": {
+          "type": ["string", "null"]
+        }
       },
       "required": ["completed", "judgement_id"],
       "type": "object"
@@ -11785,8 +11789,14 @@
     "AddHouseholdInvitationBody": {
       "additionalProperties": false,
       "properties": {
-        "relationship": { "maxLength": 64, "type": "string" },
-        "user": { "minLength": 1, "type": "string" }
+        "relationship": {
+          "maxLength": 64,
+          "type": "string"
+        },
+        "user": {
+          "minLength": 1,
+          "type": "string"
+        }
       },
       "required": ["user"],
       "type": "object"
@@ -13246,6 +13256,10 @@
       ],
       "type": "object"
     },
+    "ClearanceStatus": {
+      "enum": ["approved", "in_review", "pending", "rejected"],
+      "type": "string"
+    },
     "ClearCacheRequest": {
       "additionalProperties": false,
       "properties": {
@@ -13255,10 +13269,6 @@
       },
       "required": ["group"],
       "type": "object"
-    },
-    "ClearanceStatus": {
-      "enum": ["approved", "in_review", "pending", "rejected"],
-      "type": "string"
     },
     "Community": {
       "additionalProperties": false,
@@ -13952,6 +13962,10 @@
       ],
       "type": "object"
     },
+    "CommunityAutomodAction": {
+      "enum": ["record_only", "review_queue", "unpublish"],
+      "type": "string"
+    },
     "CommunityAutoTaggerAgent": {
       "additionalProperties": false,
       "properties": {
@@ -14025,10 +14039,6 @@
         "system_username"
       ],
       "type": "object"
-    },
-    "CommunityAutomodAction": {
-      "enum": ["record_only", "review_queue", "unpublish"],
-      "type": "string"
     },
     "CommunityBanEvasionContext": {
       "additionalProperties": false,
@@ -17870,6 +17880,104 @@
       "required": ["aside_type", "entity_id"],
       "type": "object"
     },
+    "CreatedCommunityInvite": {
+      "additionalProperties": false,
+      "properties": {
+        "__entity_type": {
+          "const": "community_invite"
+        },
+        "accepted_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "accepted_by_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "code": {
+          "type": "string"
+        },
+        "community_id": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "declined_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "id": {
+          "type": "string"
+        },
+        "invited_by_id": {
+          "type": "string"
+        },
+        "invited_email": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "invited_user_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "revoked_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "required": [
+        "__entity_type",
+        "accepted_at",
+        "accepted_by_id",
+        "code",
+        "community_id",
+        "created_at",
+        "declined_at",
+        "id",
+        "invited_by_id",
+        "invited_email",
+        "invited_user_id",
+        "revoked_at"
+      ],
+      "type": "object"
+    },
     "CreateFediverseInstanceRequest": {
       "additionalProperties": false,
       "properties": {
@@ -18768,104 +18876,6 @@
       "required": ["auth", "endpoint", "p256dh"],
       "type": "object"
     },
-    "CreatedCommunityInvite": {
-      "additionalProperties": false,
-      "properties": {
-        "__entity_type": {
-          "const": "community_invite"
-        },
-        "accepted_at": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "accepted_by_id": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "code": {
-          "type": "string"
-        },
-        "community_id": {
-          "type": "string"
-        },
-        "created_at": {
-          "type": "string"
-        },
-        "declined_at": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "id": {
-          "type": "string"
-        },
-        "invited_by_id": {
-          "type": "string"
-        },
-        "invited_email": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "invited_user_id": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "revoked_at": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        }
-      },
-      "required": [
-        "__entity_type",
-        "accepted_at",
-        "accepted_by_id",
-        "code",
-        "community_id",
-        "created_at",
-        "declined_at",
-        "id",
-        "invited_by_id",
-        "invited_email",
-        "invited_user_id",
-        "revoked_at"
-      ],
-      "type": "object"
-    },
     "CuratedAsideItem": {
       "additionalProperties": false,
       "properties": {
@@ -19524,6 +19534,13 @@
       "required": ["default_value", "description", "name", "type", "value"],
       "type": "object"
     },
+    "DynamicConfigFields": {
+      "additionalProperties": {
+        "$ref": "#/components/schemas/DynamicConfigFieldValue"
+      },
+      "properties": {},
+      "type": "object"
+    },
     "DynamicConfigFieldType": {
       "enum": ["boolean", "number", "string"],
       "type": "string"
@@ -19543,13 +19560,6 @@
           "type": "string"
         }
       ]
-    },
-    "DynamicConfigFields": {
-      "additionalProperties": {
-        "$ref": "#/components/schemas/DynamicConfigFieldValue"
-      },
-      "properties": {},
-      "type": "object"
     },
     "DynamicConfigHistoryEntry": {
       "additionalProperties": false,
@@ -19658,86 +19668,14 @@
       "required": ["__entity_type", "choice", "created_at", "entity_id", "user_id"],
       "type": "object"
     },
-    "ElectionVoteChoiceForPolicy_ElectionVotePolicy": {
-      "enum": [
-        "accurate",
-        "confirm",
-        "disavow",
-        "dislike",
-        "dispute",
-        "inaccurate",
-        "like",
-        "neutral",
-        "oppose",
-        "support",
-        "vouch"
-      ],
-      "type": "string"
-    },
-    "ElectionVoteChoiceForPolicy__sentiment_____recommendation_": {
-      "enum": ["disavow", "dislike", "like", "neutral", "oppose", "support", "vouch"],
-      "type": "string"
-    },
-    "ElectionVoteChoiceForPolicy_moderation": {
-      "enum": ["accurate", "inaccurate"],
-      "type": "string"
-    },
-    "ElectionVoteChoiceForPolicy_relation": {
-      "enum": ["confirm", "dispute"],
-      "type": "string"
-    },
-    "ElectionVoteChoiceForPolicy_sentiment": {
-      "enum": ["disavow", "dislike", "like", "neutral", "vouch"],
-      "type": "string"
-    },
-    "ElectionVoteRequest__sentiment_____recommendation_": {
-      "additionalProperties": false,
-      "properties": {
-        "choice": {
-          "$ref": "#/components/schemas/ElectionVoteChoiceForPolicy__sentiment_____recommendation_"
-        }
-      },
-      "required": ["choice"],
-      "type": "object"
-    },
-    "ElectionVoteRequest_moderation": {
-      "additionalProperties": false,
-      "properties": {
-        "choice": {
-          "$ref": "#/components/schemas/ElectionVoteChoiceForPolicy_moderation"
-        }
-      },
-      "required": ["choice"],
-      "type": "object"
-    },
-    "ElectionVoteRequest_relation": {
-      "additionalProperties": false,
-      "properties": {
-        "choice": {
-          "$ref": "#/components/schemas/ElectionVoteChoiceForPolicy_relation"
-        }
-      },
-      "required": ["choice"],
-      "type": "object"
-    },
-    "ElectionVoteRequest_sentiment": {
-      "additionalProperties": false,
-      "properties": {
-        "choice": {
-          "$ref": "#/components/schemas/ElectionVoteChoiceForPolicy_sentiment"
-        }
-      },
-      "required": ["choice"],
-      "type": "object"
-    },
-    "ElectionVote_ElectionVotePolicy": {
+    "ElectionVote__sentiment_____recommendation_": {
       "additionalProperties": false,
       "properties": {
         "__entity_type": {
           "const": "election_vote"
         },
         "choice": {
-          "$ref": "#/components/schemas/ElectionVoteChoiceForPolicy_ElectionVotePolicy"
+          "$ref": "#/components/schemas/ElectionVoteChoiceForPolicy__sentiment_____recommendation_"
         },
         "created_at": {
           "type": "string"
@@ -19752,14 +19690,14 @@
       "required": ["__entity_type", "choice", "created_at", "entity_id", "user_id"],
       "type": "object"
     },
-    "ElectionVote__sentiment_____recommendation_": {
+    "ElectionVote_ElectionVotePolicy": {
       "additionalProperties": false,
       "properties": {
         "__entity_type": {
           "const": "election_vote"
         },
         "choice": {
-          "$ref": "#/components/schemas/ElectionVoteChoiceForPolicy__sentiment_____recommendation_"
+          "$ref": "#/components/schemas/ElectionVoteChoiceForPolicy_ElectionVotePolicy"
         },
         "created_at": {
           "type": "string"
@@ -19838,6 +19776,78 @@
         }
       },
       "required": ["__entity_type", "choice", "created_at", "entity_id", "user_id"],
+      "type": "object"
+    },
+    "ElectionVoteChoiceForPolicy__sentiment_____recommendation_": {
+      "enum": ["disavow", "dislike", "like", "neutral", "oppose", "support", "vouch"],
+      "type": "string"
+    },
+    "ElectionVoteChoiceForPolicy_ElectionVotePolicy": {
+      "enum": [
+        "accurate",
+        "confirm",
+        "disavow",
+        "dislike",
+        "dispute",
+        "inaccurate",
+        "like",
+        "neutral",
+        "oppose",
+        "support",
+        "vouch"
+      ],
+      "type": "string"
+    },
+    "ElectionVoteChoiceForPolicy_moderation": {
+      "enum": ["accurate", "inaccurate"],
+      "type": "string"
+    },
+    "ElectionVoteChoiceForPolicy_relation": {
+      "enum": ["confirm", "dispute"],
+      "type": "string"
+    },
+    "ElectionVoteChoiceForPolicy_sentiment": {
+      "enum": ["disavow", "dislike", "like", "neutral", "vouch"],
+      "type": "string"
+    },
+    "ElectionVoteRequest__sentiment_____recommendation_": {
+      "additionalProperties": false,
+      "properties": {
+        "choice": {
+          "$ref": "#/components/schemas/ElectionVoteChoiceForPolicy__sentiment_____recommendation_"
+        }
+      },
+      "required": ["choice"],
+      "type": "object"
+    },
+    "ElectionVoteRequest_moderation": {
+      "additionalProperties": false,
+      "properties": {
+        "choice": {
+          "$ref": "#/components/schemas/ElectionVoteChoiceForPolicy_moderation"
+        }
+      },
+      "required": ["choice"],
+      "type": "object"
+    },
+    "ElectionVoteRequest_relation": {
+      "additionalProperties": false,
+      "properties": {
+        "choice": {
+          "$ref": "#/components/schemas/ElectionVoteChoiceForPolicy_relation"
+        }
+      },
+      "required": ["choice"],
+      "type": "object"
+    },
+    "ElectionVoteRequest_sentiment": {
+      "additionalProperties": false,
+      "properties": {
+        "choice": {
+          "$ref": "#/components/schemas/ElectionVoteChoiceForPolicy_sentiment"
+        }
+      },
+      "required": ["choice"],
       "type": "object"
     },
     "EmailAddressLoginBody": {
@@ -21284,43 +21294,124 @@
     "HouseholdInvitation": {
       "additionalProperties": false,
       "properties": {
-        "accepted_at": { "anyOf": [{ "type": "null" }, { "type": "string" }] },
-        "created_at": { "type": "string" },
-        "declined_at": { "anyOf": [{ "type": "null" }, { "type": "string" }] },
-        "household_id": { "type": "string" },
+        "accepted_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "declined_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "household_id": {
+          "type": "string"
+        },
         "household_owner": {
           "additionalProperties": false,
           "properties": {
-            "id": { "type": "string" },
-            "username": { "anyOf": [{ "type": "null" }, { "type": "string" }] }
+            "id": {
+              "type": "string"
+            },
+            "username": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            }
           },
           "required": ["id", "username"],
           "type": "object"
         },
-        "id": { "type": "string" },
+        "id": {
+          "type": "string"
+        },
         "invited_by": {
           "additionalProperties": false,
           "properties": {
-            "id": { "type": "string" },
-            "username": { "anyOf": [{ "type": "null" }, { "type": "string" }] }
+            "id": {
+              "type": "string"
+            },
+            "username": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            }
           },
           "required": ["id", "username"],
           "type": "object"
         },
-        "invited_by_id": { "type": "string" },
+        "invited_by_id": {
+          "type": "string"
+        },
         "invited_user": {
           "additionalProperties": false,
           "properties": {
-            "id": { "type": "string" },
-            "username": { "anyOf": [{ "type": "null" }, { "type": "string" }] }
+            "id": {
+              "type": "string"
+            },
+            "username": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            }
           },
           "required": ["id", "username"],
           "type": "object"
         },
-        "invited_user_id": { "type": "string" },
-        "relationship": { "anyOf": [{ "type": "null" }, { "type": "string" }] },
-        "revoked_at": { "anyOf": [{ "type": "null" }, { "type": "string" }] },
-        "updated_at": { "type": "string" }
+        "invited_user_id": {
+          "type": "string"
+        },
+        "relationship": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "revoked_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "updated_at": {
+          "type": "string"
+        }
       },
       "required": [
         "accepted_at",
@@ -21342,9 +21433,13 @@
     "HouseholdInvitationPage": {
       "additionalProperties": false,
       "properties": {
-        "page_info": { "$ref": "#/components/schemas/PageInfo" },
+        "page_info": {
+          "$ref": "#/components/schemas/PageInfo"
+        },
         "results": {
-          "items": { "$ref": "#/components/schemas/HouseholdInvitation" },
+          "items": {
+            "$ref": "#/components/schemas/HouseholdInvitation"
+          },
           "type": "array"
         }
       },
@@ -21353,7 +21448,11 @@
     },
     "HouseholdInvitationResponse": {
       "additionalProperties": false,
-      "properties": { "invitation": { "$ref": "#/components/schemas/HouseholdInvitation" } },
+      "properties": {
+        "invitation": {
+          "$ref": "#/components/schemas/HouseholdInvitation"
+        }
+      },
       "required": ["invitation"],
       "type": "object"
     },
@@ -21867,16 +21966,6 @@
       "required": ["id", "updated_at"],
       "type": "object"
     },
-    "IndividualResponse": {
-      "additionalProperties": false,
-      "properties": {
-        "individual": {
-          "$ref": "#/components/schemas/Individual"
-        }
-      },
-      "required": ["individual"],
-      "type": "object"
-    },
     "IndividualCard": {
       "additionalProperties": false,
       "properties": {
@@ -22008,6 +22097,16 @@
         }
       },
       "required": ["id", "name", "slug"],
+      "type": "object"
+    },
+    "IndividualResponse": {
+      "additionalProperties": false,
+      "properties": {
+        "individual": {
+          "$ref": "#/components/schemas/Individual"
+        }
+      },
+      "required": ["individual"],
       "type": "object"
     },
     "IndividualRewardsProgramPointValuation": {
@@ -22176,6 +22275,26 @@
       "required": ["ai_token_usage", "cache_hit_rate", "crawler_success_rate", "queue_throughput"],
       "type": "object"
     },
+    "IssuedOAuthApp": {
+      "additionalProperties": false,
+      "properties": {
+        "client_secret": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "oauth_app": {
+          "$ref": "#/components/schemas/OAuthAppView"
+        }
+      },
+      "required": ["client_secret", "oauth_app"],
+      "type": "object"
+    },
     "IssueUserWarningRequest": {
       "additionalProperties": false,
       "properties": {
@@ -22223,26 +22342,6 @@
         }
       },
       "required": ["reason", "userId"],
-      "type": "object"
-    },
-    "IssuedOAuthApp": {
-      "additionalProperties": false,
-      "properties": {
-        "client_secret": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "oauth_app": {
-          "$ref": "#/components/schemas/OAuthAppView"
-        }
-      },
-      "required": ["client_secret", "oauth_app"],
       "type": "object"
     },
     "JSONRPCResponse": {
@@ -22738,6 +22837,49 @@
         }
       ]
     },
+    "LandingPagesPage": {
+      "additionalProperties": false,
+      "properties": {
+        "page_info": {
+          "additionalProperties": false,
+          "properties": {
+            "end_cursor": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            },
+            "has_next_page": {
+              "type": "boolean"
+            },
+            "start_cursor": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "required": ["end_cursor", "has_next_page", "start_cursor"],
+          "type": "object"
+        },
+        "results": {
+          "items": {
+            "$ref": "#/components/schemas/LandingPage"
+          },
+          "type": "array"
+        }
+      },
+      "required": ["page_info", "results"],
+      "type": "object"
+    },
     "LandingPageTopic": {
       "additionalProperties": false,
       "properties": {
@@ -22844,49 +22986,6 @@
           "type": "string"
         }
       },
-      "type": "object"
-    },
-    "LandingPagesPage": {
-      "additionalProperties": false,
-      "properties": {
-        "page_info": {
-          "additionalProperties": false,
-          "properties": {
-            "end_cursor": {
-              "anyOf": [
-                {
-                  "type": "null"
-                },
-                {
-                  "type": "string"
-                }
-              ]
-            },
-            "has_next_page": {
-              "type": "boolean"
-            },
-            "start_cursor": {
-              "anyOf": [
-                {
-                  "type": "null"
-                },
-                {
-                  "type": "string"
-                }
-              ]
-            }
-          },
-          "required": ["end_cursor", "has_next_page", "start_cursor"],
-          "type": "object"
-        },
-        "results": {
-          "items": {
-            "$ref": "#/components/schemas/LandingPage"
-          },
-          "type": "array"
-        }
-      },
-      "required": ["page_info", "results"],
       "type": "object"
     },
     "LinkReferralProgramValidationBody": {
@@ -23134,70 +23233,6 @@
           "type": "string"
         }
       },
-      "type": "object"
-    },
-    "MemberUserWarningListItem": {
-      "additionalProperties": false,
-      "properties": {
-        "community_id": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "community_slug": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "created_at": {
-          "type": "string"
-        },
-        "id": {
-          "type": "string"
-        },
-        "public_message": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "revoked_at": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "user_id": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "community_id",
-        "community_slug",
-        "created_at",
-        "id",
-        "public_message",
-        "revoked_at",
-        "user_id"
-      ],
       "type": "object"
     },
     "MembershipBenefit": {
@@ -23817,6 +23852,13 @@
       "required": ["idempotency_key", "invoice_id", "reason", "user_id"],
       "type": "object"
     },
+    "MembershipsByTier": {
+      "additionalProperties": {
+        "type": "number"
+      },
+      "properties": {},
+      "type": "object"
+    },
     "MembershipStatus": {
       "enum": ["active", "cancelled", "expired", "past_due", "paused"],
       "type": "string"
@@ -23910,11 +23952,68 @@
       "enum": ["conflict", "pending", "rejected", "verified"],
       "type": "string"
     },
-    "MembershipsByTier": {
-      "additionalProperties": {
-        "type": "number"
+    "MemberUserWarningListItem": {
+      "additionalProperties": false,
+      "properties": {
+        "community_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "community_slug": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "public_message": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "revoked_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "user_id": {
+          "type": "string"
+        }
       },
-      "properties": {},
+      "required": [
+        "community_id",
+        "community_slug",
+        "created_at",
+        "id",
+        "public_message",
+        "revoked_at",
+        "user_id"
+      ],
       "type": "object"
     },
     "MergeTopicBody": {
@@ -24118,93 +24217,6 @@
       },
       "required": ["applied", "pending", "total"],
       "type": "object"
-    },
-    "ModInternalThread": {
-      "additionalProperties": false,
-      "properties": {
-        "channel_type": {
-          "const": "mod_internal"
-        },
-        "community_id": {
-          "type": "string"
-        },
-        "created_at": {
-          "type": "string"
-        },
-        "created_by_id": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "id": {
-          "type": "string"
-        },
-        "moderation_report_id": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "post_id": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "resolved_at": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "resolved_by_id": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "updated_at": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "channel_type",
-        "community_id",
-        "created_at",
-        "created_by_id",
-        "id",
-        "moderation_report_id",
-        "post_id",
-        "resolved_at",
-        "resolved_by_id",
-        "updated_at"
-      ],
-      "type": "object"
-    },
-    "ModMediaRevealSurface": {
-      "enum": ["mod_queue", "post_page", "reports", "review_queue"],
-      "type": "string"
     },
     "ModerationActorSummary": {
       "additionalProperties": false,
@@ -25196,6 +25208,89 @@
       "required": ["moderators", "users"],
       "type": "object"
     },
+    "ModInternalThread": {
+      "additionalProperties": false,
+      "properties": {
+        "channel_type": {
+          "const": "mod_internal"
+        },
+        "community_id": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "created_by_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "id": {
+          "type": "string"
+        },
+        "moderation_report_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "post_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "resolved_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "resolved_by_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "updated_at": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "channel_type",
+        "community_id",
+        "created_at",
+        "created_by_id",
+        "id",
+        "moderation_report_id",
+        "post_id",
+        "resolved_at",
+        "resolved_by_id",
+        "updated_at"
+      ],
+      "type": "object"
+    },
     "ModmailThread": {
       "additionalProperties": false,
       "properties": {
@@ -25286,6 +25381,10 @@
         "updated_at"
       ],
       "type": "object"
+    },
+    "ModMediaRevealSurface": {
+      "enum": ["mod_queue", "post_page", "reports", "review_queue"],
+      "type": "string"
     },
     "Money": {
       "additionalProperties": false,
@@ -26004,6 +26103,30 @@
         "url_id",
         "user_id"
       ],
+      "type": "object"
+    },
+    "Omit___jsonrpc___2.0___error____code__number__message__string__data___unknown_____id___string___number___undefined____id": {
+      "additionalProperties": false,
+      "properties": {
+        "error": {
+          "additionalProperties": false,
+          "properties": {
+            "code": {
+              "type": "number"
+            },
+            "data": {},
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": ["code", "message"],
+          "type": "object"
+        },
+        "jsonrpc": {
+          "const": "2.0"
+        }
+      },
+      "required": ["error", "jsonrpc"],
       "type": "object"
     },
     "Omit_BasicUser_individual_id": {
@@ -26804,64 +26927,6 @@
       ],
       "type": "object"
     },
-    "Omit_ModerationReportDuplicateCluster_clusters": {
-      "additionalProperties": false,
-      "properties": {
-        "first_reported_at": {
-          "type": "string"
-        },
-        "id": {
-          "type": "string"
-        },
-        "last_reported_at": {
-          "type": "string"
-        },
-        "post_count": {
-          "type": "number"
-        },
-        "reason_breakdown": {
-          "items": {
-            "additionalProperties": false,
-            "properties": {
-              "count": {
-                "type": "number"
-              },
-              "reason": {
-                "enum": [
-                  "harassment",
-                  "illegal_content",
-                  "misinformation",
-                  "other",
-                  "spam",
-                  "vote_manipulation"
-                ],
-                "type": "string"
-              }
-            },
-            "required": ["count", "reason"],
-            "type": "object"
-          },
-          "type": "array"
-        },
-        "report_count": {
-          "type": "number"
-        },
-        "signal": {
-          "enum": ["content_hash_duplicate", "embeddings_similarity"],
-          "type": "string"
-        }
-      },
-      "required": [
-        "first_reported_at",
-        "id",
-        "last_reported_at",
-        "post_count",
-        "reason_breakdown",
-        "report_count",
-        "signal"
-      ],
-      "type": "object"
-    },
     "Omit_ModerationReport__note_____reporter_user_id_": {
       "additionalProperties": false,
       "properties": {
@@ -26940,6 +27005,64 @@
         "resolved_by_id",
         "reviewed_at",
         "status"
+      ],
+      "type": "object"
+    },
+    "Omit_ModerationReportDuplicateCluster_clusters": {
+      "additionalProperties": false,
+      "properties": {
+        "first_reported_at": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "last_reported_at": {
+          "type": "string"
+        },
+        "post_count": {
+          "type": "number"
+        },
+        "reason_breakdown": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "count": {
+                "type": "number"
+              },
+              "reason": {
+                "enum": [
+                  "harassment",
+                  "illegal_content",
+                  "misinformation",
+                  "other",
+                  "spam",
+                  "vote_manipulation"
+                ],
+                "type": "string"
+              }
+            },
+            "required": ["count", "reason"],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "report_count": {
+          "type": "number"
+        },
+        "signal": {
+          "enum": ["content_hash_duplicate", "embeddings_similarity"],
+          "type": "string"
+        }
+      },
+      "required": [
+        "first_reported_at",
+        "id",
+        "last_reported_at",
+        "post_count",
+        "reason_breakdown",
+        "report_count",
+        "signal"
       ],
       "type": "object"
     },
@@ -27404,30 +27527,6 @@
         "topic_id",
         "updated_at"
       ],
-      "type": "object"
-    },
-    "Omit___jsonrpc___2.0___error____code__number__message__string__data___unknown_____id___string___number___undefined____id": {
-      "additionalProperties": false,
-      "properties": {
-        "error": {
-          "additionalProperties": false,
-          "properties": {
-            "code": {
-              "type": "number"
-            },
-            "data": {},
-            "message": {
-              "type": "string"
-            }
-          },
-          "required": ["code", "message"],
-          "type": "object"
-        },
-        "jsonrpc": {
-          "const": "2.0"
-        }
-      },
-      "required": ["error", "jsonrpc"],
       "type": "object"
     },
     "OmnisearchCommunity": {
@@ -29380,7 +29479,14 @@
           ]
         },
         "review_dispute_id": {
-          "type": "string"
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
         }
       },
       "required": [
@@ -30865,83 +30971,6 @@
       "enum": ["approved", "pending", "rejected"],
       "type": "string"
     },
-    "RecordModerationRevealRequest": {
-      "additionalProperties": false,
-      "properties": {
-        "postId": {
-          "anyOf": [
-            {
-              "format": "uuid",
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "reportId": {
-          "anyOf": [
-            {
-              "format": "uuid",
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "surface": {
-          "$ref": "#/components/schemas/ModMediaRevealSurface"
-        }
-      },
-      "required": ["surface"],
-      "type": "object"
-    },
-    "Record_ClassifierHumanOutcome_number": {
-      "additionalProperties": false,
-      "properties": {
-        "down": {
-          "type": "number"
-        },
-        "neutral": {
-          "type": "number"
-        },
-        "up": {
-          "type": "number"
-        }
-      },
-      "required": ["down", "neutral", "up"],
-      "type": "object"
-    },
-    "Record_MembershipBenefitPlan_MembershipBenefitValue": {
-      "additionalProperties": false,
-      "properties": {
-        "free": {
-          "$ref": "#/components/schemas/MembershipBenefitValue"
-        },
-        "plus": {
-          "$ref": "#/components/schemas/MembershipBenefitValue"
-        },
-        "pro": {
-          "$ref": "#/components/schemas/MembershipBenefitValue"
-        }
-      },
-      "required": ["free", "plus", "pro"],
-      "type": "object"
-    },
-    "Record_MembershipPlanSlug_number": {
-      "additionalProperties": false,
-      "properties": {
-        "plus": {
-          "type": "number"
-        },
-        "pro": {
-          "type": "number"
-        }
-      },
-      "required": ["plus", "pro"],
-      "type": "object"
-    },
     "Record__facebook_____x_____github_____linkedin____version__1__modes__Record__web_____native___boolean__purposes__readonly___authenticate_____connect_______": {
       "additionalProperties": false,
       "properties": {
@@ -31042,12 +31071,80 @@
       "required": ["native", "web"],
       "type": "object"
     },
-    "Record_string_Array_AgentModerationResult": {
-      "additionalProperties": {
-        "items": {
-          "$ref": "#/components/schemas/AgentModerationResult"
+    "Record_ClassifierHumanOutcome_number": {
+      "additionalProperties": false,
+      "properties": {
+        "down": {
+          "type": "number"
         },
-        "type": "array"
+        "neutral": {
+          "type": "number"
+        },
+        "up": {
+          "type": "number"
+        }
+      },
+      "required": ["down", "neutral", "up"],
+      "type": "object"
+    },
+    "Record_MembershipBenefitPlan_MembershipBenefitValue": {
+      "additionalProperties": false,
+      "properties": {
+        "free": {
+          "$ref": "#/components/schemas/MembershipBenefitValue"
+        },
+        "plus": {
+          "$ref": "#/components/schemas/MembershipBenefitValue"
+        },
+        "pro": {
+          "$ref": "#/components/schemas/MembershipBenefitValue"
+        }
+      },
+      "required": ["free", "plus", "pro"],
+      "type": "object"
+    },
+    "Record_MembershipPlanSlug_number": {
+      "additionalProperties": false,
+      "properties": {
+        "plus": {
+          "type": "number"
+        },
+        "pro": {
+          "type": "number"
+        }
+      },
+      "required": ["plus", "pro"],
+      "type": "object"
+    },
+    "Record_string___id__string__name__string__slug__string___": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "name", "slug"],
+        "type": "object"
+      },
+      "properties": {},
+      "type": "object"
+    },
+    "Record_string___previous__unknown__next__unknown___": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "next": {},
+          "previous": {}
+        },
+        "required": ["next", "previous"],
+        "type": "object"
       },
       "properties": {},
       "type": "object"
@@ -31075,6 +31172,16 @@
       "properties": {},
       "type": "object"
     },
+    "Record_string_Array_AgentModerationResult": {
+      "additionalProperties": {
+        "items": {
+          "$ref": "#/components/schemas/AgentModerationResult"
+        },
+        "type": "array"
+      },
+      "properties": {},
+      "type": "object"
+    },
     "Record_string_Array_string": {
       "additionalProperties": {
         "items": {
@@ -31085,10 +31192,22 @@
       "properties": {},
       "type": "object"
     },
+    "Record_string_boolean": {
+      "additionalProperties": {
+        "type": "boolean"
+      },
+      "properties": {},
+      "type": "object"
+    },
     "Record_string_ElectionVote": {
       "additionalProperties": {
         "$ref": "#/components/schemas/ElectionVote"
       },
+      "properties": {},
+      "type": "object"
+    },
+    "Record_string_never": {
+      "additionalProperties": false,
       "properties": {},
       "type": "object"
     },
@@ -31102,6 +31221,13 @@
     "Record_string_NotificationCommunity": {
       "additionalProperties": {
         "$ref": "#/components/schemas/NotificationCommunity"
+      },
+      "properties": {},
+      "type": "object"
+    },
+    "Record_string_number": {
+      "additionalProperties": {
+        "type": "number"
       },
       "properties": {},
       "type": "object"
@@ -31346,6 +31472,13 @@
       "properties": {},
       "type": "object"
     },
+    "Record_string_string": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "properties": {},
+      "type": "object"
+    },
     "Record_string_Topic": {
       "additionalProperties": {
         "additionalProperties": false,
@@ -31565,6 +31698,11 @@
       "properties": {},
       "type": "object"
     },
+    "Record_string_unknown": {
+      "additionalProperties": {},
+      "properties": {},
+      "type": "object"
+    },
     "Record_string_UrlEmbed": {
       "additionalProperties": {
         "$ref": "#/components/schemas/UrlEmbed"
@@ -31607,68 +31745,36 @@
       "properties": {},
       "type": "object"
     },
-    "Record_string___id__string__name__string__slug__string___": {
-      "additionalProperties": {
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "slug": {
-            "type": "string"
-          }
-        },
-        "required": ["id", "name", "slug"],
-        "type": "object"
-      },
-      "properties": {},
-      "type": "object"
-    },
-    "Record_string___previous__unknown__next__unknown___": {
-      "additionalProperties": {
-        "additionalProperties": false,
-        "properties": {
-          "next": {},
-          "previous": {}
-        },
-        "required": ["next", "previous"],
-        "type": "object"
-      },
-      "properties": {},
-      "type": "object"
-    },
-    "Record_string_boolean": {
-      "additionalProperties": {
-        "type": "boolean"
-      },
-      "properties": {},
-      "type": "object"
-    },
-    "Record_string_never": {
+    "RecordModerationRevealRequest": {
       "additionalProperties": false,
-      "properties": {},
-      "type": "object"
-    },
-    "Record_string_number": {
-      "additionalProperties": {
-        "type": "number"
+      "properties": {
+        "postId": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reportId": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "surface": {
+          "$ref": "#/components/schemas/ModMediaRevealSurface"
+        }
       },
-      "properties": {},
-      "type": "object"
-    },
-    "Record_string_string": {
-      "additionalProperties": {
-        "type": "string"
-      },
-      "properties": {},
-      "type": "object"
-    },
-    "Record_string_unknown": {
-      "additionalProperties": {},
-      "properties": {},
+      "required": ["surface"],
       "type": "object"
     },
     "ReferralClickLogEntry": {
@@ -32008,16 +32114,6 @@
       ],
       "type": "object"
     },
-    "RejectTopicClaimRequest": {
-      "additionalProperties": false,
-      "properties": {
-        "rejection_reason": {
-          "type": "string"
-        }
-      },
-      "required": ["rejection_reason"],
-      "type": "object"
-    },
     "RejectionBody": {
       "additionalProperties": false,
       "properties": {
@@ -32026,6 +32122,16 @@
         }
       },
       "required": ["category_text"],
+      "type": "object"
+    },
+    "RejectTopicClaimRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "rejection_reason": {
+          "type": "string"
+        }
+      },
+      "required": ["rejection_reason"],
       "type": "object"
     },
     "RemoveDisputeAnnotationRequest": {
@@ -32107,6 +32213,29 @@
         "reason": {
           "type": "string"
         },
+        "review_due_at": {
+          "type": "string"
+        },
+        "reviewed_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "reviewed_by_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
         "revoked_at": {
           "anyOf": [
             {
@@ -32149,6 +32278,9 @@
         "created_by_id",
         "id",
         "reason",
+        "review_due_at",
+        "reviewed_at",
+        "reviewed_by_id",
         "revoked_at",
         "revoked_by_id",
         "source_flag_id",
@@ -32280,52 +32412,6 @@
       "required": ["action"],
       "type": "object"
     },
-    "ResolveDisputeRequest": {
-      "additionalProperties": false,
-      "properties": {
-        "action": {
-          "enum": ["annotate", "dismiss", "remove"],
-          "type": "string"
-        },
-        "body_text": {
-          "type": "string"
-        }
-      },
-      "required": ["action"],
-      "type": "object"
-    },
-    "ResolveModerationReportRequest": {
-      "additionalProperties": false,
-      "properties": {
-        "status": {
-          "enum": ["dismissed", "reviewed"],
-          "type": "string"
-        }
-      },
-      "required": ["status"],
-      "type": "object"
-    },
-    "ResolveReportIntegrityFlagRequest": {
-      "additionalProperties": false,
-      "properties": {
-        "resolution": {
-          "const": "dismissed"
-        }
-      },
-      "required": ["resolution"],
-      "type": "object"
-    },
-    "ResolveVoteIntegrityFlagRequest": {
-      "additionalProperties": false,
-      "properties": {
-        "resolution": {
-          "enum": ["dismissed", "penalized", "suspended"],
-          "type": "string"
-        }
-      },
-      "required": ["resolution"],
-      "type": "object"
-    },
     "ResolvedEmbed": {
       "additionalProperties": false,
       "properties": {
@@ -32411,6 +32497,52 @@
         "thumbnail",
         "title"
       ],
+      "type": "object"
+    },
+    "ResolveDisputeRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "enum": ["annotate", "dismiss", "remove"],
+          "type": "string"
+        },
+        "body_text": {
+          "type": "string"
+        }
+      },
+      "required": ["action"],
+      "type": "object"
+    },
+    "ResolveModerationReportRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "enum": ["dismissed", "reviewed"],
+          "type": "string"
+        }
+      },
+      "required": ["status"],
+      "type": "object"
+    },
+    "ResolveReportIntegrityFlagRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "resolution": {
+          "const": "dismissed"
+        }
+      },
+      "required": ["resolution"],
+      "type": "object"
+    },
+    "ResolveVoteIntegrityFlagRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "resolution": {
+          "enum": ["dismissed", "penalized", "suspended"],
+          "type": "string"
+        }
+      },
+      "required": ["resolution"],
       "type": "object"
     },
     "RetailerAttributes": {
@@ -33501,22 +33633,6 @@
       "enum": ["api-key", "oauth"],
       "type": "string"
     },
-    "SearchReviewQueueResult": {
-      "additionalProperties": false,
-      "properties": {
-        "page_info": {
-          "$ref": "#/components/schemas/PageInfo"
-        },
-        "results": {
-          "items": {
-            "$ref": "#/components/schemas/ReviewQueuePost"
-          },
-          "type": "array"
-        }
-      },
-      "required": ["page_info", "results"],
-      "type": "object"
-    },
     "SearchedTopicAlias": {
       "additionalProperties": false,
       "properties": {
@@ -33547,6 +33663,22 @@
         }
       },
       "required": ["alias", "topic", "topic_id"],
+      "type": "object"
+    },
+    "SearchReviewQueueResult": {
+      "additionalProperties": false,
+      "properties": {
+        "page_info": {
+          "$ref": "#/components/schemas/PageInfo"
+        },
+        "results": {
+          "items": {
+            "$ref": "#/components/schemas/ReviewQueuePost"
+          },
+          "type": "array"
+        }
+      },
+      "required": ["page_info", "results"],
       "type": "object"
     },
     "SendFollowersRequestContract": {
@@ -37378,56 +37510,6 @@
       ],
       "type": "object"
     },
-    "UserModNote": {
-      "additionalProperties": false,
-      "properties": {
-        "author_user_id": {
-          "type": "string"
-        },
-        "body": {
-          "type": "string"
-        },
-        "community_id": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "created_at": {
-          "type": "string"
-        },
-        "deleted_at": {
-          "anyOf": [
-            {
-              "type": "null"
-            },
-            {
-              "type": "string"
-            }
-          ]
-        },
-        "id": {
-          "type": "string"
-        },
-        "target_user_id": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "author_user_id",
-        "body",
-        "community_id",
-        "created_at",
-        "deleted_at",
-        "id",
-        "target_user_id"
-      ],
-      "type": "object"
-    },
     "UserModerationContext": {
       "additionalProperties": false,
       "properties": {
@@ -37484,6 +37566,56 @@
         "community_removal_count",
         "content_removal_count",
         "trust_tier"
+      ],
+      "type": "object"
+    },
+    "UserModNote": {
+      "additionalProperties": false,
+      "properties": {
+        "author_user_id": {
+          "type": "string"
+        },
+        "body": {
+          "type": "string"
+        },
+        "community_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "deleted_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "id": {
+          "type": "string"
+        },
+        "target_user_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "author_user_id",
+        "body",
+        "community_id",
+        "created_at",
+        "deleted_at",
+        "id",
+        "target_user_id"
       ],
       "type": "object"
     },
@@ -39398,6 +39530,29 @@
         "reason": {
           "type": "string"
         },
+        "review_due_at": {
+          "type": "string"
+        },
+        "reviewed_at": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "reviewed_by_id": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
         "revoked_at": {
           "anyOf": [
             {
@@ -39438,6 +39593,9 @@
         "id",
         "penalty_multiplier",
         "reason",
+        "review_due_at",
+        "reviewed_at",
+        "reviewed_by_id",
         "revoked_at",
         "revoked_by_id",
         "source_flag_id",
@@ -39981,7 +40139,14 @@
     },
     "DELETE:/api/v1/households/:id/invitations/:invitationId": {
       "path": {
-        "properties": { "id": { "type": "string" }, "invitationId": { "type": "string" } },
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "invitationId": {
+            "type": "string"
+          }
+        },
         "required": ["id", "invitationId"],
         "type": "object"
       }
@@ -42815,14 +42980,25 @@
     },
     "GET:/api/v1/households/:id/invitations": {
       "path": {
-        "properties": { "id": { "type": "string" } },
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
         "required": ["id"],
         "type": "object"
       },
       "query": {
         "properties": {
-          "after": { "type": "string" },
-          "limit": { "default": 25, "maximum": 100, "minimum": 1, "type": "integer" }
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          }
         },
         "type": "object"
       }
@@ -42992,6 +43168,7 @@
         "type": "object"
       }
     },
+    "GET:/api/v1/me/individual": {},
     "GET:/api/v1/membership-verifications/:verificationId": {
       "path": {
         "properties": {
@@ -43051,7 +43228,6 @@
         "type": "object"
       }
     },
-    "GET:/api/v1/me/individual": {},
     "GET:/api/v1/my/api-keys": {
       "query": {
         "properties": {
@@ -43237,8 +43413,15 @@
     "GET:/api/v1/my/household-invitations": {
       "query": {
         "properties": {
-          "after": { "type": "string" },
-          "limit": { "default": 25, "maximum": 100, "minimum": 1, "type": "integer" }
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          }
         },
         "type": "object"
       }
@@ -43528,10 +43711,24 @@
     "GET:/api/v1/my/topic-claims": {
       "query": {
         "properties": {
-          "after": { "type": "string" },
-          "limit": { "default": 25, "maximum": 100, "minimum": 1, "type": "integer" },
-          "topic_ids": { "items": { "type": "string" }, "type": "array" },
-          "verified_only": { "type": "boolean" }
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "topic_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "verified_only": {
+            "type": "boolean"
+          }
         },
         "type": "object"
       }
@@ -44055,6 +44252,7 @@
         "type": "object"
       }
     },
+    "GET:/api/v1/report-integrity/penalties/review-due": {},
     "GET:/api/v1/reports": {
       "query": {
         "properties": {
@@ -44084,6 +44282,20 @@
             "type": "string"
           }
         },
+        "type": "object"
+      }
+    },
+    "GET:/api/v1/reports/:id/judgements/:runId": {
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "runId": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "runId"],
         "type": "object"
       }
     },
@@ -44727,10 +44939,21 @@
       },
       "query": {
         "properties": {
-          "active_only": { "type": "boolean" },
-          "after": { "type": "string" },
-          "limit": { "default": 25, "maximum": 100, "minimum": 1, "type": "integer" },
-          "mine_only": { "type": "boolean" }
+          "active_only": {
+            "type": "boolean"
+          },
+          "after": {
+            "type": "string"
+          },
+          "limit": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "mine_only": {
+            "type": "boolean"
+          }
         },
         "type": "object"
       }
@@ -45509,6 +45732,7 @@
         "type": "object"
       }
     },
+    "GET:/api/v1/vote-integrity/penalties/review-due": {},
     "GET:/api/v1/web-search": {
       "query": {
         "properties": {
@@ -48345,8 +48569,18 @@
       }
     },
     "POST:/api/v1/households/:id/invitations": {
-      "body": { "$ref": "#/components/schemas/AddHouseholdInvitationBody" },
-      "path": { "properties": { "id": { "type": "string" } }, "required": ["id"], "type": "object" }
+      "body": {
+        "$ref": "#/components/schemas/AddHouseholdInvitationBody"
+      },
+      "path": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      }
     },
     "POST:/api/v1/households/:id/memberships": {
       "body": {
@@ -48676,17 +48910,33 @@
       }
     },
     "POST:/api/v1/my/household-invitations/:invitationId/acceptance": {
-      "body": { "additionalProperties": false, "properties": {}, "type": "object" },
+      "body": {
+        "additionalProperties": false,
+        "properties": {},
+        "type": "object"
+      },
       "path": {
-        "properties": { "invitationId": { "type": "string" } },
+        "properties": {
+          "invitationId": {
+            "type": "string"
+          }
+        },
         "required": ["invitationId"],
         "type": "object"
       }
     },
     "POST:/api/v1/my/household-invitations/:invitationId/decline": {
-      "body": { "additionalProperties": false, "properties": {}, "type": "object" },
+      "body": {
+        "additionalProperties": false,
+        "properties": {},
+        "type": "object"
+      },
       "path": {
-        "properties": { "invitationId": { "type": "string" } },
+        "properties": {
+          "invitationId": {
+            "type": "string"
+          }
+        },
         "required": ["invitationId"],
         "type": "object"
       }
@@ -49148,19 +49398,21 @@
         "type": "object"
       }
     },
+    "POST:/api/v1/report-integrity/penalties/:id/reviews": {
+      "path": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      }
+    },
     "POST:/api/v1/reports": {
       "body": {
         "$ref": "#/components/schemas/CreateModerationReportRequest"
-      }
-    },
-    "GET:/api/v1/reports/:id/judgements/:runId": {
-      "path": {
-        "properties": {
-          "id": { "type": "string" },
-          "runId": { "type": "string" }
-        },
-        "required": ["id", "runId"],
-        "type": "object"
       }
     },
     "POST:/api/v1/reports/:id/judgements": {
@@ -49602,6 +49854,18 @@
       "path": {
         "properties": {
           "id": {
+            "type": "string"
+          }
+        },
+        "required": ["id"],
+        "type": "object"
+      }
+    },
+    "POST:/api/v1/vote-integrity/penalties/:id/reviews": {
+      "path": {
+        "properties": {
+          "id": {
+            "format": "uuid",
             "type": "string"
           }
         },
@@ -50198,6 +50462,9 @@
     "GET:/api/v1/localization": {
       "$ref": "#/components/schemas/Record_string_unknown"
     },
+    "GET:/api/v1/me/individual": {
+      "$ref": "#/components/schemas/IndividualResponse"
+    },
     "GET:/api/v1/moderation-transparency": {
       "$ref": "#/components/schemas/ModerationTransparency"
     },
@@ -50209,19 +50476,6 @@
     },
     "GET:/api/v1/my/import/rss-feeds/:importId": {
       "$ref": "#/components/schemas/UserRssFeedImport"
-    },
-    "POST:/api/v1/my/import/rss-feeds": {
-      "additionalProperties": false,
-      "properties": {
-        "import": {
-          "$ref": "#/components/schemas/UserRssFeedImportSummary"
-        },
-        "status_url": {
-          "type": "string"
-        }
-      },
-      "required": ["import", "status_url"],
-      "type": "object"
     },
     "GET:/api/v1/my/messages": {
       "additionalProperties": false,
@@ -50289,9 +50543,6 @@
       "required": ["results", "page_info"],
       "type": "object"
     },
-    "GET:/api/v1/me/individual": {
-      "$ref": "#/components/schemas/IndividualResponse"
-    },
     "GET:/api/v1/my/notifications/unread": {
       "$ref": "#/components/schemas/NotificationsUnreadSummaryResponseBody"
     },
@@ -50307,7 +50558,9 @@
     "GET:/api/v1/my/topic-claims": {
       "additionalProperties": false,
       "properties": {
-        "page_info": { "$ref": "#/components/schemas/PageInfo" },
+        "page_info": {
+          "$ref": "#/components/schemas/PageInfo"
+        },
         "results": {
           "items": {
             "$ref": "#/components/schemas/TopicClaimWithState"
@@ -50348,6 +50601,22 @@
     "GET:/api/v1/report-integrity/penalties": {
       "$ref": "#/components/schemas/GetReportAbusePenaltiesResult"
     },
+    "GET:/api/v1/report-integrity/penalties/review-due": {
+      "additionalProperties": false,
+      "properties": {
+        "has_more": {
+          "type": "boolean"
+        },
+        "results": {
+          "items": {
+            "$ref": "#/components/schemas/ReportAbusePenalty"
+          },
+          "type": "array"
+        }
+      },
+      "required": ["has_more", "results"],
+      "type": "object"
+    },
     "GET:/api/v1/rss-feed-items": {
       "$ref": "#/components/schemas/Record_string_unknown"
     },
@@ -50381,7 +50650,9 @@
     "GET:/api/v1/topics/:idOrSlug/claims": {
       "additionalProperties": false,
       "properties": {
-        "page_info": { "$ref": "#/components/schemas/PageInfo" },
+        "page_info": {
+          "$ref": "#/components/schemas/PageInfo"
+        },
         "results": {
           "items": {
             "$ref": "#/components/schemas/TopicClaimWithState"
@@ -50425,6 +50696,22 @@
     },
     "GET:/api/v1/vote-integrity/penalties": {
       "$ref": "#/components/schemas/GetVoteWeightPenaltiesResult"
+    },
+    "GET:/api/v1/vote-integrity/penalties/review-due": {
+      "additionalProperties": false,
+      "properties": {
+        "has_more": {
+          "type": "boolean"
+        },
+        "results": {
+          "items": {
+            "$ref": "#/components/schemas/VoteWeightPenalty"
+          },
+          "type": "array"
+        }
+      },
+      "required": ["has_more", "results"],
+      "type": "object"
     },
     "PATCH:/api/v1/hostnames/:id": {
       "$ref": "#/components/schemas/BlockHostnameResult"
@@ -50490,6 +50777,19 @@
     "POST:/api/v1/my/household-invitations/:invitationId/acceptance": {
       "$ref": "#/components/schemas/HouseholdMembershipResponse"
     },
+    "POST:/api/v1/my/import/rss-feeds": {
+      "additionalProperties": false,
+      "properties": {
+        "import": {
+          "$ref": "#/components/schemas/UserRssFeedImportSummary"
+        },
+        "status_url": {
+          "type": "string"
+        }
+      },
+      "required": ["import", "status_url"],
+      "type": "object"
+    },
     "POST:/api/v1/my/messages": {
       "additionalProperties": false,
       "properties": {
@@ -50520,12 +50820,26 @@
       "required": ["participant"],
       "type": "object"
     },
+    "POST:/api/v1/report-integrity/penalties/:id/reviews": {
+      "additionalProperties": false,
+      "properties": {
+        "penalty": {
+          "$ref": "#/components/schemas/ReportAbusePenalty"
+        }
+      },
+      "required": ["penalty"],
+      "type": "object"
+    },
     "POST:/api/v1/rss-feeds": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "import": { "$ref": "#/components/schemas/UserRssFeedImportSummary" },
-        "status_url": { "type": "string" }
+        "import": {
+          "$ref": "#/components/schemas/UserRssFeedImportSummary"
+        },
+        "status_url": {
+          "type": "string"
+        }
       },
       "required": ["import", "status_url"]
     },
@@ -50576,6 +50890,16 @@
     },
     "POST:/api/v1/vote-integrity/flags/:id/penalties": {
       "$ref": "#/components/schemas/ApplyRingPenaltyResult"
+    },
+    "POST:/api/v1/vote-integrity/penalties/:id/reviews": {
+      "additionalProperties": false,
+      "properties": {
+        "penalty": {
+          "$ref": "#/components/schemas/VoteWeightPenalty"
+        }
+      },
+      "required": ["penalty"],
+      "type": "object"
     },
     "PUT:/api/v1/admin/classifiers/:classifierId/candidates/:candidateId/threshold": {
       "$ref": "#/components/schemas/AppliedThresholdChange"

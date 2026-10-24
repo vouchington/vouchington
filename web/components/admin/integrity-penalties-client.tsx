@@ -9,6 +9,7 @@ import {
 } from './use-integrity-penalties'
 import { IntegrityPenaltiesHeader } from './integrity-penalties-header'
 import { IntegrityPenaltiesTable } from './integrity-penalties-table'
+import { AnnualPenaltyReviews, type AnnualPenaltyReviewsProps } from './annual-penalty-reviews'
 
 interface IntegrityPenaltiesClientProps<P extends IntegrityPenaltyRecord> {
   domain: 'report' | 'vote'
@@ -29,6 +30,7 @@ interface IntegrityPenaltiesClientProps<P extends IntegrityPenaltyRecord> {
     results: P[]
     page_info: { has_next_page: boolean; end_cursor: string | null; start_cursor: string | null }
   }) => boolean
+  annualReviews?: AnnualPenaltyReviewsProps<P & { review_due_at: string }>
 }
 
 export function IntegrityPenaltiesClient<P extends IntegrityPenaltyRecord>(
@@ -60,6 +62,9 @@ function IntegrityPenaltiesClientInner<P extends IntegrityPenaltyRecord>(
 
   return (
     <div className='space-y-6'>
+      {props.annualReviews && props.initialStatus === 'active' && props.available !== false ? (
+        <AnnualPenaltyReviews {...props.annualReviews} />
+      ) : null}
       <IntegrityPenaltiesHeader
         domain={props.domain}
         flagsTestId={

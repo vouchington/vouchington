@@ -4,6 +4,8 @@ import { IntegrityPenaltiesClient } from '@/components/admin/integrity-penalties
 import {
   getVoteIntegrityPenaltyClient,
   revokeVoteWeightPenalty,
+  getVoteWeightPenaltyReviewsDue,
+  reviewVoteWeightPenalty,
 } from '@/lib/api/client/vote-integrity'
 import type {
   IntegrityPenaltyStatusFilter,
@@ -31,6 +33,7 @@ export function VoteIntegrityPenaltiesClient({
       paginationParams={{ source: 'flag' }}
       penaltiesPath='/vote-integrity/penalties'
       revoke={revokeVoteWeightPenalty}
+      annualReviews={{ getDue: getVoteWeightPenaltyReviewsDue, review: reviewVoteWeightPenalty }}
       scopeGuard={hasConfirmedFlagScope}
     />
   )

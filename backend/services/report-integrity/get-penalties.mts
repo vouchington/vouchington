@@ -11,6 +11,9 @@ export type ReportAbusePenalty = {
   created_by_id: string | null
   revoked_at: Date | null
   revoked_by_id: string | null
+  reviewed_at: Date | null
+  reviewed_by_id: string | null
+  review_due_at: Date
   created_at: Date
   updated_at: Date
 }
@@ -40,6 +43,9 @@ export async function getReportAbusePenaltyByIdFromPrimary(
       created_by_id,
       revoked_at,
       revoked_by_id,
+      reviewed_at,
+      reviewed_by_id,
+      review_due_at,
       created_at,
       updated_at
     FROM report_abuse_penalties
@@ -67,6 +73,9 @@ export async function getReportAbusePenalties(
       created_by_id,
       revoked_at,
       revoked_by_id,
+      reviewed_at,
+      reviewed_by_id,
+      review_due_at,
       created_at,
       updated_at
     FROM report_abuse_penalties

@@ -186,6 +186,9 @@ CREATE TABLE IF NOT EXISTS vote_weight_penalties (
   created_by_id UUID REFERENCES users ON DELETE SET NULL,
   revoked_at TIMESTAMPTZ,
   revoked_by_id UUID REFERENCES users ON DELETE SET NULL,
+  reviewed_at TIMESTAMPTZ,
+  reviewed_by_id UUID REFERENCES users ON DELETE SET NULL,
+  review_due_at TIMESTAMPTZ NOT NULL DEFAULT (CURRENT_TIMESTAMP + interval '12 months'),
   created_at TIMESTAMPTZ GENERATED ALWAYS AS (uuid_extract_timestamp(id)) VIRTUAL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -198,6 +201,14 @@ CREATE OR REPLACE TRIGGER trigger_vote_weight_penalties_updated_at
 CREATE INDEX IF NOT EXISTS idx_vote_weight_penalties__active
   ON vote_weight_penalties (user_id)
   WHERE revoked_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_vote_weight_penalties__review_due
+  ON vote_weight_penalties (review_due_at, id)
+  WHERE revoked_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_vote_weight_penalties__reviewed_by_id
+  ON vote_weight_penalties (reviewed_by_id)
+  WHERE reviewed_by_id IS NOT NULL;
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_vote_weight_penalties__user_flag_unique
@@ -229,7 +240,7 @@ CREATE INDEX IF NOT EXISTS idx_vote_weight_penalties__post
   ON vote_weight_penalties (source_post_id)
   WHERE source_post_id IS NOT NULL;
 
-COMMENT ON TABLE vote_weight_penalties IS 'Penalties applied to users'' vote weights as a result of detected voting rings or manual moderation.';
+COMMENT ON TABLE vote_weight_penalties IS 'Penalties applied to users'' vote weights. Revoked rows are deleted after 180 days; active rows remain subject to annual staff review.';
 COMMENT ON COLUMN vote_weight_penalties.user_id IS 'The penalized user.';
 COMMENT ON COLUMN vote_weight_penalties.penalty_multiplier IS 'Multiplier applied to vote weight (0-1, where 1 means no penalty).';
 COMMENT ON COLUMN vote_weight_penalties.reason IS 'Human-readable explanation of why the penalty was applied.';
@@ -239,6 +250,9 @@ COMMENT ON COLUMN vote_weight_penalties.source_post_id IS 'The post that trigger
 COMMENT ON COLUMN vote_weight_penalties.created_by_id IS 'User who created the penalty, or NULL after that account is purged.';
 COMMENT ON COLUMN vote_weight_penalties.revoked_at IS 'When the penalty was revoked.';
 COMMENT ON COLUMN vote_weight_penalties.revoked_by_id IS 'Moderator who revoked the penalty.';
+COMMENT ON COLUMN vote_weight_penalties.reviewed_at IS 'Most recent staff confirmation that an active penalty remains warranted.';
+COMMENT ON COLUMN vote_weight_penalties.reviewed_by_id IS 'Staff member who last reviewed the active penalty.';
+COMMENT ON COLUMN vote_weight_penalties.review_due_at IS 'Next annual review deadline while this penalty remains active.';
 
 -- Current indexes for fresh schema bootstrap.
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

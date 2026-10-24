@@ -56,6 +56,7 @@ describe('runDataRetentionCleanup', () => {
       webPushSubscriptionTombstones: emptyWindow,
       oldModerationQueueClaims: emptyWindow,
       oldModerationMediaReveals: emptyWindow,
+      moderationRecords: emptyWindow,
     })
 
     expect(result.retainedIdentityRoots).toEqual([])
@@ -73,6 +74,7 @@ describe('runDataRetentionCleanup', () => {
       expiredContributionQuotaConsumptions: { deleted: 0, hasMore: false },
       expiredTopicImportAttempts: { deleted: 0, hasMore: false },
       terminalNotificationPushIntents: { deleted: 0, hasMore: false },
+      moderationRecords: { deleted: 0, hasMore: false },
       terminalStripeEventWork: { deleted: 0, hasMore: false },
       abandonedMembershipPurchaseIntents: { deleted: 0, hasMore: false },
       emailAddressLoginTokens: { deleted: 0, hasMore: false, continuation: null },

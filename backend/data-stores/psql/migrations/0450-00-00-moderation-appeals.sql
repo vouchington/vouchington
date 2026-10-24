@@ -187,7 +187,7 @@ ALTER TABLE moderation_training_feedbacks
   ADD CONSTRAINT fk_moderation_training_feedbacks__moderation_appeal_id
     FOREIGN KEY (moderation_appeal_id)
     REFERENCES moderation_appeals (id)
-    ON DELETE CASCADE
+    ON DELETE SET NULL
     NOT VALID;
 
 ALTER TABLE moderation_training_feedbacks
@@ -305,7 +305,7 @@ CREATE INDEX IF NOT EXISTS idx_moderator_actions__moderation_appeal_id
   ON moderator_actions (moderation_appeal_id)
   WHERE moderation_appeal_id IS NOT NULL;
 
-COMMENT ON TABLE moderation_appeals IS 'Appeals filed by users against moderation actions (warnings, bans, post removals, platform suspensions). Goes through an AI-assisted draft + human-approval workflow before any response is delivered.';
+COMMENT ON TABLE moderation_appeals IS 'Appeals filed against moderation actions. Resolved appeals and lifecycle changes are deleted after 24 months; pending appeals remain visible to their members.';
 COMMENT ON COLUMN moderation_appeals.appellant_user_id IS 'The user who filed the appeal.';
 COMMENT ON COLUMN moderation_appeals.user_warning_id IS 'The warning being appealed; exactly one of user_warning_id, community_ban_id, post_id, user_suspension_id must be set.';
 COMMENT ON COLUMN moderation_appeals.community_ban_id IS 'The ban being appealed; exactly one of user_warning_id, community_ban_id, post_id, user_suspension_id must be set.';

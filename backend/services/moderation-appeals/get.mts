@@ -83,6 +83,9 @@ export async function listModerationAppeals(
   `)
   if (appellantUserId) {
     query.append(sql` AND ma.appellant_user_id = ${appellantUserId}`)
+    query.append(sql`
+      AND (ma.resolved_at IS NULL OR ma.resolved_at >= CURRENT_TIMESTAMP - interval '24 months')
+    `)
   }
   if (beforeId) {
     query.append(sql` AND ma.id < ${beforeId}`)

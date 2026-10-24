@@ -35,6 +35,9 @@ export async function getVoteWeightPenaltyByIdFromPrimary(
       created_by_id,
       revoked_at,
       revoked_by_id,
+      reviewed_at,
+      reviewed_by_id,
+      review_due_at,
       created_at
     FROM vote_weight_penalties
     WHERE id = ${penaltyId}
@@ -73,6 +76,9 @@ async function getVoteWeightPenaltiesWithDatabaseRead(
       created_by_id,
       revoked_at,
       revoked_by_id,
+      reviewed_at,
+      reviewed_by_id,
+      review_due_at,
       created_at
     FROM vote_weight_penalties
     WHERE TRUE
