@@ -1,11 +1,13 @@
 /* oxlint-disable no-await-in-loop -- child families must be drained in FK order within one capped transaction. */
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import { getRetentionCutoffDate } from './cleanup-options.mts'
-import type { OperationalTombstonePageResult } from './cleanup-operational-tombstones.mts'
+import type {
+  OperationalTombstoneCandidate as Candidate,
+  OperationalTombstoneCursor as Cursor,
+  OperationalTombstonePageResult,
+} from './cleanup-operational-tombstone-types.mts'
 import { CHILD_STAGES } from './cleanup-deleted-conversation-stages.mts'
 
-type Cursor = { cursor_at: string | null; cursor_id: string | null; sweep_cutoff_at: Date | null }
-type Candidate = { id: string; position_at: string }
 type CleanupOptions = {
   now?: Date
   lowerBoundDate?: Date

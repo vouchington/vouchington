@@ -1,5 +1,8 @@
 import type { TransactionQuery } from '@data-stores/psql'
-import type { Cursor, Candidate } from './cleanup-operational-tombstones.mts'
+import type {
+  OperationalTombstoneCandidate,
+  OperationalTombstoneCursor,
+} from './cleanup-operational-tombstone-types.mts'
 import type { Plan } from './cleanup-operational-tombstone-plans.mts'
 
 export async function listCandidates(
@@ -7,9 +10,9 @@ export async function listCandidates(
   plan: Plan,
   cutoff: Date,
   limit: number,
-  cursor: Cursor,
+  cursor: OperationalTombstoneCursor,
   lowerBoundDate?: Date,
-): Promise<Candidate[]> {
+): Promise<OperationalTombstoneCandidate[]> {
   const parameters: unknown[] = [cutoff]
   const lowerBound = lowerBoundDate
     ? `AND ${plan.timestamp} >= $${parameters.push(lowerBoundDate)}::timestamptz`
@@ -21,7 +24,7 @@ export async function listCandidates(
       : ''
   const limitParameter = parameters.push(limit)
   // Text transport preserves PostgreSQL's microseconds, unlike node-postgres Date parsing.
-  const { rows } = await query<Candidate>(
+  const { rows } = await query<OperationalTombstoneCandidate>(
     `/* no-mistakes: deadlock-safe -- each fixed family locks one ordered indexed page with SKIP LOCKED, then deletes that page in the same transaction. */
      /* listOperationalTombstoneCandidates */
      SELECT source.id, ${plan.timestamp}::text AS position_at

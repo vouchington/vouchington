@@ -9,14 +9,11 @@ import {
   type Family,
   type GenericFamily,
 } from './cleanup-operational-tombstone-plans.mts'
-export type OperationalTombstoneCleanupResult = {
-  deleted: number
-  hasMore: boolean
-  continuation: { at: string; id: string } | null
-}
-export type OperationalTombstonePageResult = OperationalTombstoneCleanupResult & {
-  stalled: boolean
-}
+import type {
+  OperationalTombstoneCleanupResult,
+  OperationalTombstoneCursor,
+  OperationalTombstonePageResult,
+} from './cleanup-operational-tombstone-types.mts'
 
 type CleanupOptions = {
   batchSize?: number
@@ -25,12 +22,6 @@ type CleanupOptions = {
   lowerBoundDate?: Date
   borrowedQuery?: TransactionQuery
 }
-export type Cursor = {
-  cursor_at: string | null
-  cursor_id: string | null
-  sweep_cutoff_at: Date | null
-}
-export type Candidate = { id: string; position_at: string }
 
 /** Each page and its cursor checkpoint commit together; a capped run resumes next daily tick. */
 export async function cleanupOperationalTombstones(
@@ -76,7 +67,11 @@ async function cleanupPageWithQuery(
 ): Promise<OperationalTombstonePageResult> {
   const plan = PLANS[family]
   const trackCursor = options.borrowedQuery !== undefined || options.lowerBoundDate === undefined
-  let cursor: Cursor = { cursor_at: null, cursor_id: null, sweep_cutoff_at: null }
+  let cursor: OperationalTombstoneCursor = {
+    cursor_at: null,
+    cursor_id: null,
+    sweep_cutoff_at: null,
+  }
   if (trackCursor) {
     await query(
       `/* ensureOperationalTombstoneCursor */
@@ -85,7 +80,7 @@ async function cleanupPageWithQuery(
       [family],
     )
     cursor = (
-      await query<Cursor>(
+      await query<OperationalTombstoneCursor>(
         `/* lockOperationalTombstoneCursor */
        SELECT cursor_at::text AS cursor_at, cursor_id, sweep_cutoff_at
        FROM operational_tombstone_retention_cursors

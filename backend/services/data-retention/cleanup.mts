@@ -71,10 +71,8 @@ import {
   cleanupRetainedMediaBindings,
   type RetainedMediaBindingCleanupPage,
 } from './cleanup-retained-media-bindings.mts'
-import {
-  cleanupOperationalTombstones,
-  type OperationalTombstoneCleanupResult,
-} from './cleanup-operational-tombstones.mts'
+import { cleanupOperationalTombstones } from './cleanup-operational-tombstones.mts'
+import type { OperationalTombstoneCleanupResult } from './cleanup-operational-tombstone-types.mts'
 
 export { cleanupAbandonedBlueskyLinkSessions, cleanupExpiredBlueskyLinkCompletions }
 export { cleanupExpiredOAuthAuthorizations }
