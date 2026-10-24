@@ -1,4 +1,4 @@
-import { rateLimiterValkeyClient } from '@data-stores/valkey/clients'
+import { rateLimiterValkeyClient } from '@data-stores/valkey-rate-limiter'
 import { TimeUnit } from '@valkey/valkey-glide'
 import onError from '@modules/on-error'
 

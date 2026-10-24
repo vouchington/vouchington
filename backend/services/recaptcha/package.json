@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@data-stores/valkey": "workspace:^",
+    "@data-stores/valkey-rate-limiter": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/utils": "workspace:^",
     "@services/users": "workspace:^",

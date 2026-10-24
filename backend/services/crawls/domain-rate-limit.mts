@@ -1,4 +1,4 @@
-import { rateLimiterValkeyClient } from '@data-stores/valkey/clients'
+import { rateLimiterValkeyClient } from '@data-stores/valkey-rate-limiter'
 import { loadScript, registerScript } from '@data-stores/valkey/scripts'
 
 const KEY_PREFIX = 'crawler:domain-rate-limit'
