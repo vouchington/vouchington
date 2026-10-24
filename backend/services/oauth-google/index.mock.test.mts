@@ -1,5 +1,6 @@
 import { afterAll, afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { createRandomString } from '@voucha/test-helpers'
+import { getOAuthAccountByProviderUserId } from '@services/oauth-accounts'
 import { createSign, generateKeyPairSync, randomUUID } from 'node:crypto'
 import type { fetch as undiciFetch } from 'undici'
 import {
@@ -18,11 +19,7 @@ vi.doMock<typeof import('undici')>(import('undici'), async () => {
   return { ...actual, fetch: fetchSpy }
 })
 
-const {
-  getGoogleAccountByGoogleUserId,
-  upsertGoogleAccount,
-  upsertGoogleAuthorizationCodeAccount,
-} = await import('./index.mts')
+const { upsertGoogleAccount, upsertGoogleAuthorizationCodeAccount } = await import('./index.mts')
 
 const { privateKey: googlePrivateKey, publicKey: googlePublicKey } = generateKeyPairSync('rsa', {
   modulusLength: 2048,
@@ -77,7 +74,7 @@ describe('google oauth', () => {
     expect(account.provider_user_id).toBe(googleUserId)
     expect(account.provider_user_email_address).toBe(email)
 
-    const byId = await getGoogleAccountByGoogleUserId(googleUserId)
+    const byId = await getOAuthAccountByProviderUserId('google', googleUserId)
     expect(byId?.provider_user_id).toBe(googleUserId)
   })
 
@@ -210,7 +207,7 @@ describe('google oauth', () => {
     ).rejects.toBe(aborted)
 
     expect(fetchSpy).toHaveBeenCalledTimes(2)
-    expect(await getGoogleAccountByGoogleUserId(googleUserId)).toBeNull()
+    expect(await getOAuthAccountByProviderUserId('google', googleUserId)).toBeNull()
     expect(await getTestOAuthAuthorization(authorizationId)).toMatchObject({
       status: 'exchanging',
       google_account_id: null,

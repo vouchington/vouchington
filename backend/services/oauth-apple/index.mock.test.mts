@@ -1,6 +1,7 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createHash } from 'node:crypto'
 import { createRandomString } from '@voucha/test-helpers'
+import { getOAuthAccountByProviderUserId } from '@services/oauth-accounts'
 import {
   createSignedJwt,
   makeAppleJwk,
@@ -17,7 +18,6 @@ process.env.APPLE_CLIENT_ID = appleClientId
 process.env.APPLE_NATIVE_CLIENT_IDS = nativeAppleClientId
 
 let upsertAppleAccount: typeof import('./index.mts').upsertAppleAccount
-let getAppleAccountByAppleUserId: typeof import('./index.mts').getAppleAccountByAppleUserId
 
 describe('apple oauth', () => {
   beforeEach(async () => {
@@ -29,7 +29,6 @@ describe('apple oauth', () => {
     })
     const service = await import('./index.mts')
     upsertAppleAccount = service.upsertAppleAccount
-    getAppleAccountByAppleUserId = service.getAppleAccountByAppleUserId
   })
 
   afterAll(() => {
@@ -76,7 +75,7 @@ describe('apple oauth', () => {
         expect.objectContaining({ dispatcher: expect.anything(), signal: expect.any(AbortSignal) }),
       )
 
-      const byId = await getAppleAccountByAppleUserId(appleUserId)
+      const byId = await getOAuthAccountByProviderUserId('apple', appleUserId)
       expect(byId?.provider_user_id).toBe(appleUserId)
     })
 

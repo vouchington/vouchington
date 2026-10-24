@@ -1,5 +1,6 @@
 import { afterAll, afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { createRandomString } from '@voucha/test-helpers'
+import { getOAuthAccountByProviderUserId } from '@services/oauth-accounts'
 import { randomUUID } from 'node:crypto'
 import { Response, type fetch as undiciFetch } from 'undici'
 import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
@@ -19,8 +20,7 @@ vi.doMock<typeof import('undici')>(import('undici'), async () => {
   return { ...actual, fetch: fetchSpy }
 })
 
-const { getGoogleAccountByGoogleUserId, upsertGoogleAuthorizationCodeAccount } =
-  await import('./index.mts')
+const { upsertGoogleAuthorizationCodeAccount } = await import('./index.mts')
 
 describe('Google OAuth authorization-code failures', () => {
   beforeEach(() => {
@@ -56,7 +56,7 @@ describe('Google OAuth authorization-code failures', () => {
       ).rejects.toThrow('GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be defined')
 
       expect(fetchSpy).not.toHaveBeenCalled()
-      expect(await getGoogleAccountByGoogleUserId(googleUserId)).toBeNull()
+      expect(await getOAuthAccountByProviderUserId('google', googleUserId)).toBeNull()
       expect(await getTestOAuthAuthorization(authorizationId)).toMatchObject({
         status: 'exchanging',
         google_account_id: null,
@@ -105,7 +105,7 @@ describe('Google OAuth authorization-code failures', () => {
       expect(sentryCaptureExceptionMock).toHaveBeenCalledTimes(mode === 'reject' ? 1 : 0)
       expect(fetchSpy).toHaveBeenCalledTimes(1)
       expect(fetchSpy.mock.calls[0]?.[0]).toBe('https://oauth2.googleapis.com/token')
-      expect(await getGoogleAccountByGoogleUserId(googleUserId)).toBeNull()
+      expect(await getOAuthAccountByProviderUserId('google', googleUserId)).toBeNull()
       expect(await getTestOAuthAuthorization(authorizationId)).toMatchObject({
         status: 'exchanging',
         google_account_id: null,
@@ -159,7 +159,7 @@ describe('Google OAuth authorization-code failures', () => {
         'https://oauth2.googleapis.com/token',
         'https://openidconnect.googleapis.com/v1/userinfo',
       ])
-      expect(await getGoogleAccountByGoogleUserId(googleUserId)).toBeNull()
+      expect(await getOAuthAccountByProviderUserId('google', googleUserId)).toBeNull()
       expect(await getTestOAuthAuthorization(authorizationId)).toMatchObject({
         status: 'exchanging',
         google_account_id: null,

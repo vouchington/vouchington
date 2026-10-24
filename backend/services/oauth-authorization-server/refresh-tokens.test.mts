@@ -13,7 +13,8 @@ import {
 } from '@voucha/test-helpers/entities/oauth-authorization-server'
 import { getTestOAuthLifecycleEvents } from '@voucha/test-helpers/entities/oauth-authorization-server-events'
 import {
-  beginOAuthAuthorizationRequest,
+  beginValidatedOAuthAuthorizationRequest,
+  validateOAuthAuthorizationRequest,
   createOAuthBrowserBindingHash,
   decideOAuthAuthorizationRequest,
   exchangeOAuthAuthorizationCode,
@@ -234,7 +235,7 @@ async function createApprovedAuthorization(user: TestUser) {
   const verifier = randomBytes(32).toString('base64url')
   const deviceId = uuidv7()
   const sessionId = uuidv7()
-  const request = await beginOAuthAuthorizationRequest({
+  const parameters = {
     clientId: client.client_id,
     codeChallenge: createHash('sha256').update(verifier).digest('base64url'),
     codeChallengeMethod: 'S256',
@@ -246,7 +247,9 @@ async function createApprovedAuthorization(user: TestUser) {
     sessionId,
     state: randomBytes(16).toString('base64url'),
     userId: user.id,
-  })
+  }
+  const validated = await validateOAuthAuthorizationRequest(parameters)
+  const request = await beginValidatedOAuthAuthorizationRequest(parameters, validated)
   const decision = await decideOAuthAuthorizationRequest(
     user.id,
     request.request_id,

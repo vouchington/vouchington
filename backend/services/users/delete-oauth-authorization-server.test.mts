@@ -25,7 +25,8 @@ import {
 import { createUserDeletionRequest, processUserDeletionBatch } from '@services/user-deletions'
 import { getUserDeletionRequestForTest } from '@voucha/test-helpers/services/user-deletions/lifecycle.test-support'
 import {
-  beginOAuthAuthorizationRequest,
+  beginValidatedOAuthAuthorizationRequest,
+  validateOAuthAuthorizationRequest,
   createOAuthBrowserBindingHash,
   decideOAuthAuthorizationRequest,
   exchangeOAuthAuthorizationCode,
@@ -57,7 +58,7 @@ async function issueOnExistingClient(userId: string, clientId: string, redirectU
   const verifier = randomBytes(32).toString('base64url')
   const deviceId = uuidv7()
   const sessionId = uuidv7()
-  const request = await beginOAuthAuthorizationRequest({
+  const parameters = {
     clientId,
     codeChallenge: createHash('sha256').update(verifier).digest('base64url'),
     codeChallengeMethod: 'S256',
@@ -69,7 +70,9 @@ async function issueOnExistingClient(userId: string, clientId: string, redirectU
     sessionId,
     state: randomBytes(16).toString('base64url'),
     userId,
-  })
+  }
+  const validated = await validateOAuthAuthorizationRequest(parameters)
+  const request = await beginValidatedOAuthAuthorizationRequest(parameters, validated)
   const decision = await decideOAuthAuthorizationRequest(
     userId,
     request.request_id,
