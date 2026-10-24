@@ -30,7 +30,7 @@
     "@modules/utils": "workspace:^",
     "@services/jwt-session": "workspace:^",
     "@services/moderator-actions": "workspace:^",
-    "@vouchington/oauth-server": "^0.2.0",
+    "@vouchington/oauth-server": "^0.3.0",
     "ssrf-guard": "^1.0.0",
     "uuid": "^14.0.3"
   },

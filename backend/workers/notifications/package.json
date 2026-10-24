@@ -33,7 +33,7 @@
     "@services/notifications": "workspace:^",
     "@services/notifications-push": "workspace:^",
     "@services/users": "workspace:^",
-    "@vouchington/queue-errors": "^0.1.3"
+    "@vouchington/queue-errors": "^0.2.0"
   },
   "devDependencies": {
     "@services/bookmarks": "workspace:^",

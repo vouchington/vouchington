@@ -74,14 +74,14 @@ importers:
         specifier: ^0.2.2
         version: 0.2.2(react@19.3.1)
       '@vouchington/postgres':
-        specifier: ^0.0.17
-        version: 0.0.17
+        specifier: ^0.0.18
+        version: 0.0.18
       '@vouchington/session-jwt':
         specifier: ^0.0.2
         version: 0.0.2
       '@vouchington/worker-runtime':
-        specifier: ^0.1.3
-        version: 0.1.3(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
+        specifier: ^0.2.0
+        version: 0.2.0(@aws-sdk/client-sqs@3.1154.0)(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
       agent-blackboard:
         specifier: ^0.7.0
         version: 0.7.0(supports-color@10.2.2)(zod@4.6.5)
@@ -158,8 +158,8 @@ importers:
         specifier: ^5.0.5
         version: 5.0.5(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.5)(jsdom@30.1.3(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
       vouchington-tooling:
-        specifier: ^0.66.1
-        version: 0.66.1(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.64.1)(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.2(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.97.0(vitest@5.0.5))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.0.5)(zod@4.6.5)
+        specifier: ^0.67.0
+        version: 0.67.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.64.1)(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.2(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.97.0(vitest@5.0.5))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.0.5)(zod@4.6.5)
       yaml:
         specifier: ^2.9.1
         version: 2.9.1
@@ -215,8 +215,8 @@ importers:
         specifier: workspace:^
         version: link:../../../ts-shared/utils
       '@vouchington/queue-errors':
-        specifier: ^0.1.3
-        version: 0.1.3(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
+        specifier: ^0.2.0
+        version: 0.2.0(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
     devDependencies:
       '@voucha/test-helpers':
         specifier: workspace:^
@@ -1303,8 +1303,8 @@ importers:
         specifier: ^0.2.1
         version: 0.2.1(react@19.3.1)
       '@vouchington/oauth-server':
-        specifier: ^0.2.0
-        version: 0.2.0
+        specifier: ^0.3.0
+        version: 0.3.0
       '@vouchington/pagination':
         specifier: ^0.0.3
         version: 0.0.3
@@ -1315,8 +1315,8 @@ importers:
         specifier: ^0.0.2
         version: 0.0.2
       '@vouchington/utils':
-        specifier: ^0.7.5
-        version: 0.7.5
+        specifier: ^0.8.0
+        version: 0.8.0
       glide-mq:
         specifier: ^0.19.0
         version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -1455,11 +1455,11 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/postgres':
-        specifier: ^0.0.17
-        version: 0.0.17
+        specifier: ^0.0.18
+        version: 0.0.18
       '@vouchington/utils':
-        specifier: ^0.7.5
-        version: 0.7.5
+        specifier: ^0.8.0
+        version: 0.8.0
       pg:
         specifier: ^8.23.1
         version: 8.23.1
@@ -1467,8 +1467,8 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       vouchington-tooling:
-        specifier: ^0.66.1
-        version: 0.66.1(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.64.1)(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.2(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.97.0(vitest@5.0.5))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.0.5)(zod@4.6.5)
+        specifier: ^0.67.0
+        version: 0.67.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.64.1)(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.2(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.97.0(vitest@5.0.5))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.0.5)(zod@4.6.5)
     devDependencies:
       no-mistakes:
         specifier: ^0.97.0
@@ -2390,8 +2390,8 @@ importers:
   backend/modules/http-signatures:
     dependencies:
       '@vouchington/utils':
-        specifier: ^0.7.5
-        version: 0.7.5
+        specifier: ^0.8.0
+        version: 0.8.0
 
   backend/modules/markdown-extraction:
     dependencies:
@@ -2454,8 +2454,8 @@ importers:
         specifier: workspace:^
         version: link:../utils
       '@vouchington/queue-errors':
-        specifier: ^0.1.3
-        version: 0.1.3(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
+        specifier: ^0.2.0
+        version: 0.2.0(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
       glide-mq:
         specifier: ^0.19.0
         version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -2501,8 +2501,8 @@ importers:
         specifier: workspace:^
         version: link:../utils
       '@vouchington/queue-errors':
-        specifier: ^0.1.3
-        version: 0.1.3(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
+        specifier: ^0.2.0
+        version: 0.2.0(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
       glide-mq:
         specifier: ^0.19.0
         version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -2526,8 +2526,8 @@ importers:
         specifier: ^0.0.2
         version: 0.0.2
       '@vouchington/utils':
-        specifier: ^0.7.5
-        version: 0.7.5
+        specifier: ^0.8.0
+        version: 0.8.0
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -2548,8 +2548,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/utils':
-        specifier: ^0.7.5
-        version: 0.7.5
+        specifier: ^0.8.0
+        version: 0.8.0
 
   backend/modules/rss-unreliable-status-codes:
     dependencies:
@@ -2573,8 +2573,8 @@ importers:
   backend/modules/scopes:
     dependencies:
       '@vouchington/utils':
-        specifier: ^0.7.5
-        version: 0.7.5
+        specifier: ^0.8.0
+        version: 0.8.0
 
   backend/modules/search-utils:
     dependencies:
@@ -2599,8 +2599,8 @@ importers:
         specifier: ^0.1.0
         version: 0.1.0(stripe@23.0.0(@types/node@26.6.5))
       '@vouchington/utils':
-        specifier: ^0.7.5
-        version: 0.7.5
+        specifier: ^0.8.0
+        version: 0.8.0
       stripe:
         specifier: ^23.0.0
         version: 23.0.0(@types/node@26.6.5)
@@ -2627,8 +2627,8 @@ importers:
   backend/modules/token-secrets:
     dependencies:
       '@vouchington/utils':
-        specifier: ^0.7.5
-        version: 0.7.5
+        specifier: ^0.8.0
+        version: 0.8.0
 
   backend/modules/utils:
     dependencies:
@@ -2657,8 +2657,8 @@ importers:
         specifier: ^0.0.0
         version: 0.0.0
       '@vouchington/utils':
-        specifier: ^0.7.5
-        version: 0.7.5
+        specifier: ^0.8.0
+        version: 0.8.0
       '@vouchington/uuid-v7':
         specifier: ^0.0.0
         version: 0.0.0
@@ -3731,8 +3731,8 @@ importers:
         specifier: workspace:^
         version: link:../types
       '@vouchington/postgres':
-        specifier: ^0.0.17
-        version: 0.0.17
+        specifier: ^0.0.18
+        version: 0.0.18
       '@vouchington/rss-parser':
         specifier: ^0.1.0
         version: 0.1.0
@@ -3948,8 +3948,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/queue-errors':
-        specifier: ^0.1.3
-        version: 0.1.3(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
+        specifier: ^0.2.0
+        version: 0.2.0(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -4009,11 +4009,11 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/postgres':
-        specifier: ^0.0.17
-        version: 0.0.17
+        specifier: ^0.0.18
+        version: 0.0.18
       '@vouchington/utils':
-        specifier: ^0.7.5
-        version: 0.7.5
+        specifier: ^0.8.0
+        version: 0.8.0
       p-map:
         specifier: ^7.1.0
         version: 7.1.0
@@ -4107,8 +4107,8 @@ importers:
         specifier: workspace:^
         version: link:../users
       '@vouchington/postgres':
-        specifier: ^0.0.17
-        version: 0.0.17
+        specifier: ^0.0.18
+        version: 0.0.18
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -4436,8 +4436,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/queue-errors':
-        specifier: ^0.1.3
-        version: 0.1.3(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
+        specifier: ^0.2.0
+        version: 0.2.0(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
       pg-copy-streams:
         specifier: ^7.0.0
         version: 7.0.0
@@ -4637,8 +4637,8 @@ importers:
         specifier: workspace:^
         version: link:../users
       '@vouchington/queue-errors':
-        specifier: ^0.1.3
-        version: 0.1.3(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
+        specifier: ^0.2.0
+        version: 0.2.0(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -5300,8 +5300,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/postgres':
-        specifier: ^0.0.17
-        version: 0.0.17
+        specifier: ^0.0.18
+        version: 0.0.18
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -5391,8 +5391,8 @@ importers:
         specifier: ^0.0.1
         version: 0.0.1
       '@vouchington/embeds':
-        specifier: ^0.0.2
-        version: 0.0.2
+        specifier: ^0.1.0
+        version: 0.1.0
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -5443,8 +5443,8 @@ importers:
         specifier: ^0.0.1
         version: 0.0.1
       '@vouchington/embeds':
-        specifier: ^0.0.2
-        version: 0.0.2
+        specifier: ^0.1.0
+        version: 0.1.0
       ssrf-guard:
         specifier: ^1.0.0
         version: 1.0.0
@@ -5520,8 +5520,8 @@ importers:
         specifier: workspace:^
         version: link:../../config
       '@vouchington/embeds':
-        specifier: ^0.0.2
-        version: 0.0.2
+        specifier: ^0.1.0
+        version: 0.1.0
       '@vouchington/rss-crawler':
         specifier: ^0.1.0
         version: 0.1.0
@@ -5727,8 +5727,8 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
       '@vouchington/embeds':
-        specifier: ^0.0.2
-        version: 0.0.2
+        specifier: ^0.1.0
+        version: 0.1.0
 
   backend/services/curated-aside-items:
     dependencies:
@@ -5807,8 +5807,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/utils':
-        specifier: ^0.7.5
-        version: 0.7.5
+        specifier: ^0.8.0
+        version: 0.8.0
       ajv:
         specifier: ^8.20.0
         version: 8.20.0
@@ -5862,8 +5862,8 @@ importers:
         specifier: workspace:^
         version: link:../users
       '@vouchington/postgres':
-        specifier: ^0.0.17
-        version: 0.0.17
+        specifier: ^0.0.18
+        version: 0.0.18
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -6729,8 +6729,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/utils':
-        specifier: ^0.7.5
-        version: 0.7.5
+        specifier: ^0.8.0
+        version: 0.8.0
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -6760,8 +6760,8 @@ importers:
         specifier: workspace:^
         version: link:../../data-stores/valkey
       '@vouchington/utils':
-        specifier: ^0.7.5
-        version: 0.7.5
+        specifier: ^0.8.0
+        version: 0.8.0
 
   backend/services/fediverse-instances:
     dependencies:
@@ -7261,8 +7261,8 @@ importers:
         specifier: ^0.0.3
         version: 0.0.3
       '@vouchington/utils':
-        specifier: ^0.7.5
-        version: 0.7.5
+        specifier: ^0.8.0
+        version: 0.8.0
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -7522,8 +7522,8 @@ importers:
         specifier: workspace:^
         version: link:../../../ts-shared/utils
       '@vouchington/utils':
-        specifier: ^0.7.5
-        version: 0.7.5
+        specifier: ^0.8.0
+        version: 0.8.0
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -7644,8 +7644,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/postgres':
-        specifier: ^0.0.17
-        version: 0.0.17
+        specifier: ^0.0.18
+        version: 0.0.18
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -7717,8 +7717,8 @@ importers:
         specifier: ^0.2.0
         version: 0.2.0
       '@vouchington/utils':
-        specifier: ^0.7.5
-        version: 0.7.5
+        specifier: ^0.8.0
+        version: 0.8.0
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -8119,8 +8119,8 @@ importers:
         specifier: workspace:^
         version: link:../../../ts-shared/utils
       '@vouchington/utils':
-        specifier: ^0.7.5
-        version: 0.7.5
+        specifier: ^0.8.0
+        version: 0.8.0
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -8393,8 +8393,8 @@ importers:
         specifier: workspace:^
         version: link:../notifications
       '@vouchington/postgres':
-        specifier: ^0.0.17
-        version: 0.0.17
+        specifier: ^0.0.18
+        version: 0.0.18
       p-map:
         specifier: ^7.1.0
         version: 7.1.0
@@ -8469,8 +8469,8 @@ importers:
         specifier: workspace:^
         version: link:../../config
       '@vouchington/postgres':
-        specifier: ^0.0.17
-        version: 0.0.17
+        specifier: ^0.0.18
+        version: 0.0.18
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -8571,8 +8571,8 @@ importers:
         specifier: workspace:^
         version: link:../moderator-actions
       '@vouchington/oauth-server':
-        specifier: ^0.2.0
-        version: 0.2.0
+        specifier: ^0.3.0
+        version: 0.3.0
       ssrf-guard:
         specifier: ^1.0.0
         version: 1.0.0
@@ -8651,8 +8651,8 @@ importers:
         specifier: workspace:^
         version: link:../../config
       '@vouchington/utils':
-        specifier: ^0.7.5
-        version: 0.7.5
+        specifier: ^0.8.0
+        version: 0.8.0
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -8994,8 +8994,8 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
       '@vouchington/worker-runtime':
-        specifier: ^0.1.3
-        version: 0.1.3(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
+        specifier: ^0.2.0
+        version: 0.2.0(@aws-sdk/client-sqs@3.1154.0)(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
 
   backend/services/platform-stats:
     dependencies:
@@ -10137,11 +10137,11 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/embeds':
-        specifier: ^0.0.2
-        version: 0.0.2
+        specifier: ^0.1.0
+        version: 0.1.0
       '@vouchington/utils':
-        specifier: ^0.7.5
-        version: 0.7.5
+        specifier: ^0.8.0
+        version: 0.8.0
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -10516,8 +10516,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/postgres':
-        specifier: ^0.0.17
-        version: 0.0.17
+        specifier: ^0.0.18
+        version: 0.0.18
       p-map:
         specifier: ^7.1.0
         version: 7.1.0
@@ -10995,11 +10995,11 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/typed-entities':
-        specifier: ^0.3.0
-        version: 0.3.0
+        specifier: ^0.4.0
+        version: 0.4.0
       '@vouchington/utils':
-        specifier: ^0.7.5
-        version: 0.7.5
+        specifier: ^0.8.0
+        version: 0.8.0
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -11485,8 +11485,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/utils':
-        specifier: ^0.7.5
-        version: 0.7.5
+        specifier: ^0.8.0
+        version: 0.8.0
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -11558,8 +11558,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/queue-errors':
-        specifier: ^0.1.3
-        version: 0.1.3(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
+        specifier: ^0.2.0
+        version: 0.2.0(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
       http-assert:
         specifier: ^1.5.0
         version: 1.5.0
@@ -11857,8 +11857,8 @@ importers:
         specifier: workspace:^
         version: link:../../test-helpers
       '@vouchington/worker-runtime':
-        specifier: ^0.1.3
-        version: 0.1.3(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
+        specifier: ^0.2.0
+        version: 0.2.0(@aws-sdk/client-sqs@3.1154.0)(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
 
   backend/services/valkey-admin:
     dependencies:
@@ -12174,17 +12174,17 @@ importers:
         specifier: ^0.2.2
         version: 0.2.2(react@19.3.1)
       '@vouchington/postgres':
-        specifier: ^0.0.17
-        version: 0.0.17
+        specifier: ^0.0.18
+        version: 0.0.18
       '@vouchington/rate-limit':
         specifier: ^0.3.0
         version: 0.3.0(@jongleberry/api-server@3.1.0)(valkyries@0.11.2)
       '@vouchington/utils':
-        specifier: ^0.7.5
-        version: 0.7.5
+        specifier: ^0.8.0
+        version: 0.8.0
       '@vouchington/worker-runtime':
-        specifier: ^0.1.3
-        version: 0.1.3(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
+        specifier: ^0.2.0
+        version: 0.2.0(@aws-sdk/client-sqs@3.1154.0)(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
       glide-mq:
         specifier: ^0.19.0
         version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -12222,8 +12222,8 @@ importers:
         specifier: ^0.11.2
         version: 0.11.2
       vouchington-tooling:
-        specifier: ^0.66.1
-        version: 0.66.1(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.64.1)(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.2(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.97.0(vitest@5.0.5))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.0.5)(zod@4.6.5)
+        specifier: ^0.67.0
+        version: 0.67.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.64.1)(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.2(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.97.0(vitest@5.0.5))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.0.5)(zod@4.6.5)
     devDependencies:
       '@jongleberry/api-server':
         specifier: ^3.1.0
@@ -12259,8 +12259,8 @@ importers:
         specifier: workspace:^
         version: link:../../ts-shared/utils
       '@vouchington/embeds':
-        specifier: ^0.0.2
-        version: 0.0.2
+        specifier: ^0.1.0
+        version: 0.1.0
       sql-template-strings:
         specifier: ^2.2.2
         version: 2.2.2
@@ -12304,11 +12304,11 @@ importers:
         specifier: workspace:^
         version: link:../../ts-shared/deploy-environment
       '@vouchington/utils':
-        specifier: ^0.7.5
-        version: 0.7.5
+        specifier: ^0.8.0
+        version: 0.8.0
       '@vouchington/worker-runtime':
-        specifier: ^0.1.3
-        version: 0.1.3(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
+        specifier: ^0.2.0
+        version: 0.2.0(@aws-sdk/client-sqs@3.1154.0)(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)
       '@workers/heartbeat':
         specifier: workspace:^
         version: link:../workers/heartbeat
@@ -12389,8 +12389,8 @@ importers:
         specifier: workspace:^
         version: link:../../services/users
       '@vouchington/queue-errors':
-        specifier: ^0.1.3
-        version: 0.1.3(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
+        specifier: ^0.2.0
+        version: 0.2.0(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
       glide-mq:
         specifier: ^0.19.0
         version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -12438,8 +12438,8 @@ importers:
         specifier: workspace:^
         version: link:../../services/users
       '@vouchington/queue-errors':
-        specifier: ^0.1.3
-        version: 0.1.3(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
+        specifier: ^0.2.0
+        version: 0.2.0(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
       http-errors:
         specifier: ^2.0.1
         version: 2.0.1
@@ -12589,8 +12589,8 @@ importers:
         specifier: workspace:^
         version: link:../../types
       '@vouchington/queue-errors':
-        specifier: ^0.1.3
-        version: 0.1.3(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
+        specifier: ^0.2.0
+        version: 0.2.0(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
       glide-mq:
         specifier: ^0.19.0
         version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -12629,8 +12629,8 @@ importers:
         specifier: workspace:^
         version: link:../../services/users
       '@vouchington/queue-errors':
-        specifier: ^0.1.3
-        version: 0.1.3(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
+        specifier: ^0.2.0
+        version: 0.2.0(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
       glide-mq:
         specifier: ^0.19.0
         version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -12675,8 +12675,8 @@ importers:
         specifier: workspace:^
         version: link:../../services/queue-domain-controls
       '@vouchington/queue-errors':
-        specifier: ^0.1.3
-        version: 0.1.3(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
+        specifier: ^0.2.0
+        version: 0.2.0(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
       '@workers/account-lifecycle':
         specifier: workspace:^
         version: link:../account-lifecycle
@@ -12850,8 +12850,8 @@ importers:
         specifier: workspace:^
         version: link:../../services/queue-domain-controls
       '@vouchington/queue-errors':
-        specifier: ^0.1.3
-        version: 0.1.3(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
+        specifier: ^0.2.0
+        version: 0.2.0(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
       '@workers/ai-agents':
         specifier: workspace:^
         version: link:../ai-agents
@@ -12976,8 +12976,8 @@ importers:
         specifier: workspace:^
         version: link:../../services/communities
       '@vouchington/queue-errors':
-        specifier: ^0.1.3
-        version: 0.1.3(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
+        specifier: ^0.2.0
+        version: 0.2.0(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
       glide-mq:
         specifier: ^0.19.0
         version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -13056,8 +13056,8 @@ importers:
         specifier: workspace:^
         version: link:../../services/bluesky-follows
       '@vouchington/queue-errors':
-        specifier: ^0.1.3
-        version: 0.1.3(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
+        specifier: ^0.2.0
+        version: 0.2.0(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
 
   backend/workers/cache-purge:
     dependencies:
@@ -13635,8 +13635,8 @@ importers:
         specifier: ^0.2.0
         version: 0.2.0
       '@vouchington/queue-errors':
-        specifier: ^0.1.3
-        version: 0.1.3(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
+        specifier: ^0.2.0
+        version: 0.2.0(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
       glide-mq:
         specifier: ^0.19.0
         version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -13718,8 +13718,8 @@ importers:
         specifier: workspace:^
         version: link:../../services/users
       '@vouchington/queue-errors':
-        specifier: ^0.1.3
-        version: 0.1.3(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
+        specifier: ^0.2.0
+        version: 0.2.0(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
       glide-mq:
         specifier: ^0.19.0
         version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -13798,8 +13798,8 @@ importers:
         specifier: workspace:^
         version: link:../../services/users
       '@vouchington/queue-errors':
-        specifier: ^0.1.3
-        version: 0.1.3(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
+        specifier: ^0.2.0
+        version: 0.2.0(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
     devDependencies:
       '@services/bookmarks':
         specifier: workspace:^
@@ -13945,8 +13945,8 @@ importers:
         specifier: workspace:^
         version: link:../../services/elections-votes
       '@vouchington/queue-errors':
-        specifier: ^0.1.3
-        version: 0.1.3(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
+        specifier: ^0.2.0
+        version: 0.2.0(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
       glide-mq:
         specifier: ^0.19.0
         version: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
@@ -14068,8 +14068,8 @@ importers:
         specifier: workspace:^
         version: link:../../../ts-shared/ses-inbound-contract
       '@vouchington/queue-errors':
-        specifier: ^0.1.3
-        version: 0.1.3(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
+        specifier: ^0.2.0
+        version: 0.2.0(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))
       mailparser:
         specifier: ^3.9.41
         version: 3.9.41
@@ -14321,8 +14321,8 @@ importers:
         specifier: ^11.0.5
         version: 11.0.5
       vouchington-tooling:
-        specifier: ^0.66.1
-        version: 0.66.1(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.64.1)(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.2(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.97.0(vitest@5.0.5))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.0.5)(zod@4.6.5)
+        specifier: ^0.67.0
+        version: 0.67.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.64.1)(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.2(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.97.0(vitest@5.0.5))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.0.5)(zod@4.6.5)
     devDependencies:
       '@types/picomatch':
         specifier: ^4.0.3
@@ -14373,8 +14373,8 @@ importers:
         specifier: workspace:^
         version: link:../backend/config
       '@vouchington/edge':
-        specifier: ^0.2.0
-        version: 0.2.0(@cloudflare/workers-types@5.20261021.1)
+        specifier: ^0.3.0
+        version: 0.3.0(@cloudflare/workers-types@5.20261021.1)
       '@vouchington/rate-limit':
         specifier: ^0.3.0
         version: 0.3.0(@jongleberry/api-server@3.1.0)(valkyries@0.11.2)
@@ -14382,8 +14382,8 @@ importers:
         specifier: ^0.0.2
         version: 0.0.2
       '@vouchington/utils':
-        specifier: ^0.7.5
-        version: 0.7.5
+        specifier: ^0.8.0
+        version: 0.8.0
       isbot:
         specifier: ^5.2.2
         version: 5.2.2
@@ -14480,8 +14480,8 @@ importers:
         specifier: ^0.2.0
         version: 0.2.0
       '@vouchington/utils':
-        specifier: ^0.7.5
-        version: 0.7.5
+        specifier: ^0.8.0
+        version: 0.8.0
       satori:
         specifier: ^0.62.0
         version: 0.62.0
@@ -14549,14 +14549,14 @@ importers:
         specifier: workspace:^
         version: link:../backend/test-helpers
       '@vouchington/utils':
-        specifier: ^0.7.5
-        version: 0.7.5
+        specifier: ^0.8.0
+        version: 0.8.0
       vitest:
         specifier: ^5.0.5
         version: 5.0.5(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.5)(jsdom@30.1.3(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
       vouchington-tooling:
-        specifier: ^0.66.1
-        version: 0.66.1(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.64.1)(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.2(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.97.0(vitest@5.0.5))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.0.5)(zod@4.6.5)
+        specifier: ^0.67.0
+        version: 0.67.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.64.1)(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.2(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.97.0(vitest@5.0.5))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.0.5)(zod@4.6.5)
 
   static-code-analysis:
     dependencies:
@@ -14567,8 +14567,8 @@ importers:
         specifier: ^0.2.2
         version: 0.2.2(react@19.3.1)
       '@vouchington/postgres':
-        specifier: ^0.0.17
-        version: 0.0.17
+        specifier: ^0.0.18
+        version: 0.0.18
       ajv:
         specifier: ^8.20.0
         version: 8.20.0
@@ -14582,8 +14582,8 @@ importers:
         specifier: ^1.9.1
         version: 1.9.1
       vouchington-tooling:
-        specifier: ^0.66.1
-        version: 0.66.1(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.64.1)(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.2(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.97.0(vitest@5.0.5))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.0.5)(zod@4.6.5)
+        specifier: ^0.67.0
+        version: 0.67.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.64.1)(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.2(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.97.0(vitest@5.0.5))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.0.5)(zod@4.6.5)
       yaml:
         specifier: ^2.9.1
         version: 2.9.1
@@ -14601,8 +14601,8 @@ importers:
   ts-shared/cache:
     dependencies:
       '@vouchington/utils':
-        specifier: ^0.7.5
-        version: 0.7.5
+        specifier: ^0.8.0
+        version: 0.8.0
 
   ts-shared/data-points:
     dependencies:
@@ -14613,40 +14613,40 @@ importers:
   ts-shared/deploy-environment:
     dependencies:
       '@vouchington/utils':
-        specifier: ^0.7.5
-        version: 0.7.5
+        specifier: ^0.8.0
+        version: 0.8.0
 
   ts-shared/env-contract:
     dependencies:
       '@vouchington/utils':
-        specifier: ^0.7.5
-        version: 0.7.5
+        specifier: ^0.8.0
+        version: 0.8.0
 
   ts-shared/feature-flags:
     dependencies:
       '@vouchington/utils':
-        specifier: ^0.7.5
-        version: 0.7.5
+        specifier: ^0.8.0
+        version: 0.8.0
 
   ts-shared/feed-capabilities: {}
 
   ts-shared/languages:
     dependencies:
       '@vouchington/utils':
-        specifier: ^0.7.5
-        version: 0.7.5
+        specifier: ^0.8.0
+        version: 0.8.0
 
   ts-shared/money:
     dependencies:
       '@vouchington/utils':
-        specifier: ^0.7.5
-        version: 0.7.5
+        specifier: ^0.8.0
+        version: 0.8.0
 
   ts-shared/request-client-info:
     dependencies:
       '@vouchington/utils':
-        specifier: ^0.7.5
-        version: 0.7.5
+        specifier: ^0.8.0
+        version: 0.8.0
 
   ts-shared/route-classification:
     dependencies:
@@ -14662,8 +14662,8 @@ importers:
         specifier: ^0.0.2
         version: 0.0.2
       '@vouchington/utils':
-        specifier: ^0.7.5
-        version: 0.7.5
+        specifier: ^0.8.0
+        version: 0.8.0
       jose:
         specifier: ^6.2.13
         version: 6.2.13
@@ -14680,8 +14680,8 @@ importers:
         specifier: ^0.2.1
         version: 0.2.1(react@19.3.1)
       '@vouchington/utils':
-        specifier: ^0.7.5
-        version: 0.7.5
+        specifier: ^0.8.0
+        version: 0.8.0
       fast-xml-parser:
         specifier: ^5.11.2
         version: 5.11.2
@@ -14689,8 +14689,8 @@ importers:
   ts-shared/url-signing:
     dependencies:
       '@vouchington/utils':
-        specifier: ^0.7.5
-        version: 0.7.5
+        specifier: ^0.8.0
+        version: 0.8.0
 
   ts-shared/user-profile-collections:
     dependencies:
@@ -14710,14 +14710,14 @@ importers:
         specifier: ^0.0.0
         version: 0.0.0
       '@vouchington/utils':
-        specifier: ^0.7.5
-        version: 0.7.5
+        specifier: ^0.8.0
+        version: 0.8.0
 
   ts-shared/utm:
     dependencies:
       '@vouchington/utils':
-        specifier: ^0.7.5
-        version: 0.7.5
+        specifier: ^0.8.0
+        version: 0.8.0
 
   web:
     dependencies:
@@ -14842,8 +14842,8 @@ importers:
         specifier: ^0.1.0
         version: 0.1.0(react@19.3.1)
       '@vouchington/utils':
-        specifier: ^0.7.5
-        version: 0.7.5
+        specifier: ^0.8.0
+        version: 0.8.0
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -14957,8 +14957,8 @@ importers:
         specifier: ^8.3.4
         version: 8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1)
       vouchington-tooling:
-        specifier: ^0.66.1
-        version: 0.66.1(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.64.1)(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.2(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.97.0(vitest@5.0.5))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.0.5)(zod@4.6.5)
+        specifier: ^0.67.0
+        version: 0.67.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.64.1)(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.2(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.97.0(vitest@5.0.5))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.0.5)(zod@4.6.5)
 
 packages:
 
@@ -19892,11 +19892,11 @@ packages:
     peerDependencies:
       valkyries: ^0.10.0
 
-  '@vouchington/edge@0.2.0':
-    resolution: {integrity: sha512-VM2a424JaDsCR/5G7aKfuBFjjV2BPJkuyx77mF6Pr9DgYujgwaHEioWUeA7eK6KoLOa7DlkdLopc5XaRasWb2Q==}
+  '@vouchington/edge@0.3.0':
+    resolution: {integrity: sha512-O5JGDezYWhLHLk6F/YeRDcRKb8NlNtH0pvxjVZPEOLpUB+jdfdBL7cwrT4sa3LPqk5EuA1Kt8umOYP+zybnRKQ==}
     engines: {node: '>=24.0.0'}
     peerDependencies:
-      '@cloudflare/workers-types': ^5.20261016.1
+      '@cloudflare/workers-types': ^5.20261021.1
     peerDependenciesMeta:
       '@cloudflare/workers-types':
         optional: true
@@ -19909,8 +19909,8 @@ packages:
       react: ^19.3.1
       react-email: ^6.11.3
 
-  '@vouchington/embeds@0.0.2':
-    resolution: {integrity: sha512-USbRNL+a7wU6RC++VC6nJ7A+a6gTFmPYHZFTBJBtWr3NoNLD606k5gwI8qb36eh5f6O0Lmhor0HOe15yOY1RTA==}
+  '@vouchington/embeds@0.1.0':
+    resolution: {integrity: sha512-bntvy/s7Dvug+vFSUGtAUMeD6DOYgENnZe8V/V2I8bRmjyHU9eP4eRFOw2zpFtGCGfQlQPxDTtKp3HIwtGeIvA==}
     engines: {node: '>=24.0.0'}
 
   '@vouchington/frontmatter@0.0.0':
@@ -19925,8 +19925,8 @@ packages:
     resolution: {integrity: sha512-RhygIaNrcoWefvl9aMiYFZZipNNSkH+UYUgpOIzy3kJoWBt8tBRlZg75DYtR8cEhTDjICSkzTGn34NoH2q7d2Q==}
     engines: {node: '>=24.0.0'}
 
-  '@vouchington/http-transport@0.0.0':
-    resolution: {integrity: sha512-761TLwKZkvqXZ+MWEMjm1p12ik+0v6lKhT6dv2lMeuQVdT3fOblNvVqHrzd+sD4/qpWtzGJ2S96ZBn/rTVSkUw==}
+  '@vouchington/http-transport@0.1.0':
+    resolution: {integrity: sha512-2WDgQRJXIOaVN3Zl5yTuAQ+0lCC/Kk5TZUydK6TVsgEjBsCbnLkQz87HRGJAdF4t7kaYBS3I5w9vUZGI7EA1fw==}
     engines: {node: '>=24.0.0'}
 
   '@vouchington/image-resize@0.2.0':
@@ -19955,8 +19955,8 @@ packages:
     resolution: {integrity: sha512-I46h8Se7jv81xCD5/4CvRb1BtCcQYjHscEy8BjxmSga1LGi4KiHmeNC0KVqxLSmypi4aUQmrsldij5BhStTkog==}
     engines: {node: '>=24.0.0'}
 
-  '@vouchington/oauth-server@0.2.0':
-    resolution: {integrity: sha512-XKnfYa8umOQl0GparCKurEhvBBDBXdDZD7jRQSfVbmc3FmKcYZ2g1jjR9U9pMGmeHgJmi0p0ARdzRxjG5P819A==}
+  '@vouchington/oauth-server@0.3.0':
+    resolution: {integrity: sha512-evL75txE0G/hbvwWPvI4OsT1zu7icymy+TEkJ+Tb0pz3SCiwSMA010AJhcQA1OttowIOrz82TrITLGCUJ/UXrg==}
     engines: {node: '>=24.0.0'}
 
   '@vouchington/pagination@0.0.3':
@@ -19967,15 +19967,15 @@ packages:
     resolution: {integrity: sha512-0RvW2h4T+tl+u0xeAzCm11/WtaLkf/1r9PnitsnKtSuH/z6zyAcGjTZYQQTvoxgjvqRPSoDEyeU/6ESjNi575Q==}
     engines: {node: '>=24.0.0'}
 
-  '@vouchington/postgres@0.0.17':
-    resolution: {integrity: sha512-3TLumKZW2fOvDV2TW/898NJk+8n3zD6uwZTVwY9tGxNAkA66aX4HcUsZ5QnzE68NbQQirEAwQkhpjkveqDexFw==}
+  '@vouchington/postgres@0.0.18':
+    resolution: {integrity: sha512-5zN6OHwHq/NMAvPT6W2r/AutH180H5cqRrOwVi3sNPAoQQ3ATfLieHKb/qY+bPU5YQFr/WXN1e2r5PogEoJhnA==}
     engines: {node: '>=24.0.0'}
 
-  '@vouchington/queue-errors@0.1.3':
-    resolution: {integrity: sha512-t1Y4bEJ5o3SWeAvYFpGdF1mN4figHJLIfszA3X2tjwh6o569bMWXW7pL2ssy4CpAVRAniZKynODbthA1DHAUXQ==}
+  '@vouchington/queue-errors@0.2.0':
+    resolution: {integrity: sha512-JKSIlN5lQ1hIfAE9cOWGCWIm8ji5ZnuCDoMc1R4j1R7HkEUmIi945quJqgkSARgTedpk1kXstq+pGD5O8YwHoQ==}
     engines: {node: '>=24.0.0'}
     peerDependencies:
-      glide-mq: ^0.18.0
+      glide-mq: ^0.19.0
 
   '@vouchington/rate-limit@0.3.0':
     resolution: {integrity: sha512-FoTKeKP0dzloNhnWouhIySOpu1FkR/gtibiC9irN9Q+uA8Ou0hIvhCrVkZ69Yo52Uc7bz/qnbL1diHhf5A5M+Q==}
@@ -20016,29 +20016,28 @@ packages:
     peerDependencies:
       stripe: ^23.0.0
 
-  '@vouchington/typed-entities@0.3.0':
-    resolution: {integrity: sha512-YO4RzRxwuYJiuhMLrk29u2W2fKa9s6dFzyT8aHvw++eAir+QZT+qjHFaYOm+7MZtlNE9NruO0ji7TwT6lcC4AQ==}
+  '@vouchington/typed-entities@0.4.0':
+    resolution: {integrity: sha512-oNhv0l/UhodxafVq9eswSYH1f8Xsj62SG6INi0ihu45q710LIs0OCZ6byStmbkDNhXO1NGn/s44rdoaU5X8Zdw==}
     engines: {node: '>=24.0.0'}
 
-  '@vouchington/utils@0.7.4':
-    resolution: {integrity: sha512-EANChQVGZlLE9CPTSNVT8y0yIC0lnH1WnT3w/R+MzEGD2bI7cA+8hQZtZMXnX+9lyQuKoUH/ce3JyDN3vHvp3A==}
-    engines: {node: '>=24.0.0'}
-
-  '@vouchington/utils@0.7.5':
-    resolution: {integrity: sha512-yvSXtmsPSJuTZYQbdiYqWmS0ztUxt3I3DOV2GRu88M4aTQw3iFsUuwfjAltiMMnLgYhZLFj233OticjRTrwl5Q==}
+  '@vouchington/utils@0.8.0':
+    resolution: {integrity: sha512-UjGyW4ZXcH1FxUtBzK1GYZtYCh/9riBVfO5e8Xhz/BbYM+0G14BF0dWKKN+Rk8dpg2LgJQq0RP31uVRtk2E4uA==}
     engines: {node: '>=24.0.0'}
 
   '@vouchington/uuid-v7@0.0.0':
     resolution: {integrity: sha512-MzrhsHnPzTUw5k1RWVKdfpYLKewPGx8+th4imB01LKIasEWOHxrMcwuZz1FEFgRHZdLtrhIs1DI78pGgOmqwvg==}
     engines: {node: '>=24.0.0'}
 
-  '@vouchington/worker-runtime@0.1.3':
-    resolution: {integrity: sha512-QpAZs8N3lWw4roAhXJVljAP2+2sSEiEtTUFqdcStToEK16so2xSqd2KMuq3loN+mZEWI8tNV3GyOHm9yvODX1w==}
+  '@vouchington/worker-runtime@0.2.0':
+    resolution: {integrity: sha512-TuWx5+EgmBs6mopVnCbdye1VNynnnyZajauDSfc4EwKXHOwXE4l6h2F4x+dvInPRGGs09/Yh3d1nHB5YYfRBJg==}
     engines: {node: '>=24.0.0'}
     peerDependencies:
-      glide-mq: ^0.18.0
-      vitest: ^5.0.4
+      '@aws-sdk/client-sqs': ^3.1156.0
+      glide-mq: ^0.19.0
+      vitest: ^5.0.5
     peerDependenciesMeta:
+      '@aws-sdk/client-sqs':
+        optional: true
       vitest:
         optional: true
 
@@ -23759,8 +23758,8 @@ packages:
       jsdom:
         optional: true
 
-  vouchington-tooling@0.66.1:
-    resolution: {integrity: sha512-8p2rZogdbBl8Jx+Q/oMuiLa+gGskUrvgoROPIZLFqe8Oe219fjEVoCurzG2ZuTi4SSvX9w8+kIccv6pv2UuH8w==}
+  vouchington-tooling@0.67.0:
+    resolution: {integrity: sha512-Qdx2rbtT6D5kwO5FXp0Dm4dpzcxJDd0yjLuSgrodzTTv/RUIEng+i8jpWYQfn975ipRg0Qu9JMwUp5STJK6tmw==}
     engines: {node: '>=24.0.0'}
     hasBin: true
     peerDependencies:
@@ -28839,9 +28838,9 @@ snapshots:
     dependencies:
       valkyries: 0.11.2
 
-  '@vouchington/edge@0.2.0(@cloudflare/workers-types@5.20261021.1)':
+  '@vouchington/edge@0.3.0(@cloudflare/workers-types@5.20261021.1)':
     dependencies:
-      '@vouchington/utils': 0.7.5
+      '@vouchington/utils': 0.8.0
     optionalDependencies:
       '@cloudflare/workers-types': 5.20261021.1
 
@@ -28852,10 +28851,10 @@ snapshots:
       react: 19.3.1
       react-email: 6.11.3(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(supports-color@10.2.2)
 
-  '@vouchington/embeds@0.0.2':
+  '@vouchington/embeds@0.1.0':
     dependencies:
       '@vouchington/crawler-html': 0.0.1
-      '@vouchington/http-transport': 0.0.0
+      '@vouchington/http-transport': 0.1.0
       parse5: 8.0.1
 
   '@vouchington/frontmatter@0.0.0':
@@ -28870,7 +28869,11 @@ snapshots:
     dependencies:
       entities: 8.0.0
 
-  '@vouchington/http-transport@0.0.0': {}
+  '@vouchington/http-transport@0.1.0':
+    dependencies:
+      '@jongleberry/api-server': 3.1.0
+      ssrf-guard: 1.0.0
+      undici: 8.12.3
 
   '@vouchington/image-resize@0.2.0(@types/node@26.6.5)':
     dependencies:
@@ -28897,9 +28900,9 @@ snapshots:
 
   '@vouchington/memberships@0.2.0': {}
 
-  '@vouchington/oauth-server@0.2.0':
+  '@vouchington/oauth-server@0.3.0':
     dependencies:
-      '@vouchington/utils': 0.7.5
+      '@vouchington/utils': 0.8.0
 
   '@vouchington/pagination@0.0.3':
     dependencies:
@@ -28909,7 +28912,7 @@ snapshots:
     dependencies:
       phone: 3.1.71
 
-  '@vouchington/postgres@0.0.17':
+  '@vouchington/postgres@0.0.18':
     dependencies:
       '@libpg-query/parser': 18.0.0
       pg: 8.23.1
@@ -28919,7 +28922,7 @@ snapshots:
     transitivePeerDependencies:
       - pg-native
 
-  '@vouchington/queue-errors@0.1.3(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))':
+  '@vouchington/queue-errors@0.2.0(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))':
     dependencies:
       glide-mq: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
 
@@ -28958,22 +28961,21 @@ snapshots:
     dependencies:
       stripe: 23.0.0(@types/node@26.6.5)
 
-  '@vouchington/typed-entities@0.3.0':
+  '@vouchington/typed-entities@0.4.0':
     dependencies:
-      '@vouchington/utils': 0.7.4
+      '@vouchington/utils': 0.8.0
 
-  '@vouchington/utils@0.7.4': {}
-
-  '@vouchington/utils@0.7.5': {}
+  '@vouchington/utils@0.8.0': {}
 
   '@vouchington/uuid-v7@0.0.0':
     dependencies:
       uuid: 14.0.3
 
-  '@vouchington/worker-runtime@0.1.3(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)':
+  '@vouchington/worker-runtime@0.2.0(@aws-sdk/client-sqs@3.1154.0)(glide-mq@0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2)))(vitest@5.0.5)':
     dependencies:
       glide-mq: 0.19.0(@opentelemetry/api@1.9.1)(express@5.3.0(supports-color@10.2.2))
     optionalDependencies:
+      '@aws-sdk/client-sqs': 3.1154.0
       vitest: 5.0.5(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(@vitest/browser-playwright@5.0.5)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.5)(jsdom@30.1.3(@noble/hashes@2.4.0))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.1))
 
   '@webassemblyjs/ast@1.14.1':
@@ -33051,7 +33053,7 @@ snapshots:
     transitivePeerDependencies:
       - msw
 
-  vouchington-tooling@0.66.1(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.64.1)(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.2(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.97.0(vitest@5.0.5))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.0.5)(zod@4.6.5):
+  vouchington-tooling@0.67.0(@modelcontextprotocol/sdk@1.32.1(supports-color@10.2.2)(zod@4.6.5))(@playwright/test@1.64.1)(@typescript/typescript6@6.0.2)(eslint@10.5.0(jiti@2.7.0)(supports-color@10.2.2))(next@16.4.2(@babel/core@7.29.7(supports-color@10.2.2))(@opentelemetry/api@1.9.1)(@playwright/test@1.64.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(no-mistakes@0.97.0(vitest@5.0.5))(pg@8.23.1)(react@19.3.1)(supports-color@10.2.2)(vitest@5.0.5)(zod@4.6.5):
     dependencies:
       '@types/mdast': 4.0.4
       '@types/unist': 3.0.3

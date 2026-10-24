@@ -23,7 +23,7 @@
   "dependencies": {
     "@ts-shared/utils": "workspace:^",
     "@vouchington/localization": "^0.2.1",
-    "@vouchington/utils": "^0.7.5",
+    "@vouchington/utils": "^0.8.0",
     "fast-xml-parser": "^5.11.2"
   }
 }
