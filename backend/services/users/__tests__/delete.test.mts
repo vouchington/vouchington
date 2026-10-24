@@ -26,7 +26,7 @@ import { deleteUserAndDrainForTest } from '@voucha/test-helpers/services/users/d
 import { DELETED_USER_ID } from '../constants.mts'
 import { getPrivateUserByAny, getPublicUserByAny } from '../get.mts'
 import { caches } from '@services/entity-cache/caches'
-import { createList, getList } from '@services/lists'
+import { createList, getListForWrite } from '@services/lists'
 
 // Reconstructed locally rather than imported from @services/entity-fetch: entity-fetch already
 // depends on @services/users, so importing entity-fetch's cached getters back into users would
@@ -286,6 +286,6 @@ describe('deleteUser', () => {
 
     await deleteUserAndDrainForTest(user, user)
 
-    expect(await getList(list.id)).toBeNull()
+    expect(await getListForWrite(list.id)).toBeNull()
   })
 })

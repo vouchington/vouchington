@@ -7,7 +7,7 @@ import {
   WEB_PROVENANCE,
 } from '@voucha/test-helpers'
 import type { PrivateUser } from '@voucha/types/entities/user'
-import { createList, getList, updateList, softDeleteList, searchUserLists } from '../lists.mts'
+import { createList, updateList, softDeleteList, searchUserLists } from '../lists.mts'
 
 describe('lists service', () => {
   let user: PrivateUser
@@ -50,30 +50,6 @@ describe('lists service', () => {
       } finally {
         await restoreUser(deletedOwner.id)
       }
-    })
-  })
-
-  describe('getList', () => {
-    it('returns null for non-existent list', async () => {
-      const result = await getList('00000000-0000-7000-8000-000000000000')
-      expect(result).toBeNull()
-    })
-
-    it('returns a list by id', async () => {
-      const list = await createList(user.id, WEB_PROVENANCE, {
-        name: `Get Test ${createRandomString(8)}`,
-      })
-      const found = await getList(list.id)
-      expect(found?.id).toBe(list.id)
-    })
-
-    it('returns null for soft-deleted list', async () => {
-      const list = await createList(user.id, WEB_PROVENANCE, {
-        name: `Delete Test ${createRandomString(8)}`,
-      })
-      await softDeleteList(user.id, list.id)
-      const found = await getList(list.id)
-      expect(found).toBeNull()
     })
   })
 
@@ -123,7 +99,6 @@ describe('lists service', () => {
         name: `Soft Delete ${createRandomString(8)}`,
       })
       await softDeleteList(user.id, list.id)
-      expect(await getList(list.id)).toBeNull()
       await expect(softDeleteList(user.id, list.id)).rejects.toMatchObject({ status: 404 })
     })
 
