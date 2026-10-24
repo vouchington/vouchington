@@ -88,7 +88,8 @@ async function handleApiRequest(req: http.IncomingMessage, res: http.ServerRespo
     dashboardApp(req, res)
     return
   }
-  return apiCallback(req, res)
+  // oxlint-disable-next-line typescript/no-floating-promises -- Node discards RequestListener returns; the existing unhandledRejection handler reports escaped failures.
+  apiCallback(req, res)
 }
 
 // Explicit, SSE-safe values equal to Node's own http.Server defaults
@@ -98,14 +99,10 @@ async function handleApiRequest(req: http.IncomingMessage, res: http.ServerRespo
 // are likewise request/connection-setup bounds. `timeout` (server.timeout, the legacy
 // socket-inactivity timeout) is intentionally left unset/disabled (0) — a positive value
 // would cut sparse-write SSE streams (data-request, imports) mid-flight.
-/* v8 ignore next 8 -- constructing the real listener is exercised only by process startup, not unit tests (see serve.test.mts's source-string assertions for value coverage). */
+/* v8 ignore next 4 -- constructing the real listener is exercised only by process startup, not unit tests (see serve.test.mts's source-string assertions for value coverage). */
 const server = http.createServer(
   { requestTimeout: 300_000, headersTimeout: 60_000, keepAliveTimeout: 5_000 },
-  (req, res) =>
-    handleApiRequest(req, res).catch(err => {
-      onError(err instanceof Error ? err : new Error(String(err)))
-      res.destroy()
-    }),
+  handleApiRequest,
 )
 
 registerProductionApiShutdownCallbacks(server, { log: message => console.log(message) })
