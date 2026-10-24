@@ -9,7 +9,7 @@ import {
   updateUrlHostnameBlocked,
 } from '@voucha/test-helpers'
 import { upsertSystemUser } from '@services/users/system-users'
-import { createStoryPost } from '../story-posts.mts'
+import { prepareStoryPost } from '../story-posts.mts'
 import { reconcileStoryPostRelatedUrlProjection } from '../story-post-related-url-projection.mts'
 
 describe('story post related URL projection hostname ancestry', () => {
@@ -28,18 +28,8 @@ describe('story post related URL projection hostname ancestry', () => {
     const story = await insertTestStory({ title: `Projection ancestor block ${suffix}` })
     await insertTestStoryRssFeedItemsBatch({ storyId: story.id, urlId: url.id, count: 2 })
     const user = await createTestUserDirect()
-    const { post } = await createStoryPost(
-      story.id,
-      user,
-      {},
-      {
-        dispatchStoryPostRelationEffects: async () => {},
-        enqueueOnPostCreated: () => Promise.resolve(),
-        enqueueStoryPostAgent: async () => {},
-        enqueueReconcileStoryPostRelatedUrlProjectionsBestEffort: () => Promise.resolve(),
-        invalidateStories: async () => {},
-      },
-    )
+    const prepared = await prepareStoryPost(story.id, user)
+    const { post } = prepared.response
     await drainProjection(post.id)
     await expect(getPostRelatedUrlIds(post.id)).resolves.toEqual([])
   })

@@ -4,6 +4,7 @@ import {
   insertTestRssFeedItem,
   createTestUrlWithHostname,
   insertTestStory,
+  insertTestStoryRssFeedItemsBatch,
   setTestItemStoryId,
   addCategoryToRssFeedItem,
   createTestTopic,
@@ -24,7 +25,7 @@ import type { PrivateUser } from '@services/users/types'
 import { enqueueStoryPostAgent } from '@queues/ai-agents/enqueues/story-post'
 import { ai_agents } from '@queues/ai-agents/queues'
 import { upsertSystemUser } from '@services/users/system-users'
-import { createStoryPost } from '../story-posts.mts'
+import { prepareStoryPost } from '../story-posts.mts'
 import { reconcileStoryPostRelatedUrlProjection } from '../story-post-related-url-projection.mts'
 function sha256(data: unknown): Buffer {
   return createHash('sha256').update(JSON.stringify(data)).digest()
@@ -63,7 +64,7 @@ describe('story-posts', () => {
     urlId = await createTestUrlWithHostname()
     testUser = await createTestUserDirect()
   })
-  it('createStoryPost — creates a story post and links via story_posts', async () => {
+  it('prepareStoryPost — creates a story post and links via story_posts', async () => {
     const story = await insertTestStory({ title: 'Test Story Title' })
     const random = Math.random().toString(36).slice(2, 10)
     const itemData = { title: `Item ${random}`, link: `https://example.com/${random}` }
@@ -86,7 +87,9 @@ describe('story-posts', () => {
     })
     await setTestItemStoryId(itemId2, story.id)
     const agent = trackedStoryPostAgent()
-    const result = await createStoryPost(story.id, testUser, {}, agent)
+    const prepared = await prepareStoryPost(story.id, testUser, {}, agent)
+    await prepared.finalize()
+    const result = prepared.response
     await Promise.all(agent.pending)
     await drainStoryPostRelatedUrlProjection(result.post.id)
     expect(result.post).toBeDefined()
@@ -101,7 +104,7 @@ describe('story-posts', () => {
     expect(result.postStory.initiated_by_id).toBe(testUser.id)
     expect(await hasStoryPostAgentJob(result.post.id)).toBe(true)
   })
-  it('createStoryPost — throws 409 if story already has a post', async () => {
+  it('prepareStoryPost — throws 409 if story already has a post', async () => {
     const story = await insertTestStory({ title: 'Already Has Discussion' })
     const random = Math.random().toString(36).slice(2, 10)
     const itemData = { title: `Item ${random}`, link: `https://example.com/${random}` }
@@ -124,14 +127,15 @@ describe('story-posts', () => {
     })
     await setTestItemStoryId(itemId2, story.id)
     // First call succeeds
-    await createStoryPost(story.id, testUser)
+    const prepared = await prepareStoryPost(story.id, testUser)
+    await prepared.finalize()
     // Second call should throw 409
-    await expect(createStoryPost(story.id, testUser)).rejects.toMatchObject({ status: 409 })
+    await expect(prepareStoryPost(story.id, testUser)).rejects.toMatchObject({ status: 409 })
   })
-  it('createStoryPost — throws 404 for unknown story', async () => {
-    await expect(createStoryPost(randomUUID(), testUser)).rejects.toMatchObject({ status: 404 })
+  it('prepareStoryPost — throws 404 for unknown story', async () => {
+    await expect(prepareStoryPost(randomUUID(), testUser)).rejects.toMatchObject({ status: 404 })
   })
-  it('createStoryPost — creates post→related→url entity relations for all item URLs', async () => {
+  it('prepareStoryPost — creates post→related→url entity relations for all item URLs', async () => {
     const story = await insertTestStory({ title: 'URL Relations Test' })
     const random1 = Math.random().toString(36).slice(2, 10)
     const url1Id = await createTestUrlWithHostname()
@@ -155,7 +159,9 @@ describe('story-posts', () => {
     })
     await setTestItemStoryId(item1Id, story.id)
     await setTestItemStoryId(item2Id, story.id)
-    const result = await createStoryPost(story.id, testUser)
+    const prepared = await prepareStoryPost(story.id, testUser)
+    await prepared.finalize()
+    const result = prepared.response
     // Multi-item: title falls back to story.title
     expect(result.post.title).toBe('URL Relations Test')
     await drainStoryPostRelatedUrlProjection(result.post.id)
@@ -164,7 +170,7 @@ describe('story-posts', () => {
     expect(linkedUrlIds).toContain(url2Id)
   })
 
-  it('createStoryPost — omits blocked and referral URLs already stored on story items without penalizing @story-teller', async () => {
+  it('prepareStoryPost — omits blocked and referral URLs already stored on story items without penalizing @story-teller', async () => {
     const suffix = randomUUID().slice(0, 8)
     const blockedHostnameId = await insertTestUrlHostname({
       hostname: `story-blocked-${suffix}.example.com`,
@@ -204,13 +210,15 @@ describe('story-posts', () => {
     const storyTeller = await upsertSystemUser('story-teller')
     const penaltiesBeforeCreation = await getTestPenaltiesByUserId(storyTeller.id)
 
-    const { post } = await createStoryPost(story.id, testUser)
+    const prepared = await prepareStoryPost(story.id, testUser)
+    await prepared.finalize()
+    const { post } = prepared.response
 
     await drainStoryPostRelatedUrlProjection(post.id)
     await expect(getPostRelatedUrlIds(post.id)).resolves.toEqual([allowedUrlId])
     await expect(getTestPenaltiesByUserId(storyTeller.id)).resolves.toEqual(penaltiesBeforeCreation)
   })
-  it('createStoryPost — forwards category topic_ids as post→category→topic entity relations', async () => {
+  it('prepareStoryPost — forwards category topic_ids as post→category→topic entity relations', async () => {
     const story = await insertTestStory({ title: 'Category Forwarding Test' })
     const random = Math.random().toString(36).slice(2, 10)
     const itemData = { title: `Item ${random}`, link: `https://example.com/${random}` }
@@ -236,7 +244,9 @@ describe('story-posts', () => {
     const topic = await createTestTopic({ name: `Category Topic ${random}` })
     await addCategoryToRssFeedItem(itemId, topic.id)
 
-    const result = await createStoryPost(story.id, testUser)
+    const prepared = await prepareStoryPost(story.id, testUser)
+    await prepared.finalize()
+    const result = prepared.response
 
     const linkedTopicIds = await getPostCategoryTopicIds(result.post.id)
     expect(linkedTopicIds).toContain(topic.id)
@@ -248,42 +258,24 @@ describe('story-posts', () => {
     await expect(listTestPostPublicationImpactTopicIds(dirtyWork!.id)).resolves.toContain(topic.id)
   })
 
-  it('createStoryPost — throws 422 for story with fewer than 2 items', async () => {
+  it('prepareStoryPost — throws 422 for story with fewer than 2 items', async () => {
     const story = await insertTestStory({})
 
-    await expect(createStoryPost(story.id, testUser)).rejects.toMatchObject({ status: 422 })
+    await expect(prepareStoryPost(story.id, testUser)).rejects.toMatchObject({ status: 422 })
   })
 
-  it('createStoryPost — ai_summary_markdown option sets post content directly', async () => {
+  it('prepareStoryPost — ai_summary_markdown option sets post content directly', async () => {
     const story = await insertTestStory({ title: 'AI Summary Override Test' })
-    const random = Math.random().toString(36).slice(2, 10)
-    const itemData = { title: `Item ${random}`, link: `https://example.com/${random}` }
-    const itemId = await insertTestRssFeedItem({
-      rssFeedId: feedId,
-      urlId,
-      guid: `ai-summary-test-${random}`,
-      itemData,
-      contentSha256: sha256(itemData),
-    })
-    await setTestItemStoryId(itemId, story.id)
-    const random2 = Math.random().toString(36).slice(2, 10)
-    const itemData2 = { title: `Item ${random2}`, link: `https://example.com/${random2}` }
-    const itemId2 = await insertTestRssFeedItem({
-      rssFeedId: feedId,
-      urlId,
-      guid: `ai-summary-test-2-${random2}`,
-      itemData: itemData2,
-      contentSha256: sha256(itemData2),
-    })
-    await setTestItemStoryId(itemId2, story.id)
-
+    await insertTestStoryRssFeedItemsBatch({ storyId: story.id, urlId, count: 2 })
     const agent = trackedStoryPostAgent()
-    const result = await createStoryPost(
+    const prepared = await prepareStoryPost(
       story.id,
       testUser,
       { ai_summary_markdown: 'Overridden summary.' },
       agent,
     )
+    await prepared.finalize()
+    const result = prepared.response
     await Promise.all(agent.pending)
 
     expect(result.post).toBeDefined()

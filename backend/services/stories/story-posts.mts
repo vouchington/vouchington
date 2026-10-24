@@ -63,18 +63,3 @@ export async function prepareStoryPost(
     finalize: finalizePreparedStoryPost,
   }
 }
-
-/**
- * @public Documented contract; production use is unconfirmed and this export may be
- * removed after intended-use review. Evidence: `backend/services/stories/AGENTS.md`.
- */
-export async function createStoryPost(
-  storyId: string,
-  initiatedBy: PrivateUser,
-  options: { ai_summary_markdown?: string; query?: TransactionQuery } = {},
-  dependencies: StoryPostCreateDependencies = {},
-): Promise<StoryPostResult> {
-  const prepared = await prepareStoryPost(storyId, initiatedBy, options, dependencies)
-  await prepared.finalize()
-  return prepared.response
-}

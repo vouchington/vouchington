@@ -10,7 +10,7 @@ import {
   setTestItemStoryId,
 } from '@voucha/test-helpers'
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
-import { createStoryPost } from '../story-posts.mts'
+import { prepareStoryPost } from '../story-posts.mts'
 import { upsertSystemUser } from '@services/users/system-users'
 import type { PrivateUser } from '@services/users/types'
 
@@ -57,7 +57,9 @@ describe('adminAssignItemToStory', () => {
     const story = await insertTestStory({ title: 'Assignment delivery failure' })
     const storyItemIds = await Promise.all([makeItem(), makeItem()])
     await Promise.all(storyItemIds.map(itemId => setTestItemStoryId(itemId, story.id)))
-    const { post } = await createStoryPost(story.id, storyPostUser)
+    const prepared = await prepareStoryPost(story.id, storyPostUser)
+    await prepared.finalize()
+    const { post } = prepared.response
     const itemId = await makeItem()
     const dispatchError = new Error('relation dispatch failed')
     const reportedErrors: Error[] = []

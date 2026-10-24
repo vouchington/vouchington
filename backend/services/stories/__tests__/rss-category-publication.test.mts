@@ -28,7 +28,7 @@ import { upsertRssFeedItemCategories } from '@services/rss-feed-items/categories
 import { backfillCategoriesForTopicAliases } from '@services/rss-feed-items/backfill-categories-for-topic-aliases'
 import { clearCategoriesForUnlinkedTopicAlias } from '@services/rss-feed-items/clear-topic-alias-categories'
 import * as storyLifecycleLock from '@services/post-publication/story-lifecycle-lock'
-import { createStoryPost } from '../story-posts.mts'
+import { prepareStoryPost } from '../story-posts.mts'
 import { recordTestStoryTopicPublicationChange } from '@voucha/test-helpers/post-publication-fixtures'
 
 let feedId: string
@@ -56,7 +56,9 @@ async function createStoryPostWithItems() {
       return itemId
     }),
   )
-  const { post } = await createStoryPost(story.id, user)
+  const prepared = await prepareStoryPost(story.id, user)
+  await prepared.finalize()
+  const { post } = prepared.response
   return { itemIds, postId: post.id, story }
 }
 

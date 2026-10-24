@@ -24,7 +24,7 @@ import { upsertSystemUser } from '@services/users/system-users'
 import { voteAggregation } from '../../../queues/vote-aggregation/queues.mts'
 import { notifications } from '@queues/notifications/queues'
 import * as postPublicationPosts from '@services/post-publication/capture-posts'
-import { createStoryPost } from '../story-posts.mts'
+import { prepareStoryPost } from '../story-posts.mts'
 import { refreshStoryPostForStory } from '../refresh-story-post.mts'
 import { reconcileStoryPostRelatedUrlProjection } from '../story-post-related-url-projection.mts'
 
@@ -80,7 +80,9 @@ describe('refreshStoryPostForStory', () => {
     const story = await insertTestStory({ title: 'Refresh Test Story' })
     await insertItem(story.id)
     await insertItem(story.id)
-    const { post } = await createStoryPost(story.id, testUser)
+    const prepared = await prepareStoryPost(story.id, testUser)
+    await prepared.finalize()
+    const { post } = prepared.response
 
     await expect(refreshStoryPostForStory(story.id)).resolves.toMatchObject({ postId: post.id })
     expect(post.post_type).toBe('story')
@@ -90,7 +92,9 @@ describe('refreshStoryPostForStory', () => {
     const story = await insertTestStory({ title: 'Idempotent Refresh Story' })
     await insertItem(story.id)
     await insertItem(story.id)
-    const { post } = await createStoryPost(story.id, testUser)
+    const prepared = await prepareStoryPost(story.id, testUser)
+    await prepared.finalize()
+    const { post } = prepared.response
 
     await expect(refreshStoryPostForStory(story.id)).resolves.toMatchObject({ postId: post.id })
     await expect(refreshStoryPostForStory(story.id)).resolves.toMatchObject({ postId: post.id })
@@ -106,7 +110,9 @@ describe('refreshStoryPostForStory', () => {
     const story = await insertTestStory({ title: 'Blocked URL Refresh Story' })
     await insertItem(story.id, blockedUrlId)
     await insertItem(story.id)
-    const { post } = await createStoryPost(story.id, testUser)
+    const prepared = await prepareStoryPost(story.id, testUser)
+    await prepared.finalize()
+    const { post } = prepared.response
     await drainStoryPostRelatedUrlProjection(post.id)
     await expect(getPostRelatedUrlIds(post.id)).resolves.toContain(blockedUrlId)
     await updateUrlHostnameBlocked(hostnameId, true)
@@ -136,7 +142,9 @@ describe('refreshStoryPostForStory', () => {
     const story = await insertTestStory({ title: 'Referral URL Refresh Story' })
     await insertItem(story.id, referralUrlId)
     await insertItem(story.id)
-    const { post } = await createStoryPost(story.id, testUser)
+    const prepared = await prepareStoryPost(story.id, testUser)
+    await prepared.finalize()
+    const { post } = prepared.response
     await drainStoryPostRelatedUrlProjection(post.id)
     await expect(getPostRelatedUrlIds(post.id)).resolves.not.toContain(referralUrlId)
     const storyTeller = await upsertSystemUser('story-teller')
@@ -159,7 +167,9 @@ describe('refreshStoryPostForStory', () => {
     const itemId = await insertItem(story.id)
     await addCategoryToRssFeedItem(itemId, topicId)
     await insertItem(story.id)
-    const { post } = await createStoryPost(story.id, testUser)
+    const prepared = await prepareStoryPost(story.id, testUser)
+    await prepared.finalize()
+    const { post } = prepared.response
 
     await expect(refreshStoryPostForStory(story.id)).resolves.toMatchObject({ postId: post.id })
   })
@@ -169,7 +179,9 @@ describe('refreshStoryPostForStory', () => {
     const story = await insertTestStory({ title: `Synchronous refresh votes ${random}` })
     const itemId = await insertItem(story.id)
     await insertItem(story.id)
-    const { post } = await createStoryPost(story.id, testUser)
+    const prepared = await prepareStoryPost(story.id, testUser)
+    await prepared.finalize()
+    const { post } = prepared.response
     const topicId = await insertTestTopic({
       name: `Synchronous refresh topic ${random}`,
       slug: `synchronous-refresh-topic-${random}`,
@@ -220,7 +232,9 @@ describe('refreshStoryPostForStory', () => {
     const categorizedItemId = await insertItem(story.id)
     await addCategoryToRssFeedItem(categorizedItemId, topicId)
     await insertItem(story.id)
-    const { post } = await createStoryPost(story.id, testUser)
+    const prepared = await prepareStoryPost(story.id, testUser)
+    await prepared.finalize()
+    const { post } = prepared.response
     const relationLocked = Promise.withResolvers<void>()
     const releaseRelation = Promise.withResolvers<void>()
     async function holdStoryTopicRelation(): Promise<void> {

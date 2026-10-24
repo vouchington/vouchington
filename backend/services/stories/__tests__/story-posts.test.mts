@@ -15,7 +15,7 @@ import {
 import { createTestRssFeed } from '@voucha/test-helpers/rss-feed-create'
 import type { PrivateUser } from '@services/users/types'
 import { upsertSystemUser } from '@services/users/system-users'
-import { createStoryPost } from '../story-posts.mts'
+import { prepareStoryPost } from '../story-posts.mts'
 import { lockAuthorPublicationLifecycle } from '@services/post-publication'
 import * as publicationLock from '@services/post-publication/lock'
 import { canViewPost } from '@services/posts/check-privacy-access'
@@ -60,30 +60,34 @@ describe('story posts', () => {
     urlId = testUrlId
   })
 
-  it('createStoryPost — single-item story throws 422', async () => {
+  it('prepareStoryPost — single-item story throws 422', async () => {
     const story = await insertTestStory({})
     await insertItem(story.id)
 
-    await expect(createStoryPost(story.id, testUser)).rejects.toMatchObject({ status: 422 })
+    await expect(prepareStoryPost(story.id, testUser)).rejects.toMatchObject({ status: 422 })
   })
 
-  it('createStoryPost — multi-item story uses story.title', async () => {
+  it('prepareStoryPost — multi-item story uses story.title', async () => {
     const random = Math.random().toString(36).slice(2, 10)
     const storyTitle = `Multi Story ${random}`
     const story = await insertTestStory({ title: storyTitle })
     await insertItem(story.id)
     await insertItem(story.id)
 
-    const result = await createStoryPost(story.id, testUser)
+    const prepared = await prepareStoryPost(story.id, testUser)
+    await prepared.finalize()
+    const result = prepared.response
     expect(result.post.title).toBe(storyTitle)
   })
 
-  it('createStoryPost — post is approved on creation and visible to initiator and others', async () => {
+  it('prepareStoryPost — post is approved on creation and visible to initiator and others', async () => {
     const story = await insertTestStory({ title: 'Visibility Test' })
     await insertItem(story.id)
     await insertItem(story.id)
 
-    const result = await createStoryPost(story.id, testUser)
+    const prepared = await prepareStoryPost(story.id, testUser)
+    await prepared.finalize()
+    const result = prepared.response
 
     expect(result.post.clearance_status).toBe('approved')
     expect(await canViewPost(testUser, result.post)).toBe(true)
@@ -91,12 +95,14 @@ describe('story posts', () => {
     expect(await canViewPost(null, result.post)).toBe(true)
   })
 
-  it('createStoryPost — records the platform, not the requesting user, as the channel', async () => {
+  it('prepareStoryPost — records the platform, not the requesting user, as the channel', async () => {
     const story = await insertTestStory({ title: 'Provenance Test' })
     await insertItem(story.id)
     await insertItem(story.id)
 
-    const result = await createStoryPost(story.id, testUser)
+    const prepared = await prepareStoryPost(story.id, testUser)
+    await prepared.finalize()
+    const result = prepared.response
 
     await expect(readTestContentProvenance('posts', result.post.id)).resolves.toEqual({
       createdVia: 'system',
@@ -104,23 +110,27 @@ describe('story posts', () => {
     })
   })
 
-  it('createStoryPost — ai_summary_markdown is empty (agent has not run)', async () => {
+  it('prepareStoryPost — ai_summary_markdown is empty (agent has not run)', async () => {
     const story = await insertTestStory({ title: 'No Summary Yet' })
     await insertItem(story.id)
     await insertItem(story.id)
 
-    const result = await createStoryPost(story.id, testUser)
+    const prepared = await prepareStoryPost(story.id, testUser)
+    await prepared.finalize()
+    const result = prepared.response
     expect(result.post.ai_summary_markdown).toBe('')
   })
 
-  it('createStoryPost — ai_summary_markdown option sets post content directly', async () => {
+  it('prepareStoryPost — ai_summary_markdown option sets post content directly', async () => {
     const story = await insertTestStory({ title: 'Summary Override Test' })
     await insertItem(story.id)
     await insertItem(story.id)
 
-    const result = await createStoryPost(story.id, testUser, {
+    const prepared = await prepareStoryPost(story.id, testUser, {
       ai_summary_markdown: 'Admin-provided summary.',
     })
+    await prepared.finalize()
+    const result = prepared.response
     expect(result.post.ai_summary_markdown).toBe('Admin-provided summary.')
   })
 
@@ -154,7 +164,7 @@ describe('story posts', () => {
           return lockAuthor(query, authorUserId)
         })
 
-      const creating = createStoryPost(
+      const creating = prepareStoryPost(
         story.id,
         testUser,
         {},
