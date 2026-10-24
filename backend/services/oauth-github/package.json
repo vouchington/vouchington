@@ -34,7 +34,7 @@
     "@vouchington/utils": "^0.7.5",
     "http-errors": "^2.0.1",
     "undici": "^8.12.2",
-    "valkyries": "^0.11.1"
+    "valkyries": "^0.11.2"
   },
   "devDependencies": {
     "@types/http-errors": "^2.0.5",

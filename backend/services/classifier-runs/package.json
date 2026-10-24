@@ -29,7 +29,7 @@
     "@services/post-publication": "workspace:^",
     "@ts-shared/utils": "workspace:^",
     "sql-template-strings": "^2.2.2",
-    "valkyries": "^0.11.1"
+    "valkyries": "^0.11.2"
   },
   "devDependencies": {
     "@voucha/test-helpers": "workspace:^"

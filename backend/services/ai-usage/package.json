@@ -35,7 +35,7 @@
     "@vouchington/utils": "^0.7.5",
     "p-map": "^7.1.0",
     "sql-template-strings": "^2.2.2",
-    "valkyries": "^0.11.1"
+    "valkyries": "^0.11.2"
   },
   "devDependencies": {
     "@services/users": "workspace:^",

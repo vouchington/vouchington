@@ -27,7 +27,7 @@
     "@voucha/types": "workspace:^",
     "@vouchington/postgres": "^0.0.17",
     "sql-template-strings": "^2.2.2",
-    "valkyries": "^0.11.1"
+    "valkyries": "^0.11.2"
   },
   "devDependencies": {
     "@aws-sdk/client-cloudfront": "^3.1154.0",
