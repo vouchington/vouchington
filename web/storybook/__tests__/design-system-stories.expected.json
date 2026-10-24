@@ -124,6 +124,7 @@
   "switch.stories.tsx": ["Default", "Disabled"],
   "table.stories.tsx": ["InvoiceTable"],
   "tabs.stories.tsx": ["Default", "Scrollable"],
+  "text-link.stories.tsx": ["Default", "CallerTestId"],
   "textarea.stories.tsx": ["Default", "Disabled", "WithLabel", "SubmitOnCmdEnter"],
   "toggle.stories.tsx": ["Simple", "Outline", "WithText", "Group", "GroupSingle"],
   "topbar.stories.tsx": ["SignedOutResponsive", "SignedInResponsive"],
