@@ -1,6 +1,7 @@
 import { caches } from '@services/entity-cache/caches'
 import { refresh } from '../../entity-fetch/refresh.mts'
 import { notifications } from '@queues/notifications/queues'
+import { NOTIFICATIONS_RECONCILE_POST_JOB } from '@queues/background/enqueues/notifications-jobs'
 import { rssFeedMaintenance } from '@queues/rss-feed-maintenance/queues'
 import type { PrivateUser } from '@services/users/types'
 import {
@@ -13,7 +14,8 @@ import {
   softDeleteTopic,
 } from '@voucha/test-helpers'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
-import { describe, expect, it, onTestFinished } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { sentryCaptureExceptionMock } from '../../../test-helpers/vitest.setup.sentry-mock.mts'
 import {
   createTopicAliases,
   createUnlinkedTopicAlias,
@@ -22,6 +24,7 @@ import {
 } from '../aliases.mts'
 import { getTopicByAny } from '../get.mts'
 import { mergeTopicAliases } from '../merge-aliases.mts'
+import { getTopicAliasRecordByValue } from '../get-topic-aliases.mts'
 import { updateTopic } from '../update.mts'
 import { topicsWorkConfig } from '../work-limits.mts'
 
@@ -127,6 +130,48 @@ describe('topic alias post-cache invalidation', () => {
     await linkTopicAlias(topicId, alias.id)
 
     await expectPostNotificationReconciliationEnqueued(postIds)
+  })
+
+  it('retains a linked alias when its post-notification admission fails once', async () => {
+    const suffix = createRandomString(12)
+    const user = await createTestUser({ administrator: true })
+    const topicId = await insertTestTopic({
+      name: `Notification failure topic ${suffix}`,
+      slug: `notification-failure-${suffix}`,
+      createdById: user.id,
+    })
+    const alias = await createUnlinkedTopicAlias(`notification-failure-alias-${suffix}`)
+    const postId = (await createCachedAliasPosts(alias.id, user, suffix, 1))[0]!
+    const failure = new Error(`Owned notification admission failure ${suffix}`)
+    const originalAddBulk = notifications.addBulk
+    const addSpy = vi.spyOn(notifications, 'addBulk').mockImplementation(jobs => {
+      if (
+        jobs.some(
+          job =>
+            job.name === NOTIFICATIONS_RECONCILE_POST_JOB.name &&
+            typeof job.data === 'object' &&
+            job.data !== null &&
+            'postId' in job.data &&
+            job.data.postId === postId,
+        )
+      )
+        return Promise.reject(failure)
+      return originalAddBulk.call(notifications, jobs)
+    })
+
+    try {
+      await expect(linkTopicAlias(topicId, alias.id)).resolves.toMatchObject({ topic_id: topicId })
+      await expect(getTopicAliasRecordByValue(topicId, alias.alias)).resolves.toMatchObject({
+        id: alias.id,
+        topic_id: topicId,
+      })
+      await expectPostCachesInvalidated([postId])
+      expect(
+        sentryCaptureExceptionMock.mock.calls.filter(([error]) => error === failure),
+      ).toHaveLength(1)
+    } finally {
+      addSpy.mockRestore()
+    }
   })
 
   it('invalidates a relation-only alias member post that has no source row', async () => {

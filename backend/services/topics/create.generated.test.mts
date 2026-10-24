@@ -1,12 +1,23 @@
 import { randomUUID } from 'node:crypto'
 import { onTestFinished, it, expect, describe, vi } from 'vitest'
 import { ENTITY_LISTENERS_TOPIC_CREATED_JOB } from '@queues/background/enqueues/entity-listeners-jobs'
+import { NOTIFICATIONS_RECONCILE_POST_JOB } from '@queues/background/enqueues/notifications-jobs'
 import { entitiesListeners } from '@queues/entity-listeners/queues'
+import { notifications } from '@queues/notifications/queues'
 import { getTopicByAny } from './get.mts'
 import { createTopic } from './create.mts'
-import { createTestUser, WEB_PROVENANCE } from '@voucha/test-helpers'
-import { holdQueueAdmission } from '@voucha/test-helpers/queue-admission-hold'
-import { readEnqueuedJob } from '@voucha/test-helpers/queue-jobs'
+import { createUnlinkedTopicAlias } from './aliases.mts'
+import {
+  createTestPost,
+  createTestUser,
+  createTopHashtagPostSourceForTest,
+  WEB_PROVENANCE,
+} from '@voucha/test-helpers'
+import {
+  holdQueueAdmission,
+  holdQueueBulkAdmission,
+} from '@voucha/test-helpers/queue-admission-hold'
+import { readEnqueuedJob, removeEnqueuedJobs } from '@voucha/test-helpers/queue-jobs'
 import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
 
 describe('create.generated', () => {
@@ -130,6 +141,80 @@ describe('create.generated', () => {
       ).toHaveLength(1)
     } finally {
       addSpy.mockRestore()
+    }
+  })
+
+  it('waits for an alias post-notification admission after the topic commits', async () => {
+    const user = await createTestUser({ administrator: true })
+    const slug = `topic-alias-admission-${randomUUID()}`
+    const alias = await createUnlinkedTopicAlias(`source-${slug}`)
+    const post = await createTestPost({ user, title: slug })
+    await createTopHashtagPostSourceForTest({
+      postId: post.id,
+      topicAliasId: alias.id,
+      userId: user.id,
+      authoredToken: `#${slug}`,
+    })
+    const queueGate = holdQueueBulkAdmission(
+      notifications,
+      NOTIFICATIONS_RECONCILE_POST_JOB.name,
+      data =>
+        typeof data === 'object' && data !== null && 'postId' in data && data.postId === post.id,
+    )
+    let creation: ReturnType<typeof createTopic> | undefined
+    let settled = false
+    let gateEntered = false
+    let cleanupPromise: Promise<void> | undefined
+    const cleanup = () => {
+      cleanupPromise ??= (async () => {
+        queueGate.release()
+        try {
+          await creation?.catch(() => undefined)
+          if (gateEntered)
+            await removeEnqueuedJobs(
+              [queueGate.admitted.catch(() => [])],
+              NOTIFICATIONS_RECONCILE_POST_JOB.name,
+            )
+        } finally {
+          queueGate.restore()
+        }
+      })()
+      return cleanupPromise
+    }
+    onTestFinished(cleanup)
+
+    creation = createTopic(user, WEB_PROVENANCE, {
+      name: slug,
+      slug,
+      source_topic_alias_id: alias.id,
+    }).finally(() => {
+      settled = true
+    })
+
+    try {
+      const firstEvent = await Promise.race([
+        queueGate.entered.then(() => 'admission-entered'),
+        creation.then(
+          () => 'creation-settled',
+          () => 'creation-rejected',
+        ),
+      ])
+      expect(firstEvent).toBe('admission-entered')
+      gateEntered = true
+      expect(await getTopicByAny(slug)).toMatchObject({ slug })
+      expect(settled).toBe(false)
+
+      queueGate.release()
+      const admitted = await queueGate.admitted
+      expect(admitted).toHaveLength(1)
+      const created = await creation
+      expect(created.slug).toBe(slug)
+      expect(await readEnqueuedJob(notifications, admitted[0])).toMatchObject({
+        name: NOTIFICATIONS_RECONCILE_POST_JOB.name,
+        data: { postId: post.id },
+      })
+    } finally {
+      await cleanup()
     }
   })
 

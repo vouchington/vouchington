@@ -1,5 +1,7 @@
 import { getTopicsWorkLimit } from './work-limits.mts'
+import onError from '@modules/on-error'
 import { read } from '@data-stores/psql'
+import { awaitReportedEnqueueAdmission } from '@queues/background/enqueues'
 import { enqueueBulkReconcilePostNotifications } from '@queues/notifications/enqueues'
 import { enqueueContinueInvalidatingPostsForTopicAliases } from '@queues/rss-feed-maintenance/enqueues/topic-aliases'
 import { invalidate } from '@services/entity-cache/invalidate'
@@ -9,9 +11,20 @@ import { invalidate } from '@services/entity-cache/invalidate'
  * the work and durably chaining each subsequent page through the queue.
  */
 export async function invalidatePostsForTopicAliases(topicAliasIds: string[]): Promise<void> {
-  const result = await invalidatePostsForTopicAliasesPage(topicAliasIds)
-  if (result.hasMore && result.lastPostId) {
-    await enqueueContinueInvalidatingPostsForTopicAliases(topicAliasIds, result.lastPostId)
+  try {
+    const { postIds, hasMore, lastPostId } = await readAliasPostPage(topicAliasIds)
+    if (postIds.length === 0) return
+    await Promise.all([
+      invalidate.posts(postIds),
+      awaitReportedEnqueueAdmission(() => enqueueBulkReconcilePostNotifications(postIds)),
+    ])
+    if (hasMore && lastPostId) {
+      await awaitReportedEnqueueAdmission(() =>
+        enqueueContinueInvalidatingPostsForTopicAliases(topicAliasIds, lastPostId),
+      )
+    }
+  } catch (err) {
+    onError(err instanceof Error ? err : new Error(String(err)))
   }
 }
 
@@ -19,10 +32,17 @@ export async function invalidatePostsForTopicAliasesPage(
   topicAliasIds: string[],
   afterPostId?: string,
 ): Promise<{ hasMore: boolean; lastPostId: string | null }> {
+  const { postIds, hasMore, lastPostId } = await readAliasPostPage(topicAliasIds, afterPostId)
+  if (postIds.length === 0) return { hasMore, lastPostId }
+  await Promise.all([invalidate.posts(postIds), enqueueBulkReconcilePostNotifications(postIds)])
+  return { hasMore, lastPostId }
+}
+
+async function readAliasPostPage(topicAliasIds: string[], afterPostId?: string) {
   const TOPIC_ALIAS_POST_INVALIDATION_BATCH_SIZE = getTopicsWorkLimit(
     'alias_post_invalidation_batch_size',
   )
-  if (topicAliasIds.length === 0) return { hasMore: false, lastPostId: null }
+  if (topicAliasIds.length === 0) return { postIds: [], hasMore: false, lastPostId: null }
   const { rows } = await read<{ post_id: string }>(
     `/* invalidatePostsForTopicAliases */
       SELECT DISTINCT post_id FROM (
@@ -44,9 +64,8 @@ export async function invalidatePostsForTopicAliasesPage(
     [topicAliasIds, afterPostId ?? null, TOPIC_ALIAS_POST_INVALIDATION_BATCH_SIZE + 1],
   )
   const postIds = rows.slice(0, TOPIC_ALIAS_POST_INVALIDATION_BATCH_SIZE).map(row => row.post_id)
-  if (postIds.length === 0) return { hasMore: false, lastPostId: null }
-  await Promise.all([invalidate.posts(postIds), enqueueBulkReconcilePostNotifications(postIds)])
   return {
+    postIds,
     hasMore: rows.length > TOPIC_ALIAS_POST_INVALIDATION_BATCH_SIZE,
     lastPostId: postIds.at(-1) ?? null,
   }

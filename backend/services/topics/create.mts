@@ -49,7 +49,7 @@ export async function finalizeCreatedTopic(
     awaitReportedEnqueueAdmission(() => enqueueOnTopicCreated(topic.id, updates)),
   ]
   if (updates.source_topic_alias_id)
-    void invalidatePostsForTopicAliases([updates.source_topic_alias_id])
+    effects.push(invalidatePostsForTopicAliases([updates.source_topic_alias_id]))
   await Promise.all(effects)
 }
 

@@ -1,5 +1,5 @@
 import { getTestRssFeedItemCategories } from '@voucha/test-helpers/entities/rss-feed-item-categories'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import {
   createTestPost,
   createTestUser,
@@ -19,6 +19,9 @@ import {
 import type { enqueueContinueTopicAliasCategoryMappingReconciliation } from '@queues/rss-feed-maintenance/enqueues/topic-aliases'
 import type { processReconcileTopicAliasCategoryMappings as reconcileTopicAliasCategoryMappings } from '@services/rss-feeds/reconcile-topic-alias-category-mappings'
 import { rssFeedMaintenance } from '@queues/rss-feed-maintenance/queues'
+import { notifications } from '@queues/notifications/queues'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { topicsWorkConfig } from '@services/topics/work-limits'
 
 const mockEnqueueContinuation =
   vi.fn<typeof enqueueContinueTopicAliasCategoryMappingReconciliation>()
@@ -115,6 +118,10 @@ describe('topic-aliases processors', () => {
   })
 
   it('persists a cursor continuation after processing a full alias post page', async () => {
+    const restoreConfig = overrideDynamicConfigFieldsForTest(topicsWorkConfig, {
+      alias_post_invalidation_batch_size: 3,
+    })
+    onTestFinished(restoreConfig)
     const suffix = Math.random().toString(36).slice(2, 15)
     const user = await createTestUser({ administrator: true })
     const topicId = await insertTestTopic({
@@ -124,7 +131,7 @@ describe('topic-aliases processors', () => {
     })
     const [alias] = await createTopicAliases(topicId, `processor-invalidation-${suffix}`)
     const posts = await Promise.all(
-      Array.from({ length: 101 }, (_, index) =>
+      Array.from({ length: 4 }, (_, index) =>
         createTestPost({ user, title: `Processor invalidation ${index} ${suffix}` }),
       ),
     )
@@ -151,5 +158,99 @@ describe('topic-aliases processors', () => {
       afterPostId: expect.any(String),
       topicAliasIds: [alias!.id],
     })
+  })
+
+  it('rejects a worker page when owned notification admission fails', async () => {
+    const suffix = Math.random().toString(36).slice(2, 15)
+    const user = await createTestUser({ administrator: true })
+    const topicId = await insertTestTopic({
+      name: `Processor rejection ${suffix}`,
+      slug: `processor-rejection-${suffix}`,
+      createdById: user.id,
+    })
+    const [alias] = await createTopicAliases(topicId, `processor-rejection-${suffix}`)
+    const post = await createTestPost({ user, title: `Processor rejection ${suffix}` })
+    await createTopHashtagPostSourceForTest({
+      postId: post.id,
+      topicAliasId: alias!.id,
+      userId: user.id,
+      authoredToken: `#processor-${suffix}`,
+    })
+    const failure = new Error(`Owned worker notification admission failure ${suffix}`)
+    const originalAddBulk = notifications.addBulk
+    const addSpy = vi.spyOn(notifications, 'addBulk').mockImplementation(jobs => {
+      if (
+        jobs.some(
+          job =>
+            job.name === 'notifications.processReconcilePostNotifications' &&
+            typeof job.data === 'object' &&
+            job.data !== null &&
+            'postId' in job.data &&
+            job.data.postId === post.id,
+        )
+      )
+        return Promise.reject(failure)
+      return originalAddBulk.call(notifications, jobs)
+    })
+    try {
+      await expect(
+        processInvalidatePostsForTopicAliases({ topicAliasIds: [alias!.id] }),
+      ).rejects.toBe(failure)
+    } finally {
+      addSpy.mockRestore()
+    }
+  })
+
+  it('rejects a worker page when its owned continuation admission fails', async () => {
+    const restoreConfig = overrideDynamicConfigFieldsForTest(topicsWorkConfig, {
+      alias_post_invalidation_batch_size: 3,
+    })
+    onTestFinished(restoreConfig)
+    const suffix = Math.random().toString(36).slice(2, 15)
+    const user = await createTestUser({ administrator: true })
+    const topicId = await insertTestTopic({
+      name: `Processor continuation ${suffix}`,
+      slug: `processor-continuation-${suffix}`,
+      createdById: user.id,
+    })
+    const [alias] = await createTopicAliases(topicId, `processor-continuation-${suffix}`)
+    const posts = await Promise.all(
+      Array.from({ length: 4 }, (_, index) =>
+        createTestPost({ user, title: `Processor continuation ${index} ${suffix}` }),
+      ),
+    )
+    await Promise.all(
+      posts.map(post =>
+        createTopHashtagPostSourceForTest({
+          postId: post.id,
+          topicAliasId: alias!.id,
+          userId: user.id,
+          authoredToken: `#processor-${suffix}`,
+        }),
+      ),
+    )
+    const failure = new Error(`Owned worker continuation admission failure ${suffix}`)
+    const originalAdd = rssFeedMaintenance.add
+    const addSpy = vi.spyOn(rssFeedMaintenance, 'add').mockImplementation((name, data, options) => {
+      if (
+        name === 'processInvalidatePostsForTopicAliases' &&
+        data &&
+        typeof data === 'object' &&
+        'topicAliasIds' in data &&
+        Array.isArray(data.topicAliasIds) &&
+        data.topicAliasIds.includes(alias!.id) &&
+        'afterPostId' in data &&
+        typeof data.afterPostId === 'string'
+      )
+        return Promise.reject(failure)
+      return originalAdd.call(rssFeedMaintenance, name, data, options)
+    })
+    try {
+      await expect(
+        processInvalidatePostsForTopicAliases({ topicAliasIds: [alias!.id] }),
+      ).rejects.toBe(failure)
+    } finally {
+      addSpy.mockRestore()
+    }
   })
 })
