@@ -75,7 +75,7 @@ jobs:
           VITEST_CI_REPORTERS: run
           VITEST_COVERAGE_ENABLED: ${{ inputs.publish_coverage && 'true' || 'false' }}
           VITEST_JUNIT_OUTPUT_FILE: web-shard-${{matrix.shard}}.junit.xml
-        run: pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project web --shard ${{ matrix.shard }}/${{ needs.prep.outputs.shard-total }}
+        run: pnpm exec ./ci/with-node-test-options vitest run --bail=3 --project web --shard "$CI_SHARD"
         # Fewer, longer-running shards (see ci/vitest/project-ownership.mts) need a watchdog
         # distinct from the sub-ten-minute job KPI. This job owns a four-worker candidate on public
         # 4-vCPU runners; retain or retune it only after candidate-run KPI evidence.

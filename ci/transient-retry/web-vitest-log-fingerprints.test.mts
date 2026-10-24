@@ -19,9 +19,7 @@ function webTestsKilledCommand(): string {
   }
   const run = workflow.jobs['web-tests'].steps?.find(step => step.name === 'Run web tests')?.run
   if (run === undefined) throw new Error('tests-web.yml is missing Run web tests')
-  const concrete = run
-    .replaceAll('${{ matrix.shard }}', '1')
-    .replaceAll('${{ needs.prep.outputs.shard-total }}', '3')
+  const concrete = run.replaceAll('"$CI_SHARD"', '1/3')
   const prefix = 'pnpm exec '
   if (!concrete.startsWith(prefix)) throw new Error(`unexpected web test command: ${concrete}`)
   return quotePnpmEqualsArgs(concrete.slice(prefix.length))

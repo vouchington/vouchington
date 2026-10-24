@@ -619,8 +619,7 @@ rules:
   - name: Per-item PostgreSQL and Valkey effects
     rule: query-reached-per-item
     scope: repository
-    exclude:
-      ['**/*.test.*', '**/*.spec.*', '**/__tests__/**', '**/test-helpers/**', '**/fixtures/**']
+    exclude: ['**/*.test.*', '**/*.spec.*', '**/__tests__/**', '**/test-helpers/**']
     options:
       effects: [postgres, valkey]
       allow:
@@ -1615,33 +1614,20 @@ rules:
       - '**/*.test.*'
       - '**/*.spec.*'
       - '**/*.stories.*'
-      - '**/*.fixture.*'
       - '**/*.fixtures.*'
-      - '**/test/**'
       - '**/tests/**'
-      - '**/Tests/**'
       - '**/__tests__/**'
       - '**/__snapshots__/**'
-      - '**/fixture/**'
-      - '**/fixtures/**'
-      - '**/__fixtures__/**'
       - '**/integration-tests/**'
       - '**/test-helpers/**'
       - '**/test-support.*'
       - '**/*-fixture.*'
       - '**/*-fixtures.*'
       - '**/*-test-helper.*'
-      - '**/*-test-helpers.*'
-      - '**/*-test-scripts.*'
       - '**/*-test-support.*'
       - 'web/storybook/**'
     exclude:
-      - '**/packages.lock.json'
-      - '**/package-lock.json'
       - '**/pnpm-lock.yaml'
-      - '**/yarn.lock'
-      - '**/Cargo.lock'
-      - '**/Package.resolved'
   - name: Only canonical API routes may start an SSE response
     rule: forbidden-calls
     scope: repository
@@ -1672,8 +1658,7 @@ rules:
     rule: forbidden-calls
     scope: repository
     message: >-
-      randomUUID()/v4() are reserved for temporary markers, tokens, and other opaque non-durable
-      values; mint durable app-owned IDs as UUIDv7.
+      randomUUID()/v4() are reserved for temporary markers, tokens, and other opaque non-durable values; mint durable app-owned IDs as UUIDv7.
     options:
       roots:
         - file: backend/services/bedrock-embeddings-batch/orchestrator/create.mts
@@ -2300,15 +2285,6 @@ rules:
     exclude:
       - '**/AGENTS.md'
       - articles/**
-      - '**/fixtures/**/*.md'
-      - '**/__fixtures__/**/*.md'
-      - '**/snapshots/**/*.md'
-      - '**/__snapshots__/**/*.md'
-      - '**/test-fixtures/**/*.md'
-      - '**/test-cases/**/*.md'
-      - '**/__test-cases__/**/*.md'
-      - '**/testcases/**/*.md'
-      - '**/__testcases__/**/*.md'
     options:
       rootFilenames: [AGENTS.md]
       indexFilenames: [README.md, SCHEDULED.md]
@@ -2450,15 +2426,6 @@ rules:
     exclude:
       - '**/AGENTS.md'
       - articles/**
-      - '**/fixtures/**/*.md'
-      - '**/__fixtures__/**/*.md'
-      - '**/snapshots/**/*.md'
-      - '**/__snapshots__/**/*.md'
-      - '**/test-fixtures/**/*.md'
-      - '**/test-cases/**/*.md'
-      - '**/__test-cases__/**/*.md'
-      - '**/testcases/**/*.md'
-      - '**/__testcases__/**/*.md'
     options:
       maxLines: 180
       maxChars: 12000
@@ -2504,7 +2471,6 @@ rules:
       - '**/*.spec.*'
       - '**/__tests__/**'
       - '**/__snapshots__/**'
-      - '**/fixtures/**'
       - backend/test-helpers/**
       - backend/scripts/seeds/playwright-test-data/**
       - web/test-helpers/**
@@ -2563,8 +2529,7 @@ rules:
       bannedBasenames:
         - name: webpack.config
           message: >-
-            webpack config files are not allowed; this project uses Turbopack for
-            Next.js and Vite for Storybook
+            webpack config files are not allowed; this project uses Turbopack for Next.js and Vite for Storybook
       extensions:
         - .js
         - .cjs
@@ -2638,16 +2603,13 @@ rules:
           message: Next.js pages router files are not allowed
         - glob: 'web/app/**/[[]topicType[]]/**'
           message: >-
-            [topicType] dynamic segments are banned; use explicit routes per topic type.
-            See web/AGENTS.md routing rules.
+            [topicType] dynamic segments are banned; use explicit routes per topic type. See web/AGENTS.md routing rules.
         - glob: '**/*.[pP][aA][tT][cC][hH]'
           message: >-
-            patch and diff files are not allowed; fix the underlying problem upstream
-            or file and link a Vouchington issue labeled dependencies
+            patch and diff files are not allowed; fix the underlying problem upstream or file and link a Vouchington issue labeled dependencies
         - glob: '**/*.[dD][iI][fF][fF]'
           message: >-
-            patch and diff files are not allowed; fix the underlying problem upstream
-            or file and link a Vouchington issue labeled dependencies
+            patch and diff files are not allowed; fix the underlying problem upstream or file and link a Vouchington issue labeled dependencies
 
   - name: package dependencies resolve from registries
     rule: package-json-registry-only
@@ -3628,8 +3590,6 @@ rules:
     scope: repository
     include:
       - '**/*.md'
-      - '**/*.markdown'
-      - '**/*.mdx'
 
   - name: foreign keys have a supporting index
     rule: postgres-fk-index
@@ -4479,15 +4439,11 @@ rules:
       allow:
         - path: test-helpers/vitest.setup.storybook-browser-guard.mts
           reason: >-
-            Content-free redirect shim so no-mistakes can resolve web-storybook-browser's
-            setupFiles literal to a real repo-root path; Vitest never executes this copy
-            (see test-helpers/tsconfig.json's exclude comment). Its real logic is
-            web/.storybook/vitest.setup.ts, typechecked under web/tsconfig.json. See #8876.
+            Content-free redirect shim so no-mistakes can resolve web-storybook-browser's setupFiles literal to a real repo-root path; Vitest never executes this copy (see test-helpers/tsconfig.json's exclude comment). Its real logic is web/.storybook/vitest.setup.ts, typechecked under web/tsconfig.json. See #8876.
       auxiliaryConfigs:
         - path: web/tsconfig.dependency-cruiser.json
           reason: >-
-            Path-alias resolver config consumed only by web/.dependency-cruiser.cjs; never
-            passed to tsc directly. See #9225.
+            Path-alias resolver config consumed only by web/.dependency-cruiser.cjs; never passed to tsc directly. See #9225.
 
   - name: lychee version pin matches mise
     rule: version-pin-consistency
@@ -4998,7 +4954,7 @@ rules:
         - object: 'column:activitypub_inbox_delivery_work_items.claimed_actor_uri'
           reason: 'Decision 13 allowed URL group: Untrusted activity actor URI parsed during the network-free request preflight.'
         - object: 'column:bluesky_follow_records.record_uri'
-          reason: "Decision 13 allowed URL group: The full AT-URI (at://<follower_did>/app.bsky.graph.follow/<rkey>) returned by createRecord, passed verbatim to deleteRecord on unfollow. Not decomposed into repo/rkey columns \u2014 @atproto/api's Agent.deleteFollow(uri) parses it directly."
+          reason: "Decision 13 allowed URL group: The full AT-URI (at://<follower_did>/app.bsky.graph.follow/<rkey>) returned by createRecord, passed verbatim to deleteRecord on unfollow. Not decomposed into repo/rkey columns — @atproto/api's Agent.deleteFollow(uri) parses it directly."
         - object: 'column:copyright_notice_targets.hosted_use_url'
           reason: 'Decision 13 allowed URL group: Immutable URL snapshot supplied or resolved for the identified hosted use.'
         - object: 'column:copyright_territorial_notice_receipts.hosted_use_url'
@@ -5299,8 +5255,7 @@ rules:
           message: 'use the R4 shapes: _revisions, _changes, _work_items or _cursors'
       allow:
         - object: table:agent_moderation_votes
-          reason: Binary moderation ballots intentionally do not model neutral or semantic
-            score provenance;
+          reason: Binary moderation ballots intentionally do not model neutral or semantic score provenance;
   - name: NM-11 status beside lifecycle timestamps
     rule: postgres-status-with-lifecycle-timestamps
     scope: repository
@@ -5338,3 +5293,37 @@ rules:
         - exchanged
         - acknowledged
       minLifecycleColumns: 2
+
+  - name: Actions checkout does not persist credentials
+    rule: github-actions-checkout-credentials
+    scope: repository
+
+  - name: Actions services avoid fixed host ports
+    rule: github-actions-docker-host-ports
+    scope: repository
+
+  - name: Actions downloads verify integrity
+    rule: github-actions-download-integrity
+    scope: repository
+
+  - name: checkouts are never sparse
+    rule: no-sparse-checkout
+    scope: repository
+
+  - name: Actions scripts avoid inline expressions
+    rule: github-actions-script-expressions
+    scope: repository
+
+  - name: no-mistakes globs match tracked files
+    rule: no-mistakes-config
+    scope: repository
+
+  - name: web tsconfig aliases map to folders
+    rule: tsconfig-alias-folder-mapping
+    scope: repository
+    options:
+      tsconfig: web/tsconfig.json
+      baseDir: .
+      mappings:
+        - prefix: '@'
+          root: ''
