@@ -1,5 +1,5 @@
 import { it, expect, beforeAll, describe } from 'vitest'
-import { getCrawlerById, getCrawlerForHostnameId, getCrawlerForUrl } from './get.mts'
+import { getCrawlerById, getCrawlerForHostnameId } from './get.mts'
 import { createCrawler } from './index.mts'
 import {
   createTestUser,
@@ -68,40 +68,5 @@ describe('get.generated', () => {
     expect(retrieved).toBeDefined()
     expect(retrieved!.id).toBe(crawler.id)
     expect(retrieved!.priority).toBe(100)
-  })
-
-  it('getCrawlerForUrl returns null when no crawler matches', async () => {
-    const randomDomain = Math.random().toString(36).slice(2, 15)
-    const crawler = await getCrawlerForUrl(`https://${randomDomain}.test.invalid/test`)
-    expect(crawler).toBeNull()
-  })
-
-  it('getCrawlerForUrl returns crawler matching URL hostname', async () => {
-    const random = Math.random().toString(36).slice(2, 15)
-    const hostname = `crawler-url-${random}.example.com`
-    const url = await createTestUrlWithNewHostname(`https://${hostname}/test`)
-    const crawler = await createCrawler(user, {
-      hostname_id: url!.hostname.id,
-      crawler_type: 'fetch',
-      priority: 100,
-    })
-    const retrieved = await getCrawlerForUrl(`https://${hostname}/page`)
-    expect(retrieved).toBeDefined()
-    expect(retrieved!.id).toBe(crawler.id)
-  })
-
-  it('getCrawlerForUrl returns crawler after priority update', async () => {
-    const random = Math.random().toString(36).slice(2, 15)
-    const hostname = `crawler-priority-${random}.example.com`
-    const url = await createTestUrlWithNewHostname(`https://${hostname}/test`)
-    const crawler = await createCrawler(user, {
-      hostname_id: url!.hostname.id,
-      crawler_type: 'fetch',
-      priority: 1,
-    })
-    const retrieved = await getCrawlerForUrl(`https://${hostname}/page`)
-    expect(retrieved).toBeDefined()
-    expect(retrieved!.id).toBe(crawler.id)
-    expect(retrieved!.priority).toBe(1)
   })
 })

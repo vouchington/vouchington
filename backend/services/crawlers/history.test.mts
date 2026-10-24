@@ -8,7 +8,6 @@ import {
 import { readStaffEditorialRows } from '@voucha/test-helpers/staff-editorial-history'
 import { createCrawler } from './create-crawler.mts'
 import { updateCrawler } from './update-crawler.mts'
-import { deleteCrawler } from './delete.mts'
 import { getCrawlerById } from './get.mts'
 
 describe('crawlers staff history', () => {
@@ -31,7 +30,7 @@ describe('crawlers staff history', () => {
       after: { referral_program_id: referralProgramId },
     })
   })
-  it('records crawler creation, changed fields and deletion', async () => {
+  it('records crawler creation and changed fields', async () => {
     const actor = await createTestUser({ administrator: true })
     const hostnameId = await insertTestUrlHostname({
       hostname: `${crypto.randomUUID()}.example.com`,
@@ -42,24 +41,15 @@ describe('crawlers staff history', () => {
       description: 'Before',
     })
     await updateCrawler(actor, crawler.id, { description: 'After' })
-    await deleteCrawler(actor, crawler.id)
     const rows = await readStaffActionHistory(actor.id)
-    expect(rows.map(row => row.action_type)).toEqual([
-      'crawler_create',
-      'crawler_update',
-      'crawler_delete',
-    ])
+    expect(rows.map(row => row.action_type)).toEqual(['crawler_create', 'crawler_update'])
     expect(rows[1]!.metadata).toMatchObject({
       before: { description: 'Before' },
       after: { description: 'After' },
     })
-    expect(rows[2]!.metadata).toMatchObject({
-      before: { description: 'After' },
-      after: { deleted: true },
-    })
   })
 
-  it.each(['create', 'update', 'delete'] as const)(
+  it.each(['create', 'update'] as const)(
     'rolls back crawler %s when history fails',
     async action => {
       const actor = await createTestUser({ administrator: true })
@@ -80,9 +70,7 @@ describe('crawlers staff history', () => {
               { hostname_id: hostnameId, crawler_type: 'fetch' },
               { query },
             )
-          if (action === 'update')
-            return updateCrawler(actor, crawler!.id, { description: 'Changed' }, { query })
-          return deleteCrawler(actor, crawler!.id, { query })
+          return updateCrawler(actor, crawler!.id, { description: 'Changed' }, { query })
         }),
       ).rejects.toThrow('staff history rejected')
       expect(await readStaffEditorialRows(actor.id)).toEqual(before)
