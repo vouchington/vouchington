@@ -47,9 +47,7 @@ Cached wrappers for list/search queries, used for logged-out users only. Config:
 
 Search cache TTL aligns with `HTTP_CACHE_SHORT_MAX_AGE_SECONDS` (60s). Cache keys use SHA-256 hashing of stable-serialized options for deterministic, case-sensitive keys.
 
-Those prefixes are `ANONYMOUS_SEARCH_CACHE_PREFIXES` in
-`backend/services/entity-cache/anonymous-search-prefixes.mts`.
-`invalidateAnonymousSearchCaches` sweeps that list, and RSS feed search imports
-`RSS_FEEDS_ANON_CACHE` from the same module. `GET /api/v1/urls` requires authentication and has no
-anonymous search prefix. Hostname search uses `url_hostnames_anon_v2`. Single URL and URL hostname
-entity caches stay on the 24h entity TTLs above.
+Anonymous search entries expire naturally. Playwright global setup clears its test cache before
+browser runs so seeded pages do not see results from an earlier run. `GET /api/v1/urls` requires
+authentication and has no anonymous search cache; single URL and URL hostname entity caches use
+the entity TTL above.

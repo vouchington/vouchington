@@ -52,7 +52,9 @@
     "@data-stores/valkey": "workspace:^",
     "@queues/bloom-filters": "workspace:^",
     "@types/http-errors": "^2.0.5",
+    "@voucha/config": "workspace:^",
     "@voucha/test-helpers": "workspace:^",
-    "uuid": "^14.0.3"
+    "uuid": "^14.0.3",
+    "valkyries": "^0.11.2"
   }
 }

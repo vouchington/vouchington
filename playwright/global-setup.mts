@@ -11,7 +11,8 @@ import { assertPlaywrightSeedData } from '../backend/scripts/seeds/playwright-se
 import { seedPlaywrightTestData } from '../backend/scripts/seeds/playwright-test-data.mts'
 import { pinPlaywrightSeedCrawlAnchor } from '../backend/scripts/seeds/crawl-ids.mts'
 import { invalidate } from '../backend/services/entity-cache/index.mts'
-import { invalidateAnonymousSearchCaches } from '../backend/services/entity-fetch/search-caches.mts'
+import { ValkeyCache } from '../backend/data-stores/valkey/cache.mts'
+import { PLAYWRIGHT_ANONYMOUS_SEARCH_CACHE_PREFIXES } from '../backend/test-helpers/anonymous-search-cache.mts'
 import { routeRateLimiters } from '../backend/services/route-rate-limits/check.mts'
 import { routeRateLimitConfig } from '../backend/services/route-rate-limits/config.mts'
 import {
@@ -76,6 +77,6 @@ export default async function globalSetup(config: FullConfig) {
   await Promise.all(Object.values(routeRateLimiters).map(rl => rl.invalidate()))
   await Promise.all([
     invalidate.topic_metrics(...PLAYWRIGHT_TOPIC_IDS),
-    invalidateAnonymousSearchCaches(),
+    ...PLAYWRIGHT_ANONYMOUS_SEARCH_CACHE_PREFIXES.map(prefix => ValkeyCache.invalidate(prefix)),
   ])
 }

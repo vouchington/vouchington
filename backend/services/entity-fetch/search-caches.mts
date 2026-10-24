@@ -22,7 +22,6 @@ import { getTrendingCommunities } from '@services/trending-communities/get-trend
 import type { TrendingCommunityOptions } from '@services/trending-communities/types'
 import { getPlatformStats } from '@services/platform-stats/get-platform-stats'
 import {
-  ANONYMOUS_SEARCH_CACHE_PREFIXES,
   COMMUNITIES_ANON_CACHE,
   PLATFORM_STATS_ANON_CACHE,
   POST_IDS_ANON_CACHE,
@@ -35,7 +34,7 @@ import {
   TRENDING_TOPICS_ANON_CACHE,
   URL_HOSTNAMES_ANON_CACHE,
 } from '@services/entity-cache/anonymous-search-prefixes'
-import { createSearchCache, invalidateSearchCache } from '@services/entity-cache/search-cache'
+import { createSearchCache } from '@services/entity-cache/search-cache'
 
 export const getPostIdsCached = createSearchCache(
   POST_IDS_ANON_CACHE,
@@ -95,11 +94,3 @@ export const getPlatformStatsCached = createSearchCache(
   PLATFORM_STATS_ANON_CACHE,
   (_options: Record<string, never>) => getPlatformStats(),
 )
-
-/**
- * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
- * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
- */
-export async function invalidateAnonymousSearchCaches(): Promise<void> {
-  await Promise.all(ANONYMOUS_SEARCH_CACHE_PREFIXES.map(prefix => invalidateSearchCache(prefix)))
-}

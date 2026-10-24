@@ -1138,7 +1138,7 @@
     "vouchington/banned-member-read": [
       "error",
       {
-        "members": ["invalidate"],
+        "members": ["invalidate", "invalidateMany"],
         "include": [
           "backend/**/*.test.mts",
           "backend/**/*.spec.mts",

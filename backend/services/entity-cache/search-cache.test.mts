@@ -1,6 +1,6 @@
 import { it, expect, describe } from 'vitest'
 import { randomBytes } from 'node:crypto'
-import { createSearchCache, invalidateSearchCache, stableSerialize } from './search-cache.mts'
+import { createSearchCache, stableSerialize } from './search-cache.mts'
 
 // ─── stableSerialize ─────────────────────────────────────────────────────────
 
@@ -99,19 +99,5 @@ describe('createSearchCache', () => {
     // callCount could be 1 (cache hit on second call) or 2 (both miss) depending on timing
     // but results must be identical — just verify correctness
     expect(callCount).toBeGreaterThanOrEqual(1)
-  })
-
-  it('invalidates cached search results by prefix', async () => {
-    const prefix = `test_sc_${randomBytes(4).toString('hex')}`
-    let value = 'before'
-    const cached = createSearchCache(prefix, (_opts: { key: string }) => Promise.resolve(value))
-
-    expect(await cached({ key: 'same' })).toBe('before')
-    value = 'after'
-    expect(await cached({ key: 'same' })).toBe('before')
-
-    await invalidateSearchCache(prefix)
-
-    expect(await cached({ key: 'same' })).toBe('after')
   })
 })
