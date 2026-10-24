@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite'
 import { expect, within } from 'storybook/test'
 import { CopyrightStaffLinks } from '@/components/copyright/copyright-staff-links'
-import { StorybookProviders } from '@/storybook/entities/storybook-providers'
 import type { User } from '@/types/user'
 
 function userWithRoles(roles: string[]): User {
@@ -17,13 +16,7 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const Moderator: Story = {
-  decorators: [
-    Story => (
-      <StorybookProviders currentUser={userWithRoles(['moderator'])}>
-        <Story />
-      </StorybookProviders>
-    ),
-  ],
+  parameters: { auth: { currentUser: userWithRoles(['moderator']) } },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     await expect(canvas.getByRole('link', { name: 'Copyright review queue' })).toHaveAttribute(
@@ -38,13 +31,7 @@ export const Moderator: Story = {
 }
 
 export const OrdinaryMemberSeesNothing: Story = {
-  decorators: [
-    Story => (
-      <StorybookProviders currentUser={userWithRoles([])}>
-        <Story />
-      </StorybookProviders>
-    ),
-  ],
+  parameters: { auth: { currentUser: userWithRoles([]) } },
   play: async ({ canvasElement }) => {
     await expect(within(canvasElement).queryByRole('link')).toBeNull()
   },
