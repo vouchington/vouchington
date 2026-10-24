@@ -16,7 +16,9 @@ export type SqlTable = {
 // Keep the existing diagnostic names for PostgreSQL's normalized builtin aliases.
 const BUILTIN_TYPE_NAMES: Readonly<Record<string, string>> = {
   bigint: 'pg_catalog.int8',
+  dec: 'pg_catalog.numeric',
   'double precision': 'pg_catalog.float8',
+  float: 'pg_catalog.float8',
   integer: 'pg_catalog.int4',
   numeric: 'pg_catalog.numeric',
   decimal: 'pg_catalog.numeric',

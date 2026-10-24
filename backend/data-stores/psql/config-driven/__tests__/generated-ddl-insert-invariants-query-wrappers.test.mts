@@ -49,4 +49,19 @@ describe('config-driven generated DDL insert invariant: PREPARE/EXPLAIN wrappers
       ),
     ).not.toBeNull()
   })
+
+  it.each(['UPDATE topics SET name = name WHERE false', 'DELETE FROM topics WHERE false'])(
+    'checks each INSERT CTE before %s',
+    async statement => {
+      const insert = "INSERT INTO prompts (body) VALUES ('hi')"
+      expect(
+        await findFirstUnguardedInsertViolation(`WITH seeded AS (${insert}) ${statement};`),
+      ).toContain(insert)
+      expect(
+        await findFirstUnguardedInsertViolation(
+          `WITH seeded AS (${insert} ON CONFLICT DO NOTHING) ${statement};`,
+        ),
+      ).toBeNull()
+    },
+  )
 })
