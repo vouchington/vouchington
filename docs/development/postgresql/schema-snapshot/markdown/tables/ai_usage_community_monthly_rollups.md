@@ -6,17 +6,18 @@ All-time cost facts for live communities, folded from old per-call usage in boun
 
 Not partitioned — growth: unbounded.
 
-| Column                   | Type             | Nullable | Default    | Identity | Generated | Collation | Comment                                                                                    |
-| ------------------------ | ---------------- | -------- | ---------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------ |
-| `id`                     | `uuid`           | no       | `uuidv7()` |          |           |           | Stable identifier of this community-month total.                                           |
-| `community_id`           | `uuid`           | no       |            |          |           |           | Live community whose calls contributed to this month; removal follows community deletion.  |
-| `month_start_on`         | `date`           | no       |            |          |           |           | UTC first day of the call month.                                                           |
-| `request_count`          | `bigint`         | no       | `0`        |          |           |           | Count of folded provider calls.                                                            |
-| `input_tokens`           | `bigint`         | no       | `0`        |          |           |           | Sum of folded input tokens.                                                                |
-| `output_tokens`          | `bigint`         | no       | `0`        |          |           |           | Sum of folded output tokens.                                                               |
-| `unpriced_request_count` | `bigint`         | no       | `0`        |          |           |           | Count of folded calls without known pricing.                                               |
-| `cost_microunits`        | `bigint`         | no       | `0`        |          |           |           | Exact sum of priced USD costs in millionths of a dollar.                                   |
-| `currency_code`          | `currency_codes` | no       |            |          |           |           | USD denomination of this community-month cost; priced source calls are constrained to USD. |
+| Column                   | Type                       | Nullable | Default                      | Identity | Generated | Collation | Comment                                                                                    |
+| ------------------------ | -------------------------- | -------- | ---------------------------- | -------- | --------- | --------- | ------------------------------------------------------------------------------------------ |
+| `id`                     | `uuid`                     | no       | `uuidv7()`                   |          |           |           | Stable identifier of this community-month total.                                           |
+| `community_id`           | `uuid`                     | no       |                              |          |           |           | Live community whose calls contributed to this month; removal follows community deletion.  |
+| `month_start_on`         | `date`                     | no       |                              |          |           |           | UTC first day of the call month.                                                           |
+| `request_count`          | `bigint`                   | no       | `0`                          |          |           |           | Count of folded provider calls.                                                            |
+| `input_tokens`           | `bigint`                   | no       | `0`                          |          |           |           | Sum of folded input tokens.                                                                |
+| `output_tokens`          | `bigint`                   | no       | `0`                          |          |           |           | Sum of folded output tokens.                                                               |
+| `unpriced_request_count` | `bigint`                   | no       | `0`                          |          |           |           | Count of folded calls without known pricing.                                               |
+| `cost_microunits`        | `bigint`                   | no       | `0`                          |          |           |           | Exact sum of priced USD costs in millionths of a dollar.                                   |
+| `currency_code`          | `currency_codes`           | no       |                              |          |           |           | USD denomination of this community-month cost; priced source calls are constrained to USD. |
+| `created_at`             | `timestamp with time zone` | yes      | `uuid_extract_timestamp(id)` |          | virtual   |           | When this monthly total row was first created; the usage month is month_start_on.          |
 
 **Primary key:** `PRIMARY KEY (id)`
 

@@ -5664,6 +5664,17 @@
           "ordinalPosition": 8,
           "type": "bigint"
         },
+        "created_at": {
+          "collation": null,
+          "comment": "When this monthly total row was first created; the usage month is month_start_on.",
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 10,
+          "type": "timestamp with time zone"
+        },
         "currency_code": {
           "collation": null,
           "comment": "USD denomination of this community-month cost; priced source calls are constrained to USD.",
@@ -5868,6 +5879,17 @@
           "nullable": false,
           "ordinalPosition": 7,
           "type": "bigint"
+        },
+        "created_at": {
+          "collation": null,
+          "comment": "When this monthly total row was first created; the usage month is month_start_on.",
+          "defaultExpression": null,
+          "generated": "virtual",
+          "generatedExpression": "uuid_extract_timestamp(id)",
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 9,
+          "type": "timestamp with time zone"
         },
         "currency_code": {
           "collation": null,
