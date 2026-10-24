@@ -28,8 +28,10 @@ describe('retired sitemap cleanup', () => {
       putRetiredSitemapCursor: async value => {
         cursor = value
       },
-      listRetiredSitemapGenerationKeys: async afterKey =>
-        [...records.keys()].filter(candidate => !afterKey || candidate > afterKey),
+      listRetiredSitemapGenerationKeys: async (afterKey, limit) => {
+        const available = [...records.keys()].filter(candidate => !afterKey || candidate > afterKey)
+        return { keys: available.slice(0, limit), hasMore: available.length > limit }
+      },
       getRetiredSitemapGeneration: async recordKey => records.get(recordKey) ?? null,
       putRetiredSitemapGeneration: async record => {
         records.set(key, record)
@@ -64,5 +66,6 @@ describe('retired sitemap cleanup', () => {
     expect(final.deletedPages).toBe(1)
     expect(records.size).toBe(0)
     expect(deleted.at(-1)).toBe('families/topics/11111111-1111-4111-8111-111111111111/3.xml')
+    expect(final.hasMore).toBe(false)
   })
 })

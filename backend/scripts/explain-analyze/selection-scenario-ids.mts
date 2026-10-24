@@ -30,6 +30,7 @@ export const SELECTION_SCENARIO_IDS = [
   'media-delivery-staging-tuple-page',
   'post-publication-available-work',
   'post-publication-candidate-page',
+  'post-publication-new-root-initial-page',
   'post-publication-root-hints',
   'post-publication-candidate-author',
   'post-publication-candidate-author-late-page',

@@ -1,4 +1,3 @@
-import { beginTransaction } from '@data-stores/psql'
 import {
   createTestPost,
   createTestTopic,
@@ -11,10 +10,12 @@ import {
   claimPostPublicationDirtyWork,
   updatePostPublicationDirtyWorkCursors,
 } from './dirty-work.mts'
-import { recordPostPublicationChange } from './capture.mts'
 import { readRawPublicationCandidatePage } from './raw-candidate-page.mts'
 import { readPublicationAncestorRootHints } from './candidate-root-hints.mts'
-import { testPublicationWorkAtPost } from '@voucha/test-helpers/post-publication-fixtures'
+import {
+  recordTestPostPublicationChange,
+  testPublicationWorkAtPost,
+} from '@voucha/test-helpers/post-publication-fixtures'
 
 describe('bounded publication ancestry', () => {
   it('skips unrelated roots while retaining a nonroot impacted post in another tree', async () => {
@@ -37,13 +38,11 @@ describe('bounded publication ancestry', () => {
       parent_post_id: unrelatedRoot.id,
       post_type: 'comment',
     })
-    await using transaction = await beginTransaction()
-    const work = await recordPostPublicationChange(transaction, {
+    const work = await recordTestPostPublicationChange({
       scope: { type: 'post', postId: targetRoot.id },
       reason: 'post_updated',
       impactedPostIds: [impactedPost.id],
     })
-    await transaction.commit()
     const claimed = await claimPostPublicationDirtyWork(work, 60)
     if (!claimed) throw new Error('Expected publication work lease')
     expect(await readPublicationAncestorRootHints(claimed)).toEqual(
@@ -68,12 +67,10 @@ describe('bounded publication ancestry', () => {
     const aliasId = await createTopHashtagAliasForTest(topic.id, `empty-${crypto.randomUUID()}`)
     const before = await createTestPost({ user })
     const after = await createTestPost({ user })
-    await using transaction = await beginTransaction()
-    const work = await recordPostPublicationChange(transaction, {
+    const work = await recordTestPostPublicationChange({
       scope: { type: 'topic_alias', topicAliasId: aliasId },
       reason: 'post_topics_changed',
     })
-    await transaction.commit()
     const claimed = await claimPostPublicationDirtyWork(work, 60)
     if (!claimed) throw new Error('Expected publication work lease')
     const page = await readRawPublicationCandidatePage(
@@ -131,12 +128,10 @@ describe('bounded publication ancestry', () => {
     })
     const deepestId = parent.id
     const priorId = parent.parent_post_id!
-    await using transaction = await beginTransaction()
-    const work = await recordPostPublicationChange(transaction, {
+    const work = await recordTestPostPublicationChange({
       scope: { type: 'topic_alias', topicAliasId: aliasId },
       reason: 'post_topics_changed',
     })
-    await transaction.commit()
     const claimed = await claimPostPublicationDirtyWork(work, 60)
     if (!claimed) throw new Error('Expected publication work lease')
     const nearEnd = { ...claimed, cursor_post_id: priorId }
@@ -178,12 +173,10 @@ describe('bounded publication ancestry', () => {
       pendingAncestorId: null,
     })
 
-    await using boundaryTransaction = await beginTransaction()
-    const boundaryWork = await recordPostPublicationChange(boundaryTransaction, {
+    const boundaryWork = await recordTestPostPublicationChange({
       scope: { type: 'topic_alias', topicAliasId: boundaryAliasId },
       reason: 'post_topics_changed',
     })
-    await boundaryTransaction.commit()
     const boundaryClaim = await claimPostPublicationDirtyWork(boundaryWork, 60)
     if (!boundaryClaim) throw new Error('Expected boundary publication work lease')
     const atBoundary = await readRawPublicationCandidatePage(
@@ -199,12 +192,10 @@ describe('bounded publication ancestry', () => {
       BigInt(`0x${deepestId.replaceAll('-', '')}`),
     )
 
-    await using deferredTransaction = await beginTransaction()
-    const deferredWork = await recordPostPublicationChange(deferredTransaction, {
+    const deferredWork = await recordTestPostPublicationChange({
       scope: { type: 'topic_alias', topicAliasId: deferredAliasId },
       reason: 'post_topics_changed',
     })
-    await deferredTransaction.commit()
     const deferredClaim = await claimPostPublicationDirtyWork(deferredWork, 60)
     if (!deferredClaim) throw new Error('Expected deferred publication work lease')
     const deferredFirst = await readRawPublicationCandidatePage(

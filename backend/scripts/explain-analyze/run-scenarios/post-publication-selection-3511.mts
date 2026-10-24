@@ -1,4 +1,5 @@
 import { beginTransaction, read, write } from '@data-stores/psql'
+import { createTestPost, hardDeleteTestPost } from '@voucha/test-helpers'
 import { recordPostPublicationChange } from '@services/post-publication/public'
 import {
   claimPostPublicationDirtyWork,
@@ -115,6 +116,49 @@ export async function runPostPublicationSelection3511Scenarios(): Promise<void> 
        DELETE FROM post_publication_dirty_work WHERE id = $1::uuid`,
       [work.id],
     )
+  }
+
+  // A fresh UUIDv7 root sits after the 100k anchored posts and any local
+  // development fixtures, matching the ordinary new-post admission path.
+  const newRoot = await createTestPost()
+  const newRootId = newRoot.id
+  if (!newRoot.created_by_id) throw new Error('Expected new-root author')
+  await using newRootTransaction = await beginTransaction()
+  const newRootWork = await recordPostPublicationChange(newRootTransaction, {
+    scope: { type: 'post', postId: newRootId },
+    reason: 'post_created',
+    footprint: { priorAuthorUserId: newRoot.created_by_id },
+  })
+  await newRootTransaction.commit()
+  try {
+    const claimed = await claimPostPublicationDirtyWork(newRootWork, 60)
+    if (!claimed) throw new Error('Expected new-root publication work')
+    registerScenarioContract('post-publication-new-root-initial-page', {
+      seededRows: { posts: 100_000 },
+      expectations: [{ kind: 'maxProcessedRows', relation: 'posts', max: 50 }],
+    })
+    await runAndCapture(
+      'post-publication-new-root-initial-page',
+      async () => {
+        const page = await listPublicationCandidatePage(claimed, 10)
+        if (!page.posts.some(post => post.id === newRootId))
+          throw new Error('Expected new root on its first bounded publication page')
+      },
+      undefined,
+      'readRawPublicationCandidatePage',
+    )
+  } finally {
+    await write(
+      `/* removePostPublicationNewRootProbeKeys */
+       DELETE FROM post_publication_dirty_work_keys WHERE dirty_work_id = $1::uuid`,
+      [newRootWork.id],
+    )
+    await write(
+      `/* removePostPublicationNewRootProbeWork */
+       DELETE FROM post_publication_dirty_work WHERE id = $1::uuid`,
+      [newRootWork.id],
+    )
+    await hardDeleteTestPost(newRootId)
   }
 
   await runBroadPublicationScopeScenarios(postId)

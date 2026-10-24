@@ -7,6 +7,8 @@ import { getRssFeedById } from './get.mts'
 import { updateRssFeedById } from './update.mts'
 import { rssFeedCrawlConfig } from './crawl-config.mts'
 import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import { insertTestRssFeedDirect } from '@voucha/test-helpers/entities/rss-feeds'
+import { uuidBefore } from '@voucha/test-helpers/uuid-before'
 
 describe('get-to-fetch', () => {
   const TTL_MS = 60_000 // 1 minute
@@ -90,6 +92,51 @@ describe('get-to-fetch', () => {
     } finally {
       restore()
     }
+  })
+
+  it('continues a dense lane after reaching the eligible limit', async () => {
+    const ids = (await Promise.all([insertTestRssFeedDirect({}), insertTestRssFeedDirect({})]))
+      .map(feed => feed.id)
+      .toSorted()
+    const restore = overrideDynamicConfigFieldsForTest(rssFeedCrawlConfig, {
+      selection_scan_page_size: 1,
+    })
+    try {
+      const first = await getRssFeedsToFetch({
+        cursor: { lane: 5, afterId: uuidBefore(ids[0]!) },
+        asOf: new Date(),
+        limit: 1,
+      })
+      expect(first.feeds.map(feed => feed.id)).toEqual([ids[0]])
+      expect(first.scannedCount).toBe(1)
+      expect(first.nextCursor).toEqual({ lane: 5, afterId: ids[0] })
+
+      let cursor = first.nextCursor
+      let foundSecond = false
+      for (let page = 0; page < 8 && cursor?.lane === 5; page += 1) {
+        const next = await getRssFeedsToFetch({ cursor, asOf: new Date(), limit: 1 })
+        foundSecond ||= next.feeds.some(feed => feed.id === ids[1])
+        cursor = next.nextCursor
+        if (foundSecond) break
+      }
+      expect(foundSecond).toBe(true)
+    } finally {
+      restore()
+    }
+  })
+
+  it('advances an empty lane and stops after the final lane', async () => {
+    const afterId = 'ffffffff-ffff-ffff-ffff-ffffffffffff'
+    expect(
+      await getRssFeedsToFetch({ cursor: { lane: 9, afterId }, asOf: new Date(), limit: 1 }),
+    ).toMatchObject({ feeds: [], scannedCount: 0, nextCursor: { lane: 10 } })
+    const final = await getRssFeedsToFetch({
+      cursor: { lane: 10, afterId },
+      asOf: new Date(),
+      limit: 1,
+    })
+    expect(final).toMatchObject({ feeds: [], scannedCount: 0 })
+    expect(final.nextCursor).toBeUndefined()
   })
 
   it('getRssFeedByIdToFetch returns feed_ignore_robots_txt=null by default', async () => {

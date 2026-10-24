@@ -70,7 +70,7 @@ export function deleteRetiredSitemapGeneration(key: string): Promise<void> {
 export async function listRetiredSitemapGenerationKeys(
   afterKey: string | null,
   limit: number,
-): Promise<string[]> {
+): Promise<{ keys: string[]; hasMore: boolean }> {
   if (!Number.isInteger(limit) || limit < 1 || limit > 1000) {
     throw new Error('Invalid sitemap retirement listing limit')
   }
@@ -83,11 +83,12 @@ export async function listRetiredSitemapGenerationKeys(
     }),
   )
   const prefix = applyStoragePrefix(RETIRED_RECORD_PREFIX)
-  return (result.Contents ?? []).map(object => {
+  const keys = (result.Contents ?? []).map(object => {
     const key = object.Key
     if (!key?.startsWith(prefix)) throw new Error('Sitemap retirement listing escaped its prefix')
     return stripStoragePrefix(key)
   })
+  return { keys, hasMore: result.IsTruncated === true }
 }
 
 export async function getRetiredSitemapCursor(): Promise<string | null> {

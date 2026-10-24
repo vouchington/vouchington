@@ -23,11 +23,12 @@ describe('retired sitemap S3 operations', () => {
     vi.stubEnv('SITEMAP_S3_PREFIX', 'staging')
     mocks.send.mockResolvedValueOnce({
       Contents: [{ Key: 'staging/sitemaps/retired/records/gen.json' }],
+      IsTruncated: true,
     } as never)
 
     await expect(
       listRetiredSitemapGenerationKeys('sitemaps/retired/records/prev.json', 2),
-    ).resolves.toEqual(['sitemaps/retired/records/gen.json'])
+    ).resolves.toEqual({ keys: ['sitemaps/retired/records/gen.json'], hasMore: true })
     expect(mocks.send).toHaveBeenCalledOnce()
     expect((mocks.send.mock.calls[0]![0] as ListObjectsV2Command).input).toMatchObject({
       Bucket: S3Buckets.sitemaps,

@@ -92,13 +92,24 @@ export async function createOwnedBedrockRouterFixtures(
       owner.run(async () => {
         const id = mintUUIDv7()
         const arn = `arn:aws:bedrock:us-east-1:123456789012:model-invocation-job/${randomUUID()}`
+        const submittedAt = new Date(Date.now() - (stale ? 14 : 1) * 24 * 3600_000)
         await insertTestEmbeddingsBatch({
           id,
           jobArn: arn,
-          submittedAt: new Date(Date.now() - (stale ? 14 : 1) * 24 * 3600_000),
+          submittedAt,
         })
         ids.push(id)
-        return { id, arn, cursor: oneBatchCursor(id) }
+        return {
+          id,
+          arn,
+          cursor: stale
+            ? {
+                ...oneBatchCursor(id),
+                afterStaleAt: submittedAt.toISOString(),
+                cutoffAt: new Date(submittedAt.getTime() + 24 * 3600_000).toISOString(),
+              }
+            : oneBatchCursor(id),
+        }
       })
     const [pending, stale, foreign] = await Promise.all([insert(false), insert(true), insert(true)])
     const readForeign = () =>

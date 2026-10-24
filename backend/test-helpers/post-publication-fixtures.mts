@@ -1,8 +1,11 @@
-import { beginTransaction } from '@data-stores/psql'
+import { beginTransaction, write } from '@data-stores/psql'
 import { recordStoryTopicPublicationChanges } from '../services/post-publication/capture-story-topics.mts'
 import { createTestPost, createTestUser } from '@voucha/test-helpers'
 import { recordPostPublicationChange } from '../services/post-publication/capture.mts'
-import { claimPostPublicationDirtyWork } from '../services/post-publication/dirty-work.mts'
+import {
+  claimPostPublicationDirtyWork,
+  updatePostPublicationDirtyWorkCursors,
+} from '../services/post-publication/dirty-work.mts'
 import { listPublicationCandidates } from '../services/post-publication/publication-candidates.mts'
 import {
   reconcilePostPublicationDirtyWork,
@@ -13,6 +16,26 @@ import {
   readTestPublicationSnapshot,
   type PublicationProjectionIdentity,
 } from './entities/post-publication-snapshots.mts'
+
+/** Commit a publication capture using the same transaction boundary as callers. */
+export async function recordTestPostPublicationChange(
+  input: Parameters<typeof recordPostPublicationChange>[1],
+): Promise<Awaited<ReturnType<typeof recordPostPublicationChange>>> {
+  await using transaction = await beginTransaction()
+  const work = await recordPostPublicationChange(transaction, input)
+  await transaction.commit()
+  return work
+}
+
+export async function createTestPendingPostIdentityIds(): Promise<{
+  candidateId: string
+  ancestorId: string
+}> {
+  const { rows } = await write<{ candidate_id: string; ancestor_id: string }>(
+    '/* createTestPendingIdentityIds */ SELECT uuidv7() AS candidate_id, uuidv7() AS ancestor_id',
+  )
+  return { candidateId: rows[0]!.candidate_id, ancestorId: rows[0]!.ancestor_id }
+}
 
 /** Start a scoped test window immediately before one synthetic UUIDv7 post. */
 export function testUuidPredecessor(uuid: string): string {
@@ -50,11 +73,10 @@ export async function reconcileTestPublicationThroughPostSweep(
   posts: ReconciliationPost[]
   final: Awaited<ReturnType<typeof reconcilePostPublicationDirtyWork>>
 }> {
-  if (startAtPostId && !work.post_identity_id)
-    throw new TypeError('Owned post window requires a post-scoped publication work item')
-  // These callers assert only their owned target and later descendants. A test
-  // retaining an earlier root must pass that earlier root instead. The real
-  // raw-page selector and continuation still decide membership.
+  if (startAtPostId && !work.post_identity_id && !work.author_identity_id)
+    throw new TypeError('Owned post window requires a post- or author-scoped work item')
+  // The caller must prove its scope owns no earlier posts. The real raw-page
+  // selector and continuation still decide membership in this bounded window.
   let cursor = startAtPostId ? testUuidPredecessor(startAtPostId) : work.cursor_post_id
   let pendingPostId = work.pending_post_identity_id
   let pendingAncestorId = work.pending_ancestor_post_identity_id
@@ -88,6 +110,19 @@ export async function reconcileTestPublicationThroughPostSweep(
         BigInt(`0x${cursor.replaceAll('-', '')}`)
     )
       throw new Error('Publication raw cursor moved backward')
+    // Pending ancestry resolves from the generation-fenced work row on the writer.
+    // Persist its pair before the next page, as the production processor does.
+    if (pendingPostId || result.pendingPostId) {
+      const updated = await updatePostPublicationDirtyWorkCursors(
+        { id: work.id, generation: work.generation, leaseToken: work.lease_token },
+        {
+          postId: result.cursorPostId,
+          pendingPostId: result.pendingPostId,
+          pendingAncestorId: result.pendingAncestorId,
+        },
+      )
+      if (!updated) throw new Error('Publication test pending ancestry lease was lost')
+    }
     cursor = result.cursorPostId
     pendingPostId = result.pendingPostId
     pendingAncestorId = result.pendingAncestorId

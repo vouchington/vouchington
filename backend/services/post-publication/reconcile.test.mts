@@ -120,6 +120,12 @@ describe('post publication reconciliation', () => {
     const user = await createTestUser()
     if (!user) throw new Error('Expected topic-page author')
     const post = await createTestPost({ user })
+    // The first page must stop before a later raw post so topic draining is
+    // checked on the following post-EOF page, independent of global fixtures.
+    const laterRawPost = await createTestPost()
+    expect(BigInt(`0x${laterRawPost.id.replaceAll('-', '')}`)).toBeGreaterThan(
+      BigInt(`0x${post.id.replaceAll('-', '')}`),
+    )
     const topics = await Promise.all(Array.from({ length: 3 }, () => createTestTopic({ user })))
     await using query = await beginTransaction()
     const work = await recordPostPublicationChange(query, {

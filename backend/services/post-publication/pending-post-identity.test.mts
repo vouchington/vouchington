@@ -1,4 +1,3 @@
-import { beginTransaction, write } from '@data-stores/psql'
 import {
   acquireTestPublicationIdentityBridgeCleanupReservation,
   createTestPost,
@@ -9,8 +8,11 @@ import {
   readTestPublicationIdentityBridge,
   visitTestPublicationPostIdentityCandidates,
 } from '@voucha/test-helpers'
+import {
+  createTestPendingPostIdentityIds,
+  recordTestPostPublicationChange,
+} from '@voucha/test-helpers/post-publication-fixtures'
 import { describe, expect, it } from 'vitest'
-import { recordPostPublicationChange } from './capture.mts'
 import {
   claimPostPublicationDirtyWork,
   updatePostPublicationDirtyWorkCursors,
@@ -28,12 +30,10 @@ describe('publication pending retained post identities', () => {
       parent_post_id: ancestor.id,
       post_type: 'comment',
     })
-    await using transaction = await beginTransaction()
-    const work = await recordPostPublicationChange(transaction, {
+    const work = await recordTestPostPublicationChange({
       scope: { type: 'topic_alias', topicAliasId: aliasId },
       reason: 'post_topics_changed',
     })
-    await transaction.commit()
     const claimed = await claimPostPublicationDirtyWork(work, 60)
     if (!claimed) throw new Error('Expected publication work lease')
     expect(
@@ -75,12 +75,10 @@ describe('publication pending retained post identities', () => {
       parent_post_id: source.id,
       post_type: 'comment',
     })
-    await using transaction = await beginTransaction()
-    const work = await recordPostPublicationChange(transaction, {
+    const work = await recordTestPostPublicationChange({
       scope: { type: 'topic_alias', topicAliasId: aliasId },
       reason: 'post_topics_changed',
     })
-    await transaction.commit()
     const claimed = await claimPostPublicationDirtyWork(work, 60)
     if (!claimed) throw new Error('Expected publication work lease')
     expect(
@@ -116,25 +114,17 @@ describe('publication pending retained post identities', () => {
   })
   it('rolls back new bridge rows when a generation loses its claim', async () => {
     const scope = await createTestPost()
-    await using initial = await beginTransaction()
-    const work = await recordPostPublicationChange(initial, {
+    const work = await recordTestPostPublicationChange({
       scope: { type: 'post', postId: scope.id },
       reason: 'post_updated',
     })
-    await initial.commit()
     const claimed = await claimPostPublicationDirtyWork(work, 60)
     if (!claimed) throw new Error('Expected publication work lease')
-    await using replacement = await beginTransaction()
-    await recordPostPublicationChange(replacement, {
+    await recordTestPostPublicationChange({
       scope: { type: 'post', postId: scope.id },
       reason: 'post_updated',
     })
-    await replacement.commit()
-    const { rows: ids } = await write<{ candidate_id: string; ancestor_id: string }>(
-      '/* createTestPendingIdentityIds */ SELECT uuidv7() AS candidate_id, uuidv7() AS ancestor_id',
-    )
-    const candidateId = ids[0]!.candidate_id
-    const ancestorId = ids[0]!.ancestor_id
+    const { candidateId, ancestorId } = await createTestPendingPostIdentityIds()
     expect(
       await updatePostPublicationDirtyWorkCursors(
         { id: claimed.id, generation: claimed.generation, leaseToken: claimed.lease_token },
@@ -149,12 +139,10 @@ describe('publication pending retained post identities', () => {
     const candidate = await createTestPost()
     const ancestor = await createTestPost()
     const scope = await createTestPost()
-    await using query = await beginTransaction()
-    const work = await recordPostPublicationChange(query, {
+    const work = await recordTestPostPublicationChange({
       scope: { type: 'post', postId: scope.id },
       reason: 'post_updated',
     })
-    await query.commit()
     const claimed = await claimPostPublicationDirtyWork(work, 60)
     if (!claimed) throw new Error('Expected publication work lease')
     expect(

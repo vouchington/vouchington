@@ -121,27 +121,31 @@ async function getRssFeedsTiered(
   const { rows } = await read<
     RssFeedDispatchCandidate & { deleted_at: Date | null; is_enabled: boolean }
   >(query, params)
-  const scanned = rows.slice(0, scanLimit)
-  const feeds = scanned.filter(
-    feed =>
+  const feeds: RssFeedDispatchCandidate[] = []
+  let scannedCount = 0
+  for (const feed of rows.slice(0, scanLimit)) {
+    scannedCount += 1
+    if (
       feed.deleted_at === null &&
       feed.is_enabled &&
       feed.url != null &&
       feed.url_hostname_id != null &&
-      feed.dispatch_lane === lane,
-  )
-  const lastRawId = scanned.at(-1)?.id
+      feed.dispatch_lane === lane
+    ) {
+      feeds.push(feed)
+    }
+    if (feeds.length === limit) break
+  }
+  const lastRawId = rows[scannedCount - 1]?.id
   const nextCursor =
-    feeds.length >= limit
-      ? undefined
-      : rows.length > scanLimit && lastRawId
-        ? { lane, afterId: lastRawId }
-        : lane < 10
-          ? { lane: lane + 1, afterId: '00000000-0000-0000-0000-000000000000' }
-          : undefined
+    rows.length > scannedCount && lastRawId
+      ? { lane, afterId: lastRawId }
+      : lane < 10
+        ? { lane: lane + 1, afterId: '00000000-0000-0000-0000-000000000000' }
+        : undefined
   return {
-    feeds: feeds.slice(0, limit),
-    scannedCount: scanned.length,
+    feeds,
+    scannedCount,
     ...(nextCursor && { nextCursor }),
   }
 }

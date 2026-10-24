@@ -28,6 +28,7 @@ describe('Google Play acknowledgement recovery', () => {
         acknowledgementIds: [],
         previousCursor: null,
         previousUpperBound: null,
+        previousRevision: '0',
         sweepUpperBound: null,
         nextCursor: null,
         completesSweep: false,

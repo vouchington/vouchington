@@ -25,6 +25,8 @@ export const backgroundWorkRegistryEntries5 = {
       dirty_work_key_batch_size: 'Dirty work key batch size for post publication processing.',
       identity_snapshot_page_size: 'Identity snapshot page size for post publication processing.',
       reconciliation_page_size: 'Reconciliation page size for post publication processing.',
+      raw_candidate_scan_page_size:
+        'Raw post identities read per reconciliation page before scope eligibility checks.',
       shadow_audit_page_size: 'Shadow audit page size for post publication processing.',
       story_lifecycle_lock_batch_size:
         'Story lifecycle lock batch size for post publication processing.',
