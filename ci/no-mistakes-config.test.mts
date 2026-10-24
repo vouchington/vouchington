@@ -137,7 +137,17 @@ describe('no-mistakes config', () => {
     expect(reactOxlint.rules).not.toHaveProperty('@local/voucha/web-icon-button-tooltip')
     expect(oxlint.rules['no-mistakes/test-no-error-message-matching']).toBe('error')
     expect(oxlint.rules['no-mistakes/test-no-shared-state']).toBe('error')
-    expect(oxlint.rules['no-mistakes/test-no-skips']).toBe('error')
+    expect(oxlint.rules['no-mistakes/test-no-skips']).toEqual([
+      'error',
+      {
+        testModules: [
+          '../../helpers/test.mts',
+          '../helpers/test.mts',
+          '../../playwright/helpers/test.mts',
+          './tag-voting-helpers.mts',
+        ],
+      },
+    ])
     expect(oxlint.rules['no-mistakes/module-mock-boundary']).toEqual([
       'error',
       expect.objectContaining({
