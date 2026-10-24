@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowLeft, ExternalLink } from 'lucide-react'
+import { ArrowLeft, ExternalLinkIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { LandingPageItemEditor } from '@/components/my/landing-pages-manager/item-picker'
 import { PageDetailsForm } from '@/components/my/landing-pages-manager/page-forms'
@@ -30,6 +30,7 @@ export function LandingPageEditor({ initialPage, candidates, username }: Props) 
     >
       <div className='flex items-start justify-between gap-4'>
         <Button
+          data-pw='landing-page-editor-all-pages'
           asChild
           variant='ghost'
           size='sm'
@@ -44,6 +45,7 @@ export function LandingPageEditor({ initialPage, candidates, username }: Props) 
           </Link>
         </Button>
         <Button
+          data-pw='landing-page-editor-preview-2'
           asChild
           variant='outline'
           size='sm'
@@ -54,7 +56,7 @@ export function LandingPageEditor({ initialPage, candidates, username }: Props) 
             rel='noopener noreferrer'
             data-pw='landing-page-editor-preview'
           >
-            <ExternalLink className='mr-1 size-4' />
+            <ExternalLinkIcon className='mr-1 size-4' />
             {t('extracted.my.landingPageEditor.preview_324b134f')}
           </a>
         </Button>

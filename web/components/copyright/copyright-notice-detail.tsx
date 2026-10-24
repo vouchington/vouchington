@@ -8,6 +8,7 @@ import {
 } from '@/types/copyright-notices'
 import { CopyrightNoticeStatements } from './copyright-notice-statements'
 import { copyrightTimelineEventLabel } from './copyright-timeline-event-label'
+import { TextLink } from '@/components/ui/text-link'
 
 const EMPTY_STATEMENTS: CopyrightParticipantNoticeDetail['statements'] = []
 
@@ -50,12 +51,13 @@ export function CopyrightNoticeDetailView({
             >
               <p className='text-sm font-medium'>{copyrightImageSurfaceLabel(target.surface)}</p>
               {target.hosted_use_url ? (
-                <a
+                <TextLink
+                  data-pw='copyright-notice-hosted-use-url'
                   href={target.hosted_use_url}
                   className='underline'
                 >
                   {target.hosted_use_url}
-                </a>
+                </TextLink>
               ) : (
                 <p>Hosted material is not visible to this viewer.</p>
               )}

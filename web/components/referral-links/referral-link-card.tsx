@@ -25,6 +25,7 @@ export function ReferralLinkCard({ link, user, variant = 'default' }: ReferralLi
     >
       <div className='min-w-0 flex-1'>
         <ExternalLink
+          data-pw='referral-link-card-external-link'
           href={link.url}
           className='block truncate text-sm font-medium hover:underline'
           ugc
@@ -67,6 +68,7 @@ export function ReferralLinkCard({ link, user, variant = 'default' }: ReferralLi
       </div>
       {!isCompact && (
         <ExternalLink
+          data-pw='referral-link-card-open'
           href={link.url}
           className={buttonVariants({ variant: 'outline', size: 'sm' })}
           ugc

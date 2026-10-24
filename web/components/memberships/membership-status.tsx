@@ -13,6 +13,7 @@ import type {
 import { useUiLocale } from '@/lib/i18n/ui-locale-context'
 import { useTranslations } from '@/lib/i18n/use-translations'
 import { formatMoney } from '@/lib/money'
+import { ExternalLink } from '@/components/ui/external-link'
 
 interface MembershipStatusProps {
   membership: SubscriptionMembership | EffectiveMembership
@@ -118,20 +119,22 @@ export function MembershipStatus({ membership, management = null }: MembershipSt
       <div className='flex gap-2'>
         {managementHref ? (
           <Button
+            data-pw='membership-status-manage-billing-2'
             asChild
             variant='outline'
           >
-            <a
+            <ExternalLink
+              data-pw='membership-status-manage-billing'
               href={managementHref}
               rel='noopener noreferrer'
-              target='_blank'
             >
               {t('extracted.memberships.membershipStatus.manageBilling_6d3a16f5')}
-            </a>
+            </ExternalLink>
           </Button>
         ) : management?.provider === 'stripe' ||
           ('has_stripe_subscription' in membership && membership.has_stripe_subscription) ? (
           <Button
+            data-pw='membership-status-loading'
             variant='outline'
             loading={portalLoading}
             disabled={portalLoading}

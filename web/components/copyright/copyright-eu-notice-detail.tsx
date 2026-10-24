@@ -2,6 +2,7 @@ import Link from 'next/link'
 import type { CopyrightParticipantNoticeDetail } from '@/types/copyright-notices'
 import { CopyrightEuDisputeSettlements } from './copyright-eu-dispute-settlements'
 import { CopyrightNoticeStatements } from './copyright-notice-statements'
+import { TextLink } from '@/components/ui/text-link'
 
 export function CopyrightEuNoticeDetail({
   notice,
@@ -44,12 +45,13 @@ export function CopyrightEuNoticeDetail({
                 className='rounded border p-3'
               >
                 {target.hosted_use_url ? (
-                  <a
+                  <TextLink
+                    data-pw='copyright-eu-notice-hosted-use-url'
                     href={target.hosted_use_url}
                     className='underline'
                   >
                     {target.hosted_use_url}
-                  </a>
+                  </TextLink>
                 ) : (
                   <p>Hosted material is not visible to this viewer.</p>
                 )}

@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button'
 import { useNow } from '@/hooks/use-now'
 import { useDataRequest } from './use-data-request'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { TextLink } from '@/components/ui/text-link'
 
 interface Props {
   userId: string
@@ -48,13 +49,14 @@ export function DataRequestSection({ userId }: Props) {
             </p>
           ) : request?.status === 'ready' && expiresIn && expiresIn > 0 && request.download_url ? (
             <div className='flex items-center gap-3'>
-              <a
+              <TextLink
+                data-pw='data-export-download'
                 href={request.download_url}
                 download='export.zip'
                 className='text-sm underline'
               >
                 {t('extracted.data.dataRequestSection.downloadExport_0e113d10')}
-              </a>
+              </TextLink>
               <span className='text-sm text-muted-foreground'>
                 Expires in {expiresIn} day{expiresIn !== 1 ? 's' : ''}
               </span>
@@ -66,6 +68,7 @@ export function DataRequestSection({ userId }: Props) {
                 {t('extracted.data.dataRequestSection.yourPreviousExportExpiredRequestA_4c2f6899')}
               </p>
               <Button
+                data-pw='data-request-section-request-data-export'
                 variant='outline'
                 loading={requesting}
                 disabled={requesting}
@@ -78,6 +81,7 @@ export function DataRequestSection({ userId }: Props) {
             </div>
           ) : (
             <Button
+              data-pw='data-request-section-request-export'
               variant='outline'
               disabled={requesting}
               onClick={handleRequest}

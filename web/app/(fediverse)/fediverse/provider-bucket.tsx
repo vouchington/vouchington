@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ExternalLink } from 'lucide-react'
+import { ExternalLinkIcon } from 'lucide-react'
 import { appendUtm, isHttpHref, OUTBOUND_UTM } from '@/lib/url/utm'
 import type { FediverseProvider, FediverseSearchBucket } from '@/types/fediverse-search'
 
@@ -31,7 +31,7 @@ export function ProviderBucket({ bucket }: { bucket: FediverseSearchBucket }) {
                     rel='noreferrer'
                   >
                     {item.title}
-                    <ExternalLink className='size-3.5' />
+                    <ExternalLinkIcon className='size-3.5' />
                   </Link>
                 ) : (
                   <span className='font-medium'>{item.title}</span>

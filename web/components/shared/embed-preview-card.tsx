@@ -5,6 +5,7 @@ import { VideoEmbed } from '@/components/feed/video-embed'
 import { Button } from '@/components/ui/button'
 import type { EmbedPreview } from '@/lib/embeds/embed-preview'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { ExternalLink } from '@/components/ui/external-link'
 
 interface EmbedPreviewCardProps {
   preview: EmbedPreview
@@ -52,18 +53,19 @@ export function EmbedPreviewCard({
         />
         {isHttpsUrl(preview.sourceUrl) && (
           <Button
+            data-pw='embed-preview-card-open-source-2'
             asChild
             variant='link'
             size='sm'
             className='h-auto px-0 text-sm'
           >
-            <a
+            <ExternalLink
+              data-pw='embed-preview-card-open-source'
               href={preview.sourceUrl}
-              target='_blank'
-              rel='nofollow ugc noopener noreferrer'
+              ugc
             >
               {t('extracted.shared.embedPreviewCard.openSource_67a0d2e0')}
-            </a>
+            </ExternalLink>
           </Button>
         )}
       </div>
@@ -99,18 +101,19 @@ export function EmbedPreviewCard({
         )}
         {isHttpsUrl(preview.sourceUrl) && (
           <Button
+            data-pw='embed-preview-card-open-source-3'
             asChild
             variant='link'
             size='sm'
             className='h-auto px-0 text-sm'
           >
-            <a
+            <ExternalLink
+              data-pw='embed-preview-card-open-source-expanded'
               href={preview.sourceUrl}
-              target='_blank'
-              rel='nofollow ugc noopener noreferrer'
+              ugc
             >
               {t('extracted.shared.embedPreviewCard.openSource_67a0d2e0')}
-            </a>
+            </ExternalLink>
           </Button>
         )}
       </div>

@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ChevronDown, ExternalLink } from 'lucide-react'
+import { ChevronDown, ExternalLinkIcon } from 'lucide-react'
 import { TimeAgo } from '@/components/shared/time-ago'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -77,6 +77,7 @@ export function ReportClusterCard({
         <div className='flex flex-wrap items-start justify-between gap-3 p-4'>
           <CollapsibleTrigger asChild>
             <Button
+              data-pw='report-cluster-card-toggle'
               type='button'
               variant='ghost'
               data-moderation-queue-key={cluster.id}
@@ -130,7 +131,7 @@ export function ReportClusterCard({
               prefetch={false}
             >
               {t('extracted.admin.reportClusterCard.openAdmin_d2e9fce8')}
-              <ExternalLink className='size-3' />
+              <ExternalLinkIcon className='size-3' />
             </Link>
           ) : null}
           {targetHref ? (
@@ -140,7 +141,7 @@ export function ReportClusterCard({
               prefetch={false}
             >
               {t('extracted.admin.reportClusterCard.openTarget_d2e00ca0')}
-              <ExternalLink className='size-3' />
+              <ExternalLinkIcon className='size-3' />
             </Link>
           ) : null}
           <ReportClusterActions

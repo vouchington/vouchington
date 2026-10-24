@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import type { ProfileLink, ProfileLinkType } from '@/types/user'
 import { getProfileLinkHref, getProfileLinkLabel } from '@/lib/users/profile-link-href'
 import type { useTranslations } from '@/lib/i18n/use-translations'
+import { ExternalLink } from '@/components/ui/external-link'
 
 const BADGE_LINK_TYPE_ICON: Record<ProfileLinkType, ComponentType<{ className?: string }>> = {
   twitter: AtSign,
@@ -87,19 +88,19 @@ export function UserProfileLinks({ links, variant, t }: ProfileLinksProps) {
         return (
           <Button
             key={link.id}
-            data-pw='profile-link-badge'
+            data-pw='profile-links-badge-button'
             variant='ghost'
             size='touchIcon'
             asChild
           >
-            <a
+            <ExternalLink
+              data-pw='profile-link-badge'
               href={href}
-              target='_blank'
               rel='noopener noreferrer nofollow'
               aria-label={getProfileLinkLabel(link)}
             >
               <Icon className='h-4 w-4' />
-            </a>
+            </ExternalLink>
           </Button>
         )
       })}

@@ -8,6 +8,7 @@ import { userHref } from '@/lib/links/entity-href'
 import { mergePageResultsById, mergeRecords } from '@ts-shared/utils/collections'
 import type { ReferralClickLogResponseBody } from '@/types/api-responses'
 import { useTranslations } from '@/lib/i18n/use-translations'
+import { ExternalLink } from '@/components/ui/external-link'
 
 function truncateUrl(url: string, maxLen = 50): string {
   try {
@@ -85,15 +86,14 @@ export function ReferralClicksPage({ initialData }: { initialData: ReferralClick
                     >
                       <td className='px-4 py-3'>
                         {/^https?:\/\//i.test(click.landing_url) ? (
-                          <a
+                          <ExternalLink
+                            data-pw='referral-clicks-landing-url'
                             href={click.landing_url}
-                            target='_blank'
-                            rel='nofollow noopener noreferrer'
                             className='text-primary hover:underline'
                             title={click.landing_url}
                           >
                             {truncateUrl(click.landing_url)}
-                          </a>
+                          </ExternalLink>
                         ) : (
                           <span title={click.landing_url}>{truncateUrl(click.landing_url)}</span>
                         )}

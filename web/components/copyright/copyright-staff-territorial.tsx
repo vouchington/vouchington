@@ -13,6 +13,7 @@ import type {
   CopyrightEuDisputeSettlementsPage,
   CopyrightTerritorialComplaintsPage,
 } from '@/lib/api/client/copyright-territorial-redress'
+import { ExternalLink } from '@/components/ui/external-link'
 
 export function CopyrightStaffTerritorial({
   item,
@@ -76,13 +77,13 @@ export function CopyrightStaffTerritorial({
         <div>
           <dt className='font-medium'>Hosted use</dt>
           <dd>
-            <a
+            <ExternalLink
+              data-pw='copyright-staff-territorial-hosted-use-url'
               href={territorial.hosted_use_url}
               rel='noreferrer'
-              target='_blank'
             >
               {territorial.hosted_use_url}
-            </a>
+            </ExternalLink>
           </dd>
         </div>
         <div>
@@ -90,7 +91,6 @@ export function CopyrightStaffTerritorial({
           <dd className='whitespace-pre-wrap'>{territorial.grounds}</dd>
         </div>
       </dl>
-
       <section
         aria-label='Acknowledgment status'
         className='space-y-2'
@@ -110,6 +110,7 @@ export function CopyrightStaffTerritorial({
         {!acknowledgmentTerminal ? (
           <ButtonGroup>
             <Button
+              data-pw='copyright-staff-territorial-review'
               disabled={pending}
               onClick={() =>
                 onReview(
