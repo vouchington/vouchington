@@ -81,3 +81,42 @@ export async function revokeTestRetentionWarning(id: string, at: Date): Promise<
     UPDATE user_warnings SET revoked_at = ${at} WHERE id = ${id}::uuid
   `)
 }
+
+export async function resolveTestRetentionCaseForReport(
+  reportId: string,
+  at: Date,
+): Promise<string> {
+  const { rows } = await write<{ id: string }>(sql`/* resolveTestRetentionCaseForReport */
+    UPDATE moderation_cases SET resolved_at = ${at}
+    WHERE id = (SELECT case_id FROM moderation_reports WHERE id = ${reportId}::uuid)
+    RETURNING id
+  `)
+  if (!rows[0]) throw new Error('Test report has no moderation case')
+  return rows[0].id
+}
+
+export async function dispatchTestRetentionJudgement(id: string, at: Date): Promise<void> {
+  await write(sql`/* dispatchTestRetentionJudgement */
+    UPDATE moderation_report_judgements SET dispatched_at = ${at} WHERE id = ${id}::uuid
+  `)
+}
+
+export async function liftTestRetentionSuspension(id: string, at: Date): Promise<void> {
+  await write(sql`/* liftTestRetentionSuspension */
+    UPDATE user_suspensions SET lifted_at = ${at} WHERE id = ${id}::uuid
+  `)
+}
+
+export async function deleteTestRetentionNote(id: string, at: Date): Promise<void> {
+  await write(sql`/* deleteTestRetentionNote */
+    UPDATE user_moderator_notes SET deleted_at = ${at} WHERE id = ${id}::uuid
+  `)
+}
+
+export async function approveTestRetentionApplication(id: string, at: Date): Promise<void> {
+  await write(sql`/* approveTestRetentionApplication */
+    UPDATE community_applications
+    SET reviewed_at = ${at}, approved_at = ${at}
+    WHERE id = ${id}::uuid
+  `)
+}
