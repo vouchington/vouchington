@@ -75,7 +75,6 @@ describe('no-mistakes forbidden-calls config', () => {
       'Vitest tests do not poll or wait on timers',
       'Test helpers and vitest setup do not invoke real timers or polls',
       'Vitest tests do not assert benchmarks',
-      'Vitest tests do not run live no-mistakes analysis',
     ])
     for (const candidate of rules) {
       if (candidate.exclude === undefined) continue
@@ -185,10 +184,10 @@ describe('no-mistakes forbidden-calls config', () => {
       name: 'Vitest tests do not run live no-mistakes analysis',
       rule: 'forbidden-calls',
       scope: 'repository',
-      exclude: ['static-code-analysis/i18n-extract/route-selector-map.mock.test.mts'],
       options: {
         roots: [{ vitest: true }],
-        traversal: 'file',
+        excludeRoots: ['static-code-analysis/i18n-extract/route-selector-map.mock.test.mts'],
+        traversal: 'transitive',
         unknownCalls: 'ignore',
         targets: [
           ...[
