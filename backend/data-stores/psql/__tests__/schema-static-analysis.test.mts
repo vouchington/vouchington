@@ -198,6 +198,25 @@ describe('PostgreSQL schema static analysis', () => {
 })
 
 describe('PostgreSQL schema static-analysis rule helpers', () => {
+  it('exempts only the deletion-stable AI usage scan positions', () => {
+    for (const column_name of ['cursor_id', 'sweep_upper_bound_id']) {
+      expect(
+        isAllowedUuidConventionViolation({
+          table_name: 'ai_usage_retention_cursors',
+          column_name,
+          problem: 'uuid-column-without-key-constraint',
+        }),
+      ).toBe(true)
+    }
+    expect(
+      isAllowedUuidConventionViolation({
+        table_name: 'ai_usage_retention_cursors',
+        column_name: 'ai_usage_record_id',
+        problem: 'uuid-column-without-key-constraint',
+      }),
+    ).toBe(false)
+  })
+
   it('derives default-less UUIDv7 id exceptions from the schema-growth registry', () => {
     expect(
       isAllowedUuidConventionViolation({

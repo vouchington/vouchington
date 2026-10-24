@@ -55,6 +55,9 @@ export function assertClassifierUsageWindow({ from, to }: ClassifierUsageWindow)
   if (!(from.getTime() < to.getTime())) {
     throw new RangeError('Classifier usage window must start before it ends')
   }
+  // Retained run identities are replay keys, not report receipts. Reject historical windows
+  // instead of rendering missing per-run ledger rows as zero after raw AI usage expires.
+  // The classifier report window is shorter than AI usage's minimum 180-day raw window.
   assertClassifierWindowWithinRetention(from)
 }
 

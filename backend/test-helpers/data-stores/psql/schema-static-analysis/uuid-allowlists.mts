@@ -1,5 +1,6 @@
 import { DSA_SUBMISSION_UUID_COLUMNS_WITHOUT_KEYS } from './dsa-submission-uuid-allowlists.mts'
 import { CLASSIFIER_RETENTION_UUID_COLUMNS_WITHOUT_KEYS } from './classifier-run-allowlists.mts'
+import { RETENTION_CURSOR_UUID_COLUMNS_WITHOUT_KEYS } from './retention-cursor-uuid-allowlists.mts'
 /* v8 ignore start -- declarative schema-test allowlists have no executable branches */
 import { POST_PUBLICATION_UUID_COLUMNS_WITHOUT_KEYS } from './post-publication-allowlists.mts'
 import { ALLOWED_MEMBERSHIP_UUID_COLUMNS_WITHOUT_KEYS } from './membership-uuid-allowlists.mts'
@@ -8,6 +9,7 @@ import { OAUTH_AUTHORIZATION_UUID_COLUMNS_WITHOUT_KEYS } from './oauth-authoriza
 import { STORY_POST_RELATED_URL_PROJECTION_UUID_COLUMNS_WITHOUT_KEYS } from './story-post-related-url-projection-uuid-allowlists.mts'
 import { USER_DELETION_UUID_COLUMNS_WITHOUT_KEYS } from './user-deletion-uuid-allowlists.mts'
 export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
+  ...RETENTION_CURSOR_UUID_COLUMNS_WITHOUT_KEYS,
   ...CLASSIFIER_RETENTION_UUID_COLUMNS_WITHOUT_KEYS,
   ...DSA_SUBMISSION_UUID_COLUMNS_WITHOUT_KEYS,
   [
@@ -33,10 +35,6 @@ export const ALLOWED_UUID_COLUMNS_WITHOUT_KEYS = new Map<string, string>([
   [
     'follower_distributions.cursor_recipient_id',
     'Deletion-stable recipient UUIDv7 keyset position, not a relationship.',
-  ],
-  [
-    'retained_identity_cleanup_cursors.cursor_identity_id',
-    'Operational keyset scan position can outlive its prior root row; it is not a relationship.',
   ],
   [
     'payment_operational_cleanup_cursors.cursor_id',

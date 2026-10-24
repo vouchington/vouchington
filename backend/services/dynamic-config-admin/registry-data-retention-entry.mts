@@ -8,6 +8,12 @@ export const dataRetentionRegistryEntry = defineDynamicConfigNamespace({
   config: dataRetentionConfig,
   access: { update_roles: ['developer'] },
   fields: {
+    ai_usage_raw_retention_days: {
+      description: 'Minimum age of AI provider-call records before folding and deletion.',
+      minValue: 180,
+      maxValue: DATA_RETENTION_MAX_VALUES.ai_usage_raw_retention_days,
+      integer: true,
+    },
     topic_import_attempt_batch_size: {
       description: 'Topic import attempt rows per retention page.',
       minValue: 1,

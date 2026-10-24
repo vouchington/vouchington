@@ -191,6 +191,12 @@ describe('schema growth registry', () => {
       accessClass: 'retention-window',
       retentionOwner: 'runDataRetentionCleanup',
     })
+    expect(PARTITION_POLICIES.get('ai_usage_records')).toMatchObject({
+      key: 'id',
+      children: 'default',
+      accessClass: 'retention-window',
+      retentionOwner: 'runDataRetentionCleanup',
+    })
     expect(PARTITION_POLICIES.get('web_push_subscriptions')).toMatchObject({
       accessClass: 'retention-window',
       retentionOwner: 'runDataRetentionCleanup',

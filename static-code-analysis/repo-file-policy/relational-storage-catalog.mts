@@ -46,6 +46,9 @@ export {
 
 // Tokens, traversal cursors, and a retained table's own primary identity are not foreign references.
 export const ALLOWED_NONRELATION_UUID = new Set([
+  // AI usage keyset positions survive deletion of their source rows; the upper bound is a UUIDv7 time fence.
+  'ai_usage_retention_cursors.cursor_id',
+  'ai_usage_retention_cursors.sweep_upper_bound_id',
   // Cleanup positions survive deletion of the scanned auth or subscription row.
   'auth_session_retention_cleanup_cursors.cursor_id',
   // Raw classifier child positions survive deletion of the scanned run or topic.

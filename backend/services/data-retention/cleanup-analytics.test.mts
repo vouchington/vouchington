@@ -109,6 +109,7 @@ describe('cleanupAnalyticsLocalFiles', () => {
       terminalNotificationPushIntents: { deleted: 0, hasMore: false },
       terminalStripeEventWork: { deleted: 0, hasMore: false, cursorId: null },
       abandonedMembershipPurchaseIntents: { deleted: 0, hasMore: false, cursorId: null },
+      aiUsageRecords: { deleted: 0, hasMore: false, cursorId: null },
       emailAddressLoginTokens: { deleted: 0, hasMore: false, continuation: null },
       phoneNumberLoginTokens: { deleted: 0, hasMore: false, continuation: null },
       expiredUserSessions: { deleted: 0, hasMore: false, continuation: null },
