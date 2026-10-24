@@ -115,6 +115,10 @@ migration control must distinguish leaked sessions from unrelated server mainten
 detects real cleanup failures without rejecting healthy runs. Forced cleanup would hide the leak
 the control is meant to detect.
 
+The migration concurrency control uses a small owned migration fixture so its bounded process
+does not repeat the full application bootstrap. The pruning runner separately applies the canonical
+schema and verifies it before exercising explicit-range pruning.
+
 ## Coverage
 
 `explain:coverage` compares annotated runtime SQL against captured query names and exact query text
