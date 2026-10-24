@@ -121,7 +121,7 @@ function describeIdleClassifier(classifier: string, requests: number): string[] 
 }
 
 /**
- * @public Cross-workspace read boundary: `backend/scripts/classifier-call-efficiency.mts` prints it.
+ * Cross-workspace read boundary: `backend/scripts/classifier-call-efficiency.mts` prints it.
  *
  * The report as text, one block per classifier, those active in the window included: the D3 KPI
  * verdict first (holds, BREACHED, or INCONCLUSIVE while a run is unfinished), then the figures that

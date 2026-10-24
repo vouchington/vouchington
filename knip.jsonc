@@ -168,6 +168,11 @@
       "entry": ["**/*.mts"],
       "ignoreExportsUsedInFile": true,
     },
+    "backend/modules/structured-decisions": {
+      // Benchmark is a development CLI; keep manifest entries for production callers.
+      "entry": ["benchmark.mts"],
+      "ignoreExportsUsedInFile": true,
+    },
     "backend/services/*": {
       "entry": ["**/*.mts"],
       "ignoreExportsUsedInFile": true,
@@ -200,6 +205,10 @@
       "ignoreExportsUsedInFile": true,
     },
     "backend/agents/copyright-form-screening": {
+      // Keep the package's manifest entry so production consumers reach its run module.
+      "ignoreExportsUsedInFile": true,
+    },
+    "backend/agents/copyright-submission-guidance": {
       // Keep the package's manifest entry so production consumers reach its run module.
       "ignoreExportsUsedInFile": true,
     },

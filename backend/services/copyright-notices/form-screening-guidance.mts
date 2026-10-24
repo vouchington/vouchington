@@ -43,7 +43,7 @@ const MAX_NOTE = 1000
 const MAX_RISK_NOTES = 6
 
 /**
- * @public Cross-workspace validation boundary shared by the copyright form-screening agent and the
+ * Cross-workspace validation boundary shared by the copyright form-screening agent and the
  * staff projection. Rejects unknown keys, closed-vocabulary violations, and oversized text.
  */
 export function parseCopyrightFormGuidance(value: unknown): CopyrightFormGuidance {

@@ -48,7 +48,7 @@ export interface BuildBreadcrumbsArgs {
   intentCrumbOverride?: BreadcrumbNavItem
 }
 
-/** @internal Use `buildBreadcrumbsForPath` in page components. Reserved for the navigation library and tests. */
+/** Use `buildBreadcrumbsForPath` in page components. Reserved for the navigation library and tests. */
 export function buildBreadcrumbs({
   intent,
   isAuthenticated,
