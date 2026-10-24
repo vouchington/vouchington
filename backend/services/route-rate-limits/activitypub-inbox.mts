@@ -26,87 +26,47 @@ const activityPubInboxSenderAddOnceScript = registerScript(
   loadScript('activitypub-inbox-sender-add-once.lua', import.meta.url),
 )
 
-export type ActivityPubInboxRateLimitDependencies = {
-  limiter: Pick<RateLimiter, 'addAndCheck' | 'isRateLimited'>
-  reportError: (error: Error) => void
-}
-
-const defaultDependencies: ActivityPubInboxRateLimitDependencies = {
-  limiter: activityPubInboxRateLimiter,
-  reportError: onError,
-}
-
-const defaultAttemptDependencies: ActivityPubInboxRateLimitDependencies = {
-  limiter: activityPubInboxAttemptRateLimiter,
-  reportError: onError,
-}
-
-/**
- * @public Retained provisionally under issue #1360; external production use is unconfirmed and this
- * export may be made private or removed after intended-use review. Evidence: `docs/overview/architecture/services/README.md`.
- */
-export async function isActivityPubInboxAttemptRateLimited(
-  sourceIp: string,
-  dependencies: ActivityPubInboxRateLimitDependencies = defaultAttemptDependencies,
-): Promise<boolean> {
+export async function recordActivityPubInboxAttempt(sourceIp: string): Promise<boolean> {
   try {
-    return await dependencies.limiter.isRateLimited(
-      [sourceIp],
-      getActivityPubInboxAttemptMaxRequests() + 1,
-      getActivityPubInboxAttemptWindowSeconds(),
-    )
-  } catch (err) /* v8 ignore next 3 */ {
-    dependencies.reportError(err instanceof Error ? err : new Error(String(err)))
-    return false
-  }
-}
-
-export async function recordActivityPubInboxAttempt(
-  sourceIp: string,
-  dependencies: ActivityPubInboxRateLimitDependencies = defaultAttemptDependencies,
-): Promise<boolean> {
-  try {
-    const { limited } = await dependencies.limiter.addAndCheck(
+    const { limited } = await activityPubInboxAttemptRateLimiter.addAndCheck(
       [sourceIp],
       getActivityPubInboxAttemptMaxRequests() + 1,
       getActivityPubInboxAttemptWindowSeconds(),
     )
     return limited
   } catch (err) /* v8 ignore next 3 */ {
-    dependencies.reportError(err instanceof Error ? err : new Error(String(err)))
+    onError(err instanceof Error ? err : new Error(String(err)))
     return false
   }
 }
 
 export async function isActivityPubInboxSenderRateLimited(
   senderHostname: string,
-  dependencies: ActivityPubInboxRateLimitDependencies = defaultDependencies,
 ): Promise<boolean> {
   try {
-    return await dependencies.limiter.isRateLimited(
+    return await activityPubInboxRateLimiter.isRateLimited(
       [senderHostname],
       getActivityPubInboxMaxRequests() + 1,
       getActivityPubInboxWindowSeconds(),
     )
   } catch (err) /* v8 ignore next 3 */ {
-    dependencies.reportError(err instanceof Error ? err : new Error(String(err)))
+    onError(err instanceof Error ? err : new Error(String(err)))
     return false
   }
 }
 
 export async function recordActivityPubInboxSenderDelivery(
   senderHostname: string,
-  dependencies: ActivityPubInboxRateLimitDependencies = defaultDependencies,
 ): Promise<boolean> {
   try {
-    const { limited } = await dependencies.limiter.addAndCheck(
+    const { limited } = await activityPubInboxRateLimiter.addAndCheck(
       [senderHostname],
       getActivityPubInboxMaxRequests() + 1,
       getActivityPubInboxWindowSeconds(),
     )
     return limited
   } catch (err) /* v8 ignore next 3 */ {
-    dependencies.reportError(err instanceof Error ? err : new Error(String(err)))
+    onError(err instanceof Error ? err : new Error(String(err)))
     return false
   }
 }
@@ -114,7 +74,6 @@ export async function recordActivityPubInboxSenderDelivery(
 export async function recordActivityPubInboxSenderDeliveryOnce(
   senderHostname: string,
   deliveryId: string,
-  dependencies: Pick<ActivityPubInboxRateLimitDependencies, 'reportError'> = defaultDependencies,
 ): Promise<boolean> {
   try {
     const result = await retrySaturationError(() =>
@@ -129,7 +88,7 @@ export async function recordActivityPubInboxSenderDeliveryOnce(
     )
     return normalizeActivityPubInboxSenderLimitResult(result)
   } catch (err) /* v8 ignore next 3 -- the internal Valkey boundary is exercised with real Valkey */ {
-    dependencies.reportError(err instanceof Error ? err : new Error(String(err)))
+    onError(err instanceof Error ? err : new Error(String(err)))
     return false
   }
 }
