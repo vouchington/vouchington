@@ -3,12 +3,19 @@ import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
+  SidebarGroup,
+  SidebarGroupAction,
+  SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarInput,
   SidebarInset,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   SidebarProvider,
   SidebarRail,
   SidebarSeparator,
@@ -46,8 +53,34 @@ export const Expanded: Story = {
             </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton type='button'>Topics</SidebarMenuButton>
+              <SidebarMenuSub>
+                <SidebarMenuSubItem>
+                  <SidebarMenuSubButton
+                    href='#trending'
+                    isActive
+                  >
+                    <span>Trending</span>
+                  </SidebarMenuSubButton>
+                </SidebarMenuSubItem>
+                <SidebarMenuSubItem>
+                  <SidebarMenuSubButton href='#following'>
+                    <span>Following</span>
+                  </SidebarMenuSubButton>
+                </SidebarMenuSubItem>
+              </SidebarMenuSub>
             </SidebarMenuItem>
           </SidebarMenu>
+          <SidebarGroup>
+            <SidebarGroupLabel>Communities</SidebarGroupLabel>
+            <SidebarGroupAction aria-label='Add community'>+</SidebarGroupAction>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton type='button'>Travel rewards</SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
         </SidebarContent>
         <SidebarFooter>
           <p className='px-2 text-xs text-sidebar-foreground/70'>cardholder</p>
