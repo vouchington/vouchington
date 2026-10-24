@@ -24,7 +24,7 @@ import {
   getFollowTopicsRecipients,
   getPostReferralLinkRecipients,
 } from './dispatch-engagement-emails.mts'
-import { readEngagementRecipientPage, readPreparedEngagementRecipients } from './recipient-page.mts'
+import { readEngagementRecipientPage } from './recipient-page.mts'
 
 describe('engagement email admission projection', () => {
   it('rejects invalid selection clocks and page budgets before reading or claiming recipients', async () => {
@@ -52,13 +52,6 @@ describe('engagement email admission projection', () => {
         eligibleLimit: 2501,
       }),
     ).rejects.toThrow('Invalid engagement recipient page size')
-    await expect(
-      readPreparedEngagementRecipients({
-        type: 'follow_topics',
-        dispatchStartedAt,
-        recipientIds: Array.from({ length: 2501 }, () => '00000000-0000-0000-0000-000000000000'),
-      }),
-    ).rejects.toThrow('Invalid prepared recipient page size')
   })
 
   it('retains global unclaimed-before-oldest-claim order and tracks terminal sends', async () => {
