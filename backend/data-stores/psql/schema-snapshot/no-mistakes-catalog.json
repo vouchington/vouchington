@@ -633,6 +633,9 @@
         "administrator_refund"
       ]
     },
+    "membership_operational_cleanup_kinds": {
+      "values": ["entitlement_effects", "renewal_notices", "google_acknowledgments"]
+    },
     "membership_plan_slugs": {
       "values": ["plus", "pro"]
     },
@@ -1739,6 +1742,9 @@
     },
     "fn_update_membership_operation_work()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_membership_operation_work()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE current_token UUID;\nBEGIN\n  SELECT lease_token INTO current_token FROM membership_operation_execution_work_items\n  WHERE membership_operation_id = NEW.id;\n  IF NEW.completed_at IS NOT NULL THEN\n    DELETE FROM membership_operation_execution_work_items\n    WHERE membership_operation_id = NEW.id AND lease_token IS NOT DISTINCT FROM current_token;\n  ELSIF NEW.failed_at IS NOT NULL AND NEW.failed_at IS DISTINCT FROM OLD.failed_at THEN\n    UPDATE membership_operation_execution_work_items\n    SET lease_token = NULL, leased_at = NULL, lease_expires_at = NULL\n    WHERE membership_operation_id = NEW.id AND lease_token = current_token;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
+    },
+    "fn_update_membership_renewal_notice_end()": {
+      "definition": "CREATE OR REPLACE FUNCTION public.fn_update_membership_renewal_notice_end()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  UPDATE membership_renewal_price_increase_notification_work_items\n  SET projection_ended_at = NEW.projection_ended_at\n  WHERE membership_id = NEW.id;\n  RETURN NEW;\nEND $function$\n"
     },
     "fn_update_membership_verification_processing_work()": {
       "definition": "CREATE OR REPLACE FUNCTION public.fn_update_membership_verification_processing_work()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF num_nonnulls(NEW.verified_at, NEW.conflicted_at, NEW.rejected_at) = 1 THEN\n    UPDATE membership_verification_processing_work_items\n    SET completed_at = COALESCE(completed_at, NEW.verified_at, NEW.conflicted_at, NEW.rejected_at),\n      lease_token = NULL, leased_at = NULL, lease_expires_at = NULL\n    WHERE membership_verification_id = NEW.id;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n"
@@ -48875,102 +48881,6 @@
       },
       "uniqueConstraints": {}
     },
-    "identity_document_types": {
-      "checkConstraints": {},
-      "columns": {
-        "created_at": {
-          "comment": "When this provider value was first observed.",
-          "dataType": "timestamp with time zone",
-          "defaultExpression": null,
-          "generated": "virtual",
-          "generatedExpression": "uuid_extract_timestamp(id)",
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 3
-        },
-        "id": {
-          "comment": "Stable identifier for this identity document type.",
-          "dataType": "uuid",
-          "defaultExpression": "uuidv7()",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1
-        },
-        "identity_document_type": {
-          "comment": "Exact provider value; never normalized.",
-          "dataType": "text",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 2
-        }
-      },
-      "comment": "Identity provider document type names registered on first sight; the provider owns this open set and exact spelling.",
-      "foreignKeys": {},
-      "indexes": {
-        "identity_document_types_identity_document_type_key": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX identity_document_types_identity_document_type_key ON public.identity_document_types USING btree (identity_document_type)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": "pg_catalog.\"default\"",
-              "column": "identity_document_type",
-              "descending": false,
-              "expression": "identity_document_type",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "identity_document_types_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX identity_document_types_pkey ON public.identity_document_types USING btree (id)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": true,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        }
-      },
-      "physicalPartition": null,
-      "primaryKey": {
-        "columns": ["id"]
-      },
-      "relationKind": "table",
-      "triggers": {},
-      "uniqueConstraints": {
-        "identity_document_types_identity_document_type_key": {
-          "columns": ["identity_document_type"]
-        }
-      }
-    },
     "identity_verification_attempts": {
       "checkConstraints": {
         "identity_verification_attempts_check": {
@@ -55104,6 +55014,38 @@
           "unique": true,
           "valid": true
         },
+        "idx_membership_entitlement_effects__delivered_at": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_membership_entitlement_effects__delivered_at ON public.membership_entitlement_effects USING btree (delivered_at, id) WHERE (delivered_at IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "delivered_at",
+              "descending": false,
+              "expression": "delivered_at",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(delivered_at IS NOT NULL)",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
         "idx_membership_entitlement_effects__pending": {
           "accessMethod": "btree",
           "constraintBacked": false,
@@ -55629,6 +55571,38 @@
           "primary": false,
           "ready": true,
           "unique": true,
+          "valid": true
+        },
+        "idx_membership_google_play_acknowledgments__terminal": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_membership_google_play_acknowledgments__terminal ON public.membership_google_play_acknowledgments USING btree (COALESCE(acknowledged_at, skipped_at), id) WHERE ((acknowledged_at IS NOT NULL) OR (skipped_at IS NOT NULL))",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": null,
+              "descending": false,
+              "expression": "COALESCE(acknowledged_at, skipped_at)",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "id",
+              "descending": false,
+              "expression": "id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "((acknowledged_at IS NOT NULL) OR (skipped_at IS NOT NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
           "valid": true
         },
         "membership_google_play_acknowledgments_pkey": {
@@ -58820,6 +58794,94 @@
       "triggers": {
         "trigger_membership_operation_work_items_guard": {
           "definition": "CREATE TRIGGER trigger_membership_operation_work_items_guard BEFORE UPDATE ON public.membership_operation_execution_work_items FOR EACH ROW EXECUTE FUNCTION fn_reject_invalid_membership_operation_work_lease()"
+        }
+      },
+      "uniqueConstraints": {}
+    },
+    "membership_operational_cleanup_cursors": {
+      "checkConstraints": {
+        "membership_operational_cleanup_cursors_check": {
+          "definition": "CHECK (((cursor_at IS NULL) = (cursor_id IS NULL)))",
+          "validated": true
+        }
+      },
+      "columns": {
+        "cursor_at": {
+          "comment": "Last examined due timestamp in the current sweep.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2
+        },
+        "cursor_id": {
+          "comment": "Deletion-stable UUIDv7 keyset position; it does not reference a surviving row.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 3
+        },
+        "kind": {
+          "comment": "Fixed retention family.",
+          "dataType": "membership_operational_cleanup_kinds",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        },
+        "updated_at": {
+          "comment": "When this cleanup stream last checkpointed.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": "CURRENT_TIMESTAMP",
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 4
+        }
+      },
+      "comment": "One persisted keyset position per bounded membership operational retention sweep.",
+      "foreignKeys": {},
+      "indexes": {
+        "membership_operational_cleanup_cursors_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX membership_operational_cleanup_cursors_pkey ON public.membership_operational_cleanup_cursors USING btree (kind)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "kind",
+              "descending": false,
+              "expression": "kind",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.enum_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["kind"]
+      },
+      "relationKind": "table",
+      "triggers": {
+        "trigger_membership_operational_cleanup_cursors_updated_at": {
+          "definition": "CREATE TRIGGER trigger_membership_operational_cleanup_cursors_updated_at BEFORE UPDATE ON public.membership_operational_cleanup_cursors FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
         }
       },
       "uniqueConstraints": {}
@@ -63083,7 +63145,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 7
+          "ordinalPosition": 8
         },
         "available_at": {
           "comment": "Earliest delivery time for this prepared notice.",
@@ -63093,7 +63155,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 8
+          "ordinalPosition": 9
         },
         "completed_at": {
           "comment": "When the current generation confirmed its delivery; retained with the snapshot for deduplication.",
@@ -63103,7 +63165,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 10
+          "ordinalPosition": 11
         },
         "delivery_attempted_at": {
           "comment": "Irreversible marker written before the external send; ambiguous sends of the same snapshot are never retried.",
@@ -63113,7 +63175,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 9
+          "ordinalPosition": 10
         },
         "generation": {
           "comment": "Monotone snapshot generation; retries and fallback transfer preserve it, while a changed provider snapshot advances it.",
@@ -63123,7 +63185,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 2
+          "ordinalPosition": 3
         },
         "lease_expires_at": {
           "comment": "Deadline after which an unattempted notice may be reclaimed.",
@@ -63133,7 +63195,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 6
+          "ordinalPosition": 7
         },
         "lease_token": {
           "comment": "Opaque UUID fence for the current notice delivery owner.",
@@ -63143,7 +63205,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 4
+          "ordinalPosition": 5
         },
         "leased_at": {
           "comment": "When the current notice delivery lease began.",
@@ -63153,7 +63215,7 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": true,
-          "ordinalPosition": 5
+          "ordinalPosition": 6
         },
         "membership_id": {
           "comment": "Membership projection that currently owns the notice; fallback restoration transfers the entire work row atomically.",
@@ -63173,10 +63235,20 @@
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 3
+          "ordinalPosition": 4
+        },
+        "projection_ended_at": {
+          "comment": "Due date copied from the projection so ended work can be pruned through an indexed bounded page.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 2
         }
       },
-      "comment": "Generation-fenced renewal price notices; exact delivered or ambiguously attempted snapshots remain for duplicate suppression until membership retention removes them.",
+      "comment": "Generation-fenced renewal price notices; current work prevents duplicate sends, and ended projection work is deleted after its retention window.",
       "foreignKeys": {
         "membership_renewal_price_incr_membership_provider_observat_fkey": {
           "columns": ["membership_provider_observation_id"],
@@ -63223,6 +63295,38 @@
           ],
           "live": true,
           "predicate": "((completed_at IS NULL) AND (delivery_attempted_at IS NULL))",
+          "primary": false,
+          "ready": true,
+          "unique": false,
+          "valid": true
+        },
+        "idx_mmbrshp_rnwl_prc_incrs_ntfctn_wrk_itms__ended": {
+          "accessMethod": "btree",
+          "constraintBacked": false,
+          "definition": "CREATE INDEX idx_mmbrshp_rnwl_prc_incrs_ntfctn_wrk_itms__ended ON public.membership_renewal_price_increase_notification_work_items USING btree (projection_ended_at, membership_id) WHERE (projection_ended_at IS NOT NULL)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "projection_ended_at",
+              "descending": false,
+              "expression": "projection_ended_at",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.timestamptz_ops",
+              "orderingSupported": true
+            },
+            {
+              "collation": null,
+              "column": "membership_id",
+              "descending": false,
+              "expression": "membership_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": "(projection_ended_at IS NOT NULL)",
           "primary": false,
           "ready": true,
           "unique": false,
@@ -65092,6 +65196,9 @@
         },
         "trigger_memberships_updated_at": {
           "definition": "CREATE TRIGGER trigger_memberships_updated_at BEFORE UPDATE ON public.memberships FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+        },
+        "trigger_sync_membership_renewal_notice_end": {
+          "definition": "CREATE TRIGGER trigger_sync_membership_renewal_notice_end AFTER UPDATE OF projection_ended_at ON public.memberships FOR EACH ROW WHEN ((old.projection_ended_at IS DISTINCT FROM new.projection_ended_at)) EXECUTE FUNCTION fn_update_membership_renewal_notice_end()"
         }
       },
       "uniqueConstraints": {}
@@ -142744,125 +142851,19 @@
     },
     "verified_identities": {
       "checkConstraints": {
+        "verified_identities_check": {
+          "definition": "CHECK ((last_verified_at >= first_verified_at))",
+          "validated": true
+        },
         "verified_identities_identity_fingerprint_check": {
-          "definition": "CHECK ((char_length(identity_fingerprint) = 64))",
+          "definition": "CHECK ((octet_length(identity_fingerprint) = 32))",
           "validated": true
         }
       },
       "columns": {
-        "checkout_session_id": {
-          "comment": "Stripe Checkout Session that collected payment for this verification.",
-          "dataType": "text",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 9
-        },
-        "created_at": {
-          "comment": "Row creation timestamp.",
+        "first_verified_at": {
+          "comment": "First successful verification time.",
           "dataType": "timestamp with time zone",
-          "defaultExpression": null,
-          "generated": "virtual",
-          "generatedExpression": "uuid_extract_timestamp(id)",
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 12
-        },
-        "id": {
-          "comment": null,
-          "dataType": "uuid",
-          "defaultExpression": "uuidv7()",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 1
-        },
-        "identity_document_type_id": {
-          "comment": "Identifier of the document type (passport, id_card, driving_license, etc.).",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 7
-        },
-        "identity_fingerprint": {
-          "comment": "64-char hex HMAC-SHA256 fingerprint of (country:type:document_number). Never store the raw document number.",
-          "dataType": "text",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 5
-        },
-        "issuing_country": {
-          "comment": "ISO country code of the issuing authority.",
-          "dataType": "text",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 6
-        },
-        "provider": {
-          "comment": "Provider that performed the verification.",
-          "dataType": "identity_verification_providers",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 3
-        },
-        "provider_session_id": {
-          "comment": "Provider-specific session or report ID.",
-          "dataType": "text",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 4
-        },
-        "revoked_at": {
-          "comment": "Set when the record is revoked by an admin.",
-          "dataType": "timestamp with time zone",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 10
-        },
-        "transferred_to_user_id": {
-          "comment": "When transferred, the account that now holds the active record.",
-          "dataType": "uuid",
-          "defaultExpression": null,
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": true,
-          "ordinalPosition": 11
-        },
-        "updated_at": {
-          "comment": "Row last-updated timestamp.",
-          "dataType": "timestamp with time zone",
-          "defaultExpression": "now()",
-          "generated": null,
-          "generatedExpression": null,
-          "identity": null,
-          "nullable": false,
-          "ordinalPosition": 13
-        },
-        "user_id": {
-          "comment": "The account that completed the verification.",
-          "dataType": "uuid",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
@@ -142870,173 +142871,63 @@
           "nullable": false,
           "ordinalPosition": 2
         },
-        "verified_at": {
-          "comment": "When the provider confirmed the identity.",
+        "identity_fingerprint": {
+          "comment": "32-byte HMAC-SHA256 hash of (country:type:document_number). Never store the raw document number.",
+          "dataType": "bytea",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
+        },
+        "last_verified_at": {
+          "comment": "Most recent successful verification time.",
           "dataType": "timestamp with time zone",
           "defaultExpression": null,
           "generated": null,
           "generatedExpression": null,
           "identity": null,
           "nullable": false,
-          "ordinalPosition": 8
+          "ordinalPosition": 3
+        },
+        "revoked_at": {
+          "comment": "When the document verification was revoked, if applicable.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 4
+        },
+        "transferred_at": {
+          "comment": "When the document verification was transferred, if applicable.",
+          "dataType": "timestamp with time zone",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": true,
+          "ordinalPosition": 5
         }
       },
-      "comment": "Records of successfully verified identities. Raw document numbers are never stored; only a 64-char HMAC fingerprint.",
-      "foreignKeys": {
-        "verified_identities_identity_document_type_id_fkey": {
-          "columns": ["identity_document_type_id"],
-          "onDelete": "RESTRICT",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "identity_document_types",
-          "validated": true
-        },
-        "verified_identities_transferred_to_user_id_fkey": {
-          "columns": ["transferred_to_user_id"],
-          "onDelete": "RESTRICT",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "users",
-          "validated": true
-        },
-        "verified_identities_user_id_fkey": {
-          "columns": ["user_id"],
-          "onDelete": "RESTRICT",
-          "onUpdate": "NO ACTION",
-          "referencedColumns": ["id"],
-          "referencedTable": "users",
-          "validated": true
-        }
-      },
+      "comment": "Permanent minimum anti-reuse record: a keyed document hash and verification lifecycle dates only, with no account or provider identity.",
+      "foreignKeys": {},
       "indexes": {
-        "idx_verified_identities__identity_document_type_id": {
+        "verified_identities_pkey": {
           "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_verified_identities__identity_document_type_id ON public.verified_identities USING btree (identity_document_type_id)",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX verified_identities_pkey ON public.verified_identities USING btree (identity_fingerprint)",
           "immediate": true,
           "keys": [
             {
               "collation": null,
-              "column": "identity_document_type_id",
-              "descending": false,
-              "expression": "identity_document_type_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": null,
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_verified_identities__transferred_to_user_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_verified_identities__transferred_to_user_id ON public.verified_identities USING btree (transferred_to_user_id) WHERE (transferred_to_user_id IS NOT NULL)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "transferred_to_user_id",
-              "descending": false,
-              "expression": "transferred_to_user_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "(transferred_to_user_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "idx_verified_identities__user_id": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE INDEX idx_verified_identities__user_id ON public.verified_identities USING btree (user_id) WHERE (user_id IS NOT NULL)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "user_id",
-              "descending": false,
-              "expression": "user_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "(user_id IS NOT NULL)",
-          "primary": false,
-          "ready": true,
-          "unique": false,
-          "valid": true
-        },
-        "uq_verified_identities__fingerprint_active": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX uq_verified_identities__fingerprint_active ON public.verified_identities USING btree (identity_fingerprint) WHERE ((revoked_at IS NULL) AND (transferred_to_user_id IS NULL))",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": "pg_catalog.\"default\"",
               "column": "identity_fingerprint",
               "descending": false,
               "expression": "identity_fingerprint",
               "nullsFirst": false,
-              "opclass": "pg_catalog.text_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "((revoked_at IS NULL) AND (transferred_to_user_id IS NULL))",
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "uq_verified_identities__user_active": {
-          "accessMethod": "btree",
-          "constraintBacked": false,
-          "definition": "CREATE UNIQUE INDEX uq_verified_identities__user_active ON public.verified_identities USING btree (user_id) WHERE ((revoked_at IS NULL) AND (transferred_to_user_id IS NULL))",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "user_id",
-              "descending": false,
-              "expression": "user_id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
-              "orderingSupported": true
-            }
-          ],
-          "live": true,
-          "predicate": "((revoked_at IS NULL) AND (transferred_to_user_id IS NULL))",
-          "primary": false,
-          "ready": true,
-          "unique": true,
-          "valid": true
-        },
-        "verified_identities_pkey": {
-          "accessMethod": "btree",
-          "constraintBacked": true,
-          "definition": "CREATE UNIQUE INDEX verified_identities_pkey ON public.verified_identities USING btree (id)",
-          "immediate": true,
-          "keys": [
-            {
-              "collation": null,
-              "column": "id",
-              "descending": false,
-              "expression": "id",
-              "nullsFirst": false,
-              "opclass": "pg_catalog.uuid_ops",
+              "opclass": "pg_catalog.bytea_ops",
               "orderingSupported": true
             }
           ],
@@ -143050,15 +142941,150 @@
       },
       "physicalPartition": null,
       "primaryKey": {
-        "columns": ["id"]
+        "columns": ["identity_fingerprint"]
       },
       "relationKind": "table",
-      "triggers": {
-        "trigger_verified_identities_updated_at": {
-          "definition": "CREATE TRIGGER trigger_verified_identities_updated_at BEFORE UPDATE ON public.verified_identities FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at()"
+      "triggers": {},
+      "uniqueConstraints": {}
+    },
+    "verified_identity_account_links": {
+      "checkConstraints": {},
+      "columns": {
+        "identity_fingerprint": {
+          "comment": "Keyed document fingerprint associated with this live account; the retained fingerprint row has no account link.",
+          "dataType": "bytea",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 2
+        },
+        "provider_session_id": {
+          "comment": "Provider session retained only while the account link remains live for replay.",
+          "dataType": "text",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 3
+        },
+        "user_id": {
+          "comment": "Live verified account.",
+          "dataType": "uuid",
+          "defaultExpression": null,
+          "generated": null,
+          "generatedExpression": null,
+          "identity": null,
+          "nullable": false,
+          "ordinalPosition": 1
         }
       },
-      "uniqueConstraints": {}
+      "comment": "Live account and provider-session link for exact verification replay; removed on account deletion or revocation.",
+      "foreignKeys": {
+        "verified_identity_account_links_identity_fingerprint_fkey": {
+          "columns": ["identity_fingerprint"],
+          "onDelete": "RESTRICT",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["identity_fingerprint"],
+          "referencedTable": "verified_identities",
+          "validated": true
+        },
+        "verified_identity_account_links_user_id_fkey": {
+          "columns": ["user_id"],
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
+          "referencedColumns": ["id"],
+          "referencedTable": "users",
+          "validated": true
+        }
+      },
+      "indexes": {
+        "verified_identity_account_links_identity_fingerprint_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX verified_identity_account_links_identity_fingerprint_key ON public.verified_identity_account_links USING btree (identity_fingerprint)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "identity_fingerprint",
+              "descending": false,
+              "expression": "identity_fingerprint",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.bytea_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "verified_identity_account_links_pkey": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX verified_identity_account_links_pkey ON public.verified_identity_account_links USING btree (user_id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": null,
+              "column": "user_id",
+              "descending": false,
+              "expression": "user_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.uuid_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": true,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        },
+        "verified_identity_account_links_provider_session_id_key": {
+          "accessMethod": "btree",
+          "constraintBacked": true,
+          "definition": "CREATE UNIQUE INDEX verified_identity_account_links_provider_session_id_key ON public.verified_identity_account_links USING btree (provider_session_id)",
+          "immediate": true,
+          "keys": [
+            {
+              "collation": "pg_catalog.\"default\"",
+              "column": "provider_session_id",
+              "descending": false,
+              "expression": "provider_session_id",
+              "nullsFirst": false,
+              "opclass": "pg_catalog.text_ops",
+              "orderingSupported": true
+            }
+          ],
+          "live": true,
+          "predicate": null,
+          "primary": false,
+          "ready": true,
+          "unique": true,
+          "valid": true
+        }
+      },
+      "physicalPartition": null,
+      "primaryKey": {
+        "columns": ["user_id"]
+      },
+      "relationKind": "table",
+      "triggers": {},
+      "uniqueConstraints": {
+        "verified_identity_account_links_identity_fingerprint_key": {
+          "columns": ["identity_fingerprint"]
+        },
+        "verified_identity_account_links_provider_session_id_key": {
+          "columns": ["provider_session_id"]
+        }
+      }
     },
     "vote_integrity_flags": {
       "checkConstraints": {

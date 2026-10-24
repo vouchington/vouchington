@@ -891,6 +891,12 @@
 - `collision_resolution`
 - `administrator_refund`
 
+## `membership_operational_cleanup_kinds`
+
+- `entitlement_effects`
+- `renewal_notices`
+- `google_acknowledgments`
+
 ## `membership_plan_slugs`
 
 - `plus`

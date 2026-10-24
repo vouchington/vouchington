@@ -47,7 +47,7 @@ async function createConsumedIncludedIdentityAttempt(userId: string): Promise<st
 }
 
 describe('cleanupSoftDeletedUsers identity verification', () => {
-  it('reassigns and revokes verified_identities before hard-deleting (FK regression)', async () => {
+  it('removes the live link and keeps only the revoked hash before hard deletion', async () => {
     // Use a windowed sweep to avoid hard-deleting unrelated users on dirty/parallel runners.
     const window = createTestRetentionWindow()
     const user = await createTestUserDirect()
@@ -56,15 +56,14 @@ describe('cleanupSoftDeletedUsers identity verification', () => {
     const fingerprint = v7().replaceAll('-', '').padEnd(64, '0')
     const sessionId = `si_cleanup_test_${v7()}`
     await insertTestVerifiedIdentity(user.id, fingerprint, sessionId)
-    // Bypass deleteUser so the row remains active at purge time and exercises the defensive
-    // revoke in cleanupSoftDeletedUserBatch.
+    // Bypass deleteUser so the link remains active at purge time and exercises defensive revoke.
     await softDeleteUserAt(user.id, window.firstEligibleDate)
 
     await cleanupSoftDeletedUsers(window)
 
     expect(await getTestUserRaw(user.id)).toBeNull()
     const identity = await getVerifiedIdentityByFingerprint(fingerprint)
-    expect(identity?.user_id).toBe(DELETED_USER_ID)
+    expect(identity?.user_id).toBeNull()
     expect(identity?.status).toBe('revoked')
     expect(identity?.revoked_at).not.toBeNull()
   })
