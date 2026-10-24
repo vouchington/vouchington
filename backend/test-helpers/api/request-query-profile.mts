@@ -2,7 +2,6 @@ import { readFileSync } from 'node:fs'
 import { AsyncLocalStorage } from 'node:async_hooks'
 import { validate as isUuid } from 'uuid'
 import type http from 'node:http'
-import app from '../../api/app.mts'
 import {
   findUnbaselinedRepeats,
   formatUnbaselinedRepeats,
@@ -29,10 +28,7 @@ const BASELINE = parseRepeatBaseline(
 )
 
 /** The registered route identity when one matches; unknown paths remain exact. */
-export function requestProfileRoute(
-  req: http.IncomingMessage,
-  matcher: RouteMatcher = app,
-): string {
+export function requestProfileRoute(req: http.IncomingMessage, matcher: RouteMatcher): string {
   const path = (req.url ?? '/').split('?')[0] ?? '/'
   return resolveRequestProfileRoute(matcher, `${req.method ?? 'GET'} ${path}`)
 }
@@ -48,7 +44,7 @@ export function profileRequestQueries<Result>(
   req: http.IncomingMessage,
   res: http.ServerResponse,
   handle: () => Result,
-  matcher: RouteMatcher = app,
+  matcher: RouteMatcher,
 ): Result {
   const profile = createRequestQueryProfile()
   const route = requestProfileRoute(req, matcher)

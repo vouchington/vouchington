@@ -159,7 +159,7 @@ function createSharedApiTestServer(state: ApiTestServerGlobal): ApiTestServerSta
       req,
       res,
       () => state[API_TEST_SERVER_LISTENER_KEY]?.(req, res),
-      state[API_TEST_SERVER_MATCHER_KEY],
+      state[API_TEST_SERVER_MATCHER_KEY]!,
     ),
   )
   testServer.keepAliveTimeout = 30_000
@@ -192,5 +192,5 @@ export async function withApiRequestQueryOptions<Result>(
     createApiRequestGuardedListener(fn.callback()),
     options,
   )
-  return withOwnedApiServer(listener, address => run(createRequest(address)))
+  return withOwnedApiServer(listener, fn, address => run(createRequest(address)))
 }

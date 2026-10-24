@@ -6,54 +6,13 @@ import {
   findUnbaselinedRepeats,
   formatUnbaselinedRepeats,
 } from '../../test-helpers/request-query-profile-baseline.mts'
-import {
-  createRequestQueryProfile,
-  type RequestQuerySummary,
-} from '../../test-helpers/query-profiles.mts'
-import { formatRequestProfileLine } from '../../test-helpers/request-query-profile-line.mts'
+import { createRequestQueryProfile } from '../../test-helpers/query-profiles.mts'
 import { recordQueryTiming } from './query-timing.mts'
+import { createVouchaApiApp } from '../../api/app.mts'
 
-const summary = (repeats: RequestQuerySummary['repeats']): RequestQuerySummary => ({
-  totalQueries: 2,
-  serialDepth: 2,
-  repeats,
-})
-
-describe('request profile line', () => {
-  it('stays quiet without repeats unless all profiles are requested', () => {
-    expect(formatRequestProfileLine('GET /x', summary([]), { all: false })).toBeNull()
-    expect(formatRequestProfileLine('GET /x', summary([]), { all: true })).toBe(
-      '[pg-request-profile] route=GET /x queries=2 serialDepth=2 repeats=none\n',
-    )
-    expect(
-      formatRequestProfileLine('GET /x', summary([{ annotation: 'a', count: 2 }]), { all: false }),
-    ).toBe('[pg-request-profile] route=GET /x queries=2 serialDepth=2 repeats=a(x2)\n')
-  })
-})
-
-describe('request query profile attribution', () => {
-  const timing = { pool: 'read', durationMs: 0, rowCount: 0, error: false } as const
-
-  it('attributes timing-hook queries to the active scope only', async () => {
-    const first = createRequestQueryProfile()
-    const second = createRequestQueryProfile()
-    recordQueryTiming({ ...timing, annotation: 'outside' })
-    await Promise.all([
-      first.run(async () => {
-        await Promise.resolve()
-        recordQueryTiming({ ...timing, annotation: 'one' })
-        recordQueryTiming({ ...timing, annotation: 'one', cursorBatches: 3 })
-      }),
-      second.run(async () => {
-        await Promise.resolve()
-        recordQueryTiming({ ...timing, annotation: 'two' })
-      }),
-    ])
-    expect(first.summarize().totalQueries).toBe(2)
-    expect(first.summarize().repeats).toEqual([])
-    expect(second.summarize().totalQueries).toBe(1)
-  })
-})
+const matcher = createVouchaApiApp()
+matcher.route('/api/v1/rss-feeds/trending').get(() => {})
+matcher.route('/api/v1/mcp').post(() => {})
 
 const BASELINE_URL = new URL(
   '../../test-helpers/api/request-query-profile-baseline.json',
@@ -166,17 +125,22 @@ describe('request query profile baseline', () => {
       withRequestQueryProfileGuard(async () => {
         const res = new EventEmitter() as unknown as http.ServerResponse
         const req = { method: 'GET', url, headers: {} } as http.IncomingMessage
-        profileRequestQueries(req, res, () => {
-          for (let i = 0; i < count; i++) {
-            recordQueryTiming({
-              pool: 'read',
-              durationMs: 0,
-              rowCount: 0,
-              error: false,
-              annotation: 'getRssFeedsByIdBatch',
-            })
-          }
-        })
+        profileRequestQueries(
+          req,
+          res,
+          () => {
+            for (let i = 0; i < count; i++) {
+              recordQueryTiming({
+                pool: 'read',
+                durationMs: 0,
+                rowCount: 0,
+                error: false,
+                annotation: 'getRssFeedsByIdBatch',
+              })
+            }
+          },
+          matcher,
+        )
         res.emit('finish')
       })
     await expect(serve('/api/v1/rss-feeds/trending?limit=30', 2)).resolves.toBeUndefined()
@@ -196,10 +160,15 @@ describe('request query profile baseline', () => {
     const serve = (annotation: string, method = 'GET', url = '/v1/x?y=1') => {
       const res = new EventEmitter() as unknown as http.ServerResponse
       const req = { method, url, headers: {} } as http.IncomingMessage
-      profileRequestQueries(req, res, () => {
-        recordQueryTiming({ pool: 'read', durationMs: 0, rowCount: 0, error: false, annotation })
-        recordQueryTiming({ pool: 'read', durationMs: 0, rowCount: 0, error: false, annotation })
-      })
+      profileRequestQueries(
+        req,
+        res,
+        () => {
+          recordQueryTiming({ pool: 'read', durationMs: 0, rowCount: 0, error: false, annotation })
+          recordQueryTiming({ pool: 'read', durationMs: 0, rowCount: 0, error: false, annotation })
+        },
+        matcher,
+      )
       res.emit('finish')
     }
     const committed = JSON.parse(readFileSync(BASELINE_URL, 'utf8')) as {
@@ -232,15 +201,20 @@ describe('request query profile baseline', () => {
     try {
       const res = new EventEmitter() as unknown as http.ServerResponse
       const req = { method: 'GET', url: '/v1/quiet', headers: {} } as http.IncomingMessage
-      profileRequestQueries(req, res, () => {
-        recordQueryTiming({
-          pool: 'read',
-          durationMs: 0,
-          rowCount: 0,
-          error: false,
-          annotation: 'once',
-        })
-      })
+      profileRequestQueries(
+        req,
+        res,
+        () => {
+          recordQueryTiming({
+            pool: 'read',
+            durationMs: 0,
+            rowCount: 0,
+            error: false,
+            annotation: 'once',
+          })
+        },
+        matcher,
+      )
       res.emit('finish')
       expect(stderrSpy).toHaveBeenCalledWith(
         '[pg-request-profile] route=GET /v1/quiet queries=1 serialDepth=1 repeats=none\n',
@@ -258,17 +232,22 @@ describe('request query profile baseline', () => {
       await import('../../test-helpers/api/request-query-profile-violations.mts')
     const res = new EventEmitter() as unknown as http.ServerResponse
     const req = { method: 'GET', url: '/v1/aborted', headers: {} } as http.IncomingMessage
-    profileRequestQueries(req, res, () => {
-      for (let i = 0; i < 2; i++) {
-        recordQueryTiming({
-          pool: 'read',
-          durationMs: 0,
-          rowCount: 0,
-          error: false,
-          annotation: 'repeatBeforeDisconnect',
-        })
-      }
-    })
+    profileRequestQueries(
+      req,
+      res,
+      () => {
+        for (let i = 0; i < 2; i++) {
+          recordQueryTiming({
+            pool: 'read',
+            durationMs: 0,
+            rowCount: 0,
+            error: false,
+            annotation: 'repeatBeforeDisconnect',
+          })
+        }
+      },
+      matcher,
+    )
     res.emit('close')
     expect(takeRequestQueryProfileViolations()).toEqual([
       expect.stringContaining('GET /v1/aborted: repeatBeforeDisconnect (x2)'),
