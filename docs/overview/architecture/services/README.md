@@ -87,7 +87,10 @@ their configured maximum activity age. Inbound processing checks the signed requ
 deduplication; durable per-activity Follow and Like Undo state prevents a freshly signed old
 activity from recreating an undone edge after its generic inbox identity expires. Outbound
 fan-out rejects a job whose durable UUIDv7 activity identity is too old before it can recreate a
-completed checkpoint. Announce has no local entity effect. Terminal follower distribution intents
+completed checkpoint. Each ledger also keeps a monotonic admission floor when identities are
+purged. Increasing the configured age cannot reactivate a retired signed-date period or an
+outbound UUIDv7 identity; admission and cleanup serialize on the floor row before any network
+delivery. Announce has no local entity effect. Terminal follower distribution intents
 also expire through a persisted keyset sweep; their delivery identities and recipient snapshots
 cascade from the parent, while unfinished intents remain available for retries.
 

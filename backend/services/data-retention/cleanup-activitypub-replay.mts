@@ -1,6 +1,7 @@
 /* oxlint-disable no-await-in-loop -- each capped keyset page must finish before its cursor advances. */
 import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import { getMaximumActivityAgeDays } from '@services/ap-inbox-activities/config'
+import { advanceReplayRejectionFloor } from './cleanup-activitypub-replay-floor.mts'
 
 type Kind = 'inbox' | 'outbound'
 // PostgreSQL timestamps have microsecond precision. pg's Date parser truncates to milliseconds,
@@ -140,13 +141,18 @@ async function cleanupWithQuery(
       break
     }
     // no-mistakes-disable-next-line query-reached-per-item: capped UUID page deletes before cursor advances
-    const removed = await query(
+    const removed = await query<Key>(
       `/* deleteActivityPubReplayRetentionCandidates */
        DELETE FROM ${source.table} WHERE ${source.id} = ANY($1::uuid[])
          AND ${source.date} < $2 ${source.condition}
-         ${options.scope ? `AND ${source.id} = ANY($3::uuid[])` : ''}`,
+         ${options.scope ? `AND ${source.id} = ANY($3::uuid[])` : ''}
+       RETURNING ${source.date}::text AS at, ${source.id} AS id`,
       [page.map(item => item.id), cutoff, ...(options.scope ? [options.scope.activityIds] : [])],
     )
+    // Admission serializes on this cursor row. The identities and their rejection floor commit
+    // atomically, and only identities actually removed from the ledger advance the floor.
+    // no-mistakes-disable-next-line query-reached-per-item: each capped deleted page advances one durable floor before its cursor
+    if (removed.rows.length > 0) await advanceReplayRejectionFloor(query, kind, removed.rows)
     deleted += removed.rowCount ?? 0
     position = page.at(-1)!
     hasMore = rows.length > options.batchSize

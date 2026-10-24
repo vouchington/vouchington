@@ -1,8 +1,9 @@
 import { randomUUID } from 'node:crypto'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import { getActorUri } from '@modules/activitypub-uris'
 import { generateRsaSha256KeyPair } from '@modules/http-signatures'
 import {
+  advanceFederationReplayFloorForTest,
   deleteFederationInboxActivityForTest,
   getEntityRelation,
   readAllQueueJobs,
@@ -26,7 +27,8 @@ import {
 } from '@voucha/test-helpers/activitypub-inbox-transitions'
 
 registerActivityPubInboxAdmission()
-import { getMaximumActivityAgeDays } from './config.mts'
+import { activityPubInboxConfig, getMaximumActivityAgeDays } from './config.mts'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
 
 const randomSuffix = () => Math.random().toString(36).slice(2, 10)
 
@@ -47,6 +49,29 @@ function makeUnpersistedRemoteActor(): RemoteActorRow {
 }
 
 describe('recordAndDispatchInboundActivity', () => {
+  it('rejects a retired signed date after the configured age is widened', async () => {
+    const remoteActor = makeUnpersistedRemoteActor()
+    const id = `https://remote.example/activities/${randomSuffix()}`
+    const signedAt = new Date(Date.now() - 40 * 86_400_000)
+    await withCommittedPostgresTransactionForTest(query =>
+      advanceFederationReplayFloorForTest(query, 'inbox', signedAt),
+    )
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(activityPubInboxConfig, {
+        maximum_activity_age_days: 60,
+      }),
+    )
+    await expect(
+      recordAndDispatchInboundActivity(remoteActor, {
+        id,
+        type: 'Announce',
+        actor: remoteActor.actor_uri,
+        object: 'https://voucha.test/ap/posts/some-post',
+        signedAt,
+      }),
+    ).rejects.toMatchObject({ status: 401, message: 'Activity signature date is retired' })
+  })
+
   it('rejects a signed request beyond the configured age before reserving its identity', async () => {
     const remoteActor = makeUnpersistedRemoteActor()
     const id = `https://remote.example/activities/${randomSuffix()}`
@@ -92,8 +117,6 @@ describe('recordAndDispatchInboundActivity', () => {
   it('reports a replay as duplicate without re-dispatching', async () => {
     const remoteActor = makeUnpersistedRemoteActor()
     const activityId = `https://remote.example/activities/${randomSuffix()}`
-    // First call must succeed all the way through so the dedup marker is durably left in place —
-    // an unsupported activity type dispatches to a no-op, never throwing.
     const first = await recordAndDispatchInboundActivity(remoteActor, {
       signedAt: new Date(),
       id: activityId,
@@ -130,7 +153,6 @@ describe('recordAndDispatchInboundActivity', () => {
       'foreign key constraint',
     )
 
-    // The failed relation write and reservation share a transaction, so the retry can reserve it.
     const isFirstSeenAgain = await recordInboxActivity(activityId, activity.type, activity.actor)
     expect(isFirstSeenAgain).toBe(true)
   })
@@ -218,9 +240,6 @@ describe('recordAndDispatchInboundActivity duplicate Follow Accept resend', () =
     })
   })
 
-  // Round-7 re-review fix: a stale/out-of-order redelivery of the *original* Follow id, arriving
-  // after the sender already sent Undo(Follow), must not resurrect the relation just because the
-  // dedup ledger treats it as a duplicate delivery.
   it('does not resurrect a relation, or resend an Accept, for a stale duplicate Follow after Undo(Follow)', async () => {
     const remoteActor = await createRemoteActorFixture()
     const user = await createFederatedUser()
@@ -254,8 +273,6 @@ describe('recordAndDispatchInboundActivity duplicate Follow Accept resend', () =
     expect(staleReplay).toMatchObject({ outcome: 'applied', duplicate: true })
     expect(staleReplay).not.toHaveProperty('postCommitEnqueue')
 
-    // The 30-day sweep removes the generic dedup row. A freshly signed delivery of the exact
-    // old Follow still cannot reauthorize its durable, undone activity identity.
     await withCommittedPostgresTransactionForTest(query =>
       deleteFederationInboxActivityForTest(query, followActivityId),
     )

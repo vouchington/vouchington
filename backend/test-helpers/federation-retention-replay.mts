@@ -1,4 +1,4 @@
-import type { TransactionQuery } from '@data-stores/psql'
+import { beginTransaction, type TransactionQuery } from '@data-stores/psql'
 import { v7 } from 'uuid'
 import { prepareActivityDistributionPage } from '../services/activitypub-delivery/distribution-progress.mts'
 import type { FederationRetentionFixtureIds } from './federation-retention.mts'
@@ -58,6 +58,80 @@ export async function prepareFederationDistributionReplayForTest(
       throw new Error('A completed distribution replay must not load follower pages')
     },
   })
+}
+
+export async function prepareFederationDistributionPageForTest(
+  activityId: string,
+  sourceUserId: string,
+  query: TransactionQuery,
+) {
+  return prepareActivityDistributionPage(activityId, sourceUserId, {
+    listRemoteFollowerInboxPage: async () => [],
+    query,
+  })
+}
+
+export async function insertCompletedFederationReplayForTest(
+  query: TransactionQuery,
+  input: { activityId: string; sourceUserId: string; completedAt: Date },
+): Promise<void> {
+  await query(
+    `/* insertCompletedFederationReplayForTest */
+     INSERT INTO activitypub_distribution_work_items (activity_id, source_user_id, completed_at)
+     VALUES ($1::uuid, $2::uuid, $3)`,
+    [input.activityId, input.sourceUserId, input.completedAt],
+  )
+}
+
+export async function readFederationReplayFloorForTest(
+  query: TransactionQuery,
+  kind: 'inbox' | 'outbound',
+): Promise<Date | null> {
+  const { rows } = await query<{ rejection_floor_at: Date | null }>(
+    `/* readFederationReplayFloorForTest */
+     SELECT rejection_floor_at FROM activitypub_replay_retention_cursors
+     WHERE is_outbound = $1`,
+    [kind === 'outbound'],
+  )
+  return rows[0]?.rejection_floor_at ?? null
+}
+
+export async function advanceFederationReplayFloorForTest(
+  query: TransactionQuery,
+  kind: 'inbox' | 'outbound',
+  floorAt: Date,
+): Promise<void> {
+  await query(
+    `/* ensureFederationReplayFloorForTest */
+     INSERT INTO activitypub_replay_retention_cursors (is_outbound) VALUES ($1)
+     ON CONFLICT (is_outbound) DO NOTHING`,
+    [kind === 'outbound'],
+  )
+  await query(
+    `/* advanceFederationReplayFloorForTest */
+     UPDATE activitypub_replay_retention_cursors
+     SET rejection_floor_at = GREATEST(
+       COALESCE(rejection_floor_at, '-infinity'::timestamptz), $2::timestamptz
+     ) WHERE is_outbound = $1`,
+    [kind === 'outbound', floorAt],
+  )
+}
+
+/** Probe an already-held cursor lock from another transaction without waiting or polling. */
+export async function isReplayFloorLockedForTest(kind: 'inbox' | 'outbound'): Promise<boolean> {
+  await using query = await beginTransaction()
+  try {
+    await query(
+      `/* isReplayFloorLockedForTest */
+       SELECT rejection_floor_at FROM activitypub_replay_retention_cursors
+       WHERE is_outbound = $1 FOR UPDATE NOWAIT`,
+      [kind === 'outbound'],
+    )
+    return false
+  } catch (err) {
+    if ((err as { code?: string }).code === '55P03') return true
+    throw err
+  }
 }
 
 export async function deleteFederationInboxFixturesForTest(

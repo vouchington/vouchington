@@ -28,6 +28,7 @@
     "@modules/http-signatures": "workspace:^",
     "@modules/on-error": "workspace:^",
     "@modules/utils": "workspace:^",
+    "@services/ap-inbox-activities": "workspace:^",
     "@services/remote-actors": "workspace:^",
     "http-errors": "^2.0.1",
     "sql-template-strings": "^2.2.2",

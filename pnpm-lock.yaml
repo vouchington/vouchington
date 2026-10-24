@@ -4023,6 +4023,9 @@ importers:
       '@modules/utils':
         specifier: workspace:^
         version: link:../../modules/utils
+      '@services/ap-inbox-activities':
+        specifier: workspace:^
+        version: link:../ap-inbox-activities
       '@services/remote-actors':
         specifier: workspace:^
         version: link:../remote-actors

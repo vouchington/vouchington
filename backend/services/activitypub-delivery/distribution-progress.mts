@@ -3,9 +3,12 @@ import { beginTransaction, write, type TransactionQuery } from '@data-stores/psq
 import { listRemoteFollowerInboxPage } from '@services/remote-actors'
 import sql from 'sql-template-strings'
 import { randomUUID } from 'node:crypto'
+import { getDateFromUUIDv7 } from '@modules/utils/ids'
+import { lockActivityPubReplayFloor } from '@services/ap-inbox-activities/replay-floor'
 
 export type PreparedActivityDistributionPage =
   | { status: 'completed' }
+  | { status: 'expired' }
   | { status: 'busy'; retryAfterMs: number }
   | {
       status: 'ready'
@@ -25,6 +28,7 @@ type CheckpointRow = {
 
 type DistributionPageDependencies = {
   listRemoteFollowerInboxPage: typeof listRemoteFollowerInboxPage
+  query?: TransactionQuery
 }
 
 // Reads a bounded follower page against the primary database after ensuring the activity's durable
@@ -37,6 +41,15 @@ export async function prepareActivityDistributionPage(
   pageSize?: number,
 ): Promise<PreparedActivityDistributionPage> {
   const deps = { listRemoteFollowerInboxPage, ...dependencies }
+  if (deps.query) {
+    return prepareActivityDistributionPageInTransaction(
+      activityId,
+      sourceUserId,
+      deps,
+      deps.query,
+      pageSize,
+    )
+  }
   await using transaction = await beginTransaction()
   const page = await prepareActivityDistributionPageInTransaction(
     activityId,
@@ -58,6 +71,11 @@ async function prepareActivityDistributionPageInTransaction(
 ): Promise<PreparedActivityDistributionPage> {
   const FOLLOWER_INBOX_BATCH_SIZE =
     pageSize ?? getRemoteActorsWorkLimit('follower_inbox_batch_size')
+  const rejectionFloor = await lockActivityPubReplayFloor(query, 'outbound')
+  const activityCreatedAt = getDateFromUUIDv7(activityId)
+  if (!activityCreatedAt || (rejectionFloor && activityCreatedAt <= rejectionFloor)) {
+    return { status: 'expired' }
+  }
   await query(sql`/* prepareActivityDistributionPage:insert */
       INSERT INTO activitypub_distribution_work_items (activity_id, source_user_id)
       VALUES (${activityId}, ${sourceUserId})

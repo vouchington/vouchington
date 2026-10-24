@@ -136,7 +136,10 @@ type DataRetentionCleanupOptions = {
   }>
   oldModerationQueueClaims?: OptionalRetentionLimits<CleanupOptions>
   oldModerationMediaReveals?: OptionalRetentionLimits<CleanupOptions>
-  federationRetention?: { now?: Date }
+  federationRetention?: Omit<
+    Parameters<typeof cleanupFederationRetention>[0],
+    'batchSize' | 'maxBatches'
+  >
 }
 
 type DataRetentionCleanupResult = {
