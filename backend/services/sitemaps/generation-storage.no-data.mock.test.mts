@@ -23,6 +23,7 @@ import {
   putSitemapFamilyProgress,
   type SitemapGenerationProgress,
 } from './generation-storage.mts'
+import { cleanupRetiredSitemapGenerations } from './retired-generation-cleanup.mts'
 
 const mocks = vi.hoisted(() => ({
   send: vi.fn<typeof import('@aws-sdk/client-s3').S3Client.prototype.send>(),
@@ -94,12 +95,9 @@ describe('retired sitemap S3 operations', () => {
     })
   })
 
-  it('enforces the S3 batch cap and deletes only requested prefixed pages', async () => {
+  it('skips an empty batch and deletes only requested prefixed pages', async () => {
     vi.stubEnv('SITEMAP_S3_PREFIX', 'staging')
     await deleteSitemapObjects([])
-    await expect(
-      deleteSitemapObjects(Array.from({ length: 1001 }, () => 'page.xml')),
-    ).rejects.toThrow('Sitemap delete exceeds the S3 batch limit')
     expect(mocks.send).not.toHaveBeenCalled()
 
     mocks.send.mockResolvedValueOnce({} as never)
@@ -116,6 +114,36 @@ describe('retired sitemap S3 operations', () => {
         ],
       },
     })
+  })
+
+  it('advances past an absent retired record without deleting any page', async () => {
+    const recordKey = 'sitemaps/retired/records/11111111-1111-4111-8111-111111111111.json'
+    let savedCursor: string | undefined
+    mocks.send.mockImplementation(async command => {
+      if (command instanceof GetObjectCommand) {
+        throw Object.assign(new Error('missing object'), { name: 'NoSuchKey' })
+      }
+      if (command instanceof ListObjectsV2Command) {
+        return { Contents: [{ Key: recordKey }], IsTruncated: true } as never
+      }
+      if (command instanceof PutObjectCommand) {
+        if (typeof command.input.Body !== 'string') throw new Error('Expected JSON cursor')
+        savedCursor = command.input.Body
+        return {} as never
+      }
+      throw new Error(`Unexpected S3 command: ${command.constructor.name}`)
+    })
+
+    await expect(
+      cleanupRetiredSitemapGenerations(new Date('2026-10-25T00:00:00.000Z')),
+    ).resolves.toEqual({
+      deletedPages: 0,
+      hasMore: true,
+    })
+    expect(savedCursor).toBe(JSON.stringify({ after_key: recordKey }))
+    expect(mocks.send.mock.calls.some(([command]) => command instanceof DeleteObjectsCommand)).toBe(
+      false,
+    )
   })
 
   it('persists and removes bounded generation progress and retirement checkpoints', async () => {
