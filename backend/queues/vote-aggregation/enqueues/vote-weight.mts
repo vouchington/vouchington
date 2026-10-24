@@ -89,6 +89,15 @@ export function enqueueRecalculateUserVoteWeightBestEffort(
   })
 }
 
+export function enqueueBulkRecalculateUserVoteWeightBestEffort(
+  userIds: string[],
+  forceRecalculate?: boolean,
+): Promise<void> {
+  return awaitReportedEnqueueAdmission(() => {
+    return enqueueBulkRecalculateUserVoteWeight(userIds, forceRecalculate)
+  })
+}
+
 export function enqueueBulkRecalculateUserVoteWeight(
   userIds: string[],
   forceRecalculate?: boolean,

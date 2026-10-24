@@ -9899,9 +9899,6 @@ importers:
       '@data-stores/valkey':
         specifier: workspace:^
         version: link:../../data-stores/valkey
-      '@modules/on-error':
-        specifier: workspace:^
-        version: link:../../modules/on-error
       '@modules/pagination':
         specifier: workspace:^
         version: link:../../modules/pagination
