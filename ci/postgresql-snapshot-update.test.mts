@@ -121,6 +121,49 @@ async function git(cwd: string, ...args: string[]): Promise<string> {
   ).stdout.trim()
 }
 
+async function publicationFixture() {
+  const { root, env } = await fixture()
+  const candidate = join(root, 'candidate')
+  const remote = join(root, 'remote.git')
+  const snapshot = join(candidate, 'backend/data-stores/psql/schema-snapshot')
+  const markdown = join(candidate, 'docs/development/postgresql/schema-snapshot/markdown')
+  await mkdir(markdown, { recursive: true })
+  await mkdir(snapshot, { recursive: true })
+  await writeFile(join(snapshot, 'generate.mts'), '// source sentinel\n')
+  await writeFile(join(snapshot, 'schema.json'), '{}\n')
+  await writeFile(join(snapshot, 'no-mistakes-catalog.json'), '{}\n')
+  await writeFile(join(markdown, 'README.md'), '# Schema\n')
+  await writeFile(join(markdown, 'orphan.md'), '# Old leaf\n')
+  await writeFile(join(markdown, '../README.md'), '# Documentation owner\n')
+  await git(candidate, 'init', '-b', 'feat/snapshot')
+  await git(candidate, 'add', '.')
+  await git(candidate, 'commit', '-m', 'initial')
+  const actualHead = await git(candidate, 'rev-parse', 'HEAD')
+  await git(root, 'init', '--bare', remote)
+  await git(candidate, 'remote', 'add', 'origin', remote)
+  await git(candidate, 'push', 'origin', 'HEAD:refs/heads/feat/snapshot')
+  const pr = JSON.parse(await readFile(join(root, 'pr.json'), 'utf8'))
+  pr.head.sha = actualHead
+  await writeFile(join(root, 'pr.json'), JSON.stringify(pr))
+  const artifact = join(root, 'artifact')
+  await mkdir(artifact)
+  const publishEnv = {
+    ...env,
+    SNAPSHOT_PUBLISH_TOKEN: 'test-publish-token',
+    SNAPSHOT_PR_NUMBER: '663',
+    SNAPSHOT_HEAD_REF: 'feat/snapshot',
+    SNAPSHOT_HEAD_SHA: actualHead,
+    SNAPSHOT_BASE_REF: 'main',
+    SNAPSHOT_BASE_SHA: baseSha,
+    SNAPSHOT_POSTGRES_IMAGE: image,
+    SNAPSHOT_DEFAULT_BRANCH: 'main',
+    SNAPSHOT_ARTIFACT_DIR: artifact,
+    SNAPSHOT_CANDIDATE_DIR: candidate,
+  }
+  await runController('manifest', { ...publishEnv, GITHUB_WORKSPACE: candidate })
+  return { root, candidate, remote, snapshot, markdown, actualHead, pr, artifact, publishEnv }
+}
+
 describe('PostgreSQL snapshot controller process', () => {
   afterEach(async () => {
     await Promise.all(roots.splice(0).map(root => rm(root, { recursive: true, force: true })))
@@ -173,62 +216,8 @@ describe('PostgreSQL snapshot controller process', () => {
     expect(await readFile(output, 'utf8')).toBe('')
   })
 
-  it('publishes only generated changes and creates no commit for identical output', async () => {
-    const { root, env } = await fixture()
-    const candidate = join(root, 'candidate')
-    const remote = join(root, 'remote.git')
-    const snapshot = join(candidate, 'backend/data-stores/psql/schema-snapshot')
-    const markdown = join(candidate, 'docs/development/postgresql/schema-snapshot/markdown')
-    await mkdir(markdown, { recursive: true })
-    await mkdir(snapshot, { recursive: true })
-    await writeFile(join(snapshot, 'generate.mts'), '// source sentinel\n')
-    await writeFile(join(snapshot, 'schema.json'), '{}\n')
-    await writeFile(join(snapshot, 'no-mistakes-catalog.json'), '{}\n')
-    await writeFile(join(markdown, 'README.md'), '# Schema\n')
-    await writeFile(join(markdown, 'orphan.md'), '# Old leaf\n')
-    await writeFile(join(markdown, '../README.md'), '# Documentation owner\n')
-    await git(candidate, 'init', '-b', 'feat/snapshot')
-    await git(candidate, 'add', '.')
-    await git(candidate, 'commit', '-m', 'initial')
-    const actualHead = await git(candidate, 'rev-parse', 'HEAD')
-    await git(root, 'init', '--bare', remote)
-    await git(candidate, 'remote', 'add', 'origin', remote)
-    await git(candidate, 'push', 'origin', 'HEAD:refs/heads/feat/snapshot')
-    const pr = JSON.parse(await readFile(join(root, 'pr.json'), 'utf8'))
-    pr.head.sha = actualHead
-    await writeFile(join(root, 'pr.json'), JSON.stringify(pr))
-    const artifact = join(root, 'artifact')
-    await mkdir(artifact)
-    const publishEnv = {
-      ...env,
-      SNAPSHOT_PUBLISH_TOKEN: 'test-publish-token',
-      SNAPSHOT_PR_NUMBER: '663',
-      SNAPSHOT_HEAD_REF: 'feat/snapshot',
-      SNAPSHOT_HEAD_SHA: actualHead,
-      SNAPSHOT_BASE_REF: 'main',
-      SNAPSHOT_BASE_SHA: baseSha,
-      SNAPSHOT_POSTGRES_IMAGE: image,
-      SNAPSHOT_DEFAULT_BRANCH: 'main',
-      SNAPSHOT_ARTIFACT_DIR: artifact,
-      SNAPSHOT_CANDIDATE_DIR: candidate,
-    }
-    async function writeManifest(): Promise<void> {
-      const manifest: SnapshotManifest = {
-        formatVersion: 1,
-        repository,
-        prNumber: 663,
-        headRef: 'feat/snapshot',
-        headSha: actualHead,
-        baseRef: 'main',
-        baseSha,
-        postgresImage: image,
-        runId: 9,
-        runAttempt: 1,
-        files: await describeGeneratedSnapshotFiles(artifact),
-      }
-      await writeFile(join(artifact, 'manifest.json'), JSON.stringify(manifest))
-    }
-    await runController('manifest', { ...publishEnv, GITHUB_WORKSPACE: candidate })
+  it('creates no commit for identical generated output', async () => {
+    const { candidate, actualHead, artifact, publishEnv } = await publicationFixture()
     const generatedManifest = JSON.parse(
       await readFile(join(artifact, 'manifest.json'), 'utf8'),
     ) as SnapshotManifest
@@ -241,28 +230,38 @@ describe('PostgreSQL snapshot controller process', () => {
     expect(generatedManifest).toMatchObject({ headSha: actualHead, postgresImage: image })
     await runController('publish', publishEnv)
     expect(await git(candidate, 'rev-parse', 'HEAD')).toBe(actualHead)
+  })
 
+  it('rejects a stale PR before publishing', async () => {
+    const { root, pr, publishEnv } = await publicationFixture()
     pr.head.sha = 'd'.repeat(40)
     await writeFile(join(root, 'pr.json'), JSON.stringify(pr))
     await expect(runController('publish', publishEnv)).rejects.toThrow(/identity/)
-    pr.head.sha = actualHead
-    await writeFile(join(root, 'pr.json'), JSON.stringify(pr))
+  })
 
+  it('rejects an unsafe snapshot destination before publishing', async () => {
+    const { root, candidate, markdown, actualHead, publishEnv } = await publicationFixture()
     const markdownPath = join(markdown, 'README.md')
     await rm(markdownPath)
     await symlink(join(root, 'permission.json'), markdownPath)
     await expect(runController('publish', publishEnv)).rejects.toThrow(
       /Unsafe snapshot destination/,
     )
-    await rm(markdownPath)
-    await writeFile(markdownPath, '# Schema\n')
     expect(await git(candidate, 'rev-parse', 'HEAD')).toBe(actualHead)
+  })
 
+  it('publishes only generated changes', async () => {
+    const { candidate, remote, snapshot, markdown, actualHead, artifact, publishEnv } =
+      await publicationFixture()
     await writeFile(join(artifact, 'schema.json'), '{"formatVersion":2}\n')
     await writeFile(join(artifact, 'no-mistakes-catalog.json'), '{"coverage":"complete"}\n')
     await writeFile(join(artifact, 'markdown/README.md'), '# Updated schema\n')
     await rm(join(artifact, 'markdown/orphan.md'))
-    await writeManifest()
+    const manifest = JSON.parse(
+      await readFile(join(artifact, 'manifest.json'), 'utf8'),
+    ) as SnapshotManifest
+    manifest.files = await describeGeneratedSnapshotFiles(artifact)
+    await writeFile(join(artifact, 'manifest.json'), JSON.stringify(manifest))
     await runController('publish', publishEnv)
     expect(await git(candidate, 'rev-parse', 'HEAD')).not.toBe(actualHead)
     expect(await git(remote, 'rev-parse', 'refs/heads/feat/snapshot')).toBe(
