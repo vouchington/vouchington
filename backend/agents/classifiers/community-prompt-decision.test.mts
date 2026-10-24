@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import type {
-  ActiveClassifierConfiguration,
-  PersistClassifierDecisionInput,
-} from '@services/classifiers'
-import { executeSingleCallClassifierDecision } from './execute-single-call.mts'
+import type { ActiveClassifierConfiguration } from '@services/classifiers'
+import { prepareSingleCallClassifierDecision } from './prepare-single-call.mts'
 import { assertCompleteCandidateCoverage } from './results.mts'
 import { classifierPrompt } from './safe-content.mts'
 import type {
@@ -52,7 +49,6 @@ const promptInput = (overrides: Partial<ExecuteClassifierDecisionInput> = {}) =>
 
 describe('community prompt classifier decisions', () => {
   it('asks every community prompt in one request and keys each result by its prompt', async () => {
-    const persisted: PersistClassifierDecisionInput[] = []
     const client = makeClient(request => ({
       answers: request.questions.map((question, index) => ({
         id: question.id,
@@ -66,21 +62,16 @@ describe('community prompt classifier decisions', () => {
       usage: null,
     }))
 
-    await executeSingleCallClassifierDecision(
+    const prepared = await prepareSingleCallClassifierDecision(
       makeSingleCallInput({ client, scope: communityScope, bindings: promptBindings(10) }),
       {
         getActiveClassifierConfiguration: async () => configuration,
-        persistClassifierDecision: async input => {
-          persisted.push(input)
-          return { decision: input as never, replayed: false }
-        },
       },
     )
 
     expect(client.requests).toHaveLength(1)
     expect(client.requests[0]?.questions).toHaveLength(10)
-    expect(persisted).toHaveLength(1)
-    const results = persisted[0]!.calls.flatMap(call => call.results)
+    const results = prepared.calls.flatMap(call => call.results)
     expect(results).toHaveLength(10)
     expect(results[3]).toEqual({
       candidateKind: 'community_prompt',

@@ -107,10 +107,10 @@ export type ExecuteClassifierDecisionInput = ClassifierDecisionRequestInput & {
 }
 
 /**
- * Input for `executeSingleCallClassifierDecision`, the sharding-free twin of
- * `executeClassifierDecision` for classifier families with no exact context
- * measurer. It omits `contextPolicy` entirely rather than accepting one that
- * would never be consulted; see `docs/overview/architecture/structured-decisions.md`.
+ * Input for `prepareSingleCallClassifierDecision`, the sharding-free path for
+ * classifier families with no exact context measurer. It omits `contextPolicy`
+ * entirely rather than accepting one that would never be consulted; see
+ * `docs/overview/architecture/structured-decisions.md`.
  */
 export type ExecuteSingleCallClassifierDecisionInput = Omit<
   ClassifierDecisionRequestInput,

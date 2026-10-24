@@ -1,13 +1,18 @@
 import { describe, expect, it } from 'vitest'
-import type {
-  StructuredDecisionRequest,
-  StructuredDecisionResult,
+import {
+  StructuredDecisionError,
+  type StructuredDecisionRequest,
+  type StructuredDecisionResult,
 } from '@modules/structured-decisions'
 import { prepareSingleCallClassifierDecision } from './prepare-single-call.mts'
+import { classifierChoiceKey, classifierPrompt } from './safe-content.mts'
 import {
   configuration,
   makeClient,
   makeSingleCallInput,
+  rssFeedItemId,
+  storyAId,
+  storyBId,
   storedCandidateAId,
   topicAId,
   topicBId,
@@ -61,6 +66,61 @@ describe('prepareSingleCallClassifierDecision', () => {
         },
       ],
     })
+  })
+
+  it('maps each bound Choice criterion in the single request', async () => {
+    const client = makeClient(request => ({
+      answers: request.questions.map(question => ({
+        id: question.id,
+        type: 'choice' as const,
+        choice: 'story-a',
+        confidence: 0.7,
+        probabilities: { 'story-a': 0.7, 'story-b': 0.2, none: 0.1 },
+        raw: { id: question.id, type: 'choice' },
+      })),
+      model: 'typesafe/jev-1.13',
+      provider: 'TypeSafe',
+      raw: {},
+      usage: null,
+    }))
+    const prepared = await prepareSingleCallClassifierDecision(
+      {
+        ...makeSingleCallInput({ client }),
+        subject: { postId: null, rssFeedItemId },
+        bindings: [
+          {
+            type: 'choice',
+            questionId: 'stories',
+            question: classifierPrompt`Which story applies?`,
+            criteria: [
+              {
+                criterion: classifierChoiceKey('story-a'),
+                candidate: { candidateKind: 'story', storyId: storyAId, storedCandidateId: null },
+              },
+              {
+                criterion: classifierChoiceKey('story-b'),
+                candidate: { candidateKind: 'story', storyId: storyBId, storedCandidateId: null },
+              },
+              { criterion: classifierChoiceKey('none'), candidate: null },
+            ],
+          },
+        ],
+      },
+      {
+        getActiveClassifierConfiguration: async () => ({
+          ...configuration,
+          primitive: 'choice',
+          candidateKind: 'story',
+        }),
+      },
+    )
+
+    expect(client.requests).toHaveLength(1)
+    expect(client.requests[0]?.questions).toHaveLength(1)
+    expect(prepared.calls[0]?.results).toEqual([
+      expect.objectContaining({ storyId: storyAId, probability: 0.7 }),
+      expect.objectContaining({ storyId: storyBId, probability: 0.2 }),
+    ])
   })
 
   it.each<[string, (request: StructuredDecisionRequest) => StructuredDecisionResult, string]>([
@@ -141,6 +201,35 @@ describe('prepareSingleCallClassifierDecision', () => {
         }),
       }),
     ).rejects.toThrow('prompt version changed')
+    expect(client.requests).toEqual([])
+  })
+
+  it('propagates provider failure after one request', async () => {
+    const client = makeClient(() => {
+      throw new StructuredDecisionError('provider-error', 'context too large', 413)
+    })
+    await expect(
+      prepareSingleCallClassifierDecision(makeSingleCallInput({ client }), {
+        getActiveClassifierConfiguration: async () => configuration,
+      }),
+    ).rejects.toThrow('context too large')
+    expect(client.requests).toHaveLength(1)
+  })
+
+  it('rejects unsupported Score and invalid batch IDs before provider dispatch', async () => {
+    const client = makeClient(() => {
+      throw new Error('must not dispatch')
+    })
+    await expect(
+      prepareSingleCallClassifierDecision(makeSingleCallInput({ client }), {
+        getActiveClassifierConfiguration: async () => ({ ...configuration, primitive: 'score' }),
+      }),
+    ).rejects.toThrow('Score persistence')
+    await expect(
+      prepareSingleCallClassifierDecision(makeSingleCallInput({ client, batchId: 'not-a-uuid' }), {
+        getActiveClassifierConfiguration: async () => configuration,
+      }),
+    ).rejects.toThrow('UUIDv7')
     expect(client.requests).toEqual([])
   })
 })
