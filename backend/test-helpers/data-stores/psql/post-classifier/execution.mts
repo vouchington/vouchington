@@ -15,6 +15,7 @@ import { createTestPost, createTestUser, insertTestCommunity } from '../../../in
 import { setPostClassifierToggleForTest } from '../../../entities/post-classifier-toggles.mts'
 import { setPostClassifierPostHashForTest } from './run-facts.mts'
 import { acquirePostClassifierSeedTestLock } from './seed-lock.mts'
+import { withRealClassifierClock } from '../../../classifier-retention-clock.mts'
 
 export const POST_CLASSIFIER_TEST_DETECTOR_VERSION = 'test-package-version'
 
@@ -71,7 +72,7 @@ export async function createPostClassifierExecutionFixture(
   const { community, post, inputSha256 } = await createApprovedClassifierPost(remote, local)
   const adapter = createTestPostClassifierAdapter()
   const subject = { postId: post.id, rssFeedItemId: null } as const
-  const reserved = await reserveClassifierRun(adapter, subject)
+  const reserved = await withRealClassifierClock(() => reserveClassifierRun(adapter, subject))
   if (reserved.kind !== 'reserved') throw new Error(`Unexpected reservation: ${reserved.kind}`)
   const claim = await claimClassifierRun(adapter, {
     runId: reserved.run.runId,
