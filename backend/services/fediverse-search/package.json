@@ -31,7 +31,7 @@
     "@ts-shared/utils": "workspace:^",
     "@voucha/config": "workspace:^",
     "http-assert": "^1.5.0",
-    "undici": "^8.12.2"
+    "undici": "^8.12.3"
   },
   "devDependencies": {
     "@voucha/test-helpers": "workspace:^"

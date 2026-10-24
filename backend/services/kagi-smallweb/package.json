@@ -31,7 +31,7 @@
     "@services/urls-hostnames": "workspace:^",
     "@voucha/types": "workspace:^",
     "pg-copy-streams": "^7.0.0",
-    "undici": "^8.12.2",
+    "undici": "^8.12.3",
     "valkyries": "^0.11.2"
   },
   "devDependencies": {
