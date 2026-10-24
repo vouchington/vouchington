@@ -6,15 +6,16 @@ Persisted keyset and high-water positions for bounded inbox and completed outbou
 
 Not partitioned — growth: bounded.
 
-| Column                 | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                     |
-| ---------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | ----------------------------------------------------------- |
-| `is_outbound`          | `boolean`                  | no       |                     |          |           |           | False for inbox, true for completed outbound replay ledger. |
-| `sweep_cutoff_at`      | `timestamp with time zone` | yes      |                     |          |           |           | Fixed maximum-activity-age cutoff for one cleanup pass.     |
-| `cursor_at`            | `timestamp with time zone` | yes      |                     |          |           |           | Timestamp component of the last processed key.              |
-| `cursor_position`      | `uuid`                     | yes      |                     |          |           |           | UUID component of the last processed key.                   |
-| `upper_bound_at`       | `timestamp with time zone` | yes      |                     |          |           |           | Timestamp component of the captured pass high-water key.    |
-| `upper_bound_position` | `uuid`                     | yes      |                     |          |           |           | UUID component of the captured pass high-water key.         |
-| `updated_at`           | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           | Last time this replay sweep cursor advanced.                |
+| Column                 | Type                       | Nullable | Default             | Identity | Generated | Collation | Comment                                                                                                                                       |
+| ---------------------- | -------------------------- | -------- | ------------------- | -------- | --------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `is_outbound`          | `boolean`                  | no       |                     |          |           |           | False for inbox, true for completed outbound replay ledger.                                                                                   |
+| `sweep_cutoff_at`      | `timestamp with time zone` | yes      |                     |          |           |           | Fixed maximum-activity-age cutoff for one cleanup pass.                                                                                       |
+| `cursor_at`            | `timestamp with time zone` | yes      |                     |          |           |           | Timestamp component of the last processed key.                                                                                                |
+| `cursor_position`      | `uuid`                     | yes      |                     |          |           |           | UUID component of the last processed key.                                                                                                     |
+| `upper_bound_at`       | `timestamp with time zone` | yes      |                     |          |           |           | Timestamp component of the captured pass high-water key.                                                                                      |
+| `upper_bound_position` | `uuid`                     | yes      |                     |          |           |           | UUID component of the captured pass high-water key.                                                                                           |
+| `rejection_floor_at`   | `timestamp with time zone` | yes      |                     |          |           |           | Monotonic admission floor advanced before an inbox or outbound replay identity is purged; independent of sweep pagination and current policy. |
+| `updated_at`           | `timestamp with time zone` | no       | `CURRENT_TIMESTAMP` |          |           |           | Last time this replay sweep cursor advanced.                                                                                                  |
 
 **Primary key:** `PRIMARY KEY (is_outbound)`
 
