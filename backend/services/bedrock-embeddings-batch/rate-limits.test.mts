@@ -4,6 +4,8 @@ import {
   cleanupTestEmbeddingsBatches,
   insertTestEmbeddingsBatch,
 } from '@voucha/test-helpers/entities/bedrock-embeddings-batches'
+import { withEmbeddingQuotaSnapshot } from '@voucha/test-helpers/embedding-quota-snapshot'
+import type { QueryOptions } from '@data-stores/psql/types'
 import {
   overrideDynamicConfigFieldsForTest,
   closeScopedDynamicConfigContext,
@@ -12,6 +14,10 @@ import {
   bedrockEmbeddingsBatchConfig,
   getRateLimitConfig,
 } from '@services/bedrock-embeddings/batch/config'
+import {
+  getActiveBatchStats,
+  getBatchRecordsCreatedInLastHour,
+} from '@services/bedrock-embeddings/batch/orchestrator/poll-queries'
 import { getBatchCreationLimits } from './rate-limits.mts'
 
 const createdBatchIds: string[] = []
@@ -41,6 +47,7 @@ describe('getBatchCreationLimits', () => {
   })
 
   it('allows a batch within the configured request and size budgets', async () => {
+    const referenceTime = new Date()
     overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, {
       max_inflight_jobs: 1000000,
       max_requests_per_hour: 1000000000,
@@ -52,7 +59,7 @@ describe('getBatchCreationLimits', () => {
     await insertBatch({ bedrockStatus: 'Submitted', records: 850, inputSizeMB: 256 })
     await insertBatch({ bedrockStatus: 'Completed', records: 25, inputSizeMB: 512 })
 
-    await expect(getBatchCreationLimits()).resolves.toEqual({
+    await expect(getBatchCreationLimits(referenceTime)).resolves.toEqual({
       allowed: true,
       maxRecords: 200,
       maxSizeMB: 1024,
@@ -61,42 +68,71 @@ describe('getBatchCreationLimits', () => {
   })
 
   it('blocks when the in-flight job limit is reached', async () => {
-    overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, { max_inflight_jobs: 1 })
-    await insertBatch({ bedrockStatus: 'Submitted' })
+    const referenceTime = new Date()
+    await withEmbeddingQuotaSnapshot(async query => {
+      const activeBefore = await getActiveBatchStats({ query })
+      const hourlyBefore = await getBatchRecordsCreatedInLastHour(referenceTime, { query })
+      overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, {
+        max_inflight_jobs: activeBefore.count + 1,
+        max_requests_per_hour: hourlyBefore + 1,
+        max_job_size_gb: Math.floor(activeBefore.inputSizeMB / 1024) + 1,
+      })
+      await expect(getBatchCreationLimits(referenceTime, { query })).resolves.toMatchObject({
+        allowed: true,
+      })
+      await insertBatch({ bedrockStatus: 'Submitted' }, { query })
 
-    await expect(getBatchCreationLimits()).resolves.toEqual({
-      allowed: false,
-      reason: 'inflight_job_limit_exceeded',
+      await expect(getBatchCreationLimits(referenceTime, { query })).resolves.toEqual({
+        allowed: false,
+        reason: 'inflight_job_limit_exceeded',
+      })
     })
   })
 
   it('blocks when the hourly request limit is exhausted', async () => {
-    overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, {
-      max_inflight_jobs: 1000000,
-      max_requests_per_hour: 1,
-    })
-    await insertBatch({ bedrockStatus: 'Completed', records: 1 })
+    const referenceTime = new Date()
+    await withEmbeddingQuotaSnapshot(async query => {
+      const activeBefore = await getActiveBatchStats({ query })
+      const hourlyBefore = await getBatchRecordsCreatedInLastHour(referenceTime, { query })
+      overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, {
+        max_inflight_jobs: activeBefore.count + 1,
+        max_requests_per_hour: hourlyBefore + 1,
+        max_job_size_gb: Math.floor(activeBefore.inputSizeMB / 1024) + 1,
+      })
+      await expect(getBatchCreationLimits(referenceTime, { query })).resolves.toMatchObject({
+        allowed: true,
+      })
+      await insertBatch({ bedrockStatus: 'Completed', records: 1 }, { query })
 
-    await expect(getBatchCreationLimits()).resolves.toEqual({
-      allowed: false,
-      reason: 'hourly_request_limit_exceeded',
+      await expect(getBatchCreationLimits(referenceTime, { query })).resolves.toEqual({
+        allowed: false,
+        reason: 'hourly_request_limit_exceeded',
+      })
     })
   })
 
   it('blocks when active batches have exhausted the input-size budget', async () => {
-    overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, {
-      max_inflight_jobs: 1000000,
-      max_requests_per_hour: 1000000000,
-      max_job_size_gb: 1,
-    })
-    await insertBatch({
-      bedrockStatus: 'Submitted',
-      inputSizeMB: 1024,
-    })
+    const referenceTime = new Date()
+    await withEmbeddingQuotaSnapshot(async query => {
+      const activeBefore = await getActiveBatchStats({ query })
+      const hourlyBefore = await getBatchRecordsCreatedInLastHour(referenceTime, { query })
+      const maxJobSizeGB = Math.floor(activeBefore.inputSizeMB / 1024) + 1
+      const maxInflightSizeMB = maxJobSizeGB * 1024
+      const inputSizeMB = maxInflightSizeMB - activeBefore.inputSizeMB + 1
+      overrideDynamicConfigFieldsForTest(bedrockEmbeddingsBatchConfig, {
+        max_inflight_jobs: activeBefore.count + 2,
+        max_requests_per_hour: hourlyBefore + 1,
+        max_job_size_gb: maxJobSizeGB,
+      })
+      await expect(getBatchCreationLimits(referenceTime, { query })).resolves.toMatchObject({
+        allowed: true,
+      })
+      await insertBatch({ bedrockStatus: 'Submitted', inputSizeMB }, { query })
 
-    await expect(getBatchCreationLimits()).resolves.toEqual({
-      allowed: false,
-      reason: 'inflight_size_limit_exceeded',
+      await expect(getBatchCreationLimits(referenceTime, { query })).resolves.toEqual({
+        allowed: false,
+        reason: 'inflight_size_limit_exceeded',
+      })
     })
   })
 
@@ -121,18 +157,24 @@ describe('getBatchCreationLimits', () => {
   })
 })
 
-async function insertBatch(options: {
-  bedrockStatus: string
-  records?: number
-  inputSizeMB?: number
-}): Promise<void> {
+async function insertBatch(
+  options: {
+    bedrockStatus: string
+    records?: number
+    inputSizeMB?: number
+  },
+  queryOptions: QueryOptions = {},
+): Promise<void> {
   const id = mintUUIDv7()
   createdBatchIds.push(id)
-  await insertTestEmbeddingsBatch({
-    id,
-    jobType: 'posts',
-    bedrockStatus: options.bedrockStatus,
-    batchData: { metadata: { inputSizeMB: options.inputSizeMB ?? 0 } },
-    records: options.records ?? 0,
-  })
+  await insertTestEmbeddingsBatch(
+    {
+      id,
+      jobType: 'posts',
+      bedrockStatus: options.bedrockStatus,
+      batchData: { metadata: { inputSizeMB: options.inputSizeMB ?? 0 } },
+      records: options.records ?? 0,
+    },
+    queryOptions,
+  )
 }
