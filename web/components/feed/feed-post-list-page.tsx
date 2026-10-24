@@ -69,6 +69,7 @@ export async function FeedPostListPage({ config, searchParams }: FeedPostListPag
         noPostsYet: t('extracted.feed.feedPostListPage.noPostsYet_f2bd6770'),
         followSomeTopics: t('extracted.feed.feedPostListPage.followSomeTopicsToSeePosts_75c6faaf'),
         browseTopics: t('extracted.feed.feedPostListPage.browseTopics_58b290ad'),
+        browseFollowedTopics: t('extracted.feed.feedPostListPage.browseTopics_5a51754b'),
         findFriends: t('extracted.feed.feedPostListPage.findFriends_d4864039'),
       }}
     />

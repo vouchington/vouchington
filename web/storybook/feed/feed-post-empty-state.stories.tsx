@@ -18,6 +18,7 @@ const labels = {
   noPostsYet: 'No posts yet',
   followSomeTopics: 'Follow topics to see posts.',
   browseTopics: 'Browse topics',
+  browseFollowedTopics: 'Browse topics',
   findFriends: 'Find friends',
 }
 

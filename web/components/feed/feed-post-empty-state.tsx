@@ -16,6 +16,7 @@ export function FeedPostEmptyState({
     noPostsYet: string
     followSomeTopics: string
     browseTopics: string
+    browseFollowedTopics: string
     findFriends: string
   }
 }) {
@@ -97,7 +98,7 @@ export function FeedPostEmptyState({
             href='/topics'
             prefetch={false}
           >
-            {labels.browseTopics}
+            {labels.browseFollowedTopics}
           </Link>
         </Button>
       </EmptyState>
