@@ -37,14 +37,6 @@ function userBucketId(surface: UsageSurface, userId: string): string {
   return `${bucket}:user:${userId}`
 }
 
-// Anonymous traffic shares one bucket per surface. There is deliberately nothing to tell callers
-// apart: an IP address or device id in the key would be a persisted identifier.
-function usageBucketId(surface: UsageSurface, identity: UsageIdentity): string {
-  return identity.credential === 'anonymous'
-    ? `${surface}:aggregate`
-    : userBucketId(surface, identity.userId)
-}
-
 // A 429 was refused before it ran and an actual 5xx is the API's failure, so neither is charged.
 // Everything else, including a 4xx the caller caused, is a request the API served.
 function usageUnitsForStatus(statusCode: number): number {
@@ -81,9 +73,11 @@ export async function settleUsage(
   { limiter, reportError }: UsageQuotaDependencies = defaultDependencies,
 ): Promise<void> {
   const units = settlement.units ?? usageUnitsForStatus(settlement.statusCode)
-  if (units > 0 && isRouteRateLimitEnabled()) {
+  // Anonymous REST has no aggregate enforcement reader; analytics already records its usage.
+  // Avoid growing a sorted set with one member per anonymous request.
+  if (units > 0 && settlement.identity.credential !== 'anonymous' && isRouteRateLimitEnabled()) {
     try {
-      await limiter.add([usageBucketId(settlement.surface, settlement.identity)])
+      await limiter.add([userBucketId(settlement.surface, settlement.identity.userId)])
     } catch (err) {
       reportError(err instanceof Error ? err : new Error(String(err)))
     }

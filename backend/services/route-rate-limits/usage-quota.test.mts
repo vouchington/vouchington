@@ -201,7 +201,7 @@ describe('usage quota', () => {
     expect(rows[0]!.oauth_client_id ?? null).toBeNull()
   })
 
-  it('charges anonymous REST traffic to one aggregate bucket with no caller dimension', async () => {
+  it('reports anonymous REST traffic without growing an unenforced Valkey bucket', async () => {
     const limiter = {
       add: vi.fn<RateLimiter['add']>(),
       isRateLimited: vi.fn<RateLimiter['isRateLimited']>(),
@@ -213,7 +213,7 @@ describe('usage quota', () => {
       reportError,
     })
 
-    expect(limiter.add).toHaveBeenCalledExactlyOnceWith(['rest_anonymous:aggregate'])
+    expect(limiter.add).not.toHaveBeenCalled()
     const [row, ...rest] = await readAnonymousApiUsageRows()
     expect(rest).toEqual([])
     expect(row).toMatchObject({ surface: 'rest_anonymous', credential: 'anonymous', units: 1 })

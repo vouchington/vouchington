@@ -48,27 +48,6 @@ export async function requestClassifierRuns(
 }
 
 /**
- * Returns the requests the sweep retired as stale at this content version to the sweep, in the
- * caller's transaction, when the subject is live at that content again (a post approved again after
- * the sweep retired its requests while it was not approved). It only revives: it never creates a
- * request, never widens the classifiers a producer asked for, and never re-arms one settled by a run
- * or as no work.
- */
-export async function reviveClassifierRunRequests(
-  query: QueryExecutor,
-  input: { subject: ClassifierRunSubject; inputSha256: Buffer },
-): Promise<void> {
-  await query(
-    sql`/* reviveClassifierRunRequests */
-    UPDATE classifier_run_requests request
-    SET stale_at = NULL
-    WHERE request.input_sha256 = ${input.inputSha256}
-      AND request.run_id IS NULL AND request.no_work_at IS NULL AND request.stale_at IS NOT NULL
-      AND `.append(requestSubject(input.subject)),
-  )
-}
-
-/**
  * Records requests for a batch of just-upserted feed items at their current content digest, in the
  * upsert transaction. Unlike a re-approval, a re-upsert of the same content never re-arms a request
  * that settled with a run or as no work; an unsettled request for older content is stale. A request
