@@ -1,4 +1,4 @@
-import { test, expect } from '../../helpers/test.mts'
+import { test, expect, protectPlaywrightHookTimeouts } from '../../helpers/test.mts'
 import { navigateTo, randomSuffix, waitForBelowFoldHydration } from 'vouchington-tooling/playwright'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { insertTestUrlHostname } from '../../../backend/test-helpers/index.mts'
@@ -8,6 +8,7 @@ test.describe('Admin Domains', () => {
   let blockedHostname = ''
 
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     blockedHostname = `pw-unblock-${randomSuffix()}.example.com`
     await insertTestUrlHostname({ hostname: blockedHostname, is_blocked: true })
   })

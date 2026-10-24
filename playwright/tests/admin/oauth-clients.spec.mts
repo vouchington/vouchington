@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '../../helpers/test.mts'
+import { expect, test, protectPlaywrightHookTimeouts, type Page } from '../../helpers/test.mts'
 import { AUTH_STATE } from '../../helpers/auth-state.mts'
 import { navigateTo, randomSuffix } from 'vouchington-tooling/playwright'
 import { createTestUser } from '../../../backend/test-helpers/index.mts'
@@ -33,9 +33,11 @@ function waitForVerificationChange(page: Page, method: 'PUT' | 'DELETE') {
 }
 
 test.describe('Admin OAuth Clients', () => {
+  test.describe.configure({ mode: 'serial' })
   test.use({ storageState: AUTH_STATE })
 
   test.beforeAll(async () => {
+    protectPlaywrightHookTimeouts(test.info())
     await Promise.all(Array.from({ length: 26 }, () => registerOwnedApp()))
   })
 
