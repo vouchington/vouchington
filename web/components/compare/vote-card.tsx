@@ -19,13 +19,13 @@ export function VoteCard({ topic, election, t }: VoteCardProps) {
           <span className='text-muted-foreground'>
             {t('extracted.votes.semanticVote.positiveVotes', { count: countUp })}
           </span>
-          <span className='font-medium text-emerald-600'>+{countUp}</span>
+          <span className='font-medium text-emerald-600 dark:text-emerald-400'>+{countUp}</span>
         </div>
         <div className='flex justify-between'>
           <span className='text-muted-foreground'>
             {t('extracted.votes.semanticVote.negativeVotes', { count: countDown })}
           </span>
-          <span className='font-medium text-rose-600'>-{countDown}</span>
+          <span className='font-medium text-rose-600 dark:text-rose-400'>-{countDown}</span>
         </div>
       </div>
     </div>

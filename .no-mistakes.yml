@@ -5311,6 +5311,33 @@ rules:
       stories: ['storybook/**/*.stories.tsx']
       includeAllReactNamedExports: true
       allowComponents:
+        'components/asides/connect-social-aside.tsx#ConnectSocialAside': >-
+          Server auth/provider eligibility wrapper returning null or ConnectSocialAsideContent,
+          which is rendered in entities/asides.stories.tsx AllAsides.
+        'components/asides/create-first-post-aside.tsx#CreateFirstPostAside': >-
+          Server auth/activity eligibility wrapper returning null or CreateFirstPostAsideContent,
+          which is rendered in entities/asides.stories.tsx AllAsides.
+        'components/asides/create-landing-page-aside.tsx#CreateLandingPageAside': >-
+          Server auth/landing-page eligibility wrapper returning null or CreateLandingPageAsideContent,
+          which is rendered in entities/asides.stories.tsx AllAsides.
+        'components/asides/discover-communities-aside.tsx#DiscoverCommunitiesAside': >-
+          Server auth/membership eligibility wrapper delegating to PopularCommunitiesAside;
+          its PopularCommunitiesAsideContent is rendered in entities/asides.stories.tsx AllAsides.
+        'components/asides/find-people-aside.tsx#FindPeopleAside': >-
+          Server auth/follow eligibility wrapper returning null or FindPeopleAsideContent,
+          which is rendered in entities/asides.stories.tsx AllAsides.
+        'components/asides/upgrade-membership-aside.tsx#UpgradeMembershipAside': >-
+          Server auth/subscription eligibility wrapper returning null or UpgradeMembershipAsideContent,
+          which is rendered in entities/asides.stories.tsx AllAsides.
+        'components/communities/community-news-page.tsx#CommunityNewsPage': >-
+          Async server community/news/auth fetch composition; entities/news covers NewsItemClusterList
+          and NewsFilters, with shared dropdown, empty/error state and RSS modal pieces covered.
+        'components/feed/feed-post-list-page.tsx#FeedPostListPage': >-
+          Async server feed/auth fetch composition; FeedTopSection, PostFilters and PostViewToggle
+          have design-system/feed stories, and PostList has entities/posts stories.
+        'components/feed/media-item-listing-page.tsx#MediaItemListingPage': >-
+          Async server media/auth fetch composition; MediaItemListingView has shared listing stories,
+          NewsItemClusterList has entities/news stories, and the modal pieces have RSS item stories.
         'components/sequential-suspense.tsx#SequentialSuspense': >-
           Behavior-only Suspense nesting for async server components, which Storybook cannot render
           client-side; it has no UI of its own.
@@ -5319,6 +5346,9 @@ rules:
         'components/sources/browse-feed-page.tsx#BrowseFeedPage': >-
           Async server component that fetches feeds and the current user; its rendered body is
           covered by the BrowseFeedResults, BrowsePageHeader, and PageWithAside stories.
+        'components/topics/topic-list-page.tsx#TopicListPage': >-
+          Async server topic/auth fetch composition; entities/topics ListPage and ListForm render
+          TopicList and TopicFilters, with its shared headers, layout and aside pieces covered.
         'components/users/user-community-relation-route.tsx#UserCommunityRelationRoute': >-
           Async server component that fetches the user's communities; its rendered body is covered by
           the CommunityCard story and the RelationManagementAction stories.
@@ -5341,14 +5371,6 @@ rules:
         - 'test-helpers/**'
         # pending backfill batches (#3761): remove each line as its stories land
         - 'components/copyright/**'
-        - 'components/topics/**'
-        - 'components/asides/**'
-        - 'components/communities/**'
-        - 'components/home/**'
-        - 'components/tags/**'
-        - 'components/posts/**'
-        - 'components/compare/**'
-        - 'components/feed/**'
 
   - name: Actions checkout does not persist credentials
     rule: github-actions-checkout-credentials
