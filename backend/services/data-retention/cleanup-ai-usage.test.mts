@@ -163,6 +163,8 @@ describe('AI usage retention', () => {
 
     const janAfter = await readTestAiUsageRollups(community.id, month(1))
     const febAfter = await readTestAiUsageRollups(community.id, month(2))
+    expect(janAfter).toMatchObject({ communityCurrency: 'usd', globalCurrency: 'usd' })
+    expect(febAfter).toMatchObject({ communityCurrency: 'usd', globalCurrency: 'usd' })
     expect(Number(janAfter.communityCalls) - Number(janBefore.communityCalls)).toBe(1)
     expect(Number(janAfter.communityCost) - Number(janBefore.communityCost)).toBe(11)
     expect(Number(janAfter.globalCalls) - Number(janBefore.globalCalls)).toBe(2)

@@ -7,6 +7,7 @@ import {
   createTestPost,
   createTestUser,
   findAiUsageRecordForPost,
+  insertTestAiUsageRecord,
   insertTestCommunity,
   listAiUsageRecordsForClassifierRun,
 } from '@voucha/test-helpers'
@@ -281,5 +282,10 @@ describe('recordAiUsage', () => {
       }),
     ).resolves.toBe('recorded')
     await expect(hasRecordedAiUsageResponseId(responseId)).resolves.toBe(true)
+  })
+  it('rejects non-USD priced usage before it can enter a USD monthly total', async () => {
+    await expect(
+      insertTestAiUsageRecord({ costMicrounits: 1, currencyCode: 'eur' }),
+    ).rejects.toMatchObject({ code: '23514' })
   })
 })

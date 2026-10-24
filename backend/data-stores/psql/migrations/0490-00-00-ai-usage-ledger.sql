@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS ai_usage_records (
     (
       pricing_status = 'priced'
       AND cost_microunits IS NOT NULL
-      AND currency_code IS NOT NULL
+      AND currency_code = 'usd'
     )
     OR (
       pricing_status = 'unpriced'
@@ -81,6 +81,8 @@ CREATE TABLE IF NOT EXISTS ai_usage_community_monthly_rollups (
   output_tokens BIGINT NOT NULL DEFAULT 0 CHECK (output_tokens >= 0),
   unpriced_request_count BIGINT NOT NULL DEFAULT 0 CHECK (unpriced_request_count >= 0),
   cost_microunits BIGINT NOT NULL DEFAULT 0 CHECK (cost_microunits >= 0),
+  currency_code currency_codes NOT NULL REFERENCES currencies(code) ON DELETE RESTRICT
+    CHECK (currency_code = 'usd'),
   UNIQUE (community_id, month_start_on)
 );
 COMMENT ON TABLE ai_usage_community_monthly_rollups IS 'All-time cost facts for live communities, folded from old per-call usage in bounded atomic pages.';
@@ -91,7 +93,10 @@ COMMENT ON COLUMN ai_usage_community_monthly_rollups.request_count IS 'Count of 
 COMMENT ON COLUMN ai_usage_community_monthly_rollups.input_tokens IS 'Sum of folded input tokens.';
 COMMENT ON COLUMN ai_usage_community_monthly_rollups.output_tokens IS 'Sum of folded output tokens.';
 COMMENT ON COLUMN ai_usage_community_monthly_rollups.unpriced_request_count IS 'Count of folded calls without known pricing.';
-COMMENT ON COLUMN ai_usage_community_monthly_rollups.cost_microunits IS 'Exact sum of priced costs in millionths of a currency unit.';
+COMMENT ON COLUMN ai_usage_community_monthly_rollups.cost_microunits IS 'Exact sum of priced USD costs in millionths of a dollar.';
+COMMENT ON COLUMN ai_usage_community_monthly_rollups.currency_code IS 'USD denomination of this community-month cost; priced source calls are constrained to USD.';
+CREATE INDEX IF NOT EXISTS idx_ai_usage_community_monthly_rollups__currency_code
+  ON ai_usage_community_monthly_rollups (currency_code);
 
 CREATE TABLE IF NOT EXISTS ai_usage_global_monthly_rollups (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
@@ -100,7 +105,9 @@ CREATE TABLE IF NOT EXISTS ai_usage_global_monthly_rollups (
   input_tokens BIGINT NOT NULL DEFAULT 0 CHECK (input_tokens >= 0),
   output_tokens BIGINT NOT NULL DEFAULT 0 CHECK (output_tokens >= 0),
   unpriced_request_count BIGINT NOT NULL DEFAULT 0 CHECK (unpriced_request_count >= 0),
-  cost_microunits BIGINT NOT NULL DEFAULT 0 CHECK (cost_microunits >= 0)
+  cost_microunits BIGINT NOT NULL DEFAULT 0 CHECK (cost_microunits >= 0),
+  currency_code currency_codes NOT NULL REFERENCES currencies(code) ON DELETE RESTRICT
+    CHECK (currency_code = 'usd')
 );
 COMMENT ON TABLE ai_usage_global_monthly_rollups IS 'All provider calls, including calls without a community, after per-call usage expires.';
 COMMENT ON COLUMN ai_usage_global_monthly_rollups.id IS 'Stable identifier of this platform-month total.';
@@ -109,7 +116,10 @@ COMMENT ON COLUMN ai_usage_global_monthly_rollups.request_count IS 'Count of fol
 COMMENT ON COLUMN ai_usage_global_monthly_rollups.input_tokens IS 'Sum of folded input tokens.';
 COMMENT ON COLUMN ai_usage_global_monthly_rollups.output_tokens IS 'Sum of folded output tokens.';
 COMMENT ON COLUMN ai_usage_global_monthly_rollups.unpriced_request_count IS 'Count of folded calls without known pricing.';
-COMMENT ON COLUMN ai_usage_global_monthly_rollups.cost_microunits IS 'Exact sum of priced costs in millionths of a currency unit.';
+COMMENT ON COLUMN ai_usage_global_monthly_rollups.cost_microunits IS 'Exact sum of priced USD costs in millionths of a dollar.';
+COMMENT ON COLUMN ai_usage_global_monthly_rollups.currency_code IS 'USD denomination of this platform-month cost; priced source calls are constrained to USD.';
+CREATE INDEX IF NOT EXISTS idx_ai_usage_global_monthly_rollups__currency_code
+  ON ai_usage_global_monthly_rollups (currency_code);
 
 CREATE TABLE IF NOT EXISTS ai_usage_retention_cursors (
   is_singleton BOOLEAN PRIMARY KEY DEFAULT true CHECK (is_singleton),
@@ -169,7 +179,7 @@ COMMENT ON COLUMN ai_usage_records.reasoning_output_tokens IS 'Of output_tokens,
 COMMENT ON COLUMN ai_usage_records.latency_milliseconds IS 'Milliseconds from the request leaving to the provider response body being read; NULL when the caller did not measure it.';
 COMMENT ON COLUMN ai_usage_records.pricing_status IS 'Whether pricing was known when this usage record was written.';
 COMMENT ON COLUMN ai_usage_records.cost_microunits IS 'Estimated cost in millionths of the major currency unit; NULL when unpriced.';
-COMMENT ON COLUMN ai_usage_records.currency_code IS 'Currency of the estimated cost; NULL when unpriced.';
+COMMENT ON COLUMN ai_usage_records.currency_code IS 'USD for a priced estimated cost; NULL when unpriced.';
 COMMENT ON COLUMN ai_usage_provider_response_keys.response_id IS 'Unique provider response or decision id; it prevents duplicate ledger rows across UUIDv7 ledger partitions.';
 COMMENT ON COLUMN ai_usage_provider_response_keys.ai_usage_record_id IS 'The one ai_usage_records row reserved for this provider response or decision id.';
 

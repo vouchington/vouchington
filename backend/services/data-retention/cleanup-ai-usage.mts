@@ -108,13 +108,14 @@ async function cleanupAiUsagePage(
       ), community_rollups AS (
         INSERT INTO ai_usage_community_monthly_rollups (
           community_id, month_start_on, request_count, input_tokens, output_tokens,
-          unpriced_request_count, cost_microunits
+          unpriced_request_count, cost_microunits, currency_code
         )
         SELECT community_id, month_start_on, count(*), sum(input_tokens), sum(output_tokens),
           count(*) FILTER (WHERE pricing_status = 'unpriced'),
-          coalesce(sum(cost_microunits), 0)::bigint
+          coalesce(sum(cost_microunits), 0)::bigint, 'usd'::currency_codes
         FROM facts WHERE community_id IS NOT NULL
         GROUP BY community_id, month_start_on
+        ORDER BY community_id ASC NULLS LAST, month_start_on ASC NULLS LAST
         ON CONFLICT (community_id, month_start_on) DO UPDATE SET
           request_count = ai_usage_community_monthly_rollups.request_count + EXCLUDED.request_count,
           input_tokens = ai_usage_community_monthly_rollups.input_tokens + EXCLUDED.input_tokens,
@@ -125,12 +126,13 @@ async function cleanupAiUsagePage(
       ), global_rollups AS (
         INSERT INTO ai_usage_global_monthly_rollups (
           month_start_on, request_count, input_tokens, output_tokens,
-          unpriced_request_count, cost_microunits
+          unpriced_request_count, cost_microunits, currency_code
         )
         SELECT month_start_on, count(*), sum(input_tokens), sum(output_tokens),
           count(*) FILTER (WHERE pricing_status = 'unpriced'),
-          coalesce(sum(cost_microunits), 0)::bigint
+          coalesce(sum(cost_microunits), 0)::bigint, 'usd'::currency_codes
         FROM facts GROUP BY month_start_on
+        ORDER BY month_start_on ASC NULLS LAST
         ON CONFLICT (month_start_on) DO UPDATE SET
           request_count = ai_usage_global_monthly_rollups.request_count + EXCLUDED.request_count,
           input_tokens = ai_usage_global_monthly_rollups.input_tokens + EXCLUDED.input_tokens,
