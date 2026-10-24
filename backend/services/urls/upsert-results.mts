@@ -1,9 +1,9 @@
 import { registerPostCommitAction, type QueryOptions } from '@data-stores/psql'
+import type { TransactionQuery } from '@data-stores/psql/types'
 import type { ViewUrl } from './types.mts'
 import { getOrCreateCrawlersForHostnames } from '@services/crawlers'
 import { enqueueBulkOnUrlCreatedBestEffort } from '@queues/entity-listeners/enqueues'
 import type { upsertUrlRows } from './upsert-write.mts'
-type TransactionQueryWithClient = NonNullable<QueryOptions['query']> & { client: object }
 
 export function extractInsertedUrlIds(
   rows: Array<{ hostname_id: string; id: string; inserted: boolean }>,
@@ -20,25 +20,20 @@ export function extractInsertedUrlIds(
 export async function dispatchUrlCreatedEvents(
   insertedIds: string[],
   viewUrlsById: Map<string, ViewUrl>,
-  queryOptions: QueryOptions,
+  queryOptions: QueryOptions & { query: TransactionQuery },
   skipCreatedEvents: boolean,
   ownsTransaction: boolean,
 ): Promise<void> {
   if (insertedIds.length === 0) return
   if (skipCreatedEvents) return
 
-  if (ownsTransaction && queryOptions.query) {
+  if (ownsTransaction) {
     registerPostCommitAction(queryOptions.query, async () => {
       await enqueueBulkOnUrlCreatedBestEffort(insertedIds)
     })
     return
   }
-  if (queryOptions.client || hasTransactionQuery(queryOptions.query)) {
-    await processUrlCreatedInline(insertedIds, viewUrlsById, queryOptions)
-    return
-  }
-
-  await enqueueBulkOnUrlCreatedBestEffort(insertedIds)
+  await processUrlCreatedInline(insertedIds, viewUrlsById, queryOptions)
 }
 
 async function processUrlCreatedInline(
@@ -69,8 +64,4 @@ export function toViewUrl(
     search_params: row.search_params,
     canonical_hostname_id: row.canonical_hostname_id,
   }
-}
-
-function hasTransactionQuery(query: QueryOptions['query']): query is TransactionQueryWithClient {
-  return typeof query === 'function' && 'client' in query
 }
