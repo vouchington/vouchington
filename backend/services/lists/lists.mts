@@ -52,14 +52,6 @@ export async function createList(
   return list
 }
 
-/**
- * @public Documented contract; production use is unconfirmed and this export may be
- * removed after intended-use review. Evidence: `docs/overview/architecture/backend/README.md`.
- */
-export async function getList(listId: string): Promise<List | null> {
-  return fetchListById(read, listId)
-}
-
 export async function getListForWrite(listId: string): Promise<List | null> {
   return fetchListById(write, listId)
 }
