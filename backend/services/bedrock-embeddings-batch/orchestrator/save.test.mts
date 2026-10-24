@@ -1,4 +1,5 @@
 import { randomBytes, randomUUID } from 'node:crypto'
+import { createTestUuidWindow } from '@voucha/test-helpers/uuid-window'
 import { describe, expect, it } from 'vitest'
 import {
   createTestUser,
@@ -158,14 +159,16 @@ describe('post embedding batch ban-evasion follow-up', () => {
     await expect(getBanEvasionJobsFor(community.id, member.id)).resolves.toHaveLength(1)
   })
 
-  it('skips a non-first embedded post and retries it after the earlier post is deleted', async () => {
+  it('advances an empty recovery page and retries a skipped post after the earlier post is deleted', async () => {
     const owner = await createTestUser()
     const member = await createTestUser()
     const otherMember = await createTestUser()
     const community = await insertTestCommunity({ createdById: owner.id, visibility: 'public' })
     const suffix = randomUUID().slice(0, 8)
-    const makePost = (userId: string, label: string, communityId: string | null) =>
+    const window = createTestUuidWindow()
+    const makePost = (id: string, userId: string, label: string, communityId: string | null) =>
       insertTestPost({
+        id,
         title: `${label} ${suffix}`,
         slug: `${label.toLowerCase()}-${suffix}`,
         markdown: `${label} body`,
@@ -173,9 +176,9 @@ describe('post embedding batch ban-evasion follow-up', () => {
         communityId,
         postType: 'article',
       })
-    const first = await makePost(member.id, 'First', community.id)
-    const nonFirst = await makePost(member.id, 'Second', community.id)
-    const nextFirst = await makePost(otherMember.id, 'Third', community.id)
+    const first = await makePost(window.firstId, member.id, 'First', community.id)
+    const nonFirst = await makePost(window.secondId, member.id, 'Second', community.id)
+    const nextFirst = await makePost(window.thirdId, otherMember.id, 'Third', community.id)
     const postIds = [first, nonFirst, nextFirst]
     const hashes = postIds.map(() => randomBytes(32))
     await Promise.all(postIds.map((id, i) => setPostEmbeddingContentOnlySha256(id, hashes[i]!)))
@@ -204,8 +207,17 @@ describe('post embedding batch ban-evasion follow-up', () => {
       limit: 1,
     })
     expect(skipped.scannedCount).toBe(1)
-    expect(skipped.enqueuedCount).toBe(1)
+    expect(skipped.enqueuedCount).toBe(0)
     expect(decodeScopedUuidCursor(skipped.nextCursor!, recoveryScope, 'Invalid cursor').id).toBe(
+      nonFirst,
+    )
+    const continued = await enqueueBanEvasionDetectionForCurrentEmbeddedFirstCommunityPosts({
+      after: skipped.nextCursor!,
+      limit: 1,
+    })
+    expect(continued.scannedCount).toBe(1)
+    expect(continued.enqueuedCount).toBe(1)
+    expect(decodeScopedUuidCursor(continued.nextCursor!, recoveryScope, 'Invalid cursor').id).toBe(
       nextFirst,
     )
     await expect(getBanEvasionJobsFor(community.id, member.id)).resolves.toHaveLength(1)

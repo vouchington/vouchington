@@ -63,42 +63,47 @@ export async function enqueueBanEvasionDetectionForCurrentEmbeddedFirstCommunity
           .id
       : null
   const candidateQuery = sql`/* enqueueBanEvasionDetectionForCurrentEmbeddedFirstCommunityPosts */
-    SELECT p.id
-    -- no-mistakes-disable-next-line postgres-required-predicates: global recovery must find pending embedded posts in every ID partition, including before the first cursor
-    FROM posts p
-    WHERE p.community_id IS NOT NULL
-      AND p.created_by_id IS NOT NULL
-      AND p.deleted_at IS NULL
-      AND p.bedrock_nova_multimodal_v1_embedding IS NOT NULL
-      AND p.bedrock_nova_multimodal_v1_embedding_created_at IS NOT NULL
-      AND p.bedrock_nova_multimodal_v1_input_sha256 = p.bedrock_nova_multimodal_v1_content_sha256
-      AND (
-        p.ban_evasion_post_embedding_input_sha256 IS NULL
-        OR p.ban_evasion_post_embedding_input_sha256 != p.bedrock_nova_multimodal_v1_input_sha256
-      )
-      AND p.id = (
-        SELECT first_post.id
-        -- no-mistakes-disable-next-line postgres-required-predicates: an earlier post can be attached to this community later, so finding the first post requires all ID partitions
-        FROM posts first_post
-        WHERE first_post.created_by_id = p.created_by_id
-          AND first_post.community_id = p.community_id
-          AND first_post.deleted_at IS NULL
-        ORDER BY first_post.id ASC
-        LIMIT 1
-      )
+    WITH pending_page AS MATERIALIZED (
+      SELECT p.id, p.created_by_id, p.community_id
+      -- no-mistakes-disable-next-line postgres-required-predicates: global recovery must find pending embedded posts in every ID partition, including before the first cursor
+      FROM posts p
+      WHERE p.community_id IS NOT NULL
+        AND p.created_by_id IS NOT NULL
+        AND p.deleted_at IS NULL
+        AND p.bedrock_nova_multimodal_v1_embedding IS NOT NULL
+        AND p.bedrock_nova_multimodal_v1_embedding_created_at IS NOT NULL
+        AND p.bedrock_nova_multimodal_v1_input_sha256 = p.bedrock_nova_multimodal_v1_content_sha256
+        AND (
+          p.ban_evasion_post_embedding_input_sha256 IS NULL
+          OR p.ban_evasion_post_embedding_input_sha256 != p.bedrock_nova_multimodal_v1_input_sha256
+        )
   `
   if (afterId) candidateQuery.append(sql` AND p.id > ${afterId}::uuid`)
   candidateQuery.append(sql`
+      ORDER BY p.id
+      LIMIT ${limit}
+    )
+    SELECT p.id, p.id = (
+      SELECT first_post.id
+      -- no-mistakes-disable-next-line postgres-required-predicates: an earlier post can be attached to this community later, so finding the first post requires all ID partitions
+      FROM posts first_post
+      WHERE first_post.created_by_id = p.created_by_id
+        AND first_post.community_id = p.community_id
+        AND first_post.deleted_at IS NULL
+      ORDER BY first_post.id ASC
+      LIMIT 1
+    ) AS is_first
+    FROM pending_page p
     ORDER BY p.id
-    LIMIT ${limit}
   `)
-  const { rows: candidates } = await write<{ id: string }>(candidateQuery)
-  const scannedCount = candidates.length
+  const { rows: scanned } = await write<{ id: string; is_first: boolean }>(candidateQuery)
+  const scannedCount = scanned.length
   const nextCursor =
     scannedCount === limit
-      ? encodeScopedUuidCursor(candidates[scannedCount - 1]!.id, RECOVERY_CURSOR_SCOPE)
+      ? encodeScopedUuidCursor(scanned[scannedCount - 1]!.id, RECOVERY_CURSOR_SCOPE)
       : null
-  if (scannedCount === 0) return { enqueuedCount: 0, scannedCount, nextCursor }
+  const candidates = scanned.filter(row => row.is_first)
+  if (candidates.length === 0) return { enqueuedCount: 0, scannedCount, nextCursor }
 
   const enqueuedCount = await enqueueBanEvasionDetectionForEmbeddedFirstCommunityPostChunk(
     candidates.map(row => row.id),

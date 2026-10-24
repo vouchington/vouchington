@@ -78,7 +78,7 @@ describe('background registry', () => {
 
   it('ranks tasks at the default tier and dispatchers at 100', () => {
     for (const job of BACKGROUND_JOBS) {
-      expect([1, 10, 100]).toContain(job.options.priority)
+      expect([10, 100]).toContain(job.options.priority)
     }
   })
 
