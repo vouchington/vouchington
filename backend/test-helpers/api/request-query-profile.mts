@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { AsyncLocalStorage } from 'node:async_hooks'
 import { validate as isUuid } from 'uuid'
 import type http from 'node:http'
+import app from '../../api/app.mts'
 import {
   findUnbaselinedRepeats,
   formatUnbaselinedRepeats,
@@ -9,9 +10,8 @@ import {
 } from '../request-query-profile-baseline.mts'
 import { createRequestQueryProfile, type RequestQueryProfile } from '../query-profiles.mts'
 import { formatRequestProfileLine } from '../request-query-profile-line.mts'
+import { resolveRequestProfileRoute, type RouteMatcher } from '../request-query-profile-route.mts'
 import { recordRequestQueryProfileViolation } from './request-query-profile-violations.mts'
-
-const UUID_SEGMENT = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi
 
 // State lives on globalThis because `vi.resetModules()` re-evaluates this module for server.mts.
 type RequestScope = { route: string; splitToolCalls: boolean; inboxRequestId?: string }
@@ -28,10 +28,13 @@ const BASELINE = parseRepeatBaseline(
   ),
 )
 
-/** Method and path with query string removed and UUID segments folded to `:id`. */
-export function requestProfileRoute(req: http.IncomingMessage): string {
-  const path = (req.url ?? '/').split('?')[0]?.replace(UUID_SEGMENT, ':id')
-  return `${req.method ?? 'GET'} ${path}`
+/** The registered route identity when one matches; unknown paths remain exact. */
+export function requestProfileRoute(
+  req: http.IncomingMessage,
+  matcher: RouteMatcher = app,
+): string {
+  const path = (req.url ?? '/').split('?')[0] ?? '/'
+  return resolveRequestProfileRoute(matcher, `${req.method ?? 'GET'} ${path}`)
 }
 
 /**
@@ -45,9 +48,10 @@ export function profileRequestQueries<Result>(
   req: http.IncomingMessage,
   res: http.ServerResponse,
   handle: () => Result,
+  matcher: RouteMatcher = app,
 ): Result {
   const profile = createRequestQueryProfile()
-  const route = requestProfileRoute(req)
+  const route = requestProfileRoute(req, matcher)
   let finalized = false
   const finalize = () => {
     if (finalized) return

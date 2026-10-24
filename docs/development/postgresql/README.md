@@ -45,12 +45,13 @@ one stderr line per request.
 
 ### Enforcement and the baseline
 
-A repeated annotation within one API request that is not in
+An unlisted repeated annotation within one API request fails the test that made the request.
 [`request-query-profile-baseline.json`](../../../backend/test-helpers/api/request-query-profile-baseline.json)
-fails the test that made the request. Entries are per annotation, not per route. An entry is either
-temporary, owned by an open issue that removes the repeat, or permanent, for a repeat the code needs
-on purpose (a re-read after a lock that rejects a concurrent change); its reason names the
-mechanism. `parseRepeatBaseline` in
+records exceptions against their exact HTTP route and/or worker queue and job name. Worker scopes
+are diagnostic only; they do not exempt or fail an HTTP request. An entry is either temporary,
+owned by an open issue that removes the repeat, or permanent, for a repeat the code needs on purpose
+(a re-read after a lock that rejects a concurrent change); its reason names the mechanism.
+`parseRepeatBaseline` in
 [`request-query-profile-baseline.mts`](../../../backend/test-helpers/request-query-profile-baseline.mts)
 owns the exact fields, and the test setup rejects an entry that fits neither.
 
@@ -63,9 +64,15 @@ checks it every day, so an issue closed elsewhere is still caught. It skips loca
   open issue that owns the removal, or make the entry permanent when the code needs the repeat.
 - **Remove an entry** in the PR that removes the repeat. A stale entry never fails a run, so a fix
   PR never depends on landing order; deleting it keeps the repeat from returning.
-- **Find stale entries** over several complete runs, since a data-dependent repeat can be missing
-  from any single run: set the repository variable `VITEST_DIAGNOSTICS` to `1` for several complete
-  Backend workflow runs on main, then unset it. Concatenate each run's `test-backend-unit` and
-  credentialed job logs into one file per run and run
-  `node backend/test-helpers/api/request-query-profile-stale.mts <run-log>...`. Delete an entry only
-  when it is absent from every log; the report warns when given too few logs.
+- **Find stale scopes** from one complete local pass or complete Backend workflow run with
+  `VITEST_DIAGNOSTICS=1`. Combine all backend-unit shard logs and the ActivityPub capacity project
+  log from that pass into one file, then run
+  `NODE_ENV=test NODE_PREWARM=1 node backend/test-helpers/api/request-query-profile-stale.mts <run-log>`.
+  Use the worktree's `WORKTREE_DIR`, `DATABASE_URL`, and `VALKEY_URL` printed by
+  `./dev/initialize backend` inline with the command. The reader loads the API entrypoint's
+  registrations without serving requests and uses the public route matcher to canonicalize
+  previously collected paths. The report lists
+  missing route and worker scopes separately. It treats a scope as absent only when logs contain
+  diagnostics of that kind; missing or empty diagnostics cannot establish staleness. Remove only
+  the named scopes, and delete an entry only when every listed scope is reported stale. Worker
+  profiles remain report-only and do not enforce the request query guard.
