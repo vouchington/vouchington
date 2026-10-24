@@ -16,9 +16,47 @@ import {
 import { insertTestUserReferralProgramLink } from '@voucha/test-helpers/entities/referral-links'
 import { claimEngagementEmailSend } from '@services/users/engagement-emails'
 import { dispatchEngagementRecipientPage } from '@services/engagement-emails/dispatch-engagement-emails'
+import { getEngagementEmailsWorkLimit } from '@services/engagement-emails/work-limits'
 import { processEngagementDispatchJob } from './engagement-dispatch.mts'
 
 describe('engagement page admission replay', () => {
+  it('moves an exhausted empty topic page to the next phase with a fresh budget', async () => {
+    const dispatchStartedAt = '2026-10-22T12:00:00.000Z'
+    const admitted = await enqueueEngagementDispatchContinuation(
+      {
+        phase: 'follow_topics',
+        dispatchStartedAt,
+        preparedPage: { recipientIds: [], scannedCount: 0 },
+      },
+      { jobId: `engagement_phase_${randomUUID()}` },
+    )
+    if (!admitted || typeof admitted !== 'object' || !('id' in admitted))
+      throw new Error('Expected phase dispatcher job')
+    const root = (await background.getJob(String(admitted.id))) as
+      | Parameters<typeof processEngagementDispatchJob>[0]
+      | null
+    if (!root) throw new Error('Expected persisted phase dispatcher job')
+    const nextData = {
+      phase: 'post_referral_link',
+      dispatchStartedAt,
+      remainingBudget: getEngagementEmailsWorkLimit('dispatch_batch_size'),
+    }
+    const pageId = createHash('sha256')
+      .update(`${root.id}:${JSON.stringify(nextData)}`)
+      .digest('hex')
+    const nextJobId = `${EMAIL_DIGESTS_DISPATCH_ENGAGEMENT_JOB.name}__page__${pageId}`
+    try {
+      const result = await processEngagementDispatchJob(root)
+      expect(result).toMatchObject({ count: 0, scannedCount: 0 })
+      const persisted = (await background.getJob(root.id)) as typeof root | null
+      expect(persisted?.data.remainingBudget).toBe(nextData.remainingBudget)
+      expect((await background.getJob(nextJobId))?.data).toMatchObject(nextData)
+    } finally {
+      await (await background.getJob(nextJobId))?.remove()
+      await root.remove()
+    }
+  })
+
   it('continues a zero-eligible raw page without consuming the phase budget', async () => {
     const afterUserId = randomUUID()
     const dispatchStartedAt = new Date().toISOString()
