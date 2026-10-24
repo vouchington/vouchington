@@ -13,7 +13,7 @@ describe('plan completion API parsing', () => {
   it.each(['plan: lower', 'pLaN: mixed'])(
     'recognizes %s consistently through discovery and revalidation',
     title => {
-      const issue = { number: 726, state: 'open', title }
+      const issue = { number: 726, state: 'open', author_association: 'MEMBER', title }
       expect(
         openPlans(JSON.stringify([[issue, { ...issue, number: 727, pull_request: {} }]])),
       ).toEqual([726])
@@ -30,7 +30,7 @@ describe('plan completion API parsing', () => {
       openPlans(
         JSON.stringify([
           [
-            { number: 726, state: 'open', title: 'Plan: active' },
+            { number: 726, state: 'open', author_association: 'MEMBER', title: 'Plan: active' },
             { number: 1022, state: 'closed', title: 'Plan: recently closed' },
           ],
         ]),
@@ -97,4 +97,26 @@ describe('plan completion API parsing', () => {
       assertCommentReadback(JSON.stringify({ ...marker, body: 'other' }), 1, marker.body),
     ).toThrow('Comment readback does not match the workflow-owned advisory')
   })
+})
+
+describe('Plan author authorization', () => {
+  it.each([
+    'OWNER',
+    'MEMBER',
+    'COLLABORATOR',
+    'CONTRIBUTOR',
+    'FIRST_TIMER',
+    'FIRST_TIME_CONTRIBUTOR',
+    'NONE',
+    'UNKNOWN',
+    undefined,
+  ])(
+    'applies the same fail-closed policy to discovery and current %s author association',
+    author_association => {
+      const issue = { number: 726, state: 'open', title: 'Plan: test', author_association }
+      const trusted = ['OWNER', 'MEMBER', 'COLLABORATOR'].includes(author_association ?? '')
+      expect(openPlans(JSON.stringify([[issue]]))).toEqual(trusted ? [726] : [])
+      expect(isCurrentOpenPlan(JSON.stringify(issue), 726)).toBe(trusted)
+    },
+  )
 })

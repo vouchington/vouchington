@@ -1,10 +1,18 @@
+import { trustedIssueAuthor } from './trusted-issue-author.mts'
+
 import type { assessPlanCompletion } from '../dev/pr-description/plan-completion.mts'
 
 const MARKER = '<!-- plan-completion-advisory -->'
 const WORKFLOW_BOT = 'github-actions[bot]'
 const PLAN_TITLE = /^Plan:\s*(.*)$/i
 
-type Issue = { number?: unknown; pull_request?: unknown; state?: unknown; title?: unknown }
+type Issue = {
+  author_association?: unknown
+  number?: unknown
+  pull_request?: unknown
+  state?: unknown
+  title?: unknown
+}
 type PullRequest = { body?: unknown; merged_at?: unknown; number?: unknown; state?: unknown }
 type Comment = { body?: unknown; id?: unknown; user?: { login?: unknown } }
 
@@ -32,6 +40,7 @@ export function openPlans(json: string): number[] {
     }
     return issue.pull_request === undefined &&
       issue.state === 'open' &&
+      trustedIssueAuthor(issue.author_association) &&
       PLAN_TITLE.test(issue.title)
       ? [issue.number]
       : []
@@ -52,6 +61,7 @@ export function isCurrentOpenPlan(json: string, number: number): boolean {
     issue.pull_request === undefined &&
     issue.number === number &&
     issue.state === 'open' &&
+    trustedIssueAuthor(issue.author_association) &&
     typeof issue.title === 'string' &&
     PLAN_TITLE.test(issue.title)
   )

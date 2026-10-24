@@ -83,6 +83,14 @@ describe('fix-main workflow', () => {
     expect(promptContextStep?.with?.['check-prs']).toBe('true')
     expect(promptContextStep?.with?.['check-issues']).toBe('true')
     expect(relatedJob?.outputs).not.toHaveProperty('skip')
+    const authorization = relatedJob?.steps?.find(s => s.id === 'authorized-candidates')
+    expect(authorization?.run).toBe('node ci/fix-main-candidates.mts')
+    expect(authorization?.env?.RELATED_CANDIDATES).toBe(
+      '${{ steps.prompt-context.outputs.related-candidates }}',
+    )
+    expect(relatedJob?.steps?.indexOf(authorization!)).toBeGreaterThan(
+      relatedJob?.steps?.indexOf(promptContextStep!) ?? -1,
+    )
 
     const renderJob = parsedMain.jobs?.['render-prompt']
     expect(renderJob?.if).not.toContain('.outputs.skip')
@@ -163,7 +171,7 @@ describe('fix-main workflow', () => {
     const renderStep = renderJob?.steps?.find(s => s.id === 'render')
 
     expect(relatedJob?.outputs?.['related-candidates']).toContain(
-      'steps.prompt-context.outputs.related-candidates',
+      'steps.authorized-candidates.outputs.related-candidates',
     )
     expect(promptContextStep?.with?.['related-title-key']).toContain('Automation fix:')
     expect(promptContextStep?.with?.['related-title-key']).toContain(
