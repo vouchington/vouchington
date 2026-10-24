@@ -167,12 +167,14 @@ is off by default and deletes nothing until the owner approves a period.
 - Only `us_dmca` cases are swept; EU and UK records are kept.
 - A case is never swept while any blocker exists: open queue work, an open deadline, an active
   restriction, an operative incident, a pending delivery, a live guest capability, an unresolved
-  hold, or a preservation hold on a party account.
+  hold, a pending thread-linked email reply, or a preservation hold on a party account. Resolving
+  the reply restarts the retention period from its receipt or review.
 - Personal data and statements are overwritten and evidence object versions are deleted. The
   minimal record survives: the notice, targets, dates, states, hashes, restrictions, deadlines,
   hold and review outcomes, and repeat-infringer incidents, because the 512(i) count must not change.
 - Erasure fails closed: the database is overwritten only after every object version is confirmed
-  gone, and any failure rolls the case back for the next run.
+  gone, and any failure rolls the case back for the next run. Agent results completed after erasure
+  cannot recreate case evidence.
 - Legal-record tables refuse UPDATE and DELETE except through one allowlisted erasure function. A
   new copyright column holding ciphertext, a storage key, or a lookup token must be added to the
   erasure list or recorded as kept; a test fails until it is.
