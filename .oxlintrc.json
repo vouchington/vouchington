@@ -1031,6 +1031,22 @@
         ]
       }
     ],
+    // Source: backend/data-stores/valkey/AGENTS.md line 3, "pub/sub, rate limiting, and GlideMQ never
+    // use the general `@data-stores/valkey` barrel". The general barrel re-exports only the rate
+    // limiter client of those concerns (pub/sub and GlideMQ are not exported there), so that is the
+    // one bannable name; import it from `@data-stores/valkey-rate-limiter`. Base rules are inherited
+    // by nested configs; checkedPathPatterns scopes the rule to backend.
+    "no-mistakes/no-banned-import-outside-allowed-paths": [
+      "error",
+      {
+        "checkedPathPatterns": ["backend/**"],
+        "allowedPathPatterns": [],
+        "bannedImports": [
+          { "module": "@data-stores/valkey", "names": ["rateLimiterValkeyClient"] },
+          { "module": "@data-stores/valkey/clients", "names": ["rateLimiterValkeyClient"] }
+        ]
+      }
+    ],
     "no-mistakes/test-no-error-message-matching": "error",
     "no-mistakes/ts-no-export-renaming": [
       "error",
@@ -1292,6 +1308,45 @@
             "importSpecifier": "@data-stores/psql",
             "executorFactoryNames": ["beginTransaction", "beginBoundedTransaction"],
             "executorTypeNames": ["TransactionQuery", "QueryExecutor"]
+          }
+        ]
+      }
+    },
+    {
+      // Source: backend/AGENTS.md line 10, "Runtime code uses `addGracefulShutdownCallback()`,
+      // never `process.kill()` or direct `process.exit()`". Scoped to long-running runtime packages;
+      // the graceful-shutdown owner (backend/data-stores), CLI scripts, entrypoints, and dev tooling
+      // legitimately exit. backend/services/localization/compile-cli.mts is a one-shot build CLI.
+      // backend/services/crawler-rss/.oxlintrc.json repeats this rule because a nested config
+      // does not inherit root overrides.
+      "files": [
+        "**/backend/api/**/*.{mts,ts}",
+        "**/backend/mcp/**/*.{mts,ts}",
+        "**/backend/modules/**/*.{mts,ts}",
+        "**/backend/queues/**/*.{mts,ts}",
+        "**/backend/services/**/*.{mts,ts}",
+        "**/backend/workers/**/*.{mts,ts}"
+      ],
+      "excludeFiles": [
+        "**/*.test.*",
+        "**/__tests__/**",
+        "**/test-helpers/**",
+        "**/backend/services/localization/compile-cli.mts"
+      ],
+      "rules": {
+        "no-mistakes/forbidden-member-chains": [
+          "error",
+          {
+            "chains": [
+              {
+                "path": "process.kill",
+                "message": "Runtime code never calls process.kill(); register addGracefulShutdownCallback() instead (backend/AGENTS.md)."
+              },
+              {
+                "path": "process.exit",
+                "message": "Runtime code never calls process.exit() directly; register addGracefulShutdownCallback() instead. Only an unref'd timed forced-exit fallback may exit (backend/AGENTS.md)."
+              }
+            ]
           }
         ]
       }

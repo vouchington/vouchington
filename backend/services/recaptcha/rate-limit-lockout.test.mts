@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { rateLimiterValkeyClient } from '@data-stores/valkey/clients'
+import { rateLimiterValkeyClient } from '@data-stores/valkey-rate-limiter'
 import {
   isRecaptchaLockedOut,
   setRecaptchaLockedOut,

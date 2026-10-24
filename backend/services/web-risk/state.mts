@@ -1,6 +1,9 @@
 import crypto from 'node:crypto'
-import { RateLimiter, type RateLimiterWindow } from '@data-stores/valkey-rate-limiter'
-import { rateLimiterValkeyClient } from '@data-stores/valkey/clients'
+import {
+  RateLimiter,
+  type RateLimiterWindow,
+  rateLimiterValkeyClient,
+} from '@data-stores/valkey-rate-limiter'
 import { Batch, TimeUnit } from '@valkey/valkey-glide'
 import { getRetryAfterDurationMs } from '@modules/utils/http'
 import onError from '@modules/on-error'

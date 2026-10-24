@@ -5337,3 +5337,17 @@ rules:
       mappings:
         - prefix: '@'
           root: ''
+
+  # Source: .agents/skills/AGENTS.md line 3, "Author local skills in .agents/skills/<name>/SKILL.md".
+  # Nested supporting directories (agents/, references/) belong to their skill and carry no SKILL.md.
+  - name: local skills carry a SKILL.md entrypoint
+    rule: required-local-docs
+    scope: repository
+    exclude:
+      - .agents/skills/AGENTS.md
+      - .agents/skills/*/agents/**
+      - .agents/skills/*/references/**
+    options:
+      roots: [.agents/skills]
+      requiredFile: SKILL.md
+      codeExtensions: [md]
