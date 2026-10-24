@@ -16,7 +16,7 @@ const INDEFINITE_ENTITY_AND_CONTENT_TABLES = [
   'urls',
   'users',
 ] as const
-const INDEFINITE_AUDIT_AND_WORKFLOW_TABLES = [
+const UNBOUNDED_AUDIT_AND_WORKFLOW_TABLES = [
   'admin_import_batches',
   'admin_import_rows',
   'activitypub_distribution_work_items',
@@ -54,6 +54,11 @@ const INDEFINITE_AUDIT_AND_WORKFLOW_TABLES = [
   'user_rss_feed_import_row_discoveries',
   'identity_verification_attempts',
   'vote_integrity_flags',
+] as const
+const UNBOUNDED_MEMBERSHIP_WORK_ITEMS = [
+  'membership_google_play_acknowledgment_work_items',
+  'membership_renewal_price_increase_notification_work_items',
+  'membership_verification_processing_work_items',
 ] as const
 const INDEFINITE_EDGE_TABLES = [
   'activitypub_post_likes',
@@ -93,8 +98,14 @@ export function buildUnboundedUnpartitionedTables(
           'Durable entity/content rows grow with product adoption; indexed access remains selective.',
       },
       {
-        tables: INDEFINITE_AUDIT_AND_WORKFLOW_TABLES,
-        reason: 'Append-oriented audit/workflow history is retained indefinitely.',
+        tables: UNBOUNDED_AUDIT_AND_WORKFLOW_TABLES,
+        reason:
+          'Append-oriented audit/workflow rows currently have no enforced retention window; each needs an owner and window before launch.',
+      },
+      {
+        tables: UNBOUNDED_MEMBERSHIP_WORK_ITEMS,
+        reason:
+          'Terminal work remains with its membership or verification parent; no retention currently removes these rows.',
       },
       {
         tables: INDEFINITE_EDGE_TABLES,

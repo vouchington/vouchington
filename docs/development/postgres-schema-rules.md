@@ -25,7 +25,9 @@ recovery follow [One current contract](../../AGENTS.md).
   its own retained-identity row; durable rows that outlive the entity reference that row. A retained
   identity never authorizes a deleted entity, and root reservation does not prove the live entity
   exists. Cleanup removes an owner only after its live row and every durable reference are gone;
-  audit rows have no inferred expiry.
+  each durable row has a retention owner, a window, and the requirement behind it. Indefinite
+  retention requires a cited legal duty; retaining an identity does not extend the window of a row
+  that references it.
 - Model alternatives as per-entity FK columns with an exact-one-target constraint, or as typed
   child rows. Never use a UUID array, type/id pair, generic attribute/value table, or encoded string
   key as relationship storage.

@@ -310,7 +310,7 @@ CREATE TABLE IF NOT EXISTS membership_verification_processing_work_items (
   CHECK (lease_expires_at IS NULL OR lease_expires_at > leased_at),
   CHECK (completed_at IS NULL OR lease_token IS NULL)
 );
-COMMENT ON TABLE membership_verification_processing_work_items IS 'One pending provider-verification task per durable verification record; terminal work remains until verification retention removes its parent.';
+COMMENT ON TABLE membership_verification_processing_work_items IS 'One provider-verification task per durable verification record; terminal work remains because no verification retention currently removes its parent.';
 COMMENT ON COLUMN membership_verification_processing_work_items.membership_verification_id IS 'Durable verification whose provider adapter must run.';
 COMMENT ON COLUMN membership_verification_processing_work_items.lease_token IS 'Fencing token of the current provider verification worker.';
 COMMENT ON COLUMN membership_verification_processing_work_items.leased_at IS 'Time this processing lease was acquired.';
@@ -597,7 +597,7 @@ ON membership_renewal_price_increase_notification_work_items (lease_token) WHERE
 CREATE INDEX idx_mmbrshp_rnwl_prc_incrs_ntfctn_wrk_itms__available
 ON membership_renewal_price_increase_notification_work_items (available_at, membership_id)
 WHERE completed_at IS NULL AND delivery_attempted_at IS NULL;
-COMMENT ON TABLE membership_renewal_price_increase_notification_work_items IS 'Generation-fenced renewal price notices; exact delivered or ambiguously attempted snapshots remain for duplicate suppression until membership retention removes them.';
+COMMENT ON TABLE membership_renewal_price_increase_notification_work_items IS 'Generation-fenced renewal price notices; exact delivered or ambiguously attempted snapshots remain for duplicate suppression because no retention currently removes them.';
 COMMENT ON COLUMN membership_renewal_price_increase_notification_work_items.membership_id IS 'Membership projection that currently owns the notice; fallback restoration transfers the entire work row atomically.';
 COMMENT ON COLUMN membership_renewal_price_increase_notification_work_items.generation IS 'Monotone snapshot generation; retries and fallback transfer preserve it, while a changed provider snapshot advances it.';
 COMMENT ON COLUMN membership_renewal_price_increase_notification_work_items.membership_provider_observation_id IS 'Immutable authoritative observation that supplied this notice snapshot.';

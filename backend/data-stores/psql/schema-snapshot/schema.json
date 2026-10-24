@@ -52738,7 +52738,7 @@
           "validated": true
         }
       },
-      "growth": "bounded",
+      "growth": "unbounded",
       "indexes": {
         "idx_membership_google_play_acknowledgment_work_items__claim": {
           "accessMethod": "btree",
@@ -60058,7 +60058,7 @@
           "type": "uuid"
         }
       },
-      "comment": "Generation-fenced renewal price notices; exact delivered or ambiguously attempted snapshots remain for duplicate suppression until membership retention removes them.",
+      "comment": "Generation-fenced renewal price notices; exact delivered or ambiguously attempted snapshots remain for duplicate suppression because no retention currently removes them.",
       "foreignKeys": {
         "membership_renewal_price_incr_membership_provider_observat_fkey": {
           "columns": ["membership_provider_observation_id"],
@@ -60079,7 +60079,7 @@
           "validated": true
         }
       },
-      "growth": "bounded",
+      "growth": "unbounded",
       "indexes": {
         "idx_mmbrshp_rnwl_prc_incrs_ntfctn_wrk_itms__available": {
           "accessMethod": "btree",
@@ -60971,7 +60971,7 @@
           "type": "uuid"
         }
       },
-      "comment": "One pending provider-verification task per durable verification record; terminal work remains until verification retention removes its parent.",
+      "comment": "One provider-verification task per durable verification record; terminal work remains because no verification retention currently removes its parent.",
       "foreignKeys": {
         "membership_verification_process_membership_verification_id_fkey": {
           "columns": ["membership_verification_id"],
@@ -60983,7 +60983,7 @@
           "validated": true
         }
       },
-      "growth": "bounded",
+      "growth": "unbounded",
       "indexes": {
         "idx_membership_verification_processing_work_items__claim": {
           "accessMethod": "btree",
