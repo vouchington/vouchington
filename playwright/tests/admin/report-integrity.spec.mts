@@ -8,6 +8,9 @@ import {
   getTestReportAbusePenaltiesByFlagId,
 } from '../../../backend/test-helpers/index.mts'
 
+// Pagination fixtures share the global list with tests asserting their target is on page one.
+test.describe.configure({ mode: 'serial' })
+
 test.describe('Admin Report Integrity', () => {
   test.use({ storageState: AUTH_STATE })
 
