@@ -17,7 +17,7 @@ const {
   getPostsByAnyBatch,
   getPublicUsersByAnyBatch,
   getUserProfileMetricsByAny,
-  fetchPostsWithMetadata,
+  getBookmarksForEntityGroups,
   listProfileLinks,
 } = services
 
@@ -29,15 +29,11 @@ async function seededIds(table: string, tableTag: string, limit: number): Promis
   return rows.map(r => r.id)
 }
 
-// Loader queries the three hottest request shapes fan out to after their primary
-// id query. The feed (GET /api/v1/feeds/posts/:feed_type), post detail
-// (GET /api/v1/posts/:idOrSlug), and user profile (GET /api/v1/users/:idOrSlug)
-// routes batch-load entities by id; these capture those batch loaders directly.
+// Feed, detail, and profile routes fan out to these id batches after their primary query.
 export async function runHotPathLoaderScenarios() {
-  // Posts no longer share a fixed id prefix (seed-data/common.mts spreads their timestamps),
-  // so they can't be located by a LIKE pattern like the other seeded tables below — compute the
-  // same ids seedPosts() inserted directly instead.
+  // Seeded posts lack a stable LIKE prefix, so derive ids directly from seedPosts().
   const postIds = Array.from({ length: 25 }, (_, index) => seedUuid(index, '05'))
+  const creatorIds = Array.from({ length: 25 }, (_, index) => seedUuid(index, '01'))
   const userIds = await seededIds('users', '01', 25)
   const communityIds = await seededIds('communities', '14', 25)
 
@@ -68,7 +64,11 @@ export async function runHotPathLoaderScenarios() {
   })
   await runAndCapture(
     'post-and-creator-bookmarks',
-    () => fetchPostsWithMetadata(postIds, seedUser),
+    () =>
+      getBookmarksForEntityGroups(seedUser, [
+        { entityTypeName: 'post', entities: postIds },
+        { entityTypeName: 'user', entities: creatorIds },
+      ]),
     undefined,
     'queryEntityBookmarksForRelations',
   )
