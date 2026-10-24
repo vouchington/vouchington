@@ -5,6 +5,7 @@ import {
   insertTestVoteWeightPenalty,
   safeUsername,
 } from '@voucha/test-helpers'
+import { holdQueueBulkAdmission } from '@voucha/test-helpers/queue-admission-hold'
 import { voteAggregation } from '@queues/vote-aggregation/queues'
 import { sentryCaptureExceptionMock } from '../../test-helpers/vitest.setup.sentry-mock.mts'
 import { revokeVoteWeightPenalty } from './revoke-penalty.mts'
@@ -32,19 +33,25 @@ describe('revokeVoteWeightPenalty', () => {
     ])
     const penaltyId = await insertTestVoteWeightPenalty(penalizedUser!.id, adminUser!.id)
     const jobId = `voteWeight__${penalizedUser!.id}__force`
-    const entered = Promise.withResolvers<void>()
-    const release = Promise.withResolvers<void>()
-    const originalAddBulk = voteAggregation.addBulk
-    let admitted: Awaited<ReturnType<typeof voteAggregation.addBulk>> | undefined
-    const addBulk = vi.spyOn(voteAggregation, 'addBulk').mockImplementation(async jobs => {
-      if (!jobs.some(job => job.opts?.jobId === jobId))
-        return originalAddBulk.call(voteAggregation, jobs)
-      entered.resolve()
-      await release.promise
-      admitted = await originalAddBulk.call(voteAggregation, jobs)
-      return admitted
-    })
+    const admission = holdQueueBulkAdmission(
+      voteAggregation,
+      'vote-aggregation.processRecalculateUserVoteWeight',
+      data =>
+        typeof data === 'object' &&
+        data !== null &&
+        'userId' in data &&
+        data.userId === penalizedUser!.id &&
+        'forceRecalculate' in data &&
+        data.forceRecalculate === true,
+    )
     let operation: ReturnType<typeof revokeVoteWeightPenalty> | undefined
+    let admittedJobs: Awaited<typeof admission.admitted> = []
+    const admittedJobsPromise = admission.admitted.then(jobs => {
+      admittedJobs = jobs
+      return jobs
+    })
+    void admittedJobsPromise.catch(() => undefined)
+    let admissionStarted = false
 
     try {
       let completed = false
@@ -52,14 +59,17 @@ describe('revokeVoteWeightPenalty', () => {
         completed = true
         return result
       })
-      await entered.promise
+      await admission.entered
+      admissionStarted = true
 
       expect(await getTestPenaltiesByUserId(penalizedUser!.id)).toMatchObject([
         { id: penaltyId, revoked_at: expect.any(Date) },
       ])
       expect(completed).toBe(false)
-      release.resolve()
-      await expect(operation).resolves.toMatchObject({ id: penaltyId })
+      admission.release()
+      const [result, jobs] = await Promise.all([operation, admittedJobsPromise])
+      expect(result).toMatchObject({ id: penaltyId })
+      expect(jobs).toHaveLength(1)
       expect(await voteAggregation.getJob(jobId)).toMatchObject({
         data: {
           userId: penalizedUser!.id,
@@ -67,10 +77,11 @@ describe('revokeVoteWeightPenalty', () => {
         },
       })
     } finally {
-      release.resolve()
+      admission.release()
       await operation?.catch(() => undefined)
-      await Promise.all(admitted?.map(job => job.remove()) ?? [])
-      addBulk.mockRestore()
+      if (admissionStarted) await admittedJobsPromise.catch(() => undefined)
+      await Promise.all(admittedJobs.map(job => job.remove()))
+      admission.restore()
     }
   })
 

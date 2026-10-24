@@ -1,5 +1,6 @@
 import { createSameIdElectionRelations } from '@voucha/test-helpers/entities/entity-relation-election-collisions'
 import { insertTestEntityRelationVote } from '@voucha/test-helpers/entities/entity-relation-votes'
+import { holdQueueBulkAdmission } from '@voucha/test-helpers/queue-admission-hold'
 import { describe, it, expect, beforeAll, vi } from 'vitest'
 import { v7 as uuidv7 } from 'uuid'
 import { randomBytes } from 'node:crypto'
@@ -137,19 +138,25 @@ describe('apply-ring-penalty', () => {
       expect(flag).not.toBeNull()
 
       const jobId = `voteWeight__${upvoter!.id}__force`
-      const entered = Promise.withResolvers<void>()
-      const release = Promise.withResolvers<void>()
-      const originalAddBulk = voteAggregation.addBulk
-      let admitted: Awaited<ReturnType<typeof voteAggregation.addBulk>> | undefined
-      const addBulk = vi.spyOn(voteAggregation, 'addBulk').mockImplementation(async jobs => {
-        if (!jobs.some(job => job.opts?.jobId === jobId))
-          return originalAddBulk.call(voteAggregation, jobs)
-        entered.resolve()
-        await release.promise
-        admitted = await originalAddBulk.call(voteAggregation, jobs)
-        return admitted
-      })
+      const admission = holdQueueBulkAdmission(
+        voteAggregation,
+        'vote-aggregation.processRecalculateUserVoteWeight',
+        data =>
+          typeof data === 'object' &&
+          data !== null &&
+          'userId' in data &&
+          data.userId === upvoter!.id &&
+          'forceRecalculate' in data &&
+          data.forceRecalculate === true,
+      )
       let operation: ReturnType<typeof applyVoteRingPenalty> | undefined
+      let admittedJobs: Awaited<typeof admission.admitted> = []
+      const admittedJobsPromise = admission.admitted.then(jobs => {
+        admittedJobs = jobs
+        return jobs
+      })
+      void admittedJobsPromise.catch(() => undefined)
+      let admissionStarted = false
 
       try {
         let completed = false
@@ -157,23 +164,27 @@ describe('apply-ring-penalty', () => {
           completed = true
           return result
         })
-        await entered.promise
+        await admission.entered
+        admissionStarted = true
 
         expect(await getTestPenaltiesByFlagId(flag!.id)).toHaveLength(1)
         expect(await getVoteIntegrityFlagByIdFromPrimary(flag!.id)).toMatchObject({
           resolution: 'penalized',
         })
         expect(completed).toBe(false)
-        release.resolve()
-        await expect(operation).resolves.toMatchObject({ penalized_user_count: 1 })
+        admission.release()
+        const [result, jobs] = await Promise.all([operation, admittedJobsPromise])
+        expect(result).toMatchObject({ penalized_user_count: 1 })
+        expect(jobs).toHaveLength(1)
         expect(await voteAggregation.getJob(jobId)).toMatchObject({
           data: { userId: upvoter!.id, forceRecalculate: true },
         })
       } finally {
-        release.resolve()
+        admission.release()
         await operation?.catch(() => undefined)
-        await Promise.all(admitted?.map(job => job.remove()) ?? [])
-        addBulk.mockRestore()
+        if (admissionStarted) await admittedJobsPromise.catch(() => undefined)
+        await Promise.all(admittedJobs.map(job => job.remove()))
+        admission.restore()
       }
     })
 
