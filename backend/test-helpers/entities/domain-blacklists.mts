@@ -140,36 +140,6 @@ export async function explainBlocklistedDomainOrderPlan(
 }
 
 /**
- * Check if any URL-type domain blacklist entries exist
- */
-export async function hasUrlTypeDomainBlacklists(): Promise<boolean> {
-  const result = await read(
-    allowUnannotatedQuery(sql`
-    SELECT 1 FROM blocklisted_domains db
-    INNER JOIN domain_blocklist_sources dbs ON dbs.id = db.source_id
-    WHERE dbs.type = 'url'::domain_blocklist_types
-    LIMIT 1
-  `),
-  )
-  return result.rows.length > 0
-}
-
-/**
- * Check if any email-type domain blacklist entries exist
- */
-export async function hasEmailTypeDomainBlacklists(): Promise<boolean> {
-  const result = await read(
-    allowUnannotatedQuery(sql`
-    SELECT 1 FROM blocklisted_domains db
-    INNER JOIN domain_blocklist_sources dbs ON dbs.id = db.source_id
-    WHERE dbs.type = 'email'::domain_blocklist_types
-    LIMIT 1
-  `),
-  )
-  return result.rows.length > 0
-}
-
-/**
  * Count total blacklist sources
  */
 export async function countBlacklistSources(): Promise<number> {

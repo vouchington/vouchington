@@ -138,13 +138,6 @@ export async function warmUpEmailBlocklistBloomFilter(): Promise<void> {
   })
 }
 
-/** @public #1360: external production use is unconfirmed; may be removed after intended-use review. */
-export async function deleteEmailBloomFilter(): Promise<void> {
-  await withBlocklistBloomFilterLock('email-blocklist', () =>
-    getEmailBloomFilter().deleteWithAdditionalKeys([BLOOM_READY_KEY]),
-  )
-}
-
 async function repairEmailBlocklistUnavailableRead(): Promise<void> {
   await repairBloomFilterUnavailableRead({
     filter: 'email-blocklist',

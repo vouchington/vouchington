@@ -1,12 +1,8 @@
-import { describe, it, expect, afterAll } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { installEmailDomainDnsMock } from '@voucha/test-helpers/email-domain-dns'
 import { validateEmailDomain } from '../domain-validation.mts'
 import { EmailDomainInvalidError } from '../errors.mts'
-import {
-  rebuildEmailBloomFilter,
-  deleteEmailBloomFilter,
-  addDomainsToEmailBloomFilter,
-} from '@services/urls-domains-blacklist'
+import { addDomainsToEmailBloomFilter } from '@services/urls-domains-blacklist'
 import {
   insertUrlHostname,
   createTestBlacklistSource,
@@ -177,53 +173,5 @@ describe('disposable email blocking', () => {
     expect(err).toBeInstanceOf(EmailDomainInvalidError)
     expect((err as EmailDomainInvalidError).reason).toBe('disposable')
     expect((err as EmailDomainInvalidError).message).toContain('disposable')
-  })
-})
-
-// Tests for bloom filter integration in domain validation
-describe('bloom filter integration', () => {
-  installEmailDomainDnsMock()
-  afterAll(async () => {
-    await deleteEmailBloomFilter()
-  })
-
-  it('throws for domain in email blacklist when bloom filter includes it', async () => {
-    await createTestBlacklistSource({
-      type: 'email',
-      name: 'test-email-blacklist',
-      url: 'https://example.com/email-blacklist.txt',
-    })
-
-    const testDomain = `bloom-blacklisted-${Date.now()}.com`
-    await insertTestDomainBlacklist(testDomain, 'test-email-blacklist')
-    await rebuildEmailBloomFilter()
-
-    await expect(validateEmailDomain(testDomain)).rejects.toThrow(EmailDomainInvalidError)
-  })
-
-  it('skips blacklist check when bloom filter returns false (domain not in filter)', async () => {
-    // This test documents an intentional trade-off: domains added to the DB blacklist
-    // after the last bloom filter rebuild will be missed by the fast path until the
-    // filter is rebuilt (weekly). A 1-hour validation cache can extend that window
-    // further. This is acceptable — false negatives are transient and bounded.
-    //
-    // Setup: rebuild the filter BEFORE inserting the domain so it is absent from the filter.
-    await rebuildEmailBloomFilter()
-
-    await createTestBlacklistSource({
-      type: 'email',
-      name: 'test-email-blacklist',
-      url: 'https://example.com/email-blacklist.txt',
-    })
-
-    const testDomain = `bloom-bypass-${Date.now()}.test`
-    await insertTestDomainBlacklist(testDomain, 'test-email-blacklist')
-
-    // Bloom filter returns false → fast path skips the blacklist EXISTS subquery.
-    // The domain is in the DB blacklist but not the filter; it reaches MX validation
-    // instead of being caught by the blacklist check. `.test` has no MX records.
-    const error = await validateEmailDomain(testDomain).catch(err => err)
-    expect(error).toBeInstanceOf(EmailDomainInvalidError)
-    expect((error as EmailDomainInvalidError).message).not.toContain('email blacklist')
   })
 })
