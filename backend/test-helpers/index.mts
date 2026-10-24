@@ -106,6 +106,11 @@ export {
 } from './federation-retention.mts'
 export {
   prepareFederationDistributionReplayForTest,
+  prepareFederationDistributionPageForTest,
+  insertCompletedFederationReplayForTest,
+  readFederationReplayFloorForTest,
+  advanceFederationReplayFloorForTest,
+  isReplayFloorLockedForTest,
   deleteFederationInboxFixturesForTest,
   deleteFederationInboxActivityForTest,
   insertFederationReplayDecoysForTest,

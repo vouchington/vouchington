@@ -172,6 +172,7 @@ CREATE TABLE IF NOT EXISTS activitypub_replay_retention_cursors (
   cursor_position UUID,
   upper_bound_at TIMESTAMPTZ,
   upper_bound_position UUID,
+  rejection_floor_at TIMESTAMPTZ,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CHECK ((cursor_at IS NULL) = (cursor_position IS NULL)),
   CHECK ((upper_bound_at IS NULL) = (upper_bound_position IS NULL)),
@@ -188,6 +189,7 @@ COMMENT ON COLUMN activitypub_replay_retention_cursors.cursor_at IS 'Timestamp c
 COMMENT ON COLUMN activitypub_replay_retention_cursors.cursor_position IS 'UUID component of the last processed key.';
 COMMENT ON COLUMN activitypub_replay_retention_cursors.upper_bound_at IS 'Timestamp component of the captured pass high-water key.';
 COMMENT ON COLUMN activitypub_replay_retention_cursors.upper_bound_position IS 'UUID component of the captured pass high-water key.';
+COMMENT ON COLUMN activitypub_replay_retention_cursors.rejection_floor_at IS 'Monotonic admission floor advanced before an inbox or outbound replay identity is purged; independent of sweep pagination and current policy.';
 COMMENT ON COLUMN activitypub_replay_retention_cursors.updated_at IS 'Last time this replay sweep cursor advanced.';
 
 -- edited-in-place: pre-launch, not yet deployed anywhere (including staging)

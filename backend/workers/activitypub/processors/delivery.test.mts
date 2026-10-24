@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import createHttpError from 'http-errors'
 import { UnrecoverableError } from '@vouchington/queue-errors'
 import { generateRsaSha256KeyPair } from '@modules/http-signatures'
@@ -9,15 +9,25 @@ import {
 } from '@services/activitypub-delivery'
 import type { getActorPrivateKeyPem } from '@services/ap-actor-keys'
 import type { isFederationEnabledForUser } from '@services/users'
-import type { DeliverActivityData } from '@queues/activitypub/enqueues/delivery'
+import {
+  enqueueBulkDeliverActivity,
+  getAcceptActivityId,
+  type DeliverActivityData,
+} from '@queues/activitypub/enqueues/delivery'
 import { deliverActivity, distributeActivity } from './delivery.mts'
 import { getMinUUIDv7ForDate, mintUUIDv7 } from '@modules/utils/ids'
-import { getMaximumActivityAgeDays } from '@services/ap-inbox-activities/config'
+import {
+  activityPubInboxConfig,
+  getMaximumActivityAgeDays,
+} from '@services/ap-inbox-activities/config'
+import { overrideDynamicConfigFieldsForTest } from '@voucha/test-helpers/dynamic-config'
+import type { readOutboundReplayFloor } from '@services/ap-inbox-activities/replay-floor'
 
 const isFederationEnabledForUserMock = vi.fn<typeof isFederationEnabledForUser>()
 const buildActivityJsonMock = vi.fn<typeof buildActivityJson>()
 const deliverActivityToInboxMock = vi.fn<typeof deliverActivityToInbox>()
 const getActorPrivateKeyPemMock = vi.fn<typeof getActorPrivateKeyPem>()
+const readOutboundReplayFloorMock = vi.fn<typeof readOutboundReplayFloor>()
 
 const FOLLOW_DATA: DeliverActivityData = {
   activityId: mintUUIDv7(),
@@ -67,6 +77,7 @@ function deliverDeps() {
     deliverActivityToInbox: deliverActivityToInboxMock,
     getActorPrivateKeyPem: getActorPrivateKeyPemMock,
     isFederationEnabledForUser: isFederationEnabledForUserMock,
+    readOutboundReplayFloor: readOutboundReplayFloorMock,
   }
 }
 
@@ -77,6 +88,47 @@ describe('deliverActivity', () => {
     getActorPrivateKeyPemMock.mockResolvedValue('-----BEGIN PRIVATE KEY-----\nfake\n-----END-----')
     buildActivityJsonMock.mockReturnValue({ type: 'Follow' })
     deliverActivityToInboxMock.mockResolvedValue(undefined)
+    readOutboundReplayFloorMock.mockResolvedValue(null)
+  })
+
+  it('rejects a purged delivery after the activity-age policy is widened', async () => {
+    const createdAt = new Date(Date.now() - 40 * 86_400_000)
+    onTestFinished(
+      overrideDynamicConfigFieldsForTest(activityPubInboxConfig, {
+        maximum_activity_age_days: 60,
+      }),
+    )
+    readOutboundReplayFloorMock.mockResolvedValue(createdAt)
+    const result = await deliverActivity(
+      { ...FOLLOW_DATA, activityId: getMinUUIDv7ForDate(createdAt) },
+      deliverDeps(),
+    )
+    expect(result).toEqual({ delivered: false, reason: 'expired-activity' })
+    expect(deliverActivityToInboxMock).not.toHaveBeenCalled()
+  })
+
+  it('uses the database floor transaction before signing a current delivery', async () => {
+    const { readOutboundReplayFloor: _floor, ...deps } = deliverDeps()
+    expect(await deliverActivity(FOLLOW_DATA, deps)).toEqual({ delivered: true })
+    expect(deliverActivityToInboxMock).toHaveBeenCalledOnce()
+  })
+
+  it('keeps direct Accept replies outside the outbound distribution floor', async () => {
+    const accept: DeliverActivityData = {
+      activityType: 'Accept',
+      activityId: getAcceptActivityId({
+        sourceUserId: 'user-1',
+        followActivityId: 'remote-follow',
+      }),
+      sourceUserId: 'user-1',
+      inboxUrl: 'https://a.example/inbox',
+      followActivityId: 'remote-follow',
+      followActorUri: 'https://a.example/users/follower',
+    }
+    readOutboundReplayFloorMock.mockResolvedValue(new Date())
+    expect(await deliverActivity(accept, deliverDeps())).toEqual({ delivered: true })
+    expect(readOutboundReplayFloorMock).not.toHaveBeenCalled()
+    expect(deliverActivityToInboxMock).toHaveBeenCalledOnce()
   })
 
   it.each([
@@ -196,6 +248,23 @@ describe('deliverActivity', () => {
 })
 
 describe('old outbound activity jobs', () => {
+  it('drops a job when the checkpoint claim finds a newly advanced replay floor', async () => {
+    const prepare = vi.fn<typeof prepareActivityDistributionPage>().mockResolvedValue({
+      status: 'expired',
+    })
+    const enqueue = vi.fn<typeof enqueueBulkDeliverActivity>()
+    const result = await distributeActivity(FOLLOW_DATA, {
+      isFederationEnabledForUser: vi
+        .fn<typeof isFederationEnabledForUser>()
+        .mockResolvedValue(true),
+      prepareActivityDistributionPage: prepare,
+      enqueueBulkDeliverActivity: enqueue,
+    })
+    expect(result).toEqual({ enqueued: 0, reason: 'expired-activity' })
+    expect(prepare).toHaveBeenCalledOnce()
+    expect(enqueue).not.toHaveBeenCalled()
+  })
+
   it('cannot recreate a purged checkpoint or fan out an old UUIDv7 activity', async () => {
     const oldId = getMinUUIDv7ForDate(
       new Date(Date.now() - (getMaximumActivityAgeDays() + 1) * 86_400_000),
