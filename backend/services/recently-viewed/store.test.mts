@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { cacheValkeyClient } from '@data-stores/valkey'
 import { loadScript, registerScript } from '@data-stores/valkey/scripts'
 import {
+  RECENTLY_VIEWED_ZSET_LIMIT,
   upsertRecentlyViewed,
   searchRecentlyViewed,
   searchRecentlyViewedPage,
@@ -83,27 +84,33 @@ describe('upsertRecentlyViewed — user-only mode', () => {
     expect(results).toContain(id1)
   })
 
-  it.each([0, 1001, 1.5])('rejects invalid retention %s before writing', async limit => {
+  it('trims the oldest entry at the production retention limit and keeps a TTL', async () => {
     const entityType = randomEntityType() as never
     const userId = crypto.randomUUID()
-    await expect(
-      upsertRecentlyViewed(entityType, crypto.randomUUID(), null, userId, limit),
-    ).rejects.toThrow(RangeError)
-    expect(await countRecentlyViewed(entityType, userId)).toBe(0)
-  })
+    const key = `recently-viewed:user:${entityType}:${userId}`
+    const ids = Array.from({ length: RECENTLY_VIEWED_ZSET_LIMIT }, () => crypto.randomUUID())
+    const entries = Object.fromEntries(ids.map((id, index) => [id, index + 1]))
+    const newestId = crypto.randomUUID()
 
-  it('trims user ZSETs to the retained max and keeps a TTL', async () => {
-    const entityType = randomEntityType() as never
-    const userId = crypto.randomUUID()
-    const ids = Array.from({ length: 5 }, () => crypto.randomUUID())
+    try {
+      await cacheValkeyClient.zadd(key, entries)
+      await upsertRecentlyViewed(entityType, newestId, null, userId)
 
-    for (const id of ids) {
-      await upsertRecentlyViewed(entityType, id, null, userId, 3)
+      expect(await countRecentlyViewed(entityType, userId)).toBe(RECENTLY_VIEWED_ZSET_LIMIT)
+      const results = await searchRecentlyViewed(
+        entityType,
+        null,
+        userId,
+        RECENTLY_VIEWED_ZSET_LIMIT,
+      )
+      expect(results).toHaveLength(RECENTLY_VIEWED_ZSET_LIMIT)
+      expect(results).toContain(newestId)
+      expect(results).not.toContain(ids[0])
+      expect(results[0]).toBe(newestId)
+      expect(await cacheValkeyClient.ttl(key)).toBeGreaterThan(0)
+    } finally {
+      await cacheValkeyClient.unlink([key])
     }
-
-    expect(await countRecentlyViewed(entityType, userId)).toBe(3)
-    const ttl = await cacheValkeyClient.ttl(`recently-viewed:user:${entityType}:${userId}`)
-    expect(ttl).toBeGreaterThan(0)
   })
 })
 

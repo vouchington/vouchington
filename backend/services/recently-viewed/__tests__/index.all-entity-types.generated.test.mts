@@ -1,5 +1,5 @@
 import { it, expect, describe } from 'vitest'
-import { addRecentlyViewed, getRecentlyViewedIds } from '../index.mts'
+import { addRecentlyViewed, searchRecentlyViewed } from '../index.mts'
 import {
   createTestLandingPage,
   createTestTopic,
@@ -22,7 +22,7 @@ describe('index.all-entity-types.generated', () => {
       markdown: `Test post content ${random}`,
     })
     await addRecentlyViewed(user!.id, user!.id, 'post', postId)
-    const viewed = await getRecentlyViewedIds(user!.id, user!.id, 'post')
+    const viewed = await searchRecentlyViewed('post', user!.id, user!.id)
     expect(viewed).toContain(postId)
   })
 
@@ -45,7 +45,7 @@ describe('index.all-entity-types.generated', () => {
     await addRecentlyViewed(user!.id, user!.id, 'post', post1Id)
     await addRecentlyViewed(user!.id, user!.id, 'post', post2Id)
 
-    const viewed = await getRecentlyViewedIds(user!.id, user!.id, 'post', 100)
+    const viewed = await searchRecentlyViewed('post', user!.id, user!.id, 100)
     const idx1 = viewed.indexOf(post1Id)
     const idx2 = viewed.indexOf(post2Id)
     expect(idx1).toBeGreaterThanOrEqual(0)
@@ -53,9 +53,9 @@ describe('index.all-entity-types.generated', () => {
     expect(idx2).toBeLessThan(idx1) // post2 more recent, appears first
   })
 
-  it('getRecentlyViewedIds returns empty array when no posts viewed', async () => {
+  it('searchRecentlyViewed returns empty array when no posts viewed', async () => {
     const user = await createTestUser({ administrator: true })
-    const viewed = await getRecentlyViewedIds(user!.id, user!.id, 'post')
+    const viewed = await searchRecentlyViewed('post', user!.id, user!.id)
     expect(viewed).toEqual([])
   })
 
@@ -77,7 +77,7 @@ describe('index.all-entity-types.generated', () => {
     const rssFeedItem = await createTestRssFeedItemWithUrl(rssFeedId)
 
     await addRecentlyViewed(user!.id, user!.id, 'rss_feed_item', rssFeedItem.id)
-    const viewed = await getRecentlyViewedIds(user!.id, user!.id, 'rss_feed_item')
+    const viewed = await searchRecentlyViewed('rss_feed_item', user!.id, user!.id)
     expect(viewed).toContain(rssFeedItem.id)
   })
 
@@ -101,7 +101,7 @@ describe('index.all-entity-types.generated', () => {
     await addRecentlyViewed(user!.id, user!.id, 'rss_feed_item', rssFeedItem1.id)
     await addRecentlyViewed(user!.id, user!.id, 'rss_feed_item', rssFeedItem2.id)
 
-    const viewed = await getRecentlyViewedIds(user!.id, user!.id, 'rss_feed_item', 100)
+    const viewed = await searchRecentlyViewed('rss_feed_item', user!.id, user!.id, 100)
     const idx1 = viewed.indexOf(rssFeedItem1.id)
     const idx2 = viewed.indexOf(rssFeedItem2.id)
     expect(idx1).toBeGreaterThanOrEqual(0)
@@ -109,9 +109,9 @@ describe('index.all-entity-types.generated', () => {
     expect(idx2).toBeLessThan(idx1) // rssFeedItem2 more recent, appears first
   })
 
-  it('getRecentlyViewedIds returns empty array when no rss_feed_items viewed', async () => {
+  it('searchRecentlyViewed returns empty array when no rss_feed_items viewed', async () => {
     const user = await createTestUser({ administrator: true })
-    const viewed = await getRecentlyViewedIds(user!.id, user!.id, 'rss_feed_item')
+    const viewed = await searchRecentlyViewed('rss_feed_item', user!.id, user!.id)
     expect(viewed).toEqual([])
   })
 
@@ -120,7 +120,7 @@ describe('index.all-entity-types.generated', () => {
     const user = await createTestUser({ administrator: true })
     const viewedUser = await createTestUser({ administrator: true })
     await addRecentlyViewed(user!.id, user!.id, 'user', viewedUser!.id)
-    const viewed = await getRecentlyViewedIds(user!.id, user!.id, 'user')
+    const viewed = await searchRecentlyViewed('user', user!.id, user!.id)
     expect(viewed).toContain(viewedUser!.id)
   })
 
@@ -131,7 +131,7 @@ describe('index.all-entity-types.generated', () => {
     await addRecentlyViewed(user!.id, user!.id, 'user', viewedUser1!.id)
     await addRecentlyViewed(user!.id, user!.id, 'user', viewedUser2!.id)
 
-    const viewed = await getRecentlyViewedIds(user!.id, user!.id, 'user', 100)
+    const viewed = await searchRecentlyViewed('user', user!.id, user!.id, 100)
     const idx1 = viewed.indexOf(viewedUser1!.id)
     const idx2 = viewed.indexOf(viewedUser2!.id)
     expect(idx1).toBeGreaterThanOrEqual(0)
@@ -139,9 +139,9 @@ describe('index.all-entity-types.generated', () => {
     expect(idx2).toBeLessThan(idx1) // viewedUser2 more recent, appears first
   })
 
-  it('getRecentlyViewedIds returns empty array when no users viewed', async () => {
+  it('searchRecentlyViewed returns empty array when no users viewed', async () => {
     const user = await createTestUser({ administrator: true })
-    const viewed = await getRecentlyViewedIds(user!.id, user!.id, 'user')
+    const viewed = await searchRecentlyViewed('user', user!.id, user!.id)
     expect(viewed).toEqual([])
   })
 
@@ -161,15 +161,15 @@ describe('index.all-entity-types.generated', () => {
     await addRecentlyViewed(sessionId, userId, 'topic', topic.id)
 
     // Should be able to query by just session
-    const viewedBySession = await getRecentlyViewedIds(sessionId, null, 'topic')
+    const viewedBySession = await searchRecentlyViewed('topic', sessionId, null)
     expect(viewedBySession).toContain(topic.id)
 
     // Should also be able to query by session + user
-    const viewedByUser = await getRecentlyViewedIds(sessionId, userId, 'topic')
+    const viewedByUser = await searchRecentlyViewed('topic', sessionId, userId)
     expect(viewedByUser).toContain(topic.id)
   })
 
-  it('getRecentlyViewedIds includes user history when userId is provided', async () => {
+  it('searchRecentlyViewed includes user history when userId is provided', async () => {
     const user = await createTestUser({ administrator: true })
     const random = Math.random().toString(36).slice(2, 15)
 
@@ -187,7 +187,7 @@ describe('index.all-entity-types.generated', () => {
     await addRecentlyViewed(sessionId2, userId, 'topic', topic2.id)
 
     // Query with same user - should see topic2 from user history
-    const viewed = await getRecentlyViewedIds(sessionId2, userId, 'topic')
+    const viewed = await searchRecentlyViewed('topic', sessionId2, userId)
     expect(viewed).toContain(topic2.id)
   })
 
@@ -196,7 +196,7 @@ describe('index.all-entity-types.generated', () => {
     const user = await createTestUser({ administrator: true })
     const { landingPageId } = await createTestLandingPage(user!.id, 'Test LP')
     await addRecentlyViewed(user!.id, user!.id, 'landing_page', landingPageId)
-    const viewed = await getRecentlyViewedIds(user!.id, user!.id, 'landing_page')
+    const viewed = await searchRecentlyViewed('landing_page', user!.id, user!.id)
     expect(viewed).toContain(landingPageId)
   })
 
@@ -206,7 +206,7 @@ describe('index.all-entity-types.generated', () => {
     const { landingPageId: lp2 } = await createTestLandingPage(user!.id, 'LP 2')
     await addRecentlyViewed(user!.id, user!.id, 'landing_page', lp1)
     await addRecentlyViewed(user!.id, user!.id, 'landing_page', lp2)
-    const viewed = await getRecentlyViewedIds(user!.id, user!.id, 'landing_page', 100)
+    const viewed = await searchRecentlyViewed('landing_page', user!.id, user!.id, 100)
     const idx1 = viewed.indexOf(lp1)
     const idx2 = viewed.indexOf(lp2)
     expect(idx1).toBeGreaterThanOrEqual(0)
@@ -214,9 +214,9 @@ describe('index.all-entity-types.generated', () => {
     expect(idx2).toBeLessThan(idx1) // lp2 viewed more recently, should appear first
   })
 
-  it('getRecentlyViewedIds returns empty array when no landing pages viewed', async () => {
+  it('searchRecentlyViewed returns empty array when no landing pages viewed', async () => {
     const user = await createTestUser({ administrator: true })
-    const viewed = await getRecentlyViewedIds(user!.id, user!.id, 'landing_page')
+    const viewed = await searchRecentlyViewed('landing_page', user!.id, user!.id)
     expect(viewed).toEqual([])
   })
 
@@ -255,10 +255,10 @@ describe('index.all-entity-types.generated', () => {
     await addRecentlyViewed(user!.id, user!.id, 'user', viewedUser!.id)
 
     // Each entity type should have its own list
-    const viewedTopics = await getRecentlyViewedIds(user!.id, user!.id, 'topic')
-    const viewedPosts = await getRecentlyViewedIds(user!.id, user!.id, 'post')
-    const viewedRssFeedItems = await getRecentlyViewedIds(user!.id, user!.id, 'rss_feed_item')
-    const viewedUsers = await getRecentlyViewedIds(user!.id, user!.id, 'user')
+    const viewedTopics = await searchRecentlyViewed('topic', user!.id, user!.id)
+    const viewedPosts = await searchRecentlyViewed('post', user!.id, user!.id)
+    const viewedRssFeedItems = await searchRecentlyViewed('rss_feed_item', user!.id, user!.id)
+    const viewedUsers = await searchRecentlyViewed('user', user!.id, user!.id)
 
     expect(viewedTopics).toContain(topic.id)
     expect(viewedPosts).toContain(postId)
